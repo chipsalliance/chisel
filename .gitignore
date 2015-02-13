@@ -1,0 +1,7 @@
+src/*.DS_STORE
+src/*/*.DS_STORE
+src/*/*/*.DS_STORE
+src/*/*/*/*.DS_STORE
+src/lib/stanzam
+src/*/__MACOSX
+src/main/stanza/firrtl-main

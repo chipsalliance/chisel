@@ -1,0 +1,146 @@
+defpackage chipper.ir2 :
+   import core
+   import verse
+   
+public definterface Direction
+public val INPUT = new Direction
+public val OUTPUT = new Direction
+public val UNKNOWN-DIR = new Direction
+
+public definterface Width
+public defstruct UnknownWidth <: Width
+public defstruct IntWidth <: Width :
+   width: Int
+
+public defstruct PrimOp
+public val ADD-OP = PrimOp()
+public val ADD-MOD-OP = PrimOp()
+public val SUB-OP = PrimOp()
+public val SUB-MOD-OP = PrimOp()
+public val TIMES-OP = PrimOp()
+public val DIVIDE-OP = PrimOp()
+public val MOD-OP = PrimOp()
+public val SHIFT-LEFT-OP = PrimOp()
+public val SHIFT-RIGHT-OP = PrimOp()
+public val PAD-OP = PrimOp()
+public val BIT-AND-OP = PrimOp()
+public val BIT-OR-OP = PrimOp()
+public val BIT-XOR-OP = PrimOp()
+public val CONCAT-OP = PrimOp()
+public val BIT-SELECT-OP = PrimOp()
+public val BITS-SELECT-OP = PrimOp()
+public val MULTIPLEX-OP = PrimOp()
+public val LESS-OP = PrimOp()
+public val LESS-EQ-OP = PrimOp()
+public val GREATER-OP = PrimOp()
+public val GREATER-EQ-OP = PrimOp()
+public val EQUAL-OP = PrimOp()
+
+public definterface Expression
+public defmulti type (e:Expression) -> Type
+
+public defstruct Ref <: Expression :
+   name: Symbol
+   type: Type [multi => false]
+public defstruct Field <: Expression :
+   exp: Expression
+   name: Symbol
+   type: Type [multi => false]
+public defstruct Index <: Expression :
+   exp: Expression
+   value: Int
+   type: Type [multi => false]
+public defstruct UIntValue <: Expression :
+   value: Int
+   width: Width
+public defstruct SIntValue <: Expression :
+   value: Int
+   width: Width
+public defstruct DoPrim <: Expression :
+   op: PrimOp
+   args: List<Expression>
+   consts: List<Int>
+   type: Type [multi => false]
+public defstruct ReadPort <: Expression :
+   mem: Expression
+   index: Expression
+   type: Type [multi => false]
+
+public definterface Command
+public defstruct LetRec <: Command :
+   entries: List<KeyValue<Symbol, Element>>
+   body: Command
+public defstruct DefWire <: Command :
+   name: Symbol
+   type: Type
+public defstruct DefRegister <: Command :
+   name: Symbol
+   type: Type
+public defstruct DefInstance <: Command :
+   name: Symbol
+   module: Expression
+public defstruct DefMemory <: Command :
+   name: Symbol
+   type: VectorType
+public defstruct DefAccessor <: Command :
+   name: Symbol
+   source: Expression
+   index: Expression
+public defstruct Conditionally <: Command :
+   pred: Expression
+   conseq: Command
+   alt: Command
+public defstruct Begin <: Command :
+   body: List<Command>
+public defstruct Connect <: Command :
+   loc: Expression
+   exp: Expression
+public defstruct EmptyCommand <: Command
+
+public definterface Element
+public defmulti type (e:Element) -> Type
+
+public defstruct Register <: Element :
+   type: Type [multi => false]
+   value: Expression
+   enable: Expression
+public defstruct Memory <: Element :
+   type: Type [multi => false]
+   writers: List<WritePort>
+public defstruct WritePort :
+   index: Expression
+   value: Expression
+   enable: Expression
+public defstruct Node <: Element :
+   type: Type [multi => false]
+   value: Expression
+public defstruct Instance <: Element :
+   type: Type [multi => false]
+   module: Expression
+   ports: List<KeyValue<Symbol,Expression>>
+
+public definterface Type
+public defstruct UIntType <: Type :
+   width: Width
+public defstruct SIntType <: Type :
+   width: Width
+public defstruct BundleType <: Type :
+   ports: List<Port>
+public defstruct VectorType <: Type :
+   type: Type
+   size: Int
+public defstruct UnknownType <: Type
+
+public defstruct Port :
+   name: Symbol
+   direction: Direction
+   type: Type
+
+public defstruct Module :
+   name: Symbol
+   ports: List<Port>
+   body: Command
+
+public defstruct Circuit :
+   modules: List<Module>
+   main: Symbol

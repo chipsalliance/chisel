@@ -1,0 +1,13 @@
+February 13, 2015.
+
+This is where the notes are.
+
+To compile firrtl: stanzam -i chmain.stanza -o chmain
+
+Homework: rewrite to-working-ir, write printer
+
+a typeof T
+a and b
+a or b
+a as T
+

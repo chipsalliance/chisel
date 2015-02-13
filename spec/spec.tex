@@ -1,0 +1,831 @@
+\title{Specification for the FIRRTL Language: Version 0.1.0}
+\author{Patrick S. Li, Jonathan Bachrach}
+\documentclass[12pt]{article}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{proof}
+\usepackage{amsfonts}
+\usepackage[pdftex]{graphicx}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+
+\begin{document}
+\maketitle
+
+%Useful Macros
+\newcommand{\id}{\text{id }}
+\newcommand{\ids}{\text{id}}
+\newcommand{\ints}{\text{int}}
+\newcommand{\kw}[1]{\text{\bf #1\ }}
+\newcommand{\kws}[1]{\text{\bf #1}}
+\newcommand{\pd}[1]{\text{\em #1\ }}
+\newcommand{\pds}[1]{\text{\em #1}}
+\newcommand{\bundleT}[1]{\{#1\}}
+\newcommand{\info}{[\pds{info}]\ }
+
+\section{FIRRTL Language Definition}
+
+\subsection{Abstract Syntax Tree}
+\[
+\begin{array}{rrll}
+\pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
+\pd{module}     &=     &\info \kw{module}  \id \kw{:} (\pd{port*} \pd{stmt})                          &\text{Module}\\
+                &\vert &\info \kw{exmodule}  \id \kw{:} (\pd{port*})                                  &\text{External Module}\\
+\pd{port}       &=     &\info \pd{dir} \id \kw{:} \pd{type}                                           &\text{Port}\\
+\pd{dir}        &=     &\kws{input} \vert \kws{output}                                                &\text{Input/Output}\\
+\pd{type}       &=     &\kws{UInt}(\pd{width})                                                        &\text{Unsigned Integer}\\
+                &\vert &\kws{SInt}(\pd{width})                                                        &\text{Signed Integer}\\
+                &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
+                &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
+\pd{field}      &=     &\pd{dir} \id \kw{:} \pd{type}                                                 &\text{Bundle Field}\\
+\pd{width}      &=     &\ints                                                                         &\text{Known Integer Width}\\
+                &\vert &\kw{?}                                                                        &\text{Unknown Width}\\
+\pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
+                &\vert &\info \kw{reg} \id \kw{:} \pd{type}                                           &\text{Register Declaration}\\
+                &\vert &\info \kw{mem} \id \kw{:} \pd{type}                                           &\text{Memory Declaration}\\
+                &\vert &\info \kw{node} \id \kw{:} \pd{type} = \pd{exp}                               &\text{Node Declaration}\\
+                &\vert &\info \kw{inst} \id \kw{of} \id                                               &\text{Instance Declaration}\\
+                &\vert &\info \kw{accessor} \id = \pds{exp}[\pds{exp}]                                &\text{Accessor Declaration}\\
+                &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
+                &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
+                &\vert &\info \kw{letrec :} \pd{elem*} \kw{in :} \pd{stmt}                            &\text{Let with Recursive Definitions}\\
+                &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
+                &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
+\pd{elem}       &=     &\info \kw{reg} \id \kw{:} \pd{type} = \kws{Register}(\pds{exp}, \pds{exp})    &\text{Structural Register}\\
+                &\vert &\info \kw{node} \id \kw{:} \pd{type} = \pd{exp}                               &\text{Structural Node}\\
+                &\vert &\info \kw{mem} \id \kw{:} \pd{type} =                                         &\text{Structural Memory}\\
+                &      &\kws{Memory}(\kws{WritePort}(\pds{exp}, \pds{exp}, \pds{exp})\text{*})  &\\
+                &\vert &\info \kw{inst} \id = \ids(\kws{Input}(\ids,\pds{exp})\text{*})               &\text{Structural Instance}\\
+\pd{exp}        &=     &\info \kws{UInt}(\ints, \pds{width})                                          &\text{Literal Unsigned Integer}\\
+                &\vert &\info \kws{SInt}(\ints, \pds{width})                                          &\text{Literal Signed Integer}\\
+                &\vert &\info \id                                                                     &\text{Reference}\\
+                &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
+                &\vert &\info \pds{exp}.\ints                                                         &\text{Subindex}\\
+                &\vert &\info \kws{ReadPort}(\ids, \pds{exp})                                         &\text{Structural Read Port}\\
+                &\vert &\info \pds{primop}(\pds{exp*}, \ints\text{*})                                 &\text{Primitive Operation}\\
+\pd{info}       &=     &\text{filename } \kw{:} \text{line} . \text{col}                              &\text{File Location}\\
+                &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\
+\end{array}
+\]
+
+\[
+\begin{array}{rll}
+\pd{primop}     &= \\
+                &\kws{add} \vert \kws{addu} \vert \kws{adds}                             &\text{Generic/Unsigned/Signed Add}\\
+\vert           &\kws{sub} \vert \kws{subu} \vert \kws{subs}                             &\text{Generic/Unsigned/Signed Subtract}\\
+\vert           &\kws{mul} \vert \kws{mulu} \vert \kws{muls}                             &\text{Generic/Unsigned/Signed Multiply}\\
+\vert           &\kws{div} \vert \kws{divu} \vert \kws{divs}                             &\text{Generic/Unsigned/Signed Divide}\\
+\vert           &\kws{mod} \vert \kws{modu} \vert \kws{mods}                             &\text{Generic/Unsigned/Signed Modulo}\\
+\vert           &\kws{add-mod} \vert \kws{add-modu} \vert \kws{add-mods}                 &\text{Generic/Unsigned/Signed Add Modulo}\\
+\vert           &\kws{sub-mod} \vert \kws{sub-modu} \vert \kws{sub-mods}                 &\text{Generic/Unsigned/Signed Subtract Modulo}\\
+\vert           &\kws{lt} \vert \kws{ltu} \vert \kws{lts}                                &\text{Generic/Unsigned/Signed Less Than}\\
+\vert           &\kws{leq} \vert \kws{lequ} \vert \kws{leqs}                             &\text{Generic/Unsigned/Signed Less or Equal}\\
+\vert           &\kws{gt} \vert \kws{gtu} \vert \kws{gts}                                &\text{Generic/Unsigned/Signed Greater Than}\\
+\vert           &\kws{geq} \vert \kws{gequ} \vert \kws{geqs}                             &\text{Generic/Unsigned/Signed Greater or Equal}\\
+\vert           &\kws{pad} \vert \kws{padu} \vert \kws{pads}                             &\text{Generic/Unsigned/Signed Pad to Length}\\
+\vert           &\kws{and} \vert \kws{or} \vert \kws{xor}                                &\text{Bitwise And/Or/Exclusive Or}\\
+\vert           &\kws{concat}                                                            &\text{Concatenation}\\
+\vert           &\kws{equal}                                                             &\text{Equal}\\
+\vert           &\kws{multiplex}                                                         &\text{Multiplex}\\
+\vert           &\kws{shl} \vert \kws{shr}                                               &\text{Shift Left/Right}\\
+\vert           &\kws{bit} \vert \kws{bits}                                              &\text{Single/Multiple Bit Extraction}\\
+\end{array}
+\]
+
+\subsection{Notation}
+The above definition specifies the structure of the abstract syntax tree corresponding to a FIRRTL circuit. Nodes in the abstract syntax tree are {\em italicized}. Keywords are shown in {\bf bold}. The special productions, id and int, indicates an identifier and an integer literal respectively. Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurences of the token.
+
+Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL datastructure. Readers and writers are provided for converting a FIRRTL datastructure into a purely textual representation, and is defined in section \ref{concrete}.
+
+
+\section{Circuits and Modules}
+\[
+\begin{array}{rrl}
+\pd{circuit}    &=     &\kw{circuit} \text{toplevel-module } \kw{:} (\text{modules*}) \\
+\pd{module}     &=     &\kw{module}  \text{name } \kw{:} (\text{ports* } \text{body}) \\
+                &\vert &\kw{exmodule}  \text{name } \kw{:} (\text{ports* })           \\ 
+\pd{port}       &=     &\pd{dir} \id \kw{:} \pd{type}                                 \\
+\pd{dir}        &=     &\kws{input} \vert \kws{output}                                \\
+\end{array}
+\]
+
+All FIRRTL circuits are comprised of a flat list of modules, each representing one hardware block. Each module has a given name, a list of ports, and a statement representing the circuit connections within the module. Externally defined modules consist of a given name, and a list of ports, whose types must match the types defined in the associated Verilog. Module names exist in their own namespace, and all modules must have a unique name. The name of the top-level module must be specified for a circuit.
+
+A module port is specified by a direction, which may be input or output, a name, and the data type for the port. The port names exist in the identifier namespace for the module, and must be unique.
+
+The special port name, {\em reset}, is used to carry the module reset signal for circuit initialization, and has special meaning. Circuit initialization is described in section \ref{initialization}. 
+
+\section{Types}
+
+\subsection{Ground Types}
+\[
+\begin{array}{rrl}
+\pd{type}       &=     &\kws{UInt}(\pd{width})      \\
+                &\vert &\kws{SInt}(\pd{width})      \\
+\pd{width}      &=     &\ints                       \\
+                &\vert &\kw{?}                      \\
+\end{array}
+\]
+
+There are only two ground types in FIRRTL, an unsigned and a signed integer type. Both of these types require a given bitwidth, which may be some known integer width, which must be non-negative, or an unknown width. Unknown widths are a declaration for the width to be computed by the FIRRTL width inferencer, instead of manually given by the programmer.
+
+\subsection{Vector Types}
+\[
+\begin{array}{rrl}
+\pd{type}       &=     &\pds{type}[\ints]           \\
+\end{array}
+\]
+
+Vector types in FIRRTL indicate a structure consisting of multiple elements of some given type. This is akin to array types in the C programming language. Note that the number of elements must be known, and non-negative.
+
+As an example, the type $\kws{UInt}(16)[10]$ indicates a ten element vector of 16-bit unsigned integers. The type $\kws{UInt}(\kws{?})[10]$ indicates a ten element vector of unsigned integers, with unknown and possibly differing bitwidths.
+
+Vector types may be nested ad infinitum. The type $\kws{UInt}(16)[10][5]$ indicates a five element vector {\em of} ten element vectors of 16-bit unsigned integers.
+
+\subsection{Bundle Types}
+\[
+\begin{array}{rrl}
+\pd{type}       &=     &\bundleT{\pd{field*}}                         \\
+\pd{field}      &=     &\pd{dir} \text{name } \kw{:} \pd{type}        \\
+\end{array}
+\]
+
+Bundle types in FIRRTL are composite types formed from an ordered sequence of named, nested types. All fields in a bundle must have a given direction, name, and type. The following is an example of a possible type for representing a complex number.
+\[
+\bundleT{\kw{output} \text{real } \kw{:} \kws{SInt}(10),
+         \kw{output} \text{imag } \kw{:} \kws{SInt}(10)}
+\]
+It has two fields, real, and imag, both 10-bit signed integers. Here is an example of a possible type for a decoupled port. 
+\[
+\begin{aligned}
+\{ \kw{output} &\text{data } \kw{:} \kws{UInt}(10), \\
+   \kw{output} &\text{valid } \kw{:} \kws{UInt}(1), \\
+   \kw{input} &\text{ready } \kw{:} \kws{UInt}(1)\} \\
+\end{aligned}
+\]
+It has a data field that is specified to be a 10-bit unsigned integer, a valid signal that must be a 1-bit unsigned integer, and an {\em input} ready signal that must be a 1-bit unsigned integer.
+
+By convention, we specify the directions within a bundle type consistently with how the fields would be defined if they were {\em output} ports for a module. For this reason, the real and imag fields for the complex number bundle type are both specified to have direction \kws{output}. I.e., if a module were to output a complex number, we would declare it to have an output port real, and an output port imag. Similarly, if a module were to output a value using a decoupled protocol, we would declare the module to have an output port, data, which would contain the value itself, an output port, valid, which would indicate when the value is valid, and accept an {\em input} port, ready, from the receiving component, which would indicate when the component is ready to receive the value.
+
+Note that all field names within a bundle type must be unique. The special field name, {\em init}, is reserved for register initialization and is not available to the user. Register initialization is covered in section \ref{initialization}. 
+
+As in the case of vector types, bundle types may also be nested ad infinitum. I.e., the types of the fields themselves may also be bundle types, which will in turn contain more fields, etc. 
+
+\section{Statements}
+
+FIRRTL circuit components are instantiated and connected together using {\em statements}.
+
+\subsection{Wires}
+A wire is a named combinational circuit element that can connected to using the connect statement. A wire with a given name and type can be instantiated with the following statement.
+\[
+\kw{wire} \text{name } \kw{:} \pd{type} \\
+\]
+
+Declared wires are {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement).
+
+\subsection{Registers}
+A register is a named stateful circuit element. A register with a given name and type can be instantiated with the following statement.
+\[
+\kw{reg} \text{name } \kw{:} \pd{type} \\
+\]
+
+Like wires, registers are also {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement). 
+
+The distinguished field, {\em init}, is used to specify the initialization value for a register, and is described in section \ref{initialization}. 
+
+\subsection{Memories}
+A memory is a stateful circuit element containing multiple elements. Unlike registers, memories can {\em only} be read from or written to through {\em accessors}. A memory with a given name and type can be instantiated with the following statement.
+\[
+\begin{aligned}
+\kw{mem} \text{name } \kw{:} \pd{type} \\
+\end{aligned}
+\]
+
+Note that, by definition, memories contain multiple elements, and hence {\em must} be declared with a vector type. It is an error to specify any other type for a memory. Additionally, the type for a memory must be completely specified and cannot contain any unknown widths.
+
+\subsection{Nodes}
+A node is simply a named intermediate value in a circuit. A node with a given name and value can be instantiated with the following statement.
+\[
+\kw{node} \text{name } = \pd{exp} \\
+\]
+Unlike wires, nodes can only be used in {\em output} directions. They can be connected from, but not connected to.
+
+\subsection{Accessors}
+Accessors are used for either connecting to or from a vector-typed expression, from some {\em variable} index. An accessor can be instantiated with the following statement.
+\[
+\begin{aligned}
+\kw{accessor} \text{name } \kw{:} \pds{exp}[\text{index}] \\
+\end{aligned}
+\]
+Given a name, an expression to access, and the index at which to access, the above statement creates an accessor that may be used for connecting to or from the expression. The expression must have a vector type, and the index must be an unsigned integer. 
+
+Note that, though their directions are not explicitly specified, accessors are {\em not} bidirectional. They may be used as outputs, by being on the right-hand side of a connect statement, in which case the accessor acts as a reader from the given expression at the given index. Or they may be used as inputs, by being on the left-hand side of a connect statement, in which case the accessor acts as a writer to the given expression at the given index. An accessor must consistently be used either as an input, or as an output, but not as both. 
+
+The following example demonstrates using accessors to read and write to a memory. The accessor, reader, acts as a memory read port that reads from the index specified by the wire i. The accessor, writer, acts as a memory write port that writes 42 to the index specified by wire j.
+\[
+\begin{aligned}
+&\kw{wire} i : \kws{UInt}(5) \\
+&\kw{wire} j : \kws{UInt}(5) \\
+&\kw{mem} m : \kws{UInt}(10)[10] \\
+&\kw{accessor} reader = m[i] \\
+&\kw{accessor} writer = m[j] \\
+&writer := \kws{UInt}(42, ?) \\
+&\kw{node} temp = reader \\
+\end{aligned}
+\]
+
+As mentioned previously, the only way to read from or write to a memory is through an accessor. But accessors are not restricted to accessing memories. They can be used to access {\em any} vector-valued type. 
+
+\subsection{Instances}
+An instance refers to a particular instantiation of a FIRRTL module. An instance with some given name, of a given module can be created using the following statement.
+\[
+\begin{aligned}
+\kw{inst} \text{name } \kw{of} \text{module}
+\end{aligned}
+\]
+
+The ports of an instance may be accessed using the subfield expression. The output ports of an instance may only be used in output positions, e.g. the right-hand side of a connect statement, and the input ports of an instance may only be used in input positions, e.g. the left-hand side of a connect statement.
+
+There are restrictions upon which modules the user is allowed to instantiate, so as not to create infinitely recursive hardware. We define a module with no instances as a {\em level 0} module. A module containing only instances of {\em level 0} modules is a {\em level 1} module, and a module containing only instances of {\em level 1} or below modules is a {\em level 2} module. In general, a {\em level n} module is only allowed to contain instances of modules of level $n-1$ or below. 
+
+\subsection{The Connect Statement}
+The connect statement is used to specify a physical wired connection between one hardware component to another, and is the most important statement in FIRRTL. The following statement is used to connect the output of some component, to the input of another component. 
+\[
+\text{input } \kw{:=} \text{output} 
+\]
+
+For a connection to be legal, the types of the two expressions must match. The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be able to be used as an input.
+
+\subsection{The Conditional Statement}
+The conditional statement is used to specify a condition that must be asserted under which a list of statements hold. The condition must be a 1-bit unsigned integer. The following statement states that the {\em conseq} statements hold only when {\em condition} is assert high, otherwise the {\em alt} statements hold instead.
+\[
+\begin{aligned}
+\kw{when} \text{condition } \kw{:} \text{conseq } \kw{else :} \text{alt}
+\end{aligned}
+\]
+
+Notationally, for convenience, we omit the \kws{else} branch if it is an empty statement. 
+
+\subsubsection{Initialization Coverage}
+Because of the conditional statement, it is possible for wires to be only partially connected to an expression. In the following example, the wire w is connected to 42 when enable is asserted high, but it is not specified what w is connected to when enable is low. This is an illegal FIRRTL circuit, and will throw a \kws{wire not initialized} error during compilation.
+\[
+\begin{aligned}
+&\kw{wire} w : \kws{UInt}(\kws{?}) \\
+&\kw{when} enable : \\
+&\quad w := \kws{UInt}(42, \kws{?}) \\
+\end{aligned}
+\]
+
+\subsubsection{Scoping}
+The conditional statement creates a new {\em scope} within its consequent and alternative branches. It is an error to refer to any component declared within a branch after the branch has ended.
+
+Note that there is still only a single identifier namespace in a module. Thus, there cannot be two components with identical names in the same module, {\em even if} they are in separate scopes. This is to facilitate writing transformational passes, by ensuring that the component name and module name is sufficient to uniquely identify a component.
+
+\subsection{Statement Groups}
+Several statements can be grouped into one using the following construct.
+\[
+\begin{aligned}
+(\pd{stmt*})
+\end{aligned}
+\]
+Ordering is important in a statement group. Later connect statements take precedence over earlier connect statements, and circuit components cannot be referred to before they are instantiated.
+
+\subsubsection{Last Connect Semantics}
+Because of the connect statement, FIRRTL statements are {\em ordering} dependent. Later connections take precendence over earlier connections. In the following example, the wire w is connected to 42, not 20. 
+\[
+\begin{aligned}
+&\kw{wire} w : \kws{UInt}(\kws{?}) \\
+&w := \kws{UInt}(20, \kws{?}) \\
+&w := \kws{UInt}(42, \kws{?}) \\
+\end{aligned}
+\]
+
+By coupling the conditional statement with last connect semantics, many circuits can be expressed in a natural style. In the following example, the wire w is connected to 20 unless the enable expression is asserted high, in which case w is connected to 42. 
+\[
+\begin{aligned}
+&\kw{wire} w : \kws{UInt}(\kws{?}) \\
+&w := \kws{UInt}(20, \kws{?}) \\
+&\kw{when} enable : \\
+&\quad w := \kws{UInt}(42, \kws{?}) \\
+\end{aligned}
+\]
+
+\subsection{The Empty Statement}
+The empty statement is specified using the following.
+\[
+\begin{aligned}
+\kw{skip}
+\end{aligned}
+\]
+The empty statement does nothing and is used simply as a placeholder where a statement is expected. It is typically used as the alternative branch in a conditional statement. 
+
+\subsection{The LetRec Statement}
+The letrec statement is used for declaring {\em structural} elements, and is an important part of {\em lowered form}. It is essentially a netlist representation of a piece of circuitry, but a representation that may exist and that operates correctly together with the other FIRRTL statements. 
+
+\[
+\kw{letrec :} \pd{elem*} \kw{in :} \pd{stmt}                           
+\]
+
+A letrec statement is defined by a given list of structural elements, which are described in the following section (section \ref{elements}), and a body which contain statements that may refer to the structural elements.
+
+Unlike in a statement group, the ordering of the structural elements have no meaning. The structural elements can be thought of as being declared {\em simultaneously}, and any structural element may refer to any other structural element, no matter the order in which they are declared. 
+
+[TODO: No combinational loops]
+
+\section{Structural Elements} \label{elements}
+
+Structural elements appear in letrec statements, and are simply circuit components whose input connections are fully specified upon declaration. They {\em cannot} be used as inputs, and hence can never be on the left-hand side of a connect statement. 
+
+\subsection{Structural Register}
+\[
+\kw{reg} \text{name } \kw{:} \pd{type} = \kws{Register}(\text{value}, \text{enable})   
+\]
+A structural register is specified given a name, a type, the input value for the register, and the enable signal for the register. The type must be a ground type, the value must be of the given ground type, and the enable signal must be a 1-bit unsigned integer. 
+
+\subsection{Structural Node}
+\[
+\kw{node} \text{name } \kw{:} \pd{type} = \pd{exp}
+\]
+A structural node is specified given a name, a type, and its value. The type must be a ground type, and the given value must match the ground type.
+
+\subsection{Structural Memory}
+\[
+\kw{mem} \text{name } \kw{:} \pd{type} =
+\kws{Memory}(\kws{WritePort}(\text{index}, \text{value}, \text{enable})\text{*})  
+\]
+A structural memory is specified given a name, a type, and a list of write ports. The given type must be a vector of some ground type. Each write port must specify the index at which to write the value, the value to write, and the enable signal determining when to write the value. The index must be an unsigned integer, the value must match the declared ground type of the memory, and the enable signal must be a 1-bit unsigned integer. 
+
+The only method of reading from a structural memory is through the \kws{ReadPort} expression. 
+
+\subsection{Structural Instance}
+\[
+\kw{inst} \text{name} = \text{module}(\kws{Input}(\text{field},\pds{exp})\text{*})              
+\]
+A structural instance is specified given the instance name, the name of the module, and a list of the expressions to connect to the instance's input ports. An expression must be specified for every one of the instance's input ports, and the expression's type must match the port type.
+
+\section{Expressions}
+
+FIRRTL expressions are used for creating values corresponding to the ground types, for referring to a declared circuit component, for accessing a nested element within a component, and for performing primitive operations. 
+
+\subsection{Unsigned Integers}
+
+A value of type \kws{UInt} can be directly created using the following expression.
+\[
+\kws{UInt}(\text{value}, \text{width})
+\]
+The given value must be non-negative, and the given width, if known, must be large enough to hold the value. If the width is specified as unknown, then FIRRTL infers the minimum possible width necessary to hold the value.
+
+\subsection{Signed Integers}
+
+A value of type \kws{SInt} can be directly created using the following expression.
+\[
+\kws{SInt}(\text{value}, \text{width})
+\]
+The given width, if known, must be large enough to hold the given value in two's complement format. If the width is specified as unknown, then FIRRTL infers the minimum possible width necessary to hold the value.
+
+\subsection{References}
+\[
+\text{name}
+\]
+A reference is simply a name that refers to some declared circuit component. A reference may refer to a port, a node, a wire, a register, an instance, a memory, a structural node, a structural wire, a structural register, or a structural instance.
+
+\subsection{Subfields}
+\[
+\pds{exp}.\text{name}
+\]
+The subfield expression may be used for one of three purposes:
+\begin{enumerate}
+\item To refer to the initialization value of a register, using register-name.init.
+\item To refer to a specific port of an instance, using instance-name.port-name. 
+\item To refer to a specific field within a bundle-typed expression.
+\end{enumerate}
+
+\subsection{Subindex}
+\[
+\pds{exp}.\text{index}
+\]
+The subindex expression is used for referring to a specific element within a vector-valued expression. It is legal to use the subindex expression on any vector-valued expression, except for structural and non-structural memories. 
+
+\subsection{Structural Read Port}
+\[
+\kws{ReadPort}(\text{mem}, \text{index})
+\]
+The structural read port expression is used to read from declared structural memories. A read port is created given the name of a declared structural memory, and the index at which to read from. 
+
+
+\subsection{Primitive Operation}
+\[
+\pds{primop}(\pds{exp*}, \ints\text{*})
+\]
+There are a number of different primitive operations supported by FIRRTL. Each operation takes some number of expressions, along with some number of integer literals. Section \ref{primitives} will describe the format and semantics of each operation.
+
+
+\section{Primitive Operations} \label{primitives}
+\subsection{Add Operation}
+\[
+\begin{aligned}
+\kws{add}(\pds{exp}, \pds{exp})      \\
+\kws{addu}(\pds{exp}, \pds{exp})     \\
+\kws{adds}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+FIRRTL supports generic, unsigned, and signed versions of the add operation. The generic version supports adding of either two unsigned, or two signed integers, the unsigned version supports adding only unsigned integers, and the signed version supports adding only signed integers. 
+
+If the two operands differ in width, the operand of narrower width is automatically padded to be the same width as the wider operand. The resultant value is 1-bit larger than the wider of the two operands.
+
+\subsection{Subtract Operation}
+\[
+\begin{aligned}
+\kws{sub}(\pds{exp}, \pds{exp})      \\
+\kws{subu}(\pds{exp}, \pds{exp})     \\
+\kws{subs}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+The subtraction operation works similarly to the add operation.
+
+\subsection{Multiply Operation}
+\[
+\begin{aligned}
+\kws{mul}(\pds{exp}, \pds{exp})      \\
+\kws{mulu}(\pds{exp}, \pds{exp})     \\
+\kws{muls}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+As with add and subtract, there is a generic, unsigned, and signed version of the multiply operation. The resultant value has width equal to the sum of the widths of its two operands.
+
+\subsection{Divide Operation}
+\[
+\begin{aligned}
+\kws{div}(\pds{exp}, \pds{exp})      \\
+\kws{divu}(\pds{exp}, \pds{exp})     \\
+\kws{divs}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+The first argument is the dividend, the second argument is the divisor. The resultant value of a divide operation has width equal to the width of the dividend minus the width of the divisor.
+
+\subsection{Modulo Operation}
+\[
+\begin{aligned}
+\kws{mod}(\pds{exp}, \pds{exp})      \\
+\kws{modu}(\pds{exp}, \pds{exp})     \\
+\kws{mods}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+The first argument is the dividend, the second argument is the divisor. The resultant value of a modulo operation has the same width as the divisor.
+
+\subsection{Add Modulo Operation}
+\[
+\begin{aligned}
+\kws{add-mod}(\pds{exp}, \pds{exp})      \\
+\kws{add-modu}(\pds{exp}, \pds{exp})     \\
+\kws{add-mods}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+The add modulo operation works identically to the normal add operation except that the resultant width is the maximum of the width of the two operands, instead of 1 bit greater than the maximum. In the case of overflow, the result silently rolls over.
+
+\subsection{Subtract Modulo Operation}
+\[
+\begin{aligned}
+\kws{sub-mod}(\pds{exp}, \pds{exp})      \\
+\kws{sub-modu}(\pds{exp}, \pds{exp})     \\
+\kws{sub-mods}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+Similarly to the add modulo operation, the subtract modulo operation works identically to the normal subtract operation except that the resultant width is the maximum of the width of the two operands. In the case of overflow, the result silently rolls over.
+
+\subsection{Comparison Operations}
+\[
+\begin{aligned}
+\kws{lt}(\pds{exp}, \pds{exp})     \\
+\kws{ltu}(\pds{exp}, \pds{exp})    \\
+\kws{lts}(\pds{exp}, \pds{exp})    \\
+\kws{leq}(\pds{exp}, \pds{exp})    \\
+\kws{lequ}(\pds{exp}, \pds{exp})   \\
+\kws{leqs}(\pds{exp}, \pds{exp})   \\
+\kws{gt}(\pds{exp}, \pds{exp})     \\
+\kws{gtu}(\pds{exp}, \pds{exp})    \\
+\kws{gts}(\pds{exp}, \pds{exp})    \\
+\kws{geq}(\pds{exp}, \pds{exp})    \\
+\kws{gequ}(\pds{exp}, \pds{exp})   \\
+\kws{geqs}(\pds{exp}, \pds{exp})   \\
+\end{aligned}
+\]
+Generic, unsigned, and signed versions of the less than (\kws{lt}), less than or equal to (\kws{leq}), greater than (\kws{gt}), and greater than or equal to (\kws{geq}) comparison operations are provided. The generic versions of each operation accept either two unsigned integers, or two signed integers, but not a mixture of the two. The resultant value is a single-bit unsigned integer.
+
+\subsection{Padding Operation}
+\[
+\begin{aligned}
+\kws{pad}(\pds{exp}, \text{int})     \\
+\kws{padu}(\pds{exp}, \text{int})     \\
+\kws{pads}(\pds{exp}, \text{int})     \\
+\end{aligned}
+\]
+A generic, unsigned, and signed version of the pad operation is provided which pads some expression to a specified width. The unsigned pad operation zero-extends the given value until the specified width, while the signed pad operation sign-extends the given value. The generic operation performs either zero-extension or sign-extension depending on the type of its operand. The given width must be equal to or greater than the existing width of the expression. 
+
+\subsection{Bitwise Operations}
+\[
+\begin{aligned}
+\kws{and}(\pds{exp}, \pds{exp})     \\
+\kws{or}(\pds{exp}, \pds{exp})     \\
+\kws{xor}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+The above operations correspond to bitwise and, or, and exclusive or respectively. The operands must be unsigned integers, and the resultant width is equal to the width of the wider of the two operands. 
+
+\subsection{Concatenation}
+\[
+\begin{aligned}
+\kws{concat}(\pds{exp}, \pds{exp})     \\
+\end{aligned}
+\]
+The concatenation operator accepts two unsigned integers and returns the bitwise concatenation of the two values as an unsigned integer. The resultant width is the sum of the widths of the two operands.
+
+\subsection{Equality Comparison}
+\[
+\kws{equal}(\pds{exp}, \pds{exp}) \\
+\]
+The equality comparison operator accepts either two unsigned or two signed integers and checks whether they are bitwise equivalent. The resulting value is a 1-bit unsigned integer. 
+
+The two operands may differ in width, in which case the narrower of the two operands is padded to the width of the larger operand.
+
+\subsection{Multiplex}
+\[
+\kws{multiplex}(\text{condition}, \text{high-value}, \text{low-value}) 
+\]
+The multiplex operation accepts three signals, a 1-bit unsigned integer for the condition expression, followed by either two unsigned integers, or two signed integers. If the condition is high, then the result is equal to the first of the two following operands. If the condition is low, then the result is the second of the two following operands. 
+
+The two operands may differ in width, in which case the narrower of the two operands is padded to the width of the larger operand. 
+
+\subsection{Shift Left Operation}
+\[
+\kws{shl}(\pds{exp}, \text{int})
+\]
+The shift left operation accepts either an unsigned or a signed integer, plus a non-negative integer literal specifying the number of bits to shift. The resultant value has the same type as the operand. The output of a shift left operation is equal to the original signal concatenated with $n$ zeros at the end, where $n$ is the shift amount.
+
+\subsection{Shift Right Operation}
+\[
+\kws{shr}(\pds{exp}, \text{int})
+\]
+The shift right operation accepts either an unsigned or a signed integer, plus a non-negative integer literal specifying the number of bits to shift. The resultant value has the same type as the operand. The shift amount must be less than or equal to the width of the operand. The output of a shift right operation is equal to the original signal with the last $n$ bits truncated, where $n$ is the shift amount.
+
+\subsection{Bit Extraction Operation}
+\[
+\kws{bit}(\pds{exp}, \text{index})
+\]
+The bit extraction operation accepts either an unsigned or a signed integer, plus an integer literal specifying the index of the bit to extract. The resultant value is a 1-bit unsigned integer. The index must be non-negative and less than the width of the operand. An index of zero indicates the least significant bit in the operand, and an index of one less than the width the operand indicates the most significant bit in the operand.
+
+\subsection{Bit Range Extraction Operation}
+\[
+\kws{bits}(\pds{exp}, \text{high-index}, \text{low-index})
+\]
+The bit range extraction operation accepts either an unsigned or a signed integer, plus two integer literals that specify the high (inclusive) and low (inclusive) index of the bit range to extract. Regardless of the type of the operand, the resultant value is a $n$-bit unsigned integer, where $n = \text{high-index} - \text{low-index} + 1$. 
+
+\section{Circuit Initialization} \label{initialization}
+
+This section describes FIRRTL's facilities for expressing circuit initialization, and how it is customized through the reset port for modules, and the init field for registers. 
+
+\subsection{Register Initialization}
+On circuit reset, registers are automatically set to their {\em initialization value}. By default, a register's initialization value is set to be equal to the value of the register itself. Hence, the default reset behavior for registers is to maintain their current value.
+
+However, an explicit initialization value can be provided for a register by connecting an expression to the register's init field. The following example demonstrates declaring a register, and changing its initialization value to forty two.
+\[
+\begin{aligned}
+& \kw{reg} r : \kws{UInt}(10) \\
+& r.\text{init} := \kws{UInt}(42, \kws{?})
+\end{aligned}
+\]
+
+The type of the initialization value must match the declared type of the register. In the above example, the register, r, will be set to forty two when the circuit is reset. Note that structural registers declared within letrec statements do not have an init field.
+
+\subsection{Module Reset Port}
+Every module has an input reset port declared to be a 1-bit unsigned integer. If the user chooses, the reset port may be explicitly declared. If the user does not explicitly declare a reset port, then FIRRTL will implicitly insert a reset port for the module. 
+
+When an instance of a module with an implicit reset is created, the reset signal of the module in which the instance was created is automatically connected to the instance's reset port. Consider the following example:
+\[
+\begin{aligned}
+&\kw{module} A :                               \\
+&\quad \kw{input} x \kw{ :} \kws{UInt}(\kws{?})\\
+&\quad   ...                                   \\
+&\kw{module} B :                               \\
+&\quad \kw{inst} a \kw{ of} A                  \\
+&\quad a.\text{x} \kw{ :=} \kws{UInt}(42, \kws{?})    \\
+\end{aligned}
+\]
+The module A has an implicit reset port, and the module B creates an instance of A. In this case, there is an implicit connect statement inserted, connecting the instance's reset port to the implicit reset port of B. 
+\[
+\begin{aligned}
+&\kw{inst} a \kw{ of} A                  \\
+&a.\text{reset} \kw{ :=} \text{reset}    \\
+&\ldots
+\end{aligned}
+\]
+
+The user may choose to explicitly override this default behavior by explicitly connecting an instance's reset port to a value.
+\[
+\begin{aligned}
+&\kw{module} B :                                       \\
+&\quad \kw{inst} a \kw{ of} A                          \\
+&\quad a.\text{reset} \kw{ :=} \kws{UInt}(0, \kws{?})  \\
+&\quad a.\text{x} \kw{ :=} \kws{UInt}(42, \kws{?})     \\
+\end{aligned}
+\]
+The above code explicitly connects the instance's reset port to zero, indicating that its registers are {\em never} reset. 
+
+Should the user choose to explicitly declare the reset port for a module, then the port {\em must} be appropriately declared as an {\em input} port with a declared type of unsigned integer with width one. Additionally, if the user explicitly declares the reset port for a module, then all instances of that module must have its reset port connected explicitly. For example, the following code
+\[
+\begin{aligned}
+&\kw{module} A :                               \\
+&\quad \kw{input} \text{x} \kw{ :} \kws{UInt}(\kws{?})\\
+&\quad \kw{input} \text{reset} \kw{ :} \kws{UInt}(1)\\
+&\quad   ...                                   \\
+&\kw{module} B :                               \\
+&\quad \kw{inst} a \kw{ of} A                  \\
+&\quad a.\text{x} \kw{ :=} \kws{UInt}(42, \kws{?})    \\
+\end{aligned}
+\]
+is not legal. The module, A, has an explicitly declared reset port, but the reset port for its instance, a, is not explicitly connected to any value.
+
+\section{Lowered Form}
+
+To simplify the writing of transformation passes, FIRRTL provides a {\em lowering} pass, which rewrites any FIRRTL circuit into an equivalent {\em lowered form}. The lowered form has the advantage of not having any high-level constructs or composite types, and hence is a minimal representation that is convenient for low-level transforms. 
+
+In lowered form, every module has exactly the following form.
+\[
+\begin{aligned}
+&\kw{module} \text{name} :                                 \\
+&\quad \pds{port} \ldots                                   \\
+&\quad \kw{letrec :}                                       \\
+&\quad \quad \pds{elem} \ldots                             \\
+&\quad \kw{in :}                                           \\
+&\quad \quad \text{connections to output ports} \ldots     \\
+\end{aligned}
+\]
+
+The body of the module must consist of a single letrec statement, in which every component within the module is declared as a structural element. The only statements that may appear in the body of the letrec statement are connect statements for each of the module's output ports. The following restrictions also hold for modules in lowered form.
+
+\subsection{No Nested Expressions}
+In the declaration of the structural elements, the only nested expressions allowed are references, and unsigned and signed literals. All other nested expressions must be lifted to a named structural node, and referred to through a reference. 
+
+\subsection{No Composite Types}
+No module port may be declared with a bundle or vector type. The lowering pass will recursively expand ports into its constituent elements until all ports are declared with ground types. Additionally, by virtue of requiring all module components to be declared as structural elements, which support ground types only, there will be no composite types left in lowered form.
+
+\subsection{No Unknown Widths}
+No port or structural element may be declared with unknown width. The FIRRTL width inferencer will compute the widths for all structural elements and ports. If a width for some element cannot be calculated, then the lowering pass will fail with an error.
+
+\subsection{Explicit Resets}
+All modules will contain an explicitly declared reset port and the structural instances within a module will explicitly specify the values connected to their reset ports.
+
+
+\section{Inlined Lowered Form}
+A further pass provided by FIRRTL is the inlining pass, which recursively inlines all instances in the top-level module until the top-level module is the only remaining module in the circuit. Inlined lowered form is essentially a flat netlist which specifies every component used in a circuit and their input connections. 
+
+\section{Concrete Syntax}\label{concrete}
+This section describes the text format for FIRRTL that is supported by the provided readers and writers.
+
+\subsection*{General Principles}
+FIRRTL's text format is human-readable and uses indentation to indicate block structuring. The following characters are allowed in identifiers: upper and lower case letters, digits, as well as the punctuation characters \verb|~!@#$%^*-_+=?/|. Identifiers cannot begin with a digit. 
+
+Comments begin with a semicolon and extend until the end of the line. Commas are treated as whitespace, and may be used by the user for clarity if desired. 
+
+Statements are grouped into statement groups using parenthesis, however a colon at the end of a line will automatically surround the next indented region with parenthesis. This mechanism is used for indicating block structuring. 
+
+\subsection*{Circuits and Modules}
+A circuit is specified the following way.
+\begin{verbatim}
+circuit name : (modules ...)
+\end{verbatim}
+Or by taking advantage of indentation structuring:
+\begin{verbatim}
+circuit name :
+   modules ...
+\end{verbatim}
+
+A module is specified the following way.
+\begin{verbatim}
+module name : (ports ... stmts ...)
+\end{verbatim}
+The module body consists of a sequence of ports followed immediately by a sequence of statements. If there is more than one statement they are grouped into a statement group by the parser. 
+By using indentation structuring:
+\begin{verbatim}
+module name :
+   ports ...
+   stmts ...
+\end{verbatim}
+
+The following shows an example of a simple module.
+\begin{verbatim}
+module mymodule :
+   input a: UInt(1)
+   output b: UInt(1)
+   b := a
+\end{verbatim}
+
+\subsection*{Types}
+The unsigned and signed integer types are specified the following way. The following examples demonstrate a unsigned integer with known bitwidth, signed integer with known bitwidth, an unsigned integer with unknown bitwidth, and signed integer with unknown bitwidth.
+\begin{verbatim}
+UInt(42)
+SInt(42)
+UInt(?)
+SInt(?)
+\end{verbatim}
+
+The bundle type consists of a number of fields surrounded with parenthesis. The following shows an example of a decoupled bundle type. Note that the commas are for clarity only and are not necessary.
+\begin{verbatim}
+{output data: UInt(10),
+ output valid: UInt(1),
+ input ready: UInt(1)} 
+\end{verbatim}
+
+The vector type is specified by immediately postfixing a type with a bracketed integer literal. The following example demonstrates a ten-element vector of 16-bit unsigned integers.
+\begin{verbatim}
+UInt(16)[10]
+\end{verbatim}
+
+\subsection*{Statements}
+The following examples demonstrate declaring wires, registers, memories, nodes, instances, and accessors. 
+\begin{verbatim}
+wire mywire : UInt(10)
+reg myreg : UInt(10)
+mem mymem : UInt(10)[16]
+inst myinst of MyModule
+accessor myaccessor = e[i]
+\end{verbatim}
+
+The connect statement is specified using the \verb|:=| operator.
+\begin{verbatim}
+x := y
+\end{verbatim}
+
+The conditional statement is specified with the \verb|when| keyword.
+\begin{verbatim}
+when x : x := y else : x := z
+\end{verbatim}
+Or by using indentation structuring:
+\begin{verbatim}
+when x :
+   x := y
+else :
+   x := z
+\end{verbatim}
+
+If there is no alternative branch specified, the parser will automatically insert an empty statement.
+\begin{verbatim}
+when x :
+   x := y
+\end{verbatim}
+
+Finally, for convenience when expressing nested conditional statements, the colon following the \verb|else| keyword may be elided if the next statement is another conditional statement.
+\begin{verbatim}
+when x :
+   x := y
+else when y :
+   x := z
+else :
+   x := w
+\end{verbatim}
+
+Letrec statements are expressed using the \verb|letrec| keyword. The following example demonstrates a letrec statement containing the four structural elements.
+\begin{verbatim}
+letrec :
+   reg r : UInt(4) = Register(x, e)
+   node n : UInt(?) = y
+   mem m : UInt(4)[10] = Memory(WritePort(i, x, e), WritePort(j, x, e))
+   inst i = MyAdder(Input(data, x), Input(valid, e))
+in :
+   y := x
+\end{verbatim}
+
+\subsection*{Expressions}
+
+The UInt and SInt constructors create literal integers from a given value and bitwidth. The following examples demonstrate creating literal integers of both known and unknown bitwidth.
+\begin{verbatim}
+UInt(42, 4)
+SInt(-42, 4)
+UInt(42, ?)
+SInt(-42, ?)
+\end{verbatim}
+
+References are specified with a identifier.
+\begin{verbatim}
+x
+\end{verbatim}
+
+Subfields and subindexes are expressed using the dot operator.
+\begin{verbatim}
+x.data
+x.10
+\end{verbatim}
+
+Structural read ports are expressed using the ReadPort constructor.
+\begin{verbatim}
+ReadPort(m, index)
+\end{verbatim}
+
+Primitive operations are expressed by following the name of the primitive with a list containing the operands. 
+\begin{verbatim}
+add(x, y)
+addu(x, addu(x, y))
+shl(x, 42)
+\end{verbatim}
+
+
+\end{document}

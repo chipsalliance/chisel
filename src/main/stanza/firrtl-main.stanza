@@ -1,0 +1,26 @@
+include<"core/stringeater.stanza">
+include<"compiler/lexer.stanza">
+include<"compiler/parser.stanza">
+include<"compiler/rdparser2.stanza">
+include<"compiler/macro-utils.stanza">
+include("firrtl-ir.stanza")
+include("ir-utils.stanza")
+include("ir-parser.stanza")
+include("passes.stanza")
+include("widthsolver.stanza")
+
+defpackage chmain :
+   import core
+   import verse
+   import chipper.parser
+   import chipper.passes
+   import stanza.lexer
+   import stanza.parser
+
+defn main () :
+   val lexed = lex-file("../../test/firrtl/firrtl-test.txt")
+   val c = parse-firrtl(lexed)
+   println(c)
+   run-passes(c)
+
+main()
