@@ -18,10 +18,10 @@ defstruct RegKind <: Kind
 defstruct AccessorKind <: Kind
 defstruct PortKind <: Kind
 defstruct MemKind <: Kind
-defstruct NodeKind <: Kind
+defstruct NodeKind <: Kind ; All elems except structural memory, wires
 defstruct ModuleKind <: Kind
 defstruct InstanceKind <: Kind
-defstruct StructuralMemKind <: Kind
+defstruct StructuralMemKind <: Kind ; Separate kind because need special treatment
 
 defstruct WRef <: Expression :
    name: Symbol
@@ -41,7 +41,7 @@ defstruct WIndex <: Expression :
    type: Type [multi => false]
    dir: Direction [multi => false]
 
-defstruct WDefAccessor <: Command :
+defstruct WDefAccessor <: Stmt :
    name: Symbol
    source: Expression
    index: Expression
@@ -61,16 +61,6 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:InstanceKind) : "inst:"
       (k:StructuralMemKind) : "smem:"
 
-defmethod print (o:OutputStream, e:WRef) :
-   print-all(o, [name(e)])
-defmethod print (o:OutputStream, e:WField) :
-   print-all(o, [exp(e) "." name(e)])
-defmethod print (o:OutputStream, e:WIndex) :
-   print-all(o, [exp(e) "." value(e)])
-
-defmethod print (o:OutputStream, c:WDefAccessor) :
-   print-all(o, [dir(c) " accessor " name(c) " = " source(c) "[" index(c) "]"])
-
 defmethod map (f: Expression -> Expression, e: WField) :
    WField(f(exp(e)), name(e), type(e), dir(e))
 
@@ -85,25 +75,36 @@ defmulti dir (e:Expression) -> Direction
 defmethod dir (e:Expression) :
    OUTPUT
 
-;============== Bring to Working IR ========================
+;ADAM========== Bring to Working IR ========================
+
 defn to-working-ir (c:Circuit) :
    defn to-exp (e:Expression) :
-      match(map(to-exp, e)) :
+      match(map(to-exp,e)) :
          (e:Ref) : WRef(name(e), type(e), NodeKind(), UNKNOWN-DIR)
          (e:Field) : WField(exp(e), name(e), type(e), UNKNOWN-DIR)
          (e:Index) : WIndex(exp(e), value(e), type(e), UNKNOWN-DIR)
          (e) : e
-   defn to-command (c:Command) :
-      match(map(to-exp, c)) :
-         (c:DefAccessor) :
-            WDefAccessor(name(c), source(c), index(c), UNKNOWN-DIR)
-         (c) :
-            map(to-command, c)
+   defn to-stmt (s:Stmt) :
+      match(map(to-exp,s)) :
+         (s:DefAccessor) : WDefAccessor(name(s),source(s),index(s), UNKNOWN-DIR)
+         (s) : map(to-stmt,s)
 
    Circuit(modules*, main(c)) where :
       val modules* =
          for m in modules(c) map :
-            Module(name(m), ports(m), to-command(body(m)))
+            Module(name(m), ports(m), to-stmt(body(m)))
+
+;ADAM========== Printing ===================================
+
+defn print (o:OutputStream, e:WRef) :
+   print-all(o,[name(e)])
+defmethod print (o:OutputStream, e:WField) :
+   print-all(o,[exp(e) "." name(e)])
+defmethod print (o:OutputStream, e:WIndex) :
+   print-all(o,[exp(e) "." value(e)])
+
+defmethod print (o:OutputStream, s:WDefAccessor) :
+  print-all(o,[dir(s) " accessor " name(s) " = " source(s) "[" index(s) "]"])
 
 ;=============== Resolve Kinds =============================
 defn resolve-kinds (c:Circuit) :
@@ -112,11 +113,11 @@ defn resolve-kinds (c:Circuit) :
          (e:WRef) : WRef(name(e), type(e), kinds[name(e)], dir(e))
          (e) : map(resolve-exp{_, kinds}, e)
 
-   defn resolve-comm (c:Command, kinds:HashTable<Symbol,Kind>) -> Command :
+   defn resolve-comm (c:Stmt, kinds:HashTable<Symbol,Kind>) -> Stmt :
       map{resolve-comm{_, kinds}, _} $
       map(resolve-exp{_, kinds}, c)
 
-   defn find-kinds (c:Command, kinds:HashTable<Symbol,Kind>) :
+   defn find-kinds (c:Stmt, kinds:HashTable<Symbol,Kind>) :
       match(c) :
          (c:LetRec) :
             for entry in entries(c) do :
@@ -150,7 +151,7 @@ defn resolve-kinds (c:Circuit) :
 
 ;=============== MAKE RESET EXPLICIT =======================
 defn make-explicit-reset (c:Circuit) :
-   defn reset-instances (c:Command, reset?: List<Symbol>) -> Command :
+   defn reset-instances (c:Stmt, reset?: List<Symbol>) -> Stmt :
       match(c) :
          (c:DefInstance) :
             val module = module(c) as WRef
@@ -161,7 +162,7 @@ defn make-explicit-reset (c:Circuit) :
                   val inst = WRef(name(c), UnknownType(), InstanceKind(), UNKNOWN-DIR)
                   val reset = WRef(`reset, UnknownType(), PortKind(), UNKNOWN-DIR)
          (c) :
-            map(reset-instances{_:Command, reset?}, c)
+            map(reset-instances{_:Stmt, reset?}, c)
 
    defn make-explicit-reset (m:Module, reset-list: List<Symbol>) :
       val reset? = contains?(reset-list, name(m))
@@ -194,17 +195,17 @@ defn initialize-registers (m:Module) :
    ;=== Initializing Expressions ===
    defn init-exps (inits: List<KeyValue<Symbol,Expression>>) :
       if empty?(inits) :
-         EmptyCommand()
+         EmptyStmt()
       else :
-         Conditionally(reset, Begin(map(connect, inits)), EmptyCommand()) where :
+         Conditionally(reset, Begin(map(connect, inits)), EmptyStmt()) where :
             val reset = WRef(`reset, UnknownType(), PortKind(), UNKNOWN-DIR)
             defn connect (init: KeyValue<Symbol, Expression>) :
                val reg-ref = WRef(key(init), UnknownType(), RegKind(), UNKNOWN-DIR)
                Connect(reg-ref, value(init))
 
-   defn initialize-registers (c: Command
+   defn initialize-registers (c: Stmt
                               inits: List<KeyValue<Symbol,Expression>>) ->
-                              [Command, List<KeyValue<Symbol,Expression>>] :
+                              [Stmt, List<KeyValue<Symbol,Expression>>] :
       ;=== Rename Expressions ===
       defn rename (e:Expression) :
          match(e) :
@@ -334,7 +335,7 @@ defn vector-elem-type (t:Type) -> Type :
       (t) : UnknownType()
 
 ;e is the environment that contains all definitions seen so far.
-defn infer (c:Command, e:List<KeyValue<Symbol, Type>>) -> [Command, List<KeyValue<Symbol,Type>>] :
+defn infer (c:Stmt, e:List<KeyValue<Symbol, Type>>) -> [Stmt, List<KeyValue<Symbol,Type>>] :
    defn infer-exp (e:Expression, env:List<KeyValue<Symbol,Type>>) :
       match(map(infer-exp{_, env}, e)) :
          (e:WRef) :
@@ -397,7 +398,7 @@ defn infer (c:Command, e:List<KeyValue<Symbol, Type>>) -> [Command, List<KeyValu
                               c*
                [Begin(body*), current-e]
             (c) :
-               defn infer-comm (c:Command) :
+               defn infer-comm (c:Stmt) :
                   val [c* e*] = infer(c, e)
                   c*
                val c* = map(infer-comm, c)
@@ -440,7 +441,7 @@ defn infer-dirs (m:Module) :
    ;=== Direction of all Binders ===
    val BI-DIR = new Direction
    val directions = HashTable<Symbol,Direction>(symbol-hash)
-   defn find-dirs (c:Command) :
+   defn find-dirs (c:Stmt) :
       match(c) :
          (c:LetRec) :
             for entry in entries(c) do :
@@ -495,8 +496,8 @@ defn infer-dirs (m:Module) :
          (e) :
             map(infer-exp{_, OUTPUT}, e)
 
-   ;=== Infer directions of Commands ===
-   defn infer-comm (c:Command) :
+   ;=== Infer directions of Stmts ===
+   defn infer-comm (c:Stmt) :
       match(c) :
          (c:LetRec) :
             val c* = map(infer-exp{_, OUTPUT}, c)
@@ -520,7 +521,7 @@ defn infer-dirs (m:Module) :
             map(infer-comm, c)
 
    ;=== Iterate until fix point ===
-   defn* fixpoint (c:Command) :
+   defn* fixpoint (c:Stmt) :
       changed? = false
       val c* = infer-comm(c)
       if changed? : fixpoint(c*)
@@ -535,12 +536,12 @@ defn infer-directions (c:Circuit) :
 
 
 ;============== EXPAND VECS ================================
-defstruct ManyConnect <: Command :
+defstruct ManyConnect <: Stmt :
    index: Expression
    locs: List<Expression>
    exp: Expression
 
-defstruct ConnectMany <: Command :
+defstruct ConnectMany <: Stmt :
    index: Expression
    loc: Expression
    exps: List<Expression>
@@ -556,7 +557,7 @@ defmethod map (f: Expression -> Expression, c:ConnectMany) :
    ConnectMany(f(index(c)), f(loc(c)), map(f, exps(c)))
 
 defn expand-accessors (m: Module) :
-   defn expand (c:Command) :
+   defn expand (c:Stmt) :
       match(c) :
          (c:WDefAccessor) :
             ;Is the source a memory?
@@ -658,7 +659,7 @@ defn flatten-bundles (c:Circuit) :
          (e:Node) : Node(t*, value(e))
          (e:Instance) : Instance(t*, module(e), ports(e))
 
-   defn flatten-comm (c:Command) :
+   defn flatten-comm (c:Stmt) :
       match(c) :
          (c:LetRec) :
             val entries* =
@@ -719,7 +720,7 @@ defn expand-bundles (m:Module) :
             list(collapse-exp(e))
 
    ;Expand commands
-   defn expand-comm (c:Command) :
+   defn expand-comm (c:Stmt) :
       match(c) :
          (c:DefWire) :
             match(type(c)) :
@@ -800,20 +801,20 @@ defn expand-multi-connects (c:Circuit) :
    defn uint (i:Int) :
       UIntValue(i, UnknownWidth())
 
-   defn expand-comm (c:Command) :
+   defn expand-comm (c:Stmt) :
       match(c) :
          (c:ConnectMany) :
             Begin $ to-list $
             for (i in 0 to false, e in exps(c)) stream :
                Conditionally(equal-exp(index(c), uint(i)),
                   Connect(loc(c), e)
-                  EmptyCommand())
+                  EmptyStmt())
          (c:ManyConnect) :
             Begin $ to-list $
             for (i in 0 to false, l in locs(c)) stream :
                Conditionally(equal-exp(index(c), uint(i)),
                   Connect(l, exp(c))
-                  EmptyCommand())
+                  EmptyStmt())
          (c) :
             map(expand-comm, c)
 
@@ -891,9 +892,9 @@ defn simplify-env (env: List<KeyValue<Expression,SymbolicValue>>) :
    to-list(merged)
 
 defn expand-whens (m:Module) :
-   val commands = Vector<Command>()
+   val commands = Vector<Stmt>()
    val elements = Vector<KeyValue<Symbol,Element>>()
-   defn eval (c:Command, env:List<KeyValue<Expression,SymbolicValue>>) ->
+   defn eval (c:Stmt, env:List<KeyValue<Expression,SymbolicValue>>) ->
               List<KeyValue<Expression,SymbolicValue>> :
       match(c) :
          (c:LetRec) :
@@ -939,7 +940,7 @@ defn expand-whens (m:Module) :
             env
          (c:Connect) :
             List(loc(c) => ExpValue(exp(c)), env)
-         (c:EmptyCommand) :
+         (c:EmptyStmt) :
             env
 
    defn convert-symbolic (key:Expression, sv:SymbolicValue) :
@@ -993,7 +994,7 @@ defn structural-form (m:Module) :
    val inst-ports = HashTable<Symbol, List<KeyValue<Symbol, Expression>>>(symbol-hash)
    val port-connects = Vector<Connect>()
 
-   defn scan (c:Command) :
+   defn scan (c:Stmt) :
       match(c) :
          (c:Connect) :
             match(loc(c)) :
@@ -1228,7 +1229,7 @@ defn generate-constraints (c:Circuit) -> [Circuit, Vector<WConstraint>] :
                val elem-type = type(type(mem(e)) as VectorType)
                put-width(e, width!(elem-type))
 
-      defn infer-comm-width (c:Command) :
+      defn infer-comm-width (c:Stmt) :
          match(c) :
             (c:LetRec) :
                ;Add width vars to elements
@@ -1330,7 +1331,7 @@ defn fill-widths (c:Circuit, solved:Streamable<WidthEqual>) :
       val type* = fill-type(type(e))
       put-type(e*, type*)
 
-   defn fill-comm (c:Command) :
+   defn fill-comm (c:Stmt) :
       match(c) :
          (c:LetRec) :
             val entries* =
@@ -1429,7 +1430,7 @@ defn pad-widths (c:Circuit) :
             Instance(type(e), module(e), ports*)      
 
    ;Match widths for a command
-   defn match-comm-width (c:Command) :
+   defn match-comm-width (c:Stmt) :
       match(map(match-exp-width, c)) :
          (c:LetRec) :
             val entries* =
@@ -1469,7 +1470,7 @@ defn inline-instances (c:Circuit) :
             (e:WRef) : WRef(prefix(inst, name(e)), type(e), kind(e), dir(e))
             (e) : map(rename-exp, e)
             
-      defn to-elements (c:Command) -> List<KeyValue<Symbol,Element>> :
+      defn to-elements (c:Stmt) -> List<KeyValue<Symbol,Element>> :
          match(c) :
             (c:LetRec) :
                val entries* = 
@@ -1517,7 +1518,7 @@ defn inline-instances (c:Circuit) :
                (el) :
                   list(entry)
 
-      defn inline-comm (c:Command) :
+      defn inline-comm (c:Stmt) :
          match(map(rename-exp, c)) :
             (c:LetRec) :
                val entries* = inline-elems(entries(c))
@@ -1581,19 +1582,19 @@ defn inline-instances (c:Circuit) :
 ;      check-duplicates(type(t))
 ;    (t) : false
 ;
-;defn check-duplicates (c: Command) :
+;defn check-duplicates (c: Stmt) :
 ;  match(c) :
 ;    (c:DefWire) : check-duplicates(type(c))
 ;    (c:DefRegister) : check-duplicates(type(c))
 ;    (c:DefMemory) : check-duplicates(type(c))
 ;    (c) : do(check-duplicates, children(c))
 ;
-;defn defined-names (c: Command) :
+;defn defined-names (c: Stmt) :
 ;  generate<Symbol> :
 ;    loop(c) where :
-;      defn loop (c:Command) :
+;      defn loop (c:Stmt) :
 ;        match(c) :
-;          (c:Command&HasName) : yield(name(c))
+;          (c:Stmt&HasName) : yield(name(c))
 ;          (c) : do(loop, children(c))
 ;
 ;defn check-duplicates (m: Module):
@@ -1624,17 +1625,17 @@ defn inline-instances (c:Circuit) :
 
 
 ;;================ CLEANUP COMMANDS =========================
-;defn cleanup (c:Command) :
+;defn cleanup (c:Stmt) :
 ;   match(c) :
 ;      (c:Begin) :
-;         to-command $ generate<Command> :
+;         to-command $ generate<Stmt> :
 ;            loop(c) where :
-;               defn loop (c:Command) :
+;               defn loop (c:Stmt) :
 ;                  match(c) :
 ;                     (c:Begin) : do(loop, body(c))
-;                     (c:EmptyCommand) : false
+;                     (c:EmptyStmt) : false
 ;                     (c) : yield(cleanup(c))
-;      (c) : map(cleanup{_ as Command}, c)
+;      (c) : map(cleanup{_ as Stmt}, c)
 ;
 ;defn cleanup (c:Circuit) :
 ;   val modules* =
@@ -1658,9 +1659,9 @@ defn inline-instances (c:Circuit) :
 ;;         put-imm(i, imm*)
 ;;      (i) : i
 ;;
-;;defn shim (c:Command) -> Command :
+;;defn shim (c:Stmt) -> Stmt :
 ;;   val c* = map(shim{_ as Immediate}, c)
-;;   map(shim{_ as Command}, c*)
+;;   map(shim{_ as Stmt}, c*)
 ;;
 ;;defn shim (c:Circuit) -> Circuit :
 ;;   val modules* =
@@ -1677,7 +1678,7 @@ defn inline-instances (c:Circuit) :
 ;;   else :
 ;;      symbol-join([p, "/", s])
 ;;
-;;defn inline-command (c: Command, mods: HashTable<Symbol, Module>, prefix: String, cmds: Vector<Command>) :
+;;defn inline-command (c: Stmt, mods: HashTable<Symbol, Module>, prefix: String, cmds: Vector<Stmt>) :
 ;;   defn rename (n: Symbol) -> Symbol :
 ;;      cat-name(prefix, n)
 ;;   defn inline-name (i:Immediate) -> Symbol :
@@ -1698,18 +1699,18 @@ defn inline-instances (c:Circuit) :
 ;;      (c:DefAccessor) :  add(cmds, DefAccessor(rename(name(c)), inline-imm(source(c)), direction(c), inline-imm(index(c))))
 ;;      (c:Connect) :      add(cmds, Connect(inline-imm(loc(c)), inline-imm(exp(c))))
 ;;      (c:Begin) :        do(inline-command{_, mods, prefix, cmds}, body(c))
-;;      (c:EmptyCommand) : c
+;;      (c:EmptyStmt) : c
 ;;      (c) :              error("Unsupported command")
 ;;
-;;defn inline-port (p: Port, prefix: String) -> Command :
+;;defn inline-port (p: Port, prefix: String) -> Stmt :
 ;;   DefWire(cat-name(prefix, name(p)), type(p))
 ;;
-;;defn inline-module (mods: HashTable<Symbol, Module>, mod: Module, prefix: String, cmds: Vector<Command>) :
+;;defn inline-module (mods: HashTable<Symbol, Module>, mod: Module, prefix: String, cmds: Vector<Stmt>) :
 ;;   do(add{cmds, _}, map(inline-port{_, prefix}, ports(mod)))
 ;;   inline-command(body(mod), mods, prefix, cmds)
 ;;
 ;;defn inline-modules (c: Circuit) -> Circuit :
-;;   val cmds = Vector<Command>()
+;;   val cmds = Vector<Stmt>()
 ;;   val mods = HashTable<Symbol, Module>(symbol-hash)
 ;;   for mod in modules(c) do :
 ;;      mods[name(mod)] = mod
@@ -1779,7 +1780,7 @@ defn inline-instances (c:Circuit) :
 ;;    (t:SIntType) : width(t)
 ;;    (t) :          error("Bad prim width type")
 ;;
-;;defn emit-command (o:OutputStream, cmd:Command, top:Symbol, lits:HashTable<Symbol, DefUInt>, regs:HashTable<Symbol, DefRegister>, accs:HashTable<Symbol, DefAccessor>, ports:HashTable<Symbol, Port>, outs:HashTable<Symbol, Port>) :
+;;defn emit-command (o:OutputStream, cmd:Stmt, top:Symbol, lits:HashTable<Symbol, DefUInt>, regs:HashTable<Symbol, DefRegister>, accs:HashTable<Symbol, DefAccessor>, ports:HashTable<Symbol, Port>, outs:HashTable<Symbol, Port>) :
 ;;  match(cmd) :
 ;;    (c:DefUInt) :
 ;;       lits[name(c)] = c
@@ -1821,7 +1822,7 @@ defn inline-instances (c:Circuit) :
 ;;          emit-all(o, top, ports, lits, [dst " = mov " exp(c) "\n"])
 ;;    (c:Begin) :
 ;;       do(emit-command{o, _, top, lits, regs, accs, ports, outs}, body(c))
-;;    (c:DefWire|EmptyCommand) :
+;;    (c:DefWire|EmptyStmt) :
 ;;       print("")
 ;;    (c) :
 ;;       error("Unable to print command")
@@ -1858,17 +1859,17 @@ public defn run-passes (c: Circuit) :
    do-stage("Working IR", to-working-ir)
    do-stage("Resolve Kinds", resolve-kinds)
    do-stage("Make Explicit Reset", make-explicit-reset)
-   do-stage("Infer Types", infer-types)
-   do-stage("Infer Directions", infer-directions)
-   do-stage("Expand Accessors", expand-accessors)
-   do-stage("Flatten Bundles", flatten-bundles)
-   do-stage("Expand Bundles", expand-bundles)
-   do-stage("Expand Multi Connects", expand-multi-connects)
-   do-stage("Expand Whens", expand-whens)
-   do-stage("Structural Form", structural-form)
-   do-stage("Infer Widths", infer-widths)
-   do-stage("Pad Widths", pad-widths)
-   do-stage("Inline Instances", inline-instances)
+   ;do-stage("Infer Types", infer-types)
+   ;do-stage("Infer Directions", infer-directions)
+   ;do-stage("Expand Accessors", expand-accessors)
+   ;do-stage("Flatten Bundles", flatten-bundles)
+   ;do-stage("Expand Bundles", expand-bundles)
+   ;do-stage("Expand Multi Connects", expand-multi-connects)
+   ;do-stage("Expand Whens", expand-whens)
+   ;do-stage("Structural Form", structural-form)
+   ;do-stage("Infer Widths", infer-widths)
+   ;do-stage("Pad Widths", pad-widths)
+   ;do-stage("Inline Instances", inline-instances)
 
 
  ;;  println("Shim for Jonathan's Passes")

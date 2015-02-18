@@ -66,36 +66,36 @@ public defstruct ReadPort <: Expression :
    index: Expression
    type: Type [multi => false]
 
-public definterface Command
-public defstruct LetRec <: Command :
+public definterface Stmt
+public defstruct LetRec <: Stmt :
    entries: List<KeyValue<Symbol, Element>>
-   body: Command
-public defstruct DefWire <: Command :
+   body: Stmt
+public defstruct DefWire <: Stmt :
    name: Symbol
    type: Type
-public defstruct DefRegister <: Command :
+public defstruct DefRegister <: Stmt :
    name: Symbol
    type: Type
-public defstruct DefInstance <: Command :
+public defstruct DefInstance <: Stmt :
    name: Symbol
    module: Expression
-public defstruct DefMemory <: Command :
+public defstruct DefMemory <: Stmt :
    name: Symbol
    type: VectorType
-public defstruct DefAccessor <: Command :
+public defstruct DefAccessor <: Stmt :
    name: Symbol
    source: Expression
    index: Expression
-public defstruct Conditionally <: Command :
+public defstruct Conditionally <: Stmt :
    pred: Expression
-   conseq: Command
-   alt: Command
-public defstruct Begin <: Command :
-   body: List<Command>
-public defstruct Connect <: Command :
+   conseq: Stmt
+   alt: Stmt
+public defstruct Begin <: Stmt :
+   body: List<Stmt>
+public defstruct Connect <: Stmt :
    loc: Expression
    exp: Expression
-public defstruct EmptyCommand <: Command
+public defstruct EmptyStmt <: Stmt
 
 public definterface Element
 public defmulti type (e:Element) -> Type
@@ -139,7 +139,7 @@ public defstruct Port :
 public defstruct Module :
    name: Symbol
    ports: List<Port>
-   body: Command
+   body: Stmt
 
 public defstruct Circuit :
    modules: List<Module>

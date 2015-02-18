@@ -129,7 +129,7 @@ rd.defsyntax firrtl :
       (when ?pred:#exp : ?conseq:#comm else ?alt:#comm/when) :
          Conditionally(pred, conseq, alt)
       (when ?pred:#exp : ?conseq:#comm) :
-         Conditionally(pred, conseq, EmptyCommand())
+         Conditionally(pred, conseq, EmptyStmt())
 
    defrule element :
       (reg ?name:#symbol : ?type:#type = Register (@do ?value:#exp ?en:#exp)) :

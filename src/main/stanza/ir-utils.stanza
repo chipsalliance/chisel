@@ -20,28 +20,28 @@ defmethod print (o:OutputStream, w:Width) :
 defmethod print (o:OutputStream, op:PrimOp) :
    print{o, _} $
    switch {op == _} :
-      ADD-OP : "ADD"
-      ADD-MOD-OP : "ADD-MOD"
-      SUB-OP : "MINUS"
-      SUB-MOD-OP : "SUB-MOD"
-      TIMES-OP : "TIMES"
-      DIVIDE-OP : "DIVIDE"
-      MOD-OP : "MOD"
-      SHIFT-LEFT-OP : "SHIFT-LEFT"
-      SHIFT-RIGHT-OP : "SHIFT-RIGHT"
-      PAD-OP : "PAD"
-      BIT-AND-OP : "BIT-AND"
-      BIT-OR-OP : "BIT-OR"
-      BIT-XOR-OP : "BIT-XOR"
-      CONCAT-OP : "CONCAT"
-      BIT-SELECT-OP : "BIT-SELECT"
-      BITS-SELECT-OP : "BITS-SELECT"
-      MULTIPLEX-OP : "MULTIPLEX"
-      LESS-OP : "LESS"
-      LESS-EQ-OP : "LESS-EQ"
-      GREATER-OP : "GREATER"
-      GREATER-EQ-OP : "GREATER-EQ"
-      EQUAL-OP : "EQUAL"
+      ADD-OP : "add"
+      ADD-MOD-OP : "add-mod"
+      SUB-OP : "minus"
+      SUB-MOD-OP : "sub-mod"
+      TIMES-OP : "times"
+      DIVIDE-OP : "divide"
+      MOD-OP : "mod"
+      SHIFT-LEFT-OP : "shift-left"
+      SHIFT-RIGHT-OP : "shift-right"
+      PAD-OP : "pad"
+      BIT-AND-OP : "bit-and"
+      BIT-OR-OP : "bit-or"
+      BIT-XOR-OP : "bit-xor"
+      CONCAT-OP : "concat"
+      BIT-SELECT-OP : "bit-select"
+      BITS-SELECT-OP : "bits-select"
+      MULTIPLEX-OP : "multiplex"
+      LESS-OP : "less"
+      LESS-EQ-OP : "less-eq"
+      GREATER-OP : "greater"
+      GREATER-EQ-OP : "greater-eq"
+      EQUAL-OP : "equal"
    
 defmethod print (o:OutputStream, e:Expression) :
    match(e) :
@@ -56,7 +56,7 @@ defmethod print (o:OutputStream, e:Expression) :
          print(o, ")")
       (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ")"])
 
-defmethod print (o:OutputStream, c:Command) :
+defmethod print (o:OutputStream, c:Stmt) :
    match(c) :
       (c:LetRec) :
          println(o, "let : ")
@@ -78,14 +78,14 @@ defmethod print (o:OutputStream, c:Command) :
       (c:Conditionally) :
          println-all(o, ["when " pred(c) " :"])
          indented(o, print{conseq(c)})
-         if alt(c) not-typeof EmptyCommand :
+         if alt(c) not-typeof EmptyStmt :
             println(o, "\nelse :")
             indented(o, print{alt(c)})
       (c:Begin) :
          do(print, join(body(c), "\n"))
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
-      (c:EmptyCommand) :
+      (c:EmptyStmt) :
          print(o, "skip")
 
 defmethod print (o:OutputStream, e:Element) :
@@ -111,7 +111,9 @@ defmethod print (o:OutputStream, t:Type) :
       (t:UnknownType) :
          print(o, "?")
       (t:UIntType) :
-         print-all(o, ["UInt(" width(t) ")"])
+         match(width(t)) :
+            (w:UnknownWidth) : print-all(o, ["UInt"])
+            (w) : print-all(o, ["UInt(" width(t) ")"])
       (t:SIntType) :
          print-all(o, ["SInt(" width(t) ")"])
       (t:BundleType) :
@@ -196,8 +198,8 @@ defmethod map (f: Expression -> Expression, e:Element) -> Element :
                          key(p) => f(value(p))
          Instance(type(e), f(module(e)), ports*)
 
-public defmulti map<?T> (f: Expression -> Expression, c:?T&Command) -> T
-defmethod map (f: Expression -> Expression, c:Command) -> Command :
+public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
+defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
    match(c) :
       (c:LetRec) :
          val entries* = for entry in entries(c) map :
@@ -209,16 +211,16 @@ defmethod map (f: Expression -> Expression, c:Command) -> Command :
       (c:Connect) : Connect(f(loc(c)), f(exp(c)))
       (c) : c
 
-public defmulti map<?T> (f: Command -> Command, c:?T&Command) -> T
-defmethod map (f: Command -> Command, c:Command) -> Command :
+public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T
+defmethod map (f: Stmt -> Stmt, c:Stmt) -> Stmt :
    match(c) :
       (c:LetRec) : LetRec(entries(c), f(body(c)))
       (c:Conditionally) : Conditionally(pred(c), f(conseq(c)), f(alt(c)))
       (c:Begin) : Begin(map(f, body(c)))
       (c) : c
 
-public defmulti children (c:Command) -> List<Command>
-defmethod children (c:Command) :
+public defmulti children (c:Stmt) -> List<Stmt>
+defmethod children (c:Stmt) :
    match(c) :
       (c:LetRec) : list(body(c))
       (c:Conditionally) : list(conseq(c), alt(c))

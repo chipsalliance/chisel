@@ -21,6 +21,6 @@ defn main () :
    val lexed = lex-file("../../test/firrtl/firrtl-test.txt")
    val c = parse-firrtl(lexed)
    println(c)
-   run-passes(c)
+   ;run-passes(c)
 
 main()

@@ -2,6 +2,10 @@ src/*.DS_STORE
 src/*/*.DS_STORE
 src/*/*/*.DS_STORE
 src/*/*/*/*.DS_STORE
+*.swp
+*/*.swp
+*/*/*.swp
+*/*/*/*.swp
 src/lib/stanzam
 src/*/__MACOSX
 src/main/stanza/firrtl-main
