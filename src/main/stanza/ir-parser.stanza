@@ -1,7 +1,7 @@
-defpackage chipper.parser :
+defpackage firrtl.parser :
    import core
    import verse
-   import chipper.ir2
+   import firrtl.ir2
    import stanza.rdparser
    import stanza.lexer
 

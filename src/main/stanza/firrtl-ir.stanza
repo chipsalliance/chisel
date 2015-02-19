@@ -1,4 +1,4 @@
-defpackage chipper.ir2 :
+defpackage firrtl.ir2 :
    import core
    import verse
    

@@ -1,9 +1,12 @@
+; RUN: firrtl %s ab | tee %s.out | FileCheck %s
+
 circuit top :
    module subtracter :
       input x : UInt
       input y : UInt
       output z : UInt
       z := sub-mod(x, y)
+; CHECK: port:z := sub-mod(port:x, port:y)
    module gcd :
       input a : UInt(16)
       input b : UInt(16)
@@ -17,6 +20,7 @@ circuit top :
       when greater(x, y) :
          inst s of subtracter
          s.x := x
+; CHECK: inst:s.x := reg:x
          s.y := y
          x := s.z
       else :

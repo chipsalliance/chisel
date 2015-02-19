@@ -12,38 +12,19 @@ include("widthsolver.stanza")
 defpackage chmain :
    import core
    import verse
-   import chipper.parser
-   import chipper.passes
+   import firrtl.parser
+   import firrtl.passes
    import stanza.lexer
    import stanza.parser
+   import firrtl.ir-utils
 
-defn split (s:String,c:Char) -> List<String> :
-   val empty = ""
-     
-   defn next-word (s:String,i:Int) -> String|False : 
-      if i == length(s) : false
-      else: 
-         if (s[i] == c): substring(s,0,i)
-         else: next-word(s,i + 1)
-
-   val next-str = next-word(s,0)
-   if next-str == false : list()
-   else if next-str == empty : split(substring(s,1,length(s)),c)
-   else :
-      val str = next-str as String
-      List(str,split(substring(s,length(str)+1,length(s)),c))
-     
 defn main () :
    val arg = commandline-arguments()
-   println(arg)
    val args = split(arg,' ')
-   println(args)
-   println(length(args))
-   
    val lexed = lex-file(args[1])
    val c = parse-firrtl(lexed)
    println(c)
-   run-passes(c)
+   run-passes(c,to-list(args[2]))
 
 main()
 

@@ -1,4 +1,4 @@
-; RUN: firrtl %s | FileCheck %s
+; RUN: firrtl %s ab | tee %s.out | FileCheck %s
 
 circuit top :
    module subtracter :

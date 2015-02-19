@@ -1,7 +1,7 @@
-defpackage chipper.ir-utils :
+defpackage firrtl.ir-utils :
    import core
    import verse
-   import chipper.ir2
+   import firrtl.ir2
 
 ;============== PRINTERS ===================================
 defmethod print (o:OutputStream, d:Direction) :
@@ -226,4 +226,26 @@ defmethod children (c:Stmt) :
       (c:Conditionally) : list(conseq(c), alt(c))
       (c:Begin) : body(c)
       (c) : List()
+
+;=================== STRING OPS ===============================
+public defn split (s:String,c:Char) -> List<String> :
+   val empty = ""
+   defn next-word (s:String,i:Int) -> String|False : 
+      if i == length(s) : false
+      else: 
+         if (s[i] == c): substring(s,0,i)
+         else: next-word(s,i + 1)
+
+   val next-str = next-word(s,0)
+   if next-str == false : list()
+   else if next-str == empty : split(substring(s,1,length(s)),c)
+   else :
+      val str = next-str as String
+      List(str,split(substring(s,length(str)+1,length(s)),c))
+     
+public defn contains (l:List<Char>, c:Char) :
+   label<True|False> myret :
+      for x in l do :
+         if x == c : myret(true)
+      false
 

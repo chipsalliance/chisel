@@ -1,8 +1,8 @@
-defpackage chipper.passes :
+defpackage firrtl.passes :
   import core
   import verse
-  import chipper.ir2
-  import chipper.ir-utils
+  import firrtl.ir2
+  import firrtl.ir-utils
   import widthsolver
 
 ;============== EXCEPTIONS =================================
@@ -1856,28 +1856,30 @@ defn inline-instances (c:Circuit) :
 
 
 ;============= DRIVER ======================================
-public defn run-passes (c: Circuit) :
+public defn run-passes (c: Circuit, p: List<Char>) :
    var c*:Circuit = c
    defn do-stage (name:String, f: Circuit -> Circuit) :
       println(name)
       c* = f(c*)
-      println(c*)
-      println("\n\n\n\n")
 
-   do-stage("Working IR", to-working-ir)
-   do-stage("Resolve Kinds", resolve-kinds)
-   ;do-stage("Make Explicit Reset", make-explicit-reset)
-   ;do-stage("Infer Types", infer-types)
-   ;do-stage("Infer Directions", infer-directions)
-   ;do-stage("Expand Accessors", expand-accessors)
-   ;do-stage("Flatten Bundles", flatten-bundles)
-   ;do-stage("Expand Bundles", expand-bundles)
-   ;do-stage("Expand Multi Connects", expand-multi-connects)
-   ;do-stage("Expand Whens", expand-whens)
-   ;do-stage("Structural Form", structural-form)
-   ;do-stage("Infer Widths", infer-widths)
-   ;do-stage("Pad Widths", pad-widths)
-   ;do-stage("Inline Instances", inline-instances)
+   
+   if contains(p,'a') : do-stage("Working IR", to-working-ir)
+   if contains(p,'b') : do-stage("Resolve Kinds", resolve-kinds)
+   if contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
+   if contains(p,'d') : do-stage("Infer Types", infer-types)
+   if contains(p,'e') : do-stage("Infer Directions", infer-directions)
+   if contains(p,'f') : do-stage("Expand Accessors", expand-accessors)
+   if contains(p,'g') : do-stage("Flatten Bundles", flatten-bundles)
+   if contains(p,'h') : do-stage("Expand Bundles", expand-bundles)
+   if contains(p,'i') : do-stage("Expand Multi Connects", expand-multi-connects)
+   if contains(p,'j') : do-stage("Expand Whens", expand-whens)
+   if contains(p,'k') : do-stage("Structural Form", structural-form)
+   if contains(p,'l') : do-stage("Infer Widths", infer-widths)
+   if contains(p,'m') : do-stage("Pad Widths", pad-widths)
+   if contains(p,'n') : do-stage("Inline Instances", inline-instances)
+
+   println(c*)
+   println("\n\n\n\n")
 
 
  ;;  println("Shim for Jonathan's Passes")
