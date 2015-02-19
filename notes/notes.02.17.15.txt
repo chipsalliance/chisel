@@ -1,6 +1,5 @@
 February 17, 2015.
 
-
 Functions (defn) have (1) a static type signature and (2) an implementation
 You can define them seperately
   type signature -> defmulti
@@ -12,19 +11,12 @@ However, you cannot have:
   defn a(x:Int) -> Int
 because it is unclear which to call (2 matching static type signatures)
 
-TODO Implement resolve-kinds
 TODO Read initialization spec
 TODO Read through make-explicit-reset
 TODO If you feel up for it, rewrite make-explicit-reset
 TODO If you feel up for it, read through initialize-registers
-TODO Look into testing framework
 
 TODO 
 Make stanza a git repo
-Write Makefile
 Write installation instructions for stanza
-Add P-Money as admin to github/firrtl (CuppoJava)
-
-TOTHINK
 Need 2 different prints, one with IR-internal information, and another that matches correct FIRRTL
-Add input file argument...

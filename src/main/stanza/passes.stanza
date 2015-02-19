@@ -116,46 +116,54 @@ defn to-working-ir (c:Circuit) :
 ;   Circuit where all WRef kinds are resolved
 
 defn resolve-kinds (c:Circuit) :
-   defn resolve-exp (e:Expression, kinds:HashTable<Symbol,Kind>) :
-      match(e) :
-         (e:WRef) : WRef(name(e), type(e), kinds[name(e)], dir(e))
-         (e) : map(resolve-exp{_, kinds}, e)
+   defn resolve (body:Stmt, kinds:HashTable<Symbol,Kind>) :
+      defn resolve-stmt (s:Stmt) -> Stmt :
+         map{resolve-expr,_} $
+         map(resolve-stmt,s)
 
-   defn resolve-comm (c:Stmt, kinds:HashTable<Symbol,Kind>) -> Stmt :
-      map{resolve-comm{_, kinds}, _} $
-      map(resolve-exp{_, kinds}, c)
+      defn resolve-expr (e:Expression) -> Expression :
+         match(e) :
+            (e:WRef) : WRef(name(e),type(e),kinds[name(e)],dir(e))
+            (e) : map(resolve-expr,e)
 
-   defn find-kinds (c:Stmt, kinds:HashTable<Symbol,Kind>) :
-      match(c) :
-         (c:LetRec) :
-            for entry in entries(c) do :
-               kinds[key(entry)] = element-kind(value(entry))
-         (c:DefWire) : kinds[name(c)] = NodeKind()
-         (c:DefRegister) : kinds[name(c)] = RegKind()
-         (c:DefInstance) : kinds[name(c)] = InstanceKind()
-         (c:DefMemory) : kinds[name(c)] = MemKind()
-         (c:WDefAccessor) : kinds[name(c)] = AccessorKind()
-         (c) : false
-      do(find-kinds{_, kinds}, children(c))
+      resolve-stmt(body)
 
-   defn element-kind (e:Element) :
-      match(e) :
-         (e:Memory) : StructuralMemKind()
-         (e) : NodeKind()
+   defn find (m:Module, kinds:HashTable<Symbol,Kind>) :
+      defn find-stmt (s:Stmt) -> Stmt :
+         match(s) :
+            (s:LetRec) : 
+               for e in entries(s) do :
+                  kinds[key(e)] = get-elem-kind(value(e))
+            (s:DefWire) : kinds[name(s)] = NodeKind()
+            (s:DefRegister) : kinds[name(s)] = RegKind()
+            (s:DefInstance) : kinds[name(s)] = InstanceKind()
+            (s:DefMemory) : kinds[name(s)] = MemKind()
+            (s:WDefAccessor) : kinds[name(s)] = AccessorKind()
+            (s) : false
+         map(find-stmt,s)
 
-   defn resolve-mod (m:Module, modules:List<Symbol>) :
+      defn get-elem-kind (e:Element) :
+         match(e) :
+            (e: Memory) : StructuralMemKind()
+            (e) : NodeKind()
+
+      kinds[name(m)] = ModuleKind()
+      for p in ports(m) do :
+         kinds[name(p)] = PortKind()
+      find-stmt(body(m))
+    
+   defn resolve-module (m:Module, c:Circuit) -> Module :
       val kinds = HashTable<Symbol,Kind>(symbol-hash)
-      for module in modules do :
-         kinds[module] = ModuleKind()
-      for port in ports(m) do :
-         kinds[name(port)] = PortKind()
-      find-kinds(body(m), kinds)
-      Module(name(m), ports(m), body*) where :
-         val body* = resolve-comm(body(m), kinds)
+      for m in modules(c) do :
+         kinds[name(m)] = ModuleKind()
+      find(m,kinds)   
+      val body! = resolve(body(m),kinds)
+      Module(name(m),ports(m),body!)
 
    Circuit(modules*, main(c)) where :
-      val mod-names = map(name, modules(c))
-      val modules* = map(resolve-mod{_, mod-names}, modules(c))
+      val modules* = 
+         for m in modules(c) map :
+            resolve-module(m,c)
 
 ;=============== MAKE RESET EXPLICIT =======================
 defn make-explicit-reset (c:Circuit) :

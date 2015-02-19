@@ -28,23 +28,3 @@ defn main () :
 
 main()
 
-; [a b c] <- a tuple
-;
-; val rest = List(1,2,3)
-; val b = List(0,rest) --> (0,1,2,3)
-; val c = list(0,rest) --> (0,(1,2,3))
-
-; label<Int> myret :
-;    for i in 0 to 10 do :
-;       if i == 5:
-;          myret(i)
-;    0
-
-; val v = Vector<Int>()
-; add(v,10)
-; add(v,20)
-; add(v,32)
-; for x in v do :
-;    println(x)
-
-

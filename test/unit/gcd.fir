@@ -38,9 +38,11 @@ circuit top :
       input b : UInt(16)
       output z : UInt
       inst i of gcd
+; CHECK: inst i of module:gcd
       i.a := a
       i.b := b
       i.e := UInt(1)
       z := i.z
+; CHECK: port:z := inst:i.z
 
 
