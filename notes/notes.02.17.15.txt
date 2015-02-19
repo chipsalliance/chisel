@@ -24,3 +24,7 @@ Make stanza a git repo
 Write Makefile
 Write installation instructions for stanza
 Add P-Money as admin to github/firrtl (CuppoJava)
+
+TOTHINK
+Need 2 different prints, one with IR-internal information, and another that matches correct FIRRTL
+Add input file argument...

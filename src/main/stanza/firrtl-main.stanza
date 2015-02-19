@@ -17,10 +17,53 @@ defpackage chmain :
    import stanza.lexer
    import stanza.parser
 
+defn split (s:String,c:Char) -> List<String> :
+   val empty = ""
+     
+   defn next-word (s:String,i:Int) -> String|False : 
+      if i == length(s) : false
+      else: 
+         if (s[i] == c): substring(s,0,i)
+         else: next-word(s,i + 1)
+
+   val next-str = next-word(s,0)
+   if next-str == false : list()
+   else if next-str == empty : split(substring(s,1,length(s)),c)
+   else :
+      val str = next-str as String
+      List(str,split(substring(s,length(str)+1,length(s)),c))
+     
 defn main () :
-   val lexed = lex-file("../../test/firrtl/firrtl-test.txt")
+   val arg = commandline-arguments()
+   println(arg)
+   val args = split(arg,' ')
+   println(args)
+   println(length(args))
+   
+   val lexed = lex-file(args[1])
    val c = parse-firrtl(lexed)
    println(c)
-   ;run-passes(c)
+   run-passes(c)
 
 main()
+
+; [a b c] <- a tuple
+;
+; val rest = List(1,2,3)
+; val b = List(0,rest) --> (0,1,2,3)
+; val c = list(0,rest) --> (0,(1,2,3))
+
+; label<Int> myret :
+;    for i in 0 to 10 do :
+;       if i == 5:
+;          myret(i)
+;    0
+
+; val v = Vector<Int>()
+; add(v,10)
+; add(v,20)
+; add(v,32)
+; for x in v do :
+;    println(x)
+
+

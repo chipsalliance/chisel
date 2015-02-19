@@ -1,0 +1,11 @@
+unit tests
+end-to-end
+full programs
+
+dir structure
+
+firrtl/lib
+
+llvm's lit is probably overkill, but should have execution command in code, and use llvm's FileCheck to verify correctness of test
+
+

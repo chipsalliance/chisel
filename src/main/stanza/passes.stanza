@@ -61,6 +61,18 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:InstanceKind) : "inst:"
       (k:StructuralMemKind) : "smem:"
 
+defmethod print (o:OutputStream, e:WRef) :
+   print-all(o,[kind(e) name(e)])
+
+defmethod print (o:OutputStream, e:WField) :
+   print-all(o,[exp(e) "." name(e)])
+
+defmethod print (o:OutputStream, e:WIndex) :
+   print-all(o,[exp(e) "." value(e)])
+
+defmethod print (o:OutputStream, s:WDefAccessor) :
+  print-all(o,[dir(s) " accessor " name(s) " = " source(s) "[" index(s) "]"])
+
 defmethod map (f: Expression -> Expression, e: WField) :
    WField(f(exp(e)), name(e), type(e), dir(e))
 
@@ -75,7 +87,10 @@ defmulti dir (e:Expression) -> Direction
 defmethod dir (e:Expression) :
    OUTPUT
 
-;ADAM========== Bring to Working IR ========================
+;================= Bring to Working IR ========================
+; Returns a new Circuit with Refs, Fields, Indexes and DefAccessors 
+;   replaced with IR-internal nodes that contain additional 
+;   information (kind, direction)
 
 defn to-working-ir (c:Circuit) :
    defn to-exp (e:Expression) :
@@ -94,19 +109,12 @@ defn to-working-ir (c:Circuit) :
          for m in modules(c) map :
             Module(name(m), ports(m), to-stmt(body(m)))
 
-;ADAM========== Printing ===================================
-
-defn print (o:OutputStream, e:WRef) :
-   print-all(o,[name(e)])
-defmethod print (o:OutputStream, e:WField) :
-   print-all(o,[exp(e) "." name(e)])
-defmethod print (o:OutputStream, e:WIndex) :
-   print-all(o,[exp(e) "." value(e)])
-
-defmethod print (o:OutputStream, s:WDefAccessor) :
-  print-all(o,[dir(s) " accessor " name(s) " = " source(s) "[" index(s) "]"])
-
 ;=============== Resolve Kinds =============================
+; It is useful for the compiler to know information about 
+;   objects referenced. This information is stored in the kind
+;   field in WRef. This pass walks the graph and returns a new
+;   Circuit where all WRef kinds are resolved
+
 defn resolve-kinds (c:Circuit) :
    defn resolve-exp (e:Expression, kinds:HashTable<Symbol,Kind>) :
       match(e) :
@@ -1858,7 +1866,7 @@ public defn run-passes (c: Circuit) :
 
    do-stage("Working IR", to-working-ir)
    do-stage("Resolve Kinds", resolve-kinds)
-   do-stage("Make Explicit Reset", make-explicit-reset)
+   ;do-stage("Make Explicit Reset", make-explicit-reset)
    ;do-stage("Infer Types", infer-types)
    ;do-stage("Infer Directions", infer-directions)
    ;do-stage("Expand Accessors", expand-accessors)

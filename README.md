@@ -15,3 +15,6 @@ Work TODO:
 
 Secondary TODO:
   Need stanza version control - perhaps a sub-repo?
+
+Install lit:
+  pip install lit
