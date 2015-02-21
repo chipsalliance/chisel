@@ -46,3 +46,12 @@ a typeof T
 a and b
 a or b
 a as T
+
+
+append(list1,list2) -> list1,list2
+List(x,list) -> x,list
+list() -> empty
+list(a) -> a
+list(a,b) -> a,b 
+
+println-all([a b c])

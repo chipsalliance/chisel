@@ -152,7 +152,7 @@ defn resolve-kinds (c:Circuit) :
          kinds[name(p)] = PortKind()
       find-stmt(body(m))
     
-   defn resolve-module (m:Module, c:Circuit) -> Module :
+   defn resolve-kinds (m:Module, c:Circuit) -> Module :
       val kinds = HashTable<Symbol,Kind>(symbol-hash)
       for m in modules(c) do :
          kinds[name(m)] = ModuleKind()
@@ -163,126 +163,140 @@ defn resolve-kinds (c:Circuit) :
    Circuit(modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
-            resolve-module(m,c)
+            resolve-kinds(m,c)
 
-;=============== MAKE RESET EXPLICIT =======================
+;=============== MAKE EXPLICIT RESET =======================
+; All modules have an implicit reset signal - however, the 
+;   programmer can explicitly reference this signal if desired.
+;   This pass makes all implicit resets explicit while
+;   preserving any previously explicit resets
+; If reset is not explicitly passed to instantiations, then this
+;   pass autmatically connects the parent module's reset to the
+;   instantiation's reset
+
 defn make-explicit-reset (c:Circuit) :
-   defn reset-instances (c:Stmt, reset?: List<Symbol>) -> Stmt :
-      match(c) :
-         (c:DefInstance) :
-            val module = module(c) as WRef
-            if contains?(reset?, name(module)) :
-               c
-            else :
-               Begin $ list(c, Connect(WField(inst, `reset, UnknownType(), UNKNOWN-DIR), reset)) where :
-                  val inst = WRef(name(c), UnknownType(), InstanceKind(), UNKNOWN-DIR)
-                  val reset = WRef(`reset, UnknownType(), PortKind(), UNKNOWN-DIR)
-         (c) :
-            map(reset-instances{_:Stmt, reset?}, c)
-
-   defn make-explicit-reset (m:Module, reset-list: List<Symbol>) :
-      val reset? = contains?(reset-list, name(m))
-
-      ;Add reset port if necessary
-      val ports* =
-         if reset? :
-            ports(m)
-         else :
-            val reset = Port(`reset, INPUT, UIntType(IntWidth(1)))
-            List(reset, ports(m))
-
-      ;Reset Instances
-      val body* = reset-instances(body(m), reset-list)
-      val m* = Module(name(m), ports*, body*)
-
-      ;Initialize registers if necessary
-      if reset? : m*
-      else : initialize-registers(m*)
-
-   Circuit(modules*, main(c)) where :
-      defn reset? (m:Module) :
+   defn find-explicit (c:Circuit) -> List<Symbol> :
+      defn explicit? (m:Module) -> True|False :
          for p in ports(m) any? :
             name(p) == `reset
-      val reset-list = to-list(stream(name, filter(reset?, modules(c))))
-      val modules* = map(make-explicit-reset{_, reset-list}, modules(c))
+      val explicit-reset = Vector<Symbol>()
+      for m in modules(c) do:
+         if explicit?(m) : add(explicit-reset,name(m))
+      to-list(explicit-reset)
+
+   defn make-explicit (m:Module, explicit-reset:List<Symbol>) -> Module :
+      defn route-reset (s:Stmt) -> Stmt :
+         match(s) :
+            (s:DefInstance) : 
+               val iref = WField(WRef(name(s), UnknownType(), InstanceKind(), UNKNOWN-DIR),`reset,UnknownType(),UNKNOWN-DIR)
+               val pref = WRef(`reset, UnknownType(), PortKind(), INPUT)
+               Begin(to-list([s,Connect(iref,pref)]))
+            (s) : map(route-reset,s)
+
+      var ports! = ports(m)
+      if not contains?(explicit-reset,name(m)) :
+         ports! = append(ports(m),list(Port(`reset,INPUT,UIntType(IntWidth(1)))))
+      val body! = route-reset(body(m))
+      Module(name(m),ports!,body!)
+      
+   defn make-explicit-reset (m:Module, c:Circuit) -> Module :
+      val explicit-reset = find-explicit(c)
+      make-explicit(m,explicit-reset)
+
+   Circuit(modules*, main(c)) where :
+      val modules* = 
+         for m in modules(c) map :
+            make-explicit-reset(m,c)
 
 ;======= MAKE EXPLICIT REGISTER INITIALIZATION =============
-defn initialize-registers (m:Module) :
-   ;=== Initializing Expressions ===
-   defn init-exps (inits: List<KeyValue<Symbol,Expression>>) :
-      if empty?(inits) :
-         EmptyStmt()
-      else :
-         Conditionally(reset, Begin(map(connect, inits)), EmptyStmt()) where :
-            val reset = WRef(`reset, UnknownType(), PortKind(), UNKNOWN-DIR)
-            defn connect (init: KeyValue<Symbol, Expression>) :
-               val reg-ref = WRef(key(init), UnknownType(), RegKind(), UNKNOWN-DIR)
-               Connect(reg-ref, value(init))
+; This pass replaces the reg.init construct by creating a new
+;   wire that holds the value at initialization. This wire
+;   is then connected to the register conditionally on reset,
+;   at the end of that register's scope.
+; If a register has no inital value, the wire is connected to
+;   a NULL node. Later passes will remove these with the base
+;   case Mux(reset,NULL,a) -> a, and Mux(reset,a,NULL) -> a.
+;   This ensures proper behavior if this pass is run multiple 
+;   times.
 
-   defn initialize-registers (c: Stmt
-                              inits: List<KeyValue<Symbol,Expression>>) ->
-                              [Stmt, List<KeyValue<Symbol,Expression>>] :
-      ;=== Rename Expressions ===
-      defn rename (e:Expression) :
+defn initialize-registers (c:Circuit) :
+   defn add-when (s:Stmt,renames:HashTable<Symbol,Symbol>) -> Stmt :
+      Begin(list(s,when-reset)) where :
+         var inits = List<Stmt>()
+         for kv in renames do :
+            val refreg = WRef(key(kv),UnknownType(),RegKind(),UNKNOWN-DIR)
+            val refwire = WRef(value(kv),UnknownType(),NodeKind(),UNKNOWN-DIR)
+            val connect = Connect(refreg,refwire)
+            inits = append(inits,list(connect))
+         val pred = WRef(`reset, UnknownType(), PortKind(), UNKNOWN-DIR)
+         val when-reset = Conditionally(pred,Begin(inits),Begin(List<Stmt>()))
+   defn rename (s:Stmt,l:HashTable<Symbol, Symbol>) -> Stmt :
+      defn rename-stmt (s:Stmt) -> Stmt :
+         map{rename-expr,_} $
+         map(rename-stmt,s)
+      defn rename-expr (e:Expression) -> Expression :
          match(e) :
-            (e:WField) :
-               switch {name(e) == _} :
-                  `init :
-                     if reg?(exp(e)) : init-wire(exp(e))
-                     else : map(rename, e)
-                  else : map(rename, e)
-            (e) : map(rename, e)
-      defn reg? (e:Expression) :
+            (e:WField) : 
+               if name(e) == `init and register?(exp(e)) :
+                  ;TODO Error if l does not contain register
+                  val new-name = l[name(exp(e) as WRef)]
+                  WRef(new-name,UnknownType(),NodeKind(),UNKNOWN-DIR)
+               else : e
+            (e) : map(rename-expr,e)
+      defn register? (e:Expression) -> True|False :
          match(e) :
             (e:WRef) : kind(e) typeof RegKind
             (e) : false
-      defn init-wire (e:Expression) :
-         lookup!(inits, name(e as WRef))
 
-      ;=== Driver ===
-      match(c) :
-         (c:DefRegister) :
-            [new-command, list(init-entry)] where :
-               val wire-name = gensym()
-               val wire-ref = WRef(wire-name, UnknownType(), NodeKind(), UNKNOWN-DIR)
-               val reg-ref = WRef(name(c), UnknownType(), RegKind(), UNKNOWN-DIR)
-               val def-init-wire = DefWire(wire-name, type(c))
-               val init-wire = Connect(wire-ref, reg-ref)
-               val init-reg = Connect(reg-ref, wire-ref)
-               val new-command = Begin(to-list([c, def-init-wire, init-wire, init-reg]))
-               val init-entry = name(c) => wire-ref
-         (c:Conditionally) :
-            val pred* = rename(pred(c))
-            val [conseq* con-inits] = initialize-registers(conseq(c), inits)
-            val [alt* alt-inits] = initialize-registers(alt(c), inits)
-            val c* = Conditionally(pred*, conseq+inits, alt+inits) where :
-               val conseq+inits = Begin(list(conseq*, init-exps(con-inits)))
-               val alt+inits = Begin(list(alt*, init-exps(alt-inits)))
-            [c*, List()]
-         (c:LetRec) :
-            val c* = map(rename, c)
-            val [body*, body-inits] = initialize-registers(body(c), inits)
-            val new-command =
-               LetRec(entries(c*), body+inits) where :
-                  val body+inits = Begin(list(body*, init-exps(body-inits)))
-            [new-command, List()]
-         (c:Begin) :
-            var inits-in:List<KeyValue<Symbol,Expression>> = inits
-            var inits-out:List<KeyValue<Symbol,Expression>> = List()
-            val body* =
-               for c in body(c) map :
-                  val [c* inits*] = initialize-registers(c, inits-in)
-                  inits-in = append(inits*, inits-in)
-                  inits-out = append(inits*, inits-out)
-                  c*
-            [Begin(body*), inits-out]
-         (c) :
-            val c* = map(rename, c)
-            [c*, List()]
+      rename-stmt(s)
 
-   Module(name(m), ports(m), body+inits) where :
-      val [body*, inits] = initialize-registers(body(m), List())
-      val body+inits = Begin(list(body*, init-exps(inits)))
+   defn initialize-registers (s:Stmt) -> [Stmt,HashTable<Symbol, Symbol>] :
+      val empty-hash = HashTable<Symbol,Symbol>(symbol-hash)
+      match(s) :
+         (s:Begin) : 
+            var body! = List<Stmt>()
+            var renames = HashTable<Symbol,Symbol>(symbol-hash)
+            for s in body(s) do :
+               val [s!,renames!] = initialize-registers(s)
+               body! = append(body!,list(s!))
+               merge!(renames,renames!)
+            [Begin(body!),renames]
+         (s:DefRegister) :
+            val wire-name = gensym()
+            val renames = HashTable<Symbol, Symbol>(symbol-hash)
+            renames[name(s)] = wire-name
+            [Begin(body!),renames] where :
+               val defreg = s
+               val defwire = DefWire(wire-name,type(s))
+               val conwire = Connect(WRef(wire-name,type(s),NodeKind(),UNKNOWN-DIR),Null())
+               val body! = list(defreg,defwire,conwire)
+         (s:Conditionally) :
+            [Conditionally(pred(s),initialize-scope(conseq(s)),initialize-scope(alt(s))),empty-hash]
+         ;TODO Add Letrec
+         (s) : [s,empty-hash]
+            
+
+   defn initialize-scope (s:Stmt) -> Stmt :
+      defn run-initialize (s:Stmt) -> Stmt :
+         val [s!,renames] = initialize-registers(s)
+         val s!! = rename(s!,renames)
+         val s!!! = add-when(s!!,renames)
+         s!!!
+      match(s) :
+         (s:Begin) : run-initialize(s)
+         (s:DefRegister) :  run-initialize(s)
+         (s:Conditionally) : run-initialize(s)
+         ;TODO Add Letrec
+         (s) : s
+     
+   defn initialize-scope (m:Module) -> Module :
+     Module(name(m), ports(m), body!) where :
+        val body! = initialize-scope(body(m))
+
+   Circuit(modules*, main(c)) where :
+      val modules* = 
+         for m in modules(c) map :
+            initialize-scope(m)
       
 
 ;============== INFER TYPES ================================
@@ -1870,21 +1884,23 @@ public defn run-passes (c: Circuit, p: List<Char>) :
       println(name)
       c* = f(c*)
 
-   
+  ; Early passes:
+  ;  If modules have a reset defined, must be an INPUT and UInt(1)
    if contains(p,'a') : do-stage("Working IR", to-working-ir)
    if contains(p,'b') : do-stage("Resolve Kinds", resolve-kinds)
    if contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
-   if contains(p,'d') : do-stage("Infer Types", infer-types)
-   if contains(p,'e') : do-stage("Infer Directions", infer-directions)
-   if contains(p,'f') : do-stage("Expand Accessors", expand-accessors)
-   if contains(p,'g') : do-stage("Flatten Bundles", flatten-bundles)
-   if contains(p,'h') : do-stage("Expand Bundles", expand-bundles)
-   if contains(p,'i') : do-stage("Expand Multi Connects", expand-multi-connects)
-   if contains(p,'j') : do-stage("Expand Whens", expand-whens)
-   if contains(p,'k') : do-stage("Structural Form", structural-form)
-   if contains(p,'l') : do-stage("Infer Widths", infer-widths)
-   if contains(p,'m') : do-stage("Pad Widths", pad-widths)
-   if contains(p,'n') : do-stage("Inline Instances", inline-instances)
+   if contains(p,'d') : do-stage("Initialize Registers", initialize-registers)
+   if contains(p,'e') : do-stage("Infer Types", infer-types)
+   if contains(p,'f') : do-stage("Infer Directions", infer-directions)
+   if contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
+   if contains(p,'h') : do-stage("Flatten Bundles", flatten-bundles)
+   if contains(p,'i') : do-stage("Expand Bundles", expand-bundles)
+   if contains(p,'j') : do-stage("Expand Multi Connects", expand-multi-connects)
+   if contains(p,'k') : do-stage("Expand Whens", expand-whens)
+   if contains(p,'l') : do-stage("Structural Form", structural-form)
+   if contains(p,'m') : do-stage("Infer Widths", infer-widths)
+   if contains(p,'n') : do-stage("Pad Widths", pad-widths)
+   if contains(p,'o') : do-stage("Inline Instances", inline-instances)
 
    println(c*)
    println("\n\n\n\n")

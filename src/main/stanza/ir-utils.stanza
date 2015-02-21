@@ -55,6 +55,7 @@ defmethod print (o:OutputStream, e:Expression) :
          print-all(o, join(concat(args(e), consts(e)), ", "))
          print(o, ")")
       (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ")"])
+      (e:Null) : print-all(o, ["Null"])
 
 defmethod print (o:OutputStream, c:Stmt) :
    match(c) :
@@ -227,7 +228,7 @@ defmethod children (c:Stmt) :
       (c:Begin) : body(c)
       (c) : List()
 
-;=================== STRING OPS ===============================
+;=================== ADAM OPS ===============================
 public defn split (s:String,c:Char) -> List<String> :
    val empty = ""
    defn next-word (s:String,i:Int) -> String|False : 
@@ -249,3 +250,6 @@ public defn contains (l:List<Char>, c:Char) :
          if x == c : myret(true)
       false
 
+public defn merge!<?K,?V> (a:HashTable<?K,?V>, b:HashTable<K,V>) :
+   for e in b do :
+      a[key(e)] = value(e)

@@ -23,7 +23,7 @@ defn main () :
    val args = split(arg,' ')
    val lexed = lex-file(args[1])
    val c = parse-firrtl(lexed)
-   println(c)
+   ;println(c)
    run-passes(c,to-list(args[2]))
 
 main()

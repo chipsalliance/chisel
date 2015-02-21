@@ -12,3 +12,7 @@ src/main/stanza/firrtl-main
 utils/bin/firrtl
 test/unit/Output
 test/unit/*.out
+spec/spec.aux
+spec/spec.log
+spec/spec.pdf
+spec/spec.synctex.gz

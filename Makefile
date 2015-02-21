@@ -13,5 +13,9 @@ build:
 
 # Runs single test
 check: 
-	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
-	cat $(test_dir)/unit/gcd.fir.out
+	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/
+
+clean:
+	rm -f $(test_dir)/passes/*/*.out
+	rm -f $(test_dir)/passes/*.out
+	rm -f $(test_dir)/*/*.out
