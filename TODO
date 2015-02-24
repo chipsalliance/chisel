@@ -3,3 +3,7 @@ Make stanza a git repo
 Write installation instructions for stanza
 Need 2 different prints, one with IR-internal information, and another that matches correct FIRRTL
 
+Tests:
+   Error if declare anything other than module in circuit
+   Error if incorrectly assign stuff, like use = instead of :=
+

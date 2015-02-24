@@ -1,5 +1,6 @@
 ; RUN: firrtl %s abcd | tee %s.out | FileCheck %s 
 
+; CHECK: Initialize Registers
          circuit top :
             module top :
                input a : UInt(16)
@@ -12,6 +13,7 @@
 
                reg r2 : UInt
                r2.init := UInt(0)
+; CHECK-NOT:   r2.init := UInt(0)
 ; CHECK:       wire [[R2:gen[0-9]*]] : UInt
 ; CHECK-NOT:   reg:r2 := n:[[R2]]
 ; CHECK:       n:[[R2]] := Null

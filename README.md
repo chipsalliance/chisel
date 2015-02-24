@@ -18,3 +18,16 @@ Secondary TODO:
 
 Install lit:
   pip install lit
+
+
+Stanza Installation:
+  git clone https://github.com/ucb-bar/firrtl
+  cd src/lib 
+  unzip stanzam.zip
+  cd stanzam
+  sudo ./stanzam -platform os-x -install /usr/local/bin/stanzam
+
+
+
+
+  

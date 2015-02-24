@@ -62,7 +62,11 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:StructuralMemKind) : "smem:"
 
 defmethod print (o:OutputStream, e:WRef) :
-   print-all(o,[kind(e) name(e)])
+   match(type(e)) :
+      (t:UnknownType) : 
+         print-all(o,[kind(e) name(e)])
+      (t) : 
+         print-all(o,[kind(e) name(e) ":" type(e)])
 
 defmethod print (o:OutputStream, e:WField) :
    print-all(o,[exp(e) "." name(e)])
@@ -212,7 +216,8 @@ defn make-explicit-reset (c:Circuit) :
 ; This pass replaces the reg.init construct by creating a new
 ;   wire that holds the value at initialization. This wire
 ;   is then connected to the register conditionally on reset,
-;   at the end of that register's scope.
+;   at the end of the scope containing the  register 
+;   declaration
 ; If a register has no inital value, the wire is connected to
 ;   a NULL node. Later passes will remove these with the base
 ;   case Mux(reset,NULL,a) -> a, and Mux(reset,a,NULL) -> a.
@@ -221,15 +226,19 @@ defn make-explicit-reset (c:Circuit) :
 
 defn initialize-registers (c:Circuit) :
    defn add-when (s:Stmt,renames:HashTable<Symbol,Symbol>) -> Stmt :
-      Begin(list(s,when-reset)) where :
-         var inits = List<Stmt>()
-         for kv in renames do :
-            val refreg = WRef(key(kv),UnknownType(),RegKind(),UNKNOWN-DIR)
-            val refwire = WRef(value(kv),UnknownType(),NodeKind(),UNKNOWN-DIR)
-            val connect = Connect(refreg,refwire)
-            inits = append(inits,list(connect))
+      var inits = List<Stmt>()
+      for kv in renames do :
+         val refreg = WRef(key(kv),UnknownType(),RegKind(),UNKNOWN-DIR)
+         val refwire = WRef(value(kv),UnknownType(),NodeKind(),UNKNOWN-DIR)
+         val connect = Connect(refreg,refwire)
+         inits = append(inits,list(connect))
+      if empty?(inits) :
+         s
+      else :
          val pred = WRef(`reset, UnknownType(), PortKind(), UNKNOWN-DIR)
          val when-reset = Conditionally(pred,Begin(inits),Begin(List<Stmt>()))
+         Begin(list(s,when-reset))
+
    defn rename (s:Stmt,l:HashTable<Symbol, Symbol>) -> Stmt :
       defn rename-stmt (s:Stmt) -> Stmt :
          map{rename-expr,_} $
@@ -268,38 +277,43 @@ defn initialize-registers (c:Circuit) :
             [Begin(body!),renames] where :
                val defreg = s
                val defwire = DefWire(wire-name,type(s))
-               val conwire = Connect(WRef(wire-name,type(s),NodeKind(),UNKNOWN-DIR),Null())
+               val conwire = Connect(WRef(wire-name,UnknownType(),NodeKind(),UNKNOWN-DIR),Null())
                val body! = list(defreg,defwire,conwire)
          (s:Conditionally) :
             [Conditionally(pred(s),initialize-scope(conseq(s)),initialize-scope(alt(s))),empty-hash]
+         (s:LetRec) : 
+            [LetRec(entries(s),initialize-scope(body(s))),empty-hash]
          ;TODO Add Letrec
          (s) : [s,empty-hash]
             
 
    defn initialize-scope (s:Stmt) -> Stmt :
-      defn run-initialize (s:Stmt) -> Stmt :
-         val [s!,renames] = initialize-registers(s)
-         val s!! = rename(s!,renames)
-         val s!!! = add-when(s!!,renames)
-         s!!!
-      match(s) :
-         (s:Begin) : run-initialize(s)
-         (s:DefRegister) :  run-initialize(s)
-         (s:Conditionally) : run-initialize(s)
-         ;TODO Add Letrec
-         (s) : s
+      val [s!,renames] = initialize-registers(s)
+      val s!! = rename(s!,renames)
+      val s!!! = add-when(s!!,renames)
+      s!!!
      
-   defn initialize-scope (m:Module) -> Module :
+   defn initialize-module (m:Module) -> Module :
      Module(name(m), ports(m), body!) where :
         val body! = initialize-scope(body(m))
 
    Circuit(modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
-            initialize-scope(m)
+            initialize-module(m)
       
 
 ;============== INFER TYPES ================================
+; This pass infers the type field in all IR nodes by updating
+;   and passing an environment to all statements in pre-order
+;   traversal, and resolving types in expressions in post-
+;   order traversal.
+; Type propagation for primary ops are defined here.
+; Notable cases: LetRec requires updating environment before
+;   resolving the subexpressions in its elements.
+; Type errors are not checked in this pass, as this is
+;   postponed for a later/earlier pass.
+
 defmethod type (v:UIntValue) :
    UIntType(width(v))
 
@@ -327,6 +341,7 @@ defn infer (op:PrimOp, arg-types: List<Type>) -> Type :
 
    defn arg0 () : wipe-width(arg-types[0])
    defn arg1 () : wipe-width(arg-types[1])
+   ; TODO subtle, not entirely figured out
    switch {op == _} :
       ADD-OP : arg0()
       ADD-MOD-OP : arg0()
@@ -380,6 +395,7 @@ defn infer (c:Stmt, e:List<KeyValue<Symbol, Type>>) -> [Stmt, List<KeyValue<Symb
             put-type(e, infer(op(e), map(type, args(e))))
          (e:ReadPort) :
             put-type(e, vector-elem-type(type(mem(e))))
+         (e:Null) : e
 
    defn element-type (e:Element, env:List<KeyValue<Symbol,Type>>) :
       match(e) :
@@ -1883,6 +1899,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    defn do-stage (name:String, f: Circuit -> Circuit) :
       println(name)
       c* = f(c*)
+      println(c*)
 
   ; Early passes:
   ;  If modules have a reset defined, must be an INPUT and UInt(1)
@@ -1902,7 +1919,6 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'n') : do-stage("Pad Widths", pad-widths)
    if contains(p,'o') : do-stage("Inline Instances", inline-instances)
 
-   println(c*)
    println("\n\n\n\n")
 
 

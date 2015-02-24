@@ -1,5 +1,6 @@
 ; RUN: firrtl %s abc | tee %s.out | FileCheck %s
 
+; CHECK: Make Explicit Reset
 circuit top :
    module A :
       ;CHECK: input reset : UInt(1)

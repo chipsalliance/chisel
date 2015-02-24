@@ -1,5 +1,6 @@
 ; RUN: firrtl %s abcd | tee %s.out | FileCheck %s 
-; CHECK: circuit top :
+
+; CHECK: Initialize Registers
          circuit top :
             module top :
                input a : UInt(16)

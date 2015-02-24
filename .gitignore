@@ -10,8 +10,10 @@ src/lib/stanzam
 src/*/__MACOSX
 src/main/stanza/firrtl-main
 utils/bin/firrtl
-test/unit/Output
-test/unit/*.out
+test/passes/Output
+test/passes/*/Output
+test/passes/*.out
+test/passes/*/*.out
 spec/spec.aux
 spec/spec.log
 spec/spec.pdf

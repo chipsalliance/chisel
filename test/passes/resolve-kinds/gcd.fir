@@ -1,5 +1,6 @@
 ; RUN: firrtl %s ab | tee %s.out | FileCheck %s
 
+; CHECK: Resolve Kinds
 circuit top :
    module subtracter :
       input x : UInt
