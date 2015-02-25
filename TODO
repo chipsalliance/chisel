@@ -1,12 +1,31 @@
 
 TODO 
-   Make stanza a git repo
-   Write installation instructions for stanza
-   Need 2 different prints, one with IR-internal information, and another that matches correct FIRRTL
+   Update print defmethods to correctly print depending on global variables
+   Update tests to invoke compiler correctly, and fix matches
    Figure out how types and widths propogate for all updated primops
-   node not parsed for stmts
+   Write infer-types pass
+   Update spec
+      change concrete syntactical names of structural elements
+      change direction names for bundle fields
+      add new field for sequential or combinational
+      play with non-implicit growth
+      remove generics, add all combinations (adduu, addus, addss, ...)
+      add assertions
+      add convert to primop
+      remove type from node in statement
+   Future questions to address in spec:
+      Introduction – motivation, and intended usage
+      Philosophical justifications for all constructs
+      More introduction for types, e.g. what is a ground type?
+      What is a statement? What is an expression? What is a memory? Difference between vector type and memory? What are accessors for?
+      Why would I ever write an empty statement? Mainly for use by compiler/passes
+      What is a structural element? Duplication?
+      Subtracting two unsigned numbers… Should talk to a math guy to figure it out
+      What are shift left and shift right operations? HW doesn’t have these concepts. Need justification.
+      What is lowered form? What is it for?
+
 
 Tests:
    Error if declare anything other than module in circuit
    Error if incorrectly assign stuff, like use = instead of :=
-
+   Error: Node not parsed for stmts

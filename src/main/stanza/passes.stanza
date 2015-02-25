@@ -49,33 +49,61 @@ defstruct WDefAccessor <: Stmt :
    dir: Direction
 
 ;================ WORKING IR UTILS =========================
+;============== DEBUG STUFF =============================
+public var PRINT-TYPES : True|False = false
+public var PRINT-KINDS : True|False = false
+public var PRINT-WIDTHS : True|False = false
+public var PRINT-CIRCUITS : True|False = false
 ;=== Printers ===
 defmethod print (o:OutputStream, k:Kind) :
    print{o, _} $
    match(k) :
-      (k:RegKind) : "reg:"
-      (k:AccessorKind) : "accessor:"
-      (k:PortKind) : "port:"
-      (k:MemKind) : "mem:"
-      (k:NodeKind) : "n:"
-      (k:ModuleKind) : "module:"
-      (k:InstanceKind) : "inst:"
-      (k:StructuralMemKind) : "smem:"
+      (k:RegKind) : "reg"
+      (k:AccessorKind) : "accessor"
+      (k:PortKind) : "port"
+      (k:MemKind) : "mem"
+      (k:NodeKind) : "n"
+      (k:ModuleKind) : "module"
+      (k:InstanceKind) : "inst"
+      (k:StructuralMemKind) : "smem"
 
+defn hasWidth (e:Expression|Stmt|Type|Element|Port) :
+   e typeof UIntType|SIntType|UIntValue|SIntValue
+
+defn hasType (e:Expression|Stmt|Type|Element|Port) :
+   e typeof Ref|Field|Index|DoPrim|ReadPort|WRef|WField
+      |WIndex|DefWire|DefRegister|DefMemory|Register
+      |Memory|Node|Instance|VectorType|Port
+
+defn hasKind (e:Expression|Stmt|Type|Element|Port) :
+   e typeof WRef
+
+defn any-debug? (e:Expression|Stmt|Type|Element|Port) : 
+   (hasType(e) and PRINT-TYPES) or
+   (hasWidth(e) and PRINT-WIDTHS) or
+   (hasKind(e) and PRINT-KINDS)
+
+defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port) :
+   if any-debug?(e) : print(o,"@")
+   if PRINT-KINDS and hasKind(e) : print-all(o,["<k:" kind(e as ?) ">"])
+   if PRINT-TYPES and hasType(e) : print-all(o,["<t:" type(e as ?) ">"])
+   if PRINT-WIDTHS and hasWidth(e): print-all(o,["<w:" width(e as ?) ">"])
+      
 defmethod print (o:OutputStream, e:WRef) :
-   if PRINT-TYPES :
-      print-all(o,[kind(e) name(e) ":" type(e)])
-   else : 
-      print-all(o,[kind(e) name(e)])
+   print(o,name(e))
+   print-debug(o,e as ?)
 
 defmethod print (o:OutputStream, e:WField) :
    print-all(o,[exp(e) "." name(e)])
+   print-debug(o,e as ?)
 
 defmethod print (o:OutputStream, e:WIndex) :
    print-all(o,[exp(e) "." value(e)])
+   print-debug(o,e as ?)
 
 defmethod print (o:OutputStream, s:WDefAccessor) :
-  print-all(o,[dir(s) " accessor " name(s) " = " source(s) "[" index(s) "]"])
+   print-all(o,[dir(s) " accessor " name(s) " = " source(s) "[" index(s) "]"])
+   print-debug(o,s)
 
 defmethod map (f: Expression -> Expression, e: WField) :
    WField(f(exp(e)), name(e), type(e), dir(e))
@@ -1896,10 +1924,14 @@ defn inline-instances (c:Circuit) :
 ;============= DRIVER ======================================
 public defn run-passes (c: Circuit, p: List<Char>) :
    var c*:Circuit = c
+   println("Compiling!")
+   if PRINT-CIRCUITS : println("Original Circuit")
+   if PRINT-CIRCUITS : print(c)
    defn do-stage (name:String, f: Circuit -> Circuit) :
-      println(name)
+      if PRINT-CIRCUITS : println(name)
       c* = f(c*)
-      println(c*)
+      if PRINT-CIRCUITS : print(c*)
+      if PRINT-CIRCUITS : println-all(["Finished " name "\n"])
 
   ; Early passes:
   ;  If modules have a reset defined, must be an INPUT and UInt(1)
@@ -1919,7 +1951,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'n') : do-stage("Pad Widths", pad-widths)
    if contains(p,'o') : do-stage("Inline Instances", inline-instances)
 
-   println("\n\n\n\n")
+   println("Done!")
 
 
  ;;  println("Shim for Jonathan's Passes")

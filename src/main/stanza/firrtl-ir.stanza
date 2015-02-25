@@ -83,6 +83,9 @@ public defstruct DefInstance <: Stmt :
 public defstruct DefMemory <: Stmt :
    name: Symbol
    type: VectorType
+public defstruct DefNode <: Stmt :
+   name: Symbol
+   value: Expression
 public defstruct DefAccessor <: Stmt :
    name: Symbol
    source: Expression

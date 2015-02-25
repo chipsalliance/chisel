@@ -1,4 +1,4 @@
-; RUN: firrtl %s ab | tee %s.out | FileCheck %s
+; RUN: firrtl %s ab ck | tee %s.out | FileCheck %s
 
 ; CHECK: Resolve Kinds
 circuit top :
@@ -7,7 +7,7 @@ circuit top :
       input y : UInt
       output z : UInt
       z := sub-mod(x, y)
-; CHECK: port:z := sub-mod(port:x, port:y)
+      ;CHECK: z@<k:port> := sub-mod(x@<k:port>, y@<k:port>)
    module gcd :
       input a : UInt(16)
       input b : UInt(16)
@@ -21,7 +21,7 @@ circuit top :
       when greater(x, y) :
          inst s of subtracter
          s.x := x
-; CHECK: inst:s.x := reg:x
+         ;CHECK: s@<k:inst>.x := x@<k:reg>
          s.y := y
          x := s.z
       else :
@@ -39,11 +39,12 @@ circuit top :
       input b : UInt(16)
       output z : UInt
       inst i of gcd
-; CHECK: inst i of module:gcd
+      ;CHECK: inst i of gcd@<k:module>
       i.a := a
       i.b := b
       i.e := UInt(1)
       z := i.z
-; CHECK: port:z := inst:i.z
+      ;CHECK: z@<k:port> := i@<k:inst>.z
+; CHECK: Finished Resolve Kinds
 
 

@@ -3,6 +3,10 @@ defpackage firrtl.ir-utils :
    import verse
    import firrtl.ir2
 
+;============== DEBUG STUFF =============================
+
+public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port) -> False
+
 ;============== PRINTERS ===================================
 defmethod print (o:OutputStream, d:Direction) :
    print{o, _} $
@@ -56,6 +60,7 @@ defmethod print (o:OutputStream, e:Expression) :
          print(o, ")")
       (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ")"])
       (e:Null) : print-all(o, ["Null"])
+   print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :
    match(c) :
@@ -74,6 +79,8 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(["mem " name(c) " : " type(c)])
       (c:DefInstance) :
          print-all(["inst " name(c) " of " module(c)])
+      (c:DefNode) :
+         print-all(["node " name(c) " = " value(c)])      
       (c:DefAccessor) :
          print-all(["accessor " name(c) " = " source(c) "[" index(c) "]"])      
       (c:Conditionally) :
@@ -88,6 +95,7 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(o, [loc(c) " := " exp(c)])
       (c:EmptyStmt) :
          print(o, "skip")
+   print-debug(o,c)
 
 defmethod print (o:OutputStream, e:Element) :
    match(e) :
@@ -103,6 +111,7 @@ defmethod print (o:OutputStream, e:Element) :
          print-all(o, ["Instance(" module(e) ", "])
          print-all(o, join(ports(e), ", "))
          print(o, ")")
+   print-debug(o,e)
 
 defmethod print (o:OutputStream, p:WritePort) :
    print-all(o, [index(p) " => WritePort(" value(p) ", " enable(p) ")"])
@@ -123,9 +132,11 @@ defmethod print (o:OutputStream, t:Type) :
          print(o, "}")
       (t:VectorType) :
          print-all(o, [type(t) "[" size(t) "]"])
+   print-debug(o,t)
 
 defmethod print (o:OutputStream, p:Port) :
    print-all(o, [direction(p) " " name(p) " : " type(p)])
+   print-debug(o,p)
 
 defmethod print (o:OutputStream, m:Module) :
    println-all(o, ["module " name(m) " :"])
@@ -207,6 +218,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
                            key(entry) => map(f, value(entry))
          LetRec(entries*, body(c))                  
       (c:DefAccessor) : DefAccessor(name(c), f(source(c)), f(index(c)))
+      (c:DefNode) : DefNode(name(c), f(value(c)))
       (c:DefInstance) : DefInstance(name(c), f(module(c)))
       (c:Conditionally) : Conditionally(f(pred(c)), conseq(c), alt(c))
       (c:Connect) : Connect(f(loc(c)), f(exp(c)))

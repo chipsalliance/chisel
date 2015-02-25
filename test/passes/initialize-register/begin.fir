@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcd | tee %s.out | FileCheck %s 
+; RUN: firrtl %s abcd c | tee %s.out | FileCheck %s 
 
 ; CHECK: Initialize Registers
          circuit top :
@@ -9,16 +9,18 @@
 
                reg r1 : UInt
 ; CHECK:       wire [[R1:gen[0-9]*]] : UInt
-; CHECK:       n:[[R1]] := Null
+; CHECK:       [[R1]] := Null
 
                reg r2 : UInt
                r2.init := UInt(0)
 ; CHECK-NOT:   r2.init := UInt(0)
 ; CHECK:       wire [[R2:gen[0-9]*]] : UInt
-; CHECK-NOT:   reg:r2 := n:[[R2]]
-; CHECK:       n:[[R2]] := Null
-; CHECK:       n:[[R2]] := UInt(0)
+; CHECK-NOT:   r2 := [[R2]]
+; CHECK:       [[R2]] := Null
+; CHECK:       [[R2]] := UInt(0)
       
-; CHECK:       when port:reset :
-; CHECK-DAG:      reg:r1 := n:[[R1]]
-; CHECK-DAG:      reg:r2 := n:[[R2]]
+; CHECK:       when reset :
+; CHECK-DAG:      r1 := [[R1]]
+; CHECK-DAG:      r2 := [[R2]]
+
+; CHECK: Finished Initialize Registers

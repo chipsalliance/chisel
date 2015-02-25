@@ -112,6 +112,8 @@ rd.defsyntax firrtl :
          DefMemory(ut(name), type)
       (inst ?name:#symbol of ?module:#exp) :
          DefInstance(ut(name), module)
+      (node ?name:#symbol = ?exp:#exp) :
+         DefNode(ut(name), exp)
       (accessor ?name:#symbol = ?source:#exp (@get ?index:#exp)) :
          DefAccessor(ut(name), source, index)
       ((?body:#comm ...)) :

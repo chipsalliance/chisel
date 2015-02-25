@@ -1,9 +1,10 @@
-; RUN: firrtl %s abcde | tee %s.out | FileCheck %s
+; RUN: firrtl %s abcde ct | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Types
 circuit top :
    module top :
       wire io : {input x : UInt, output y : UInt}
-      wire a : UInt 
-      a := io.x
-
+      node a = io.x
+;CHECK: wire io : {input x : UInt@<t:UInt>, output y : UInt@<t:UInt>}@<t:{input x : UInt@<t:UInt>, output y : UInt@<t:UInt>}>
+;CHECK: node a = io@<t:{input x : UInt@<t:UInt>, output y : UInt@<t:UInt>}>.x@<t:UInt>
+;CHECK: Finished Infer Types
