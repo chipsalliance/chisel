@@ -11,7 +11,7 @@
  The hardest part to port will likely be the parser, but we hope to use an scala parser for the port.   
 
 #### Installation instructions (for Mac):    
-*Disclaimer*: This project is going through development stages so there is no guarantee anything works.
+*Disclaimer*: This project is going through development stages so there is no guarantee anything works.     
     `git clone https://github.com/ucb-bar/firrtl # Clone repository`     
     `make install # Stanza installation`     
     `pip install lit # Install lit (this assumes you have pip installed)`     
