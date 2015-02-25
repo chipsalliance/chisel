@@ -1,7 +1,5 @@
 
 TODO 
-   Update print defmethods to correctly print depending on global variables
-   Update tests to invoke compiler correctly, and fix matches
    Figure out how types and widths propogate for all updated primops
    Write infer-types pass
    Update spec
