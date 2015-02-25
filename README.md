@@ -18,8 +18,8 @@ Installation instructions:
 
 -- These installations are for a mac. Won't work for a Unix-based system.
   
-  `; Clone repository
-    git clone https://github.com/ucb-bar/firrtl
+  ; Clone repository
+    `git clone https://github.com/ucb-bar/firrtl`
 
   ; Stanza installation
     `make install
