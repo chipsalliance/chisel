@@ -1,33 +1,39 @@
 # firrtl
 Flexible Internal Representation for RTL
 
-General TODO:
-  Add instructions to install stanzam
-  Run directory structure past Patrick
-  Go over .gitignore
-  Write makefile for installation
-  Add instructions to compile firrtl
+Description:
 
-Work TODO:
-  Reimplement to-working-ir
-  Write printer function
-  Make compilation of txt file an argument, not hardcoded
+This repository contains the compiler for .firrtl files.
+It is currently being developed in stanza, with the end-goal to translate into scala for ease of other people to use.
+This decision was made for multiple reasons: 
+   (1) previous development had already been done in stanza
+   (2) most of the passes are relatively language independent
+   (3) stanza is easier to develop in than scala bc less-strict type system
+   (4) as a favor, its useful to develop in stanza to give Patrick some language tips :)
+The hardest part to port will likely be the parser, but we hope to use an scala parser for the port.
 
-Secondary TODO:
-  Need stanza version control - perhaps a sub-repo?
+Installation instructions:
 
-Install lit:
-  pip install lit
+-- Disclaimer: This project is going through development stages so there is no guarantee anything works.
 
-
-Stanza Installation:
+-- These installations are for a mac. Won't work for a Unix-based system.
+  `
+  ; Clone repository
   git clone https://github.com/ucb-bar/firrtl
-  cd src/lib 
-  unzip stanzam.zip
-  cd stanzam
-  sudo ./stanzam -platform os-x -install /usr/local/bin/stanzam
-
-
-
-
   
+  ; Stanza installation
+  make install
+
+  ; Install lit <- this assumes you have pip installed
+  pip install lit
+  
+  ; Build firrtl
+  make build
+
+  ; Run tests
+  make check
+
+  ; Build & test
+  make
+  `
+

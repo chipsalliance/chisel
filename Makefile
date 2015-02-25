@@ -6,16 +6,19 @@ firrtl_dir ?= $(root_dir)/src/main/stanza
 
 all: build check
 
-install-stanza:
+install:
+	cd src/lib && unzip stanzam.zip
+	cd stanzam && sudo ./stanzam -platform os-x -install /usr/local/bin/stanzam
 
-build: 
+build-deploy: 
 	cd $(firrtl_dir) && stanzam -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl
 
-# Runs single test
+build: 
+	cd $(firrtl_dir) && stanzam -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl
+
 check: 
 	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/
 
 clean:
-	rm -f $(test_dir)/passes/*/*.out
-	rm -f $(test_dir)/passes/*.out
+	rm -f $(test_dir)/*/*/*.out
 	rm -f $(test_dir)/*/*.out

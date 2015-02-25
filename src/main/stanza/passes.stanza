@@ -4,6 +4,7 @@ defpackage firrtl.passes :
   import firrtl.ir2
   import firrtl.ir-utils
   import widthsolver
+  import firrtl-main
 
 ;============== EXCEPTIONS =================================
 defclass PassException <: Exception
@@ -62,11 +63,10 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:StructuralMemKind) : "smem:"
 
 defmethod print (o:OutputStream, e:WRef) :
-   match(type(e)) :
-      (t:UnknownType) : 
-         print-all(o,[kind(e) name(e)])
-      (t) : 
-         print-all(o,[kind(e) name(e) ":" type(e)])
+   if PRINT-TYPES :
+      print-all(o,[kind(e) name(e) ":" type(e)])
+   else : 
+      print-all(o,[kind(e) name(e)])
 
 defmethod print (o:OutputStream, e:WField) :
    print-all(o,[exp(e) "." name(e)])

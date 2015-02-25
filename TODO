@@ -1,7 +1,10 @@
+
 TODO 
-Make stanza a git repo
-Write installation instructions for stanza
-Need 2 different prints, one with IR-internal information, and another that matches correct FIRRTL
+   Make stanza a git repo
+   Write installation instructions for stanza
+   Need 2 different prints, one with IR-internal information, and another that matches correct FIRRTL
+   Figure out how types and widths propogate for all updated primops
+   node not parsed for stmts
 
 Tests:
    Error if declare anything other than module in circuit

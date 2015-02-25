@@ -18,6 +18,8 @@ defpackage firrtl-main :
    import stanza.parser
    import firrtl.ir-utils
 
+public var PRINT-TYPES : True|False = false
+
 defn main () :
    val arg = commandline-arguments()
    val args = split(arg,' ')
@@ -27,4 +29,5 @@ defn main () :
    run-passes(c,to-list(args[2]))
 
 main()
+
 
