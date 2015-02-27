@@ -1,5 +1,5 @@
 \title{Specification for the FIRRTL Language: Version 0.1.0}
-\author{Patrick S. Li, Jonathan Bachrach}
+\author{Patrick S. Li, Adam M. Izraelevitz, Jonathan Bachrach}
 \documentclass[12pt]{article}
 \usepackage{listings}
 \usepackage{amsmath}
@@ -36,14 +36,15 @@
                 &\vert &\kws{SInt}(\pd{width})                                                        &\text{Signed Integer}\\
                 &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
                 &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
-\pd{field}      &=     &\pd{dir} \id \kw{:} \pd{type}                                                 &\text{Bundle Field}\\
+\pd{field}      &=     &\pd{orientation} \id \kw{:} \pd{type}                                                 &\text{Bundle Field}\\
+\pd{orientation}&=     &\kws{inward} \vert \kws{outward}                                                &\text{Inward/Outward}\\
 \pd{width}      &=     &\ints                                                                         &\text{Known Integer Width}\\
                 &\vert &\kw{?}                                                                        &\text{Unknown Width}\\
 \pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
                 &\vert &\info \kw{reg} \id \kw{:} \pd{type}                                           &\text{Register Declaration}\\
                 &\vert &\info \kw{mem} \id \kw{:} \pd{type}                                           &\text{Memory Declaration}\\
-                &\vert &\info \kw{node} \id \kw{:} \pd{type} = \pd{exp}                               &\text{Node Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{of} \id                                               &\text{Instance Declaration}\\
+                &\vert &\info \kw{node} \id  = \pd{exp}                               &\text{Node Declaration}\\
                 &\vert &\info \kw{accessor} \id = \pds{exp}[\pds{exp}]                                &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
                 &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
@@ -70,24 +71,33 @@
 \[
 \begin{array}{rll}
 \pd{primop}     &= \\
-                &\kws{add} \vert \kws{addu} \vert \kws{adds}                             &\text{Generic/Unsigned/Signed Add}\\
-\vert           &\kws{sub} \vert \kws{subu} \vert \kws{subs}                             &\text{Generic/Unsigned/Signed Subtract}\\
-\vert           &\kws{mul} \vert \kws{mulu} \vert \kws{muls}                             &\text{Generic/Unsigned/Signed Multiply}\\
-\vert           &\kws{div} \vert \kws{divu} \vert \kws{divs}                             &\text{Generic/Unsigned/Signed Divide}\\
-\vert           &\kws{mod} \vert \kws{modu} \vert \kws{mods}                             &\text{Generic/Unsigned/Signed Modulo}\\
-\vert           &\kws{add-mod} \vert \kws{add-modu} \vert \kws{add-mods}                 &\text{Generic/Unsigned/Signed Add Modulo}\\
-\vert           &\kws{sub-mod} \vert \kws{sub-modu} \vert \kws{sub-mods}                 &\text{Generic/Unsigned/Signed Subtract Modulo}\\
-\vert           &\kws{lt} \vert \kws{ltu} \vert \kws{lts}                                &\text{Generic/Unsigned/Signed Less Than}\\
-\vert           &\kws{leq} \vert \kws{lequ} \vert \kws{leqs}                             &\text{Generic/Unsigned/Signed Less or Equal}\\
-\vert           &\kws{gt} \vert \kws{gtu} \vert \kws{gts}                                &\text{Generic/Unsigned/Signed Greater Than}\\
-\vert           &\kws{geq} \vert \kws{gequ} \vert \kws{geqs}                             &\text{Generic/Unsigned/Signed Greater or Equal}\\
-\vert           &\kws{pad} \vert \kws{padu} \vert \kws{pads}                             &\text{Generic/Unsigned/Signed Pad to Length}\\
-\vert           &\kws{and} \vert \kws{or} \vert \kws{xor}                                &\text{Bitwise And/Or/Exclusive Or}\\
-\vert           &\kws{concat}                                                            &\text{Concatenation}\\
-\vert           &\kws{equal}                                                             &\text{Equal}\\
-\vert           &\kws{multiplex}                                                         &\text{Multiplex}\\
-\vert           &\kws{shl} \vert \kws{shr}                                               &\text{Shift Left/Right}\\
-\vert           &\kws{bit} \vert \kws{bits}                                              &\text{Single/Multiple Bit Extraction}\\
+                &\kws{add}        \vert \kws{add-uu}     \vert \kws{add-us}     \vert \kws{add-su}   \vert \kws{add-ss}     &\text{Unsigned/Signed Add}\\
+\vert           &\kws{sub}        \vert \kws{sub-uu}     \vert \kws{sub-us}     \vert \kws{sub-su}   \vert \kws{sub-ss}     &\text{Unsigned/Signed Subtract}\\
+\vert           &\kws{mul}        \vert \kws{mul-uu}     \vert \kws{mul-us}     \vert \kws{mul-su}   \vert \kws{mul-ss}     &\text{Unsigned/Signed Multiply}\\
+\vert           &\kws{div}        \vert \kws{div-uu}     \vert \kws{div-us}     \vert \kws{div-su}   \vert \kws{div-ss}     &\text{Unsigned/Signed Divide}\\
+\vert           &\kws{rem}        \vert \kws{rem-uu}     \vert \kws{rem-us}     \vert \kws{rem-su}   \vert \kws{rem-ss}     &\text{Unsigned/Signed Remainder}\\
+\vert           &\kws{quo}        \vert \kws{quo-uu}     \vert \kws{quo-us}     \vert \kws{quo-su}   \vert \kws{quo-ss}     &\text{Unsigned/Signed Quotient}\\
+\vert           &\kws{mod}        \vert \kws{mod-uu}     \vert \kws{mod-us}     \vert \kws{mod-su}   \vert \kws{mod-ss}     &\text{Unsigned/Signed Modulo}\\
+\vert           &\kws{add-mod}    \vert \kws{add-mod-uu} \vert \kws{add-mod-us} \vert                                       &\text{Unsigned/Signed Add Modulo}\\
+                &\kws{add-mod-su} \vert \kws{add-mod-ss}                                                                    &\\ 
+\vert           &\kws{sub-mod}    \vert \kws{sub-mod-uu} \vert \kws{sub-mod-us} \vert                                       &\text{Unsigned/Signed Subtract Modulo}\\
+                &\kws{sub-mod-su} \vert \kws{sub-mod-ss}                                                                    &\\
+\vert           &\kws{lt}         \vert \kws{lt-uu}      \vert \kws{lt-us}      \vert \kws{lt-su}    \vert \kws{lt-ss}      &\text{Unsigned/Signed Less Than}\\
+\vert           &\kws{leq}        \vert \kws{leq-uu}     \vert \kws{leq-us}     \vert \kws{leq-su}   \vert \kws{leq-ss}     &\text{Unsigned/Signed Less or Equal}\\
+\vert           &\kws{gt}         \vert \kws{gt-uu}      \vert \kws{gt-us}      \vert \kws{gt-su}    \vert \kws{gt-ss}      &\text{Unsigned/Signed Greater Than}\\
+\vert           &\kws{geq}        \vert \kws{geq-uu}     \vert \kws{geq-us}     \vert \kws{geq-su}   \vert \kws{geq-ss}     &\text{Unsigned/Signed Greater or Equal}\\
+\vert           &\kws{equal}      \vert \kws{equal-uu}   \vert \kws{equal-ss}   \vert \kws{equal-su} \vert \kws{equal-ss}   &\text{Unsigned/Signed Equal}\\
+\vert           &\kws{mux}        \vert \kws{mux-uu}     \vert \kws{mux-ss}                                                 &\text{Unsigned/Signed Multiplex}\\
+\vert           &\kws{pad}        \vert \kws{pad-u}      \vert \kws{pad-s}                                                  &\text{Unsigned/Signed Pad to Length}\\
+\vert           &\kws{as}         \vert \kws{as-u}       \vert \kws{as-s}                                                   &\text{Unsigned/Signed Type Cast}\\
+\vert           &\kws{shl}        \vert \kws{shl-u}      \vert \kws{shl-s}                                                  &\text{Unsigned/Signed Shift Left}\\
+\vert           &\kws{shr}        \vert \kws{shr-u}      \vert \kws{shr-s}                                                  &\text{Unsigned/Signed Shift Right}\\
+\vert           &\kws{convert}                                                                                              &\text{Unsigned to Signed Conversion}\\
+\vert           &\kws{and}                                                                                                  &\text{Unsigned And}\\
+\vert           &\kws{or}                                                                                                   &\text{Unsigned Or}\\
+\vert           &\kws{xor}                                                                                                  &\text{Unsigned Xor}\\
+\vert           &\kws{concat}                                                                                               &\text{Unsigned Concatenation}\\
+\vert           &\kws{bit} \vert \kws{bits}                                                                                 &\text{Single/Multiple Bit Extraction}\\
 \end{array}
 \]
 
