@@ -431,7 +431,7 @@ defn get-primop-rettype (e:DoPrim) -> Type :
       (e:SHIFT-LEFT-S-OP ) : s()
       (e:SHIFT-RIGHT-OP ) : u()
       (e:SHIFT-RIGHT-U-OP ) : u()
-      (e:SHIFT-RIGHT-S-OP ) : u()
+      (e:SHIFT-RIGHT-S-OP ) : s()
       (e:CONVERT-OP ) : u()
       (e:CONVERT-U-OP ) : u()
       (e:CONVERT-S-OP ) : u()
