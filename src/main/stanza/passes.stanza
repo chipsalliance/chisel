@@ -342,155 +342,173 @@ defn initialize-registers (c:Circuit) :
 ; Type errors are not checked in this pass, as this is
 ;   postponed for a later/earlier pass.
 
-defmethod type (v:UIntValue) :
-   UIntType(width(v))
-
-defmethod type (v:SIntValue) :
-   SIntType(width(v))
-
-defn put-type (e:Expression, t:Type) -> Expression :
+defn get-primop-rettype (e:DoPrim) -> Type :
+   defn u() = UIntType(UnknownWidth())
+   defn s() = SIntType(UnknownWidth())
    match(e) :
-      (e:WRef) : WRef(name(e), t, kind(e), dir(e))
-      (e:WField) : WField(exp(e), name(e), t, dir(e))
-      (e:WIndex) : WIndex(exp(e), value(e), t, dir(e))
-      (e:DoPrim) : DoPrim(op(e), args(e), consts(e), t)
-      (e:ReadPort) : ReadPort(mem(e), index(e), t)
-      (e) : e
+      (e:ADD-OP ) : u()
+      (e:ADD-UU-OP ) : u()
+      (e:ADD-US-OP ) : s()
+      (e:ADD-SU-OP ) : s()
+      (e:ADD-SS-OP ) : s()
+      (e:SUB-OP ) : s()
+      (e:SUB-UU-OP ) : s()
+      (e:SUB-US-OP ) : s()
+      (e:SUB-SU-OP ) : s()
+      (e:SUB-SS-OP ) : s()
+      (e:TIMES-OP ) : u()
+      (e:TIMES-UU-OP ) : u()
+      (e:TIMES-US-OP ) : s()
+      (e:TIMES-SU-OP ) : s()
+      (e:TIMES-SS-OP ) : s()
+      (e:DIVIDE-OP ) : u()
+      (e:DIVIDE-UU-OP ) : u()
+      (e:DIVIDE-US-OP ) : s()
+      (e:DIVIDE-SU-OP ) : s()
+      (e:DIVIDE-SS-OP ) : s()
+      (e:MOD-OP ) : u()
+      (e:MOD-UU-OP ) : s()
+      (e:MOD-US-OP ) : s()
+      (e:MOD-SU-OP ) : s()
+      (e:MOD-SS-OP ) : s()
+      (e:QUOTIENT-OP ) : u()
+      (e:QUOTIENT-UU-OP ) : u()
+      (e:QUOTIENT-US-OP ) : s()
+      (e:QUOTIENT-SU-OP ) : s()
+      (e:QUOTIENT-SS-OP ) : s()
+      (e:REMAINDER-OP ) : u()
+      (e:REMAINDER-UU-OP ) : u()
+      (e:REMAINDER-US-OP ) : s()
+      (e:REMAINDER-SU-OP ) : u()
+      (e:REMAINDER-SS-OP ) : s()
+      (e:ADD-WRAP-OP ) : u()
+      (e:ADD-WRAP-UU-OP ) : u()
+      (e:ADD-WRAP-US-OP ) : s()
+      (e:ADD-WRAP-SU-OP ) : s()
+      (e:ADD-WRAP-SS-OP ) : s()
+      (e:SUB-WRAP-OP ) : u()
+      (e:SUB-WRAP-UU-OP ) : u()
+      (e:SUB-WRAP-US-OP ) : s()
+      (e:SUB-WRAP-SU-OP ) : s()
+      (e:SUB-WRAP-SS-OP ) : s()
+      (e:LESS-OP ) : u()
+      (e:LESS-UU-OP ) : u()
+      (e:LESS-US-OP ) : u()
+      (e:LESS-SU-OP ) : u()
+      (e:LESS-SS-OP ) : u()
+      (e:LESS-EQ-OP ) : u()
+      (e:LESS-EQ-UU-OP ) : u()
+      (e:LESS-EQ-US-OP ) : u()
+      (e:LESS-EQ-SU-OP ) : u()
+      (e:LESS-EQ-SS-OP ) : u()
+      (e:GREATER-OP ) : u()
+      (e:GREATER-UU-OP ) : u()
+      (e:GREATER-US-OP ) : u()
+      (e:GREATER-SU-OP ) : u()
+      (e:GREATER-SS-OP ) : u()
+      (e:GREATER-EQ-OP ) : u()
+      (e:GREATER-EQ-UU-OP ) : u()
+      (e:GREATER-EQ-US-OP ) : u()
+      (e:GREATER-EQ-SU-OP ) : u()
+      (e:GREATER-EQ-SS-OP ) : u()
+      (e:EQUAL-OP ) : u()
+      (e:EQUAL-UU-OP ) : u()
+      (e:EQUAL-SS-OP ) : u()
+      (e:MULTIPLEX-OP ) : u()
+      (e:MULTIPLEX-UU-OP ) : u()
+      (e:MULTIPLEX-SS-OP ) : s()
+      (e:PAD-OP ) : u()
+      (e:PAD-U-OP ) : u()
+      (e:PAD-S-OP ) : s()
+      (e:AS-UINT-OP ) : u()
+      (e:AS-UINT-U-OP ) : u()
+      (e:AS-UINT-S-OP ) : u()
+      (e:AS-SINT-OP ) : s()
+      (e:AS-SINT-U-OP ) : s()
+      (e:AS-SINT-S-OP ) : s()
+      (e:SHIFT-LEFT-OP ) : u()
+      (e:SHIFT-LEFT-U-OP ) : u()
+      (e:SHIFT-LEFT-S-OP ) : s()
+      (e:SHIFT-RIGHT-OP ) : u()
+      (e:SHIFT-RIGHT-U-OP ) : u()
+      (e:SHIFT-RIGHT-S-OP ) : s()
+      (e:CONVERT-OP ) : u()
+      (e:CONVERT-U-OP ) : u()
+      (e:CONVERT-S-OP ) : u()
+      (e:BIT-AND-OP ) : u()
+      (e:BIT-OR-OP ) : u()
+      (e:BIT-XOR-OP ) : u()
+      (e:CONCAT-OP ) : u()
+      (e:BIT-SELECT-OP ) : u()
+      (e:BITS-SELECT-OP ) : u()
 
-defn lookup-port (ports: Streamable<Port>, port-name: Symbol) :
-   for port in ports find :
-      name(port) == port-name
+defn type (m:Module) -> Type : 
+   BundleType(ports(module(s)))
 
-defn infer (op:PrimOp, arg-types: List<Type>) -> Type :
-   defn wipe-width (t:Type) :
-      match(t) :
-         (t:UIntType) : UIntType(UnknownWidth())
-         (t:SIntType) : SIntType(UnknownWidth())
+defn get-type (b:Symbol,l:List<KeyValue<Symbol,Type>>) -> Type :
+   val contains? = for kv in l any? : b == key(kv)
+   if contains? :
+      label<Type> myret :
+         for kv in l do :
+            if b == key(kv) : myret(value(kv))
+   else : UnknownType()
 
-   defn arg0 () : wipe-width(arg-types[0])
-   defn arg1 () : wipe-width(arg-types[1])
-   ; TODO subtle, not entirely figured out
-   switch {op == _} :
-      ADD-OP : arg0()
-      ADD-MOD-OP : arg0()
-      SUB-OP : arg0()
-      SUB-MOD-OP : arg0()
-      TIMES-OP : arg0()
-      DIVIDE-OP : arg0()
-      MOD-OP : arg0()
-      SHIFT-LEFT-OP : arg0()
-      SHIFT-RIGHT-OP : arg0()
-      PAD-OP : arg0()
-      BIT-AND-OP : arg0()
-      BIT-OR-OP : arg0()
-      BIT-XOR-OP : arg0()
-      CONCAT-OP : arg0()
-      BIT-SELECT-OP : UIntType(UnknownWidth())
-      BITS-SELECT-OP : arg0()
-      MULTIPLEX-OP : arg0()
-      LESS-OP : UIntType(UnknownWidth())
-      LESS-EQ-OP : UIntType(UnknownWidth())
-      GREATER-OP : UIntType(UnknownWidth())
-      GREATER-EQ-OP : UIntType(UnknownWidth())
-      EQUAL-OP : UIntType(UnknownWidth())
+defn get-bundle-subtype (v:Type,s:Symbol) -> Type :
+   match(v) :
+      (v:BundleType) : 
+         val contains? = for p in ports(v) any? : name(p) == s
+         if contains? :
+            label<Type> myret :
+               for p in ports(v) do :
+                  if b == name(p) : myret(type(p))
+         else : UnknownType()
+      (v) : UnknownType()
 
-defn bundle-field-type (t:Type, n:Symbol) -> Type :
-   match(t) :
-      (t:BundleType) :
-         match(lookup-port(ports(t), n)) :
-            (p:Port) : type(p)
-            (p) : UnknownType()
-      (t) : UnknownType()
+defn get-vector-subtype (v:Type) -> Type :
+   match(v) :
+      (v:VectorType) : type(v)
+      (v) : UnknownType()
 
-defn vector-elem-type (t:Type) -> Type :
-   match(t) :
-      (t:VectorType) : type(t)
-      (t) : UnknownType()
+defn infer-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression :
+   match(map(infer-types{_,l},e)) :
+      (e:WRef) : WRef(name(e), get-type(name(e),l))
+      (e:WField) : WField(exp(e),name(e), get-bundle-subtype(type(exp(e))))
+      (e:WIndex) : WIndex(exp(e),name(e), get-vector-subtype(type(exp(e))))
+      (e:DoPrim) : DoPrim(op(e),args(e),consts(e),get-primop-rettype(e))
+      (e:ReadPort) : ReadPort(mem(e),index(e),get-vector-subtype(type(mem(e))))
+      (e:UIntValue|SIntValue|Null) : e
 
-;e is the environment that contains all definitions seen so far.
-defn infer (c:Stmt, e:List<KeyValue<Symbol, Type>>) -> [Stmt, List<KeyValue<Symbol,Type>>] :
-   defn infer-exp (e:Expression, env:List<KeyValue<Symbol,Type>>) :
-      match(map(infer-exp{_, env}, e)) :
-         (e:WRef) :
-            put-type(e, lookup!(env, name(e)))
-         (e:WField) :
-            put-type(e, bundle-field-type(type(exp(e)), name(e)))
-         (e:WIndex) :
-            put-type(e, vector-elem-type(type(exp(e))))
-         (e:UIntValue) : e
-         (e:SIntValue) : e
-         (e:DoPrim) :
-            put-type(e, infer(op(e), map(type, args(e))))
-         (e:ReadPort) :
-            put-type(e, vector-elem-type(type(mem(e))))
-         (e:Null) : e
+defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt, List<KeyValue<Symbol,Type>>]
+   match(map(infer-types{_,l},s)) :
+      (s:LetRec) : [s,l] ;TODO, this is wrong but we might be getting rid of letrecs?
+      (s:Begin) : 
+         var env = l
+         val body* = 
+            for s in body(s) map :
+               val [s*,l*] = infer-types(s,env)
+               env = l*
+               s*
+         [Begin(body*),env]
+      (s:DefWire|DefRegister|DefMemory) : [s,List(name(s) => type(s),l)]
+      (s:DefInstance) : [s, List(name(s) => type(module(s)),l)]
+      (s:DefNode) : [s, List(name(s) => type(value(s)),l)]
+      (s:WDefAccessor) : [s, List(name(s) => type(source(s)),l)]
+      (s:Conditionally|Connect|EmptyStmt) : [s,l]
 
-   defn element-type (e:Element, env:List<KeyValue<Symbol,Type>>) :
-      match(e) :
-         (e:Instance) :
-            val t = type(infer-exp(module(e), env))
-            match(t) :
-               (t:BundleType) :
-                  BundleType $ to-list $
-                  for p in ports(t) filter :
-                     direction(p) == OUTPUT
-               (t) : UnknownType()
-         (e) : type(e)
-
-   match(c) :
-      (c:LetRec) :
-         val e* = append(elem-types, e) where :
-            val elem-types =
-               for entry in entries(c) map :
-                  key(entry) => element-type(value(entry), e)
-         val c* = map(infer-exp{_, e*}, c)
-         val [body*, be] = infer(body(c*), e*)
-         [LetRec(entries(c*), body*), e]
-      (c) :
-         match(map(infer-exp{_, e}, c)) :
-            (c:DefWire) :
-               [c, List(entry, e)] where :
-                  val entry = name(c) => type(c)
-            (c:DefRegister) :
-               [c, List(entry, e)] where :
-                  val entry = name(c) => type(c)
-            (c:DefInstance) :
-               [c, List(entry, e)] where :
-                  val entry = name(c) => type(module(c))
-            (c:DefMemory) :
-               [c, List(entry, e)] where :
-                  val entry = name(c) => type(c)
-            (c:WDefAccessor) :
-               [c, List(entry, e)] where :
-                  val src-type = type(source(c))
-                  val entry = name(c) => vector-elem-type(src-type)
-            (c:Begin) :
-               var current-e: List<KeyValue<Symbol,Type>> = e
-               val body* = for c in body(c) map :
-                              val [c*, e*] = infer(c, current-e)
-                              current-e = e*
-                              c*
-               [Begin(body*), current-e]
-            (c) :
-               defn infer-comm (c:Stmt) :
-                  val [c* e*] = infer(c, e)
-                  c*
-               val c* = map(infer-comm, c)
-               [c*, e]
-
-defn infer (m:Module, e:List<KeyValue<Symbol, Type>>) -> Module :
-   val env = append{_, e} $
+defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
+   val ptypes = 
       for p in ports(m) map :
          name(p) => type(p)
-   val [body*, e*] = infer(body(m), env)
-   Module(name(m), ports(m), body*)
+   infer-types(body(m),append(ptypes, l))
 
 defn infer-types (c:Circuit) -> Circuit :
-   val env =
+   val l = 
       for m in modules(c) map :
          name(m) => BundleType(ports(m))
-   Circuit(map(infer{_, env}, modules(c)),
-           main(c))
+   Circuit{ _, main(c) } $ 
+      for m in modules(c) map :
+         infer-types(m,l)
+         
 
 ;============= INFER DIRECTIONS ============================
 defn flip (d:Direction) :
