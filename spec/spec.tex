@@ -575,9 +575,9 @@ The resultant value of a divide operation has width equal to the width of the di
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
 \kws{mod}(   \pds{op1}, \pds{op2}) & UInt|SInt & width(op1)|width(op2) - 1  \\
 \kws{mod-uu}(\pds{op1}, \pds{op2}) &   UInt & width(op2)     \\
-\kws{mod-us}(\pds{op1}, \pds{op2}) &   SInt & width(op2) - 1?  \\
+\kws{mod-us}(\pds{op1}, \pds{op2}) &   UInt & width(op2) - 1?  \\
 \kws{mod-su}(\pds{op1}, \pds{op2}) &   UInt & width(op2)     \\
-\kws{mod-ss}(\pds{op1}, \pds{op2}) &   SInt & width(op2) - 1?  \\
+\kws{mod-ss}(\pds{op1}, \pds{op2}) &   UInt & width(op2) - 1?  \\
 \end{array}
 \]
 
@@ -671,9 +671,9 @@ The resultant value is a single-bit unsigned integer.
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{equal}  (\pds{op1}, \pds{op2})     & UInt|SInt & 1 \\
+\kws{equal}  (\pds{op1}, \pds{op2})     & UInt & 1 \\
 \kws{equal-u}(\pds{op1}, \pds{op2})     & UInt & 1 \\
-\kws{equal-s}(\pds{op1}, \pds{op2})     & SInt & 1 \\
+\kws{equal-s}(\pds{op1}, \pds{op2})     & UInt & 1 \\
 \end{array}
 \]
 The equality comparison operator accepts either two unsigned or two signed integers and checks whether they are bitwise equivalent.
@@ -760,6 +760,20 @@ The shift right operation accepts either an unsigned or a signed integer, plus a
 The resultant value has the same type as the operand.
 The shift amount must be less than or equal to the width of the operand.
 The output of a shift right operation is equal to the original signal with the least significant $num$ bits truncated, where $num$ is the shift amount.
+
+\subsection{Convert to Signed}
+\[
+\begin{array}{rll}
+\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
+\pd{convert}        & SInt & width(op)|width(op) + 1 \\
+\pd{convert-u}      & SInt & width(op) + 1 \\
+\pd{convert-s}      & SInt & width(op) \\
+\end{array}
+\]
+The convert operation accepts either an unsigned or a signed integer.
+The resultant value is always a signed integer.
+The output of a convert operation will be the same arithmetic value as the input value.
+The output width is the same as the input width if the input is signed, and increased by one if the input is unsigned.
 
 \subsection{Bitwise Operations}
 \[

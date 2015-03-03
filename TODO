@@ -2,6 +2,7 @@
 TODO 
    Figure out how types and widths propogate for all updated primops
    Write infer-types pass
+   Remove letrec. Add to expressions: Register(input,en), ReadPort(mem,index,enable), WritePort(mem,index,enable)
    Update spec
       change concrete syntactical names of structural elements
       change direction names for bundle fields
@@ -21,6 +22,7 @@ TODO
       Subtracting two unsigned numbers… Should talk to a math guy to figure it out
       What are shift left and shift right operations? HW doesn’t have these concepts. Need justification.
       What is lowered form? What is it for?
+
 
 
 Tests:
