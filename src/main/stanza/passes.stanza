@@ -343,107 +343,119 @@ defn initialize-registers (c:Circuit) :
 ;   postponed for a later/earlier pass.
 
 defn get-primop-rettype (e:DoPrim) -> Type :
-   defn u() = UIntType(UnknownWidth())
-   defn s() = SIntType(UnknownWidth())
-   match(e) :
-      (e:ADD-OP ) : u()
-      (e:ADD-UU-OP ) : u()
-      (e:ADD-US-OP ) : s()
-      (e:ADD-SU-OP ) : s()
-      (e:ADD-SS-OP ) : s()
-      (e:SUB-OP ) : s()
-      (e:SUB-UU-OP ) : s()
-      (e:SUB-US-OP ) : s()
-      (e:SUB-SU-OP ) : s()
-      (e:SUB-SS-OP ) : s()
-      (e:TIMES-OP ) : u()
-      (e:TIMES-UU-OP ) : u()
-      (e:TIMES-US-OP ) : s()
-      (e:TIMES-SU-OP ) : s()
-      (e:TIMES-SS-OP ) : s()
-      (e:DIVIDE-OP ) : u()
-      (e:DIVIDE-UU-OP ) : u()
-      (e:DIVIDE-US-OP ) : s()
-      (e:DIVIDE-SU-OP ) : s()
-      (e:DIVIDE-SS-OP ) : s()
-      (e:MOD-OP ) : u()
-      (e:MOD-UU-OP ) : s()
-      (e:MOD-US-OP ) : s()
-      (e:MOD-SU-OP ) : s()
-      (e:MOD-SS-OP ) : s()
-      (e:QUOTIENT-OP ) : u()
-      (e:QUOTIENT-UU-OP ) : u()
-      (e:QUOTIENT-US-OP ) : s()
-      (e:QUOTIENT-SU-OP ) : s()
-      (e:QUOTIENT-SS-OP ) : s()
-      (e:REMAINDER-OP ) : u()
-      (e:REMAINDER-UU-OP ) : u()
-      (e:REMAINDER-US-OP ) : s()
-      (e:REMAINDER-SU-OP ) : u()
-      (e:REMAINDER-SS-OP ) : s()
-      (e:ADD-WRAP-OP ) : u()
-      (e:ADD-WRAP-UU-OP ) : u()
-      (e:ADD-WRAP-US-OP ) : s()
-      (e:ADD-WRAP-SU-OP ) : s()
-      (e:ADD-WRAP-SS-OP ) : s()
-      (e:SUB-WRAP-OP ) : u()
-      (e:SUB-WRAP-UU-OP ) : u()
-      (e:SUB-WRAP-US-OP ) : s()
-      (e:SUB-WRAP-SU-OP ) : s()
-      (e:SUB-WRAP-SS-OP ) : s()
-      (e:LESS-OP ) : u()
-      (e:LESS-UU-OP ) : u()
-      (e:LESS-US-OP ) : u()
-      (e:LESS-SU-OP ) : u()
-      (e:LESS-SS-OP ) : u()
-      (e:LESS-EQ-OP ) : u()
-      (e:LESS-EQ-UU-OP ) : u()
-      (e:LESS-EQ-US-OP ) : u()
-      (e:LESS-EQ-SU-OP ) : u()
-      (e:LESS-EQ-SS-OP ) : u()
-      (e:GREATER-OP ) : u()
-      (e:GREATER-UU-OP ) : u()
-      (e:GREATER-US-OP ) : u()
-      (e:GREATER-SU-OP ) : u()
-      (e:GREATER-SS-OP ) : u()
-      (e:GREATER-EQ-OP ) : u()
-      (e:GREATER-EQ-UU-OP ) : u()
-      (e:GREATER-EQ-US-OP ) : u()
-      (e:GREATER-EQ-SU-OP ) : u()
-      (e:GREATER-EQ-SS-OP ) : u()
-      (e:EQUAL-OP ) : u()
-      (e:EQUAL-UU-OP ) : u()
-      (e:EQUAL-SS-OP ) : u()
-      (e:MULTIPLEX-OP ) : u()
-      (e:MULTIPLEX-UU-OP ) : u()
-      (e:MULTIPLEX-SS-OP ) : s()
-      (e:PAD-OP ) : u()
-      (e:PAD-U-OP ) : u()
-      (e:PAD-S-OP ) : s()
-      (e:AS-UINT-OP ) : u()
-      (e:AS-UINT-U-OP ) : u()
-      (e:AS-UINT-S-OP ) : u()
-      (e:AS-SINT-OP ) : s()
-      (e:AS-SINT-U-OP ) : s()
-      (e:AS-SINT-S-OP ) : s()
-      (e:SHIFT-LEFT-OP ) : u()
-      (e:SHIFT-LEFT-U-OP ) : u()
-      (e:SHIFT-LEFT-S-OP ) : s()
-      (e:SHIFT-RIGHT-OP ) : u()
-      (e:SHIFT-RIGHT-U-OP ) : u()
-      (e:SHIFT-RIGHT-S-OP ) : s()
-      (e:CONVERT-OP ) : u()
-      (e:CONVERT-U-OP ) : u()
-      (e:CONVERT-S-OP ) : u()
-      (e:BIT-AND-OP ) : u()
-      (e:BIT-OR-OP ) : u()
-      (e:BIT-XOR-OP ) : u()
-      (e:CONCAT-OP ) : u()
-      (e:BIT-SELECT-OP ) : u()
-      (e:BITS-SELECT-OP ) : u()
+   defn u () : UIntType(UnknownWidth())
+   defn s () : SIntType(UnknownWidth())
+   defn u-and (op1:Expression,op2:Expression) : 
+     if type(op1) typeof UIntType and type(op2) typeof UIntType :
+        UIntType(UnknownWidth())
+     else : 
+        SIntType(UnknownWidth())
+   defn of-type (op:Expression) :
+     if type(op) typeof UIntType :
+        UIntType(UnknownWidth())
+     if type(op) typeof SIntType :
+        SIntType(UnknownWidth())
+     else : UnknownType()
+
+   switch {e == _} :
+      ADD-OP : u-and(args(e)[0],args(e)[1])
+      ADD-UU-OP : u()
+      ADD-US-OP : s()
+      ADD-SU-OP : s()
+      ADD-SS-OP : s()
+      SUB-OP : s()
+      SUB-UU-OP : s()
+      SUB-US-OP : s()
+      SUB-SU-OP : s()
+      SUB-SS-OP : s()
+      MUL-OP : u-and(args(e)[0],args(e)[1])
+      MUL-UU-OP : u()
+      MUL-US-OP : s()
+      MUL-SU-OP : s()
+      MUL-SS-OP : s()
+      DIV-OP : u-and(args(e)[0],args(e)[1])
+      DIV-UU-OP : u()
+      DIV-US-OP : s()
+      DIV-SU-OP : s()
+      DIV-SS-OP : s()
+      MOD-OP : u()
+      MOD-UU-OP : u()
+      MOD-US-OP : u()
+      MOD-SU-OP : u()
+      MOD-SS-OP : u()
+      QUO-OP : u-and(args(e)[0],args(e)[1])
+      QUO-UU-OP : u()
+      QUO-US-OP : s()
+      QUO-SU-OP : s()
+      QUO-SS-OP : s()
+      REM-OP : of-type(args(e)[1])
+      REM-UU-OP : u()
+      REM-US-OP : s()
+      REM-SU-OP : u()
+      REM-SS-OP : s()
+      ADD-WRAP-OP : u-and(args(e)[0],args(e)[1])
+      ADD-WRAP-UU-OP : u()
+      ADD-WRAP-US-OP : s()
+      ADD-WRAP-SU-OP : s()
+      ADD-WRAP-SS-OP : s()
+      SUB-WRAP-OP : u-and(args(e)[0],args(e)[1])
+      SUB-WRAP-UU-OP : u()
+      SUB-WRAP-US-OP : s()
+      SUB-WRAP-SU-OP : s()
+      SUB-WRAP-SS-OP : s()
+      LESS-OP : u()
+      LESS-UU-OP : u()
+      LESS-US-OP : u()
+      LESS-SU-OP : u()
+      LESS-SS-OP : u()
+      LESS-EQ-OP : u()
+      LESS-EQ-UU-OP : u()
+      LESS-EQ-US-OP : u()
+      LESS-EQ-SU-OP : u()
+      LESS-EQ-SS-OP : u()
+      GREATER-OP : u()
+      GREATER-UU-OP : u()
+      GREATER-US-OP : u()
+      GREATER-SU-OP : u()
+      GREATER-SS-OP : u()
+      GREATER-EQ-OP : u()
+      GREATER-EQ-UU-OP : u()
+      GREATER-EQ-US-OP : u()
+      GREATER-EQ-SU-OP : u()
+      GREATER-EQ-SS-OP : u()
+      EQUAL-OP : u()
+      EQUAL-UU-OP : u()
+      EQUAL-SS-OP : u()
+      MUX-OP : of-type(args(e)[0])
+      MUX-UU-OP : u()
+      MUX-SS-OP : s()
+      PAD-OP : of-type(args(e)[0])
+      PAD-U-OP : u()
+      PAD-S-OP : s()
+      AS-UINT-OP : u()
+      AS-UINT-U-OP : u()
+      AS-UINT-S-OP : u()
+      AS-SINT-OP : s()
+      AS-SINT-U-OP : s()
+      AS-SINT-S-OP : s()
+      SHIFT-LEFT-OP : of-type(args(e)[0])
+      SHIFT-LEFT-U-OP : u()
+      SHIFT-LEFT-S-OP : s()
+      SHIFT-RIGHT-OP : of-type(args(e)[0])
+      SHIFT-RIGHT-U-OP : u()
+      SHIFT-RIGHT-S-OP : s()
+      CONVERT-OP : s()
+      CONVERT-U-OP : s()
+      CONVERT-S-OP : s()
+      BIT-AND-OP : u()
+      BIT-OR-OP : u()
+      BIT-XOR-OP : u()
+      CONCAT-OP : u()
+      BIT-SELECT-OP : u()
+      BITS-SELECT-OP : u()
 
 defn type (m:Module) -> Type : 
-   BundleType(ports(module(s)))
+   BundleType(ports(m))
 
 defn get-type (b:Symbol,l:List<KeyValue<Symbol,Type>>) -> Type :
    val contains? = for kv in l any? : b == key(kv)
@@ -451,9 +463,10 @@ defn get-type (b:Symbol,l:List<KeyValue<Symbol,Type>>) -> Type :
       label<Type> myret :
          for kv in l do :
             if b == key(kv) : myret(value(kv))
+         myret(UnknownType())
    else : UnknownType()
 
-defn get-bundle-subtype (v:Type,s:Symbol) -> Type :
+defn bundle-field-type (v:Type,s:Symbol) -> Type :
    match(v) :
       (v:BundleType) : 
          val contains? = for p in ports(v) any? : name(p) == s
@@ -471,15 +484,15 @@ defn get-vector-subtype (v:Type) -> Type :
 
 defn infer-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression :
    match(map(infer-types{_,l},e)) :
-      (e:WRef) : WRef(name(e), get-type(name(e),l))
-      (e:WField) : WField(exp(e),name(e), get-bundle-subtype(type(exp(e))))
-      (e:WIndex) : WIndex(exp(e),name(e), get-vector-subtype(type(exp(e))))
+      (e:WRef) : WRef(name(e), get-type(name(e),l),kind(e),dir(e))
+      (e:WField) : WField(exp(e),name(e), bundle-field-type(type(exp(e)),name(e)),dir(e))
+      (e:WIndex) : WIndex(exp(e),value(e), get-vector-subtype(type(exp(e))),dir(e))
       (e:DoPrim) : DoPrim(op(e),args(e),consts(e),get-primop-rettype(e))
       (e:ReadPort) : ReadPort(mem(e),index(e),get-vector-subtype(type(mem(e))))
       (e:UIntValue|SIntValue|Null) : e
 
-defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt, List<KeyValue<Symbol,Type>>]
-   match(map(infer-types{_,l},s)) :
+defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt, List<KeyValue<Symbol,Type>>] :
+   match(s) :
       (s:LetRec) : [s,l] ;TODO, this is wrong but we might be getting rid of letrecs?
       (s:Begin) : 
          var env = l
@@ -489,17 +502,24 @@ defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt, List<KeyValue
                env = l*
                s*
          [Begin(body*),env]
-      (s:DefWire|DefRegister|DefMemory) : [s,List(name(s) => type(s),l)]
+      (s:DefWire) : [s,List(name(s) => type(s),l)]
+      (s:DefRegister) : [s,List(name(s) => type(s),l)]
+      (s:DefMemory) : [s,List(name(s) => type(s),l)]
       (s:DefInstance) : [s, List(name(s) => type(module(s)),l)]
       (s:DefNode) : [s, List(name(s) => type(value(s)),l)]
       (s:WDefAccessor) : [s, List(name(s) => type(source(s)),l)]
-      (s:Conditionally|Connect|EmptyStmt) : [s,l]
+      (s:Conditionally) : 
+        val [s*,l*] = infer-types(conseq(s),l)
+        val [s**,l**] = infer-types(alt(s),l)
+        [Conditionally(pred(s),s*,s**),l]
+      (s:Connect|EmptyStmt) : [s,l]
 
 defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
    val ptypes = 
       for p in ports(m) map :
          name(p) => type(p)
-   infer-types(body(m),append(ptypes, l))
+   val [s,l*] = infer-types(body(m),append(ptypes, l))
+   Module(name(m),ports(m),s)
 
 defn infer-types (c:Circuit) -> Circuit :
    val l = 
@@ -520,6 +540,10 @@ defn flip (d:Direction) :
 defn times (d1:Direction, d2:Direction) :
    if d1 == INPUT : flip(d2)
    else : d2
+
+defn lookup-port (ports: Streamable<Port>, port-name: Symbol) :
+   for port in ports find :
+      name(port) == port-name
 
 defn bundle-field-dir (t:Type, n:Symbol) -> Direction :
    match(t) :
@@ -1044,7 +1068,7 @@ defn expand-whens (m:Module) :
             exp(sv)
          (sv:WhenValue) :
             defn multiplex-exp (pred:Expression, conseq:Expression, alt:Expression) :
-               DoPrim(MULTIPLEX-OP, list(pred, conseq, alt), List(), type(conseq))
+               DoPrim(MUX-OP, list(pred, conseq, alt), List(), type(conseq))
             multiplex-exp(pred(sv),
                           convert-symbolic(key, conseq(sv))
                           convert-symbolic(key, alt(sv)))
@@ -1229,11 +1253,11 @@ defn primop-width (op:PrimOp, ws:List<Width>, ints:List<Int>) -> Exp :
       
    switch {op == _} :
       ADD-OP : wmax-inc(ws[0], ws[1])
-      ADD-MOD-OP : wmax(ws[0], ws[1])
+      ADD-WRAP-OP : wmax(ws[0], ws[1])
       SUB-OP : wmax-inc(ws[0], ws[1])
-      SUB-MOD-OP : wmax(ws[0], ws[1])
-      TIMES-OP : wplus(ws[0], ws[1])
-      DIVIDE-OP : wminus(ws[0], ws[1])
+      SUB-WRAP-OP : wmax(ws[0], ws[1])
+      MUL-OP : wplus(ws[0], ws[1])
+      DIV-OP : wminus(ws[0], ws[1])
       MOD-OP : to-exp(ws[1])
       SHIFT-LEFT-OP : wplus(ws[0], ints[0])
       SHIFT-RIGHT-OP : wminus(ws[0], ints[0])
@@ -1244,7 +1268,7 @@ defn primop-width (op:PrimOp, ws:List<Width>, ints:List<Int>) -> Exp :
       CONCAT-OP : wplus(ws[0], ints[0])
       BIT-SELECT-OP : ELit(1)
       BITS-SELECT-OP : ELit(ints[0])
-      MULTIPLEX-OP : wmax(ws[1], ws[2])
+      MUX-OP : wmax(ws[1], ws[2])
       LESS-OP : ELit(1)
       LESS-EQ-OP : ELit(1)
       GREATER-OP : ELit(1)
@@ -1489,7 +1513,7 @@ defn pad-widths (c:Circuit) :
             if contains?([BIT-AND-OP, BIT-OR-OP, BIT-XOR-OP, EQUAL-OP], op(e)) :
                val args* = match-widths(args(e))
                DoPrim(op(e), args*, consts(e), type(e))
-            else if op(e) == MULTIPLEX-OP :
+            else if op(e) == MUX-OP :
                val args* = List(head(args(e)), match-widths(tail(args(e))))
                DoPrim(op(e), args*, consts(e), type(e))
             else :
@@ -1822,8 +1846,8 @@ defn inline-instances (c:Circuit) :
 ;;      ADD-MOD-OP :     "add"
 ;;      MINUS-OP :       "sub"
 ;;      SUB-MOD-OP :     "sub"
-;;      TIMES-OP :       "mul" ;; todo: signed version
-;;      DIVIDE-OP :      "div" ;; todo: signed version
+;;      MUL-OP :       "mul" ;; todo: signed version
+;;      DIV-OP :      "div" ;; todo: signed version
 ;;      MOD-OP :         "mod" ;; todo: signed version
 ;;      SHIFT-LEFT-OP :  "lsh" ;; todo: signed version
 ;;      SHIFT-RIGHT-OP : "rsh"
@@ -1839,7 +1863,7 @@ defn inline-instances (c:Circuit) :
 ;;      GREATER-OP :     "gt"  ;; todo: swap args
 ;;      GREATER-EQ-OP :  "gte" ;; todo: signed version
 ;;      EQUAL-OP :       "eq"
-;;      MULTIPLEX-OP :   "mux"
+;;      MUX-OP :   "mux"
 ;;      else : error $ string-join $
 ;;             ["Unable to print Primop: " op]
 ;;
