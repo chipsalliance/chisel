@@ -13,7 +13,7 @@ defmethod print (o:OutputStream, d:Direction) :
    switch {d == _} :
       INPUT : "input"
       OUTPUT: "output"
-      UNKNOWN-DIR : "unknown"
+      ;UNKNOWN-DIR : "unknown"
 
 defmethod print (o:OutputStream, w:Width) :
    print{o, _} $
@@ -123,7 +123,7 @@ defmethod print (o:OutputStream, op:PrimOp) :
 defmethod print (o:OutputStream, e:Expression) :
    match(e) :
       (e:Ref) : print(o, name(e))
-      (e:Field) : print-all(o, [exp(e) "." name(e)])
+      (e:Subfield) : print-all(o, [exp(e) "." name(e)])
       (e:Index) : print-all(o, [exp(e) "." value(e)])
       (e:UIntValue) : print-all(o, ["UInt(" value(e) ")"])
       (e:SIntValue) : print-all(o, ["SInt(" value(e) ")"])
@@ -263,7 +263,7 @@ public defn map<?T> (f: Type -> Type, t:?T&Type) -> T :
 public defmulti map<?T> (f: Expression -> Expression, e:?T&Expression) -> T 
 defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
    match(e) :
-      (e:Field) : Field(f(exp(e)), name(e), type(e)) 
+      (e:Subfield) : Subfield(f(exp(e)), name(e), type(e)) 
       (e:Index) : Index(f(exp(e)), value(e), type(e))
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
       (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e))

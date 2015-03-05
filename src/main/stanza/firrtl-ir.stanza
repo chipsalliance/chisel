@@ -5,7 +5,11 @@ defpackage firrtl.ir2 :
 public definterface Direction
 public val INPUT = new Direction
 public val OUTPUT = new Direction
-public val UNKNOWN-DIR = new Direction
+
+definterface Gender
+public val MALE = new Gender
+public val FEMALE = new Gender
+
 
 public definterface Width
 public defstruct UnknownWidth <: Width
@@ -115,7 +119,7 @@ public defmulti type (e:Expression) -> Type
 public defstruct Ref <: Expression :
    name: Symbol
    type: Type [multi => false]
-public defstruct Field <: Expression :
+public defstruct Subfield <: Expression :
    exp: Expression
    name: Symbol
    type: Type [multi => false]
@@ -202,11 +206,16 @@ public defstruct UIntType <: Type :
 public defstruct SIntType <: Type :
    width: Width
 public defstruct BundleType <: Type :
-   ports: List<Port>
+   ports: List<Field>
 public defstruct VectorType <: Type :
    type: Type
    size: Int
 public defstruct UnknownType <: Type
+
+public defstruct Field :
+   name: Symbol
+   gender: Gender
+   type: Type
 
 public defstruct Port :
    name: Symbol

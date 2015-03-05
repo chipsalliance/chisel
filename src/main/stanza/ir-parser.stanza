@@ -155,7 +155,7 @@ rd.defsyntax firrtl :
       (?x:#exp . ?f:#int) :
          Index(x, ut(f), UnknownType())
       (?x:#exp . ?f:#symbol) :
-         Field(x, ut(f), UnknownType())
+         Subfield(x, ut(f), UnknownType())
       (?x:#exp-form) :
          x
 
