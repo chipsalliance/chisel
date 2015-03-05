@@ -6,7 +6,7 @@
                input a : UInt(16)
                input b : UInt(16)
                output z : UInt
-               when greater(1, 2) :
+               when gt(1, 2) :
                   reg r1: UInt
                   r1.init := UInt(12)
 ; CHECK:          wire [[R1:gen[0-9]*]] : UInt

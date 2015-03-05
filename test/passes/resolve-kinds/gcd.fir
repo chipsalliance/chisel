@@ -6,8 +6,8 @@ circuit top :
       input x : UInt
       input y : UInt
       output z : UInt
-      z := sub-mod(x, y)
-      ;CHECK: z@<k:port> := sub-mod(x@<k:port>, y@<k:port>)
+      z := sub-wrap(x, y)
+      ;CHECK: z@<k:port> := sub-wrap(x@<k:port>, y@<k:port>)
    module gcd :
       input a : UInt(16)
       input b : UInt(16)
@@ -18,7 +18,7 @@ circuit top :
       reg y : UInt
       x.init := UInt(0)
       y.init := UInt(42)
-      when greater(x, y) :
+      when gt(x, y) :
          inst s of subtracter
          s.x := x
          ;CHECK: s@<k:inst>.x := x@<k:reg>

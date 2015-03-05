@@ -1,7 +1,8 @@
-src/*.DS_STORE
-src/*/*.DS_STORE
-src/*/*/*.DS_STORE
-src/*/*/*/*.DS_STORE
+.DS_STORE
+*/*.DS_STORE
+*/*/*.DS_STORE
+*/*/*/*.DS_STORE
+*/*/*/*/*.DS_STORE
 *.swp
 */*.swp
 */*/*.swp

@@ -54,11 +54,15 @@ defn unwrap-prefix-form (form) :
 
 ;======= Split Dots ============
 defn split-dots (forms:List) :
+   defn to-form (x:String) :
+      val num? = for c in x all? :
+                    c >= '0' and c <= '9'
+      to-int(x) when num? else to-symbol(x)              
    defn split (form) :
       match(ut(form)) :
          (f:Symbol) :
             val fstr = to-string(f)
-            if contains?(fstr, '.') : map(to-symbol, split-string(fstr, "."))
+            if contains?(fstr, '.') : map(to-form, split-string(fstr, "."))
             else : list(form)
          (f:List) :
             list(map-append(split, f))
@@ -148,10 +152,10 @@ rd.defsyntax firrtl :
          ut(name) => Instance(UnknownType(), module, ports)
 
    defrule exp :
-      (?x:#exp . ?f:#symbol) :
-         Field(x, ut(f), UnknownType())
       (?x:#exp . ?f:#int) :
          Index(x, ut(f), UnknownType())
+      (?x:#exp . ?f:#symbol) :
+         Field(x, ut(f), UnknownType())
       (?x:#exp-form) :
          x
 
@@ -201,26 +205,26 @@ rd.defsyntax firrtl :
    operators[`sub-wrap-us] = SUB-WRAP-US-OP
    operators[`sub-wrap-su] = SUB-WRAP-SU-OP
    operators[`sub-wrap-ss] = SUB-WRAP-SS-OP
-   operators[`less] = LESS-OP
-   operators[`less-uu] = LESS-UU-OP
-   operators[`less-us] = LESS-US-OP
-   operators[`less-su] = LESS-SU-OP
-   operators[`less-ss] = LESS-SS-OP
-   operators[`less-eq] = LESS-EQ-OP
-   operators[`less-eq-uu] = LESS-EQ-UU-OP
-   operators[`less-eq-us] = LESS-EQ-US-OP
-   operators[`less-eq-su] = LESS-EQ-SU-OP
-   operators[`less-eq-ss] = LESS-EQ-SS-OP
-   operators[`greater] = GREATER-OP
-   operators[`greater-uu] = GREATER-UU-OP
-   operators[`greater-us] = GREATER-US-OP
-   operators[`greater-su] = GREATER-SU-OP
-   operators[`greater-ss] = GREATER-SS-OP
-   operators[`greater-eq] = GREATER-EQ-OP
-   operators[`greater-eq-uu] = GREATER-EQ-UU-OP
-   operators[`greater-eq-us] = GREATER-EQ-US-OP
-   operators[`greater-eq-su] = GREATER-EQ-SU-OP
-   operators[`greater-eq-ss] = GREATER-EQ-SS-OP
+   operators[`lt] = LESS-OP
+   operators[`lt-uu] = LESS-UU-OP
+   operators[`lt-us] = LESS-US-OP
+   operators[`lt-su] = LESS-SU-OP
+   operators[`lt-ss] = LESS-SS-OP
+   operators[`leq] = LESS-EQ-OP
+   operators[`leq-uu] = LESS-EQ-UU-OP
+   operators[`leq-us] = LESS-EQ-US-OP
+   operators[`leq-su] = LESS-EQ-SU-OP
+   operators[`leq-ss] = LESS-EQ-SS-OP
+   operators[`gt] = GREATER-OP
+   operators[`gt-uu] = GREATER-UU-OP
+   operators[`gt-us] = GREATER-US-OP
+   operators[`gt-su] = GREATER-SU-OP
+   operators[`gt-ss] = GREATER-SS-OP
+   operators[`geq] = GREATER-EQ-OP
+   operators[`geq-uu] = GREATER-EQ-UU-OP
+   operators[`geq-us] = GREATER-EQ-US-OP
+   operators[`geq-su] = GREATER-EQ-SU-OP
+   operators[`geq-ss] = GREATER-EQ-SS-OP
    operators[`equal] = EQUAL-OP
    operators[`equal-uu] = EQUAL-UU-OP
    operators[`equal-ss] = EQUAL-SS-OP
@@ -236,15 +240,15 @@ rd.defsyntax firrtl :
    operators[`as-SInt] = AS-SINT-OP
    operators[`as-SInt-u] = AS-SINT-U-OP
    operators[`as-SInt-s] = AS-SINT-S-OP
-   operators[`shift-left] = SHIFT-LEFT-OP
-   operators[`shift-left-u] = SHIFT-LEFT-U-OP
-   operators[`shift-left-s] = SHIFT-LEFT-S-OP
-   operators[`shift-right] = SHIFT-RIGHT-OP
-   operators[`shift-right-u] = SHIFT-RIGHT-U-OP
-   operators[`shift-right-s] = SHIFT-RIGHT-S-OP
-   operators[`convert] = SHIFT-RIGHT-OP
-   operators[`convert-u] = SHIFT-RIGHT-U-OP
-   operators[`convert-s] = SHIFT-RIGHT-S-OP
+   operators[`shl] = SHIFT-LEFT-OP
+   operators[`shl-u] = SHIFT-LEFT-U-OP
+   operators[`shl-s] = SHIFT-LEFT-S-OP
+   operators[`shr] = SHIFT-RIGHT-OP
+   operators[`shr-u] = SHIFT-RIGHT-U-OP
+   operators[`shr-s] = SHIFT-RIGHT-S-OP
+   operators[`convert] = CONVERT-OP
+   operators[`convert-u] = CONVERT-U-OP
+   operators[`convert-s] = CONVERT-S-OP
    operators[`bit-and] = BIT-AND-OP
    operators[`bit-or] = BIT-OR-OP
    operators[`bit-xor] = BIT-XOR-OP
