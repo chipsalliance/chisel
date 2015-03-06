@@ -5,9 +5,17 @@ defpackage firrtl.ir-utils :
 
 ;============== DEBUG STUFF =============================
 
-public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port) -> False
+public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port|Field) -> False
 
 ;============== PRINTERS ===================================
+defmethod print (o:OutputStream, g:Gender) :
+   print{o, _} $
+   switch {g == _} :
+      MALE : "male"
+      FEMALE: "female"
+      BI-GENDER : "bi"
+      UNKNOWN-GENDER: "unknown"
+
 defmethod print (o:OutputStream, d:Direction) :
    print{o, _} $
    switch {d == _} :
@@ -203,11 +211,15 @@ defmethod print (o:OutputStream, t:Type) :
             (w) : print-all(o, ["SInt(" width(t) ")"])
       (t:BundleType) :
          print(o, "{")
-         print-all(o, join(ports(t), ", "))
+         print-all(o, join(fields(t), ", "))
          print(o, "}")
       (t:VectorType) :
          print-all(o, [type(t) "[" size(t) "]"])
    print-debug(o,t)
+
+defmethod print (o:OutputStream, f:Field) :
+   print-all(o, [gender(f) " " name(f) " : " type(f)])
+   print-debug(o,f)
 
 defmethod print (o:OutputStream, p:Port) :
    print-all(o, [direction(p) " " name(p) " : " type(p)])
@@ -252,8 +264,8 @@ public defn map<?T> (f: Type -> Type, t:?T&Type) -> T :
       match(t) :
          (t:T&BundleType) :
             BundleType $
-            for p in ports(t) map :
-               Port(name(p), direction(p), f(type(p)))
+            for p in fields(t) map :
+               Field(name(p), gender(p), f(type(p)))
          (t:T&VectorType) :
             VectorType(f(type(t)), size(t))
          (t) :

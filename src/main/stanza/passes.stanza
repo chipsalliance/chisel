@@ -25,26 +25,24 @@ defstruct InstanceKind <: Kind
 defstruct StructuralMemKind <: Kind ; Separate kind because need special treatment
 
 ;val UNKNOWN-DIR = new Direction
-val UNKNOWN-GENDER = new Gender
-val BI-GENDER = new Gender
 
 defstruct WRef <: Expression :
    name: Symbol
    type: Type [multi => false]
    kind: Kind
-   gender: Gender [multi => false]
+   gender: Gender 
 
 defstruct WSubfield <: Expression :
    exp: Expression
    name: Symbol
    type: Type [multi => false]
-   gender: Gender [multi => false]
+   gender: Gender
 
 defstruct WIndex <: Expression :
    exp: Expression
    value: Int
    type: Type [multi => false]
-   gender: Gender [multi => false]
+   gender: Gender
 
 defstruct WDefAccessor <: Stmt :
    name: Symbol
@@ -53,6 +51,22 @@ defstruct WDefAccessor <: Stmt :
    gender: Gender
 
 ;================ WORKING IR UTILS =========================
+
+defn times (f1:Gender,f2:Gender) -> Gender :
+   if (f1 == UNKNOWN-GENDER) : UNKNOWN-GENDER
+   else if (f2 == UNKNOWN-GENDER) : UNKNOWN-GENDER
+   else if (f1 == MALE) : f2
+   else if (f2 == MALE) : f1
+   else if (f1 == FEMALE and f2 == FEMALE) : MALE
+   else if (f1 == BI-GENDER) : f2
+   else if (f2 == BI-GENDER) : f1
+   else : UNKNOWN-GENDER
+     
+defn to-field (p:Port) -> Field :
+   if direction(p) == OUTPUT : Field(name(p),FEMALE,type(p))
+   else if direction(p) == INPUT : Field(name(p),MALE,type(p))
+   else : Field(name(p),UNKNOWN-GENDER,type(p))
+
 ;============== DEBUG STUFF =============================
 public var PRINT-TYPES : True|False = false
 public var PRINT-KINDS : True|False = false
@@ -72,26 +86,27 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:InstanceKind) : "inst"
       (k:StructuralMemKind) : "smem"
 
-defn hasWidth (e:Expression|Stmt|Type|Element|Port) :
+defn hasGender (e:Expression|Stmt|Type|Element|Port|Field) :
+   e typeof Field|WRef|WSubfield|WIndex|WDefAccessor
+
+defn hasWidth (e:Expression|Stmt|Type|Element|Port|Field) :
    e typeof UIntType|SIntType|UIntValue|SIntValue
 
-defn hasWidth (e:Expression|Stmt|Type|Element|Port) :
-   e typeof UIntType|SIntType|UIntValue|SIntValue
-
-defn hasType (e:Expression|Stmt|Type|Element|Port) :
+defn hasType (e:Expression|Stmt|Type|Element|Port|Field) :
    e typeof Ref|Subfield|Index|DoPrim|ReadPort|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory|Register
-      |Memory|Node|Instance|VectorType|Port
+      |Memory|Node|Instance|VectorType|Port|Field
 
-defn hasKind (e:Expression|Stmt|Type|Element|Port) :
+defn hasKind (e:Expression|Stmt|Type|Element|Port|Field) :
    e typeof WRef
 
-defn any-debug? (e:Expression|Stmt|Type|Element|Port) : 
+defn any-debug? (e:Expression|Stmt|Type|Element|Port|Field) : 
+   (hasGender(e) and PRINT-GENDERS) or
    (hasType(e) and PRINT-TYPES) or
    (hasWidth(e) and PRINT-WIDTHS) or
    (hasKind(e) and PRINT-KINDS)
 
-defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port) :
+defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port|Field) :
    defn wipe-width (t:Type) -> Type : 
      match(t) :
         (t:UIntType) : UIntType(UnknownWidth())
@@ -102,6 +117,7 @@ defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port) :
    if PRINT-KINDS and hasKind(e) : print-all(o,["<k:" kind(e as ?) ">"])
    if PRINT-TYPES and hasType(e) : print-all(o,["<t:" wipe-width(type(e as ?)) ">"])
    if PRINT-WIDTHS and hasWidth(e): print-all(o,["<w:" width(e as ?) ">"])
+   if PRINT-GENDERS and hasGender(e): print-all(o,["<g:" gender(e as ?) ">"])
       
 defmethod print (o:OutputStream, e:WRef) :
    print(o,name(e))
@@ -116,22 +132,22 @@ defmethod print (o:OutputStream, e:WIndex) :
    print-debug(o,e as ?)
 
 defmethod print (o:OutputStream, s:WDefAccessor) :
-   print-all(o,[dir(s) " accessor " name(s) " = " source(s) "[" index(s) "]"])
+   print-all(o,["accessor " name(s) " = " source(s) "[" index(s) "]"])
    print-debug(o,s)
 
 defmethod map (f: Expression -> Expression, e: WSubfield) :
-   WSubfield(f(exp(e)), name(e), type(e), dir(e))
+   WSubfield(f(exp(e)), name(e), type(e), gender(e))
 
 defmethod map (f: Expression -> Expression, e: WIndex) :
-   WIndex(f(exp(e)), value(e), type(e), dir(e))
+   WIndex(f(exp(e)), value(e), type(e), gender(e))
 
 defmethod map (f: Expression -> Expression, c:WDefAccessor) :
-   WDefAccessor(name(c), f(source(c)), f(index(c)), dir(c))
+   WDefAccessor(name(c), f(source(c)), f(index(c)), gender(c))
 
 ;================= DIRECTION ===============================
-defmulti dir (e:Expression) -> Gender
-defmethod dir (e:Expression) :
-   OUTPUT
+;defmulti gender (e:Expression) -> Gender
+;defmethod gender (e:Expression) :
+   ;MALE
 
 ;================= Bring to Working IR ========================
 ; Returns a new Circuit with Refs, Subfields, Indexes and DefAccessors 
@@ -169,7 +185,7 @@ defn resolve-kinds (c:Circuit) :
 
       defn resolve-expr (e:Expression) -> Expression :
          match(e) :
-            (e:WRef) : WRef(name(e),type(e),kinds[name(e)],dir(e))
+            (e:WRef) : WRef(name(e),type(e),kinds[name(e)],gender(e))
             (e) : map(resolve-expr,e)
 
       resolve-stmt(body)
@@ -241,7 +257,7 @@ defn make-explicit-reset (c:Circuit) :
 
       var ports! = ports(m)
       if not contains?(explicit-reset,name(m)) :
-         ports! = append(ports(m),list(Port(`reset,MALE,UIntType(IntWidth(1)))))
+         ports! = append(ports(m),list(Port(`reset,INPUT,UIntType(IntWidth(1)))))
       val body! = route-reset(body(m))
       Module(name(m),ports!,body!)
       
@@ -471,7 +487,7 @@ defn get-primop-rettype (e:DoPrim) -> Type :
       BITS-SELECT-OP : u()
 
 defn type (m:Module) -> Type : 
-   BundleType(ports(m))
+   BundleType(for p in ports(m) map : to-field(p))
 
 defn get-type (b:Symbol,l:List<KeyValue<Symbol,Type>>) -> Type :
    val ma  = for kv in l find : b == key(kv)
@@ -484,8 +500,8 @@ defn get-type (b:Symbol,l:List<KeyValue<Symbol,Type>>) -> Type :
 defn bundle-field-type (v:Type,s:Symbol) -> Type :
    match(v) :
       (v:BundleType) : 
-         val ft = for p in ports(v) find : name(p) == s
-         if ft != false : type(ft as Port)
+         val ft = for p in fields(v) find : name(p) == s
+         if ft != false : type(ft as Field)
          else : UnknownType()
       (v) : UnknownType()
 
@@ -497,9 +513,9 @@ defn get-vector-subtype (v:Type) -> Type :
 defn infer-exp-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression :
    val r = map(infer-exp-types{_,l},e)
    match(r) :
-      (e:WRef) : WRef(name(e), get-type(name(e),l),kind(e),dir(e))
-      (e:WSubfield) : WSubfield(exp(e),name(e), bundle-field-type(type(exp(e)),name(e)),dir(e))
-      (e:WIndex) : WIndex(exp(e),value(e), get-vector-subtype(type(exp(e))),dir(e))
+      (e:WRef) : WRef(name(e), get-type(name(e),l),kind(e),gender(e))
+      (e:WSubfield) : WSubfield(exp(e),name(e), bundle-field-type(type(exp(e)),name(e)),gender(e))
+      (e:WIndex) : WIndex(exp(e),value(e), get-vector-subtype(type(exp(e))),gender(e))
       (e:DoPrim) : DoPrim(op(e),args(e),consts(e),get-primop-rettype(e))
       (e:ReadPort) : ReadPort(mem(e),index(e),get-vector-subtype(type(mem(e))))
       (e:UIntValue|SIntValue|Null) : e
@@ -538,14 +554,14 @@ defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
 defn infer-types (c:Circuit) -> Circuit :
    val l = 
       for m in modules(c) map :
-         name(m) => BundleType(ports(m))
+         name(m) => BundleType(map(to-field,ports(m)))
    ;println-all(l)
    Circuit{ _, main(c) } $ 
       for m in modules(c) map :
          infer-types(m,l)
          
 
-;============= INFER DIRECTIONS ============================
+;============= RESOLVE ACCESSOR GENDER  ============================
 ; To ensure a proper circuit, we must ensure that assignments
 ;   only work on expressions that can be assigned to. Similarly,
 ;   we must ensure that only expressions that can be read from
@@ -557,80 +573,115 @@ defn infer-types (c:Circuit) -> Circuit :
 ; Because accessor gender is not known during declaration, 
 ;   this pass requires iterating until a fixed point is reached.
 
-defn infer-genders (c:Circuit) :
-   defn resolve (body:Stmt, kinds:HashTable<Symbol,Kind>) :
+defn resolve-accessor-genders (c:Circuit) :
+   defn resolve (body:Stmt, genders:HashTable<Symbol,Gender>) :
+      println(genders)
       defn resolve-stmt (s:Stmt) -> Stmt :
-         match(s)
-      ;      (s:LetRec) : s ; TODO get rid of this
-      ;      (s:DefInstance) : genders[name(s)] = MALE
-      ;      (s:DefMemory) : genders[name(s)] = BI-GENDER ;TODO WHY??
-      ;      (s:WDefAccessor) : genders[name(s)] = gender(s)
-      ;      (s) : false
-      ;   map(find-stmt,s)
+         match(map(resolve-expr,s)) :
+            (s:WDefAccessor) : 
+               println(genders[name(s)])
+               WDefAccessor(name(s),source(s),index(s),genders[name(s)])
+            (s) : map(resolve-stmt,s)
+      defn resolve-expr (e:Expression) -> Expression :
+         match(map(resolve-expr,e)) :
+            (e:WRef) : WRef(name(e),type(e),kind(e),genders[name(e)])
+            (e:WSubfield) : 
+               val field = for f in fields(type(e) as BundleType) find :
+                  name(f) == name(e)
+               find-expr-gender(exp(e), gender(field as Field) * desired) * gender(field as Field)
+            (e:WIndex) : find-expr-gender(exp(e),desired)
+            (e:WSubfield) : WSubfield(exp(e),name(e),type(e),genders[name(e)])
+            (e:WIndex) : WIndex(exp(e),value(e),type(e)[name(e)])
+            (e) : e
+      resolve-stmt(body)
 
-      ;defn resolve-expr (e:Expression) -> Expression :
-      ;   match(e) :
-      ;      (e:WRef) : WRef(name(e),type(e),kinds[name(e)],dir(e))
-      ;      (e) : map(resolve-expr,e)
-
-      ;resolve-stmt(body)
-
-   defn find (m:Module, genders:HashTable<Symbol,Gender>) :
+   defn find-module (m:Module, genders:HashTable<Symbol,Gender>) -> HashTable<Symbol,Gender> :
+      if find-iter(m,genders) : genders
+      else : find-module(m,genders)
+   defn find-iter (m:Module, genders:HashTable<Symbol,Gender>) -> True|False : 
+      var done? = true
+      println(genders)
+      defn try-add (n:Symbol,g:Gender) -> Gender :
+         val entry = for kv in genders find :
+            key(kv) == n
+         label<Gender> myret :
+            if entry == false :
+               genders[n] = g
+               done? = false
+               myret(g)
+            else :
+               val value = value(entry as KeyValue<Symbol,Gender>)
+               if value == UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(g)
+               if value != UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(value)
+               if value == UNKNOWN-GENDER and g != UNKNOWN-GENDER : 
+                  genders[n] = g
+                  done? = false
+                  myret(g)
+               if value != UNKNOWN-GENDER and g != UNKNOWN-GENDER : myret(value)
+            UNKNOWN-GENDER
+            
       defn find-stmt (s:Stmt) -> Stmt :
-         match(s)
-            (s:LetRec) : s ; TODO get rid of this
-            (s:DefWire) : genders[name(s)] = BI-GENDER
-            (s:DefRegister) : genders[name(s)] = BI-GENDER
-            (s:DefInstance) : genders[name(s)] = MALE
-            (s:DefMemory) : genders[name(s)] = BI-GENDER ;TODO WHY??
-            (s:WDefAccessor) : genders[name(s)] = gender(s)
-            (s) : false
+         match(s) :
+            (s:DefWire) :
+               genders[name(s)] = BI-GENDER
+            (s:DefRegister) :
+               genders[name(s)] = BI-GENDER
+            (s:DefInstance) : 
+               genders[name(s)] = MALE
+            (s:DefMemory) : 
+               genders[name(s)] = BI-GENDER
+            (s:DefNode) :
+               try-add(name(s),find-expr-gender(value(s),UNKNOWN-GENDER))
+            (s:WDefAccessor) : 
+               find-expr-gender(index(s),MALE)
+               val sourcegender = find-expr-gender(source(s),try-add(name(s),UNKNOWN-GENDER))
+               val mygender = try-add(name(s),sourcegender)
+               println-all(["For " name(s) " got " mygender])
+               mygender
+            (s:Connect) : 
+               find-expr-gender(loc(s),FEMALE)
+               find-expr-gender(exp(s),MALE)
+            (s:Conditionally) :
+               find-expr-gender(pred(s),MALE)
+            (s) : s
          map(find-stmt,s)
 
-      kinds[name(m)] = ModuleKind()
+      defn find-expr-gender (e:Expression,desired:Gender) -> Gender :
+         match(e) :
+            (e:WRef) : 
+               val added = try-add(name(e),desired)
+               if added == BI-GENDER :
+                  desired
+               else : added
+            (e:WSubfield) : 
+               val field = for f in fields(type(e) as BundleType) find :
+                  name(f) == name(e)
+               find-expr-gender(exp(e), gender(field as Field) * desired) * gender(field as Field)
+            (e:WIndex) : find-expr-gender(exp(e),desired)
+            (e:UIntValue) : MALE
+            (e:SIntValue) : MALE
+            (e:DoPrim) : MALE
+            (e:ReadPort) : MALE
+            (e:Null) : MALE
+            (e) : MALE
+
       for p in ports(m) do :
-         kinds[name(p)] = PortKind()
+         genders[name(p)] = gender(to-field(p))
       find-stmt(body(m))
+      done?
     
    defn resolve-genders (m:Module, c:Circuit) -> Module :
-      val genders = HashTable<Symbol,Genders>(symbol-hash)
+      val genders = HashTable<Symbol,Gender>(symbol-hash)
       for m in modules(c) do :
-         genders[name(m)] = flip(to-field(ports(m)))
-      find(m,genders)
-      val [body*,done?] = resolve(body(m),kinds)
-      val module* = Module(name(m),ports(m),body*)
-      if done? : module*
-      else : resolve-genders(module,c)
+         genders[name(m)] = FEMALE ;; TODO Should I add this?
+      find-module(m,genders)
+      val body* = resolve(body(m),genders)
+      Module(name(m),ports(m),body*)
 
    Circuit(modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
             resolve-genders(m,c)
-
-;first pass, probably will delete
-defn iter-infer-genders (m:Module,l:HashTable<Symbol, Gender>) -> [Circuit, True|False] :
-   var all-done? = false
-   val body* = 
-      for m in modules(c) map :
-         val [m*,done?] = iter-infer-genders(m)
-         all-done? = all-done? and done?
-         m*
-   [Circuit(modules*,name(c)),all-done?]
-   
-
-defn iter-infer-genders (c:Circuit) -> [Circuit, True|False] :
-   var all-done? = false
-   val modules* = 
-      for m in modules(c) map :
-         val [m*,done?] = iter-infer-genders(m)
-         all-done? = all-done? and done?
-         m*
-   [Circuit(modules*,name(c)),all-done?]
-
-defn infer-genders (c:Circuit) -> Circuit :
-   val [c*,done?] = iter-infer-genders(c)
-   if done? : c*
-   else : infer-genders(c*)
 
 ;;============== EXPAND VECS ================================
 ;defstruct ManyConnect <: Stmt :
@@ -1963,7 +2014,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
    if contains(p,'d') : do-stage("Initialize Registers", initialize-registers)
    if contains(p,'e') : do-stage("Infer Types", infer-types)
-   ;if contains(p,'f') : do-stage("Infer Genders", infer-genders)
+   if contains(p,'f') : do-stage("Resolve Accessor Genders", resolve-accessor-genders)
    ;if contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
    ;if contains(p,'h') : do-stage("Flatten Bundles", flatten-bundles)
    ;if contains(p,'i') : do-stage("Expand Bundles", expand-bundles)

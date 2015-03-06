@@ -6,9 +6,11 @@ public definterface Direction
 public val INPUT = new Direction
 public val OUTPUT = new Direction
 
-definterface Gender
+public definterface Gender
 public val MALE = new Gender
 public val FEMALE = new Gender
+public val UNKNOWN-GENDER = new Gender
+public val BI-GENDER = new Gender
 
 
 public definterface Width
@@ -206,7 +208,7 @@ public defstruct UIntType <: Type :
 public defstruct SIntType <: Type :
    width: Width
 public defstruct BundleType <: Type :
-   ports: List<Field>
+   fields: List<Field>
 public defstruct VectorType <: Type :
    type: Type
    size: Int

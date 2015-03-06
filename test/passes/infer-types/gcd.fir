@@ -22,14 +22,14 @@ circuit top :
       when gt(x, y) :
       ;CHECK: when gt(x@<t:UInt>, y@<t:UInt>)@<t:UInt> :
          inst s of subtracter
-         ;CHECK: inst s of subtracter@<t:{input x : UInt@<t:UInt>, input y : UInt@<t:UInt>, output z : UInt@<t:UInt>, input reset : UInt(1)@<t:UInt>}>
+         ;CHECK: inst s of subtracter@<t:{male x : UInt@<t:UInt>, male y : UInt@<t:UInt>, female z : UInt@<t:UInt>, male reset : UInt(1)@<t:UInt>}>
          s.x := x
          s.y := y
          x := s.z
-         ;CHECK: s@<t:{input x : UInt@<t:UInt>, input y : UInt@<t:UInt>, output z : UInt@<t:UInt>, input reset : UInt(1)@<t:UInt>}>.reset@<t:UInt> := reset@<t:UInt>
-         ;CHECK: s@<t:{input x : UInt@<t:UInt>, input y : UInt@<t:UInt>, output z : UInt@<t:UInt>, input reset : UInt(1)@<t:UInt>}>.x@<t:UInt> := x@<t:UInt>
-         ;CHECK: s@<t:{input x : UInt@<t:UInt>, input y : UInt@<t:UInt>, output z : UInt@<t:UInt>, input reset : UInt(1)@<t:UInt>}>.y@<t:UInt> := y@<t:UInt>
-         ;CHECK: x@<t:UInt> := s@<t:{input x : UInt@<t:UInt>, input y : UInt@<t:UInt>, output z : UInt@<t:UInt>, input reset : UInt(1)@<t:UInt>}>.z@<t:UInt>
+         ;CHECK: s@<t:{male x : UInt@<t:UInt>, male y : UInt@<t:UInt>, female z : UInt@<t:UInt>, male reset : UInt(1)@<t:UInt>}>.reset@<t:UInt> := reset@<t:UInt>
+         ;CHECK: s@<t:{male x : UInt@<t:UInt>, male y : UInt@<t:UInt>, female z : UInt@<t:UInt>, male reset : UInt(1)@<t:UInt>}>.x@<t:UInt> := x@<t:UInt>
+         ;CHECK: s@<t:{male x : UInt@<t:UInt>, male y : UInt@<t:UInt>, female z : UInt@<t:UInt>, male reset : UInt(1)@<t:UInt>}>.y@<t:UInt> := y@<t:UInt>
+         ;CHECK: x@<t:UInt> := s@<t:{male x : UInt@<t:UInt>, male y : UInt@<t:UInt>, female z : UInt@<t:UInt>, male reset : UInt(1)@<t:UInt>}>.z@<t:UInt>
       else :
          inst s2 of subtracter
          s2.x := x

@@ -87,6 +87,12 @@ rd.defsyntax firrtl :
       (module ?name:#symbol : (?ports:#port ... ?body:#comm ...)) :
          Module(ut(name), ports, Begin(body))
 
+   defrule field :
+      (male ?name:#symbol : ?type:#type) :
+         Field(ut(name), MALE, type)
+      (female ?name:#symbol : ?type:#type) :
+         Field(ut(name), FEMALE, type)
+
    defrule port :
       (input ?name:#symbol : ?type:#type) :
          Port(ut(name), INPUT, type)
@@ -104,8 +110,8 @@ rd.defsyntax firrtl :
          SIntType(IntWidth(ut(width)))
       (SInt) :
          SIntType(UnknownWidth())
-      ({?ports:#port ...}) :
-         BundleType(ports)
+      ({?fields:#field ...}) :
+         BundleType(fields)
 
    defrule comm :
       (wire ?name:#symbol : ?type:#type) :
