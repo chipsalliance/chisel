@@ -30,25 +30,25 @@ defstruct WRef <: Expression :
    name: Symbol
    type: Type [multi => false]
    kind: Kind
-   gender: Gender 
+   gender: Gender  [multi => false]
 
 defstruct WSubfield <: Expression :
    exp: Expression
    name: Symbol
    type: Type [multi => false]
-   gender: Gender
+   gender: Gender [multi => false]
 
 defstruct WIndex <: Expression :
    exp: Expression
    value: Int
    type: Type [multi => false]
-   gender: Gender
+   gender: Gender [multi => false]
 
 defstruct WDefAccessor <: Stmt :
    name: Symbol
    source: Expression
    index: Expression
-   gender: Gender
+   gender: Gender 
 
 ;================ WORKING IR UTILS =========================
 
@@ -66,6 +66,10 @@ defn to-field (p:Port) -> Field :
    if direction(p) == OUTPUT : Field(name(p),FEMALE,type(p))
    else if direction(p) == INPUT : Field(name(p),MALE,type(p))
    else : Field(name(p),UNKNOWN-GENDER,type(p))
+
+defmulti gender (e:Expression) -> Gender
+defmethod gender (e:Expression) :
+   MALE ; TODO, why was this OUTPUT before? It makes sense as male, not female
 
 ;============== DEBUG STUFF =============================
 public var PRINT-TYPES : True|False = false
@@ -573,110 +577,102 @@ defn infer-types (c:Circuit) -> Circuit :
 ; Because accessor gender is not known during declaration, 
 ;   this pass requires iterating until a fixed point is reached.
 
-defn resolve-accessor-genders (c:Circuit) :
-   defn resolve (body:Stmt, genders:HashTable<Symbol,Gender>) :
-      println(genders)
-      defn resolve-stmt (s:Stmt) -> Stmt :
-         match(map(resolve-expr,s)) :
-            (s:WDefAccessor) : 
-               println(genders[name(s)])
-               WDefAccessor(name(s),source(s),index(s),genders[name(s)])
-            (s) : map(resolve-stmt,s)
-      defn resolve-expr (e:Expression) -> Expression :
-         match(map(resolve-expr,e)) :
-            (e:WRef) : WRef(name(e),type(e),kind(e),genders[name(e)])
-            (e:WSubfield) : 
-               val field = for f in fields(type(e) as BundleType) find :
-                  name(f) == name(e)
-               find-expr-gender(exp(e), gender(field as Field) * desired) * gender(field as Field)
-            (e:WIndex) : find-expr-gender(exp(e),desired)
-            (e:WSubfield) : WSubfield(exp(e),name(e),type(e),genders[name(e)])
-            (e:WIndex) : WIndex(exp(e),value(e),type(e)[name(e)])
-            (e) : e
-      resolve-stmt(body)
-
-   defn find-module (m:Module, genders:HashTable<Symbol,Gender>) -> HashTable<Symbol,Gender> :
-      if find-iter(m,genders) : genders
-      else : find-module(m,genders)
-   defn find-iter (m:Module, genders:HashTable<Symbol,Gender>) -> True|False : 
+defn resolve-genders (c:Circuit) :
+   defn resolve-module (m:Module, genders:HashTable<Symbol,Gender>) -> Module :
       var done? = true
-      println(genders)
-      defn try-add (n:Symbol,g:Gender) -> Gender :
+
+      defn resolve-iter (m:Module) -> Module : 
+         val body* = resolve-stmt(body(m))
+         Module(name(m),ports(m),body*)
+
+      defn get-gender (n:Symbol,g:Gender) -> Gender :
+         defn force-gender (n:Symbol,g:Gender) -> Gender : 
+            genders[n] = g
+            done? = false
+            g
          val entry = for kv in genders find :
             key(kv) == n
          label<Gender> myret :
-            if entry == false :
-               genders[n] = g
-               done? = false
-               myret(g)
-            else :
-               val value = value(entry as KeyValue<Symbol,Gender>)
-               if value == UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(g)
-               if value != UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(value)
-               if value == UNKNOWN-GENDER and g != UNKNOWN-GENDER : 
-                  genders[n] = g
-                  done? = false
-                  myret(g)
-               if value != UNKNOWN-GENDER and g != UNKNOWN-GENDER : myret(value)
-            UNKNOWN-GENDER
+            match(entry) :
+               (e:KeyValue<Symbol,Gender>) :
+                  val value = value(e)
+                  if      value == UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(g)
+                  else if value != UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(value)
+                  else if value == UNKNOWN-GENDER and g != UNKNOWN-GENDER : myret(force-gender(n,g))
+                  else : myret(value)
+               (e:False) : myret(force-gender(n,g))
             
-      defn find-stmt (s:Stmt) -> Stmt :
+      defn resolve-stmt (s:Stmt) -> Stmt :
          match(s) :
             (s:DefWire) :
-               genders[name(s)] = BI-GENDER
+               get-gender(name(s),BI-GENDER)
+               s
             (s:DefRegister) :
-               genders[name(s)] = BI-GENDER
-            (s:DefInstance) : 
-               genders[name(s)] = MALE
-            (s:DefMemory) : 
-               genders[name(s)] = BI-GENDER
-            (s:DefNode) :
-               try-add(name(s),find-expr-gender(value(s),UNKNOWN-GENDER))
+               get-gender(name(s),BI-GENDER)
+               s
+            (s:DefMemory) :
+               get-gender(name(s),BI-GENDER)
+               s
+            (s:DefNode) : 
+               get-gender(name(s),MALE)
+               s
+            (s:DefInstance) :
+               get-gender(name(s),FEMALE)
+               DefInstance(name(s),resolve-expr(module(s),FEMALE))
             (s:WDefAccessor) : 
-               find-expr-gender(index(s),MALE)
-               val sourcegender = find-expr-gender(source(s),try-add(name(s),UNKNOWN-GENDER))
-               val mygender = try-add(name(s),sourcegender)
-               println-all(["For " name(s) " got " mygender])
-               mygender
+               val gender* = get-gender(name(s),UNKNOWN-GENDER)
+               val index* = resolve-expr(index(s),MALE)
+               val source* = resolve-expr(source(s),gender*)
+               WDefAccessor(name(s),source*,index*,gender*)
             (s:Connect) : 
-               find-expr-gender(loc(s),FEMALE)
-               find-expr-gender(exp(s),MALE)
+               Connect(resolve-expr(loc(s),FEMALE),resolve-expr(exp(s),MALE))
             (s:Conditionally) :
-               find-expr-gender(pred(s),MALE)
-            (s) : s
-         map(find-stmt,s)
+               val pred* = resolve-expr(pred(s),MALE)
+               val conseq* = resolve-stmt(conseq(s))
+               val alt* = resolve-stmt(conseq(s))
+               Conditionally(pred*,conseq*,alt*)
+            (s) : map(resolve-stmt,s)
 
-      defn find-expr-gender (e:Expression,desired:Gender) -> Gender :
+      defn resolve-expr (e:Expression,desired:Gender) -> Expression :
+         defn bundle-field-gender (n:Symbol,t:Type) -> Gender :
+            match(t) :
+               (b:BundleType) : 
+                   val field = for f in fields(b) find :
+                                  name(f) == n
+                   match(field):
+                            (f:Field) : gender(f)
+                            (f) : UNKNOWN-GENDER
+               (b) : UNKNOWN-GENDER
+            
          match(e) :
             (e:WRef) : 
-               val added = try-add(name(e),desired)
-               if added == BI-GENDER :
-                  desired
-               else : added
+               val gender = get-gender(name(e),desired)
+               WRef{name(e),type(e),kind(e),_} $
+                  if gender == BI-GENDER : desired
+                  else : gender
             (e:WSubfield) : 
-               val field = for f in fields(type(e) as BundleType) find :
-                  name(f) == name(e)
-               find-expr-gender(exp(e), gender(field as Field) * desired) * gender(field as Field)
-            (e:WIndex) : find-expr-gender(exp(e),desired)
-            (e:UIntValue) : MALE
-            (e:SIntValue) : MALE
-            (e:DoPrim) : MALE
-            (e:ReadPort) : MALE
-            (e:Null) : MALE
-            (e) : MALE
+               val field-gender = bundle-field-gender(name(e),type(exp(e)))
+               val exp* = resolve-expr(exp(e),field-gender * desired)
+               val gender* = field-gender * gender(exp*)
+               WSubfield(exp*,name(e),type(e),gender*)
+            (e:WIndex) : 
+               val exp* = resolve-expr(exp(e),desired)
+               val gender* = gender(exp*)
+               WIndex(exp*,value(e),type(e),gender*)
+            (e) : map(resolve-expr{_,desired},e)
 
-      for p in ports(m) do :
-         genders[name(p)] = gender(to-field(p))
-      find-stmt(body(m))
-      done?
+      var module* = resolve-iter(m)
+      while not done? : 
+        done? = true
+        module* = resolve-iter(m)
+      module*
     
    defn resolve-genders (m:Module, c:Circuit) -> Module :
       val genders = HashTable<Symbol,Gender>(symbol-hash)
       for m in modules(c) do :
-         genders[name(m)] = FEMALE ;; TODO Should I add this?
-      find-module(m,genders)
-      val body* = resolve(body(m),genders)
-      Module(name(m),ports(m),body*)
+         genders[name(m)] = FEMALE
+      resolve-module(m,genders)
+      
 
    Circuit(modules*, main(c)) where :
       val modules* = 
@@ -2014,7 +2010,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
    if contains(p,'d') : do-stage("Initialize Registers", initialize-registers)
    if contains(p,'e') : do-stage("Infer Types", infer-types)
-   if contains(p,'f') : do-stage("Resolve Accessor Genders", resolve-accessor-genders)
+   if contains(p,'f') : do-stage("Resolve Genders", resolve-genders)
    ;if contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
    ;if contains(p,'h') : do-stage("Flatten Bundles", flatten-bundles)
    ;if contains(p,'i') : do-stage("Expand Bundles", expand-bundles)

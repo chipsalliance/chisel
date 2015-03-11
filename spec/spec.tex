@@ -36,31 +36,28 @@
                 &\vert &\kws{SInt}(\pd{width})                                                        &\text{Signed Integer}\\
                 &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
                 &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
-\pd{field}      &=     &\pd{side} \id \kw{:} \pd{type}                                         &\text{Bundle Field}\\
-\pd{side}       &=     &\kws{female} \vert \kws{male}                                                 &\text{Female/Male}\\
+\pd{field}      &=     &\pd{gender} \id \kw{:} \pd{type}                                              &\text{Bundle Field}\\
+\pd{gender}     &=     &\kws{female} \vert \kws{male}                                                 &\text{Gender}\\
 \pd{width}      &=     &\ints                                                                         &\text{Known Integer Width}\\
                 &\vert &\kw{?}                                                                        &\text{Unknown Width}\\
 \pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
                 &\vert &\info \kw{reg} \id \kw{:} \pd{type}                                           &\text{Register Declaration}\\
                 &\vert &\info \kw{mem} \id \kw{:} \pd{type}                                           &\text{Memory Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{of} \id                                               &\text{Instance Declaration}\\
-                &\vert &\info \kw{node} \id  = \pd{exp}                               &\text{Node Declaration}\\
+                &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
                 &\vert &\info \kw{accessor} \id = \pds{exp}[\pds{exp}]                                &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
                 &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
-                &\vert &\info \kw{letrec :} \pd{elem*} \kw{in :} \pd{stmt}                            &\text{Let with Recursive Definitions}\\
                 &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
                 &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
-\pd{elem}       &=     &\info \kw{reg} \id \kw{:} \pd{type} = \kws{Register}(\pds{exp}, \pds{exp})    &\text{Structural Register}\\
-                &\vert &\info \kw{node} \id \kw{:} \pd{type} = \pd{exp}                               &\text{Structural Node}\\
-                &\vert &\info \kw{mem} \id \kw{:} \pd{type} =                                         &\text{Structural Memory}\\
-                &      &\kws{Memory}(\kws{WritePort}(\pds{exp}, \pds{exp}, \pds{exp})\text{*})  &\\
-                &\vert &\info \kw{inst} \id = \ids(\kws{Input}(\ids,\pds{exp})\text{*})               &\text{Structural Instance}\\
 \pd{exp}        &=     &\info \kws{UInt}(\ints, \pds{width})                                          &\text{Literal Unsigned Integer}\\
                 &\vert &\info \kws{SInt}(\ints, \pds{width})                                          &\text{Literal Signed Integer}\\
                 &\vert &\info \id                                                                     &\text{Reference}\\
                 &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
                 &\vert &\info \pds{exp}.\ints                                                         &\text{Subindex}\\
+                &\vert &\info \kws{Register}(\pds{exp}, \pds{exp})                                    &\text{Structural Register}\\
+                &\vert &\info \kws{WritePort}(\id, \pds{exp}, \pds{exp})                              &\text{Structural Write Port}\\
+                &\vert &\info \kws{ReadPort}(\id, \pds{exp}, \pds{exp})                               &\text{Structural Read Port}\\
 \end{array}
 \]
 \[
@@ -68,7 +65,6 @@
                 &\vert &\info \pds{pad!}(\pds{exp}, \pds{width})                                      &\text{Generic Pad to Width}\\
                 &\vert &\info \pds{pad!-u}(\pds{exp}, \pds{width})                                    &\text{Unsigned Pad to Width}\\
                 &\vert &\info \pds{pad!-s}(\pds{exp}, \pds{width})                                    &\text{Signed Pad to Width}\\
-                &\vert &\info \kws{ReadPort}(\ids, \pds{exp})                                         &\text{Structural Read Port}\\
                 &\vert &\info \pds{primop}(\pds{exp*}, \ints\text{*})                                 &\text{Primitive Operation}\\
 \pd{info}       &=     &\text{filename } \kw{:} \text{line} . \text{col}                              &\text{File Location}\\
                 &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\

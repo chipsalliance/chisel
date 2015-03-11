@@ -1,19 +1,12 @@
 
 TODO 
-   Figure out how types and widths propogate for all updated primops
-   Write infer-types pass
+   Figure out how widths propogate for all updated primops
    Remove letrec. Add to expressions: Register(input,en), ReadPort(mem,index,enable), WritePort(mem,index,enable)
    Add bit-reduce-and etc to primops
    Write pass to rename identifiers (alpha-transform)
    Update spec
-      change concrete syntactical names of structural elements
-      change direction names for bundle fields
       add new field for sequential or combinational
-      play with non-implicit growth
-      remove generics, add all combinations (adduu, addus, addss, ...)
       add assertions
-      add convert to primop
-      remove type from node in statement
    Future questions to address in spec:
       Introduction – motivation, and intended usage
       Philosophical justifications for all constructs
