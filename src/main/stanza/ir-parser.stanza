@@ -88,10 +88,10 @@ rd.defsyntax firrtl :
          Module(ut(name), ports, Begin(body))
 
    defrule field :
-      (male ?name:#symbol : ?type:#type) :
-         Field(ut(name), MALE, type)
-      (female ?name:#symbol : ?type:#type) :
-         Field(ut(name), FEMALE, type)
+      (?name:#symbol : ?type:#type) :
+         Field(ut(name), DEFAULT, type)
+      (flip ?name:#symbol : ?type:#type) :
+         Field(ut(name), REVERSE, type)
 
    defrule port :
       (input ?name:#symbol : ?type:#type) :

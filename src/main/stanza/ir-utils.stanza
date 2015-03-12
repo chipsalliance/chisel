@@ -8,20 +8,18 @@ defpackage firrtl.ir-utils :
 public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port|Field) -> False
 
 ;============== PRINTERS ===================================
-defmethod print (o:OutputStream, g:Gender) :
+
+defmethod print (o:OutputStream, d:Flip) :
    print{o, _} $
-   switch {g == _} :
-      MALE : "male"
-      FEMALE: "female"
-      BI-GENDER : "bi"
-      UNKNOWN-GENDER: "unknown"
+   switch {d == _} :
+      DEFAULT : ""
+      REVERSE: "flip"
 
 defmethod print (o:OutputStream, d:Direction) :
    print{o, _} $
    switch {d == _} :
       INPUT : "input"
       OUTPUT: "output"
-      ;UNKNOWN-DIR : "unknown"
 
 defmethod print (o:OutputStream, w:Width) :
    print{o, _} $
@@ -216,7 +214,7 @@ defmethod print (o:OutputStream, t:Type) :
    print-debug(o,t)
 
 defmethod print (o:OutputStream, f:Field) :
-   print-all(o, [gender(f) " " name(f) " : " type(f)])
+   print-all(o, [flip(f) " " name(f) " : " type(f)])
    print-debug(o,f)
 
 defmethod print (o:OutputStream, p:Port) :
@@ -263,7 +261,7 @@ public defn map<?T> (f: Type -> Type, t:?T&Type) -> T :
          (t:T&BundleType) :
             BundleType $
             for p in fields(t) map :
-               Field(name(p), gender(p), f(type(p)))
+               Field(name(p), flip(p), f(type(p)))
          (t:T&VectorType) :
             VectorType(f(type(t)), size(t))
          (t) :

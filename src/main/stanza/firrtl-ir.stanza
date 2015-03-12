@@ -6,12 +6,9 @@ public definterface Direction
 public val INPUT = new Direction
 public val OUTPUT = new Direction
 
-public definterface Gender
-public val MALE = new Gender
-public val FEMALE = new Gender
-public val UNKNOWN-GENDER = new Gender
-public val BI-GENDER = new Gender
-
+public definterface Flip
+public val DEFAULT = new Flip
+public val REVERSE = new Flip
 
 public definterface Width
 public defstruct UnknownWidth <: Width
@@ -218,7 +215,7 @@ public defstruct UnknownType <: Type
 
 public defstruct Field :
    name: Symbol
-   gender: Gender
+   flip: Flip
    type: Type
 
 public defstruct Port :
