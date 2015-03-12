@@ -97,7 +97,7 @@ defn hasWidth (e:Expression|Stmt|Type|Element|Port|Field) :
    e typeof UIntType|SIntType|UIntValue|SIntValue
 
 defn hasType (e:Expression|Stmt|Type|Element|Port|Field) :
-   e typeof Ref|Subfield|Index|DoPrim|ReadPort|WRef|WSubfield
+   e typeof Ref|Subfield|Index|DoPrim|WritePort|ReadPort|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory|Register
       |Memory|Node|Instance|VectorType|Port|Field
 
@@ -521,7 +521,8 @@ defn infer-exp-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression
       (e:WSubfield) : WSubfield(exp(e),name(e), bundle-field-type(type(exp(e)),name(e)),gender(e))
       (e:WIndex) : WIndex(exp(e),value(e), get-vector-subtype(type(exp(e))),gender(e))
       (e:DoPrim) : DoPrim(op(e),args(e),consts(e),get-primop-rettype(e))
-      (e:ReadPort) : ReadPort(mem(e),index(e),get-vector-subtype(type(mem(e))))
+      (e:ReadPort) : ReadPort(mem(e),index(e),get-vector-subtype(type(mem(e))),enable(e))
+      (e:WritePort) : WritePort(mem(e),index(e),get-vector-subtype(type(mem(e))),enable(e))
       (e:UIntValue|SIntValue|Null) : e
 
 defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt, List<KeyValue<Symbol,Type>>] :
@@ -592,15 +593,14 @@ defn resolve-genders (c:Circuit) :
             g
          val entry = for kv in genders find :
             key(kv) == n
-         label<Gender> myret :
-            match(entry) :
-               (e:KeyValue<Symbol,Gender>) :
-                  val value = value(e)
-                  if      value == UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(g)
-                  else if value != UNKNOWN-GENDER and g == UNKNOWN-GENDER : myret(value)
-                  else if value == UNKNOWN-GENDER and g != UNKNOWN-GENDER : myret(force-gender(n,g))
-                  else : myret(value)
-               (e:False) : myret(force-gender(n,g))
+         match(entry) :
+            (e:KeyValue<Symbol,Gender>) :
+               val value = value(e)
+               if      value == UNKNOWN-GENDER and g == UNKNOWN-GENDER : g
+               else if value != UNKNOWN-GENDER and g == UNKNOWN-GENDER : value
+               else if value == UNKNOWN-GENDER and g != UNKNOWN-GENDER : force-gender(n,g)
+               else : value
+            (e:False) : force-gender(n,g)
             
       defn resolve-stmt (s:Stmt) -> Stmt :
          match(s) :
@@ -629,7 +629,7 @@ defn resolve-genders (c:Circuit) :
             (s:Conditionally) :
                val pred* = resolve-expr(pred(s),MALE)
                val conseq* = resolve-stmt(conseq(s))
-               val alt* = resolve-stmt(conseq(s))
+               val alt* = resolve-stmt(alt(s))
                Conditionally(pred*,conseq*,alt*)
             (s) : map(resolve-stmt,s)
 
@@ -641,8 +641,8 @@ defn resolve-genders (c:Circuit) :
                                   name(f) == n
                    match(field):
                             (f:Field) : gender(f)
-                            (f) : UNKNOWN-GENDER
-               (b) : UNKNOWN-GENDER
+                            (f) : error(string-join(["Could not find " n " in bundle "]))
+               (b) : error(string-join(["Accessing subfield " n " on a non-Bundle type."]))
             
          match(e) :
             (e:WRef) : 
@@ -659,7 +659,7 @@ defn resolve-genders (c:Circuit) :
                val exp* = resolve-expr(exp(e),desired)
                val gender* = gender(exp*)
                WIndex(exp*,value(e),type(e),gender*)
-            (e) : map(resolve-expr{_,desired},e)
+            (e) : map(resolve-expr{_,MALE},e)
 
       var module* = resolve-iter(m)
       while not done? : 
@@ -679,71 +679,106 @@ defn resolve-genders (c:Circuit) :
          for m in modules(c) map :
             resolve-genders(m,c)
 
-;;============== EXPAND VECS ================================
-;defstruct ManyConnect <: Stmt :
-;   index: Expression
-;   locs: List<Expression>
-;   exp: Expression
-;
-;defstruct ConnectMany <: Stmt :
-;   index: Expression
-;   loc: Expression
-;   exps: List<Expression>
-;
-;defmethod print (o:OutputStream, c:ManyConnect) :
-;   print-all(o, [locs(c) "[" index(c) "] := " exp(c)])
-;defmethod print (o:OutputStream, c:ConnectMany) :
-;   print-all(o, [loc(c) " := " exps(c) "[" index(c) "]"])
-;
-;defmethod map (f: Expression -> Expression, c:ManyConnect) :
-;   ManyConnect(f(index(c)), map(f, locs(c)), f(exp(c)))
-;defmethod map (f: Expression -> Expression, c:ConnectMany) :
-;   ConnectMany(f(index(c)), f(loc(c)), map(f, exps(c)))
-;
-;defn expand-accessors (m: Module) :
-;   defn expand (c:Stmt) :
-;      match(c) :
-;         (c:WDefAccessor) :
-;            ;Is the source a memory?
-;            val mem? =
-;               match(source(c)) :
-;                  (r:WRef) : kind(r) typeof MemKind
-;                  (r) : false
-;
-;            if mem? :
-;               c
-;            else :
-;               switch {dir(c) == _} :
-;                  INPUT :
-;                     Begin(list(
-;                        DefWire(name(c), type(src-type))
-;                        ManyConnect(index(c), elems, wire-ref)))
-;                     where :
-;                        val src-type = type(source(c)) as VectorType
-;                        val wire-ref = WRef(name(c), type(src-type), NodeKind(), OUTPUT)
-;                        val elems = to-list $
-;                           for i in 0 to size(src-type) stream :
-;                              WIndex(source(c), i, type(src-type), INPUT)
-;                  OUTPUT :
-;                     Begin(list(
-;                        DefWire(name(c), type(src-type))
-;                        ConnectMany(index(c), wire-ref, elems)))
-;                     where :
-;                        val src-type = type(source(c)) as VectorType
-;                        val wire-ref = WRef(name(c), type(src-type), NodeKind(), INPUT)
-;                        val elems = to-list $
-;                           for i in 0 to size(src-type) stream :
-;                              WIndex(source(c), i, type(src-type), OUTPUT)
-;         (c) :
-;            map(expand, c)
-;   Module(name(m), ports(m), expand(body(m)))
-;
-;defn expand-accessors (c:Circuit) :
-;   Circuit(modules*, main(c)) where :
-;      val modules* = map(expand-accessors, modules(c))
-;
-;
-;
+;;============== EXPAND ACCESSORS ================================
+; This pass expands accessors into either ReadPort/WritePort if it
+;   accesses a memory, or a ManyConnect/ConnectMany otherwise.
+; If accessing a memory, female accessors turn into WritePorts and
+;   male accessors turn into ReadPorts. The enable signals are
+;   calculated by ANDing all predicates of all parent nested whens 
+;   at the sight of the accessor declaration
+; If not accessing a memory, all elements of the vector are 
+;   explicitly written out, then indexed. Depending on the gender
+;   of the accessor, it is transformed into ManyConnect (male) or
+;   ConnectMany (female)
+
+defstruct ManyConnect <: Stmt :
+   index: Expression
+   locs: List<Expression>
+   exp: Expression
+
+defstruct ConnectMany <: Stmt :
+   index: Expression
+   loc: Expression
+   exps: List<Expression>
+
+defmethod print (o:OutputStream, c:ManyConnect) :
+   print-all(o, [locs(c) "[" index(c) "] := " exp(c)])
+defmethod print (o:OutputStream, c:ConnectMany) :
+   print-all(o, [loc(c) " := " exps(c) "[" index(c) "]"])
+
+defmethod map (f: Expression -> Expression, c:ManyConnect) :
+   ManyConnect(f(index(c)), map(f, locs(c)), f(exp(c)))
+defmethod map (f: Expression -> Expression, c:ConnectMany) :
+   ConnectMany(f(index(c)), f(loc(c)), map(f, exps(c)))
+
+defn expand-vector (e:Expression) -> List<Expression> :
+   match(e) :
+      (e:WRef) :
+         match(type(e)) :
+            (t:VectorType) : 
+               var l = list()
+               for i in 0 to size(t) do :
+                  l = List(WIndex(e,i,type(t),gender(e)),l)
+               l
+            (t) : error("Shouldn't be here, TODO")
+      (e) : error("Shouldn't be here, TODO")
+
+defn contained-type (e:Expression) -> Type :
+   match(e) : 
+      (e:WRef) :
+         match(type(e)) :
+            (t:VectorType) : type(t)
+            (t) : error("Shouldn't be here, TODO")
+      (t) : error("Shouldn't be here, TODO")
+
+defn and-all (l:List<Expression>) -> Expression :
+   if length(l) == 0 : UIntValue(1,IntWidth(1))
+   else : DoPrim(BIT-AND-OP,list(l[0],and-all(tail(l))),list(),UIntType(IntWidth(1)))
+
+defn expand-stmt (s:Stmt,preds:List<Expression>) -> Stmt :
+   match(s) :
+      (s:WDefAccessor) : 
+         println-all(["Matched WDefAcc with " name(s)])
+         val mem? = match(source(s)) :
+            (e:WRef) : kind(e) typeof MemKind
+            (e) : false
+         if mem? :
+            val enable = and-all(preds)
+            val value-type = contained-type(source(s))
+            val wire = DefWire(name(s),value-type)
+            switch {gender(s) == _} :
+               MALE : 
+                  val read = ReadPort(source(s),index(s),value-type,enable)
+                  val connect = Connect(WRef(name(s),value-type,NodeKind(),FEMALE),read)
+                  Begin(list(wire,connect))
+               FEMALE:
+                  val write = WritePort(source(s),index(s),value-type,enable)
+                  val connect = Connect(write,WRef(name(s),value-type,NodeKind(),MALE))
+                  Begin(list(wire,connect))
+         else :
+            val value-type = contained-type(source(s))
+            val wire = DefWire(name(s),value-type)
+            switch {gender(s) == _} :
+               MALE : Begin(list(wire,connectmany)) where :
+                     val exps = expand-vector(source(s))
+                     val connectmany = ConnectMany(index(s),WRef(name(s),value-type,NodeKind(),FEMALE),exps)
+               FEMALE: Begin(list(wire,manyconnect)) where :
+                     val locs = expand-vector(source(s))
+                     val manyconnect = ManyConnect(index(s),locs,WRef(name(s),value-type,NodeKind(),MALE))
+      (s:Conditionally) : 
+         val conseq* = expand-stmt(conseq(s),List(pred(s),preds))
+         val alt-pred = DoPrim(EQUAL-UU-OP,list(UIntValue(0,IntWidth(1)),pred(s)),list(),UIntType(IntWidth(1)))
+         val alt* = expand-stmt(alt(s),List(alt-pred,preds))
+         Conditionally(pred(s),conseq*,alt*)
+      (s) : map(expand-stmt{_,preds},s)
+
+defn expand-accessors (c:Circuit) :
+   Circuit(modules*, main(c)) where :
+      val modules* = 
+         for m in modules(c) map :
+            Module(name(m),ports(m),expand-stmt(body(m),list()))
+
+
 ;;=============== BUNDLE FLATTENING =========================
 ;defn prefix (prefix, suffix) :
 ;   symbol-join([prefix "/" suffix])
@@ -2011,7 +2046,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'d') : do-stage("Initialize Registers", initialize-registers)
    if contains(p,'e') : do-stage("Infer Types", infer-types)
    if contains(p,'f') : do-stage("Resolve Genders", resolve-genders)
-   ;if contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
+   if contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
    ;if contains(p,'h') : do-stage("Flatten Bundles", flatten-bundles)
    ;if contains(p,'i') : do-stage("Expand Bundles", expand-bundles)
    ;if contains(p,'j') : do-stage("Expand Multi Connects", expand-multi-connects)

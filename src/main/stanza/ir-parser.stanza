@@ -146,10 +146,6 @@ rd.defsyntax firrtl :
    defrule element :
       (reg ?name:#symbol : ?type:#type = Register (@do ?value:#exp ?en:#exp)) :
          ut(name) => Register(type, value, en)
-      (mem ?name:#symbol : ?type:#type = Memory
-         (@do (?i:#exp => WritePort (@do ?value:#exp ?en:#exp) @...))) :
-         val ports = map(WritePort, i, value, en)
-         ut(name) => Memory(type, ports)
       (node ?name:#symbol : ?type:#type = ?exp:#exp) :
          ut(name) => Node(type, exp)
       (inst ?name:#symbol = Instance (@do ?module:#exp
@@ -271,8 +267,10 @@ rd.defsyntax firrtl :
          SIntValue(ut(value), IntWidth(ut(width)))
       (SInt (@do ?value:#int)) :
          SIntValue(ut(value), UnknownWidth())
-      (ReadPort (@do ?mem:#exp ?index:#exp)) :
-         ReadPort(mem, index, UnknownType())
+      (WritePort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
+         WritePort(mem, index, UnknownType(), enable)
+      (ReadPort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
+         ReadPort(mem, index, UnknownType(), enable)
       (?op:#symbol (@do ?es:#exp ... ?ints:#int ...)) :
          match(get?(operators, ut(op), false)) :
             (op:PrimOp) :

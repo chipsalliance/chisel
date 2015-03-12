@@ -144,6 +144,12 @@ public defstruct ReadPort <: Expression :
    mem: Expression
    index: Expression
    type: Type [multi => false]
+   enable: Expression
+public defstruct WritePort <: Expression :
+   mem: Expression
+   index: Expression
+   type: Type [multi => false]
+   enable: Expression
 public defstruct Null <: Expression
 
 public definterface Stmt
@@ -190,10 +196,6 @@ public defstruct Register <: Element :
 public defstruct Memory <: Element :
    type: Type [multi => false]
    writers: List<WritePort>
-public defstruct WritePort :
-   index: Expression
-   value: Expression
-   enable: Expression
 public defstruct Node <: Element :
    type: Type [multi => false]
    value: Expression

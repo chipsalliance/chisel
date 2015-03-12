@@ -4,6 +4,7 @@ TODO
    Remove letrec. Add to expressions: Register(input,en), ReadPort(mem,index,enable), WritePort(mem,index,enable)
    Add bit-reduce-and etc to primops
    Write pass to rename identifiers (alpha-transform)
+   Add partial bulk connect
    Update spec
       add new field for sequential or combinational
       add assertions

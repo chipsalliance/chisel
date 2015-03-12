@@ -139,7 +139,8 @@ defmethod print (o:OutputStream, e:Expression) :
          print-all(o, [op(e) "("])
          print-all(o, join(concat(args(e), consts(e)), ", "))
          print(o, ")")
-      (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ")"])
+      (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ", " enable(e) ")"])
+      (e:WritePort) : print-all(o, ["WritePort(" mem(e) ", " index(e) ", " enable(e) ")"])
       (e:Null) : print-all(o, ["Null"])
    print-debug(o,e)
 
@@ -193,9 +194,6 @@ defmethod print (o:OutputStream, e:Element) :
          print-all(o, join(ports(e), ", "))
          print(o, ")")
    print-debug(o,e)
-
-defmethod print (o:OutputStream, p:WritePort) :
-   print-all(o, [index(p) " => WritePort(" value(p) ", " enable(p) ")"])
 
 defmethod print (o:OutputStream, t:Type) :
    match(t) :
@@ -278,7 +276,8 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:Subfield) : Subfield(f(exp(e)), name(e), type(e)) 
       (e:Index) : Index(f(exp(e)), value(e), type(e))
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
-      (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e))
+      (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e), enable(e))
+      (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), enable(e))
       (e) : e
 
 public defmulti map<?T> (f: Expression -> Expression, e:?T&Element) -> T
@@ -286,10 +285,7 @@ defmethod map (f: Expression -> Expression, e:Element) -> Element :
    match(e) :
       (e:Register) :
          Register(type(e), f(value(e)), f(enable(e)))
-      (e:Memory) :
-         val writers* = for w in writers(e) map :
-                           WritePort(f(index(w)), f(value(w)), f(enable(w)))
-         Memory(type(e), writers*)                  
+      (e:Memory) : e
       (e:Node) :
          Node(type(e), f(value(e)))
       (e:Instance) :
