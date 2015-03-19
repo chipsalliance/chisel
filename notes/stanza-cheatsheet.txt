@@ -55,3 +55,11 @@ list(a) -> a
 list(a,b) -> a,b 
 
 println-all([a b c])
+
+to extract values (with correct type-age) from a tuple:
+val x = [1 "hi"]
+val [a,b] = x
+a typeof Int
+b typeof String
+
+to combine symbols: symbol-join

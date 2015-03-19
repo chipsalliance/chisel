@@ -1,0 +1,52 @@
+WHEN EXPANSION
+
+Goal:
+reg r
+wire w
+when p1 :
+  w := b
+  r.init := x
+    when p2 :
+      w := c
+      r := d
+r := e
+
+==>
+
+1. Remove last connect semantics
+2. Remove conditional blocks
+3. Eliminate concept of scoping
+
+Exp    | Value
+--------------
+r      | e
+w      | mux(p1,mux(p2,c,b),null)
+r.init | mux(p1,x,null)
+
+==>
+
+Symbolic Value - what can appear in value column
+sv = e
+   | null
+   | svmux(e,sv1,sv2)
+
+State:
+{
+  r => void
+  r.init => p1
+  w => svmux(e,_,_)
+}
+
+==>
+
+Build two tables, one mapping symbols to symbolic values, and another mapping symbols to declared types
+
+if w is a wire:
+merge {r=>x, w=>y} with {r=>x} under p : {r=>svmux(p,x,x), w=>y}
+
+if s is a reg:
+merge {r=>x,s=>y} with {r=>x} under p : {r=>svmux(p,x,x), s=>svmux(p,y,void)}
+
+
+
+

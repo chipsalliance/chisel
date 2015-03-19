@@ -1,10 +1,16 @@
 
 TODO 
-   Figure out how widths propogate for all updated primops
-   Remove letrec. Add to expressions: Register(input,en), ReadPort(mem,index,enable), WritePort(mem,index,enable)
-   Add bit-reduce-and etc to primops
-   Write pass to rename identifiers (alpha-transform)
-   Add partial bulk connect
+   Figure out how widths propogate for all updated primops (Adam)
+   Remove letrec. Add to expressions: Register(input,en), ReadPort(mem,index,enable), WritePort(mem,index,enable) (Patrick)
+   Add bit-reduce-and etc to primops (Jonathan)
+   Write pass to rename identifiers (alpha-transform) (Adam)
+   Add partial bulk connect (Scott, Stephen)
+   Add FIFOs to the IR (Palmer)
+   Registers/Memories only have data and enable fields, which can be written/read from. These are set by the front-end. This will probably have to wait (Palmer)
+   Multi-streams for print statements (Jack)
+   Consider def female node. (Patrick) 
+   Think about supporting memories (Scott)
+
    Update spec
       add new field for sequential or combinational
       add assertions
@@ -25,3 +31,15 @@ Tests:
    Error if declare anything other than module in circuit
    Error if incorrectly assign stuff, like use = instead of :=
    Error: Node not parsed for stmts
+
+Male node:
+defnode n = e
+==>
+wire n
+n := e
+
+Female node:
+defnode n = e
+==>
+wire n 
+e := n
