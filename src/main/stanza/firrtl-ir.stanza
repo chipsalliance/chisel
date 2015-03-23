@@ -147,7 +147,6 @@ public defstruct WritePort <: Expression :
    index: Expression
    type: Type [multi => false]
    enable: Expression
-public defstruct Null <: Expression
 
 public definterface Stmt
 public defstruct LetRec <: Stmt :

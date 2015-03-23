@@ -1,3 +1,6 @@
+; RUN: firrtl %s abcdefghijk c | tee %s.out | FileCheck %s 
+
+; CHECK: Expand Whens
 circuit top :
    module top :
       mem m : UInt(1)[2]
@@ -16,7 +19,8 @@ circuit top :
           accessor d = m[i]
           d := i
       else :
-        when p2 :
+        wire p3 : UInt(1)
+        when p3 :
           accessor w = m[i] 
           i := w
           accessor x = m[i]
@@ -26,3 +30,4 @@ circuit top :
           i := y
           accessor z = m[i]
           z := i
+; CHECK: Finished Expand Whens
