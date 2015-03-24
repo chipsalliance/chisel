@@ -151,29 +151,30 @@ defmethod print (o:OutputStream, c:Stmt) :
          println(o, "in :")
          print(io, body(c))
       (c:DefWire) :
-         print-all(["wire " name(c) " : " type(c)])
+         print-all(o,["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
-         print-all(["reg " name(c) " : " type(c)])
+         print-all(o,["reg " name(c) " : " type(c)])
       (c:DefMemory) :
-         print-all(["mem " name(c) " : " type(c)])
+         print-all(o,["mem " name(c) " : " type(c)])
       (c:DefInstance) :
-         print-all(["inst " name(c) " of " module(c)])
+         print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :
-         print-all(["node " name(c) " = " value(c)])      
+         print-all(o,["node " name(c) " = " value(c)])      
       (c:DefAccessor) :
-         print-all(["accessor " name(c) " = " source(c) "[" index(c) "]"])      
+         print-all(o,["accessor " name(c) " = " source(c) "[" index(c) "]"])      
       (c:Conditionally) :
          println-all(o, ["when " pred(c) " :"])
          print(io,conseq(c))
          if alt(c) not-typeof EmptyStmt :
-            println(o, "\nelse :")
+            print(o, "\nelse :")
+            print(io, "\n")
             print(io,alt(c))
       (c:Begin) :
          do(print{o,_}, join(body(c), "\n"))
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
       (c:EmptyStmt) :
-         print(o, "skip")
+         print(o, "ip")
    print-debug(o,c)
 
 defmethod print (o:OutputStream, e:Element) :

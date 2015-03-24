@@ -272,8 +272,10 @@ rd.defsyntax firrtl :
       (ReadPort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
          ReadPort(mem, index, UnknownType(), enable)
       (?op:#symbol (@do ?es:#exp ... ?ints:#int ...)) :
+         println("Op-symbol is:~" % [op])
          match(get?(operators, ut(op), false)) :
             (op:PrimOp) :
+               println("Op is:~ ~" % [op,op == ADD-OP])
                DoPrim(op, es, map(ut, ints), UnknownType())
             (f:False) :
                throw-error $ string-join $ [

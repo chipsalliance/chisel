@@ -869,7 +869,7 @@ defn lower-module (m:Module,table:HashTable<Symbol,List<KeyValue<Expression,Flip
          (s:DefWire) : table[name(s)] = get-entries(name(s),type(s))
          (s:DefRegister) : 
             table[name(s)] = get-entries(name(s),type(s))
-            table[to-symbol("~.init" % to-string(name(s)))] = get-entries(to-symbol("~#init" % to-string(name(s))),type(s)) ; TODO, we are keeping WRegInits around
+            table[to-symbol("~.init" % [to-string(name(s))])] = get-entries(to-symbol("~#init" % [to-string(name(s))]),type(s)) ; TODO, we are keeping WRegInits around
          (s:DefInstance) : 
             val r = WRef(name(s),type(module(s)),InstanceKind(),FEMALE)
             val ports = table[name(module(s) as WRef)]
