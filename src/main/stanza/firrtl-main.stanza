@@ -1,7 +1,7 @@
 include<"core/stringeater.stanza">
 include<"compiler/lexer.stanza">
 include<"compiler/parser.stanza">
-include<"compiler/rdparser2.stanza">
+include<"compiler/rdparser.stanza">
 include<"compiler/macro-utils.stanza">
 include("firrtl-ir.stanza")
 include("ir-utils.stanza")

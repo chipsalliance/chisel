@@ -37,7 +37,7 @@ defn split-string (s:String, split:String) -> List<String> :
    loop(s)
 
 ;======= Unwrap Prefix Forms ============
-defn unwrap-prefix-form (form) :
+defn unwrap-prefix-form (form) -> ? :
    match(form) :
       (form:Token) :
          val fs = unwrap-prefix-form(item(form))
@@ -53,12 +53,12 @@ defn unwrap-prefix-form (form) :
          list(form)
 
 ;======= Split Dots ============
-defn split-dots (forms:List) :
+defn split-dots (forms:List) -> ? :
    defn to-form (x:String) :
       val num? = for c in x all? :
                     c >= '0' and c <= '9'
       to-int(x) when num? else to-symbol(x)              
-   defn split (form) :
+   defn split (form) -> List:
       match(ut(form)) :
          (f:Symbol) :
             val fstr = to-string(f)

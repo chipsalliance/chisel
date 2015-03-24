@@ -11,14 +11,14 @@ all-noise:
 all: build check done
 
 install:
-	cd src/lib && unzip stanzam.zip
-	cd stanzam && sudo ./stanzam -platform os-x -install /usr/local/bin/stanzam
+	cd src/lib && unzip stanza.zip
+	cd src/lib/stanza && sudo ./stanza -platform os-x -install /usr/local/bin/stanza
 
 build-deploy: 
-	cd $(firrtl_dir) && stanzam -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl
+	cd $(firrtl_dir) && stanza -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl
 
 build: 
-	cd $(firrtl_dir) && stanzam -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl
+	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl
 
 check: 
 	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/

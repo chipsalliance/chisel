@@ -142,14 +142,14 @@ defmethod print (o:OutputStream, e:Expression) :
    print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :
+   val io = IndentedStream(o, 3)
    match(c) :
       (c:LetRec) :
          println(o, "let : ")
-         indented{o, _} $ fn () :
-            for entry in entries(c) do :
-               println-all([key(entry) " = " value(entry)])
+         for entry in entries(c) do :
+            println-all(io,[key(entry) " = " value(entry)])
          println(o, "in :")
-         indented(o, print{o, body(c)})
+         print(io, body(c))
       (c:DefWire) :
          print-all(["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
@@ -164,12 +164,12 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(["accessor " name(c) " = " source(c) "[" index(c) "]"])      
       (c:Conditionally) :
          println-all(o, ["when " pred(c) " :"])
-         indented(o, print{conseq(c)})
+         print(io,conseq(c))
          if alt(c) not-typeof EmptyStmt :
             println(o, "\nelse :")
-            indented(o, print{alt(c)})
+            print(io,alt(c))
       (c:Begin) :
-         do(print, join(body(c), "\n"))
+         do(print{o,_}, join(body(c), "\n"))
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
       (c:EmptyStmt) :
@@ -222,36 +222,16 @@ defmethod print (o:OutputStream, p:Port) :
 
 defmethod print (o:OutputStream, m:Module) :
    println-all(o, ["module " name(m) " :"])
-   indented{o, _} $ fn () :
-      do(println, ports(m))
-      print(body(m))
+   val io = IndentedStream(o, 3)
+   for p in ports(m) do :
+      println(io,p)
+   print(io,body(m))
 
 defmethod print (o:OutputStream, c:Circuit) :
    println-all(o, ["circuit " main(c) " :"])
-   indented(o, do{println, modules(c)})   
-
-;================== INDENTATION ============================
-defn IndentedStream (o:OutputStream, n:Int) :
-   var indent? = true
-   defn put (c:Char) :
-      if indent? :
-         do(print{o, " "}, 0 to n)
-         indent? = false
-      print(o, c)
-      if c == '\n' :
-         indent? = true
-      
-   new OutputStream :
-      defmethod print (this, s:String) : do(put, s)
-      defmethod print (this, c:Char) : put(c)
-   
-defn indented (o:OutputStream, f: () -> ?) :
-   val prev-stream = CURRENT-OUTPUT-STREAM
-   dynamic-wind(
-      fn () : CURRENT-OUTPUT-STREAM = IndentedStream(o, 3)
-      f
-      fn (f) : CURRENT-OUTPUT-STREAM = prev-stream)
-
+   val io = IndentedStream(o, 3)
+   for m in modules(c) do :
+      println(io, m)
 
 ;=================== MAPPERS ===============================
 public defn map<?T> (f: Type -> Type, t:?T&Type) -> T :

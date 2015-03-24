@@ -231,7 +231,7 @@ defn to-working-ir (c:Circuit) :
       match(map(to-exp,e)) :
          (e:Ref) : WRef(name(e), type(e), NodeKind(), UNKNOWN-GENDER)
          (e:Subfield) : 
-            if name(e) == `init : WRegInit(exp(e), to-symbol(to-string(name(exp(e) as WRef)) + ".init"), type(e), UNKNOWN-GENDER)
+            if name(e) == `init : WRegInit(exp(e), to-symbol("~.init" % [name(exp(e) as WRef)]), type(e), UNKNOWN-GENDER)
             else : WSubfield(exp(e), name(e), type(e), UNKNOWN-GENDER)
          (e:Index) : WIndex(exp(e), value(e), type(e), UNKNOWN-GENDER)
          (e) : e
@@ -869,7 +869,7 @@ defn lower-module (m:Module,table:HashTable<Symbol,List<KeyValue<Expression,Flip
          (s:DefWire) : table[name(s)] = get-entries(name(s),type(s))
          (s:DefRegister) : 
             table[name(s)] = get-entries(name(s),type(s))
-            table[to-symbol(to-string(name(s)) + ".init")] = get-entries(to-symbol(to-string(name(s))+ "#init"),type(s))
+            table[to-symbol("~.init" % to-string(name(s)))] = get-entries(to-symbol("~#init" % to-string(name(s))),type(s)) ; TODO, we are keeping WRegInits around
          (s:DefInstance) : 
             val r = WRef(name(s),type(module(s)),InstanceKind(),FEMALE)
             val ports = table[name(module(s) as WRef)]
@@ -984,7 +984,34 @@ defmethod map (f: SymbolicValue -> SymbolicValue, sv:SymbolicValue) -> SymbolicV
 defn new-vec () -> Vector<KeyValue<Symbol,[Stmt SymbolicValue]>> :
    Vector<KeyValue<Symbol,[Stmt SymbolicValue]>>()
 
-;defn expand-whens (table:HashTable,KeyValue<Symbol,[Kind SymbolicValue]>>) -> Stmt :
+;defn expand-whens (table:List<KeyValue<Symbol,[Stmt SymbolicValue]>>) -> HashMap<Symbol,SymbolicValue> :
+;   val enables = HashMap<Symbol,SymbolicValue>(symbol-hash)
+;   for x in table do :
+;      val [s sv] = value(x)
+;      val sym = key(x)
+;      val sv* = 
+;         match(s) :
+;            (s:WDefAccessor) : 
+;               switch {_ == gender(s)} :
+;                  FEMALE : 
+;                     defn get-enable (sv:SymbolicValue) -> SymbolicValue :
+;                        match(map(get-enable,sv)) :
+;                           (sv: SVExp) : SVExp(UIntValue(1,1))
+;                           (sv: SVNul) : SVExp(UIntValue(0,1))
+;                           (sv) : sv
+;                     get-enable(sv)
+;                  MALE :
+;                     for y in table do :
+;                        val [ys ysv] = value(y)
+;                        if contains?(key(x),ysv) :
+;                           
+;                     defn get-enable (sym:Symbol,sv:SymbolicValue) -> SymbolicValue :
+;                        defn active (e:Expression) -> 
+;                        match(map(get-enable,sv)) :
+;                           (sv: SVExp) : exp
+;                           (sv: SVNul) : SVExp(UIntValue(0,1))
+;                           (sv) : sv
+                              
 
 defn optimize-table (table:List<KeyValue<Symbol,[Stmt SymbolicValue]>>) -> List<KeyValue<Symbol,[Stmt SymbolicValue]>>:
    defn optimize (sv:SymbolicValue) -> SymbolicValue :

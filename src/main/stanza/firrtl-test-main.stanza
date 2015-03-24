@@ -1,7 +1,7 @@
 include<"core/stringeater.stanza">
 include<"compiler/lexer.stanza">
 include<"compiler/parser.stanza">
-include<"compiler/rdparser2.stanza">
+include<"compiler/rdparser.stanza">
 include<"compiler/macro-utils.stanza">
 include("firrtl-ir.stanza")
 include("ir-utils.stanza")
@@ -26,8 +26,7 @@ defn set-printvars! (p:List<Char>) :
    if contains(p,'c') : PRINT-CIRCUITS = true
 
 defn main () :
-   val arg = commandline-arguments()
-   val args = split(arg,' ')
+   val args = commandline-arguments()
    val lexed = lex-file(args[1])
    val c = parse-firrtl(lexed)
    if length(args) >= 4 :
