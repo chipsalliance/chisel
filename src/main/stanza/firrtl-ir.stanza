@@ -147,11 +147,12 @@ public defstruct WritePort <: Expression :
    index: Expression
    type: Type [multi => false]
    enable: Expression
+public defstruct Register <: Expression :
+   type: Type [multi => false]
+   value: Expression
+   enable: Expression
 
 public definterface Stmt
-public defstruct LetRec <: Stmt :
-   entries: List<KeyValue<Symbol, Element>>
-   body: Stmt
 public defstruct DefWire <: Stmt :
    name: Symbol
    type: Type
@@ -181,24 +182,6 @@ public defstruct Connect <: Stmt :
    loc: Expression
    exp: Expression
 public defstruct EmptyStmt <: Stmt
-
-public definterface Element
-public defmulti type (e:Element) -> Type
-
-public defstruct Register <: Element :
-   type: Type [multi => false]
-   value: Expression
-   enable: Expression
-public defstruct Memory <: Element :
-   type: Type [multi => false]
-   writers: List<WritePort>
-public defstruct Node <: Element :
-   type: Type [multi => false]
-   value: Expression
-public defstruct Instance <: Element :
-   type: Type [multi => false]
-   module: Expression
-   ports: List<KeyValue<Symbol,Expression>>
 
 public definterface Type
 public defstruct UIntType <: Type :

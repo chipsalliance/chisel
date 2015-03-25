@@ -45,7 +45,22 @@ if w is a wire:
 merge {r=>x, w=>y} with {r=>x} under p : {r=>svmux(p,x,x), w=>y}
 
 if s is a reg:
-merge {r=>x,s=>y} with {r=>x} under p : {r=>svmux(p,x,x), s=>svmux(p,y,void)}
+merge {r=>x,s=>y} with {r=>x} under p : {r=>svmux(p,x,x), s=>svmux(p,y,void)} ;this is to correctly calculate the ENABLE signal! when actually calculating the input, we will reduce it
+
+wire r     {r=>VOID}
+r := x     {r=>x}
+when p     {r=>x}
+  reg s    {r=>x,s=>VOID}
+  s := y   {r=>x,s=>y}
+  wire w   {r=>x,s=>y,w=>VOID}
+  w := y   {r=>x,s=>y,w=>y}
+else 
+  emptystmt {r=>x}
+;merge table-c with table-a
+;get unique keys of table-a + table-c
+; (r,s,w)
+{r=>(p?x:x),s=>
+
 
 
 

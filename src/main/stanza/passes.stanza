@@ -156,27 +156,27 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:ReadAccessorKind) : "racc"
       (k:WriteAccessorKind) : "wacc"
 
-defn hasGender (e:Expression|Stmt|Type|Element|Port|Field) :
+defn hasGender (e:Expression|Stmt|Type|Port|Field) :
    e typeof WRef|WSubfield|WIndex|WDefAccessor|WRegInit
 
-defn hasWidth (e:Expression|Stmt|Type|Element|Port|Field) :
+defn hasWidth (e:Expression|Stmt|Type|Port|Field) :
    e typeof UIntType|SIntType|UIntValue|SIntValue|WRegInit
 
-defn hasType (e:Expression|Stmt|Type|Element|Port|Field) :
+defn hasType (e:Expression|Stmt|Type|Port|Field) :
    e typeof Ref|Subfield|Index|DoPrim|WritePort|ReadPort|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory|Register
-      |Memory|Node|Instance|VectorType|Port|Field|WRegInit
+      |VectorType|Port|Field|WRegInit
 
-defn hasKind (e:Expression|Stmt|Type|Element|Port|Field) :
+defn hasKind (e:Expression|Stmt|Type|Port|Field) :
    e typeof WRef
 
-defn any-debug? (e:Expression|Stmt|Type|Element|Port|Field) : 
+defn any-debug? (e:Expression|Stmt|Type|Port|Field) : 
    (hasGender(e) and PRINT-GENDERS) or
    (hasType(e) and PRINT-TYPES) or
    (hasWidth(e) and PRINT-WIDTHS) or
    (hasKind(e) and PRINT-KINDS)
 
-defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port|Field) :
+defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field) :
    defn wipe-width (t:Type) -> Type : 
      match(t) :
         (t:UIntType) : UIntType(UnknownWidth())
@@ -267,9 +267,6 @@ defn resolve-kinds (c:Circuit) :
    defn find (m:Module, kinds:HashTable<Symbol,Kind>) :
       defn find-stmt (s:Stmt) -> Stmt :
          match(s) :
-            (s:LetRec) : 
-               for e in entries(s) do :
-                  kinds[key(e)] = get-elem-kind(value(e))
             (s:DefWire) : kinds[name(s)] = NodeKind()
             ;TODO add DefNode
             (s:DefRegister) : kinds[name(s)] = RegKind()
@@ -278,11 +275,6 @@ defn resolve-kinds (c:Circuit) :
             (s:WDefAccessor) : kinds[name(s)] = AccessorKind()
             (s) : false
          map(find-stmt,s)
-
-      defn get-elem-kind (e:Element) :
-         match(e) :
-            (e: Memory) : StructuralMemKind()
-            (e) : NodeKind()
 
       kinds[name(m)] = ModuleKind()
       for p in ports(m) do :
@@ -506,9 +498,8 @@ defn infer-exp-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression
       (e:WritePort) : WritePort(mem(e),index(e),get-vector-subtype(type(mem(e))),enable(e))
       (e:UIntValue|SIntValue) : e
 
-defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt, List<KeyValue<Symbol,Type>>] :
+defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<Symbol,Type>>] :
    match(map(infer-exp-types{_,l},s)) :
-      (s:LetRec) : [s,l] ;TODO, this is wrong but we might be getting rid of letrecs?
       (s:Begin) : 
          var env = l
          val body* = 
@@ -868,8 +859,13 @@ defn lower-module (m:Module,table:HashTable<Symbol,List<KeyValue<Expression,Flip
       match(stmt) :
          (s:DefWire) : table[name(s)] = get-entries(name(s),type(s))
          (s:DefRegister) : 
-            table[name(s)] = get-entries(name(s),type(s))
-            table[to-symbol("~.init" % [to-string(name(s))])] = get-entries(to-symbol("~#init" % [to-string(name(s))]),type(s)) ; TODO, we are keeping WRegInits around
+            val regs = get-entries(name(s),type(s))
+            val init-sym = symbol-join([name(s),`.init])
+            val init-regs = for r in regs map : 
+               val [e f] = [key(r) value(r)]
+               WRegInit(e,symbol-join([name(e),`.init]),type(e),gender(e)) => f
+            table[name(s)] = regs
+            table[init-sym] = init-regs
          (s:DefInstance) : 
             val r = WRef(name(s),type(module(s)),InstanceKind(),FEMALE)
             val ports = table[name(module(s) as WRef)]
@@ -969,6 +965,24 @@ public defstruct SVMux <: SymbolicValue :
    alt : SymbolicValue
 public defstruct SVNul <: SymbolicValue
 
+defstruct SSV :
+   stmt : Stmt
+   sv : SymbolicValue
+
+defn is-equal (a:SymbolicValue,b:SymbolicValue) -> True|False :
+   defn ex-equal (e:Expression,d:Expression) -> True|False :
+      match(e,d) : 
+         (e:WRef,d:WRef) : name(e) == name(d)
+         (e,d) : false
+   match(a,b) :
+      (a:SVNul,b:SVNul) : true
+      (a:SVExp,b:SVExp) : ex-equal(exp(a), exp(b))
+      (a:SVMux,b:SVMux) : ex-equal(pred(a),pred(b)) and is-equal(conseq(a),conseq(b)) and is-equal(alt(a),alt(b))
+      (a,b) : false
+
+defmethod print (o:OutputStream, ssv:SSV) :
+   print-all(o, ["[ {" stmt(ssv) "} :: {" sv(ssv) "} ]"])
+
 defmethod print (o:OutputStream, sv:SymbolicValue) :
    match(sv) :
       (sv: SVExp) : print(o, exp(sv))
@@ -981,131 +995,187 @@ defmethod map (f: SymbolicValue -> SymbolicValue, sv:SymbolicValue) -> SymbolicV
       (sv: SVMux) : SVMux(pred(sv),f(conseq(sv)),f(alt(sv)))
       (sv) : sv
 
-defn new-vec () -> Vector<KeyValue<Symbol,[Stmt SymbolicValue]>> :
-   Vector<KeyValue<Symbol,[Stmt SymbolicValue]>>()
+defn new-table () -> Vector<KeyValue<Symbol,SSV>> :
+   Vector<KeyValue<Symbol,SSV>>()
 
-;defn expand-whens (table:List<KeyValue<Symbol,[Stmt SymbolicValue]>>) -> HashMap<Symbol,SymbolicValue> :
-;   val enables = HashMap<Symbol,SymbolicValue>(symbol-hash)
-;   for x in table do :
-;      val [s sv] = value(x)
-;      val sym = key(x)
-;      val sv* = 
-;         match(s) :
-;            (s:WDefAccessor) : 
-;               switch {_ == gender(s)} :
-;                  FEMALE : 
-;                     defn get-enable (sv:SymbolicValue) -> SymbolicValue :
-;                        match(map(get-enable,sv)) :
-;                           (sv: SVExp) : SVExp(UIntValue(1,1))
-;                           (sv: SVNul) : SVExp(UIntValue(0,1))
-;                           (sv) : sv
-;                     get-enable(sv)
-;                  MALE :
-;                     for y in table do :
-;                        val [ys ysv] = value(y)
-;                        if contains?(key(x),ysv) :
-;                           
-;                     defn get-enable (sym:Symbol,sv:SymbolicValue) -> SymbolicValue :
-;                        defn active (e:Expression) -> 
-;                        match(map(get-enable,sv)) :
-;                           (sv: SVExp) : exp
-;                           (sv: SVNul) : SVExp(UIntValue(0,1))
-;                           (sv) : sv
-                              
+defn get-enables (table:List<KeyValue<Symbol,SSV>>) -> HashTable<Symbol,SymbolicValue> :;TODO reset is wrong
+   val zero = UIntValue(0,IntWidth(1))
+   val one = UIntValue(1,IntWidth(1))
+   defn equals? (e1:Expression,e2:UIntValue) -> True|False :;TODO note I don't compare width
+      match(e1) :
+         (e:UIntValue) : 
+            if value(e) == value(e2) : true
+            else : false
+         (e) : false
+   defn one? (e:Expression) -> True|False : 
+      equals?(e,one)
+   defn zero? (e:Expression) -> True|False : ;TODO note I don't compare width
+      equals?(e,zero)
+   defn AND (e1:Expression,e2:Expression) -> Expression :
+      if zero?(e1) : zero
+      else if zero?(e2) : zero
+      else if one?(e1) : e2
+      else if one?(e2) : e1
+      else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   defn OR (e1:Expression,e2:Expression) -> Expression :
+      if one?(e1) : one
+      else if one?(e2) : one
+      else if zero?(e1) : e2
+      else if zero?(e2) : e1
+      else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   defn NOT (e1:Expression) -> Expression :
+      DoPrim(EQUAL-UU-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+   defn reduce-or (l:List<True|False>) -> True|False :
+      if length(l) == 0 : false
+      else : head(l) or reduce-or(tail(l))
+   defn reduce-or (l:List<Expression>) -> Expression :
+      if length(l) == 0 : zero
+      else : OR(head(l) reduce-or(tail(l)))
+      
+   defn get-read-enable (sym:Symbol,sv:SymbolicValue) -> Expression :
+      defn active (e:Expression) -> True|False :
+         match(e) :
+            (e:WRef) : 
+               name(e) == sym
+            (e:WSubfield) : active(exp(e))
+            (e:WRegInit) : active(reg(e))
+            (es:DoPrim) : reduce-or{_} $ for e in args(es) map : active(e)
+            (e:ReadPort) : reduce-or{_} $ map(active,list(mem(e),index(e),enable(e)))
+            (e:WritePort) : reduce-or{_} $ map(active,list(mem(e),index(e),enable(e)))
+            (e:Register) : reduce-or{_} $ map(active,list(value(e),enable(e)))
+            (e) : false
+      val x = match(sv) : 
+         (sv: SVNul) : zero
+         (sv: SVExp) : 
+            if active(exp(sv)) : one
+            else : zero
+         (sv: SVMux) : 
+         ; TODO what if used in predicate?
+            val e0 = get-read-enable(sym,SVExp(pred(sv)))
+            val e1 = get-read-enable(sym,conseq(sv))
+            val e2 = get-read-enable(sym,alt(sv))
+            OR(e0,OR(AND(pred(sv),e1),AND(NOT(pred(sv)),e2)))
+      ;println-all(["Returning " x " from " sym " with " sv])
+      x
 
-defn optimize-table (table:List<KeyValue<Symbol,[Stmt SymbolicValue]>>) -> List<KeyValue<Symbol,[Stmt SymbolicValue]>>:
+   defn get-write-enable (sv:SymbolicValue) -> SymbolicValue :
+      match(map(get-write-enable,sv)) :
+         (sv: SVExp) : SVExp(one)
+         (sv: SVNul) : SVExp(zero)
+         (sv) : sv
+
+   val enables = HashTable<Symbol,SymbolicValue>(symbol-hash)
+   for x in table do :
+      val sym = key(x)
+      val s = stmt(value(x))
+      match(s) :
+         (s:WDefAccessor) : 
+            switch {_ == gender(s)} :
+               FEMALE : enables[sym] = get-write-enable(sv(value(x)))
+               MALE : enables[sym] = SVExp{_} $ reduce-or{_} $ 
+                  for y in table map-append :
+                     list(get-read-enable(sym,sv(value(y))))
+         (s:DefRegister) : 
+            val write-enable = get-write-enable(sv(value(x)))
+            enables[sym] = SVMux(WRef(`reset,UIntType(IntWidth(1)),PortKind(),MALE),reset-enable,write-enable) where :
+               val x = for x in table find : key(x) == symbol-join([name(s),`.init])
+               val reset-enable = match(x) :
+                  (x:False) : SVExp(zero)
+                  (x:KeyValue<Symbol,SSV>) : 
+                     match(sv(value(x))) :
+                        (v:SVNul) : SVExp(zero)
+                        (v) : SVExp(one)
+         (s) : s
+   enables
+            
+defn optimize-table (table:List<KeyValue<Symbol,SSV>>) -> List<KeyValue<Symbol,SSV>>:
    defn optimize (sv:SymbolicValue) -> SymbolicValue :
       match(map(optimize,sv)) :
          (sv:SVMux) : 
-            if conseq(sv) typeof SVNul and alt(sv) typeof SVNul : SVNul()
+            if is-equal(conseq(sv),alt(sv)) : conseq(sv)
             else : sv
          (sv) : sv
    for x in table map :
-      val [k sv] = value(x)
-      key(x) => [k optimize(sv)]
+      key(x) => SSV(stmt(value(x)) optimize(sv(value(x))))
 
-defn build-table (s:Stmt, table:Vector<KeyValue<Symbol,[Stmt SymbolicValue]>>) :
+defn build-table (s:Stmt, table-arg:Vector<KeyValue<Symbol,SSV>>) -> Vector<KeyValue<Symbol,SSV>> : 
+   var table = table-arg
+   println("=====================")
    match(s) :
-      (s:DefWire) : add(table,name(s) => [s SVNul()])
-      (s:DefNode) : add(table,name(s) => [s SVNul()])
-      (s:WDefAccessor) : add(table,name(s) => [s SVNul()]) 
-      (s:DefInstance) : add(table,name(s) => [s SVNul()])
-      (s:DefMemory) : add(table,name(s) => [s SVNul()])
+      (s:DefWire) : add(table,name(s) => SSV(s SVNul()))
+      (s:DefNode) : add(table,name(s) => SSV(s SVNul()))
+      (s:DefRegister) : add(table,name(s) => SSV(s SVNul()))
+      (s:WDefAccessor) : add(table,name(s) => SSV(s SVNul()) )
+      (s:DefInstance) : add(table,name(s) => SSV(s SVNul()))
+      (s:DefMemory) : add(table,name(s) => SSV(s SVNul()))
       (s:Conditionally) :
-         defn in? (i:Symbol,t:Vector<KeyValue<Symbol,[Stmt SymbolicValue]>>) -> True|False :
-            for x in t any? : i == key(x)
-         defn get (i:Symbol,t:Vector<KeyValue<Symbol,[Stmt SymbolicValue]>>) -> [Stmt SymbolicValue] :
+         defn deepcopy (t:Vector<KeyValue<Symbol,SSV>>) -> Vector<KeyValue<Symbol,SSV>> :
+            t0 where :
+               val t0 = Vector<KeyValue<Symbol,SSV>>()
+               for x in t do :
+                  add(t0,key(x) => SSV(stmt(value(x)),sv(value(x))))
+         defn get (t:Vector<KeyValue<Symbol,SSV>>,i:Symbol) -> SSV|False :
             val kv = for x in t find : i == key(x)
             match(kv) :
-               (e:False) : [EmptyStmt() SVNul()]
-               (e:KeyValue<Symbol,[Stmt SymbolicValue]>) : value(e)
-         defn all-kvs (ts:List<Vector<KeyValue<Symbol,[Stmt SymbolicValue]>>>) -> Vector<KeyValue<Symbol,[Stmt SymbolicValue]>> :
-            val t0 = new-vec()
-            for v in ts do : 
-               for t in v do :
-                  add(t0,key(t) => value(t))
-            t0
+               (e:False) : false
+               (e:KeyValue<Symbol,SSV>) : value(e)
+         defn get-unique-keys (ts:List<Vector<KeyValue<Symbol,SSV>>>) -> Vector<Symbol> :
+            t0 where :
+               val t0 = Vector<Symbol>()
+               for v in ts do : 
+                  for t in v do :
+                     val duplicate? = for x in t0 any? : x == key(t)
+                     if not duplicate? : add(t0,key(t))
 
-         val table-c = new-vec()
-         build-table(conseq(s),table-c)
+         println("TABLE")
+         for x in table do : println(x)
 
-         val table-a = new-vec()
-         build-table(alt(s),table-a)
+         val table1 = table
+         val table2 = deepcopy(table)
 
-         val table-m = new-vec()
-         for kv in all-kvs(list(table,table-c,table-a)) do :
-            defn get-sv (i:Symbol,t:Vector<KeyValue<Symbol,[Stmt SymbolicValue]>>) -> SymbolicValue|False :
-               val kv = for x in t find : i == key(x)
-               match(kv) :
-                  (e:KeyValue<Symbol,[Stmt SymbolicValue]>) : 
-                     val [k sv] = value(e)
-                     sv
-                  (e:False) : false
-               
-            val i = key(kv)
-            val [k,sv] = get(i,table)
-            val [k-c,sv-c] = get(i,table-c)
-            val [k-a,sv-a] = get(i,table-a)
-            val [k* sv*] = 
-               match(get-sv(i,table),get-sv(i,table-c),get-sv(i,table-a)) :
-                  (sv?:SymbolicValue,sv-c?:SymbolicValue,sv-a?:SymbolicValue) : [k, SVMux(pred(s),sv-c?,sv-a?)]
-                  (sv?:SymbolicValue,sv-c?:SymbolicValue,sv-a?:False) : [k, SVMux(pred(s),sv-c?,sv)]
-                  (sv?:SymbolicValue,sv-c?:False,sv-a?:SymbolicValue) : [k, SVMux(pred(s),sv,sv-a?)]
-                  (sv?:SymbolicValue,sv-c?:False,sv-a?:False) : [k,sv]
-                  (sv?:False,sv-c?:SymbolicValue,sv-a?:SymbolicValue) : [k, SVMux(pred(s),sv-c?,sv-a?)]
-                  (sv?:False,sv-c?:SymbolicValue,sv-a?:False) : [k-c, SVMux(pred(s),sv-c?,sv)]
-                  (sv?:False,sv-c?:False,sv-a?:SymbolicValue) : [k-a, SVMux(pred(s),sv,sv-a?)]
-                  (sv?:False,sv-c?:False,sv-a?:False) : [k,sv]
+         val table-c = build-table(conseq(s),table1)
+         println("TABLE-C")
+         for x in table-c do : println(x)
 
-            val inserted? = label<True|False> myret :
-               for (index in 0 to false, x in table) do :
-                  if key(x) == i : 
-                     table[index] = i => [k* sv*]
-                     myret(true)
-               myret(false)
-            if not inserted? : add(table,i => [k* sv*])
-               
+         val table-a = build-table(alt(s),table2)
+         println("TABLE-A")
+         for x in table-a do : println(x)
+
+         val table-m = new-table()
+         for i in get-unique-keys(list(table-c,table-a)) do :
+            add{table-m,i => _} $ match(get(table-c,i),get(table-a,i)) :
+                  (c:SSV,a:SSV) : SSV(stmt(c),SVMux(pred(s),sv(c),sv(a)))
+                  (c:SSV,a:False) : SSV(stmt(c),SVMux(pred(s),sv(c),SVNul()))
+                  (c:False,a:SSV) : SSV(stmt(a),SVMux(pred(s),SVNul(),sv(a)))
+                  (c:False,a:False) : error("Shouldn't be here")
+         println("TABLE-M")
+         for x in table-m do : println(x)
+         table = table-m
+         println("TABLE")
+         for x in table do : println(x)
       (s:Connect) :
-         var i* = 0
-         var kv* = false
-         for (i in 0 to false, kv in table) do :
-            if name(loc(s) as ?) == key(kv) :
-               i* = i
-               kv* = kv
-         match(kv*) :
-            (kv:False) : add(table,name(loc(s) as ?) => [EmptyStmt() SVExp(exp(s))])
-            (kv:KeyValue<Symbol,[Stmt SymbolicValue]>) : 
-               val [k sv] = value(kv)
-               table[i*] = key(kv) => [k SVExp(exp(s))]
-      (s:Begin) : for s* in body(s) do: build-table(s*,table)
+         val i = for (i in 0 to false, kv in table) find :
+            name(loc(s) as ?) == key(kv)
+         match(i) :
+            (i:False) : add(table,name(loc(s) as ?) => SSV(EmptyStmt() SVExp(exp(s))))
+            (i:Int) : 
+               val kv = table[i]
+               val [k sv] = [stmt(value(kv)) sv(value(kv))]
+               table[i] = key(kv) => SSV(k SVExp(exp(s)))
+      (s:Begin) : for s* in body(s) do: table = build-table(s*,table)
       (s) : s
+   table
          
 defn expand-whens (m:Module) -> Module :
-   var table = new-vec()
-   build-table(body(m),table)
+   val table = build-table(body(m),new-table())
+   println("Original Table")
    for x in table do : println(x)
    val table* = optimize-table(to-list(table))
+   println("Optimized Table")
    for x in table* do : println(x)
+   val enables = get-enables(table*)
+   println("Enable Table")
+   for x in enables do : println(x)
    Module(name(m),ports(m),body(m))
    ;Module(name(m),ports(m),expand-whens-stmt(body(m),table))
 

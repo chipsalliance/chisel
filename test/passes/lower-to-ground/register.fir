@@ -15,7 +15,7 @@
       ; CHECK: reg r1#y : SInt
       ; CHECK: wire q#x : UInt
       ; CHECK: wire q#y : SInt
-      ; CHECK: r1#init#x := q#x
-      ; CHECK: q#y := r1#init#y
+      ; CHECK: r1#x.init := q#x
+      ; CHECK: q#y := r1#y.init
 
 ; CHECK: Finished Lower To Ground

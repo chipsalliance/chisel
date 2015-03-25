@@ -5,7 +5,7 @@ defpackage firrtl.ir-utils :
 
 ;============== DEBUG STUFF =============================
 
-public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Element|Port|Field) -> False
+public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field) -> False
 
 ;============== PRINTERS ===================================
 
@@ -144,12 +144,6 @@ defmethod print (o:OutputStream, e:Expression) :
 defmethod print (o:OutputStream, c:Stmt) :
    val io = IndentedStream(o, 3)
    match(c) :
-      (c:LetRec) :
-         println(o, "let : ")
-         for entry in entries(c) do :
-            println-all(io,[key(entry) " = " value(entry)])
-         println(o, "in :")
-         print(io, body(c))
       (c:DefWire) :
          print-all(o,["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
@@ -174,24 +168,8 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
       (c:EmptyStmt) :
-         print(o, "ip")
+         print(o, "$empty$")
    print-debug(o,c)
-
-defmethod print (o:OutputStream, e:Element) :
-   match(e) :
-      (e:Register) :
-         print-all(o, ["Register(" type(e) ", " value(e) ", " enable(e) ")"])
-      (e:Memory) :
-         print-all(o, ["Memory(" type(e) ", "])
-         print-all(o, join(writers(e), ", "))
-         print(o, ")")   
-      (e:Node) :
-         print-all(o, ["Node(" type(e) ", " value(e) ")"])
-      (e:Instance) :
-         print-all(o, ["Instance(" module(e) ", "])
-         print-all(o, join(ports(e), ", "))
-         print(o, ")")
-   print-debug(o,e)
 
 defmethod print (o:OutputStream, t:Type) :
    match(t) :
@@ -258,26 +236,9 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), enable(e))
       (e) : e
 
-public defmulti map<?T> (f: Expression -> Expression, e:?T&Element) -> T
-defmethod map (f: Expression -> Expression, e:Element) -> Element :
-   match(e) :
-      (e:Register) :
-         Register(type(e), f(value(e)), f(enable(e)))
-      (e:Memory) : e
-      (e:Node) :
-         Node(type(e), f(value(e)))
-      (e:Instance) :
-         val ports* = for p in ports(e) map :
-                         key(p) => f(value(p))
-         Instance(type(e), f(module(e)), ports*)
-
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
 defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
    match(c) :
-      (c:LetRec) :
-         val entries* = for entry in entries(c) map :
-                           key(entry) => map(f, value(entry))
-         LetRec(entries*, body(c))                  
       (c:DefAccessor) : DefAccessor(name(c), f(source(c)), f(index(c)))
       (c:DefNode) : DefNode(name(c), f(value(c)))
       (c:DefInstance) : DefInstance(name(c), f(module(c)))
@@ -288,7 +249,6 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T
 defmethod map (f: Stmt -> Stmt, c:Stmt) -> Stmt :
    match(c) :
-      (c:LetRec) : LetRec(entries(c), f(body(c)))
       (c:Conditionally) : Conditionally(pred(c), f(conseq(c)), f(alt(c)))
       (c:Begin) : Begin(map(f, body(c)))
       (c) : c
@@ -296,7 +256,6 @@ defmethod map (f: Stmt -> Stmt, c:Stmt) -> Stmt :
 public defmulti children (c:Stmt) -> List<Stmt>
 defmethod children (c:Stmt) :
    match(c) :
-      (c:LetRec) : list(body(c))
       (c:Conditionally) : list(conseq(c), alt(c))
       (c:Begin) : body(c)
       (c) : List()

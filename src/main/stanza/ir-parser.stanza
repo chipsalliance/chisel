@@ -128,8 +128,6 @@ rd.defsyntax firrtl :
          DefAccessor(ut(name), source, index)
       ((?body:#comm ...)) :
          Begin(body)
-      (letrec : (?elems:#element ...) in : ?body:#comm) :
-         LetRec(elems, body)
       (?x:#exp := ?y:#exp) :
          Connect(x, y)
       (?c:#comm/when) :
@@ -142,16 +140,6 @@ rd.defsyntax firrtl :
          Conditionally(pred, conseq, alt)
       (when ?pred:#exp : ?conseq:#comm) :
          Conditionally(pred, conseq, EmptyStmt())
-
-   defrule element :
-      (reg ?name:#symbol : ?type:#type = Register (@do ?value:#exp ?en:#exp)) :
-         ut(name) => Register(type, value, en)
-      (node ?name:#symbol : ?type:#type = ?exp:#exp) :
-         ut(name) => Node(type, exp)
-      (inst ?name:#symbol = Instance (@do ?module:#exp
-                               (?names:#symbol => ?values:#exp @...))) :
-         val ports = map({ut(_) => _}, names, values)
-         ut(name) => Instance(UnknownType(), module, ports)
 
    defrule exp :
       (?x:#exp . ?f:#int) :

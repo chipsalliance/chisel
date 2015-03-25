@@ -6,7 +6,12 @@ circuit top :
       mem m : UInt(1)[2]
       wire i : UInt(1)
       wire p : UInt(1)
+      wire j : UInt(1)
+      reg r : UInt(1)
+
+      p := j
       when p :
+        r.init := i
         accessor a = m[i] 
         i := a
         accessor b = m[i]
@@ -16,5 +21,12 @@ circuit top :
         i := c
         accessor d = m[i] 
         d := i
+      accessor e = m[i]
+      when p :
+        p := i
+        when e :
+           p := p
+           r.init := p
+        
 
 ; CHECK: Finished Expand Whens
