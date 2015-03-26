@@ -812,7 +812,7 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
                      [MALE,FEMALE]   : ConnectFromIndexed(index(s),key(r),locs)
          (s:DefMemory) : Begin{_} $ 
             for t in table[name(s)] map :
-               DefMemory(name(key(t) as WRef),VectorType(type(key(t)),size(type(s))))
+               DefMemory(name(key(t) as WRef),type(key(t)) as VectorType)
          (s) : map(lower-stmt,s)
 
    defn expand-expr (e:Expression) -> List<KeyValue<Expression,Flip>> :
@@ -872,7 +872,10 @@ defn lower-module (m:Module,table:HashTable<Symbol,List<KeyValue<Expression,Flip
             table[name(s)] =
                for w in ports map-append :
                   list(KeyValue(WSubfield(r,name(key(w) as WRef),type(key(w) as WRef),UNKNOWN-GENDER), value(w)))
-         (s:DefMemory) : table[name(s)] = get-entries(name(s),type(type(s) as VectorType))
+         (s:DefMemory) : table[name(s)] = 
+            for x in get-entries(name(s),type(type(s) as VectorType)) map :
+               val [w f] = [key(x) value(x)]
+               WRef(name(w),VectorType(type(w),size(type(s) as VectorType)),kind(w),gender(w)) => f
          (s:DefNode) : table[name(s)] = get-entries(name(s),type(value(s)))
          (s:WDefAccessor) : table[name(s)] = get-entries(name(s),type(type(source(s)) as VectorType))
          (s) : map(build-table-stmt,s)
@@ -956,6 +959,48 @@ defn expand-connect-indexed (c: Circuit) -> Circuit :
 ;   the table for when this is referenced (a read). All conditions
 ;   are accumulated and OR'ed together.
 
+; ======== Expression Computation Library ===========
+
+val zero = UIntValue(0,IntWidth(1))
+val one = UIntValue(1,IntWidth(1))
+
+defmethod equal? (e1:Expression,e2:Expression) -> True|False :
+   match(e1,e2) :
+      (e1:UIntValue,e2:UIntValue) : 
+         if value(e1) == value(e2) : 
+            match(width(e1), width(e2)) :
+               (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+         else : false
+      (e1:SIntValue,e2:SIntValue) : 
+         if value(e1) == value(e2) : 
+            match(width(e1), width(e2)) :
+               (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+         else : false
+      (e1:WRef,e2:WRef) : name(e1) == name(e2)
+      (e1:WRegInit,e2:WRegInit) : reg(e1) == reg(e2) and name(e1) == name(e2)
+      (e1:WSubfield,e2:WSubfield) : name(e1) == name(e2)
+      (e1,e2) : false
+
+defn AND (e1:Expression,e2:Expression) -> Expression :
+   if e1 == e2 : e1
+   else if e1 == zero or e2 == zero : zero
+   else if e1 == one : e2
+   else if e2 == one : e1
+   else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+
+defn OR (e1:Expression,e2:Expression) -> Expression :
+   if e1 == e2 : e1
+   else if e1 == one or e2 == one : one
+   else if e1 == zero : e2
+   else if e2 == zero : e1
+   else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+
+defn NOT (e1:Expression) -> Expression :
+   if e1 == one : zero
+   else if e1 == zero : one
+   else : DoPrim(EQUAL-UU-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+
+; ======= Symbolic Value Library ==========
 public definterface SymbolicValue
 public defstruct SVExp <: SymbolicValue :
    exp : Expression
@@ -964,24 +1009,6 @@ public defstruct SVMux <: SymbolicValue :
    conseq : SymbolicValue
    alt : SymbolicValue
 public defstruct SVNul <: SymbolicValue
-
-defstruct SSV :
-   stmt : Stmt
-   sv : SymbolicValue
-
-defn is-equal (a:SymbolicValue,b:SymbolicValue) -> True|False :
-   defn ex-equal (e:Expression,d:Expression) -> True|False :
-      match(e,d) : 
-         (e:WRef,d:WRef) : name(e) == name(d)
-         (e,d) : false
-   match(a,b) :
-      (a:SVNul,b:SVNul) : true
-      (a:SVExp,b:SVExp) : ex-equal(exp(a), exp(b))
-      (a:SVMux,b:SVMux) : ex-equal(pred(a),pred(b)) and is-equal(conseq(a),conseq(b)) and is-equal(alt(a),alt(b))
-      (a,b) : false
-
-defmethod print (o:OutputStream, ssv:SSV) :
-   print-all(o, ["[ {" stmt(ssv) "} :: {" sv(ssv) "} ]"])
 
 defmethod print (o:OutputStream, sv:SymbolicValue) :
    match(sv) :
@@ -995,36 +1022,92 @@ defmethod map (f: SymbolicValue -> SymbolicValue, sv:SymbolicValue) -> SymbolicV
       (sv: SVMux) : SVMux(pred(sv),f(conseq(sv)),f(alt(sv)))
       (sv) : sv
 
-defn new-table () -> Vector<KeyValue<Symbol,SSV>> :
-   Vector<KeyValue<Symbol,SSV>>()
+defmethod equal? (a:SymbolicValue,b:SymbolicValue) -> True|False :
+   match(a,b) :
+      (a:SVNul,b:SVNul) : true
+      (a:SVExp,b:SVExp) : exp(a) == exp(b)
+      (a:SVMux,b:SVMux) : pred(a) == pred(b) and conseq(a) == conseq(b) and alt(a) == alt(b)
+      (a,b) : false
 
-defn get-enables (table:List<KeyValue<Symbol,SSV>>) -> HashTable<Symbol,SymbolicValue> :;TODO reset is wrong
-   val zero = UIntValue(0,IntWidth(1))
-   val one = UIntValue(1,IntWidth(1))
-   defn equals? (e1:Expression,e2:UIntValue) -> True|False :;TODO note I don't compare width
-      match(e1) :
-         (e:UIntValue) : 
-            if value(e) == value(e2) : true
-            else : false
-         (e) : false
-   defn one? (e:Expression) -> True|False : 
-      equals?(e,one)
-   defn zero? (e:Expression) -> True|False : ;TODO note I don't compare width
-      equals?(e,zero)
-   defn AND (e1:Expression,e2:Expression) -> Expression :
-      if zero?(e1) : zero
-      else if zero?(e2) : zero
-      else if one?(e1) : e2
-      else if one?(e2) : e1
-      else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
-   defn OR (e1:Expression,e2:Expression) -> Expression :
-      if one?(e1) : one
-      else if one?(e2) : one
-      else if zero?(e1) : e2
-      else if zero?(e2) : e1
-      else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
-   defn NOT (e1:Expression) -> Expression :
-      DoPrim(EQUAL-UU-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+defn optimize (sv:SymbolicValue) -> SymbolicValue :
+   match(map(optimize,sv)) :
+      (sv:SVMux) : 
+         if conseq(sv) == alt(sv) : conseq(sv)
+         else : 
+            match(conseq(sv),alt(sv)) :
+               (c:SVExp,a:SVExp) : 
+                  if exp(c) == one and exp(a) == zero : SVExp(pred(sv))
+                  else if exp(c) == zero and exp(a) == one : SVExp(NOT(pred(sv)))
+                  else : sv
+               (c,a) : sv
+      (sv) : sv
+
+; ========== Expand When Utilz ==========
+defstruct SSV :
+   stmt : Stmt
+   sv : SymbolicValue
+
+defmethod print (o:OutputStream, ssv:SSV) :
+   print-all(o, ["[ {" stmt(ssv) "} :: {" sv(ssv) "} ]"])
+
+defn new-table () -> HashTable<Symbol,SSV> : HashTable<Symbol,SSV>(symbol-hash)
+
+; ========= Expand When Pass ===========
+
+defn expand-whens-stmt (table:HashTable<Symbol,SSV>,enables:HashTable<Symbol,SymbolicValue>) -> Stmt :
+   defn to-exp (sv:SymbolicValue) -> Expression :
+      defn remove-nul (sv:SymbolicValue) -> SymbolicValue :
+         match(map(remove-nul,sv)) :
+            (sv:SVMux) : 
+               match(conseq(sv),alt(sv)) :
+                  (c,a:SVNul) : c
+                  (c:SVNul,a) : a
+                  (c,a) : sv
+            (sv) : sv
+               
+      match(remove-nul(sv)) :
+         (sv:SVMux) : 
+            DoPrim(MUX-UU-OP,
+                   list(pred(sv),to-exp(conseq(sv)),to-exp(alt(sv))),
+                   list(),
+                   UIntType(IntWidth(1)))
+         (sv:SVExp) : exp(sv)
+         (sv) : error("Shouldn't be here")
+           
+   val declarations = Vector<Stmt>()
+   val connections = Vector<Stmt>()
+   for x in table do :
+      val [sym ssv] = [key(x) value(x)]
+      match(stmt(ssv)) : 
+         (s:WDefAccessor) : 
+            val ty = type(type(source(s)) as VectorType)
+            add(declarations,DefWire(sym,ty))
+            switch {_ == gender(s)} :
+               FEMALE : 
+                  add{connections,_} $
+                     Connect{_,WRef(sym,ty,NodeKind(),MALE)} $
+                        WritePort(source(s),index(s),ty,to-exp(enables[sym]))
+                  add{connections,_} $
+                     Connect{_,to-exp(sv(ssv))} $
+                        WRef(name(stmt(ssv) as ?), UnknownType(), NodeKind(), FEMALE)
+               MALE :
+                  add{connections,_} $ 
+                     Connect{WRef(sym,ty,NodeKind(),FEMALE),_} $
+                        ReadPort(source(s),index(s),ty,to-exp(enables[sym]))
+         (s:DefRegister) :
+            add(declarations,s)
+            add{connections,_} $ Connect{WRef(sym,type(s),NodeKind(),FEMALE),_} $
+               Register(type(s),to-exp(sv(ssv)),to-exp(enables[sym]))
+         (s) : 
+            add(declarations,stmt(value(x)))
+            if not sv(ssv) typeof SVNul :
+               add{connections,_} $ 
+                  Connect{_,to-exp(sv(ssv))} $
+                     WRef(name(stmt(ssv) as ?), UnknownType(), NodeKind(), FEMALE)
+
+   Begin(append(to-list(declarations),to-list(connections)))
+
+defn get-enables (table:HashTable<Symbol,SSV>) -> HashTable<Symbol,SymbolicValue> :
    defn reduce-or (l:List<True|False>) -> True|False :
       if length(l) == 0 : false
       else : head(l) or reduce-or(tail(l))
@@ -1035,8 +1118,7 @@ defn get-enables (table:List<KeyValue<Symbol,SSV>>) -> HashTable<Symbol,Symbolic
    defn get-read-enable (sym:Symbol,sv:SymbolicValue) -> Expression :
       defn active (e:Expression) -> True|False :
          match(e) :
-            (e:WRef) : 
-               name(e) == sym
+            (e:WRef) : name(e) == sym
             (e:WSubfield) : active(exp(e))
             (e:WRegInit) : active(reg(e))
             (es:DoPrim) : reduce-or{_} $ for e in args(es) map : active(e)
@@ -1044,19 +1126,16 @@ defn get-enables (table:List<KeyValue<Symbol,SSV>>) -> HashTable<Symbol,Symbolic
             (e:WritePort) : reduce-or{_} $ map(active,list(mem(e),index(e),enable(e)))
             (e:Register) : reduce-or{_} $ map(active,list(value(e),enable(e)))
             (e) : false
-      val x = match(sv) : 
+      match(sv) : 
          (sv: SVNul) : zero
          (sv: SVExp) : 
-            if active(exp(sv)) : one
+            if active(exp(sv)) : one 
             else : zero
          (sv: SVMux) : 
-         ; TODO what if used in predicate?
             val e0 = get-read-enable(sym,SVExp(pred(sv)))
             val e1 = get-read-enable(sym,conseq(sv))
             val e2 = get-read-enable(sym,alt(sv))
             OR(e0,OR(AND(pred(sv),e1),AND(NOT(pred(sv)),e2)))
-      ;println-all(["Returning " x " from " sym " with " sv])
-      x
 
    defn get-write-enable (sv:SymbolicValue) -> SymbolicValue :
       match(map(get-write-enable,sv)) :
@@ -1067,117 +1146,112 @@ defn get-enables (table:List<KeyValue<Symbol,SSV>>) -> HashTable<Symbol,Symbolic
    val enables = HashTable<Symbol,SymbolicValue>(symbol-hash)
    for x in table do :
       val sym = key(x)
-      val s = stmt(value(x))
-      match(s) :
-         (s:WDefAccessor) : 
-            switch {_ == gender(s)} :
-               FEMALE : enables[sym] = get-write-enable(sv(value(x)))
-               MALE : enables[sym] = SVExp{_} $ reduce-or{_} $ 
-                  for y in table map-append :
-                     list(get-read-enable(sym,sv(value(y))))
-         (s:DefRegister) : 
-            val write-enable = get-write-enable(sv(value(x)))
-            enables[sym] = SVMux(WRef(`reset,UIntType(IntWidth(1)),PortKind(),MALE),reset-enable,write-enable) where :
-               val x = for x in table find : key(x) == symbol-join([name(s),`.init])
-               val reset-enable = match(x) :
-                  (x:False) : SVExp(zero)
-                  (x:KeyValue<Symbol,SSV>) : 
-                     match(sv(value(x))) :
-                        (v:SVNul) : SVExp(zero)
-                        (v) : SVExp(one)
+      match(stmt(value(x))) :
+         (s:WDefAccessor) : switch {_ == gender(s)} :
+            FEMALE : enables[sym] = get-write-enable(sv(value(x)))
+            MALE : enables[sym] = SVExp{_} $ reduce-or{_} $ 
+               for y in table map-append :
+                  list(get-read-enable(sym,sv(value(y))))
+         (s:DefRegister) : enables[sym] = get-write-enable(sv(value(x)))
          (s) : s
    enables
             
-defn optimize-table (table:List<KeyValue<Symbol,SSV>>) -> List<KeyValue<Symbol,SSV>>:
-   defn optimize (sv:SymbolicValue) -> SymbolicValue :
-      match(map(optimize,sv)) :
-         (sv:SVMux) : 
-            if is-equal(conseq(sv),alt(sv)) : conseq(sv)
-            else : sv
-         (sv) : sv
-   for x in table map :
-      key(x) => SSV(stmt(value(x)) optimize(sv(value(x))))
+defn merge-reg-init (table:HashTable<Symbol,SSV>) -> HashTable<Symbol,SSV> :
+   val merge = HashTable<Symbol,SSV>(symbol-hash)
+   for x in table do :
+      val sym = key(x)
+      match(stmt(value(x))) :
+         (s:DefRegister) : 
+            val write = sv(value(x))
+            val x = for x in table find : key(x) == symbol-join([name(s),`.init])
+            val init = match(x) :
+               (x:False) : SVExp(zero)
+               (x:KeyValue<Symbol,SSV>) : sv(value(x))
+            merge[sym] = SSV(s,SVMux(WRef(`reset,UIntType(IntWidth(1)),PortKind(),MALE),init,write))
+         (s:EmptyStmt) : "Nothing"
+         (s) : merge[sym] = table[sym]
+   merge
+   
 
-defn build-table (s:Stmt, table-arg:Vector<KeyValue<Symbol,SSV>>) -> Vector<KeyValue<Symbol,SSV>> : 
+defn build-table (s:Stmt, table-arg:HashTable<Symbol,SSV>) -> HashTable<Symbol,SSV> : 
    var table = table-arg
-   println("=====================")
+   ;println("=====================")
    match(s) :
-      (s:DefWire) : add(table,name(s) => SSV(s SVNul()))
-      (s:DefNode) : add(table,name(s) => SSV(s SVNul()))
-      (s:DefRegister) : add(table,name(s) => SSV(s SVNul()))
-      (s:WDefAccessor) : add(table,name(s) => SSV(s SVNul()) )
-      (s:DefInstance) : add(table,name(s) => SSV(s SVNul()))
-      (s:DefMemory) : add(table,name(s) => SSV(s SVNul()))
+      (s:DefWire) : table[name(s)] = SSV(s SVNul())
+      (s:DefNode) : table[name(s)] = SSV(s SVNul())
+      (s:DefRegister) : table[name(s)] = SSV(s SVNul())
+      (s:WDefAccessor) : table[name(s)] = SSV(s SVNul()) 
+      (s:DefInstance) : table[name(s)] = SSV(s SVNul())
+      (s:DefMemory) : table[name(s)] = SSV(s SVNul())
       (s:Conditionally) :
-         defn deepcopy (t:Vector<KeyValue<Symbol,SSV>>) -> Vector<KeyValue<Symbol,SSV>> :
+         defn deepcopy (t:HashTable<Symbol,SSV>) -> HashTable<Symbol,SSV> :
             t0 where :
-               val t0 = Vector<KeyValue<Symbol,SSV>>()
+               val t0 = new-table()
                for x in t do :
-                  add(t0,key(x) => SSV(stmt(value(x)),sv(value(x))))
-         defn get (t:Vector<KeyValue<Symbol,SSV>>,i:Symbol) -> SSV|False :
+                  t0[key(x)] = SSV(stmt(value(x)),sv(value(x)))
+         defn get (t:HashTable<Symbol,SSV>,i:Symbol) -> SSV|False :
             val kv = for x in t find : i == key(x)
             match(kv) :
                (e:False) : false
                (e:KeyValue<Symbol,SSV>) : value(e)
-         defn get-unique-keys (ts:List<Vector<KeyValue<Symbol,SSV>>>) -> Vector<Symbol> :
+         defn get-unique-keys (ts:List<HashTable<Symbol,SSV>>) -> Vector<Symbol> :
             t0 where :
                val t0 = Vector<Symbol>()
                for v in ts do : 
                   for t in v do :
                      val duplicate? = for x in t0 any? : x == key(t)
                      if not duplicate? : add(t0,key(t))
-
-         println("TABLE")
-         for x in table do : println(x)
-
-         val table1 = table
+         val table1 = deepcopy(table)
          val table2 = deepcopy(table)
-
          val table-c = build-table(conseq(s),table1)
-         println("TABLE-C")
-         for x in table-c do : println(x)
-
          val table-a = build-table(alt(s),table2)
-         println("TABLE-A")
-         for x in table-a do : println(x)
-
          val table-m = new-table()
          for i in get-unique-keys(list(table-c,table-a)) do :
-            add{table-m,i => _} $ match(get(table-c,i),get(table-a,i)) :
+            table-m[i] = match(get(table-c,i),get(table-a,i)) :
                   (c:SSV,a:SSV) : SSV(stmt(c),SVMux(pred(s),sv(c),sv(a)))
                   (c:SSV,a:False) : SSV(stmt(c),SVMux(pred(s),sv(c),SVNul()))
                   (c:False,a:SSV) : SSV(stmt(a),SVMux(pred(s),SVNul(),sv(a)))
                   (c:False,a:False) : error("Shouldn't be here")
-         println("TABLE-M")
-         for x in table-m do : println(x)
          table = table-m
-         println("TABLE")
-         for x in table do : println(x)
+         ;println("TABLE")
+         ;for x in table do : println(x)
+         ;println("TABLE-C")
+         ;for x in table-c do : println(x)
+         ;println("TABLE-A")
+         ;for x in table-a do : println(x)
+         ;println("TABLE-M")
+         ;for x in table-m do : println(x)
       (s:Connect) :
-         val i = for (i in 0 to false, kv in table) find :
+         val i = for kv in table find :
             name(loc(s) as ?) == key(kv)
          match(i) :
-            (i:False) : add(table,name(loc(s) as ?) => SSV(EmptyStmt() SVExp(exp(s))))
-            (i:Int) : 
-               val kv = table[i]
-               val [k sv] = [stmt(value(kv)) sv(value(kv))]
-               table[i] = key(kv) => SSV(k SVExp(exp(s)))
+            (i:False) : table[name(loc(s) as ?)] = SSV(EmptyStmt() SVExp(exp(s)))
+            (i:KeyValue<Symbol,SSV>) : table[key(i)] = SSV(stmt(value(i)) SVExp(exp(s)))
       (s:Begin) : for s* in body(s) do: table = build-table(s*,table)
       (s) : s
    table
          
 defn expand-whens (m:Module) -> Module :
    val table = build-table(body(m),new-table())
-   println("Original Table")
-   for x in table do : println(x)
-   val table* = optimize-table(to-list(table))
-   println("Optimized Table")
-   for x in table* do : println(x)
-   val enables = get-enables(table*)
-   println("Enable Table")
-   for x in enables do : println(x)
-   Module(name(m),ports(m),body(m))
-   ;Module(name(m),ports(m),expand-whens-stmt(body(m),table))
+   val table* = HashTable<Symbol,SSV>(symbol-hash)
+   for x in table do : table*[key(x)] = SSV(stmt(value(x)) optimize(sv(value(x))))
+   val table** = merge-reg-init(table*)
+   val enables = get-enables(table**)
+   val enables* = HashTable<Symbol,SymbolicValue>(symbol-hash)
+   for x in enables do : enables*[key(x)] = optimize(value(x))
+         
+   ;println("Original Table")
+   ;for x in table do : println(x)
+   ;println("Optimized Table")
+   ;for x in table* do : println(x)
+   ;println("Merged Inits Table")
+   ;for x in table** do : println(x)
+   ;println("Enable Table")
+   ;for x in enables do : println(x)
+   ;println("Optimized Enable Table")
+   ;for x in enables* do : println(x)
+
+   Module(name(m),ports(m),expand-whens-stmt(table**,enables*))
 
 defn expand-whens (c:Circuit) -> Circuit :
    Circuit(modules*, main(c)) where :

@@ -139,6 +139,7 @@ defmethod print (o:OutputStream, e:Expression) :
          print(o, ")")
       (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ", " enable(e) ")"])
       (e:WritePort) : print-all(o, ["WritePort(" mem(e) ", " index(e) ", " enable(e) ")"])
+      (e:Register) : print-all(o, ["Register(" value(e) ", " enable(e) ")"])
    print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :

@@ -27,6 +27,7 @@ circuit top :
         when e :
            p := p
            r.init := p
+           r := p
         
 
 ; CHECK: Finished Expand Whens

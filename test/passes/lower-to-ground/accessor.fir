@@ -3,8 +3,8 @@
 ; CHECK: Lower To Ground
 circuit top :
    module m :
-      wire i : UInt
-      wire j : UInt
+      wire i : UInt(2)
+      wire j : UInt(32)
 
       wire a : UInt(32)[4]
       ; CHECK: wire a#0 : UInt(32)
@@ -22,7 +22,7 @@ circuit top :
       ; CHECK: (a#0 a#1 a#2 a#3)[i] := c
       c := j
       
-      mem p : UInt(32)[10]
+      mem p : UInt(32)[4]
       accessor t = p[i]
       ; CHECK: accessor t = p[i]
       j := t

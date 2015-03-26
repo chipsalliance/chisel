@@ -1,10 +1,7 @@
 TODO 
-   when calculating writeenables, use assignment
-   when calculating read enables, scan list
    change parser to use <> syntax (and update all tests)
 
    Figure out how widths propogate for all updated primops (Adam)
-   Remove letrec. Add to expressions: Register(input,en), ReadPort(mem,index,enable), WritePort(mem,index,enable) (Patrick)
    Add bit-reduce-and etc to primops (Jonathan)
    Write pass to rename identifiers (alpha-transform) (Adam)
    Add partial bulk connect (Scott, Stephen)
@@ -32,6 +29,7 @@ TODO
 Checks:
    Subfields are only on bundles, before type inference 
    after adding dynamic assertions, insert bounds check with accessor expansion
+   all things only assigned to once
 
 Tests:
    Error if declare anything other than module in circuit
