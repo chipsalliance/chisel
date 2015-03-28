@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcdefghijk c | tee %s.out | FileCheck %s 
+; RUN: firrtl %s abcefghipj c | tee %s.out | FileCheck %s 
 
 ; CHECK: Expand Whens
 circuit top :

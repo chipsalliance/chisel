@@ -1,6 +1,7 @@
 TODO 
    change parser to use <> syntax (and update all tests)
 
+   Write lowering step for primops
    Figure out how widths propogate for all updated primops (Adam)
    Add bit-reduce-and etc to primops (Jonathan)
    Write pass to rename identifiers (alpha-transform) (Adam)
@@ -10,6 +11,7 @@ TODO
    Multi-streams for print statements (Jack)
    Consider def female node. (Patrick) 
    Think about supporting memories (Scott)
+   Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
 
    Update spec
       add new field for sequential or combinational

@@ -1,33 +1,35 @@
-; RUN: firrtl %s abcdefghijk c | tee %s.out | FileCheck %s 
+; RUN: firrtl %s abcdefghijkp c | tee %s.out | FileCheck %s 
 
 ; CHECK: Expand Whens
 circuit top :
    module top :
-      mem m : UInt(1)[2]
+      mem m :{ x : UInt(1), y : UInt(1) }[2] 
       wire i : UInt(1)
       wire p : UInt(1)
+      wire q : { x : UInt(1), y : UInt(1) }
       when p :
         wire p2 : UInt(1)
+        reg r5 : UInt(1)
         when p2 :
           accessor a = m[i] 
-          i := a
+          q := a
           accessor b = m[i]
-          b := i
+          b := q
         else :
           accessor c = m[i] 
-          i := c
+          q := c
           accessor d = m[i]
-          d := i
+          d := q
       else :
         wire p3 : UInt(1)
         when p3 :
           accessor w = m[i] 
-          i := w
+          q := w
           accessor x = m[i]
-          x := i
+          x := q
         else :
           accessor y = m[i] 
-          i := y
+          q := y
           accessor z = m[i]
-          z := i
+          z := q
 ; CHECK: Finished Expand Whens

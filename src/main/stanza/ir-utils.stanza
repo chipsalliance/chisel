@@ -254,12 +254,73 @@ defmethod map (f: Stmt -> Stmt, c:Stmt) -> Stmt :
       (c:Begin) : Begin(map(f, body(c)))
       (c) : c
 
-public defmulti children (c:Stmt) -> List<Stmt>
-defmethod children (c:Stmt) :
-   match(c) :
-      (c:Conditionally) : list(conseq(c), alt(c))
-      (c:Begin) : body(c)
-      (c) : List()
+;================= HELPER FUNCTIONS USING MAP ===================
+public defmulti do (f:Expression -> ?, e:Expression) -> False
+defmethod do (f:Expression -> ?, e:Expression) -> False :
+   for x in e map :
+      f(x)
+      x
+   false
+
+public defmulti do (f:Expression -> ?, s:Stmt) -> False
+defmethod do (f:Expression -> ?, s:Stmt) -> False :
+   defn f* (x:Expression) : 
+      f(x)
+      x
+   map(f*,s)
+   false
+
+public defmulti do (f:Stmt -> ?, s:Stmt) -> False
+defmethod do (f:Stmt -> ?, s:Stmt) -> False :
+   defn f* (x:Stmt) :
+      f(x)
+      x
+   map(f*,s)
+   false
+
+public defmulti dor (f:Expression -> ?, e:Expression) -> False
+defmethod dor (f:Expression -> ?, e:Expression) -> False :
+   f(e)
+   for x in e map : 
+      dor(f,x)
+      x
+   false
+
+public defmulti dor (f:Expression -> ?, s:Stmt) -> False
+defmethod dor (f:Expression -> ?, s:Stmt) -> False :
+   defn f* (x:Expression) :
+      dor(f,x)
+      x
+   map(f*,s)
+   false
+
+public defmulti dor (f:Stmt -> ?, s:Stmt) -> False
+defmethod dor (f:Stmt -> ?, s:Stmt) -> False :
+   f(s)
+   defn f* (x:Stmt) :
+      dor(f,x)
+      x
+   map(f*,s)
+   false
+
+public defmulti sub-exps (s:Expression|Stmt) -> List<Expression>
+defmethod sub-exps (e:Expression) -> List<Expression> :
+   val l = Vector<Expression>()
+   defn f (x:Expression) : add(l,x)
+   do(f,e)
+   to-list(l)
+defmethod sub-exps (e:Stmt) -> List<Expression> :
+   val l = Vector<Expression>()
+   defn f (x:Expression) : add(l,x)
+   do(f,e)
+   to-list(l)
+
+public defmulti sub-stmts (s:Stmt) -> List<Stmt>
+defmethod sub-stmts (s:Stmt) :
+   val l = Vector<Stmt>()
+   defn f (x:Stmt) : add(l,x)
+   do(f,s)
+   to-list(l)
 
 ;=================== ADAM OPS ===============================
 public defn split (s:String,c:Char) -> List<String> :
