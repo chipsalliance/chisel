@@ -1,5 +1,24 @@
 TODO 
    change parser to use <> syntax (and update all tests)
+   think about on-reset
+   make instances always male, flip the bundles on declaration
+   write out FIFO example pass
+   write out diff mem examples and how we will support it
+   instances can be bulk connected -> change := semantics to:
+      F := M -> F := M (legal)
+      M := F -> M := F (legal)
+      M := M -> (illegal)
+      F := F -> (illegal)
+      B := B -> F := M (legal)
+      F := U -> F := M (legal)
+      M := U -> M := F (legal)
+      U := M -> F := M (legal)
+      U := F -> M := F (legal)
+      U := U -> U := U (legal)
+      Address this in gender inference pass, when see M := F, replace with F := M
+      What if Instances were Male always? And its type is the flipped version of module??
+
+   talk to palmer/patrick about how writing passes is going to be supported
 
    Write lowering step for primops
    Figure out how widths propogate for all updated primops (Adam)
@@ -16,6 +35,7 @@ TODO
    Update spec
       add new field for sequential or combinational
       add assertions
+      cannot connect directly to a mem (loc can never contain a mem)
    Future questions to address in spec:
       Introduction – motivation, and intended usage
       Philosophical justifications for all constructs
@@ -49,3 +69,8 @@ defnode n = e
 ==>
 wire n 
 e := n
+
+
+
+Front-end needs to guarantee unique names per module.
+FIRRTL rule: No name can be a prefix of any other name.

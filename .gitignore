@@ -8,6 +8,7 @@
 */*/*.swp
 */*/*/*.swp
 src/lib/stanzam
+src/lib/stanza
 src/*/__MACOSX
 src/main/stanza/firrtl-main
 utils/bin/firrtl
@@ -17,5 +18,4 @@ test/passes/*.out
 test/passes/*/*.out
 spec/spec.aux
 spec/spec.log
-spec/spec.pdf
 spec/spec.synctex.gz

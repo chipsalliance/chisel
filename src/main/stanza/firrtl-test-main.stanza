@@ -22,6 +22,7 @@ defn set-printvars! (p:List<Char>) :
    if contains(p,'t') : PRINT-TYPES = true
    if contains(p,'k') : PRINT-KINDS = true
    if contains(p,'w') : PRINT-WIDTHS = true
+   if contains(p,'T') : PRINT-TWIDTHS = true
    if contains(p,'g') : PRINT-GENDERS = true
    if contains(p,'c') : PRINT-CIRCUITS = true
 

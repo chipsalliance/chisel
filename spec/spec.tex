@@ -38,6 +38,8 @@
                 &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
 \pd{field}      &=     &\pd{gender} \id \kw{:} \pd{type}                                              &\text{Bundle Field}\\
 \pd{gender}     &=     &\kws{female} \vert \kws{male}                                                 &\text{Gender}\\
+\pd{vptype}     &=     &\kws{read} \vert \kws{write} \vert \kws{rdwr}                                 &\text{Known Vector Port-Type}\\
+                &\vert &\kw{?}                                                                        &\text{Unknown Vector Port-Type}\\
 \pd{width}      &=     &\ints                                                                         &\text{Known Integer Width}\\
                 &\vert &\kw{?}                                                                        &\text{Unknown Width}\\
 \pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
@@ -45,7 +47,7 @@
                 &\vert &\info \kw{mem} \id \kw{:} \pd{type}                                           &\text{Memory Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{of} \id                                               &\text{Instance Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
-                &\vert &\info \kw{accessor} \id = \pds{exp}[\pds{exp}]                                &\text{Accessor Declaration}\\
+                &\vert &\info \pd{vptype}  \kw{accessor} \id = \pds{exp}[\pds{exp}]                   &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
                 &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
                 &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
@@ -55,9 +57,10 @@
                 &\vert &\info \id                                                                     &\text{Reference}\\
                 &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
                 &\vert &\info \pds{exp}.\ints                                                         &\text{Subindex}\\
-                &\vert &\info \kws{Register}(\pds{exp}, \pds{exp})                                    &\text{Structural Register}\\
-                &\vert &\info \kws{WritePort}(\id, \pds{exp}, \pds{exp})                              &\text{Structural Write Port}\\
-                &\vert &\info \kws{ReadPort}(\id, \pds{exp}, \pds{exp})                               &\text{Structural Read Port}\\
+                &\vert &\info \kws{Register}(\pds{exp}, \pds{exp})                                    &\text{Register}\\
+                &\vert &\info \kws{WritePort}(\id, \pds{exp}, \pds{exp})                              &\text{Write Port}\\
+                &\vert &\info \kws{ReadPort}(\id, \pds{exp}, \pds{exp})                               &\text{Read Port}\\
+                &\vert &\info \kws{ReadWritePort}(\id, \pds{exp}, \pds{exp})                          &\text{ReadWrite Port}\\
 \end{array}
 \]
 \[

@@ -254,89 +254,123 @@ defmethod map (f: Stmt -> Stmt, c:Stmt) -> Stmt :
       (c:Begin) : Begin(map(f, body(c)))
       (c) : c
 
+public defmulti map<?T> (f: Width -> Width, c:?T&Expression) -> T
+defmethod map (f: Width -> Width, c:Expression) -> Expression :
+   match(c) :
+      (c:UIntValue) : UIntValue(value(c),f(width(c)))
+      (c:SIntValue) : SIntValue(value(c),f(width(c)))
+      (c) : c
+
+public defmulti map<?T> (f: Width -> Width, c:?T&Type) -> T
+defmethod map (f: Width -> Width, c:Type) -> Type :
+   match(c) :
+      (c:UIntType) : UIntType(f(width(c)))
+      (c:SIntType) : SIntType(f(width(c)))
+      (c) : c
+
+public defmulti map<?T> (f: Type -> Type, c:?T&Expression) -> T
+defmethod map (f: Type -> Type, c:Expression) -> Expression :
+   match(c) :
+      (c:Ref) : Ref(name(c),f(type(c)))
+      (c:Subfield) : Subfield(exp(c),name(c),f(type(c)))
+      (c:Index) : Index(exp(c),value(c),f(type(c)))
+      (c:DoPrim) : DoPrim(op(c),args(c),consts(c),f(type(c)))
+      (c:ReadPort) : ReadPort(mem(c),index(c),f(type(c)),enable(c))
+      (c:WritePort) : WritePort(mem(c),index(c),f(type(c)),enable(c))
+      (c:Register) : Register(f(type(c)),value(c),enable(c))
+      (c) : c
+
+public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T
+defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
+   match(c) :
+      (c:DefWire) : DefWire(name(c),f(type(c)))
+      (c:DefRegister) : DefRegister(name(c),f(type(c)))
+      (c:DefMemory) : DefRegister(name(c),f(type(c)))
+      (c) : c
+
 ;================= HELPER FUNCTIONS USING MAP ===================
-public defmulti do (f:Expression -> ?, e:Expression) -> False
-defmethod do (f:Expression -> ?, e:Expression) -> False :
-   for x in e map :
-      f(x)
-      x
-   false
-
-public defmulti do (f:Expression -> ?, s:Stmt) -> False
-defmethod do (f:Expression -> ?, s:Stmt) -> False :
-   defn f* (x:Expression) : 
-      f(x)
-      x
-   map(f*,s)
-   false
-
-public defmulti do (f:Stmt -> ?, s:Stmt) -> False
-defmethod do (f:Stmt -> ?, s:Stmt) -> False :
-   defn f* (x:Stmt) :
-      f(x)
-      x
-   map(f*,s)
-   false
-
-public defmulti dor (f:Expression -> ?, e:Expression) -> False
-defmethod dor (f:Expression -> ?, e:Expression) -> False :
-   f(e)
-   for x in e map : 
-      dor(f,x)
-      x
-   false
-
-public defmulti dor (f:Expression -> ?, s:Stmt) -> False
-defmethod dor (f:Expression -> ?, s:Stmt) -> False :
-   defn f* (x:Expression) :
-      dor(f,x)
-      x
-   map(f*,s)
-   false
-
-public defmulti dor (f:Stmt -> ?, s:Stmt) -> False
-defmethod dor (f:Stmt -> ?, s:Stmt) -> False :
-   f(s)
-   defn f* (x:Stmt) :
-      dor(f,x)
-      x
-   map(f*,s)
-   false
-
-public defmulti sub-exps (s:Expression|Stmt) -> List<Expression>
-defmethod sub-exps (e:Expression) -> List<Expression> :
-   val l = Vector<Expression>()
-   defn f (x:Expression) : add(l,x)
-   do(f,e)
-   to-list(l)
-defmethod sub-exps (e:Stmt) -> List<Expression> :
-   val l = Vector<Expression>()
-   defn f (x:Expression) : add(l,x)
-   do(f,e)
-   to-list(l)
-
-public defmulti sub-stmts (s:Stmt) -> List<Stmt>
-defmethod sub-stmts (s:Stmt) :
-   val l = Vector<Stmt>()
-   defn f (x:Stmt) : add(l,x)
-   do(f,s)
-   to-list(l)
+; These don't work properly..
+;public defmulti do (f:Expression -> ?, e:Expression) -> False
+;defmethod do (f:Expression -> ?, e:Expression) -> False :
+;   for x in e map :
+;      f(x)
+;      x
+;   false
+;
+;public defmulti do (f:Expression -> ?, s:Stmt) -> False
+;defmethod do (f:Expression -> ?, s:Stmt) -> False :
+;   defn f* (x:Expression) : 
+;      f(x)
+;      x
+;   map(f*,s)
+;   false
+;
+;public defmulti do (f:Stmt -> ?, s:Stmt) -> False
+;defmethod do (f:Stmt -> ?, s:Stmt) -> False :
+;   defn f* (x:Stmt) :
+;      f(x)
+;      x
+;   map(f*,s)
+;   false
+;
+;public defmulti dor (f:Expression -> ?, e:Expression) -> False
+;defmethod dor (f:Expression -> ?, e:Expression) -> False :
+;   f(e)
+;   for x in e map : 
+;      dor(f,x)
+;      x
+;   false
+;
+;public defmulti dor (f:Expression -> ?, s:Stmt) -> False
+;defmethod dor (f:Expression -> ?, s:Stmt) -> False :
+;   defn f* (x:Expression) :
+;      dor(f,x)
+;      x
+;   map(f*,s)
+;   false
+;
+;public defmulti dor (f:Stmt -> ?, s:Stmt) -> False
+;defmethod dor (f:Stmt -> ?, s:Stmt) -> False :
+;   f(s)
+;   defn f* (x:Stmt) :
+;      dor(f,x)
+;      x
+;   map(f*,s)
+;   false
+;
+;public defmulti sub-exps (s:Expression|Stmt) -> List<Expression>
+;defmethod sub-exps (e:Expression) -> List<Expression> :
+;   val l = Vector<Expression>()
+;   defn f (x:Expression) : add(l,x)
+;   do(f,e)
+;   to-list(l)
+;defmethod sub-exps (e:Stmt) -> List<Expression> :
+;   val l = Vector<Expression>()
+;   defn f (x:Expression) : add(l,x)
+;   do(f,e)
+;   to-list(l)
+;
+;public defmulti sub-stmts (s:Stmt) -> List<Stmt>
+;defmethod sub-stmts (s:Stmt) :
+;   val l = Vector<Stmt>()
+;   defn f (x:Stmt) : add(l,x)
+;   do(f,s)
+;   to-list(l)
 
 ;=================== ADAM OPS ===============================
 public defn split (s:String,c:Char) -> List<String> :
-   val empty = ""
-   defn next-word (s:String,i:Int) -> String|False : 
-      if i == length(s) : false
-      else: 
-         if (s[i] == c): substring(s,0,i)
-         else: next-word(s,i + 1)
-
-   val next-str = next-word(s,0)
-   if next-str == false : list()
-   else if next-str == empty : split(substring(s,1,length(s)),c)
+   if not contains(to-list(s),c) : list(s)
    else :
-      val str = next-str as String
-      List(str,split(substring(s,length(str)+1,length(s)),c))
+      val index = label<Int> ret :
+         var i = 0
+         for c* in to-list(s) do :
+            if c* == c : ret(i)
+            else : 
+               i = i + 1
+         ret(0)
+      val h = substring(s,0,index)
+      val t = substring(s,index + 1,length(s))
+      List(h,split(t,c))
      
 public defn contains (l:List<Char>, c:Char) :
    label<True|False> myret :
