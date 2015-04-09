@@ -1037,7 +1037,7 @@ defn initialize-registers (c:Circuit) :
    defn explicit-init-scope (s:Stmt) -> Stmt :
       val h = HashTable<Symbol,True|False>(symbol-hash)
       using-init(s,h)
-      println(h)
+      ;println(h)
       val [s* t] = rename(s,h)
       add-when(s*,t)
      
@@ -1395,14 +1395,14 @@ defn expand-whens (m:Module) -> Module :
    val enables = get-enables(assign,kinds)
    for x in enables do : enables[key(x)] = optimize(value(x))
          
-   println("Assigns")
-   for x in assign do : println(x)
-   println("Kinds")
-   for x in kinds do : println(x)
-   println("Decs")
-   for x in decs do : println(x)
-   println("Enables")
-   for x in enables do : println(x)
+   ;println("Assigns")
+   ;for x in assign do : println(x)
+   ;println("Kinds")
+   ;for x in kinds do : println(x)
+   ;println("Decs")
+   ;for x in decs do : println(x)
+   ;println("Enables")
+   ;for x in enables do : println(x)
 
    Module(name(m),ports(m),expand-whens(assign,kinds,stmts,decs,enables))
 
