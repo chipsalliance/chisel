@@ -235,6 +235,7 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
       (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e), enable(e))
       (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), enable(e))
+      (e:Register) : Register(type(e),f(value(e)),f(enable(e)))
       (e) : e
 
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T

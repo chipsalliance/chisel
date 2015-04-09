@@ -259,6 +259,8 @@ rd.defsyntax firrtl :
          WritePort(mem, index, UnknownType(), enable)
       (ReadPort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
          ReadPort(mem, index, UnknownType(), enable)
+      (Register (@do ?value:#exp ?enable:#exp)) :
+         Register(UnknownType(),value,enable)
       (?op:#symbol (@do ?es:#exp ... ?ints:#int ...)) :
          println("Op-symbol is:~" % [op])
          match(get?(operators, ut(op), false)) :

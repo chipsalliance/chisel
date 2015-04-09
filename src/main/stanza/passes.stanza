@@ -240,6 +240,7 @@ defmethod map (f: Expression -> Expression, e: WSubfield) :
    WSubfield(f(exp(e)), name(e), type(e), gender(e))
 defmethod map (f: Expression -> Expression, e: WIndex) :
    WIndex(f(exp(e)), value(e), type(e), gender(e))
+
 defmethod map (f: Expression -> Expression, c:WDefAccessor) :
    WDefAccessor(name(c), f(source(c)), f(index(c)), gender(c))
 defmethod map (f: Expression -> Expression, c:ConnectToIndexed) :
@@ -303,7 +304,7 @@ defn resolve-kinds (c:Circuit) :
       defn find-stmt (s:Stmt) -> Stmt :
          match(s) :
             (s:DefWire) : kinds[name(s)] = NodeKind()
-            ;TODO add DefNode
+            (s:DefNode) : kinds[name(s)] = NodeKind()
             (s:DefRegister) : kinds[name(s)] = RegKind()
             (s:DefInstance) : kinds[name(s)] = InstanceKind()
             (s:DefMemory) : kinds[name(s)] = MemKind()
@@ -631,8 +632,7 @@ defn resolve-genders (c:Circuit) :
                get-gender(name(s),BI-GENDER)
                s
             (s:DefNode) : 
-               get-gender(name(s),MALE)
-               s
+               DefNode(name(s),resolve-expr(value(s),get-gender(name(s),MALE)))
             (s:DefInstance) :
                get-gender(name(s),FEMALE)
                DefInstance(name(s),resolve-expr(module(s),FEMALE))
@@ -674,9 +674,11 @@ defn resolve-genders (c:Circuit) :
             (e) : map(resolve-expr{_,MALE},e)
 
       var module* = resolve-iter(m)
+      println(genders)
       while not done? : 
         done? = true
         module* = resolve-iter(m)
+        println(genders)
       module*
     
    defn resolve-genders (m:Module, c:Circuit) -> Module :
@@ -1420,33 +1422,191 @@ defn expand-whens (c:Circuit) -> Circuit :
 ; Then, you solve width constraints.
 ; Finally, you replace all width variables with the solved
 ;   widths.
+; Low FIRRTL Pass.
 
 defstruct VarWidth <: Width :
    name: Symbol
+defstruct PlusWidth <: Width :
+   arg1 : Width
+   arg2 : Width
+defstruct MinusWidth <: Width :
+   arg1 : Width
+   arg2 : Width
+defstruct MaxWidth <: Width :
+   arg1 : Width
+   arg2 : Width
 
 defmethod print (o:OutputStream, w:VarWidth) :
    print(o,name(w))
+defmethod print (o:OutputStream, w:MaxWidth) :
+   print-all(o,["max(" arg1(w) "," arg2(w) ")"])
+defmethod print (o:OutputStream, w:PlusWidth) :
+   print-all(o,[ arg1(w) " + " arg2(w)])
+defmethod print (o:OutputStream, w:MinusWidth) :
+   print-all(o,[ arg1(w) " - " arg2(w)])
 
+definterface Constraint
+defstruct WGeq <: Constraint :
+   loc : Width
+   exp : Width
+defstruct WEq <: Constraint :
+   loc : Width
+   exp : Width
+defmethod print (o:OutputStream, c:WGeq) :
+   print-all(o,[ loc(c) " >= " exp(c)])
+defmethod print (o:OutputStream, c:WEq) :
+   print-all(o,[ loc(c) " = " exp(c)])
+
+   
 ;defn remove-var-widths (c:Circuit) -> Circuit :
 
-;defn solve-constraints (l:List<WCon>) -> HashTable<Symbol,Int> :
+;defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
    
-;defn gen-constraints (m:Module) -> List<WCon> :
-;   val v = Vector<WCon>()
-;   val h = HashTable<Symbol,Width>(symbol-hash)
-;
-;
-;   defn get-width (e:Expression) -> Width :
-;      match(e) :
-;         (e:WRef) : 
-;            val w = get-width(type(e))
-;            add(v,WGeq(w,h[name(e)]))
-;            add(v,WGeq(h[name(e)],w))
-;            w
-;         (e:WSubfield) : ;assumes only subfields are instances
-;            add(v,WGeq(w,
-;   defn gen-constraints (s:Stmt) -> Stmt :
-;      match(map(gen-constraints,s)) :
+defn width! (t:Type) -> Width :
+   match(t) :
+      (t:UIntType) : width(t)
+      (t:SIntType) : width(t)
+      (t) : error("No width!")
+defn prim-width (e:DoPrim,v:Vector<WGeq>) -> Width :
+   defn e-width (e:Expression) -> Width : width!(type(e))
+   defn wpc (l:List<Expression>,c:List<Int>) : PlusWidth(e-width(l[0]),IntWidth(c[0]))
+   defn wmc (l:List<Expression>,c:List<Int>) : MinusWidth(e-width(l[0]),IntWidth(c[0]))
+   defn maxw (l:List<Expression>) : MaxWidth(e-width(l[0]),e-width(l[1]))
+   defn mp1 (l:List<Expression>) : PlusWidth(MaxWidth(e-width(l[0]),e-width(l[1])),IntWidth(1))
+   defn sum (l:List<Expression>) : PlusWidth(e-width(l[0]),e-width(l[1]))
+   switch {op(e) == _} :
+      ADD-UU-OP : mp1(args(e))
+      ADD-US-OP : mp1(args(e))
+      ADD-SU-OP : mp1(args(e))
+      ADD-SS-OP : mp1(args(e))
+      SUB-UU-OP : mp1(args(e))
+      SUB-US-OP : mp1(args(e))
+      SUB-SU-OP : mp1(args(e))
+      SUB-SS-OP : mp1(args(e))
+      MUL-UU-OP : sum(args(e))
+      MUL-US-OP : sum(args(e))
+      MUL-SU-OP : sum(args(e))
+      MUL-SS-OP : sum(args(e))
+      ;(p:DIV-UU-OP) : 
+      ;(p:DIV-US-OP) :
+      ;(p:DIV-SU-OP) :
+      ;(p:DIV-SS-OP) :
+      ;(p:MOD-UU-OP) :
+      ;(p:MOD-US-OP) :
+      ;(p:MOD-SU-OP) :
+      ;(p:MOD-SS-OP) :
+      ;(p:QUO-UU-OP) :
+      ;(p:QUO-US-OP) :
+      ;(p:QUO-SU-OP) :
+      ;(p:QUO-SS-OP) :
+      ;(p:REM-UU-OP) :
+      ;(p:REM-US-OP) :
+      ;(p:REM-SU-OP) :
+      ;(p:REM-SS-OP) :
+      ADD-WRAP-UU-OP : maxw(args(e))
+      ADD-WRAP-US-OP : maxw(args(e))
+      ADD-WRAP-SU-OP : maxw(args(e))
+      ADD-WRAP-SS-OP : maxw(args(e))
+      SUB-WRAP-UU-OP : maxw(args(e))
+      SUB-WRAP-US-OP : maxw(args(e))
+      SUB-WRAP-SU-OP : maxw(args(e))
+      SUB-WRAP-SS-OP : maxw(args(e))
+      LESS-UU-OP : IntWidth(1)
+      LESS-US-OP : IntWidth(1)
+      LESS-SU-OP : IntWidth(1)
+      LESS-SS-OP : IntWidth(1)
+      LESS-EQ-UU-OP : IntWidth(1)
+      LESS-EQ-US-OP : IntWidth(1)
+      LESS-EQ-SU-OP : IntWidth(1)
+      LESS-EQ-SS-OP : IntWidth(1)
+      GREATER-UU-OP : IntWidth(1)
+      GREATER-US-OP : IntWidth(1)
+      GREATER-SU-OP : IntWidth(1)
+      GREATER-SS-OP : IntWidth(1)
+      GREATER-EQ-UU-OP : IntWidth(1)
+      GREATER-EQ-US-OP : IntWidth(1)
+      GREATER-EQ-SU-OP : IntWidth(1)
+      GREATER-EQ-SS-OP : IntWidth(1)
+      EQUAL-UU-OP : IntWidth(1)
+      EQUAL-SS-OP : IntWidth(1)
+      MUX-UU-OP : maxw(args(e))
+      MUX-SS-OP : maxw(args(e))
+      PAD-U-OP : IntWidth(consts(e)[0])
+      PAD-S-OP : IntWidth(consts(e)[0])
+      AS-UINT-U-OP : e-width(args(e)[0])
+      AS-UINT-S-OP : e-width(args(e)[0])
+      AS-SINT-U-OP : e-width(args(e)[0])
+      AS-SINT-S-OP : e-width(args(e)[0])
+      SHIFT-LEFT-U-OP : wpc(args(e),consts(e))
+      SHIFT-LEFT-S-OP : wpc(args(e),consts(e))
+      SHIFT-RIGHT-U-OP : wmc(args(e),consts(e))
+      SHIFT-RIGHT-S-OP : wmc(args(e),consts(e))
+      CONVERT-U-OP : PlusWidth(e-width(args(e)[0]),IntWidth(1))
+      CONVERT-S-OP : e-width(args(e)[0])
+      BIT-AND-OP : maxw(args(e))
+      BIT-OR-OP : maxw(args(e))
+      BIT-XOR-OP : maxw(args(e))
+      CONCAT-OP : sum(args(e))
+      BIT-SELECT-OP : IntWidth(1)
+      BITS-SELECT-OP : IntWidth(consts(e)[0] - consts(e)[1])
+
+defn gen-constraints (c:Circuit, m:Module) -> List<WGeq> :
+   val v = Vector<WGeq>()
+   val h = HashTable<Symbol,Type>(symbol-hash)
+
+   defn get-width (e:Expression) -> Width :
+      match(e) :
+         (e:WRef) : 
+            val [wdec wref] = match(kind(e)) :
+               (k:InstanceKind) : error("Shouldn't be here")
+               (k:MemKind) : 
+                  [width! $ type $ (h[name(e)] as VectorType),
+                   width! $ type $ (type(e) as VectorType)]
+               (k) :
+                  [width! $ h[name(e)],
+                   width! $ type(e)]
+            add(v,WGeq(wdec,wref))
+            add(v,WGeq(wref,wdec))
+            wdec
+         (e:WSubfield) : ;assumes only subfields are instances
+            val wdec = width! $ bundle-field-type(h[name(exp(e) as WRef)],name(e))
+            val wref = width! $ bundle-field-type(type(exp(e)),name(e))
+            add(v,WGeq(wdec,wref))
+            add(v,WGeq(wref,wdec))
+            wdec
+         (e:WIndex) : error("Shouldn't be here")
+         (e:UIntValue) : width(e)
+         (e:SIntValue) : width(e)
+         (e:DoPrim) : prim-width(e,v)
+         (e:ReadPort|WritePort) : 
+            add(v,WGeq(get-width(enable(e)),IntWidth(1)))
+            add(v,WGeq(IntWidth(1),get-width(enable(e))))
+            get-width(mem(e))
+         (e:Register) : 
+            add(v,WGeq(get-width(enable(e)),IntWidth(1)))
+            add(v,WGeq(IntWidth(1),get-width(enable(e))))
+            val w = width!(type(e))
+            add(v,WGeq(get-width(value(e)),w))
+            add(v,WGeq(w,get-width(value(e))))
+            w
+   defn gen-constraints (s:Stmt) -> Stmt :
+      match(map(gen-constraints,s)) :
+         (s:DefWire) : h[name(s)] = type(s)
+         (s:DefInstance) : h[name(s)] = h[name(module(s) as WRef)]
+         (s:DefMemory) : h[name(s)] = type(s)
+         (s:DefNode) : h[name(s)] = type(value(s))
+         (s:Connect) : 
+            add(v,WGeq(get-width(loc(s)),get-width(exp(s))))
+            add(v,WGeq(get-width(exp(s)),get-width(loc(s))))
+         (s) : ""
+      s
+
+   for m in modules(c) do : 
+      h[name(m)] = BundleType(map(to-field,ports(m)))
+   for p in ports(m) do :
+      h[name(p)] = type(p)
+   gen-constraints(body(m))
+   to-list(v)
          
 
 defn remove-unknown-widths (c:Circuit) -> Circuit :
@@ -1476,8 +1636,10 @@ defn remove-unknown-widths (c:Circuit) -> Circuit :
    
 defn infer-widths (c:Circuit) -> Circuit :
    val c* = remove-unknown-widths(c)
+   for m in modules(c*) do :
+      val l = gen-constraints(c*,m)
+      for x in l do : println(x)
    c*
-   ;val l = gen-constraints(c*)
    ;val h = solve-constraints(l)
    ;replace-var-widths(c*,h)
 

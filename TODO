@@ -1,16 +1,18 @@
 TODO 
    Change parser to use <> syntax (and update all tests) (patrick)
    Think about on-reset, add it
+   Think about expanding mems, more complicated than first glance!
+   Think about max(op1,op2) for muxes.
    Make instances always male, flip the bundles on declaration
    Talk to palmer/patrick about how writing passes is going to be supported
    Add asserts, printf to spec
    Write lowering step for primops
    Figure out how widths propogate for all updated primops (Adam)
    Add bit-reduce-and etc to primops (Jonathan)
-   Write pass to rename identifiers (alpha-transform) (Adam)
+   //HANDLED IN FRONT END// Write pass to rename identifiers (alpha-transform) (Adam)
    Add partial bulk connect (Scott, Stephen)
    Add FIFOs to the IR (Palmer)
-   Multi-streams for print statements (Jack)
+   Multi-streams for print statements/asserts (Jack)
    Consider def female node. (Patrick) 
    Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
 

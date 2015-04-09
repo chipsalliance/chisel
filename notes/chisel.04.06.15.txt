@@ -9,7 +9,7 @@ mem m : { tag : UInt<10> data : UInt<128> }[32]
 accessor w = m[i]
 
 == Low FIRRTL ==
-mem m : { tag : UInt<10> data : UInt<128> }[32]
+mem m : { tag : UInt<10>[32] data : UInt<128>[32] }
 wire w#tag : UInt<10>
 wire w#data : UInt<128>
 WritePort(m.tag,i,en*) := w#tag

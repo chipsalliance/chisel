@@ -2,19 +2,16 @@
 
 ; CHECK: Expand Whens
 
-circuit BundleWire : 
-  module BundleWire : 
-    input in : { y : UInt(32), x : UInt(32) }
-    output outs : { y : UInt(32), x : UInt(32) }[4]
-    
-    wire coords : { y : UInt(32), x : UInt(32) }[4]
-    coords.0 := in
-    outs.0 := coords.0
-    coords.1 := in
-    outs.1 := coords.1
-    coords.2 := in
-    outs.2 := coords.2
-    coords.3 := in
-    outs.3 := coords.3
+circuit TestLower : 
+  module Inst :
+     input x : UInt
+     output y : UInt
+  module TestLower : 
+     mem m : {data : { w : UInt , x : UInt } tag : { y : UInt, z : UInt }}[8]
+     wire index : UInt
+     accessor r = m[index]
+
+     inst i of Inst
+     i.x := r
 
 ; CHECK: Finished Expand Whens
