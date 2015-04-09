@@ -585,6 +585,16 @@ defn infer-types (c:Circuit) -> Circuit :
 ; Because accessor gender is not known during declaration, 
 ;   this pass requires iterating until a fixed point is reached.
 
+defn bundle-field-flip (n:Symbol,t:Type) -> Flip :
+   match(t) :
+      (b:BundleType) : 
+          val field = for f in fields(b) find :
+                         name(f) == n
+          match(field):
+                   (f:Field) : flip(f)
+                   (f) : error(string-join(["Could not find " n " in bundle "]))
+      (b) : error(string-join(["Accessing subfield " n " on a non-Bundle type."]))
+
 defn resolve-genders (c:Circuit) :
    defn resolve-module (m:Module, genders:HashTable<Symbol,Gender>) -> Module :
       var done? = true
@@ -641,16 +651,6 @@ defn resolve-genders (c:Circuit) :
             (s) : map(resolve-stmt,s)
 
       defn resolve-expr (e:Expression,desired:Gender) -> Expression :
-         defn bundle-field-flip (n:Symbol,t:Type) -> Flip :
-            match(t) :
-               (b:BundleType) : 
-                   val field = for f in fields(b) find :
-                                  name(f) == n
-                   match(field):
-                            (f:Field) : flip(f)
-                            (f) : error(string-join(["Could not find " n " in bundle "]))
-               (b) : error(string-join(["Accessing subfield " n " on a non-Bundle type."]))
-            
          match(e) :
             (e:WRef) : 
                val gender = get-gender(name(e),desired)
@@ -771,6 +771,19 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
                             key(x) == y
          if contains? : ctable[y] = append(ctable[y],list(k))
          else : ctable[y] = list(k)
+      defn is-instance (e:Expression) -> True|False :
+         match(e) :
+            (e:WRef) : kind(e) == InstanceKind()
+            (e) : false
+      defn calc-gender (g:Gender, e:Expression) -> Gender :
+         match(e) :
+            (e:WRef) : gender(e)
+            (e:WRegInit) : gender(e)
+            (e:WSubfield) : 
+               if is-instance(exp(e)) : gender(e)
+               else : calc-gender(bundle-field-flip(name(e),type(exp(e))) * g,exp(e))
+            (e:WIndex) : gender(e)
+            (e) : g
 
       match(s) :
          (s:DefWire) : Begin{_} $
@@ -787,8 +800,8 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             lower-stmt(s*)
          (s:Connect) : Begin{_} $
             for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
-               val lgender = FEMALE * value(l)
-               val rgender = MALE * value(r)
+               val lgender = calc-gender(FEMALE,loc(s)) * value(l)
+               val rgender = calc-gender(MALE,exp(s)) * value(r)
                switch fn ([x,y]) : lgender == x and rgender == y :
                   [FEMALE,MALE]   : Connect(key(l),key(r))
                   [MALE,FEMALE]   : Connect(key(r),key(l))
@@ -802,10 +815,11 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
                   add-to-table(name(key(l) as WRef),r,ctable)
             val ls = 
                for l in expand-expr(loc(s)) map :
-                  val lgender = FEMALE * value(l)
+                  val cg = calc-gender(FEMALE,loc(s))
+                  val lgender = cg * value(l)
                   var rgender = BI-GENDER
                   val exps = for e in ctable[name(key(l) as WRef)] map :
-                                rgender = rgender + (MALE * value(e))
+                                rgender = rgender + (swap(cg) * value(e))
                                 key(e)
                   switch fn ([x,y]) : lgender == x and rgender == y :
                      [FEMALE,MALE]   : ConnectFromIndexed(index(s),key(l),exps)
@@ -818,10 +832,11 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             val ls = 
                for r in expand-expr(exp(s)) map :
                   val n = name(key(r) as WRef)
-                  val rgender = MALE * value(r)
+                  val cg = calc-gender(MALE,exp(s))
+                  val rgender = cg * value(r)
                   var lgender = BI-GENDER
                   val locs = for l in ctable[n] map :
-                                lgender = lgender + (FEMALE * value(l))
+                                lgender = lgender + (swap(cg) * value(l))
                                 key(l)
                   switch fn ([x,y]) : lgender == x and rgender == y :
                      [FEMALE,MALE]   : ConnectToIndexed(index(s),locs,key(r))
@@ -1406,16 +1421,16 @@ defn expand-whens (c:Circuit) -> Circuit :
 ; Finally, you replace all width variables with the solved
 ;   widths.
 
-;defstruct VarWidth <: Width :
-;   name: Symbol
-;
-;defmethod print (o:OutputStream, w:VarWidth) :
-;   print(o,name(w))
-;
-;;defn remove-var-widths (c:Circuit) -> Circuit :
-;
-;;defn solve-constraints (l:List<WCon>) -> HashTable<Symbol,Int> :
-;   
+defstruct VarWidth <: Width :
+   name: Symbol
+
+defmethod print (o:OutputStream, w:VarWidth) :
+   print(o,name(w))
+
+;defn remove-var-widths (c:Circuit) -> Circuit :
+
+;defn solve-constraints (l:List<WCon>) -> HashTable<Symbol,Int> :
+   
 ;defn gen-constraints (m:Module) -> List<WCon> :
 ;   val v = Vector<WCon>()
 ;   val h = HashTable<Symbol,Width>(symbol-hash)
@@ -1432,39 +1447,39 @@ defn expand-whens (c:Circuit) -> Circuit :
 ;            add(v,WGeq(w,
 ;   defn gen-constraints (s:Stmt) -> Stmt :
 ;      match(map(gen-constraints,s)) :
-;         
-;
-;defn remove-unknown-widths (c:Circuit) -> Circuit :
-;   defn remove-unknown-widths-wid (w:Width) -> Width :
-;      match(w) :
-;         (w:UnknownWidth) : VarWidth(gensym(`w))
-;         (w) : w
-;   defn remove-unknown-widths-type (t:Type) -> Type :
-;      map{remove-unknown-widths-wid,_} $
-;      map(remove-unknown-widths-type,t)
-;   defn remove-unknown-widths-exp (e:Expression) -> Expression :
-;      map{remove-unknown-widths-wid,_} $
-;      map{remove-unknown-widths-type,_} $
-;      map(remove-unknown-widths-exp,e)
-;   defn remove-unknown-widths-stmt (s:Stmt) -> Stmt :
-;      map{remove-unknown-widths-type,_} $
-;      map{remove-unknown-widths-exp,_} $
-;      map(remove-unknown-widths-stmt,s)
-;   val modules* = for m in modules(c) map :
-;      Module{name(m),_,body(m)} $
-;         for p in ports(m) map :
-;            Port(name(p),direction(p),remove-unknown-widths-type(type(p)))
-;
-;   val modules** = for m in modules* map :
-;      Module(name(m),ports(m),remove-unknown-widths-stmt(body(m)))
-;   Circuit(modules**,main(c))
-;   
-;defn infer-widths (c:Circuit) -> Circuit :
-;   val c* = remove-unknown-widths(c)
-;   c*
-;   ;val l = gen-constraints(c*)
-;   ;val h = solve-constraints(l)
-;   ;replace-var-widths(c*,h)
+         
+
+defn remove-unknown-widths (c:Circuit) -> Circuit :
+   defn remove-unknown-widths-wid (w:Width) -> Width :
+      match(w) :
+         (w:UnknownWidth) : VarWidth(gensym(`w))
+         (w) : w
+   defn remove-unknown-widths-type (t:Type) -> Type :
+      map{remove-unknown-widths-wid,_} $
+      map(remove-unknown-widths-type,t)
+   defn remove-unknown-widths-exp (e:Expression) -> Expression :
+      map{remove-unknown-widths-wid,_} $
+      map{remove-unknown-widths-type,_} $
+      map(remove-unknown-widths-exp,e)
+   defn remove-unknown-widths-stmt (s:Stmt) -> Stmt :
+      map{remove-unknown-widths-type,_} $
+      map{remove-unknown-widths-exp,_} $
+      map(remove-unknown-widths-stmt,s)
+   val modules* = for m in modules(c) map :
+      Module{name(m),_,body(m)} $
+         for p in ports(m) map :
+            Port(name(p),direction(p),remove-unknown-widths-type(type(p)))
+
+   val modules** = for m in modules* map :
+      Module(name(m),ports(m),remove-unknown-widths-stmt(body(m)))
+   Circuit(modules**,main(c))
+   
+defn infer-widths (c:Circuit) -> Circuit :
+   val c* = remove-unknown-widths(c)
+   c*
+   ;val l = gen-constraints(c*)
+   ;val h = solve-constraints(l)
+   ;replace-var-widths(c*,h)
 
 
 
@@ -2298,7 +2313,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'i') : do-stage("Expand Indexed Connects", expand-connect-indexed)
    if contains(p,'p') : do-stage("Initialize Registers", initialize-registers)
    if contains(p,'j') : do-stage("Expand Whens", expand-whens)
-   ;if contains(p,'k') : do-stage("Infer Widths", infer-widths)
+   if contains(p,'k') : do-stage("Infer Widths", infer-widths)
    ;if contains(p,'n') : do-stage("Pad Widths", pad-widths)
    ;if contains(p,'o') : do-stage("Inline Instances", inline-instances)
 

@@ -11,11 +11,11 @@
                wire q : { x : UInt, flip y : SInt }
                r1.init := q    
 
-      ; CHECK: reg r1#x : UInt
-      ; CHECK: reg r1#y : SInt
-      ; CHECK: wire q#x : UInt
-      ; CHECK: wire q#y : SInt
-      ; CHECK: r1#x.init := q#x
-      ; CHECK: q#y := r1#y.init
+      ; CHECK: reg r1$x : UInt
+      ; CHECK: reg r1$y : SInt
+      ; CHECK: wire q$x : UInt
+      ; CHECK: wire q$y : SInt
+      ; CHECK: r1$x.init := q$x
+      ; CHECK: q$y := r1$y.init
 
 ; CHECK: Finished Lower To Ground

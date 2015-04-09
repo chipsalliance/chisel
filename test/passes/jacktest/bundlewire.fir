@@ -1,10 +1,10 @@
-; RUN: firrtl %s abcefghipj c | tee %s.out | FileCheck %s 
+; RUN: firrtl %s abcefghipj cg | tee %s.out | FileCheck %s 
 
 ; CHECK: Expand Whens
 
 circuit BundleWire : 
   module BundleWire : 
-    output in : { y : UInt(32), x : UInt(32) }
+    input in : { y : UInt(32), x : UInt(32) }
     output outs : { y : UInt(32), x : UInt(32) }[4]
     
     wire coords : { y : UInt(32), x : UInt(32) }[4]
