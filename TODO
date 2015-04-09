@@ -1,41 +1,24 @@
 TODO 
-   change parser to use <> syntax (and update all tests)
-   think about on-reset
-   make instances always male, flip the bundles on declaration
-   write out FIFO example pass
-   write out diff mem examples and how we will support it
-   instances can be bulk connected -> change := semantics to:
-      F := M -> F := M (legal)
-      M := F -> M := F (legal)
-      M := M -> (illegal)
-      F := F -> (illegal)
-      B := B -> F := M (legal)
-      F := U -> F := M (legal)
-      M := U -> M := F (legal)
-      U := M -> F := M (legal)
-      U := F -> M := F (legal)
-      U := U -> U := U (legal)
-      Address this in gender inference pass, when see M := F, replace with F := M
-      What if Instances were Male always? And its type is the flipped version of module??
-
-   talk to palmer/patrick about how writing passes is going to be supported
-
+   Change parser to use <> syntax (and update all tests) (patrick)
+   Think about on-reset, add it
+   Make instances always male, flip the bundles on declaration
+   Talk to palmer/patrick about how writing passes is going to be supported
+   Add asserts, printf to spec
    Write lowering step for primops
    Figure out how widths propogate for all updated primops (Adam)
    Add bit-reduce-and etc to primops (Jonathan)
    Write pass to rename identifiers (alpha-transform) (Adam)
    Add partial bulk connect (Scott, Stephen)
    Add FIFOs to the IR (Palmer)
-   Registers/Memories only have data and enable fields, which can be written/read from. These are set by the front-end. This will probably have to wait (Palmer)
    Multi-streams for print statements (Jack)
    Consider def female node. (Patrick) 
-   Think about supporting memories (Scott)
    Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
 
    Update spec
-      add new field for sequential or combinational
       add assertions
       cannot connect directly to a mem (loc can never contain a mem)
+      Front-end needs to guarantee unique names per module.
+      FIRRTL rule: No name can be a prefix of any other name.
    Future questions to address in spec:
       Introduction – motivation, and intended usage
       Philosophical justifications for all constructs
@@ -50,8 +33,10 @@ TODO
 
 Checks:
    Subfields are only on bundles, before type inference 
-   after adding dynamic assertions, insert bounds check with accessor expansion
-   all things only assigned to once
+   After adding dynamic assertions, insert bounds check with accessor expansion
+   All things only assigned to once
+   Front-end needs to guarantee unique names per module.
+   FIRRTL rule: No name can be a prefix of any other name.
 
 Tests:
    Error if declare anything other than module in circuit
@@ -72,5 +57,3 @@ e := n
 
 
 
-Front-end needs to guarantee unique names per module.
-FIRRTL rule: No name can be a prefix of any other name.
