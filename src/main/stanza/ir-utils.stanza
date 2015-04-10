@@ -289,6 +289,22 @@ defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
       (c:DefMemory) : DefRegister(name(c),f(type(c)))
       (c) : c
 
+public defmulti mapr<?T> (f: Width -> Width, t:?T&Type) -> T
+defmethod mapr (f: Width -> Width, t:Type) -> Type :
+   defn apply-t (t:Type) -> Type :
+      map{f,_} $ map(apply-t,t)
+   apply-t(t)
+
+public defmulti mapr<?T> (f: Width -> Width, s:?T&Stmt) -> T
+defmethod mapr (f: Width -> Width, s:Stmt) -> Stmt :
+   defn apply-t (t:Type) -> Type : mapr(f,t)
+   defn apply-e (e:Expression) -> Expression :
+      map{f,_} $ map{apply-t,_} $ map(apply-e,e)
+   defn apply-s (s:Stmt) -> Stmt :
+      map{apply-t,_} $ map{apply-e,_} $ map(apply-s,s)
+   apply-s(s)
+
+
 ;================= HELPER FUNCTIONS USING MAP ===================
 ; These don't work properly..
 ;public defmulti do (f:Expression -> ?, e:Expression) -> False

@@ -3,10 +3,9 @@
 ;CHECK: Infer Widths
 circuit top :
    module top :
-      wire e : UInt
-      wire x : UInt
+      wire e : UInt(30)
       reg y : UInt
-      y := mux-uu(e, UInt(1), equal-uu(gt-uu(x, x), UInt(0)))
+      y := e
    
 
 ; CHECK: Finished Infer Widths

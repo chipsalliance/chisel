@@ -1,7 +1,7 @@
 TODO 
    Change parser to use <> syntax (and update all tests) (patrick)
    Think about on-reset, add it
-   Think about expanding mems, more complicated than first glance!
+   Think about expanding mems, more complicated than first glance! Change DefMem to be size, and element type
    Think about max(op1,op2) for muxes.
    Make instances always male, flip the bundles on declaration
    Talk to palmer/patrick about how writing passes is going to be supported
