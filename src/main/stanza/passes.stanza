@@ -1,8 +1,8 @@
-defpackage firrtl.passes :
+defpackage firrtl/passes :
   import core
   import verse
-  import firrtl.ir2
-  import firrtl.ir-utils
+  import firrtl/ir2
+  import firrtl/ir-utils
   import widthsolver
   import firrtl-main
 
@@ -36,27 +36,27 @@ public val BI-GENDER = new Gender
 
 defstruct WRef <: Expression :
    name: Symbol
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
    kind: Kind
-   gender: Gender  [multi => false]
+   gender: Gender  with: (as-method => true)
 
 defstruct WRegInit <: Expression :
    reg: Expression
    name: Symbol
-   type: Type [multi => false]
-   gender: Gender  [multi => false]
+   type: Type with: (as-method => true)
+   gender: Gender  with: (as-method => true)
 
 defstruct WSubfield <: Expression :
    exp: Expression
    name: Symbol
-   type: Type [multi => false]
-   gender: Gender [multi => false]
+   type: Type with: (as-method => true)
+   gender: Gender with: (as-method => true)
 
 defstruct WIndex <: Expression :
    exp: Expression
    value: Int
-   type: Type [multi => false]
-   gender: Gender [multi => false]
+   type: Type with: (as-method => true)
+   gender: Gender with: (as-method => true)
 
 defstruct WDefAccessor <: Stmt :
    name: Symbol
@@ -893,10 +893,10 @@ defn lower-module (m:Module,table:HashTable<Symbol,List<KeyValue<Expression,Flip
          (s:DefWire) : table[name(s)] = get-entries(name(s),type(s))
          (s:DefRegister) : 
             val regs = get-entries(name(s),type(s))
-            val init-sym = symbol-join([name(s),`.init])
+            val init-sym = symbol-join([name(s),`\|.init|])
             val init-regs = for r in regs map : 
                val [e f] = [key(r) value(r)]
-               WRegInit(e,symbol-join([name(e),`.init]),type(e),gender(e)) => f
+               WRegInit(e,symbol-join([name(e),`\|.init|]),type(e),gender(e)) => f
             table[name(s)] = regs
             table[init-sym] = init-regs
          (s:DefInstance) : 

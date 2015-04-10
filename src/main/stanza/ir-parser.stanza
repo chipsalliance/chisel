@@ -1,9 +1,9 @@
-defpackage firrtl.parser :
+defpackage firrtl/parser :
    import core
    import verse
-   import firrtl.ir2
-   import stanza.rdparser
-   import stanza.lexer
+   import firrtl/ir2
+   import stz/parser
+   import stz/lexer
 
 ;======= Convenience Functions ====
 defn throw-error (x) :
@@ -14,139 +14,84 @@ defn throw-error (x) :
 defn ut (x) :
    unwrap-token(x)
 
-;======== String Splitting ========
-defn substring? (s:String, look:String) :
-   index-of-string(s, look) != false
-   
-defn index-of-string (s:String, look:String) :
-   for i in 0 through length(s) - length(look) index-when :
-      for j in 0 to length(look) all? :
-         s[i + j] == look[j]
-
-defn split-string (s:String, split:String) -> List<String> :
-   defn loop (s:String) -> List<String> :
-      if length(s) == 0 :
-         List()
-      else :   
-         match(index-of-string(s, split)) :
-            (i:Int) :
-               val rest = loop(substring(s, i + length(split)))
-               if i == 0 : List(split, rest)
-               else : List(substring(s, 0, i), split, rest)
-            (f:False) : list(s)
-   loop(s)
-
-;======= Unwrap Prefix Forms ============
-defn unwrap-prefix-form (form) -> ? :
-   match(form) :
-      (form:Token) :
-         val fs = unwrap-prefix-form(item(form))
-         List(Token(head(fs), info(form)), tail(fs))
-      (form:List) :
-         if tagged-list?(form, `(@get @do @do-afn @of)) :
-            val rest = map-append(unwrap-prefix-form, tailn(form, 2))
-            val form* = List(form[0], rest)
-            append(unwrap-prefix-form(form[1]), list(form*))            
-         else :
-            list(map-append(unwrap-prefix-form, form))
-      (form) :
-         list(form)
-
-;======= Split Dots ============
-defn split-dots (forms:List) -> ? :
-   defn to-form (x:String) :
-      val num? = for c in x all? :
-                    c >= '0' and c <= '9'
-      to-int(x) when num? else to-symbol(x)              
-   defn split (form) -> List:
-      match(ut(form)) :
-         (f:Symbol) :
-            val fstr = to-string(f)
-            if contains?(fstr, '.') : map(to-form, split-string(fstr, "."))
-            else : list(form)
-         (f:List) :
-            list(map-append(split, f))
-         (f) :
-            list(f)
-   head(split(forms))   
-
-;====== Normalize Dots ========
-defn normalize-dots (forms:List) :
-   val forms* = head(unwrap-prefix-form(forms))
-   split-dots(forms*)
-
 ;======== SYNTAX =======================
-rd.defsyntax firrtl :
+defsyntax firrtl :
+   defrule :
+      symbol = (?x) when ut(x) typeof Symbol : ut(x)
+      int = (?x) when ut(x) typeof Int : ut(x)
+      
    defrule circuit :
-      (circuit ?name:#symbol : (?module-form ...)) :
-         rd.match-syntax(normalize-dots(module-form)) :
-            (?modules:#module ...) :
-               Circuit(modules, ut(name))            
+      circuit = (circuit ?name:#symbol : (?modules:#module ... ?rest ...)) :
+         if not empty?(rest) :
+            throw-error("Expected module here: ~" << [rest])
+         Circuit(modules, name)         
 
    defrule module :
-      (module ?name:#symbol : (?ports:#port ... ?body:#comm ...)) :
-         Module(ut(name), ports, Begin(body))
+      module = (module ?name:#symbol : (?ports:#port ... ?body:#comm ... ?rest ...)) :
+         if not empty?(rest) :
+            throw-error("Expected command here: ~" << [rest])
+         Module(name, ports, Begin(body))
 
    defrule field :
-      (?name:#symbol : ?type:#type) :
+      field = (?name:#symbol : ?type:#type) :
          Field(ut(name), DEFAULT, type)
-      (flip ?name:#symbol : ?type:#type) :
+      field = (flip ?name:#symbol : ?type:#type) :
          Field(ut(name), REVERSE, type)
 
    defrule port :
-      (input ?name:#symbol : ?type:#type) :
+      port = (input ?name:#symbol : ?type:#type) :
          Port(ut(name), INPUT, type)
-      (output ?name:#symbol : ?type:#type) :
+      port = (output ?name:#symbol : ?type:#type) :
          Port(ut(name), OUTPUT, type)
 
    defrule type :
-      (?type:#type (@get ?size:#int)) :
+      type = (?type:#type (@get ?size:#int)) :
          VectorType(type, ut(size))
-      (UInt (@do ?width:#int)) :
+      type = (UInt (@do ?width:#int)) :
          UIntType(IntWidth(ut(width)))
-      (UInt) :
+      type = (UInt) :
          UIntType(UnknownWidth())
-      (SInt (@do ?width:#int)) :
+      type = (SInt (@do ?width:#int)) :
          SIntType(IntWidth(ut(width)))
-      (SInt) :
+      type = (SInt) :
          SIntType(UnknownWidth())
-      ({?fields:#field ...}) :
+      type = ({?fields:#field ...}) :
          BundleType(fields)
 
    defrule comm :
-      (wire ?name:#symbol : ?type:#type) :
+      comm = (wire ?name:#symbol : ?type:#type) :
          DefWire(ut(name), type)
-      (reg ?name:#symbol : ?type:#type) :
+      comm = (reg ?name:#symbol : ?type:#type) :
          DefRegister(ut(name), type)
-      (mem ?name:#symbol : ?type:#type) :
+      comm = (mem ?name:#symbol : ?type:#type) :
          DefMemory(ut(name), type)
-      (inst ?name:#symbol of ?module:#exp) :
+      comm = (inst ?name:#symbol of ?module:#exp) :
          DefInstance(ut(name), module)
-      (node ?name:#symbol = ?exp:#exp) :
+      comm = (node ?name:#symbol = ?exp:#exp) :
          DefNode(ut(name), exp)
-      (accessor ?name:#symbol = ?source:#exp (@get ?index:#exp)) :
+      comm = (accessor ?name:#symbol = ?source:#exp (@get ?index:#exp)) :
          DefAccessor(ut(name), source, index)
-      ((?body:#comm ...)) :
+      comm = ((?body:#comm ...)) :
          Begin(body)
-      (?x:#exp := ?y:#exp) :
+      comm = (?x:#exp := ?y:#exp) :
          Connect(x, y)
-      (?c:#comm/when) :
+      comm = (?c:#comm/when) :
          c
          
    defrule comm/when :
-      (when ?pred:#exp : ?conseq:#comm else : ?alt:#comm) :
+      comm/when = (when ?pred:#exp : ?conseq:#comm else : ?alt:#comm) :
          Conditionally(pred, conseq, alt)
-      (when ?pred:#exp : ?conseq:#comm else ?alt:#comm/when) :
+      comm/when = (when ?pred:#exp : ?conseq:#comm else ?alt:#comm/when) :
          Conditionally(pred, conseq, alt)
-      (when ?pred:#exp : ?conseq:#comm) :
+      comm/when = (when ?pred:#exp : ?conseq:#comm) :
          Conditionally(pred, conseq, EmptyStmt())
 
    defrule exp :
-      (?x:#exp . ?f:#int) :
+      exp = (?x:#exp . ?f:#int) :
          Index(x, ut(f), UnknownType())
-      (?x:#exp . ?f:#symbol) :
+      exp = (?x:#exp . ?f:#symbol) :
          Subfield(x, ut(f), UnknownType())
-      (?x:#exp-form) :
+      exp = (?x:#exp-form) :
          x
 
    val operators = HashTable<Symbol, PrimOp>(symbol-hash)
@@ -247,21 +192,21 @@ rd.defsyntax firrtl :
    operators[`bits] = BITS-SELECT-OP
 
    defrule exp-form :
-      (UInt (@do ?value:#int ?width:#int)) :
+      exp-form = (UInt (@do ?value:#int ?width:#int)) :
          UIntValue(ut(value), IntWidth(ut(width)))
-      (UInt (@do ?value:#int)) :
+      exp-form = (UInt (@do ?value:#int)) :
          UIntValue(ut(value), UnknownWidth())
-      (SInt (@do ?value:#int ?width:#int)) :
+      exp-form = (SInt (@do ?value:#int ?width:#int)) :
          SIntValue(ut(value), IntWidth(ut(width)))
-      (SInt (@do ?value:#int)) :
+      exp-form = (SInt (@do ?value:#int)) :
          SIntValue(ut(value), UnknownWidth())
-      (WritePort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
+      exp-form = (WritePort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
          WritePort(mem, index, UnknownType(), enable)
-      (ReadPort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
+      exp-form = (ReadPort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
          ReadPort(mem, index, UnknownType(), enable)
-      (Register (@do ?value:#exp ?enable:#exp)) :
+      exp-form = (Register (@do ?value:#exp ?enable:#exp)) :
          Register(UnknownType(),value,enable)
-      (?op:#symbol (@do ?es:#exp ... ?ints:#int ...)) :
+      exp-form = (?op:#symbol (@do ?es:#exp ... ?ints:#int ...)) :
          println("Op-symbol is:~" % [op])
          match(get?(operators, ut(op), false)) :
             (op:PrimOp) :
@@ -270,11 +215,11 @@ rd.defsyntax firrtl :
             (f:False) :
                throw-error $ string-join $ [
                "Invalid operator: " op]     
-      (?x:#symbol) :
+      exp-form = (?x:#symbol) :
          Ref(ut(x), UnknownType())                       
 
 public defn parse-firrtl (forms:List) :
-   with-parser{`firrtl, _} $ fn () :
-      rd.match-syntax(forms) :
+   with-syntax(firrtl) :
+      match-syntax(forms) :
          (?c:#circuit) :
             c

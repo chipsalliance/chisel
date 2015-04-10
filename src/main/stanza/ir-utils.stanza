@@ -1,7 +1,7 @@
-defpackage firrtl.ir-utils :
+defpackage firrtl/ir-utils :
    import core
    import verse
-   import firrtl.ir2
+   import firrtl/ir2
 
 ;============== DEBUG STUFF =============================
 

@@ -1,22 +1,22 @@
-include<"core/stringeater.stanza">
-include<"compiler/lexer.stanza">
-include<"compiler/parser.stanza">
-include<"compiler/rdparser.stanza">
-include<"compiler/macro-utils.stanza">
-include("firrtl-ir.stanza")
-include("ir-utils.stanza")
-include("ir-parser.stanza")
-include("passes.stanza")
-include("widthsolver.stanza")
+#include<"core/stringeater.stanza">
+#include<"core/macro-utils.stanza">
+#include<"compiler/stz-algorithms.stanza">
+#include<"compiler/stz-lexer.stanza">
+#include<"compiler/stz-parser.stanza">
+#include("firrtl-ir.stanza")
+#include("ir-utils.stanza")
+#include("ir-parser.stanza")
+#include("passes.stanza")
+#include("widthsolver.stanza")
 
 defpackage firrtl-main :
    import core
    import verse
-   import firrtl.parser
-   import firrtl.passes
-   import stanza.lexer
-   import stanza.parser
-   import firrtl.ir-utils
+   import firrtl/parser
+   import firrtl/passes
+   import stz/lexer
+   import stz/parser
+   import firrtl/ir-utils
 
 defn set-printvars! (p:List<Char>) :
    if contains(p,'t') : PRINT-TYPES = true
