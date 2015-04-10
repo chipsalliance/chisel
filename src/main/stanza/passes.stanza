@@ -1543,29 +1543,27 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
    val o = Vector<Symbol>()
    for x in u do :
       val [n e] = [key(x) value(x)]
-      val e* = substitute(e,f)
-      ;val e* = remove-cycle{n,_} $ substitute(e,f)
-      ;if not self-rec?(n,e*) : 
-      add(o,n)
-      f[n] = e*
+      val e* = remove-cycle{n,_} $ substitute(e,f)
+      if not self-rec?(n,e*) : 
+         add(o,n)
+         f[n] = e*
 
    println("Forward Solved Constraints")
    for x in f do : println(x)
 
    ; Backwards Solve
-   ;val b = HashTable<Symbol,Width>(symbol-hash)
-   ;for i in (length(o) - 1) through 0 by -1 do :
-   ;   val n = o[i]
-   ;   b[n] = substitute(f[n],b)
+   val b = HashTable<Symbol,Width>(symbol-hash)
+   for i in (length(o) - 1) through 0 by -1 do :
+      val n = o[i]
+      b[n] = substitute(f[n],b)
+   println("Backwards Solved Constraints")
+   for x in b do : println(x)
 
-   ;println("Backwards Solved Constraints")
-   ;for x in b do : println(x)
-   ;; Evaluate
-   ;val e = evaluate(b)
-   ;println("Evaluated Constraints")
-   ;for x in e do : println(x)
-   ;e
-   HashTable<Symbol,Int>(symbol-hash)
+   ; Evaluate
+   val e = evaluate(b)
+   println("Evaluated Constraints")
+   for x in e do : println(x)
+   e
    
 defn width! (t:Type) -> Width :
    match(t) :
