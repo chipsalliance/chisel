@@ -985,7 +985,7 @@ defn expand-connect-indexed (c: Circuit) -> Circuit :
 ;   times.
 
 defn initialize-registers (c:Circuit) :
-   defn to-wire-name (y:Symbol) : to-symbol("~$init" % [y])
+   defn to-wire-name (y:Symbol) : symbol-join([ y "$init"])
    defn add-when (s:Stmt,h:HashTable<Symbol,Type>) -> Stmt :
       var inits = List<Stmt>()
       for kv in h do :
@@ -1860,48 +1860,51 @@ defn infer-widths (c:Circuit) -> Circuit :
    replace-var-widths(Circuit(modules*,main(c)),h)
 
 
-;================= Inline Modules ========================
+;================= Inline Instances ========================
+; Inlines instances. Assumes module with same name as the
+;   Circuit is the top level module
 
 defn inline-instances (c:Circuit) :
    val h = HashTable<Symbol,Module>(symbol-hash)
    val h-s = HashTable<Symbol,Stmt>(symbol-hash)
+   defn inline-inst (s:Stmt) -> Stmt :
+       match(map(inline-inst,s)) :
+         (s:DefInstance) : 
+            val n = name(module(s) as WRef)
+            val m = h[n]
+            val body* = 
+               if key?(h-s,n) : h-s[n]
+               else : 
+                  val v = Vector<Stmt>()
+                  for p in ports(m) do :
+                     add(v,DefWire(name(p),type(p)))
+                  add(v,inline-inst(body(m)))
+                  Begin(to-list(v))
+            h-s[n] = body*
+            rename-s(body*,name(s))
+         (s) : s
+   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n "$" ref])
+   defn rename-e (e:Expression,n:Symbol) -> Expression :
+      match(map(rename-e{_,n},e)) :
+         (e:WRef) : WRef(rename(name(e),n),type(e),kind(e),gender(e))
+         (e:WSubfield) : 
+            match(kind(exp(e) as WRef)) :
+               (k:InstanceKind) : 
+                  WRef(symbol-join([name(exp(e) as WRef) "$" name(e)]),type(e),k,gender(e))
+               (k:MemKind) : e
+         (e) : e
+   defn rename-s (s:Stmt,n:Symbol) -> Stmt :
+      map{rename-e{_,n},_} $ match(map(rename-s{_,n},s)) :
+         (s:DefWire) : DefWire(rename(name(s),n),type(s))
+         (s:DefInstance) : error("Shouldn't be here")
+         (s:DefMemory) : DefMemory(rename(name(s),n),type(s))
+         (s:DefNode) : DefNode(rename(name(s),n),value(s))
+         (s) : s
    for m in modules(c) do :
       h[name(m)] = m
-   defn inline (m:Module,i:Symbol,top?:True|False) -> Stmt :
-      defn rename (n:Symbol) -> Symbol : 
-         if not top? : to-symbol("~$~" % [i n])
-         else : n
-      defn inline (s:Stmt) -> Stmt :
-         map{inline-e,_} $ match(map(inline,s)) :
-            (s:DefWire) : DefWire(rename(name(s)),type(s))
-            (s:DefInstance) : 
-               val n = name(module(s))
-               val body* = 
-                  if key?(h-s,n) : h-s[n]
-                  else : inline(name(module(s) as WRef),name(s))
-               h-s[n] = body*
-               inline(body*)
-            (s:DefMemory) : DefMemory(rename(name(s)),type(s))
-            (s:DefNode) : DefNode(rename(name(s)),value(s))
-            (s) : s
-      defn inline-e (e:Expression) -> Expression :
-         match(map(inline-e,e)) :
-            (e:WRef) : WRef(rename(name(e)),type(e),kind(e),gender(e))
-            (e:WSubfield) : 
-               match(kind(e)) :
-                  (k:InstanceKind) : 
-                     WRef(rename(to-symbol("~$~" % [name(exp(e) as WRef) name(e)]),type(e)))
-                  (k:MemKind) : e
-            (e) : e
-      val v = Vector<Stmt>()
-      for p in ports(m) do :
-         add(v,DefWire(rename(name(p)),type(p)))
-      add(v,inline(body(m)))
-      Begin(to-list(v))
-      
-   val top = for m in modules(c) find : name(m) == main(c)
-   Circuit(main(c), Module(name(top),ports(top),inline(top,`null,true)))
-      
+   val top = (for m in modules(c) find : name(m) == main(c)) as Module
+   Circuit(list(Module(name(top),ports(top),inline-inst(body(top)))),main(c))
+
 
 
 ;================= Bring to Real IR ========================
@@ -1920,14 +1923,12 @@ defn to-real-ir (c:Circuit) :
         (e:WDefAccessor) : error("Shouldn't be here")
         (e:ConnectToIndexed) : error("Shouldn't be here")
         (e:ConnectFromIndexed) : error("Shouldn't be here")
-        (e) : map(to-stmt)
+        (e) : map(to-stmt,e)
 
    Circuit(modules*, main(c)) where :
       val modules* =
          for m in modules(c) map :
             Module(name(m), ports(m), to-stmt(body(m)))
-
-
 
 
 ;============= DRIVER ======================================

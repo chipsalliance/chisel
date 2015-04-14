@@ -1,6 +1,6 @@
 ; RUN: firrtl %s abcefghipjkn c | tee %s.out | FileCheck %s
 
-;CHECK: Infer Widths
+;CHECK: Inline Instances
 circuit top :
    module subtracter :
       input x : UInt
@@ -42,4 +42,4 @@ circuit top :
       i.e := UInt(1)
       z := i.z
 
-; CHECK: Finished Infer Widths
+; CHECK: Finished Inline Instances
