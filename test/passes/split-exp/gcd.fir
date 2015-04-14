@@ -1,6 +1,6 @@
-; RUN: firrtl %s abcefghipjkl c | tee %s.out | FileCheck %s
+; RUN: firrtl %s abcefghipjklm c | tee %s.out | FileCheck %s
 
-;CHECK: Inline Instances
+;CHECK: Split Expressions
 circuit top :
    module subtracter :
       input x : UInt
@@ -42,4 +42,4 @@ circuit top :
       i.e := UInt(1)
       z := i.z
 
-; CHECK: Finished Inline Instances
+; CHECK: Finished Split Expressions

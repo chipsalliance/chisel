@@ -1906,6 +1906,31 @@ defn inline-instances (c:Circuit) :
    Circuit(list(Module(name(top),ports(top),inline-inst(body(top)))),main(c))
 
 
+;================= Split Expressions ========================
+; Inteded to only work on low firrtl
+
+defn split-exp (c:Circuit) :
+   defn split-exp-s (s:Stmt,v:Vector<Stmt>) -> False :
+      match(s) :
+         (s:Begin) : 
+            defn f (s:Stmt) -> False: split-exp-s(s,v)
+            do(f,s)
+         (s:Conditionally) : error("Shouldn't be here")
+         (s) : add(v,map(split-exp-e{_,v},s))
+      false
+   defn split-exp-e (e:Expression,v:Vector<Stmt>) -> Expression :
+      match(map(split-exp-e{_,v},e)):
+         (e:Subfield|DoPrim|ReadPort|Register) : 
+            val n = gensym(`T)
+            add(v,DefNode(n,e))
+            WRef(n,type(e),NodeKind(),UNKNOWN-GENDER)
+         (e) : e
+
+   Circuit{_,main(c)} $
+      for m in modules(c) map :
+         val v = Vector<Stmt>()
+         split-exp-s(body(m),v)
+         Module(name(m),ports(m),Begin(to-list(v)))
 
 ;================= Bring to Real IR ========================
 ; Returns a new Circuit with only real IR nodes.
@@ -1956,8 +1981,9 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'p') : do-stage("Initialize Registers", initialize-registers)
    if contains(p,'j') : do-stage("Expand Whens", expand-whens)
    if contains(p,'k') : do-stage("Infer Widths", infer-widths)
-   if contains(p,'n') : do-stage("Inline Instances", inline-instances)
-   ;if contains(p,'n') : do-stage("Pad Widths", pad-widths)
+   if contains(p,'l') : do-stage("Inline Instances", inline-instances)
+   if contains(p,'m') : do-stage("Split Expressions", split-exp)
+   if contains(p,'n') : do-stage("Real IR", to-real-ir)
 
    println("Done!")
 
