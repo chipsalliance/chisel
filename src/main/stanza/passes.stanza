@@ -1907,7 +1907,7 @@ defn inline-instances (c:Circuit) :
 
 
 ;================= Split Expressions ========================
-; Inteded to only work on low firrtl
+; Intended to only work on low firrtl
 
 defn split-exp (c:Circuit) :
    defn split-exp-s (s:Stmt,v:Vector<Stmt>) -> False :
@@ -1920,7 +1920,7 @@ defn split-exp (c:Circuit) :
       false
    defn split-exp-e (e:Expression,v:Vector<Stmt>) -> Expression :
       match(map(split-exp-e{_,v},e)):
-         (e:Subfield|DoPrim|ReadPort|Register) : 
+         (e:Subfield|DoPrim|ReadPort|Register|WritePort) : 
             val n = gensym(`T)
             add(v,DefNode(n,e))
             WRef(n,type(e),NodeKind(),UNKNOWN-GENDER)
