@@ -1,0 +1,29 @@
+Std Library Discussion
+
+FIRRTL Feedback:
+   Can we write an asynchronous FIFO using our implicit clock port semantics? (Patrick)
+      Unclear.
+
+   Can't mux between Bundle Types. (Stephen)
+      We think that is ok.
+
+   Bit-wise operation on SInts. Knocking down low bits. (Stephen)
+      Good point, we can define these.
+
+   UInt - UInt = SInt
+      ...
+
+   cmem vs reg of vec?
+      reg of vec has initialization, and can be accessed combinationally
+      maybe
+
+   subword updates?
+      modeled through the bundle types
+      not supported, but need to figure out how to support it
+
+   printfs and asserts
+
+   all primops require same widths. Need explicit incrementer node.
+
+   add padTo
+

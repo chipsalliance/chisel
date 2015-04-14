@@ -306,30 +306,31 @@ defmethod mapr (f: Width -> Width, s:Stmt) -> Stmt :
 
 
 ;================= HELPER FUNCTIONS USING MAP ===================
-; These don't work properly..
-;public defmulti do (f:Expression -> ?, e:Expression) -> False
-;defmethod do (f:Expression -> ?, e:Expression) -> False :
-;   for x in e map :
-;      f(x)
-;      x
-;   false
-;
-;public defmulti do (f:Expression -> ?, s:Stmt) -> False
-;defmethod do (f:Expression -> ?, s:Stmt) -> False :
-;   defn f* (x:Expression) : 
-;      f(x)
-;      x
-;   map(f*,s)
-;   false
-;
-;public defmulti do (f:Stmt -> ?, s:Stmt) -> False
-;defmethod do (f:Stmt -> ?, s:Stmt) -> False :
-;   defn f* (x:Stmt) :
-;      f(x)
-;      x
-;   map(f*,s)
-;   false
-;
+public defmulti do (f:Expression -> ?, e:Expression) -> False
+defmethod do (f:Expression -> ?, e:Expression) -> False :
+   defn f* (x:Expression) :
+      f(x)
+      x
+   map(f*,e)
+   false
+
+public defmulti do (f:Expression -> ?, s:Stmt) -> False
+defmethod do (f:Expression -> ?, s:Stmt) -> False :
+   defn f* (x:Expression) : 
+      f(x)
+      x
+   map(f*,s)
+   false
+
+public defmulti do (f:Stmt -> ?, s:Stmt) -> False
+defmethod do (f:Stmt -> ?, s:Stmt) -> False :
+   defn f* (x:Stmt) :
+      f(x)
+      x
+   map(f*,s)
+   false
+
+; Not well defined - usually use dor on fields of a recursive type
 ;public defmulti dor (f:Expression -> ?, e:Expression) -> False
 ;defmethod dor (f:Expression -> ?, e:Expression) -> False :
 ;   f(e)
