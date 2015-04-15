@@ -1,0 +1,13 @@
+Male node:
+male defnode n = e
+==>
+wire n
+n := e
+
+Female node:
+female defnode n = e
+==>
+wire n 
+e := n
+
+

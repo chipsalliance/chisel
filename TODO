@@ -1,67 +1,65 @@
-Passes:
-- To-Real-IR
-+ Inline Modules
-+ Remove Nested Expressions
-+ Flo
+================================================
+========== ADAM's BIG ASS TODO LIST ============
+================================================
 
-TODO 
-   Change all primops to be strict on data widths
-   Change parser to use <> syntax (and update all tests) (patrick)
-   Think about on-reset, add it
-   Think about expanding mems, more complicated than first glance! Change DefMem to be size, and element type
-   Make instances always male, flip the bundles on declaration
-   Talk to palmer/patrick about how writing passes is going to be supported
-   Add asserts, printf to spec
-   Write lowering step for primops
-   Figure out how widths propogate for all updated primops (Adam)
-   Add bit-reduce-and etc to primops (Jonathan)
-   //HANDLED IN FRONT END// Write pass to rename identifiers (alpha-transform) (Adam)
-   Add partial bulk connect (Scott, Stephen)
-   Add FIFOs to the IR (Palmer)
-   Multi-streams for print statements/asserts (Jack)
-   Consider def female node. (Patrick) 
-   Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
+Important things:
+   Include new parser
+   
+======== Update Core ==========
+Change all primops to be strict on data widths
+Merge pull request and update tests
+on-reset
+Write lowering step for primops
+Add bit-reduce-and etc to primops (Jonathan)
+Add source locaters
 
-   Update spec
-      add assertions
-      cannot connect directly to a mem (loc can never contain a mem)
-      Front-end needs to guarantee unique names per module.
-      FIRRTL rule: No name can be a prefix of any other name.
-   Future questions to address in spec:
-      Introduction – motivation, and intended usage
-      Philosophical justifications for all constructs
-      More introduction for types, e.g. what is a ground type?
-      What is a statement? What is an expression? What is a memory? Difference between vector type and memory? What are accessors for?
-      Why would I ever write an empty statement? Mainly for use by compiler/passes
-      What is a structural element? Duplication?
-      Subtracting two unsigned numbers… Should talk to a math guy to figure it out
-      What are shift left and shift right operations? HW doesn’t have these concepts. Need justification.
-      What is lowered form? What is it for?
-
-
-Checks:
-   Subfields are only on bundles, before type inference 
-   After adding dynamic assertions, insert bounds check with accessor expansion
-   All things only assigned to once
-   Front-end needs to guarantee unique names per module.
-   FIRRTL rule: No name can be a prefix of any other name.
-
-Tests:
-   Error if declare anything other than module in circuit
+======== Check Passes ==========
+Parser
    Error if incorrectly assign stuff, like use = instead of :=
-   Error: Node not parsed for stmts
+Well-formed high firrtl 
+   Unique names per module
+   No name can be a prefix of any other name.
+   No nested modules
+   Only modules in circuit (no statements or expressions)
+   Cannot connect directly to a mem ever
+   Subfields are only on bundles, before type inference 
+   Can only connect to a Ref or Subfield or Index
+   UInt only has positive ints
+After adding dynamic assertions, insert bounds check with accessor expansion
+Well-formed low firrtl
+   All things only assigned to once
 
-Male node:
-defnode n = e
-==>
-wire n
-n := e
+======== Other Passes ========
+Flo backend
+PrimOp lowering
 
-Female node:
-defnode n = e
-==>
-wire n 
-e := n
-
-
-
+======== Think About ========
+annotation system
+zero-width wires
+on-reset
+expanding mems (consider changing defmem to be size, and element type)
+Make instances always male, flip the bundles on declaration
+Multi-streams for print statements/asserts (Jack)
+Consider def female node. (Patrick) 
+Talk to palmer/patrick about how writing passes is going to be supported
+Figure out how widths propogate for all updated primops (Adam)
+Add partial bulk connect (Scott, Stephen)
+Add FIFOs to the IR (Palmer)
+Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
+   
+======== Update Spec ========
+Add Not to spec
+add assertions and printfs
+cannot connect directly to a mem (loc can never contain a mem)
+Front-end needs to guarantee unique names per module.
+FIRRTL rule: No name can be a prefix of any other name.
+Future questions to address in spec:
+   Introduction – motivation, and intended usage
+   Philosophical justifications for all constructs
+   More introduction for types, e.g. what is a ground type?
+   What is a statement? What is an expression? What is a memory? Difference between vector type and memory? What are accessors for?
+   Why would I ever write an empty statement? Mainly for use by compiler/passes
+   What is a structural element? Duplication?
+   Subtracting two unsigned numbers… Should talk to a math guy to figure it out
+   What are shift left and shift right operations? HW doesn’t have these concepts. Need justification.
+   What is lowered form? What is it for?

@@ -239,6 +239,7 @@ rd.defsyntax firrtl :
    operators[`convert] = CONVERT-OP
    operators[`convert-u] = CONVERT-U-OP
    operators[`convert-s] = CONVERT-S-OP
+   operators[`bit-not] = BIT-NOT-OP
    operators[`bit-and] = BIT-AND-OP
    operators[`bit-or] = BIT-OR-OP
    operators[`bit-xor] = BIT-XOR-OP

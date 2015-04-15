@@ -189,7 +189,6 @@ defn any-debug? (e:Expression|Stmt|Type|Port|Field) :
    (hasGender(e) and PRINT-GENDERS) or
    (hasType(e) and PRINT-TYPES) or
    (hasWidth(e) and PRINT-WIDTHS) or
-   (hasType(e) and PRINT-WIDTHS) or
    (hasKind(e) and PRINT-KINDS)
 
 defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field) :
@@ -492,6 +491,7 @@ defn get-primop-rettype (e:DoPrim) -> Type :
       CONVERT-OP : s()
       CONVERT-U-OP : s()
       CONVERT-S-OP : s()
+      BIT-NOT-OP : u()
       BIT-AND-OP : u()
       BIT-OR-OP : u()
       BIT-XOR-OP : u()
@@ -1730,6 +1730,7 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          SHIFT-RIGHT-S-OP : wmc(args(e),consts(e))
          CONVERT-U-OP : add-c(PlusWidth(width!(args(e)[0]),IntWidth(1)))
          CONVERT-S-OP : add-c(width!(args(e)[0]))
+         BIT-NOT-OP : maxw(args(e))
          BIT-AND-OP : maxw(args(e))
          BIT-OR-OP : maxw(args(e))
          BIT-XOR-OP : maxw(args(e))
@@ -1762,11 +1763,17 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (e:Register) : Register(type(value(e)),value(e),enable(e))
          (e:UIntValue) : 
             match(width(e)) :
-               (w:UnknownWidth) : UIntValue(value(e),VarWidth(gensym(`w)))
+               (w:UnknownWidth) : 
+                  val w* = VarWidth(gensym(`w))
+                  add(v,WGeq(w*,IntWidth(ceil-log2(value(e)))))
+                  UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
-               (w:UnknownWidth) : SIntValue(value(e),VarWidth(gensym(`w)))
+               (w:UnknownWidth) : 
+                  val w* = VarWidth(gensym(`w))
+                  add(v,WGeq(w*,IntWidth(1 + ceil-log2(abs(value(e))))))
+                  SIntValue(value(e),w*)
                (w) : e
          (e) : e
 
@@ -1868,21 +1875,29 @@ defn inline-instances (c:Circuit) :
    val h = HashTable<Symbol,Module>(symbol-hash)
    val h-s = HashTable<Symbol,Stmt>(symbol-hash)
    defn inline-inst (s:Stmt) -> Stmt :
-       match(map(inline-inst,s)) :
-         (s:DefInstance) : 
-            val n = name(module(s) as WRef)
-            val m = h[n]
-            val body* = 
-               if key?(h-s,n) : h-s[n]
-               else : 
-                  val v = Vector<Stmt>()
-                  for p in ports(m) do :
-                     add(v,DefWire(name(p),type(p)))
-                  add(v,inline-inst(body(m)))
-                  Begin(to-list(v))
-            h-s[n] = body*
-            rename-s(body*,name(s))
-         (s) : s
+      match(map(inline-inst,s)) :
+        (s:DefInstance) : 
+           val n = name(module(s) as WRef)
+           val m = h[n]
+           val body* = 
+              if key?(h-s,n) : h-s[n]
+              else : 
+                 val v = Vector<Stmt>()
+                 for p in ports(m) do :
+                    add(v,DefWire(name(p),type(p)))
+                 add(v,inline-inst(body(m)))
+                 Begin(to-list(v))
+           h-s[n] = body*
+           rename-s(body*,name(s))
+        (s) : map(inline-inst-e,s)
+   defn inline-inst-e (e:Expression) -> Expression :
+      match(map(inline-inst-e,e)) :
+         (e:WSubfield) : 
+            match(kind(exp(e) as WRef)) :
+               (k:InstanceKind) : 
+                  WRef(symbol-join([name(exp(e) as WRef) "$" name(e)]),type(e),k,gender(e))
+               (k:MemKind) : e
+         (e) : e
    defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n "$" ref])
    defn rename-e (e:Expression,n:Symbol) -> Expression :
       match(map(rename-e{_,n},e)) :
@@ -1955,6 +1970,188 @@ defn to-real-ir (c:Circuit) :
          for m in modules(c) map :
             Module(name(m), ports(m), to-stmt(body(m)))
 
+;============= FLO PRINTER ======================================
+; Emit 
+
+defn flo-op-name (op:PrimOp) -> String :
+   switch {op == _ } :
+      ;NEG-OP :         "neg"
+      ;NEG-OP :         "neg"
+      ;NEG-OP :         "neg"
+      ;NEG-OP :         "neg"
+      ADD-UU-OP :      "add"
+      ADD-US-OP :      "add"
+      ADD-SU-OP :      "add"
+      ADD-SS-OP :      "add"
+      ADD-WRAP-UU-OP : "add"
+      ADD-WRAP-US-OP : "add"
+      ADD-WRAP-SU-OP : "add"
+      ADD-WRAP-SS-OP : "add"
+      SUB-UU-OP :      "sub"
+      SUB-US-OP :      "sub"
+      SUB-SU-OP :      "sub"
+      SUB-SS-OP :      "sub"
+      SUB-WRAP-UU-OP : "sub"
+      SUB-WRAP-US-OP : "sub"
+      SUB-WRAP-SU-OP : "sub"
+      SUB-WRAP-SS-OP : "sub"
+      MUL-UU-OP :      "mul" ;; todo: signed version
+      MUL-US-OP :      "mul" ;; todo: signed version
+      MUL-SU-OP :      "mul" ;; todo: signed version
+      MUL-SS-OP :      "mul" ;; todo: signed version
+      DIV-UU-OP :      "div" ;; todo: signed version
+      DIV-US-OP :      "div" ;; todo: signed version
+      DIV-SU-OP :      "div" ;; todo: signed version
+      DIV-SS-OP :      "div" ;; todo: signed version
+      MOD-UU-OP :      "mod" ;; todo: signed version
+      MOD-US-OP :      "mod" ;; todo: signed version
+      MOD-SU-OP :      "mod" ;; todo: signed version
+      MOD-SS-OP :      "mod" ;; todo: signed version
+      LESS-UU-OP :        "lt"  ;; todo: signed version
+      LESS-US-OP :        "lt"  ;; todo: signed version
+      LESS-SU-OP :        "lt"  ;; todo: signed version
+      LESS-SS-OP :        "lt"  ;; todo: signed version
+      LESS-EQ-UU-OP :     "lte" ;; todo: swap args
+      LESS-EQ-US-OP :     "lte" ;; todo: swap args
+      LESS-EQ-SU-OP :     "lte" ;; todo: swap args
+      LESS-EQ-SS-OP :     "lte" ;; todo: swap args
+      GREATER-UU-OP :     "lte" ;; todo: swap args BROKEN
+      GREATER-US-OP :     "lte" ;; todo: swap args BROKEN
+      GREATER-SU-OP :     "lte" ;; todo: swap args BROKEN
+      GREATER-SS-OP :     "lte" ;; todo: swap args BROKEN
+      GREATER-EQ-UU-OP :  "lt"  ;; todo: signed version
+      GREATER-EQ-US-OP :  "lt"  ;; todo: signed version
+      GREATER-EQ-SU-OP :  "lt"  ;; todo: signed version
+      GREATER-EQ-SS-OP :  "lt"  ;; todo: signed version
+      NEQUAL-UU-OP :      "neq"
+      NEQUAL-SS-OP :      "neq"
+      EQUAL-UU-OP :       "eq"
+      EQUAL-SS-OP :       "eq"
+      MUX-UU-OP :         "mux"
+      MUX-SS-OP :         "mux"
+      PAD-U-OP :         "rsh" ;; todo: signed version
+      PAD-S-OP :         "rsh" ;; todo: signed version
+      ;AS-UINT-U-OP :
+      ;AS-UINT-S-OP :
+      ;AS-SINT-U-OP :
+      ;AS-SINT-S-OP :
+      SHIFT-LEFT-U-OP :  "lsh" ;; todo: signed version
+      SHIFT-LEFT-S-OP :  "lsh" ;; todo: signed version
+      SHIFT-RIGHT-U-OP : "rsh"
+      SHIFT-RIGHT-S-OP : "rsh"
+      ;CONVERT-U-OP : 
+      ;CONVERT-S-OP : 
+      BIT-AND-OP :     "and"
+      BIT-NOT-OP :     "not"
+      BIT-OR-OP :      "or"
+      BIT-XOR-OP :     "xor"
+      CONCAT-OP :      "cat"
+      BIT-SELECT-OP :  "rsh"
+      BITS-SELECT-OP : "rsh"
+      else : error $ string-join $ ["Unable to print Primop: " op]
+
+defn sane-width (wd:Width) -> Int :
+  match(wd) :
+    (w:IntWidth) : max(1, width(w))
+    (w)          : error("Unknown width")
+
+defn prim-width (type:Type) -> Int :
+   match(type) :
+      (t:UIntType) : sane-width(width(t))
+      (t:SIntType) : sane-width(width(t))
+      (t) :          error("Bad prim width type")
+
+defn sizeof (in: Int) -> Int :
+  ;; if in == 1: 1 else: to-int(ceil(log(in)/log(2)))
+  max(1, ceil-log2(in))
+
+defn emit-all (o:OutputStream, es:Streamable, top:Symbol) :
+  for e in es do :
+     match(e) :
+       (ex:Expression) : emit!(o,e,top)
+       (ex:String) :     print(o, ex)
+       (ex:Symbol) :     print(o, ex)
+       ;; (ex:Int) :        print-all(o, [ex "'" sizeof(ex)])
+       (ex:Int) :        print(o, ex)
+       (ex) :            print(o, ex)
+
+defn emit! (o:OutputStream, e:Expression,top:Symbol) :
+   defn cmp-op? (op: PrimOp) -> True|False :
+      contains?([EQUAL-OP, NEQUAL-OP, GREATER-OP, LESS-EQ-OP, LESS-OP, GREATER-EQ-OP], op)
+   match(e) :
+      (e:Ref) :       emit-all(o,[top "::" name(e)], top)
+      (e:UIntValue) : emit-all(o,[value(e) "'" sane-width(width(e))], top)
+      (e:SIntValue) : emit-all(o,[value(e) "'" sane-width(width(e))], top)
+      (e:Subfield) :  emit-all(o,[exp(e) "/" name(e)], top)
+      (e:Index) :     emit-all(o,[exp(e) "/" value(e)], top)
+      (e:Register) : 
+         emit-all(o,["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top)
+      (e:ReadPort) : 
+         emit-all(o,["rd'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e)], top)
+      (e:DoPrim) : 
+         if cmp-op?(op(e)) :
+           emit-all(o, [flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
+           if op(e) == GREATER-OP or op(e) == LESS-EQ-OP :
+             emit-all(o, ["  " args(e)[1] " " args(e)[0]], top)
+           else :
+             emit-all(o, ["  " args(e)[0] " " args(e)[1]], top)
+         else if op(e) == BIT-SELECT-OP :
+           emit-all(o, [flo-op-name(op(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
+         else if op(e) == BITS-SELECT-OP :
+           val w = consts(e)[0] - consts(e)[1] + 1
+           emit-all(o, [flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+         ;; else if op(e) == CONCAT-OP :
+         ;;   val w = consts(e)[0] - consts(e)[1] + 1
+         ;;   emit-all(o, [flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+         else :
+           emit-all(o, [flo-op-name(op(e)) "'" prim-width(type(e))], top)
+           if op(e) == PAD-OP :
+             emit-all(o, ["  " args(e)[0] " 0"], top)
+           else :
+             for arg in args(e) do :
+               print(o, " ")
+               emit!(o, arg, top)
+             for const in consts(e) do :
+               print(o, " ")
+               print(o, const)
+      (e) : print-all(o, ["EMIT(" e ")"])
+      ;(e) : emit-all(o, ["mov'" prim-width(type(e)) " " e], top)
+
+defn emit-s (o:OutputStream, s:Stmt, v:List<Symbol>, top:Symbol) :
+   match(s) :
+      (s:DefWire) : ""
+      (s:DefInstance) : error("Shouldn't be here")
+      (s:DefMemory) :
+           val vtype = type(s) as VectorType
+           emit-all(o, [top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
+      (s:DefNode) : emit-all(o, [top "::" name(s) " = " value(s) "\n"], top)
+      (s:Begin) : do(emit-s{o, _, v, top}, body(s))
+      (s:Connect) : 
+         if loc(s) typeof WritePort :
+            val e = loc(s) as WritePort
+            val name = gensym("T")
+            emit-all(o, [top "::" name " = wr'" prim-width(type(e)) " " enable(e) " " top "::" mem(e) " " index(e) " " exp(s) "\n"], top)
+         else :
+            val n = name(loc(s) as Ref)
+            if contains?(v,n) :
+               emit-all(o, [n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
+            else :
+               emit-all(o, [top "::" n " = " exp(s) "\n"], top)
+      (s) : s 
+
+defn emit-module (o:OutputStream, m:Module) :
+   val v = Vector<Symbol>()
+   for port in ports(m) do :
+      if name(port) ==`reset :
+         emit-all(o, [name(m) "::" name(port) " = rst'1\n"], name(m))
+      else : switch {_ == direction(port)} :
+         INPUT : print-all(o, [name(m) "::" name(port) " = " "in'" prim-width(type(port)) "\n"])
+         OUTPUT : add(v,name(port))
+   emit-s(o, body(m), to-list(v), name(m))
+
+public defn emit-flo (o:OutputStream, c:Circuit) :
+   emit-module(o, modules(c)[0])
+   c
 
 ;============= DRIVER ======================================
 public defn run-passes (c: Circuit, p: List<Char>) :
@@ -1984,7 +2181,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'l') : do-stage("Inline Instances", inline-instances)
    if contains(p,'m') : do-stage("Split Expressions", split-exp)
    if contains(p,'n') : do-stage("Real IR", to-real-ir)
-
+   if contains(p,'o') : do-stage("To Flo", emit-flo{STANDARD-OUTPUT,_})
    println("Done!")
 
 

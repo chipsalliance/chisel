@@ -23,6 +23,9 @@ build:
 check: 
 	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/
 
+chisel3:
+	cd $(test_dir)/chisel3 && lit -v . --path=$(root_dir)/utils/bin/
+
 clean:
 	rm -f $(test_dir)/*/*/*.out
 	rm -f $(test_dir)/*/*.out
