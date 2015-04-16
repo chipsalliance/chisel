@@ -1,4 +1,4 @@
-defpackage firrtl.ir2 :
+defpackage firrtl/ir2 :
    import core
    import verse
    
@@ -121,15 +121,15 @@ public defmulti type (e:Expression) -> Type
 
 public defstruct Ref <: Expression :
    name: Symbol
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
 public defstruct Subfield <: Expression :
    exp: Expression
    name: Symbol
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
 public defstruct Index <: Expression :
    exp: Expression
    value: Int
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
 public defstruct UIntValue <: Expression :
    value: Int
    width: Width
@@ -140,19 +140,19 @@ public defstruct DoPrim <: Expression :
    op: PrimOp
    args: List<Expression>
    consts: List<Int>
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
 public defstruct ReadPort <: Expression :
    mem: Expression
    index: Expression
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
    enable: Expression
 public defstruct WritePort <: Expression :
    mem: Expression
    index: Expression
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
    enable: Expression
 public defstruct Register <: Expression :
-   type: Type [multi => false]
+   type: Type with: (as-method => true)
    value: Expression
    enable: Expression
 
