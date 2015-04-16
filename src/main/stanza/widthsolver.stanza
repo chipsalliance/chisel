@@ -1,12 +1,12 @@
 ;Define the STANDALONE flag to run STANDALONE
-if-defined(STANDALONE) :
-   include<"core/stringeater.stanza">
-   include<"compiler/lexer.stanza">
+#if-defined(STANDALONE) :
+   #include<"core/stringeater.stanza">
+   #include<"compiler/lexer.stanza">
 
 defpackage widthsolver :
    import core
    import verse
-   import stanza.lexer
+   import stz/lexer
 
 ;============= Language of Constraints ======================
 public definterface WConstraint 
@@ -286,7 +286,7 @@ public defn solve-widths (cs: Streamable<WConstraint>) :
    backsubstitute(keys(eqns), solns)
 
 ;================= Main =====================================
-if-defined(STANDALONE) :
+#if-defined(STANDALONE) :
    defn main () :
       val input = lex(commandline-arguments())
       error("No input file!") when length(input) < 2
