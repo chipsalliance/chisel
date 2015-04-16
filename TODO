@@ -33,6 +33,14 @@ Well-formed low firrtl
 ======== Other Passes ========
 PrimOp lowering
 
+======== Consultations ========
+Patrick:
+   subword accesses (extractor?)
+      draft example
+Stephen:
+   width equality
+      pin stephen on an example
+
 ======== Think About ========
 annotation system
 zero-width wires
@@ -70,10 +78,15 @@ Overflow checks for add/add-wrap
 Check combinational
 Fast C++ where wires/register/instances are predicated
 
+======== FIRRTL++ =========
+Variable size FIFOs
+TruthTable node
+Custom types? Parameterized Types?
 
-======== Next layer components =======
+======== Next Layer Components =======
 Accelerator with config registers
 Schedulable
    Decouple
    Nack
 Scheduler
+
