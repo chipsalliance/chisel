@@ -2115,7 +2115,7 @@ defn emit! (o:OutputStream, e:Expression,top:Symbol) :
                print(o, " ")
                print(o, const)
       (e) : print-all(o, ["EMIT(" e ")"])
-      ;(e) : emit-all(o, ["mov'" prim-width(type(e)) " " e], top)
+      ;(e) : emit-all(o, ["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
 
 defn emit-s (o:OutputStream, s:Stmt, v:List<Symbol>, top:Symbol) :
    match(s) :
@@ -2129,7 +2129,7 @@ defn emit-s (o:OutputStream, s:Stmt, v:List<Symbol>, top:Symbol) :
       (s:Connect) : 
          if loc(s) typeof WritePort :
             val e = loc(s) as WritePort
-            val name = gensym("T")
+            val name = gensym(`F)
             emit-all(o, [top "::" name " = wr'" prim-width(type(e)) " " enable(e) " " top "::" mem(e) " " index(e) " " exp(s) "\n"], top)
          else :
             val n = name(loc(s) as Ref)
