@@ -3,14 +3,11 @@
 ================================================
 
 Important things:
-   Include new parser
    
 ======== Update Core ==========
 Change all primops to be strict on data widths
-Merge pull request and update tests
+Update parser and update tests
 on-reset
-Write lowering step for primops
-Add bit-reduce-and etc to primops (Jonathan)
 Add source locaters
 Add Unit Tests for each pass
 
@@ -31,7 +28,7 @@ Well-formed low firrtl
    All things only assigned to once
 
 ======== Other Passes ========
-PrimOp lowering
+Temp Elimination
 
 ======== Consultations ========
 Patrick:

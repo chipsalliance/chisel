@@ -1,0 +1,353 @@
+defpackage firrtl/primops :
+  import core
+  import verse
+  import firrtl/ir2
+  import firrtl/ir-utils
+  import firrtl/passes
+
+public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
+   defn u () : UIntType(UnknownWidth())
+   defn s () : SIntType(UnknownWidth())
+   defn u-and (op1:Expression,op2:Expression) : 
+      match(type(op1), type(op2)) :
+         (t1:UIntType, t2:UIntType) : u()
+         (t1:SIntType, t2) : s()
+         (t1, t2:SIntType) : s()
+         (t1, t2) : UnknownType()
+        
+   defn of-type (op:Expression) :
+      match(type(op)) :
+         (t:UIntType) : u()
+         (t:SIntType) : s()
+         (t) : UnknownType()
+
+   println-all(["Inferencing primop type: " e])
+   switch {op(e) == _} :
+      ADD-OP           : 
+         DoPrim{_,args(e),consts(e),u-and(args(e)[0],args(e)[1])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : ADD-UU-OP
+               (t1:UIntType, t2:SIntType) : ADD-US-OP
+               (t1:SIntType, t2:UIntType) : ADD-SU-OP
+               (t1:SIntType, t2:SIntType) : ADD-SS-OP
+      ADD-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      ADD-US-OP        : DoPrim(op(e),args(e),consts(e),s())
+      ADD-SU-OP        : DoPrim(op(e),args(e),consts(e),s())
+      ADD-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      SUB-OP           : 
+         DoPrim{_,args(e),consts(e),s()} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : SUB-UU-OP
+               (t1:UIntType, t2:SIntType) : SUB-US-OP
+               (t1:SIntType, t2:UIntType) : SUB-SU-OP
+               (t1:SIntType, t2:SIntType) : SUB-SS-OP
+      SUB-UU-OP        : DoPrim(op(e),args(e),consts(e),s())
+      SUB-US-OP        : DoPrim(op(e),args(e),consts(e),s())
+      SUB-SU-OP        : DoPrim(op(e),args(e),consts(e),s())
+      SUB-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      MUL-OP           : 
+         DoPrim{_,args(e),consts(e),u-and(args(e)[0],args(e)[1])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : MUL-UU-OP
+               (t1:UIntType, t2:SIntType) : MUL-US-OP
+               (t1:SIntType, t2:UIntType) : MUL-SU-OP
+               (t1:SIntType, t2:SIntType) : MUL-SS-OP
+      MUL-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      MUL-US-OP        : DoPrim(op(e),args(e),consts(e),s())
+      MUL-SU-OP        : DoPrim(op(e),args(e),consts(e),s())
+      MUL-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      DIV-OP           : 
+         DoPrim{_,args(e),consts(e),u-and(args(e)[0],args(e)[1])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : DIV-UU-OP
+               (t1:UIntType, t2:SIntType) : DIV-US-OP
+               (t1:SIntType, t2:UIntType) : DIV-SU-OP
+               (t1:SIntType, t2:SIntType) : DIV-SS-OP
+      DIV-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      DIV-US-OP        : DoPrim(op(e),args(e),consts(e),s())
+      DIV-SU-OP        : DoPrim(op(e),args(e),consts(e),s())
+      DIV-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      MOD-OP           : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : MOD-UU-OP
+               (t1:UIntType, t2:SIntType) : MOD-US-OP
+               (t1:SIntType, t2:UIntType) : MOD-SU-OP
+               (t1:SIntType, t2:SIntType) : MOD-SS-OP
+      MOD-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      MOD-US-OP        : DoPrim(op(e),args(e),consts(e),u())
+      MOD-SU-OP        : DoPrim(op(e),args(e),consts(e),s())
+      MOD-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      QUO-OP           : 
+         DoPrim{_,args(e),consts(e),u-and(args(e)[0],args(e)[1])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : QUO-UU-OP
+               (t1:UIntType, t2:SIntType) : QUO-US-OP
+               (t1:SIntType, t2:UIntType) : QUO-SU-OP
+               (t1:SIntType, t2:SIntType) : QUO-SS-OP
+      QUO-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      QUO-US-OP        : DoPrim(op(e),args(e),consts(e),s())
+      QUO-SU-OP        : DoPrim(op(e),args(e),consts(e),s())
+      QUO-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      REM-OP           : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[1])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : REM-UU-OP
+               (t1:UIntType, t2:SIntType) : REM-US-OP
+               (t1:SIntType, t2:UIntType) : REM-SU-OP
+               (t1:SIntType, t2:SIntType) : REM-SS-OP
+      REM-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      REM-US-OP        : DoPrim(op(e),args(e),consts(e),s())
+      REM-SU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      REM-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      ADD-WRAP-OP      : 
+         DoPrim{_,args(e),consts(e),u-and(args(e)[0],args(e)[1])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : ADD-WRAP-UU-OP
+               (t1:UIntType, t2:SIntType) : ADD-WRAP-US-OP
+               (t1:SIntType, t2:UIntType) : ADD-WRAP-SU-OP
+               (t1:SIntType, t2:SIntType) : ADD-WRAP-SS-OP
+      ADD-WRAP-UU-OP   : DoPrim(op(e),args(e),consts(e),u())
+      ADD-WRAP-US-OP   : DoPrim(op(e),args(e),consts(e),s())
+      ADD-WRAP-SU-OP   : DoPrim(op(e),args(e),consts(e),s())
+      ADD-WRAP-SS-OP   : DoPrim(op(e),args(e),consts(e),s())
+      SUB-WRAP-OP      : 
+         DoPrim{_,args(e),consts(e),u-and(args(e)[0],args(e)[1])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : SUB-WRAP-UU-OP
+               (t1:UIntType, t2:SIntType) : SUB-WRAP-US-OP
+               (t1:SIntType, t2:UIntType) : SUB-WRAP-SU-OP
+               (t1:SIntType, t2:SIntType) : SUB-WRAP-SS-OP
+      SUB-WRAP-UU-OP   : DoPrim(op(e),args(e),consts(e),u())
+      SUB-WRAP-US-OP   : DoPrim(op(e),args(e),consts(e),s())
+      SUB-WRAP-SU-OP   : DoPrim(op(e),args(e),consts(e),s())
+      SUB-WRAP-SS-OP   : DoPrim(op(e),args(e),consts(e),s())
+      LESS-OP          : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : LESS-UU-OP
+               (t1:UIntType, t2:SIntType) : LESS-US-OP
+               (t1:SIntType, t2:UIntType) : LESS-SU-OP
+               (t1:SIntType, t2:SIntType) : LESS-SS-OP
+      LESS-UU-OP       : DoPrim(op(e),args(e),consts(e),u())
+      LESS-US-OP       : DoPrim(op(e),args(e),consts(e),u())
+      LESS-SU-OP       : DoPrim(op(e),args(e),consts(e),u())
+      LESS-SS-OP       : DoPrim(op(e),args(e),consts(e),u())
+      LESS-EQ-OP       : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : LESS-EQ-UU-OP
+               (t1:UIntType, t2:SIntType) : LESS-EQ-US-OP
+               (t1:SIntType, t2:UIntType) : LESS-EQ-SU-OP
+               (t1:SIntType, t2:SIntType) : LESS-EQ-SS-OP
+      LESS-EQ-UU-OP    : DoPrim(op(e),args(e),consts(e),u())
+      LESS-EQ-US-OP    : DoPrim(op(e),args(e),consts(e),u())
+      LESS-EQ-SU-OP    : DoPrim(op(e),args(e),consts(e),u())
+      LESS-EQ-SS-OP    : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-OP       : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : GREATER-UU-OP
+               (t1:UIntType, t2:SIntType) : GREATER-US-OP
+               (t1:SIntType, t2:UIntType) : GREATER-SU-OP
+               (t1:SIntType, t2:SIntType) : GREATER-SS-OP
+      GREATER-UU-OP    : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-US-OP    : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-SU-OP    : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-SS-OP    : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-EQ-OP    : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : GREATER-EQ-UU-OP
+               (t1:UIntType, t2:SIntType) : GREATER-EQ-US-OP
+               (t1:SIntType, t2:UIntType) : GREATER-EQ-SU-OP
+               (t1:SIntType, t2:SIntType) : GREATER-EQ-SS-OP
+      GREATER-EQ-UU-OP : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-EQ-US-OP : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-EQ-SU-OP : DoPrim(op(e),args(e),consts(e),u())
+      GREATER-EQ-SS-OP : DoPrim(op(e),args(e),consts(e),u())
+      EQUAL-OP         : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : EQUAL-UU-OP
+               (t1:SIntType, t2:SIntType) : EQUAL-SS-OP
+      EQUAL-UU-OP      : DoPrim(op(e),args(e),consts(e),u())
+      EQUAL-SS-OP      : DoPrim(op(e),args(e),consts(e),u())
+      NEQUAL-OP         : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : NEQUAL-UU-OP
+               (t1:SIntType, t2:SIntType) : NEQUAL-SS-OP
+      NEQUAL-UU-OP      : DoPrim(op(e),args(e),consts(e),u())
+      NEQUAL-SS-OP      : DoPrim(op(e),args(e),consts(e),u())
+      MUX-OP           : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType, t2:UIntType) : MUX-UU-OP
+               (t1:SIntType, t2:SIntType) : MUX-SS-OP
+      MUX-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
+      MUX-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
+      PAD-OP           : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+            match(type(args(e)[0])) :
+               (t1:UIntType) : PAD-U-OP
+               (t1:SIntType) : PAD-S-OP
+      PAD-U-OP         : DoPrim(op(e),args(e),consts(e),u())
+      PAD-S-OP         : DoPrim(op(e),args(e),consts(e),s())
+      AS-UINT-OP       : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0])) :
+               (t1:UIntType) : AS-UINT-U-OP
+               (t1:SIntType) : AS-UINT-S-OP
+      AS-UINT-U-OP     : DoPrim(op(e),args(e),consts(e),u())
+      AS-UINT-S-OP     : DoPrim(op(e),args(e),consts(e),u())
+      AS-SINT-OP       : 
+         DoPrim{_,args(e),consts(e),s()} $
+            match(type(args(e)[0])) :
+               (t1:UIntType) : AS-SINT-U-OP
+               (t1:SIntType) : AS-SINT-S-OP
+      AS-SINT-U-OP     : DoPrim(op(e),args(e),consts(e),s())
+      AS-SINT-S-OP     : DoPrim(op(e),args(e),consts(e),s())
+      SHIFT-LEFT-OP    : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+            match(type(args(e)[0])) :
+               (t1:UIntType) : SHIFT-LEFT-U-OP
+               (t1:SIntType) : SHIFT-LEFT-S-OP
+      SHIFT-LEFT-U-OP  : DoPrim(op(e),args(e),consts(e),u())
+      SHIFT-LEFT-S-OP  : DoPrim(op(e),args(e),consts(e),s())
+      SHIFT-RIGHT-OP   : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+            match(type(args(e)[0])) :
+               (t1:UIntType) : SHIFT-RIGHT-U-OP
+               (t1:SIntType) : SHIFT-RIGHT-S-OP
+      SHIFT-RIGHT-U-OP : DoPrim(op(e),args(e),consts(e),u())
+      SHIFT-RIGHT-S-OP : DoPrim(op(e),args(e),consts(e),s())
+      CONVERT-OP       : 
+         DoPrim{_,args(e),consts(e),s()} $
+            match(type(args(e)[0])) :
+               (t1:UIntType) : CONVERT-U-OP
+               (t1:SIntType) : CONVERT-S-OP
+      CONVERT-U-OP     : DoPrim(op(e),args(e),consts(e),s())
+      CONVERT-S-OP     : DoPrim(op(e),args(e),consts(e),s())
+      NEG-OP         : 
+         DoPrim{_,args(e),consts(e),u()} $
+            match(type(args(e)[0])) :
+               (t1:UIntType) : NEG-U-OP
+               (t1:SIntType) : NEG-S-OP
+      NEG-U-OP         : DoPrim(op(e),args(e),consts(e),u())
+      NEG-S-OP         : DoPrim(op(e),args(e),consts(e),u())
+      BIT-NOT-OP       : DoPrim(op(e),args(e),consts(e),u())
+      BIT-AND-OP       : DoPrim(op(e),args(e),consts(e),u())
+      BIT-OR-OP        : DoPrim(op(e),args(e),consts(e),u())
+      BIT-XOR-OP       : DoPrim(op(e),args(e),consts(e),u())
+      CONCAT-OP        : DoPrim(op(e),args(e),consts(e),u())
+      BIT-SELECT-OP    : DoPrim(op(e),args(e),consts(e),u())
+      BITS-SELECT-OP   : DoPrim(op(e),args(e),consts(e),u())
+      BIT-AND-REDUCE-OP: DoPrim(op(e),args(e),consts(e),u())
+      BIT-OR-REDUCE-OP : DoPrim(op(e),args(e),consts(e),u())
+      BIT-XOR-REDUCE-OP: DoPrim(op(e),args(e),consts(e),u())
+
+public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
+   defn add-c (w:Width) -> Type:
+      val w* = VarWidth(gensym(`w))
+      add(v,WGeq(w*,w))
+      add(v,WGeq(w,w*))
+      match(type(e)) :
+         (t:UIntType) : UIntType(w*)
+         (t:SIntType) : SIntType(w*)
+         (t) : error("Shouldn't be here")
+   defn wpc (l:List<Expression>,c:List<Int>) :
+      add-c(PlusWidth(width!(l[0]),IntWidth(c[0])))
+   defn wmc (l:List<Expression>,c:List<Int>) :
+      add-c(MinusWidth(width!(l[0]),IntWidth(c[0])))
+   defn maxw (l:List<Expression>) : 
+      add-c(MaxWidth(map(width!,l)))
+   defn cons (ls:List<Expression>) : 
+      val l = width!(ls[0])
+      val r = width!(ls[1])
+      add(v,WGeq(l,r))
+      add(v,WGeq(r,l))
+      add-c(l)
+      add-c(r)
+   defn mp1 (l:List<Expression>) : 
+      add-c(PlusWidth(MaxWidth(list(width!(l[0]),width!(l[1]))),IntWidth(1)))
+   defn sum (l:List<Expression>) : 
+      add-c(PlusWidth(width!(l[0]),width!(l[1])))
+
+   println-all(["Looking at " op(e) " with inputs " args(e)])
+   switch {op(e) == _} :
+      ADD-UU-OP : mp1(args(e))
+      ADD-US-OP : mp1(args(e))
+      ADD-SU-OP : mp1(args(e))
+      ADD-SS-OP : mp1(args(e))
+      SUB-UU-OP : mp1(args(e))
+      SUB-US-OP : mp1(args(e))
+      SUB-SU-OP : mp1(args(e))
+      SUB-SS-OP : mp1(args(e))
+      MUL-UU-OP : sum(args(e))
+      MUL-US-OP : sum(args(e))
+      MUL-SU-OP : sum(args(e))
+      MUL-SS-OP : sum(args(e))
+      ;(p:DIV-UU-OP) : 
+      ;(p:DIV-US-OP) :
+      ;(p:DIV-SU-OP) :
+      ;(p:DIV-SS-OP) :
+      ;(p:MOD-UU-OP) :
+      ;(p:MOD-US-OP) :
+      ;(p:MOD-SU-OP) :
+      ;(p:MOD-SS-OP) :
+      ;(p:QUO-UU-OP) :
+      ;(p:QUO-US-OP) :
+      ;(p:QUO-SU-OP) :
+      ;(p:QUO-SS-OP) :
+      ;(p:REM-UU-OP) :
+      ;(p:REM-US-OP) :
+      ;(p:REM-SU-OP) :
+      ;(p:REM-SS-OP) :
+      ADD-WRAP-UU-OP : maxw(args(e))
+      ADD-WRAP-US-OP : maxw(args(e))
+      ADD-WRAP-SU-OP : maxw(args(e))
+      ADD-WRAP-SS-OP : maxw(args(e))
+      SUB-WRAP-UU-OP : maxw(args(e))
+      SUB-WRAP-US-OP : maxw(args(e))
+      SUB-WRAP-SU-OP : maxw(args(e))
+      SUB-WRAP-SS-OP : maxw(args(e))
+      LESS-UU-OP : add-c(IntWidth(1))
+      LESS-US-OP : add-c(IntWidth(1))
+      LESS-SU-OP : add-c(IntWidth(1))
+      LESS-SS-OP : add-c(IntWidth(1))
+      LESS-EQ-UU-OP : add-c(IntWidth(1))
+      LESS-EQ-US-OP : add-c(IntWidth(1))
+      LESS-EQ-SU-OP : add-c(IntWidth(1))
+      LESS-EQ-SS-OP : add-c(IntWidth(1))
+      GREATER-UU-OP : add-c(IntWidth(1))
+      GREATER-US-OP : add-c(IntWidth(1))
+      GREATER-SU-OP : add-c(IntWidth(1))
+      GREATER-SS-OP : add-c(IntWidth(1))
+      GREATER-EQ-UU-OP : add-c(IntWidth(1))
+      GREATER-EQ-US-OP : add-c(IntWidth(1))
+      GREATER-EQ-SU-OP : add-c(IntWidth(1))
+      GREATER-EQ-SS-OP : add-c(IntWidth(1))
+      EQUAL-UU-OP : add-c(IntWidth(1))
+      EQUAL-SS-OP : add-c(IntWidth(1))
+      MUX-UU-OP : cons(args(e))
+      MUX-SS-OP : cons(args(e))
+      PAD-U-OP : add-c(IntWidth(consts(e)[0]))
+      PAD-S-OP : add-c(IntWidth(consts(e)[0]))
+      AS-UINT-U-OP : add-c(width!(args(e)[0]))
+      AS-UINT-S-OP : add-c(width!(args(e)[0]))
+      AS-SINT-U-OP : add-c(width!(args(e)[0]))
+      AS-SINT-S-OP : add-c(width!(args(e)[0]))
+      SHIFT-LEFT-U-OP : wpc(args(e),consts(e))
+      SHIFT-LEFT-S-OP : wpc(args(e),consts(e))
+      SHIFT-RIGHT-U-OP : wmc(args(e),consts(e))
+      SHIFT-RIGHT-S-OP : wmc(args(e),consts(e))
+      CONVERT-U-OP : add-c(PlusWidth(width!(args(e)[0]),IntWidth(1)))
+      CONVERT-S-OP : add-c(width!(args(e)[0]))
+      BIT-NOT-OP : maxw(args(e))
+      BIT-AND-OP : maxw(args(e))
+      BIT-OR-OP : maxw(args(e))
+      BIT-XOR-OP : maxw(args(e))
+      CONCAT-OP : sum(args(e))
+      BIT-SELECT-OP : add-c(IntWidth(1))
+      BITS-SELECT-OP : add-c(IntWidth(consts(e)[0] - consts(e)[1]))

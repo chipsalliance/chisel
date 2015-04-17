@@ -105,6 +105,9 @@ public val SHIFT-LEFT-S-OP = new PrimOp
 public val SHIFT-RIGHT-OP = new PrimOp
 public val SHIFT-RIGHT-U-OP = new PrimOp
 public val SHIFT-RIGHT-S-OP = new PrimOp
+public val NEG-OP = new PrimOp
+public val NEG-U-OP = new PrimOp
+public val NEG-S-OP = new PrimOp
 public val CONVERT-OP = new PrimOp
 public val CONVERT-U-OP = new PrimOp
 public val CONVERT-S-OP = new PrimOp
@@ -115,6 +118,9 @@ public val BIT-XOR-OP = new PrimOp
 public val CONCAT-OP = new PrimOp
 public val BIT-SELECT-OP = new PrimOp
 public val BITS-SELECT-OP = new PrimOp
+public val BIT-AND-REDUCE-OP = new PrimOp
+public val BIT-OR-REDUCE-OP = new PrimOp
+public val BIT-XOR-REDUCE-OP = new PrimOp
 
 public definterface Expression
 public defmulti type (e:Expression) -> Type

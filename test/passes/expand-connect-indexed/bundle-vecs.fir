@@ -16,10 +16,10 @@ circuit top :
       ; CHECK: wire b$x : UInt(32)
       ; CHECK: wire b$y : UInt(32)
       ; CHECK: b$x := a$0$x
-      ; CHECK: when equal-uu(i, UInt(1)) :
+      ; CHECK: when eq-uu(i, UInt(1)) :
       ; CHECK:    b$x := a$1$x
       ; CHECK: a$0$y := b$y
-      ; CHECK: when equal-uu(i, UInt(1)) :
+      ; CHECK: when eq-uu(i, UInt(1)) :
       ; CHECK:    a$1$y := b$y
       j := b
       

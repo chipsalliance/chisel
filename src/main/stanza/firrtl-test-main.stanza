@@ -7,7 +7,7 @@
 #include("ir-utils.stanza")
 #include("ir-parser.stanza")
 #include("passes.stanza")
-#include("widthsolver.stanza")
+#include("primop.stanza")
 
 defpackage firrtl-main :
    import core

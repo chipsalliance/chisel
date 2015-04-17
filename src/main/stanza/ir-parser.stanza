@@ -162,9 +162,12 @@ defsyntax firrtl :
    operators[`geq-us] = GREATER-EQ-US-OP
    operators[`geq-su] = GREATER-EQ-SU-OP
    operators[`geq-ss] = GREATER-EQ-SS-OP
-   operators[`equal] = EQUAL-OP
-   operators[`equal-uu] = EQUAL-UU-OP
-   operators[`equal-ss] = EQUAL-SS-OP
+   operators[`eq] = EQUAL-OP
+   operators[`eq-uu] = EQUAL-UU-OP
+   operators[`eq-ss] = EQUAL-SS-OP
+   operators[`neq] = NEQUAL-OP
+   operators[`neq-uu] = NEQUAL-UU-OP
+   operators[`neq-ss] = NEQUAL-SS-OP
    operators[`mux] = MUX-OP
    operators[`mux-uu] = MUX-UU-OP
    operators[`mux-ss] = MUX-SS-OP
@@ -186,13 +189,19 @@ defsyntax firrtl :
    operators[`convert] = CONVERT-OP
    operators[`convert-u] = CONVERT-U-OP
    operators[`convert-s] = CONVERT-S-OP
+   operators[`neg] = NEG-OP
+   operators[`neg-u] = NEG-U-OP
+   operators[`neg-s] = NEG-S-OP
    operators[`bit-not] = BIT-NOT-OP
    operators[`bit-and] = BIT-AND-OP
    operators[`bit-or] = BIT-OR-OP
    operators[`bit-xor] = BIT-XOR-OP
-   operators[`concat] = CONCAT-OP
+   operators[`cat] = CONCAT-OP
    operators[`bit] = BIT-SELECT-OP
    operators[`bits] = BITS-SELECT-OP
+   operators[`bit-and-reduce] = BIT-AND-REDUCE-OP
+   operators[`bit-or-reduce] = BIT-OR-REDUCE-OP
+   operators[`bit-xor-reduce] = BIT-XOR-REDUCE-OP
 
    defrule exp-form :
       exp-form = (UInt (@do ?value:#int ?width:#int)) :

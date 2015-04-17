@@ -22,12 +22,12 @@ circuit Risc :
     node rai = bits(inst, 15, 8)
     node rbi = bits(inst, 7, 0)
     node T_52 = UInt(0, 1)
-    node T_53 = equal(rai, T_52)
+    node T_53 = eq(rai, T_52)
     node T_54 = UInt(0, 1)
     accessor T_55 = file[rai]
     node ra = mux(T_53, T_54, T_55)
     node T_56 = UInt(0, 1)
-    node T_57 = equal(rbi, T_56)
+    node T_57 = eq(rbi, T_56)
     node T_58 = UInt(0, 1)
     accessor T_59 = file[rbi]
     node rb = mux(T_57, T_58, T_59)
@@ -45,18 +45,18 @@ circuit Risc :
         node T_64 = UInt(0, 1)
         pc := T_64
       else : 
-        node T_65 = equal(add_op, op)
+        node T_65 = eq(add_op, op)
         when T_65 : 
           node T_66 = add-wrap(ra, rb)
           rc := T_66
-        node T_67 = equal(imm_op, op)
+        node T_67 = eq(imm_op, op)
         when T_67 : 
           node T_68 = shl(rai, 8)
           node T_69 = bit-or(T_68, rbi)
           rc := T_69
         out := rc
         node T_70 = UInt(255, 8)
-        node T_71 = equal(rci, T_70)
+        node T_71 = eq(rci, T_70)
         when T_71 : 
           node T_72 = UInt(1, 1)
           valid := T_72

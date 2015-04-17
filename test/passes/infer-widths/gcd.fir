@@ -30,7 +30,7 @@ circuit top :
       when e :
          x := a
          y := b
-      v := equal-uu(v, UInt(0))
+      v := eq-uu(v, UInt(0))
       z := x
    module top :
       input a : UInt(16)
