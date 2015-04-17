@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcefghipj c | tee %s.out | FileCheck %s 
+; RUN: firrtl %s qabcdefghijklmnopj c | tee %s.out | FileCheck %s 
 ; CHECK: Expand Whens
 circuit Risc : 
   module Risc : 

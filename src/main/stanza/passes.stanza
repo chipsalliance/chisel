@@ -256,6 +256,37 @@ defmethod map (f: Type -> Type, e: WSubfield) :
 defmethod map (f: Type -> Type, e: WIndex) :
    WIndex(exp(e), value(e), f(type(e)), gender(e))
 
+;================= Temparary Variable Elimination ========================
+; Returns a new Circuit where temporary variables are removed and returns
+;   the resulting nested expression
+
+defn temp-elimination (c:Circuit) :
+   val h = HashTable<Symbol,Expression>(symbol-hash)
+   defn is-temp? (n:Symbol) -> True|False :
+      println(n)
+      println(to-string(n)[0])
+      println(to-string(n)[0] == 'T')
+      to-string(n)[0] == 'T'
+   defn temp-elim-e (e:Expression) :
+      match(map(temp-elim-e,e)) :
+         (e:Ref) : 
+            if key?(h,name(e)) : h[name(e)]
+            else : e
+         (e) : e
+   defn temp-elim-s (s:Stmt) :
+      match(map(temp-elim-e,s)) :
+         (s:DefNode) : 
+            if is-temp?(name(s)) :
+               h[name(s)] = value(s)
+               EmptyStmt()
+            else : s
+         (s) : map(temp-elim-s,s)
+
+   Circuit(modules*, main(c)) where :
+      val modules* =
+         for m in modules(c) map :
+            Module(name(m), ports(m), temp-elim-s(body(m)))
+
 ;================= Bring to Working IR ========================
 ; Returns a new Circuit with Refs, Subfields, Indexes and DefAccessors 
 ;   replaced with IR-internal nodes that contain additional 
@@ -1949,6 +1980,7 @@ public defn run-passes (c: Circuit, p: List<Char>) :
 
   ; Early passes:
   ;  If modules have a reset defined, must be an INPUT and UInt(1)
+   if contains(p,'q') : do-stage("Temp Elimination", temp-elimination)
    if contains(p,'a') : do-stage("Working IR", to-working-ir)
    if contains(p,'b') : do-stage("Resolve Kinds", resolve-kinds)
    if contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
