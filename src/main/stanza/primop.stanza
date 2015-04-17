@@ -21,7 +21,7 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
          (t:SIntType) : s()
          (t) : UnknownType()
 
-   println-all(["Inferencing primop type: " e])
+   ;println-all(["Inferencing primop type: " e])
    switch {op(e) == _} :
       ADD-OP           : 
          DoPrim{_,args(e),consts(e),u-and(args(e)[0],args(e)[1])} $
@@ -274,7 +274,7 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
    defn sum (l:List<Expression>) : 
       add-c(PlusWidth(width!(l[0]),width!(l[1])))
 
-   println-all(["Looking at " op(e) " with inputs " args(e)])
+   ;println-all(["Looking at " op(e) " with inputs " args(e)])
    switch {op(e) == _} :
       ADD-UU-OP : mp1(args(e))
       ADD-US-OP : mp1(args(e))

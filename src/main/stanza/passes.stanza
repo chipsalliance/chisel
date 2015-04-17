@@ -263,9 +263,6 @@ defmethod map (f: Type -> Type, e: WIndex) :
 defn temp-elimination (c:Circuit) :
    val h = HashTable<Symbol,Expression>(symbol-hash)
    defn is-temp? (n:Symbol) -> True|False :
-      println(n)
-      println(to-string(n)[0])
-      println(to-string(n)[0] == 'T')
       to-string(n)[0] == 'T'
    defn temp-elim-e (e:Expression) :
       match(map(temp-elim-e,e)) :
@@ -591,11 +588,11 @@ defn resolve-genders (c:Circuit) :
             (e) : map(resolve-expr{_,MALE},e)
 
       var module* = resolve-iter(m)
-      println(genders)
+      ;println(genders)
       while not done? : 
         done? = true
         module* = resolve-iter(m)
-        println(genders)
+        ;println(genders)
       module*
     
    defn resolve-genders (m:Module, c:Circuit) -> Module :
@@ -623,7 +620,7 @@ defn expand-vector (e:Expression) -> List<Expression> :
 defn expand-stmt (s:Stmt) -> Stmt :
    match(s) :
       (s:WDefAccessor) : 
-         println-all(["Matched WDefAcc with " name(s)])
+         ;println-all(["Matched WDefAcc with " name(s)])
          val mem? = match(source(s)) :
             (e:WRef) : kind(e) typeof MemKind
             (e) : false
@@ -780,7 +777,7 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             headn(tailn(exps,len * value(e)),len)
          (e) : list(KeyValue(e, DEFAULT))
 
-   println(table)
+   ;println(table)
    lower-stmt(body)
 
 defn get-entries (n:Symbol,t:Type) -> List<KeyValue<WRef,Flip>> :
@@ -1491,9 +1488,9 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
    ;  2) Remove Cycles
    ;  3) Move to solved if not self-recursive
    val u = make-unique(l)
-   println("======== UNIQUE CONSTRAINTS ========")
-   for x in u do : println(x)
-   println("====================================")
+   ;println("======== UNIQUE CONSTRAINTS ========")
+   ;for x in u do : println(x)
+   ;println("====================================")
 
    val f = HashTable<Symbol,Width>(symbol-hash)
    val o = Vector<Symbol>()
@@ -1611,13 +1608,13 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
          
 defn replace-var-widths (c:Circuit,h:HashTable<Symbol,Int>) -> Circuit :
    defn replace-var-widths-w (w:Width) -> Width :
-      println-all(["REPLACE: " w])
+      ;println-all(["REPLACE: " w])
       val w* = match(w) :
          (w:VarWidth) : 
             if key?(h,name(w)) : IntWidth(h[name(w)])
             else: w
          (w) : w
-      println-all(["WITH: " w*])
+      ;println-all(["WITH: " w*])
       w*
 
    val modules* = for m in modules(c) map :
@@ -1661,22 +1658,22 @@ defn infer-widths (c:Circuit) -> Circuit :
    for m in modules(c) do : 
       ports*[name(m)] = remove-unknowns(BundleType(map(to-field,ports(m))))
    val modules* = for m in modules(c) map :
-      println-all(["====== MODULE(" name(m) ") ENV ======"])
+      ;println-all(["====== MODULE(" name(m) ") ENV ======"])
       val h = build-environment(c,m,deepcopy(ports*))
-      for x in h do: println(x)
-      println-all(["====================================="])
+      ;for x in h do: println(x)
+      ;println-all(["====================================="])
       val m* = gen-constraints(m,h,v)
-      println-all(["====== MODULE(" name(m) ") ======"])
-      println(m*)
-      println-all(["====================================="])
+      ;println-all(["====== MODULE(" name(m) ") ======"])
+      ;println(m*)
+      ;println-all(["====================================="])
       m*
-   println("======== ALL CONSTRAINTS ========")
-   for x in v do : println(x)
-   println("=================================")
+   ;println("======== ALL CONSTRAINTS ========")
+   ;for x in v do : println(x)
+   ;println("=================================")
    val h = solve-constraints(to-list(v))
-   println("======== SOLVED CONSTRAINTS ========")
-   for x in h do : println(x)
-   println("====================================")
+   ;println("======== SOLVED CONSTRAINTS ========")
+   ;for x in h do : println(x)
+   ;println("====================================")
    replace-var-widths(Circuit(modules*,main(c)),h)
 
 

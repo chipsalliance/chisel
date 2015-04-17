@@ -32,7 +32,10 @@ defn main () :
    val c = parse-firrtl(lexed)
    if length(args) >= 4 :
       set-printvars!(to-list(args[3]))
-   run-passes(c,to-list(args[2]))
+   if length(args) >= 3 :
+      run-passes(c,to-list(args[2]))
+   else :
+      run-passes(c,to-list("qabcefghipjklmno"))
 
 main()
 

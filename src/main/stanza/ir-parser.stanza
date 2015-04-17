@@ -222,7 +222,7 @@ defsyntax firrtl :
          println("Op-symbol is:~" % [op])
          match(get?(operators, ut(op), false)) :
             (op:PrimOp) :
-               println("Op is:~ ~ ~" % [op,op == ADD-OP, op == ADD-UU-OP])
+               ;println("Op is:~ ~ ~" % [op,op == ADD-OP, op == ADD-UU-OP])
                DoPrim(op, es, map(ut, ints), UnknownType())
             (f:False) :
                throw-error $ string-join $ [
