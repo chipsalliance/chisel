@@ -1,0 +1,13 @@
+======= Fixes to Jonathan's Front-end ======
+Remove type from node emission
+
+Currently, these are not equivalent because we will fail a type check:
+output in { input x : UInt, input y : UInt}
+=>
+input in {x : UInt, y : UInt}
+
+Switch "input" -> "flip" and "output" to "" within a bundle
+Switch "add-mod" -> "add-wrap"
+Switch "multiplex" -> "mux"
+Switch "greater" -> "gt"
+

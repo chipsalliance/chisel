@@ -1,9 +1,11 @@
+;RUN: firrtl %s abcefghipjklmno c | tee %s.out | FileCheck %s
+;CHECK: To Flo
 circuit BundleWire : 
   module BundleWire : 
-    output in : {input y : UInt(32), input x : UInt(32)}
-    output outs : {output y : UInt(32), output x : UInt(32)}[4]
+    output in : {flip y : UInt(32), flip x : UInt(32)}
+    output outs : {y : UInt(32), x : UInt(32)}[4]
     
-    wire coords : {output y : UInt(32), output x : UInt(32)}[4]
+    wire coords : {y : UInt(32), x : UInt(32)}[4]
     coords.0 := in
     outs.0 := coords.0
     coords.1 := in
@@ -12,3 +14,4 @@ circuit BundleWire :
     outs.2 := coords.2
     coords.3 := in
     outs.3 := coords.3
+;CHECK: Finished To Flo

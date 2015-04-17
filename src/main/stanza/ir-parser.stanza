@@ -75,6 +75,8 @@ defsyntax firrtl :
          Begin(body)
       comm = (?x:#exp := ?y:#exp) :
          Connect(x, y)
+      comm = (?c:skip) :
+         EmptyStmt()
       comm = (?c:#comm/when) :
          c
          

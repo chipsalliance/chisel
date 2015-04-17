@@ -119,6 +119,7 @@ defmethod print (o:OutputStream, op:PrimOp) :
       CONVERT-OP : "convert"
       CONVERT-U-OP : "convert-u"
       CONVERT-S-OP : "convert-s"
+      BIT-NOT-OP : "bit-not"
       BIT-AND-OP : "bit-and"
       BIT-OR-OP : "bit-or"
       BIT-XOR-OP : "bit-xor"
@@ -169,7 +170,7 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
       (c:EmptyStmt) :
-         print(o, "$empty$")
+         print(o, "skip")
    print-debug(o,c)
 
 defmethod print (o:OutputStream, t:Type) :
