@@ -21,10 +21,16 @@ defpackage firrtl-main :
 defn main () :
    val arg = commandline-arguments()
    val args = split(arg,' ')
-   val lexed = lex-file(args[1])
+   val pathname = args[1]
+   val lexed = lex-file(pathname)
    val c = parse-firrtl(lexed)
    ;println(c)
-   run-passes(c,to-list(args[2]))
+   val dir = "." ;; could have dir arg
+   val name = last(split(pathname,'/'))
+   val basename = split(name,'.')[0]
+   val outname = string-join([dir "/" basename ".flo"])
+   val c* = run-passes(c, to-list(args[2]), outname)
+   ;; run-passes(c,to-list(args[2]))
 
 main()
 

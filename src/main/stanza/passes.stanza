@@ -1963,8 +1963,14 @@ public defn emit-flo (o:OutputStream, c:Circuit) :
    emit-module(o, modules(c)[0])
    c
 
+public defn emit-flo (pathname:String, c:Circuit) :
+   val out = FileOutputStream(pathname)
+   emit-flo(out, c)
+   close(out)
+   c
+
 ;============= DRIVER ======================================
-public defn run-passes (c: Circuit, p: List<Char>) :
+public defn run-passes (c: Circuit, p: List<Char>, pathname:String) :
    var c*:Circuit = c
    println("Compiling!")
    if PRINT-CIRCUITS : println("Original Circuit")
@@ -1992,12 +1998,5 @@ public defn run-passes (c: Circuit, p: List<Char>) :
    if contains(p,'l') : do-stage("Inline Instances", inline-instances)
    if contains(p,'m') : do-stage("Split Expressions", split-exp)
    if contains(p,'n') : do-stage("Real IR", to-real-ir)
-   if contains(p,'o') : do-stage("To Flo", emit-flo{STANDARD-OUTPUT,_})
+   if contains(p,'o') : do-stage("To Flo", emit-flo{pathname,_})
    println("Done!")
-
-
- ;;  println("Shim for Jonathan's Passes")
- ;;  c* = shim(c*)
- ;;  println("Inline Modules")
- ;;  c* = inline-modules(c*)
- ;  c*
