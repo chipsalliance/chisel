@@ -1954,12 +1954,6 @@ public defn emit-flo (file:String, c:Circuit) :
       false
    c
 
-public defn emit-flo (pathname:String, c:Circuit) :
-   val out = FileOutputStream(pathname)
-   emit-flo(out, c)
-   close(out)
-   c
-
 ;============= DRIVER ======================================
 public defn run-passes (c: Circuit, p: List<Char>,file:String) :
    var c*:Circuit = c
