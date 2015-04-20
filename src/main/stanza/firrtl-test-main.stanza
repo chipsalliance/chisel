@@ -26,21 +26,24 @@ defn set-printvars! (p:List<Char>) :
    if contains(p,'g') : PRINT-GENDERS = true
    if contains(p,'c') : PRINT-CIRCUITS = true
 
+;firrtl -i gcd.fir -o gcd.flo -x qabcefghipjklmno -p c
 defn main () :
    val args = commandline-arguments()
-   val pathname = args[1]
-   val lexed = lex-file(pathname)
+   var input = false
+   var output = false
+   var passes = "qabcefghipjklmno"
+   var printvars = ""
+   for (s in args, i in 0 to false) do :
+      if s == "-i" : input = args[i + 1]
+      if s == "-o" : output = args[i + 1]
+      if s == "-x" : passes = args[i + 1]
+      if s == "-p" : printvars = args[i + 1]
+   if input == false : error("No input file provided. Use -i flag")
+   if output == false : error("No output file provided. Use -o flag")
+   val lexed = lex-file(input as String)
    val c = parse-firrtl(lexed)
-   val dir = "." ;; could have dir arg
-   val name = last(split(pathname,'/'))
-   val basename = split(name,'.')[0]
-   val outname = string-join([dir "/" basename ".flo"])
-   if length(args) >= 4 :
-      set-printvars!(to-list(args[3]))
-   if length(args) >= 3 :
-      run-passes(c,to-list(args[2]), outname)
-   else :
-      run-passes(c,to-list("qabcefghipjklmno"), outname)
+   set-printvars!(to-list(printvars))
+   run-passes(c,to-list(passes),output as String)
 
 main()
 

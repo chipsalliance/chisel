@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcde ct | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abcde -p ct | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Types
 circuit top :

@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcef cg | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abcdef -p cg | tee %s.out | FileCheck %s
 
 ;CHECK: Resolve Genders
 circuit top :

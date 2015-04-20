@@ -1,5 +1,6 @@
-; RUN: firrtl %s qabcdefghijklmnopj c | tee %s.out | FileCheck %s 
+; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
 ; CHECK: Expand Whens
+
 circuit Risc : 
   module Risc : 
     output out : UInt(32)

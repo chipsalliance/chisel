@@ -243,8 +243,8 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:Subfield) : Subfield(f(exp(e)), name(e), type(e)) 
       (e:Index) : Index(f(exp(e)), value(e), type(e))
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
-      (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e), enable(e))
-      (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), enable(e))
+      (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
+      (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
       (e:Register) : Register(type(e),f(value(e)),f(enable(e)))
       (e) : e
 

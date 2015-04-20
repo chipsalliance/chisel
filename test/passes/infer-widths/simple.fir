@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcefghipjk cT | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abcdefghijkl -p cT | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
 circuit top :
