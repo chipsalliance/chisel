@@ -1730,14 +1730,21 @@ defn split-exp (c:Circuit) :
             defn f (s:Stmt) -> False: split-exp-s(s,v)
             do(f,s)
          (s:Conditionally) : error("Shouldn't be here")
-         (s) : add(v,map(split-exp-e{_,v},s))
+         (s:Connect) :
+            match(loc(s)) :
+               (e:WritePort) : add(v,map(split-exp-e{_,v,name(exp(s) as WRef)},s))
+               (e) : add(v,map(split-exp-e{_,v,name(loc(s) as WRef)},s))
+         (s:DefNode) : add(v,map(split-exp-e{_,v,name(s)},s))
+         (s) : add(v,map(split-exp-e{_,v,false},s))
       false
-   defn split-exp-e (e:Expression,v:Vector<Stmt>) -> Expression :
-      match(map(split-exp-e{_,v},e)):
+   defn split-exp-e (e:Expression,v:Vector<Stmt>,n:Symbol|False) -> Expression :
+      match(map(split-exp-e{_,v,n},e)):
          (e:Subfield|DoPrim|ReadPort|Register|WritePort) : 
-            val n = gensym(`T)
-            add(v,DefNode(n,e))
-            WRef(n,type(e),NodeKind(),UNKNOWN-GENDER)
+            val n* = 
+               if n typeof False : gensym(`T)
+               else : to-symbol $ string-join $ [n as Symbol gensym(`#)]
+            add(v,DefNode(n*,e))
+            WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
          (e) : e
 
    Circuit{_,main(c)} $
