@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcdefghipj c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abcdefgh -p c | tee %s.out | FileCheck %s
 
 ;CHECK: Lower To Ground
 circuit top :

@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcdefg c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abcdefg -p c | tee %s.out | FileCheck %s
 
 ;CHECK: Expand Accessors
 circuit top :

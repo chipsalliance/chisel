@@ -1,4 +1,4 @@
-; RUN: firrtl %s abcefghipjklmnoq cw | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x X -p cw | tee %s.out | FileCheck %s
 
 ;CHECK: To Flo
 circuit GCD : 

@@ -716,8 +716,11 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             lower-stmt(s*)
          (s:Connect) : Begin{_} $
             for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
+               println(s)
                val lgender = calc-gender(FEMALE,loc(s)) * value(l)
                val rgender = calc-gender(MALE,exp(s)) * value(r)
+               println(loc(s))
+               println(exp(s))
                switch fn ([x,y]) : lgender == x and rgender == y :
                   [FEMALE,MALE]   : Connect(key(l),key(r))
                   [MALE,FEMALE]   : Connect(key(r),key(l))
@@ -1624,20 +1627,6 @@ defn replace-var-widths (c:Circuit,h:HashTable<Symbol,Int>) -> Circuit :
 
    Circuit(modules*,main(c))
 
-;defn remove-unknown-widths (c:Circuit) -> Circuit :
-;   defn remove-unknown-widths-w (w:Width) -> Width :
-;      match(w) :
-;         (w:UnknownWidth) : VarWidth(gensym(`w)) 
-;         (w) : w
-;   val modules* = for m in modules(c) map :
-;      Module{name(m),_,body(m)} $
-;         for p in ports(m) map :
-;            Port(name(p),direction(p),mapr(remove-unknown-widths-w,type(p)))
-;
-;   val modules** = for m in modules* map :
-;      Module(name(m),ports(m),mapr(remove-unknown-widths-w,body(m)))
-;   Circuit(modules**,main(c))
-   
 defn remove-unknowns-w (w:Width) -> Width :
    match(w) :
       (w:UnknownWidth) : VarWidth(gensym(`w)) 
@@ -1863,7 +1852,7 @@ defn flo-op-name (op:PrimOp) -> String :
 defn sane-width (wd:Width) -> Int :
   match(wd) :
     (w:IntWidth) : max(1, width(w))
-    (w)          : error("Unknown width")
+    (w)          : error(string-join(["Unknown width: " w]))
 
 defn prim-width (type:Type) -> Int :
    match(type) :
@@ -1875,96 +1864,98 @@ defn sizeof (in: Int) -> Int :
   ;; if in == 1: 1 else: to-int(ceil(log(in)/log(2)))
   max(1, ceil-log2(in))
 
-defn emit-all (o:OutputStream, es:Streamable, top:Symbol) :
+defn emit-all (es:Streamable, top:Symbol) :
   for e in es do :
      match(e) :
-       (ex:Expression) : emit!(o,e,top)
-       (ex:String) :     print(o, ex)
-       (ex:Symbol) :     print(o, ex)
-       ;; (ex:Int) :        print-all(o, [ex "'" sizeof(ex)])
-       (ex:Int) :        print(o, ex)
-       (ex) :            print(o, ex)
+       (ex:Expression) : emit!(ex,top)
+       (ex:String) :     print(ex)
+       (ex:Symbol) :     print(ex)
+       ;; (ex:Int) :        print-all([ex "'" sizeof(ex)])
+       (ex:Int) :        print(ex)
+       (ex) :            print(ex)
 
-defn emit! (o:OutputStream, e:Expression,top:Symbol) :
+defn emit! (e:Expression,top:Symbol) :
    defn cmp-op? (op: PrimOp) -> True|False :
       contains?([EQUAL-OP, NEQUAL-OP, GREATER-OP, LESS-EQ-OP, LESS-OP, GREATER-EQ-OP], op)
    match(e) :
-      (e:Ref) :       emit-all(o,[top "::" name(e)], top)
-      (e:UIntValue) : emit-all(o,[value(e) "'" sane-width(width(e))], top)
-      (e:SIntValue) : emit-all(o,[value(e) "'" sane-width(width(e))], top)
-      (e:Subfield) :  emit-all(o,[exp(e) "/" name(e)], top)
-      (e:Index) :     emit-all(o,[exp(e) "/" value(e)], top)
+      (e:Ref) :       emit-all([top "::" name(e)], top)
+      (e:UIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
+      (e:SIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
+      (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
+      (e:Index) :     emit-all([exp(e) "/" value(e)], top)
       (e:Register) : 
-         emit-all(o,["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top)
+         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top)
       (e:ReadPort) : 
-         emit-all(o,["rd'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e)], top)
+         emit-all(["rd'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e)], top)
       (e:DoPrim) : 
          if cmp-op?(op(e)) :
-           emit-all(o, [flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
+           emit-all([flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
            if op(e) == GREATER-OP or op(e) == LESS-EQ-OP :
-             emit-all(o, ["  " args(e)[1] " " args(e)[0]], top)
+             emit-all(["  " args(e)[1] " " args(e)[0]], top)
            else :
-             emit-all(o, ["  " args(e)[0] " " args(e)[1]], top)
+             emit-all(["  " args(e)[0] " " args(e)[1]], top)
          else if op(e) == BIT-SELECT-OP :
-           emit-all(o, [flo-op-name(op(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
+           emit-all([flo-op-name(op(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
          else if op(e) == BITS-SELECT-OP :
            val w = consts(e)[0] - consts(e)[1] + 1
-           emit-all(o, [flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+           emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
          ;; else if op(e) == CONCAT-OP :
          ;;   val w = consts(e)[0] - consts(e)[1] + 1
-         ;;   emit-all(o, [flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+         ;;   emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
          else :
-           emit-all(o, [flo-op-name(op(e)) "'" prim-width(type(e))], top)
+           emit-all([flo-op-name(op(e)) "'" prim-width(type(e))], top)
            if op(e) == PAD-OP :
-             emit-all(o, ["  " args(e)[0] " 0"], top)
+             emit-all(["  " args(e)[0] " 0"], top)
            else :
              for arg in args(e) do :
-               print(o, " ")
-               emit!(o, arg, top)
+               print(" ")
+               emit!(arg, top)
              for const in consts(e) do :
-               print(o, " ")
-               print(o, const)
-      (e) : print-all(o, ["EMIT(" e ")"])
-      ;(e) : emit-all(o, ["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
+               print(" ")
+               print(const)
+      (e) : print-all(["EMIT(" e ")"])
+      ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
 
-defn emit-s (o:OutputStream, s:Stmt, v:List<Symbol>, top:Symbol) :
+defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
    match(s) :
       (s:DefWire) : ""
       (s:DefInstance) : error("Shouldn't be here")
       (s:DefMemory) :
            val vtype = type(s) as VectorType
-           emit-all(o, [top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
-      (s:DefNode) : emit-all(o, [top "::" name(s) " = " value(s) "\n"], top)
-      (s:Begin) : do(emit-s{o, _, v, top}, body(s))
+           emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
+      (s:DefNode) : emit-all([top "::" name(s) " = " value(s) "\n"], top)
+      (s:Begin) : do(emit-s{_, v, top}, body(s))
       (s:Connect) : 
          if loc(s) typeof WritePort :
             val e = loc(s) as WritePort
             val name = gensym(`F)
-            emit-all(o, [top "::" name " = wr'" prim-width(type(e)) " " enable(e) " " top "::" mem(e) " " index(e) " " exp(s) "\n"], top)
+            emit-all([top "::" name " = wr'" prim-width(type(e)) " " enable(e) " " top "::" mem(e) " " index(e) " " exp(s) "\n"], top)
          else :
             val n = name(loc(s) as Ref)
             if contains?(v,n) :
-               emit-all(o, [n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
+               emit-all([n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
             else :
-               emit-all(o, [top "::" n " = " exp(s) "\n"], top)
+               emit-all([top "::" n " = " exp(s) "\n"], top)
       (s) : s 
 
-defn emit-module (o:OutputStream, m:Module) :
+defn emit-module (m:Module) :
    val v = Vector<Symbol>()
    for port in ports(m) do :
       if name(port) ==`reset :
-         emit-all(o, [name(m) "::" name(port) " = rst'1\n"], name(m))
+         emit-all([name(m) "::" name(port) " = rst'1\n"], name(m))
       else : switch {_ == direction(port)} :
-         INPUT : print-all(o, [name(m) "::" name(port) " = " "in'" prim-width(type(port)) "\n"])
+         INPUT : print-all([name(m) "::" name(port) " = " "in'" prim-width(type(port)) "\n"])
          OUTPUT : add(v,name(port))
-   emit-s(o, body(m), to-list(v), name(m))
+   emit-s(body(m), to-list(v), name(m))
 
-public defn emit-flo (o:OutputStream, c:Circuit) :
-   emit-module(o, modules(c)[0])
+public defn emit-flo (file:String, c:Circuit) :
+   with-output-file{file, _} $ fn () :
+      emit-module(modules(c)[0])
+      false
    c
 
 ;============= DRIVER ======================================
-public defn run-passes (c: Circuit, p: List<Char>) :
+public defn run-passes (c: Circuit, p: List<Char>,file:String) :
    var c*:Circuit = c
    println("Compiling!")
    if PRINT-CIRCUITS : println("Original Circuit")
@@ -1977,22 +1968,23 @@ public defn run-passes (c: Circuit, p: List<Char>) :
 
   ; Early passes:
   ;  If modules have a reset defined, must be an INPUT and UInt(1)
-   if contains(p,'q') : do-stage("Temp Elimination", temp-elimination)
-   if contains(p,'a') : do-stage("Working IR", to-working-ir)
-   if contains(p,'b') : do-stage("Resolve Kinds", resolve-kinds)
-   if contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
-   if contains(p,'e') : do-stage("Infer Types", infer-types)
-   if contains(p,'f') : do-stage("Resolve Genders", resolve-genders)
-   if contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
-   if contains(p,'h') : do-stage("Lower To Ground", lower-to-ground)
-   if contains(p,'i') : do-stage("Expand Indexed Connects", expand-connect-indexed)
-   if contains(p,'p') : do-stage("Initialize Registers", initialize-registers)
-   if contains(p,'j') : do-stage("Expand Whens", expand-whens)
-   if contains(p,'k') : do-stage("Infer Widths", infer-widths)
-   if contains(p,'l') : do-stage("Inline Instances", inline-instances)
-   if contains(p,'m') : do-stage("Split Expressions", split-exp)
-   if contains(p,'n') : do-stage("Real IR", to-real-ir)
-   if contains(p,'o') : do-stage("To Flo", emit-flo{STANDARD-OUTPUT,_})
+   if contains(p,'X') or contains(p,'a') : do-stage("Temp Elimination", temp-elimination)
+   if contains(p,'X') or contains(p,'b') : do-stage("Working IR", to-working-ir)
+   if contains(p,'X') or contains(p,'c') : do-stage("Resolve Kinds", resolve-kinds)
+   if contains(p,'X') or contains(p,'d') : do-stage("Make Explicit Reset", make-explicit-reset)
+   if contains(p,'X') or contains(p,'e') : do-stage("Infer Types", infer-types)
+   if contains(p,'X') or contains(p,'f') : do-stage("Resolve Genders", resolve-genders)
+   if contains(p,'X') or contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
+   if contains(p,'X') or contains(p,'h') : do-stage("Lower To Ground", lower-to-ground)
+   if contains(p,'X') or contains(p,'i') : do-stage("Expand Indexed Connects", expand-connect-indexed)
+   if contains(p,'X') or contains(p,'j') : do-stage("Initialize Registers", initialize-registers)
+   if contains(p,'X') or contains(p,'k') : do-stage("Expand Whens", expand-whens)
+   if contains(p,'X') or contains(p,'l') : do-stage("Infer Widths", infer-widths)
+   if contains(p,'X') or contains(p,'m') : do-stage("Inline Instances", inline-instances)
+   if contains(p,'X') or contains(p,'n') : do-stage("Split Expressions", split-exp)
+   if contains(p,'X') or contains(p,'o') : do-stage("Real IR", to-real-ir)
+   if contains(p,'X') or contains(p,'F') : do-stage("To Flo", emit-flo{file,_})
+
    println("Done!")
 
 

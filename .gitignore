@@ -7,6 +7,9 @@
 */*.swp
 */*/*.swp
 */*/*/*.swp
+*/*/*.flo
+*/*/*.out
+*/*/*/*.flo
 src/lib/stanzam
 src/lib/stanza
 src/*/__MACOSX

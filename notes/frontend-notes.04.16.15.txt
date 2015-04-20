@@ -1,4 +1,18 @@
 ======= Fixes to Jonathan's Front-end ======
+
+== TODO ==
+Fixing chisel3 front-end bugs:
+   LFSR16: "concat" -> "cat"
+   MemorySearch: name collision with node done and output done
+   Mul: shr/shl take one expression argument, and one int argument.
+      node T_59 = UInt(2, 2)
+      node T_60 = shl(x, T_59)
+      ==>
+      node T_60 = shl(x, 2)
+   Outer: "instance" => "inst"
+   Stack: bug in firrtl! thanks!
+
+== Completed ==
 Remove type from node emission
 
 Currently, these are not equivalent because we will fail a type check:
@@ -10,4 +24,3 @@ Switch "input" -> "flip" and "output" to "" within a bundle
 Switch "add-mod" -> "add-wrap"
 Switch "multiplex" -> "mux"
 Switch "greater" -> "gt"
-
