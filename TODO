@@ -2,12 +2,15 @@
 ========== ADAM's BIG ASS TODO LIST ============
 ================================================
 
-Important things:
+======== Current Tasks ========
+on-reset
+Parser
+   Error if incorrectly assign stuff, like use = instead of :=
+   Update parser and update tests
    
 ======== Update Core ==========
-Change all primops to be strict on data widths
-Update parser and update tests
 on-reset
+Change all primops to be strict on data widths
 Add source locaters
 Add Unit Tests for each pass
 
@@ -39,7 +42,6 @@ naming for split nodes
 subword accesses
 annotation system
 zero-width wires
-on-reset
 expanding mems (consider changing defmem to be size, and element type)
 Make instances always male, flip the bundles on declaration
 Multi-streams for print statements/asserts (Jack)
@@ -72,6 +74,9 @@ Bounds checks for accessors
 Overflow checks for add/add-wrap
 Check combinational
 Fast C++ where wires/register/instances are predicated
+Verilog backend - put stuff in posedge clock, not assign statements, for speedup
+Annotate mems with location stuff
+Coverage tests, such as statespace or specific instances (like asserts, sort of)
 
 ======== FIRRTL++ =========
 Variable size FIFOs
