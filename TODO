@@ -31,6 +31,8 @@ Well-formed low firrtl
    All things only assigned to once
 
 ======== Other Passes ========
+constant folding (partial eval) pass
+common subexpression elimination pass
 
 ======== Consultations ========
 Stephen:
@@ -38,6 +40,7 @@ Stephen:
       pin stephen on an example
 
 ======== Think About ========
+dlsh,drsh
 naming for split nodes
 subword accesses
 annotation system
