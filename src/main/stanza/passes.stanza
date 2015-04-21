@@ -308,6 +308,49 @@ defn to-working-ir (c:Circuit) :
          for m in modules(c) map :
             Module(name(m), ports(m), to-stmt(body(m)))
 
+;=============== MAKE EXPLICIT RESET =======================
+; All modules have an implicit reset signal - however, the 
+;   programmer can explicitly reference this signal if desired.
+;   This pass makes all implicit resets explicit while
+;   preserving any previously explicit resets
+; If reset is not explicitly passed to instantiations, then this
+;   pass autmatically connects the parent module's reset to the
+;   instantiation's reset
+
+defn make-explicit-reset (c:Circuit) :
+   defn find-explicit (c:Circuit) -> List<Symbol> :
+      defn explicit? (m:Module) -> True|False :
+         for p in ports(m) any? :
+            name(p) == `reset
+      val explicit-reset = Vector<Symbol>()
+      for m in modules(c) do:
+         if explicit?(m) : add(explicit-reset,name(m))
+      to-list(explicit-reset)
+
+   defn make-explicit (m:Module, explicit-reset:List<Symbol>) -> Module :
+      defn route-reset (s:Stmt) -> Stmt :
+         match(s) :
+            (s:DefInstance) : 
+               val iref = WSubfield(WRef(name(s), UnknownType(), InstanceKind(), UNKNOWN-GENDER),`reset,UnknownType(),UNKNOWN-GENDER)
+               val pref = WRef(`reset, UnknownType(), PortKind(), MALE)
+               Begin(to-list([s,Connect(iref,pref)]))
+            (s) : map(route-reset,s)
+
+      var ports! = ports(m)
+      if not contains?(explicit-reset,name(m)) :
+         ports! = append(ports(m),list(Port(`reset,INPUT,UIntType(IntWidth(1)))))
+      val body! = route-reset(body(m))
+      Module(name(m),ports!,body!)
+      
+   defn make-explicit-reset (m:Module, c:Circuit) -> Module :
+      val explicit-reset = find-explicit(c)
+      make-explicit(m,explicit-reset)
+
+   Circuit(modules*, main(c)) where :
+      val modules* = 
+         for m in modules(c) map :
+            make-explicit-reset(m,c)
+
 ;=============== Resolve Kinds =============================
 ; It is useful for the compiler to know information about 
 ;   objects referenced. This information is stored in the kind
@@ -356,50 +399,6 @@ defn resolve-kinds (c:Circuit) :
       val modules* = 
          for m in modules(c) map :
             resolve-kinds(m,c)
-
-;=============== MAKE EXPLICIT RESET =======================
-; All modules have an implicit reset signal - however, the 
-;   programmer can explicitly reference this signal if desired.
-;   This pass makes all implicit resets explicit while
-;   preserving any previously explicit resets
-; If reset is not explicitly passed to instantiations, then this
-;   pass autmatically connects the parent module's reset to the
-;   instantiation's reset
-
-defn make-explicit-reset (c:Circuit) :
-   defn find-explicit (c:Circuit) -> List<Symbol> :
-      defn explicit? (m:Module) -> True|False :
-         for p in ports(m) any? :
-            name(p) == `reset
-      val explicit-reset = Vector<Symbol>()
-      for m in modules(c) do:
-         if explicit?(m) : add(explicit-reset,name(m))
-      to-list(explicit-reset)
-
-   defn make-explicit (m:Module, explicit-reset:List<Symbol>) -> Module :
-      defn route-reset (s:Stmt) -> Stmt :
-         match(s) :
-            (s:DefInstance) : 
-               val iref = WSubfield(WRef(name(s), UnknownType(), InstanceKind(), UNKNOWN-GENDER),`reset,UnknownType(),UNKNOWN-GENDER)
-               val pref = WRef(`reset, UnknownType(), PortKind(), MALE)
-               Begin(to-list([s,Connect(iref,pref)]))
-            (s) : map(route-reset,s)
-
-      var ports! = ports(m)
-      if not contains?(explicit-reset,name(m)) :
-         ports! = append(ports(m),list(Port(`reset,INPUT,UIntType(IntWidth(1)))))
-      val body! = route-reset(body(m))
-      Module(name(m),ports!,body!)
-      
-   defn make-explicit-reset (m:Module, c:Circuit) -> Module :
-      val explicit-reset = find-explicit(c)
-      make-explicit(m,explicit-reset)
-
-   Circuit(modules*, main(c)) where :
-      val modules* = 
-         for m in modules(c) map :
-            make-explicit-reset(m,c)
-
 
 ;============== INFER TYPES ================================
 ; This pass infers the type field in all IR nodes by updating
@@ -1977,8 +1976,8 @@ public defn run-passes (c: Circuit, p: List<Char>,file:String) :
   ;  If modules have a reset defined, must be an INPUT and UInt(1)
    if contains(p,'X') or contains(p,'a') : do-stage("Temp Elimination", temp-elimination)
    if contains(p,'X') or contains(p,'b') : do-stage("Working IR", to-working-ir)
-   if contains(p,'X') or contains(p,'c') : do-stage("Resolve Kinds", resolve-kinds)
-   if contains(p,'X') or contains(p,'d') : do-stage("Make Explicit Reset", make-explicit-reset)
+   if contains(p,'X') or contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
+   if contains(p,'X') or contains(p,'d') : do-stage("Resolve Kinds", resolve-kinds)
    if contains(p,'X') or contains(p,'e') : do-stage("Infer Types", infer-types)
    if contains(p,'X') or contains(p,'f') : do-stage("Resolve Genders", resolve-genders)
    if contains(p,'X') or contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
