@@ -28,17 +28,15 @@ Well-formed low firrtl
    All things only assigned to once
 
 ======== Other Passes ========
-Temp Elimination
 
 ======== Consultations ========
-Patrick:
-   subword accesses (extractor?)
-      draft example
 Stephen:
    width equality
       pin stephen on an example
 
 ======== Think About ========
+naming for split nodes
+subword accesses
 annotation system
 zero-width wires
 on-reset
