@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x abcd -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abc -p c | tee %s.out | FileCheck %s
 
 ; CHECK: Make Explicit Reset
 circuit top :
