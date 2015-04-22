@@ -1890,7 +1890,7 @@ defn emit! (e:Expression,top:Symbol) :
       (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
       (e:Index) :     emit-all([exp(e) "/" value(e)], top)
       (e:Register) : 
-         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top)
+         emit-all(["reg'" prim-width(type(e)) " 1 " value(e)], top) ;; enable(e)
       (e:ReadPort) : 
          emit-all(["rd'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e)], top)
       (e:DoPrim) : 
@@ -1922,6 +1922,16 @@ defn emit! (e:Expression,top:Symbol) :
       (e) : print-all(["EMIT(" e ")"])
       ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
 
+defn maybe-mov (e:Expression) -> String :
+   val need-mov? = match(e) :
+      (e:Ref) :       true
+      (e:UIntValue) : true
+      (e:SIntValue) : true
+      (e:Subfield) :  true
+      (e:Index) :     true
+      (e) :           false
+   if need-mov?: "mov " else: ""
+
 defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
    match(s) :
       (s:DefWire) : ""
@@ -1929,7 +1939,7 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
       (s:DefMemory) :
            val vtype = type(s) as VectorType
            emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
-      (s:DefNode) : emit-all([top "::" name(s) " = " value(s) "\n"], top)
+      (s:DefNode) : emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
       (s:Begin) : do(emit-s{_, v, top}, body(s))
       (s:Connect) : 
          if loc(s) typeof WritePort :
@@ -1939,9 +1949,9 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
          else :
             val n = name(loc(s) as Ref)
             if contains?(v,n) :
-               emit-all([n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
+               emit-all([top "::" n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
             else :
-               emit-all([top "::" n " = " exp(s) "\n"], top)
+               emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
       (s) : s 
 
 defn emit-module (m:Module) :
