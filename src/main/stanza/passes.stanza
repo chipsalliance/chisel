@@ -155,7 +155,17 @@ public var PRINT-WIDTHS : True|False = false
 public var PRINT-TWIDTHS : True|False = false
 public var PRINT-GENDERS : True|False = false
 public var PRINT-CIRCUITS : True|False = false
+public var PRINT-DEBUG : True|False = false
 ;=== Printers ===
+
+public defn println-all-debug (l:?) -> False :
+   if PRINT-DEBUG : println-all(l)
+   else : false
+
+public defn println-debug (s:?) -> False :
+   if PRINT-DEBUG : println(s)
+   else : false
+
 defmethod print (o:OutputStream, k:Kind) :
    print{o, _} $
    match(k) :
@@ -175,12 +185,12 @@ defn hasGender (e:Expression|Stmt|Type|Port|Field) :
    e typeof WRef|WSubfield|WIndex|WDefAccessor|WRegInit
 
 defn hasWidth (e:Expression|Stmt|Type|Port|Field) :
-   e typeof UIntType|SIntType|UIntValue|SIntValue
+   e typeof UIntType|SIntType|UIntValue|SIntValue|Pad
 
 defn hasType (e:Expression|Stmt|Type|Port|Field) :
    e typeof Ref|Subfield|Index|DoPrim|WritePort|ReadPort|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory|Register
-      |VectorType|Port|Field|WRegInit
+      |VectorType|Port|Field|WRegInit|Pad
 
 defn hasKind (e:Expression|Stmt|Type|Port|Field) :
    e typeof WRef
@@ -446,6 +456,8 @@ defn infer-exp-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression
          ;DoPrim(op(e),args(e),consts(e),get-primop-rettype(e))
       (e:ReadPort) : ReadPort(mem(e),index(e),get-vector-subtype(type(mem(e))),enable(e))
       (e:WritePort) : WritePort(mem(e),index(e),get-vector-subtype(type(mem(e))),enable(e))
+      (e:Register) : Register(type(value(e)),value(e),enable(e))
+      (e:Pad) : Pad(value(e),width(e),type(value(e)))
       (e:UIntValue|SIntValue) : e
 
 defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<Symbol,Type>>] :
@@ -474,7 +486,7 @@ defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
    val ptypes = 
       for p in ports(m) map :
          name(p) => type(p)
-   ;println-all(append(ptypes,l))
+   println-all-debug(append(ptypes,l))
    val [s,l*] = infer-types(body(m),append(ptypes, l))
    Module(name(m),ports(m),s)
 
@@ -482,7 +494,7 @@ defn infer-types (c:Circuit) -> Circuit :
    val l = 
       for m in modules(c) map :
          name(m) => BundleType(map(to-field,ports(m)))
-   ;println-all(l)
+   println-all-debug(l)
    Circuit{ _, main(c) } $ 
       for m in modules(c) map :
          infer-types(m,l)
@@ -587,11 +599,11 @@ defn resolve-genders (c:Circuit) :
             (e) : map(resolve-expr{_,MALE},e)
 
       var module* = resolve-iter(m)
-      ;println(genders)
+      println-debug(genders)
       while not done? : 
         done? = true
         module* = resolve-iter(m)
-        ;println(genders)
+        ;println-debug(genders)
       module*
     
    defn resolve-genders (m:Module, c:Circuit) -> Module :
@@ -619,7 +631,7 @@ defn expand-vector (e:Expression) -> List<Expression> :
 defn expand-stmt (s:Stmt) -> Stmt :
    match(s) :
       (s:WDefAccessor) : 
-         ;println-all(["Matched WDefAcc with " name(s)])
+         println-all-debug(["Matched WDefAcc with " name(s)])
          val mem? = match(source(s)) :
             (e:WRef) : kind(e) typeof MemKind
             (e) : false
@@ -715,11 +727,11 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             lower-stmt(s*)
          (s:Connect) : Begin{_} $
             for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
-               println(s)
+               println-debug(s)
                val lgender = calc-gender(FEMALE,loc(s)) * value(l)
                val rgender = calc-gender(MALE,exp(s)) * value(r)
-               println(loc(s))
-               println(exp(s))
+               println-debug(loc(s))
+               println-debug(exp(s))
                switch fn ([x,y]) : lgender == x and rgender == y :
                   [FEMALE,MALE]   : Connect(key(l),key(r))
                   [MALE,FEMALE]   : Connect(key(r),key(l))
@@ -779,7 +791,7 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             headn(tailn(exps,len * value(e)),len)
          (e) : list(KeyValue(e, DEFAULT))
 
-   ;println(table)
+   ;println-debug(table)
    lower-stmt(body)
 
 defn get-entries (n:Symbol,t:Type) -> List<KeyValue<WRef,Flip>> :
@@ -955,7 +967,7 @@ defn initialize-registers (c:Circuit) :
    defn explicit-init-scope (s:Stmt) -> Stmt :
       val h = HashTable<Symbol,True|False>(symbol-hash)
       using-init(s,h)
-      ;println(h)
+      ;println-debug(h)
       val [s* t] = rename(s,h)
       add-when(s*,t)
      
@@ -1262,7 +1274,7 @@ defn build-tables (s:Stmt,
          add(decs,s)
          for f in fields(type(module(s)) as BundleType) do :
             val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
-            ;println-all(["In DefInst adding: " n])
+            println-all-debug(["In DefInst adding: " n])
             kinds[n] = InstanceKind()
             assign[n] = SVNul()
             stmts[n] = s
@@ -1282,12 +1294,12 @@ defn build-tables (s:Stmt,
                      if kinds[i] typeof WireKind|InstanceKind|NodeKind : a
                      else : SVMux(pred(s),SVNul(),a)
                   (c:False,a:False) : error("Shouldn't be here")
-         ;println("TABLE-C")
-         ;for x in assign-c do : println(x)
-         ;println("TABLE-A")
-         ;for x in assign-a do : println(x)
-         ;println("TABLE")
-         ;for x in assign do : println(x)
+         ;println-debug("TABLE-C")
+         ;for x in assign-c do : println-debug(x)
+         ;println-debug("TABLE-A")
+         ;for x in assign-a do : println-debug(x)
+         ;println-debug("TABLE")
+         ;for x in assign do : println-debug(x)
       (s:Connect) : 
          val key* = match(loc(s)) :
             (e:WRef) : name(e)
@@ -1314,14 +1326,14 @@ defn expand-whens (m:Module) -> Module :
    val enables = get-enables(assign,kinds)
    for x in enables do : enables[key(x)] = optimize(value(x))
          
-   ;println("Assigns")
-   ;for x in assign do : println(x)
-   ;println("Kinds")
-   ;for x in kinds do : println(x)
-   ;println("Decs")
-   ;for x in decs do : println(x)
-   ;println("Enables")
-   ;for x in enables do : println(x)
+   ;println-debug("Assigns")
+   ;for x in assign do : println-debug(x)
+   ;println-debug("Kinds")
+   ;for x in kinds do : println-debug(x)
+   ;println-debug("Decs")
+   ;for x in decs do : println-debug(x)
+   ;println-debug("Enables")
+   ;for x in enables do : println-debug(x)
 
    Module(name(m),ports(m),expand-whens(assign,kinds,stmts,decs,enables))
 
@@ -1412,30 +1424,30 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
             val v = Vector<Width>()
             for w* in args(w) do :
                match(w*) :
-                  (w:MaxWidth) : 
-                     for x in args(w) do : add(v,x)
-                  (w) : add(v,w)
+                  (w*:MaxWidth) : 
+                     for x in args(w*) do : add(v,x)
+                  (w*) : add(v,w*)
             MaxWidth(unique(v))
          (w) : w
    defn substitute (w:Width,h:HashTable<Symbol,Width>) -> Width :
-      ;println-all(["Substituting for [" w "]"])
+      ;println-all-debug(["Substituting for [" w "]"])
       val w* = simplify(w)
-      ;println-all(["After Simplify: [" w "]"])
+      ;println-all-debug(["After Simplify: [" w* "]"])
       match(map(substitute{_,h},simplify(w))) :
          (w:VarWidth) : 
-            ;println("matched varwidth!")
+            ;println-debug("matched varwidth!")
             if contains?(name(w),h) : 
-               ;println("Contained!")
-               ;println-all(["Width: " w])
-               ;println-all(["Accessed: " h[name(w)]])
+               ;println-debug("Contained!")
+               ;println-all-debug(["Width: " w])
+               ;println-all-debug(["Accessed: " h[name(w)]])
                val t = simplify(substitute(h[name(w)],h))
                ;val t = h[name(w)]
-               ;println-all(["Width after sub: " t])
+               ;println-all-debug(["Width after sub: " t])
                h[name(w)] = t
                t
             else : w
          (w): 
-            ;println-all(["not varwidth!" w])
+            ;println-all-debug(["not varwidth!" w])
             w
    defn b-sub (w:Width,h:HashTable<Symbol,Width>) -> Width:
       match(map(b-sub{_,h},w)) :
@@ -1444,11 +1456,11 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
             else : w
          (w) : w
    defn remove-cycle (n:Symbol,w:Width) -> Width :
-      ;println-all(["Removing cycle for " n " inside " w])
+      ;println-all-debug(["Removing cycle for " n " inside " w])
       val w* = match(map(remove-cycle{n,_},w)) :
          (w:MaxWidth) : MaxWidth(to-list(filter({_ != VarWidth(n)},args(w))))
          (w) : w
-      ;println-all(["After removing cycle for " n ", returning " w*])
+      ;println-all-debug(["After removing cycle for " n ", returning " w*])
       w*
    defn self-rec? (n:Symbol,w:Width) -> True|False :
       var has? = false
@@ -1467,7 +1479,7 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
          if length(l) == 0 : 0
          else : apply(head(l),apply-l(tail(l),f),f)
       defn max (a:Int,b:Int) -> Int :
-         if a > b : a
+         if a >= b : a
          else : b
       defn solve (w:Width) -> Int|False :
          match(w) :
@@ -1490,55 +1502,55 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
    ;  2) Remove Cycles
    ;  3) Move to solved if not self-recursive
    val u = make-unique(l)
-   ;println("======== UNIQUE CONSTRAINTS ========")
-   ;for x in u do : println(x)
-   ;println("====================================")
+   ;println-debug("======== UNIQUE CONSTRAINTS ========")
+   ;for x in u do : println-debug(x)
+   ;println-debug("====================================")
 
    val f = HashTable<Symbol,Width>(symbol-hash)
    val o = Vector<Symbol>()
    for x in u do :
-      ;println("==== SOLUTIONS TABLE ====")
-      ;for x in f do : println(x)
-      ;println("=========================")
+      ;println-debug("==== SOLUTIONS TABLE ====")
+      ;for x in f do : println-debug(x)
+      ;println-debug("=========================")
 
       val [n e] = [key(x) value(x)]
 
       val e-sub = substitute(e,f)
-      ;println(["Solving " n " => " e])
-      ;println(["After Substitute: " n " => " e-sub])
-      ;println("==== SOLUTIONS TABLE (Post Substitute) ====")
-      ;for x in f do : println(x)
-      ;println("=========================")
+      ;println-debug(["Solving " n " => " e])
+      ;println-debug(["After Substitute: " n " => " e-sub])
+      ;println-debug("==== SOLUTIONS TABLE (Post Substitute) ====")
+      ;for x in f do : println-debug(x)
+      ;println-debug("=========================")
       val e* = remove-cycle{n,_} $ e-sub
-      ;println(["After Remove Cycle: " n " => " e*])
+      ;println-debug(["After Remove Cycle: " n " => " e*])
       if not self-rec?(n,e*) : 
-         ;println-all(["Not rec!: " n " => " e*])
-         ;println-all(["Adding [" n "=>" e* "] to Solutions Table"])
+         ;println-all-debug(["Not rec!: " n " => " e*])
+         ;println-all-debug(["Adding [" n "=>" e* "] to Solutions Table"])
          add(o,n)
          f[n] = e*
 
-   ;println("Forward Solved Constraints")
-   ;for x in f do : println(x)
+   ;println-debug("Forward Solved Constraints")
+   ;for x in f do : println-debug(x)
 
    ; Backwards Solve
    val b = HashTable<Symbol,Width>(symbol-hash)
    for i in (length(o) - 1) through 0 by -1 do :
       val n = o[i]
-      ;println-all(["SOLVE BACK: [" n " => " f[n] "]"])
-      ;println("==== SOLUTIONS TABLE ====")
-      ;for x in b do : println(x)
-      ;println("=========================")
+      ;println-all-debug(["SOLVE BACK: [" n " => " f[n] "]"])
+      ;println-debug("==== SOLUTIONS TABLE ====")
+      ;for x in b do : println-debug(x)
+      ;println-debug("=========================")
       val e* = simplify(b-sub(f[n],b))
-      ;println-all(["BACK RETURN: [" n " => " e* "]"])
+      ;println-all-debug(["BACK RETURN: [" n " => " e* "]"])
       b[n] = e*
-      ;println("==== SOLUTIONS TABLE (Post backsolve) ====")
-      ;for x in b do : println(x)
-      ;println("=========================")
+      ;println-debug("==== SOLUTIONS TABLE (Post backsolve) ====")
+      ;for x in b do : println-debug(x)
+      ;println-debug("=========================")
 
    ; Evaluate
    val e = evaluate(b)
-   ;println("Evaluated Constraints")
-   ;for x in e do : println(x)
+   ;println-debug("Evaluated Constraints")
+   ;for x in e do : println-debug(x)
    e
    
 public defn width! (t:Type) -> Width :
@@ -1549,7 +1561,6 @@ public defn width! (t:Type) -> Width :
 public defn width! (e:Expression) -> Width : width!(type(e))
 
 defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Module:
-
    defn gen-constraints-s (s:Stmt) -> Stmt :
       match(map(gen-constraints-s,s)) :
          (s:DefWire) : DefWire(name(s),h[name(s)])
@@ -1570,6 +1581,15 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (e:WSubfield) : WSubfield(exp(e),name(e),bundle-field-type(type(exp(e)),name(e)),gender(e))
          (e:WIndex) : error("Shouldn't be here")
          (e:DoPrim) : DoPrim(op(e),args(e),consts(e),primop-gen-constraints(e,v))
+         (e:Pad) : 
+            val value-w = width!(value(e))
+            val pad-w = remove-unknowns-w(width(e))
+            ;add(v,WGeq(pad-w, IntWidth(0)))
+            val pad-t = match(type(e)) :
+               (t:UIntType) : UIntType(pad-w)
+               (t:SIntType) : SIntType(pad-w)
+               (t) : error("Shouldn't be here")
+            Pad(value(e),pad-w,pad-t)
          (e:ReadPort) : ReadPort(mem(e),index(e),type(type(mem(e)) as VectorType),enable(e))
          (e:WritePort) : WritePort(mem(e),index(e),type(type(mem(e)) as VectorType),enable(e))
          (e:Register) : Register(type(value(e)),value(e),enable(e))
@@ -1610,13 +1630,13 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
          
 defn replace-var-widths (c:Circuit,h:HashTable<Symbol,Int>) -> Circuit :
    defn replace-var-widths-w (w:Width) -> Width :
-      ;println-all(["REPLACE: " w])
+      println-all-debug(["REPLACE: " w])
       val w* = match(w) :
          (w:VarWidth) : 
             if key?(h,name(w)) : IntWidth(h[name(w)])
             else: w
          (w) : w
-      ;println-all(["WITH: " w*])
+      println-all-debug(["WITH: " w*])
       w*
 
    val modules* = for m in modules(c) map :
@@ -1639,29 +1659,27 @@ defn infer-widths (c:Circuit) -> Circuit :
          for x in t do :
             t0[key(x)] = value(x)
    
-   ;val c* = remove-unknown-widths(c)
-   ;println(c*)
    val v = Vector<WGeq>()
    val ports* = HashTable<Symbol,Type>(symbol-hash)
    for m in modules(c) do : 
       ports*[name(m)] = remove-unknowns(BundleType(map(to-field,ports(m))))
    val modules* = for m in modules(c) map :
-      ;println-all(["====== MODULE(" name(m) ") ENV ======"])
+      println-all-debug(["====== MODULE(" name(m) ") ENV ======"])
       val h = build-environment(c,m,deepcopy(ports*))
-      ;for x in h do: println(x)
-      ;println-all(["====================================="])
+      for x in h do: println-debug(x)
+      println-all-debug(["====================================="])
       val m* = gen-constraints(m,h,v)
-      ;println-all(["====== MODULE(" name(m) ") ======"])
-      ;println(m*)
-      ;println-all(["====================================="])
+      println-all-debug(["====== MODULE(" name(m) ") ======"])
+      println-debug(m*)
+      println-all-debug(["====================================="])
       m*
-   ;println("======== ALL CONSTRAINTS ========")
-   ;for x in v do : println(x)
-   ;println("=================================")
+   println-debug("======== ALL CONSTRAINTS ========")
+   for x in v do : println-debug(x)
+   println-debug("=================================")
    val h = solve-constraints(to-list(v))
-   ;println("======== SOLVED CONSTRAINTS ========")
-   ;for x in h do : println(x)
-   ;println("====================================")
+   println-debug("======== SOLVED CONSTRAINTS ========")
+   for x in h do : println-debug(x)
+   println-debug("====================================")
    replace-var-widths(Circuit(modules*,main(c)),h)
 
 
@@ -1738,7 +1756,7 @@ defn split-exp (c:Circuit) :
       false
    defn split-exp-e (e:Expression,v:Vector<Stmt>,n:Symbol|False) -> Expression :
       match(map(split-exp-e{_,v,n},e)):
-         (e:Subfield|DoPrim|ReadPort|Register|WritePort) : 
+         (e:Subfield|DoPrim|Pad|ReadPort|Register|WritePort) : 
             val n* = 
                if n typeof False : gensym(`T)
                else : to-symbol $ string-join $ [n as Symbol gensym(`#)]
@@ -1836,6 +1854,8 @@ defn flo-op-name (op:PrimOp) -> String :
       MUX-SS-OP :         "mux"
       PAD-U-OP :         "rsh" ;; todo: signed version
       PAD-S-OP :         "rsh" ;; todo: signed version
+      NEG-U-OP :         "neg"
+      NEG-S-OP :         "neg"
       ;AS-UINT-U-OP :
       ;AS-UINT-S-OP :
       ;AS-SINT-U-OP :
@@ -1889,6 +1909,8 @@ defn emit! (e:Expression,top:Symbol) :
       (e:SIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
       (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
       (e:Index) :     emit-all([exp(e) "/" value(e)], top)
+      (e:Pad) : 
+         emit-all(["rsh'" prim-width(type(e)) "  " value(e) "  " width(e)], top)
       (e:Register) : 
          emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top)
       (e:ReadPort) : 
@@ -1910,8 +1932,8 @@ defn emit! (e:Expression,top:Symbol) :
          ;;   emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
          else :
            emit-all([flo-op-name(op(e)) "'" prim-width(type(e))], top)
-           if op(e) == PAD-OP :
-             emit-all(["  " args(e)[0] " 0"], top)
+           if (op(e) == PAD-U-OP) or (op(e) == PAD-S-OP) :
+             emit-all(["  " args(e)[0] " " consts(e)[0]], top)
            else :
              for arg in args(e) do :
                print(" ")

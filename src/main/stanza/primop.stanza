@@ -248,106 +248,116 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
       BIT-XOR-REDUCE-OP: DoPrim(op(e),args(e),consts(e),u())
 
 public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
-   defn add-c (w:Width) -> Type:
-      val w* = VarWidth(gensym(`w))
-      add(v,WGeq(w*,w))
-      add(v,WGeq(w,w*))
-      match(type(e)) :
-         (t:UIntType) : UIntType(w*)
-         (t:SIntType) : SIntType(w*)
-         (t) : error("Shouldn't be here")
-   defn wpc (l:List<Expression>,c:List<Int>) :
-      add-c(PlusWidth(width!(l[0]),IntWidth(c[0])))
-   defn wmc (l:List<Expression>,c:List<Int>) :
-      add-c(MinusWidth(width!(l[0]),IntWidth(c[0])))
-   defn maxw (l:List<Expression>) : 
-      add-c(MaxWidth(map(width!,l)))
-   defn cons (ls:List<Expression>) : 
-      val l = width!(ls[0])
-      val r = width!(ls[1])
-      add(v,WGeq(l,r))
-      add(v,WGeq(r,l))
-      add-c(l)
-      add-c(r)
-   defn mp1 (l:List<Expression>) : 
-      add-c(PlusWidth(MaxWidth(list(width!(l[0]),width!(l[1]))),IntWidth(1)))
-   defn sum (l:List<Expression>) : 
-      add-c(PlusWidth(width!(l[0]),width!(l[1])))
+   defn all-equal (ls:List<Expression>) -> Width : 
+      if length(ls) == 1 : width!(ls[0])
+      else :
+         val m = MaxWidth(map(width!,ls))
+         for (l in ls) do :
+            add(v,WGeq(width!(l),m))
+         m
+   ;defn new-width (w:Width) -> Width:
+   ;   val w* = VarWidth(gensym(`w))
+   ;   add(v,WGeq(w*,w))
+   ;   ;add(v,WGeq(w,w*))
+   ;   w*
+   ;defn width-plus-const (l:List<Expression>,c:List<Int>) -> Width :
+   ;   new-width(PlusWidth(width!(l[0]),IntWidth(c[0])))
+   ;defn width-minus-const (l:List<Expression>,c:List<Int>) -> Width :
+   ;   new-width(MinusWidth(width!(l[0]),IntWidth(c[0])))
+   ;defn max-width (l:List<Expression>) -> Width : 
+   ;   new-width(MaxWidth(map(width!,l)))
+   ;defn max-plus-one (l:List<Expression>) -> Width : 
+   ;   new-width(PlusWidth(MaxWidth(list(width!(l[0]),width!(l[1]))),IntWidth(1)))
+   ;defn sum (l:List<Expression>) -> Width : 
+   ;   new-width(PlusWidth(width!(l[0]),width!(l[1])))
 
-   ;println-all(["Looking at " op(e) " with inputs " args(e)])
-   switch {op(e) == _} :
-      ADD-UU-OP : mp1(args(e))
-      ADD-US-OP : mp1(args(e))
-      ADD-SU-OP : mp1(args(e))
-      ADD-SS-OP : mp1(args(e))
-      SUB-UU-OP : mp1(args(e))
-      SUB-US-OP : mp1(args(e))
-      SUB-SU-OP : mp1(args(e))
-      SUB-SS-OP : mp1(args(e))
-      MUL-UU-OP : sum(args(e))
-      MUL-US-OP : sum(args(e))
-      MUL-SU-OP : sum(args(e))
-      MUL-SS-OP : sum(args(e))
-      ;(p:DIV-UU-OP) : 
-      ;(p:DIV-US-OP) :
-      ;(p:DIV-SU-OP) :
-      ;(p:DIV-SS-OP) :
-      ;(p:MOD-UU-OP) :
-      ;(p:MOD-US-OP) :
-      ;(p:MOD-SU-OP) :
-      ;(p:MOD-SS-OP) :
-      ;(p:QUO-UU-OP) :
-      ;(p:QUO-US-OP) :
-      ;(p:QUO-SU-OP) :
-      ;(p:QUO-SS-OP) :
-      ;(p:REM-UU-OP) :
-      ;(p:REM-US-OP) :
-      ;(p:REM-SU-OP) :
-      ;(p:REM-SS-OP) :
-      ADD-WRAP-UU-OP : maxw(args(e))
-      ADD-WRAP-US-OP : maxw(args(e))
-      ADD-WRAP-SU-OP : maxw(args(e))
-      ADD-WRAP-SS-OP : maxw(args(e))
-      SUB-WRAP-UU-OP : maxw(args(e))
-      SUB-WRAP-US-OP : maxw(args(e))
-      SUB-WRAP-SU-OP : maxw(args(e))
-      SUB-WRAP-SS-OP : maxw(args(e))
-      LESS-UU-OP : add-c(IntWidth(1))
-      LESS-US-OP : add-c(IntWidth(1))
-      LESS-SU-OP : add-c(IntWidth(1))
-      LESS-SS-OP : add-c(IntWidth(1))
-      LESS-EQ-UU-OP : add-c(IntWidth(1))
-      LESS-EQ-US-OP : add-c(IntWidth(1))
-      LESS-EQ-SU-OP : add-c(IntWidth(1))
-      LESS-EQ-SS-OP : add-c(IntWidth(1))
-      GREATER-UU-OP : add-c(IntWidth(1))
-      GREATER-US-OP : add-c(IntWidth(1))
-      GREATER-SU-OP : add-c(IntWidth(1))
-      GREATER-SS-OP : add-c(IntWidth(1))
-      GREATER-EQ-UU-OP : add-c(IntWidth(1))
-      GREATER-EQ-US-OP : add-c(IntWidth(1))
-      GREATER-EQ-SU-OP : add-c(IntWidth(1))
-      GREATER-EQ-SS-OP : add-c(IntWidth(1))
-      EQUAL-UU-OP : add-c(IntWidth(1))
-      EQUAL-SS-OP : add-c(IntWidth(1))
-      MUX-UU-OP : cons(args(e))
-      MUX-SS-OP : cons(args(e))
-      PAD-U-OP : add-c(IntWidth(consts(e)[0]))
-      PAD-S-OP : add-c(IntWidth(consts(e)[0]))
-      AS-UINT-U-OP : add-c(width!(args(e)[0]))
-      AS-UINT-S-OP : add-c(width!(args(e)[0]))
-      AS-SINT-U-OP : add-c(width!(args(e)[0]))
-      AS-SINT-S-OP : add-c(width!(args(e)[0]))
-      SHIFT-LEFT-U-OP : wpc(args(e),consts(e))
-      SHIFT-LEFT-S-OP : wpc(args(e),consts(e))
-      SHIFT-RIGHT-U-OP : wmc(args(e),consts(e))
-      SHIFT-RIGHT-S-OP : wmc(args(e),consts(e))
-      CONVERT-U-OP : add-c(PlusWidth(width!(args(e)[0]),IntWidth(1)))
-      CONVERT-S-OP : add-c(width!(args(e)[0]))
-      BIT-NOT-OP : maxw(args(e))
-      BIT-AND-OP : maxw(args(e))
-      BIT-OR-OP : maxw(args(e))
-      BIT-XOR-OP : maxw(args(e))
-      CONCAT-OP : sum(args(e))
-      BIT-SELECT-OP : add-c(IntWidth(1))
-      BITS-SELECT-OP : add-c(IntWidth(consts(e)[0] - consts(e)[1]))
+   println-all-debug(["Looking at " op(e) " with inputs " args(e)])
+   val all-args-not-equal = list(MUX-UU-OP,MUX-SS-OP,CONCAT-OP)
+   ;val consts-gte-args    = list(PAD-U-OP,PAD-S-OP)
+
+   val w* = 
+      if not contains?(all-args-not-equal,op(e)) :
+         val max-args-w = all-equal(args(e))
+         switch {op(e) == _} :
+            ADD-UU-OP : PlusWidth(max-args-w,IntWidth(1))
+            ADD-US-OP : PlusWidth(max-args-w,IntWidth(1))
+            ADD-SU-OP : PlusWidth(max-args-w,IntWidth(1))
+            ADD-SS-OP : PlusWidth(max-args-w,IntWidth(1))
+            SUB-UU-OP : PlusWidth(max-args-w,IntWidth(1))
+            SUB-US-OP : PlusWidth(max-args-w,IntWidth(1))
+            SUB-SU-OP : PlusWidth(max-args-w,IntWidth(1))
+            SUB-SS-OP : PlusWidth(max-args-w,IntWidth(1))
+            MUL-UU-OP : PlusWidth(max-args-w,max-args-w)
+            MUL-US-OP : PlusWidth(max-args-w,max-args-w)
+            MUL-SU-OP : PlusWidth(max-args-w,max-args-w)
+            MUL-SS-OP : PlusWidth(max-args-w,max-args-w)
+            DIV-UU-OP : max-args-w
+            DIV-US-OP : PlusWidth(max-args-w,IntWidth(1))
+            DIV-SU-OP : max-args-w
+            DIV-SS-OP : PlusWidth(max-args-w,IntWidth(1))
+            ADD-WRAP-UU-OP : max-args-w
+            ADD-WRAP-US-OP : max-args-w
+            ADD-WRAP-SU-OP : max-args-w
+            ADD-WRAP-SS-OP : max-args-w
+            SUB-WRAP-UU-OP : max-args-w
+            SUB-WRAP-US-OP : max-args-w
+            SUB-WRAP-SU-OP : max-args-w
+            SUB-WRAP-SS-OP : max-args-w
+            LESS-UU-OP : IntWidth(1)
+            LESS-US-OP : IntWidth(1)
+            LESS-SU-OP : IntWidth(1)
+            LESS-SS-OP : IntWidth(1)
+            LESS-EQ-UU-OP : IntWidth(1)
+            LESS-EQ-US-OP : IntWidth(1)
+            LESS-EQ-SU-OP : IntWidth(1)
+            LESS-EQ-SS-OP : IntWidth(1)
+            GREATER-UU-OP : IntWidth(1)
+            GREATER-US-OP : IntWidth(1)
+            GREATER-SU-OP : IntWidth(1)
+            GREATER-SS-OP : IntWidth(1)
+            GREATER-EQ-UU-OP : IntWidth(1)
+            GREATER-EQ-US-OP : IntWidth(1)
+            GREATER-EQ-SU-OP : IntWidth(1)
+            GREATER-EQ-SS-OP : IntWidth(1)
+            EQUAL-UU-OP : IntWidth(1)
+            EQUAL-SS-OP : IntWidth(1)
+            NEQUAL-UU-OP : IntWidth(1)
+            NEQUAL-SS-OP : IntWidth(1)
+            PAD-U-OP : IntWidth(consts(e)[0])
+            PAD-S-OP : IntWidth(consts(e)[0])
+            NEG-U-OP : IntWidth(1)
+            NEG-S-OP : IntWidth(1)
+            AS-UINT-U-OP : max-args-w
+            AS-UINT-S-OP : max-args-w
+            AS-SINT-U-OP : max-args-w
+            AS-SINT-S-OP : max-args-w
+            SHIFT-LEFT-U-OP : PlusWidth(max-args-w,IntWidth(consts(e)[0]))
+            SHIFT-LEFT-S-OP : PlusWidth(max-args-w,IntWidth(consts(e)[0]))
+            SHIFT-RIGHT-U-OP : MinusWidth(max-args-w,IntWidth(consts(e)[0]))
+            SHIFT-RIGHT-S-OP : MinusWidth(max-args-w,IntWidth(consts(e)[0]))
+            CONVERT-U-OP : PlusWidth(max-args-w,IntWidth(1))
+            CONVERT-S-OP : max-args-w
+            BIT-NOT-OP : max-args-w
+            BIT-AND-OP : max-args-w
+            BIT-OR-OP :  max-args-w
+            BIT-XOR-OP : max-args-w
+            BIT-SELECT-OP : IntWidth(1)
+            BITS-SELECT-OP : IntWidth(consts(e)[0] - consts(e)[1])
+      else : 
+         switch {op(e) == _} :
+            MUX-UU-OP : 
+               add(v,WGeq(width!(args(e)[0]),IntWidth(1)))
+               all-equal(tail(args(e)))
+            MUX-SS-OP : 
+               add(v,WGeq(width!(args(e)[0]),IntWidth(1)))
+               all-equal(tail(args(e)))
+            CONCAT-OP : 
+               PlusWidth(width!(args(e)[0]),width!(args(e)[1]))
+
+   val w-var = VarWidth(gensym(`w))
+   add(v,WGeq(w-var,w*))
+   match(type(e)) :
+      (t:UIntType) : UIntType(w-var)
+      (t:SIntType) : SIntType(w-var)
+      (t) : error("Shouldn't be here")
+

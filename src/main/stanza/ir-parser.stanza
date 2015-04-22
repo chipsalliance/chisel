@@ -203,13 +203,19 @@ defsyntax firrtl :
    operators[`bit-or-reduce] = BIT-OR-REDUCE-OP
    operators[`bit-xor-reduce] = BIT-XOR-REDUCE-OP
 
+   defrule width :
+      width = (?) :
+         UnknownWidth()
+      width = (?width:#int) :
+         IntWidth(ut(width))
+         
    defrule exp-form :
-      exp-form = (UInt (@do ?value:#int ?width:#int)) :
-         UIntValue(ut(value), IntWidth(ut(width)))
+      exp-form = (UInt (@do ?value:#int ?width:#width)) :
+         UIntValue(ut(value), width)
       exp-form = (UInt (@do ?value:#int)) :
          UIntValue(ut(value), UnknownWidth())
-      exp-form = (SInt (@do ?value:#int ?width:#int)) :
-         SIntValue(ut(value), IntWidth(ut(width)))
+      exp-form = (SInt (@do ?value:#int ?width:#width)) :
+         SIntValue(ut(value), width)
       exp-form = (SInt (@do ?value:#int)) :
          SIntValue(ut(value), UnknownWidth())
       exp-form = (WritePort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
@@ -218,6 +224,8 @@ defsyntax firrtl :
          ReadPort(mem, index, UnknownType(), enable)
       exp-form = (Register (@do ?value:#exp ?enable:#exp)) :
          Register(UnknownType(),value,enable)
+      exp-form = (Pad (@do ?value:#exp ?width:#width)) :
+         Pad(value,width,UnknownType())
       exp-form = (?op:#symbol (@do ?es:#exp ... ?ints:#int ...)) :
          println("Op-symbol is:~" % [op])
          match(get?(operators, ut(op), false)) :

@@ -161,6 +161,10 @@ public defstruct Register <: Expression :
    type: Type with: (as-method => true)
    value: Expression
    enable: Expression
+public defstruct Pad <: Expression :
+   value: Expression
+   width: Width
+   type: Type with: (as-method => true)
 
 public definterface Stmt
 public defstruct DefWire <: Stmt : ;LOW

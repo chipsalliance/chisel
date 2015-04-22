@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x X -p cTwd | tee %s.out | FileCheck %s
 ; CHECK: Expand Whens
 
 circuit Risc : 

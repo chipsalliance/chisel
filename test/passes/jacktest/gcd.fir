@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p cw | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x X -p cTwd | tee %s.out | FileCheck %s
 
 ;CHECK: To Flo
 circuit GCD : 
@@ -23,7 +23,7 @@ circuit GCD :
       y := b
     z := x
     node T_20 = UInt(0, 1)
-    node T_21 = eq(y, T_20)
+    node T_21 = eq(y, Pad(T_20,?))
     v := T_21
 
 ;CHECK: Finished To Flo
