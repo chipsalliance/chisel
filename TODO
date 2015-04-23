@@ -4,16 +4,13 @@
 
 ======== Current Tasks ========
 on-reset
-Parser
-   Error if incorrectly assign stuff, like use = instead of :=
-   Update parser and update tests
 Make instances always male, flip the bundles on declaration
 dlsh,drsh
 move Infer-Widths to before vec expansion?
+Add Unit Tests for each pass
    
 ======== Update Core ==========
 Add source locaters
-Add Unit Tests for each pass
 
 ======== Check Passes ==========
 Well-formed high firrtl 

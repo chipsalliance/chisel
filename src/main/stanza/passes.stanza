@@ -228,7 +228,7 @@ defmethod print (o:OutputStream, e:WSubfield) :
    print-debug(o,e as ?)
 
 defmethod print (o:OutputStream, e:WIndex) :
-   print-all(o,[exp(e) "." value(e)])
+   print-all(o,[exp(e) "[" value(e) "]"])
    print-debug(o,e as ?)
 
 defmethod print (o:OutputStream, s:WDefAccessor) :

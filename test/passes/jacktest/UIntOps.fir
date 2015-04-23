@@ -3,21 +3,21 @@
 
 circuit UIntOps : 
   module UIntOps : 
-    input b : UInt(16)
-    input a : UInt(16)
-    output addout : UInt(16)
-    output subout : UInt(16)
-    output timesout : UInt(16)
-    output divout : UInt(16)
-    output modout : UInt(16)
-    output lshiftout : UInt(16)
-    output rshiftout : UInt(16)
-    output lessout : UInt(1)
-    output greatout : UInt(1)
-    output eqout : UInt(1)
-    output noteqout : UInt(1)
-    output lesseqout : UInt(1)
-    output greateqout : UInt(1)
+    input b : UInt<16>
+    input a : UInt<16>
+    output addout : UInt<16>
+    output subout : UInt<16>
+    output timesout : UInt<16>
+    output divout : UInt<16>
+    output modout : UInt<16>
+    output lshiftout : UInt<16>
+    output rshiftout : UInt<16>
+    output lessout : UInt<1>
+    output greatout : UInt<1>
+    output eqout : UInt<1>
+    output noteqout : UInt<1>
+    output lesseqout : UInt<1>
+    output greateqout : UInt<1>
     
     node T_31 = add-wrap(a, b)
     addout := T_31

@@ -9,16 +9,16 @@ circuit top :
       z := sub-wrap(x, y)
       ;CHECK: z@<g:female> := sub-wrap-uu(x@<g:male>, y@<g:male>)
    module gcd :
-      input a : UInt(16)
-      input b : UInt(16)
-      input e : UInt(1)
-      output z : UInt(16)
-      output v : UInt(1)
+      input a : UInt<16>
+      input b : UInt<16>
+      input e : UInt<1>
+      output z : UInt<16>
+      output v : UInt<1>
       reg x : UInt
       reg y : UInt
 ; CHECK: reg x : UInt
-      x.init := UInt(0)
-      y.init := UInt(42)
+      on-reset x := UInt(0)
+      on-reset y := UInt(42)
       when gt(x, y) :
       ;CHECK: when gt-uu(x@<g:male>, y@<g:male>) :
          inst s of subtracter
@@ -40,8 +40,8 @@ circuit top :
       v := eq(v, UInt(0))
       z := x
    module top :
-      input a : UInt(16)
-      input b : UInt(16)
+      input a : UInt<16>
+      input b : UInt<16>
       output z : UInt
       inst i of gcd
       i.a := a

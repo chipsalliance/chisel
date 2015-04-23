@@ -140,7 +140,7 @@ defmethod print (o:OutputStream, e:Expression) :
    match(e) :
       (e:Ref) : print(o, name(e))
       (e:Subfield) : print-all(o, [exp(e) "." name(e)])
-      (e:Index) : print-all(o, [exp(e) "." value(e)])
+      (e:Index) : print-all(o, [exp(e) "[" value(e) "]"])
       (e:UIntValue) : print-all(o, ["UInt(" value(e) ")"])
       (e:SIntValue) : print-all(o, ["SInt(" value(e) ")"])
       (e:DoPrim) :
@@ -179,6 +179,8 @@ defmethod print (o:OutputStream, c:Stmt) :
          do(print{o,_}, join(body(c), "\n"))
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
+      (c:OnReset) :
+         print-all(o, ["on-reset " reg(c) " := " exp(c)])
       (c:EmptyStmt) :
          print(o, "skip")
    print-debug(o,c)
@@ -190,11 +192,11 @@ defmethod print (o:OutputStream, t:Type) :
       (t:UIntType) :
          match(width(t)) :
             (w:UnknownWidth) : print-all(o, ["UInt"])
-            (w) : print-all(o, ["UInt(" width(t) ")"])
+            (w) : print-all(o, ["UInt<" width(t) ">"])
       (t:SIntType) :
          match(width(t)) :
             (w:UnknownWidth) : print-all(o, ["SInt"])
-            (w) : print-all(o, ["SInt(" width(t) ")"])
+            (w) : print-all(o, ["SInt<" width(t) ">"])
       (t:BundleType) :
          print(o, "{")
          print-all(o, join(fields(t), ", "))
@@ -258,6 +260,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:DefInstance) : DefInstance(name(c), f(module(c)))
       (c:Conditionally) : Conditionally(f(pred(c)), conseq(c), alt(c))
       (c:Connect) : Connect(f(loc(c)), f(exp(c)))
+      (c:OnReset) : OnReset(f(reg(c)),f(exp(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T

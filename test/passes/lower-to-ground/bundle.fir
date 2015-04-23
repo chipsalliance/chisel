@@ -21,7 +21,7 @@ circuit top :
 ;CHECK:       output a$y : SInt
 ;CHECK:       output b$x : UInt
 ;CHECK:       input b$y : SInt
-;CHECK:       input reset : UInt(1)
+;CHECK:       input reset : UInt<1>
 ;CHECK:    module subtracter :
 ;CHECK:       input c$x$0 : UInt
 ;CHECK:       input c$x$1 : UInt
@@ -32,7 +32,7 @@ circuit top :
 ;CHECK:       output c$y$x$1 : UInt
 ;CHECK:       output c$y$x$2 : UInt
 ;CHECK:       input c$y$y : SInt
-;CHECK:       input reset : UInt(1)
+;CHECK:       input reset : UInt<1>
 ;CHECK:       wire a$x : UInt
 ;CHECK:       wire a$y : SInt
 ;CHECK:       wire b$x : UInt

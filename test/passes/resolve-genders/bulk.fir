@@ -3,9 +3,9 @@
 ;CHECK: Resolve Genders
 circuit top :
    module source :
-      output bundle : { data : UInt(16), flip ready : UInt(1) }
+      output bundle : { data : UInt<16>, flip ready : UInt<1> }
    module sink :
-      input bundle : { data : UInt(16), flip ready : UInt(1) }
+      input bundle : { data : UInt<16>, flip ready : UInt<1> }
    module top :
       inst src of source
       inst snk of sink

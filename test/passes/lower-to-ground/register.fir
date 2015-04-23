@@ -3,13 +3,13 @@
 ; CHECK: Lower To Ground
          circuit top :
             module top :
-               input a : UInt(16)
-               input b : UInt(16)
+               input a : UInt<16>
+               input b : UInt<16>
                output z : UInt
 
                reg r1 : { x : UInt, flip y : SInt }
                wire q : { x : UInt, flip y : SInt }
-               r1.init := q    
+               on-reset r1 := q    
 
       ; CHECK: reg r1$x : UInt
       ; CHECK: reg r1$y : SInt

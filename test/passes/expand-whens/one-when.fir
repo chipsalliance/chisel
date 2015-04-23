@@ -3,15 +3,15 @@
 ; CHECK: Expand Whens
 circuit top :
    module top :
-      mem m : UInt(1)[2]
-      wire i : UInt(1)
-      wire p : UInt(1)
-      wire j : UInt(1)
-      reg r : UInt(1)
+      mem m : UInt<1>[2]
+      wire i : UInt<1>
+      wire p : UInt<1>
+      wire j : UInt<1>
+      reg r : UInt<1>
 
       p := j
       when p :
-        r.init := i
+        on-reset r := i
         accessor a = m[i] 
         i := a
         accessor b = m[i]
@@ -26,7 +26,7 @@ circuit top :
         p := i
         when e :
            p := p
-           r.init := p
+           on-reset r := p
            r := p
         
 

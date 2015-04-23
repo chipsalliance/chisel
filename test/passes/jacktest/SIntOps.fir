@@ -3,22 +3,22 @@
 
 circuit SIntOps : 
   module SIntOps : 
-    input b : SInt(16)
-    input a : SInt(16)
-    output addout : SInt(16)
-    output subout : SInt(16)
-    output timesout : SInt(16)
-    output divout : SInt(16)
-    output modout : SInt(16)
-    output lshiftout : SInt(16)
-    output rshiftout : SInt(16)
-    output lessout : UInt(1)
-    output greatout : UInt(1)
-    output eqout : UInt(1)
-    output noteqout : UInt(1)
-    output lesseqout : UInt(1)
-    output greateqout : UInt(1)
-    output negout : SInt(16)
+    input b : SInt<16>
+    input a : SInt<16>
+    output addout : SInt<16>
+    output subout : SInt<16>
+    output timesout : SInt<16>
+    output divout : SInt<16>
+    output modout : SInt<16>
+    output lshiftout : SInt<16>
+    output rshiftout : SInt<16>
+    output lessout : UInt<1>
+    output greatout : UInt<1>
+    output eqout : UInt<1>
+    output noteqout : UInt<1>
+    output lesseqout : UInt<1>
+    output greateqout : UInt<1>
+    output negout : SInt<16>
     
     node T_35 = add-wrap(a, b)
     addout := T_35
