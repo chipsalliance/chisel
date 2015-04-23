@@ -1,5 +1,4 @@
 ; RUN: firrtl -i %s -o %s.flo -x X -p cTwd | tee %s.out | FileCheck %s
-
 ;CHECK: To Flo
 circuit GCD : 
   module GCD : 
@@ -11,19 +10,17 @@ circuit GCD :
     
     reg x : UInt(16)
     reg y : UInt(16)
-    node T_17 = gt(x, y)
+    node T_17 = gt(Pad(x,?), Pad(y,?))
     when T_17 : 
-      node T_18 = sub-wrap(x, y)
+      node T_18 = sub-wrap(Pad(x,?), Pad(y,?))
       x := T_18
     else : 
-      node T_19 = sub-wrap(y, x)
+      node T_19 = sub-wrap(Pad(y,?), Pad(x,?))
       y := T_19
     when e : 
       x := a
       y := b
     z := x
     node T_20 = UInt(0, 1)
-    node T_21 = eq(y, Pad(T_20,?))
+    node T_21 = eq(Pad(y,?), Pad(T_20,?))
     v := T_21
-
-;CHECK: Finished To Flo
