@@ -7,8 +7,6 @@ on-reset
 Parser
    Error if incorrectly assign stuff, like use = instead of :=
    Update parser and update tests
-Change all primops to be strict on data widths
-Add pad!
 Make instances always male, flip the bundles on declaration
 dlsh,drsh
 move Infer-Widths to before vec expansion?
@@ -32,6 +30,12 @@ Well-formed high firrtl
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once
+Width inference
+   No names
+   No Unknowns
+   All widths are positive
+   Pad's width is greater than value's width
+   pad's width is greater than value's width
 
 ======== Other Passes ========
 constant folding (partial eval) pass

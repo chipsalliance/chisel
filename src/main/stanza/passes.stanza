@@ -1584,7 +1584,7 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (e:Pad) : 
             val value-w = width!(value(e))
             val pad-w = remove-unknowns-w(width(e))
-            ;add(v,WGeq(pad-w, IntWidth(0)))
+            add(v,WGeq(pad-w, value-w))
             val pad-t = match(type(e)) :
                (t:UIntType) : UIntType(pad-w)
                (t:SIntType) : SIntType(pad-w)
