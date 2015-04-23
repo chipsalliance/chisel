@@ -1,5 +1,5 @@
 ================================================
-========== ADAM's BIG ASS TODO LIST ============
+========== ADAM's BIG ARSE TODO LIST ============
 ================================================
 
 ======== Current Tasks ========
@@ -7,16 +7,17 @@ on-reset
 Parser
    Error if incorrectly assign stuff, like use = instead of :=
    Update parser and update tests
+Change all primops to be strict on data widths
+Add pad!
+Make instances always male, flip the bundles on declaration
+dlsh,drsh
+move Infer-Widths to before vec expansion?
    
 ======== Update Core ==========
-on-reset
-Change all primops to be strict on data widths
 Add source locaters
 Add Unit Tests for each pass
 
 ======== Check Passes ==========
-Parser
-   Error if incorrectly assign stuff, like use = instead of :=
 Well-formed high firrtl 
    Unique names per module
    No name can be a prefix of any other name.
@@ -26,6 +27,8 @@ Well-formed high firrtl
    Subfields are only on bundles, before type inference 
    Can only connect to a Ref or Subfield or Index
    UInt only has positive ints
+   No combinational loops
+   cannot connect to a pad, or a register. only connct to a reference
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once
@@ -33,6 +36,7 @@ Well-formed low firrtl
 ======== Other Passes ========
 constant folding (partial eval) pass
 common subexpression elimination pass
+Verilog backend
 
 ======== Consultations ========
 Stephen:
@@ -40,13 +44,12 @@ Stephen:
       pin stephen on an example
 
 ======== Think About ========
-dlsh,drsh
-naming for split nodes
 subword accesses
+verilog style guide
+naming for split nodes
 annotation system
 zero-width wires
 expanding mems (consider changing defmem to be size, and element type)
-Make instances always male, flip the bundles on declaration
 Multi-streams for print statements/asserts (Jack)
 Consider def female node. (Patrick) 
 Talk to palmer/patrick about how writing passes is going to be supported
@@ -54,6 +57,10 @@ Figure out how widths propogate for all updated primops (Adam)
 Add partial bulk connect (Scott, Stephen)
 Add FIFOs to the IR (Palmer)
 Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
+Union Types
+Enums?
+Convert to scala
+Firrtl interpreter (in scala)
 
 ======== Update Spec ========
 Add Not to spec

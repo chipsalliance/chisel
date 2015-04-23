@@ -150,6 +150,7 @@ defmethod print (o:OutputStream, e:Expression) :
       (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ", " enable(e) ")"])
       (e:WritePort) : print-all(o, ["WritePort(" mem(e) ", " index(e) ", " enable(e) ")"])
       (e:Register) : print-all(o, ["Register(" value(e) ", " enable(e) ")"])
+      (e:Pad) : print-all(o, ["Pad(" value(e) ", " width(e) ")"])
    print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :
@@ -246,6 +247,7 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
       (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
       (e:Register) : Register(type(e),f(value(e)),f(enable(e)))
+      (e:Pad) : Pad(f(value(e)),width(e),type(e))
       (e) : e
 
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
@@ -270,6 +272,7 @@ defmethod map (f: Width -> Width, c:Expression) -> Expression :
    match(c) :
       (c:UIntValue) : UIntValue(value(c),f(width(c)))
       (c:SIntValue) : SIntValue(value(c),f(width(c)))
+      (c:Pad) : Pad(value(c),f(width(c)),type(c))
       (c) : c
 
 public defmulti map<?T> (f: Width -> Width, c:?T&Type) -> T
@@ -289,6 +292,7 @@ defmethod map (f: Type -> Type, c:Expression) -> Expression :
       (c:ReadPort) : ReadPort(mem(c),index(c),f(type(c)),enable(c))
       (c:WritePort) : WritePort(mem(c),index(c),f(type(c)),enable(c))
       (c:Register) : Register(f(type(c)),value(c),enable(c))
+      (c:Pad) : Pad(value(c),width(c),f(type(c)))
       (c) : c
 
 public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T
