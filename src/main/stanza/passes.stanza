@@ -789,6 +789,12 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             val exps = expand-expr(exp(e))
             val len = num-elems(type(e))
             headn(tailn(exps,len * value(e)),len)
+         (e:Pad) : 
+            val v = key(expand-expr(value(e))[0])
+            list(KeyValue(Pad(v,width(e),type(e)),DEFAULT))
+         (e:DoPrim) :
+            val args = for x in args(e) map : key(expand-expr(x)[0])
+            list(KeyValue(DoPrim(op(e),args,consts(e),type(e)),DEFAULT))
          (e) : list(KeyValue(e, DEFAULT))
 
    ;println-debug(table)
