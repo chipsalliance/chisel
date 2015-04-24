@@ -1938,7 +1938,7 @@ defn emit! (e:Expression,top:Symbol) :
       (e:Register) : 
          emit-all(["reg'" prim-width(type(e)) " 1 " value(e)], top) ;; enable(e)
       (e:ReadPort) : 
-         emit-all(["rd'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e)], top)
+         emit-all(["rd'" prim-width(type(e)) " " "1" " " mem(e) " " index(e)], top) ;; enable(e)
       (e:DoPrim) : 
          if cmp-op?(op(e)) :
            emit-all([flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
@@ -1963,8 +1963,7 @@ defn emit! (e:Expression,top:Symbol) :
                print(" ")
                emit!(arg, top)
              for const in consts(e) do :
-               print(" ")
-               print(const)
+               print-all([" " const "'" sizeof(const)])
       (e) : error("SHOULDN'T EMIT THIS") ;; print-all(["EMIT(" e ")"])
       ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
 
