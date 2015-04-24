@@ -279,7 +279,7 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
    val w-var = VarWidth(gensym(`w))
    val w* = 
       if not contains?(all-args-not-equal,op(e)) :
-         val max-args-w = all-equal(List(w-var,map(width!,args(e))))
+         val max-args-w = all-equal(map(width!,args(e)))
          switch {op(e) == _} :
             ADD-UU-OP : PlusWidth(max-args-w,IntWidth(1))
             ADD-US-OP : PlusWidth(max-args-w,IntWidth(1))
