@@ -1169,12 +1169,26 @@ defn reduce-or (l:List<Expression>) -> Expression :
 
 ; 1) Build Table, Build Declaration List
 
-defn expand-whens (assign:HashTable<Symbol,SymbolicValue>,
-                   kinds:HashTable<Symbol,Kind>,
-                   stmts:HashTable<Symbol,Stmt>,
-                   decs:Vector<Stmt>,
-                   enables:HashTable<Symbol,SymbolicValue>) -> Stmt :
+; assign: holds the symbolic value of a wref.
+; resets: holds the symbolic value of connections under reset
+; stmts:  Used to hold the orignal type, as well as the mem/index for Write/ReadPorts
+; kinds:  Used to know the kind of reference, so we know whether we should error if it isn't initialized. We also know how we should declare the refernce.
+; enables:Calculated off of assigns.
+
+; I think I'm going to restructure this so that not all information is held in the tables, but instead, we walk the graph again, and do stuff on declarations, and delete other stuff
+defn expand-whens (body:Stmt,
+                   assign:HashTable<Symbol,SymbolicValue>, 
+                   resets:HashTable<Symbol,SymbolicValue>) -> Stmt :
            
+
+   match(map(expad-whens{_,assign,resets},s)) : 
+      (s:DefWire) : Begin $ list{s,_} $
+         val ref = WRef(n,type(s),NodeKind,FEMALE)
+         if has-nul?(assign[n]) : 
+            println("Uninitialized: ~" % [to-string(n)]);TODO actually collect error
+            EmptyStmt()
+         else : Connect(ref,to-exp(assign[n]))
+      (e:
    for x in assign do :
       val [n sv] = [key(x) value(x)]
       match(kinds[n]) : 
@@ -1259,83 +1273,83 @@ defn get-enables (assign:HashTable<Symbol,SymbolicValue>,
 
 defn build-tables (s:Stmt, 
                    assign:HashTable<Symbol,SymbolicValue>,
-                   kinds:HashTable<Symbol,Kind>,
-                   decs:Vector<Stmt>,
-                   stmts:HashTable<Symbol,Stmt>) -> False :
+                   resets:HashTable<Symbol,SymbolicValue>,
+                   flattn:HashTable<Symbol,True|False>,
+                   ) -> False :
    match(s) :
-      (s:DefWire) : 
-         add(decs,s)
-         kinds[name(s)] = WireKind()
+      (s:DefWire) :
          assign[name(s)] = SVNul()
-         stmts[name(s)] = s
-      (s:DefNode) : add(decs,s)
-      (s:DefRegister) :
-         add(decs,DefWire(name(s),type(s)))
-         kinds[name(s)] = RegKind()
+         resets[name(s)] = SVNul()
+         flattn[name(s)] = true
+      (s:DefRegister|WDefAccessor) : 
          assign[name(s)] = SVNul()
-         stmts[name(s)] = s
-      (s:WDefAccessor) : 
-         add(decs,DefWire(name(s),type(type(source(s)) as VectorType)))
-         assign[name(s)] = SVNul()
-         kinds[name(s)] = switch {_ == gender(s)} :
-            MALE : ReadAccessorKind()
-            FEMALE : WriteAccessorKind()
-         stmts[name(s)] = s
-      (s:DefInstance) : 
-         add(decs,s)
+         resets[name(s)] = SVNul()
+         flattn[name(s)] = false
+      (s:DefInstance) :
          for f in fields(type(module(s)) as BundleType) do :
             val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
-            println-all-debug(["In DefInst adding: " n])
-            kinds[n] = InstanceKind()
             assign[n] = SVNul()
-            stmts[n] = s
-      (s:DefMemory) : add(decs,s)
+            resets[n] = SVNul()
+            flattn[name(s)] = true
+      (s:DefMemory|DefNode) : false
       (s:Conditionally) :
-         val assign-c = deepcopy(assign)
-         val assign-a = deepcopy(assign)
-         build-tables(conseq(s),assign-c,kinds,decs,stmts)
-         build-tables(alt(s),assign-a,kinds,decs,stmts)
-         for i in get-unique-keys(list(assign-c,assign-a)) do :
-            assign[i] = match(get?(assign-c,i,false),get?(assign-a,i,false)) : ;TODO add to syntax highlighting
-                  (c:SymbolicValue,a:SymbolicValue) : SVMux(pred(s),c,a)
-                  (c:SymbolicValue,a:False) :
-                     if kinds[i] typeof WireKind|InstanceKind|NodeKind : c
+         defn combine (flattn:HashTable<Symbol,True|False>,
+                       table-c:HashTable<Symbol,SymbolicValue>,
+                       table-a:HashTable<Symbol,SymbolicValue>,
+                       i:Symbol
+                       ) -> SymbolicValue :
+            match(get?(table-c,i,false),get?(table-a,i,false)) : 
+                  (c:SymbolicValue,a:SymbolicValue) : 
+                     if c == a : c
+                     else : SVMux(pred(s),c,a)
+                  (c:SymbolicValue,a:False) : 
+                     if flattn[i] : c
                      else : SVMux(pred(s),c,SVNul())
-                  (c:False,a:SymbolicValue) : 
-                     if kinds[i] typeof WireKind|InstanceKind|NodeKind : a
+                  (c:False,a:SymbolicValue) :
+                     if flattn[i] : a
                      else : SVMux(pred(s),SVNul(),a)
                   (c:False,a:False) : error("Shouldn't be here")
+
+         val assign-c = deepcopy(assign)
+         val assign-a = deepcopy(assign)
+         val resets-c = deepcopy(resets)
+         val resets-a = deepcopy(resets)
+         build-tables(conseq(s),assign-c,resets-c,flattn)
+         build-tables(alt(s),assign-a,resets-a,flattn)
+         for i in get-unique-keys(list(assign-c,assign-a)) do :
+            assign[i] = combine(flattn,assign-c,assign-a,i)
+            resets[i] = combine(flattn,resets-c,resets-a,i)
          ;println-debug("TABLE-C")
          ;for x in assign-c do : println-debug(x)
          ;println-debug("TABLE-A")
          ;for x in assign-a do : println-debug(x)
          ;println-debug("TABLE")
          ;for x in assign do : println-debug(x)
-      (s:Connect) : 
+      (s:Connect|OnReset) : 
          val key* = match(loc(s)) :
             (e:WRef) : name(e)
             (e:WSubfield) : symbol-join([name(exp(e) as ?) `. name(e)])
             (e) : error("Shouldn't be here with ~" % [e])
-         assign[key*] = SVExp(exp(s)); TODO, need to check all references are declared before this point
-      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,kinds,decs,stmts)
-      (s) : false
+         if c typeof Connect : assign[key*] = SVExp(exp(s))
+         if c typeof OnReset : resets[key*] = SVExp(exp(s))
+      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets)
          
 defn expand-whens (m:Module) -> Module :
    val assign = HashTable<Symbol,SymbolicValue>(symbol-hash)
-   val decs = Vector<Stmt>()
-   val kinds = HashTable<Symbol,Kind>(symbol-hash)
-   val stmts = HashTable<Symbol,Stmt>(symbol-hash)
+   val resets = HashTable<Symbol,SymbolicValue>(symbol-hash)
+   val flattn = HashTable<Symbol,True|False>(symbol-hash)
 
    for p in ports(m) do :
       if direction(p) == OUTPUT :
          assign[name(p)] = SVNul()
-         kinds[name(p)] = PortKind()
-         stmts[name(p)] = DefWire(name(p),type(p))
+         resets[name(p)] = SVNul()
+         flattn[name(p)] = false
          
-   build-tables(body(m),assign,kinds,decs,stmts)
+   build-tables(body(m),assign,resets)
    for x in assign do : assign[key(x)] = optimize(value(x))
-   val enables = get-enables(assign,kinds)
-   for x in enables do : enables[key(x)] = optimize(value(x))
+   for x in resets do : resets[key(x)] = optimize(value(x))
+   ;val enables = get-enables(assign,kinds)
+   ;for x in enables do : enables[key(x)] = optimize(value(x))
          
    ;println-debug("Assigns")
    ;for x in assign do : println-debug(x)
@@ -1346,7 +1360,7 @@ defn expand-whens (m:Module) -> Module :
    ;println-debug("Enables")
    ;for x in enables do : println-debug(x)
 
-   Module(name(m),ports(m),expand-whens(assign,kinds,stmts,decs,enables))
+   Module(name(m),ports(m),expand-whens(body(m),assign,resets))
 
 defn expand-whens (c:Circuit) -> Circuit :
    Circuit(modules*, main(c)) where :
