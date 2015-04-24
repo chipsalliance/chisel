@@ -1011,20 +1011,25 @@ val one = UIntValue(1,IntWidth(1))
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
       (e1:UIntValue,e2:UIntValue) : 
-         if value(e1) == value(e2) : 
-            match(width(e1), width(e2)) :
-               (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
-               (w1,w2) : false
+         if value(e1) == value(e2) : width(e1) == width(e2)
          else : false
       (e1:SIntValue,e2:SIntValue) : 
-         if value(e1) == value(e2) : 
-            match(width(e1), width(e2)) :
-               (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+         if value(e1) == value(e2) : width(e1) == width(e2)
          else : false
       (e1:WRef,e2:WRef) : name(e1) == name(e2)
       ;(e1:DoPrim,e2:DoPrim) :  TODO
       (e1:WRegInit,e2:WRegInit) : reg(e1) == reg(e2) and name(e1) == name(e2)
       (e1:WSubfield,e2:WSubfield) : name(e1) == name(e2)
+      (e1:Pad,e2:Pad) : width(e1) == width(e2) and value(e1) == value(e2)
+      (e1:DoPrim,e2:DoPrim) : 
+         var are-equal? = op(e1) == op(e2)
+         for (x in args(e1),y in args(e2)) do :
+            if not x == y : 
+               are-equal? = false
+         for (x in consts(e1),y in consts(e2)) do :
+            if not x == y : 
+               are-equal? = false
+         are-equal?
       (e1,e2) : false
 
 defn AND (e1:Expression,e2:Expression) -> Expression :
@@ -1292,7 +1297,9 @@ defn build-tables (s:Stmt,
          build-tables(alt(s),assign-a,kinds,decs,stmts)
          for i in get-unique-keys(list(assign-c,assign-a)) do :
             assign[i] = match(get?(assign-c,i,false),get?(assign-a,i,false)) : ;TODO add to syntax highlighting
-                  (c:SymbolicValue,a:SymbolicValue) : SVMux(pred(s),c,a)
+                  (c:SymbolicValue,a:SymbolicValue) : 
+                     if c == a : c
+                     else : SVMux(pred(s),c,a)
                   (c:SymbolicValue,a:False) :
                      if kinds[i] typeof WireKind|InstanceKind|NodeKind : c
                      else : SVMux(pred(s),c,SVNul())
@@ -1300,12 +1307,12 @@ defn build-tables (s:Stmt,
                      if kinds[i] typeof WireKind|InstanceKind|NodeKind : a
                      else : SVMux(pred(s),SVNul(),a)
                   (c:False,a:False) : error("Shouldn't be here")
-         ;println-debug("TABLE-C")
-         ;for x in assign-c do : println-debug(x)
-         ;println-debug("TABLE-A")
-         ;for x in assign-a do : println-debug(x)
-         ;println-debug("TABLE")
-         ;for x in assign do : println-debug(x)
+         println-debug("TABLE-C")
+         for x in assign-c do : println-debug(x)
+         println-debug("TABLE-A")
+         for x in assign-a do : println-debug(x)
+         println-debug("TABLE")
+         for x in assign do : println-debug(x)
       (s:Connect) : 
          val key* = match(loc(s)) :
             (e:WRef) : name(e)
@@ -1328,18 +1335,19 @@ defn expand-whens (m:Module) -> Module :
          stmts[name(p)] = DefWire(name(p),type(p))
          
    build-tables(body(m),assign,kinds,decs,stmts)
+
    for x in assign do : assign[key(x)] = optimize(value(x))
    val enables = get-enables(assign,kinds)
    for x in enables do : enables[key(x)] = optimize(value(x))
          
-   ;println-debug("Assigns")
-   ;for x in assign do : println-debug(x)
-   ;println-debug("Kinds")
-   ;for x in kinds do : println-debug(x)
-   ;println-debug("Decs")
-   ;for x in decs do : println-debug(x)
-   ;println-debug("Enables")
-   ;for x in enables do : println-debug(x)
+   println-debug("Assigns")
+   for x in assign do : println-debug(x)
+   println-debug("Kinds")
+   for x in kinds do : println-debug(x)
+   println-debug("Decs")
+   for x in decs do : println-debug(x)
+   println-debug("Enables")
+   for x in enables do : println-debug(x)
 
    Module(name(m),ports(m),expand-whens(assign,kinds,stmts,decs,enables))
 
@@ -1404,6 +1412,7 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
                   if not contains?(args(w2),w) : ret(false)
                ret(true)
       (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+      (w1:UnknownWidth,w2:UnknownWidth) : true
       (w1,w2) : false
 defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
    if a typeof Int and b typeof Int : f(a as Int, b as Int)
