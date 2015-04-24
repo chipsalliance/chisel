@@ -300,7 +300,7 @@ defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
    match(c) :
       (c:DefWire) : DefWire(name(c),f(type(c)))
       (c:DefRegister) : DefRegister(name(c),f(type(c)))
-      (c:DefMemory) : DefMemory(name(c),f(type(c)))
+      (c:DefMemory) : DefMemory(name(c),f(type(c)) as VectorType)
       (c) : c
 
 public defmulti mapr<?T> (f: Width -> Width, t:?T&Type) -> T
