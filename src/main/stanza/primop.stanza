@@ -248,12 +248,12 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
       BIT-XOR-REDUCE-OP: DoPrim(op(e),args(e),consts(e),u())
 
 public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
-   defn all-equal (ls:List<Expression>) -> Width : 
-      if length(ls) == 1 : width!(ls[0])
+   defn all-equal (ls:List<Width>) -> Width : 
+      if length(ls) == 1 : (ls[0])
       else :
-         val m = MaxWidth(map(width!,ls))
+         val m = MaxWidth(ls)
          for (l in ls) do :
-            add(v,WGeq(width!(l),m))
+            add(v,WGeq(l,m))
          m
    ;defn new-width (w:Width) -> Width:
    ;   val w* = VarWidth(gensym(`w))
@@ -275,9 +275,11 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
    val all-args-not-equal = list(MUX-UU-OP,MUX-SS-OP,CONCAT-OP)
    ;val consts-gte-args    = list(PAD-U-OP,PAD-S-OP)
 
+   
+   val w-var = VarWidth(gensym(`w))
    val w* = 
       if not contains?(all-args-not-equal,op(e)) :
-         val max-args-w = all-equal(args(e))
+         val max-args-w = all-equal(List(w-var,map(width!,args(e))))
          switch {op(e) == _} :
             ADD-UU-OP : PlusWidth(max-args-w,IntWidth(1))
             ADD-US-OP : PlusWidth(max-args-w,IntWidth(1))
@@ -347,14 +349,13 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
          switch {op(e) == _} :
             MUX-UU-OP : 
                add(v,WGeq(width!(args(e)[0]),IntWidth(1)))
-               all-equal(tail(args(e)))
+               all-equal(List(w-var,tail(map(width!,args(e)))))
             MUX-SS-OP : 
                add(v,WGeq(width!(args(e)[0]),IntWidth(1)))
-               all-equal(tail(args(e)))
+               all-equal(List(w-var,tail(map(width!,args(e)))))
             CONCAT-OP : 
                PlusWidth(width!(args(e)[0]),width!(args(e)[1]))
 
-   val w-var = VarWidth(gensym(`w))
    add(v,WGeq(w-var,w*))
    match(type(e)) :
       (t:UIntType) : UIntType(w-var)
