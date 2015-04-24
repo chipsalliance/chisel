@@ -24,6 +24,7 @@ Well-formed high firrtl
    UInt only has positive ints
    No combinational loops
    cannot connect to a pad, or a register. only connct to a reference
+   onreset can only handle a register
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once

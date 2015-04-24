@@ -40,18 +40,27 @@ defstruct WRef <: Expression :
    kind: Kind
    gender: Gender  with: (as-method => true)
 
-defstruct WRegInit <: Expression :
-   reg: Expression
-   name: Symbol
-   type: Type with: (as-method => true)
-   gender: Gender  with: (as-method => true)
-
 defstruct WSubfield <: Expression :
    exp: Expression
    name: Symbol
    type: Type with: (as-method => true)
    gender: Gender with: (as-method => true)
 
+defstruct WRegInit <: Expression :
+   reg: Expression
+   name: Symbol
+   type: Type with: (as-method => true)
+   gender: Gender  with: (as-method => true)
+
+defmethod map (f: Expression -> Expression, e: WRegInit) :
+   WRegInit(f(reg(e)), name(e), type(e), gender(e))
+defmethod map (f: Type -> Type, e: WRegInit) :
+   WRegInit(reg(e), name(e), f(type(e)), gender(e))   
+
+defmethod print (o:OutputStream, e:WRegInit) :
+   print-all(o,[name(e)])
+      print-debug(o,e as ?)
+   
 defstruct WIndex <: Expression :
    exp: Expression
    value: Int
@@ -219,10 +228,6 @@ defmethod print (o:OutputStream, e:WRef) :
    print(o,name(e))
    print-debug(o,e as ?)
 
-defmethod print (o:OutputStream, e:WRegInit) :
-   print-all(o,[name(e)])
-   print-debug(o,e as ?)
-
 defmethod print (o:OutputStream, e:WSubfield) :
    print-all(o,[exp(e) "." name(e)])
    print-debug(o,e as ?)
@@ -243,8 +248,6 @@ defmethod print (o:OutputStream, c:ConnectFromIndexed) :
    print-all(o, [loc(c) " := " exps(c) "[" index(c) "]"])
    print-debug(o,c as ?)
 
-defmethod map (f: Expression -> Expression, e: WRegInit) :
-   WRegInit(f(reg(e)), name(e), type(e), gender(e))
 defmethod map (f: Expression -> Expression, e: WSubfield) :
    WSubfield(f(exp(e)), name(e), type(e), gender(e))
 defmethod map (f: Expression -> Expression, e: WIndex) :
@@ -259,8 +262,6 @@ defmethod map (f: Expression -> Expression, c:ConnectFromIndexed) :
 
 defmethod map (f: Type -> Type, e: WRef) :
    WRef(name(e), f(type(e)), kind(e), gender(e))
-defmethod map (f: Type -> Type, e: WRegInit) :
-   WRegInit(reg(e), name(e), f(type(e)), gender(e))
 defmethod map (f: Type -> Type, e: WSubfield) :
    WSubfield(exp(e), name(e), f(type(e)), gender(e))
 defmethod map (f: Type -> Type, e: WIndex) :
@@ -303,9 +304,7 @@ defn to-working-ir (c:Circuit) :
    defn to-exp (e:Expression) :
       match(map(to-exp,e)) :
          (e:Ref) : WRef(name(e), type(e), NodeKind(), UNKNOWN-GENDER)
-         (e:Subfield) : 
-            if name(e) == `init : WRegInit(exp(e), to-symbol("~.init" % [name(exp(e) as WRef)]), type(e), UNKNOWN-GENDER)
-            else : WSubfield(exp(e), name(e), type(e), UNKNOWN-GENDER)
+         (e:Subfield) : WSubfield(exp(e), name(e), type(e), UNKNOWN-GENDER)
          (e:Index) : WIndex(exp(e), value(e), type(e), UNKNOWN-GENDER)
          (e) : e
    defn to-stmt (s:Stmt) :
@@ -480,7 +479,7 @@ defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<
         val [s*,l*] = infer-types(conseq(s),l)
         val [s**,l**] = infer-types(alt(s),l)
         [Conditionally(pred(s),s*,s**),l]
-      (s:Connect|EmptyStmt) : [s,l]
+      (s:Connect|OnReset|EmptyStmt) : [s,l]
 
 defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
    val ptypes = 
@@ -568,6 +567,8 @@ defn resolve-genders (c:Circuit) :
                WDefAccessor(name(s),source*,index*,gender*)
             (s:Connect) : 
                Connect(resolve-expr(loc(s),FEMALE),resolve-expr(exp(s),MALE))
+            (s:OnReset) : 
+               OnReset(resolve-expr(loc(s),FEMALE),resolve-expr(exp(s),MALE))
             (s:Conditionally) :
                val pred* = resolve-expr(pred(s),MALE)
                val conseq* = resolve-stmt(conseq(s))
@@ -725,6 +726,16 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
                DefWire(name(s),type(value(s))),
                Connect(WRef(name(s),type(value(s)),NodeKind(),FEMALE),value(s)))
             lower-stmt(s*)
+         (s:OnReset) : Begin{_} $
+            for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
+               println-debug(s)
+               val lgender = calc-gender(FEMALE,loc(s)) * value(l)
+               val rgender = calc-gender(MALE,exp(s)) * value(r)
+               println-debug(loc(s))
+               println-debug(exp(s))
+               switch fn ([x,y]) : lgender == x and rgender == y :
+                  [FEMALE,MALE]   : OnReset(key(l),key(r))
+                  [MALE,FEMALE]   : OnReset(key(r),key(l))
          (s:Connect) : Begin{_} $
             for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
                println-debug(s)

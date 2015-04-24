@@ -180,7 +180,7 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
       (c:OnReset) :
-         print-all(o, ["on-reset " reg(c) " := " exp(c)])
+         print-all(o, ["on-reset " loc(c) " := " exp(c)])
       (c:EmptyStmt) :
          print(o, "skip")
    print-debug(o,c)
@@ -260,7 +260,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:DefInstance) : DefInstance(name(c), f(module(c)))
       (c:Conditionally) : Conditionally(f(pred(c)), conseq(c), alt(c))
       (c:Connect) : Connect(f(loc(c)), f(exp(c)))
-      (c:OnReset) : OnReset(f(reg(c)),f(exp(c)))
+      (c:OnReset) : OnReset(f(loc(c)),f(exp(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T

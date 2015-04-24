@@ -263,7 +263,7 @@ defsyntax firrtl :
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp := ?y:#exp!) : Connect(x, y)
-      stmt = (on-reset ?x:#exp := ?y:#exp!) : Connect(x, y);TODO
+      stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(x, y)
 
       stmt = ((?s:#stmt ?ss:#stmt ... ?rest ...)) :
          if not empty?(rest) :
