@@ -329,20 +329,12 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
             PAD-S-OP : IntWidth(consts(e)[0])
             NEG-U-OP : IntWidth(1)
             NEG-S-OP : IntWidth(1)
-            AS-UINT-U-OP : max-args-w
-            AS-UINT-S-OP : max-args-w
-            AS-SINT-U-OP : max-args-w
-            AS-SINT-S-OP : max-args-w
             SHIFT-LEFT-U-OP : PlusWidth(max-args-w,IntWidth(consts(e)[0]))
             SHIFT-LEFT-S-OP : PlusWidth(max-args-w,IntWidth(consts(e)[0]))
             SHIFT-RIGHT-U-OP : MinusWidth(max-args-w,IntWidth(consts(e)[0]))
             SHIFT-RIGHT-S-OP : MinusWidth(max-args-w,IntWidth(consts(e)[0]))
             CONVERT-U-OP : PlusWidth(max-args-w,IntWidth(1))
             CONVERT-S-OP : max-args-w
-            BIT-NOT-OP : max-args-w
-            BIT-AND-OP : max-args-w
-            BIT-OR-OP :  max-args-w
-            BIT-XOR-OP : max-args-w
             BIT-SELECT-OP : IntWidth(1)
             BITS-SELECT-OP : IntWidth(consts(e)[0] - consts(e)[1])
       else : 
@@ -355,6 +347,17 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
                all-equal(List(w-var,tail(map(width!,args(e)))))
             CONCAT-OP : 
                PlusWidth(width!(args(e)[0]),width!(args(e)[1]))
+            BIT-NOT-OP : all-equal(List(w-var,map(width!,args(e))))
+            BIT-AND-OP : all-equal(List(w-var,map(width!,args(e))))
+            BIT-OR-OP :  all-equal(List(w-var,map(width!,args(e))))
+            BIT-XOR-OP : all-equal(List(w-var,map(width!,args(e))))
+            BIT-AND-REDUCE-OP : all-equal(List(w-var,map(width!,args(e))))
+            BIT-OR-REDUCE-OP : all-equal(List(w-var,map(width!,args(e))))
+            BIT-XOR-REDUCE-OP : all-equal(List(w-var,map(width!,args(e))))
+            AS-UINT-U-OP : all-equal(List(w-var,map(width!,args(e))))
+            AS-UINT-S-OP : all-equal(List(w-var,map(width!,args(e))))
+            AS-SINT-U-OP : all-equal(List(w-var,map(width!,args(e))))
+            AS-SINT-S-OP : all-equal(List(w-var,map(width!,args(e))))
 
    add(v,WGeq(w-var,w*))
    match(type(e)) :
