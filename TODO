@@ -6,8 +6,11 @@
 on-reset
 Make instances always male, flip the bundles on declaration
 dlsh,drsh
+<<<<<<< HEAD
 move Infer-Widths to before vec expansion?
 Add Unit Tests for each pass
+=======
+>>>>>>> 5a2a495ce88eec9e2e79cfbfe7f5548cede25874
    
 ======== Update Core ==========
 Add source locaters
@@ -24,8 +27,12 @@ Well-formed high firrtl
    UInt only has positive ints
    No combinational loops
    cannot connect to a pad, or a register. only connct to a reference
+<<<<<<< HEAD
    onreset can only handle a register
    all references are declared
+=======
+   expression in pad must be a ground type
+>>>>>>> 5a2a495ce88eec9e2e79cfbfe7f5548cede25874
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once
@@ -38,13 +45,19 @@ Width inference
 
 ======== Other Passes ========
 constant folding (partial eval) pass
+   Get rid of unnecessary pads
+   push pad into literal
 common subexpression elimination pass
+deadcode elimination
 Verilog backend
+Eliminate skips
 
 ======== Consultations ========
 Stephen:
    width equality
       pin stephen on an example
+Patrick: 
+   move Infer-Widths to before vec expansion?
 
 ======== Think About ========
 subword accesses
@@ -57,7 +70,6 @@ Multi-streams for print statements/asserts (Jack)
 Consider def female node. (Patrick) 
 Talk to palmer/patrick about how writing passes is going to be supported
 Figure out how widths propogate for all updated primops (Adam)
-Add partial bulk connect (Scott, Stephen)
 Add FIFOs to the IR (Palmer)
 Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
 Union Types
@@ -102,4 +114,12 @@ Schedulable
    Decouple
    Nack
 Scheduler
+
+======== Notes ========
+Only for MUXES can width inference go backwards:
+  reg r : UInt<5>
+  r := MUX(p,UInt<?>(1),UInt<?>(2))
+  ==>
+  reg r : UInt<5>
+  r := MUX(p,UInt<5>(1),UInt<5>(2))
 

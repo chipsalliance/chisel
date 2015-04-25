@@ -800,6 +800,12 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
             val exps = expand-expr(exp(e))
             val len = num-elems(type(e))
             headn(tailn(exps,len * value(e)),len)
+         (e:Pad) : 
+            val v = key(expand-expr(value(e))[0])
+            list(KeyValue(Pad(v,width(e),type(e)),DEFAULT))
+         (e:DoPrim) :
+            val args = for x in args(e) map : key(expand-expr(x)[0])
+            list(KeyValue(DoPrim(op(e),args,consts(e),type(e)),DEFAULT))
          (e) : list(KeyValue(e, DEFAULT))
 
    ;println-debug(table)
@@ -1016,20 +1022,25 @@ val one = UIntValue(1,IntWidth(1))
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
       (e1:UIntValue,e2:UIntValue) : 
-         if value(e1) == value(e2) : 
-            match(width(e1), width(e2)) :
-               (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
-               (w1,w2) : false
+         if value(e1) == value(e2) : width(e1) == width(e2)
          else : false
       (e1:SIntValue,e2:SIntValue) : 
-         if value(e1) == value(e2) : 
-            match(width(e1), width(e2)) :
-               (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+         if value(e1) == value(e2) : width(e1) == width(e2)
          else : false
       (e1:WRef,e2:WRef) : name(e1) == name(e2)
       ;(e1:DoPrim,e2:DoPrim) :  TODO
       (e1:WRegInit,e2:WRegInit) : reg(e1) == reg(e2) and name(e1) == name(e2)
       (e1:WSubfield,e2:WSubfield) : name(e1) == name(e2)
+      (e1:Pad,e2:Pad) : width(e1) == width(e2) and value(e1) == value(e2)
+      (e1:DoPrim,e2:DoPrim) : 
+         var are-equal? = op(e1) == op(e2)
+         for (x in args(e1),y in args(e2)) do :
+            if not x == y : 
+               are-equal? = false
+         for (x in consts(e1),y in consts(e2)) do :
+            if not x == y : 
+               are-equal? = false
+         are-equal?
       (e1,e2) : false
 
 defn AND (e1:Expression,e2:Expression) -> Expression :
@@ -1351,14 +1362,14 @@ defn expand-whens (m:Module) -> Module :
    ;val enables = get-enables(assign,kinds)
    ;for x in enables do : enables[key(x)] = optimize(value(x))
          
-   ;println-debug("Assigns")
-   ;for x in assign do : println-debug(x)
-   ;println-debug("Kinds")
-   ;for x in kinds do : println-debug(x)
-   ;println-debug("Decs")
-   ;for x in decs do : println-debug(x)
-   ;println-debug("Enables")
-   ;for x in enables do : println-debug(x)
+   println-debug("Assigns")
+   for x in assign do : println-debug(x)
+   println-debug("Kinds")
+   for x in kinds do : println-debug(x)
+   println-debug("Decs")
+   for x in decs do : println-debug(x)
+   println-debug("Enables")
+   for x in enables do : println-debug(x)
 
    Module(name(m),ports(m),expand-whens(body(m),assign,resets))
 
@@ -1423,6 +1434,7 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
                   if not contains?(args(w2),w) : ret(false)
                ret(true)
       (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+      (w1:UnknownWidth,w2:UnknownWidth) : true
       (w1,w2) : false
 defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
    if a typeof Int and b typeof Int : f(a as Int, b as Int)
@@ -1784,7 +1796,7 @@ defn split-exp (c:Circuit) :
          (e:Subfield|DoPrim|Pad|ReadPort|Register|WritePort) : 
             val n* = 
                if n typeof False : gensym(`T)
-               else : to-symbol $ string-join $ [n as Symbol gensym(`#)]
+               else : to-symbol $ string-join $ [n as Symbol gensym(`#)] 
             add(v,DefNode(n*,e))
             WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
          (e) : e
@@ -1926,8 +1938,17 @@ defn emit-all (es:Streamable, top:Symbol) :
        (ex) :            print(ex)
 
 defn emit! (e:Expression,top:Symbol) :
+   defn greater-op? (op: PrimOp) -> True|False :
+      contains?([GREATER-OP, GREATER-UU-OP, GREATER-US-OP, GREATER-SU-OP, GREATER-SS-OP], op)
+   defn greater-eq-op? (op: PrimOp) -> True|False :
+      contains?([GREATER-EQ-OP, GREATER-EQ-UU-OP, GREATER-EQ-US-OP, GREATER-EQ-SU-OP, GREATER-EQ-SS-OP], op)     
+   defn less-eq-op? (op: PrimOp) -> True|False :
+      contains?([LESS-EQ-OP, LESS-EQ-UU-OP, LESS-EQ-US-OP, LESS-EQ-SS-OP, LESS-EQ-SS-OP], op)
+   defn less-op? (op: PrimOp) -> True|False :
+      contains?([LESS-OP, LESS-UU-OP, LESS-US-OP, LESS-SS-OP, LESS-SS-OP], op)
    defn cmp-op? (op: PrimOp) -> True|False :
-      contains?([EQUAL-OP, NEQUAL-OP, GREATER-OP, LESS-EQ-OP, LESS-OP, GREATER-EQ-OP], op)
+      greater-op?(op) or greater-eq-op?(op) or less-op?(op) or less-eq-op?(op) or 
+      contains?([EQUAL-OP, EQUAL-UU-OP, EQUAL-SS-OP, NEQUAL-OP, NEQUAL-UU-OP, NEQUAL-SS-OP], op)
    match(e) :
       (e:Ref) :       emit-all([top "::" name(e)], top)
       (e:UIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
@@ -1935,18 +1956,18 @@ defn emit! (e:Expression,top:Symbol) :
       (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
       (e:Index) :     emit-all([exp(e) "/" value(e)], top)
       (e:Pad) : 
-         emit-all(["rsh'" prim-width(type(e)) "  " value(e) "  " width(e)], top)
+         emit-all(["rsh'" prim-width(type(e)) " " value(e) " " width(e)], top)
       (e:Register) : 
-         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top)
+         emit-all(["reg'" prim-width(type(e)) " 1 " value(e)], top) ;; enable(e)
       (e:ReadPort) : 
          emit-all(["rd'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e)], top)
       (e:DoPrim) : 
          if cmp-op?(op(e)) :
            emit-all([flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
-           if op(e) == GREATER-OP or op(e) == LESS-EQ-OP :
-             emit-all(["  " args(e)[1] " " args(e)[0]], top)
+           if greater-op?(op(e)) or less-eq-op?(op(e)) :
+             emit-all([" " args(e)[1] " " args(e)[0]], top)
            else :
-             emit-all(["  " args(e)[0] " " args(e)[1]], top)
+             emit-all([" " args(e)[0] " " args(e)[1]], top)
          else if op(e) == BIT-SELECT-OP :
            emit-all([flo-op-name(op(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
          else if op(e) == BITS-SELECT-OP :
@@ -1966,29 +1987,40 @@ defn emit! (e:Expression,top:Symbol) :
              for const in consts(e) do :
                print(" ")
                print(const)
-      (e) : print-all(["EMIT(" e ")"])
+      (e) : error("SHOULDN'T EMIT THIS") ;; print-all(["EMIT(" e ")"])
       ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
+
+defn maybe-mov (e:Expression) -> String :
+   val need-mov? = match(e) :
+      (e:Ref) :       true
+      (e:UIntValue) : true
+      (e:SIntValue) : true
+      (e:Subfield) :  true
+      (e:Index) :     true
+      (e) :           false
+   if need-mov?: "mov " else: ""
 
 defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
    match(s) :
       (s:DefWire) : ""
       (s:DefInstance) : error("Shouldn't be here")
       (s:DefMemory) :
-           val vtype = type(s) as VectorType
-           emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
-      (s:DefNode) : emit-all([top "::" name(s) " = " value(s) "\n"], top)
+         val vtype = type(s) as VectorType
+         emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
+      (s:DefNode) :
+         if value(s) typeof WritePort :
+            val e = value(s) as WritePort
+            val n = gensym(`F)
+            emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " name(s) "\n"], top)
+         else :
+           emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
       (s:Begin) : do(emit-s{_, v, top}, body(s))
       (s:Connect) : 
-         if loc(s) typeof WritePort :
-            val e = loc(s) as WritePort
-            val name = gensym(`F)
-            emit-all([top "::" name " = wr'" prim-width(type(e)) " " enable(e) " " top "::" mem(e) " " index(e) " " exp(s) "\n"], top)
+         val n = name(loc(s) as Ref)
+         if contains?(v,n) :
+            emit-all([top "::" n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
          else :
-            val n = name(loc(s) as Ref)
-            if contains?(v,n) :
-               emit-all([n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
-            else :
-               emit-all([top "::" n " = " exp(s) "\n"], top)
+            emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
       (s) : s 
 
 defn emit-module (m:Module) :
@@ -2039,10 +2071,3 @@ public defn run-passes (c: Circuit, p: List<Char>,file:String) :
    if contains(p,'X') or contains(p,'F') : do-stage("To Flo", emit-flo{file,_})
 
    println("Done!")
-
-
- ;;  println("Shim for Jonathan's Passes")
- ;;  c* = shim(c*)
- ;;  println("Inline Modules")
- ;;  c* = inline-modules(c*)
- ;  c*
