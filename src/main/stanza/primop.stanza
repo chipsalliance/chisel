@@ -272,7 +272,7 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
    ;   new-width(PlusWidth(width!(l[0]),width!(l[1])))
 
    println-all-debug(["Looking at " op(e) " with inputs " args(e)])
-   val all-args-not-equal = list(MUX-UU-OP,MUX-SS-OP,CONCAT-OP)
+   val all-args-not-equal = to-list([MUX-UU-OP,MUX-SS-OP,CONCAT-OP,BIT-AND-OP,BIT-NOT-OP,BIT-OR-OP,BIT-XOR-OP,BIT-AND-REDUCE-OP,BIT-OR-REDUCE-OP,BIT-XOR-REDUCE-OP,AS-UINT-U-OP,AS-UINT-S-OP,AS-SINT-U-OP,AS-SINT-S-OP])
    ;val consts-gte-args    = list(PAD-U-OP,PAD-S-OP)
 
    
@@ -327,8 +327,8 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
             NEQUAL-SS-OP : IntWidth(1)
             PAD-U-OP : IntWidth(consts(e)[0])
             PAD-S-OP : IntWidth(consts(e)[0])
-            NEG-U-OP : IntWidth(1)
-            NEG-S-OP : IntWidth(1)
+            NEG-U-OP : PlusWidth(max-args-w,IntWidth(1))
+            NEG-S-OP : PlusWidth(max-args-w,IntWidth(1))
             SHIFT-LEFT-U-OP : PlusWidth(max-args-w,IntWidth(consts(e)[0]))
             SHIFT-LEFT-S-OP : PlusWidth(max-args-w,IntWidth(consts(e)[0]))
             SHIFT-RIGHT-U-OP : MinusWidth(max-args-w,IntWidth(consts(e)[0]))
