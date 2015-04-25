@@ -6,11 +6,8 @@
 on-reset
 Make instances always male, flip the bundles on declaration
 dlsh,drsh
-<<<<<<< HEAD
 move Infer-Widths to before vec expansion?
 Add Unit Tests for each pass
-=======
->>>>>>> 5a2a495ce88eec9e2e79cfbfe7f5548cede25874
    
 ======== Update Core ==========
 Add source locaters
@@ -27,12 +24,9 @@ Well-formed high firrtl
    UInt only has positive ints
    No combinational loops
    cannot connect to a pad, or a register. only connct to a reference
-<<<<<<< HEAD
    onreset can only handle a register
    all references are declared
-=======
    expression in pad must be a ground type
->>>>>>> 5a2a495ce88eec9e2e79cfbfe7f5548cede25874
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once
