@@ -1934,7 +1934,7 @@ defn emit! (e:Expression,top:Symbol) :
       (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
       (e:Index) :     emit-all([exp(e) "/" value(e)], top)
       (e:Pad) : 
-         emit-all(["rsh'" prim-width(type(e)) " " value(e) " " width(e)], top)
+         emit-all(["rsh'" prim-width(type(e)) " " value(e) " 0"], top)
       (e:Register) : 
          emit-all(["reg'" prim-width(type(e)) " 1 " value(e)], top) ;; enable(e)
       (e:ReadPort) : 
