@@ -15,7 +15,7 @@
       ; CHECK: reg r1$y : SInt
       ; CHECK: wire q$x : UInt
       ; CHECK: wire q$y : SInt
-      ; CHECK: r1$x.init := q$x
-      ; CHECK: q$y := r1$y.init
+      ; CHECK: on-reset r1$x := q$x
+      ; CHECK: on-reset q$y := r1$y   
 
 ; CHECK: Finished Lower To Ground

@@ -1,5 +1,5 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefghij -p c | tee %s.out | FileCheck %s
-; CHECK: Done!
+; RUN: firrtl -i %s -o %s.flo -x abcdefghijk -p c | tee %s.out | FileCheck %s
+; CHECK: Expand Whens
 circuit top :
    module A :
       wire p : UInt
@@ -10,17 +10,15 @@ circuit top :
       wire x : UInt
       wire y : UInt
       wire z : UInt
+      wire w : UInt
 
       on-reset r := w
-      when p
+      when p :
         on-reset r := x
         r := a
-      when q
+      when q :
         on-reset r := y
         r := b
       r := z
-      
-; CHECK: r := z
-; CHECK: when reset
-; CHECK:    r := q?b:(p?a:w)
-
+; CHECK: r := Register(mux-uu(reset, mux-uu(q, y, mux-uu(p, x, w)), z), UInt(1))
+; CHECK: Finished Expand Whens

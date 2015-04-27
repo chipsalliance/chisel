@@ -3,7 +3,6 @@
 ================================================
 
 ======== Current Tasks ========
-on-reset
 Make instances always male, flip the bundles on declaration
 dlsh,drsh
 move Infer-Widths to before vec expansion?

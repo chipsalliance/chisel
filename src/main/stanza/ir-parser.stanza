@@ -129,6 +129,7 @@ OPERATORS[`convert-s] = CONVERT-S-OP
 OPERATORS[`bit-and-reduce] = BIT-AND-REDUCE-OP
 OPERATORS[`bit-or-reduce] = BIT-OR-REDUCE-OP
 OPERATORS[`bit-xor-reduce] = BIT-XOR-REDUCE-OP
+OPERATORS[`bit-not] = BIT-NOT-OP
 OPERATORS[`bit-and] = BIT-AND-OP
 OPERATORS[`bit-or] = BIT-OR-OP
 OPERATORS[`bit-xor] = BIT-XOR-OP

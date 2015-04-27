@@ -132,7 +132,6 @@ defn times (f1:Flip,f2:Flip) -> Flip :
       REVERSE : swap(f1)
      
 defn to-field (p:Port) -> Field :
-   Field(name(p),REVERSE,type(p))
    if direction(p) == OUTPUT : Field(name(p),REVERSE,type(p))
    else if direction(p) == INPUT : Field(name(p),DEFAULT,type(p))
    else : error("Shouldn't be here")
@@ -929,70 +928,70 @@ defn expand-connect-indexed (c: Circuit) -> Circuit :
 ;   This ensures proper behavior if this pass is run multiple 
 ;   times.
 
-defn initialize-registers (c:Circuit) :
-   defn to-wire-name (y:Symbol) : symbol-join([ y "$init"])
-   defn add-when (s:Stmt,h:HashTable<Symbol,Type>) -> Stmt :
-      var inits = List<Stmt>()
-      for kv in h do :
-         val refreg = WRef(key(kv),value(kv),RegKind(),FEMALE)
-         val refwire = WRef(to-wire-name(key(kv)),value(kv),NodeKind(),MALE)
-         val connect = Connect(refreg,refwire)
-         inits = append(inits,list(connect))
-      if empty?(inits) : s
-      else :
-         val pred = WRef(`reset, UIntType(IntWidth(1)), PortKind(), MALE)
-         val when-reset = Conditionally(pred,Begin(inits),Begin(List<Stmt>()))
-         Begin(list(s,when-reset))
-
-   defn rename (s:Stmt,h:HashTable<Symbol,True|False>) -> [Stmt HashTable<Symbol,Type>] :
-      val t = HashTable<Symbol,Type>(symbol-hash)
-      defn rename-expr (e:Expression) -> Expression :
-         match(map(rename-expr,e)) :
-            (e:WRegInit) : 
-               val new-name = to-wire-name(name(reg(e) as WRef))
-               WRef(new-name,type(reg(e)),RegKind(),gender(e))
-            (e) : e
-      defn rename-stmt (s:Stmt) -> Stmt :
-         match(map(rename-stmt,s)) :
-            (s:DefRegister) : 
-               if h[name(s)] :
-                  t[name(s)] = type(s)
-                  Begin(list(s,DefWire(to-wire-name(name(s)),type(s))))
-               else : s
-            (s) : map(rename-expr,s)
-      [rename-stmt(s) t]
-
-   defn init? (y:Symbol,s:Stmt) -> True|False :
-      var used? = false
-      defn has? (e:Expression) -> Expression :
-         match(map(has?,e)) :
-            (e:WRegInit) : 
-               if name(reg(e) as WRef) == y : used? = true
-            (e) : map(has?,e)
-         e
-      map(has?,s)
-      used?
-
-   defn using-init (s:Stmt,h:HashTable<Symbol,True|False>) -> Stmt :
-      match(s) :
-         (s:DefRegister) : h[name(s)] = false
-         (s) : 
-            for x in h do :
-               h[key(x)] = value(x) or init?(key(x),s)
-      map(using-init{_,h},s)
-
-   defn explicit-init-scope (s:Stmt) -> Stmt :
-      val h = HashTable<Symbol,True|False>(symbol-hash)
-      using-init(s,h)
-      ;println-debug(h)
-      val [s* t] = rename(s,h)
-      add-when(s*,t)
-     
-   Circuit(modules*, main(c)) where :
-      val modules* = 
-         for m in modules(c) map :
-            Module(name(m), ports(m), body*) where :
-               val body* = explicit-init-scope(body(m))
+;defn initialize-registers (c:Circuit) :
+;   defn to-wire-name (y:Symbol) : symbol-join([ y "$init"])
+;   defn add-when (s:Stmt,h:HashTable<Symbol,Type>) -> Stmt :
+;      var inits = List<Stmt>()
+;      for kv in h do :
+;         val refreg = WRef(key(kv),value(kv),RegKind(),FEMALE)
+;         val refwire = WRef(to-wire-name(key(kv)),value(kv),NodeKind(),MALE)
+;         val connect = Connect(refreg,refwire)
+;         inits = append(inits,list(connect))
+;      if empty?(inits) : s
+;      else :
+;         val pred = WRef(`reset, UIntType(IntWidth(1)), PortKind(), MALE)
+;         val when-reset = Conditionally(pred,Begin(inits),Begin(List<Stmt>()))
+;         Begin(list(s,when-reset))
+;
+;   defn rename (s:Stmt,h:HashTable<Symbol,True|False>) -> [Stmt HashTable<Symbol,Type>] :
+;      val t = HashTable<Symbol,Type>(symbol-hash)
+;      defn rename-expr (e:Expression) -> Expression :
+;         match(map(rename-expr,e)) :
+;            (e:WRegInit) : 
+;               val new-name = to-wire-name(name(reg(e) as WRef))
+;               WRef(new-name,type(reg(e)),RegKind(),gender(e))
+;            (e) : e
+;      defn rename-stmt (s:Stmt) -> Stmt :
+;         match(map(rename-stmt,s)) :
+;            (s:DefRegister) : 
+;               if h[name(s)] :
+;                  t[name(s)] = type(s)
+;                  Begin(list(s,DefWire(to-wire-name(name(s)),type(s))))
+;               else : s
+;            (s) : map(rename-expr,s)
+;      [rename-stmt(s) t]
+;
+;   defn init? (y:Symbol,s:Stmt) -> True|False :
+;      var used? = false
+;      defn has? (e:Expression) -> Expression :
+;         match(map(has?,e)) :
+;            (e:WRegInit) : 
+;               if name(reg(e) as WRef) == y : used? = true
+;            (e) : map(has?,e)
+;         e
+;      map(has?,s)
+;      used?
+;
+;   defn using-init (s:Stmt,h:HashTable<Symbol,True|False>) -> Stmt :
+;      match(s) :
+;         (s:DefRegister) : h[name(s)] = false
+;         (s) : 
+;            for x in h do :
+;               h[key(x)] = value(x) or init?(key(x),s)
+;      map(using-init{_,h},s)
+;
+;   defn explicit-init-scope (s:Stmt) -> Stmt :
+;      val h = HashTable<Symbol,True|False>(symbol-hash)
+;      using-init(s,h)
+;      ;println-debug(h)
+;      val [s* t] = rename(s,h)
+;      add-when(s*,t)
+;     
+;   Circuit(modules*, main(c)) where :
+;      val modules* = 
+;         for m in modules(c) map :
+;            Module(name(m), ports(m), body*) where :
+;               val body* = explicit-init-scope(body(m))
 
 ;;================ EXPAND WHENS =============================
 ; This pass does three things: remove last connect semantics,
@@ -1187,108 +1186,69 @@ defn reduce-or (l:List<Expression>) -> Expression :
 ; enables:Calculated off of assigns.
 
 ; I think I'm going to restructure this so that not all information is held in the tables, but instead, we walk the graph again, and do stuff on declarations, and delete other stuff
-defn expand-whens (body:Stmt, table:HashTable<Symbol,SymbolicValue>) -> Stmt :
-           
-
-   match(map(expand-whens{_,table,resets},s)) : 
-      (s:DefWire) : Begin $ list{s,_} $
-         val ref = WRef(name(s),type(s),NodeKind,FEMALE)
-         if has-nul?(table[n]) : 
-            println("Uninitialized: ~" % [to-string(name(s))]);TODO actually collect error
-            EmptyStmt()
-         else : Connect(ref,to-exp(table[name(s)]))
-      (s:DefRegister) : Begin $ list{s,_} $
-         val ref = WRef(name(s),type(s),RegKind,FEMALE)
-         val e = to-exp(table[name(s)])
-         match(e) : 
-            (e:False) : EmptyStmt()
-            (e:Expression) : Register(type(s),e, to-exp $ get-write-enable(table[name(s)]))
-      (s:WDefAccessor) : Begin $ 
-         val t = type(type(source(s)) as VectorType)
-         val n = name(s)
-         switch {_ == gender(s)} :
-            MALE : 
-               val ref = WRef(n,t,ReadAccessorKind(),FEMALE)
-               list(DefWire(n,t),
-                    Connect(ref,ReadPort(source(s),index(s),t,to-exp $ get-read-enable(table,n))))
-            FEMALE :
-               val ref = WRef(n,t,WriteAccessorKind(),FEMALE)
-               val e = to-exp(table[n])
-               val s* = match(e) :
-                  (e:False) : 
-                     println("Uninitialized: ~" % [to-string(n)]) ;TODO actually collect error
-                     EmptyStmt()
-                  (e:Expression) : 
-                     Connect(ref,e)
-               list(DefWire(name(s),t),
-                    Connect(WritePort(source(s),index(s),t,to-exp $ get-write-enable(table[n])),ref),
-                    s*)
-      (s:DefInstance) : Begin $
-         for f in fields(type(module(s)) as BundleType) do :
-            val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
-            val ref = WRef(n,type(s),PortKind,FEMALE)
-            if has-nul?(table[n]) : 
+defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stmt>,cons:Vector<Stmt>) -> Stmt :
+   match(map(expand-whens{_,table,decs,cons},s)) : 
+      (s:DefNode|DefMemory) : add(decs,s)
+      (s:DefWire) : 
+         add(decs,s)
+         add{cons,_} $ { 
+            val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
+            if has-nul?(table[name(s)]) : 
                println("Uninitialized: ~" % [to-string(name(s))]);TODO actually collect error
                EmptyStmt()
-            else : Connect(ref,to-exp(table[name(s)]))
-         val x = to-symbol(split(to-string(n),'.')[0])
-         val f = to-symbol(split(to-string(n),'.')[1])
-         val ref = WRef(x,type(module(s)),k,FEMALE)
-         val sref = WSubfield(ref,f,bundle-field-type(type(module(s)),f),FEMALE)
-         if has-nul?(assign[n]) : println("Uninitialized: ~" % [to-string(n)]);TODO actually collect error
-         else : add(decs,Connect(sref,to-exp(assign[n])))
-      (s:Connect) : EmptyStmt()
-      (s:Conditionally) : Begin(list(conseq(s),alt(s)))
-      (s:OnReset) : EmptyStmt()
-      (s:Begin) : s
-         
+            else : Connect(ref,to-exp(table[name(s)]) as Expression)
+            }()
+      (s:DefRegister) : 
+         add(decs,DefWire(name(s),type(s)))
+         add{cons,_} $ { 
+            val ref = WRef(name(s),type(s),RegKind(),FEMALE)
+            val e = to-exp(table[name(s)])
+            match(e) : 
+               (e:False) : EmptyStmt()
+               (e:Expression) : Connect(ref,Register(type(s),e, to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
+         }()
+      (s:WDefAccessor) : 
+         val t = type(type(source(s)) as VectorType)
+         val n = name(s)
+         add(decs,DefWire(n,t))
+         add{cons,_} $ { 
+            switch {_ == gender(s)} :
+               MALE : 
+                  val ref = WRef(n,t,ReadAccessorKind(),FEMALE)
+                  Begin $ list $ Connect(ref,ReadPort(source(s),index(s),t,get-read-enable(n,table)))
+               FEMALE :
+                  val ref = WRef(n,t,WriteAccessorKind(),FEMALE)
+                  val e = to-exp(table[n])
+                  val s* = match(e) :
+                     (e:False) : 
+                        println("Uninitialized: ~" % [to-string(n)]) ;TODO actually collect error
+                        EmptyStmt()
+                     (e:Expression) : 
+                        Connect(ref,e)
+                  val enable = (to-exp $ optimize $ get-write-enable(table[n])) as Expression
+                  val wp = WritePort(source(s),index(s),t,enable as Expression)
+                  Begin $ list(Connect(wp,ref),s*)
+         }()
+      (s:DefInstance) : 
+         add(decs,s)
+         add{cons,_} $ Begin $ 
+            for f in fields(type(module(s)) as BundleType) map :
+               if flip(f) == DEFAULT : 
+                  val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
+                  val x = to-symbol(split(to-string(n),'.')[0])
+                  val f = to-symbol(split(to-string(n),'.')[1])
+                  val ref = WRef(x,type(module(s)),InstanceKind(),FEMALE)
+                  val sref = WSubfield(ref,f,bundle-field-type(type(module(s)),f),FEMALE)
+                  if has-nul?(table[n]) : 
+                     println("Uninitialized: ~" % [to-string(n)]);TODO actually collect error
+                     EmptyStmt()
+                  else : Connect(sref,to-exp(table[n]) as Expression)
+               else : EmptyStmt()
+      (s:Connect|Conditionally|OnReset|Begin|EmptyStmt) : false
+   s
 
-   for x in assign do :
-      val [n sv] = [key(x) value(x)]
-      match(kinds[n]) : 
-         (k:WriteAccessorKind) :
-            ;First create WritePort and assign from accessor-turned-wire
-            val s = stmts[n] as WDefAccessor
-            val t = type(type(source(s)) as VectorType)
-            val ref = WRef(n,t,k,MALE)
-            val wp = WritePort(source(s),index(s),t,to-exp(enables[n]))
-            add(decs,Connect(wp,ref))
-            ;If initialized, assign input to accessor-turned-wire
-            val sv = remove-nul(assign[n])
-            if sv == SVNul : println("Uninitialized: ~" % [to-string(n)]) ;TODO actually collect error
-            else : add(decs,Connect(ref,to-exp(sv)))
-         (k:ReadAccessorKind) :
-            val s = stmts[n] as WDefAccessor
-            val t = type(type(source(s)) as VectorType)
-            val ref = WRef(n,t,k,FEMALE)
-            val rp = ReadPort(source(s),index(s),t,to-exp(enables[n]))
-            add(decs,Connect(ref,rp))
-         (k:RegKind) :
-            val s = stmts[n] as DefRegister
-            val ref = WRef(n,type(s),k,FEMALE)
-            val sv = remove-nul(assign[n])
-            val reg = 
-               if sv typeof SVNul : Register(type(s),UIntValue(0,width(type(s) as ?)),zero)
-               else : Register(type(s),to-exp(sv),to-exp(enables[n]))
-            add(decs,Connect(ref,reg))
-         (k:InstanceKind) :
-            val s = stmts[n] as DefInstance
-            val x = to-symbol(split(to-string(n),'.')[0])
-            val f = to-symbol(split(to-string(n),'.')[1])
-            val ref = WRef(x,type(module(s)),k,FEMALE)
-            val sref = WSubfield(ref,f,bundle-field-type(type(module(s)),f),FEMALE)
-            if has-nul?(assign[n]) : println("Uninitialized: ~" % [to-string(n)]);TODO actually collect error
-            else : add(decs,Connect(sref,to-exp(assign[n])))
-         (k) : 
-            val s = stmts[n] as DefWire
-            val ref = WRef(n,type(s),k,FEMALE)
-            if has-nul?(assign[n]) : println("Uninitialized: ~" % [to-string(n)]);TODO actually collect error
-            else : add(decs,Connect(ref,to-exp(assign[n])))
-   Begin(to-list(decs))
-
-defn get-enables (assign:HashTable<Symbol,SymbolicValue>,
-                  kinds:HashTable<Symbol,Kind>) -> HashTable<Symbol,SymbolicValue> :
-   defn get-read-enable (sym:Symbol,sv:SymbolicValue) -> Expression :
+defn get-read-enable (sym:Symbol,table:HashTable<Symbol,SymbolicValue>) -> Expression :
+   defn get-single-read-enable (sym:Symbol,sv:SymbolicValue) -> Expression :
       defn active (e:Expression) -> True|False : 
          match(e) :
             (e:WRef) : name(e) == sym
@@ -1300,30 +1260,30 @@ defn get-enables (assign:HashTable<Symbol,SymbolicValue>,
             if active(exp(sv)) : one 
             else : zero
          (sv: SVMux) : 
-            val e0 = get-read-enable(sym,SVExp(pred(sv)))
-            val e1 = get-read-enable(sym,conseq(sv))
-            val e2 = get-read-enable(sym,alt(sv))
+            val e0 = get-single-read-enable(sym,SVExp(pred(sv)))
+            val e1 = get-single-read-enable(sym,conseq(sv))
+            val e2 = get-single-read-enable(sym,alt(sv))
             if e1 == e2 : OR(e0,e1)
             else : OR(e0,OR(AND(pred(sv),e1),AND(NOT(pred(sv)),e2)))
+   DoPrim{BIT-OR-OP,_,list(),UIntType(IntWidth(1))} $ to-list $
+      for y in table stream : get-single-read-enable(sym,value(y))
 
-   defn get-write-enable (sv:SymbolicValue) -> SymbolicValue :
-      match(map(get-write-enable,sv)) :
-         (sv: SVExp) : SVExp(one)
-         (sv: SVNul) : SVExp(zero)
-         (sv) : sv
+defn get-write-enable (sv:SymbolicValue) -> SymbolicValue :
+   match(map(get-write-enable,sv)) :
+      (sv: SVExp) : SVExp(one)
+      (sv: SVNul) : SVExp(zero)
+      (sv) : sv
 
-   val enables = HashTable<Symbol,SymbolicValue>(symbol-hash)
-   for x in assign do :
-      val sym = key(x)
-      match(kinds[sym]) :
-         (k:ReadAccessorKind) : 
-            enables[sym] = SVExp{_} $ reduce-or{_} $ to-list{_} $
-               for y in assign stream :
-                  get-read-enable(sym,value(y))
-         (k:WriteAccessorKind) : enables[sym] = get-write-enable(value(x))
-         (k:RegKind) : enables[sym] = get-write-enable(value(x))
-         (k) : k
-   enables
+defn merge-resets (assign:HashTable<Symbol,SymbolicValue>, resets:HashTable<Symbol,SymbolicValue>) -> HashTable<Symbol,SymbolicValue> :
+   val table = HashTable<Symbol,SymbolicValue>(symbol-hash)
+   val reset = WRef(`reset, UnknownType(), PortKind(), MALE)
+   for i in get-unique-keys(list(assign,resets)) do :
+      table[i] = match(get?(assign,i,false),get?(resets,i,false)) : 
+            (a:SymbolicValue,r:SymbolicValue) : SVMux(reset,r,a)
+            (a:SymbolicValue,r:False) : a
+            (a:False,r:SymbolicValue) : SVMux(reset,r,SVNul())
+            (a:False,r:False) : error("Shouldn't be here")
+   table
 
 defn build-tables (s:Stmt, 
                    assign:HashTable<Symbol,SymbolicValue>,
@@ -1333,26 +1293,22 @@ defn build-tables (s:Stmt,
    match(s) :
       (s:DefWire) :
          assign[name(s)] = SVNul()
-         resets[name(s)] = SVNul()
          flattn[name(s)] = true
       (s:DefRegister|WDefAccessor) : 
          assign[name(s)] = SVNul()
-         resets[name(s)] = SVNul()
          flattn[name(s)] = false
-      (s:DefInstance) :
+      (s:DefInstance) : ;TODO only add instance input ports. This probably involves correcting instance genders
          for f in fields(type(module(s)) as BundleType) do :
-            if 
-            val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
-            assign[n] = SVNul()
-            resets[n] = SVNul()
-            flattn[name(s)] = true
-      (s:DefMemory|DefNode) : false
+            if flip(f) == DEFAULT : 
+               println-all-debug(["Instance: " s " has input " f])
+               val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
+               assign[n] = SVNul()
+               flattn[n] = true
       (s:Conditionally) :
          defn combine (flattn:HashTable<Symbol,True|False>,
                        table-c:HashTable<Symbol,SymbolicValue>,
                        table-a:HashTable<Symbol,SymbolicValue>,
-                       i:Symbol
-                       ) -> SymbolicValue :
+                       i:Symbol) -> SymbolicValue|False :
             match(get?(table-c,i,false),get?(table-a,i,false)) : 
                   (c:SymbolicValue,a:SymbolicValue) : 
                      if c == a : c
@@ -1363,7 +1319,7 @@ defn build-tables (s:Stmt,
                   (c:False,a:SymbolicValue) :
                      if flattn[i] : a
                      else : SVMux(pred(s),SVNul(),a)
-                  (c:False,a:False) : error("Shouldn't be here")
+                  (c:False,a:False) : false
 
          val assign-c = deepcopy(assign)
          val assign-a = deepcopy(assign)
@@ -1372,8 +1328,11 @@ defn build-tables (s:Stmt,
          build-tables(conseq(s),assign-c,resets-c,flattn)
          build-tables(alt(s),assign-a,resets-a,flattn)
          for i in get-unique-keys(list(assign-c,assign-a)) do :
-            assign[i] = combine(flattn,assign-c,assign-a,i)
-            resets[i] = combine(flattn,resets-c,resets-a,i)
+            assign[i] = combine(flattn,assign-c,assign-a,i) as SymbolicValue
+            val r = combine(flattn,resets-c,resets-a,i)
+            match(r) : 
+               (r:SymbolicValue) : resets[i] = r
+               (r) : false
          ;println-debug("TABLE-C")
          ;for x in assign-c do : println-debug(x)
          ;println-debug("TABLE-A")
@@ -1385,9 +1344,10 @@ defn build-tables (s:Stmt,
             (e:WRef) : name(e)
             (e:WSubfield) : symbol-join([name(exp(e) as ?) `. name(e)])
             (e) : error("Shouldn't be here with ~" % [e])
-         if c typeof Connect : assign[key*] = SVExp(exp(s))
-         if c typeof OnReset : resets[key*] = SVExp(exp(s))
-      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets)
+         if s typeof Connect : assign[key*] = SVExp(exp(s))
+         if s typeof OnReset : resets[key*] = SVExp(exp(s))
+      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets,flattn)
+      (s:DefMemory|DefNode|EmptyStmt) : false
          
 defn expand-whens (m:Module) -> Module :
    val assign = HashTable<Symbol,SymbolicValue>(symbol-hash)
@@ -1397,22 +1357,26 @@ defn expand-whens (m:Module) -> Module :
    for p in ports(m) do :
       if direction(p) == OUTPUT :
          assign[name(p)] = SVNul()
-         resets[name(p)] = SVNul()
          flattn[name(p)] = false
          
-   build-tables(body(m),assign,resets)
+   build-tables(body(m),assign,resets,flattn)
    for x in assign do : assign[key(x)] = optimize(value(x))
    for x in resets do : resets[key(x)] = optimize(value(x))
    ;val enables = get-enables(assign,kinds)
    ;for x in enables do : enables[key(x)] = optimize(value(x))
          
-   println-debug("Assigns")
+   println-debug("====== Assigns ======")
    for x in assign do : println-debug(x)
-   println-debug("Resets")
+   println-debug("====== Resets ======")
    for x in resets do : println-debug(x)
 
    val table = merge-resets(assign,resets)
-   Module(name(m),ports(m),expand-whens(body(m),table))
+   println-debug("====== Table ======")
+   for x in table do : println-debug(x)
+   val decs = Vector<Stmt>()
+   val cons = Vector<Stmt>()
+   expand-whens(body(m),table,decs,cons)
+   Module(name(m),ports(m),Begin(append(to-list(decs),to-list(cons))))
 
 defn expand-whens (c:Circuit) -> Circuit :
    Circuit(modules*, main(c)) where :
@@ -2103,7 +2067,6 @@ public defn run-passes (c: Circuit, p: List<Char>,file:String) :
    if contains(p,'X') or contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
    if contains(p,'X') or contains(p,'h') : do-stage("Lower To Ground", lower-to-ground)
    if contains(p,'X') or contains(p,'i') : do-stage("Expand Indexed Connects", expand-connect-indexed)
-   if contains(p,'X') or contains(p,'j') : do-stage("Initialize Registers", initialize-registers)
    if contains(p,'X') or contains(p,'k') : do-stage("Expand Whens", expand-whens)
    if contains(p,'X') or contains(p,'l') : do-stage("Infer Widths", infer-widths)
    if contains(p,'X') or contains(p,'m') : do-stage("Inline Instances", inline-instances)
