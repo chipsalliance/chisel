@@ -46,21 +46,6 @@ defstruct WSubfield <: Expression :
    type: Type with: (as-method => true)
    gender: Gender with: (as-method => true)
 
-defstruct WRegInit <: Expression :
-   reg: Expression
-   name: Symbol
-   type: Type with: (as-method => true)
-   gender: Gender  with: (as-method => true)
-
-defmethod map (f: Expression -> Expression, e: WRegInit) :
-   WRegInit(f(reg(e)), name(e), type(e), gender(e))
-defmethod map (f: Type -> Type, e: WRegInit) :
-   WRegInit(reg(e), name(e), f(type(e)), gender(e))   
-
-defmethod print (o:OutputStream, e:WRegInit) :
-   print-all(o,[name(e)])
-      print-debug(o,e as ?)
-   
 defstruct WIndex <: Expression :
    exp: Expression
    value: Int
@@ -190,7 +175,7 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:WriteAccessorKind) : "wacc"
 
 defn hasGender (e:Expression|Stmt|Type|Port|Field) :
-   e typeof WRef|WSubfield|WIndex|WDefAccessor|WRegInit
+   e typeof WRef|WSubfield|WIndex|WDefAccessor
 
 defn hasWidth (e:Expression|Stmt|Type|Port|Field) :
    e typeof UIntType|SIntType|UIntValue|SIntValue|Pad
@@ -198,7 +183,7 @@ defn hasWidth (e:Expression|Stmt|Type|Port|Field) :
 defn hasType (e:Expression|Stmt|Type|Port|Field) :
    e typeof Ref|Subfield|Index|DoPrim|WritePort|ReadPort|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory|Register
-      |VectorType|Port|Field|WRegInit|Pad
+      |VectorType|Port|Field|Pad
 
 defn hasKind (e:Expression|Stmt|Type|Port|Field) :
    e typeof WRef
@@ -448,7 +433,6 @@ defn infer-exp-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression
    match(r) :
       (e:WRef) : WRef(name(e), get-type(name(e),l),kind(e),gender(e))
       (e:WSubfield) : WSubfield(exp(e),name(e), bundle-field-type(type(exp(e)),name(e)),gender(e))
-      (e:WRegInit) : WRegInit(reg(e),name(e),get-type(name(reg(e) as WRef),l),gender(e))
       (e:WIndex) : WIndex(exp(e),value(e), get-vector-subtype(type(exp(e))),gender(e))
       (e:DoPrim) : lower-and-type-primop(e)
          ;DoPrim(op(e),args(e),consts(e),get-primop-rettype(e))
@@ -582,11 +566,6 @@ defn resolve-genders (c:Circuit) :
                WRef{name(e),type(e),kind(e),_} $
                   if gender == BI-GENDER : desired
                   else : gender
-            (e:WRegInit) : 
-               val gender = get-gender(name(reg(e) as WRef),desired)
-               WRegInit{reg(e),name(e),type(e),_} $
-                  if gender == BI-GENDER : desired
-                  else : gender
             (e:WSubfield) : 
                val field-flip = bundle-field-flip(name(e),type(exp(e)))
                val exp* = resolve-expr(exp(e),field-flip * desired)
@@ -705,7 +684,6 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
       defn calc-gender (g:Gender, e:Expression) -> Gender :
          match(e) :
             (e:WRef) : gender(e)
-            (e:WRegInit) : gender(e)
             (e:WSubfield) : 
                if is-instance(exp(e)) : gender(e)
                else : calc-gender(bundle-field-flip(name(e),type(exp(e))) * g,exp(e))
@@ -789,7 +767,6 @@ defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) 
    defn expand-expr (e:Expression) -> List<KeyValue<Expression,Flip>> :
       match(e) :
          (e:WRef) : table[name(e)]
-         (e:WRegInit) : table[name(e)]
          (e:WSubfield) : 
             val exps = expand-expr(exp(e))
             val begin = index-of-elem(type(exp(e)) as BundleType,name(e))
@@ -837,12 +814,7 @@ defn lower-module (m:Module,table:HashTable<Symbol,List<KeyValue<Expression,Flip
          (s:DefWire) : table[name(s)] = get-entries(name(s),type(s))
          (s:DefRegister) : 
             val regs = get-entries(name(s),type(s))
-            val init-sym = symbol-join([name(s),`\|.init|])
-            val init-regs = for r in regs map : 
-               val [e f] = [key(r) value(r)]
-               WRegInit(e,symbol-join([name(e),`\|.init|]),type(e),gender(e)) => f
             table[name(s)] = regs
-            table[init-sym] = init-regs
          (s:DefInstance) : 
             val r = WRef(name(s),type(module(s)),InstanceKind(),FEMALE)
             val ports = table[name(module(s) as WRef)]
@@ -1028,7 +1000,6 @@ defmethod equal? (e1:Expression,e2:Expression) -> True|False :
          else : false
       (e1:WRef,e2:WRef) : name(e1) == name(e2)
       ;(e1:DoPrim,e2:DoPrim) :  TODO
-      (e1:WRegInit,e2:WRegInit) : reg(e1) == reg(e2) and name(e1) == name(e2)
       (e1:WSubfield,e2:WSubfield) : name(e1) == name(e2)
       (e1:Pad,e2:Pad) : width(e1) == width(e2) and value(e1) == value(e2)
       (e1:DoPrim,e2:DoPrim) : 
@@ -1820,7 +1791,6 @@ defn to-real-ir (c:Circuit) :
       match(map(to-exp,e)) :
          (e:WRef) : Ref(name(e), type(e))
          (e:WSubfield) : Subfield(exp(e),name(e),type(e))
-         (e:WRegInit) : error("Shouldn't be here")
          (e:WIndex) : error("Shouldn't be here")
          (e) : e
    defn to-stmt (s:Stmt) :
