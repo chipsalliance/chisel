@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefghijkl -p cTd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abcdefghijkl -p cd | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
 circuit top :
@@ -8,15 +8,15 @@ circuit top :
       output q : UInt
       q := sub-wrap-uu(x, y)
    module gcd :
-      input a : UInt(16)
-      input b : UInt(16)
-      input e : UInt(1)
-      output z : UInt(16)
-      output v : UInt(1)
+      input a : UInt<16>
+      input b : UInt<16>
+      input e : UInt<1>
+      output z : UInt<16>
+      output v : UInt<1>
       reg x : UInt
       reg y : UInt
-      x.init := UInt(0)
-      y.init := UInt(42)
+      on-reset x := UInt(0)
+      on-reset y := UInt(42)
       when gt-uu(x, y) :
          inst s of subtracter
          s.x := x
@@ -33,8 +33,8 @@ circuit top :
       v := eq-uu(v, UInt(0))
       z := x
    module top :
-      input a : UInt(16)
-      input b : UInt(16)
+      input a : UInt<16>
+      input b : UInt<16>
       output z : UInt
       inst i of gcd
       i.a := a

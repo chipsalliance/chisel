@@ -5,241 +5,321 @@ defpackage firrtl/parser :
    import stz/parser
    import stz/lexer
 
-;======= Convenience Functions ====
-defn throw-error (x) :
+;======= Convenience Functions ========
+defn first-info? (form) -> FileInfo|False :
+   match(form) :
+      (form:Token) : info(form)
+      (form:List) : search(first-info?, form)
+      (form) : false
+
+defn first-info (form:List) :
+   match(first-info?(form)) :
+      (i:FileInfo) : i
+      (f:False) : FileInfo()
+
+defn FPE (form, x) :
    throw $ new Exception :
       defmethod print (o:OutputStream, this) :
-         print(o, x)
+         print(o, "[~] FIRRTL Parsing Error: ~" << [first-info(form), x])
 
-defn ut (x) :
-   unwrap-token(x)
+defn* apply-suffix-ops (x, fs:List) :
+   if empty?(fs) : x
+   else : apply-suffix-ops(head(fs)(x), tail(fs))
 
-;======== SYNTAX =======================
+;======== Parser Utilities ==============
+defn atom? (x) : unwrap-token(x) not-typeof List
+
+defn primop (x:Symbol) : get?(OPERATORS, x, false)
+val OPERATORS = HashTable<Symbol, PrimOp>(symbol-hash)
+OPERATORS[`add] = ADD-OP
+OPERATORS[`add-uu] = ADD-UU-OP
+OPERATORS[`add-us] = ADD-US-OP
+OPERATORS[`add-su] = ADD-SU-OP
+OPERATORS[`add-ss] = ADD-SS-OP
+OPERATORS[`sub] = SUB-OP
+OPERATORS[`sub-uu] = SUB-UU-OP
+OPERATORS[`sub-us] = SUB-US-OP
+OPERATORS[`sub-su] = SUB-SU-OP
+OPERATORS[`sub-ss] = SUB-SS-OP
+OPERATORS[`mul] = MUL-OP
+OPERATORS[`mul-uu] = MUL-UU-OP
+OPERATORS[`mul-us] = MUL-US-OP
+OPERATORS[`mul-su] = MUL-SU-OP
+OPERATORS[`mul-ss] = MUL-SS-OP
+OPERATORS[`div] = DIV-OP
+OPERATORS[`div-uu] = DIV-UU-OP
+OPERATORS[`div-us] = DIV-US-OP
+OPERATORS[`div-su] = DIV-SU-OP
+OPERATORS[`div-ss] = DIV-SS-OP
+OPERATORS[`mod] = MOD-OP
+OPERATORS[`mod-uu] = MOD-UU-OP
+OPERATORS[`mod-us] = MOD-US-OP
+OPERATORS[`mod-su] = MOD-SU-OP
+OPERATORS[`mod-ss] = MOD-SS-OP
+OPERATORS[`quo] = QUO-OP
+OPERATORS[`quo-uu] = QUO-UU-OP
+OPERATORS[`quo-us] = QUO-US-OP
+OPERATORS[`quo-su] = QUO-SU-OP
+OPERATORS[`quo-ss] = QUO-SS-OP
+OPERATORS[`rem] = REM-OP
+OPERATORS[`rem-uu] = REM-UU-OP
+OPERATORS[`rem-us] = REM-US-OP
+OPERATORS[`rem-su] = REM-SU-OP
+OPERATORS[`rem-ss] = REM-SS-OP
+OPERATORS[`add-wrap] = ADD-WRAP-OP
+OPERATORS[`add-wrap-uu] = ADD-WRAP-UU-OP
+OPERATORS[`add-wrap-us] = ADD-WRAP-US-OP
+OPERATORS[`add-wrap-su] = ADD-WRAP-SU-OP
+OPERATORS[`add-wrap-ss] = ADD-WRAP-SS-OP
+OPERATORS[`sub-wrap] = SUB-WRAP-OP
+OPERATORS[`sub-wrap-uu] = SUB-WRAP-UU-OP
+OPERATORS[`sub-wrap-us] = SUB-WRAP-US-OP
+OPERATORS[`sub-wrap-su] = SUB-WRAP-SU-OP
+OPERATORS[`sub-wrap-ss] = SUB-WRAP-SS-OP
+OPERATORS[`lt] = LESS-OP
+OPERATORS[`lt-uu] = LESS-UU-OP
+OPERATORS[`lt-us] = LESS-US-OP
+OPERATORS[`lt-su] = LESS-SU-OP
+OPERATORS[`lt-ss] = LESS-SS-OP
+OPERATORS[`leq] = LESS-EQ-OP
+OPERATORS[`leq-uu] = LESS-EQ-UU-OP
+OPERATORS[`leq-us] = LESS-EQ-US-OP
+OPERATORS[`leq-su] = LESS-EQ-SU-OP
+OPERATORS[`leq-ss] = LESS-EQ-SS-OP
+OPERATORS[`gt] = GREATER-OP
+OPERATORS[`gt-uu] = GREATER-UU-OP
+OPERATORS[`gt-us] = GREATER-US-OP
+OPERATORS[`gt-su] = GREATER-SU-OP
+OPERATORS[`gt-ss] = GREATER-SS-OP
+OPERATORS[`geq] = GREATER-EQ-OP
+OPERATORS[`geq-uu] = GREATER-EQ-UU-OP
+OPERATORS[`geq-us] = GREATER-EQ-US-OP
+OPERATORS[`geq-su] = GREATER-EQ-SU-OP
+OPERATORS[`geq-ss] = GREATER-EQ-SS-OP
+OPERATORS[`eq] = EQUAL-OP
+OPERATORS[`eq-uu] = EQUAL-UU-OP
+OPERATORS[`eq-ss] = EQUAL-SS-OP
+OPERATORS[`neq] = NEQUAL-OP
+OPERATORS[`neq-uu] = NEQUAL-UU-OP
+OPERATORS[`neq-ss] = NEQUAL-SS-OP
+OPERATORS[`mux] = MUX-OP
+OPERATORS[`mux-uu] = MUX-UU-OP
+OPERATORS[`mux-ss] = MUX-SS-OP
+OPERATORS[`pad] = PAD-OP
+OPERATORS[`pad-u] = PAD-U-OP
+OPERATORS[`pad-s] = PAD-S-OP
+OPERATORS[`neg] = NEG-OP
+OPERATORS[`neg-u] = NEG-U-OP
+OPERATORS[`neg-s] = NEG-S-OP
+OPERATORS[`as-UInt] = AS-UINT-OP
+OPERATORS[`as-UInt-u] = AS-UINT-U-OP
+OPERATORS[`as-UInt-s] = AS-UINT-S-OP
+OPERATORS[`as-SInt] = AS-SINT-OP
+OPERATORS[`as-SInt-u] = AS-SINT-U-OP
+OPERATORS[`as-SInt-s] = AS-SINT-S-OP
+OPERATORS[`shl] = SHIFT-LEFT-OP
+OPERATORS[`shl-u] = SHIFT-LEFT-U-OP
+OPERATORS[`shl-s] = SHIFT-LEFT-S-OP
+OPERATORS[`shr] = SHIFT-RIGHT-OP
+OPERATORS[`shr-u] = SHIFT-RIGHT-U-OP
+OPERATORS[`shr-s] = SHIFT-RIGHT-S-OP
+OPERATORS[`convert] = CONVERT-OP
+OPERATORS[`convert-u] = CONVERT-U-OP
+OPERATORS[`convert-s] = CONVERT-S-OP
+OPERATORS[`bit-and-reduce] = BIT-AND-REDUCE-OP
+OPERATORS[`bit-or-reduce] = BIT-OR-REDUCE-OP
+OPERATORS[`bit-xor-reduce] = BIT-XOR-REDUCE-OP
+OPERATORS[`bit-not] = BIT-NOT-OP
+OPERATORS[`bit-and] = BIT-AND-OP
+OPERATORS[`bit-or] = BIT-OR-OP
+OPERATORS[`bit-xor] = BIT-XOR-OP
+OPERATORS[`cat] = CONCAT-OP
+OPERATORS[`bit] = BIT-SELECT-OP
+OPERATORS[`bits] = BITS-SELECT-OP
+
+;======== Parser Rules ==================
 defsyntax firrtl :
-   defrule :
-      symbol = (?x) when ut(x) typeof Symbol : ut(x)
-      int = (?x) when ut(x) typeof Int : ut(x)
-      
-   defrule circuit :
-      circuit = (circuit ?name:#symbol : (?modules:#module ... ?rest ...)) :
-         if not empty?(rest) :
-            throw-error("Expected module here: ~" << [rest])
-         Circuit(modules, name)         
+   ;Useful Atoms
+   defrule atoms :
+      ;Unconditionally parse next form as identifier.
+      id = (?x) when atom?(x) :
+         match(unwrap-token(x)) :
+            (x:Symbol) : x
+            (x) : FPE(form, "Expected an identifier here. Got ~ instead." << [x])
 
-   defrule module :
-      module = (module ?name:#symbol : (?ports:#port ... ?body:#comm ... ?rest ...)) :
+      ;Parses next form if integer literal
+      int = (?x) when unwrap-token(x) typeof Int :
+         unwrap-token(x)
+
+      ;Parses next form if symbol
+      sym = (?x) when unwrap-token(x) typeof Symbol :
+         unwrap-token(x)
+         
+   ;Error Handling Productions
+   defrule :
+      ;Error if not an identifier
+      id! = (?x:#id) : x
+      id! != () : FPE(form, "Expected an identifier here.")
+
+      ;Error if not a colon
+      :! = (:) : (`:)
+      :! != () : FPE(form, "Expected a colon here.")
+
+      ;Error if not 'of' keyword
+      of! = (of) : `of
+      of! != () : FPE(form, "Expected the 'of' keyword here.")
+
+      ;Error if not a =
+      =! = (=) : `=
+      =! != () : FPE(form, "Expected a '=' here.")
+
+      ;Error if not a single integer
+      int$ = (?i:#int ?rest ...) when empty?(rest) : i
+      int$ != () : FPE(form, "Expected a single integer literal here.")
+
+      ;Error if not a single width
+      width$ = (?w:#width ?rest ...) when empty?(rest) : w
+      width$ != () : FPE(form, "Expected a single width specifier here.")
+
+      ;Error if not a type
+      type! = (?t:#type) : t
+      type! != () : FPE(form, "Expected a type here.")
+
+      ;Error if not a vec type
+      vectype! = (?t:#type!) :
+         FPE(form, "Expected a vector type here.") when t not-typeof VectorType
+         t
+
+      ;Error if not an expression
+      exp! = (?e:#exp) : e
+      exp! != () : FPE(form, "Expected an expression here.")
+
+      ;Error if not a single expression
+      exp$ = (?e:#exp ?rest ...) when empty?(rest) : e
+      exp$ != () : FPE(form, "Expected a single expression here.")
+
+      ;Error if not a stmt
+      stmt! = (?s:#stmt) : s
+      stmt! != () : FPE(form, "Expected a statement here.")
+
+      ;Error if not a reference expression
+      ref! = (?e:#exp!) :
+         FPE(form, "Expected a reference expression here.") when e not-typeof Ref
+         e
+   
+   ;Main Circuit Production
+   defrule circuit :
+      circuit = (circuit ?name:#id! #:! (?ms:#module ... ?rest ...)) :
          if not empty?(rest) :
-            throw-error("Expected command here: ~" << [rest])
-         Module(name, ports, Begin(body))
+            FPE(rest, "Expected a module declaration here.")
+         Circuit(ms, name)
+      circuit != (circuit) :
+         FPE(form, "Invalid syntax for circuit definition.")
+
+   ;Main Module Production
+   defrule module :
+      module = (module ?name:#id! #:! (?ps:#port ... ?cs:#stmt ... ?rest ...)) :
+         if not empty?(rest) :
+            FPE(rest, "Expected a statement here.")
+         Module(name, ps, Begin(cs))
+      module != (module) :
+         FPE(form, "Invalid syntax for module definition.")
+   
+   defrule port :
+      port = (input ?name:#id! #:! ?type:#type!) : Port(name, INPUT, type)
+      port = (output ?name:#id! #:! ?type:#type!) : Port(name, OUTPUT, type)
+         
+   ;Main Type Productions
+   defrule type :
+      inttype = (UInt<?w:#width$>) : UIntType(w)
+      inttype = (UInt) : UIntType(UnknownWidth())
+      inttype = (SInt<?w:#width$>) : SIntType(w)
+      inttype = (SInt) : SIntType(UnknownWidth())
+
+      type = (?t:#typeterm ?ops:#typeop ...) : apply-suffix-ops(t, ops)
+      typeop = ((@get ?size:#int$)) : (fn (t) : VectorType(t, size))
+      
+      typeterm = (?t:#inttype) : t
+      typeterm = ({?fs:#field ... ?rest ...}) :
+         if not empty?(rest) :
+            FPE(rest, "Expected a bundle field declaration here.")
+         BundleType(fs)
 
    defrule field :
-      field = (?name:#symbol : ?type:#type) :
-         Field(ut(name), DEFAULT, type)
-      field = (flip ?name:#symbol : ?type:#type) :
-         Field(ut(name), REVERSE, type)
-
-   defrule port :
-      port = (input ?name:#symbol : ?type:#type) :
-         Port(ut(name), INPUT, type)
-      port = (output ?name:#symbol : ?type:#type) :
-         Port(ut(name), OUTPUT, type)
-
-   defrule type :
-      type = (?type:#type (@get ?size:#int)) :
-         VectorType(type, ut(size))
-      type = (UInt (@do ?width:#int)) :
-         UIntType(IntWidth(ut(width)))
-      type = (UInt) :
-         UIntType(UnknownWidth())
-      type = (SInt (@do ?width:#int)) :
-         SIntType(IntWidth(ut(width)))
-      type = (SInt) :
-         SIntType(UnknownWidth())
-      type = ({?fields:#field ...}) :
-         BundleType(fields)
-
-   defrule comm :
-      comm = (wire ?name:#symbol : ?type:#type) :
-         DefWire(ut(name), type)
-      comm = (reg ?name:#symbol : ?type:#type) :
-         DefRegister(ut(name), type)
-      comm = (mem ?name:#symbol : ?type:#type) :
-         DefMemory(ut(name), type)
-      comm = (inst ?name:#symbol of ?module:#exp) :
-         DefInstance(ut(name), module)
-      comm = (node ?name:#symbol = ?exp:#exp) :
-         DefNode(ut(name), exp)
-      comm = (accessor ?name:#symbol = ?source:#exp (@get ?index:#exp)) :
-         DefAccessor(ut(name), source, index)
-      comm = ((?body:#comm ...)) :
-         Begin(body)
-      comm = (?x:#exp := ?y:#exp) :
-         Connect(x, y)
-      comm = (?c:skip) :
-         EmptyStmt()
-      comm = (?c:#comm/when) :
-         c
-         
-   defrule comm/when :
-      comm/when = (when ?pred:#exp : ?conseq:#comm else : ?alt:#comm) :
-         Conditionally(pred, conseq, alt)
-      comm/when = (when ?pred:#exp : ?conseq:#comm else ?alt:#comm/when) :
-         Conditionally(pred, conseq, alt)
-      comm/when = (when ?pred:#exp : ?conseq:#comm) :
-         Conditionally(pred, conseq, EmptyStmt())
-
-   defrule exp :
-      exp = (?x:#exp . ?f:#int) :
-         Index(x, ut(f), UnknownType())
-      exp = (?x:#exp . ?f:#symbol) :
-         Subfield(x, ut(f), UnknownType())
-      exp = (?x:#exp-form) :
-         x
-
-   val operators = HashTable<Symbol, PrimOp>(symbol-hash)
-   operators[`add] = ADD-OP
-   operators[`add-uu] = ADD-UU-OP
-   operators[`add-us] = ADD-US-OP
-   operators[`add-su] = ADD-SU-OP
-   operators[`add-ss] = ADD-SS-OP
-   operators[`sub] = SUB-OP
-   operators[`sub-uu] = SUB-UU-OP
-   operators[`sub-us] = SUB-US-OP
-   operators[`sub-su] = SUB-SU-OP
-   operators[`sub-ss] = SUB-SS-OP
-   operators[`mul] = MUL-OP
-   operators[`mul-uu] = MUL-UU-OP
-   operators[`mul-us] = MUL-US-OP
-   operators[`mul-su] = MUL-SU-OP
-   operators[`mul-ss] = MUL-SS-OP
-   operators[`div] = DIV-OP
-   operators[`div-uu] = DIV-UU-OP
-   operators[`div-us] = DIV-US-OP
-   operators[`div-su] = DIV-SU-OP
-   operators[`div-ss] = DIV-SS-OP
-   operators[`mod] = MOD-OP
-   operators[`mod-uu] = MOD-UU-OP
-   operators[`mod-us] = MOD-US-OP
-   operators[`mod-su] = MOD-SU-OP
-   operators[`mod-ss] = MOD-SS-OP
-   operators[`quo] = QUO-OP
-   operators[`quo-uu] = QUO-UU-OP
-   operators[`quo-us] = QUO-US-OP
-   operators[`quo-su] = QUO-SU-OP
-   operators[`quo-ss] = QUO-SS-OP
-   operators[`rem] = REM-OP
-   operators[`rem-uu] = REM-UU-OP
-   operators[`rem-us] = REM-US-OP
-   operators[`rem-su] = REM-SU-OP
-   operators[`rem-ss] = REM-SS-OP
-   operators[`add-wrap] = ADD-WRAP-OP
-   operators[`add-wrap-uu] = ADD-WRAP-UU-OP
-   operators[`add-wrap-us] = ADD-WRAP-US-OP
-   operators[`add-wrap-su] = ADD-WRAP-SU-OP
-   operators[`add-wrap-ss] = ADD-WRAP-SS-OP
-   operators[`sub-wrap] = SUB-WRAP-OP
-   operators[`sub-wrap-uu] = SUB-WRAP-UU-OP
-   operators[`sub-wrap-us] = SUB-WRAP-US-OP
-   operators[`sub-wrap-su] = SUB-WRAP-SU-OP
-   operators[`sub-wrap-ss] = SUB-WRAP-SS-OP
-   operators[`lt] = LESS-OP
-   operators[`lt-uu] = LESS-UU-OP
-   operators[`lt-us] = LESS-US-OP
-   operators[`lt-su] = LESS-SU-OP
-   operators[`lt-ss] = LESS-SS-OP
-   operators[`leq] = LESS-EQ-OP
-   operators[`leq-uu] = LESS-EQ-UU-OP
-   operators[`leq-us] = LESS-EQ-US-OP
-   operators[`leq-su] = LESS-EQ-SU-OP
-   operators[`leq-ss] = LESS-EQ-SS-OP
-   operators[`gt] = GREATER-OP
-   operators[`gt-uu] = GREATER-UU-OP
-   operators[`gt-us] = GREATER-US-OP
-   operators[`gt-su] = GREATER-SU-OP
-   operators[`gt-ss] = GREATER-SS-OP
-   operators[`geq] = GREATER-EQ-OP
-   operators[`geq-uu] = GREATER-EQ-UU-OP
-   operators[`geq-us] = GREATER-EQ-US-OP
-   operators[`geq-su] = GREATER-EQ-SU-OP
-   operators[`geq-ss] = GREATER-EQ-SS-OP
-   operators[`eq] = EQUAL-OP
-   operators[`eq-uu] = EQUAL-UU-OP
-   operators[`eq-ss] = EQUAL-SS-OP
-   operators[`neq] = NEQUAL-OP
-   operators[`neq-uu] = NEQUAL-UU-OP
-   operators[`neq-ss] = NEQUAL-SS-OP
-   operators[`mux] = MUX-OP
-   operators[`mux-uu] = MUX-UU-OP
-   operators[`mux-ss] = MUX-SS-OP
-   operators[`pad] = PAD-OP
-   operators[`pad-u] = PAD-U-OP
-   operators[`pad-s] = PAD-S-OP
-   operators[`as-UInt] = AS-UINT-OP
-   operators[`as-UInt-u] = AS-UINT-U-OP
-   operators[`as-UInt-s] = AS-UINT-S-OP
-   operators[`as-SInt] = AS-SINT-OP
-   operators[`as-SInt-u] = AS-SINT-U-OP
-   operators[`as-SInt-s] = AS-SINT-S-OP
-   operators[`shl] = SHIFT-LEFT-OP
-   operators[`shl-u] = SHIFT-LEFT-U-OP
-   operators[`shl-s] = SHIFT-LEFT-S-OP
-   operators[`shr] = SHIFT-RIGHT-OP
-   operators[`shr-u] = SHIFT-RIGHT-U-OP
-   operators[`shr-s] = SHIFT-RIGHT-S-OP
-   operators[`convert] = CONVERT-OP
-   operators[`convert-u] = CONVERT-U-OP
-   operators[`convert-s] = CONVERT-S-OP
-   operators[`neg] = NEG-OP
-   operators[`neg-u] = NEG-U-OP
-   operators[`neg-s] = NEG-S-OP
-   operators[`bit-not] = BIT-NOT-OP
-   operators[`bit-and] = BIT-AND-OP
-   operators[`bit-or] = BIT-OR-OP
-   operators[`bit-xor] = BIT-XOR-OP
-   operators[`cat] = CONCAT-OP
-   operators[`bit] = BIT-SELECT-OP
-   operators[`bits] = BITS-SELECT-OP
-   operators[`bit-and-reduce] = BIT-AND-REDUCE-OP
-   operators[`bit-or-reduce] = BIT-OR-REDUCE-OP
-   operators[`bit-xor-reduce] = BIT-XOR-REDUCE-OP
+      field = (flip ?name:#id! #:! ?type:#type!) : Field(name, REVERSE, type)
+      field = (?name:#id #:! ?type:#type!) : Field(name, DEFAULT, type)
 
    defrule width :
-      width = (?) :
-         UnknownWidth()
-      width = (?width:#int) :
-         IntWidth(ut(width))
+      width = (?x:#int) : IntWidth(x)
+      width = (?) : UnknownWidth()
+
+   ;Main Statement Productions
+   defrule statements :
+      stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(name, t)
+      stmt = (reg ?name:#id! #:! ?t:#type!) : DefRegister(name, t)
+      stmt = (mem ?name:#id! #:! ?t:#vectype!) : DefMemory(name, t)
+      stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(name, m)
+      stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(name, e)
+      stmt = (accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(name, s, i)
+      stmt = (?s:#stmt/when) : s
+
+      stmt = (?x:#exp := ?y:#exp!) : Connect(x, y)
+      stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(x, y)
+
+      stmt = ((?s:#stmt ?ss:#stmt ... ?rest ...)) :
+         if not empty?(rest) :
+            FPE(rest, "Expected a statement here.")
+         Begin(List(s, ss))
+      stmt = (()) :
+         Begin(List())
          
-   defrule exp-form :
-      exp-form = (UInt (@do ?value:#int ?width:#width)) :
-         UIntValue(ut(value), width)
-      exp-form = (UInt (@do ?value:#int)) :
-         UIntValue(ut(value), UnknownWidth())
-      exp-form = (SInt (@do ?value:#int ?width:#width)) :
-         SIntValue(ut(value), width)
-      exp-form = (SInt (@do ?value:#int)) :
-         SIntValue(ut(value), UnknownWidth())
-      exp-form = (WritePort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
-         WritePort(mem, index, UnknownType(), enable)
-      exp-form = (ReadPort (@do ?mem:#exp ?index:#exp ?enable:#exp)) :
-         ReadPort(mem, index, UnknownType(), enable)
-      exp-form = (Register (@do ?value:#exp ?enable:#exp)) :
-         Register(UnknownType(),value,enable)
-      exp-form = (Pad (@do ?value:#exp ?width:#width)) :
-         Pad(value,width,UnknownType())
-      exp-form = (?op:#symbol (@do ?es:#exp ... ?ints:#int ...)) :
-         println("Op-symbol is:~" % [op])
-         match(get?(operators, ut(op), false)) :
-            (op:PrimOp) :
-               ;println("Op is:~ ~ ~" % [op,op == ADD-OP, op == ADD-UU-OP])
-               DoPrim(op, es, map(ut, ints), UnknownType())
-            (f:False) :
-               throw-error $ string-join $ [
-               "Invalid operator: " op]     
-      exp-form = (?x:#symbol) :
-         Ref(ut(x), UnknownType())                       
+   defrule stmt/when :
+      stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt! else ?alt:#stmt/when) :
+         Conditionally(pred, conseq, alt)
+      stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt! else #:! ?alt:#stmt!) :
+         Conditionally(pred, conseq, alt)
+      stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt!) :
+         Conditionally(pred, conseq, EmptyStmt())
+
+   ;Main Expressions
+   defrule exp :
+      ;Suffix Operators
+      exp = (?x:#expterm ?ops:#expop ...) : apply-suffix-ops(x, ops)      
+      expop = ((@get ?f:#int)) : (fn (x) : Index(x, f, UnknownType()))
+      expop = (. ?f:#id!) : (fn (x) : Subfield(x, f, UnknownType()))
+      
+      ;Prefix Operators
+      expterm = (?t:#inttype(?v:#int$)) :
+         match(t) :
+            (t:UIntType) : UIntValue(v, width(t))
+            (t:SIntType) : SIntValue(v, width(t))
+
+      expterm = (WritePort(?m:#exp, ?i:#exp, ?e:#exp)) : WritePort(m, i, UnknownType(), e)
+      expterm != (WritePort) : FPE(form, "Invalid syntax for WritePort expression.")
+
+      expterm = (ReadPort(?m:#exp, ?i:#exp, ?e:#exp)) : ReadPort(m, i, UnknownType(), e)
+      expterm != (ReadPort) : FPE(form, "Invalid syntax for ReadPort expression.")
+
+      expterm = (Register(?v:#exp, ?e:#exp)) : Register(UnknownType(), v, e)
+      expterm != (Register) : FPE(form, "Invalid syntax for Register expression.")
+
+      expterm = (Pad(?e:#exp, ?w:#width$)) : Pad(e,w,UnknownType())
+      expterm != (Pad) : FPE(form, "Invalid syntax for Pad expression.")
+
+      expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
+         if not empty?(rest) :
+            FPE(rest, "Illegal operands to primitive operator.")
+         match(primop(op)) :
+            (p:PrimOp) : DoPrim(p, es, ints, UnknownType())
+            (p:False) : FPE(form, "Unrecognized primitive operator '~'." << [op])
+      expterm = (?op:#sym) :
+         Ref(op, UnknownType())
 
 public defn parse-firrtl (forms:List) :
    with-syntax(firrtl) :
       match-syntax(forms) :
-         (?c:#circuit) :
-            c
+         (?c:#circuit) : c
+         (_ ...) : FPE(form, "Invalid firrtl circuit.")
+
+public defn parse-firrtl-file (filename:String) :
+   parse-firrtl(lex-file(filename))

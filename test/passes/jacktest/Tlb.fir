@@ -2,13 +2,13 @@
 ; CHECK: Done!
 circuit Tbl : 
   module Tbl : 
-    output o : UInt(16)
-    input i : UInt(16)
-    input d : UInt(16)
-    input we : UInt(1)
+    output o : UInt<16>
+    input i : UInt<16>
+    input d : UInt<16>
+    input we : UInt<1>
     
-    mem m : UInt(10)[256]
-    node T_12 = UInt(0, 1)
+    mem m : UInt<10>[256]
+    node T_12 = UInt<1>(0)
     o := Pad(T_12,?)
     when we : 
       accessor T_13 = m[i]

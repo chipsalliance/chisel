@@ -3,13 +3,13 @@
 ; CHECK: Expand Whens
 circuit top :
    module top :
-      mem m :{ x : UInt(1), y : UInt(1) }[2] 
-      wire i : UInt(1)
-      wire p : UInt(1)
-      wire q : { x : UInt(1), y : UInt(1) }
+      mem m :{ x : UInt<1>, y : UInt<1> }[2] 
+      wire i : UInt<1>
+      wire p : UInt<1>
+      wire q : { x : UInt<1>, y : UInt<1> }
       when p :
-        wire p2 : UInt(1)
-        reg r5 : UInt(1)
+        wire p2 : UInt<1>
+        reg r5 : UInt<1>
         when p2 :
           accessor a = m[i] 
           q := a
@@ -21,7 +21,7 @@ circuit top :
           accessor d = m[i]
           d := q
       else :
-        wire p3 : UInt(1)
+        wire p3 : UInt<1>
         when p3 :
           accessor w = m[i] 
           q := w

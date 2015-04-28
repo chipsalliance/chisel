@@ -3,11 +3,11 @@
 ;CHECK: Infer Types
 circuit top :
    module top :
-      wire a : UInt(16)
-      wire b : UInt(8)
-      wire c : SInt(16)
-      wire d : SInt(8)
-      wire e : UInt(1)
+      wire a : UInt<16>
+      wire b : UInt<8>
+      wire c : SInt<16>
+      wire d : SInt<8>
+      wire e : UInt<1>
 
       node vadd = add(a, c)    ;CHECK: node vadd = add-us(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
       node wadd-uu = add-uu(a, b) ;CHECK: node wadd-uu = add-uu(a@<t:UInt>, b@<t:UInt>)@<t:UInt>

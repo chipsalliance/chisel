@@ -3,16 +3,13 @@
 ================================================
 
 ======== Current Tasks ========
-on-reset
-Parser
-   Error if incorrectly assign stuff, like use = instead of :=
-   Update parser and update tests
 Make instances always male, flip the bundles on declaration
 dlsh,drsh
+move Infer-Widths to before vec expansion?
+Add Unit Tests for each pass
    
 ======== Update Core ==========
 Add source locaters
-Add Unit Tests for each pass
 
 ======== Check Passes ==========
 Well-formed high firrtl 
@@ -26,6 +23,8 @@ Well-formed high firrtl
    UInt only has positive ints
    No combinational loops
    cannot connect to a pad, or a register. only connct to a reference
+   onreset can only handle a register
+   all references are declared
    expression in pad must be a ground type
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl

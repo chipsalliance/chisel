@@ -3,14 +3,14 @@
 ;CHECK: Resolve Genders
 circuit top :
    module source :
-      output data : UInt(16)
-      input ready : UInt(1)
+      output data : UInt<16>
+      input ready : UInt<1>
       data := UInt(16)
    module sink :
-      input data : UInt(16)
-      output ready : UInt(1)
+      input data : UInt<16>
+      output ready : UInt<1>
    module top: 
-      wire connect : { data : UInt(16), flip ready: UInt(1) }
+      wire connect : { data : UInt<16>, flip ready: UInt<1> }
       inst src of source         ;CHECK: inst src of source@<g:female>
       inst snk of sink           ;CHECK: inst snk of sink@<g:female>
       connect.data := src.data   ;CHECK: connect@<g:female>.data@<g:female> := src@<g:female>.data@<g:male>
