@@ -1853,14 +1853,14 @@ defn flo-op-name (op:PrimOp) -> String :
       LESS-EQ-US-OP :     "lte" ;; todo: swap args
       LESS-EQ-SU-OP :     "lte" ;; todo: swap args
       LESS-EQ-SS-OP :     "lte" ;; todo: swap args
-      GREATER-UU-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-US-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-SU-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-SS-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-EQ-UU-OP :  "lt"  ;; todo: signed version
-      GREATER-EQ-US-OP :  "lt"  ;; todo: signed version
-      GREATER-EQ-SU-OP :  "lt"  ;; todo: signed version
-      GREATER-EQ-SS-OP :  "lt"  ;; todo: signed version
+      GREATER-UU-OP :     "lt"  ;; todo: swap args
+      GREATER-US-OP :     "lt"  ;; todo: swap args
+      GREATER-SU-OP :     "lt"  ;; todo: swap args
+      GREATER-SS-OP :     "lt"  ;; todo: swap args
+      GREATER-EQ-UU-OP :  "lte" ;; todo: signed version
+      GREATER-EQ-US-OP :  "lte" ;; todo: signed version
+      GREATER-EQ-SU-OP :  "lte" ;; todo: signed version
+      GREATER-EQ-SS-OP :  "lte" ;; todo: signed version
       NEQUAL-UU-OP :      "neq"
       NEQUAL-SS-OP :      "neq"
       EQUAL-UU-OP :       "eq"
@@ -1936,13 +1936,13 @@ defn emit! (e:Expression,top:Symbol) :
       (e:Pad) : 
          emit-all(["rsh'" prim-width(type(e)) " " value(e) " 0"], top)
       (e:Register) : 
-         emit-all(["reg'" prim-width(type(e)) " 1 " value(e)], top) ;; enable(e)
+         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top) 
       (e:ReadPort) : 
          emit-all(["rd'" prim-width(type(e)) " " "1" " " mem(e) " " index(e)], top) ;; enable(e)
       (e:DoPrim) : 
          if cmp-op?(op(e)) :
            emit-all([flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
-           if greater-op?(op(e)) or less-eq-op?(op(e)) :
+           if greater-op?(op(e)) or greater-eq-op?(op(e)) :
              emit-all([" " args(e)[1] " " args(e)[0]], top)
            else :
              emit-all([" " args(e)[0] " " args(e)[1]], top)
