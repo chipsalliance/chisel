@@ -3,12 +3,12 @@
 
 circuit LFSR16 : 
   module LFSR16 : 
-    output out : UInt(16)
-    input inc : UInt(1)
+    output out : UInt<16>
+    input inc : UInt<1>
     
-    node T_16 = UInt(1, 16)
-    reg res : UInt(16)
-    res.init := T_16
+    node T_16 = UInt<16>(1)
+    reg res : UInt<16>
+    on-reset res := T_16
     when inc : 
       node T_17 = bit(res, 0)
       node T_18 = bit(res, 2)

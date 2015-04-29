@@ -22,14 +22,14 @@ circuit top :
       when gt(x, y) :
       ;CHECK: when gt-uu(x@<t:UInt>, y@<t:UInt>)@<t:UInt> :
          inst s of subtracter
-         ;CHECK: inst s of subtracter@<t:{ x : UInt@<t:UInt>, y : UInt@<t:UInt>, flip z : UInt@<t:UInt>, reset : UInt<1>@<t:UInt>}>
+         ;CHECK: inst s of subtracter@<t:{flip x : UInt@<t:UInt>, flip y : UInt@<t:UInt>,  z : UInt@<t:UInt>, flip reset : UInt<1>@<t:UInt>}>
          s.x := x
          s.y := y
          x := s.z
-         ;CHECK: s@<t:{ x : UInt@<t:UInt>, y : UInt@<t:UInt>, flip z : UInt@<t:UInt>, reset : UInt<1>@<t:UInt>}>.reset@<t:UInt> := reset@<t:UInt>
-         ;CHECK: s@<t:{ x : UInt@<t:UInt>, y : UInt@<t:UInt>, flip z : UInt@<t:UInt>, reset : UInt<1>@<t:UInt>}>.x@<t:UInt> := x@<t:UInt>
-         ;CHECK: s@<t:{ x : UInt@<t:UInt>, y : UInt@<t:UInt>, flip z : UInt@<t:UInt>, reset : UInt<1>@<t:UInt>}>.y@<t:UInt> := y@<t:UInt>
-         ;CHECK: x@<t:UInt> := s@<t:{ x : UInt@<t:UInt>, y : UInt@<t:UInt>, flip z : UInt@<t:UInt>, reset : UInt<1>@<t:UInt>}>.z@<t:UInt>
+         ;CHECK: s@<t:{flip x : UInt@<t:UInt>, flip y : UInt@<t:UInt>,  z : UInt@<t:UInt>, flip reset : UInt<1>@<t:UInt>}>.reset@<t:UInt> := reset@<t:UInt>
+         ;CHECK: s@<t:{flip x : UInt@<t:UInt>, flip y : UInt@<t:UInt>,  z : UInt@<t:UInt>, flip reset : UInt<1>@<t:UInt>}>.x@<t:UInt> := x@<t:UInt>
+         ;CHECK: s@<t:{flip x : UInt@<t:UInt>, flip y : UInt@<t:UInt>,  z : UInt@<t:UInt>, flip reset : UInt<1>@<t:UInt>}>.y@<t:UInt> := y@<t:UInt>
+         ;CHECK: x@<t:UInt> := s@<t:{flip x : UInt@<t:UInt>, flip y : UInt@<t:UInt>,  z : UInt@<t:UInt>, flip reset : UInt<1>@<t:UInt>}>.z@<t:UInt>      
       else :
          inst s2 of subtracter
          s2.x := x

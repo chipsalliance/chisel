@@ -3,10 +3,10 @@
 ================================================
 
 ======== Current Tasks ========
-Make instances always male, flip the bundles on declaration
 dlsh,drsh
-move Infer-Widths to before vec expansion?
 Add Unit Tests for each pass
+<>
+Update spec
    
 ======== Update Core ==========
 Add source locaters
@@ -26,6 +26,8 @@ Well-formed high firrtl
    onreset can only handle a register
    all references are declared
    expression in pad must be a ground type
+   node's value cannot be a bundle with a flip in it
+   mems cannot be a bundle with flips
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once
@@ -53,6 +55,7 @@ Patrick:
    move Infer-Widths to before vec expansion?
 
 ======== Think About ========
+<>
 subword accesses
 verilog style guide
 naming for split nodes

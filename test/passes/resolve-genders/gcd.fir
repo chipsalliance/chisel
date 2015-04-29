@@ -7,7 +7,7 @@ circuit top :
       input y : UInt
       output z : UInt
       z := sub-wrap(x, y)
-      ;CHECK: z@<g:female> := sub-wrap-uu(x@<g:male>, y@<g:male>)
+      ;CHECK: z@<g:f> := sub-wrap-uu(x@<g:m>, y@<g:m>)
    module gcd :
       input a : UInt<16>
       input b : UInt<16>
@@ -20,15 +20,15 @@ circuit top :
       on-reset x := UInt(0)
       on-reset y := UInt(42)
       when gt(x, y) :
-      ;CHECK: when gt-uu(x@<g:male>, y@<g:male>) :
+      ;CHECK: when gt-uu(x@<g:m>, y@<g:m>) :
          inst s of subtracter
-         ;CHECK: inst s of subtracter@<g:female>
+         ;CHECK: inst s of subtracter@<g:m>
          s.x := x
          s.y := y
          x := s.z
-         ;CHECK: s@<g:female>.x@<g:female> := x@<g:male>
-         ;CHECK: s@<g:female>.y@<g:female> := y@<g:male>
-         ;CHECK: x@<g:female> := s@<g:female>.z@<g:male>
+         ;CHECK: s@<g:m>.x@<g:f> := x@<g:m>
+         ;CHECK: s@<g:m>.y@<g:f> := y@<g:m>
+         ;CHECK: x@<g:f> := s@<g:m>.z@<g:m>
       else :
          inst s2 of subtracter
          s2.x := x

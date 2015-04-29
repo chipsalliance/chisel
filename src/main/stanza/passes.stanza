@@ -117,8 +117,8 @@ defn times (f1:Flip,f2:Flip) -> Flip :
       REVERSE : swap(f1)
      
 defn to-field (p:Port) -> Field :
-   if direction(p) == OUTPUT : Field(name(p),REVERSE,type(p))
-   else if direction(p) == INPUT : Field(name(p),DEFAULT,type(p))
+   if direction(p) == OUTPUT : Field(name(p),DEFAULT,type(p))
+   else if direction(p) == INPUT : Field(name(p),REVERSE,type(p))
    else : error("Shouldn't be here")
 
 defn to-dir (g:Gender) -> Direction :
@@ -128,15 +128,15 @@ defn to-dir (g:Gender) -> Direction :
 
 defmulti gender (e:Expression) -> Gender
 defmethod gender (e:Expression) :
-   MALE ; TODO, why was this OUTPUT before? It makes sense as male, not female
+   MALE
 
 defmethod print (o:OutputStream, g:Gender) :
    print{o, _} $
    switch {g == _} :
-      MALE : "male"
-      FEMALE: "female"
-      BI-GENDER : "bi"
-      UNKNOWN-GENDER: "unknown"
+      MALE : "m"
+      FEMALE: "f"
+      BI-GENDER : "b"
+      UNKNOWN-GENDER: "u"
 
 defmethod type (exp:UIntValue) -> Type : UIntType(width(exp))
 defmethod type (exp:SIntValue) -> Type : SIntType(width(exp))
@@ -496,8 +496,7 @@ defn infer-types (c:Circuit) -> Circuit :
 defn bundle-field-flip (n:Symbol,t:Type) -> Flip :
    match(t) :
       (b:BundleType) : 
-          val field = for f in fields(b) find :
-                         name(f) == n
+          val field = for f in fields(b) find : name(f) == n
           match(field):
                    (f:Field) : flip(f)
                    (f) : error(string-join(["Could not find " n " in bundle "]))
@@ -541,8 +540,8 @@ defn resolve-genders (c:Circuit) :
             (s:DefNode) : 
                DefNode(name(s),resolve-expr(value(s),get-gender(name(s),MALE)))
             (s:DefInstance) :
-               get-gender(name(s),FEMALE)
-               DefInstance(name(s),resolve-expr(module(s),FEMALE))
+               get-gender(name(s),MALE)
+               DefInstance(name(s),resolve-expr(module(s),MALE))
             (s:WDefAccessor) : 
                val gender* = get-gender(name(s),UNKNOWN-GENDER)
                val index* = resolve-expr(index(s),MALE)
@@ -642,6 +641,21 @@ defn expand-accessors (c:Circuit) :
 ;   to the lowered ground expression names and genders. This allows
 ;   references to be resolved.
 
+defstruct EF :
+   exp : Expression
+   flip : Flip
+
+defmethod print (o:OutputStream,e:EF) :
+   print-all(o, ["EF(" exp(e) "," flip(e) ")"])
+   
+defmethod print (o:OutputStream,e:NTF) :
+   print-all(o, ["NTF(" name(e) "," type(e) "," flip(e) ")"])
+
+defstruct NTF :
+   name : Symbol
+   type : Type
+   flip : Flip
+
 defn num-elems (t:Type) -> Int :
    match(t) :
       (t:BundleType) : 
@@ -660,194 +674,182 @@ defn index-of-elem (t:BundleType, s:Symbol) -> Int :
          else : sum = sum + num-elems(type(f))
       error("Shouldn't be here")
 
-defn lower-ports (m:Module, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) -> List<Port> :
-   val entries = table[name(m)]
-   val directions = 
-      for p in ports(m) map-append :
-         to-list(for i in 0 to num-elems(type(p)) stream : direction(p))
-   for (kv in entries, d in directions) map :
-      val exp = key(kv) as WRef
-      val dir* = d * value(kv)
-      Port(name(exp),dir*,type(exp))
 
-defn lower (body:Stmt, table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) -> Stmt :
+defn generate-entry (n:Symbol,t:Type) -> List<NTF> :
+   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n "$" n*])
+   match(t) :
+      (t:BundleType) : 
+         for f in fields(t) map-append :
+            val es = generate-entry(name(f),type(f))
+            for e in es map :
+               NTF(uniquify(name(e)),type(e),flip(e) * flip(f))
+      (t:VectorType) :
+         for i in 0 to size(t) map-append :
+            val es = generate-entry(to-symbol(i),type(t))
+            for e in es map :
+               NTF(uniquify(name(e)),type(e),flip(e))
+      (t) : list $ NTF(n,t,DEFAULT)
+
+defn expand-expr (e:Expression) -> List<EF> :
+   defn inst? (e:Expression) -> True|False :
+      match(e) :
+         (e:WRef) : kind(e) == InstanceKind()
+         (e) : false
+   match(e) :
+      (e:WRef) : 
+         if inst?(e) : 
+            for f in fields(type(e) as BundleType) map-append :
+               for x in generate-entry(name(f),type(f)) map :
+                  EF(WSubfield(e,name(x),type(x),gender(e)),flip(f) * flip(x))
+         else :
+            for x in generate-entry(name(e),type(e)) map :
+               EF(WRef(name(x),type(x),kind(e),gender(e)), flip(x))
+      (e:WSubfield) : 
+         if inst?(exp(e)) : 
+            val i = exp(e)
+            val f = {_ as Field} $
+               for f in fields(type(i) as BundleType) find : name(f) == name(e)
+            for x in generate-entry(name(f),type(f)) map :
+               EF(WSubfield(i,name(x),type(x),gender(e)),flip(x))
+         else :
+            val b = exp(e)
+            val exps = for x in generate-entry(name(b as WRef),type(b)) map :
+               EF(WRef(name(x),type(x),NodeKind(),gender(e)),DEFAULT)
+            val begin = index-of-elem(type(b) as BundleType,name(e))
+            val len = num-elems(type(e))
+            headn(tailn(exps,begin),len)
+      (e:WIndex) :
+         val exps = expand-expr(exp(e))
+         val len = num-elems(type(e))
+         headn(tailn(exps,len * value(e)),len)
+      (e:Pad) : 
+         val v = exp(head(expand-expr(value(e))))
+         list(EF(Pad(v,width(e),type(e)),DEFAULT))
+      (e:DoPrim) :
+         val args = for x in args(e) map : exp(head(expand-expr(x)))
+         list(EF(DoPrim(op(e),args,consts(e),type(e)),DEFAULT))
+      (e) : list(EF(e,DEFAULT))
+
+defn lower-ports (ports:List<Port>) -> List<Port> :
+   for p in ports map-append :
+      for x in generate-entry(name(p),type(p)) map :
+         Port(name(x),direction(p) * flip(x),type(x))
+
+defn type (s:WDefAccessor) -> Type : type(type(source(s)) as VectorType)
+defn size (s:DefMemory) -> Int : size(type(s))
+defn size (s:WDefAccessor) -> Int : size(type(source(s)) as VectorType)
+defn kind (e:WSubfield) -> Kind : kind(exp(e) as WRef|WSubfield|WIndex)
+defn kind (e:WIndex) -> Kind : kind(exp(e) as WRef|WSubfield|WIndex)
+
+defn set-gender (e:Expression,g:Gender,f:Flip) -> Expression :
+   match(e) : 
+      (e:WRef) : WRef(name(e),type(e),kind(e),g)
+      (e:WSubfield) : WSubfield(set-gender(exp(e),g * f,DEFAULT),name(e),type(e),g)
+      (e) : e
+
+defn lower (body:Stmt) -> Stmt :
    defn lower-stmt (s:Stmt) -> Stmt :
-      defn add-to-table (y:Symbol,k:KeyValue<Expression,Flip>,ctable:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) :
-         val contains? = for x in ctable any? :
-                            key(x) == y
-         if contains? : ctable[y] = append(ctable[y],list(k))
-         else : ctable[y] = list(k)
-      defn is-instance (e:Expression) -> True|False :
-         match(e) :
-            (e:WRef) : kind(e) == InstanceKind()
-            (e) : false
       defn calc-gender (g:Gender, e:Expression) -> Gender :
          match(e) :
             (e:WRef) : gender(e)
             (e:WSubfield) : 
-               if is-instance(exp(e)) : gender(e)
-               else : calc-gender(bundle-field-flip(name(e),type(exp(e))) * g,exp(e))
+               println-all-debug(["Calc gender. " g " with " e])
+               println-all-debug(["Exp: " exp(e)])
+               val flip = bundle-field-flip(name(e),type(exp(e)))
+               println-all-debug(["Flip: " flip])
+               calc-gender(flip * g,exp(e))
             (e:WIndex) : gender(e)
             (e) : g
 
+      println(s)
       match(s) :
-         (s:DefWire) : Begin{_} $
-            for t in table[name(s)] map :
-               DefWire(name(key(t) as WRef),type(key(t)))
+         (s:DefWire) : Begin $
+            for x in generate-entry(name(s),type(s)) map :
+               DefWire(name(x),type(x))
          (s:DefRegister) : Begin{_} $
-            for t in table[name(s)] map :
-               DefRegister(name(key(t) as WRef),type(key(t)))
+            for x in generate-entry(name(s),type(s)) map :
+               DefRegister(name(x),type(x))
          (s:DefInstance) : s
-         (s:DefNode) :
-            val s* = Begin $ list(
-               DefWire(name(s),type(value(s))),
-               Connect(WRef(name(s),type(value(s)),NodeKind(),FEMALE),value(s)))
-            lower-stmt(s*)
-         (s:OnReset) : Begin{_} $
+         (s:DefNode) : Begin $
+            for x in expand-expr(value(s)) map : 
+               DefNode(name(s),exp(x))
+         (s:DefMemory) : Begin $ 
+            for x in generate-entry(name(s),type(type(s))) map :
+               DefMemory(name(x),VectorType(type(x),size(s)))
+         (s:WDefAccessor) : 
+            val ls = generate-entry(name(s),type(s))
+            val rs = generate-entry(name(source(s) as WRef),type(s))
+            Begin $ for (l in ls, r in rs) map:
+               if flip(r) == REVERSE : error("Shouldn't be here")
+               val memref = WRef(name(r),VectorType(type(r),size(s)),MemKind(),gender(s))
+               WDefAccessor(name(l),memref,index(s),gender(s))
+         (s:OnReset|Connect) : Begin $
             for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
-               println-debug(s)
-               val lgender = calc-gender(FEMALE,loc(s)) * value(l)
-               val rgender = calc-gender(MALE,exp(s)) * value(r)
-               println-debug(loc(s))
-               println-debug(exp(s))
+               val lgender = FEMALE * flip(l)
+               val rgender = MALE * flip(r)
+               val l* = set-gender(exp(l),lgender,flip(l))
+               val r* = set-gender(exp(r),rgender,flip(r))
+               println-all-debug(["Left: " l " with Gender: " lgender])
+               println-all-debug(["Right: " r " with Gender: " rgender])
                switch fn ([x,y]) : lgender == x and rgender == y :
-                  [FEMALE,MALE]   : OnReset(key(l),key(r))
-                  [MALE,FEMALE]   : OnReset(key(r),key(l))
-         (s:Connect) : Begin{_} $
-            for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
-               println-debug(s)
-               val lgender = calc-gender(FEMALE,loc(s)) * value(l)
-               val rgender = calc-gender(MALE,exp(s)) * value(r)
-               println-debug(loc(s))
-               println-debug(exp(s))
-               switch fn ([x,y]) : lgender == x and rgender == y :
-                  [FEMALE,MALE]   : Connect(key(l),key(r))
-                  [MALE,FEMALE]   : Connect(key(r),key(l))
-         (s:WDefAccessor) : Begin{_} $
-            for (l in table[name(s)], r in expand-expr(source(s))) map:
-               WDefAccessor(name(key(l) as WRef),key(r),index(s),value(r) * gender(s))
+                  [FEMALE,MALE]  : 
+                     if s typeof Connect : Connect(l*,r*)
+                     else : OnReset(l*,r*)
+                  [MALE,FEMALE]  : 
+                     if s typeof Connect : Connect(r*,l*)
+                     else : OnReset(r*,l*)
          (s:ConnectFromIndexed) : Begin(ls) where :
-            val ctable = HashTable<Symbol,List<KeyValue<Expression,Flip>>>(symbol-hash)
+            val ctable = HashTable<Symbol,Vector<EF>>(symbol-hash)
             for e in exps(s) do :
                for (r in expand-expr(e),l in expand-expr(loc(s))) do :
-                  add-to-table(name(key(l) as WRef),r,ctable)
-            val ls = 
-               for l in expand-expr(loc(s)) map :
-                  val cg = calc-gender(FEMALE,loc(s))
-                  val lgender = cg * value(l)
-                  var rgender = BI-GENDER
-                  val exps = for e in ctable[name(key(l) as WRef)] map :
-                                rgender = rgender + (swap(cg) * value(e))
-                                key(e)
+                  val n = name(exp(l) as WRef)
+                  val x = get?(ctable,n,Vector<EF>())
+                  add(x,r)
+                  ctable[n] = x
+            val ls = for l in expand-expr(loc(s)) map :
+                  val n = name(exp(l) as WRef)
+                  val lgender = FEMALE * flip(l)
+                  for x in ctable[n] do : 
+                     if (flip(x) * MALE) == lgender : error("Shouldn't be here")
+                  val rgender = lgender * REVERSE
+                  val l* = set-gender(exp(l),lgender,flip(l))
+                  val exps = to-list $ for e in ctable[n] map : set-gender(exp(e),rgender,flip(e))
                   switch fn ([x,y]) : lgender == x and rgender == y :
-                     [FEMALE,MALE]   : ConnectFromIndexed(index(s),key(l),exps)
-                     [MALE,FEMALE]   : ConnectToIndexed(index(s),exps,key(l))
+                     [FEMALE,MALE]   : ConnectFromIndexed(index(s),l*,exps)
+                     [MALE,FEMALE]   : ConnectToIndexed(index(s),exps,l*)
          (s:ConnectToIndexed) : Begin(ls) where :
-            val ctable = HashTable<Symbol,List<KeyValue<Expression,Flip>>>(symbol-hash)
-            for ls in locs(s) do :
-               for (l in expand-expr(ls),r in expand-expr(exp(s))) do :
-                  add-to-table(name(key(r) as WRef),l,ctable)
-            val ls = 
-               for r in expand-expr(exp(s)) map :
-                  val n = name(key(r) as WRef)
-                  val cg = calc-gender(MALE,exp(s))
-                  val rgender = cg * value(r)
-                  var lgender = BI-GENDER
-                  val locs = for l in ctable[n] map :
-                                lgender = lgender + (swap(cg) * value(l))
-                                key(l)
+            val ctable = HashTable<Symbol,Vector<EF>>(symbol-hash)
+            for e in locs(s) do :
+               for (l in expand-expr(e),r in expand-expr(exp(s))) do :
+                  val n = name(exp(r) as WRef)
+                  val x = get?(ctable,n,Vector<EF>())
+                  add(x,l)
+                  ctable[n] = x
+            val ls = for r in expand-expr(exp(s)) map :
+                  val n = name(exp(r) as WRef)
+                  val rgender = MALE * flip(r)
+                  for x in ctable[n] do : 
+                     if (flip(x) * FEMALE) == rgender : error("Shouldn't be here")
+                  val lgender = rgender * REVERSE
+                  val r* = set-gender(exp(r),rgender,flip(r))
+                  val locs = to-list $ for e in ctable[n] map : set-gender(exp(e),lgender,flip(e))
                   switch fn ([x,y]) : lgender == x and rgender == y :
-                     [FEMALE,MALE]   : ConnectToIndexed(index(s),locs,key(r))
-                     [MALE,FEMALE]   : ConnectFromIndexed(index(s),key(r),locs)
-         (s:DefMemory) : Begin{_} $ 
-            for t in table[name(s)] map :
-               DefMemory(name(key(t) as WRef),type(key(t)) as VectorType)
-         (s) : map(lower-stmt,s)
+                     [FEMALE,MALE]   : ConnectToIndexed(index(s),locs,r*)
+                     [MALE,FEMALE]   : ConnectFromIndexed(index(s),r*,locs)
+         (s:Begin|Conditionally|EmptyStmt) : map(lower-stmt,s)
 
-   defn expand-expr (e:Expression) -> List<KeyValue<Expression,Flip>> :
-      match(e) :
-         (e:WRef) : table[name(e)]
-         (e:WSubfield) : 
-            val exps = expand-expr(exp(e))
-            val begin = index-of-elem(type(exp(e)) as BundleType,name(e))
-            val len = num-elems(type(e))
-            headn(tailn(exps,begin),len)
-         (e:WIndex) :
-            val exps = expand-expr(exp(e))
-            val len = num-elems(type(e))
-            headn(tailn(exps,len * value(e)),len)
-         (e:Pad) : 
-            val v = key(expand-expr(value(e))[0])
-            list(KeyValue(Pad(v,width(e),type(e)),DEFAULT))
-         (e:DoPrim) :
-            val args = for x in args(e) map : key(expand-expr(x)[0])
-            list(KeyValue(DoPrim(op(e),args,consts(e),type(e)),DEFAULT))
-         (e) : list(KeyValue(e, DEFAULT))
-
-   ;println-debug(table)
    lower-stmt(body)
 
-defn get-entries (n:Symbol,t:Type) -> List<KeyValue<WRef,Flip>> :
-   defn uniquify (w:WRef) -> WRef :
-      val name* = symbol-join([n "$" name(w)])
-      WRef(name*,type(w),kind(w),gender(w))
-   match(t) :
-      (t:BundleType) : 
-         for f in fields(t) map-append :
-            val es = get-entries(name(f),type(f))
-            for e in es map :
-               uniquify(key(e)) => value(e) * flip(f)
-      (t:VectorType) :
-         for i in 0 to size(t) map-append :
-            val es = get-entries(to-symbol(i),type(t))
-            for e in es map :
-               uniquify(key(e)) => value(e)
-      (t) : list(KeyValue(WRef(n,t,NodeKind(),UNKNOWN-GENDER),DEFAULT))
-
-defn lower-module (m:Module,table:HashTable<Symbol,List<KeyValue<Expression,Flip>>>) -> Module :
-   defn build-table-ports (ports:List<Port>) :
-      for p in ports do :
-         table[name(p)] = get-entries(name(p),type(p))
-
-   defn build-table-stmt (stmt:Stmt) -> Stmt:
-      match(stmt) :
-         (s:DefWire) : table[name(s)] = get-entries(name(s),type(s))
-         (s:DefRegister) : 
-            val regs = get-entries(name(s),type(s))
-            table[name(s)] = regs
-         (s:DefInstance) : 
-            val r = WRef(name(s),type(module(s)),InstanceKind(),FEMALE)
-            val ports = table[name(module(s) as WRef)]
-            table[name(s)] =
-               for w in ports map-append :
-                  list(KeyValue(WSubfield(r,name(key(w) as WRef),type(key(w) as WRef),UNKNOWN-GENDER), value(w)))
-         (s:DefMemory) : table[name(s)] = 
-            for x in get-entries(name(s),type(type(s) as VectorType)) map :
-               val [w f] = [key(x) value(x)]
-               WRef(name(w),VectorType(type(w),size(type(s) as VectorType)),kind(w),gender(w)) => f
-         (s:DefNode) : table[name(s)] = get-entries(name(s),type(value(s)))
-         (s:WDefAccessor) : table[name(s)] = get-entries(name(s),type(type(source(s)) as VectorType))
-         (s) : map(build-table-stmt,s)
-      stmt
-
-   build-table-ports(ports(m))
-   build-table-stmt(body(m)) 
+defn lower-module (c:Circuit,m:Module) -> Module : 
    Module(name(m),ports*,body*) where :
-      val body* = lower(body(m),table)
-      val ports* = lower-ports(m,table)
+      val body* = lower(body(m))
+      val ports* = lower-ports(ports(m))
 
 defn lower-to-ground (c:Circuit) -> Circuit :
-   val table = HashTable<Symbol,List<KeyValue<Expression,Flip>>>(symbol-hash)
-   defn build-table-module (m:Module) -> ? :
-      table[name(m)] = for p in ports(m) map-append : get-entries(name(p),type(p))
-
-   for m in modules(c) map :
-      build-table-module(m)
-
    Circuit(modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
-            lower-module(m,table)
+            lower-module(c,m)
 
 
 ;;=========== CONVERT MULTI CONNECTS to WHEN ================
@@ -887,83 +889,6 @@ defn expand-connect-indexed (c: Circuit) -> Circuit :
      val modules* = 
         for m in modules(c) map :
            expand-connect-indexed(m)
-
-;======= MAKE EXPLICIT REGISTER INITIALIZATION =============
-; This pass replaces the reg.init construct by creating a new
-;   wire that holds the value at initialization. This wire
-;   is then connected to the register conditionally on reset,
-;   at the end of the scope containing the  register 
-;   declaration
-; If a register has no inital value, the wire is connected to
-;   a NULL node. Later passes will remove these with the base
-;   case Mux(reset,NULL,a) -> a, and Mux(reset,a,NULL) -> a.
-;   This ensures proper behavior if this pass is run multiple 
-;   times.
-
-;defn initialize-registers (c:Circuit) :
-;   defn to-wire-name (y:Symbol) : symbol-join([ y "$init"])
-;   defn add-when (s:Stmt,h:HashTable<Symbol,Type>) -> Stmt :
-;      var inits = List<Stmt>()
-;      for kv in h do :
-;         val refreg = WRef(key(kv),value(kv),RegKind(),FEMALE)
-;         val refwire = WRef(to-wire-name(key(kv)),value(kv),NodeKind(),MALE)
-;         val connect = Connect(refreg,refwire)
-;         inits = append(inits,list(connect))
-;      if empty?(inits) : s
-;      else :
-;         val pred = WRef(`reset, UIntType(IntWidth(1)), PortKind(), MALE)
-;         val when-reset = Conditionally(pred,Begin(inits),Begin(List<Stmt>()))
-;         Begin(list(s,when-reset))
-;
-;   defn rename (s:Stmt,h:HashTable<Symbol,True|False>) -> [Stmt HashTable<Symbol,Type>] :
-;      val t = HashTable<Symbol,Type>(symbol-hash)
-;      defn rename-expr (e:Expression) -> Expression :
-;         match(map(rename-expr,e)) :
-;            (e:WRegInit) : 
-;               val new-name = to-wire-name(name(reg(e) as WRef))
-;               WRef(new-name,type(reg(e)),RegKind(),gender(e))
-;            (e) : e
-;      defn rename-stmt (s:Stmt) -> Stmt :
-;         match(map(rename-stmt,s)) :
-;            (s:DefRegister) : 
-;               if h[name(s)] :
-;                  t[name(s)] = type(s)
-;                  Begin(list(s,DefWire(to-wire-name(name(s)),type(s))))
-;               else : s
-;            (s) : map(rename-expr,s)
-;      [rename-stmt(s) t]
-;
-;   defn init? (y:Symbol,s:Stmt) -> True|False :
-;      var used? = false
-;      defn has? (e:Expression) -> Expression :
-;         match(map(has?,e)) :
-;            (e:WRegInit) : 
-;               if name(reg(e) as WRef) == y : used? = true
-;            (e) : map(has?,e)
-;         e
-;      map(has?,s)
-;      used?
-;
-;   defn using-init (s:Stmt,h:HashTable<Symbol,True|False>) -> Stmt :
-;      match(s) :
-;         (s:DefRegister) : h[name(s)] = false
-;         (s) : 
-;            for x in h do :
-;               h[key(x)] = value(x) or init?(key(x),s)
-;      map(using-init{_,h},s)
-;
-;   defn explicit-init-scope (s:Stmt) -> Stmt :
-;      val h = HashTable<Symbol,True|False>(symbol-hash)
-;      using-init(s,h)
-;      ;println-debug(h)
-;      val [s* t] = rename(s,h)
-;      add-when(s*,t)
-;     
-;   Circuit(modules*, main(c)) where :
-;      val modules* = 
-;         for m in modules(c) map :
-;            Module(name(m), ports(m), body*) where :
-;               val body* = explicit-init-scope(body(m))
 
 ;;================ EXPAND WHENS =============================
 ; This pass does three things: remove last connect semantics,
@@ -1040,9 +965,6 @@ defn children (e:Expression) -> List<Expression> :
    map(f,e)
    to-list(es)
    
-
-
-
 ; ======= Symbolic Value Library ==========
 public definterface SymbolicValue
 public defstruct SVExp <: SymbolicValue :
@@ -1204,7 +1126,7 @@ defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stm
          add(decs,s)
          add{cons,_} $ Begin $ 
             for f in fields(type(module(s)) as BundleType) map :
-               if flip(f) == DEFAULT : 
+               if flip(f) == REVERSE : 
                   val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
                   val x = to-symbol(split(to-string(n),'.')[0])
                   val f = to-symbol(split(to-string(n),'.')[1])
@@ -1270,7 +1192,7 @@ defn build-tables (s:Stmt,
          flattn[name(s)] = false
       (s:DefInstance) : ;TODO only add instance input ports. This probably involves correcting instance genders
          for f in fields(type(module(s)) as BundleType) do :
-            if flip(f) == DEFAULT : 
+            if flip(f) == REVERSE : 
                println-all-debug(["Instance: " s " has input " f])
                val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
                assign[n] = SVNul()

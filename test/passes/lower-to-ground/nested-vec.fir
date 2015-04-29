@@ -5,6 +5,7 @@ circuit top :
    module q :
       wire i : UInt
       wire j : { x : UInt<32>, flip y : UInt<32> }
+      wire k : { x : UInt<32>, y : UInt<32> }
 
       wire a : { x : UInt<32>, flip y : UInt<32> }[2]
       ; CHECK: wire a$0$x : UInt<32>
@@ -19,16 +20,17 @@ circuit top :
       ; CHECK: (a$0$y a$1$y)[i] := b$y
       j := b
 
-      mem m : { x : UInt<32>, flip y : UInt<32> }[2]
+      mem m : { x : UInt<32>, y : UInt<32> }[2]
       ; CHECK: mem m$x : UInt<32>[2]
       ; CHECK: mem m$y : UInt<32>[2]
 
       accessor c = m[i] ; MALE
       ; CHECK: accessor c$x = m$x[i]
       ; CHECK: accessor c$y = m$y[i]
-      ; CHECK: c$x := j$x
-      ; CHECK: j$y := c$y
-      c := j
+
+      c := k
+      ; CHECK: c$x := k$x
+      ; CHECK: c$y := k$y
 
 ; CHECK: Finished Lower To Ground
 
