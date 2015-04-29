@@ -169,7 +169,7 @@ case class Slot(val imm: Immediate, val name: String) extends Immediate {
 case class Index(val imm: Immediate, val value: Int) extends Immediate {
   def name = "." + value
   def fullname = {
-    imm.fullname + "." + value
+    imm.fullname + "[" + value + "]"
   }
 }
 
@@ -1188,7 +1188,7 @@ class Emitter {
   def emit(e: Width): String = {
     e match {
       case e: UnknownWidth => ""
-      case e: IntWidth => "(" + e.value.toString + ")"
+      case e: IntWidth => "<" + e.value.toString + ">"
     }
   }
   def emitType(e: Kind): String = {
@@ -1201,9 +1201,10 @@ class Emitter {
     }
   }
   def emit(e: Command): String = {
+    def maybeWidth (w: Int) = if (w == -1) "<?>" else ("<" + w + ">")
     e match {
-      case e: DefUInt => "node " + e.name + " = UInt(" + e.value + (if (e.width == -1) "" else ", " + e.width) + ")"
-      case e: DefSInt => "node " + e.name + " = SInt(" + e.value + (if (e.width == -1) "" else ", " + e.width) + ")"
+      case e: DefUInt => "node " + e.name + " = UInt" + maybeWidth(e.width) + "(" + e.value + ")"
+      case e: DefSInt => "node " + e.name + " = SInt" + maybeWidth(e.width) + "(" + e.value + ")"
       case e: DefFlo => "node " + e.name + " = Flo(" + e.value + ")"
       case e: DefDbl => "node " + e.name + " = Dbl(" + e.value + ")"
       case e: DefPrim => "node " + e.name + " = " + emit(e.op) + "(" + join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ") + ")"
@@ -1223,8 +1224,8 @@ class Emitter {
       case e: Begin => join0(e.body.map(x => emit(x)), newline)
       case e: Connect => emit(e.loc) + " := " + emit(e.exp)
       case e: ConnectPad => emit(e.loc) + " := Pad(" + emit(e.exp) + ",?)"
-      case e: ConnectInit => emit(e.loc) + ".init := Pad(" + emit(e.exp) + ",?)"
-      case e: ConnectInitIndex => emit(e.loc) + ".init." + e.index + " := Pad(" + emit(e.exp) + ",?)"
+      case e: ConnectInit => "on-reset " + emit(e.loc) + " := Pad(" + emit(e.exp) + ",?)"
+      case e: ConnectInitIndex => "on-reset " + emit(e.loc) + "[" + e.index + "] := Pad(" + emit(e.exp) + ",?)"
       case e: EmptyCommand => "skip"
     }
   }
