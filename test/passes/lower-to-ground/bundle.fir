@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefgh -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x abcdefgh -p cd | tee %s.out | FileCheck %s
 
 circuit top :
    module m :
