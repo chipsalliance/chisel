@@ -113,6 +113,12 @@ defmethod print (o:OutputStream, op:PrimOp) :
       AS-SINT-OP : "as-SInt"
       AS-SINT-U-OP : "as-SInt-u"
       AS-SINT-S-OP : "as-SInt-s"
+      DYN-SHIFT-LEFT-OP : "dshl"
+      DYN-SHIFT-LEFT-U-OP : "dshl-u"
+      DYN-SHIFT-LEFT-S-OP : "dshl-s"
+      DYN-SHIFT-RIGHT-OP : "dshr"
+      DYN-SHIFT-RIGHT-U-OP : "dshr-u"
+      DYN-SHIFT-RIGHT-S-OP : "dshr-s"
       SHIFT-LEFT-OP : "shl"
       SHIFT-LEFT-U-OP : "shl-u"
       SHIFT-LEFT-S-OP : "shl-s"
@@ -416,3 +422,13 @@ public defn contains (l:List<Char>, c:Char) :
 public defn merge!<?K,?V> (a:HashTable<?K,?V>, b:HashTable<K,V>) :
    for e in b do :
       a[key(e)] = value(e)
+
+public defn pow (x:Int,y:Int) -> Int :
+   var x* = 1
+   var y* = y
+   while y* != 0 :
+      x* = x* * x
+      y* = y* - 1
+   x*
+
+

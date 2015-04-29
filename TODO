@@ -3,10 +3,9 @@
 ================================================
 
 ======== Current Tasks ========
-dlsh,drsh
-Add Unit Tests for each pass
 <>
 Update spec
+Add Unit Tests for each pass
    
 ======== Update Core ==========
 Add source locaters
@@ -28,6 +27,7 @@ Well-formed high firrtl
    expression in pad must be a ground type
    node's value cannot be a bundle with a flip in it
    mems cannot be a bundle with flips
+   2nd arg in dshr/l must be UInt
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once

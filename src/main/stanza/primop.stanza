@@ -208,6 +208,20 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
                (t1:SIntType) : AS-SINT-S-OP
       AS-SINT-U-OP     : DoPrim(op(e),args(e),consts(e),s())
       AS-SINT-S-OP     : DoPrim(op(e),args(e),consts(e),s())
+      DYN-SHIFT-LEFT-OP    : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType,t2:UIntType) : DYN-SHIFT-LEFT-U-OP
+               (t1:SIntType,t2:UIntType) : DYN-SHIFT-LEFT-S-OP
+      DYN-SHIFT-LEFT-U-OP  : DoPrim(op(e),args(e),consts(e),u())
+      DYN-SHIFT-LEFT-S-OP  : DoPrim(op(e),args(e),consts(e),s())
+      DYN-SHIFT-RIGHT-OP   : 
+         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+            match(type(args(e)[0]),type(args(e)[1])) :
+               (t1:UIntType,t2:UIntType) : DYN-SHIFT-RIGHT-U-OP
+               (t1:SIntType,t2:UIntType) : DYN-SHIFT-RIGHT-S-OP
+      DYN-SHIFT-RIGHT-U-OP : DoPrim(op(e),args(e),consts(e),u())
+      DYN-SHIFT-RIGHT-S-OP : DoPrim(op(e),args(e),consts(e),s())
       SHIFT-LEFT-OP    : 
          DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
             match(type(args(e)[0])) :
@@ -255,26 +269,8 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
          for (l in ls) do :
             add(v,WGeq(l,m))
          m
-   ;defn new-width (w:Width) -> Width:
-   ;   val w* = VarWidth(gensym(`w))
-   ;   add(v,WGeq(w*,w))
-   ;   ;add(v,WGeq(w,w*))
-   ;   w*
-   ;defn width-plus-const (l:List<Expression>,c:List<Int>) -> Width :
-   ;   new-width(PlusWidth(width!(l[0]),IntWidth(c[0])))
-   ;defn width-minus-const (l:List<Expression>,c:List<Int>) -> Width :
-   ;   new-width(MinusWidth(width!(l[0]),IntWidth(c[0])))
-   ;defn max-width (l:List<Expression>) -> Width : 
-   ;   new-width(MaxWidth(map(width!,l)))
-   ;defn max-plus-one (l:List<Expression>) -> Width : 
-   ;   new-width(PlusWidth(MaxWidth(list(width!(l[0]),width!(l[1]))),IntWidth(1)))
-   ;defn sum (l:List<Expression>) -> Width : 
-   ;   new-width(PlusWidth(width!(l[0]),width!(l[1])))
-
    println-all-debug(["Looking at " op(e) " with inputs " args(e)])
-   val all-args-not-equal = to-list([MUX-UU-OP,MUX-SS-OP,CONCAT-OP,BIT-AND-OP,BIT-NOT-OP,BIT-OR-OP,BIT-XOR-OP,BIT-AND-REDUCE-OP,BIT-OR-REDUCE-OP,BIT-XOR-REDUCE-OP,AS-UINT-U-OP,AS-UINT-S-OP,AS-SINT-U-OP,AS-SINT-S-OP])
-   ;val consts-gte-args    = list(PAD-U-OP,PAD-S-OP)
-
+   val all-args-not-equal = to-list([MUX-UU-OP,MUX-SS-OP,CONCAT-OP,BIT-AND-OP,BIT-NOT-OP,BIT-OR-OP,BIT-XOR-OP,BIT-AND-REDUCE-OP,BIT-OR-REDUCE-OP,BIT-XOR-REDUCE-OP,AS-UINT-U-OP,AS-UINT-S-OP,AS-SINT-U-OP,AS-SINT-S-OP,DYN-SHIFT-LEFT-U-OP,DYN-SHIFT-LEFT-S-OP,DYN-SHIFT-RIGHT-U-OP,DYN-SHIFT-RIGHT-S-OP])
    
    val w-var = VarWidth(gensym(`w))
    val w* = 
@@ -358,6 +354,12 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
             AS-UINT-S-OP : all-equal(List(w-var,map(width!,args(e))))
             AS-SINT-U-OP : all-equal(List(w-var,map(width!,args(e))))
             AS-SINT-S-OP : all-equal(List(w-var,map(width!,args(e))))
+            DYN-SHIFT-LEFT-U-OP : 
+               PlusWidth(width!(args(e)[0]),ExpWidth(width!(args(e)[1])))
+            DYN-SHIFT-LEFT-S-OP : 
+               PlusWidth(width!(args(e)[0]),ExpWidth(width!(args(e)[1])))
+            DYN-SHIFT-RIGHT-U-OP : width!(args(e)[0])
+            DYN-SHIFT-RIGHT-S-OP : width!(args(e)[0])
 
    add(v,WGeq(w-var,w*))
    match(type(e)) :
