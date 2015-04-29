@@ -3,8 +3,8 @@
 ================================================
 
 ======== Current Tasks ========
-<>
 Update spec
+<>
 Add Unit Tests for each pass
    
 ======== Update Core ==========
@@ -58,7 +58,6 @@ Patrick:
 <>
 subword accesses
 verilog style guide
-naming for split nodes
 annotation system
 zero-width wires
 expanding mems (consider changing defmem to be size, and element type)

@@ -141,6 +141,18 @@ defmethod print (o:OutputStream, g:Gender) :
 defmethod type (exp:UIntValue) -> Type : UIntType(width(exp))
 defmethod type (exp:SIntValue) -> Type : SIntType(width(exp))
 
+;============== GENSYM STUFF ======================
+
+val sym-hash = HashTable<Symbol,Int>(symbol-hash)
+defn firrtl-gensym (s:Symbol) -> Symbol :
+   val cur = get?(sym-hash,s,0)
+   val nxt = cur + 1
+   sym-hash[s] = nxt
+   symbol-join([s cur])
+   
+defn firrtl-gensym () -> Symbol :
+   firrtl-gensym(`gen)
+   
 ;============== DEBUG STUFF =============================
 public var PRINT-TYPES : True|False = false
 public var PRINT-KINDS : True|False = false
@@ -251,7 +263,7 @@ defmethod map (f: Type -> Type, e: WSubfield) :
 defmethod map (f: Type -> Type, e: WIndex) :
    WIndex(exp(e), value(e), f(type(e)), gender(e))
 
-;================= Temparary Variable Elimination ========================
+;================= Temporary Variable Elimination ========================
 ; Returns a new Circuit where temporary variables are removed and returns
 ;   the resulting nested expression
 
@@ -1538,14 +1550,14 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (e:UIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
-                  val w* = VarWidth(gensym(`w))
+                  val w* = VarWidth(firrtl-gensym(`w))
                   add(v,WGeq(w*,IntWidth(ceil-log2(value(e)))))
                   UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
-                  val w* = VarWidth(gensym(`w))
+                  val w* = VarWidth(firrtl-gensym(`w))
                   add(v,WGeq(w*,IntWidth(1 + ceil-log2(abs(value(e))))))
                   SIntValue(value(e),w*)
                (w) : e
@@ -1590,7 +1602,7 @@ defn replace-var-widths (c:Circuit,h:HashTable<Symbol,Int>) -> Circuit :
 
 defn remove-unknowns-w (w:Width) -> Width :
    match(w) :
-      (w:UnknownWidth) : VarWidth(gensym(`w)) 
+      (w:UnknownWidth) : VarWidth(firrtl-gensym(`w)) 
       (w) : w
 defn remove-unknowns (t:Type) -> Type : mapr(remove-unknowns-w,t)
 
@@ -1700,8 +1712,9 @@ defn split-exp (c:Circuit) :
       match(map(split-exp-e{_,v,n},e)):
          (e:Subfield|DoPrim|Pad|ReadPort|Register|WritePort) : 
             val n* = 
-               if n typeof False : gensym(`T)
-               else : to-symbol $ string-join $ [n as Symbol gensym(`#)] 
+               if n typeof False : firrtl-gensym(`T)
+               else : firrtl-gensym(symbol-join([n as Symbol `#]))
+                  ;to-symbol $ string-join $ [n as Symbol firrtl-gensym(`#)] 
             add(v,DefNode(n*,e))
             WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
          (e) : e
@@ -1914,7 +1927,7 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
       (s:DefNode) :
          if value(s) typeof WritePort :
             val e = value(s) as WritePort
-            val n = gensym(`F)
+            val n = firrtl-gensym(`F)
             emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " name(s) "\n"], top)
          else :
            emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
