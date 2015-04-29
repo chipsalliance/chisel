@@ -584,10 +584,10 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   }
 
   def unary_- = bits_unop(NegOp)
-  def +e (other: Bits) = bits_binop_pad(AddOp, other)
+  def +& (other: Bits) = bits_binop_pad(AddOp, other)
   def + (other: Bits) = this +% other
   def +% (other: Bits) = bits_binop_pad(AddModOp, other)
-  def -e (other: Bits) = bits_binop_pad(SubOp, other)
+  def -& (other: Bits) = bits_binop_pad(SubOp, other)
   def -% (other: Bits) = bits_binop_pad(SubModOp, other)
   def - (other: Bits) = this -% other
   def * (other: Bits) = bits_binop_pad(TimesOp, other)
@@ -714,10 +714,10 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   }
 
   override def unary_- = uint_unop(NegOp)
-  def +e (other: UInt) = uint_binop_pad(AddOp, other)
+  def +& (other: UInt) = uint_binop_pad(AddOp, other)
   def + (other: UInt) = this +% other
   def +% (other: UInt) = uint_binop_pad(AddModOp, other)
-  def -e (other: UInt) = uint_binop_pad(SubOp, other)
+  def -& (other: UInt) = uint_binop_pad(SubOp, other)
   def - (other: UInt) = this -% other
   def -% (other: UInt) = uint_binop_pad(SubModOp, other)
   def * (other: UInt) = uint_binop_pad(TimesOp, other)
@@ -809,9 +809,9 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   }
 
   override def unary_- = sint_unop(NegOp)
-  def +e (other: SInt) = sint_binop_pad(AddOp, other)
+  def +& (other: SInt) = sint_binop_pad(AddOp, other)
   def + (other: SInt) = sint_binop_pad(AddModOp, other)
-  def -e (other: SInt) = sint_binop_pad(SubOp, other)
+  def -& (other: SInt) = sint_binop_pad(SubOp, other)
   def - (other: SInt) = sint_binop_pad(SubModOp, other)
   def * (other: SInt) = sint_binop_pad(TimesOp, other)
   def / (other: SInt) = sint_binop_pad(DivideOp, other)
