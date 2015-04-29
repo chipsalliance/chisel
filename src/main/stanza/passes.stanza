@@ -761,7 +761,7 @@ defn lower (body:Stmt) -> Stmt :
             (e:WIndex) : gender(e)
             (e) : g
 
-      println(s)
+      ;; println(s)
       match(s) :
          (s:DefWire) : Begin $
             for x in generate-entry(name(s),type(s)) map :
