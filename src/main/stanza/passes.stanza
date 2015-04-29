@@ -712,12 +712,17 @@ defn expand-expr (e:Expression) -> List<EF> :
             for x in generate-entry(name(f),type(f)) map :
                EF(WSubfield(i,name(x),type(x),gender(e)),flip(x))
          else :
-            val b = exp(e)
-            val exps = for x in generate-entry(name(b as WRef),type(b)) map :
-               EF(WRef(name(x),type(x),NodeKind(),gender(e)),DEFAULT)
-            val begin = index-of-elem(type(b) as BundleType,name(e))
+            val exps = expand-expr(exp(e))
+            val begin = index-of-elem(type(exp(e)) as BundleType,name(e))
             val len = num-elems(type(e))
-            headn(tailn(exps,begin),len)
+            val ret = headn(tailn(exps,begin),len)
+            for r in ret map : EF(exp(r),DEFAULT)
+            ;val b =  exp(e)
+            ;val exps = for x in generate-entry(name(b as WRef),type(b)) map :
+               ;EF(WRef(name(x),type(x),NodeKind(),gender(e)),DEFAULT)
+            ;val begin = index-of-elem(type(b) as BundleType,name(e))
+            ;val len = num-elems(type(e))
+            ;headn(tailn(exps,begin),len)
       (e:WIndex) :
          val exps = expand-expr(exp(e))
          val len = num-elems(type(e))
@@ -740,6 +745,11 @@ defn size (s:DefMemory) -> Int : size(type(s))
 defn size (s:WDefAccessor) -> Int : size(type(source(s)) as VectorType)
 defn kind (e:WSubfield) -> Kind : kind(exp(e) as WRef|WSubfield|WIndex)
 defn kind (e:WIndex) -> Kind : kind(exp(e) as WRef|WSubfield|WIndex)
+defn base-name (e:Expression) -> Symbol :
+   match(e) : 
+      (e:WRef) : name(e)
+      (e:WSubfield) : base-name(exp(e))
+      (e:WIndex) : base-name(exp(e))
 
 defn set-gender (e:Expression,g:Gender,f:Flip) -> Expression :
    match(e) : 
@@ -749,18 +759,6 @@ defn set-gender (e:Expression,g:Gender,f:Flip) -> Expression :
 
 defn lower (body:Stmt) -> Stmt :
    defn lower-stmt (s:Stmt) -> Stmt :
-      defn calc-gender (g:Gender, e:Expression) -> Gender :
-         match(e) :
-            (e:WRef) : gender(e)
-            (e:WSubfield) : 
-               println-all-debug(["Calc gender. " g " with " e])
-               println-all-debug(["Exp: " exp(e)])
-               val flip = bundle-field-flip(name(e),type(exp(e)))
-               println-all-debug(["Flip: " flip])
-               calc-gender(flip * g,exp(e))
-            (e:WIndex) : gender(e)
-            (e) : g
-
       println(s)
       match(s) :
          (s:DefWire) : Begin $
@@ -1974,5 +1972,4 @@ public defn run-passes (c: Circuit, p: List<Char>,file:String) :
    if contains(p,'X') or contains(p,'n') : do-stage("Split Expressions", split-exp)
    if contains(p,'X') or contains(p,'o') : do-stage("Real IR", to-real-ir)
    if contains(p,'X') or contains(p,'F') : do-stage("To Flo", emit-flo{file,_})
-
    println("Done!")
