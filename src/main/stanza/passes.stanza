@@ -1297,6 +1297,8 @@ public defstruct MinusWidth <: Width :
    arg2 : Width
 public defstruct MaxWidth <: Width :
    args : List<Width>
+public defstruct ExpWidth <: Width :
+   arg1 : Width
 
 public defmulti map<?T> (f: Width -> Width, w:?T&Width) -> T
 defmethod map (f: Width -> Width, w:Width) -> Width :
@@ -1304,6 +1306,7 @@ defmethod map (f: Width -> Width, w:Width) -> Width :
       (w:MaxWidth) : MaxWidth(map(f,args(w)))
       (w:PlusWidth) : PlusWidth(f(arg1(w)),f(arg2(w)))
       (w:MinusWidth) : MinusWidth(f(arg1(w)),f(arg2(w)))
+      (w:ExpWidth) : ExpWidth(f(arg1(w)))
       (w) : w
 
 public defmethod print (o:OutputStream, w:VarWidth) :
@@ -1314,6 +1317,8 @@ public defmethod print (o:OutputStream, w:PlusWidth) :
    print-all(o,[ arg1(w) " + " arg2(w)])
 public defmethod print (o:OutputStream, w:MinusWidth) :
    print-all(o,[ arg1(w) " - " arg2(w)])
+public defmethod print (o:OutputStream, w:ExpWidth) :
+   print-all(o,[ "exp(" arg1(w) ")"])
 
 public definterface Constraint
 public defstruct WGeq <: Constraint :
@@ -1407,6 +1412,9 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
       look(w)
       has?
    defn evaluate (h:HashTable<Symbol,Width>) -> HashTable<Symbol,Int> :
+      defn apply (a:Int|False,f:(Int) -> Int) -> Int|False :
+         if a typeof Int : f(a as Int)
+         else : false
       defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
          if a typeof Int and b typeof Int : f(a as Int, b as Int)
          else : false
@@ -1422,6 +1430,7 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
             (w:MaxWidth) : apply-l(map(solve,args(w)),max)
             (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ + _})
             (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ - _})
+            (w:ExpWidth) : apply(2,solve(arg1(w)),{pow(_,_) - 1})
             (w:IntWidth) : width(w)
             (w) : error("Shouldn't be here")
 

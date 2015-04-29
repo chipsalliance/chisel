@@ -115,6 +115,14 @@ circuit top :
       node wshl-u = shl-u(a, 10) ;CHECK: node wshl-u = shl-u(a@<t:UInt>, 10)@<t:UInt>
       node zshl-s = shl-s(c, 10) ;CHECK: node zshl-s = shl-s(c@<t:SInt>, 10)@<t:SInt>
    
+      node vdshl = dshl(a, a)   ;CHECK: node vdshl = dshl-u(a@<t:UInt>, a@<t:UInt>)@<t:UInt>
+      node wdshl-u = dshl-u(a, a) ;CHECK: node wdshl-u = dshl-u(a@<t:UInt>, a@<t:UInt>)@<t:UInt>
+      node zdshl-s = dshl-s(c, a) ;CHECK: node zdshl-s = dshl-s(c@<t:SInt>, a@<t:UInt>)@<t:SInt>
+   
+      node vdshr = dshr(a, a)   ;CHECK: node vdshr = dshr-u(a@<t:UInt>, a@<t:UInt>)@<t:UInt>
+      node wdshr-u = dshr-u(a, a) ;CHECK: node wdshr-u = dshr-u(a@<t:UInt>, a@<t:UInt>)@<t:UInt>
+      node zdshr-s = dshr-s(c, a) ;CHECK: node zdshr-s = dshr-s(c@<t:SInt>, a@<t:UInt>)@<t:SInt>
+   
       node vshr = shr(a, 10)   ;CHECK: node vshr = shr-u(a@<t:UInt>, 10)@<t:UInt>
       node wshr-u = shr-u(a, 10) ;CHECK: node wshr-u = shr-u(a@<t:UInt>, 10)@<t:UInt>
       node zshr-s = shr-s(c, 10) ;CHECK: node zshr-s = shr-s(c@<t:SInt>, 10)@<t:SInt>
