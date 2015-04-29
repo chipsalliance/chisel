@@ -517,7 +517,7 @@ abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
 }
 
 abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width) {
-  var litValueVar: Option[BigInt] = Some(-1)
+  private var litValueVar: Option[BigInt] = None
 
   override def litValue(): BigInt = litValueVar.getOrElse(-1)
   override def isLitValue(): Boolean = litValueVar.isDefined
@@ -530,8 +530,8 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   final def apply(x: BigInt): Bool = {
     val d = new Bool(dir)
-    if (this.isLitValue())
-      setLitValue((this.litValue() >> x.toInt) & 1)
+    if (isLitValue())
+      d.setLitValue((litValue() >> x.toInt) & 1)
     pushCommand(DefPrim(d.defd.id, d.toType, BitSelectOp, Array(this.ref), Array(x)))
     d
   }
@@ -539,9 +539,11 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     apply(x.litValue(), y.litValue())
 
   final def apply(x: BigInt, y: BigInt): UInt = {
-    val d = UInt(width = (y - x + 1).toInt)
-    if (this.isLitValue())
-      setLitValue((this.litValue() >> y.toInt) & ((BigInt(1)<<d.getWidth)-BigInt(1)))
+    val d = UInt(width = (x - y + 1).toInt)
+    if (isLitValue()) {
+      val mask = (BigInt(1)<<d.getWidth)-BigInt(1)
+      d.setLitValue((litValue() >> y.toInt) & mask)
+    }
     pushCommand(DefPrim(d.defd.id, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
     d
   }
@@ -753,7 +755,7 @@ object UInt {
   def uintLit(value: BigInt, width: Int) = {
     val w = if(width == -1) max(bitLength(value), 1) else width
     val b = new UInt(NO_DIR, w)
-    b.litValueVar = Some(value)
+    b.setLitValue(value)
     pushCommand(DefUInt(b.defd.id, value, w))
     b
   }
@@ -841,7 +843,7 @@ object SInt {
   def sintLit(value: BigInt, width: Int) = {
     val w = if (width == -1) bitLength(value) + 1 else width
     val b = new SInt(NO_DIR, w)
-    b.litValueVar = Some(value)
+    b.setLitValue(value)
     pushCommand(DefSInt(b.defd.id, value, w))
     b
   }
