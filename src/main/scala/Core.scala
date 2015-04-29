@@ -34,6 +34,7 @@ object Builder {
   def pushModule(mod: Module) {
     modulez.push(mod)
   }
+  def getComponent(): Module = modulez.head
   def popModule() {
     modulez.pop
   }
@@ -77,7 +78,7 @@ object Builder {
   }
 
   def setFieldForId(parentid: String, id: String, name: String) {
-    refmap(id) = Field(Alias(parentid), name)
+    refmap(id) = Slot(Alias(parentid), name)
   }
 
   def setIndexForId(parentid: String, id: String, index: Int) {
@@ -159,7 +160,7 @@ case class Alias(val id: String) extends Immediate {
 case class Ref(val name: String) extends Immediate {
   def fullname = name
 }
-case class Field(val imm: Immediate, val name: String) extends Immediate {
+case class Slot(val imm: Immediate, val name: String) extends Immediate {
   def fullname = {
     val imm_fullname = imm.fullname
     if (imm_fullname == "this") name else imm_fullname + "." + name
@@ -172,20 +173,20 @@ case class Index(val imm: Immediate, val value: Int) extends Immediate {
   }
 }
 
-case class Port(val id: String, val dir: Direction, val kind: Type);
+case class Port(val id: String, val dir: Direction, val kind: Kind);
 
 abstract class Width;
 case class UnknownWidth() extends Width;
 case class IntWidth(val value: Int) extends Width;
 
-abstract class Type(val isFlip: Boolean);
-case class UnknownType(flip: Boolean) extends Type(flip);
-case class UIntType(val width: Width, flip: Boolean) extends Type(flip);
-case class SIntType(val width: Width, flip: Boolean) extends Type(flip);
-case class FloType(flip: Boolean) extends Type(flip);
-case class DblType(flip: Boolean) extends Type(flip);
-case class BundleType(val ports: Array[Port], flip: Boolean) extends Type(flip);
-case class VectorType(val size: Int, val kind: Type, flip: Boolean) extends Type(flip);
+abstract class Kind(val isFlip: Boolean);
+case class UnknownType(flip: Boolean) extends Kind(flip);
+case class UIntType(val width: Width, flip: Boolean) extends Kind(flip);
+case class SIntType(val width: Width, flip: Boolean) extends Kind(flip);
+case class FloType(flip: Boolean) extends Kind(flip);
+case class DblType(flip: Boolean) extends Kind(flip);
+case class BundleType(val ports: Array[Port], flip: Boolean) extends Kind(flip);
+case class VectorType(val size: Int, val kind: Kind, flip: Boolean) extends Kind(flip);
 
 abstract class Command;
 abstract class Definition extends Command {
@@ -197,11 +198,11 @@ case class DefSInt(val id: String, val value: BigInt, val width: Int) extends De
 case class DefFlo(val id: String, val value: Float) extends Definition;
 case class DefDbl(val id: String, val value: Double) extends Definition;
 case class DefMInt(val id: String, val value: String, val width: Int) extends Definition;
-case class DefPrim(val id: String, val kind: Type, val op: PrimOp, val args: Array[Alias], val lits: Array[BigInt]) extends Definition;
-case class DefPrimPad(val id: String, val kind: Type, val op: PrimOp, val args: Array[Alias], val lits: Array[BigInt]) extends Definition;
-case class DefWire(val id: String, val kind: Type) extends Definition;
-case class DefRegister(val id: String, val kind: Type) extends Definition;
-case class DefMemory(val id: String, val kind: Type, val size: Int) extends Definition;
+case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Alias], val lits: Array[BigInt]) extends Definition;
+case class DefPrimPad(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Alias], val lits: Array[BigInt]) extends Definition;
+case class DefWire(val id: String, val kind: Kind) extends Definition;
+case class DefRegister(val id: String, val kind: Kind) extends Definition;
+case class DefMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
 case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Alias) extends Definition;
 case class DefInstance(val id: String, val module: String) extends Definition;
 case class Conditionally(val pred: Alias, val conseq: Command, val alt: Command) extends Command;
@@ -255,7 +256,7 @@ abstract class Id {
 
 abstract class Data(dirArg: Direction) extends Id {
   val mod = modulez.top
-  def toType: Type
+  def toType: Kind
   var isFlipVar = dirArg == INPUT
   def isFlip = isFlipVar
   def dir: Direction = if (isFlip) INPUT else OUTPUT
@@ -270,7 +271,7 @@ abstract class Data(dirArg: Direction) extends Id {
     setDir(OUTPUT)
     this
   }
-  def flip: this.type = {
+  def flip(): this.type = {
     isFlipVar = !isFlipVar
     this
   }
@@ -284,6 +285,9 @@ abstract class Data(dirArg: Direction) extends Id {
     Alias(id)
   def name = getRefForId(id).name
   def debugName = mod.debugName + "." + name
+  def litValue(): BigInt = -1
+  def isLitValue(): Boolean = false
+  def setLitValue(x: BigInt) {  }
   def getWidth: Int
   def flatten: Array[Bits]
   def fromBits(n: Bits): this.type = {
@@ -312,6 +316,7 @@ abstract class Data(dirArg: Direction) extends Id {
   def collectElts: Unit
   var isReg_ = false
   def isReg = isReg_
+  def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
 object Wire {
@@ -359,12 +364,14 @@ object Mem {
   }
 }
 
-class Mem[T <: Data](val t: T, val size: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
+class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
   def apply(idx: Bits): T = {
     val x = t.cloneType
     pushCommand(DefAccessor(x.defd.id, Alias(t.id), NO_DIR, idx.ref))
     x
   }
+  def name = getRefForId(t.id).name
+  def debugName = t.mod.debugName + "." + name
 }
 
 object Vec {
@@ -417,7 +424,7 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
     self(idx)
   def toPorts: Array[Port] = 
     self.map(d => d.toPort).toArray
-  def toType: Type = 
+  def toType: Kind = 
     VectorType(self.size, elt0.toType, isFlipVar)
   override def cloneType: this.type = {
     val v = Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
@@ -482,7 +489,7 @@ class MInt(val value: String, val width: Int) extends Data(NO_DIR) {
   def collectElts: Unit = { }
   override def dir: Direction = NO_DIR
   override def setDir(dir: Direction): Unit = { }
-  override def toType: Type = UIntType(UnknownWidth(), isFlip)
+  override def toType: Kind = UIntType(UnknownWidth(), isFlip)
   override def getWidth: Int = width
   override def flatten: Array[Bits] = Array[Bits](Bits(0))
   override def cloneType: this.type = 
@@ -492,13 +499,16 @@ class MInt(val value: String, val width: Int) extends Data(NO_DIR) {
   def zEquals(other: Bits): Bool = 
     (Bits(toLitVal(mask, 2)) & other) === Bits(toLitVal(bits, 2))
   def === (other: Bits): Bool = zEquals(other)
-  def !== (other: Bits): Bool  = !zEquals(other)
+  def != (other: Bits): Bool  = !zEquals(other)
 }
 
 object MInt {
-  def mintLit(value: String, width: Int) = new MInt(value, width)
-  def apply(value: String, width: Int) = mintLit(value, width)
-  def apply(value: String) = mintLit(value, -1)
+  def mintLit(n: String, width: Int) = {
+    assert(n(0) == 'b', "BINARY MINTS ONLY")
+    new MInt(n.substring(1, n.length), width)
+  }
+  def apply(value: String, width: Int): MInt = mintLit(value, width)
+  def apply(value: String): MInt = apply(value, -1)
 }
 
 abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
@@ -507,25 +517,31 @@ abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
 }
 
 abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width) {
-  var litValue: Option[BigInt] = Some(-1)
+  var litValueVar: Option[BigInt] = Some(-1)
 
-  def litValueGet: BigInt = litValue.getOrElse(-1)
+  override def litValue(): BigInt = litValueVar.getOrElse(-1)
+  override def isLitValue(): Boolean = litValueVar.isDefined
+  override def setLitValue(x: BigInt) { litValueVar = Some(x) }
 
   override def flatten: Array[Bits] = Array[Bits](this)
 
-  def apply(x: UInt): Bool = 
-    apply(x.litValueGet)
+  final def apply(x: UInt): Bool = 
+    apply(x.litValue())
 
-  def apply(x: BigInt): Bool = {
+  final def apply(x: BigInt): Bool = {
     val d = new Bool(dir)
+    if (this.isLitValue())
+      setLitValue((this.litValue() >> x.toInt) & 1)
     pushCommand(DefPrim(d.defd.id, d.toType, BitSelectOp, Array(this.ref), Array(x)))
     d
   }
-  def apply(x: UInt, y: UInt): this.type = 
-    apply(x.litValueGet, y.litValueGet)
+  final def apply(x: UInt, y: UInt): UInt = 
+    apply(x.litValue(), y.litValue())
 
-  def apply(x: BigInt, y: BigInt): this.type = {
-    val d = cloneTypeWidth(-1)
+  final def apply(x: BigInt, y: BigInt): UInt = {
+    val d = UInt(width = (y - x + 1).toInt)
+    if (this.isLitValue())
+      setLitValue((this.litValue() >> y.toInt) & ((BigInt(1)<<d.getWidth)-BigInt(1)))
     pushCommand(DefPrim(d.defd.id, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
     d
   }
@@ -579,14 +595,24 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def >> (other: Bits) = bits_binop(DynamicShiftRightOp, other)
   def unary_~(): Bits = bits_unop(BitNotOp)
 
-  def & (other: Bits) = bits_binop_pad(BitAndOp, other)
+  def & (other: Bits) = {
+    val r = bits_binop_pad(BitAndOp, other)
+    if (isLitValue() && other.isLitValue())
+      r.setLitValue(litValue() & other.litValue())
+    r
+  }
   def | (other: Bits) = bits_binop_pad(BitOrOp, other)
   def ^ (other: Bits) = bits_binop_pad(BitXorOp, other)
 
   def < (other: Bits) = bits_compop_pad(LessOp, other)
   def > (other: Bits) = bits_compop_pad(GreaterOp, other)
-  def === (other: Bits) = bits_compop_pad(EqualOp, other)
-  def !== (other: Bits) = bits_compop_pad(NotEqualOp, other)
+  def === (other: Bits) = {
+    val r = bits_compop_pad(EqualOp, other)
+    if (isLitValue() && other.isLitValue())
+      r.setLitValue(if (litValue() == other.litValue()) 1 else 0)
+    r
+  }
+  def != (other: Bits) = bits_compop_pad(NotEqualOp, other)
   def <= (other: Bits) = bits_compop_pad(LessEqOp, other)
   def >= (other: Bits) = bits_compop_pad(GreaterEqOp, other)
   def pad (other: BigInt) = bits_binop(PadOp, other)
@@ -619,8 +645,11 @@ import UInt._
 
 object Bits {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = new UInt(dir, width)
-  def apply(value: BigInt, width: Int) = uintLit(value, width)
-  def apply(value: BigInt) = uintLit(value, -1)
+  def apply(value: BigInt, width: Int): UInt = uintLit(value, width)
+  def apply(value: BigInt): UInt = apply(value, -1)
+  def apply(n: String, width: Int): UInt =
+    apply(stringToVal(n(0), n.substring(1, n.length)), width)
+  def apply(n: String): UInt = apply(n, -1)
 }
 
 abstract trait Num[T <: Data] {
@@ -646,7 +675,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
     new UInt(dir, w).asInstanceOf[this.type]
   override def cloneType : this.type = cloneTypeWidth(width)
 
-  def toType: Type = 
+  def toType: Kind = 
     UIntType(if (width == -1) UnknownWidth() else IntWidth(width), isFlipVar)
 
   def fromInt(x: BigInt): this.type = UInt(x).asInstanceOf[this.type]
@@ -694,14 +723,24 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def >> (other: UInt) = uint_binop(DynamicShiftRightOp, other)
 
   override def unary_~(): UInt = uint_unop(BitNotOp)
-  def & (other: UInt) = uint_binop_pad(BitAndOp, other)
+  def & (other: UInt) = {
+    val r = uint_binop_pad(BitAndOp, other)
+    if (isLitValue() && other.isLitValue())
+      r.setLitValue(litValue() & other.litValue())
+    r
+  }
   def | (other: UInt) = uint_binop_pad(BitOrOp, other)
   def ^ (other: UInt) = uint_binop_pad(BitXorOp, other)
 
   def < (other: UInt) = uint_compop_pad(LessOp, other)
   def > (other: UInt) = uint_compop_pad(GreaterOp, other)
-  def === (other: UInt) = uint_compop_pad(EqualOp, other)
-  def !== (other: UInt) = uint_compop_pad(NotEqualOp, other)
+  def === (other: UInt) = {
+    val r = uint_compop_pad(EqualOp, other)
+    if (isLitValue() && other.isLitValue())
+      r.setLitValue(if (litValue() == other.litValue()) 1 else 0)
+    r
+  }
+  def != (other: UInt) = uint_compop_pad(NotEqualOp, other)
   def <= (other: UInt) = uint_compop_pad(LessEqOp, other)
   def >= (other: UInt) = uint_compop_pad(GreaterEqOp, other)
 
@@ -714,18 +753,22 @@ object UInt {
   def uintLit(value: BigInt, width: Int) = {
     val w = if(width == -1) max(bitLength(value), 1) else width
     val b = new UInt(NO_DIR, w)
+    b.litValueVar = Some(value)
     pushCommand(DefUInt(b.defd.id, value, w))
     b
   }
-  def apply(value: BigInt, width: Int) = uintLit(value, width)
-  def apply(value: BigInt) = uintLit(value, -1)
+  def apply(value: BigInt, width: Int): UInt = uintLit(value, width)
+  def apply(value: BigInt): UInt = apply(value, -1)
+  def apply(n: String, width: Int): UInt =
+    apply(stringToVal(n(0), n.substring(1, n.length)), width)
+  def apply(n: String): UInt = apply(n, -1)
 }
 
 class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   override def cloneTypeWidth(w: Int): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   override def cloneType: this.type = cloneTypeWidth(width)
-  def toType: Type = 
+  def toType: Kind = 
     SIntType(if (width == -1) UnknownWidth() else IntWidth(width), isFlipVar)
 
   def fromInt(x: BigInt): this.type = SInt(x).asInstanceOf[this.type]
@@ -779,8 +822,13 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
 
   def < (other: SInt) = sint_compop_pad(LessOp, other)
   def > (other: SInt) = sint_compop_pad(GreaterOp, other)
-  def === (other: SInt) = sint_compop_pad(EqualOp, other)
-  def !== (other: SInt) = sint_compop_pad(NotEqualOp, other)
+  def === (other: SInt) = {
+    val r = sint_compop_pad(EqualOp, other)
+    if (isLitValue() && other.isLitValue())
+      r.setLitValue(if (litValue() == other.litValue()) 1 else 0)
+    r
+  }
+  def != (other: SInt) = sint_compop_pad(NotEqualOp, other)
   def <= (other: SInt) = sint_compop_pad(LessEqOp, other)
   def >= (other: SInt) = sint_compop_pad(GreaterEqOp, other)
 
@@ -793,11 +841,15 @@ object SInt {
   def sintLit(value: BigInt, width: Int) = {
     val w = if (width == -1) bitLength(value) + 1 else width
     val b = new SInt(NO_DIR, w)
+    b.litValueVar = Some(value)
     pushCommand(DefSInt(b.defd.id, value, w))
     b
   }
-  def apply(value: BigInt, width: Int) = sintLit(value, width)
-  def apply(value: BigInt) = sintLit(value, -1)
+  def apply(value: BigInt, width: Int): SInt = sintLit(value, width)
+  def apply(value: BigInt): SInt = apply(value, -1)
+  def apply(n: String, width: Int): SInt =
+    apply(stringToVal(n(0), n.substring(1, n.length)), width)
+  def apply(n: String): SInt = apply(n, -1)
 }
 
 class Bool(dir: Direction) extends UInt(dir, 1) {
@@ -862,7 +914,10 @@ object Cat {
     else {
       val l = doCat(r.slice(0, r.length/2))
       val h = doCat(r.slice(r.length/2, r.length))
-      val d = l.cloneType
+      val isConst = (l.isLitValue() && h.isLitValue())
+      val w = if (isConst) l.getWidth + h.getWidth else -1
+      val d = l.cloneTypeWidth(w)
+      if (isConst) d.setLitValue((l.litValue() << l.getWidth) | h.litValue())
       pushCommand(DefPrim(d.id, d.toType, ConcatOp, Array(l.ref, h.ref), NoLits))
       d
     }
@@ -874,6 +929,17 @@ object Bundle {
     "flatten", "binding", "asInput", "asOutput", "unary_$tilde",
     "unary_$bang", "unary_$minus", "cloneType", "toUInt", "toBits",
     "toBool", "toSInt", "asDirectionless")
+  def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
+    Driver.parStack.push(p.push)
+    val res = b
+    Driver.parStack.pop
+    res
+  }
+  def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
+    val q = params.alterPartial(f)
+    apply(b)(q)
+  }
+  private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
 class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
@@ -944,30 +1010,42 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
 }
 
 object Module {
-  def apply[T <: Module](c: T): T = {
+  def apply[T <: Module](bc: => T)(implicit p: Parameters = params): T = {
+    Driver.modStackPushed = true
+    Driver.parStack.push(p.push)
+    val m = bc
     val cmd = popCommands
     popScope
     popModule
-    c.io.collectElts
-    c.setRefs
-    val ports = c.io.toPorts
-    val component = UniqueComponent(c.name, ports, cmd)
+    m.io.collectElts
+    m.setRefs
+    val ports = m.io.toPorts
+    val component = UniqueComponent(m.name, ports, cmd)
     components += component
-    pushCommand(DefInstance(c.defd.id, component.name))
-    c
+    pushCommand(DefInstance(m.defd.id, component.name))
+    Driver.parStack.pop
+    m
   }
+  def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
+    val q = params.alterPartial(f)
+    apply(m)(q)
+  }
+  private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
-abstract class Module extends Id {
+abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
   val parent = modulez.headOption
   pushModule(this)
   pushScope
   pushCommands
   addModule(this)
 
+  lazy val params = Module.params
+  params.path = this.getClass :: params.path
+
   def io: Bundle
   def ref = getRefForId(id)
-  val reset = Bool().defd
+  val reset = if (_reset == null) Bool().defd else _reset
   setRefForId(reset.id, "reset")
 
   def name = {
@@ -1107,7 +1185,7 @@ class Emitter {
       case e: IntWidth => "(" + e.value.toString + ")"
     }
   }
-  def emitType(e: Type): String = {
+  def emitType(e: Kind): String = {
     e match {
       case e: UnknownType => "?"
       case e: UIntType => "UInt" + emit(e.width)

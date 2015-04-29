@@ -148,7 +148,7 @@ object MuxLookup {
   def apply[S <: UInt, T <: Bits] (key: S, default: T, mapping: Seq[(S, T)]): T = {
     var res = default;
     for ((k, v) <- mapping.reverse)
-      res = Mux(key === k, v, res);
+      res = Mux(k === key, v, res);
     res
   }
 
@@ -187,7 +187,7 @@ object MuxCase {
 }
 
 object ListLookup {
-  def apply[T <: Data](addr: UInt, default: List[T], mapping: Array[(UInt, List[T])]): List[T] = {
+  def apply[T <: Data](addr: UInt, default: List[T], mapping: Array[(MInt, List[T])]): List[T] = {
     val map = mapping.map(m => (m._1 === addr, m._2))
     default.zipWithIndex map { case (d, i) =>
       map.foldRight(d)((m, n) => Mux(m._1, m._2(i), n))
@@ -196,7 +196,7 @@ object ListLookup {
 }
 
 object Lookup {
-  def apply[T <: Bits](addr: UInt, default: T, mapping: Seq[(UInt, T)]): T =
+  def apply[T <: Bits](addr: UInt, default: T, mapping: Seq[(MInt, T)]): T =
     ListLookup(addr, List(default), mapping.map(m => (m._1, List(m._2))).toArray).head
 }
 
@@ -250,4 +250,151 @@ object UIntToOH
   def apply(in: UInt, width: Int = -1): UInt =
     if (width == -1) UInt(1) << in
     else (UInt(1) << in(log2Up(width)-1,0))(width-1,0)
+}
+
+class Counter(val n: Int) {
+  val value = if (n == 1) UInt(0) else Reg(init=UInt(0, log2Up(n)))
+  def inc(): Bool = {
+    if (n == 1) Bool(true)
+    else {
+      val wrap = value === UInt(n-1)
+      value := Mux(Bool(!isPow2(n)) && wrap, UInt(0), value + UInt(1))
+      wrap
+    }
+  }
+}
+
+object Counter
+{
+  def apply(n: Int): Counter = new Counter(n)
+  def apply(cond: Bool, n: Int): (UInt, Bool) = {
+    val c = new Counter(n)
+    var wrap: Bool = null
+    when (cond) { wrap = c.inc() }
+    (c.value, cond && wrap)
+  }
+}
+
+class ValidIO[+T <: Data](gen: T) extends Bundle
+{
+  val valid = Bool(OUTPUT)
+  val bits = gen.cloneType.asOutput
+  def fire(dummy: Int = 0): Bool = valid
+  override def cloneType: this.type = new ValidIO(gen).asInstanceOf[this.type]
+}
+
+/** Adds a valid protocol to any interface. The standard used is
+  that the consumer uses the flipped interface.
+*/
+object Valid {
+  def apply[T <: Data](gen: T): ValidIO[T] = new ValidIO(gen)
+}
+
+class DecoupledIO[+T <: Data](gen: T) extends Bundle
+{
+  val ready = Bool(INPUT)
+  val valid = Bool(OUTPUT)
+  val bits  = gen.cloneType.asOutput
+  def fire(dummy: Int = 0): Bool = ready && valid
+  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
+}
+
+/** Adds a ready-valid handshaking protocol to any interface.
+  The standard used is that the consumer uses the flipped
+  interface.
+  */
+object Decoupled {
+  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+}
+
+class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
+{
+  def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
+  valid := Bool(false);
+  for (io <- bits.flatten)
+    io := UInt(0)
+  override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
+}
+
+class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen)
+{
+  flip()
+  ready := Bool(false);
+  def deq(b: Boolean = false): T = { ready := Bool(true); bits }
+  override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
+}
+
+
+class DecoupledIOC[+T <: Data](gen: T) extends Bundle
+{
+  val ready = Bool(INPUT)
+  val valid = Bool(OUTPUT)
+  val bits  = gen.cloneType.asOutput
+}
+
+class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
+{
+  val enq   = Decoupled(gen.cloneType).flip
+  val deq   = Decoupled(gen.cloneType)
+  val count = UInt(OUTPUT, log2Up(entries + 1))
+}
+
+class Queue[T <: Data](gen: T, val entries: Int, pipe: Boolean = false, flow: Boolean = false, _reset: Bool = null) extends Module(_reset=_reset)
+{
+  val io = new QueueIO(gen, entries)
+
+  val ram = Mem(gen, entries)
+  val enq_ptr = Counter(entries)
+  val deq_ptr = Counter(entries)
+  val maybe_full = Reg(init=Bool(false))
+
+  val ptr_match = enq_ptr.value === deq_ptr.value
+  val empty = ptr_match && !maybe_full
+  val full = ptr_match && maybe_full
+  val maybe_flow = Bool(flow) && empty
+  val do_flow = maybe_flow && io.deq.ready
+
+  val do_enq = io.enq.ready && io.enq.valid && !do_flow
+  val do_deq = io.deq.ready && io.deq.valid && !do_flow
+  when (do_enq) {
+    ram(enq_ptr.value) := io.enq.bits
+    enq_ptr.inc()
+  }
+  when (do_deq) {
+    deq_ptr.inc()
+  }
+  when (do_enq != do_deq) {
+    maybe_full := do_enq
+  }
+
+  io.deq.valid := !empty || Bool(flow) && io.enq.valid
+  io.enq.ready := !full || Bool(pipe) && io.deq.ready
+  io.deq.bits := Mux(maybe_flow, io.enq.bits, ram(deq_ptr.value))
+
+  val ptr_diff = enq_ptr.value - deq_ptr.value
+  if (isPow2(entries)) {
+    io.count := Cat(maybe_full && ptr_match, ptr_diff)
+  } else {
+    io.count := Mux(ptr_match, Mux(maybe_full, UInt(entries), UInt(0)), Mux(deq_ptr.value > enq_ptr.value, UInt(entries) + ptr_diff, ptr_diff))
+  }
+}
+
+/** Generic hardware queue. Required parameter entries controls
+  the depth of the queues. The width of the queue is determined
+  from the inputs.
+
+  Example usage:
+    val q = new Queue(UInt(), 16)
+    q.io.enq <> producer.io.out
+    consumer.io.in <> q.io.deq
+  */
+object Queue
+{
+  def apply[T <: Data](enq: DecoupledIO[T], entries: Int = 2, pipe: Boolean = false): DecoupledIO[T]  = {
+    val q = Module(new Queue(enq.bits.cloneType, entries, pipe))
+    q.io.enq.valid := enq.valid // not using <> so that override is allowed
+    q.io.enq.bits := enq.bits
+    enq.ready := q.io.enq.ready
+    q.io.deq
+  }
 }

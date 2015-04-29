@@ -91,7 +91,7 @@ class Flo(dir: Direction = NO_DIR) extends Element(dir, 32) with Num[Flo] {
     pushCommand(DefPrim(d.defd.id, d.toType, FloToBits, Array(this.ref), NoLits))
     d
   }
-  def toType: Type = FloType(isFlip)
+  def toType: Kind = FloType(isFlip)
   def cloneType: this.type = new Flo(dir).asInstanceOf[this.type]
   def flatten: Array[Bits] = Array[Bits](toBits)
 
@@ -205,7 +205,7 @@ class Dbl(dir: Direction = null) extends Element(dir, 64) with Num[Dbl] {
     pushCommand(DefPrim(d.defd.id, d.toType, DblToBits, Array(this.ref), NoLits))
     d
   }
-  def toType: Type = DblType(isFlip)
+  def toType: Kind = DblType(isFlip)
   def cloneType: this.type = new Dbl(dir).asInstanceOf[this.type]
   def flatten: Array[Bits] = Array[Bits](toBits)
 

@@ -194,7 +194,7 @@ class ManualTester[+T <: Module]
     }
   }
 
-  def peekAt[T <: Bits](data: Data, off: Int): BigInt = {
+  def peekAt[T <: Bits](data: Mem[T], off: Int): BigInt = {
     // signed_fix(data(1), peekBits(data, off))
     doPeekBits(data.debugName, off)
   }
@@ -239,7 +239,7 @@ class ManualTester[+T <: Module]
     }
   }
 
-  def pokeAt[T <: Bits](data: Data, x: BigInt, off: Int): Unit = {
+  def pokeAt[T <: Bits](data: Mem[T], x: BigInt, off: Int): Unit = {
     doPokeBits(data.debugName, x, off)
   }
 
@@ -267,7 +267,7 @@ class ManualTester[+T <: Module]
 
   def int(x: Boolean): BigInt = if (x) 1 else 0
   def int(x: Int): BigInt = x
-  def int(x: Bits): BigInt = x.litValue.getOrElse(-1)
+  def int(x: Bits): BigInt = x.litValue()
 
   var ok = true;
   var failureTime = -1

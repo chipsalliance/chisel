@@ -84,15 +84,16 @@ object chiselMain {
 
 //Is this antiquated?
 object chiselMainTest {
-  def apply[T <: Module](args: Array[String], gen: () => T)(tester: T => Tester[T]): (Circuit, T) =
+  def apply[T <: Module](args: Array[String], gen: () => T)(tester: T => Tester[T]): (Circuit, T) = {
     chiselMain(args, gen, tester)
+  }
 }
 
 object Driver extends FileSystemUtilities{
   def apply[T <: Module](args: Array[String], gen: () => T, wrapped:Boolean = true): (Circuit, T) = {
     initChisel(args)
     try {
-      execute(gen) /* else executeUnwrapped(gen) */
+      if(wrapped) execute(gen) else executeUnwrapped(gen)
     } finally {
       ChiselError.report
       if (ChiselError.hasErrors && !getLineNumbers) {
@@ -109,9 +110,9 @@ object Driver extends FileSystemUtilities{
     (circuit, mod)
   }
 
-  /*
-  private def executeUnwrapped[T <: Module](gen: () => T): T = {
+  private def executeUnwrapped[T <: Module](gen: () => T): (Circuit, T) = {
     if (!chiselConfigMode.isEmpty && !chiselConfigClassName.isEmpty) {
+      println("CHISEL PARAMS")
       val name = appendString(chiselProjectName,chiselConfigClassName)
       val config = try {
         Class.forName(name).newInstance.asInstanceOf[ChiselConfig]
@@ -125,7 +126,7 @@ object Driver extends FileSystemUtilities{
       } else { new Instance(config.topDefinitions,config.knobValues) }
       val p = Parameters.root(world)
       config.topConstraints.foreach(c => p.constrain(c))
-      val c = execute(() => Module(gen())(p))
+      val (circuit, mod) = execute(() => Module(gen())(p))
       if(chiselConfigMode.get == "collect") {
         val v = createOutputFile(chiselConfigClassName.get + ".knb")
         v.write(world.getKnobs)
@@ -134,35 +135,30 @@ object Driver extends FileSystemUtilities{
         w.write(world.getConstraints)
         w.close
       }
-      c
+      (circuit, mod)
     }
     else {
       execute(() => Module(gen()))
     }
   }
- */
 
   private def execute[T <: Module](gen: () => T): (Circuit, T) = {
     val emitter = new Emitter
-    val (c, mod) = build{ Module(gen()) }
+    val (c, mod) = build{ gen() }
+    // setTopComponent(c)
     val s = emitter.emit( c )
     val filename = c.main + ".fir"
     // println("FILENAME " + filename)
     // println("S = " + s)
     val out = createOutputFile(filename)
     out.write(s)
-    /*
     /* Params - If dumping design, dump space to pDir*/
     if (chiselConfigMode == None || chiselConfigMode.get == "instance") {
-      setTopComponent(c)
-      backend.elaborate(c)
-      if (isCompiling && isGenHarness) backend.compile(c)
       if(chiselConfigDump && !Dump.dump.isEmpty) {
         val w = createOutputFile(appendString(Some(topComponent.name),chiselConfigClassName) + ".prm")
         w.write(Dump.getDump); w.close
       }
     }
-     */
     out.close()
     (c, mod)
   }
@@ -379,7 +375,7 @@ object Driver extends FileSystemUtilities{
   val chiselOneHotMap = HashMap[(UInt, Int), UInt]()
   val chiselOneHotBitMap = HashMap[(Bits, Int), Bool]()
   val compStack = Stack[Module]()
-  // val parStack = new Stack[Parameters]
+  val parStack = new Stack[Parameters]
   var stackIndent = 0
   val printStackStruct = ArrayBuffer[(Int, Module)]()
   // val clocks = ArrayBuffer[Clock]()
