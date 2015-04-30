@@ -1807,6 +1807,10 @@ defn flo-op-name (op:PrimOp) -> String :
       SHIFT-LEFT-S-OP :  "lsh" ;; todo: signed version
       SHIFT-RIGHT-U-OP : "rsh"
       SHIFT-RIGHT-S-OP : "rsh"
+      DYN-SHIFT-LEFT-U-OP :  "lsh" ;; todo: signed version
+      DYN-SHIFT-LEFT-S-OP :  "lsh" ;; todo: signed version
+      DYN-SHIFT-RIGHT-U-OP : "rsh"
+      DYN-SHIFT-RIGHT-S-OP : "rsh"
       ;CONVERT-U-OP : 
       ;CONVERT-S-OP : 
       BIT-AND-OP :     "and"
