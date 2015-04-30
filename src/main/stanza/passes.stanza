@@ -1935,13 +1935,8 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
       (s:DefNode) :
          if value(s) typeof WritePort :
             val e = value(s) as WritePort
-<<<<<<< HEAD
-            val n = gensym(`F)
-            emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " top "::" name(s) "\n"], top)
-=======
             val n = firrtl-gensym(`F)
             emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " name(s) "\n"], top)
->>>>>>> upstream/master
          else :
            emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
       (s:Begin) : do(emit-s{_, v, top}, body(s))
