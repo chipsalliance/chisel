@@ -1088,7 +1088,17 @@ defn reduce-or (l:List<Expression>) -> Expression :
 ; kinds:  Used to know the kind of reference, so we know whether we should error if it isn't initialized. We also know how we should declare the refernce.
 ; enables:Calculated off of assigns.
 
-; I think I'm going to restructure this so that not all information is held in the tables, but instead, we walk the graph again, and do stuff on declarations, and delete other stuff
+
+defn expand-whens (ports:List<Port>, table:HashTable<Symbol,SymbolicValue>,cons:Vector<Stmt>) -> False :
+   for p in ports do :
+      if direction(p) == OUTPUT :
+         val ref = WRef(name(p),type(p),PortKind(),FEMALE)
+         add{cons,_} $ 
+            if has-nul?(table[name(p)]) : 
+               println("Uninitialized: ~" % [to-string(name(p))]);TODO actually collect error
+               EmptyStmt()
+            else : Connect(ref,to-exp(table[name(p)]) as Expression)
+
 defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stmt>,cons:Vector<Stmt>) -> Stmt :
    match(map(expand-whens{_,table,decs,cons},s)) : 
       (s:DefNode|DefMemory) : add(decs,s)
@@ -1277,6 +1287,7 @@ defn expand-whens (m:Module) -> Module :
    for x in table do : println-debug(x)
    val decs = Vector<Stmt>()
    val cons = Vector<Stmt>()
+   expand-whens(ports(m),table,cons)
    expand-whens(body(m),table,decs,cons)
    Module(name(m),ports(m),Begin(append(to-list(decs),to-list(cons))))
 
