@@ -1168,8 +1168,7 @@ defn get-read-enable (sym:Symbol,table:HashTable<Symbol,SymbolicValue>) -> Expre
             val e2 = get-single-read-enable(sym,alt(sv))
             if e1 == e2 : OR(e0,e1)
             else : OR(e0,OR(AND(pred(sv),e1),AND(NOT(pred(sv)),e2)))
-   DoPrim{BIT-OR-OP,_,list(),UIntType(IntWidth(1))} $ to-list $
-      for y in table stream : get-single-read-enable(sym,value(y))
+   reduce-or $ to-list $ for y in table stream : get-single-read-enable(sym,value(y))
 
 defn get-write-enable (sv:SymbolicValue) -> SymbolicValue :
    match(map(get-write-enable,sv)) :
