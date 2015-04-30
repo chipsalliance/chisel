@@ -1520,7 +1520,12 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (s:DefWire) : DefWire(name(s),h[name(s)])
          (s:DefInstance) : DefInstance(name(s),gen-constraints(module(s)))
          (s:DefMemory) : DefMemory(name(s),h[name(s)] as VectorType)
-         (s:DefNode) : DefNode(name(s),gen-constraints(value(s)))
+         (s:DefNode) : 
+            val l = h[name(s)]
+            val r = gen-constraints(value(s))
+            add(v,WGeq(width!(l),width!(type(r))))
+            add(v,WGeq(width!(type(r)),width!(l)))
+            DefNode(name(s),r)
          (s:Connect) : 
             val l = gen-constraints(loc(s))
             val e = gen-constraints(exp(s))
