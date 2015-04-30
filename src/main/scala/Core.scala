@@ -153,10 +153,29 @@ abstract class Immediate {
   def name: String
 }
 
-case class Alias(val id: String) extends Immediate {
+abstract class Arg extends Immediate {
+  def fullname: String
+  def name: String
+}
+
+case class Alias(val id: String) extends Arg {
   def fullname = getRefForId(id).fullname
   def name = getRefForId(id).name
 }
+
+abstract class LitArg (val num: BigInt, val width: Int) extends Arg {
+}
+
+case class ULit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
+  def fullname = name
+  def name = "UInt<" + width + ">(" + num + ")"
+}
+
+case class SLit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
+  def fullname = name
+  def name = "SInt<" + width + ">(" + num + ")"
+}
+
 case class Ref(val name: String) extends Immediate {
   def fullname = name
 }
@@ -198,19 +217,19 @@ case class DefSInt(val id: String, val value: BigInt, val width: Int) extends De
 case class DefFlo(val id: String, val value: Float) extends Definition;
 case class DefDbl(val id: String, val value: Double) extends Definition;
 case class DefMInt(val id: String, val value: String, val width: Int) extends Definition;
-case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Alias], val lits: Array[BigInt]) extends Definition;
-case class DefPrimPad(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Alias], val lits: Array[BigInt]) extends Definition;
+case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Arg], val lits: Array[BigInt]) extends Definition;
+case class DefPrimPad(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Arg], val lits: Array[BigInt]) extends Definition;
 case class DefWire(val id: String, val kind: Kind) extends Definition;
 case class DefRegister(val id: String, val kind: Kind) extends Definition;
 case class DefMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
-case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Alias) extends Definition;
+case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Arg) extends Definition;
 case class DefInstance(val id: String, val module: String) extends Definition;
-case class Conditionally(val pred: Alias, val conseq: Command, val alt: Command) extends Command;
+case class Conditionally(val pred: Arg, val conseq: Command, val alt: Command) extends Command;
 case class Begin(val body: Array[Command]) extends Command();
-case class Connect(val loc: Alias, val exp: Alias) extends Command;
-case class ConnectPad(val loc: Alias, val exp: Alias) extends Command;
-case class ConnectInit(val loc: Alias, val exp: Alias) extends Command;
-case class ConnectInitIndex(val loc: Alias, val index: Int, val exp: Alias) extends Command;
+case class Connect(val loc: Alias, val exp: Arg) extends Command;
+case class ConnectPad(val loc: Alias, val exp: Arg) extends Command;
+case class ConnectInit(val loc: Alias, val exp: Arg) extends Command;
+case class ConnectInitIndex(val loc: Alias, val index: Int, val exp: Arg) extends Command;
 case class EmptyCommand() extends Command;
 
 case class Component(val name: String, val ports: Array[Port], val body: Command);
@@ -276,18 +295,21 @@ abstract class Data(dirArg: Direction) extends Id {
     this
   }
   def :=(other: Data) = 
-    pushCommand(Connect(this.ref, other.ref))
+    pushCommand(Connect(this.lref, other.ref))
   def <>(other: Data) = 
-    pushCommand(Connect(this.ref, other.ref))
+    pushCommand(Connect(this.lref, other.ref))
   def cloneType: this.type
   def cloneTypeWidth(width: Int): this.type
-  def ref: Alias = 
+  def lref: Alias = 
     Alias(id)
+  def ref: Arg = 
+    if (isLitValue) litArg() else Alias(id)
   def name = getRefForId(id).name
   def debugName = mod.debugName + "." + name
+  def litArg(): LitArg = null
   def litValue(): BigInt = -1
   def isLitValue(): Boolean = false
-  def setLitValue(x: BigInt) {  }
+  def setLitValue(x: LitArg) {  }
   def getWidth: Int
   def flatten: Array[Bits]
   def fromBits(n: Bits): this.type = {
@@ -329,7 +351,7 @@ object Wire {
     x.collectElts
     pushCommand(DefWire(x.defd.id, x.toType))
     if (init != null)
-      pushCommand(Connect(x.ref, init.ref))
+      pushCommand(Connect(x.lref, init.ref))
     x
   }
 }
@@ -347,9 +369,9 @@ object Reg {
     x.isReg_ = true
     pushCommand(DefRegister(x.defd.id, x.toType))
     if (init != null) 
-      pushCommand(ConnectInit(x.ref, init.ref))
+      pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
-      pushCommand(ConnectPad(x.ref, next.ref))
+      pushCommand(ConnectPad(x.lref, next.ref))
     x
   }
   def apply[T <: Data](outType: T): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])
@@ -387,7 +409,7 @@ object Vec {
       pushCommand(DefWire(vec.defd.id, vec.toType))
       var i = 0
       for (elt <- elts) {
-        pushCommand(ConnectPad(vec(i).ref, elt.ref))
+        pushCommand(ConnectPad(vec(i).lref, elt.ref))
         i += 1
       }
     }
@@ -434,7 +456,7 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
   def inits (f: (Int, T, (Int, T, T) => Unit) => Unit) = {
     var i = 0
     def doInit (index: Int, elt: T, init: T) =
-      pushCommand(ConnectInitIndex(elt.ref, index, init.ref))
+      pushCommand(ConnectInitIndex(elt.lref, index, init.ref))
     for (d <- self) {
       f(i, d, doInit)
       i += 1;
@@ -477,7 +499,7 @@ object chiselCast {
     val x = gen
     pushCommand(DefWire(x.defd.id, x.toType))
     val b = i.toBits
-    pushCommand(Connect(x.ref, b.ref))
+    pushCommand(Connect(x.lref, b.ref))
     x
   }
 }
@@ -517,11 +539,12 @@ abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
 }
 
 abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width) {
-  private var litValueVar: Option[BigInt] = None
+  private var litValueVar: Option[LitArg] = None
 
-  override def litValue(): BigInt = litValueVar.getOrElse(-1)
+  override def litArg(): LitArg = litValueVar.get
   override def isLitValue(): Boolean = litValueVar.isDefined
-  override def setLitValue(x: BigInt) { litValueVar = Some(x) }
+  override def litValue(): BigInt = if (isLitValue) litValueVar.get.num else -1
+  override def setLitValue(x: LitArg) { litValueVar = Some(x) }
 
   override def flatten: Array[Bits] = Array[Bits](this)
 
@@ -531,7 +554,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   final def apply(x: BigInt): Bool = {
     val d = new Bool(dir)
     if (isLitValue())
-      d.setLitValue((litValue() >> x.toInt) & 1)
+      d.setLitValue(ULit((litValue() >> x.toInt) & 1, 1))
     pushCommand(DefPrim(d.defd.id, d.toType, BitSelectOp, Array(this.ref), Array(x)))
     d
   }
@@ -539,17 +562,18 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     apply(x.litValue(), y.litValue())
 
   final def apply(x: BigInt, y: BigInt): UInt = {
-    val d = UInt(width = (x - y + 1).toInt)
+    val w = (x - y + 1).toInt
+    val d = UInt(width = w)
     if (isLitValue()) {
       val mask = (BigInt(1)<<d.getWidth)-BigInt(1)
-      d.setLitValue((litValue() >> y.toInt) & mask)
+      d.setLitValue(ULit((litValue() >> y.toInt) & mask, w))
     }
     pushCommand(DefPrim(d.defd.id, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
     d
   }
 
   def :=(other: Bits) = 
-    pushCommand(ConnectPad(this.ref, other.ref))
+    pushCommand(ConnectPad(this.lref, other.ref))
 
   override def fromBits(n: Bits): this.type = {
     val res = Wire(this.cloneType)
@@ -602,7 +626,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def & (other: Bits) = {
     val r = bits_binop_pad(BitAndOp, other)
     if (isLitValue() && other.isLitValue())
-      r.setLitValue(litValue() & other.litValue())
+      r.setLitValue(ULit(litValue() & other.litValue()))
     r
   }
   def | (other: Bits) = bits_binop_pad(BitOrOp, other)
@@ -613,7 +637,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def === (other: Bits) = {
     val r = bits_compop_pad(EqualOp, other)
     if (isLitValue() && other.isLitValue())
-      r.setLitValue(if (litValue() == other.litValue()) 1 else 0)
+      r.setLitValue(ULit(if (litValue() == other.litValue()) 1 else 0, 1))
     r
   }
   def != (other: Bits) = bits_compop_pad(NotEqualOp, other)
@@ -732,7 +756,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def & (other: UInt) = {
     val r = uint_binop_pad(BitAndOp, other)
     if (isLitValue() && other.isLitValue())
-      r.setLitValue(litValue() & other.litValue())
+      r.setLitValue(ULit(litValue() & other.litValue()))
     r
   }
   def | (other: UInt) = uint_binop_pad(BitOrOp, other)
@@ -743,7 +767,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def === (other: UInt) = {
     val r = uint_compop_pad(EqualOp, other)
     if (isLitValue() && other.isLitValue())
-      r.setLitValue(if (litValue() == other.litValue()) 1 else 0)
+      r.setLitValue(ULit(if (litValue() == other.litValue()) 1 else 0, 1))
     r
   }
   def != (other: UInt) = uint_compop_pad(NotEqualOp, other)
@@ -759,8 +783,8 @@ object UInt {
   def uintLit(value: BigInt, width: Int) = {
     val w = if(width == -1) max(bitLength(value), 1) else width
     val b = new UInt(NO_DIR, w)
-    b.setLitValue(value)
-    pushCommand(DefUInt(b.defd.id, value, w))
+    b.setLitValue(ULit(value, w))
+    // pushCommand(DefUInt(b.defd.id, value, w))
     b
   }
   def apply(value: BigInt, width: Int): UInt = uintLit(value, width)
@@ -831,7 +855,7 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   def === (other: SInt) = {
     val r = sint_compop_pad(EqualOp, other)
     if (isLitValue() && other.isLitValue())
-      r.setLitValue(if (litValue() == other.litValue()) 1 else 0)
+      r.setLitValue(SLit(if (litValue() == other.litValue()) 1 else 0))
     r
   }
   def != (other: SInt) = sint_compop_pad(NotEqualOp, other)
@@ -847,8 +871,8 @@ object SInt {
   def sintLit(value: BigInt, width: Int) = {
     val w = if (width == -1) bitLength(value) + 1 else width
     val b = new SInt(NO_DIR, w)
-    b.setLitValue(value)
-    pushCommand(DefSInt(b.defd.id, value, w))
+    b.setLitValue(SLit(value, w))
+    // pushCommand(DefSInt(b.defd.id, value, w))
     b
   }
   def apply(value: BigInt, width: Int): SInt = sintLit(value, width)
@@ -923,7 +947,7 @@ object Cat {
       val isConst = (l.isLitValue() && h.isLitValue())
       val w = if (isConst) l.getWidth + h.getWidth else -1
       val d = l.cloneTypeWidth(w)
-      if (isConst) d.setLitValue((l.litValue() << l.getWidth) | h.litValue())
+      if (isConst) d.setLitValue(ULit((l.litValue() << l.getWidth) | h.litValue(), w))
       pushCommand(DefPrim(d.id, d.toType, ConcatOp, Array(l.ref, h.ref), NoLits))
       d
     }
@@ -1051,6 +1075,7 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
 
   def io: Bundle
   def ref = getRefForId(id)
+  def lref = ref
   val reset = if (_reset == null) Bool().defd else _reset
   setRefForId(reset.id, "reset")
 
@@ -1182,7 +1207,7 @@ class Emitter {
   def emitDir(e: Direction, isTop: Boolean): String =
     if (isTop) (e.name + " ") else if (e == INPUT) "flip " else ""
   def emit(e: PrimOp): String = e.name
-  def emit(e: Alias): String = e.fullname
+  def emit(e: Arg): String = e.fullname
   def emitPort(e: Port, isTop: Boolean): String =
     emitDir(e.dir, isTop) + getRefForId(e.id).name + " : " + emitType(e.kind)
   def emit(e: Width): String = {
