@@ -21,9 +21,9 @@ circuit ModuleVec :
     
     inst T_37 of PlusOne
     inst T_38 of PlusOne_25
-    wire pluses : { in : UInt<32>, flip out : UInt<32>}[2]
-    pluses[0] := Pad(T_37,?)
-    pluses[1] := Pad(T_38,?)
+    wire pluses : { flip in : UInt<32>, out : UInt<32>}[2]
+    pluses[0] := T_37
+    pluses[1] := T_38
     pluses[0].in := Pad(ins[0],?)
     outs[0] := Pad(pluses[0].out,?)
     pluses[1].in := Pad(ins[1],?)

@@ -6,6 +6,9 @@
 Update spec
 <>
 Add Unit Tests for each pass
+   Separate passes into discrete chunks
+   Push all tests entirely through
+   Check after each pass
    
 ======== Update Core ==========
 Add source locaters
@@ -53,6 +56,7 @@ Stephen:
       pin stephen on an example
 Patrick: 
    move Infer-Widths to before vec expansion?
+   talk about primops
 
 ======== Think About ========
 <>
@@ -111,10 +115,14 @@ Schedulable
 Scheduler
 
 ======== Notes ========
-Only for MUXES can width inference go backwards:
+Only for MUXES, AS, and __ can width inference go backwards:
   reg r : UInt<5>
   r := MUX(p,UInt<?>(1),UInt<?>(2))
   ==>
   reg r : UInt<5>
   r := MUX(p,UInt<5>(1),UInt<5>(2))
 
+
+Which ones
+Treat everything as just bits - the only operators that should exist are ones that emit different bits
+Go through all primops with Andrew

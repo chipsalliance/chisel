@@ -729,12 +729,6 @@ defn expand-expr (e:Expression) -> List<EF> :
             val len = num-elems(type(e))
             val ret = headn(tailn(exps,begin),len)
             for r in ret map : EF(exp(r),DEFAULT)
-            ;val b =  exp(e)
-            ;val exps = for x in generate-entry(name(b as WRef),type(b)) map :
-               ;EF(WRef(name(x),type(x),NodeKind(),gender(e)),DEFAULT)
-            ;val begin = index-of-elem(type(b) as BundleType,name(e))
-            ;val len = num-elems(type(e))
-            ;headn(tailn(exps,begin),len)
       (e:WIndex) :
          val exps = expand-expr(exp(e))
          val len = num-elems(type(e))
@@ -755,8 +749,6 @@ defn lower-ports (ports:List<Port>) -> List<Port> :
 defn type (s:WDefAccessor) -> Type : type(type(source(s)) as VectorType)
 defn size (s:DefMemory) -> Int : size(type(s))
 defn size (s:WDefAccessor) -> Int : size(type(source(s)) as VectorType)
-defn kind (e:WSubfield) -> Kind : kind(exp(e) as WRef|WSubfield|WIndex)
-defn kind (e:WIndex) -> Kind : kind(exp(e) as WRef|WSubfield|WIndex)
 defn base-name (e:Expression) -> Symbol :
    match(e) : 
       (e:WRef) : name(e)
