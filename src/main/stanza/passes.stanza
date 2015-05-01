@@ -1349,6 +1349,11 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
                   if not contains?(args(w2),w) : ret(false)
                ret(true)
       (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+      (w1:PlusWidth,w2:PlusWidth) : 
+         (arg1(w1) == arg1(w2) and arg2(w1) == arg2(w2)) or (arg1(w1) == arg2(w2) and arg2(w1) == arg1(w2))
+      (w1:MinusWidth,w2:MinusWidth) :
+         (arg1(w1) == arg1(w2) and arg2(w1) == arg2(w2)) or (arg1(w1) == arg2(w2) and arg2(w1) == arg1(w2))
+      (w1:ExpWidth,w2:ExpWidth) : arg1(w1) == arg1(w2)
       (w1:UnknownWidth,w2:UnknownWidth) : true
       (w1,w2) : false
 defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
@@ -1380,6 +1385,18 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
                      for x in args(w*) do : add(v,x)
                   (w*) : add(v,w*)
             MaxWidth(unique(v))
+         (w:PlusWidth) : 
+            match(arg1(w),arg2(w)) :
+               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) + width(w2))
+               (w1,w2) : w
+         (w:MinusWidth) : 
+            match(arg1(w),arg2(w)) :
+               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) - width(w2))
+               (w1,w2) : w
+         (w:ExpWidth) : 
+            match(arg1(w)) :
+               (w1:IntWidth) : IntWidth(pow(2,width(w1)))
+               (w1) : w
          (w) : w
    defn substitute (w:Width,h:HashTable<Symbol,Width>) -> Width :
       ;println-all-debug(["Substituting for [" w "]"])
@@ -1458,25 +1475,25 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
    ;  2) Remove Cycles
    ;  3) Move to solved if not self-recursive
    val u = make-unique(l)
-   ;println-debug("======== UNIQUE CONSTRAINTS ========")
-   ;for x in u do : println-debug(x)
-   ;println-debug("====================================")
+   println-debug("======== UNIQUE CONSTRAINTS ========")
+   for x in u do : println-debug(x)
+   println-debug("====================================")
 
    val f = HashTable<Symbol,Width>(symbol-hash)
    val o = Vector<Symbol>()
    for x in u do :
-      ;println-debug("==== SOLUTIONS TABLE ====")
-      ;for x in f do : println-debug(x)
-      ;println-debug("=========================")
+      println-debug("==== SOLUTIONS TABLE ====")
+      for x in f do : println-debug(x)
+      println-debug("=========================")
 
       val [n e] = [key(x) value(x)]
 
       val e-sub = substitute(e,f)
-      ;println-debug(["Solving " n " => " e])
-      ;println-debug(["After Substitute: " n " => " e-sub])
-      ;println-debug("==== SOLUTIONS TABLE (Post Substitute) ====")
-      ;for x in f do : println-debug(x)
-      ;println-debug("=========================")
+      println-debug(["Solving " n " => " e])
+      println-debug(["After Substitute: " n " => " e-sub])
+      println-debug("==== SOLUTIONS TABLE (Post Substitute) ====")
+      for x in f do : println-debug(x)
+      println-debug("=========================")
       val e* = remove-cycle{n,_} $ e-sub
       ;println-debug(["After Remove Cycle: " n " => " e*])
       if not self-rec?(n,e*) : 
@@ -1485,28 +1502,28 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
          add(o,n)
          f[n] = e*
 
-   ;println-debug("Forward Solved Constraints")
-   ;for x in f do : println-debug(x)
+   println-debug("Forward Solved Constraints")
+   for x in f do : println-debug(x)
 
    ; Backwards Solve
    val b = HashTable<Symbol,Width>(symbol-hash)
    for i in (length(o) - 1) through 0 by -1 do :
       val n = o[i]
-      ;println-all-debug(["SOLVE BACK: [" n " => " f[n] "]"])
-      ;println-debug("==== SOLUTIONS TABLE ====")
-      ;for x in b do : println-debug(x)
-      ;println-debug("=========================")
+      println-all-debug(["SOLVE BACK: [" n " => " f[n] "]"])
+      println-debug("==== SOLUTIONS TABLE ====")
+      for x in b do : println-debug(x)
+      println-debug("=========================")
       val e* = simplify(b-sub(f[n],b))
-      ;println-all-debug(["BACK RETURN: [" n " => " e* "]"])
+      println-all-debug(["BACK RETURN: [" n " => " e* "]"])
       b[n] = e*
-      ;println-debug("==== SOLUTIONS TABLE (Post backsolve) ====")
-      ;for x in b do : println-debug(x)
-      ;println-debug("=========================")
+      println-debug("==== SOLUTIONS TABLE (Post backsolve) ====")
+      for x in b do : println-debug(x)
+      println-debug("=========================")
 
    ; Evaluate
    val e = evaluate(b)
-   ;println-debug("Evaluated Constraints")
-   ;for x in e do : println-debug(x)
+   println-debug("Evaluated Constraints")
+   for x in e do : println-debug(x)
    e
    
 public defn width! (t:Type) -> Width :
