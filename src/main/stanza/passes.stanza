@@ -1860,8 +1860,7 @@ defn prim-width (type:Type) -> Int :
       (t) :          error("Bad prim width type")
 
 defn sizeof (in: Int) -> Int :
-  ;; if in == 1: 1 else: to-int(ceil(log(in)/log(2)))
-  max(1, ceil-log2(in))
+  max(1, ceil-log2(in + 1))
 
 defn emit-all (es:Streamable, top:Symbol) :
   for e in es do :
