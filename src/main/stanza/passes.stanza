@@ -1395,7 +1395,7 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
                (w1,w2) : w
          (w:ExpWidth) : 
             match(arg1(w)) :
-               (w1:IntWidth) : IntWidth(pow(2,width(w1)))
+               (w1:IntWidth) : IntWidth(pow(2,width(w1)) - 1)
                (w1) : w
          (w) : w
    defn substitute (w:Width,h:HashTable<Symbol,Width>) -> Width :
