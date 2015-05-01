@@ -371,7 +371,7 @@ object Reg {
     if (init != null) 
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
-      pushCommand(ConnectPad(x.lref, next.ref))
+      x := next
     x
   }
   def apply[T <: Data](outType: T): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])
@@ -409,7 +409,7 @@ object Vec {
       pushCommand(DefWire(vec.defd.id, vec.toType))
       var i = 0
       for (elt <- elts) {
-        pushCommand(ConnectPad(vec(i).lref, elt.ref))
+        vec(i) := elt
         i += 1
       }
     }
