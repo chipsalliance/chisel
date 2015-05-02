@@ -34,7 +34,7 @@ object Builder {
   def pushModule(mod: Module) {
     modulez.push(mod)
   }
-  def getComponent(): Module = modulez.head
+  def getComponent(): Module = if (modulez.length > 0) modulez.head else null
   def popModule() {
     modulez.pop
   }
@@ -142,15 +142,16 @@ object PrimOp {
   val NotEqualOp = PrimOp("neq")
   val NegOp = PrimOp("neg")
   val MultiplexOp = PrimOp("mux")
-  val AndReduceOp = PrimOp("and-reduce")
-  val OrReduceOp = PrimOp("or-reduce")
-  val XorReduceOp = PrimOp("xor-reduce")
+  val AndReduceOp = PrimOp("bit-and-reduce")
+  val OrReduceOp = PrimOp("bit-or-reduce")
+  val XorReduceOp = PrimOp("bit-xor-reduce")
 }
 import PrimOp._
 
 abstract class Immediate {
   def fullname: String
   def name: String
+  def debugName = fullname
 }
 
 abstract class Arg extends Immediate {
@@ -161,6 +162,7 @@ abstract class Arg extends Immediate {
 case class Alias(val id: String) extends Arg {
   def fullname = getRefForId(id).fullname
   def name = getRefForId(id).name
+  override def debugName = getRefForId(id).debugName
 }
 
 abstract class LitArg (val num: BigInt, val width: Int) extends Arg {
@@ -184,12 +186,15 @@ case class Slot(val imm: Immediate, val name: String) extends Immediate {
     val imm_fullname = imm.fullname
     if (imm_fullname == "this") name else imm_fullname + "." + name
   }
+  override def debugName = {
+    val imm_debugName = imm.debugName
+    if (imm_debugName == "this") name else imm_debugName + "_" + name
+  }
 }
 case class Index(val imm: Immediate, val value: Int) extends Immediate {
-  def name = "." + value
-  def fullname = {
-    imm.fullname + "[" + value + "]"
-  }
+  def name = "[" + value + "]"
+  def fullname = imm.fullname + "[" + value + "]"
+  override def debugName = imm.debugName + "_" + value
 }
 
 case class Port(val id: String, val dir: Direction, val kind: Kind);
@@ -274,7 +279,7 @@ abstract class Id {
 }
 
 abstract class Data(dirArg: Direction) extends Id {
-  val mod = modulez.top
+  val mod = getComponent()
   def toType: Kind
   var isFlipVar = dirArg == INPUT
   def isFlip = isFlipVar
@@ -305,7 +310,7 @@ abstract class Data(dirArg: Direction) extends Id {
   def ref: Arg = 
     if (isLitValue) litArg() else Alias(id)
   def name = getRefForId(id).name
-  def debugName = mod.debugName + "." + name
+  def debugName = mod.debugName + "." + getRefForId(id).debugName
   def litArg(): LitArg = null
   def litValue(): BigInt = -1
   def isLitValue(): Boolean = false
@@ -393,7 +398,7 @@ class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VEC
     x
   }
   def name = getRefForId(t.id).name
-  def debugName = t.mod.debugName + "." + name
+  def debugName = t.mod.debugName + "." + getRefForId(t.id).debugName
 }
 
 object Vec {
@@ -555,7 +560,8 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     val d = new Bool(dir)
     if (isLitValue())
       d.setLitValue(ULit((litValue() >> x.toInt) & 1, 1))
-    pushCommand(DefPrim(d.defd.id, d.toType, BitSelectOp, Array(this.ref), Array(x)))
+    else
+      pushCommand(DefPrim(d.defd.id, d.toType, BitSelectOp, Array(this.ref), Array(x)))
     d
   }
   final def apply(x: UInt, y: UInt): UInt = 
@@ -567,8 +573,8 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     if (isLitValue()) {
       val mask = (BigInt(1)<<d.getWidth)-BigInt(1)
       d.setLitValue(ULit((litValue() >> y.toInt) & mask, w))
-    }
-    pushCommand(DefPrim(d.defd.id, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
+    } else
+      pushCommand(DefPrim(d.defd.id, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
     d
   }
 
@@ -607,7 +613,10 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     d
   }
 
-  def unary_- = bits_unop(NegOp)
+  // def unary_- = bits_unop(NegOp)
+  // def unary_-% = bits_unop(NegModOp)
+  def unary_- = Bits(0) - this
+  def unary_-% = Bits(0) -% this
   def +& (other: Bits) = bits_binop_pad(AddOp, other)
   def + (other: Bits) = this +% other
   def +% (other: Bits) = bits_binop_pad(AddModOp, other)
@@ -624,10 +633,12 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def unary_~(): Bits = bits_unop(BitNotOp)
 
   def & (other: Bits) = {
-    val r = bits_binop_pad(BitAndOp, other)
-    if (isLitValue() && other.isLitValue())
+    if (isLitValue() && other.isLitValue()) {
+      val r = cloneTypeWidth(-1)
       r.setLitValue(ULit(litValue() & other.litValue()))
-    r
+      r
+    } else
+      bits_binop_pad(BitAndOp, other)
   }
   def | (other: Bits) = bits_binop_pad(BitOrOp, other)
   def ^ (other: Bits) = bits_binop_pad(BitXorOp, other)
@@ -635,10 +646,12 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def < (other: Bits) = bits_compop_pad(LessOp, other)
   def > (other: Bits) = bits_compop_pad(GreaterOp, other)
   def === (other: Bits) = {
-    val r = bits_compop_pad(EqualOp, other)
-    if (isLitValue() && other.isLitValue())
+    if (isLitValue() && other.isLitValue()) {
+      val r = new Bool(dir)
       r.setLitValue(ULit(if (litValue() == other.litValue()) 1 else 0, 1))
-    r
+      r
+    } else
+      bits_compop_pad(EqualOp, other)
   }
   def != (other: Bits) = bits_compop_pad(NotEqualOp, other)
   def <= (other: Bits) = bits_compop_pad(LessEqOp, other)
@@ -737,7 +750,9 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
     d
   }
 
-  override def unary_- = uint_unop(NegOp)
+  // override def unary_- = uint_unop(NegOp)
+  override def unary_- = UInt(0) - this
+  override def unary_-% = UInt(0) -% this
   def +& (other: UInt) = uint_binop_pad(AddOp, other)
   def + (other: UInt) = this +% other
   def +% (other: UInt) = uint_binop_pad(AddModOp, other)
@@ -754,10 +769,12 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
 
   override def unary_~(): UInt = uint_unop(BitNotOp)
   def & (other: UInt) = {
-    val r = uint_binop_pad(BitAndOp, other)
-    if (isLitValue() && other.isLitValue())
+    if (isLitValue() && other.isLitValue()) {
+      val r = cloneTypeWidth(-1)
       r.setLitValue(ULit(litValue() & other.litValue()))
-    r
+      r
+    } else
+      uint_binop_pad(BitAndOp, other)
   }
   def | (other: UInt) = uint_binop_pad(BitOrOp, other)
   def ^ (other: UInt) = uint_binop_pad(BitXorOp, other)
@@ -765,10 +782,12 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def < (other: UInt) = uint_compop_pad(LessOp, other)
   def > (other: UInt) = uint_compop_pad(GreaterOp, other)
   def === (other: UInt) = {
-    val r = uint_compop_pad(EqualOp, other)
-    if (isLitValue() && other.isLitValue())
+    if (isLitValue() && other.isLitValue()) {
+      val r = new Bool(dir)
       r.setLitValue(ULit(if (litValue() == other.litValue()) 1 else 0, 1))
-    r
+      r
+    } else
+      uint_compop_pad(EqualOp, other)
   }
   def != (other: UInt) = uint_compop_pad(NotEqualOp, other)
   def <= (other: UInt) = uint_compop_pad(LessEqOp, other)
@@ -832,7 +851,9 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
     d
   }
 
-  override def unary_- = sint_unop(NegOp)
+  // override def unary_- = sint_unop(NegOp)
+  override def unary_- = SInt(0) - this
+  override def unary_-% = SInt(0) -% this
   def +& (other: SInt) = sint_binop_pad(AddOp, other)
   def + (other: SInt) = sint_binop_pad(AddModOp, other)
   def -& (other: SInt) = sint_binop_pad(SubOp, other)
@@ -947,8 +968,13 @@ object Cat {
       val isConst = (l.isLitValue() && h.isLitValue())
       val w = if (isConst) l.getWidth + h.getWidth else -1
       val d = l.cloneTypeWidth(w)
-      if (isConst) d.setLitValue(ULit((l.litValue() << l.getWidth) | h.litValue(), w))
-      pushCommand(DefPrim(d.id, d.toType, ConcatOp, Array(l.ref, h.ref), NoLits))
+      if (isConst) {
+        val c = (l.litValue() << h.getWidth) | h.litValue()
+        // println("DO-CAT L = " + l.litValue() + " LW = " + l.getWidth + " H = " + h.litValue() + " -> " + c)
+
+        d.setLitValue(ULit(c, w))
+      } else
+        pushCommand(DefPrim(d.id, d.toType, ConcatOp, Array(l.ref, h.ref), NoLits))
       d
     }
   }
