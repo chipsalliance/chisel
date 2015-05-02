@@ -1821,14 +1821,14 @@ defn flo-op-name (op:PrimOp) -> String :
       ;AS-UINT-S-OP :
       ;AS-SINT-U-OP :
       ;AS-SINT-S-OP :
-      SHIFT-LEFT-U-OP :  "lsh" ;; todo: signed version
-      SHIFT-LEFT-S-OP :  "lsh" ;; todo: signed version
+      SHIFT-LEFT-U-OP :  "lsh" 
+      SHIFT-LEFT-S-OP :  "lsh" 
       SHIFT-RIGHT-U-OP : "rsh"
-      SHIFT-RIGHT-S-OP : "rsh"
-      DYN-SHIFT-LEFT-U-OP :  "lsh" ;; todo: signed version
-      DYN-SHIFT-LEFT-S-OP :  "lsh" ;; todo: signed version
-      DYN-SHIFT-RIGHT-U-OP : "rsh"
-      DYN-SHIFT-RIGHT-S-OP : "rsh"
+      SHIFT-RIGHT-S-OP : "arsh"
+      DYN-SHIFT-LEFT-U-OP :  "lsh" 
+      DYN-SHIFT-LEFT-S-OP :  "lsh" 
+      DYN-SHIFT-RIGHT-U-OP : "rsh" 
+      DYN-SHIFT-RIGHT-S-OP : "arsh"
       ;CONVERT-U-OP : 
       ;CONVERT-S-OP : 
       BIT-AND-OP :     "and"
