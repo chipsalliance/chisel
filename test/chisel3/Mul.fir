@@ -1,12 +1,10 @@
 ; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
 ; CHECK: Done!
-
 circuit Mul : 
   module Mul : 
     input x : UInt<2>
-    output z : UInt<4>
-    output a : UInt<4>
     input y : UInt<2>
+    output z : UInt<4>
     
     wire tbl : UInt<4>[16]
     tbl[0] := UInt<4>(0)
@@ -25,8 +23,7 @@ circuit Mul :
     tbl[13] := UInt<4>(3)
     tbl[14] := UInt<4>(6)
     tbl[15] := UInt<4>(9)
-    node T_43 = shl(x, 2)
-    node ad = bit-or(Pad(T_43,?), Pad(y,?))
-    a := Pad(ad,?)
-    accessor T_44 = tbl[ad]
+    node T_42 = shl(x, 2)
+    node T_43 = bit-or(Pad(T_42,?), Pad(y,?))
+    accessor T_44 = tbl[T_43]
     z := Pad(T_44,?)

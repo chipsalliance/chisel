@@ -862,24 +862,38 @@ defn lower-to-ground (c:Circuit) -> Circuit :
 defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
    defn equality (e1:Expression,e2:Expression) -> Expression :
       DoPrim(EQUAL-UU-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
+   defn get-name (e:Expression) -> Symbol :
+      match(e) :
+         (e:WRef) : symbol-join([name(e) `#])
+         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) `#])
+         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) `#])
+         (e) : `T
    match(s) :
       (s:ConnectToIndexed) : Begin $
          if length(locs(s)) == 0 : list(EmptyStmt())
          else :
-            List(Connect(head(locs(s)),exp(s)), to-list $
-               for (i in 1 to false, l in tail(locs(s))) stream : Conditionally(
-                  equality(index(s),UIntValue(i,UnknownWidth())),
-                  Connect(l,exp(s)),
-                  EmptyStmt())
+            val ref = WRef(firrtl-gensym(get-name(exp(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            append(
+               list(Connect(head(locs(s)),exp(s)),DefNode(name(ref),index(s)))
+               to-list $
+                  for (i in 1 to false, l in tail(locs(s))) stream : Conditionally(
+                     equality(ref,UIntValue(i,UnknownWidth())),
+                     Connect(l,exp(s)),
+                     EmptyStmt()
+                  )
             )
       (s:ConnectFromIndexed) : Begin $
          if length(exps(s)) == 0 : list(EmptyStmt())
          else :
-            List(Connect(loc(s),head(exps(s))), to-list $
-               for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
-                  equality(index(s),UIntValue(i,UnknownWidth())),
-                  Connect(loc(s),e),
-                  EmptyStmt())
+            val ref = WRef(firrtl-gensym(get-name(loc(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            append(
+               list(Connect(loc(s),head(exps(s))),DefNode(name(ref),index(s)))
+               to-list $
+                  for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
+                     equality(ref,UIntValue(i,UnknownWidth())),
+                     Connect(loc(s),e),
+                     EmptyStmt()
+                  )
             )
       (s) : map(expand-connect-indexed-stmt,s)
   
