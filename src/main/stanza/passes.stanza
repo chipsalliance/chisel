@@ -5,6 +5,7 @@ defpackage firrtl/passes :
   import firrtl/ir-utils
   import firrtl/primops
   import firrtl-main
+  import firrtl/errors
 
 ;============== EXCEPTIONS =================================
 defclass PassException <: Exception
@@ -838,7 +839,9 @@ defn lower (body:Stmt) -> Stmt :
                   switch fn ([x,y]) : lgender == x and rgender == y :
                      [FEMALE,MALE]   : ConnectToIndexed(index(s),locs,r*)
                      [MALE,FEMALE]   : ConnectFromIndexed(index(s),r*,locs)
-         (s:Begin|Conditionally|EmptyStmt) : map(lower-stmt,s)
+         (s:Conditionally) : 
+            Conditionally(exp(head $ expand-expr(pred(s))),lower-stmt(conseq(s)),lower-stmt(alt(s)))
+         (s:Begin|EmptyStmt) : map(lower-stmt,s)
 
    lower-stmt(body)
 
@@ -2008,6 +2011,7 @@ public defn run-passes (c: Circuit, p: List<Char>,file:String) :
 
   ; Early passes:
   ;  If modules have a reset defined, must be an INPUT and UInt(1)
+   if contains(p,'X') or contains(p,'A') : do-stage("High Form Check", check-high-form)
    if contains(p,'X') or contains(p,'a') : do-stage("Temp Elimination", temp-elimination)
    if contains(p,'X') or contains(p,'b') : do-stage("Working IR", to-working-ir)
    if contains(p,'X') or contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)

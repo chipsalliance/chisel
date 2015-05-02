@@ -8,6 +8,7 @@
 #include("ir-parser.stanza")
 #include("passes.stanza")
 #include("primop.stanza")
+#include("errors.stanza")
 
 defpackage firrtl-main :
    import core
