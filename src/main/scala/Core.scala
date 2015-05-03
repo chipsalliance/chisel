@@ -157,6 +157,15 @@ abstract class Immediate {
 abstract class Arg extends Immediate {
   def fullname: String
   def name: String
+  def padTo(width: Int, pad: Int): Arg =
+    if (pad == 0 || (pad > 0 && pad == width)) this else Pad(this, pad)
+}
+
+case class Pad(val x: Immediate, val amount: Int) extends Arg {
+  def padIt(s: String) = "Pad(" + s + (if (amount == -1) ",?" else ("," + amount)) + ")"
+  def fullname: String = padIt(x.fullname)
+  def name: String = padIt(x.name)
+  override def debugName: String = padIt(x.debugName)
 }
 
 case class Alias(val id: String) extends Arg {
@@ -171,11 +180,15 @@ abstract class LitArg (val num: BigInt, val width: Int) extends Arg {
 case class ULit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
   def fullname = name
   def name = "UInt<" + width + ">(" + num + ")"
+  override def padTo(width: Int, pad: Int): Arg =
+    if (pad == -1) Pad(this,-1) else if (pad == 0) this else ULit(n, pad)
 }
 
 case class SLit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
   def fullname = name
   def name = "SInt<" + width + ">(" + num + ")"
+  override def padTo(width: Int, pad: Int): Arg =
+    if (pad == -1) Pad(this,-1) else if (pad == 0) this else SLit(n, pad)
 }
 
 case class Ref(val name: String) extends Immediate {
@@ -223,7 +236,6 @@ case class DefFlo(val id: String, val value: Float) extends Definition;
 case class DefDbl(val id: String, val value: Double) extends Definition;
 case class DefMInt(val id: String, val value: String, val width: Int) extends Definition;
 case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Arg], val lits: Array[BigInt]) extends Definition;
-case class DefPrimPad(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Arg], val lits: Array[BigInt]) extends Definition;
 case class DefWire(val id: String, val kind: Kind) extends Definition;
 case class DefRegister(val id: String, val kind: Kind) extends Definition;
 case class DefMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
@@ -232,7 +244,6 @@ case class DefInstance(val id: String, val module: String) extends Definition;
 case class Conditionally(val pred: Arg, val conseq: Command, val alt: Command) extends Command;
 case class Begin(val body: Array[Command]) extends Command();
 case class Connect(val loc: Alias, val exp: Arg) extends Command;
-case class ConnectPad(val loc: Alias, val exp: Arg) extends Command;
 case class ConnectInit(val loc: Alias, val exp: Arg) extends Command;
 case class ConnectInitIndex(val loc: Alias, val index: Int, val exp: Arg) extends Command;
 case class EmptyCommand() extends Command;
@@ -300,9 +311,9 @@ abstract class Data(dirArg: Direction) extends Id {
     this
   }
   def :=(other: Data) = 
-    pushCommand(Connect(this.lref, other.ref))
+    pushCommand(Connect(this.lref, this.padArg(other)))
   def <>(other: Data) = 
-    pushCommand(Connect(this.lref, other.ref))
+    this := other
   def cloneType: this.type
   def cloneTypeWidth(width: Int): this.type
   def lref: Alias = 
@@ -316,6 +327,9 @@ abstract class Data(dirArg: Direction) extends Id {
   def isLitValue(): Boolean = false
   def setLitValue(x: LitArg) {  }
   def getWidth: Int
+  def padTo(other: Data): Int = 0 // avoid padding non bits
+  def padArg(other: Data): Arg = other.ref
+  def maxWidth(other: Data): Int = -1
   def flatten: Array[Bits]
   def fromBits(n: Bits): this.type = {
     val res = this.cloneType
@@ -337,7 +351,7 @@ abstract class Data(dirArg: Direction) extends Id {
     x
   }
   def toBool(): Bool = 
-    chiselCast(this){Bool()}
+    chiselCast(this){x:Int => Bool()}
 
   def toPort: Port = Port(id, dir, toType)
   def collectElts: Unit
@@ -355,8 +369,8 @@ object Wire {
     // TODO: COME UP WITH MORE ROBUST WAY TO HANDLE THIS
     x.collectElts
     pushCommand(DefWire(x.defd.id, x.toType))
-    if (init != null)
-      pushCommand(Connect(x.lref, init.ref))
+    if (init != null) 
+      pushCommand(Connect(x.lref, x.padArg(init)))
     x
   }
 }
@@ -374,7 +388,7 @@ object Reg {
     x.isReg_ = true
     pushCommand(DefRegister(x.defd.id, x.toType))
     if (init != null) 
-      pushCommand(ConnectInit(x.lref, init.ref))
+      pushCommand(ConnectInit(x.lref, x.padArg(init)))
     if (next != null) 
       x := next
     x
@@ -461,7 +475,7 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
   def inits (f: (Int, T, (Int, T, T) => Unit) => Unit) = {
     var i = 0
     def doInit (index: Int, elt: T, init: T) =
-      pushCommand(ConnectInitIndex(elt.lref, index, init.ref))
+      pushCommand(ConnectInitIndex(elt.lref, index, elt.padArg(init)))
     for (d <- self) {
       f(i, d, doInit)
       i += 1;
@@ -500,11 +514,11 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 }
 
 object chiselCast {
-  def apply[S <: Data, T <: Bits](i: S)(gen: => T): T = {
-    val x = gen
-    pushCommand(DefWire(x.defd.id, x.toType))
+  def apply[S <: Data, T <: Bits](i: S)(gen: Int => T): T = {
     val b = i.toBits
-    pushCommand(Connect(x.lref, b.ref))
+    val x = gen(b.getWidth)
+    pushCommand(DefWire(x.defd.id, x.toType))
+    pushCommand(Connect(x.lref, x.padArg(b)))
     x
   }
 }
@@ -577,9 +591,17 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
       pushCommand(DefPrim(d.defd.id, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
     d
   }
+  def maxWidth(other: Bits): Int = 
+    if (getWidth >= 0 && other.getWidth >= 0) max(getWidth, other.getWidth) else -1
+  def padTo(other: Bits): Int = {
+    val allKnown = getWidth >= 0 && other.getWidth >= 0
+    val isSame = allKnown && getWidth == other.getWidth
+    println("SAME " + isSame + " = " + getWidth + " " + other.getWidth)
+    if (isSame) 0 else if (allKnown) maxWidth(other) else -1
+  }
 
   def :=(other: Bits) = 
-    pushCommand(ConnectPad(this.lref, other.ref))
+    pushCommand(Connect(this.lref, this.padArg(other)))
 
   override def fromBits(n: Bits): this.type = {
     val res = Wire(this.cloneType)
@@ -592,24 +614,43 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), NoLits))
     d
   }
-  private def bits_binop(op: PrimOp, other: BigInt): Bits = {
-    val d = cloneTypeWidth(-1)
+  private def bits_binop(op: PrimOp, other: BigInt, width: Int = -1): Bits = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), Array(other)))
     d.asInstanceOf[Bits]
   }
-  private def bits_binop_pad(op: PrimOp, other: Bits): Bits = {
-    val d = cloneTypeWidth(-1)
-    pushCommand(DefPrimPad(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
+  def padOne(mx: Int): Arg = {
+    // println("A " + a + "'" + a.getWidth + " MX " + mx)
+    if (getWidth > 0 && getWidth == mx) ref else ref.padTo(getWidth, mx)
+  }
+  def padArgs(a0: Bits, a1: Bits): Array[Arg] = {
+    val pd = a0.padTo(a1)
+    println("PD " + pd)
+    if (pd == 0)
+      Array(a0.ref, a1.ref)
+    else
+      Array(a0.padOne(pd), a1.padOne(pd))
+  }
+  def padArg(other: Bits): Arg = {
+    val pd = padTo(other)
+    if (pd == 0)
+      other.ref
+    else
+      other.padOne(pd)
+  }
+  private def bits_binop_pad(op: PrimOp, other: Bits, width: Int = -1): Bits = {
+    val d = cloneTypeWidth(width)
+    pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
   private def bits_binop(op: PrimOp, other: Bits): Bits = {
     val d = cloneTypeWidth(-1)
-    pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
   private def bits_compop_pad(op: PrimOp, other: Bits): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrimPad(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
 
@@ -619,9 +660,9 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def unary_-% = Bits(0) -% this
   def +& (other: Bits) = bits_binop_pad(AddOp, other)
   def + (other: Bits) = this +% other
-  def +% (other: Bits) = bits_binop_pad(AddModOp, other)
+  def +% (other: Bits) = bits_binop_pad(AddModOp, other, maxWidth(other))
   def -& (other: Bits) = bits_binop_pad(SubOp, other)
-  def -% (other: Bits) = bits_binop_pad(SubModOp, other)
+  def -% (other: Bits) = bits_binop_pad(SubModOp, other, maxWidth(other))
   def - (other: Bits) = this -% other
   def * (other: Bits) = bits_binop_pad(TimesOp, other)
   def / (other: Bits) = bits_binop_pad(DivideOp, other)
@@ -638,10 +679,10 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
       r.setLitValue(ULit(litValue() & other.litValue()))
       r
     } else
-      bits_binop_pad(BitAndOp, other)
+      bits_binop_pad(BitAndOp, other, maxWidth(other))
   }
-  def | (other: Bits) = bits_binop_pad(BitOrOp, other)
-  def ^ (other: Bits) = bits_binop_pad(BitXorOp, other)
+  def | (other: Bits) = bits_binop_pad(BitOrOp, other, maxWidth(other))
+  def ^ (other: Bits) = bits_binop_pad(BitXorOp, other, maxWidth(other))
 
   def < (other: Bits) = bits_compop_pad(LessOp, other)
   def > (other: Bits) = bits_compop_pad(GreaterOp, other)
@@ -656,7 +697,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def != (other: Bits) = bits_compop_pad(NotEqualOp, other)
   def <= (other: Bits) = bits_compop_pad(LessEqOp, other)
   def >= (other: Bits) = bits_compop_pad(GreaterEqOp, other)
-  def pad (other: BigInt) = bits_binop(PadOp, other)
+  def pad (other: BigInt) = bits_binop(PadOp, other, other.toInt)
 
   private def bits_redop(op: PrimOp): Bool = {
     val d = new Bool(dir)
@@ -677,9 +718,9 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   def fromInt(x: BigInt): this.type;
 
-  def toSInt(): SInt = chiselCast(this){SInt()};
+  def toSInt(): SInt = chiselCast(this){w:Int => SInt(width = w)};
 
-  def toUInt(): UInt = chiselCast(this){UInt()};
+  def toUInt(): UInt = chiselCast(this){w:Int => UInt(width = w)};
 }
 
 import UInt._
@@ -734,19 +775,19 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
-  private def uint_binop_pad(op: PrimOp, other: UInt): UInt = {
-    val d = cloneTypeWidth(-1)
-    pushCommand(DefPrimPad(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
+  private def uint_binop_pad(op: PrimOp, other: UInt, width: Int = -1): UInt = {
+    val d = cloneTypeWidth(width)
+    pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
-  private def uint_binop(op: PrimOp, other: BigInt): UInt = {
-    val d = cloneTypeWidth(-1)
+  private def uint_binop(op: PrimOp, other: BigInt, width: Int = -1): UInt = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), Array(other)))
     d
   }
   private def uint_compop_pad(op: PrimOp, other: UInt): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrimPad(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
 
@@ -755,10 +796,10 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   override def unary_-% = UInt(0) -% this
   def +& (other: UInt) = uint_binop_pad(AddOp, other)
   def + (other: UInt) = this +% other
-  def +% (other: UInt) = uint_binop_pad(AddModOp, other)
+  def +% (other: UInt) = uint_binop_pad(AddModOp, other, maxWidth(other))
   def -& (other: UInt) = uint_binop_pad(SubOp, other)
   def - (other: UInt) = this -% other
-  def -% (other: UInt) = uint_binop_pad(SubModOp, other)
+  def -% (other: UInt) = uint_binop_pad(SubModOp, other, maxWidth(other))
   def * (other: UInt) = uint_binop_pad(TimesOp, other)
   def / (other: UInt) = uint_binop_pad(DivideOp, other)
   def % (other: UInt) = uint_binop_pad(ModOp, other)
@@ -774,10 +815,10 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
       r.setLitValue(ULit(litValue() & other.litValue()))
       r
     } else
-      uint_binop_pad(BitAndOp, other)
+      uint_binop_pad(BitAndOp, other, maxWidth(other))
   }
-  def | (other: UInt) = uint_binop_pad(BitOrOp, other)
-  def ^ (other: UInt) = uint_binop_pad(BitXorOp, other)
+  def | (other: UInt) = uint_binop_pad(BitOrOp, other, maxWidth(other))
+  def ^ (other: UInt) = uint_binop_pad(BitXorOp, other, maxWidth(other))
 
   def < (other: UInt) = uint_compop_pad(LessOp, other)
   def > (other: UInt) = uint_compop_pad(GreaterOp, other)
@@ -793,14 +834,14 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def <= (other: UInt) = uint_compop_pad(LessEqOp, other)
   def >= (other: UInt) = uint_compop_pad(GreaterEqOp, other)
 
-  override def pad (other: BigInt) = uint_binop(PadOp, other)
+  override def pad (other: BigInt) = uint_binop(PadOp, other, other.toInt)
 }
 
 object UInt {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = 
     new UInt(dir, width)
   def uintLit(value: BigInt, width: Int) = {
-    val w = if(width == -1) max(bitLength(value), 1) else width
+    val w = if (width == -1) max(bitLength(value), 1) else width
     val b = new UInt(NO_DIR, w)
     b.setLitValue(ULit(value, w))
     // pushCommand(DefUInt(b.defd.id, value, w))
@@ -830,8 +871,8 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), NoLits))
     d
   }
-  private def sint_binop(op: PrimOp, other: BigInt): Bits = {
-    val d = cloneTypeWidth(-1)
+  private def sint_binop(op: PrimOp, other: BigInt, width: Int = -1): Bits = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), Array(other)))
     d
   }
@@ -840,14 +881,14 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
-  private def sint_binop_pad(op: PrimOp, other: SInt): SInt = {
-    val d = cloneTypeWidth(-1)
-    pushCommand(DefPrimPad(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
+  private def sint_binop_pad(op: PrimOp, other: SInt, width: Int = -1): SInt = {
+    val d = cloneTypeWidth(width)
+    pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
   private def sint_compop_pad(op: PrimOp, other: SInt): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrimPad(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
 
@@ -855,9 +896,11 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   override def unary_- = SInt(0) - this
   override def unary_-% = SInt(0) -% this
   def +& (other: SInt) = sint_binop_pad(AddOp, other)
-  def + (other: SInt) = sint_binop_pad(AddModOp, other)
+  def +% (other: SInt) = sint_binop_pad(AddModOp, other, maxWidth(other))
+  def + (other: SInt) = this +% other
   def -& (other: SInt) = sint_binop_pad(SubOp, other)
-  def - (other: SInt) = sint_binop_pad(SubModOp, other)
+  def -% (other: SInt) = sint_binop_pad(SubModOp, other, maxWidth(other))
+  def - (other: SInt) = this -% other
   def * (other: SInt) = sint_binop_pad(TimesOp, other)
   def / (other: SInt) = sint_binop_pad(DivideOp, other)
   def % (other: SInt) = sint_binop_pad(ModOp, other)
@@ -867,9 +910,9 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   def >> (other: UInt) = sint_binop(DynamicShiftRightOp, other)
 
   override def unary_~(): SInt = sint_unop(BitNotOp)
-  def & (other: SInt) = sint_binop_pad(BitAndOp, other)
-  def | (other: SInt) = sint_binop_pad(BitOrOp, other)
-  def ^ (other: SInt) = sint_binop_pad(BitXorOp, other)
+  def & (other: SInt) = sint_binop_pad(BitAndOp, other, maxWidth(other))
+  def | (other: SInt) = sint_binop_pad(BitOrOp, other, maxWidth(other))
+  def ^ (other: SInt) = sint_binop_pad(BitXorOp, other, maxWidth(other))
 
   def < (other: SInt) = sint_compop_pad(LessOp, other)
   def > (other: SInt) = sint_compop_pad(GreaterOp, other)
@@ -883,7 +926,7 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   def <= (other: SInt) = sint_compop_pad(LessEqOp, other)
   def >= (other: SInt) = sint_compop_pad(GreaterEqOp, other)
 
-  override def pad (other: BigInt) = sint_binop(PadOp, other)
+  override def pad (other: BigInt) = sint_binop(PadOp, other, other.toInt)
 }
 
 object SInt {
@@ -944,15 +987,27 @@ object Bool {
 
 object Mux {
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = {
-    val r = con.cloneTypeWidth(-1)
-    val args = Array(cond.ref, con.ref, alt.ref)
-    con match {
-      case t: Bits => 
-        pushCommand(DefPrimPad(r.defd.id, r.toType, MultiplexOp, args, NoLits))
-      case _ =>
-        pushCommand(DefPrim(r.defd.id, r.toType, MultiplexOp, args, NoLits))
+    def genericMux() = {
+      val r = con.cloneTypeWidth(con.maxWidth(alt))
+      val args = Array(cond.ref, con.ref, alt.ref)
+      pushCommand(DefPrim(r.defd.id, r.toType, MultiplexOp, args, NoLits))
+      r.asInstanceOf[T]
     }
-    r.asInstanceOf[T]
+    con match {
+      case tc: Bits => 
+        alt match {
+          case ta: Bits =>
+            // println("MUX COND " + cond + " " + (!isp) + " CON(" + con.litValue() + ")'" + con.getWidth + " " + con + " ALT(" + alt.litValue() + ")'" + alt.getWidth + " " + alt)
+            val rb = tc.cloneTypeWidth(tc.maxWidth(ta))
+            val pargs = Array(cond.ref) ++ tc.padArgs(tc, ta)
+            pushCommand(DefPrim(rb.defd.id, rb.toType, MultiplexOp, pargs, NoLits))
+            rb.asInstanceOf[T]
+          case _ =>
+            genericMux()
+        }
+      case _ =>
+        genericMux()
+    }
   }
 }
 
@@ -966,7 +1021,7 @@ object Cat {
       val l = doCat(r.slice(0, r.length/2))
       val h = doCat(r.slice(r.length/2, r.length))
       val isConst = (l.isLitValue() && h.isLitValue())
-      val w = if (isConst) l.getWidth + h.getWidth else -1
+      val w = if (isConst) l.getWidth + h.getWidth else if (l.getWidth >= 0 && h.getWidth >= 0) l.getWidth + h.getWidth else -1
       val d = l.cloneTypeWidth(w)
       if (isConst) {
         val c = (l.litValue() << h.getWidth) | h.litValue()
@@ -1258,8 +1313,8 @@ class Emitter {
       case e: DefSInt => "node " + e.name + " = SInt" + maybeWidth(e.width) + "(" + e.value + ")"
       case e: DefFlo => "node " + e.name + " = Flo(" + e.value + ")"
       case e: DefDbl => "node " + e.name + " = Dbl(" + e.value + ")"
-      case e: DefPrim => "node " + e.name + " = " + emit(e.op) + "(" + join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ") + ")"
-      case e: DefPrimPad => "node " + e.name + " = " + emit(e.op) + "(" + join(e.args.map(x => "Pad(" + emit(x) + ",?)") ++ e.lits.map(x => x.toString), ", ") + ")"
+      case e: DefPrim =>
+        "node " + e.name + " = " + emit(e.op) + "(" + join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ") + ")"
       case e: DefWire => "wire " + e.name + " : " + emitType(e.kind)
       case e: DefRegister => "reg " + e.name + " : " + emitType(e.kind)
       case e: DefMemory => "mem " + e.name + " : " + emitType(e.kind) + "[" + e.size + "]";
@@ -1274,9 +1329,8 @@ class Emitter {
       case e: Conditionally => "when " + emit(e.pred) + " : " + withIndent{ emit(e.conseq) } + (if (e.alt.isInstanceOf[EmptyCommand]) "" else newline + "else : " + withIndent{ emit(e.alt) })
       case e: Begin => join0(e.body.map(x => emit(x)), newline)
       case e: Connect => emit(e.loc) + " := " + emit(e.exp)
-      case e: ConnectPad => emit(e.loc) + " := Pad(" + emit(e.exp) + ",?)"
-      case e: ConnectInit => "on-reset " + emit(e.loc) + " := Pad(" + emit(e.exp) + ",?)"
-      case e: ConnectInitIndex => "on-reset " + emit(e.loc) + "[" + e.index + "] := Pad(" + emit(e.exp) + ",?)"
+      case e: ConnectInit => "on-reset " + emit(e.loc) + " := " + emit(e.exp)
+      case e: ConnectInitIndex => "on-reset " + emit(e.loc) + "[" + e.index + "] := " + emit(e.exp)
       case e: EmptyCommand => "skip"
     }
   }
