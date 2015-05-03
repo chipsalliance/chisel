@@ -5,6 +5,7 @@ defpackage firrtl/passes :
   import firrtl/ir-utils
   import firrtl/primops
   import firrtl-main
+  import firrtl/errors
 
 ;============== EXCEPTIONS =================================
 defclass PassException <: Exception
@@ -838,7 +839,9 @@ defn lower (body:Stmt) -> Stmt :
                   switch fn ([x,y]) : lgender == x and rgender == y :
                      [FEMALE,MALE]   : ConnectToIndexed(index(s),locs,r*)
                      [MALE,FEMALE]   : ConnectFromIndexed(index(s),r*,locs)
-         (s:Begin|Conditionally|EmptyStmt) : map(lower-stmt,s)
+         (s:Conditionally) : 
+            Conditionally(exp(head $ expand-expr(pred(s))),lower-stmt(conseq(s)),lower-stmt(alt(s)))
+         (s:Begin|EmptyStmt) : map(lower-stmt,s)
 
    lower-stmt(body)
 
@@ -862,24 +865,38 @@ defn lower-to-ground (c:Circuit) -> Circuit :
 defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
    defn equality (e1:Expression,e2:Expression) -> Expression :
       DoPrim(EQUAL-UU-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
+   defn get-name (e:Expression) -> Symbol :
+      match(e) :
+         (e:WRef) : symbol-join([name(e) `#])
+         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) `#])
+         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) `#])
+         (e) : `T
    match(s) :
       (s:ConnectToIndexed) : Begin $
          if length(locs(s)) == 0 : list(EmptyStmt())
          else :
-            List(Connect(head(locs(s)),exp(s)), to-list $
-               for (i in 1 to false, l in tail(locs(s))) stream : Conditionally(
-                  equality(index(s),UIntValue(i,UnknownWidth())),
-                  Connect(l,exp(s)),
-                  EmptyStmt())
+            val ref = WRef(firrtl-gensym(get-name(exp(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            append(
+               list(Connect(head(locs(s)),exp(s)),DefNode(name(ref),index(s)))
+               to-list $
+                  for (i in 1 to false, l in tail(locs(s))) stream : Conditionally(
+                     equality(ref,UIntValue(i,UnknownWidth())),
+                     Connect(l,exp(s)),
+                     EmptyStmt()
+                  )
             )
       (s:ConnectFromIndexed) : Begin $
          if length(exps(s)) == 0 : list(EmptyStmt())
          else :
-            List(Connect(loc(s),head(exps(s))), to-list $
-               for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
-                  equality(index(s),UIntValue(i,UnknownWidth())),
-                  Connect(loc(s),e),
-                  EmptyStmt())
+            val ref = WRef(firrtl-gensym(get-name(loc(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            append(
+               list(Connect(loc(s),head(exps(s))),DefNode(name(ref),index(s)))
+               to-list $
+                  for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
+                     equality(ref,UIntValue(i,UnknownWidth())),
+                     Connect(loc(s),e),
+                     EmptyStmt()
+                  )
             )
       (s) : map(expand-connect-indexed-stmt,s)
   
@@ -1349,6 +1366,11 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
                   if not contains?(args(w2),w) : ret(false)
                ret(true)
       (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+      (w1:PlusWidth,w2:PlusWidth) : 
+         (arg1(w1) == arg1(w2) and arg2(w1) == arg2(w2)) or (arg1(w1) == arg2(w2) and arg2(w1) == arg1(w2))
+      (w1:MinusWidth,w2:MinusWidth) :
+         (arg1(w1) == arg1(w2) and arg2(w1) == arg2(w2)) or (arg1(w1) == arg2(w2) and arg2(w1) == arg1(w2))
+      (w1:ExpWidth,w2:ExpWidth) : arg1(w1) == arg1(w2)
       (w1:UnknownWidth,w2:UnknownWidth) : true
       (w1,w2) : false
 defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
@@ -1380,6 +1402,18 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
                      for x in args(w*) do : add(v,x)
                   (w*) : add(v,w*)
             MaxWidth(unique(v))
+         (w:PlusWidth) : 
+            match(arg1(w),arg2(w)) :
+               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) + width(w2))
+               (w1,w2) : w
+         (w:MinusWidth) : 
+            match(arg1(w),arg2(w)) :
+               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) - width(w2))
+               (w1,w2) : w
+         (w:ExpWidth) : 
+            match(arg1(w)) :
+               (w1:IntWidth) : IntWidth(pow(2,width(w1)) - 1)
+               (w1) : w
          (w) : w
    defn substitute (w:Width,h:HashTable<Symbol,Width>) -> Width :
       ;println-all-debug(["Substituting for [" w "]"])
@@ -1458,25 +1492,25 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
    ;  2) Remove Cycles
    ;  3) Move to solved if not self-recursive
    val u = make-unique(l)
-   ;println-debug("======== UNIQUE CONSTRAINTS ========")
-   ;for x in u do : println-debug(x)
-   ;println-debug("====================================")
+   println-debug("======== UNIQUE CONSTRAINTS ========")
+   for x in u do : println-debug(x)
+   println-debug("====================================")
 
    val f = HashTable<Symbol,Width>(symbol-hash)
    val o = Vector<Symbol>()
    for x in u do :
-      ;println-debug("==== SOLUTIONS TABLE ====")
-      ;for x in f do : println-debug(x)
-      ;println-debug("=========================")
+      println-debug("==== SOLUTIONS TABLE ====")
+      for x in f do : println-debug(x)
+      println-debug("=========================")
 
       val [n e] = [key(x) value(x)]
 
       val e-sub = substitute(e,f)
-      ;println-debug(["Solving " n " => " e])
-      ;println-debug(["After Substitute: " n " => " e-sub])
-      ;println-debug("==== SOLUTIONS TABLE (Post Substitute) ====")
-      ;for x in f do : println-debug(x)
-      ;println-debug("=========================")
+      println-debug(["Solving " n " => " e])
+      println-debug(["After Substitute: " n " => " e-sub])
+      println-debug("==== SOLUTIONS TABLE (Post Substitute) ====")
+      for x in f do : println-debug(x)
+      println-debug("=========================")
       val e* = remove-cycle{n,_} $ e-sub
       ;println-debug(["After Remove Cycle: " n " => " e*])
       if not self-rec?(n,e*) : 
@@ -1485,28 +1519,28 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
          add(o,n)
          f[n] = e*
 
-   ;println-debug("Forward Solved Constraints")
-   ;for x in f do : println-debug(x)
+   println-debug("Forward Solved Constraints")
+   for x in f do : println-debug(x)
 
    ; Backwards Solve
    val b = HashTable<Symbol,Width>(symbol-hash)
    for i in (length(o) - 1) through 0 by -1 do :
       val n = o[i]
-      ;println-all-debug(["SOLVE BACK: [" n " => " f[n] "]"])
-      ;println-debug("==== SOLUTIONS TABLE ====")
-      ;for x in b do : println-debug(x)
-      ;println-debug("=========================")
+      println-all-debug(["SOLVE BACK: [" n " => " f[n] "]"])
+      println-debug("==== SOLUTIONS TABLE ====")
+      for x in b do : println-debug(x)
+      println-debug("=========================")
       val e* = simplify(b-sub(f[n],b))
-      ;println-all-debug(["BACK RETURN: [" n " => " e* "]"])
+      println-all-debug(["BACK RETURN: [" n " => " e* "]"])
       b[n] = e*
-      ;println-debug("==== SOLUTIONS TABLE (Post backsolve) ====")
-      ;for x in b do : println-debug(x)
-      ;println-debug("=========================")
+      println-debug("==== SOLUTIONS TABLE (Post backsolve) ====")
+      for x in b do : println-debug(x)
+      println-debug("=========================")
 
    ; Evaluate
    val e = evaluate(b)
-   ;println-debug("Evaluated Constraints")
-   ;for x in e do : println-debug(x)
+   println-debug("Evaluated Constraints")
+   for x in e do : println-debug(x)
    e
    
 public defn width! (t:Type) -> Width :
@@ -1979,6 +2013,7 @@ public defn run-passes (c: Circuit, p: List<Char>,file:String) :
 
   ; Early passes:
   ;  If modules have a reset defined, must be an INPUT and UInt(1)
+   if contains(p,'X') or contains(p,'A') : do-stage("High Form Check", check-high-form)
    if contains(p,'X') or contains(p,'a') : do-stage("Temp Elimination", temp-elimination)
    if contains(p,'X') or contains(p,'b') : do-stage("Working IR", to-working-ir)
    if contains(p,'X') or contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)

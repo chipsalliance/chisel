@@ -31,6 +31,7 @@ Well-formed high firrtl
    node's value cannot be a bundle with a flip in it
    mems cannot be a bundle with flips
    2nd arg in dshr/l must be UInt
+   pred in conditionally must be of type UInt
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once

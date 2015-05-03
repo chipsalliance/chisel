@@ -185,6 +185,7 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
             match(type(args(e)[1]),type(args(e)[2])) :
                (t1:UIntType, t2:UIntType) : MUX-UU-OP
                (t1:SIntType, t2:SIntType) : MUX-SS-OP
+               (t1,t2) : error(to-string(args(e)))
       MUX-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
       MUX-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
       PAD-OP           : 

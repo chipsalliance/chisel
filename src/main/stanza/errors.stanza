@@ -1,0 +1,139 @@
+defpackage firrtl/errors :
+   import core
+   import verse
+   import firrtl/ir2
+   import firrtl/ir-utils
+   import firrtl/primops
+   import firrtl/passes
+   import firrtl-main
+
+;========== ALL CHECKS =================
+;CAUGHT IN PARSER
+; No nested modules <- parser
+; Only modules in circuit (no statements or expressions) <- parser
+
+;CAUGHT in HIGH FORM CHECK
+; Unique names per module
+; No name can be a prefix of any other name.
+; Can only connect to a Ref or Subfield or Index
+; UInt only has positive ints
+; all references are declared
+; mems cannot be a bundle with flips
+; cannot connect to Register or ReadPort
+
+;AFTER KIND RESOLUTION
+; Cannot connect directly to a mem ever
+; onreset can only handle a register
+
+;AFTER TYPE INFERENCE
+; expression in pad must be a ground type
+; Subfields are only on bundles, before type inference <- need to not error, just do unknown-type
+; node's value cannot be a bundle with a flip in it
+; 2nd arg in dshr/l must be UInt
+; pred in conditionally must be of type UInt
+; Type checking
+
+;AFTER WIDTH INFERENCE
+; No names
+; No Unknowns
+; All widths are positive
+; Pad's width is greater than value's width
+; pad's width is greater than value's width
+
+;AFTER LOWERING
+; All things connect to once
+
+; ??
+; No combinational loops
+; cannot connect to a pad, or a register. only connct to a reference
+
+definterface HighFormException <: Exception
+defn HighFormException (s:String) :
+   new HighFormException :
+      defmethod print (o:OutputStream, this) :
+         print(o, s)
+
+defn HighFormExceptions (xs:Streamable<HighFormException>) :
+   HighFormException(string-join(xs, "\n"))
+
+defn NotUnique (info:FileInfo|False, name:Symbol) :
+   HighFormException $ string-join $
+   [info ": Reference " name " does not have a unique name."]
+
+defn IsPrefix (info:FileInfo|False, name:Symbol, prefix:Symbol, dec:FileInfo|False) :
+   HighFormException $ string-join $
+   [info ": Reference " name " is an invalid name because the prefix " prefix " is declared at " dec "."]
+   
+defn InvalidLOC (info:FileInfo|False) :
+   HighFormException $ string-join $
+   [info ": Invalid connect to an expression that is not a reference or a WritePort."]
+   
+defn NegUInt (info:FileInfo|False) :
+   HighFormException $ string-join $
+   [info ": UInt has a negative value."]
+
+defn UndeclaredReference (info:FileInfo|False, name:Symbol) :
+   HighFormException $ string-join $
+   [info ": Reference " name " is not declared."]
+
+defn MemWithFlip (info:FileInfo|False, name:Symbol) : 
+   HighFormException $ string-join $
+   [info ": Memory " name " cannot be a bundle type with flips."]
+
+defn InvalidSubfield (info:FileInfo|False, name:Symbol) :
+   HighFormException $ string-join $
+   [info ": Invalid subfield access to non-reference."]
+
+defn InvalidIndex (info:FileInfo|False, name:Symbol) :
+   HighFormException $ string-join $
+   [info ": Invalid index access to non-reference."]
+   
+defn NoTopModule (info:FileInfo|False, name:Symbol) :
+   HighFormException $ string-join $
+   [info ": A single module must be named " name "."]
+
+;================ Check Helper Functions ==============
+defn has-flip? (t:Type) -> True|False :
+   var has? = false
+   defn find-flip (t:Type) -> Type :
+      match(t) : 
+         (t:BundleType) : 
+            for f in fields(t) do : 
+               if flip(f) == REVERSE : has? = true
+            t
+         (t) : t
+   find-flip(t)
+   map(find-flip,t)
+   has?
+;================= High Form Check ==========================
+;CAUGHT in HIGH FORM CHECK
+; o Unique names per module
+; o No name can be a prefix of any other name.
+; o Can only connect to a Ref or Subfield or Index
+; o UInt only has positive ints
+; o all references are declared
+; o cannot connect to Register or ReadPort
+; * A module has the same name as main of circuit
+; * mems cannot be a bundle with flips
+
+public defn check-high-form (c:Circuit) -> Circuit : 
+   val errors = Vector<HighFormException>()
+
+   defn check-high-form-s (s:Stmt) -> Stmt :
+      map{check-high-form-s,_} $ match(s) :
+         (s:DefMemory) : 
+            if has-flip?(type(s)) : add(errors, MemWithFlip(info!(s), name(s)))
+            s
+         (s) : s
+   defn check-high-form-m (ms:List<Module>) -> False :
+      var number-top-m = 0
+      for m in ms do :
+         if name(m) == main(c) : number-top-m = number-top-m + 1
+         check-high-form-s(body(m))
+      if number-top-m != 1 : add(errors,NoTopModule(info!(c),main(c)))
+   
+   check-high-form-m(modules(c))
+   throw(HighFormExceptions(errors)) when not empty?(errors)
+   c
+
+
