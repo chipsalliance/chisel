@@ -764,7 +764,7 @@ defn set-gender (e:Expression,g:Gender,f:Flip) -> Expression :
 
 defn lower (body:Stmt) -> Stmt :
    defn lower-stmt (s:Stmt) -> Stmt :
-      println(s)
+      ;; println(s)
       match(s) :
          (s:DefWire) : Begin $
             for x in generate-entry(name(s),type(s)) map :
@@ -1833,14 +1833,14 @@ defn flo-op-name (op:PrimOp) -> String :
       LESS-EQ-US-OP :     "lte" ;; todo: swap args
       LESS-EQ-SU-OP :     "lte" ;; todo: swap args
       LESS-EQ-SS-OP :     "lte" ;; todo: swap args
-      GREATER-UU-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-US-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-SU-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-SS-OP :     "lte" ;; todo: swap args BROKEN
-      GREATER-EQ-UU-OP :  "lt"  ;; todo: signed version
-      GREATER-EQ-US-OP :  "lt"  ;; todo: signed version
-      GREATER-EQ-SU-OP :  "lt"  ;; todo: signed version
-      GREATER-EQ-SS-OP :  "lt"  ;; todo: signed version
+      GREATER-UU-OP :     "lt"  ;; todo: swap args
+      GREATER-US-OP :     "lt"  ;; todo: swap args
+      GREATER-SU-OP :     "lt"  ;; todo: swap args
+      GREATER-SS-OP :     "lt"  ;; todo: swap args
+      GREATER-EQ-UU-OP :  "lte" ;; todo: signed version
+      GREATER-EQ-US-OP :  "lte" ;; todo: signed version
+      GREATER-EQ-SU-OP :  "lte" ;; todo: signed version
+      GREATER-EQ-SS-OP :  "lte" ;; todo: signed version
       NEQUAL-UU-OP :      "neq"
       NEQUAL-SS-OP :      "neq"
       EQUAL-UU-OP :       "eq"
@@ -1855,10 +1855,14 @@ defn flo-op-name (op:PrimOp) -> String :
       ;AS-UINT-S-OP :
       ;AS-SINT-U-OP :
       ;AS-SINT-S-OP :
-      SHIFT-LEFT-U-OP :  "lsh" ;; todo: signed version
-      SHIFT-LEFT-S-OP :  "lsh" ;; todo: signed version
+      SHIFT-LEFT-U-OP :  "lsh" 
+      SHIFT-LEFT-S-OP :  "lsh" 
       SHIFT-RIGHT-U-OP : "rsh"
-      SHIFT-RIGHT-S-OP : "rsh"
+      SHIFT-RIGHT-S-OP : "arsh"
+      DYN-SHIFT-LEFT-U-OP :  "lsh" 
+      DYN-SHIFT-LEFT-S-OP :  "lsh" 
+      DYN-SHIFT-RIGHT-U-OP : "rsh" 
+      DYN-SHIFT-RIGHT-S-OP : "arsh"
       ;CONVERT-U-OP : 
       ;CONVERT-S-OP : 
       BIT-AND-OP :     "and"
@@ -1882,8 +1886,7 @@ defn prim-width (type:Type) -> Int :
       (t) :          error("Bad prim width type")
 
 defn sizeof (in: Int) -> Int :
-  ;; if in == 1: 1 else: to-int(ceil(log(in)/log(2)))
-  max(1, ceil-log2(in))
+  max(1, ceil-log2(in + 1))
 
 defn emit-all (es:Streamable, top:Symbol) :
   for e in es do :
@@ -1914,15 +1917,15 @@ defn emit! (e:Expression,top:Symbol) :
       (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
       (e:Index) :     emit-all([exp(e) "/" value(e)], top)
       (e:Pad) : 
-         emit-all(["rsh'" prim-width(type(e)) " " value(e) " " width(e)], top)
+         emit-all(["rsh'" prim-width(type(e)) " " value(e) " 0"], top)
       (e:Register) : 
-         emit-all(["reg'" prim-width(type(e)) " 1 " value(e)], top) ;; enable(e)
+         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top) 
       (e:ReadPort) : 
-         emit-all(["rd'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e)], top)
+         emit-all(["rd'" prim-width(type(e)) " " "1" " " mem(e) " " index(e)], top) ;; enable(e)
       (e:DoPrim) : 
          if cmp-op?(op(e)) :
            emit-all([flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
-           if greater-op?(op(e)) or less-eq-op?(op(e)) :
+           if greater-op?(op(e)) or greater-eq-op?(op(e)) :
              emit-all([" " args(e)[1] " " args(e)[0]], top)
            else :
              emit-all([" " args(e)[0] " " args(e)[1]], top)
@@ -1943,8 +1946,7 @@ defn emit! (e:Expression,top:Symbol) :
                print(" ")
                emit!(arg, top)
              for const in consts(e) do :
-               print(" ")
-               print(const)
+               print-all([" " const "'" sizeof(const)])
       (e) : error("SHOULDN'T EMIT THIS") ;; print-all(["EMIT(" e ")"])
       ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
 
@@ -1969,7 +1971,7 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
          if value(s) typeof WritePort :
             val e = value(s) as WritePort
             val n = firrtl-gensym(`F)
-            emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " name(s) "\n"], top)
+            emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " top "::" name(s) "\n"], top)
          else :
            emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
       (s:Begin) : do(emit-s{_, v, top}, body(s))
