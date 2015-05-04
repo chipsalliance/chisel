@@ -149,6 +149,7 @@ defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
 ; * A module has the same name as main of circuit
 ; * mems cannot be a bundle with flips
 ; o instance module must be a reference with same name as defined module
+; o reset must be UInt<1>
 
 public defn check-high-form (c:Circuit) -> Circuit : 
    val errors = Vector<HighFormException>()
