@@ -60,9 +60,9 @@ defn NotUnique (info:FileInfo|False, name:Symbol) :
    HighFormException $ string-join $
    [info ": Reference " name " does not have a unique name."]
 
-defn IsPrefix (info:FileInfo|False, name:Symbol, prefix:Symbol, dec:FileInfo|False) :
+defn IsPrefix (info:FileInfo|False, name1:Symbol, name2:Symbol) :
    HighFormException $ string-join $
-   [info ": Reference " name " is an invalid name because the prefix " prefix " is declared at " dec "."]
+   [info ": Reference " name1 " and " name2 " share a prefix."]
    
 defn InvalidLOC (info:FileInfo|False) :
    HighFormException $ string-join $
@@ -92,6 +92,14 @@ defn NoTopModule (info:FileInfo|False, name:Symbol) :
    HighFormException $ string-join $
    [info ": A single module must be named " name "."]
 
+defn InstNotModule (info:FileInfo|False, name:Symbol) :
+   HighFormException $ string-join $
+   [info ": The referenced module in the instance declaration, " name ", is not a reference."]
+
+defn ModuleNotDefined (info:FileInfo|False, name:Symbol) :
+   HighFormException $ string-join $
+   [info ": The referenced module in the instance declaration, " name ", is not defined."]
+
 ;================ Check Helper Functions ==============
 defn has-flip? (t:Type) -> True|False :
    var has? = false
@@ -105,6 +113,31 @@ defn has-flip? (t:Type) -> True|False :
    find-flip(t)
    map(find-flip,t)
    has?
+
+defn contains?<?T> (c:?T,cs:Streamable<?T>) -> True|False : 
+   label<True|False> myret :
+      for x in cs do :
+         if x == c : myret(true)
+      false
+
+defn is-prefix? (s:Symbol,v:Vector<Symbol>) -> Symbol|False :
+   label<Symbol|False> myret :
+      for x in v do :
+         if is-prefix?(x,s) : myret(x)
+      false
+
+defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
+   var is? = true
+   val s1* = to-string(s1)
+   val s2* = to-string(s2)
+   for (x in s1*, y in s2*) do :
+      if x != y : is? = false
+   if length(s1*) > length(s2*) :
+      if s1*[length(s2*)] != '$' : is? = false
+   if length(s1*) < length(s2*) :
+      if s2*[length(s1*)] != '$' : is? = false
+   is?
+
 ;================= High Form Check ==========================
 ;CAUGHT in HIGH FORM CHECK
 ; o Unique names per module
@@ -115,24 +148,41 @@ defn has-flip? (t:Type) -> True|False :
 ; o cannot connect to Register or ReadPort
 ; * A module has the same name as main of circuit
 ; * mems cannot be a bundle with flips
+; o instance module must be a reference with same name as defined module
 
 public defn check-high-form (c:Circuit) -> Circuit : 
    val errors = Vector<HighFormException>()
 
-   defn check-high-form-s (s:Stmt) -> Stmt :
-      map{check-high-form-s,_} $ match(s) :
-         (s:DefMemory) : 
-            if has-flip?(type(s)) : add(errors, MemWithFlip(info!(s), name(s)))
-            s
-         (s) : s
-   defn check-high-form-m (ms:List<Module>) -> False :
-      var number-top-m = 0
-      for m in ms do :
-         if name(m) == main(c) : number-top-m = number-top-m + 1
-         check-high-form-s(body(m))
-      if number-top-m != 1 : add(errors,NoTopModule(info!(c),main(c)))
+   defn check-high-form-s (s:Stmt,names:Vector<Symbol>) -> Stmt :
+      defn check-name (info:FileInfo|False,name:Symbol) -> False :
+         if contains?(name,names) : add(errors,NotUnique(info,name))
+         val prefix = is-prefix?(name,names)
+         if prefix typeof Symbol : add(errors,IsPrefix(info,name,prefix as Symbol))
+
+      map{check-high-form-s{_,names},_} $ { 
+         match(s) :
+            (s:DefWire|DefRegister) : check-name(info!(s),name(s))
+            (s:DefMemory) : 
+               check-name(info!(s),name(s))
+               if has-flip?(type(s)) : add(errors, MemWithFlip(info!(s), name(s)))
+            (s:DefInstance) : 
+               if not (module(s) typeof Ref) : add(errors, InstNotModule(info!(s),name(s)))
+               else :
+                  if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
+                     add(errors, ModuleNotDefined(info!(s),name(s)))
+            (s) : false
+         s }()
+
+   defn check-high-form-m (m:Module) -> False :
+      val names = Vector<Symbol>()
+      check-high-form-s(body(m),names)
+      false
    
-   check-high-form-m(modules(c))
+   var number-top-m = 0
+   for m in modules(c) do :
+      if name(m) == main(c) : number-top-m = number-top-m + 1
+      check-high-form-m(m)
+   if number-top-m != 1 : add(errors,NoTopModule(info!(c),main(c)))
    throw(HighFormExceptions(errors)) when not empty?(errors)
    c
 

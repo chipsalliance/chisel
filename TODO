@@ -102,6 +102,7 @@ Fast C++ where wires/register/instances are predicated
 Verilog backend - put stuff in posedge clock, not assign statements, for speedup
 Annotate mems with location stuff
 Coverage tests, such as statespace or specific instances (like asserts, sort of)
+   check all predicates of whens
 
 ======== FIRRTL++ =========
 Variable size FIFOs
