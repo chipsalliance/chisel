@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x X -p cd | tee %s.out | FileCheck %s
 ; CHECK: Done!
 
 circuit Datapath : 
@@ -64,9 +64,9 @@ circuit Datapath :
     node T_474 = add-wrap(A, T_473)
     sum := T_474
   module BrCond : 
+    input rs1 : UInt<32>
     input rs2 : UInt<32>
     output taken : UInt<1>
-    input rs1 : UInt<32>
     input br_type : UInt<3>
     
     node eq = eq(rs1, rs2)
@@ -100,13 +100,13 @@ circuit Datapath :
     node T_495 = bit-or(T_492, T_494)
     taken := T_495
   module RegFile : 
-    input waddr : UInt<5>
-    input wdata : UInt<32>
-    input wen : UInt<1>
-    output rdata1 : UInt<32>
     input raddr1 : UInt<5>
     input raddr2 : UInt<5>
+    output rdata1 : UInt<32>
     output rdata2 : UInt<32>
+    input wen : UInt<1>
+    input waddr : UInt<5>
+    input wdata : UInt<32>
     
     mem regs : UInt<32>[32]
     node T_496 = eq(raddr1, UInt<5>(0))
@@ -182,10 +182,10 @@ circuit Datapath :
     node T_544 = mux(T_543, Pad(Iimm,32), T_542)
     out := T_544
   module CSR : 
-    output host : {status : UInt<32>, tohost : UInt<32>, flip hid : UInt<1>}
+    output host : {status : UInt<32>, flip hid : UInt<1>, tohost : UInt<32>}
     input src : UInt<32>
-    input cmd : UInt<2>
     output data : UInt<32>
+    input cmd : UInt<2>
     input addr : UInt<12>
     
     reg reg_tohost : UInt<32>
@@ -238,11 +238,11 @@ circuit Datapath :
         node T_572 = bit-and(data, Pad(T_571,32))
         reg_status := T_572
   module Datapath : 
-    output host : {status : UInt<32>, tohost : UInt<32>, flip hid : UInt<1>}
+    output host : {status : UInt<32>, flip hid : UInt<1>, tohost : UInt<32>}
+    input ctrl : {flip inst : UInt<32>, pc_sel : UInt<1>, inst_type : UInt<1>, inst_re : UInt<1>, flip stall : UInt<1>, imm_sel : UInt<3>, wb_en : UInt<1>, wb_sel : UInt<2>, A_sel : UInt<1>, B_sel : UInt<1>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, csr_cmd : UInt<2>}
+    output icache : {re : UInt<1>, addr : UInt<32>, we : UInt<4>, din : UInt<32>, flip dout : UInt<32>}
+    output dcache : {re : UInt<1>, addr : UInt<32>, we : UInt<4>, din : UInt<32>, flip dout : UInt<32>}
     input stall : UInt<1>
-    output dcache : {re : UInt<1>, we : UInt<4>, addr : UInt<32>, flip dout : UInt<32>, din : UInt<32>}
-    output icache : {re : UInt<1>, we : UInt<4>, addr : UInt<32>, flip dout : UInt<32>, din : UInt<32>}
-    input ctrl : {flip inst : UInt<32>, flip stall : UInt<1>, csr_cmd : UInt<2>, ld_type : UInt<3>, st_type : UInt<2>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, B_sel : UInt<1>, wb_sel : UInt<2>, wb_en : UInt<1>, A_sel : UInt<1>, data_re : UInt<1>, pc_sel : UInt<1>, inst_re : UInt<1>, inst_type : UInt<1>}
     
     inst alu of ALU
     inst brCond of BrCond
@@ -371,7 +371,7 @@ circuit Datapath :
     node T_638 = eq(UInt<3>(1), ctrl.ld_type)
     node load = mux(T_638, T_623, T_637)
     inst csr of CSR
-    csr.host := host
+    host := csr.host
     csr.src := Pad(ew_alu,?)
     node T_639 = bits(ew_inst, 31, 20)
     csr.addr := T_639
