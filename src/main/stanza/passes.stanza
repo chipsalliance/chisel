@@ -772,7 +772,14 @@ defn lower (body:Stmt) -> Stmt :
          (s:DefRegister) : Begin{_} $
             for x in generate-entry(name(s),type(s)) map :
                DefRegister(name(x),type(x))
-         (s:DefInstance) : s
+         (s:DefInstance) : 
+            val fields = 
+               for f in fields(type(module(s)) as BundleType) map-append :
+                  val etfs = generate-entry(name(f),type(f))
+                  for etf in etfs map : 
+                     Field(name(etf),flip(etf) * flip(f),type(etf))
+            val m = module(s) as WRef
+            DefInstance(name(s),WRef(name(m),BundleType(fields),kind(m),gender(m)))
          (s:DefNode) : Begin $
             for x in expand-expr(value(s)) map : 
                DefNode(name(s),exp(x))

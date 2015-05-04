@@ -9,6 +9,7 @@ Add Unit Tests for each pass
    Separate passes into discrete chunks
    Push all tests entirely through
    Check after each pass
+   write test that checks instance types are correctly lowered
    
 ======== Update Core ==========
 Add source locaters
@@ -41,8 +42,12 @@ Width inference
    All widths are positive
    Pad's width is greater than value's width
    pad's width is greater than value's width
+Check Gender
 
 ======== Other Passes ========
+; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
+; CHECK: Done!
+
 constant folding (partial eval) pass
    Get rid of unnecessary pads
    push pad into literal
