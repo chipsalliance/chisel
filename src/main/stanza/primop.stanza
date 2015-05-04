@@ -181,7 +181,7 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
       NEQUAL-UU-OP      : DoPrim(op(e),args(e),consts(e),u())
       NEQUAL-SS-OP      : DoPrim(op(e),args(e),consts(e),u())
       MUX-OP           : 
-         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+         DoPrim{_,args(e),consts(e),of-type(args(e)[1])} $
             match(type(args(e)[1]),type(args(e)[2])) :
                (t1:UIntType, t2:UIntType) : MUX-UU-OP
                (t1:SIntType, t2:SIntType) : MUX-SS-OP
@@ -189,7 +189,7 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
       MUX-UU-OP        : DoPrim(op(e),args(e),consts(e),u())
       MUX-SS-OP        : DoPrim(op(e),args(e),consts(e),s())
       PAD-OP           : 
-         DoPrim{_,args(e),consts(e),of-type(args(e)[0])} $
+         DoPrim{_,args(e),consts(e),of-type(args(e)[1])} $
             match(type(args(e)[0])) :
                (t1:UIntType) : PAD-U-OP
                (t1:SIntType) : PAD-S-OP
