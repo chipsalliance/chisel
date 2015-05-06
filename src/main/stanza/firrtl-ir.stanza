@@ -2,8 +2,8 @@ defpackage firrtl/ir2 :
    import core
    import verse
    
-public defmulti info! (x:?) -> False
-public defmethod info! (x:?) : false
+public defmulti info! (x:?) -> FileInfo
+public defmethod info! (x:?) : FileInfo()
 
 public definterface Direction
 public val INPUT = new Direction
@@ -239,5 +239,3 @@ public defstruct Module :
 public defstruct Circuit :
    modules: List<Module>
    main: Symbol
-
-

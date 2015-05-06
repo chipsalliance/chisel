@@ -7,12 +7,15 @@ defpackage firrtl/passes :
   import firrtl-main
   import firrtl/errors
 
-;============== EXCEPTIONS =================================
-defclass PassException <: Exception
-defn PassException (msg:String) :
-  new PassException :
-    defmethod print (o:OutputStream, this) :
-      print(o, msg)
+;============== Exceptions =====================
+public definterface PassException <: Exception
+public defn PassException (s:String) :
+   new PassException :
+      defmethod print (o:OutputStream, this) :
+         print(o, s)
+
+public defn PassExceptions (xs:Streamable<PassException>) :
+   PassException(string-join(xs, "\n"))
 
 ;=============== WORKING IR ================================
 definterface Kind
@@ -26,7 +29,6 @@ defstruct NodeKind <: Kind ; All elems except structural memory, wires
 
 defstruct MemKind <: Kind
 defstruct ModuleKind <: Kind
-defstruct StructuralMemKind <: Kind ; Separate kind because need special treatment
 defstruct AccessorKind <: Kind
 
 public definterface Gender
@@ -183,7 +185,6 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:NodeKind) : "n"
       (k:ModuleKind) : "module"
       (k:InstanceKind) : "inst"
-      (k:StructuralMemKind) : "smem"
       (k:ReadAccessorKind) : "racc"
       (k:WriteAccessorKind) : "wacc"
 
@@ -434,7 +435,7 @@ defn bundle-field-type (v:Type,s:Symbol) -> Type :
          val ft = for p in fields(v) find : name(p) == s
          if ft != false : type(ft as Field)
          else : UnknownType()
-      (v) : error(string-join(["Accessing subfield " s " on a non-Bundle type."]))
+      (v) : UnknownType()
 
 defn get-vector-subtype (v:Type) -> Type :
    match(v) :
@@ -2018,22 +2019,30 @@ public defn run-passes (c: Circuit, p: List<Char>,file:String) :
       if PRINT-CIRCUITS : print(c*)
       if PRINT-CIRCUITS : println-all(["Finished " name "\n"])
 
-  ; Early passes:
-  ;  If modules have a reset defined, must be an INPUT and UInt(1)
    if contains(p,'X') or contains(p,'A') : do-stage("High Form Check", check-high-form)
    if contains(p,'X') or contains(p,'a') : do-stage("Temp Elimination", temp-elimination)
    if contains(p,'X') or contains(p,'b') : do-stage("Working IR", to-working-ir)
+
    if contains(p,'X') or contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
+
    if contains(p,'X') or contains(p,'d') : do-stage("Resolve Kinds", resolve-kinds)
+   if contains(p,'X') or contains(p,'D') : do-stage("Check Kinds", check-kinds)
+
    if contains(p,'X') or contains(p,'e') : do-stage("Infer Types", infer-types)
    if contains(p,'X') or contains(p,'f') : do-stage("Resolve Genders", resolve-genders)
-   if contains(p,'X') or contains(p,'g') : do-stage("Expand Accessors", expand-accessors)
-   if contains(p,'X') or contains(p,'h') : do-stage("Lower To Ground", lower-to-ground)
+   if contains(p,'X') or contains(p,'g') : do-stage("Expand Accessors", expand-accessors) ;mem kind
+   if contains(p,'X') or contains(p,'h') : do-stage("Lower To Ground", lower-to-ground) ;inst kind
    if contains(p,'X') or contains(p,'i') : do-stage("Expand Indexed Connects", expand-connect-indexed)
-   if contains(p,'X') or contains(p,'k') : do-stage("Expand Whens", expand-whens)
-   if contains(p,'X') or contains(p,'l') : do-stage("Infer Widths", infer-widths)
-   if contains(p,'X') or contains(p,'m') : do-stage("Inline Instances", inline-instances)
+
+; make sure no bundle types
+   if contains(p,'X') or contains(p,'k') : do-stage("Expand Whens", expand-whens) ; requires types, lowering
+
+   if contains(p,'X') or contains(p,'l') : do-stage("Infer Widths", infer-widths) ; requires lowering, expand whens
+   
+   if contains(p,'X') or contains(p,'m') : do-stage("Inline Instances", inline-instances) ;inst kind
+
    if contains(p,'X') or contains(p,'n') : do-stage("Split Expressions", split-exp)
+
    if contains(p,'X') or contains(p,'o') : do-stage("Real IR", to-real-ir)
    if contains(p,'X') or contains(p,'F') : do-stage("To Flo", emit-flo{file,_})
    println("Done!")

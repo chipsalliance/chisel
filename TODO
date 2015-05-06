@@ -108,6 +108,7 @@ Verilog backend - put stuff in posedge clock, not assign statements, for speedup
 Annotate mems with location stuff
 Coverage tests, such as statespace or specific instances (like asserts, sort of)
    check all predicates of whens
+Generate a ROM, and index with cycle counter, and dynamically check any wire on a given cycle
 
 ======== FIRRTL++ =========
 Variable size FIFOs

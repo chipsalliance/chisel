@@ -1,0 +1,28 @@
+=========== FIRRTL PASSES ==============
+
+Parser : Parses text file and provides some error checking.
+   i: Parses the text file into an in-memory representation of the FIRRTL graph (tree).
+   +: Incorrect syntax correctly crashes the parser with an error message.
+   -: Error messages could be improved
+High Form Check : Ensures file has correct high firrtl form.
+   i: Ensures that initial file upholds various non-syntactic invariants
+   +: Some have been implemented. Current invariants not checked will likely crash the compiler in a later stage.
+   -: More to implemented (grunt work).
+Temp Elimination : Inline poorly-named single-assignment values.
+   ;Allows betterTo make the Chisel frontend simpler, we emit no nested expressions, and generate a lot of temps with non-intuitive names.
+Working IR : Replaces some IR nodes with working IR nodes with useful fields
+Make Explicit Reset : If not declared, reset is added to every module
+Resolve Kinds : Populates WRefs with the 'kind of reference'
+Infer Types : All type fields are inferred
+Type Check : All types are checked
+   -: Not implemented
+Resolve Genders : Genders of WRef and WAccessor is filled in
+Expand Accessors : Accessors to non-memory vectors are expanded to ConnectFromIndexed and ConnectToIndexed
+Lower To Ground : All types are lowered to ground types by expanding all Indexes and Subfields that are not instances
+Expand Indexed Connects : All ConnectFromIndexed and ConnectToIndexed are expanded to whens
+Expand Whens : Basic interpreter to calculate single assignment with muxes.
+Infer Widths : Width inferences
+Inline Instances
+Split Expressions : All nested expressions are expanded to single-assignment nodes with a relative name
+Real IR : All working IR nodes are removed
+To Flo : Flo is emitted
