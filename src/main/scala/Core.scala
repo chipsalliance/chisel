@@ -97,6 +97,7 @@ object Builder {
 
   def build[T <: Module](f: => T): (Circuit, T) = {
     val (cmd, mod) = collectCommands(f)
+    setRefForId(mod.id, mod.name)
     (Circuit(components.toArray, components.last.name), mod)
   }
 
@@ -142,9 +143,7 @@ object PrimOp {
   val NotEqualOp = PrimOp("neq")
   val NegOp = PrimOp("neg")
   val MultiplexOp = PrimOp("mux")
-  val AndReduceOp = PrimOp("bit-and-reduce")
-  val OrReduceOp = PrimOp("bit-or-reduce")
-  val XorReduceOp = PrimOp("bit-xor-reduce")
+  val XorReduceOp = PrimOp("xorr")
 }
 import PrimOp._
 
@@ -172,6 +171,7 @@ case class Alias(val id: String) extends Arg {
   def fullname = getRefForId(id).fullname
   def name = getRefForId(id).name
   override def debugName = getRefForId(id).debugName
+  def emit: String = "Alias(" + id + ")"
 }
 
 abstract class LitArg (val num: BigInt, val width: Int) extends Arg {
@@ -201,7 +201,7 @@ case class Slot(val imm: Immediate, val name: String) extends Immediate {
   }
   override def debugName = {
     val imm_debugName = imm.debugName
-    if (imm_debugName == "this") name else imm_debugName + "_" + name
+    if (imm_debugName == "this") name else imm_debugName + "." + name
   }
 }
 case class Index(val imm: Immediate, val value: Int) extends Immediate {
@@ -329,7 +329,9 @@ abstract class Data(dirArg: Direction) extends Id {
   def getWidth: Int
   def padTo(other: Data): Int = 0 // avoid padding non bits
   def padArg(other: Data): Arg = other.ref
-  def maxWidth(other: Data): Int = -1
+  def maxWidth(other: Data, amt: BigInt): Int = -1
+  def sumWidth(amt: BigInt): Int = -1
+  def sumWidth(other: Data, amt: BigInt): Int = -1
   def flatten: Array[Bits]
   def fromBits(n: Bits): this.type = {
     val res = this.cloneType
@@ -591,13 +593,18 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
       pushCommand(DefPrim(d.defd.id, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
     d
   }
-  def maxWidth(other: Bits): Int = 
-    if (getWidth >= 0 && other.getWidth >= 0) max(getWidth, other.getWidth) else -1
+  def maxWidth(other: Bits, amt: Int): Int = 
+    if (getWidth >= 0 && other.getWidth >= 0) (max(getWidth, other.getWidth)+amt) else -1
+  override def sumWidth(amt: BigInt): Int = if (getWidth >= 0) (getWidth + amt).toInt else -1
+  def sumWidth(other: Bits, amt: BigInt): Int =
+    if (getWidth >= 0 && other.getWidth >= 0) (getWidth + other.getWidth + amt).toInt else -1
+  def sumLog2Width(other: Bits): Int =
+    if (getWidth >= 0 && other.getWidth >= 0) (getWidth + (1<<other.getWidth)).toInt else -1
   def padTo(other: Bits): Int = {
     val allKnown = getWidth >= 0 && other.getWidth >= 0
     val isSame = allKnown && getWidth == other.getWidth
-    println("SAME " + isSame + " = " + getWidth + " " + other.getWidth)
-    if (isSame) 0 else if (allKnown) maxWidth(other) else -1
+    // println("SAME " + isSame + " = " + getWidth + " " + other.getWidth)
+    if (isSame) 0 else if (allKnown) maxWidth(other, 0) else -1
   }
 
   def :=(other: Bits) = 
@@ -609,12 +616,12 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     res.asInstanceOf[this.type]
   }
 
-  private def bits_unop(op: PrimOp): Bits = {
-    val d = cloneTypeWidth(-1)
+  private def bits_unop(op: PrimOp, width: Int = -1): Bits = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), NoLits))
     d
   }
-  private def bits_binop(op: PrimOp, other: BigInt, width: Int = -1): Bits = {
+  private def bits_binop(op: PrimOp, other: BigInt, width: Int): Bits = {
     val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), Array(other)))
     d.asInstanceOf[Bits]
@@ -625,7 +632,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   }
   def padArgs(a0: Bits, a1: Bits): Array[Arg] = {
     val pd = a0.padTo(a1)
-    println("PD " + pd)
+    // println("PD " + pd)
     if (pd == 0)
       Array(a0.ref, a1.ref)
     else
@@ -643,8 +650,8 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
-  private def bits_binop(op: PrimOp, other: Bits): Bits = {
-    val d = cloneTypeWidth(-1)
+  private def bits_binop(op: PrimOp, other: Bits, width: Int): Bits = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
@@ -658,20 +665,20 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   // def unary_-% = bits_unop(NegModOp)
   def unary_- = Bits(0) - this
   def unary_-% = Bits(0) -% this
-  def +& (other: Bits) = bits_binop_pad(AddOp, other)
+  def +& (other: Bits) = bits_binop_pad(AddOp, other, maxWidth(other, 1))
   def + (other: Bits) = this +% other
-  def +% (other: Bits) = bits_binop_pad(AddModOp, other, maxWidth(other))
-  def -& (other: Bits) = bits_binop_pad(SubOp, other)
-  def -% (other: Bits) = bits_binop_pad(SubModOp, other, maxWidth(other))
+  def +% (other: Bits) = bits_binop_pad(AddModOp, other, maxWidth(other, 0))
+  def -& (other: Bits) = bits_binop_pad(SubOp, other, maxWidth(other, 1))
+  def -% (other: Bits) = bits_binop_pad(SubModOp, other, maxWidth(other, 0))
   def - (other: Bits) = this -% other
-  def * (other: Bits) = bits_binop_pad(TimesOp, other)
-  def / (other: Bits) = bits_binop_pad(DivideOp, other)
-  def % (other: Bits) = bits_binop_pad(ModOp, other)
-  def << (other: BigInt) = bits_binop(ShiftLeftOp, other)
-  def << (other: Bits) = bits_binop(DynamicShiftLeftOp, other)
-  def >> (other: BigInt) = bits_binop(ShiftRightOp, other)
-  def >> (other: Bits) = bits_binop(DynamicShiftRightOp, other)
-  def unary_~(): Bits = bits_unop(BitNotOp)
+  def * (other: Bits) = bits_binop_pad(TimesOp, other, sumWidth(other, 0))
+  def / (other: Bits) = bits_binop_pad(DivideOp, other, sumWidth(0))
+  def % (other: Bits) = bits_binop_pad(ModOp, other, sumWidth(0))
+  def << (other: BigInt) = bits_binop(ShiftLeftOp, other, sumWidth(other))
+  def << (other: Bits) = bits_binop(DynamicShiftLeftOp, other, sumLog2Width(other))
+  def >> (other: BigInt) = bits_binop(ShiftRightOp, other, sumWidth(-other))
+  def >> (other: Bits) = bits_binop(DynamicShiftRightOp, other, sumWidth(0))
+  def unary_~(): Bits = bits_unop(BitNotOp, sumWidth(0))
 
   def & (other: Bits) = {
     if (isLitValue() && other.isLitValue()) {
@@ -679,10 +686,10 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
       r.setLitValue(ULit(litValue() & other.litValue()))
       r
     } else
-      bits_binop_pad(BitAndOp, other, maxWidth(other))
+      bits_binop_pad(BitAndOp, other, maxWidth(other, 0))
   }
-  def | (other: Bits) = bits_binop_pad(BitOrOp, other, maxWidth(other))
-  def ^ (other: Bits) = bits_binop_pad(BitXorOp, other, maxWidth(other))
+  def | (other: Bits) = bits_binop_pad(BitOrOp, other, maxWidth(other, 0))
+  def ^ (other: Bits) = bits_binop_pad(BitXorOp, other, maxWidth(other, 0))
 
   def < (other: Bits) = bits_compop_pad(LessOp, other)
   def > (other: Bits) = bits_compop_pad(GreaterOp, other)
@@ -705,8 +712,8 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     d
   }
 
-  def orR = bits_redop(OrReduceOp)
-  def andR = bits_redop(AndReduceOp)
+  def orR = !(this === Bits(0))
+  def andR = (this === Bits(-1))
   def xorR = bits_redop(XorReduceOp)
 
   def bitSet(off: BigInt, dat: Bits): Bits = {
@@ -729,8 +736,7 @@ object Bits {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = new UInt(dir, width)
   def apply(value: BigInt, width: Int): UInt = uintLit(value, width)
   def apply(value: BigInt): UInt = apply(value, -1)
-  def apply(n: String, width: Int): UInt =
-    apply(stringToVal(n(0), n.substring(1, n.length)), width)
+  def apply(n: String, width: Int): UInt = UInt(n, width)
   def apply(n: String): UInt = apply(n, -1)
 }
 
@@ -765,13 +771,13 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   override def makeLit(value: BigInt, width: Int): this.type = 
     UInt(value, width).asInstanceOf[this.type]
 
-  private def uint_unop(op: PrimOp): UInt = {
-    val d = cloneTypeWidth(-1)
+  private def uint_unop(op: PrimOp, width: Int = -1): UInt = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), NoLits))
     d
   }
-  private def uint_binop(op: PrimOp, other: UInt): UInt = {
-    val d = cloneTypeWidth(-1)
+  private def uint_binop(op: PrimOp, other: UInt, width: Int): UInt = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
@@ -780,7 +786,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
     pushCommand(DefPrim(d.defd.id, d.toType, op, padArgs(this, other), NoLits))
     d
   }
-  private def uint_binop(op: PrimOp, other: BigInt, width: Int = -1): UInt = {
+  private def uint_binop(op: PrimOp, other: BigInt, width: Int): UInt = {
     val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), Array(other)))
     d
@@ -794,31 +800,45 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   // override def unary_- = uint_unop(NegOp)
   override def unary_- = UInt(0) - this
   override def unary_-% = UInt(0) -% this
-  def +& (other: UInt) = uint_binop_pad(AddOp, other)
+  def +& (other: UInt) = uint_binop_pad(AddOp, other, maxWidth(other, 1))
   def + (other: UInt) = this +% other
-  def +% (other: UInt) = uint_binop_pad(AddModOp, other, maxWidth(other))
-  def -& (other: UInt) = uint_binop_pad(SubOp, other)
+  def +% (other: UInt) = uint_binop_pad(AddModOp, other, maxWidth(other, 0))
+  def -& (other: UInt) = uint_binop_pad(SubOp, other, maxWidth(other, 1))
   def - (other: UInt) = this -% other
-  def -% (other: UInt) = uint_binop_pad(SubModOp, other, maxWidth(other))
-  def * (other: UInt) = uint_binop_pad(TimesOp, other)
-  def / (other: UInt) = uint_binop_pad(DivideOp, other)
-  def % (other: UInt) = uint_binop_pad(ModOp, other)
-  override def << (other: BigInt) = uint_binop(ShiftLeftOp, other)
-  def << (other: UInt) = uint_binop(DynamicShiftLeftOp, other)
-  override def >> (other: BigInt) = uint_binop(ShiftRightOp, other)
-  def >> (other: UInt) = uint_binop(DynamicShiftRightOp, other)
+  def -% (other: UInt) = uint_binop_pad(SubModOp, other, maxWidth(other, 0))
+  def * (other: UInt) = uint_binop_pad(TimesOp, other, sumWidth(other, 0))
+  def / (other: UInt) = uint_binop_pad(DivideOp, other, sumWidth(0))
+  def % (other: UInt) = uint_binop_pad(ModOp, other, sumWidth(0))
+  override def << (other: BigInt) = {
+    if (isLitValue()) {
+      val r = cloneTypeWidth(getWidth + other.toInt)
+      r.setLitValue(ULit(litValue() << other.toInt))
+      r
+    } else
+      uint_binop(ShiftLeftOp, other, sumWidth(other))
+  }
+  def << (other: UInt) = uint_binop(DynamicShiftLeftOp, other, sumLog2Width(other))
+  override def >> (other: BigInt) = {
+    if (isLitValue()) {
+      val r = cloneTypeWidth(getWidth - other.toInt)
+      r.setLitValue(ULit(litValue() >> other.toInt))
+      r
+    } else
+      uint_binop(ShiftRightOp, other, sumWidth(-other))
+  }
+  def >> (other: UInt) = uint_binop(DynamicShiftRightOp, other, sumWidth(0))
 
-  override def unary_~(): UInt = uint_unop(BitNotOp)
+  override def unary_~(): UInt = uint_unop(BitNotOp, sumWidth(0))
   def & (other: UInt) = {
     if (isLitValue() && other.isLitValue()) {
       val r = cloneTypeWidth(-1)
       r.setLitValue(ULit(litValue() & other.litValue()))
       r
     } else
-      uint_binop_pad(BitAndOp, other, maxWidth(other))
+      uint_binop_pad(BitAndOp, other, maxWidth(other, 0))
   }
-  def | (other: UInt) = uint_binop_pad(BitOrOp, other, maxWidth(other))
-  def ^ (other: UInt) = uint_binop_pad(BitXorOp, other, maxWidth(other))
+  def | (other: UInt) = uint_binop_pad(BitOrOp, other, maxWidth(other, 0))
+  def ^ (other: UInt) = uint_binop_pad(BitXorOp, other, maxWidth(other, 0))
 
   def < (other: UInt) = uint_compop_pad(LessOp, other)
   def > (other: UInt) = uint_compop_pad(GreaterOp, other)
@@ -842,6 +862,7 @@ object UInt {
     new UInt(dir, width)
   def uintLit(value: BigInt, width: Int) = {
     val w = if (width == -1) max(bitLength(value), 1) else width
+    // println("UINT-LIT VALUE = " + value + "(b" + value.toString(2) + ") WIDTH " + w)
     val b = new UInt(NO_DIR, w)
     b.setLitValue(ULit(value, w))
     // pushCommand(DefUInt(b.defd.id, value, w))
@@ -849,8 +870,11 @@ object UInt {
   }
   def apply(value: BigInt, width: Int): UInt = uintLit(value, width)
   def apply(value: BigInt): UInt = apply(value, -1)
-  def apply(n: String, width: Int): UInt =
-    apply(stringToVal(n(0), n.substring(1, n.length)), width)
+  def apply(n: String, width: Int): UInt = {
+    val bitsPerDigit = if (n(0) == 'b') 1 else if (n(0) == 'h') 4 else -1
+    apply(stringToVal(n(0), n.substring(1, n.length)),
+          if (width == -1) (bitsPerDigit * (n.length-1)) else width)
+  }
   def apply(n: String): UInt = apply(n, -1)
 }
 
@@ -866,18 +890,18 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   override def makeLit(value: BigInt, width: Int): this.type =
     SInt(value, width).asInstanceOf[this.type]
 
-  private def sint_unop(op: PrimOp): SInt = {
-    val d = cloneTypeWidth(-1)
+  private def sint_unop(op: PrimOp, width: Int = -1): SInt = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), NoLits))
     d
   }
-  private def sint_binop(op: PrimOp, other: BigInt, width: Int = -1): Bits = {
+  private def sint_binop(op: PrimOp, other: BigInt, width: Int): Bits = {
     val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref), Array(other)))
     d
   }
-  private def sint_binop(op: PrimOp, other: Bits): SInt = {
-    val d = cloneTypeWidth(-1)
+  private def sint_binop(op: PrimOp, other: Bits, width: Int): SInt = {
+    val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d.defd.id, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
@@ -893,26 +917,26 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   }
 
   // override def unary_- = sint_unop(NegOp)
-  override def unary_- = SInt(0) - this
-  override def unary_-% = SInt(0) -% this
-  def +& (other: SInt) = sint_binop_pad(AddOp, other)
-  def +% (other: SInt) = sint_binop_pad(AddModOp, other, maxWidth(other))
+  override def unary_- = SInt(0, getWidth) - this
+  override def unary_-% = SInt(0, getWidth) -% this
+  def +& (other: SInt) = sint_binop_pad(AddOp, other, maxWidth(other, 1))
+  def +% (other: SInt) = sint_binop_pad(AddModOp, other, maxWidth(other, 0))
   def + (other: SInt) = this +% other
-  def -& (other: SInt) = sint_binop_pad(SubOp, other)
-  def -% (other: SInt) = sint_binop_pad(SubModOp, other, maxWidth(other))
+  def -& (other: SInt) = sint_binop_pad(SubOp, other, maxWidth(other, 1))
+  def -% (other: SInt) = sint_binop_pad(SubModOp, other, maxWidth(other, 0))
   def - (other: SInt) = this -% other
-  def * (other: SInt) = sint_binop_pad(TimesOp, other)
-  def / (other: SInt) = sint_binop_pad(DivideOp, other)
-  def % (other: SInt) = sint_binop_pad(ModOp, other)
-  override def << (other: BigInt) = sint_binop(ShiftLeftOp, other)
-  def << (other: UInt) = sint_binop(DynamicShiftLeftOp, other)
-  override def >> (other: BigInt) = sint_binop(ShiftRightOp, other)
-  def >> (other: UInt) = sint_binop(DynamicShiftRightOp, other)
+  def * (other: SInt) = sint_binop_pad(TimesOp, other, sumWidth(other, 0))
+  def / (other: SInt) = sint_binop_pad(DivideOp, other, sumWidth(0))
+  def % (other: SInt) = sint_binop_pad(ModOp, other, sumWidth(0))
+  override def << (other: BigInt) = sint_binop(ShiftLeftOp, other, sumWidth(other))
+  def << (other: UInt) = sint_binop(DynamicShiftLeftOp, other, sumLog2Width(other))
+  override def >> (other: BigInt) = sint_binop(ShiftRightOp, other, sumWidth(-other))
+  def >> (other: UInt) = sint_binop(DynamicShiftRightOp, other, sumWidth(0))
 
-  override def unary_~(): SInt = sint_unop(BitNotOp)
-  def & (other: SInt) = sint_binop_pad(BitAndOp, other, maxWidth(other))
-  def | (other: SInt) = sint_binop_pad(BitOrOp, other, maxWidth(other))
-  def ^ (other: SInt) = sint_binop_pad(BitXorOp, other, maxWidth(other))
+  override def unary_~(): SInt = sint_unop(BitNotOp, sumWidth(0))
+  def & (other: SInt) = sint_binop_pad(BitAndOp, other, maxWidth(other, 0))
+  def | (other: SInt) = sint_binop_pad(BitOrOp, other, maxWidth(other, 0))
+  def ^ (other: SInt) = sint_binop_pad(BitXorOp, other, maxWidth(other, 0))
 
   def < (other: SInt) = sint_compop_pad(LessOp, other)
   def > (other: SInt) = sint_compop_pad(GreaterOp, other)
@@ -988,7 +1012,7 @@ object Bool {
 object Mux {
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = {
     def genericMux() = {
-      val r = con.cloneTypeWidth(con.maxWidth(alt))
+      val r = con.cloneTypeWidth(con.maxWidth(alt, 0))
       val args = Array(cond.ref, con.ref, alt.ref)
       pushCommand(DefPrim(r.defd.id, r.toType, MultiplexOp, args, NoLits))
       r.asInstanceOf[T]
@@ -997,8 +1021,8 @@ object Mux {
       case tc: Bits => 
         alt match {
           case ta: Bits =>
-            // println("MUX COND " + cond + " " + (!isp) + " CON(" + con.litValue() + ")'" + con.getWidth + " " + con + " ALT(" + alt.litValue() + ")'" + alt.getWidth + " " + alt)
-            val rb = tc.cloneTypeWidth(tc.maxWidth(ta))
+            // println("MUX COND " + cond + " CON(" + con.litValue() + ")'" + con.getWidth + " " + con + " ALT(" + alt.litValue() + ")'" + alt.getWidth + " " + alt)
+            val rb = tc.cloneTypeWidth(tc.maxWidth(ta, 0))
             val pargs = Array(cond.ref) ++ tc.padArgs(tc, ta)
             pushCommand(DefPrim(rb.defd.id, rb.toType, MultiplexOp, pargs, NoLits))
             rb.asInstanceOf[T]
@@ -1166,7 +1190,8 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
   }
   def debugName: String = {
     val p = parent.getOrElse(null)
-    name + (if (p == null) "" else ("__" + p.debugName))
+    val pname = if (p == null) "" else (p.debugName + ".")
+    pname + getRefForId(id).debugName
   }
 
   def setRefs {
@@ -1234,8 +1259,7 @@ class when {
       // this is an elsewhen clause
       // we have to go deeper
       case newcond: Conditionally =>
-        Conditionally(cond.pred, cond.conseq,
-          replaceCondition(newcond, elsecmd))
+        Conditionally(cond.pred, cond.conseq, replaceCondition(newcond, elsecmd))
       // if the alt is empty, we've found the end
       case empty: EmptyCommand =>
         Conditionally(cond.pred, cond.conseq, elsecmd)

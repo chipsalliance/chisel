@@ -285,7 +285,7 @@ class ManualTester[+T <: Module]
 
     // expect((got & mask) == (expected & mask),
     expect(got == expected,
-       "EXPECT " + data.debugName + " <- " + got + " == " + expected)
+       "EXPECT " + data.debugName + " <- 0x" + got.toString(16) + " == 0x" + expected.toString(16))
   }
 
   def expect (data: Aggregate, expected: Array[BigInt]): Boolean = {

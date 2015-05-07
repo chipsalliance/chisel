@@ -5,7 +5,11 @@ int main (int argc, char* argv[]) {
   for (;;) {
     c = getchar();
     if (c == EOF) break;
-    char nc = (c == '$' || c == '#') ? '_' : c;
-    putchar(nc);
+    if (c == '#')
+      putchar('_');
+    else if (c == '$') {
+      putchar(':'); putchar(':');
+    } else
+      putchar(c);
   } 
 }

@@ -146,20 +146,22 @@ object Driver extends FileSystemUtilities{
     val emitter = new Emitter
     val (c, mod) = build{ gen() }
     // setTopComponent(c)
-    val s = emitter.emit( c )
-    val filename = c.main + ".fir"
-    // println("FILENAME " + filename)
-    // println("S = " + s)
-    val out = createOutputFile(filename)
-    out.write(s)
-    /* Params - If dumping design, dump space to pDir*/
-    if (chiselConfigMode == None || chiselConfigMode.get == "instance") {
-      if(chiselConfigDump && !Dump.dump.isEmpty) {
-        val w = createOutputFile(appendString(Some(topComponent.name),chiselConfigClassName) + ".prm")
-        w.write(Dump.getDump); w.close
+    if (!isTesting) {
+      val s = emitter.emit( c )
+      val filename = c.main + ".fir"
+      // println("FILENAME " + filename)
+      // println("S = " + s)
+      val out = createOutputFile(filename)
+      out.write(s)
+      /* Params - If dumping design, dump space to pDir*/
+      if (chiselConfigMode == None || chiselConfigMode.get == "instance") {
+        if(chiselConfigDump && !Dump.dump.isEmpty) {
+          val w = createOutputFile(appendString(Some(topComponent.name),chiselConfigClassName) + ".prm")
+          w.write(Dump.getDump); w.close
+        }
       }
+      out.close()
     }
-    out.close()
     (c, mod)
   }
 

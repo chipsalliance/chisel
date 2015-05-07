@@ -1,6 +1,6 @@
 #!/bin/bash
 
-flo-llvm $1.flo
+flo-llvm --vcdtmp $1.flo
 echo FLO-LLVM DONE
 flo-llvm-release $1.flo --harness > $1-harness.cpp
 echo FLO-LLVM-RELEASE DONE
