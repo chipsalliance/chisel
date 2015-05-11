@@ -3,11 +3,24 @@ SBT_FLAGS	?= -Dsbt.log.noformat=true
 RM_DIRS 	:= test-outputs test-reports
 #CLEAN_DIRS	:= doc
 
+# If a chiselVersion is defined, use that.
+# Otherwise, use the snapshot.
+ifneq (,$(chiselVersion))
+SBT_FLAGS += -DchiselVersion="$(chiselVersion)"
+else
+SBT_FLAGS += -DchiselVersion="3.0-SNAPSHOT"
+endif
+
 SRC_DIR	?= .
 SYSTEMC ?= $(SRC_DIR)/../../systemc/systemc-2.3.1
 CHISEL_JAR ?= $(SRC_DIR)/target/scala-2.11/chisel_2.11-3.0-SNAPSHOT.jar
 DRIVER	   ?= $(SRC_DIR)/src/test/resources/AddFilterSysCdriver.cpp
 TEST_OUTPUT_DIR ?= ./test-outputs
+
+test_src_dir := src/test/scala/ChiselTests
+test_results := $(notdir $(basename $(filter-out main,$(wildcard $(test_src_dir)/*.scala))))
+
+test_outs    := $(addprefix generated/, $(addsuffix .out, $(test_results)))
 
 .PHONY:	smoke publish-local check clean jenkins-build sysctest coverage scaladoc test
 
@@ -19,8 +32,10 @@ smoke:
 publish-local:
 	$(SBT) $(SBT_FLAGS) publish-local
 
-check test:
+test:
 	$(SBT) $(SBT_FLAGS) test
+
+check:	test $(test_outs)
 
 coverage:
 	$(SBT) $(SBT_FLAGS) coverage test
@@ -66,3 +81,11 @@ AddFilter.cpp AddFilter.h:	   AddFilter.class
 AddFilter.class:  $(CHISEL_JAR) ../src/test/scala/AddFilter.scala
 	scalac -cp $(CHISEL_JAR) ../src/test/scala/AddFilter.scala
 
+generated/%.fir: $(test_src_dir)/%.scala
+	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS)"
+
+generated/%.flo: generated/%.fir
+	./bin/fir2flo.sh $< > $@
+
+generated/%.out: generated/%.flo
+	./bin/flo-app.sh $< > $@
