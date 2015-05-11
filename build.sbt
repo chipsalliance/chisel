@@ -4,4 +4,4 @@ version := "3.0"
 
 name := "Chisel"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.11.6"
