@@ -1,7 +1,7 @@
 SBT		?= sbt
 SBT_FLAGS	?= -Dsbt.log.noformat=true
 RM_DIRS 	:= test-outputs test-reports
-CLEAN_DIRS	:= doc
+#CLEAN_DIRS	:= doc
 
 SRC_DIR	?= .
 SYSTEMC ?= $(SRC_DIR)/../../systemc/systemc-2.3.1
@@ -28,8 +28,12 @@ coverage:
 
 clean:
 	$(SBT) $(SBT_FLAGS) +clean
+ifneq (,$(CLEAN_DIRS))
 	for dir in $(CLEAN_DIRS); do $(MAKE) -C $$dir clean; done
+endif
+ifneq (,$(RM_DIRS))
 	$(RM) -r $(RM_DIRS)
+endif
 
 scaladoc:
 	$(SBT) $(SBT_FLAGS) doc test:doc
