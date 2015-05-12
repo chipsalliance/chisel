@@ -1,7 +1,5 @@
 SBT		?= sbt
 SBT_FLAGS	?= -Dsbt.log.noformat=true
-RM_DIRS 	:= test-outputs test-reports
-#CLEAN_DIRS	:= doc
 
 # If a chiselVersion is defined, use that.
 # Otherwise, use the snapshot.
@@ -15,12 +13,18 @@ SRC_DIR	?= .
 SYSTEMC ?= $(SRC_DIR)/../../systemc/systemc-2.3.1
 CHISEL_JAR ?= $(SRC_DIR)/target/scala-2.11/chisel_2.11-3.0-SNAPSHOT.jar
 DRIVER	   ?= $(SRC_DIR)/src/test/resources/AddFilterSysCdriver.cpp
+# The targetDir will be rm -rf'ed when "make clean"
+targetDir ?= ./generated
+# The TEST_OUTPUT_DIR will be rm -rf'ed when "make clean"
 TEST_OUTPUT_DIR ?= ./test-outputs
+RM_DIRS 	:= $(TEST_OUTPUT_DIR) test-reports $(targetDir)
+#CLEAN_DIRS	:= doc
 
 test_src_dir := src/test/scala/ChiselTests
-test_results := $(notdir $(basename $(filter-out main,$(wildcard $(test_src_dir)/*.scala))))
+test_results := $(filter-out main,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
+c_resources_dir := src/main/resources
 
-test_outs    := $(addprefix generated/, $(addsuffix .out, $(test_results)))
+test_outs    := $(addprefix $(targetDir)/, $(addsuffix .out, $(test_results)))
 
 .PHONY:	smoke publish-local check clean jenkins-build sysctest coverage scaladoc test
 
@@ -81,11 +85,17 @@ AddFilter.cpp AddFilter.h:	   AddFilter.class
 AddFilter.class:  $(CHISEL_JAR) ../src/test/scala/AddFilter.scala
 	scalac -cp $(CHISEL_JAR) ../src/test/scala/AddFilter.scala
 
-generated/%.fir: $(test_src_dir)/%.scala
+$(targetDir)/%.fir: $(test_src_dir)/%.scala
 	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS)"
 
-generated/%.flo: generated/%.fir
-	./bin/fir2flo.sh $< > $@
+$(targetDir)/%.flo: $(targetDir)/%.fir
+	$(CHISEL_BIN)/fir2flo.sh $(targetDir)/$*
 
-generated/%.out: generated/%.flo
-	./bin/flo-app.sh $< > $@
+$(targetDir)/%: $(targetDir)/%.flo $(targetDir)/emulator.h $(targetDir)/emulator_mod.h $(targetDir)/emulator_api.h
+	(cd $(targetDir); $(CHISEL_BIN)/flo2app.sh $*)
+
+$(targetDir)/%.h:	$(c_resources_dir)/%.h
+	cp $< $@
+
+$(targetDir)/%.out:	$(targetDir)/%
+	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS) --test --targetDir $(targetDir)"
