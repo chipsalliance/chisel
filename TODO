@@ -3,6 +3,9 @@
 ================================================
 
 ======== Current Tasks ========
+Declared references needs to understand scope
+Size of vector type must be non-negative
+Check for recursively defined instances
 Update spec
 <>
 Add Unit Tests for each pass
@@ -10,9 +13,13 @@ Add Unit Tests for each pass
    Push all tests entirely through
    Check after each pass
    write test that checks instance types are correctly lowered
+move width inference earlier
    
 ======== Update Core ==========
 Add source locaters
+Add exmodule
+Add vptype
+Add readwriteport
 
 ======== Check Passes ==========
 Well-formed high firrtl 
@@ -83,7 +90,9 @@ Convert to scala
 Firrtl interpreter (in scala)
 
 ======== Update Spec ========
-Add Not to spec
+Look through all primops
+change parser to other unknown thing for vptype?
+Add optional type to node
 add assertions and printfs
 cannot connect directly to a mem (loc can never contain a mem)
 Front-end needs to guarantee unique names per module.

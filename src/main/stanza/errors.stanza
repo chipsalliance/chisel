@@ -194,7 +194,10 @@ public defn check-high-form (c:Circuit) -> Circuit :
 
    defn check-high-form-m (m:Module) -> False :
       val names = Vector<Symbol>()
+      for m in modules(c) do :
+         add(names,name(m))
       for p in ports(m) do :
+         add(names,name(p))
          if name(p) == `reset :
             if direction(p) == OUTPUT : 
                add(errors,WrongReset(info!(m),name(m)))
@@ -205,6 +208,8 @@ public defn check-high-form (c:Circuit) -> Circuit :
                else :
                   add(errors,WrongReset(info!(m),name(m)))
 
+      
+      add(names,`reset)
       check-high-form-s(body(m),names)
       false
    
@@ -238,28 +243,32 @@ defn OnResetNotReg (info:FileInfo, name:Symbol) :
 ; I may have been overeager in looking for places where mems can't be, as mems are guaranteed to have a vector
 ;   type, and this will get caught in the type check pass
 public defn check-kinds (c:Circuit) -> Circuit : 
-   val errors = Vector<PassExceptioPassException>()
+   val errors = Vector<PassException>()
    defn check-not-mem (info:FileInfo,e:Expression) -> False :
-      match(map(check-not-mem{info,_},e)) :
+      do(check-not-mem{info,_},e) 
+      match(e) :
          (e:WRef) : if kind(e) == MemKind() : add(errors,IsMem(info,name(e)))
-         (e:WSubfield) : check-not-mem(exp(e))
-         (e:WIndex) : check-not-mem(exp(e))
+         (e:WSubfield) : check-not-mem(info,exp(e))
+         (e:WIndex) : check-not-mem(info,exp(e))
          (e) : false
    defn check-is-reg (info:FileInfo,e:Expression) -> False :
-      match(map(check-is-reg{info,_},e)) :
+      do(check-is-reg{info,_},e) 
+      match(e) :
          (e:WRef) : if kind(e) != RegKind() : add(errors,OnResetNotReg(info,name(e)))
-         (e:WSubfield) : check-is-reg(exp(e))
-         (e:WIndex) : check-is-reg(exp(e))
+         (e:WSubfield) : check-is-reg(info,exp(e))
+         (e:WIndex) : check-is-reg(info,exp(e))
          (e) : false
    defn check-is-mem (info:FileInfo,e:Expression) -> False :
-      match(map(check-is-mem{info,_},e)) :
+      do(check-is-mem{info,_},e) 
+      match(e) :
          (e:WRef) : if kind(e) != MemKind() : add(errors,NotMem(info,name(e)))
-         (e:WSubfield) : check-is-mem(exp(e))
-         (e:WIndex) : check-is-mem(exp(e))
+         (e:WSubfield) : check-is-mem(info,exp(e))
+         (e:WIndex) : check-is-mem(info,exp(e))
          (e) : false
 
    defn check-kinds-e (info:FileInfo,e:Expression) -> False :
-      match(map(check-kinds-e{info,_},e)) :
+      do(check-kinds-e{info,_},e)
+      match(e) :
          (e:ReadPort) : 
             check-is-mem(info,mem(e))
             check-not-mem(info,index(e))
@@ -270,21 +279,21 @@ public defn check-kinds (c:Circuit) -> Circuit :
             check-not-mem(info,enable(e))
          (e:Pad) :
             check-not-mem(info,value(e))
-         (e) : map(check-not-mem{info,_},e)
-   defn check-kinds-s (s:Stmt) -> Stmt :
-      map{check-kinds-s,_} $ { 
-         match(map(check-kinds-e{info!(s),_},s)) : 
-            (s:DefNode) : check-not-mem(info!(s),value(s))
-            (s:DefAccessor) : check-not-mem(info!(s),index(s))
-            (s:Conditionally) : check-not-mem(info!(s),pred(s))
-            (s:Connect) : 
-               check-not-mem(info!(s),loc(s))
-               check-not-mem(info!(s),exp(s))
-            (s:OnReset) : 
-               check-is-reg(info!(s),loc(s))
-               check-not-mem(info!(s),exp(s))
-            (s) : false
-         s }()
+         (e) : do(check-not-mem{info,_},e)
+   defn check-kinds-s (s:Stmt) -> False :
+      do(check-kinds-e{info!(s),_:Expression},s)
+      match(s) : 
+         (s:DefNode) : check-not-mem(info!(s),value(s))
+         (s:DefAccessor) : check-not-mem(info!(s),index(s))
+         (s:Conditionally) : check-not-mem(info!(s),pred(s))
+         (s:Connect) : 
+            check-not-mem(info!(s),loc(s))
+            check-not-mem(info!(s),exp(s))
+         (s:OnReset) : 
+            check-is-reg(info!(s),loc(s))
+            check-not-mem(info!(s),exp(s))
+         (s) : false
+      do(check-kinds-s,s)
    
    for m in modules(c) do :
       check-kinds-s(body(m))
@@ -307,13 +316,45 @@ defn SubfieldNotInBundle (info:FileInfo, name:Symbol) :
    PassException $ string-join $
    [info ": Subfield " name " is not in bundle."]
 
+defn SubfieldOnNonBundle (info:FileInfo, name:Symbol) :
+   PassException $ string-join $
+   [info ": Subfield " name " is accessed on a non-bundle."]
+
+defn IndexTooLarge (info:FileInfo, value:Int) :
+   PassException $ string-join $
+   [info ": Index with value " value " is too large."]
+
+defn IndexOnNonVector (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Index illegal on non-vector type."]
+
+defn IndexNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Index is not of UIntType."]
+
+defn EnableNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Enable is not of UIntType."]
+
+defn PadNotGround (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Illegal Pad on non-ground type."]
+
+defn InvalidConnect (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Type mismatch."]
+
+defn PredNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Predicate not a UIntType."]
+
 ;---------------- Helper Functions --------------
-defn equal? (t1:Type,t2:Type) -> True|False :
+defmethod equal? (t1:Type,t2:Type) -> True|False :
    match(t1,t2) : 
       (t1:UIntType,t2:UIntType) : true
       (t1:SIntType,t2:SIntType) : true
       (t1:BundleType,t2:BundleType) : 
-         val same? = true
+         var same? = true
          for (f1 in fields(t1),f2 in fields(t2)) do :
             if flip(f1) != flip(f2) : same? = false
             if name(f1) != name(f2) : same? = false
@@ -324,19 +365,19 @@ defn equal? (t1:Type,t2:Type) -> True|False :
          else : false
       (t1,t2) : false
             
-defn u() -> UIntType : UIntType(UnknownWidth())
-defn s() -> SIntType : SIntType(UnknownWidth())
+defn u () -> UIntType : UIntType(UnknownWidth())
+defn s () -> SIntType : SIntType(UnknownWidth())
 
 ;----------------- Check Types Pass ---------------------
 public defn check-types (c:Circuit) -> Circuit : 
-   val errors = Vector<PassExceptioPassException>()
-   defn check-types-e (info:FileInfo,e:Expression) -> Expression
-      match(map(check-types-e{info,_},s)) :
+   val errors = Vector<PassException>()
+   defn check-types-e (info:FileInfo,e:Expression) -> Expression :
+      match(map(check-types-e{info,_},e)) :
          (e:WRef) : e
          (e:WSubfield) : 
             match(type(exp(e))) : 
                (t:BundleType) : 
-                  val ft = for p in fields(v) find : name(p) == s
+                  val ft = for p in fields(t) find : name(p) == s
                   if ft == false : add(errors,SubfieldNotInBundle(info,name(e)))
                (t) : add(errors,SubfieldOnNonBundle(info,name(e)))
          (e:WIndex) : 
@@ -344,7 +385,7 @@ public defn check-types (c:Circuit) -> Circuit :
                (t:VectorType) : 
                   if value(e) >= size(t) : add(errors,IndexTooLarge(info,value(e)))
                (t) : add(errors,IndexOnNonVector(info))
-         (e:DoPrim) : check-types-primop(e)
+         (e:DoPrim) : false ;check-types-primop(e)
          (e:ReadPort|WritePort) : 
             if type(index(e)) != u() : add(errors,IndexNotUInt(info))
             if type(enable(e)) != u() : add(errors,EnableNotUInt(info))
@@ -357,13 +398,14 @@ public defn check-types (c:Circuit) -> Circuit :
       e
    defn check-types-s (s:Stmt) -> Stmt :
       map{check-types-s,_} $ 
-      match(map(check-types-e,s)) : 
+      match(map(check-types-e{info!(s),_},s)) : 
          (s:Connect|OnReset) : 
             if type(loc(s)) == type(exp(s)) : add(errors,InvalidConnect(info!(s)))
+            s
          (s:Conditionally) :
-            if type(pred(s)) != u() : add(errors,PredNotUInt(info))
-         (s) : false
-      s
+            if type(pred(s)) != u() : add(errors,PredNotUInt(info!(s)))
+            s
+         (s) : s
    
    for m in modules(c) do :
       check-types-s(body(m))

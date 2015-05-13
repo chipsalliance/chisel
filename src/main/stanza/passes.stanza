@@ -18,18 +18,17 @@ public defn PassExceptions (xs:Streamable<PassException>) :
    PassException(string-join(xs, "\n"))
 
 ;=============== WORKING IR ================================
-definterface Kind
-defstruct WireKind <: Kind 
-defstruct RegKind <: Kind
-defstruct InstanceKind <: Kind
-defstruct ReadAccessorKind <: Kind 
-defstruct WriteAccessorKind <: Kind 
-defstruct PortKind <: Kind
-defstruct NodeKind <: Kind ; All elems except structural memory, wires
-
-defstruct MemKind <: Kind
-defstruct ModuleKind <: Kind
-defstruct AccessorKind <: Kind
+public definterface Kind
+public defstruct WireKind <: Kind 
+public defstruct RegKind <: Kind
+public defstruct InstanceKind <: Kind
+public defstruct ReadAccessorKind <: Kind 
+public defstruct WriteAccessorKind <: Kind 
+public defstruct PortKind <: Kind
+public defstruct NodeKind <: Kind ; All elems except structural memory, wires
+public defstruct MemKind <: Kind
+public defstruct ModuleKind <: Kind
+public defstruct AccessorKind <: Kind
 
 public definterface Gender
 public val MALE = new Gender
@@ -37,25 +36,25 @@ public val FEMALE = new Gender
 public val UNKNOWN-GENDER = new Gender
 public val BI-GENDER = new Gender
 
-defstruct WRef <: Expression :
+public defstruct WRef <: Expression :
    name: Symbol
    type: Type with: (as-method => true)
    kind: Kind
    gender: Gender  with: (as-method => true)
 
-defstruct WSubfield <: Expression :
+public defstruct WSubfield <: Expression :
    exp: Expression
    name: Symbol
    type: Type with: (as-method => true)
    gender: Gender with: (as-method => true)
 
-defstruct WIndex <: Expression :
+public defstruct WIndex <: Expression :
    exp: Expression
    value: Int
    type: Type with: (as-method => true)
    gender: Gender with: (as-method => true)
 
-defstruct WDefAccessor <: Stmt :
+public defstruct WDefAccessor <: Stmt :
    name: Symbol
    source: Expression
    index: Expression
@@ -719,18 +718,18 @@ defn expand-expr (e:Expression) -> List<EF> :
             for x in generate-entry(name(e),type(e)) map :
                EF(WRef(name(x),type(x),kind(e),gender(e)), flip(x))
       (e:WSubfield) : 
+         val f = {_ as Field} $
+            for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
          if inst?(exp(e)) : 
-            val i = exp(e)
-            val f = {_ as Field} $
-               for f in fields(type(i) as BundleType) find : name(f) == name(e)
+            println-all(["here with " exp(e)])
             for x in generate-entry(name(f),type(f)) map :
-               EF(WSubfield(i,name(x),type(x),gender(e)),flip(x))
+               EF(WSubfield(exp(e),name(x),type(x),gender(e)),flip(x))
          else :
             val exps = expand-expr(exp(e))
             val begin = index-of-elem(type(exp(e)) as BundleType,name(e))
             val len = num-elems(type(e))
             val ret = headn(tailn(exps,begin),len)
-            for r in ret map : EF(exp(r),DEFAULT)
+            for r in ret map : EF(exp(r),flip(r) * flip(f))
       (e:WIndex) :
          val exps = expand-expr(exp(e))
          val len = num-elems(type(e))
