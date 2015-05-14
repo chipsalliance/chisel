@@ -218,7 +218,7 @@ defsyntax firrtl :
       circuit = (circuit ?name:#id! #:! (?ms:#module ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Expected a module declaration here.")
-         Circuit(ms, name)
+         Circuit(first-info(form),ms, name)
       circuit != (circuit) :
          FPE(form, "Invalid syntax for circuit definition.")
 
@@ -227,13 +227,13 @@ defsyntax firrtl :
       module = (module ?name:#id! #:! (?ps:#port ... ?cs:#stmt ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Expected a statement here.")
-         Module(name, ps, Begin(cs))
+         Module(first-info(form),name, ps, Begin(cs))
       module != (module) :
          FPE(form, "Invalid syntax for module definition.")
    
    defrule port :
-      port = (input ?name:#id! #:! ?type:#type!) : Port(name, INPUT, type)
-      port = (output ?name:#id! #:! ?type:#type!) : Port(name, OUTPUT, type)
+      port = (input ?name:#id! #:! ?type:#type!) : Port(first-info(form),name, INPUT, type)
+      port = (output ?name:#id! #:! ?type:#type!) : Port(first-info(form),name, OUTPUT, type)
          
    ;Main Type Productions
    defrule type :
@@ -261,16 +261,16 @@ defsyntax firrtl :
 
    ;Main Statement Productions
    defrule statements :
-      stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(name, t)
-      stmt = (reg ?name:#id! #:! ?t:#type!) : DefRegister(name, t)
-      stmt = (mem ?name:#id! #:! ?t:#vectype!) : DefMemory(name, t)
-      stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(name, m)
-      stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(name, e)
-      stmt = (accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(name, s, i)
+      stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(first-info(form),name, t)
+      stmt = (reg ?name:#id! #:! ?t:#type!) : DefRegister(first-info(form),name, t)
+      stmt = (mem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t)
+      stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name, m)
+      stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name, e)
+      stmt = (accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i)
       stmt = (?s:#stmt/when) : s
 
-      stmt = (?x:#exp := ?y:#exp!) : Connect(x, y)
-      stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(x, y)
+      stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
+      stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x, y)
 
       stmt = ((?s:#stmt ?ss:#stmt ... ?rest ...)) :
          if not empty?(rest) :
@@ -281,11 +281,11 @@ defsyntax firrtl :
          
    defrule stmt/when :
       stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt! else ?alt:#stmt/when) :
-         Conditionally(pred, conseq, alt)
+         Conditionally(first-info(form),pred, conseq, alt)
       stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt! else #:! ?alt:#stmt!) :
-         Conditionally(pred, conseq, alt)
+         Conditionally(first-info(form),pred, conseq, alt)
       stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt!) :
-         Conditionally(pred, conseq, EmptyStmt())
+         Conditionally(first-info(form),pred, conseq, EmptyStmt())
 
    ;Main Expressions
    defrule exp :

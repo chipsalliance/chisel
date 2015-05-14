@@ -2,8 +2,8 @@ defpackage firrtl/ir2 :
    import core
    import verse
    
-public defmulti info! (x:?) -> False
-public defmethod info! (x:?) : false
+public defmulti info! (x:?) -> FileInfo
+public defmethod info! (x:?) : FileInfo()
 
 public definterface Direction
 public val INPUT = new Direction
@@ -176,35 +176,46 @@ public defstruct Pad <: Expression :
    type: Type with: (as-method => true)
 
 public definterface Stmt
+public defmulti info (s:Stmt) -> FileInfo
+
 public defstruct DefWire <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
    name: Symbol
    type: Type
 public defstruct DefRegister <: Stmt :
+   info: FileInfo with: (as-method => true)
    name: Symbol
    type: Type
 public defstruct DefInstance <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
    name: Symbol
    module: Expression
 public defstruct DefMemory <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
    name: Symbol
    type: VectorType
 public defstruct DefNode <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
    name: Symbol
    value: Expression
 public defstruct DefAccessor <: Stmt :
+   info: FileInfo with: (as-method => true)
    name: Symbol
    source: Expression
    index: Expression
 public defstruct Conditionally <: Stmt :
+   info: FileInfo with: (as-method => true)
    pred: Expression
    conseq: Stmt
    alt: Stmt
 public defstruct Begin <: Stmt : ;LOW
    body: List<Stmt>
 public defstruct OnReset <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
    loc: Expression
    exp: Expression
 public defstruct Connect <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
    loc: Expression
    exp: Expression
 public defstruct EmptyStmt <: Stmt ;LOW
@@ -227,17 +238,18 @@ public defstruct Field :
    type: Type
 
 public defstruct Port :
+   info: FileInfo
    name: Symbol
    direction: Direction
    type: Type
 
 public defstruct Module :
+   info: FileInfo
    name: Symbol
    ports: List<Port>
    body: Stmt
 
 public defstruct Circuit :
+   info: FileInfo
    modules: List<Module>
    main: Symbol
-
-

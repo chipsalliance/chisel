@@ -5,7 +5,7 @@ defpackage firrtl/ir-utils :
 
 ;============== DEBUG STUFF =============================
 
-public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field) -> False
+public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|Module|Circuit) -> False
 
 ;============== PRINTERS ===================================
 
@@ -171,11 +171,13 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :
-         print-all(o,["node " name(c) " = " value(c)])      
+         print-all(o,["node " name(c) " = " value(c)])
       (c:DefAccessor) :
          print-all(o,["accessor " name(c) " = " source(c) "[" index(c) "]"])      
       (c:Conditionally) :
-         println-all(o, ["when " pred(c) " :"])
+         print-all(o, ["when " pred(c) " :"])
+         print-debug(o,c)
+         print(o,"\n")
          print(io,conseq(c))
          if alt(c) not-typeof EmptyStmt :
             print(o, "\nelse :")
@@ -189,7 +191,7 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(o, ["on-reset " loc(c) " := " exp(c)])
       (c:EmptyStmt) :
          print(o, "skip")
-   print-debug(o,c)
+   if not c typeof Conditionally|Begin|EmptyStmt : print-debug(o,c)
 
 defmethod print (o:OutputStream, t:Type) :
    match(t) :
@@ -220,14 +222,18 @@ defmethod print (o:OutputStream, p:Port) :
    print-debug(o,p)
 
 defmethod print (o:OutputStream, m:Module) :
-   println-all(o, ["module " name(m) " :"])
+   print-all(o, ["module " name(m) " :"])
+   print-debug(o,m)
+   print(o,"\n")
    val io = IndentedStream(o, 3)
    for p in ports(m) do :
       println(io,p)
    print(io,body(m))
 
 defmethod print (o:OutputStream, c:Circuit) :
-   println-all(o, ["circuit " main(c) " :"])
+   print-all(o, ["circuit " main(c) " :"])
+   print-debug(o,c)
+   print(o,"\n")
    val io = IndentedStream(o, 3)
    for m in modules(c) do :
       println(io, m)
@@ -261,18 +267,18 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
 defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
    match(c) :
-      (c:DefAccessor) : DefAccessor(name(c), f(source(c)), f(index(c)))
-      (c:DefNode) : DefNode(name(c), f(value(c)))
-      (c:DefInstance) : DefInstance(name(c), f(module(c)))
-      (c:Conditionally) : Conditionally(f(pred(c)), conseq(c), alt(c))
-      (c:Connect) : Connect(f(loc(c)), f(exp(c)))
-      (c:OnReset) : OnReset(f(loc(c)),f(exp(c)))
+      (c:DefAccessor) : DefAccessor(info(c),name(c), f(source(c)), f(index(c)))
+      (c:DefNode) : DefNode(info(c),name(c), f(value(c)))
+      (c:DefInstance) : DefInstance(info(c),name(c), f(module(c)))
+      (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
+      (c:Connect) : Connect(info(c),f(loc(c)), f(exp(c)))
+      (c:OnReset) : OnReset(info(c),f(loc(c)),f(exp(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T
 defmethod map (f: Stmt -> Stmt, c:Stmt) -> Stmt :
    match(c) :
-      (c:Conditionally) : Conditionally(pred(c), f(conseq(c)), f(alt(c)))
+      (c:Conditionally) : Conditionally(info(c),pred(c), f(conseq(c)), f(alt(c)))
       (c:Begin) : Begin(map(f, body(c)))
       (c) : c
 
@@ -307,9 +313,9 @@ defmethod map (f: Type -> Type, c:Expression) -> Expression :
 public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T
 defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
    match(c) :
-      (c:DefWire) : DefWire(name(c),f(type(c)))
-      (c:DefRegister) : DefRegister(name(c),f(type(c)))
-      (c:DefMemory) : DefMemory(name(c),f(type(c)) as VectorType)
+      (c:DefWire) : DefWire(info(c),name(c),f(type(c)))
+      (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)))
+      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)) as VectorType)
       (c) : c
 
 public defmulti mapr<?T> (f: Width -> Width, t:?T&Type) -> T

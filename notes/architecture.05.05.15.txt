@@ -1,0 +1,4 @@
+Omar/Ofar? wrote genesis and is Dave's boss
+Big problem is how to integrate different verilog, and put them all together to make it work
+   Can chisel help?
+Different clock domains? L2 should be in a different domain

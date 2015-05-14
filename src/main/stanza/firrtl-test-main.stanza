@@ -27,6 +27,7 @@ defn set-printvars! (p:List<Char>) :
    if contains(p,'g') : PRINT-GENDERS = true
    if contains(p,'c') : PRINT-CIRCUITS = true
    if contains(p,'d') : PRINT-DEBUG = true
+   if contains(p,'i') : PRINT-INFO = true
 
 ;firrtl -i gcd.fir -o gcd.flo -x qabcefghipjklmno -p c
 defn main () :
