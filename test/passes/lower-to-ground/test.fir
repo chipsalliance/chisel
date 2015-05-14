@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p cd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -x X -p cdt | tee %s.out | FileCheck %s
 ; CHECK: Done!
 
 circuit Top :

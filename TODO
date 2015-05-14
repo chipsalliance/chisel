@@ -14,6 +14,7 @@ Add Unit Tests for each pass
    Check after each pass
    write test that checks instance types are correctly lowered
 move width inference earlier
+Register should be a NODE, not a wire that is connected to, because you shouldn't be able to write to a wire that was connected to a Register? hmm.. think about this
    
 ======== Update Core ==========
 Add source locaters

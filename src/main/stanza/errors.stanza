@@ -171,24 +171,24 @@ public defn check-high-form (c:Circuit) -> Circuit :
          if prefix typeof Symbol : add(errors,IsPrefix(info,name,prefix as Symbol))
 
       map{check-high-form-s{_,names},_} $ { 
-         match(map(check-high-form-e{info!(s),_,names},s)) :
-            (s:DefWire|DefRegister) : 
-               check-name(info!(s),name(s))
+         match(map(check-high-form-e{info(s),_,names},s)) :
+            (s:DefWire|DefRegister) :
+               check-name(info(s),name(s))
                add(names,name(s))
             (s:DefMemory) : 
-               check-name(info!(s),name(s))
+               check-name(info(s),name(s))
                add(names,name(s))
-               if has-flip?(type(s)) : add(errors, MemWithFlip(info!(s), name(s)))
+               if has-flip?(type(s)) : add(errors, MemWithFlip(info(s), name(s)))
             (s:DefInstance) : 
                if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
-                  add(errors, ModuleNotDefined(info!(s),name(module(s) as Ref)))
+                  add(errors, ModuleNotDefined(info(s),name(module(s) as Ref)))
                add(names,name(s))
             (s:DefNode) : 
                add(names,name(s))
             (s:DefAccessor) :
                add(names,name(s))
             (s:Connect) : 
-               check-valid-loc(info!(s),loc(s))
+               check-valid-loc(info(s),loc(s))
             (s) : false
          s }()
 
@@ -281,17 +281,17 @@ public defn check-kinds (c:Circuit) -> Circuit :
             check-not-mem(info,value(e))
          (e) : do(check-not-mem{info,_},e)
    defn check-kinds-s (s:Stmt) -> False :
-      do(check-kinds-e{info!(s),_:Expression},s)
+      do(check-kinds-e{info(s),_:Expression},s)
       match(s) : 
-         (s:DefNode) : check-not-mem(info!(s),value(s))
-         (s:DefAccessor) : check-not-mem(info!(s),index(s))
-         (s:Conditionally) : check-not-mem(info!(s),pred(s))
+         (s:DefNode) : check-not-mem(info(s),value(s))
+         (s:DefAccessor) : check-not-mem(info(s),index(s))
+         (s:Conditionally) : check-not-mem(info(s),pred(s))
          (s:Connect) : 
-            check-not-mem(info!(s),loc(s))
-            check-not-mem(info!(s),exp(s))
+            check-not-mem(info(s),loc(s))
+            check-not-mem(info(s),exp(s))
          (s:OnReset) : 
-            check-is-reg(info!(s),loc(s))
-            check-not-mem(info!(s),exp(s))
+            check-is-reg(info(s),loc(s))
+            check-not-mem(info(s),exp(s))
          (s) : false
       do(check-kinds-s,s)
    
@@ -377,7 +377,7 @@ public defn check-types (c:Circuit) -> Circuit :
          (e:WSubfield) : 
             match(type(exp(e))) : 
                (t:BundleType) : 
-                  val ft = for p in fields(t) find : name(p) == s
+                  val ft = for p in fields(t) find : name(p) == name(e)
                   if ft == false : add(errors,SubfieldNotInBundle(info,name(e)))
                (t) : add(errors,SubfieldOnNonBundle(info,name(e)))
          (e:WIndex) : 
@@ -398,16 +398,115 @@ public defn check-types (c:Circuit) -> Circuit :
       e
    defn check-types-s (s:Stmt) -> Stmt :
       map{check-types-s,_} $ 
-      match(map(check-types-e{info!(s),_},s)) : 
-         (s:Connect|OnReset) : 
-            if type(loc(s)) == type(exp(s)) : add(errors,InvalidConnect(info!(s)))
+      match(map(check-types-e{info(s),_},s)) : 
+         (s:Connect) : 
+            if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
+            s
+         (s:OnReset) : 
+            if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
             s
          (s:Conditionally) :
-            if type(pred(s)) != u() : add(errors,PredNotUInt(info!(s)))
+            if type(pred(s)) != u() : add(errors,PredNotUInt(info(s)))
             s
          (s) : s
    
    for m in modules(c) do :
       check-types-s(body(m))
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+
+;================= GENDER CHECK  ==========================
+; o Nodes always male
+; o Accessors only have one gender, unless rdwr
+; o output/input only one gender
+; o correctly check for the base bundle
+
+;----------------- Errors ---------------------
+defn WrongGender (info:FileInfo,expr:Symbol,wrong:Symbol,right:Symbol) :
+   PassException $ string-join $
+   [info ": Expression " expr "has gender " wrong " but requires gender " right "."]
+
+defn UnknownGenders (info:FileInfo,name:Symbol) : 
+   PassException $ string-join $
+   [info ": Accessor " name " has an unknown gender."]
+
+;---------------- Helper Functions --------------
+defn dir-to-gender (d:Direction) -> Gender :
+   switch {_ == d} :
+      INPUT : MALE
+      OUTPUT : FEMALE
+
+;----------------- Check Genders Pass ---------------------
+
+public defn check-genders (c:Circuit) -> Circuit :
+   val errors = Vector<PassException>()
+   defn check-gender (info:FileInfo,genders:HashTable<Symbol,Gender>,e:Expression,right:Gender) -> False :
+      val gender = get-gender(e,genders)
+      if gender != right and gender != BI-GENDER:
+         add(errors,WrongGender(info,to-symbol(e),to-symbol(gender),to-symbol(right)))
+
+   defn get-gender (e:Expression,genders:HashTable<Symbol,Gender>) -> Gender :
+      match(e) :
+         (e:WRef) : genders[name(e)]
+         (e:WSubfield) : 
+            val f = {_ as Field} $ for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
+            get-gender(exp(e),genders) * flip(f)
+         (e:WIndex) : get-gender(exp(e),genders)
+         (e:Pad) : MALE
+         (e:DoPrim) : MALE
+         (e:UIntValue) : MALE
+         (e:SIntValue) : MALE
+         (e:ReadPort) : MALE
+         (e:WritePort) : FEMALE
+         (e:Register) : MALE
+
+   defn check-genders-e (info:FileInfo,e:Expression,genders:HashTable<Symbol,Gender>) -> False :
+      do(check-genders-e{info,_,genders},e)
+      match(e) :
+         (e:WRef) : false
+         (e:WSubfield) : false
+         (e:WIndex) : false
+         (e:Pad) : check-gender(info,genders,value(e),MALE)
+         (e:DoPrim) : 
+            for e in args(e) do :
+               check-gender(info,genders,e,MALE)
+         (e:UIntValue) : false
+         (e:SIntValue) : false
+         (e:ReadPort) : do(check-gender{info,genders,_,MALE},e)
+         (e:WritePort) : do(check-gender{info,genders,_,MALE},e)
+         (e:Register) : do(check-gender{info,genders,_,MALE},e)
+     
+   defn check-genders-s (s:Stmt,genders:HashTable<Symbol,Gender>) -> False :
+      do(check-genders-e{info(s),_:Expression,genders},s)
+      match(s) :
+         (s:DefWire) : genders[name(s)] = BI-GENDER
+         (s:DefRegister) : genders[name(s)] = BI-GENDER
+         (s:DefNode) : 
+            check-gender(info(s),genders,value(s),MALE)
+            genders[name(s)] = MALE
+         (s:DefMemory) : genders[name(s)] = BI-GENDER
+         (s:DefInstance) : genders[name(s)] = MALE
+         (s:WDefAccessor) : 
+            if gender(s) == UNKNOWN-GENDER : add(errors,UnknownGenders(info(s),name(s)))
+            check-gender(info(s),genders,index(s),MALE)
+            check-gender(info(s),genders,source(s),gender(s))
+            genders[name(s)] = gender(s)
+         (s:Connect) : 
+            check-gender(info(s),genders,loc(s),FEMALE)
+            check-gender(info(s),genders,exp(s),MALE)
+         (s:OnReset) : 
+            check-gender(info(s),genders,loc(s),FEMALE)
+            check-gender(info(s),genders,exp(s),MALE)
+         (s:Conditionally) :
+            check-gender(info(s),genders,pred(s),MALE)
+         (s:EmptyStmt) : false
+         (s:Begin) : false
+
+
+   for m in modules(c) do :
+      val genders = HashTable<Symbol,Gender>(symbol-hash)
+      for p in ports(m) do :
+         genders[name(p)] = dir-to-gender(direction(p))
+      check-genders-s(body(m),genders)
    throw(PassExceptions(errors)) when not empty?(errors)
    c
