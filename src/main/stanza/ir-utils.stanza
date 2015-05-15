@@ -7,6 +7,40 @@ defpackage firrtl/ir-utils :
 
 public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|Module|Circuit) -> False
 
+;============== GENSYM STUFF ======================
+
+val sym-hash = HashTable<Symbol,Int>(symbol-hash)
+public defn firrtl-gensym (s:Symbol) -> Symbol :
+   val cur = get?(sym-hash,s,0)
+   val nxt = cur + 1
+   sym-hash[s] = nxt
+   symbol-join([s cur])
+   
+public defn firrtl-gensym () -> Symbol :
+   firrtl-gensym(`gen)
+   
+;============== Exceptions =====================
+
+public definterface PassException <: Exception
+public defn PassException (s:String) :
+   new PassException :
+      defmethod print (o:OutputStream, this) :
+         print(o, s)
+
+public defn PassExceptions (xs:Streamable<PassException>) :
+   PassException(string-join(xs, "\n"))
+
+;============== Pass/Compiler Structs ============
+
+public definterface Compiler 
+public defmulti passes (c:Compiler) -> List<Pass>
+public defmulti file (c:Compiler) -> String
+
+public definterface Pass
+public defmulti pass (p:Pass) -> (Circuit -> Circuit)
+public defmulti name (p:Pass) -> String
+public defmulti short-name (p:Pass) -> String
+
 ;============== PRINTERS ===================================
 
 defmethod print (o:OutputStream, d:Flip) :

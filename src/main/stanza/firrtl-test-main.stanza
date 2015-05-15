@@ -9,6 +9,8 @@
 #include("passes.stanza")
 #include("primop.stanza")
 #include("errors.stanza")
+#include("compilers.stanza")
+#include("flo.stanza")
 
 defpackage firrtl-main :
    import core
@@ -18,6 +20,7 @@ defpackage firrtl-main :
    import stz/lexer
    import stz/parser
    import firrtl/ir-utils
+   import firrtl/compiler
 
 defn set-printvars! (p:List<Char>) :
    if contains(p,'t') : PRINT-TYPES = true
@@ -29,24 +32,44 @@ defn set-printvars! (p:List<Char>) :
    if contains(p,'d') : PRINT-DEBUG = true
    if contains(p,'i') : PRINT-INFO = true
 
-;firrtl -i gcd.fir -o gcd.flo -x qabcefghipjklmno -p c
+defn get-passes (pass-names:List<String>) -> List<Pass> :
+   for n in pass-names map :
+      val p = for p in standard-passes find : n == short-name(p)
+      if p == false :
+         error(to-string $ ["Unrecognized pass flag: " n])
+      p as Pass
+         
 defn main () :
    val args = commandline-arguments()
    var input = false
    var output = false
-   var passes = "qabcefghipjklmno"
+   var compiler = false
+   val pass-names = Vector<String>()
    var printvars = ""
    for (s in args, i in 0 to false) do :
       if s == "-i" : input = args[i + 1]
       if s == "-o" : output = args[i + 1]
-      if s == "-x" : passes = args[i + 1]
+      if s == "-x" : add(pass-names,args[i + 1])
+      if s == "-X" : compiler = args[i + 1]
       if s == "-p" : printvars = args[i + 1]
-   if input == false : error("No input file provided. Use -i flag")
-   if output == false : error("No output file provided. Use -o flag")
+
+   if input == false : 
+      error("No input file provided. Use -i flag.")
+   if output == false : 
+      error("No output file provided. Use -o flag.")
+   if compiler == false and length(pass-names) == 0 :
+      error("Must specify a compiler. Use -X flag.")
+
    val lexed = lex-file(input as String)
    val c = parse-firrtl(lexed)
    set-printvars!(to-list(printvars))
-   run-passes(c,to-list(passes),output as String)
+   
+   if compiler == false :
+      run-passes(c,get-passes(to-list(pass-names)))
+   else :
+      switch {_ == compiler} :
+         "flo" : run-passes(c,StandardFlo(output as String))
+         else : error("Invalid compiler flag")
 
 main()
 

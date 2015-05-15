@@ -1,9 +1,9 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefghijkl -p cd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cd | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
 
 circuit top :
-   module M :
+   module top :
       wire x : UInt<16>
       wire z : SInt<16>
       wire y : UInt<3>

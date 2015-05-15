@@ -1,7 +1,7 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefghijk -p cd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cd | tee %s.out | FileCheck %s
 ; CHECK: Expand Whens
 circuit top :
-   module A :
+   module top :
       reg r : { x : UInt, flip y : UInt}
       wire a : UInt
       wire b : UInt
