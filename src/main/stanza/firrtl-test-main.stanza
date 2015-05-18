@@ -34,7 +34,8 @@ defn set-printvars! (p:List<Char>) :
 
 defn get-passes (pass-names:List<String>) -> List<Pass> :
    for n in pass-names map :
-      val p = for p in standard-passes find : n == short-name(p)
+      val p = for p in standard-passes find :
+         n == short-name(p)
       if p == false :
          error(to-string $ ["Unrecognized pass flag: " n])
       p as Pass

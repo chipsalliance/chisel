@@ -3,6 +3,7 @@
 ================================================
 
 ======== Current Tasks ========
+Temp elimination needs to count # uses
 Declared references needs to understand scope <= check in high form check
 Size of vector type must be non-negative
 Check for recursively defined instances
@@ -69,6 +70,7 @@ Width inference
    All widths are positive
    Pad's width is greater than value's width
    pad's width is greater than value's width
+   connect can connect from big to small??
 Check Gender
 
 ======== Other Passes ========

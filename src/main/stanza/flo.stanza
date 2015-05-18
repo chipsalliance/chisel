@@ -14,78 +14,33 @@ public defmethod name (b:Flo) -> String : "To Flo"
 
 defn flo-op-name (op:PrimOp) -> String :
    switch {op == _ } :
-      ;NEG-OP :         "neg"
-      ;NEG-OP :         "neg"
-      ;NEG-OP :         "neg"
-      ;NEG-OP :         "neg"
-      ADD-UU-OP :      "add"
-      ADD-US-OP :      "add"
-      ADD-SU-OP :      "add"
-      ADD-SS-OP :      "add"
-      ADD-WRAP-UU-OP : "add"
-      ADD-WRAP-US-OP : "add"
-      ADD-WRAP-SU-OP : "add"
-      ADD-WRAP-SS-OP : "add"
-      SUB-UU-OP :      "sub"
-      SUB-US-OP :      "sub"
-      SUB-SU-OP :      "sub"
-      SUB-SS-OP :      "sub"
-      SUB-WRAP-UU-OP : "sub"
-      SUB-WRAP-US-OP : "sub"
-      SUB-WRAP-SU-OP : "sub"
-      SUB-WRAP-SS-OP : "sub"
-      MUL-UU-OP :      "mul" ;; todo: signed version
-      MUL-US-OP :      "mul" ;; todo: signed version
-      MUL-SU-OP :      "mul" ;; todo: signed version
-      MUL-SS-OP :      "mul" ;; todo: signed version
-      DIV-UU-OP :      "div" ;; todo: signed version
-      DIV-US-OP :      "div" ;; todo: signed version
-      DIV-SU-OP :      "div" ;; todo: signed version
-      DIV-SS-OP :      "div" ;; todo: signed version
-      MOD-UU-OP :      "mod" ;; todo: signed version
-      MOD-US-OP :      "mod" ;; todo: signed version
-      MOD-SU-OP :      "mod" ;; todo: signed version
-      MOD-SS-OP :      "mod" ;; todo: signed version
-      LESS-UU-OP :        "lt"  ;; todo: signed version
-      LESS-US-OP :        "lt"  ;; todo: signed version
-      LESS-SU-OP :        "lt"  ;; todo: signed version
-      LESS-SS-OP :        "lt"  ;; todo: signed version
-      LESS-EQ-UU-OP :     "lte" ;; todo: swap args
-      LESS-EQ-US-OP :     "lte" ;; todo: swap args
-      LESS-EQ-SU-OP :     "lte" ;; todo: swap args
-      LESS-EQ-SS-OP :     "lte" ;; todo: swap args
-      GREATER-UU-OP :     "lt"  ;; todo: swap args
-      GREATER-US-OP :     "lt"  ;; todo: swap args
-      GREATER-SU-OP :     "lt"  ;; todo: swap args
-      GREATER-SS-OP :     "lt"  ;; todo: swap args
-      GREATER-EQ-UU-OP :  "lte" ;; todo: signed version
-      GREATER-EQ-US-OP :  "lte" ;; todo: signed version
-      GREATER-EQ-SU-OP :  "lte" ;; todo: signed version
-      GREATER-EQ-SS-OP :  "lte" ;; todo: signed version
-      NEQUAL-UU-OP :      "neq"
-      NEQUAL-SS-OP :      "neq"
-      EQUAL-UU-OP :       "eq"
-      EQUAL-SS-OP :       "eq"
-      MUX-UU-OP :         "mux"
-      MUX-SS-OP :         "mux"
-      PAD-U-OP :         "rsh" ;; todo: signed version
-      PAD-S-OP :         "rsh" ;; todo: signed version
-      NEG-U-OP :         "neg"
-      NEG-S-OP :         "neg"
+      ADD-OP :      "add"
+      ADD-WRAP-OP : "add"
+      SUB-OP :      "sub"
+      SUB-WRAP-OP : "sub"
+      MUL-OP :      "mul" ;; todo: signed version
+      DIV-OP :      "div" ;; todo: signed version
+      MOD-OP :      "mod" ;; todo: signed version
+      QUO-OP :      "div" ;; todo: signed version
+      REM-OP :      "mod" ;; todo: signed version
+      LESS-OP :        "lt"  ;; todo: signed version
+      LESS-EQ-OP :     "lte" ;; todo: swap args
+      GREATER-OP :     "lt"  ;; todo: swap args
+      GREATER-EQ-OP :  "lte" ;; todo: signed version
+      NEQUAL-OP :      "neq"
+      EQUAL-OP :       "eq"
+      MUX-OP :         "mux"
+      PAD-OP :         "rsh" ;; todo: signed version
+      NEG-OP :         "neg"
       ;AS-UINT-U-OP :
       ;AS-UINT-S-OP :
       ;AS-SINT-U-OP :
       ;AS-SINT-S-OP :
-      SHIFT-LEFT-U-OP :  "lsh" 
-      SHIFT-LEFT-S-OP :  "lsh" 
-      SHIFT-RIGHT-U-OP : "rsh"
-      SHIFT-RIGHT-S-OP : "arsh"
-      DYN-SHIFT-LEFT-U-OP :  "lsh" 
-      DYN-SHIFT-LEFT-S-OP :  "lsh" 
-      DYN-SHIFT-RIGHT-U-OP : "rsh" 
-      DYN-SHIFT-RIGHT-S-OP : "arsh"
+      SHIFT-LEFT-OP :  "lsh" 
+      SHIFT-RIGHT-OP : "rsh"
+      DYN-SHIFT-LEFT-OP :  "lsh" 
+      DYN-SHIFT-RIGHT-OP : "rsh" 
       ;CONVERT-U-OP : 
-      ;CONVERT-S-OP : 
       BIT-AND-OP :     "and"
       BIT-NOT-OP :     "not"
       BIT-OR-OP :      "or"
@@ -121,24 +76,24 @@ defn emit-all (es:Streamable, top:Symbol) :
 
 defn emit! (e:Expression,top:Symbol) :
    defn greater-op? (op: PrimOp) -> True|False :
-      contains?([GREATER-OP, GREATER-UU-OP, GREATER-US-OP, GREATER-SU-OP, GREATER-SS-OP], op)
+      contains?([GREATER-OP], op)
    defn greater-eq-op? (op: PrimOp) -> True|False :
-      contains?([GREATER-EQ-OP, GREATER-EQ-UU-OP, GREATER-EQ-US-OP, GREATER-EQ-SU-OP, GREATER-EQ-SS-OP], op)     
+      contains?([GREATER-EQ-OP], op)     
    defn less-eq-op? (op: PrimOp) -> True|False :
-      contains?([LESS-EQ-OP, LESS-EQ-UU-OP, LESS-EQ-US-OP, LESS-EQ-SS-OP, LESS-EQ-SS-OP], op)
+      contains?([LESS-EQ-OP], op)
    defn less-op? (op: PrimOp) -> True|False :
-      contains?([LESS-OP, LESS-UU-OP, LESS-US-OP, LESS-SS-OP, LESS-SS-OP], op)
+      contains?([LESS-OP], op)
    defn cmp-op? (op: PrimOp) -> True|False :
       greater-op?(op) or greater-eq-op?(op) or less-op?(op) or less-eq-op?(op) or 
-      contains?([EQUAL-OP, EQUAL-UU-OP, EQUAL-SS-OP, NEQUAL-OP, NEQUAL-UU-OP, NEQUAL-SS-OP], op)
+      contains?([EQUAL-OP NEQUAL-OP] op)
    match(e) :
       (e:Ref) :       emit-all([top "::" name(e)], top)
       (e:UIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
       (e:SIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
       (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
       (e:Index) :     emit-all([exp(e) "/" value(e)], top)
-      (e:Pad) : 
-         emit-all(["rsh'" prim-width(type(e)) " " value(e) " 0"], top)
+      ;(e:Pad) : 
+         ;emit-all(["rsh'" prim-width(type(e)) " " value(e) " 0"], top)
       (e:Register) : 
          emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top) 
       (e:ReadPort) : 
@@ -160,14 +115,14 @@ defn emit! (e:Expression,top:Symbol) :
          ;;   emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
          else :
            emit-all([flo-op-name(op(e)) "'" prim-width(type(e))], top)
-           if (op(e) == PAD-U-OP) or (op(e) == PAD-S-OP) :
-             emit-all(["  " args(e)[0] " " consts(e)[0]], top)
-           else :
-             for arg in args(e) do :
-               print(" ")
-               emit!(arg, top)
-             for const in consts(e) do :
-               print-all([" " const "'" sizeof(const)])
+           ;if (op(e) == PAD-U-OP) or (op(e) == PAD-S-OP) :
+             ;emit-all(["  " args(e)[0] " " consts(e)[0]], top)
+           ;else :
+           for arg in args(e) do :
+             print(" ")
+             emit!(arg, top)
+           for const in consts(e) do :
+             print-all([" " const "'" sizeof(const)])
       (e) : error("SHOULDN'T EMIT THIS") ;; print-all(["EMIT(" e ")"])
       ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
 

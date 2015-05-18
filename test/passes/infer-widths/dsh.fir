@@ -12,10 +12,10 @@ circuit top :
       wire c : UInt
       wire d : SInt
 
-      a := dshl-u(x,y)
-      b := dshl-s(z,y)
-      c := dshr-u(x,y)
-      d := dshr-s(z,y)
+      a := dshl(x,y)
+      b := dshl(z,y)
+      c := dshr(x,y)
+      d := dshr(z,y)
 
 
 ; CHECK: wire a : UInt<23>

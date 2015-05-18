@@ -15,11 +15,11 @@ circuit top :
       r.y := b
       on-reset r := w
 
-; CHECK: r$x := Register(mux-uu(reset, w$x, a), UInt(1))
+; CHECK: r$x := Register(mux(reset, w$x, a), UInt(1))
 ; CHECK: r$y := Register(b, UInt(1))
 ; CHECK: a := UInt(1)
 ; CHECK: b := UInt(2)
 ; CHECK: w$x := b
-; CHECK: w$y := mux-uu(reset, r$y, a)   
+; CHECK: w$y := mux(reset, r$y, a)   
       
 ; CHECK: Finished Expand Whens

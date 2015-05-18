@@ -12,7 +12,7 @@ circuit top :
       wire c : UInt
       wire z : UInt
        
-      z := mux(c,Pad(a,?),Pad(b,?))
+      z := mux(c,a,b)
 
    
 

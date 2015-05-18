@@ -7,6 +7,6 @@ circuit top :
          reg r : UInt
          on-reset r := UInt(10)
          r := UInt(20)
-; CHECK: r := Register(mux-uu(reset, UInt(10), UInt(20)), mux-uu(reset, UInt(1), p))
+; CHECK: r := Register(mux(reset, UInt(10), UInt(20)), mux(reset, UInt(1), p))
 ; CHECK: Finished Expand Whens
 

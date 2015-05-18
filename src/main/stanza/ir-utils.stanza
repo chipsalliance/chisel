@@ -40,6 +40,9 @@ public definterface Pass
 public defmulti pass (p:Pass) -> (Circuit -> Circuit)
 public defmulti name (p:Pass) -> String
 public defmulti short-name (p:Pass) -> String
+public defmethod print (o:OutputStream, p:Pass) :
+   print(o,name(p))
+   
 
 ;============== PRINTERS ===================================
 
@@ -65,106 +68,30 @@ defmethod print (o:OutputStream, op:PrimOp) :
    print{o, _} $
    switch {op == _} :
       ADD-OP : "add"
-      ADD-UU-OP : "add-uu"
-      ADD-US-OP : "add-us"
-      ADD-SU-OP : "add-su"
-      ADD-SS-OP : "add-ss"
       SUB-OP : "sub"
-      SUB-UU-OP : "sub-uu"
-      SUB-US-OP : "sub-us"
-      SUB-SU-OP : "sub-su"
-      SUB-SS-OP : "sub-ss"
       MUL-OP : "mul"
-      MUL-UU-OP : "mul-uu"
-      MUL-US-OP : "mul-us"
-      MUL-SU-OP : "mul-su"
-      MUL-SS-OP : "mul-ss"
       DIV-OP : "div"
-      DIV-UU-OP : "div-uu"
-      DIV-US-OP : "div-us"
-      DIV-SU-OP : "div-su"
-      DIV-SS-OP : "div-ss"
       MOD-OP : "mod"
-      MOD-UU-OP : "mod-uu"
-      MOD-US-OP : "mod-us"
-      MOD-SU-OP : "mod-su"
-      MOD-SS-OP : "mod-ss"
       QUO-OP : "quo"
-      QUO-UU-OP : "quo-uu"
-      QUO-US-OP : "quo-us"
-      QUO-SU-OP : "quo-su"
-      QUO-SS-OP : "quo-ss"
       REM-OP : "rem"
-      REM-UU-OP : "rem-uu"
-      REM-US-OP : "rem-us"
-      REM-SU-OP : "rem-su"
-      REM-SS-OP : "rem-ss"
       ADD-WRAP-OP : "add-wrap"
-      ADD-WRAP-UU-OP : "add-wrap-uu"
-      ADD-WRAP-US-OP : "add-wrap-us"
-      ADD-WRAP-SU-OP : "add-wrap-su"
-      ADD-WRAP-SS-OP : "add-wrap-ss"
       SUB-WRAP-OP : "sub-wrap"
-      SUB-WRAP-UU-OP : "sub-wrap-uu"
-      SUB-WRAP-US-OP : "sub-wrap-us"
-      SUB-WRAP-SU-OP : "sub-wrap-su"
-      SUB-WRAP-SS-OP : "sub-wrap-ss"
       LESS-OP : "lt"
-      LESS-UU-OP : "lt-uu"
-      LESS-US-OP : "lt-us"
-      LESS-SU-OP : "lt-su"
-      LESS-SS-OP : "lt-ss"
       LESS-EQ-OP : "leq"
-      LESS-EQ-UU-OP : "leq-uu"
-      LESS-EQ-US-OP : "leq-us"
-      LESS-EQ-SU-OP : "leq-su"
-      LESS-EQ-SS-OP : "leq-ss"
       GREATER-OP : "gt"
-      GREATER-UU-OP : "gt-uu"
-      GREATER-US-OP : "gt-us"
-      GREATER-SU-OP : "gt-su"
-      GREATER-SS-OP : "gt-ss"
       GREATER-EQ-OP : "geq"
-      GREATER-EQ-UU-OP : "geq-uu"
-      GREATER-EQ-US-OP : "geq-us"
-      GREATER-EQ-SU-OP : "geq-su"
-      GREATER-EQ-SS-OP : "geq-ss"
       EQUAL-OP : "eq"
-      EQUAL-UU-OP : "eq-uu"
-      EQUAL-SS-OP : "eq-ss"
       NEQUAL-OP : "neq"
-      NEQUAL-UU-OP : "neq-uu"
-      NEQUAL-SS-OP : "neq-ss"
       MUX-OP : "mux"
-      MUX-UU-OP : "mux-uu"
-      MUX-SS-OP : "mux-ss"
       PAD-OP : "pad"
-      PAD-U-OP : "pad-u"
-      PAD-S-OP : "pad-s"
       AS-UINT-OP : "as-UInt"
-      AS-UINT-U-OP : "as-UInt-u"
-      AS-UINT-S-OP : "as-UInt-s"
       AS-SINT-OP : "as-SInt"
-      AS-SINT-U-OP : "as-SInt-u"
-      AS-SINT-S-OP : "as-SInt-s"
       DYN-SHIFT-LEFT-OP : "dshl"
-      DYN-SHIFT-LEFT-U-OP : "dshl-u"
-      DYN-SHIFT-LEFT-S-OP : "dshl-s"
       DYN-SHIFT-RIGHT-OP : "dshr"
-      DYN-SHIFT-RIGHT-U-OP : "dshr-u"
-      DYN-SHIFT-RIGHT-S-OP : "dshr-s"
       SHIFT-LEFT-OP : "shl"
-      SHIFT-LEFT-U-OP : "shl-u"
-      SHIFT-LEFT-S-OP : "shl-s"
       SHIFT-RIGHT-OP : "shr"
-      SHIFT-RIGHT-U-OP : "shr-u"
-      SHIFT-RIGHT-S-OP : "shr-s"
       CONVERT-OP : "convert"
-      CONVERT-U-OP : "convert-u"
-      CONVERT-S-OP : "convert-s"
       NEG-OP : "neg"
-      NEG-U-OP : "neg-u"
-      NEG-S-OP : "neg-s"
       BIT-NOT-OP : "bit-not"
       BIT-AND-OP : "bit-and"
       BIT-OR-OP : "bit-or"
@@ -190,7 +117,6 @@ defmethod print (o:OutputStream, e:Expression) :
       (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ", " enable(e) ")"])
       (e:WritePort) : print-all(o, ["WritePort(" mem(e) ", " index(e) ", " enable(e) ")"])
       (e:Register) : print-all(o, ["Register(" value(e) ", " enable(e) ")"])
-      (e:Pad) : print-all(o, ["Pad(" value(e) ", " width(e) ")"])
    print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :
@@ -295,7 +221,6 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
       (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
       (e:Register) : Register(type(e),f(value(e)),f(enable(e)))
-      (e:Pad) : Pad(f(value(e)),width(e),type(e))
       (e) : e
 
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
@@ -321,7 +246,6 @@ defmethod map (f: Width -> Width, c:Expression) -> Expression :
    match(c) :
       (c:UIntValue) : UIntValue(value(c),f(width(c)))
       (c:SIntValue) : SIntValue(value(c),f(width(c)))
-      (c:Pad) : Pad(value(c),f(width(c)),type(c))
       (c) : c
 
 public defmulti map<?T> (f: Width -> Width, c:?T&Type) -> T
@@ -341,7 +265,6 @@ defmethod map (f: Type -> Type, c:Expression) -> Expression :
       (c:ReadPort) : ReadPort(mem(c),index(c),f(type(c)),enable(c))
       (c:WritePort) : WritePort(mem(c),index(c),f(type(c)),enable(c))
       (c:Register) : Register(f(type(c)),value(c),enable(c))
-      (c:Pad) : Pad(value(c),width(c),f(type(c)))
       (c) : c
 
 public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T

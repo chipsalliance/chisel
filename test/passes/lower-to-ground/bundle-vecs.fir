@@ -1,10 +1,10 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefgh -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 
 ; CHECK: Lower To Ground
 circuit top :
-   module q :
+   module top :
       wire i : UInt
-      wire j : UInt
+      wire j : { x : UInt<32>, flip y : UInt<32> }
 
       wire a : { x : UInt<32>, flip y : UInt<32> }[2]
       ; CHECK: wire a$0$x : UInt<32>

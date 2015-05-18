@@ -6,7 +6,7 @@ circuit top :
       input x : UInt
       input y : UInt
       output q : UInt
-      q := sub-wrap-uu(x, y)
+      q := sub-wrap(x, y)
    module gcd :
       input a : UInt<16>
       input b : UInt<16>
@@ -17,7 +17,7 @@ circuit top :
       reg y : UInt
       on-reset x := UInt(0)
       on-reset y := UInt(42)
-      when gt-uu(x, y) :
+      when gt(x, y) :
          inst s of subtracter
          s.x := x
          s.y := y
@@ -30,7 +30,7 @@ circuit top :
       when e :
          x := a
          y := b
-      v := eq-uu(v, UInt(0))
+      v := eq(v, UInt(0))
       z := x
    module top :
       input a : UInt<16>

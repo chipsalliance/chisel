@@ -17,12 +17,12 @@ circuit top :
       ; CHECK: wire b$y : UInt<32>
       ; CHECK: b$x := a$0$x
       ; CHECK: node b$x#0 = i
-      ; CHECK: when eq-uu(b$x#0, UInt(1)) :
+      ; CHECK: when eq(b$x#0, UInt(1)) :
       ; CHECK:    b$x := a$1$x      
       ; CHECK: node b$y#0 = i
-      ; CHECK: when eq-uu(b$y#0, UInt(0)) :
+      ; CHECK: when eq(b$y#0, UInt(0)) :
       ; CHECK:    a$0$y := b$y      
-      ; CHECK: when eq-uu(b$y#0, UInt(1)) :
+      ; CHECK: when eq(b$y#0, UInt(1)) :
       ; CHECK:    a$1$y := b$y      
       j := b.x
       

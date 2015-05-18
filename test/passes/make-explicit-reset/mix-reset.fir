@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x abc -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cd | tee %s.out | FileCheck %s
 
 ; CHECK: Make Explicit Reset
 circuit top :
@@ -23,7 +23,7 @@ circuit top :
       ;CHECK: input reset : UInt<1>
       input a : UInt<16>
       input b : UInt<16>
-      output z : UInt
-      inst a of A
-      ;CHECK: a.reset := reset
+      output z : UInt<1>
+      inst x of A
+      ;CHECK: x.reset := reset
 ;CHECK: Finished Make Explicit Reset

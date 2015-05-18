@@ -20,5 +20,5 @@ circuit top :
         on-reset r := y
         r := b
       r := z
-; CHECK: r := Register(mux-uu(reset, mux-uu(q, y, mux-uu(p, x, w)), z), UInt(1))
+; CHECK: r := Register(mux(reset, mux(q, y, mux(p, x, w)), z), UInt(1))
 ; CHECK: Finished Expand Whens

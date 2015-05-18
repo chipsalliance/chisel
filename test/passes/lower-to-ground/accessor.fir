@@ -1,8 +1,8 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefgh -p cd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cd | tee %s.out | FileCheck %s
 
 ; CHECK: Lower To Ground
 circuit top :
-   module m :
+   module top :
       wire i : UInt<2>
       wire j : UInt<32>
 

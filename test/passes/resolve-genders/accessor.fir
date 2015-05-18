@@ -1,9 +1,9 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdef -p cg | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cg | tee %s.out | FileCheck %s
 
 ;CHECK: Resolve Genders
 circuit top :
    module top :
-      wire m : UInt<32>[10][10][10]
+      wire m : UInt<32>[5][5][5]
       wire i : UInt
       accessor a = m[i] ;CHECK: accessor a = m@<g:m>[i@<g:m>]@<g:m>
       accessor b = a[i] ;CHECK: accessor b = a@<g:m>[i@<g:m>]@<g:m>
