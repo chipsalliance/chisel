@@ -1815,6 +1815,12 @@ public defmethod pass (b:SplitExp) -> (Circuit -> Circuit) : split-exp
 public defmethod name (b:SplitExp) -> String : "Split Expressions"
 public defmethod short-name (b:SplitExp) -> String : "split-expressions"
 
+defn full-name (e:Expression) -> Symbol :
+   match(e) :
+      (e:WRef) : name(e)
+      (e:WSubfield) : to-symbol $ string-join([full-name(exp(e)) "." name(e)])
+      (e) : error("Non-supported expression.")
+
 defn split-exp (c:Circuit) :
    defn split-exp-s (s:Stmt,v:Vector<Stmt>) -> False :
       match(s) :
@@ -1824,14 +1830,14 @@ defn split-exp (c:Circuit) :
          (s:Conditionally) : error("Shouldn't be here")
          (s:Connect) :
             match(loc(s)) :
-               (e:WritePort) : add(v,map(split-exp-e{_,v,name(exp(s) as WRef),info(s)},s))
-               (e) : add(v,map(split-exp-e{_,v,name(loc(s) as WRef),info(s)},s))
+               (e:WritePort) : add(v,map(split-exp-e{_,v,full-name(exp(s)),info(s)},s))
+               (e) : add(v,map(split-exp-e{_,v,full-name(loc(s)),info(s)},s))
          (s:DefNode) : add(v,map(split-exp-e{_,v,name(s),info(s)},s))
          (s) : add(v,map(split-exp-e{_,v,false,info(s)},s))
       false
    defn split-exp-e (e:Expression,v:Vector<Stmt>,n:Symbol|False,info:FileInfo) -> Expression :
       match(map(split-exp-e{_,v,n,info},e)):
-         (e:Subfield|DoPrim|ReadPort|Register|WritePort) : 
+         (e:DoPrim) : 
             val n* = 
                if n typeof False : firrtl-gensym(`T)
                else : firrtl-gensym(symbol-join([n as Symbol `__]))
