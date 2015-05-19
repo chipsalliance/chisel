@@ -33,6 +33,11 @@ defn get-width (t:Type) -> String :
       (t:SIntType) : emit(width(t))
       (t) : error("Non-supported type.")
 
+defn remove-subfield (e:Expression) -> Expression :
+   match(map(remove-subfield,e)) :
+      (e:Subfield) : Ref(to-symbol $ string-join $ [emit(exp(e)) "_" name(e)],type(e))
+      (e) : e
+
 
 ;============ Verilog Backend =============
 
@@ -110,11 +115,21 @@ defn emit-module (m:Module) :
    val inits = Vector<Streamable>()
    val assigns = Vector<Streamable>()
    val updates = Vector<Streamable>()
+   val insts = HashTable<Symbol,Symbol>(symbol-hash) ; inst -> module
+   val inst-ports = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
    
    defn emit-s (s:Stmt) :
-      match(s) :
+      match(map(remove-subfield,s)) :
          (s:DefWire) : add(wires,["wire " get-width(type(s)) " " name(s) ";"])
-         (s:DefInstance) : false ; TODO fix this
+         (s:DefInstance) : 
+            inst-ports[name(s)] = Vector<Streamable>()
+            insts[name(s)] = name(module(s) as Ref)
+            for f in fields(type(module(s)) as BundleType) do :
+               ;val sf = value(s) as Subfield
+               ;val e = exp(sf) as Ref
+               val n* = to-symbol $ string-join $ [name(s) "_" name(f)]
+               add(wires,["wire " get-width(type(f)) " " n* ";"])
+               add(inst-ports[name(s)], ["." name(f) "( " n* " )"])
          (s:DefMemory) :
             val vtype = type(s) as VectorType
             val innerwidth = 
@@ -167,26 +182,37 @@ defn emit-module (m:Module) :
       print("  ")
       println-all(r)
 
-   println("`ifndef SYNTHESIS")
-   println("  integer initvar;")
-   println("  initial begin")
-   println("    #0.002;")
-   for i in inits do :
-      print-all("    ")
-      println-all(i)
-   println("  end")
-   println("`endif")
+   if length(inits) != 0 :
+      println("`ifndef SYNTHESIS")
+      println("  integer initvar;")
+      println("  initial begin")
+      println("    #0.002;")
+      for i in inits do :
+         print-all("    ")
+         println-all(i)
+      println("  end")
+      println("`endif")
 
    for a in assigns do :
       print("  ")
       println-all(a)
 
-   println("  always @(posedge clk) begin")
-   for u in updates do :
-      print("  ")
-      println-all(u)
-   println("  end")
+   for x in insts do :
+      println-all(["  " value(x) " " key(x) ".clk(clk),"])
+      for (y in inst-ports[key(x)],i in 1 to false) do :
+        print("       ")
+        print-all(y)
+        if length(inst-ports[key(x)]) != i :
+          print(",\n")
+      println("\n  );")
 
+   if length(updates) != 0 :
+      println("  always @(posedge clk) begin")
+      for u in updates do :
+         print("    ")
+         println-all(u)
+      println("  end")
+   
    println("endmodule")
 
 

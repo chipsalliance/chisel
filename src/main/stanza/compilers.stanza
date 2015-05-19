@@ -52,7 +52,7 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ExpandIndexedConnects()
       ExpandWhens()
       InferWidths()
-      Inline()
+      ;Inline()
       SplitExp()
       ToRealIR()
       Verilog(file(c))
