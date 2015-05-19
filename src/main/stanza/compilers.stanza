@@ -4,12 +4,12 @@ defpackage firrtl/compiler :
   import firrtl/passes
   import firrtl/errors
   import firrtl/flo
+  import firrtl/verilog
   import firrtl/ir2
   import firrtl/ir-utils
 
 public defstruct StandardFlo <: Compiler :
    file: String with: (as-method => true)
-
 public defmethod passes (c:StandardFlo) -> List<Pass> :
    to-list $ [
       CheckHighForm()
@@ -31,6 +31,31 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       SplitExp()
       ToRealIR()
       Flo(file(c))
+   ]
+
+public defstruct StandardVerilog <: Compiler :
+   file: String with: (as-method => true)
+public defmethod passes (c:StandardVerilog) -> List<Pass> :
+   to-list $ [
+      CheckHighForm()
+      TempElimination()
+      ToWorkingIR()
+      MakeExplicitReset()
+      ResolveKinds()
+      CheckKinds()
+      InferTypes()
+      CheckTypes()
+      ResolveGenders()
+      CheckGenders()
+      ExpandAccessors()
+      LowerToGround()
+      ExpandIndexedConnects()
+      ExpandWhens()
+      InferWidths()
+      Inline()
+      SplitExp()
+      ToRealIR()
+      Verilog(file(c))
    ]
 
 ;============= DRIVER ======================================

@@ -22,12 +22,12 @@ BlackBoxes
 Scaling
 
 ======== Verilog Backend Notes ========
-1) Emit module. No Parameters. Include clk and reset signals
-2) Emit all declarations (wires,regs)
-3) Initialize all regs with random values under synthesis
-4) Emit all connections as assign statements
-5) Emit assertions under always @ posedge clk, under synthesisp
-6) Emit all register updates:
+* 1) Emit module. No Parameters. Include clk and reset signals
+o 2) Emit all declarations (wires,regs)
+o 3) Initialize all regs with random values under synthesis
+o 4) Emit all connections as assign statements
+o 5) Emit assertions under always @ posedge clk, under synthesis
+o 6) Emit all register updates:
       if(io_update_valid) begin
          R4 <= io_update_bits_target;
       end

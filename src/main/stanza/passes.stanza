@@ -744,7 +744,7 @@ defn index-of-elem (t:BundleType, s:Symbol) -> Int :
 
 
 defn generate-entry (n:Symbol,t:Type) -> List<NTF> :
-   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n "$" n*])
+   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n "_" n*])
    match(t) :
       (t:BundleType) : 
          for f in fields(t) map-append :
@@ -933,9 +933,9 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
       DoPrim(EQUAL-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
    defn get-name (e:Expression) -> Symbol :
       match(e) :
-         (e:WRef) : symbol-join([name(e) `#])
-         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) `#])
-         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) `#])
+         (e:WRef) : symbol-join([name(e) `__])
+         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) `__])
+         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) `__])
          (e) : `T
    match(s) :
       (s:ConnectToIndexed) : Begin $
@@ -1192,24 +1192,29 @@ defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stm
             else : Connect(info(s),ref,to-exp(table[name(s)]) as Expression)
             }()
       (s:DefRegister) : 
-         add(decs,DefWire(info(s),name(s),type(s)))
+         ;add(decs,DefWire(info(s),name(s),type(s)))
+         ;add{cons,_} $ { 
+         ;   val ref = WRef(name(s),type(s),RegKind(),FEMALE)
+         ;   val e = to-exp(table[name(s)])
+         ;   match(e) : 
+         ;      (e:False) : EmptyStmt()
+         ;      (e:Expression) : Connect(info(s),ref,Register(type(s),e, to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
+         ;}()
+         val e = to-exp(table[name(s)])
          add{cons,_} $ { 
-            val ref = WRef(name(s),type(s),RegKind(),FEMALE)
-            val e = to-exp(table[name(s)])
             match(e) : 
                (e:False) : EmptyStmt()
-               (e:Expression) : Connect(info(s),ref,Register(type(s),e, to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
+               (e:Expression) : DefNode(info(s),name(s),Register(type(s),e,to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
          }()
       (s:WDefAccessor) : 
          val t = type(type(source(s)) as VectorType)
          val n = name(s)
-         add(decs,DefWire(info(s),n,t))
          add{cons,_} $ { 
             switch {_ == gender(s)} :
                MALE : 
-                  val ref = WRef(n,t,ReadAccessorKind(),FEMALE)
-                  Begin $ list $ Connect(info(s),ref,ReadPort(source(s),index(s),t,get-read-enable(n,table)))
+                  Begin $ list $ DefNode(info(s),n,ReadPort(source(s),index(s),t,get-read-enable(n,table)))
                FEMALE :
+                  add(decs,DefWire(info(s),n,t))
                   val ref = WRef(n,t,WriteAccessorKind(),FEMALE)
                   val e = to-exp(table[n])
                   val s* = match(e) :
@@ -1777,17 +1782,17 @@ defn inline-instances (c:Circuit) :
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) "$" name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) "_" name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
-   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n "$" ref])
+   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n "_" ref])
    defn rename-e (e:Expression,n:Symbol) -> Expression :
       match(map(rename-e{_,n},e)) :
          (e:WRef) : WRef(rename(name(e),n),type(e),kind(e),gender(e))
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) "$" name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) "_" name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
    defn rename-s (s:Stmt,n:Symbol) -> Stmt :
@@ -1829,7 +1834,7 @@ defn split-exp (c:Circuit) :
          (e:Subfield|DoPrim|ReadPort|Register|WritePort) : 
             val n* = 
                if n typeof False : firrtl-gensym(`T)
-               else : firrtl-gensym(symbol-join([n as Symbol `#]))
+               else : firrtl-gensym(symbol-join([n as Symbol `__]))
             add(v,DefNode(info,n*,e))
             WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
          (e) : e

@@ -11,6 +11,7 @@
 #include("errors.stanza")
 #include("compilers.stanza")
 #include("flo.stanza")
+#include("verilog.stanza")
 
 defpackage firrtl-main :
    import core
@@ -70,6 +71,7 @@ defn main () :
    else :
       switch {_ == compiler} :
          "flo" : run-passes(c,StandardFlo(output as String))
+         "verilog" : run-passes(c,StandardVerilog(output as String))
          else : error("Invalid compiler flag")
 
 main()

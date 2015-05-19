@@ -3,7 +3,7 @@
 ;CHECK: Resolve Genders
 circuit top :
    module top :
-      wire m : UInt<32>[5][5][5]
+      wire m : UInt<32>[2][2][2]
       wire i : UInt
       accessor a = m[i] ;CHECK: accessor a = m@<g:m>[i@<g:m>]@<g:m>
       accessor b = a[i] ;CHECK: accessor b = a@<g:m>[i@<g:m>]@<g:m>

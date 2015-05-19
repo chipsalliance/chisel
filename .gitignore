@@ -8,9 +8,11 @@
 */*/*.swp
 */*/*/*.swp
 */*/*.flo
+*/*/*.v
 */*/*.out
 */*/Output
 */*/*/*.flo
+*/*/*/*.v
 */*/*/*.out
 */*/*/Output
 src/lib/stanzam
