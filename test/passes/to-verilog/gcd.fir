@@ -1,6 +1,6 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c | tee %s.out | FileCheck %s
 
-;CHECK: Inline Instances
+;CHECK: Verilog
 circuit top :
    module subtracter :
       input x : UInt
@@ -41,5 +41,5 @@ circuit top :
       i.b := b
       i.e := UInt(1)
       z := i.z
+;CHECK: Done!
 
-; CHECK: Finished Inline Instances

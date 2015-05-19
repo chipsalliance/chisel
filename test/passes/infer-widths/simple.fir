@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefghijkl -p cTwd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cTwd | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
 circuit top :
@@ -12,7 +12,7 @@ circuit top :
       wire c : UInt
       wire z : UInt
        
-      z := mux(c,Pad(a,?),Pad(b,?))
+      z := mux(c,a,b)
 
    
 

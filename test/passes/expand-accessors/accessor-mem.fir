@@ -1,10 +1,11 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 
 ;CHECK: Expand Accessors
 circuit top :
    module top :
       mem m : UInt<32>[2][2][2]
       wire i : UInt<4>
+      i := UInt(1)
       accessor a = m[i] ;CHECK: accessor a = m[i]
       accessor b = a[i] ;CHECK: b := (a[0] a[1])[i]
       accessor c = b[i] ;CHECK: c := (b[0] b[1])[i]

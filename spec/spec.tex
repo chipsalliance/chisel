@@ -754,15 +754,15 @@ The output width of a dynamic shift left operation is the width of the original 
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{dshr}(\pds{op}:UInt, \pds{op2}:UInt)  & UInt & width(op) - pow(2,width(op2)) \\
-\kws{dshr}(\pds{op}:SInt, \pds{op2}:UInt)  & SInt & width(op) - pow(2,width(op2)) \\
+\kws{dshr}(\pds{op}:UInt, \pds{op2}:UInt)  & UInt & width(op) \\
+\kws{dshr}(\pds{op}:SInt, \pds{op2}:UInt)  & SInt & width(op) \\
 \end{array}
 \]
 The shift right operation accepts either an unsigned or a signed integer, plus a non-negative integer literal specifying the number of bits to shift.
 The resultant value has the same type as the operand.
 The shift amount must be less than or equal to the width of the operand.
 The output of a shift right operation is equal to the original signal with the least significant $n$ bits truncated, where $n$ is the dynamic shift amount.
-The output width of a dynamic shift right operation is the width of the original signal minus 2 raised to the width of the dynamic shift amount.
+The output width of a dynamic shift right operation is the width of the original signal.
 
 \subsection{Convert to Signed}
 \[
@@ -792,7 +792,7 @@ If the input type is SInt, primop returns -1 * input value, as an SInt with the 
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{bit-not}     (\pds{op1:UInt}, \pds{op2:UInt}) & UInt & max(width(op1),width(op2))    \\
+\kws{bit-not}     (\pds{op1:UInt}) & UInt & width(op1)    \\
 \kws{bit-and}     (\pds{op1:UInt}, \pds{op2:UInt}) & UInt & max(width(op1),width(op2))    \\
 \kws{bit-or}      (\pds{op1:UInt}, \pds{op2:UInt}) & UInt & max(width(op1),width(op2))    \\
 \kws{bit-xor}     (\pds{op1:UInt}, \pds{op2:UInt}) & UInt & max(width(op1),width(op2))    \\
@@ -805,7 +805,6 @@ The operands must be unsigned integers, and the resultant width is equal to the 
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{bit-not-reduce}     (\pds{op:UInt}*) & UInt & max(width(op)*)    \\
 \kws{bit-and-reduce}     (\pds{op:UInt}*) & UInt & max(width(op)*)    \\
 \kws{bit-or-reduce}      (\pds{op:UInt}*) & UInt & max(width(op)*)    \\
 \kws{bit-xor-reduce}     (\pds{op:UInt}*) & UInt & max(width(op)*)    \\

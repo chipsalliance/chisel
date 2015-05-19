@@ -1,0 +1,177 @@
+defpackage firrtl/flo :
+   import core
+   import verse
+   import firrtl/ir-utils
+   import firrtl/ir2
+
+public defstruct Flo <: Pass :
+   file : String
+public defmethod pass (b:Flo) -> (Circuit -> Circuit) : emit-flo{file(b),_}
+public defmethod name (b:Flo) -> String : "To Flo"
+  
+;============= FLO PRINTER ======================================
+; Emit 
+
+defn is-sint? (arg:Expression) -> True|False : type(arg) typeof SIntType
+
+defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
+   switch {op == _ } :
+      ADD-OP :             "add"
+      ADD-WRAP-OP :        "add"
+      SUB-OP :             "sub"
+      SUB-WRAP-OP :        "sub"
+      MUL-OP :             "mul" ;; todo: signed version
+      DIV-OP :             "div" ;; todo: signed version
+      MOD-OP :             "mod" ;; todo: signed version
+      QUO-OP :             "div" ;; todo: signed version
+      REM-OP :             "mod" ;; todo: signed version
+      LESS-OP :            "lt"  ;; todo: signed version
+      LESS-EQ-OP :         "lte" ;; todo: swap args
+      GREATER-OP :         "lt"  ;; todo: swap args
+      GREATER-EQ-OP :      "lte" ;; todo: signed version
+      NEQUAL-OP :          "neq"
+      EQUAL-OP :           "eq"
+      MUX-OP :             "mux"
+      PAD-OP :             if is-sint?(args[0]): "arsh" else: "rsh"
+      NEG-OP :             "neg"
+      AS-UINT-OP :         "mov"
+      SHIFT-LEFT-OP :      "lsh" 
+      SHIFT-RIGHT-OP :     if is-sint?(args[0]): "arsh" else: "rsh"
+      DYN-SHIFT-LEFT-OP :  "lsh" 
+      DYN-SHIFT-RIGHT-OP : if is-sint?(args[0]): "arsh" else: "rsh"
+      CONVERT-OP :         if is-sint?(args[0]): "arsh" else: "rsh"
+      BIT-AND-OP :         "and"
+      BIT-NOT-OP :         "not"
+      BIT-OR-OP :          "or"
+      BIT-XOR-OP :         "xor"
+      CONCAT-OP :          "cat"
+      BIT-SELECT-OP :      "rsh"
+      BITS-SELECT-OP :     "rsh"
+      BIT-XOR-REDUCE-OP :  "xorr"
+      else :
+        error $ string-join $ ["Unable to print Primop: " op]
+
+defn sane-width (wd:Width) -> Int :
+  match(wd) :
+    (w:IntWidth) : max(1, width(w))
+    (w)          : error(string-join(["Unknown width: " w]))
+
+defn prim-width (type:Type) -> Int :
+   match(type) :
+      (t:UIntType) : sane-width(width(t))
+      (t:SIntType) : sane-width(width(t))
+      (t) :          error("Bad prim width type")
+
+defn sizeof (in: Int) -> Int :
+  max(1, ceil-log2(in + 1))
+
+defn emit-all (es:Streamable, top:Symbol) :
+  for e in es do :
+     match(e) :
+       (ex:Expression) : emit!(ex,top)
+       (ex:String) :     print(ex)
+       (ex:Symbol) :     print(ex)
+       ;; (ex:Int) :        print-all([ex "'" sizeof(ex)])
+       (ex:Int) :        print(ex)
+       (ex) :            print(ex)
+
+defn emit! (e:Expression,top:Symbol) :
+   defn greater-op? (op: PrimOp) -> True|False :
+      contains?([GREATER-OP], op)
+   defn greater-eq-op? (op: PrimOp) -> True|False :
+      contains?([GREATER-EQ-OP], op)     
+   defn less-eq-op? (op: PrimOp) -> True|False :
+      contains?([LESS-EQ-OP], op)
+   defn less-op? (op: PrimOp) -> True|False :
+      contains?([LESS-OP], op)
+   defn cmp-op? (op: PrimOp) -> True|False :
+      greater-op?(op) or greater-eq-op?(op) or less-op?(op) or less-eq-op?(op) or 
+      contains?([EQUAL-OP NEQUAL-OP] op)
+   match(e) :
+      (e:Ref) :       emit-all([top "::" name(e)], top)
+      (e:UIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
+      (e:SIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
+      (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
+      (e:Index) :     emit-all([exp(e) "/" value(e)], top)
+      ;(e:Pad) : 
+         ;emit-all(["rsh'" prim-width(type(e)) " " value(e) " 0"], top)
+      (e:Register) : 
+         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top) 
+      (e:ReadPort) : 
+         emit-all(["rd'" prim-width(type(e)) " " "1" " " mem(e) " " index(e)], top) ;; enable(e)
+      (e:DoPrim) : 
+         if cmp-op?(op(e)) :
+           emit-all([flo-op-name(op(e), args(e)) "'" prim-width(type(args(e)[0]))], top)
+           if greater-op?(op(e)) or greater-eq-op?(op(e)) :
+             emit-all([" " args(e)[1] " " args(e)[0]], top)
+           else :
+             emit-all([" " args(e)[0] " " args(e)[1]], top)
+         else if op(e) == BIT-SELECT-OP :
+           emit-all([flo-op-name(op(e), args(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
+         else if op(e) == BITS-SELECT-OP :
+           val w = consts(e)[0] - consts(e)[1] + 1
+           emit-all([flo-op-name(op(e), args(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+         ;; else if op(e) == CONCAT-OP :
+         ;;   val w = consts(e)[0] - consts(e)[1] + 1
+         ;;   emit-all([flo-op-name(op(e), args(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+         else :
+           emit-all([flo-op-name(op(e), args(e)) "'" prim-width(type(e))], top)
+           ;if (op(e) == PAD-U-OP) or (op(e) == PAD-S-OP) :
+             ;emit-all(["  " args(e)[0] " " consts(e)[0]], top)
+           ;else :
+           for arg in args(e) do :
+             print(" ")
+             emit!(arg, top)
+           for const in consts(e) do :
+             print-all([" " const "'" sizeof(const)])
+      (e) : error("SHOULDN'T EMIT THIS") ;; print-all(["EMIT(" e ")"])
+      ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
+
+defn maybe-mov (e:Expression) -> String :
+   val need-mov? = match(e) :
+      (e:Ref) :       true
+      (e:UIntValue) : true
+      (e:SIntValue) : true
+      (e:Subfield) :  true
+      (e:Index) :     true
+      (e) :           false
+   if need-mov?: "mov " else: ""
+
+defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
+   match(s) :
+      (s:DefWire) : ""
+      (s:DefInstance) : error("Shouldn't be here")
+      (s:DefMemory) :
+         val vtype = type(s) as VectorType
+         emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
+      (s:DefNode) :
+         if value(s) typeof WritePort :
+            val e = value(s) as WritePort
+            val n = firrtl-gensym(`F)
+            emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " top "::" name(s) "\n"], top)
+         else :
+           emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
+      (s:Begin) : do(emit-s{_, v, top}, body(s))
+      (s:Connect) : 
+         val n = name(loc(s) as Ref)
+         if contains?(v,n) :
+            emit-all([top "::" n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
+         else :
+            emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
+      (s) : s 
+
+defn emit-module (m:Module) :
+   val v = Vector<Symbol>()
+   for port in ports(m) do :
+      if name(port) ==`reset :
+         emit-all([name(m) "::" name(port) " = rst'1\n"], name(m))
+      else : switch {_ == direction(port)} :
+         INPUT : print-all([name(m) "::" name(port) " = " "in'" prim-width(type(port)) "\n"])
+         OUTPUT : add(v,name(port))
+   emit-s(body(m), to-list(v), name(m))
+
+public defn emit-flo (file:String, c:Circuit) :
+   with-output-file{file, _} $ fn () :
+      emit-module(modules(c)[0])
+      false
+   c

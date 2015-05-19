@@ -1,8 +1,8 @@
-; RUN: firrtl -i %s -o %s.flo -x abcde -p ct | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p ct | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Types
 circuit top :
-   module subtracter :
+   module top :
       wire z : { x : UInt, flip y: SInt}
       node x = z.x            ;CHECK: node x = z@<t:{ x : UInt@<t:UInt>, flip y : SInt@<t:SInt>}>.x@<t:UInt>
       node y = z.y            ;CHECK: node y = z@<t:{ x : UInt@<t:UInt>, flip y : SInt@<t:SInt>}>.y@<t:SInt>

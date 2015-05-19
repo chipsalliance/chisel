@@ -7,16 +7,26 @@ defpackage firrtl/passes :
   import firrtl-main
   import firrtl/errors
 
-;============== Exceptions =====================
-public definterface PassException <: Exception
-public defn PassException (s:String) :
-   new PassException :
-      defmethod print (o:OutputStream, this) :
-         print(o, s)
-
-public defn PassExceptions (xs:Streamable<PassException>) :
-   PassException(string-join(xs, "\n"))
-
+;============== Pass List ================
+public val standard-passes = to-list $ [
+   CheckHighForm()
+   TempElimination()
+   ToWorkingIR()
+   MakeExplicitReset()
+   ResolveKinds()
+   CheckKinds()
+   InferTypes()
+   CheckTypes()
+   ResolveGenders()
+   CheckGenders()
+   ExpandAccessors()
+   LowerToGround()
+   ExpandIndexedConnects()
+   ExpandWhens()
+   InferWidths()
+   Inline()
+   SplitExp()
+   ToRealIR() ]
 ;=============== WORKING IR ================================
 public definterface Kind
 public defstruct WireKind <: Kind 
@@ -149,18 +159,6 @@ defmethod info (stmt:EmptyStmt) -> FileInfo : FileInfo()
 defmethod type (exp:UIntValue) -> Type : UIntType(width(exp))
 defmethod type (exp:SIntValue) -> Type : SIntType(width(exp))
 
-;============== GENSYM STUFF ======================
-
-val sym-hash = HashTable<Symbol,Int>(symbol-hash)
-defn firrtl-gensym (s:Symbol) -> Symbol :
-   val cur = get?(sym-hash,s,0)
-   val nxt = cur + 1
-   sym-hash[s] = nxt
-   symbol-join([s cur])
-   
-defn firrtl-gensym () -> Symbol :
-   firrtl-gensym(`gen)
-   
 ;============== DEBUG STUFF =============================
 public var PRINT-TYPES : True|False = false
 public var PRINT-KINDS : True|False = false
@@ -198,12 +196,12 @@ defn hasGender (e:?) :
    e typeof WRef|WSubfield|WIndex|WDefAccessor
 
 defn hasWidth (e:?) :
-   e typeof UIntType|SIntType|UIntValue|SIntValue|Pad
+   e typeof UIntType|SIntType|UIntValue|SIntValue
 
 defn hasType (e:?) :
    e typeof Ref|Subfield|Index|DoPrim|WritePort|ReadPort|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory|Register
-      |VectorType|Port|Field|Pad
+      |VectorType|Port|Field
 
 defn hasKind (e:?) :
    e typeof WRef
@@ -246,15 +244,15 @@ defmethod print (o:OutputStream, e:WIndex) :
    print-debug(o,e as ?)
 
 defmethod print (o:OutputStream, s:WDefAccessor) :
-   print-all(o,["accessor " name(s) " = " source(s) "[" index(s) "] @[" info(s) "]"])
+   print-all(o,["accessor " name(s) " = " source(s) "[" index(s) "]"])
    print-debug(o,s)
 
 defmethod print (o:OutputStream, c:ConnectToIndexed) :
-   print-all(o, [locs(c) "[" index(c) "] := " exp(c) " @[" info(c) "]"])
+   print-all(o, [locs(c) "[" index(c) "] := " exp(c)])
    print-debug(o,c as ?)
 
 defmethod print (o:OutputStream, c:ConnectFromIndexed) :
-   print-all(o, [loc(c) " := " exps(c) "[" index(c) "] @[" info(c) "]"])
+   print-all(o, [loc(c) " := " exps(c) "[" index(c) "]" ])
    print-debug(o,c as ?)
 
 defmethod map (f: Expression -> Expression, e: WSubfield) :
@@ -279,6 +277,10 @@ defmethod map (f: Type -> Type, e: WIndex) :
 ;================= Temporary Variable Elimination ========================
 ; Returns a new Circuit where temporary variables are removed and returns
 ;   the resulting nested expression
+public defstruct TempElimination <: Pass
+public defmethod pass (b:TempElimination) -> (Circuit -> Circuit) : temp-elimination
+public defmethod name (b:TempElimination) -> String : "Temp Elimination"
+public defmethod short-name (b:TempElimination) -> String : "temp-elim"
 
 defn temp-elimination (c:Circuit) :
    val h = HashTable<Symbol,Expression>(symbol-hash)
@@ -308,6 +310,10 @@ defn temp-elimination (c:Circuit) :
 ; Returns a new Circuit with Refs, Subfields, Indexes and DefAccessors 
 ;   replaced with IR-internal nodes that contain additional 
 ;   information (kind, gender)
+public defstruct ToWorkingIR <: Pass
+public defmethod pass (b:ToWorkingIR) -> (Circuit -> Circuit) : to-working-ir
+public defmethod name (b:ToWorkingIR) -> String : "Working IR"
+public defmethod short-name (b:ToWorkingIR) -> String : "to-working-ir"
 
 defn to-working-ir (c:Circuit) :
    defn to-exp (e:Expression) :
@@ -334,6 +340,10 @@ defn to-working-ir (c:Circuit) :
 ; If reset is not explicitly passed to instantiations, then this
 ;   pass autmatically connects the parent module's reset to the
 ;   instantiation's reset
+public defstruct MakeExplicitReset <: Pass
+public defmethod pass (b:MakeExplicitReset) -> (Circuit -> Circuit) : make-explicit-reset
+public defmethod name (b:MakeExplicitReset) -> String : "Make Explicit Reset"
+public defmethod short-name (b:MakeExplicitReset) -> String : "make-explicit-reset"
 
 defn make-explicit-reset (c:Circuit) :
    defn find-explicit (c:Circuit) -> List<Symbol> :
@@ -374,6 +384,10 @@ defn make-explicit-reset (c:Circuit) :
 ;   objects referenced. This information is stored in the kind
 ;   field in WRef. This pass walks the graph and returns a new
 ;   Circuit where all WRef kinds are resolved
+public defstruct ResolveKinds <: Pass
+public defmethod pass (b:ResolveKinds) -> (Circuit -> Circuit) : resolve-kinds
+public defmethod name (b:ResolveKinds) -> String : "Resolve Kinds"
+public defmethod short-name (b:ResolveKinds) -> String : "resolve-kinds"
 
 defn resolve-kinds (c:Circuit) :
    defn resolve (body:Stmt, kinds:HashTable<Symbol,Kind>) :
@@ -428,6 +442,10 @@ defn resolve-kinds (c:Circuit) :
 ;   resolving the subexpressions in its elements.
 ; Type errors are not checked in this pass, as this is
 ;   postponed for a later/earlier pass.
+public defstruct InferTypes <: Pass
+public defmethod pass (b:InferTypes) -> (Circuit -> Circuit) : infer-types
+public defmethod name (b:InferTypes) -> String : "Infer Types"
+public defmethod short-name (b:InferTypes) -> String : "infer-types"
 
 defn type (m:Module) -> Type : 
    BundleType(for p in ports(m) map : to-field(p))
@@ -464,7 +482,6 @@ defn infer-exp-types (e:Expression, l:List<KeyValue<Symbol,Type>>) -> Expression
       (e:ReadPort) : ReadPort(mem(e),index(e),get-vector-subtype(type(mem(e))),enable(e))
       (e:WritePort) : WritePort(mem(e),index(e),get-vector-subtype(type(mem(e))),enable(e))
       (e:Register) : Register(type(value(e)),value(e),enable(e))
-      (e:Pad) : Pad(value(e),width(e),type(value(e)))
       (e:UIntValue|SIntValue) : e
 
 defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<Symbol,Type>>] :
@@ -517,6 +534,10 @@ defn infer-types (c:Circuit) -> Circuit :
 ;   elements are single-gender (e.g. accessors, ports). 
 ; Because accessor gender is not known during declaration, 
 ;   this pass requires iterating until a fixed point is reached.
+public defstruct ResolveGenders <: Pass
+public defmethod pass (b:ResolveGenders) -> (Circuit -> Circuit) : resolve-genders
+public defmethod name (b:ResolveGenders) -> String : "Resolve Genders"
+public defmethod short-name (b:ResolveGenders) -> String : "resolve-genders"
 
 ; Notes
 ; Is there a case where an incorrect gender would cause a weird result in resolving an accessor gender, such that a following gender check is wrong/right which it shouldn't be?
@@ -637,6 +658,10 @@ defn resolve-genders (c:Circuit) :
 ;   of the accessor, it is transformed into ConnectToIndexed (male) or
 ;   ConnectFromIndexed (female)
 ; Eg:
+public defstruct ExpandAccessors <: Pass
+public defmethod pass (b:ExpandAccessors) -> (Circuit -> Circuit) : expand-accessors
+public defmethod name (b:ExpandAccessors) -> String : "Expand Accessors"
+public defmethod short-name (b:ExpandAccessors) -> String : "expand-accessors"
 
 defn expand-vector (e:Expression) -> List<Expression> :
    val t = type(e) as VectorType
@@ -679,6 +704,10 @@ defn expand-accessors (c:Circuit) :
 ; This pass involves filling a table mapping the name of elevated types
 ;   to the lowered ground expression names and genders. This allows
 ;   references to be resolved.
+public defstruct LowerToGround <: Pass
+public defmethod pass (b:LowerToGround) -> (Circuit -> Circuit) : lower-to-ground
+public defmethod name (b:LowerToGround) -> String : "Lower To Ground"
+public defmethod short-name (b:LowerToGround) -> String : "lower-to-ground"
 
 defstruct EF :
    exp : Expression
@@ -715,7 +744,7 @@ defn index-of-elem (t:BundleType, s:Symbol) -> Int :
 
 
 defn generate-entry (n:Symbol,t:Type) -> List<NTF> :
-   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n "$" n*])
+   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n "_" n*])
    match(t) :
       (t:BundleType) : 
          for f in fields(t) map-append :
@@ -760,9 +789,9 @@ defn expand-expr (e:Expression) -> List<EF> :
          val exps = expand-expr(exp(e))
          val len = num-elems(type(e))
          headn(tailn(exps,len * value(e)),len)
-      (e:Pad) : 
-         val v = exp(head(expand-expr(value(e))))
-         list(EF(Pad(v,width(e),type(e)),DEFAULT))
+      ;(e:Pad) : 
+         ;val v = exp(head(expand-expr(value(e))))
+         ;list(EF(Pad(v,width(e),type(e)),DEFAULT))
       (e:DoPrim) :
          val args = for x in args(e) map : exp(head(expand-expr(x)))
          list(EF(DoPrim(op(e),args,consts(e),type(e)),DEFAULT))
@@ -894,15 +923,19 @@ defn lower-to-ground (c:Circuit) -> Circuit :
 ; This pass converts ConnectToIndexed and ConnectFromIndexed
 ;   into a series of when statements. TODO what about initial
 ;   values?
+public defstruct ExpandIndexedConnects <: Pass
+public defmethod pass (b:ExpandIndexedConnects) -> (Circuit -> Circuit) : expand-connect-indexed
+public defmethod name (b:ExpandIndexedConnects) -> String : "Expand Indexed Connects"
+public defmethod short-name (b:ExpandIndexedConnects) -> String : "expand-indexed-connects"
 
 defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
    defn equality (e1:Expression,e2:Expression) -> Expression :
-      DoPrim(EQUAL-UU-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
+      DoPrim(EQUAL-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
    defn get-name (e:Expression) -> Symbol :
       match(e) :
-         (e:WRef) : symbol-join([name(e) `#])
-         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) `#])
-         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) `#])
+         (e:WRef) : symbol-join([name(e) `__])
+         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) `__])
+         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) `__])
          (e) : `T
    match(s) :
       (s:ConnectToIndexed) : Begin $
@@ -910,15 +943,15 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
          else :
             val ref = WRef(firrtl-gensym(get-name(exp(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
-               list(Connect(info(s),head(locs(s)),exp(s)),DefNode(info(s),name(ref),index(s)))
+               list(DefNode(info(s),name(ref),index(s)))
                to-list $
-                  for (i in 1 to false, l in tail(locs(s))) stream : Conditionally(
+                  for (i in 0 to false, l in locs(s)) stream : Conditionally(
                      info(s),
                      equality(ref,UIntValue(i,UnknownWidth())),
                      Connect(info(s),l,exp(s)),
                      EmptyStmt()
                   )
-            )
+               )
       (s:ConnectFromIndexed) : Begin $
          if length(exps(s)) == 0 : list(EmptyStmt())
          else :
@@ -963,6 +996,10 @@ defn expand-connect-indexed (c: Circuit) -> Circuit :
 ; The ReadPort enable is calcuated by scanning all entries in
 ;   the table for when this is referenced (a read). All conditions
 ;   are accumulated and OR'ed together.
+public defstruct ExpandWhens <: Pass
+public defmethod pass (b:ExpandWhens) -> (Circuit -> Circuit) : expand-whens
+public defmethod name (b:ExpandWhens) -> String : "Expand Whens"
+public defmethod short-name (b:ExpandWhens) -> String : "expand-whens"
 
 ; ======== Expression Computation Library ===========
 
@@ -980,7 +1017,7 @@ defmethod equal? (e1:Expression,e2:Expression) -> True|False :
       (e1:WRef,e2:WRef) : name(e1) == name(e2)
       ;(e1:DoPrim,e2:DoPrim) :  TODO
       (e1:WSubfield,e2:WSubfield) : name(e1) == name(e2)
-      (e1:Pad,e2:Pad) : width(e1) == width(e2) and value(e1) == value(e2)
+      ;(e1:Pad,e2:Pad) : width(e1) == width(e2) and value(e1) == value(e2)
       (e1:DoPrim,e2:DoPrim) : 
          var are-equal? = op(e1) == op(e2)
          for (x in args(e1),y in args(e2)) do :
@@ -1009,7 +1046,7 @@ defn OR (e1:Expression,e2:Expression) -> Expression :
 defn NOT (e1:Expression) -> Expression :
    if e1 == one : zero
    else if e1 == zero : one
-   else : DoPrim(EQUAL-UU-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+   else : DoPrim(EQUAL-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
 
 defn children (e:Expression) -> List<Expression> :
    val es = Vector<Expression>()
@@ -1106,7 +1143,7 @@ defn remove-nul (sv:SymbolicValue) -> SymbolicValue :
 defn to-exp (sv:SymbolicValue) -> Expression|False :
    match(remove-nul(sv)) :
       (sv:SVMux) : 
-         DoPrim(MUX-UU-OP,
+         DoPrim(MUX-OP,
                 list(pred(sv),to-exp(conseq(sv)) as Expression,to-exp(alt(sv)) as Expression),
                 list(),
                 UIntType(IntWidth(1)))
@@ -1132,7 +1169,6 @@ defn reduce-or (l:List<Expression>) -> Expression :
 ; kinds:  Used to know the kind of reference, so we know whether we should error if it isn't initialized. We also know how we should declare the refernce.
 ; enables:Calculated off of assigns.
 
-
 defn expand-whens (ports:List<Port>, table:HashTable<Symbol,SymbolicValue>,cons:Vector<Stmt>) -> False :
    for p in ports do :
       if direction(p) == OUTPUT :
@@ -1156,24 +1192,29 @@ defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stm
             else : Connect(info(s),ref,to-exp(table[name(s)]) as Expression)
             }()
       (s:DefRegister) : 
-         add(decs,DefWire(info(s),name(s),type(s)))
+         ;add(decs,DefWire(info(s),name(s),type(s)))
+         ;add{cons,_} $ { 
+         ;   val ref = WRef(name(s),type(s),RegKind(),FEMALE)
+         ;   val e = to-exp(table[name(s)])
+         ;   match(e) : 
+         ;      (e:False) : EmptyStmt()
+         ;      (e:Expression) : Connect(info(s),ref,Register(type(s),e, to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
+         ;}()
+         val e = to-exp(table[name(s)])
          add{cons,_} $ { 
-            val ref = WRef(name(s),type(s),RegKind(),FEMALE)
-            val e = to-exp(table[name(s)])
             match(e) : 
                (e:False) : EmptyStmt()
-               (e:Expression) : Connect(info(s),ref,Register(type(s),e, to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
+               (e:Expression) : DefNode(info(s),name(s),Register(type(s),e,to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
          }()
       (s:WDefAccessor) : 
          val t = type(type(source(s)) as VectorType)
          val n = name(s)
-         add(decs,DefWire(info(s),n,t))
          add{cons,_} $ { 
             switch {_ == gender(s)} :
                MALE : 
-                  val ref = WRef(n,t,ReadAccessorKind(),FEMALE)
-                  Begin $ list $ Connect(info(s),ref,ReadPort(source(s),index(s),t,get-read-enable(n,table)))
+                  Begin $ list $ DefNode(info(s),n,ReadPort(source(s),index(s),t,get-read-enable(n,table)))
                FEMALE :
+                  add(decs,DefWire(info(s),n,t))
                   val ref = WRef(n,t,WriteAccessorKind(),FEMALE)
                   val e = to-exp(table[n])
                   val s* = match(e) :
@@ -1350,6 +1391,10 @@ defn expand-whens (c:Circuit) -> Circuit :
 ; Finally, you replace all width variables with the solved
 ;   widths.
 ; Low FIRRTL Pass.
+public defstruct InferWidths <: Pass
+public defmethod pass (b:InferWidths) -> (Circuit -> Circuit) : infer-widths
+public defmethod name (b:InferWidths) -> String : "Infer Widths"
+public defmethod short-name (b:InferWidths) -> String : "infer-widths"
 
 public defstruct VarWidth <: Width :
    name: Symbol
@@ -1412,10 +1457,8 @@ defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
    if a typeof Int and b typeof Int : f(a as Int, b as Int)
    else : false
 
-; TODO: I should make MaxWidth take a variable list of arguments, which would make it easier to write the simplify function. It looks like there isn't a bug in the algorithm, but simplification reallllly speeds it up.
-
    
-defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
+defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
    defn contains? (n:Symbol,h:HashTable<Symbol,?>) -> True|False : key?(h,n)
    defn make-unique (ls:List<WGeq>) -> HashTable<Symbol,Width> :
       val h = HashTable<Symbol,Width>(symbol-hash)
@@ -1492,34 +1535,6 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
          w
       look(w)
       has?
-   defn evaluate (h:HashTable<Symbol,Width>) -> HashTable<Symbol,Int> :
-      defn apply (a:Int|False,f:(Int) -> Int) -> Int|False :
-         if a typeof Int : f(a as Int)
-         else : false
-      defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
-         if a typeof Int and b typeof Int : f(a as Int, b as Int)
-         else : false
-      defn apply-l (l:List<Int|False>,f:(Int,Int) -> Int) -> Int|False :
-         if length(l) == 0 : 0
-         else : apply(head(l),apply-l(tail(l),f),f)
-      defn max (a:Int,b:Int) -> Int :
-         if a >= b : a
-         else : b
-      defn solve (w:Width) -> Int|False :
-         match(w) :
-            (w:VarWidth) : false
-            (w:MaxWidth) : apply-l(map(solve,args(w)),max)
-            (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ + _})
-            (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ - _})
-            (w:ExpWidth) : apply(2,solve(arg1(w)),{pow(_,_) - 1})
-            (w:IntWidth) : width(w)
-            (w) : error("Shouldn't be here")
-
-      val i = HashTable<Symbol,Int>(symbol-hash)
-      for x in h do :
-         val s = solve(value(x))
-         if s typeof Int : i[key(x)] = s as Int
-      i
        
    ; Forward solve
    ; Returns a solved list where each constraint undergoes:
@@ -1572,11 +1587,7 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Int> :
       for x in b do : println-debug(x)
       println-debug("=========================")
 
-   ; Evaluate
-   val e = evaluate(b)
-   println-debug("Evaluated Constraints")
-   for x in e do : println-debug(x)
-   e
+   b
    
 public defn width! (t:Type) -> Width :
    match(t) :
@@ -1611,15 +1622,15 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (e:WSubfield) : WSubfield(exp(e),name(e),bundle-field-type(type(exp(e)),name(e)),gender(e))
          (e:WIndex) : error("Shouldn't be here")
          (e:DoPrim) : DoPrim(op(e),args(e),consts(e),primop-gen-constraints(e,v))
-         (e:Pad) : 
-            val value-w = width!(value(e))
-            val pad-w = remove-unknowns-w(width(e))
-            add(v,WGeq(pad-w, value-w))
-            val pad-t = match(type(e)) :
-               (t:UIntType) : UIntType(pad-w)
-               (t:SIntType) : SIntType(pad-w)
-               (t) : error("Shouldn't be here")
-            Pad(value(e),pad-w,pad-t)
+         ;(e:Pad) : 
+         ;   val value-w = width!(value(e))
+         ;   val pad-w = remove-unknowns-w(width(e))
+         ;   add(v,WGeq(pad-w, value-w))
+         ;   val pad-t = match(type(e)) :
+         ;      (t:UIntType) : UIntType(pad-w)
+         ;      (t:SIntType) : SIntType(pad-w)
+         ;      (t) : error("Shouldn't be here")
+         ;   Pad(value(e),pad-w,pad-t)
          (e:ReadPort) : ReadPort(mem(e),index(e),type(type(mem(e)) as VectorType),enable(e))
          (e:WritePort) : WritePort(mem(e),index(e),type(type(mem(e)) as VectorType),enable(e))
          (e:Register) : Register(type(value(e)),value(e),enable(e))
@@ -1658,21 +1669,47 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
    build-environment(body(m))
    h
          
-defn replace-var-widths (c:Circuit,h:HashTable<Symbol,Int>) -> Circuit :
-   defn replace-var-widths-w (w:Width) -> Width :
+defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
+   defn evaluate (w:Width) -> Width :
+      defn apply (a:Int|False,f:(Int) -> Int) -> Int|False :
+         if a typeof Int : f(a as Int)
+         else : false
+      defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
+         if a typeof Int and b typeof Int : f(a as Int, b as Int)
+         else : false
+      defn apply-l (l:List<Int|False>,f:(Int,Int) -> Int) -> Int|False :
+         if length(l) == 0 : 0
+         else : apply(head(l),apply-l(tail(l),f),f)
+      defn max (a:Int,b:Int) -> Int :
+         if a >= b : a
+         else : b
+      defn solve (w:Width) -> Int|False :
+         match(w) :
+            (w:VarWidth) : 
+               val w* = h[name(w)]
+               if w* typeof VarWidth : false
+               else : solve(w*)
+            (w:MaxWidth) : apply-l(map(solve,args(w)),max)
+            (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ + _})
+            (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ - _})
+            (w:ExpWidth) : apply(2,solve(arg1(w)),{pow(_,_) - 1})
+            (w:IntWidth) : width(w)
+            (w) : error("Shouldn't be here")
+   
+      val s = solve(w)
+      if s typeof Int : IntWidth(s as Int)
+      else : w
+
+   defn reduce-var-widths-w (w:Width) -> Width :
       println-all-debug(["REPLACE: " w])
-      val w* = match(w) :
-         (w:VarWidth) : 
-            if key?(h,name(w)) : IntWidth(h[name(w)])
-            else: w
-         (w) : w
+      val w* = evaluate(w)
       println-all-debug(["WITH: " w*])
       w*
 
    val modules* = for m in modules(c) map :
-      Module{info(m),name(m),_,mapr(replace-var-widths-w,body(m))} $
+      Module{info(m),name(m),_,mapr(reduce-var-widths-w,body(m))} $
          for p in ports(m) map :
-            Port(info(p),name(p),direction(p),mapr(replace-var-widths-w,type(p)))
+            Port(info(p),name(p),direction(p),mapr(reduce-var-widths-w,type(p)))
 
    Circuit(info(c),modules*,main(c))
 
@@ -1710,12 +1747,16 @@ defn infer-widths (c:Circuit) -> Circuit :
    println-debug("======== SOLVED CONSTRAINTS ========")
    for x in h do : println-debug(x)
    println-debug("====================================")
-   replace-var-widths(Circuit(info(c),modules*,main(c)),h)
+   reduce-var-widths(Circuit(info(c),modules*,main(c)),h)
 
 
 ;================= Inline Instances ========================
 ; Inlines instances. Assumes module with same name as the
 ;   Circuit is the top level module
+public defstruct Inline <: Pass
+public defmethod pass (b:Inline) -> (Circuit -> Circuit) : inline-instances
+public defmethod name (b:Inline) -> String : "Inline Instances"
+public defmethod short-name (b:Inline) -> String : "inline-instances"
 
 defn inline-instances (c:Circuit) :
    val h = HashTable<Symbol,Module>(symbol-hash)
@@ -1741,17 +1782,17 @@ defn inline-instances (c:Circuit) :
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) "$" name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) "_" name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
-   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n "$" ref])
+   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n "_" ref])
    defn rename-e (e:Expression,n:Symbol) -> Expression :
       match(map(rename-e{_,n},e)) :
          (e:WRef) : WRef(rename(name(e),n),type(e),kind(e),gender(e))
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) "$" name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) "_" name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
    defn rename-s (s:Stmt,n:Symbol) -> Stmt :
@@ -1769,6 +1810,10 @@ defn inline-instances (c:Circuit) :
 
 ;================= Split Expressions ========================
 ; Intended to only work on low firrtl
+public defstruct SplitExp <: Pass
+public defmethod pass (b:SplitExp) -> (Circuit -> Circuit) : split-exp
+public defmethod name (b:SplitExp) -> String : "Split Expressions"
+public defmethod short-name (b:SplitExp) -> String : "split-expressions"
 
 defn split-exp (c:Circuit) :
    defn split-exp-s (s:Stmt,v:Vector<Stmt>) -> False :
@@ -1786,11 +1831,10 @@ defn split-exp (c:Circuit) :
       false
    defn split-exp-e (e:Expression,v:Vector<Stmt>,n:Symbol|False,info:FileInfo) -> Expression :
       match(map(split-exp-e{_,v,n,info},e)):
-         (e:Subfield|DoPrim|Pad|ReadPort|Register|WritePort) : 
+         (e:Subfield|DoPrim|ReadPort|Register|WritePort) : 
             val n* = 
                if n typeof False : firrtl-gensym(`T)
-               else : firrtl-gensym(symbol-join([n as Symbol `#]))
-                  ;to-symbol $ string-join $ [n as Symbol firrtl-gensym(`#)] 
+               else : firrtl-gensym(symbol-join([n as Symbol `__]))
             add(v,DefNode(info,n*,e))
             WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
          (e) : e
@@ -1803,6 +1847,10 @@ defn split-exp (c:Circuit) :
 
 ;================= Bring to Real IR ========================
 ; Returns a new Circuit with only real IR nodes.
+public defstruct ToRealIR <: Pass
+public defmethod pass (b:ToRealIR) -> (Circuit -> Circuit) : to-real-ir
+public defmethod name (b:ToRealIR) -> String : "Real IR"
+public defmethod short-name (b:ToRealIR) -> String : "real-ir"
 
 defn to-real-ir (c:Circuit) :
    defn to-exp (e:Expression) :
@@ -1823,265 +1871,3 @@ defn to-real-ir (c:Circuit) :
          for m in modules(c) map :
             Module(info(m),name(m), ports(m), to-stmt(body(m)))
 
-;============= FLO PRINTER ======================================
-; Emit 
-
-defn flo-op-name (op:PrimOp) -> String :
-   switch {op == _ } :
-      ;NEG-OP :         "neg"
-      ;NEG-OP :         "neg"
-      ;NEG-OP :         "neg"
-      ;NEG-OP :         "neg"
-      ADD-UU-OP :      "add"
-      ADD-US-OP :      "add"
-      ADD-SU-OP :      "add"
-      ADD-SS-OP :      "add"
-      ADD-WRAP-UU-OP : "add"
-      ADD-WRAP-US-OP : "add"
-      ADD-WRAP-SU-OP : "add"
-      ADD-WRAP-SS-OP : "add"
-      SUB-UU-OP :      "sub"
-      SUB-US-OP :      "sub"
-      SUB-SU-OP :      "sub"
-      SUB-SS-OP :      "sub"
-      SUB-WRAP-UU-OP : "sub"
-      SUB-WRAP-US-OP : "sub"
-      SUB-WRAP-SU-OP : "sub"
-      SUB-WRAP-SS-OP : "sub"
-      MUL-UU-OP :      "mul" ;; todo: signed version
-      MUL-US-OP :      "mul" ;; todo: signed version
-      MUL-SU-OP :      "mul" ;; todo: signed version
-      MUL-SS-OP :      "mul" ;; todo: signed version
-      DIV-UU-OP :      "div" ;; todo: signed version
-      DIV-US-OP :      "div" ;; todo: signed version
-      DIV-SU-OP :      "div" ;; todo: signed version
-      DIV-SS-OP :      "div" ;; todo: signed version
-      MOD-UU-OP :      "mod" ;; todo: signed version
-      MOD-US-OP :      "mod" ;; todo: signed version
-      MOD-SU-OP :      "mod" ;; todo: signed version
-      MOD-SS-OP :      "mod" ;; todo: signed version
-      LESS-UU-OP :        "lt"  ;; todo: signed version
-      LESS-US-OP :        "lt"  ;; todo: signed version
-      LESS-SU-OP :        "lt"  ;; todo: signed version
-      LESS-SS-OP :        "lt"  ;; todo: signed version
-      LESS-EQ-UU-OP :     "lte" ;; todo: swap args
-      LESS-EQ-US-OP :     "lte" ;; todo: swap args
-      LESS-EQ-SU-OP :     "lte" ;; todo: swap args
-      LESS-EQ-SS-OP :     "lte" ;; todo: swap args
-      GREATER-UU-OP :     "lt"  ;; todo: swap args
-      GREATER-US-OP :     "lt"  ;; todo: swap args
-      GREATER-SU-OP :     "lt"  ;; todo: swap args
-      GREATER-SS-OP :     "lt"  ;; todo: swap args
-      GREATER-EQ-UU-OP :  "lte" ;; todo: signed version
-      GREATER-EQ-US-OP :  "lte" ;; todo: signed version
-      GREATER-EQ-SU-OP :  "lte" ;; todo: signed version
-      GREATER-EQ-SS-OP :  "lte" ;; todo: signed version
-      NEQUAL-UU-OP :      "neq"
-      NEQUAL-SS-OP :      "neq"
-      EQUAL-UU-OP :       "eq"
-      EQUAL-SS-OP :       "eq"
-      MUX-UU-OP :         "mux"
-      MUX-SS-OP :         "mux"
-      PAD-U-OP :          "rsh" 
-      PAD-S-OP :          "arsh"
-      NEG-U-OP :          "neg"
-      NEG-S-OP :          "neg"
-      AS-UINT-U-OP : "mov"
-      AS-UINT-S-OP : "mov"
-      AS-SINT-U-OP : "mov"
-      AS-SINT-S-OP : "mov"
-      SHIFT-LEFT-U-OP :  "lsh" 
-      SHIFT-LEFT-S-OP :  "lsh" 
-      SHIFT-RIGHT-U-OP : "rsh"
-      SHIFT-RIGHT-S-OP : "arsh"
-      DYN-SHIFT-LEFT-U-OP :  "lsh" 
-      DYN-SHIFT-LEFT-S-OP :  "lsh" 
-      DYN-SHIFT-RIGHT-U-OP : "rsh" 
-      DYN-SHIFT-RIGHT-S-OP : "arsh"
-      CONVERT-U-OP : "arsh"
-      CONVERT-S-OP : "mov"
-      BIT-AND-OP :     "and"
-      BIT-NOT-OP :     "not"
-      BIT-OR-OP :      "or"
-      BIT-XOR-OP :     "xor"
-      BIT-XOR-REDUCE-OP : "xorr"
-      BIT-AND-REDUCE-OP : "andr"
-      BIT-OR-REDUCE-OP : "orr"
-      CONCAT-OP :      "cat"
-      BIT-SELECT-OP :  "rsh"
-      BITS-SELECT-OP : "rsh"
-      else : error $ string-join $ ["Unable to print Primop: " op]
-
-defn sane-width (wd:Width) -> Int :
-  match(wd) :
-    (w:IntWidth) : max(1, width(w))
-    (w)          : error(string-join(["Unknown width: " w]))
-
-defn prim-width (type:Type) -> Int :
-   match(type) :
-      (t:UIntType) : sane-width(width(t))
-      (t:SIntType) : sane-width(width(t))
-      (t) :          error("Bad prim width type")
-
-defn sizeof (in: Int) -> Int :
-  max(1, ceil-log2(in + 1))
-
-defn emit-all (es:Streamable, top:Symbol) :
-  for e in es do :
-     match(e) :
-       (ex:Expression) : emit!(ex,top)
-       (ex:String) :     print(ex)
-       (ex:Symbol) :     print(ex)
-       ;; (ex:Int) :        print-all([ex "'" sizeof(ex)])
-       (ex:Int) :        print(ex)
-       (ex) :            print(ex)
-
-defn emit! (e:Expression,top:Symbol) :
-   defn greater-op? (op: PrimOp) -> True|False :
-      contains?([GREATER-OP, GREATER-UU-OP, GREATER-US-OP, GREATER-SU-OP, GREATER-SS-OP], op)
-   defn greater-eq-op? (op: PrimOp) -> True|False :
-      contains?([GREATER-EQ-OP, GREATER-EQ-UU-OP, GREATER-EQ-US-OP, GREATER-EQ-SU-OP, GREATER-EQ-SS-OP], op)     
-   defn less-eq-op? (op: PrimOp) -> True|False :
-      contains?([LESS-EQ-OP, LESS-EQ-UU-OP, LESS-EQ-US-OP, LESS-EQ-SS-OP, LESS-EQ-SS-OP], op)
-   defn less-op? (op: PrimOp) -> True|False :
-      contains?([LESS-OP, LESS-UU-OP, LESS-US-OP, LESS-SS-OP, LESS-SS-OP], op)
-   defn cmp-op? (op: PrimOp) -> True|False :
-      greater-op?(op) or greater-eq-op?(op) or less-op?(op) or less-eq-op?(op) or 
-      contains?([EQUAL-OP, EQUAL-UU-OP, EQUAL-SS-OP, NEQUAL-OP, NEQUAL-UU-OP, NEQUAL-SS-OP], op)
-   match(e) :
-      (e:Ref) :       emit-all([top "::" name(e)], top)
-      (e:UIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
-      (e:SIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
-      (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
-      (e:Index) :     emit-all([exp(e) "/" value(e)], top)
-      (e:Pad) : 
-         val op-name = match(type(e)) :
-             (t:SIntType) : "arsh"
-             (u) : "rsh"
-         emit-all([op-name "'" prim-width(type(e)) " " value(e) " 0"], top)
-      (e:Register) : 
-         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top) 
-      (e:ReadPort) : 
-         emit-all(["rd'" prim-width(type(e)) " " "1" " " mem(e) " " index(e)], top) ;; enable(e)
-      (e:DoPrim) : 
-         if cmp-op?(op(e)) :
-           emit-all([flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
-           if greater-op?(op(e)) or greater-eq-op?(op(e)) :
-             emit-all([" " args(e)[1] " " args(e)[0]], top)
-           else :
-             emit-all([" " args(e)[0] " " args(e)[1]], top)
-         else if op(e) == CONVERT-U-OP :
-           emit-all(["arsh'" prim-width(type(e)) " " args(e)[0] " 0"], top)
-         else if op(e) == BIT-SELECT-OP :
-           emit-all([flo-op-name(op(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
-         else if op(e) == BITS-SELECT-OP :
-           val w = consts(e)[0] - consts(e)[1] + 1
-           emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
-         ;; else if op(e) == CONCAT-OP :
-         ;;   val w = consts(e)[0] - consts(e)[1] + 1
-         ;;   emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
-         else :
-           emit-all([flo-op-name(op(e)) "'" prim-width(type(e))], top)
-           if (op(e) == PAD-U-OP) or (op(e) == PAD-S-OP) :
-             emit-all(["  " args(e)[0] " " consts(e)[0]], top)
-           else :
-             for arg in args(e) do :
-               print(" ")
-               emit!(arg, top)
-             for const in consts(e) do :
-               print-all([" " const "'" sizeof(const)])
-      (e) : error("SHOULDN'T EMIT THIS") ;; print-all(["EMIT(" e ")"])
-      ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
-
-defn maybe-mov (e:Expression) -> String :
-   val need-mov? = match(e) :
-      (e:Ref) :       true
-      (e:UIntValue) : true
-      (e:SIntValue) : true
-      (e:Subfield) :  true
-      (e:Index) :     true
-      (e) :           false
-   if need-mov?: "mov " else: ""
-
-defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
-   match(s) :
-      (s:DefWire) : ""
-      (s:DefInstance) : error("Shouldn't be here")
-      (s:DefMemory) :
-         val vtype = type(s) as VectorType
-         emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
-      (s:DefNode) :
-         if value(s) typeof WritePort :
-            val e = value(s) as WritePort
-            val n = firrtl-gensym(`F)
-            emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " top "::" name(s) "\n"], top)
-         else :
-           emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
-      (s:Begin) : do(emit-s{_, v, top}, body(s))
-      (s:Connect) : 
-         val n = name(loc(s) as Ref)
-         if contains?(v,n) :
-            emit-all([top "::" n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
-         else :
-            emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
-      (s) : s 
-
-defn emit-module (m:Module) :
-   val v = Vector<Symbol>()
-   for port in ports(m) do :
-      if name(port) ==`reset :
-         emit-all([name(m) "::" name(port) " = rst'1\n"], name(m))
-      else : switch {_ == direction(port)} :
-         INPUT : print-all([name(m) "::" name(port) " = " "in'" prim-width(type(port)) "\n"])
-         OUTPUT : add(v,name(port))
-   emit-s(body(m), to-list(v), name(m))
-
-public defn emit-flo (file:String, c:Circuit) :
-   with-output-file{file, _} $ fn () :
-      emit-module(modules(c)[0])
-      false
-   c
-
-;============= DRIVER ======================================
-public defn run-passes (c: Circuit, p: List<Char>,file:String) :
-   var c*:Circuit = c
-   println("Compiling!")
-   if PRINT-CIRCUITS : println("Original Circuit")
-   if PRINT-CIRCUITS : print(c)
-   defn do-stage (name:String, f: Circuit -> Circuit) :
-      if PRINT-CIRCUITS : println(name)
-      c* = f(c*)
-      if PRINT-CIRCUITS : print(c*)
-      if PRINT-CIRCUITS : println-all(["Finished " name "\n"])
-
-   if contains(p,'X') or contains(p,'A') : do-stage("High Form Check", check-high-form)
-   if contains(p,'X') or contains(p,'a') : do-stage("Temp Elimination", temp-elimination)
-   if contains(p,'X') or contains(p,'b') : do-stage("Working IR", to-working-ir)
-
-   if contains(p,'X') or contains(p,'c') : do-stage("Make Explicit Reset", make-explicit-reset)
-
-   if contains(p,'X') or contains(p,'d') : do-stage("Resolve Kinds", resolve-kinds)
-   if contains(p,'X') or contains(p,'D') : do-stage("Check Kinds", check-kinds)
-
-   if contains(p,'X') or contains(p,'e') : do-stage("Infer Types", infer-types)
-   if contains(p,'X') or contains(p,'E') : do-stage("Check Types", check-types)
-
-   if contains(p,'X') or contains(p,'f') : do-stage("Resolve Genders", resolve-genders)
-   if contains(p,'X') or contains(p,'F') : do-stage("Check Genders", check-genders)
-
-   if contains(p,'X') or contains(p,'g') : do-stage("Expand Accessors", expand-accessors) ;mem kind
-   if contains(p,'X') or contains(p,'h') : do-stage("Lower To Ground", lower-to-ground) ;inst kind
-   if contains(p,'X') or contains(p,'i') : do-stage("Expand Indexed Connects", expand-connect-indexed)
-
-; make sure no bundle types
-   if contains(p,'X') or contains(p,'k') : do-stage("Expand Whens", expand-whens) ; requires types, lowering
-
-   if contains(p,'X') or contains(p,'l') : do-stage("Infer Widths", infer-widths) ; requires lowering, expand whens
-   
-   if contains(p,'X') or contains(p,'m') : do-stage("Inline Instances", inline-instances) ;inst kind
-
-   if contains(p,'X') or contains(p,'n') : do-stage("Split Expressions", split-exp)
-
-   if contains(p,'X') or contains(p,'o') : do-stage("Real IR", to-real-ir)
-   if contains(p,'X') or contains(p,'F') : do-stage("To Flo", emit-flo{file,_})
-   println("Done!")

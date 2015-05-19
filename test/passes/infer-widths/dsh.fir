@@ -1,9 +1,9 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefghijkl -p cd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cd | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
 
 circuit top :
-   module M :
+   module top :
       wire x : UInt<16>
       wire z : SInt<16>
       wire y : UInt<3>
@@ -12,10 +12,10 @@ circuit top :
       wire c : UInt
       wire d : SInt
 
-      a := dshl-u(x,y)
-      b := dshl-s(z,y)
-      c := dshr-u(x,y)
-      d := dshr-s(z,y)
+      a := dshl(x,y)
+      b := dshl(z,y)
+      c := dshr(x,y)
+      d := dshr(z,y)
 
 
 ; CHECK: wire a : UInt<23>

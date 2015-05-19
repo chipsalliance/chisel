@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p cdt | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cdt | tee %s.out | FileCheck %s
 ; CHECK: Done!
 
 circuit Top :
@@ -8,6 +8,6 @@ circuit Top :
     output this : {out : {valid : UInt<1>, flip ready : UInt<1>}}
     inst queue of Queue
     this.out := queue.out
-    wire w : { x : UInt, flip y : UInt}
-    wire a : UInt
+    wire w : { x : UInt<5>, flip y : UInt<5>}
+    wire a : UInt<5>
     w.y := a

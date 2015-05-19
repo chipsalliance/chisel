@@ -1,0 +1,197 @@
+defpackage firrtl/verilog :
+   import core
+   import verse
+   import firrtl/ir-utils
+   import firrtl/ir2
+
+public defstruct Verilog <: Pass :
+   file : String
+public defmethod pass (b:Verilog) -> (Circuit -> Circuit) : emit-verilog{file(b),_}
+public defmethod name (b:Verilog) -> String : "To Verilog"
+public defmethod short-name (b:Verilog) -> String : "To Verilog"
+
+;============ Utilz =============
+defn width! (w:Width) -> Int :
+   match(w) : 
+      (w:IntWidth) : width(w)
+      (w) : error("Non-supported width type.")
+
+defn width! (t:Type) -> Int :
+   match(t) :
+      (t:UIntType) : width!(width(t))
+      (t:SIntType) : width!(width(t))
+      (t) : error("Non-supported type.")
+
+defn emit (w:Width) -> String :
+   match(w) : 
+      (w:IntWidth) : string-join $ ["[" width(w) ":0]"] ;TODO check if need to special case 0 or 1 width wires
+      (w) : error("Non-supported width type.")
+
+defn get-width (t:Type) -> String :
+   match(t) :
+      (t:UIntType) : emit(width(t))
+      (t:SIntType) : emit(width(t))
+      (t) : error("Non-supported type.")
+
+
+;============ Verilog Backend =============
+
+defn emit (e:Expression) -> String :
+   match(e) :
+      (e:Ref) : to-string $ name(e)
+      (e:UIntValue) : string-join $ [width!(type(e)) "'d" value(e)]
+      (e:SIntValue) : string-join $ [width!(type(e)) "'sd" value(e)]
+      (e:Subfield) : error("Non-supported expression")
+      (e:Index) : error("Non-supported expression")
+      (e:Register) : error("Non-supported expression")
+      (e:ReadPort) : error("Non-supported expression")
+      (e:WritePort) : error("Non-supported expression")
+      (e:DoPrim) : string-join $ switch {_ == op(e)} :
+         ADD-OP : [emit(args(e)[0]) " + " emit(args(e)[1])]
+         SUB-OP : [emit(args(e)[0]) " - " emit(args(e)[1])]
+         MUL-OP : [emit(args(e)[0]) " * " emit(args(e)[1])]
+         DIV-OP : [emit(args(e)[0]) " / " emit(args(e)[1])]
+         MOD-OP : [emit(args(e)[0]) " % " emit(args(e)[1])]
+         QUO-OP : [emit(args(e)[0]) " / " emit(args(e)[1])]
+         REM-OP : [emit(args(e)[0]) " % " emit(args(e)[1])]
+         ADD-WRAP-OP : [emit(args(e)[0]) " + " emit(args(e)[1])]
+         SUB-WRAP-OP : [emit(args(e)[0]) " - " emit(args(e)[1])]
+         LESS-OP : [emit(args(e)[0]) " < " emit(args(e)[1])]
+         LESS-EQ-OP : [emit(args(e)[0]) " <= " emit(args(e)[1])]
+         GREATER-OP : [emit(args(e)[0]) " > " emit(args(e)[1])]
+         GREATER-EQ-OP : [emit(args(e)[0]) " >= " emit(args(e)[1])]
+         NEQUAL-OP : [emit(args(e)[0]) " != " emit(args(e)[1])]
+         EQUAL-OP : [emit(args(e)[0]) " == " emit(args(e)[1])]
+         MUX-OP : [emit(args(e)[0]) " ? " emit(args(e)[1]) " : " emit(args(e)[2])]
+         PAD-OP : 
+            val x = args(e)[0]
+            val w = width!(type(x))
+            val diff = consts(e)[0] - w
+            ["{" diff "{" x "[" w - 1 "]}," emit(x)]
+         AS-UINT-OP : 
+            ["$unsigned(" emit(args(e)[0]) " "]
+         AS-SINT-OP : 
+            ["$signed(" emit(args(e)[0]) " "]
+         DYN-SHIFT-LEFT-OP : [emit(args(e)[0]) " << " emit(args(e)[1])]
+         DYN-SHIFT-RIGHT-OP : [emit(args(e)[0]) " >> " emit(args(e)[1])]
+         SHIFT-LEFT-OP : [emit(args(e)[0]) " << " emit(args(e)[1])]
+         SHIFT-RIGHT-OP : [emit(args(e)[0]) " >> " emit(args(e)[1])]
+         NEG-OP : ["-{" emit(args(e)[0]) "}"]
+         CONVERT-OP : 
+            match(type(args(e)[0])) :
+               (t:UIntType) : ["{1'b0," emit(args(e)[0]) "}"]
+               (t:SIntType) : [emit(args(e)[0])]
+         BIT-NOT-OP : ["!" emit(args(e)[0])]
+         BIT-AND-OP : [emit(args(e)[0]) " & " emit(args(e)[1])]
+         BIT-OR-OP : [emit(args(e)[0]) " | " emit(args(e)[1])]
+         BIT-XOR-OP : [emit(args(e)[0]) " ^ " emit(args(e)[1])]
+         CONCAT-OP : ["{" emit(args(e)[0]) "," emit(args(e)[1]) "}"]
+         BIT-SELECT-OP : [emit(args(e)[0]) "[" consts(e)[0] "]"]
+         BITS-SELECT-OP : [emit(args(e)[0]) "[" consts(e)[1] ":" consts(e)[0] "]"]
+         BIT-AND-REDUCE-OP : 
+            var v = emit(args(e)[0])
+            for x in tail(args(e)) do :
+               v = concat(v, [" & " emit(x)])
+            v
+         BIT-OR-REDUCE-OP : 
+            var v = emit(args(e)[0])
+            for x in tail(args(e)) do :
+               v = concat(v, [" | " emit(x)])
+            v
+         BIT-XOR-REDUCE-OP : 
+            var v = emit(args(e)[0])
+            for x in tail(args(e)) do :
+               v = concat(v, [" ^ " emit(x)])
+            v
+
+defn emit-module (m:Module) :
+   val wires = Vector<Streamable>()
+   val regs = Vector<Streamable>()
+   val inits = Vector<Streamable>()
+   val assigns = Vector<Streamable>()
+   val updates = Vector<Streamable>()
+   
+   defn emit-s (s:Stmt) :
+      match(s) :
+         (s:DefWire) : add(wires,["wire " get-width(type(s)) " " name(s) ";"])
+         (s:DefInstance) : false ; TODO fix this
+         (s:DefMemory) :
+            val vtype = type(s) as VectorType
+            val innerwidth = 
+            add(regs,["reg  " get-width(type(vtype)) " " name(s) " [0:" size(vtype) "];"])
+            add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
+            add(inits,[name(s) " = {" width!(type(vtype)) "{$random}};"])
+         (s:DefNode) :
+            if value(s) typeof Register :
+               val reg = value(s) as Register
+               add(regs,["reg  " get-width(type(reg)) " " name(s) ";"])
+               add(inits,[name(s) " = {" width!(type(reg)) "{$random}};"])
+               add(updates,["if(" emit(enable(reg)) ") begin"])
+               add(updates,["  " name(s) " <= " emit(value(reg)) ";"])
+               add(updates,["end"])
+            else if value(s) typeof ReadPort :
+               val rp = value(s) as ReadPort
+               add(assigns,["assign " name(s) " = " emit(mem(rp)) "[" emit(index(rp)) "];"])
+            else :
+               add(wires,["wire " get-width(type(value(s))) " " name(s) ";"])
+               add(assigns,["assign " name(s) " = " emit(value(s)) ";"])
+         (s:Begin) : do(emit-s, body(s))
+         (s:Connect) : 
+            if loc(s) typeof WritePort :
+               val wp = loc(s) as WritePort
+               add(updates,["if(" emit(enable(wp)) ") begin"])
+               add(updates,["  " emit(mem(wp)) "[" emit(index(wp)) "] <= " emit(exp(s)) ";"])
+               add(updates,["end"])
+            else :
+               add(assigns,["assign " emit(loc(s)) " = " emit(exp(s)) ";"])
+         (s) : s 
+   
+   emit-s(body(m))
+
+   ;==== Actually printing module =====
+   val port-indent = "    "
+   print-all(["module " name(m) "(input clk, input reset,\n"])
+   for (p in ports(m),i in 1 to false) do :
+      if name(p) !=`reset :
+         var end = ",\n"
+         if length(ports(m)) - 1 == i :
+            end = "\n);\n"
+         switch {_ == direction(p)} :
+            INPUT  : print-all([port-indent "input  " get-width(type(p)) " " name(p) end])
+            OUTPUT : print-all([port-indent "output " get-width(type(p)) " " name(p) end])
+
+   for w in wires do :
+      print("  ")
+      println-all(w)
+   for r in regs do :
+      print("  ")
+      println-all(r)
+
+   println("`ifndef SYNTHESIS")
+   println("  integer initvar;")
+   println("  initial begin")
+   println("    #0.002;")
+   for i in inits do :
+      print-all("    ")
+      println-all(i)
+   println("  end")
+   println("`endif")
+
+   for a in assigns do :
+      print("  ")
+      println-all(a)
+
+   println("  always @(posedge clk) begin")
+   for u in updates do :
+      print("  ")
+      println-all(u)
+   println("  end")
+
+   println("endmodule")
+
+
+public defn emit-verilog (file:String, c:Circuit) :
+   with-output-file{file, _} $ fn () :
+      for m in modules(c) do :
+         emit-module(m)
+   c

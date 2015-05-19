@@ -1,8 +1,8 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdefgh -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 
 ;CHECK: Resolve Genders
 circuit top :
-   module M :
+   module top :
       input i : UInt<10>
       output o : UInt<10>
       wire w : {x : UInt<10>, flip y : UInt<10>}

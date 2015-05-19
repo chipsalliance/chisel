@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x abcd -p ck | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p ck | tee %s.out | FileCheck %s
 
 ; CHECK: Resolve Kinds
 circuit top :

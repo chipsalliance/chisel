@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x abcdef -p cg | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cg | tee %s.out | FileCheck %s
 
 ;CHECK: Resolve Genders
 circuit top :
@@ -7,7 +7,7 @@ circuit top :
       input y : UInt
       output z : UInt
       z := sub-wrap(x, y)
-      ;CHECK: z@<g:f> := sub-wrap-uu(x@<g:m>, y@<g:m>)
+      ;CHECK: z@<g:f> := sub-wrap(x@<g:m>, y@<g:m>)
    module gcd :
       input a : UInt<16>
       input b : UInt<16>
@@ -20,7 +20,7 @@ circuit top :
       on-reset x := UInt(0)
       on-reset y := UInt(42)
       when gt(x, y) :
-      ;CHECK: when gt-uu(x@<g:m>, y@<g:m>) :
+      ;CHECK: when gt(x@<g:m>, y@<g:m>) :
          inst s of subtracter
          ;CHECK: inst s of subtracter@<g:m>
          s.x := x

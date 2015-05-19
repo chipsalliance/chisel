@@ -3,10 +3,10 @@
 ================================================
 
 ======== Current Tasks ========
-Declared references needs to understand scope
+Temp elimination needs to count # uses
+Declared references needs to understand scope <= check in high form check
 Size of vector type must be non-negative
 Check for recursively defined instances
-Update spec
 <>
 Add Unit Tests for each pass
    Separate passes into discrete chunks
@@ -14,10 +14,30 @@ Add Unit Tests for each pass
    Check after each pass
    write test that checks instance types are correctly lowered
 move width inference earlier
-Register should be a NODE, not a wire that is connected to, because you shouldn't be able to write to a wire that was connected to a Register? hmm.. think about this
+Remove Pad
+Fix all primops and width inference
+Verilog
+SeqMem
+BlackBoxes
+Scaling
+
+======== Verilog Backend Notes ========
+* 1) Emit module. No Parameters. Include clk and reset signals
+o 2) Emit all declarations (wires,regs)
+o 3) Initialize all regs with random values under synthesis
+o 4) Emit all connections as assign statements
+o 5) Emit assertions under always @ posedge clk, under synthesis
+o 6) Emit all register updates:
+      if(io_update_valid) begin
+         R4 <= io_update_bits_target;
+      end
+   Note: muxes turn into if/else statements within the always@ block
+Notes:
+   For now, emit mems as reg with nothing else.
+   WritePorts?
+
    
 ======== Update Core ==========
-Add source locaters
 Add exmodule
 Add vptype
 Add readwriteport
@@ -50,6 +70,7 @@ Width inference
    All widths are positive
    Pad's width is greater than value's width
    pad's width is greater than value's width
+   connect can connect from big to small??
 Check Gender
 
 ======== Other Passes ========
@@ -65,12 +86,7 @@ Verilog backend
 Eliminate skips
 
 ======== Consultations ========
-Stephen:
-   width equality
-      pin stephen on an example
-Patrick: 
-   move Infer-Widths to before vec expansion?
-   talk about primops
+Andrew: Way to keep Array information for backends to avoid code explosion
 
 ======== Think About ========
 <>

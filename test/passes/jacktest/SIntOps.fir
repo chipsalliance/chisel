@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p cTwd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cTwd | tee %s.out | FileCheck %s
 ; CHECK: Done!
 
 circuit SIntOps : 

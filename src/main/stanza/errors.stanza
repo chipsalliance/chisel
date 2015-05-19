@@ -15,12 +15,6 @@ defpackage firrtl/errors :
 ; * Only modules in circuit (no statements or expressions) <- parser
 ; * Module must be a reference in inst declaration
 
-;AFTER GENDER INFERENCE
-; o Nodes always male
-; o Accessors only have one gender, unless rdwr
-; o output/input only one gender
-; o correctly check for the base bundle
-
 ;AFTER WIDTH INFERENCE
 ; o No names
 ; o No Unknowns
@@ -49,6 +43,11 @@ defpackage firrtl/errors :
 ; * No name can be a prefix of any other name.
 ; * all references are declared
 ; * UInt only has positive ints
+
+public defstruct CheckHighForm <: Pass
+public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form
+public defmethod name (b:CheckHighForm) -> String : "High Form Check"
+public defmethod short-name (b:CheckHighForm) -> String : "high-form-check"
 
 ;----------------- Errors ------------------------
 defn NotUnique (info:FileInfo, name:Symbol) :
@@ -141,7 +140,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
 
    defn check-valid-loc (info:FileInfo,e:Expression) -> False :
       match(e) : 
-         (e:UIntValue|SIntValue|DoPrim|ReadPort|Register|Pad) :
+         (e:UIntValue|SIntValue|DoPrim|ReadPort|Register) :
             add(errors,InvalidLOC(info))
          (e) : false
 
@@ -182,10 +181,13 @@ public defn check-high-form (c:Circuit) -> Circuit :
             (s:DefInstance) : 
                if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
                   add(errors, ModuleNotDefined(info(s),name(module(s) as Ref)))
+               check-name(info(s),name(s))
                add(names,name(s))
             (s:DefNode) : 
+               check-name(info(s),name(s))
                add(names,name(s))
             (s:DefAccessor) :
+               check-name(info(s),name(s))
                add(names,name(s))
             (s:Connect) : 
                check-valid-loc(info(s),loc(s))
@@ -225,6 +227,11 @@ public defn check-high-form (c:Circuit) -> Circuit :
 ; o Cannot connect directly to a mem ever
 ; o onreset can only handle a register
 ; o Cannot use a mem in anything except an accessor, Readport, or Writeport
+
+public defstruct CheckKinds <: Pass
+public defmethod pass (b:CheckKinds) -> (Circuit -> Circuit) : check-kinds
+public defmethod name (b:CheckKinds) -> String : "Check Kinds"
+public defmethod short-name (b:CheckKinds) -> String : "check-kinds"
 
 ;----------------- Errors ---------------------
 defn NotMem (info:FileInfo, name:Symbol) :
@@ -277,8 +284,8 @@ public defn check-kinds (c:Circuit) -> Circuit :
             check-is-mem(info,mem(e))
             check-not-mem(info,index(e))
             check-not-mem(info,enable(e))
-         (e:Pad) :
-            check-not-mem(info,value(e))
+         ;(e:Pad) :
+            ;check-not-mem(info,value(e))
          (e) : do(check-not-mem{info,_},e)
    defn check-kinds-s (s:Stmt) -> False :
       do(check-kinds-e{info(s),_:Expression},s)
@@ -311,6 +318,11 @@ public defn check-kinds (c:Circuit) -> Circuit :
 ; o := has same types
 ; o 2nd arg in dshr/l must be UInt, in general do primops
 
+public defstruct CheckTypes <: Pass
+public defmethod pass (b:CheckTypes) -> (Circuit -> Circuit) : check-types
+public defmethod name (b:CheckTypes) -> String : "Check Types"
+public defmethod short-name (b:CheckTypes) -> String : "check-types"
+
 ;----------------- Errors ---------------------
 defn SubfieldNotInBundle (info:FileInfo, name:Symbol) :
    PassException $ string-join $
@@ -336,9 +348,9 @@ defn EnableNotUInt (info:FileInfo) :
    PassException $ string-join $
    [info ": Enable is not of UIntType."]
 
-defn PadNotGround (info:FileInfo) :
-   PassException $ string-join $
-   [info ": Illegal Pad on non-ground type."]
+;defn PadNotGround (info:FileInfo) :
+   ;PassException $ string-join $
+   ;[info ": Illegal Pad on non-ground type."]
 
 defn InvalidConnect (info:FileInfo) :
    PassException $ string-join $
@@ -391,9 +403,9 @@ public defn check-types (c:Circuit) -> Circuit :
             if type(enable(e)) != u() : add(errors,EnableNotUInt(info))
          (e:Register) :
             if type(enable(e)) != u() : add(errors,EnableNotUInt(info))
-         (e:Pad) :
-            val t = type(value(e))
-            if not (t == u() or t == s()) : add(errors,PadNotGround(info))
+         ;(e:Pad) :
+            ;val t = type(value(e))
+            ;if not (t == u() or t == s()) : add(errors,PadNotGround(info))
          (e:UIntValue|SIntValue) : false
       e
    defn check-types-s (s:Stmt) -> Stmt :
@@ -420,6 +432,11 @@ public defn check-types (c:Circuit) -> Circuit :
 ; o Accessors only have one gender, unless rdwr
 ; o output/input only one gender
 ; o correctly check for the base bundle
+
+public defstruct CheckGenders <: Pass
+public defmethod pass (b:CheckGenders) -> (Circuit -> Circuit) : check-genders
+public defmethod name (b:CheckGenders) -> String : "Check Genders"
+public defmethod short-name (b:CheckGenders) -> String : "check-genders"
 
 ;----------------- Errors ---------------------
 defn WrongGender (info:FileInfo,expr:Symbol,wrong:Symbol,right:Symbol) :
@@ -452,7 +469,7 @@ public defn check-genders (c:Circuit) -> Circuit :
             val f = {_ as Field} $ for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
             get-gender(exp(e),genders) * flip(f)
          (e:WIndex) : get-gender(exp(e),genders)
-         (e:Pad) : MALE
+         ;(e:Pad) : MALE
          (e:DoPrim) : MALE
          (e:UIntValue) : MALE
          (e:SIntValue) : MALE
@@ -466,7 +483,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (e:WRef) : false
          (e:WSubfield) : false
          (e:WIndex) : false
-         (e:Pad) : check-gender(info,genders,value(e),MALE)
+         ;(e:Pad) : check-gender(info,genders,value(e),MALE)
          (e:DoPrim) : 
             for e in args(e) do :
                check-gender(info,genders,e,MALE)
