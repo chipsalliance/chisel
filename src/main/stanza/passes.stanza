@@ -747,7 +747,7 @@ defn expand-expr (e:Expression) -> List<EF> :
          val f = {_ as Field} $
             for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
          if inst?(exp(e)) : 
-            println-all(["here with " exp(e)])
+            ;; println-all(["here with " exp(e)])
             for x in generate-entry(name(f),type(f)) map :
                EF(WSubfield(exp(e),name(x),type(x),gender(e)),flip(x))
          else :
@@ -1886,10 +1886,10 @@ defn flo-op-name (op:PrimOp) -> String :
       PAD-S-OP :          "arsh"
       NEG-U-OP :          "neg"
       NEG-S-OP :          "neg"
-      ;AS-UINT-U-OP :
-      ;AS-UINT-S-OP :
-      ;AS-SINT-U-OP :
-      ;AS-SINT-S-OP :
+      AS-UINT-U-OP : "mov"
+      AS-UINT-S-OP : "mov"
+      AS-SINT-U-OP : "mov"
+      AS-SINT-S-OP : "mov"
       SHIFT-LEFT-U-OP :  "lsh" 
       SHIFT-LEFT-S-OP :  "lsh" 
       SHIFT-RIGHT-U-OP : "rsh"
@@ -1898,8 +1898,8 @@ defn flo-op-name (op:PrimOp) -> String :
       DYN-SHIFT-LEFT-S-OP :  "lsh" 
       DYN-SHIFT-RIGHT-U-OP : "rsh" 
       DYN-SHIFT-RIGHT-S-OP : "arsh"
-      ;CONVERT-U-OP : 
-      ;CONVERT-S-OP : 
+      CONVERT-U-OP : "arsh"
+      CONVERT-S-OP : "mov"
       BIT-AND-OP :     "and"
       BIT-NOT-OP :     "not"
       BIT-OR-OP :      "or"
@@ -1970,6 +1970,8 @@ defn emit! (e:Expression,top:Symbol) :
              emit-all([" " args(e)[1] " " args(e)[0]], top)
            else :
              emit-all([" " args(e)[0] " " args(e)[1]], top)
+         else if op(e) == CONVERT-U-OP :
+           emit-all(["arsh'" prim-width(type(e)) " " args(e)[0] " 0"], top)
          else if op(e) == BIT-SELECT-OP :
            emit-all([flo-op-name(op(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
          else if op(e) == BITS-SELECT-OP :

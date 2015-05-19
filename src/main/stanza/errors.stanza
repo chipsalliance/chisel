@@ -158,9 +158,9 @@ public defn check-high-form (c:Circuit) -> Circuit :
             match(exp(e)) :
                (e:Ref|Subfield|Index) : false
                (e) : add(errors,InvalidIndex(info))
-         (e:UIntValue) :
-            if value(e) < 0 : 
-               add(errors,NegUInt(info))
+         ;; (e:UIntValue) :
+         ;; if value(e) < 0 : 
+         ;;    add(errors,NegUInt(info))
          (e) : false
       e
 
