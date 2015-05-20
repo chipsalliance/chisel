@@ -1,13 +1,12 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p cTwd | tee %s.out | FileCheck %s
-
-;CHECK: To Flo
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+;CHECK: Done!
 circuit GCD : 
   module GCD : 
-    input b : UInt<16>
-    input a : UInt<16>
     input e : UInt<1>
     output z : UInt<16>
     output v : UInt<1>
+    input a : UInt<16>
+    input b : UInt<16>
     
     reg x : UInt<16>
     reg y : UInt<16>
@@ -22,8 +21,5 @@ circuit GCD :
       x := a
       y := b
     z := x
-    node T_20 = UInt<1>(0)
-    node T_21 = eq(y, Pad(T_20,?))
-    v := T_21
-
-;CHECK: Finished To Flo
+    node T_20 = eq(y, UInt<1>(0))
+    v := T_20
