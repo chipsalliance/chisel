@@ -145,19 +145,22 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
          val vtype = type(s) as VectorType
          emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
       (s:DefNode) :
-         if value(s) typeof WritePort :
-            val e = value(s) as WritePort
-            val n = firrtl-gensym(`F)
-            emit-all([top "::" n " = wr'" prim-width(type(e)) " " enable(e) " " mem(e) " " index(e) " " top "::" name(s) "\n"], top)
-         else :
-           emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
+         emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
       (s:Begin) : do(emit-s{_, v, top}, body(s))
       (s:Connect) : 
-         val n = name(loc(s) as Ref)
-         if contains?(v,n) :
-            emit-all([top "::" n " = out'" prim-width(type(loc(s))) " " exp(s) "\n"], top)
-         else :
-            emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
+         match(loc(s)) :
+           (r:Ref) :
+             val n = name(r)
+             if contains?(v,n) :
+                emit-all([top "::" n " = out'" prim-width(type(r)) " " exp(s) "\n"], top)
+             else :
+                emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
+           (w:WritePort) :
+             val n = firrtl-gensym(`F)
+             emit-all([top "::" n " = wr'" prim-width(type(w)) " " enable(w) " " mem(w) " " index(w) " " exp(s) "\n"], top)
+           (o) :
+             println-all(["CONNEcT LOC " loc(s)])
+             error("Unknown Connect")
       (s) : s 
 
 defn emit-module (m:Module) :
