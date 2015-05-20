@@ -12,43 +12,44 @@ public defmethod name (b:Flo) -> String : "To Flo"
 ;============= FLO PRINTER ======================================
 ; Emit 
 
-defn flo-op-name (op:PrimOp) -> String :
+defn is-sint? (arg:Expression) -> True|False : type(arg) typeof SIntType
+
+defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
    switch {op == _ } :
-      ADD-OP :      "add"
-      ADD-WRAP-OP : "add"
-      SUB-OP :      "sub"
-      SUB-WRAP-OP : "sub"
-      MUL-OP :      "mul" ;; todo: signed version
-      DIV-OP :      "div" ;; todo: signed version
-      MOD-OP :      "mod" ;; todo: signed version
-      QUO-OP :      "div" ;; todo: signed version
-      REM-OP :      "mod" ;; todo: signed version
-      LESS-OP :        "lt"  ;; todo: signed version
-      LESS-EQ-OP :     "lte" ;; todo: swap args
-      GREATER-OP :     "lt"  ;; todo: swap args
-      GREATER-EQ-OP :  "lte" ;; todo: signed version
-      NEQUAL-OP :      "neq"
-      EQUAL-OP :       "eq"
-      MUX-OP :         "mux"
-      PAD-OP :         "rsh" ;; todo: signed version
-      NEG-OP :         "neg"
-      ;AS-UINT-U-OP :
-      ;AS-UINT-S-OP :
-      ;AS-SINT-U-OP :
-      ;AS-SINT-S-OP :
-      SHIFT-LEFT-OP :  "lsh" 
-      SHIFT-RIGHT-OP : "rsh"
+      ADD-OP :             "add"
+      ADD-WRAP-OP :        "add"
+      SUB-OP :             "sub"
+      SUB-WRAP-OP :        "sub"
+      MUL-OP :             "mul" ;; todo: signed version
+      DIV-OP :             "div" ;; todo: signed version
+      MOD-OP :             "mod" ;; todo: signed version
+      QUO-OP :             "div" ;; todo: signed version
+      REM-OP :             "mod" ;; todo: signed version
+      LESS-OP :            "lt"  ;; todo: signed version
+      LESS-EQ-OP :         "lte" ;; todo: swap args
+      GREATER-OP :         "lt"  ;; todo: swap args
+      GREATER-EQ-OP :      "lte" ;; todo: signed version
+      NEQUAL-OP :          "neq"
+      EQUAL-OP :           "eq"
+      MUX-OP :             "mux"
+      PAD-OP :             if is-sint?(args[0]): "arsh" else: "rsh"
+      NEG-OP :             "neg"
+      AS-UINT-OP :         "mov"
+      SHIFT-LEFT-OP :      "lsh" 
+      SHIFT-RIGHT-OP :     if is-sint?(args[0]): "arsh" else: "rsh"
       DYN-SHIFT-LEFT-OP :  "lsh" 
-      DYN-SHIFT-RIGHT-OP : "rsh" 
-      ;CONVERT-U-OP : 
-      BIT-AND-OP :     "and"
-      BIT-NOT-OP :     "not"
-      BIT-OR-OP :      "or"
-      BIT-XOR-OP :     "xor"
-      CONCAT-OP :      "cat"
-      BIT-SELECT-OP :  "rsh"
-      BITS-SELECT-OP : "rsh"
-      else : error $ string-join $ ["Unable to print Primop: " op]
+      DYN-SHIFT-RIGHT-OP : if is-sint?(args[0]): "arsh" else: "rsh"
+      CONVERT-OP :         if is-sint?(args[0]): "arsh" else: "rsh"
+      BIT-AND-OP :         "and"
+      BIT-NOT-OP :         "not"
+      BIT-OR-OP :          "or"
+      BIT-XOR-OP :         "xor"
+      CONCAT-OP :          "cat"
+      BIT-SELECT-OP :      "rsh"
+      BITS-SELECT-OP :     "rsh"
+      BIT-XOR-REDUCE-OP :  "xorr"
+      else :
+        error $ string-join $ ["Unable to print Primop: " op]
 
 defn sane-width (wd:Width) -> Int :
   match(wd) :
@@ -100,21 +101,21 @@ defn emit! (e:Expression,top:Symbol) :
          emit-all(["rd'" prim-width(type(e)) " " "1" " " mem(e) " " index(e)], top) ;; enable(e)
       (e:DoPrim) : 
          if cmp-op?(op(e)) :
-           emit-all([flo-op-name(op(e)) "'" prim-width(type(args(e)[0]))], top)
+           emit-all([flo-op-name(op(e), args(e)) "'" prim-width(type(args(e)[0]))], top)
            if greater-op?(op(e)) or greater-eq-op?(op(e)) :
              emit-all([" " args(e)[1] " " args(e)[0]], top)
            else :
              emit-all([" " args(e)[0] " " args(e)[1]], top)
          else if op(e) == BIT-SELECT-OP :
-           emit-all([flo-op-name(op(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
+           emit-all([flo-op-name(op(e), args(e)) "'1 " args(e)[0] " " consts(e)[0]], top)
          else if op(e) == BITS-SELECT-OP :
            val w = consts(e)[0] - consts(e)[1] + 1
-           emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+           emit-all([flo-op-name(op(e), args(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
          ;; else if op(e) == CONCAT-OP :
          ;;   val w = consts(e)[0] - consts(e)[1] + 1
-         ;;   emit-all([flo-op-name(op(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+         ;;   emit-all([flo-op-name(op(e), args(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
          else :
-           emit-all([flo-op-name(op(e)) "'" prim-width(type(e))], top)
+           emit-all([flo-op-name(op(e), args(e)) "'" prim-width(type(e))], top)
            ;if (op(e) == PAD-U-OP) or (op(e) == PAD-S-OP) :
              ;emit-all(["  " args(e)[0] " " consts(e)[0]], top)
            ;else :
