@@ -139,7 +139,7 @@ object PrimOp {
   val GreaterEqOp = PrimOp("geq")
   val EqualOp = PrimOp("eq")
   val PatternEqualOp = PrimOp("pattern-equal")
-  val PadOp = PrimOp("Pad")
+  val PadOp = PrimOp("pad")
   val NotEqualOp = PrimOp("neq")
   val NegOp = PrimOp("neg")
   val MultiplexOp = PrimOp("mux")
@@ -159,13 +159,6 @@ abstract class Immediate {
 abstract class Arg extends Immediate {
   def fullname: String
   def name: String
-}
-
-case class Pad(val x: Immediate, val amount: Int) extends Arg {
-  def padIt(s: String) = "Pad(" + s + (if (amount == -1) ",?" else ("," + amount)) + ")"
-  def fullname: String = padIt(x.fullname)
-  def name: String = padIt(x.name)
-  override def debugName: String = padIt(x.debugName)
 }
 
 case class Alias(val id: String) extends Arg {
