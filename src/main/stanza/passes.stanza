@@ -776,7 +776,7 @@ defn expand-expr (e:Expression) -> List<EF> :
          val f = {_ as Field} $
             for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
          if inst?(exp(e)) : 
-            println-all(["here with " exp(e)])
+            ;; println-all(["here with " exp(e)])
             for x in generate-entry(name(f),type(f)) map :
                EF(WSubfield(exp(e),name(x),type(x),gender(e)),flip(x))
          else :
@@ -1876,5 +1876,4 @@ defn to-real-ir (c:Circuit) :
       val modules* =
          for m in modules(c) map :
             Module(info(m),name(m), ports(m), to-stmt(body(m)))
-
 
