@@ -27,6 +27,7 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       ExpandIndexedConnects()
       ExpandWhens()
       InferWidths()
+      Pad()
       Inline()
       SplitExp()
       ToRealIR()

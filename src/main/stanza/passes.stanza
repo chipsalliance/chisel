@@ -1586,7 +1586,6 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
       println-debug("==== SOLUTIONS TABLE (Post backsolve) ====")
       for x in b do : println-debug(x)
       println-debug("=========================")
-
    b
    
 public defn width! (t:Type) -> Width :

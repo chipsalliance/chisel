@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 ; CHECK: Invalid index access to non-reference.
 ; CHECK: Invalid subfield access to non-reference.
 

@@ -3,15 +3,70 @@ defpackage firrtl/flo :
    import verse
    import firrtl/ir-utils
    import firrtl/ir2
+   import firrtl/passes
+
+;========== Pad Widths ==================
+
+public defstruct Pad <: Pass
+public defmethod pass (b:Pad) -> (Circuit -> Circuit) : pad-widths
+public defmethod name (b:Pad) -> String : "Pad Widths"
+
+defn int-width! (t:Type) -> Int :
+   match(width!(t)) :
+      (w:IntWidth) : width(w)
+      (w) : error("Non-int width")
+
+defn set-width (desired:Int,t:Type) -> Type :
+   match(t) :
+      (t:UIntType) : UIntType(IntWidth(desired))
+      (t:SIntType) : SIntType(IntWidth(desired))
+      (t) : error("Non-ground type")
+
+defn pad-widths-e (desired:Int,e:Expression) -> Expression :
+   match(e) :
+      (e:DoPrim) :
+         println(e)
+         val e* = map(pad-widths-e{desired,_},e)
+         val i = int-width!(type(e*))
+         if i > desired : error("Cannot pad a larger width to a smaller width")
+         else if i == desired : e*
+         else : DoPrim(PAD-OP,list(e*),list(),set-width(desired,type(e*)))
+      (e:WRef|WSubfield|WIndex) : 
+         println(e)
+         val i = int-width!(type(e))
+         if i > desired : error("Cannot pad a larger width to a smaller width")
+         else if i == desired : e
+         else : DoPrim(PAD-OP,list(e),list(),set-width(desired,type(e)))
+      (e:UIntValue) : 
+         val i = int-width!(type(e))
+         if i > desired : error("Cannot pad a larger width to a smaller width")
+         else : UIntValue(value(e),IntWidth(desired))
+      (e:SIntValue) : 
+         val i = int-width!(type(e))
+         if i > desired : error("Cannot pad a larger width to a smaller width")
+         else : SIntValue(value(e),IntWidth(desired))
+      (e) : error(to-string $ e)
+
+defn pad-widths-s (s:Stmt) -> Stmt :
+   match(map(pad-widths-s,s)) :
+      (s:Connect) : 
+         val i = int-width!(type(loc(s)))
+         val exp* = pad-widths-e(i,exp(s))
+         Connect(info(s),loc(s),exp*)
+      (s) : s
+
+public defn pad-widths (c:Circuit) -> Circuit :
+   Circuit{info(c),_,main(c)} $
+      for m in modules(c) map :
+         Module(info(m),name(m),ports(m),pad-widths-s(body(m)))
+
+;============= Flo Backend ================
 
 public defstruct Flo <: Pass :
    file : String
 public defmethod pass (b:Flo) -> (Circuit -> Circuit) : emit-flo{file(b),_}
 public defmethod name (b:Flo) -> String : "To Flo"
   
-;============= FLO PRINTER ======================================
-; Emit 
-
 defn is-sint? (arg:Expression) -> True|False : type(arg) typeof SIntType
 
 defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :

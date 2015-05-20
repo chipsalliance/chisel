@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 ; CHECK: Memory m cannot be a bundle type with flips.
 
 circuit Flip-Mem : 
