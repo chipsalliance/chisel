@@ -1,5 +1,5 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
-; CHECK: Done!
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+;CHECK: Done!
 
 circuit SIntOps : 
   module SIntOps : 
@@ -20,41 +20,34 @@ circuit SIntOps :
     output greateqout : UInt<1>
     output negout : SInt<16>
     
-    wire ub : UInt
-    ub := b
-    node T_44 = add-wrap(Pad(a,?), Pad(b,?))
-    addout := Pad(T_44,?)
-    node T_45 = sub-wrap(Pad(a,?), Pad(b,?))
-    subout := Pad(T_45,?)
-    node T_46 = mul(Pad(a,?), Pad(b,?))
-    node T_47 = bits(T_46, 15, 0)
-    timesout := Pad(T_47,?)
-    node T_48 = eq(Pad(b,?), Pad(SInt<1>(0),?))
-    node T_49 = mux(Pad(T_48,?), Pad(SInt<2>(1),?), Pad(b,?))
-    node T_50 = div(Pad(a,?), Pad(T_49,?))
-    divout := Pad(T_50,?)
-    modout := Pad(UInt<1>(0),?)
-    node T_51 = bits(ub, 3, 0)
-    node T_52 = dshl(a, T_51)
-    node T_53 = bits(T_52, 15, 0)
-    wire T_54 : SInt
-    T_54 := T_53
-    lshiftout := Pad(T_54,?)
-    node T_55 = dshr(a, ub)
-    wire T_56 : SInt
-    T_56 := T_55
-    rshiftout := Pad(T_56,?)
-    node T_57 = lt(Pad(a,?), Pad(b,?))
-    lessout := Pad(T_57,?)
-    node T_58 = gt(Pad(a,?), Pad(b,?))
-    greatout := Pad(T_58,?)
-    node T_59 = eq(Pad(a,?), Pad(b,?))
-    eqout := Pad(T_59,?)
-    node T_60 = neq(Pad(a,?), Pad(b,?))
-    noteqout := Pad(T_60,?)
-    node T_61 = leq(Pad(a,?), Pad(b,?))
-    lesseqout := Pad(T_61,?)
-    node T_62 = geq(Pad(a,?), Pad(b,?))
-    greateqout := Pad(T_62,?)
-    node T_63 = sub-wrap(Pad(SInt<1>(0),?), Pad(a,?))
-    negout := Pad(T_63,?)
+    node ub = as-UInt(b)
+    node T_38 = add-wrap(a, b)
+    addout := T_38
+    node T_39 = sub-wrap(a, b)
+    subout := T_39
+    node T_40 = mul(a, b)
+    node T_41 = bits(T_40, 15, 0)
+    timesout := T_41
+    node T_42 = mul(a, b)
+    node T_43 = bits(T_42, 15, 0)
+    divout := T_43
+    modout := UInt<1>(0)
+    node T_44 = shl(a, 12)
+    node T_45 = bits(T_44, 15, 0)
+    lshiftout := T_45
+    node T_46 = shr(a, 8)
+    rshiftout := T_46
+    node T_47 = lt(a, b)
+    lessout := T_47
+    node T_48 = gt(a, b)
+    greatout := T_48
+    node T_49 = eq(a, b)
+    eqout := T_49
+    node T_50 = neq(a, b)
+    noteqout := T_50
+    node T_51 = leq(a, b)
+    lesseqout := T_51
+    node T_52 = geq(a, b)
+    greateqout := T_52
+    node T_53 = sub-wrap(SInt<1>(0), a)
+    negout := T_53

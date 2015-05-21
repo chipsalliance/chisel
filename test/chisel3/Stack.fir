@@ -1,5 +1,6 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
-; CHECK: Done!
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+;CHECK: Done!
+
 circuit Stack : 
   module Stack : 
     input push : UInt<1>
@@ -9,35 +10,27 @@ circuit Stack :
     input dataIn : UInt<32>
     
     mem stack_mem : UInt<32>[16]
-    node T_30 = UInt<5>(0)
     reg sp : UInt<5>
-    on-reset sp := T_30
-    node T_31 = UInt<32>(0)
+    on-reset sp := UInt<5>(0)
     reg out : UInt<32>
-    on-reset out := T_31
+    on-reset out := UInt<32>(0)
     when en : 
-      node T_32 = UInt<5>(16)
-      node T_33 = lt(sp, T_32)
-      node T_34 = bit-and(push, T_33)
-      when T_34 : 
-        accessor T_35 = stack_mem[sp]
-        T_35 := dataIn
-        node T_36 = UInt<1>(1)
-        node T_37 = add-wrap(sp, T_36)
-        sp := T_37
+      node T_30 = lt(sp, UInt<5>(16))
+      node T_31 = bit-and(push, T_30)
+      when T_31 : 
+        accessor T_32 = stack_mem[sp]
+        T_32 := dataIn
+        node T_33 = add-wrap(sp, UInt<1>(1))
+        sp := T_33
       else : 
-        node T_38 = UInt<1>(0)
-        node T_39 = gt(sp, T_38)
-        node T_40 = bit-and(pop, T_39)
-        when T_40 : 
-          node T_41 = UInt<1>(1)
-          node T_42 = sub-wrap(sp, T_41)
-          sp := T_42
-      node T_43 = UInt<1>(0)
-      node T_44 = gt(sp, T_43)
-      when T_44 : 
-        node T_45 = UInt<1>(1)
-        node T_46 = sub-wrap(sp, T_45)
-        accessor T_47 = stack_mem[T_46]
-        out := T_47
+        node T_34 = gt(sp, UInt<1>(0))
+        node T_35 = bit-and(pop, T_34)
+        when T_35 : 
+          node T_36 = sub-wrap(sp, UInt<1>(1))
+          sp := T_36
+      node T_37 = gt(sp, UInt<1>(0))
+      when T_37 : 
+        node T_38 = sub-wrap(sp, UInt<1>(1))
+        accessor T_39 = stack_mem[T_38]
+        out := T_39
     dataOut := out

@@ -1,5 +1,6 @@
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
-; CHECK: Done!
+; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+;CHECK: Done!
+
 circuit RegisterVecShift : 
   module RegisterVecShift : 
     input load : UInt<1>
@@ -9,26 +10,18 @@ circuit RegisterVecShift :
     
     reg delays : UInt<4>[4]
     when reset : 
-      node T_39 = UInt<4>(0)
-      node T_40 = UInt<4>(0)
-      node T_41 = UInt<4>(0)
-      node T_42 = UInt<4>(0)
-      wire T_43 : UInt<4>[4]
-      T_43[0] := T_39
-      T_43[1] := T_40
-      T_43[2] := T_41
-      T_43[3] := T_42
-      delays := T_43
-    node T_44 = UInt<3>(5)
-    node T_45 = bit-and(T_44, load)
-    node T_46 = UInt<3>(4)
-    node T_47 = eq(T_45, T_46)
-    when T_47 : 
+      wire T_33 : UInt<4>[4]
+      T_33[0] := UInt<4>(0)
+      T_33[1] := UInt<4>(0)
+      T_33[2] := UInt<4>(0)
+      T_33[3] := UInt<4>(0)
+      delays := T_33
+    when load : 
       delays[0] := ins[0]
       delays[1] := ins[1]
       delays[2] := ins[2]
       delays[3] := ins[3]
-     else : when shift : 
+    else : when shift : 
         delays[0] := ins[0]
         delays[1] := delays[0]
         delays[2] := delays[1]

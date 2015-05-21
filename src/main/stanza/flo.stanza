@@ -26,24 +26,30 @@ defn pad-widths-e (desired:Int,e:Expression) -> Expression :
    match(e) :
       (e:DoPrim) :
          println(e)
-         val e* = map(pad-widths-e{desired,_},e)
-         val i = int-width!(type(e*))
-         if i > desired : error("Cannot pad a larger width to a smaller width")
-         else if i == desired : e*
-         else : DoPrim(PAD-OP,list(e*),list(),set-width(desired,type(e*)))
+         if contains?([ADD-OP,SUB-OP,MUL-OP,DIV-OP,MOD-OP,QUO-OP,REM-OP,ADD-WRAP-OP,SUB-WRAP-OP,MUX-OP,AS-UINT-OP,AS-SINT-OP,DYN-SHIFT-LEFT-OP,DYN-SHIFT-RIGHT-OP,SHIFT-LEFT-OP,SHIFT-RIGHT-OP,NEG-OP,CONVERT-OP,BIT-NOT-OP,BIT-OR-OP,BIT-XOR-OP,BIT-AND-REDUCE-OP,BIT-OR-REDUCE-OP,BIT-XOR-REDUCE-OP],op(e)) : 
+            val e* = map(pad-widths-e{desired,_},e)
+            val i = int-width!(type(e*))
+            if i > desired : 
+               DoPrim(BITS-SELECT-OP,list(e),list(0,desired),set-width(desired,type(e)))
+            else if i == desired : e*
+            else : DoPrim(PAD-OP,list(e*),list(),set-width(desired,type(e*)))
+         else : e
       (e:WRef|WSubfield|WIndex) : 
          println(e)
          val i = int-width!(type(e))
-         if i > desired : error("Cannot pad a larger width to a smaller width")
+         if i > desired : 
+            DoPrim(BITS-SELECT-OP,list(e),list(0,desired),set-width(desired,type(e)))
          else if i == desired : e
          else : DoPrim(PAD-OP,list(e),list(),set-width(desired,type(e)))
       (e:UIntValue) : 
          val i = int-width!(type(e))
-         if i > desired : error("Cannot pad a larger width to a smaller width")
+         if i > desired :
+            DoPrim(BITS-SELECT-OP,list(e),list(0,desired),set-width(desired,type(e)))
          else : UIntValue(value(e),IntWidth(desired))
       (e:SIntValue) : 
          val i = int-width!(type(e))
-         if i > desired : error("Cannot pad a larger width to a smaller width")
+         if i > desired : 
+            DoPrim(BITS-SELECT-OP,list(e),list(0,desired),set-width(desired,type(e)))
          else : SIntValue(value(e),IntWidth(desired))
       (e) : error(to-string $ e)
 
