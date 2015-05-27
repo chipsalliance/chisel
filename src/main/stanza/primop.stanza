@@ -5,6 +5,7 @@ defpackage firrtl/primops :
   import firrtl/ir-utils
   import firrtl/passes
 
+
 public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
    defn u () : UIntType(UnknownWidth())
    defn s () : SIntType(UnknownWidth())

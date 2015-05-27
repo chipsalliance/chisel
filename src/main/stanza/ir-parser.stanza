@@ -194,6 +194,7 @@ defsyntax firrtl :
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
+      stmt = (?x:#exp <> ?y:#exp!) : BulkConnect(first-info(form),x, y)
       stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x, y)
 
       stmt = ((?s:#stmt ?ss:#stmt ... ?rest ...)) :

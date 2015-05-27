@@ -134,6 +134,10 @@ public defstruct OnReset <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    loc: Expression
    exp: Expression
+public defstruct BulkConnect <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
+   loc: Expression
+   exp: Expression
 public defstruct Connect <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    loc: Expression

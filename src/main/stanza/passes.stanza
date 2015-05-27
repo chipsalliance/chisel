@@ -85,6 +85,11 @@ defstruct ConnectFromIndexed <: Stmt :
 
 
 ;================ WORKING IR UTILS =========================
+;defmethod equal? (f1:Flip, f2:Flip) -> True|False :
+;   switch fn ([x,y]) : f1 == x and f2 == y :
+;      [DEFAULT,DEFAULT] : true
+;      [REVERSE,REVERSE] : true
+;      else : false
 
 defn plus (g1:Gender,g2:Gender) -> Gender :
    switch fn ([x,y]) : g1 == x and g2 == y :
@@ -504,7 +509,7 @@ defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<
         val [s*,l*] = infer-types(conseq(s),l)
         val [s**,l**] = infer-types(alt(s),l)
         [Conditionally(info(s),pred(s),s*,s**),l]
-      (s:Connect|OnReset|EmptyStmt) : [s,l]
+      (s:Connect|BulkConnect|OnReset|EmptyStmt) : [s,l]
 
 defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
    val ptypes = 
@@ -607,6 +612,8 @@ defn resolve-genders (c:Circuit) :
                WDefAccessor(info(s),name(s),source*,index*,gender*)
             (s:Connect) : 
                Connect(info(s),resolve-expr(loc(s),FEMALE),resolve-expr(exp(s),MALE))
+            (s:BulkConnect) : 
+               BulkConnect(info(s),resolve-expr(loc(s),FEMALE),resolve-expr(exp(s),MALE))
             (s:OnReset) : 
                OnReset(info(s),resolve-expr(loc(s),FEMALE),resolve-expr(exp(s),MALE))
             (s:Conditionally) :
@@ -742,7 +749,6 @@ defn index-of-elem (t:BundleType, s:Symbol) -> Int :
          else : sum = sum + num-elems(type(f))
       error("Shouldn't be here")
 
-
 defn generate-entry (n:Symbol,t:Type) -> List<NTF> :
    defn uniquify (n*:Symbol) -> Symbol : symbol-join([n "_" n*])
    match(t) :
@@ -863,6 +869,28 @@ defn lower (body:Stmt) -> Stmt :
                   [MALE,FEMALE]  : 
                      if s typeof Connect : Connect(info(s),r*,l*)
                      else : OnReset(info(s),r*,l*)
+         (s:BulkConnect) :
+            val ls-fake = generate-entry(`null,type(loc(s)))
+            val rs-fake = generate-entry(`null,type(exp(s)))
+            val ls = expand-expr(loc(s))
+            val rs = expand-expr(exp(s))
+            val ls* = Vector<EF>()
+            val rs* = Vector<EF>()
+            for (l-fake in ls-fake,l in ls) do :
+               for (r-fake in rs-fake, r in rs) do :
+                  if name(l-fake) == name(r-fake) and flip(l-fake) == flip(r-fake) and type(l-fake) == type(r-fake) :
+                     add(ls*,l)
+                     add(rs*,r)
+            Begin $ for (l in to-list(ls*), r in to-list(rs*)) map :
+               val lgender = FEMALE * flip(l)
+               val rgender = MALE * flip(r)
+               val l* = set-gender(exp(l),lgender,flip(l))
+               val r* = set-gender(exp(r),rgender,flip(r))
+               println-all-debug(["Left: " l " with Gender: " lgender])
+               println-all-debug(["Right: " r " with Gender: " rgender])
+               switch fn ([x,y]) : lgender == x and rgender == y :
+                  [FEMALE,MALE]  : Connect(info(s),l*,r*)
+                  [MALE,FEMALE]  : Connect(info(s),r*,l*)
          (s:ConnectFromIndexed) : Begin(ls) where :
             val ctable = HashTable<Symbol,Vector<EF>>(symbol-hash)
             for e in exps(s) do :

@@ -3,23 +3,18 @@
 ================================================
 
 ======== Current Tasks ========
-Temp elimination needs to count # uses
-Declared references needs to understand scope <= check in high form check
-Size of vector type must be non-negative
-Check for recursively defined instances
-<>
-Add Unit Tests for each pass
-   Separate passes into discrete chunks
-   Push all tests entirely through
-   Check after each pass
-   write test that checks instance types are correctly lowered
-move width inference earlier
-Remove Pad
-Fix all primops and width inference
-Verilog
 SeqMem
 BlackBoxes
 Scaling
+move width inference earlier
+Temp elimination needs to count # uses
+Declared references needs to understand scope <= check in high form check
+Check for recursively defined instances
+Names in bundles must be unique
+Fix reset scope
+Add Unit Tests for each pass
+   Check after each pass
+   write test that checks instance types are correctly lowered
 
 ======== Verilog Backend Notes ========
 * 1) Emit module. No Parameters. Include clk and reset signals
@@ -35,7 +30,6 @@ o 6) Emit all register updates:
 Notes:
    For now, emit mems as reg with nothing else.
    WritePorts?
-
    
 ======== Update Core ==========
 Add exmodule
@@ -43,24 +37,8 @@ Add vptype
 Add readwriteport
 
 ======== Check Passes ==========
-Well-formed high firrtl 
-   Unique names per module
-   No name can be a prefix of any other name.
-   No nested modules
-   Only modules in circuit (no statements or expressions)
-   Cannot connect directly to a mem ever
-   Subfields are only on bundles, before type inference 
-   Can only connect to a Ref or Subfield or Index
-   UInt only has positive ints
+High-Firrtl
    No combinational loops
-   cannot connect to a pad, or a register. only connct to a reference
-   onreset can only handle a register
-   all references are declared
-   expression in pad must be a ground type
-   node's value cannot be a bundle with a flip in it
-   mems cannot be a bundle with flips
-   2nd arg in dshr/l must be UInt
-   pred in conditionally must be of type UInt
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once
@@ -71,7 +49,6 @@ Width inference
    Pad's width is greater than value's width
    pad's width is greater than value's width
    connect can connect from big to small??
-Check Gender
 
 ======== Other Passes ========
 ; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
@@ -82,7 +59,6 @@ constant folding (partial eval) pass
    push pad into literal
 common subexpression elimination pass
 deadcode elimination
-Verilog backend
 Eliminate skips
 
 ======== Consultations ========

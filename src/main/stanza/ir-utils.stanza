@@ -147,6 +147,8 @@ defmethod print (o:OutputStream, c:Stmt) :
          do(print{o,_}, join(body(c), "\n"))
       (c:Connect) :
          print-all(o, [loc(c) " := " exp(c)])
+      (c:BulkConnect) :
+         print-all(o, [loc(c) " <> " exp(c)])
       (c:OnReset) :
          print-all(o, ["on-reset " loc(c) " := " exp(c)])
       (c:EmptyStmt) :
@@ -231,6 +233,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:DefInstance) : DefInstance(info(c),name(c), f(module(c)))
       (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
       (c:Connect) : Connect(info(c),f(loc(c)), f(exp(c)))
+      (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
       (c:OnReset) : OnReset(info(c),f(loc(c)),f(exp(c)))
       (c) : c
 
