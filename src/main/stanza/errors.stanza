@@ -46,8 +46,9 @@ defpackage firrtl/errors :
 ; * Width sizes are positive
 ; * Primops have the correct number of arguments
 
-public defstruct CheckHighForm <: Pass
-public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form
+public defstruct CheckHighForm <: Pass :
+   sym : Symbol
+public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form{_,sym(b)}
 public defmethod name (b:CheckHighForm) -> String : "High Form Check"
 public defmethod short-name (b:CheckHighForm) -> String : "high-form-check"
 
@@ -132,25 +133,24 @@ defn contains?<?T> (c:?T,cs:Streamable<?T>) -> True|False :
          if x == c : myret(true)
       false
 
-defn is-prefix? (s:Symbol,v:Vector<Symbol>) -> Symbol|False :
+defn is-prefix? (s:Symbol,v:Vector<Symbol>,sym:Symbol) -> Symbol|False :
+   defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
+      var is? = true
+      val s1* = to-string(s1)
+      val s2* = to-string(s2)
+      for (x in s1*, y in s2*) do :
+         if x != y : is? = false
+      if length(s1*) > length(s2*) :
+         if s1*[length(s2*)] != to-string(sym)[0] : is? = false
+      if length(s1*) < length(s2*) :
+         if s2*[length(s1*)] != to-string(sym)[0] : is? = false
+      if length(s1*) == length(s2*) :
+         is? = false
+      is?
    label<Symbol|False> myret :
       for x in v do :
          if is-prefix?(x,s) : myret(x)
       false
-
-defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
-   var is? = true
-   val s1* = to-string(s1)
-   val s2* = to-string(s2)
-   for (x in s1*, y in s2*) do :
-      if x != y : is? = false
-   if length(s1*) > length(s2*) :
-      if s1*[length(s2*)] != '$' : is? = false
-   if length(s1*) < length(s2*) :
-      if s2*[length(s1*)] != '$' : is? = false
-   if length(s1*) == length(s2*) :
-      is? = false
-   is?
 
 defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
    defn correct-num (ne:Int|False,nc:Int) -> False :
@@ -196,7 +196,7 @@ defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInf
       BITS-SELECT-OP     : correct-num(1,2)
 
 ;--------------- Check High Form Pass -------------------
-public defn check-high-form (c:Circuit) -> Circuit : 
+public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit : 
    val errors = Vector<PassException>()
 
    defn check-valid-loc (info:FileInfo,e:Expression) -> False :
@@ -244,7 +244,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
    defn check-high-form-s (s:Stmt,names:Vector<Symbol>) -> Stmt :
       defn check-name (info:FileInfo,name:Symbol) -> False :
          if contains?(name,names) : add(errors,NotUnique(info,name))
-         val prefix = is-prefix?(name,names)
+         val prefix = is-prefix?(name,names,sym)
          if prefix typeof Symbol : add(errors,IsPrefix(info,name,prefix as Symbol))
 
       map(check-high-form-t{info(s),_:Type},s)
@@ -297,7 +297,9 @@ public defn check-high-form (c:Circuit) -> Circuit :
 
       
       add(names,`reset)
-      check-high-form-s(body(m),names)
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-high-form-s(body(m),names)
       false
    
    var number-top-m = 0
@@ -389,7 +391,9 @@ public defn check-kinds (c:Circuit) -> Circuit :
       do(check-kinds-s,s)
    
    for m in modules(c) do :
-      check-kinds-s(body(m))
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-kinds-s(body(m))
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
@@ -580,7 +584,9 @@ public defn check-types (c:Circuit) -> Circuit :
          s }()
    
    for m in modules(c) do :
-      check-types-s(body(m))
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-types-s(body(m))
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
@@ -682,6 +688,9 @@ public defn check-genders (c:Circuit) -> Circuit :
       val genders = HashTable<Symbol,Gender>(symbol-hash)
       for p in ports(m) do :
          genders[name(p)] = dir-to-gender(direction(p))
-      check-genders-s(body(m),genders)
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-genders-s(body(m),genders)
    throw(PassExceptions(errors)) when not empty?(errors)
    c
+

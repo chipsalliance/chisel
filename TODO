@@ -4,17 +4,18 @@
 
 ======== Current Tasks ========
 SeqMem
-BlackBoxes
-Scaling
 move width inference earlier
 Temp elimination needs to count # uses
 Declared references needs to understand scope <= check in high form check
 Check for recursively defined instances
 Names in bundles must be unique
 Fix reset scope
+Fix firrtl-gen so it is a relative pass, not global state
 Add Unit Tests for each pass
    Check after each pass
    write test that checks instance types are correctly lowered
+Scaling
+Do name-mangling differently, use _xEF or something like that
 
 ======== Verilog Backend Notes ========
 * 1) Emit module. No Parameters. Include clk and reset signals
@@ -32,7 +33,6 @@ Notes:
    WritePorts?
    
 ======== Update Core ==========
-Add exmodule
 Add vptype
 Add readwriteport
 
@@ -51,15 +51,11 @@ Width inference
    connect can connect from big to small??
 
 ======== Other Passes ========
-; RUN: firrtl -i %s -o %s.flo -x X -p c | tee %s.out | FileCheck %s
-; CHECK: Done!
-
 constant folding (partial eval) pass
    Get rid of unnecessary pads
    push pad into literal
 common subexpression elimination pass
 deadcode elimination
-Eliminate skips
 
 ======== Consultations ========
 Andrew: Way to keep Array information for backends to avoid code explosion

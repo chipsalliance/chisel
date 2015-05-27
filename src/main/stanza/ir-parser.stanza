@@ -151,9 +151,15 @@ defsyntax firrtl :
       module = (module ?name:#id! #:! (?ps:#port ... ?cs:#stmt ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Expected a statement here.")
-         Module(first-info(form),name, ps, Begin(cs))
+         InModule(first-info(form),name, ps, Begin(cs))
+      module = (exmodule ?name:#id! #:! (?ps:#port ... ?rest ...)) :
+         if not empty?(rest) :
+            FPE(rest, "Expected a port here.")
+         ExModule(first-info(form),name, ps)
       module != (module) :
          FPE(form, "Invalid syntax for module definition.")
+      module != (exmodule) :
+         FPE(form, "Invalid syntax for exmodule definition.")
    
    defrule port :
       port = (input ?name:#id! #:! ?type:#type!) : Port(first-info(form),name, INPUT, type)

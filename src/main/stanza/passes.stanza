@@ -9,7 +9,7 @@ defpackage firrtl/passes :
 
 ;============== Pass List ================
 public val standard-passes = to-list $ [
-   CheckHighForm()
+   CheckHighForm(expand-delin)
    TempElimination()
    ToWorkingIR()
    MakeExplicitReset()
@@ -309,7 +309,9 @@ defn temp-elimination (c:Circuit) :
    Circuit(info(c),modules*, main(c)) where :
       val modules* =
          for m in modules(c) map :
-            Module(info(m),name(m), ports(m), temp-elim-s(body(m)))
+            match(m) :
+               (m:InModule) : InModule(info(m),name(m), ports(m), temp-elim-s(body(m)))
+               (m:ExModule) : m
 
 ;================= Bring to Working IR ========================
 ; Returns a new Circuit with Refs, Subfields, Indexes and DefAccessors 
@@ -335,7 +337,9 @@ defn to-working-ir (c:Circuit) :
    Circuit(info(c),modules*, main(c)) where :
       val modules* =
          for m in modules(c) map :
-            Module(info(m),name(m), ports(m), to-stmt(body(m)))
+            match(m) :
+               (m:InModule) : InModule(info(m),name(m), ports(m), to-stmt(body(m)))
+               (m:ExModule) : m
 
 ;=============== MAKE EXPLICIT RESET =======================
 ; All modules have an implicit reset signal - however, the 
@@ -372,8 +376,11 @@ defn make-explicit-reset (c:Circuit) :
       var ports! = ports(m)
       if not contains?(explicit-reset,name(m)) :
          ports! = append(ports(m),list(Port(FileInfo(),`reset,INPUT,UIntType(IntWidth(1)))))
-      val body! = route-reset(body(m))
-      Module(info(m),name(m),ports!,body!)
+      match(m) :
+         (m:InModule) : 
+            val body! = route-reset(body(m))
+            InModule(info(m),name(m),ports!,body!)
+         (m:ExModule) : ExModule(info(m),name(m),ports!)
       
    defn make-explicit-reset (m:Module, c:Circuit) -> Module :
       val explicit-reset = find-explicit(c)
@@ -422,15 +429,20 @@ defn resolve-kinds (c:Circuit) :
       kinds[name(m)] = ModuleKind()
       for p in ports(m) do :
          kinds[name(p)] = PortKind()
-      find-stmt(body(m))
+      match(m) : 
+         (m:InModule) : find-stmt(body(m))
+         (m:ExModule) : false
     
    defn resolve-kinds (m:Module, c:Circuit) -> Module :
       val kinds = HashTable<Symbol,Kind>(symbol-hash)
       for m in modules(c) do :
          kinds[name(m)] = ModuleKind()
       find(m,kinds)   
-      val body! = resolve(body(m),kinds)
-      Module(info(m),name(m),ports(m),body!)
+      match(m) : 
+         (m:InModule) : 
+            val body! = resolve(body(m),kinds)
+            InModule(info(m),name(m),ports(m),body!)
+         (m:ExModule) : ExModule(info(m),name(m),ports(m))
 
    Circuit(info(c),modules*, main(c)) where :
       val modules* = 
@@ -516,8 +528,11 @@ defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
       for p in ports(m) map :
          name(p) => type(p)
    println-all-debug(append(ptypes,l))
-   val [s,l*] = infer-types(body(m),append(ptypes, l))
-   Module(info(m),name(m),ports(m),s)
+   match(m) :
+      (m:InModule) :
+         val [s,l*] = infer-types(body(m),append(ptypes, l))
+         InModule(info(m),name(m),ports(m),s)
+      (m:ExModule) : m
 
 defn infer-types (c:Circuit) -> Circuit :
    val l = 
@@ -570,8 +585,11 @@ defn resolve-genders (c:Circuit) :
       var done? = true
 
       defn resolve-iter (m:Module) -> Module : 
-         val body* = resolve-stmt(body(m))
-         Module(info(m),name(m),ports(m),body*)
+         match(m) :
+            (m:InModule) :
+               val body* = resolve-stmt(body(m))
+               InModule(info(m),name(m),ports(m),body*)
+            (m:ExModule) : m
 
       defn get-gender (n:Symbol,g:Gender) -> Gender :
          defn force-gender (n:Symbol,g:Gender) -> Gender : 
@@ -703,7 +721,9 @@ defn expand-accessors (c:Circuit) :
    Circuit(info(c),modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
-            Module(info(m),name(m),ports(m),expand-stmt(body(m)))
+            match(m) :
+               (m:InModule) : InModule(info(m),name(m),ports(m),expand-stmt(body(m)))
+               (m:ExModule) : m
 
 ;;=============== LOWERING TO GROUND TYPES =============================
 ; All non-ground (elevated) types (Vectors, Bundles) are expanded out to
@@ -750,7 +770,7 @@ defn index-of-elem (t:BundleType, s:Symbol) -> Int :
       error("Shouldn't be here")
 
 defn generate-entry (n:Symbol,t:Type) -> List<NTF> :
-   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n "_" n*])
+   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n expand-delin n*])
    match(t) :
       (t:BundleType) : 
          for f in fields(t) map-append :
@@ -936,9 +956,13 @@ defn lower (body:Stmt) -> Stmt :
    lower-stmt(body)
 
 defn lower-module (c:Circuit,m:Module) -> Module : 
-   Module(info(m),name(m),ports*,body*) where :
-      val body* = lower(body(m))
-      val ports* = lower-ports(ports(m))
+   val ports* = lower-ports(ports(m))
+   match(m) :
+      (m:InModule) :
+         val body* = lower(body(m))
+         InModule(info(m),name(m),ports*,body*)
+      (m:ExModule) :
+         ExModule(info(m),name(m),ports*)
 
 defn lower-to-ground (c:Circuit) -> Circuit :
    Circuit(info(c),modules*, main(c)) where :
@@ -961,15 +985,15 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
       DoPrim(EQUAL-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
    defn get-name (e:Expression) -> Symbol :
       match(e) :
-         (e:WRef) : symbol-join([name(e) `__])
-         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) `__])
-         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) `__])
+         (e:WRef) : symbol-join([name(e) gen-delin])
+         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) gen-delin])
+         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) gen-delin])
          (e) : `T
    match(s) :
       (s:ConnectToIndexed) : Begin $
          if length(locs(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(exp(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -983,7 +1007,7 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
       (s:ConnectFromIndexed) : Begin $
          if length(exps(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(loc(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(Connect(info(s),loc(s),head(exps(s))),DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -997,7 +1021,9 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
       (s) : map(expand-connect-indexed-stmt,s)
   
 defn expand-connect-indexed (m: Module) -> Module :
-   Module(info(m),name(m),ports(m),expand-connect-indexed-stmt(body(m)))
+   match(m) :
+      (m:InModule) : InModule(info(m),name(m),ports(m),expand-connect-indexed-stmt(body(m)))
+      (m:ExModule) : m
 
 defn expand-connect-indexed (c: Circuit) -> Circuit :
   Circuit(info(c),modules*, main(c)) where :
@@ -1201,63 +1227,49 @@ defn expand-whens (ports:List<Port>, table:HashTable<Symbol,SymbolicValue>,cons:
    for p in ports do :
       if direction(p) == OUTPUT :
          val ref = WRef(name(p),type(p),PortKind(),FEMALE)
-         add{cons,_} $ 
-            if has-nul?(table[name(p)]) : 
-               println("Uninitialized: ~" % [to-string(name(p))]);TODO actually collect error
-               EmptyStmt()
-            else : Connect(FileInfo(),ref,to-exp(table[name(p)]) as Expression)
+         if has-nul?(table[name(p)]) : 
+            println("Uninitialized: ~" % [to-string(name(p))]);TODO actually collect error
+         else : add{cons,_} $ Connect(FileInfo(),ref,to-exp(table[name(p)]) as Expression)
 
 defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stmt>,cons:Vector<Stmt>) -> Stmt :
    match(map(expand-whens{_,table,decs,cons},s)) : 
       (s:DefNode|DefMemory) : add(decs,s)
       (s:DefWire) : 
          add(decs,s)
-         add{cons,_} $ { 
-            val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
-            if has-nul?(table[name(s)]) : 
-               println("Uninitialized: ~" % [to-string(name(s))]);TODO actually collect error
-               EmptyStmt()
-            else : Connect(info(s),ref,to-exp(table[name(s)]) as Expression)
-            }()
+         val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
+         if has-nul?(table[name(s)]) : 
+            println("Uninitialized: ~" % [to-string(name(s))]);TODO actually collect error
+         else : add{cons,_} $ Connect(info(s),ref,to-exp(table[name(s)]) as Expression)
       (s:DefRegister) : 
-         ;add(decs,DefWire(info(s),name(s),type(s)))
-         ;add{cons,_} $ { 
-         ;   val ref = WRef(name(s),type(s),RegKind(),FEMALE)
-         ;   val e = to-exp(table[name(s)])
-         ;   match(e) : 
-         ;      (e:False) : EmptyStmt()
-         ;      (e:Expression) : Connect(info(s),ref,Register(type(s),e, to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
-         ;}()
          val e = to-exp(table[name(s)])
-         add{cons,_} $ { 
-            match(e) : 
-               (e:False) : EmptyStmt()
-               (e:Expression) : DefNode(info(s),name(s),Register(type(s),e,to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
-         }()
+         match(e) : 
+            (e:Expression) : 
+               add{decs,_} $ DefWire(info(s),name(s),type(s))
+               val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
+               add{cons,_} $ Connect(info(s),ref,Register(type(s),e,to-exp(optimize $ get-write-enable(table[name(s)])) as Expression))
+            (e:False) : false
       (s:WDefAccessor) : 
          val t = type(type(source(s)) as VectorType)
          val n = name(s)
-         add{cons,_} $ { 
             switch {_ == gender(s)} :
                MALE : 
-                  Begin $ list $ DefNode(info(s),n,ReadPort(source(s),index(s),t,get-read-enable(n,table)))
+                  add{decs,_} $ DefWire(info(s),n,t)
+                  val ref = WRef(n,t,WriteAccessorKind(),FEMALE)
+                  add{cons,_} $ Connect(info(s),ref,ReadPort(source(s),index(s),t,get-read-enable(n,table)))
                FEMALE :
                   add(decs,DefWire(info(s),n,t))
-                  val ref = WRef(n,t,WriteAccessorKind(),FEMALE)
-                  val e = to-exp(table[n])
-                  val s* = match(e) :
-                     (e:False) : 
-                        println("Uninitialized: ~" % [to-string(n)]) ;TODO actually collect error
-                        EmptyStmt()
-                     (e:Expression) : 
-                        Connect(info(s),ref,e)
+                  val ref = WRef(n,t,WriteAccessorKind(),MALE)
                   val enable = (to-exp $ optimize $ get-write-enable(table[n])) as Expression
                   val wp = WritePort(source(s),index(s),t,enable as Expression)
-                  Begin $ list(Connect(info(s),wp,ref),s*)
-         }()
+                  val e = to-exp(table[n])
+                  add{cons,_} $ Connect(info(s),wp,ref)
+                  match(e) :
+                     (e:False) : 
+                        println("Uninitialized: ~" % [to-string(n)]) ;TODO actually collect error
+                     (e:Expression) : 
+                        add{cons,_} $ Connect(info(s),ref,e)
       (s:DefInstance) : 
          add(decs,s)
-         add{cons,_} $ Begin $ 
             for f in fields(type(module(s)) as BundleType) map :
                if flip(f) == REVERSE : 
                   val n = to-symbol("~.~" % [name(s),name(f)]) ; only on inputs
@@ -1267,9 +1279,7 @@ defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stm
                   val sref = WSubfield(ref,f,bundle-field-type(type(module(s)),f),FEMALE)
                   if has-nul?(table[n]) : 
                      println("Uninitialized: ~" % [to-string(n)]);TODO actually collect error
-                     EmptyStmt()
-                  else : Connect(info(s),sref,to-exp(table[n]) as Expression)
-               else : EmptyStmt()
+                  else : add{cons,_} $ Connect(info(s),sref,to-exp(table[n]) as Expression)
       (s:Connect|Conditionally|OnReset|Begin|EmptyStmt) : false
    s
 
@@ -1375,34 +1385,37 @@ defn build-tables (s:Stmt,
       (s:DefMemory|DefNode|EmptyStmt) : false
          
 defn expand-whens (m:Module) -> Module :
-   val assign = HashTable<Symbol,SymbolicValue>(symbol-hash)
-   val resets = HashTable<Symbol,SymbolicValue>(symbol-hash)
-   val flattn = HashTable<Symbol,True|False>(symbol-hash)
+   match(m) :
+      (m:ExModule) : m
+      (m:InModule) : 
+         val assign = HashTable<Symbol,SymbolicValue>(symbol-hash)
+         val resets = HashTable<Symbol,SymbolicValue>(symbol-hash)
+         val flattn = HashTable<Symbol,True|False>(symbol-hash)
 
-   for p in ports(m) do :
-      if direction(p) == OUTPUT :
-         assign[name(p)] = SVNul()
-         flattn[name(p)] = false
-         
-   build-tables(body(m),assign,resets,flattn)
-   for x in assign do : assign[key(x)] = optimize(value(x))
-   for x in resets do : resets[key(x)] = optimize(value(x))
-   ;val enables = get-enables(assign,kinds)
-   ;for x in enables do : enables[key(x)] = optimize(value(x))
-         
-   println-debug("====== Assigns ======")
-   for x in assign do : println-debug(x)
-   println-debug("====== Resets ======")
-   for x in resets do : println-debug(x)
+         for p in ports(m) do :
+            if direction(p) == OUTPUT :
+               assign[name(p)] = SVNul()
+               flattn[name(p)] = false
+               
+         build-tables(body(m),assign,resets,flattn)
+         for x in assign do : assign[key(x)] = optimize(value(x))
+         for x in resets do : resets[key(x)] = optimize(value(x))
+         ;val enables = get-enables(assign,kinds)
+         ;for x in enables do : enables[key(x)] = optimize(value(x))
+               
+         println-debug("====== Assigns ======")
+         for x in assign do : println-debug(x)
+         println-debug("====== Resets ======")
+         for x in resets do : println-debug(x)
 
-   val table = merge-resets(assign,resets)
-   println-debug("====== Table ======")
-   for x in table do : println-debug(x)
-   val decs = Vector<Stmt>()
-   val cons = Vector<Stmt>()
-   expand-whens(ports(m),table,cons)
-   expand-whens(body(m),table,decs,cons)
-   Module(info(m),name(m),ports(m),Begin(append(to-list(decs),to-list(cons))))
+         val table = merge-resets(assign,resets)
+         println-debug("====== Table ======")
+         for x in table do : println-debug(x)
+         val decs = Vector<Stmt>()
+         val cons = Vector<Stmt>()
+         expand-whens(ports(m),table,cons)
+         expand-whens(body(m),table,decs,cons)
+         InModule(info(m),name(m),ports(m),Begin(append(to-list(decs),to-list(cons))))
 
 defn expand-whens (c:Circuit) -> Circuit :
    Circuit(info(c),modules*, main(c)) where :
@@ -1680,7 +1693,9 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
    val ports* = 
       for p in ports(m) map : Port(info(p),name(p),direction(p),h[name(p)])
          
-   Module(info(m),name(m),ports*,gen-constraints-s(body(m)))
+   match(m) :
+      (m:ExModule) : ExModule(info(m),name(m),ports*)
+      (m:InModule) : InModule(info(m),name(m),ports*,gen-constraints-s(body(m)))
 
 defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTable<Symbol,Type> :
    defn build-environment (s:Stmt) -> False :
@@ -1693,7 +1708,10 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
       do(build-environment,s)
    for p in ports(m) do :
       h[name(p)] = bundle-field-type(h[name(m)],name(p))
-   build-environment(body(m))
+
+   match(m) :
+      (m:ExModule) : false
+      (m:InModule) : build-environment(body(m))
    h
          
 defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
@@ -1734,9 +1752,12 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
       w*
 
    val modules* = for m in modules(c) map :
-      Module{info(m),name(m),_,mapr(reduce-var-widths-w,body(m))} $
-         for p in ports(m) map :
-            Port(info(p),name(p),direction(p),mapr(reduce-var-widths-w,type(p)))
+      val ports* = for p in ports(m) map :
+         Port(info(p),name(p),direction(p),mapr(reduce-var-widths-w,type(p)))
+
+      match(m) :
+         (m:ExModule) : ExModule(info(m),name(m),ports*)
+         (m:InModule) : InModule(info(m),name(m),ports*,mapr(reduce-var-widths-w,body(m)))
 
    Circuit(info(c),modules*,main(c))
 
@@ -1786,7 +1807,7 @@ public defmethod name (b:Inline) -> String : "Inline Instances"
 public defmethod short-name (b:Inline) -> String : "inline-instances"
 
 defn inline-instances (c:Circuit) :
-   val h = HashTable<Symbol,Module>(symbol-hash)
+   val h = HashTable<Symbol,InModule>(symbol-hash)
    val h-s = HashTable<Symbol,Stmt>(symbol-hash)
    defn inline-inst (s:Stmt) -> Stmt :
       match(map(inline-inst,s)) :
@@ -1809,17 +1830,17 @@ defn inline-instances (c:Circuit) :
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) "_" name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) expand-delin name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
-   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n "_" ref])
+   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n expand-delin ref])
    defn rename-e (e:Expression,n:Symbol) -> Expression :
       match(map(rename-e{_,n},e)) :
          (e:WRef) : WRef(rename(name(e),n),type(e),kind(e),gender(e))
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) "_" name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) expand-delin name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
    defn rename-s (s:Stmt,n:Symbol) -> Stmt :
@@ -1830,9 +1851,11 @@ defn inline-instances (c:Circuit) :
          (s:DefNode) : DefNode(info(s),rename(name(s),n),value(s))
          (s) : s
    for m in modules(c) do :
-      h[name(m)] = m
-   val top = (for m in modules(c) find : name(m) == main(c)) as Module
-   Circuit(info(c),list(Module(info(top),name(top),ports(top),inline-inst(body(top)))),main(c))
+      match(m) : 
+         (m:ExModule) : error("Cannot inline with external modules")
+         (m:InModule) : h[name(m)] = m
+   val top = (for m in modules(c) find : name(m) == main(c)) as InModule
+   Circuit(info(c),list(InModule(info(top),name(top),ports(top),inline-inst(body(top)))),main(c))
 
 
 ;================= Split Expressions ========================
@@ -1867,16 +1890,19 @@ defn split-exp (c:Circuit) :
          (e:DoPrim) : 
             val n* = 
                if n typeof False : firrtl-gensym(`T)
-               else : firrtl-gensym(symbol-join([n as Symbol `__]))
+               else : firrtl-gensym(symbol-join([n as Symbol gen-delin]))
             add(v,DefNode(info,n*,e))
             WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
          (e) : e
 
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map :
-         val v = Vector<Stmt>()
-         split-exp-s(body(m),v)
-         Module(info(m),name(m),ports(m),Begin(to-list(v)))
+         match(m) :
+            (m:InModule) :
+               val v = Vector<Stmt>()
+               split-exp-s(body(m),v)
+               InModule(info(m),name(m),ports(m),Begin(to-list(v)))
+            (m:ExModule) : m
 
 ;================= Bring to Real IR ========================
 ; Returns a new Circuit with only real IR nodes.
@@ -1902,5 +1928,60 @@ defn to-real-ir (c:Circuit) :
    Circuit(info(c),modules*, main(c)) where :
       val modules* =
          for m in modules(c) map :
-            Module(info(m),name(m), ports(m), to-stmt(body(m)))
+            match(m) :
+               (m:InModule) : InModule(info(m),name(m), ports(m), to-stmt(body(m)))
+               (m:ExModule) : m
+
+;================= Special Rename ========================
+; Returns a new Circuit with only real IR nodes.
+public defstruct SpecialRename <: Pass :
+   original-sym : Symbol
+   new-sym : Symbol
+public defmethod pass (b:SpecialRename) -> (Circuit -> Circuit) : special-rename{original-sym(b),new-sym(b),_:Circuit}
+public defmethod name (b:SpecialRename) -> String : "Special Rename"
+public defmethod short-name (b:SpecialRename) -> String : "special-rename"
+
+public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
+   defn rename (s:Symbol) -> Symbol :
+      val y = Vector<String>()
+      val os = to-string $ original-sym
+      val ns = to-string $ new-sym
+      defn rename (st:String) -> False :
+         if st == os : 
+            add(y,ns)
+         else if length(st) <= length(os) : 
+            add(y,st)
+         else :
+            if substring(st,0,length(os)) == os :
+               add(y,ns)
+               rename(substring(st,length(os),length(st)))
+            else : 
+               add(y,substring(st,0,1))
+               rename(substring(st,1,length(st)))
+      rename(to-string(s))
+      to-symbol $ string-join $ to-list(y)
+   defn to-exp (e:Expression) -> Expression :
+      match(map(to-exp,e)) :
+         (e:Ref) : Ref(rename(name(e)), type(e))
+         (e:Subfield) : Subfield(exp(e),rename(name(e)),type(e))
+         (e) : e
+   defn to-stmt (s:Stmt) -> Stmt :
+     match(map(to-exp,s)) :
+        (s:DefWire) : DefWire(info(s),rename(name(s)),type(s))
+        (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s))
+        (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
+        (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s))
+        (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
+        (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s))
+        (s) : map(to-stmt,s)
+
+   defn to-port (p:Port) -> Port : Port(info(p),rename(name(p)),direction(p),type(p))
+
+   Circuit(info(c),modules*, main(c)) where :
+      val modules* =
+         for m in modules(c) map :
+            match(m) :
+               (m:InModule) : InModule(info(m),name(m), map(to-port,ports(m)), to-stmt(body(m)))
+               (m:ExModule) : m
+
 

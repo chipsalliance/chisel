@@ -11,11 +11,11 @@
                wire q : { x : UInt, flip y : SInt }
                on-reset r1 := q    
 
-      ; CHECK: reg r1_x : UInt
-      ; CHECK: reg r1_y : SInt
-      ; CHECK: wire q_x : UInt
-      ; CHECK: wire q_y : SInt
-      ; CHECK: on-reset r1_x := q_x
-      ; CHECK: on-reset q_y := r1_y   
+      ; CHECK: reg r1$x : UInt
+      ; CHECK: reg r1$y : SInt
+      ; CHECK: wire q$x : UInt
+      ; CHECK: wire q$y : SInt
+      ; CHECK: on-reset r1$x := q$x
+      ; CHECK: on-reset q$y := r1$y   
 
 ; CHECK: Finished Lower To Ground

@@ -32,15 +32,15 @@ defn pad-widths-e (desired:Int,e:Expression) -> Expression :
             if i > desired : 
                DoPrim(BITS-SELECT-OP,list(e),list(0,desired),set-width(desired,type(e)))
             else if i == desired : e*
-            else : DoPrim(PAD-OP,list(e*),list(),set-width(desired,type(e*)))
+            else : DoPrim(PAD-OP,list(e*),list(desired),set-width(desired,type(e*)))
          else : e
-      (e:WRef|WSubfield|WIndex) : 
+      (e:WRef|WSubfield|WIndex|Register|ReadPort) : 
          println(e)
          val i = int-width!(type(e))
          if i > desired : 
             DoPrim(BITS-SELECT-OP,list(e),list(0,desired),set-width(desired,type(e)))
          else if i == desired : e
-         else : DoPrim(PAD-OP,list(e),list(),set-width(desired,type(e)))
+         else : DoPrim(PAD-OP,list(e),list(desired),set-width(desired,type(e)))
       (e:UIntValue) : 
          val i = int-width!(type(e))
          if i > desired :
@@ -64,7 +64,9 @@ defn pad-widths-s (s:Stmt) -> Stmt :
 public defn pad-widths (c:Circuit) -> Circuit :
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map :
-         Module(info(m),name(m),ports(m),pad-widths-s(body(m)))
+         match(m) :
+            (m:ExModule) : error("Cannot use flo backend with external modules")
+            (m:InModule) : InModule(info(m),name(m),ports(m),pad-widths-s(body(m)))
 
 ;============= Flo Backend ================
 
@@ -224,7 +226,7 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
              error("Unknown Connect")
       (s) : s 
 
-defn emit-module (m:Module) :
+defn emit-module (m:InModule) :
    val v = Vector<Symbol>()
    for port in ports(m) do :
       if name(port) ==`reset :
@@ -236,6 +238,6 @@ defn emit-module (m:Module) :
 
 public defn emit-flo (file:String, c:Circuit) :
    with-output-file{file, _} $ fn () :
-      emit-module(modules(c)[0])
+      emit-module(modules(c)[0] as InModule)
       false
    c

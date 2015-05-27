@@ -5,6 +5,9 @@ defpackage firrtl/ir2 :
 public defmulti info! (x:?) -> FileInfo
 public defmethod info! (x:?) : FileInfo()
 
+public val expand-delin = `$
+public val gen-delin = `#
+
 public definterface Direction
 public val INPUT = new Direction
 public val OUTPUT = new Direction
@@ -167,11 +170,20 @@ public defstruct Port :
    direction: Direction
    type: Type
 
-public defstruct Module :
+public definterface Module
+public defmulti name (m:Module) -> Symbol
+public defmulti ports (m:Module) -> List<Port>
+
+public defstruct InModule <: Module :
    info: FileInfo
-   name: Symbol
-   ports: List<Port>
+   name: Symbol with: (as-method => true)
+   ports: List<Port> with: (as-method => true)
    body: Stmt
+
+public defstruct ExModule <: Module :
+   info: FileInfo
+   name: Symbol with: (as-method => true)
+   ports: List<Port> with: (as-method => true)
 
 public defstruct Circuit :
    info: FileInfo

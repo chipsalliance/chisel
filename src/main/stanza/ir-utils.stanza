@@ -18,6 +18,10 @@ public defn firrtl-gensym (s:Symbol) -> Symbol :
    
 public defn firrtl-gensym () -> Symbol :
    firrtl-gensym(`gen)
+
+;public defn get-sym-hash (m:Circuit) -> HashTable<Symbol,Int> :
+   ;public defn get-sym-hash (c:Circuit) -> HashTable<Symbol,Int> :
+   
    
 ;============== Exceptions =====================
 
@@ -183,7 +187,7 @@ defmethod print (o:OutputStream, p:Port) :
    print-all(o, [direction(p) " " name(p) " : " type(p)])
    print-debug(o,p)
 
-defmethod print (o:OutputStream, m:Module) :
+defmethod print (o:OutputStream, m:InModule) :
    print-all(o, ["module " name(m) " :"])
    print-debug(o,m)
    print(o,"\n")
@@ -191,6 +195,14 @@ defmethod print (o:OutputStream, m:Module) :
    for p in ports(m) do :
       println(io,p)
    print(io,body(m))
+
+defmethod print (o:OutputStream, m:ExModule) :
+   print-all(o, ["exmodule " name(m) " :"])
+   print-debug(o,m)
+   print(o,"\n")
+   val io = IndentedStream(o, 3)
+   for p in ports(m) do :
+      println(io,p)
 
 defmethod print (o:OutputStream, c:Circuit) :
    print-all(o, ["circuit " main(c) " :"])
