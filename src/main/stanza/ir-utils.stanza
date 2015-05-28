@@ -9,19 +9,42 @@ public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|M
 
 ;============== GENSYM STUFF ======================
 
-val sym-hash = HashTable<Symbol,Int>(symbol-hash)
-public defn firrtl-gensym (s:Symbol) -> Symbol :
-   val cur = get?(sym-hash,s,0)
-   val nxt = cur + 1
-   sym-hash[s] = nxt
-   symbol-join([s cur])
-   
-public defn firrtl-gensym () -> Symbol :
-   firrtl-gensym(`gen)
 
-;public defn get-sym-hash (m:Circuit) -> HashTable<Symbol,Int> :
-   ;public defn get-sym-hash (c:Circuit) -> HashTable<Symbol,Int> :
+public defn firrtl-gensym (s:Symbol) -> Symbol : firrtl-gensym(s,HashTable<Symbol,Int>(symbol-hash))
+
+public defn firrtl-gensym (s:Symbol,sym-hash:HashTable<Symbol,Int>) -> Symbol :
+   defn get-new (s:Symbol, i:Int) -> Symbol :
+      val s* = symbol-join([s i])
+      if contains?(keys(sym-hash),s*) :
+         get-new(s,i + 1)
+      else :
+         sym-hash[s] = i
+         sym-hash[s*] = 0
+         s*
+   get-new(s,0)
    
+public defn firrtl-gensym (sym-hash:HashTable<Symbol,Int>) -> Symbol :
+   firrtl-gensym(`gen,sym-hash)
+
+public defn get-sym-hash (m:InModule) -> HashTable<Symbol,Int> :
+   val sym-hash = HashTable<Symbol,Int>(symbol-hash)
+   defn add-name (s:Symbol) -> False :
+      sym-hash[s] = 0
+   defn to-port (p:Port) -> False : add-name(name(p))
+   defn to-stmt (s:Stmt) -> Stmt :
+     match(s) :
+        (s:DefWire) : add-name(name(s))
+        (s:DefRegister) : add-name(name(s))
+        (s:DefInstance) : add-name(name(s))
+        (s:DefMemory) : add-name(name(s))
+        (s:DefNode) : add-name(name(s))
+        (s:DefAccessor) : add-name(name(s))
+        (s) : false
+     map(to-stmt,s)
+
+   to-stmt(body(m))
+   map(to-port,ports(m))
+   sym-hash
    
 ;============== Exceptions =====================
 
@@ -131,7 +154,8 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefRegister) : 
          print-all(o,["reg " name(c) " : " type(c)])
       (c:DefMemory) :
-         print-all(o,["mem " name(c) " : " type(c)])
+         if seq?(c) : print-all(o,["smem " name(c) " : " type(c)])
+         else       : print-all(o,["cmem " name(c) " : " type(c)])
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :
@@ -287,7 +311,7 @@ defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
    match(c) :
       (c:DefWire) : DefWire(info(c),name(c),f(type(c)))
       (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)))
-      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)) as VectorType)
+      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)) as VectorType,seq?(c))
       (c) : c
 
 public defmulti mapr<?T> (f: Width -> Width, t:?T&Type) -> T

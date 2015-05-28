@@ -38,6 +38,11 @@ defn remove-subfield (e:Expression) -> Expression :
       (e:Subfield) : Ref(to-symbol $ string-join $ [emit(exp(e)) "_" name(e)],type(e))
       (e) : e
 
+definterface VKind
+defstruct WireKind <: VKind 
+defstruct RegKind <: VKind
+defstruct SeqMemKind <: VKind
+defstruct ComMemKind <: VKind
 
 ;============ Verilog Backend =============
 
@@ -110,13 +115,17 @@ defn emit (e:Expression) -> String :
             v
 
 defn emit-module (m:InModule) :
-   val h = Vector<Symbol>()
+   val h = HashTable<Symbol,VKind>(symbol-hash)
    defn build-table (m:InModule) :
       defn build-table (s:Stmt) -> Stmt :
          match(map(build-table,s)) : 
+            (s:DefWire) : h[name(s)] = WireKind()
+            (s:DefMemory) : 
+               if seq?(s) : h[name(s)] = SeqMemKind()
+               else       : h[name(s)] = ComMemKind()
             (s:Connect) : 
                match(exp(s)) :
-                  (e:Register) : add(h,name(loc(s) as Ref))
+                  (e:Register) : h[name(loc(s) as Ref)] = RegKind()
                   (e) : false
             (s) : false
          s
@@ -130,11 +139,13 @@ defn emit-module (m:InModule) :
    val updates = Vector<Streamable>()
    val insts = HashTable<Symbol,Symbol>(symbol-hash) ; inst -> module
    val inst-ports = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
+
+   val sh = get-sym-hash(m)
    
    defn emit-s (s:Stmt) :
       match(map(remove-subfield,s)) :
          (s:DefWire) : 
-            if contains?(to-list $ h, name(s)) : 
+            if h[name(s)] == RegKind() : 
                add(regs,["reg  " get-width(type(s)) " " name(s) ";"])
             else :
                add(wires,["wire " get-width(type(s)) " " name(s) ";"])
@@ -147,13 +158,17 @@ defn emit-module (m:InModule) :
                add(inst-ports[name(s)], ["." name(f) "( " n* " )"])
          (s:DefMemory) :
             val vtype = type(s) as VectorType
-            val innerwidth = 
-            add(regs,["reg  " get-width(type(vtype)) " " name(s) " [0:" size(vtype) "];"])
-            add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
-            add(inits,[name(s) " = {" width!(type(vtype)) "{$random}};"])
+            if seq?(s) :
+               add(regs,["reg  " get-width(type(vtype)) " " name(s) " [0:" size(vtype) "];"])
+               add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
+               add(inits,[name(s) " = {" width!(type(vtype)) "{$random}};"])
+            else :
+               add(regs,["reg  " get-width(type(vtype)) " " name(s) " [0:" size(vtype) "];"])
+               add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
+               add(inits,[name(s) " = {" width!(type(vtype)) "{$random}};"])
          (s:DefNode) :
-               add(wires,["wire " get-width(type(value(s))) " " name(s) ";"])
-               add(assigns,["assign " name(s) " = " emit(value(s)) ";"])
+            add(wires,["wire " get-width(type(value(s))) " " name(s) ";"])
+            add(assigns,["assign " name(s) " = " emit(value(s)) ";"])
          (s:Begin) : do(emit-s, body(s))
          (s:Connect) : 
             if loc(s) typeof WritePort :
@@ -172,7 +187,17 @@ defn emit-module (m:InModule) :
                else if exp(s) typeof ReadPort :
                   val n = name(loc(s) as Ref)
                   val rp = exp(s) as ReadPort
-                  add(assigns,["assign " n " = " emit(mem(rp)) "[" emit(index(rp)) "];"])
+                  match(h[name(mem(rp) as Ref)]) :
+                     (k:SeqMemKind) : 
+                        val index* = Ref(firrtl-gensym(name(index(rp) as Ref),sh),type(index(rp)))
+                        add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"])
+                        add(inits,[name(index*) " = {" width!(type(index*)) "{$random}};"])
+                        add(updates,["if(" emit(enable(rp)) ") begin"])
+                        add(updates,["  " name(index*) " <= " emit(index(rp)) ";"])
+                        add(updates,["end"])
+                        add(assigns,["assign " n " = " emit(mem(rp)) "[" emit(index*) "];"])
+                     (k:ComMemKind) : 
+                        add(assigns,["assign " n " = " emit(mem(rp)) "[" emit(index(rp)) "];"])
                else :
                   add(assigns,["assign " emit(loc(s)) " = " emit(exp(s)) ";"])
          (s) : s 

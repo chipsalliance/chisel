@@ -20,9 +20,9 @@ circuit top :
       ; CHECK: (a$0$y a$1$y)[i] := b$y
       j := b
 
-      mem m : { x : UInt<32>, y : UInt<32> }[2]
-      ; CHECK: mem m$x : UInt<32>[2]
-      ; CHECK: mem m$y : UInt<32>[2]
+      cmem m : { x : UInt<32>, y : UInt<32> }[2]
+      ; CHECK: cmem m$x : UInt<32>[2]
+      ; CHECK: cmem m$y : UInt<32>[2]
 
       accessor c = m[i] ; MALE
       ; CHECK: accessor c$x = m$x[i]

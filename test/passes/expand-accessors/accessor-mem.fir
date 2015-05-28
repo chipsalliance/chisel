@@ -3,7 +3,7 @@
 ;CHECK: Expand Accessors
 circuit top :
    module top :
-      mem m : UInt<32>[2][2][2]
+      cmem m : UInt<32>[2][2][2]
       wire i : UInt<4>
       i := UInt(1)
       accessor a = m[i] ;CHECK: accessor a = m[i]

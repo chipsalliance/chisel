@@ -200,7 +200,7 @@ defn maybe-mov (e:Expression) -> String :
       (e) :           false
    if need-mov?: "mov " else: ""
 
-defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
+defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol,sh:HashTable<Symbol,Int>) :
    match(s) :
       (s:DefWire) : ""
       (s:DefInstance) : error("Shouldn't be here")
@@ -209,7 +209,7 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
          emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
       (s:DefNode) :
          emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
-      (s:Begin) : do(emit-s{_, v, top}, body(s))
+      (s:Begin) : do(emit-s{_, v, top,sh}, body(s))
       (s:Connect) : 
          match(loc(s)) :
            (r:Ref) :
@@ -219,14 +219,14 @@ defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol) :
              else :
                 emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
            (w:WritePort) :
-             val n = firrtl-gensym(`F)
+             val n = firrtl-gensym(`F,sh)
              emit-all([top "::" n " = wr'" prim-width(type(w)) " " enable(w) " " mem(w) " " index(w) " " exp(s) "\n"], top)
            (o) :
              println-all(["CONNEcT LOC " loc(s)])
              error("Unknown Connect")
       (s) : s 
 
-defn emit-module (m:InModule) :
+defn emit-module (m:InModule,sh:HashTable<Symbol,Int>) :
    val v = Vector<Symbol>()
    for port in ports(m) do :
       if name(port) ==`reset :
@@ -234,10 +234,10 @@ defn emit-module (m:InModule) :
       else : switch {_ == direction(port)} :
          INPUT : print-all([name(m) "::" name(port) " = " "in'" prim-width(type(port)) "\n"])
          OUTPUT : add(v,name(port))
-   emit-s(body(m), to-list(v), name(m))
+   emit-s(body(m), to-list(v), name(m),sh)
 
 public defn emit-flo (file:String, c:Circuit) :
    with-output-file{file, _} $ fn () :
-      emit-module(modules(c)[0] as InModule)
+      emit-module(modules(c)[0] as InModule,get-sym-hash(modules(c)[0] as InModule))
       false
    c

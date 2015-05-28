@@ -9,8 +9,8 @@ circuit Risc :
     input wrAddr : UInt<8>
     input wrData : UInt<32>
     
-    mem file : UInt<32>[256]
-    mem code : UInt<32>[256]
+    cmem file : UInt<32>[256]
+    cmem code : UInt<32>[256]
     reg pc : UInt<8>
     on-reset pc := UInt<8>(0)
     accessor inst = code[pc]

@@ -193,7 +193,8 @@ defsyntax firrtl :
    defrule statements :
       stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(first-info(form),name, t)
       stmt = (reg ?name:#id! #:! ?t:#type!) : DefRegister(first-info(form),name, t)
-      stmt = (mem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t)
+      stmt = (cmem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t, false)
+      stmt = (smem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t, true)
       stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name, m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name, e)
       stmt = (accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i)

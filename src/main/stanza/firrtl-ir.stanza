@@ -117,6 +117,7 @@ public defstruct DefMemory <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
    type: VectorType
+   seq?: True|False
 public defstruct DefNode <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol

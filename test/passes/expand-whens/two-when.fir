@@ -3,7 +3,7 @@
 ; CHECK: Expand Whens
 circuit top :
    module top :
-      mem m :{ x : UInt<1>, y : UInt<1> }[2] 
+      cmem m :{ x : UInt<1>, y : UInt<1> }[2] 
       wire i : UInt<1>
       wire p : UInt<1>
       wire q : { x : UInt<1>, y : UInt<1> }

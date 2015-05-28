@@ -866,7 +866,7 @@ defn lower (body:Stmt) -> Stmt :
                DefNode(info(s),name(s),exp(x))
          (s:DefMemory) : Begin $ 
             for x in generate-entry(name(s),type(type(s))) map :
-               DefMemory(info(s),name(x),VectorType(type(x),size(s)))
+               DefMemory(info(s),name(x),VectorType(type(x),size(s)), seq?(s))
          (s:WDefAccessor) : 
             val ls = generate-entry(name(s),type(s))
             val rs = generate-entry(name(source(s) as WRef),type(s))
@@ -980,7 +980,7 @@ public defmethod pass (b:ExpandIndexedConnects) -> (Circuit -> Circuit) : expand
 public defmethod name (b:ExpandIndexedConnects) -> String : "Expand Indexed Connects"
 public defmethod short-name (b:ExpandIndexedConnects) -> String : "expand-indexed-connects"
 
-defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
+defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
    defn equality (e1:Expression,e2:Expression) -> Expression :
       DoPrim(EQUAL-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
    defn get-name (e:Expression) -> Symbol :
@@ -993,7 +993,7 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
       (s:ConnectToIndexed) : Begin $
          if length(locs(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(index(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s)),sh),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -1007,7 +1007,7 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
       (s:ConnectFromIndexed) : Begin $
          if length(exps(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(index(s))),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s)),sh),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(Connect(info(s),loc(s),head(exps(s))),DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -1018,11 +1018,13 @@ defn expand-connect-indexed-stmt (s: Stmt) -> Stmt :
                      EmptyStmt()
                   )
             )
-      (s) : map(expand-connect-indexed-stmt,s)
+      (s) : map(expand-connect-indexed-stmt{_,sh},s)
   
 defn expand-connect-indexed (m: Module) -> Module :
    match(m) :
-      (m:InModule) : InModule(info(m),name(m),ports(m),expand-connect-indexed-stmt(body(m)))
+      (m:InModule) : 
+         val sh = get-sym-hash(m)
+         InModule(info(m),name(m),ports(m),expand-connect-indexed-stmt(body(m),sh))
       (m:ExModule) : m
 
 defn expand-connect-indexed (c: Circuit) -> Circuit :
@@ -1450,6 +1452,8 @@ public defstruct MaxWidth <: Width :
 public defstruct ExpWidth <: Width :
    arg1 : Width
 
+val width-name-hash = HashTable<Symbol,Int>(symbol-hash)
+
 public defmulti map<?T> (f: Width -> Width, w:?T&Width) -> T
 defmethod map (f: Width -> Width, w:Width) -> Width :
    match(w) :
@@ -1641,7 +1645,7 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
       match(map(gen-constraints-s,s)) :
          (s:DefWire) : DefWire(info(s),name(s),h[name(s)])
          (s:DefInstance) : DefInstance(info(s),name(s),gen-constraints(module(s)))
-         (s:DefMemory) : DefMemory(info(s),name(s),h[name(s)] as VectorType)
+         (s:DefMemory) : DefMemory(info(s),name(s),h[name(s)] as VectorType,seq?(s))
          (s:DefNode) : 
             val l = h[name(s)]
             val r = gen-constraints(value(s))
@@ -1677,14 +1681,14 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (e:UIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
-                  val w* = VarWidth(firrtl-gensym(`w))
+                  val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
                   add(v,WGeq(w*,IntWidth(ceil-log2(value(e)))))
                   UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
-                  val w* = VarWidth(firrtl-gensym(`w))
+                  val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
                   add(v,WGeq(w*,IntWidth(1 + ceil-log2(abs(value(e))))))
                   SIntValue(value(e),w*)
                (w) : e
@@ -1763,7 +1767,7 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
 
 defn remove-unknowns-w (w:Width) -> Width :
    match(w) :
-      (w:UnknownWidth) : VarWidth(firrtl-gensym(`w)) 
+      (w:UnknownWidth) : VarWidth(firrtl-gensym(`w,width-name-hash))
       (w) : w
 defn remove-unknowns (t:Type) -> Type : mapr(remove-unknowns-w,t)
 
@@ -1847,7 +1851,7 @@ defn inline-instances (c:Circuit) :
       map{rename-e{_,n},_} $ match(map(rename-s{_,n},s)) :
          (s:DefWire) : DefWire(info(s),rename(name(s),n),type(s))
          (s:DefInstance) : error("Shouldn't be here")
-         (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s))
+         (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s),seq?(s))
          (s:DefNode) : DefNode(info(s),rename(name(s),n),value(s))
          (s) : s
    for m in modules(c) do :
@@ -1872,35 +1876,36 @@ defn full-name (e:Expression) -> Symbol :
       (e) : error("Non-supported expression.")
 
 defn split-exp (c:Circuit) :
-   defn split-exp-s (s:Stmt,v:Vector<Stmt>) -> False :
+   defn split-exp-s (s:Stmt,v:Vector<Stmt>,sh:HashTable<Symbol,Int>) -> False :
+      defn split-exp-e (e:Expression,n:Symbol|False,info:FileInfo) -> Expression :
+         match(map(split-exp-e{_,n,info},e)) :
+            (e:DoPrim) : 
+               val n* = 
+                  if n typeof False : firrtl-gensym(`T,sh)
+                  else : firrtl-gensym(symbol-join([n as Symbol gen-delin]),sh)
+               add(v,DefNode(info,n*,e))
+               WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
+            (e) : e
       match(s) :
          (s:Begin) : 
-            defn f (s:Stmt) -> False: split-exp-s(s,v)
+            defn f (s:Stmt) -> False: split-exp-s(s,v,sh)
             do(f,s)
          (s:Conditionally) : error("Shouldn't be here")
          (s:Connect) :
             match(loc(s)) :
-               (e:WritePort) : add(v,map(split-exp-e{_,v,full-name(exp(s)),info(s)},s))
-               (e) : add(v,map(split-exp-e{_,v,full-name(loc(s)),info(s)},s))
-         (s:DefNode) : add(v,map(split-exp-e{_,v,name(s),info(s)},s))
-         (s) : add(v,map(split-exp-e{_,v,false,info(s)},s))
+               (e:WritePort) : add(v,map(split-exp-e{_,full-name(exp(s)),info(s)},s))
+               (e) : add(v,map(split-exp-e{_,full-name(loc(s)),info(s)},s))
+         (s:DefNode) : add(v,map(split-exp-e{_,name(s),info(s)},s))
+         (s) : add(v,map(split-exp-e{_,false,info(s)},s))
       false
-   defn split-exp-e (e:Expression,v:Vector<Stmt>,n:Symbol|False,info:FileInfo) -> Expression :
-      match(map(split-exp-e{_,v,n,info},e)):
-         (e:DoPrim) : 
-            val n* = 
-               if n typeof False : firrtl-gensym(`T)
-               else : firrtl-gensym(symbol-join([n as Symbol gen-delin]))
-            add(v,DefNode(info,n*,e))
-            WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
-         (e) : e
 
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map :
          match(m) :
             (m:InModule) :
                val v = Vector<Stmt>()
-               split-exp-s(body(m),v)
+               val sh = get-sym-hash(m)
+               split-exp-s(body(m),v,sh)
                InModule(info(m),name(m),ports(m),Begin(to-list(v)))
             (m:ExModule) : m
 
@@ -1970,7 +1975,7 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
         (s:DefWire) : DefWire(info(s),rename(name(s)),type(s))
         (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s))
         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
-        (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s))
+        (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s))
         (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
         (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s))
         (s) : map(to-stmt,s)
