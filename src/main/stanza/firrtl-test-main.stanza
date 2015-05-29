@@ -49,7 +49,6 @@ defn get-passes (pass-names:List<String>) -> List<Pass> :
       p as Pass
          
 defn main () :
-   println("HERE")
    val args = commandline-arguments()
    var input = false
    var output = false
@@ -65,7 +64,6 @@ defn main () :
       if s == "-p" : printvars = args[i + 1]
       if s == "-s" : add(pass-args,args[i + 1])
 
-   println("THERE")
    if input == false : 
       error("No input file provided. Use -i flag.")
    if output == false : 
@@ -77,7 +75,6 @@ defn main () :
    val c = parse-firrtl(lexed)
    set-printvars!(to-list(printvars))
    
-   println("EVERYWHERE")
    if compiler == false :
       run-passes(c,get-passes(to-list(pass-names)))
    else :
