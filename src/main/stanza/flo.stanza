@@ -114,6 +114,7 @@ defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
       MUX-OP :             "mux"
       NEG-OP :             "neg"
       AS-UINT-OP :         "mov"
+      AS-SINT-OP :         "mov"
       SHIFT-LEFT-OP :      "lsh" 
       SHIFT-RIGHT-OP :     if is-sint?(args[0]): "arsh" else: "rsh"
       DYN-SHIFT-LEFT-OP :  "lsh" 
@@ -191,9 +192,9 @@ defn emit! (e:Expression,top:Symbol) :
          else if op(e) == BITS-SELECT-OP :
            val w = consts(e)[0] - consts(e)[1] + 1
            emit-all([flo-op-name(op(e), args(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
-         ;; else if op(e) == CONCAT-OP :
-         ;;   val w = consts(e)[0] - consts(e)[1] + 1
-         ;;   emit-all([flo-op-name(op(e), args(e)) "'" w " " args(e)[0] " " consts(e)[1]], top)
+         else if op(e) == CONCAT-OP :
+           val w = prim-width(type(args(e)[1]))
+           emit-all([flo-op-name(op(e), args(e)) "'" w " " args(e)[0] " " args(e)[1]], top)
          else if op(e) == PAD-OP or op(e) == CONVERT-OP :
            emit-all([flo-op-name(op(e), args(e)) "'" prim-width(type(e)) " " args(e)[0] " 0"], top)
          else :

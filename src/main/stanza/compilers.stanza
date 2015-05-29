@@ -13,7 +13,7 @@ public defstruct StandardFlo <: Compiler :
 public defmethod passes (c:StandardFlo) -> List<Pass> :
    to-list $ [
       CheckHighForm()
-      TempElimination()
+      ;; TempElimination()
       ToWorkingIR()
       MakeExplicitReset()
       ResolveKinds()
@@ -39,7 +39,7 @@ public defstruct StandardVerilog <: Compiler :
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
       CheckHighForm()
-      TempElimination()
+      ;; TempElimination()
       ToWorkingIR()
       MakeExplicitReset()
       ResolveKinds()
