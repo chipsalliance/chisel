@@ -48,6 +48,7 @@ High-Firrtl
 After adding dynamic assertions, insert bounds check with accessor expansion
 Well-formed low firrtl
    All things only assigned to once
+   Register/ReadPort/WritePort are only in correct spots
 Width inference
    No names
    No Unknowns
@@ -55,6 +56,7 @@ Width inference
    Pad's width is greater than value's width
    pad's width is greater than value's width
    connect can connect from big to small??
+Width pad check?
 
 ======== Other Passes ========
 constant folding (partial eval) pass

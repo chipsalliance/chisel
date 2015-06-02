@@ -60,11 +60,14 @@ defn pad-widths-e (desired:Int,e:Expression) -> Expression :
          if i > desired : trim(desired, e)
          else : SIntValue(value(e),IntWidth(desired))
       (e:Register) :
-         trim-pad(desired, Register(type(e), pad-widths-e(int-width!(type(e)), value(e)), pad-widths-e(1, enable(e))))
+         val value* = pad-widths-e(desired, value(e))
+         Register(type(value*), value*, pad-widths-e(1, enable(e)))
       (e:ReadPort) :
-         trim-pad(desired, ReadPort(mem(e), self-pad-widths-e(index(e)), type(e), pad-widths-e(1, enable(e))))
+         if int-width!(type(e)) != desired : error("ReadPort has different width than desired")
+         else : ReadPort(mem(e), self-pad-widths-e(index(e)), type(e), pad-widths-e(1, enable(e)))
       (e:WritePort) :
-         trim-pad(desired, WritePort(mem(e), self-pad-widths-e(index(e)), type(e), pad-widths-e(1, enable(e))))
+         if int-width!(type(e)) != desired : error("WritePort has different width than desired")
+         else : WritePort(mem(e), self-pad-widths-e(index(e)), type(e), pad-widths-e(1, enable(e)))
       (e) : error(to-string $ e)
 
 defn pad-widths-s (s:Stmt) -> Stmt :

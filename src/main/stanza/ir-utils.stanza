@@ -445,11 +445,12 @@ public defn merge!<?K,?V> (a:HashTable<?K,?V>, b:HashTable<K,V>) :
       a[key(e)] = value(e)
 
 public defn pow (x:Int,y:Int) -> Int :
-   var x* = 1
-   var y* = y
-   while y* != 0 :
-      x* = x* * x
-      y* = y* - 1
-   x*
+   var x* = to-long(1)
+   var y* = to-long(y)
+   while y* != to-long(0) :
+      x* = x* * to-long(x)
+      y* = y* - to-long(1)
+   if x* > to-long(2147483647) : error("Value too big for Int")
+   else : to-int $ to-string(x*)
 
 
