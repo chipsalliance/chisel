@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
 
 circuit Stack : 
@@ -9,7 +9,7 @@ circuit Stack :
     output dataOut : UInt<32>
     input dataIn : UInt<32>
     
-    mem stack_mem : UInt<32>[16]
+    cmem stack_mem : UInt<32>[16]
     reg sp : UInt<5>
     on-reset sp := UInt<5>(0)
     reg out : UInt<32>

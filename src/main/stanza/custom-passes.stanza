@@ -45,7 +45,7 @@ defn when-coverage (port-name:Symbol, reg-name:Symbol, instrument?:HashTable<Sym
    val sym = HashTable<Symbol,Int>(symbol-hash)
    val w1 = IntWidth(1)
    val t1 = UIntType(w1)
-   val u1 = UIntValue(1,w1)
+   val u1 = UIntValue(to-long $ 1,w1)
    defn when-coverage (s:Stmt) -> Stmt :
       match(s) :
          (s:Conditionally) : 
@@ -70,7 +70,7 @@ defn when-coverage (port-name:Symbol, reg-name:Symbol, instrument?:HashTable<Sym
    if length(w-ls) != 0 :
       val reg-ref = Ref(reg-name,UIntType(IntWidth(length(w-ls))))
       add{logic,_} $ DefRegister(FileInfo(),name(reg-ref),type(reg-ref))
-      add{logic,_} $ OnReset(FileInfo(),reg-ref,UIntValue(0,IntWidth(length(w-ls))))
+      add{logic,_} $ OnReset(FileInfo(),reg-ref,UIntValue(to-long $ 0,IntWidth(length(w-ls))))
       for (x in w-ls, i in 0 to false) do :
          add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
          add{logic,_} $ Connect(FileInfo(),x,DoPrim(BIT-SELECT-OP,list(reg-ref),list(i),UIntType(w1)))
@@ -80,7 +80,7 @@ defn when-coverage (port-name:Symbol, reg-name:Symbol, instrument?:HashTable<Sym
    if length(i-ls) != 0 :
       for (x in i-ls, i in 0 to false) do :
          add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
-         add{logic,_} $ Connect(FileInfo(),x,UIntValue(0,UnknownWidth()))
+         add{logic,_} $ Connect(FileInfo(),x,UIntValue(to-long $ 0,UnknownWidth()))
 
    if instrument?[name(m)] : add{logic,_} $ Connect(FileInfo(),port-ref,concat-all(append(w-ls,i-ls)))
 

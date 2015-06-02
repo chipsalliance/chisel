@@ -22,11 +22,6 @@ defpackage firrtl/errors :
 ; o pad's width is greater than value's width
 ; o widths are large enough to contain value
 
-;AFTER LOWERING
-; o All things connect to once
-; o no reg
-; o no accessors
-
 ;AFTER ??????
 ; o No combinational loops
 ; o cannot connect to a pad, or a register. only connct to a reference
@@ -233,9 +228,8 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
                (e:Ref|Subfield|Index) : false
                (e) : add(errors,InvalidIndex(info))
          (e:DoPrim) : check-high-form-primop(e,errors,info)
-         ;; (e:UIntValue) :
-         ;; if value(e) < 0 : 
-         ;;    add(errors,NegUInt(info))
+         (e:UIntValue) :
+            if value(e) < to-long $ 0 : add(errors,NegUInt(info))
          (e) : false
       map(check-high-form-w{info,_:Width},e)
       map(check-high-form-t{info,_:Type},e)
@@ -694,3 +688,134 @@ public defn check-genders (c:Circuit) -> Circuit :
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
+;================= High Form Check ==========================
+;AFTER LOWERING
+; o All things connect to once
+; o no reg
+; o no accessors
+; o only vecs are for memories
+; o no bundles (future, will have them for mems)
+; o
+;
+;public defstruct CheckLowForm <: Pass :
+;   sym : Symbol
+;public defmethod pass (b:CheckLowForm) -> (Circuit -> Circuit) : check-low-form{_,sym(b)}
+;public defmethod name (b:CheckLowForm) -> String : "Low Form Check"
+;public defmethod short-name (b:CheckLowForm) -> String : "low-form-check"
+;
+;;----------------- Errors ------------------------
+;defn NotUnique (info:FileInfo, name:Symbol) :
+;   PassException $ string-join $
+;   [info ": Reference " name " does not have a unique name."]
+;
+;
+;;---------------- Helper Functions --------------
+;
+;;--------------- Check Low Form Pass -------------------
+;public defn check-low-form (c:Circuit,sym:Symbol) -> Circuit : 
+;   val errors = Vector<PassException>()
+;
+;   defn check-high-form-w (info:FileInfo,w:Width) -> Width :
+;      match(w) :
+;         (w:IntWidth) : 
+;            if width(w) < 0 : add(errors,NegWidth(info))
+;            w
+;         (w) : w
+;
+;   defn check-high-form-t (info:FileInfo,t:Type) -> Type :
+;      match(map(check-high-form-t{info,_},t)) :
+;         (t:VectorType) : 
+;            if size(t) < 0 : add(errors,NegVecSize(info))
+;         (t) : false
+;      map(check-high-form-w{info,_:Width},t)
+;      
+;   defn check-high-form-e (info:FileInfo,e:Expression,names:Vector<Symbol>) -> Expression :
+;      match(map(check-high-form-e{info,_,names},e)) :
+;         (e:Ref) : 
+;            if not contains?(name(e),names) : 
+;               add(errors,UndeclaredReference(info,name(e)))
+;         (e:Subfield) : 
+;            match(exp(e)) :
+;               (e:Ref|Subfield|Index) : false
+;               (e) : add(errors,InvalidSubfield(info))
+;         (e:Index) : 
+;            match(exp(e)) :
+;               (e:Ref|Subfield|Index) : false
+;               (e) : add(errors,InvalidIndex(info))
+;         (e:DoPrim) : check-high-form-primop(e,errors,info)
+;         (e:UIntValue) :
+;            if value(e) < to-long $ 0 : add(errors,NegUInt(info))
+;         (e) : false
+;      map(check-high-form-w{info,_:Width},e)
+;      map(check-high-form-t{info,_:Type},e)
+;      e
+;
+;   defn check-high-form-s (s:Stmt,names:Vector<Symbol>) -> Stmt :
+;      defn check-name (info:FileInfo,name:Symbol) -> False :
+;         if contains?(name,names) : add(errors,NotUnique(info,name))
+;         val prefix = is-prefix?(name,names,sym)
+;         if prefix typeof Symbol : add(errors,IsPrefix(info,name,prefix as Symbol))
+;
+;      map(check-high-form-t{info(s),_:Type},s)
+;
+;      map{check-high-form-s{_,names},_} $ { 
+;         match(map(check-high-form-e{info(s),_,names},s)) :
+;            (s:DefWire|DefRegister) :
+;               check-name(info(s),name(s))
+;               add(names,name(s))
+;            (s:DefMemory) : 
+;               check-name(info(s),name(s))
+;               add(names,name(s))
+;               if has-flip?(type(s)) : add(errors, MemWithFlip(info(s), name(s)))
+;            (s:DefInstance) : 
+;               if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
+;                  add(errors, ModuleNotDefined(info(s),name(module(s) as Ref)))
+;               check-name(info(s),name(s))
+;               add(names,name(s))
+;            (s:DefNode) : 
+;               check-name(info(s),name(s))
+;               add(names,name(s))
+;            (s:DefAccessor) :
+;               check-name(info(s),name(s))
+;               add(names,name(s))
+;            (s:Connect) : 
+;               check-valid-loc(info(s),loc(s))
+;            (s:BulkConnect) : 
+;               check-valid-loc(info(s),loc(s))
+;            (s) : false
+;         s }()
+;
+;   defn check-high-form-m (m:Module) -> False :
+;      val names = Vector<Symbol>()
+;      for m in modules(c) do :
+;         add(names,name(m))
+;      for p in ports(m) do :
+;         add(names,name(p))
+;         if name(p) == `reset :
+;            if direction(p) == OUTPUT : 
+;               add(errors,WrongReset(info!(m),name(m)))
+;            else :
+;               if type(p) typeof UIntType :
+;                  if width(type(p) as UIntType) != IntWidth(1) : 
+;                     add(errors,WrongReset(info!(m),name(m)))
+;               else :
+;                  add(errors,WrongReset(info!(m),name(m)))
+;         map(check-high-form-t{info(p),_},type(p))
+;         map(check-high-form-w{info(p),_},type(p))
+;
+;
+;      
+;      add(names,`reset)
+;      match(m) :
+;         (m:ExModule) : false
+;         (m:InModule) : check-high-form-s(body(m),names)
+;      false
+;   
+;   var number-top-m = 0
+;   for m in modules(c) do :
+;      if name(m) == main(c) : number-top-m = number-top-m + 1
+;      check-high-form-m(m)
+;   if number-top-m != 1 : add(errors,NoTopModule(info!(c),main(c)))
+;   throw(PassExceptions(errors)) when not empty?(errors)
+;   c
+;

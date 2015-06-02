@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
 
 circuit SIntOps : 
@@ -26,15 +26,15 @@ circuit SIntOps :
     node T_39 = sub-wrap(a, b)
     subout := T_39
     node T_40 = mul(a, b)
-    node T_41 = bits(T_40, 15, 0)
-    timesout := T_41
+    node T_41 = bits(as-UInt(T_40), 15, 0)
+    timesout := as-SInt(T_41)
     node T_42 = mul(a, b)
-    node T_43 = bits(T_42, 15, 0)
-    divout := T_43
-    modout := UInt<1>(0)
+    node T_43 = bits(as-UInt(T_42), 15, 0)
+    divout := as-SInt(T_43)
+    modout := SInt<1>(0)
     node T_44 = shl(a, 12)
-    node T_45 = bits(T_44, 15, 0)
-    lshiftout := T_45
+    node T_45 = bits(as-UInt(T_44), 15, 0)
+    lshiftout := as-SInt(T_45)
     node T_46 = shr(a, 8)
     rshiftout := T_46
     node T_47 = lt(a, b)

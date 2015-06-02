@@ -56,9 +56,11 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ExpandIndexedConnects()
       ExpandWhens()
       InferWidths()
+      Pad()
       SplitExp()
       ToRealIR()
-      SpecialRename(`#,`_)
+      SpecialRename(`#,`__)
+      SpecialRename(`$,`_)
       Verilog(file(c))
    ]
 

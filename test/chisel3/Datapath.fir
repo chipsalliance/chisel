@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
 
 circuit Datapath : 
@@ -97,7 +97,7 @@ circuit Datapath :
     input waddr : UInt<5>
     input wdata : UInt<32>
     
-    mem regs : UInt<32>[32]
+    cmem regs : UInt<32>[32]
     node T_495 = eq(raddr1, UInt<1>(0))
     node T_496 = bit-not(T_495)
     accessor T_497 = regs[raddr1]

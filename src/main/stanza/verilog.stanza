@@ -24,7 +24,10 @@ defn width! (t:Type) -> Int :
 
 defn emit (w:Width) -> String :
    match(w) : 
-      (w:IntWidth) : string-join $ ["[" width(w) ":0]"] ;TODO check if need to special case 0 or 1 width wires
+      (w:IntWidth) : 
+         if width(w) >= 1 : string-join $ ["[" width(w) - 1 ":0]"] ;TODO check if need to special case 0 or 1 width wires
+         else : ""
+
       (w) : error("Non-supported width type.")
 
 defn get-width (t:Type) -> String :
@@ -77,15 +80,15 @@ defn emit (e:Expression) -> String :
             val x = args(e)[0]
             val w = width!(type(x))
             val diff = consts(e)[0] - w
-            ["{" diff "{" x "[" w - 1 "]}," emit(x)]
+            ["{{" diff "{" emit(x) "[" w - 1 "]}}, " emit(x) " }"]
          AS-UINT-OP : 
-            ["$unsigned(" emit(args(e)[0]) " "]
+            ["$unsigned(" emit(args(e)[0]) ")"]
          AS-SINT-OP : 
-            ["$signed(" emit(args(e)[0]) " "]
+            ["$signed(" emit(args(e)[0]) ")"]
          DYN-SHIFT-LEFT-OP : [emit(args(e)[0]) " << " emit(args(e)[1])]
          DYN-SHIFT-RIGHT-OP : [emit(args(e)[0]) " >> " emit(args(e)[1])]
-         SHIFT-LEFT-OP : [emit(args(e)[0]) " << " emit(args(e)[1])]
-         SHIFT-RIGHT-OP : [emit(args(e)[0]) " >> " emit(args(e)[1])]
+         SHIFT-LEFT-OP : [emit(args(e)[0]) " << " consts(e)[0]]
+         SHIFT-RIGHT-OP : [emit(args(e)[0]) " >> " consts(e)[0]]
          NEG-OP : ["-{" emit(args(e)[0]) "}"]
          CONVERT-OP : 
             match(type(args(e)[0])) :
@@ -239,12 +242,15 @@ defn emit-module (m:InModule) :
       println-all(a)
 
    for x in insts do :
-      println-all(["  " value(x) " " key(x) ".clk(clk),"])
+      println-all(["  " value(x) " " key(x) " ("])
+      print("       ")
+      print-all([".clk( clk )"])
       for (y in inst-ports[key(x)],i in 1 to false) do :
+        print(",\n")
         print("       ")
         print-all(y)
-        if length(inst-ports[key(x)]) != i :
-          print(",\n")
+        ;if length(inst-ports[key(x)]) != i :
+          ;print(",\n")
       println("\n  );")
 
    if length(updates) != 0 :

@@ -3,14 +3,15 @@
 ================================================
 
 ======== Current Tasks ========
-SeqMem
+Add print, assert
 move width inference earlier
+   Required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits
+Low FIRRTL pass analysis
 Temp elimination needs to count # uses
 Declared references needs to understand scope <= check in high form check
 Check for recursively defined instances
 Names in bundles must be unique
 Fix reset scope
-Fix firrtl-gen so it is a relative pass, not global state
 Add Unit Tests for each pass
    Check after each pass
    write test that checks instance types are correctly lowered
@@ -31,6 +32,11 @@ o 6) Emit all register updates:
 Notes:
    For now, emit mems as reg with nothing else.
    WritePorts?
+Checks:
+   names in fields should be special renamed
+   widths are -1 of size
+   zero width?
+
    
 ======== Update Core ==========
 Add vptype
@@ -61,7 +67,6 @@ deadcode elimination
 Andrew: Way to keep Array information for backends to avoid code explosion
 
 ======== Think About ========
-<>
 subword accesses
 verilog style guide
 annotation system
@@ -69,8 +74,6 @@ zero-width wires
 expanding mems (consider changing defmem to be size, and element type)
 Multi-streams for print statements/asserts (Jack)
 Consider def female node. (Patrick) 
-Talk to palmer/patrick about how writing passes is going to be supported
-Figure out how widths propogate for all updated primops (Adam)
 Add FIFOs to the IR (Palmer)
 Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
 Union Types

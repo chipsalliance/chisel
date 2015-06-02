@@ -999,7 +999,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 0 to false, l in locs(s)) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(i,UnknownWidth())),
+                     equality(ref,UIntValue(to-long $ i,UnknownWidth())),
                      Connect(info(s),l,exp(s)),
                      EmptyStmt()
                   )
@@ -1013,7 +1013,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(i,UnknownWidth())),
+                     equality(ref,UIntValue(to-long $ i,UnknownWidth())),
                      Connect(info(s),loc(s),e),
                      EmptyStmt()
                   )
@@ -1059,8 +1059,8 @@ public defmethod short-name (b:ExpandWhens) -> String : "expand-whens"
 
 ; ======== Expression Computation Library ===========
 
-val zero = UIntValue(0,IntWidth(1))
-val one = UIntValue(1,IntWidth(1))
+val zero = UIntValue(to-long $ 0,IntWidth(1))
+val one = UIntValue(to-long $ 1,IntWidth(1))
 
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
@@ -1501,7 +1501,6 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
 defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
    if a typeof Int and b typeof Int : f(a as Int, b as Int)
    else : false
-
    
 defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
    defn contains? (n:Symbol,h:HashTable<Symbol,?>) -> True|False : key?(h,n)
@@ -1682,14 +1681,14 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(ceil-log2(value(e)))))
+                  add(v,WGeq(w*,IntWidth(to-int $ to-string $ ceil-log2(value(e)))))
                   UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(1 + ceil-log2(abs(value(e))))))
+                  add(v,WGeq(w*,IntWidth(1 + to-int $ to-string $ ceil-log2(abs(value(e))))))
                   SIntValue(value(e),w*)
                (w) : e
          (e) : e
@@ -1869,10 +1868,10 @@ public defmethod pass (b:SplitExp) -> (Circuit -> Circuit) : split-exp
 public defmethod name (b:SplitExp) -> String : "Split Expressions"
 public defmethod short-name (b:SplitExp) -> String : "split-expressions"
 
-defn full-name (e:Expression) -> Symbol :
+defn full-name (e:Expression) -> Symbol|False :
    match(e) :
       (e:WRef) : name(e)
-      (e:WSubfield) : to-symbol $ string-join([full-name(exp(e)) "." name(e)])
+      (e:WSubfield) : false
       (e) : error("Non-supported expression.")
 
 defn split-exp (c:Circuit) :
@@ -1959,19 +1958,26 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
          else :
             if substring(st,0,length(os)) == os :
                add(y,ns)
+               println(st)
+               println(substring(st,length(os),length(st)))
                rename(substring(st,length(os),length(st)))
             else : 
                add(y,substring(st,0,1))
                rename(substring(st,1,length(st)))
       rename(to-string(s))
       to-symbol $ string-join $ to-list(y)
+   defn to-type (t:Type) -> Type :
+      match(map(to-type,t)) :
+         (t:BundleType) : BundleType $ 
+            for f in fields(t) map : Field(rename(name(f)),flip(f),type(f))
+         (t) : t
    defn to-exp (e:Expression) -> Expression :
-      match(map(to-exp,e)) :
+      map{to-type,_} $ match(map(to-exp,e)) :
          (e:Ref) : Ref(rename(name(e)), type(e))
          (e:Subfield) : Subfield(exp(e),rename(name(e)),type(e))
          (e) : e
    defn to-stmt (s:Stmt) -> Stmt :
-     match(map(to-exp,s)) :
+     map{to-type,_} $ match(map(to-exp,s)) :
         (s:DefWire) : DefWire(info(s),rename(name(s)),type(s))
         (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s))
         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))

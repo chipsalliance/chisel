@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
 
 circuit Tbl : 
@@ -8,7 +8,7 @@ circuit Tbl :
     output o : UInt<16>
     input we : UInt<1>
     
-    mem m : UInt<10>[256]
+    cmem m : UInt<10>[256]
     o := UInt<1>(0)
     when we : 
       accessor T_13 = m[i]

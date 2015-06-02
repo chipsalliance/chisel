@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
 
 circuit Tile : 
@@ -97,7 +97,7 @@ circuit Tile :
     input waddr : UInt<5>
     input wdata : UInt<32>
     
-    mem regs : UInt<32>[32]
+    cmem regs : UInt<32>[32]
     node T_1616 = eq(raddr1, UInt<1>(0))
     node T_1617 = bit-not(T_1616)
     accessor T_1618 = regs[raddr1]
@@ -1026,7 +1026,7 @@ circuit Tile :
     input enq : {valid : UInt<1>, flip ready : UInt<1>, bits : {mask : UInt<4>, tag : UInt<5>, rw : UInt<1>, addr : UInt<32>}}
     output deq : {valid : UInt<1>, flip ready : UInt<1>, bits : {mask : UInt<4>, tag : UInt<5>, rw : UInt<1>, addr : UInt<32>}}
     
-    mem ram : {mask : UInt<4>, tag : UInt<5>, rw : UInt<1>, addr : UInt<32>}[4]
+    cmem ram : {mask : UInt<4>, tag : UInt<5>, rw : UInt<1>, addr : UInt<32>}[4]
     reg T_2381 : UInt<2>
     on-reset T_2381 := UInt<2>(0)
     reg T_2382 : UInt<2>
@@ -1089,7 +1089,7 @@ circuit Tile :
     input enq : {valid : UInt<1>, flip ready : UInt<1>, bits : {data : UInt<32>}}
     output deq : {valid : UInt<1>, flip ready : UInt<1>, bits : {data : UInt<32>}}
     
-    mem ram : {data : UInt<32>}[4]
+    cmem ram : {data : UInt<32>}[4]
     reg T_2412 : UInt<2>
     on-reset T_2412 := UInt<2>(0)
     reg T_2413 : UInt<2>

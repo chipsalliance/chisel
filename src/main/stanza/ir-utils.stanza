@@ -69,7 +69,26 @@ public defmulti name (p:Pass) -> String
 public defmulti short-name (p:Pass) -> String
 public defmethod print (o:OutputStream, p:Pass) :
    print(o,name(p))
+
+;============== Various Useful Functions ==============
+
+public defn ceil-log2 (i:Long) -> Long :
+   defn* loop (n:Long, l:Long) :
+      if n < i :
+         if l == 30 : to-long(31)
+         else : loop(n * to-long(2), l + to-long(1))
+      else : l
+   error("Log of negative number!") when i < to-long(0)
+   loop(to-long $ 1, to-long $ 0)
+
    
+public defn abs (x:Long) -> Long :
+   if x < to-long(0) : to-long(0) - x
+   else : x
+
+;public defn to-int (x:Long) -> Int :
+   ;if x > to-long(2147483647) or x < to-long(–2147483648) : error("Long too big to convert to Int")
+   ;else : x + 0
 
 ;============== PRINTERS ===================================
 

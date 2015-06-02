@@ -73,10 +73,10 @@ public defstruct Index <: Expression :
    value: Int
    type: Type with: (as-method => true)
 public defstruct UIntValue <: Expression :
-   value: Int
+   value: Long
    width: Width
 public defstruct SIntValue <: Expression :
-   value: Int
+   value: Long
    width: Width
 public defstruct DoPrim <: Expression :
    op: PrimOp
