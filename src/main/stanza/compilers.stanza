@@ -41,13 +41,8 @@ public defstruct StandardVerilog <: Compiler :
    file: String with: (as-method => true)
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
-<<<<<<< HEAD
-      CheckHighForm()
-      ;; TempElimination()
-=======
       CheckHighForm(expand-delin)
-      TempElimination()
->>>>>>> upstream/master
+      ;; TempElimination()
       ToWorkingIR()
       MakeExplicitReset()
       ResolveKinds()
