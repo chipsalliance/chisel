@@ -1,0 +1,38 @@
+defpackage firrtl/custom-compiler :
+   import core
+   import verse
+   import firrtl/ir-utils
+   import firrtl/ir2
+   import firrtl/passes
+   import firrtl/errors
+   import firrtl/verilog
+   import firrtl/custom-passes
+
+public defstruct InstrumentedVerilog <: Compiler :
+   file: String with: (as-method => true)
+   args: List<String>
+public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
+   to-list $ [
+      WhenCoverage(args(c)[0],args(c)[1])
+      CheckHighForm(expand-delin)
+      TempElimination()
+      ToWorkingIR()
+      MakeExplicitReset()
+      ResolveKinds()
+      CheckKinds()
+      InferTypes()
+      CheckTypes()
+      ResolveGenders()
+      CheckGenders()
+      ExpandAccessors()
+      LowerToGround()
+      ExpandIndexedConnects()
+      ExpandWhens()
+      InferWidths()
+      SplitExp()
+      ToRealIR()
+      SpecialRename(`#,`_)
+      Verilog(file(c))
+   ]
+
+

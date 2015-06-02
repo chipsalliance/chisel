@@ -1,5 +1,6 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
+
 circuit Core : 
   module ALU : 
     input B : UInt<32>
@@ -56,10 +57,10 @@ circuit Core :
     node T_1266 = add-wrap(A, T_1265)
     sum := T_1266
   module BrCond : 
+    input br_type : UInt<3>
     input rs1 : UInt<32>
     input rs2 : UInt<32>
     output taken : UInt<1>
-    input br_type : UInt<3>
     
     node eq = eq(rs1, rs2)
     node neq = bit-not(eq)
@@ -148,7 +149,7 @@ circuit Core :
     node T_1321 = cat(T_1318, T_1320)
     node Jimm = convert(T_1321)
     node T_1322 = bits(inst, 19, 15)
-    node T_1323 = Pad(T_1322, 32)
+    node T_1323 = pad(T_1322, 32)
     node Zimm = convert(T_1323)
     node T_1324 = eq(UInt<3>(3), sel)
     node T_1325 = mux(T_1324, Jimm, Zimm)
@@ -218,10 +219,10 @@ circuit Core :
         reg_status := T_1361
   module Datapath : 
     output host : {status : UInt<32>, flip hid : UInt<1>, tohost : UInt<32>}
-    output icache : {re : UInt<1>, flip dout : UInt<32>, we : UInt<4>, addr : UInt<32>, din : UInt<32>}
-    input ctrl : {flip inst : UInt<32>, flip stall : UInt<1>, pc_sel : UInt<1>, inst_re : UInt<1>, A_sel : UInt<1>, inst_type : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>}
+    input ctrl : {flip inst : UInt<32>, flip stall : UInt<1>, pc_sel : UInt<1>, inst_re : UInt<1>, inst_type : UInt<1>, A_sel : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>}
+    output icache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
+    output dcache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
     input stall : UInt<1>
-    output dcache : {re : UInt<1>, flip dout : UInt<32>, we : UInt<4>, addr : UInt<32>, din : UInt<32>}
     
     inst alu of ALU
     inst brCond of BrCond
@@ -330,11 +331,11 @@ circuit Core :
     node lshift = dshr(dcache.dout, loffset)
     node T_1412 = bits(lshift, 15, 0)
     node T_1413 = convert(T_1412)
-    node T_1414 = Pad(T_1413, 32)
+    node T_1414 = pad(T_1413, 32)
     node T_1415 = as-UInt(T_1414)
     node T_1416 = bits(lshift, 7, 0)
     node T_1417 = convert(T_1416)
-    node T_1418 = Pad(T_1417, 32)
+    node T_1418 = pad(T_1417, 32)
     node T_1419 = as-UInt(T_1418)
     node T_1420 = bits(lshift, 15, 0)
     node T_1421 = bits(lshift, 7, 0)
@@ -363,7 +364,7 @@ circuit Core :
     regFile.waddr := ex_rd_addr
     regFile.wdata := regWrite
   module Control : 
-    output ctrl : {flip inst : UInt<32>, flip stall : UInt<1>, pc_sel : UInt<1>, inst_re : UInt<1>, A_sel : UInt<1>, inst_type : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>}
+    output ctrl : {flip inst : UInt<32>, flip stall : UInt<1>, pc_sel : UInt<1>, inst_re : UInt<1>, inst_type : UInt<1>, A_sel : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>}
     
     node T_1436 = bit-and(UInt<7>(127), ctrl.inst)
     node T_1437 = eq(T_1436, UInt<6>(55))
@@ -1009,9 +1010,9 @@ circuit Core :
     ctrl.csr_cmd := csr_cmd
   module Core : 
     output host : {status : UInt<32>, flip hid : UInt<1>, tohost : UInt<32>}
-    output icache : {re : UInt<1>, flip dout : UInt<32>, we : UInt<4>, addr : UInt<32>, din : UInt<32>}
+    output icache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
+    output dcache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
     input stall : UInt<1>
-    output dcache : {re : UInt<1>, flip dout : UInt<32>, we : UInt<4>, addr : UInt<32>, din : UInt<32>}
     
     inst dpath of Datapath
     inst ctrl of Control

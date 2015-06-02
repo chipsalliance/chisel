@@ -8,7 +8,7 @@ circuit Stack :
     output dataOut : UInt<32>
     input dataIn : UInt<32>
     
-    mem stack_mem : UInt<32>[16]
+    cmem stack_mem : UInt<32>[16]
     reg sp : UInt<5>
     on-reset sp := UInt<5>(0)
     reg out : UInt<32>

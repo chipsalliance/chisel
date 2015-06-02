@@ -32,6 +32,12 @@ errors:
 chisel3:
 	cd $(test_dir)/chisel3 && lit -v . --path=$(root_dir)/utils/bin/
 
+features:
+	cd $(test_dir)/features && lit -v . --path=$(root_dir)/utils/bin/
+
+custom:
+	cd $(test_dir)/custom && lit -v . --path=$(root_dir)/utils/bin/ --max-time=10
+
 clean:
 	rm -f $(test_dir)/*/*/*.out
 	rm -f $(test_dir)/*/*.out

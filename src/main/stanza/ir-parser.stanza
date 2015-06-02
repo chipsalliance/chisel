@@ -151,9 +151,15 @@ defsyntax firrtl :
       module = (module ?name:#id! #:! (?ps:#port ... ?cs:#stmt ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Expected a statement here.")
-         Module(first-info(form),name, ps, Begin(cs))
+         InModule(first-info(form),name, ps, Begin(cs))
+      module = (exmodule ?name:#id! #:! (?ps:#port ... ?rest ...)) :
+         if not empty?(rest) :
+            FPE(rest, "Expected a port here.")
+         ExModule(first-info(form),name, ps)
       module != (module) :
          FPE(form, "Invalid syntax for module definition.")
+      module != (exmodule) :
+         FPE(form, "Invalid syntax for exmodule definition.")
    
    defrule port :
       port = (input ?name:#id! #:! ?type:#type!) : Port(first-info(form),name, INPUT, type)
@@ -187,13 +193,15 @@ defsyntax firrtl :
    defrule statements :
       stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(first-info(form),name, t)
       stmt = (reg ?name:#id! #:! ?t:#type!) : DefRegister(first-info(form),name, t)
-      stmt = (mem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t)
+      stmt = (cmem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t, false)
+      stmt = (smem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t, true)
       stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name, m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name, e)
       stmt = (accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i)
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
+      stmt = (?x:#exp <> ?y:#exp!) : BulkConnect(first-info(form),x, y)
       stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x, y)
 
       stmt = ((?s:#stmt ?ss:#stmt ... ?rest ...)) :

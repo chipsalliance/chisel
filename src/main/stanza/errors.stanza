@@ -19,7 +19,6 @@ defpackage firrtl/errors :
 ; o No names
 ; o No Unknowns
 ; o All widths are positive
-; o Pad's width is greater than value's width
 ; o pad's width is greater than value's width
 ; o widths are large enough to contain value
 
@@ -43,9 +42,13 @@ defpackage firrtl/errors :
 ; * No name can be a prefix of any other name.
 ; * all references are declared
 ; * UInt only has positive ints
+; * Vector types has positive size
+; * Width sizes are positive
+; * Primops have the correct number of arguments
 
-public defstruct CheckHighForm <: Pass
-public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form
+public defstruct CheckHighForm <: Pass :
+   sym : Symbol
+public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form{_,sym(b)}
 public defmethod name (b:CheckHighForm) -> String : "High Form Check"
 public defmethod short-name (b:CheckHighForm) -> String : "high-form-check"
 
@@ -94,6 +97,22 @@ defn WrongReset (info:FileInfo, name:Symbol) :
    PassException $ string-join $
    [info ": Module " name " has a reset that is not of type UInt<1>."]
 
+defn IncorrectNumArgs (info:FileInfo, op:Symbol, n:Int) :
+   PassException $ string-join $
+   [info ": Primop " op " requires " n " expression arguments."]
+
+defn IncorrectNumConsts (info:FileInfo, op:Symbol, n:Int) :
+   PassException $ string-join $
+   [info ": Primop " op " requires " n " integer arguments."]
+
+defn NegWidth (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Width cannot be negative."]
+
+defn NegVecSize (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Vector type size cannot be negative."]
+
 ;---------------- Helper Functions --------------
 defn has-flip? (t:Type) -> True|False :
    var has? = false
@@ -114,28 +133,70 @@ defn contains?<?T> (c:?T,cs:Streamable<?T>) -> True|False :
          if x == c : myret(true)
       false
 
-defn is-prefix? (s:Symbol,v:Vector<Symbol>) -> Symbol|False :
+defn is-prefix? (s:Symbol,v:Vector<Symbol>,sym:Symbol) -> Symbol|False :
+   defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
+      var is? = true
+      val s1* = to-string(s1)
+      val s2* = to-string(s2)
+      for (x in s1*, y in s2*) do :
+         if x != y : is? = false
+      if length(s1*) > length(s2*) :
+         if s1*[length(s2*)] != to-string(sym)[0] : is? = false
+      if length(s1*) < length(s2*) :
+         if s2*[length(s1*)] != to-string(sym)[0] : is? = false
+      if length(s1*) == length(s2*) :
+         is? = false
+      is?
    label<Symbol|False> myret :
       for x in v do :
          if is-prefix?(x,s) : myret(x)
       false
 
-defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
-   var is? = true
-   val s1* = to-string(s1)
-   val s2* = to-string(s2)
-   for (x in s1*, y in s2*) do :
-      if x != y : is? = false
-   if length(s1*) > length(s2*) :
-      if s1*[length(s2*)] != '$' : is? = false
-   if length(s1*) < length(s2*) :
-      if s2*[length(s1*)] != '$' : is? = false
-   if length(s1*) == length(s2*) :
-      is? = false
-   is?
+defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
+   defn correct-num (ne:Int|False,nc:Int) -> False :
+      if not (ne typeof False) : 
+         if length(args(e)) != ne as Int : add(errors,IncorrectNumArgs(info,to-symbol(op(e)),ne as Int))
+      if length(consts(e)) != nc : add(errors,IncorrectNumConsts(info,to-symbol $ op(e),nc))
+
+   switch {op(e) == _} :
+      ADD-OP             : correct-num(2,0)
+      SUB-OP             : correct-num(2,0)
+      MUL-OP             : correct-num(2,0)
+      DIV-OP             : correct-num(2,0)
+      MOD-OP             : correct-num(2,0)
+      QUO-OP             : correct-num(2,0)
+      REM-OP             : correct-num(2,0)
+      ADD-WRAP-OP        : correct-num(2,0)
+      SUB-WRAP-OP        : correct-num(2,0)
+      LESS-OP            : correct-num(2,0)
+      LESS-EQ-OP         : correct-num(2,0)
+      GREATER-OP         : correct-num(2,0)
+      GREATER-EQ-OP      : correct-num(2,0)
+      EQUAL-OP           : correct-num(2,0)
+      NEQUAL-OP          : correct-num(2,0)
+      MUX-OP             : correct-num(3,0)
+      PAD-OP             : correct-num(1,1)
+      AS-UINT-OP         : correct-num(1,0)
+      AS-SINT-OP         : correct-num(1,0)
+      DYN-SHIFT-LEFT-OP  : correct-num(2,0)
+      DYN-SHIFT-RIGHT-OP : correct-num(2,0)
+      SHIFT-LEFT-OP      : correct-num(1,1)
+      SHIFT-RIGHT-OP     : correct-num(1,1)
+      CONVERT-OP         : correct-num(1,0)
+      NEG-OP             : correct-num(1,0)
+      BIT-NOT-OP         : correct-num(1,0)
+      BIT-AND-OP         : correct-num(2,0)
+      BIT-OR-OP          : correct-num(2,0)
+      BIT-XOR-OP         : correct-num(2,0)
+      BIT-AND-REDUCE-OP  : correct-num(false,0)
+      BIT-OR-REDUCE-OP   : correct-num(false,0)
+      BIT-XOR-REDUCE-OP  : correct-num(false,0)
+      CONCAT-OP          : correct-num(2,0)
+      BIT-SELECT-OP      : correct-num(1,1)
+      BITS-SELECT-OP     : correct-num(1,2)
 
 ;--------------- Check High Form Pass -------------------
-public defn check-high-form (c:Circuit) -> Circuit : 
+public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit : 
    val errors = Vector<PassException>()
 
    defn check-valid-loc (info:FileInfo,e:Expression) -> False :
@@ -144,6 +205,20 @@ public defn check-high-form (c:Circuit) -> Circuit :
             add(errors,InvalidLOC(info))
          (e) : false
 
+   defn check-high-form-w (info:FileInfo,w:Width) -> Width :
+      match(w) :
+         (w:IntWidth) : 
+            if width(w) < 0 : add(errors,NegWidth(info))
+            w
+         (w) : w
+
+   defn check-high-form-t (info:FileInfo,t:Type) -> Type :
+      match(map(check-high-form-t{info,_},t)) :
+         (t:VectorType) : 
+            if size(t) < 0 : add(errors,NegVecSize(info))
+         (t) : false
+      map(check-high-form-w{info,_:Width},t)
+      
    defn check-high-form-e (info:FileInfo,e:Expression,names:Vector<Symbol>) -> Expression :
       match(map(check-high-form-e{info,_,names},e)) :
          (e:Ref) : 
@@ -157,17 +232,22 @@ public defn check-high-form (c:Circuit) -> Circuit :
             match(exp(e)) :
                (e:Ref|Subfield|Index) : false
                (e) : add(errors,InvalidIndex(info))
+         (e:DoPrim) : check-high-form-primop(e,errors,info)
          ;; (e:UIntValue) :
          ;; if value(e) < 0 : 
          ;;    add(errors,NegUInt(info))
          (e) : false
+      map(check-high-form-w{info,_:Width},e)
+      map(check-high-form-t{info,_:Type},e)
       e
 
    defn check-high-form-s (s:Stmt,names:Vector<Symbol>) -> Stmt :
       defn check-name (info:FileInfo,name:Symbol) -> False :
          if contains?(name,names) : add(errors,NotUnique(info,name))
-         val prefix = is-prefix?(name,names)
+         val prefix = is-prefix?(name,names,sym)
          if prefix typeof Symbol : add(errors,IsPrefix(info,name,prefix as Symbol))
+
+      map(check-high-form-t{info(s),_:Type},s)
 
       map{check-high-form-s{_,names},_} $ { 
          match(map(check-high-form-e{info(s),_,names},s)) :
@@ -191,6 +271,8 @@ public defn check-high-form (c:Circuit) -> Circuit :
                add(names,name(s))
             (s:Connect) : 
                check-valid-loc(info(s),loc(s))
+            (s:BulkConnect) : 
+               check-valid-loc(info(s),loc(s))
             (s) : false
          s }()
 
@@ -209,10 +291,15 @@ public defn check-high-form (c:Circuit) -> Circuit :
                      add(errors,WrongReset(info!(m),name(m)))
                else :
                   add(errors,WrongReset(info!(m),name(m)))
+         map(check-high-form-t{info(p),_},type(p))
+         map(check-high-form-w{info(p),_},type(p))
+
 
       
       add(names,`reset)
-      check-high-form-s(body(m),names)
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-high-form-s(body(m),names)
       false
    
    var number-top-m = 0
@@ -284,8 +371,6 @@ public defn check-kinds (c:Circuit) -> Circuit :
             check-is-mem(info,mem(e))
             check-not-mem(info,index(e))
             check-not-mem(info,enable(e))
-         ;(e:Pad) :
-            ;check-not-mem(info,value(e))
          (e) : do(check-not-mem{info,_},e)
    defn check-kinds-s (s:Stmt) -> False :
       do(check-kinds-e{info(s),_:Expression},s)
@@ -296,6 +381,9 @@ public defn check-kinds (c:Circuit) -> Circuit :
          (s:Connect) : 
             check-not-mem(info(s),loc(s))
             check-not-mem(info(s),exp(s))
+         (s:BulkConnect) : 
+            check-not-mem(info(s),loc(s))
+            check-not-mem(info(s),exp(s))
          (s:OnReset) : 
             check-is-reg(info(s),loc(s))
             check-not-mem(info(s),exp(s))
@@ -303,13 +391,14 @@ public defn check-kinds (c:Circuit) -> Circuit :
       do(check-kinds-s,s)
    
    for m in modules(c) do :
-      check-kinds-s(body(m))
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-kinds-s(body(m))
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
 
 ;==================== CHECK TYPES =====================
-; o expression in pad must be a ground type
 ; o Subfields are only on bundles, before type inference <- need to not error, just do unknown-type
 ; o Indexes are only on vectors
 ; o pred in conditionally must be of type UInt
@@ -348,10 +437,6 @@ defn EnableNotUInt (info:FileInfo) :
    PassException $ string-join $
    [info ": Enable is not of UIntType."]
 
-;defn PadNotGround (info:FileInfo) :
-   ;PassException $ string-join $
-   ;[info ": Illegal Pad on non-ground type."]
-
 defn InvalidConnect (info:FileInfo) :
    PassException $ string-join $
    [info ": Type mismatch."]
@@ -359,6 +444,27 @@ defn InvalidConnect (info:FileInfo) :
 defn PredNotUInt (info:FileInfo) :
    PassException $ string-join $
    [info ": Predicate not a UIntType."]
+
+defn OpNotGround (info:FileInfo, op:Symbol) :
+   PassException $ string-join $
+   [info ": Primop " op " cannot operate on non-ground types."]
+
+defn OpNotUInt (info:FileInfo, op:Symbol,e:Symbol) :
+   PassException $ string-join $
+   [info ": Primop " op " requires argument " e " to be a UInt type."]
+
+defn OpNotAllUInt (info:FileInfo, op:Symbol) :
+   PassException $ string-join $
+   [info ": Primop " op " requires all arguments to be UInt type."]
+
+defn OpNotAllSameType (info:FileInfo, op:Symbol) :
+   PassException $ string-join $
+   [info ": Primop " op " requires all operands to have the same type."]
+
+defn NodeWithFlips (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Node cannot be a bundle type with flips."]
+
 
 ;---------------- Helper Functions --------------
 defmethod equal? (t1:Type,t2:Type) -> True|False :
@@ -380,6 +486,64 @@ defmethod equal? (t1:Type,t2:Type) -> True|False :
 defn u () -> UIntType : UIntType(UnknownWidth())
 defn s () -> SIntType : SIntType(UnknownWidth())
 
+defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
+   defn all-same-type (ls:List<Expression>) -> False :
+      for x in ls do :
+         if type(head(ls)) != type(x) : 
+           add(errors,OpNotAllSameType(info,to-symbol $ op(e))) 
+   defn all-ground (ls:List<Expression>) -> False :
+      for x in ls do :
+         if not (type(x) typeof UIntType or type(x) typeof SIntType) :
+           add(errors,OpNotGround(info,to-symbol $ op(e))) 
+   defn all-uint (ls:List<Expression>) -> False :
+      for x in ls do :
+         if not (type(x) typeof UIntType) : 
+           add(errors,OpNotAllUInt(info,to-symbol $ op(e))) 
+   defn is-uint (x:Expression) -> False : 
+      if not (type(x) typeof UIntType) : 
+        add(errors,OpNotUInt(info,to-symbol $ op(e),to-symbol(x))) 
+   
+   all-ground(args(e))
+
+   switch {op(e) == _} :
+      ADD-OP             : false
+      SUB-OP             : false
+      MUL-OP             : false
+      DIV-OP             : false
+      MOD-OP             : false
+      QUO-OP             : false
+      REM-OP             : false
+      ADD-WRAP-OP        : false
+      SUB-WRAP-OP        : false
+      LESS-OP            : false
+      LESS-EQ-OP         : false
+      GREATER-OP         : false
+      GREATER-EQ-OP      : false
+      EQUAL-OP           : all-same-type(args(e))
+      NEQUAL-OP          : all-same-type(args(e))
+      MUX-OP             : 
+         all-same-type(tail(args(e)))
+         is-uint(head(args(e)))
+      PAD-OP             : false
+      AS-UINT-OP         : false
+      AS-SINT-OP         : false
+      DYN-SHIFT-LEFT-OP  : is-uint(args(e)[1])
+      DYN-SHIFT-RIGHT-OP : is-uint(args(e)[1])
+      SHIFT-LEFT-OP      : false
+      SHIFT-RIGHT-OP     : false
+      CONVERT-OP         : false
+      NEG-OP             : false
+      BIT-NOT-OP         : all-uint(args(e))
+      BIT-AND-OP         : all-uint(args(e))
+      BIT-OR-OP          : all-uint(args(e))
+      BIT-XOR-OP         : all-uint(args(e))
+      BIT-AND-REDUCE-OP  : all-uint(args(e))
+      BIT-OR-REDUCE-OP   : all-uint(args(e))
+      BIT-XOR-REDUCE-OP  : all-uint(args(e))
+      CONCAT-OP          : all-uint(args(e))
+      BIT-SELECT-OP      : all-uint(args(e))
+      BITS-SELECT-OP     : all-uint(args(e))
+   
 ;----------------- Check Types Pass ---------------------
 public defn check-types (c:Circuit) -> Circuit : 
    val errors = Vector<PassException>()
@@ -397,33 +561,32 @@ public defn check-types (c:Circuit) -> Circuit :
                (t:VectorType) : 
                   if value(e) >= size(t) : add(errors,IndexTooLarge(info,value(e)))
                (t) : add(errors,IndexOnNonVector(info))
-         (e:DoPrim) : false ;check-types-primop(e)
+         (e:DoPrim) : check-types-primop(e,errors,info)
          (e:ReadPort|WritePort) : 
             if type(index(e)) != u() : add(errors,IndexNotUInt(info))
             if type(enable(e)) != u() : add(errors,EnableNotUInt(info))
          (e:Register) :
             if type(enable(e)) != u() : add(errors,EnableNotUInt(info))
-         ;(e:Pad) :
-            ;val t = type(value(e))
-            ;if not (t == u() or t == s()) : add(errors,PadNotGround(info))
          (e:UIntValue|SIntValue) : false
       e
    defn check-types-s (s:Stmt) -> Stmt :
-      map{check-types-s,_} $ 
-      match(map(check-types-e{info(s),_},s)) : 
-         (s:Connect) : 
-            if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
-            s
-         (s:OnReset) : 
-            if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
-            s
-         (s:Conditionally) :
-            if type(pred(s)) != u() : add(errors,PredNotUInt(info(s)))
-            s
-         (s) : s
+      map{check-types-s,_} $ {
+         match(map(check-types-e{info(s),_},s)) : 
+            (s:Connect) : 
+               if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
+            (s:OnReset) : 
+               if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
+            (s:Conditionally) :
+               if type(pred(s)) != u() : add(errors,PredNotUInt(info(s)))
+            (s:DefNode) :
+               if has-flip?(type(value(s))) : add(errors,NodeWithFlips(info(s)))
+            (s) : false
+         s }()
    
    for m in modules(c) do :
-      check-types-s(body(m))
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-types-s(body(m))
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
@@ -469,7 +632,6 @@ public defn check-genders (c:Circuit) -> Circuit :
             val f = {_ as Field} $ for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
             get-gender(exp(e),genders) * flip(f)
          (e:WIndex) : get-gender(exp(e),genders)
-         ;(e:Pad) : MALE
          (e:DoPrim) : MALE
          (e:UIntValue) : MALE
          (e:SIntValue) : MALE
@@ -483,7 +645,6 @@ public defn check-genders (c:Circuit) -> Circuit :
          (e:WRef) : false
          (e:WSubfield) : false
          (e:WIndex) : false
-         ;(e:Pad) : check-gender(info,genders,value(e),MALE)
          (e:DoPrim) : 
             for e in args(e) do :
                check-gender(info,genders,e,MALE)
@@ -511,6 +672,9 @@ public defn check-genders (c:Circuit) -> Circuit :
          (s:Connect) : 
             check-gender(info(s),genders,loc(s),FEMALE)
             check-gender(info(s),genders,exp(s),MALE)
+         (s:BulkConnect) : 
+            check-gender(info(s),genders,loc(s),FEMALE)
+            check-gender(info(s),genders,exp(s),MALE)
          (s:OnReset) : 
             check-gender(info(s),genders,loc(s),FEMALE)
             check-gender(info(s),genders,exp(s),MALE)
@@ -524,6 +688,9 @@ public defn check-genders (c:Circuit) -> Circuit :
       val genders = HashTable<Symbol,Gender>(symbol-hash)
       for p in ports(m) do :
          genders[name(p)] = dir-to-gender(direction(p))
-      check-genders-s(body(m),genders)
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-genders-s(body(m),genders)
    throw(PassExceptions(errors)) when not empty?(errors)
    c
+

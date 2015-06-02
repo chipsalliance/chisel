@@ -12,7 +12,7 @@ public defstruct StandardFlo <: Compiler :
    file: String with: (as-method => true)
 public defmethod passes (c:StandardFlo) -> List<Pass> :
    to-list $ [
-      CheckHighForm()
+      CheckHighForm(expand-delin)
       ;; TempElimination()
       ToWorkingIR()
       MakeExplicitReset()
@@ -31,6 +31,9 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       Inline()
       SplitExp()
       ToRealIR()
+      SpecialRename(`#,`_)
+      SpecialRename(`$,`::)
+      CheckHighForm(`::)
       Flo(file(c))
    ]
 
@@ -38,8 +41,13 @@ public defstruct StandardVerilog <: Compiler :
    file: String with: (as-method => true)
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
+<<<<<<< HEAD
       CheckHighForm()
       ;; TempElimination()
+=======
+      CheckHighForm(expand-delin)
+      TempElimination()
+>>>>>>> upstream/master
       ToWorkingIR()
       MakeExplicitReset()
       ResolveKinds()
@@ -53,9 +61,9 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ExpandIndexedConnects()
       ExpandWhens()
       InferWidths()
-      ;Inline()
       SplitExp()
       ToRealIR()
+      SpecialRename(`#,`_)
       Verilog(file(c))
    ]
 

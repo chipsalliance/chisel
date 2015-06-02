@@ -5,6 +5,9 @@ defpackage firrtl/ir2 :
 public defmulti info! (x:?) -> FileInfo
 public defmethod info! (x:?) : FileInfo()
 
+public val expand-delin = `$
+public val gen-delin = `#
+
 public definterface Direction
 public val INPUT = new Direction
 public val OUTPUT = new Direction
@@ -114,6 +117,7 @@ public defstruct DefMemory <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
    type: VectorType
+   seq?: True|False
 public defstruct DefNode <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
@@ -130,7 +134,11 @@ public defstruct Conditionally <: Stmt :
    alt: Stmt
 public defstruct Begin <: Stmt : ;LOW
    body: List<Stmt>
-public defstruct OnReset <: Stmt : ;LOW
+public defstruct OnReset <: Stmt : 
+   info: FileInfo with: (as-method => true)
+   loc: Expression
+   exp: Expression
+public defstruct BulkConnect <: Stmt : 
    info: FileInfo with: (as-method => true)
    loc: Expression
    exp: Expression
@@ -163,11 +171,20 @@ public defstruct Port :
    direction: Direction
    type: Type
 
-public defstruct Module :
+public definterface Module
+public defmulti name (m:Module) -> Symbol
+public defmulti ports (m:Module) -> List<Port>
+
+public defstruct InModule <: Module :
    info: FileInfo
-   name: Symbol
-   ports: List<Port>
+   name: Symbol with: (as-method => true)
+   ports: List<Port> with: (as-method => true)
    body: Stmt
+
+public defstruct ExModule <: Module :
+   info: FileInfo
+   name: Symbol with: (as-method => true)
+   ports: List<Port> with: (as-method => true)
 
 public defstruct Circuit :
    info: FileInfo

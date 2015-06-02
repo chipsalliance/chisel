@@ -1,5 +1,6 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
+
 circuit Tbl : 
   module Tbl : 
     input i : UInt<16>
@@ -7,7 +8,7 @@ circuit Tbl :
     output o : UInt<16>
     input we : UInt<1>
     
-    cmem m : UInt<10>[256]
+    mem m : UInt<10>[256]
     o := UInt<1>(0)
     when we : 
       accessor T_13 = m[i]

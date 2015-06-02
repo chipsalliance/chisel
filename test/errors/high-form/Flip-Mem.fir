@@ -1,6 +1,8 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
-; CHECK: Memory m cannot be a bundle type with flips.
+; CHECK: Memory m-c cannot be a bundle type with flips.
+; CHECK: Memory m-s cannot be a bundle type with flips.
 
 circuit Flip-Mem : 
   module Flip-Mem : 
-    mem m : {x : UInt<3>, flip y : UInt<5>}[10]
+    cmem m-c : {x : UInt<3>, flip y : UInt<5>}[10]
+    smem m-s : {x : UInt<3>, flip y : UInt<5>}[10]

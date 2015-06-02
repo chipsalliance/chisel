@@ -13,6 +13,10 @@
 #include("flo.stanza")
 #include("verilog.stanza")
 
+;Custom Packages
+#include("custom-passes.stanza")
+#include("custom-compiler.stanza")
+
 defpackage firrtl-main :
    import core
    import verse
@@ -22,6 +26,9 @@ defpackage firrtl-main :
    import stz/parser
    import firrtl/ir-utils
    import firrtl/compiler
+   ;Custom Packages
+   import firrtl/custom-passes
+   import firrtl/custom-compiler
 
 defn set-printvars! (p:List<Char>) :
    if contains(p,'t') : PRINT-TYPES = true
@@ -47,6 +54,7 @@ defn main () :
    var output = false
    var compiler = false
    val pass-names = Vector<String>()
+   val pass-args = Vector<String>()
    var printvars = ""
    for (s in args, i in 0 to false) do :
       if s == "-i" : input = args[i + 1]
@@ -54,6 +62,7 @@ defn main () :
       if s == "-x" : add(pass-names,args[i + 1])
       if s == "-X" : compiler = args[i + 1]
       if s == "-p" : printvars = args[i + 1]
+      if s == "-s" : add(pass-args,args[i + 1])
 
    if input == false : 
       error("No input file provided. Use -i flag.")
@@ -72,6 +81,7 @@ defn main () :
       switch {_ == compiler} :
          "flo" : run-passes(c,StandardFlo(output as String))
          "verilog" : run-passes(c,StandardVerilog(output as String))
+         "verilute" : run-passes(c,InstrumentedVerilog(output as String,to-list $ pass-args))
          else : error("Invalid compiler flag")
 
 main()

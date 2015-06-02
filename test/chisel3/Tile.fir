@@ -1,5 +1,6 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 ;CHECK: Done!
+
 circuit Tile : 
   module ALU : 
     input B : UInt<32>
@@ -148,7 +149,7 @@ circuit Tile :
     node T_1651 = cat(T_1648, T_1650)
     node Jimm = convert(T_1651)
     node T_1652 = bits(inst, 19, 15)
-    node T_1653 = Pad(T_1652, 32)
+    node T_1653 = pad(T_1652, 32)
     node Zimm = convert(T_1653)
     node T_1654 = eq(UInt<3>(3), sel)
     node T_1655 = mux(T_1654, Jimm, Zimm)
@@ -218,10 +219,10 @@ circuit Tile :
         reg_status := T_1691
   module Datapath : 
     output host : {status : UInt<32>, flip hid : UInt<1>, tohost : UInt<32>}
-    input ctrl : {flip inst : UInt<32>, inst_type : UInt<1>, A_sel : UInt<1>, pc_sel : UInt<1>, inst_re : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>, flip stall : UInt<1>}
     input stall : UInt<1>
     output icache : {re : UInt<1>, flip dout : UInt<32>, we : UInt<4>, addr : UInt<32>, din : UInt<32>}
     output dcache : {re : UInt<1>, flip dout : UInt<32>, we : UInt<4>, addr : UInt<32>, din : UInt<32>}
+    input ctrl : {flip inst : UInt<32>, flip stall : UInt<1>, inst_re : UInt<1>, inst_type : UInt<1>, pc_sel : UInt<1>, A_sel : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>}
     
     inst alu of ALU
     inst brCond of BrCond
@@ -330,11 +331,11 @@ circuit Tile :
     node lshift = dshr(dcache.dout, loffset)
     node T_1742 = bits(lshift, 15, 0)
     node T_1743 = convert(T_1742)
-    node T_1744 = Pad(T_1743, 32)
+    node T_1744 = pad(T_1743, 32)
     node T_1745 = as-UInt(T_1744)
     node T_1746 = bits(lshift, 7, 0)
     node T_1747 = convert(T_1746)
-    node T_1748 = Pad(T_1747, 32)
+    node T_1748 = pad(T_1747, 32)
     node T_1749 = as-UInt(T_1748)
     node T_1750 = bits(lshift, 15, 0)
     node T_1751 = bits(lshift, 7, 0)
@@ -363,7 +364,7 @@ circuit Tile :
     regFile.waddr := ex_rd_addr
     regFile.wdata := regWrite
   module Control : 
-    output ctrl : {flip inst : UInt<32>, inst_type : UInt<1>, A_sel : UInt<1>, pc_sel : UInt<1>, inst_re : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>, flip stall : UInt<1>}
+    output ctrl : {flip inst : UInt<32>, flip stall : UInt<1>, inst_re : UInt<1>, inst_type : UInt<1>, pc_sel : UInt<1>, A_sel : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>}
     
     node T_1766 = bit-and(UInt<7>(127), ctrl.inst)
     node T_1767 = eq(T_1766, UInt<6>(55))
