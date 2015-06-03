@@ -133,14 +133,15 @@ defn is-prefix? (s:Symbol,v:Vector<Symbol>,sym:Symbol) -> Symbol|False :
       var is? = true
       val s1* = to-string(s1)
       val s2* = to-string(s2)
+      val st = to-string(sym)
       for (x in s1*, y in s2*) do :
          if x != y : is? = false
-      if length(s1*) > length(s2*) :
-         if s1*[length(s2*)] != to-string(sym)[0] : is? = false
-      if length(s1*) < length(s2*) :
-         if s2*[length(s1*)] != to-string(sym)[0] : is? = false
-      if length(s1*) == length(s2*) :
-         is? = false
+      if abs(length(s1*) - length(s2*)) < length(st) : is? = false
+      else :
+         if length(s1*) > length(s2*) :
+            if substring(s1*,length(s2*),length(s2*) + length(st)) != st : is? = false
+         if length(s1*) < length(s2*) :
+            if substring(s2*,length(s1*),length(s1*) + length(st)) != st : is? = false
       is?
    label<Symbol|False> myret :
       for x in v do :
@@ -688,134 +689,145 @@ public defn check-genders (c:Circuit) -> Circuit :
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
-;================= High Form Check ==========================
+;================= Low Form Check ==========================
 ;AFTER LOWERING
 ; o All things connect to once
 ; o no reg
 ; o no accessors
 ; o only vecs are for memories
 ; o no bundles (future, will have them for mems)
-; o
-;
-;public defstruct CheckLowForm <: Pass :
-;   sym : Symbol
-;public defmethod pass (b:CheckLowForm) -> (Circuit -> Circuit) : check-low-form{_,sym(b)}
-;public defmethod name (b:CheckLowForm) -> String : "Low Form Check"
-;public defmethod short-name (b:CheckLowForm) -> String : "low-form-check"
-;
-;;----------------- Errors ------------------------
-;defn NotUnique (info:FileInfo, name:Symbol) :
-;   PassException $ string-join $
-;   [info ": Reference " name " does not have a unique name."]
-;
-;
-;;---------------- Helper Functions --------------
-;
-;;--------------- Check Low Form Pass -------------------
-;public defn check-low-form (c:Circuit,sym:Symbol) -> Circuit : 
-;   val errors = Vector<PassException>()
-;
-;   defn check-high-form-w (info:FileInfo,w:Width) -> Width :
-;      match(w) :
-;         (w:IntWidth) : 
-;            if width(w) < 0 : add(errors,NegWidth(info))
-;            w
-;         (w) : w
-;
-;   defn check-high-form-t (info:FileInfo,t:Type) -> Type :
-;      match(map(check-high-form-t{info,_},t)) :
-;         (t:VectorType) : 
-;            if size(t) < 0 : add(errors,NegVecSize(info))
-;         (t) : false
-;      map(check-high-form-w{info,_:Width},t)
-;      
-;   defn check-high-form-e (info:FileInfo,e:Expression,names:Vector<Symbol>) -> Expression :
-;      match(map(check-high-form-e{info,_,names},e)) :
-;         (e:Ref) : 
-;            if not contains?(name(e),names) : 
-;               add(errors,UndeclaredReference(info,name(e)))
-;         (e:Subfield) : 
-;            match(exp(e)) :
-;               (e:Ref|Subfield|Index) : false
-;               (e) : add(errors,InvalidSubfield(info))
-;         (e:Index) : 
-;            match(exp(e)) :
-;               (e:Ref|Subfield|Index) : false
-;               (e) : add(errors,InvalidIndex(info))
-;         (e:DoPrim) : check-high-form-primop(e,errors,info)
-;         (e:UIntValue) :
-;            if value(e) < to-long $ 0 : add(errors,NegUInt(info))
-;         (e) : false
-;      map(check-high-form-w{info,_:Width},e)
-;      map(check-high-form-t{info,_:Type},e)
-;      e
-;
-;   defn check-high-form-s (s:Stmt,names:Vector<Symbol>) -> Stmt :
-;      defn check-name (info:FileInfo,name:Symbol) -> False :
-;         if contains?(name,names) : add(errors,NotUnique(info,name))
-;         val prefix = is-prefix?(name,names,sym)
-;         if prefix typeof Symbol : add(errors,IsPrefix(info,name,prefix as Symbol))
-;
-;      map(check-high-form-t{info(s),_:Type},s)
-;
-;      map{check-high-form-s{_,names},_} $ { 
-;         match(map(check-high-form-e{info(s),_,names},s)) :
-;            (s:DefWire|DefRegister) :
-;               check-name(info(s),name(s))
-;               add(names,name(s))
-;            (s:DefMemory) : 
-;               check-name(info(s),name(s))
-;               add(names,name(s))
-;               if has-flip?(type(s)) : add(errors, MemWithFlip(info(s), name(s)))
-;            (s:DefInstance) : 
-;               if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
-;                  add(errors, ModuleNotDefined(info(s),name(module(s) as Ref)))
-;               check-name(info(s),name(s))
-;               add(names,name(s))
-;            (s:DefNode) : 
-;               check-name(info(s),name(s))
-;               add(names,name(s))
-;            (s:DefAccessor) :
-;               check-name(info(s),name(s))
-;               add(names,name(s))
-;            (s:Connect) : 
-;               check-valid-loc(info(s),loc(s))
-;            (s:BulkConnect) : 
-;               check-valid-loc(info(s),loc(s))
-;            (s) : false
-;         s }()
-;
-;   defn check-high-form-m (m:Module) -> False :
-;      val names = Vector<Symbol>()
-;      for m in modules(c) do :
-;         add(names,name(m))
-;      for p in ports(m) do :
-;         add(names,name(p))
-;         if name(p) == `reset :
-;            if direction(p) == OUTPUT : 
-;               add(errors,WrongReset(info!(m),name(m)))
-;            else :
-;               if type(p) typeof UIntType :
-;                  if width(type(p) as UIntType) != IntWidth(1) : 
-;                     add(errors,WrongReset(info!(m),name(m)))
-;               else :
-;                  add(errors,WrongReset(info!(m),name(m)))
-;         map(check-high-form-t{info(p),_},type(p))
-;         map(check-high-form-w{info(p),_},type(p))
-;
-;
-;      
-;      add(names,`reset)
-;      match(m) :
-;         (m:ExModule) : false
-;         (m:InModule) : check-high-form-s(body(m),names)
-;      false
-;   
-;   var number-top-m = 0
-;   for m in modules(c) do :
-;      if name(m) == main(c) : number-top-m = number-top-m + 1
-;      check-high-form-m(m)
-;   if number-top-m != 1 : add(errors,NoTopModule(info!(c),main(c)))
-;   throw(PassExceptions(errors)) when not empty?(errors)
-;   c
-;
+
+public defstruct CheckLowForm <: Pass 
+public defmethod pass (b:CheckLowForm) -> (Circuit -> Circuit) : check-low-form
+public defmethod name (b:CheckLowForm) -> String : "Low Form Check"
+public defmethod short-name (b:CheckLowForm) -> String : "low-form-check"
+
+;----------------- Errors ------------------------
+defn IncorrectRegisterUsage (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Register can only be used on the right side of a connect statement."]
+
+defn IncorrectReadPortUsage (info:FileInfo) :
+   PassException $ string-join $
+   [info ": ReadPort can only be used on the right side of a connect statement."]
+
+defn IncorrectWritePortUsage (info:FileInfo) :
+   PassException $ string-join $
+   [info ": WritePort can only be used on the left side of a connect statement."]
+
+defn NoReg (info:FileInfo,name:Symbol) :
+   PassException $ string-join $
+   [info ": Invalid reg declaration " name ". No reg declarations are allowed in low firrtl."]
+
+defn NoAccessor (info:FileInfo,name:Symbol) :
+   PassException $ string-join $
+   [info ": Invalid accessor declaration " name ". No accessor declarations are allowed in low firrtl."]
+
+defn InvalidVec (info:FileInfo,name:Symbol) :
+   PassException $ string-join $
+   [info ": Expression " name " has an illegal vector type."]
+
+defn InvalidBundle (info:FileInfo,name:Symbol) :
+   PassException $ string-join $
+   [info ": Expression " name " has an illegal bundle type."]
+
+defn NoWhen (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Illegal when statement. No when statements are allowed in low firrtl."]
+
+defn SingleAssignment (info:FileInfo,name:Symbol) :
+   PassException $ string-join $
+   [info ": Illegal assignment to " name ". Wires can only be assigned to once."]
+
+defn NoOnReset (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Invalid use of on-reset. No on-resets are allowed in low firrtl."]
+
+defn NoBulkConnect (info:FileInfo) :
+   PassException $ string-join $
+   [info ": Invalid use of <>. No <>'s are allowed in low firrtl."]
+
+;---------------- Helper Functions --------------
+
+;--------------- Check Low Form Pass -------------------
+public defn check-low-form (c:Circuit) -> Circuit : 
+   val errors = Vector<PassException>()
+
+   defn check-low-form-t (info:FileInfo,t:Type,name:Symbol) -> False :
+      match(t) :
+         (t:VectorType) : add(errors,InvalidVec(info,name))
+         (t:BundleType) : add(errors,InvalidBundle(info,name))
+         (t) : false
+
+   defn check-low-form-m (m:Module) -> False :
+      for p in ports(m) do :
+         check-low-form-t(info(p),type(p),name(p))
+
+      val assigned? = Vector<Symbol>()
+      val insts = Vector<Symbol>()
+      val mems = Vector<Symbol>()
+      defn check-correct-exp (info:FileInfo,e:Expression) -> False :
+         do(check-correct-exp{info,_:Expression},e)
+         match(e) :
+            (e:Ref) : 
+               if contains?(insts,name(e)) : 
+                  for f in fields(type(e) as BundleType) do :
+                     check-low-form-t(info,type(f),name(e))
+               if contains?(mems,name(e)) :
+                  check-low-form-t(info,type(type(e) as VectorType),name(e))
+            (e:Register) : add(errors,IncorrectRegisterUsage(info))
+            (e:ReadPort) : add(errors,IncorrectReadPortUsage(info))
+            (e:WritePort) : add(errors,IncorrectWritePortUsage(info))
+            (e) : check-low-form-t(info,type(e),to-symbol $ to-string(e))
+      defn check-low-form-s (s:Stmt) -> False :
+         match(s) : 
+            (s:DefWire) :
+               check-low-form-t(info(s),type(s),name(s))
+            (s:DefMemory) : 
+               check-low-form-t(info(s),type(type(s)),name(s))
+               add(mems,name(s))
+            (s:DefInstance) : 
+               for f in fields(type(module(s)) as BundleType) do :
+                  check-low-form-t(info(s),type(f),name(s))
+               add(insts,name(s))
+            (s:DefNode) : 
+               check-correct-exp(info(s),value(s))
+            (s:DefRegister) : add(errors,NoReg(info(s),name(s)))
+            (s:DefAccessor) : add(errors,NoAccessor(info(s),name(s)))
+            (s:Conditionally) : add(errors,NoWhen(info(s)))
+            (s:OnReset) : add(errors,NoOnReset(info(s)))
+            (s:BulkConnect) : add(errors,NoBulkConnect(info(s)))
+            (s:Connect) :
+               match(exp(s)) :
+                  (e:Register) : 
+                     check-low-form-t(info(s),type(e),to-symbol $ to-string(e))
+                     check-correct-exp(info(s),value(e))
+                     check-correct-exp(info(s),enable(e))
+                  (e:ReadPort) : 
+                     check-low-form-t(info(s),type(e),to-symbol $ to-string(e))
+                     check-correct-exp(info(s),index(e))
+                     check-correct-exp(info(s),enable(e))
+                  (e) : check-correct-exp(info(s),e)
+               match(loc(s)) :
+                  (e:WritePort) : 
+                     check-low-form-t(info(s),type(e),to-symbol $ to-string(e))
+                     check-correct-exp(info(s),index(e))
+                     check-correct-exp(info(s),enable(e))
+                  (e:Ref|Subfield) : 
+                     val n* = to-symbol $ to-string $ e
+                     if contains?(assigned?,n*) : add(errors,SingleAssignment(info(s),n*))
+                     else : add(assigned?,to-symbol $ to-string $ e)
+                  (e) : check-correct-exp(info(s),e)
+            (s:EmptyStmt) : false
+            (s:Begin) : do(check-low-form-s,s)
+
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-low-form-s(body(m))
+      false
+   
+   for m in modules(c) do :
+      check-low-form-m(m)
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+

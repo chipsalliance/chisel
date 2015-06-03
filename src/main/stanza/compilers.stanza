@@ -34,6 +34,7 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       SpecialRename(`#,`_)
       SpecialRename(`$,`::)
       CheckHighForm(`::)
+      CheckLowForm()
       Flo(file(c))
    ]
 
@@ -59,8 +60,10 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       Pad()
       SplitExp()
       ToRealIR()
-      SpecialRename(`#,`__)
-      SpecialRename(`$,`_)
+      SpecialRename(`#,`_)
+      SpecialRename(`$,`__)
+      CheckHighForm(`__)
+      CheckLowForm()
       Verilog(file(c))
    ]
 
