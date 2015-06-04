@@ -20,6 +20,9 @@ build-deploy:
 build: 
 	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl
 
+build-fast: 
+	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
+
 check: 
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
 

@@ -89,7 +89,7 @@ public defn pad-widths (c:Circuit) -> Circuit :
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map :
          match(m) :
-            (m:ExModule) : error("Cannot use flo backend with external modules")
+            (m:ExModule) : m
             (m:InModule) : InModule(info(m),name(m),ports(m),pad-widths-s(body(m)))
 
 ;============= Flo Backend ================

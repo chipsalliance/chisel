@@ -32,7 +32,7 @@ public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
       SplitExp()
       ToRealIR()
       SpecialRename(`#,`_)
-      CheckHighForm(`_)
+      CheckHighForm(expand-delin)
       CheckLowForm()
       Verilog(file(c))
    ]
