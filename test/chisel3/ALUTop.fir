@@ -12,7 +12,7 @@ circuit ALUTop :
     node shamt = bits(B, 4, 0)
     node T_157 = add-wrap(A, B)
     node T_158 = sub-wrap(A, B)
-    node T_159 = convert(A)
+    node T_159 = as-SInt(A)
     node T_160 = dshr(T_159, shamt)
     node T_161 = as-UInt(T_160)
     node T_162 = dshr(A, shamt)
@@ -100,19 +100,19 @@ circuit ALUTop :
     node alu_op2 = mux(T_233, UInt<4>(11), T_232)
     alu_op := alu_op2
   module ALUTop : 
-    input B : UInt<32>
-    output out : UInt<32>
-    input A : UInt<32>
-    input opcode : UInt<7>
-    input funct : UInt<3>
-    input add_rshift_type : UInt<1>
+    input io_B : UInt<32>
+    output io_out : UInt<32>
+    input io_A : UInt<32>
+    input io_opcode : UInt<7>
+    input io_funct : UInt<3>
+    input io_add_rshift_type : UInt<1>
     
     inst alu of ALU
     inst alu_dec of ALUdec
-    alu_dec.opcode := opcode
-    alu_dec.funct := funct
-    alu_dec.add_rshift_type := add_rshift_type
-    alu.A := A
-    alu.B := B
-    out := alu.out
+    alu_dec.opcode := io_opcode
+    alu_dec.funct := io_funct
+    alu_dec.add_rshift_type := io_add_rshift_type
+    alu.A := io_A
+    alu.B := io_B
+    io_out := alu.out
     alu.alu_op := alu_dec.alu_op

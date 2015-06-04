@@ -46,7 +46,7 @@ riscv:
 	cd $(test_dir)/riscv-mini && lit -v . --path=$(root_dir)/utils/bin/
 
 push:
-	scp test/riscv-mini/*.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-src
+	scp test/chisel3/*.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-fir-src
 
 done:
 	say "done"

@@ -195,12 +195,12 @@ circuit Tile :
     when T_1676 : 
       node T_1677 = eq(addr, UInt<12>(1310))
       when T_1677 : 
-        node T_1678 = dshl(UInt<1>(1), src)
+        node T_1678 = dshl(UInt<1>(1), bits(src,5,0))
         node T_1679 = bit-or(data, T_1678)
         reg_tohost := T_1679
       node T_1680 = eq(addr, UInt<12>(1290))
       when T_1680 : 
-        node T_1681 = dshl(UInt<1>(1), src)
+        node T_1681 = dshl(UInt<1>(1), bits(src,5,0))
         node T_1682 = bit-or(data, T_1681)
         reg_status := T_1682
     node T_1683 = eq(cmd, UInt<2>(3))
@@ -209,12 +209,12 @@ circuit Tile :
     when T_1685 : 
       node T_1686 = eq(addr, UInt<12>(1310))
       when T_1686 : 
-        node T_1687 = dshl(UInt<1>(0), src)
+        node T_1687 = dshl(UInt<1>(0), bits(src,5,0))
         node T_1688 = bit-and(data, T_1687)
         reg_tohost := T_1688
       node T_1689 = eq(addr, UInt<12>(1290))
       when T_1689 : 
-        node T_1690 = dshl(UInt<1>(0), src)
+        node T_1690 = dshl(UInt<1>(0), bits(src,5,0))
         node T_1691 = bit-and(data, T_1690)
         reg_status := T_1691
   module Datapath : 

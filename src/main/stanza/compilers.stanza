@@ -43,7 +43,7 @@ public defstruct StandardVerilog <: Compiler :
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
       CheckHighForm(expand-delin)
-      ;; TempElimination()
+      TempElimination()
       ToWorkingIR()
       MakeExplicitReset()
       ResolveKinds()

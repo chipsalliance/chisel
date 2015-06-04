@@ -49,6 +49,18 @@ defstruct ComMemKind <: VKind
 
 ;============ Verilog Backend =============
 
+defn emit-as-type (e:Expression,t:Type) -> String : 
+   match(t) :
+      (t:UIntType) : emit(e)
+      (t:SIntType) : string-join(["$signed(" emit(e) ")"])
+
+defn emit-signed-if-any (e:Expression,ls:List<Expression>) -> String : 
+   var signed? = false
+   for x in ls do :
+      if type(x) typeof SIntType : signed? = true
+   if not signed? : emit(e)
+   else : string-join(["$signed(" emit(e) ")"])
+
 defn emit (e:Expression) -> String :
    match(e) :
       (e:Ref) : to-string $ name(e)
@@ -59,64 +71,73 @@ defn emit (e:Expression) -> String :
       (e:Register) : error("Non-supported expression")
       (e:ReadPort) : error("Non-supported expression")
       (e:WritePort) : error("Non-supported expression")
-      (e:DoPrim) : string-join $ switch {_ == op(e)} :
-         ADD-OP : [emit(args(e)[0]) " + " emit(args(e)[1])]
-         SUB-OP : [emit(args(e)[0]) " - " emit(args(e)[1])]
-         MUL-OP : [emit(args(e)[0]) " * " emit(args(e)[1])]
-         DIV-OP : [emit(args(e)[0]) " / " emit(args(e)[1])]
-         MOD-OP : [emit(args(e)[0]) " % " emit(args(e)[1])]
-         QUO-OP : [emit(args(e)[0]) " / " emit(args(e)[1])]
-         REM-OP : [emit(args(e)[0]) " % " emit(args(e)[1])]
-         ADD-WRAP-OP : [emit(args(e)[0]) " + " emit(args(e)[1])]
-         SUB-WRAP-OP : [emit(args(e)[0]) " - " emit(args(e)[1])]
-         LESS-OP : [emit(args(e)[0]) " < " emit(args(e)[1])]
-         LESS-EQ-OP : [emit(args(e)[0]) " <= " emit(args(e)[1])]
-         GREATER-OP : [emit(args(e)[0]) " > " emit(args(e)[1])]
-         GREATER-EQ-OP : [emit(args(e)[0]) " >= " emit(args(e)[1])]
-         NEQUAL-OP : [emit(args(e)[0]) " != " emit(args(e)[1])]
-         EQUAL-OP : [emit(args(e)[0]) " == " emit(args(e)[1])]
-         MUX-OP : [emit(args(e)[0]) " ? " emit(args(e)[1]) " : " emit(args(e)[2])]
-         PAD-OP : 
-            val x = args(e)[0]
-            val w = width!(type(x))
-            val diff = consts(e)[0] - w
-            if w == 0 : [ emit(x) ]
-            else : ["{{" diff "{" emit(x) "[" w - 1 "]}}, " emit(x) " }"]
-         AS-UINT-OP : 
-            ["$unsigned(" emit(args(e)[0]) ")"]
-         AS-SINT-OP : 
-            ["$signed(" emit(args(e)[0]) ")"]
-         DYN-SHIFT-LEFT-OP : [emit(args(e)[0]) " << " emit(args(e)[1])]
-         DYN-SHIFT-RIGHT-OP : [emit(args(e)[0]) " >> " emit(args(e)[1])]
-         SHIFT-LEFT-OP : [emit(args(e)[0]) " << " consts(e)[0]]
-         SHIFT-RIGHT-OP : [emit(args(e)[0]) " >> " consts(e)[0]]
-         NEG-OP : ["-{" emit(args(e)[0]) "}"]
-         CONVERT-OP : 
-            match(type(args(e)[0])) :
-               (t:UIntType) : ["{1'b0," emit(args(e)[0]) "}"]
-               (t:SIntType) : [emit(args(e)[0])]
-         BIT-NOT-OP : ["!" emit(args(e)[0])]
-         BIT-AND-OP : [emit(args(e)[0]) " & " emit(args(e)[1])]
-         BIT-OR-OP : [emit(args(e)[0]) " | " emit(args(e)[1])]
-         BIT-XOR-OP : [emit(args(e)[0]) " ^ " emit(args(e)[1])]
-         CONCAT-OP : ["{" emit(args(e)[0]) "," emit(args(e)[1]) "}"]
-         BIT-SELECT-OP : [emit(args(e)[0]) "[" consts(e)[0] "]"]
-         BITS-SELECT-OP : [emit(args(e)[0]) "[" consts(e)[0] ":" consts(e)[1] "]"]
-         BIT-AND-REDUCE-OP : 
-            var v = emit(args(e)[0])
-            for x in tail(args(e)) do :
-               v = concat(v, [" & " emit(x)])
-            v
-         BIT-OR-REDUCE-OP : 
-            var v = emit(args(e)[0])
-            for x in tail(args(e)) do :
-               v = concat(v, [" | " emit(x)])
-            v
-         BIT-XOR-REDUCE-OP : 
-            var v = emit(args(e)[0])
-            for x in tail(args(e)) do :
-               v = concat(v, [" ^ " emit(x)])
-            v
+      (e:DoPrim) : 
+         val sargs = map(emit-as-type{_,type(e)},args(e))
+         val xargs = map(emit-signed-if-any{_,args(e)},args(e))
+         string-join $ switch {_ == op(e)} :
+            ADD-OP : [sargs[0] " + " sargs[1]]
+            SUB-OP : [sargs[0] " - " sargs[1]]
+            MUL-OP : [sargs[0] " * " sargs[1] ]
+            DIV-OP : [sargs[0] " / " sargs[1] ]
+            MOD-OP : [sargs[0] " % " sargs[1] ]
+            QUO-OP : [sargs[0] " / " sargs[1] ]
+            REM-OP : [sargs[0] " % " sargs[1] ]
+            ADD-WRAP-OP : [sargs[0], " + " sargs[1]]
+            SUB-WRAP-OP : [sargs[0], " - " sargs[1]]
+            LESS-OP : [xargs[0] " < " xargs[1]]
+            LESS-EQ-OP : [xargs[0] " <= " xargs[1]]
+            GREATER-OP : [xargs[0] " > " xargs[1]]
+            GREATER-EQ-OP : [xargs[0] " >= " xargs[1]]
+            NEQUAL-OP : [xargs[0] " != " xargs[1]]
+            EQUAL-OP : [xargs[0] " == " xargs[1]]
+            MUX-OP : [emit(args(e)[0]) " ? " sargs[1] " : " sargs[2]]
+            PAD-OP : 
+               val x = args(e)[0]
+               val w = width!(type(x))
+               val diff = consts(e)[0] - w
+               if w == 0 : [ emit(x) ]
+               else : 
+                  if type(e) typeof SIntType : ["{{" diff "{" emit(x) "[" w - 1 "]}}, " emit(x) " }"]
+                  else : ["{{" diff "'d0 }, " emit(x) " }"]
+            AS-UINT-OP : 
+               ["$unsigned(" emit(args(e)[0]) ")"]
+            AS-SINT-OP : 
+               ["$signed(" emit(args(e)[0]) ")"]
+            DYN-SHIFT-LEFT-OP : [sargs[0] " << " emit(args(e)[1])]
+            DYN-SHIFT-RIGHT-OP : 
+               if type(e) typeof SIntType : [sargs[0] " >>> " emit(args(e)[1])]
+               else : [sargs[0] " >> " emit(args(e)[1])]
+            SHIFT-LEFT-OP : [sargs[0] " << " consts(e)[0]]
+            SHIFT-RIGHT-OP : 
+               if type(e) typeof SIntType : [sargs[0] " >>> " consts(e)[0]]
+               else : [sargs[0] " >> " consts(e)[0]]
+            NEG-OP : ["-{" sargs[0] "}"]
+            CONVERT-OP : 
+               match(type(args(e)[0])) :
+                  (t:UIntType) : ["{1'b0," sargs[0] "}"]
+                  (t:SIntType) : [sargs[0]]
+            BIT-NOT-OP : ["!" sargs[0]]
+            BIT-AND-OP : [sargs[0] " & " sargs[1]]
+            BIT-OR-OP : [sargs[0] " | " sargs[1]]
+            BIT-XOR-OP : [sargs[0] " ^ " sargs[1]]
+            CONCAT-OP : ["{" sargs[0] "," sargs[1] "}"]
+            BIT-SELECT-OP : [sargs[0] "[" consts(e)[0] "]"]
+            BITS-SELECT-OP : [sargs[0] "[" consts(e)[0] ":" consts(e)[1] "]"]
+            BIT-AND-REDUCE-OP : 
+               var v = sargs[0]
+               for x in tail(args(e)) do :
+                  v = concat(v, [" & " emit(x)])
+               v
+            BIT-OR-REDUCE-OP : 
+               var v = sargs[0]
+               for x in tail(args(e)) do :
+                  v = concat(v, [" | " emit(x)])
+               v
+            BIT-XOR-REDUCE-OP : 
+               var v = sargs[0]
+               for x in tail(args(e)) do :
+                  v = concat(v, [" ^ " emit(x)])
+               v
 
 defn emit-module (m:InModule) :
    val h = HashTable<Symbol,VKind>(symbol-hash)

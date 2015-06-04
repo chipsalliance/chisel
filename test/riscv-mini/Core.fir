@@ -12,7 +12,7 @@ circuit Core :
     node shamt = bits(B, 4, 0)
     node T_1224 = add-wrap(A, B)
     node T_1225 = sub-wrap(A, B)
-    node T_1226 = convert(A)
+    node T_1226 = as-SInt(A)
     node T_1227 = dshr(T_1226, shamt)
     node T_1228 = as-UInt(T_1227)
     node T_1229 = dshr(A, shamt)

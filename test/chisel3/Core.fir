@@ -12,7 +12,7 @@ circuit Core :
     node shamt = bits(B, 4, 0)
     node T_1224 = add-wrap(A, B)
     node T_1225 = sub-wrap(A, B)
-    node T_1226 = convert(A)
+    node T_1226 = as-SInt(A)
     node T_1227 = dshr(T_1226, shamt)
     node T_1228 = as-UInt(T_1227)
     node T_1229 = dshr(A, shamt)
@@ -195,12 +195,12 @@ circuit Core :
     when T_1346 : 
       node T_1347 = eq(addr, UInt<12>(1310))
       when T_1347 : 
-        node T_1348 = dshl(UInt<1>(1), src)
+        node T_1348 = dshl(UInt<1>(1), bits(src,5,0))
         node T_1349 = bit-or(data, T_1348)
         reg_tohost := T_1349
       node T_1350 = eq(addr, UInt<12>(1290))
       when T_1350 : 
-        node T_1351 = dshl(UInt<1>(1), src)
+        node T_1351 = dshl(UInt<1>(1), bits(src,5,0))
         node T_1352 = bit-or(data, T_1351)
         reg_status := T_1352
     node T_1353 = eq(cmd, UInt<2>(3))
@@ -209,12 +209,12 @@ circuit Core :
     when T_1355 : 
       node T_1356 = eq(addr, UInt<12>(1310))
       when T_1356 : 
-        node T_1357 = dshl(UInt<1>(0), src)
+        node T_1357 = dshl(UInt<1>(0), bits(src,5,0))
         node T_1358 = bit-and(data, T_1357)
         reg_tohost := T_1358
       node T_1359 = eq(addr, UInt<12>(1290))
       when T_1359 : 
-        node T_1360 = dshl(UInt<1>(0), src)
+        node T_1360 = dshl(UInt<1>(0), bits(src,5,0))
         node T_1361 = bit-and(data, T_1360)
         reg_status := T_1361
   module Datapath : 

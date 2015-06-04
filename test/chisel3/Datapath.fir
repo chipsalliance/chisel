@@ -195,12 +195,12 @@ circuit Datapath :
     when T_555 : 
       node T_556 = eq(addr, UInt<12>(1310))
       when T_556 : 
-        node T_557 = dshl(UInt<1>(1), src)
+        node T_557 = dshl(UInt<1>(1), bits(src,5,0))
         node T_558 = bit-or(data, T_557)
         reg_tohost := T_558
       node T_559 = eq(addr, UInt<12>(1290))
       when T_559 : 
-        node T_560 = dshl(UInt<1>(1), src)
+        node T_560 = dshl(UInt<1>(1), bits(src,5,0))
         node T_561 = bit-or(data, T_560)
         reg_status := T_561
     node T_562 = eq(cmd, UInt<2>(3))
@@ -209,12 +209,12 @@ circuit Datapath :
     when T_564 : 
       node T_565 = eq(addr, UInt<12>(1310))
       when T_565 : 
-        node T_566 = dshl(UInt<1>(0), src)
+        node T_566 = dshl(UInt<1>(0), bits(src,5,0))
         node T_567 = bit-and(data, T_566)
         reg_tohost := T_567
       node T_568 = eq(addr, UInt<12>(1290))
       when T_568 : 
-        node T_569 = dshl(UInt<1>(0), src)
+        node T_569 = dshl(UInt<1>(0), bits(src,5,0))
         node T_570 = bit-and(data, T_569)
         reg_status := T_570
   module Datapath : 
