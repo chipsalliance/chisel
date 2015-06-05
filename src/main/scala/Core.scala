@@ -229,6 +229,7 @@ case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Arr
 case class DefWire(val id: String, val kind: Kind) extends Definition;
 case class DefRegister(val id: String, val kind: Kind) extends Definition;
 case class DefMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
+case class DefSeqMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
 case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Arg) extends Definition;
 case class DefInstance(val id: String, val module: String) extends Definition;
 case class Conditionally(val pred: Arg, val conseq: Command, val alt: Command) extends Command;
@@ -277,6 +278,11 @@ abstract class Id {
     this
   }
   def isDef = isDef_
+}
+
+object debug {
+  // TODO:
+  def apply (arg: Data) = arg
 }
 
 abstract class Data(dirArg: Direction) extends Id {
@@ -394,6 +400,25 @@ object Mem {
 }
 
 class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
+  def apply(idx: Bits): T = {
+    val x = t.cloneType
+    pushCommand(DefAccessor(x.defd.id, Alias(t.id), NO_DIR, idx.ref))
+    x
+  }
+  def name = getRefForId(t.id).name
+  def debugName = t.mod.debugName + "." + getRefForId(t.id).debugName
+}
+
+object SeqMem {
+  def apply[T <: Data](t: T, size: Int): SeqMem[T] = {
+    val mt  = t.cloneType
+    val mem = new SeqMem(mt, size)
+    pushCommand(DefSeqMemory(mt.defd.id, mt.toType, size))
+    mem
+  }
+}
+
+class SeqMem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
   def apply(idx: Bits): T = {
     val x = t.cloneType
     pushCommand(DefAccessor(x.defd.id, Alias(t.id), NO_DIR, idx.ref))
@@ -1201,6 +1226,8 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
             }
           case mem: Mem[_] =>
             setRefForId(mem.t.id, name)
+          case mem: SeqMem[_] =>
+            setRefForId(mem.t.id, name)
           case vec: Vec[_] =>
             setRefForId(vec.id, name)
           case data: Data =>
@@ -1330,8 +1357,8 @@ class Emitter {
         "node " + e.name + " = " + emit(e.op) + "(" + join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ") + ")"
       case e: DefWire => "wire " + e.name + " : " + emitType(e.kind)
       case e: DefRegister => "reg " + e.name + " : " + emitType(e.kind)
-      case e: DefMemory => "mem " + e.name + " : " + emitType(e.kind) + "[" + e.size + "]";
-      // case e: DefVector => "vec " + e.name + " : " + emit(e.kind) + "(" + join(e.args.map(x => emit(x)).toArray[String], " ") + ")"
+      case e: DefMemory => "cmem " + e.name + " : " + emitType(e.kind) + "[" + e.size + "]";
+      case e: DefSeqMemory => "smem " + e.name + " : " + emitType(e.kind) + "[" + e.size + "]";
       case e: DefAccessor => "accessor " + e.name + " = " + emit(e.source) + "[" + emit(e.index) + "]"
       case e: DefInstance => {
         val mod = modules(e.id)
