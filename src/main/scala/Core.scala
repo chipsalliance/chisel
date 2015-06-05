@@ -197,7 +197,7 @@ case class Slot(val imm: Immediate, val name: String) extends Immediate {
 case class Index(val imm: Immediate, val value: Int) extends Immediate {
   def name = "[" + value + "]"
   def fullname = imm.fullname + "[" + value + "]"
-  override def debugName = imm.debugName + "_" + value
+  override def debugName = imm.debugName + "." + value
 }
 
 case class Port(val id: String, val dir: Direction, val kind: Kind);
