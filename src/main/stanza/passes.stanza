@@ -1949,8 +1949,8 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
          else :
             if substring(st,0,length(os)) == os :
                add(y,ns)
-               println(st)
-               println(substring(st,length(os),length(st)))
+               ;println(st)
+               ;println(substring(st,length(os),length(st)))
                rename(substring(st,length(os),length(st)))
             else : 
                add(y,substring(st,0,1))

@@ -6,7 +6,6 @@
 Add print, assert
 move width inference earlier
    Required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits
-Low FIRRTL pass analysis
 Temp elimination needs to count # uses
 Declared references needs to understand scope <= check in high form check
 Check for recursively defined instances
@@ -17,6 +16,7 @@ Add Unit Tests for each pass
    write test that checks instance types are correctly lowered
 Scaling
 Do name-mangling differently, use _xEF or something like that
+Add alpha transform pass
 
 ======== Verilog Backend Notes ========
 * 1) Emit module. No Parameters. Include clk and reset signals
@@ -39,16 +39,13 @@ Checks:
 
    
 ======== Update Core ==========
-Add vptype
+Add bi-accessor
 Add readwriteport
 
 ======== Check Passes ==========
 High-Firrtl
    No combinational loops
 After adding dynamic assertions, insert bounds check with accessor expansion
-Well-formed low firrtl
-   All things only assigned to once
-   Register/ReadPort/WritePort are only in correct spots
 Width inference
    No names
    No Unknowns
@@ -77,19 +74,18 @@ expanding mems (consider changing defmem to be size, and element type)
 Multi-streams for print statements/asserts (Jack)
 Consider def female node. (Patrick) 
 Add FIFOs to the IR (Palmer)
-Think about supporting generic primops on bundles and vecs (Adam) (wait until front-end more completed)
 Union Types
 Enums?
 Convert to scala
 Firrtl interpreter (in scala)
 
 ======== Update Spec ========
-Look through all primops
-change parser to other unknown thing for vptype?
-Add optional type to node
-add assertions and printfs
-cannot connect directly to a mem (loc can never contain a mem)
-Front-end needs to guarantee unique names per module.
+add printfs
+think about subword on accessors
+think about mems in lowered form - change ReadPort's reference to mem to be either exp or id
+add explanation about mems
+think about ROMS
+
 FIRRTL rule: No name can be a prefix of any other name.
 Future questions to address in spec:
    Introduction – motivation, and intended usage
@@ -126,14 +122,6 @@ Schedulable
 Scheduler
 
 ======== Notes ========
-Only for MUXES, AS, and __ can width inference go backwards:
-  reg r : UInt<5>
-  r := MUX(p,UInt<?>(1),UInt<?>(2))
-  ==>
-  reg r : UInt<5>
-  r := MUX(p,UInt<5>(1),UInt<5>(2))
-
-
 Which ones
 Treat everything as just bits - the only operators that should exist are ones that emit different bits
 Go through all primops with Andrew

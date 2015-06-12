@@ -24,13 +24,13 @@ Masks?
    How do we do this? Try not expanding mems, but expanding accessors.
    e.g.
 
-mem m : { tag : UInt<10> data : UInt<128> }
+mem m : { tag : UInt<10> data : UInt<128> }[128]
 accessor r = m[i]
 accessor w = m[i]
 
 ==>
 
-mem m : { tag : UInt<10> data : UInt<128> }
+mem m : { tag : UInt<10> data : UInt<128> }[128]
 accessor r#tag = m.tag[i]
 accessor r#data = m.data[i]
 accessor w#tag = m.tag[i]
