@@ -1,8 +1,8 @@
-\title{Specification for the FIRRTL Language:\\ Version 0.1.2 \\ PRE-RELEASE VERSION, DO NOT DISTRIBUTE}
+\title{Specification for the FIRRTL Language:\\ Version 0.1.2 \\ PRE-RELEASE VERSION - DO NOT DISTRIBUTE}
 \author{Patrick S. Li \\ \href{mailto:psli@eecs.berkeley.edu}{psli@eecs.berkeley.edu}
    \and Adam M. Izraelevitz \\ \href{mailto:adamiz@eecs.berkeley.edu}{adamiz@eecs.berkeley.edu} 
    \and Jonathan Bachrach \\ \href{mailto:jrb@eecs.berkeley.edu}{jrb@eecs.berkeley.edu} }
-\documentclass[10pt]{article}
+\documentclass[12pt]{article}
 \usepackage{listings}
 \usepackage{amsmath}
 \usepackage{proof}
@@ -20,7 +20,7 @@
 \pagestyle{fancy}
 \lhead{Specification for the FIRRTL Language}
 \rhead{Version 0.1.2}
-\cfoot{\thepage \\ \em{PRE-RELEASE VERSION, DO NOT DISTRIBUTE}}
+\cfoot{\thepage \\ \em{PRE-RELEASE VERSION - DO NOT DISTRIBUTE}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
 \lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
@@ -44,15 +44,37 @@
 
 \section{Introduction and Philosophy}
 
-This is our philosophy placeholder.
+\subsection{Justification}
+\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
+\item Easy to make light-weight backends
+\item Easy to make light-weight front-ends
+\item Enables more complicated, but potentially more performant, backends that operate on high firrtl
+\item Lowering allows transforms to operate on a limited scope (low firrtl), but produce high firrtl, then lower again if needed.
+\item Specification allows additional people to contribute front-ends, back-ends, and custom transforms.
+\end{enumerate}
+
+\subsection{Annotations}
+\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
+\item Writing a correct compiler is difficult.
+\item To make it easier, make things as brittle as possible
+\item If annotations are kept in the FIRRTL graph, it is unclear how they propagate.
+\item If improperly propagated, you either have annotations where they shouldn't be, or lack annotations where they should be.
+\item This is impossible to detect, so turns into a silent failure
+\item If annotations are used for actual manipulations of circuits later on, this could be the cause of a bug that is exceptionally hard to solve
+\item Thus, annotation producer/consumer keeps external datastructure mapping names to annotations
+\item Pass writers must do all they can to preserve names - can provide transform for names that annotation users can run on their tables
+\item If a name is mangled, the annotation consumer can ERROR. Then, they need to look at the pass to see how their annotations should propagate.
+\end{enumerate}
 
 \section{Acknowledgements}
 
-The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, including but not limited to Andrew Waterman, Stephen Twigg, Palmer Dabbelt, Eric Love, Scott Beamer, Chris Celio, Krste Asanovic, and many many others. We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
+The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, including but not limited to Andrew Waterman, Stephen Twigg, Palmer Dabbelt, Eric Love, Scott Beamer, Chris Celio, Krste Asanovic, and many many others.
+We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
 
 \section{FIRRTL Language Definition}
 
 \subsection{Abstract Syntax Tree}
+{\footnotesize
 \[
 \begin{array}{rrll}
 \pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
@@ -72,7 +94,7 @@ The FIRRTL language could not have been developed without the help of many of th
                 &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \ids , \pds{exp}                      &\text{Register Declaration}\\
                 &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \ids                                  &\text{Sequential Memory Declaration}\\
                 &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \ids                                  &\text{Combinational Memory Declaration}\\
-                &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
+                &\vert &\info \kw{inst} \id \kw{:} \id , \ids\text{*}                                 &\text{Instance Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
                 &\vert &\info \kw{accessor} \id = \pds{exp}[\pds{exp}]                                &\text{Accessor Declaration}\\
                 &\vert &\info \kw{bi-accessor} \id = \pds{exp}[\pds{exp}]                             &\text{Bi-Accessor Declaration}\\
@@ -98,8 +120,10 @@ The FIRRTL language could not have been developed without the help of many of th
                 &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\
 \end{array}
 \]
+}
 
 \[
+{\footnotesize
 \begin{array}{rll}
 \pd{primop}     &= \\
                 &\kws{add}            &\text{Unsigned/Signed Add}\\
@@ -138,6 +162,7 @@ The FIRRTL language could not have been developed without the help of many of th
 \vert           &\kws{bit}            &\text{Single Bit Extraction}\\
 \vert           &\kws{bits}           &\text{Multiple Bit Extraction}\\
 \end{array}
+}
 \]
 
 \subsection{Notation}
@@ -148,7 +173,7 @@ The special productions, id and int, indicates an identifier and an integer lite
 Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurences of the token.
 
 Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL datastructure.
-Readers and writers are provided for converting a FIRRTL datastructure into a purely textual representation, and is defined in section \ref{concrete}.
+Readers and writers are provided for converting a FIRRTL datastructure into a purely textual representation, which is defined in Section \ref{concrete}.
 
 
 \section{Circuits and Modules}
@@ -158,7 +183,7 @@ Readers and writers are provided for converting a FIRRTL datastructure into a pu
 \pd{module}     &=     &\kw{module}  \text{name } \kw{:} (\text{ports* } \text{body}) \\
                 &\vert &\kw{exmodule}  \text{name } \kw{:} (\text{ports* })           \\ 
 \pd{port}       &=     &\pd{dir} \id \kw{:} \pd{type}                                 \\
-\pd{dir}        &=     &\kws{input} \vert \kws{output}                                \\
+\pd{dir}        &=     &\kws{input} \vert \kws{output} \vert \kws{clock}              \\
 \end{array}
 \]
 
@@ -171,8 +196,18 @@ A module port is specified by a direction, which may be input or output or clock
 The port names exist in the identifier namespace for the module, and must be unique.
 In addition, all references within a module must be unique.
 
-The clock port direction is special, in that it has the same conceptual direction as an input port, but cannot be used to connect to any element in the circuit except to other clock ports of declared instances.
-In addition, can be referenced in the \kws{reg}, \kws{cmem}, \kws{smem} declarations, as explained in section \ref{statements}.
+The clock port direction is special in that it cannot be used to connect to any element in the circuit.
+However, a clock port can be referenced in the \kws{reg}, \kws{cmem}, \kws{smem}, and \kws{inst} declarations, as explained in Section \ref{statements}.
+
+The following example shows how a module can span two clock domains:
+\[
+\begin{aligned}
+&\kw{module} TwoClock : \\
+&\quad \kw{clock} clk1 \\
+&\quad \kw{clock} clk2 \\
+&\quad \kw{input} ... \\
+\end{aligned}
+\]
 
 \section{Types}
 
@@ -233,11 +268,11 @@ Here is an example of a possible type for a decoupled port.
    \kw{reverse} &\text{ready } \kw{:} \kws{UInt}\kws{$<$} 1 \kws{$>$}\} \\
 \end{aligned}
 \]
-It has a data field that is specified to be a 10-bit unsigned integer, a valid signal that must be a 1-bit unsigned integer, and a flipped ready signal that must be a 1-bit unsigned integer.
+It has a data field that is specified to be a 10-bit unsigned integer, a valid signal that must be a 1-bit unsigned integer, and a reversed ready signal that must be a 1-bit unsigned integer.
 
 By convention, we specify the directions within a bundle type with their relative orientation.
 For this reason, the real and imag fields for the complex number bundle type are both specified to be {\em default}.
-Similarly, if a module were to output a value using a decoupled protocol, we would declare the module to have an output port, data, which would contain the value itself, a non-flipped field, valid, which would indicate when the value is valid, and accept an {\em reverse} field, ready, from the receiving component, which would indicate when the component is ready to receive the value.
+Similarly, if a module were to output a value using a decoupled protocol, we would declare the module to have an output port, data, which would contain the value itself, a default field, valid, which would indicate when the value is valid, and accept an {\em reverse} field, ready, from the receiving component, which would indicate when the component is ready to receive the value.
 
 Note that all field names within a bundle type must be unique.
 
@@ -287,9 +322,11 @@ A combinatorially read memory with a given name, type and clock port name can be
 \]
 
 Note that, by definition, memories contain multiple elements, and hence {\em must} be declared with a vector type.
+Additionally, the type for a memory must be completely specified and cannot contain any unknown widths.
 It is an error to specify any other type for a memory.
 However, the internal type to the vector type may be a non-ground type, with the caveat that the internal type, if a bundle type, cannot contain any reverse fields.
-Additionally, the type for a memory must be completely specified and cannot contain any unknown widths.
+
+A memory cannot be explicitly initialized using a special FIRRTL construct - the circuit itself must contain the proper logic to initialize the memory.
 
 \subsection{Nodes}
 A node is simply a named intermediate value in a circuit, and is akin to a pointer in the C programming language.
@@ -299,7 +336,7 @@ A node with a given name and value can be instantiated with the following statem
 \]
 Unlike wires, nodes can only be used in {\em output} directions.
 They can be connected from, but not connected to.
-Consequentially, their expression cannot be a bundle type with any flipped fields.
+Consequentially, their expression cannot be a bundle type with any reversed fields.
 
 \subsection{Accessors}
 Accessors are used for either connecting to or from a vector-typed expression, from some {\em variable} index.
@@ -368,17 +405,68 @@ They can be used to access {\em any} vector-valued type.
 
 \subsection{Instances}
 An instance refers to a particular instantiation of a FIRRTL module.
-An instance with some given name, of a given module can be created using the following statement.
+An instance with some given name, of a given module, with a list of clock ports can be created using the following statement.
 \[
 \begin{aligned}
-\kw{inst} \text{name } \kw{of} \text{module}
+\kw{inst} \text{name } \kw{:} \text{module}, \text{clk*}
 \end{aligned}
 \]
 
-The ports of an instance may be accessed using the subfield expression.
-The output ports of an instance may only be used in output positions, e.g. the right-hand side of a connect statement, and the input ports of an instance may only be used in input positions, e.g. the left-hand side of a connect statement.
+The instance's clock ports are assigned in order of the specified list of enclosing module clock ports.
+A mismatch in number of clock ports results in an error.
 
-An instance may be directly connected to a value. However, it can only be used as an input, or on the right side of a connect.
+The resulting instance has a bundle type, where the given module's non-clock ports are fields and can be accessed using the subfield expression.
+The orientation of the {\em output} ports are {\em default}, and the orientation of the {\em input} ports are {\em reverse}.
+An instance may be directly connected to another element, but it must be on the right-hand side of the connect statement.
+
+The following example illustrates directly connecting an instance to a wire:
+
+{\footnotesize
+\[
+\begin{aligned}
+&\kw{exmodule} Queue \ \kws{:} \\
+&\quad \kw{clock} clk  \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{input} in   \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
+&\quad \kw{output} out \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
+&\kw{module} Top \ \kws{:} \\
+&\quad \kw{clock} clk \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{inst} queue \ \kw{:} Queue, clk \\
+&\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} in \kw{:} \ \kws{UInt$<$}16\kws{$>$}} \\
+&\quad connect \ \kw{:=} queue \\
+\end{aligned}
+\]
+}
+
+The output ports of an instance may only be connected from, e.g. the right-hand side of a connect statement.
+Conversely, the input ports of an instance may only be connected to, e.g. the left-hand side of a connect statement.
+
+The following example illustrates a proper use of creating instances with different clock domains:
+
+{\footnotesize
+\[
+\begin{aligned}
+&\kw{exmodule} AsyncQueue \ \kws{:} \\
+&\quad \kw{clock} clk1 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{clock} clk2 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{input} in  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\quad \kw{output} out  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\kw{exmodule} Source \ \kws{:} \\
+&\quad \kw{clock} clk \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{output} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\kw{exmodule} Sink \ \kws{:} \\
+&\quad \kw{clock} clk \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{input} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\kw{module} TwoClock \ \kws{:} \\
+&\quad \kw{clock} clk1 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{clock} clk2 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{inst} src \ \kw{:} Source, clk1 \\
+&\quad \kw{inst} snk \ \kw{:} Sink, clk2 \\
+&\quad \kw{inst} queue \ \kw{:} AsynchQueue, clk1, clk2 \\
+&\quad queue.in \ \kw{:=} src.packet \\
+&\quad snk.packet \ \kw{:=} queue.out \\
+\end{aligned}
+\]
+}
 
 There are restrictions upon which modules the user is allowed to instantiate, so as not to create infinitely recursive hardware.
 We define a module with no instances as a {\em level 0} module.
@@ -410,7 +498,7 @@ A bulk connect between two components of the same ground type is equivalent to a
 All other combinations of types will not error, but will not generate any connect statements.
 
 \subsection{The On-Reset Connect Statement}
-The on-reset connect statement is used to specify the default value for a \kws{reg} element.
+The on reset connect statement is used to specify the default value for a \kws{reg} element.
 \[
 \kw{onreset} \text{r } \kw{:=} \text{output} 
 \]
@@ -419,7 +507,7 @@ For a connection to be legal, the types of the two expressions must match exactl
 The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be a \kws{reg} element.
 Memories cannot be initialized with this construct.
 
-By default, a \kws{reg} will not have a initialization value and will maintain their current value under the reset signal specified in their declaration.
+By default, a \kws{reg} will not have a initialization value and will maintain its current value under the reset signal specified in their declaration.
 The following example demonstrates declaring a \kws{reg}, and changing its initialization value to forty two.
 
 \[
@@ -429,12 +517,12 @@ The following example demonstrates declaring a \kws{reg}, and changing its initi
 \end{aligned}
 \]
 
-Note that structural registers, kws{Register}, cannot be assigned an initial value because they can only be used on the right side of a connect statement.
+Note that structural registers, \kws{Register}, cannot be assigned an initial value because they can only be used on the right side of a connect statement.
 
 \subsection{The Sub-Word Connect Statement}
-The subword connect statement is used to assigned to a range of bits within a ground-typed element.
+The subword connect statement is used to assigned to a range of bits within a ground-typed element. It is specified by two integers that indicate the high and low bounds of the range, inclusively.
 \[
-\text{exp}[\intsp \kw{through} \ints] \ \kw{:=} \text{output} 
+\text{exp}[\text{hi} \kw{through} \text{lo}] \ \kw{:=} \text{output} 
 \]
 
 The subword is always UInt type, so for a connection to be legal, the expression on the right must also be of UInt type.
@@ -505,6 +593,15 @@ In the following example, the wire w is connected to 20 unless the enable expres
 &\quad w := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
 \end{aligned}
 \]
+
+\subsection{The Assert Statement}
+The assert statement is used to specify a dynamic assertion on an expression in a circuit.
+\[
+\begin{aligned}
+\kw{assert} \pds{signal}
+\end{aligned}
+\]
+The assertion expression must be a one-bit UInt type.
 
 \subsection{The Empty Statement}
 The empty statement is specified using the following.
@@ -928,13 +1025,13 @@ The operands must be unsigned integers, and the resultant width is equal to the 
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{andr}     (\pds{op:UInt}*) & UInt & max(width(op)*)    \\
-\kws{orr}      (\pds{op:UInt}*) & UInt & max(width(op)*)    \\
-\kws{xorr}     (\pds{op:UInt}*) & UInt & max(width(op)*)    \\
+\kws{andr}     (\pds{op:UInt}) & UInt & 1    \\
+\kws{orr}      (\pds{op:UInt}) & UInt & 1    \\
+\kws{xorr}     (\pds{op:UInt}) & UInt & 1    \\
 \end{array}
 \]
-The above operations correspond to bitwise not, and, or, and exclusive or respectively, reduced over a list of unsigned integers.
-The resultant width is equal to the width of the widest operand.
+The above operations correspond to bitwise not, and, or, and exclusive or respectively, reduced over every bit of a single unsigned integer.
+The resultant width is always one.
 
 \subsection{Concatenation}
 \[
@@ -1023,6 +1120,8 @@ Commas are treated as whitespace, and may be used by the user for clarity if des
 Statements are grouped into statement groups using parenthesis, however a colon at the end of a line will automatically surround the next indented region with parenthesis.
 This mechanism is used for indicating block structuring. 
 
+The following circuit, module, port and statement examples all exclude the info token \verb|@[filename:line.col]|, which can be optionally included at the end of the first line of each elements' concrete syntax.
+
 \subsection*{Circuits and Modules}
 A circuit is specified the following way.
 \begin{verbatim}
@@ -1082,14 +1181,14 @@ UInt<16>[10]
 \end{verbatim}
 
 \subsection*{Statements}
-The following examples demonstrate declaring wires, registers, memories, nodes, instances, accessors and bi-accessors. 
+The following examples demonstrate declaring wires, registers, memories, nodes, instances, accessors and bi-accessors.
 \begin{verbatim}
-wire mywire : UInt<10>
-reg myreg : UInt<10>, clk, reset
-mem mymem : UInt<10>[16], clk2
-inst myinst : MyModule
-accessor myaccessor = e[i]
-bi-accessor myaccessor = e[i]
+wire mywire : UInt<10> 
+reg myreg : UInt<10>, clk, reset 
+mem mymem : UInt<10>[16], clk2 
+inst myinst : MyModule 
+accessor myaccessor = e[i] 
+bi-accessor mybiaccessor = e[i] 
 \end{verbatim}
 
 The connect statement is specified using the \verb|:=| operator.
@@ -1097,19 +1196,24 @@ The connect statement is specified using the \verb|:=| operator.
 x := y
 \end{verbatim}
 
-The on-reset connect statement is specified using the onreset keyword and the \verb|:=| operator.
+The on reset connect statement is specified using the onreset keyword and the \verb|:=| operator.
 \begin{verbatim}
-onreset x := y
+onreset x := y 
 \end{verbatim}
 
 The bulk connect statement is specified using the \verb|<>| operator.
 \begin{verbatim}
-x <> y
+x <> y 
 \end{verbatim}
 
 The subword connect statement is specified with \verb|[| \verb|]| brackets after the expression on the left of the \verb|:=| operator. Within the brackets is the high bit index, followed by the keyword \verb|through|, followed by the low bit index.
 \begin{verbatim}
-x[3 through 0] := y
+x[3 through 0] := y 
+\end{verbatim}
+
+The assert statement is specified using the assert keyword.
+\begin{verbatim}
+assert x
 \end{verbatim}
 
 The conditional statement is specified with the \verb|when| keyword.
@@ -1130,7 +1234,7 @@ when x :
    x := y
 \end{verbatim}
 
-Finally, for convenience when expressing nested conditional statements, the colon following the \verb|else| keyword may be elided if the next statement is another conditional statement.
+For convenience when expressing nested conditional statements, the colon following the \verb|else| keyword may be elided if the next statement is another conditional statement.
 \begin{verbatim}
 when x :
    x := y

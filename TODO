@@ -37,22 +37,29 @@ Checks:
    widths are -1 of size
    zero width?
 
-   
 ======== Update Core ==========
 Add bi-accessor
-Add readwriteport
+Add RdWrPort
+Add SubwordConnect
+Add clock, reset to reg
+Add clock to cmem, smem
+Add clock to Direction, make sure it all works
+Remove concrete syntax from EmptyStmt()
 
 ======== Check Passes ==========
 High-Firrtl
    No combinational loops
+   Clocks are used correctly
+   Restrictions on subword assignments
+
 After adding dynamic assertions, insert bounds check with accessor expansion
 Width inference
    No names
    No Unknowns
-   All widths are positive
+   All widths are positive, and nonzero
    Pad's width is greater than value's width
    pad's width is greater than value's width
-   connect can connect from big to small??
+   connect can connect from big to small?? <- I think this shouldn't be allowed
 Width pad check?
 
 ======== Other Passes ========
@@ -80,11 +87,14 @@ Convert to scala
 Firrtl interpreter (in scala)
 
 ======== Update Spec ========
-add printfs
-think about subword on accessors
+Add explanation of an instance type, ie converting from input/output to default/reverse
+   also, can only be used on the right side of :=
+Add assert statement explanation
+think about printfs
+think about subword on accessors, non-ground types
 think about mems in lowered form - change ReadPort's reference to mem to be either exp or id
-add explanation about mems
 think about ROMS
+think about how widths propagate - add section explicitly addressing this
 
 FIRRTL rule: No name can be a prefix of any other name.
 Future questions to address in spec:
