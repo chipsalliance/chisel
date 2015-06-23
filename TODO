@@ -3,6 +3,7 @@
 ================================================
 
 ======== Current Tasks ========
+Add what is FIRRTL for, and what it is not for
 Add print, assert
 move width inference earlier
    Required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits

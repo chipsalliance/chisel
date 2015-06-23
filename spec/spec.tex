@@ -42,9 +42,38 @@
 \newcommand{\bundleT}[1]{\{#1\}}
 \newcommand{\info}{[\pds{info}]\ }
 
-\section{Introduction and Philosophy}
+\section{Introduction - IN PROGRESS}
 
-\subsection{Justification}
+\subsection{Background}
+The ideas for FIRRTL originated from a different UC Berkeley project, Chisel, which embedded a hardware description language in Scala and was used to write highly-parameterized circuit designs.
+
+Paragraph explaining how the concepts of Chisel are great.
+
+\subsection{Motivation}
+Internally, Chisel successfully enabled our research in computer architecture by becoming the backbone of our research infrastructure.
+Externally, many projects outside of UC Berkeley used Chisel to design their hardware.
+However, Chisel's external rate of adoption slowed for the following reasons:
+\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
+\item Learning a functional language (Scala) was a large barrier to entry
+\item Conceptually separating the Chisel HDL from the host language was difficult for new users
+\item Verilog generation was unreadable and slow
+\item Writing transformational passes required insider knowledge of the Chisel compiler
+\item Compiler design was unstructured, making error checking difficult and error messages often uncomprehensible
+\item Chisel IR semantics were ill-defined and thus impossible to target from other languages
+\end{enumerate}
+
+For these reasons, we felt Chisel needed to be redesigned from its ground up to formalize its IR and semantics, modularize its compilation process for robustness, and cleanly separate its frontend (Chisel + Scala), internal representation (FIRRTL), and backends.
+
+\subsection{Design Philosophy and Justification}
+FIRRTL represents the formalized elaborated graph that the Chisel DSL produces, prior to any simplification.
+By including complicated constructs like vector types, bundle types, and when statements in FIRRTL, the Chisel/Scala frontend can be as light-weight as possible.
+
+Low FIRRTL represents a simplified FIRRTL circuit that lacks any complex features and has additional structural invariants to make it a netlist of a circuit.
+This form is straightforward to transform into another language (e.g. Verilog) by a light-weight backend.
+
+By containing low FIRRTL within 
+
+
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
 \item Easy to make light-weight backends
 \item Easy to make light-weight front-ends
@@ -53,20 +82,7 @@
 \item Specification allows additional people to contribute front-ends, back-ends, and custom transforms.
 \end{enumerate}
 
-\subsection{Annotations}
-\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Writing a correct compiler is difficult.
-\item To make it easier, make things as brittle as possible
-\item If annotations are kept in the FIRRTL graph, it is unclear how they propagate.
-\item If improperly propagated, you either have annotations where they shouldn't be, or lack annotations where they should be.
-\item This is impossible to detect, so turns into a silent failure
-\item If annotations are used for actual manipulations of circuits later on, this could be the cause of a bug that is exceptionally hard to solve
-\item Thus, annotation producer/consumer keeps external datastructure mapping names to annotations
-\item Pass writers must do all they can to preserve names - can provide transform for names that annotation users can run on their tables
-\item If a name is mangled, the annotation consumer can ERROR. Then, they need to look at the pass to see how their annotations should propagate.
-\end{enumerate}
-
-\section{Acknowledgements}
+\section{Acknowledgements - IN PROGRESS}
 
 The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, including but not limited to Andrew Waterman, Stephen Twigg, Palmer Dabbelt, Eric Love, Scott Beamer, Chris Celio, Krste Asanovic, and many many others.
 We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
@@ -80,8 +96,8 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
 \pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
 \pd{module}     &=     &\info \kw{module}  \id \kw{:} (\pd{port*} \pd{stmt})                          &\text{Module}\\
                 &\vert &\info \kw{exmodule}  \id \kw{:} (\pd{port*})                                  &\text{External Module}\\
-\pd{port}       &=     &\info \pd{dir} \id \kw{:} \pd{type}                                           &\text{Port}\\
-\pd{dir}        &=     &\kws{input} \vert \kws{output} \vert \kws{clk}                                &\text{Input/Output}\\
+\pd{port}       &=     &\info \pd{kind} \id \kw{:} \pd{type}                                          &\text{Port}\\
+\pd{kind}       &=     &\kws{input} \vert \kws{output} \vert \kws{clk}                                &\text{Port Kind}\\
 \pd{type}       &=     &\kws{UInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Unsigned Integer}\\
                 &\vert &\kws{SInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Signed Integer}\\
                 &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
@@ -96,8 +112,7 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
                 &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \ids                                  &\text{Combinational Memory Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{:} \id , \ids\text{*}                                 &\text{Instance Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
-                &\vert &\info \kw{accessor} \id = \pds{exp}[\pds{exp}]                                &\text{Accessor Declaration}\\
-                &\vert &\info \kw{bi-accessor} \id = \pds{exp}[\pds{exp}]                             &\text{Bi-Accessor Declaration}\\
+                &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}]                       &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
                 &\vert &\info \kw{onreset} \pd{exp} \kw{:=} \pd{exp}                                  &\text{On-Reset Connect}\\
                 &\vert &\info \pd{exp} \kw{$<>$} \pd{exp}                                             &\text{Bulk Connect}\\
@@ -106,15 +121,12 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
                 &\vert &\info \kw{assert} \pd{exp}                                                    &\text{Assert Statement}\\
                 &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
                 &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
+\pd{dir}        &=     &\kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr}                &\text{Accessor Direction}\\
 \pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(ints)                        &\text{Literal Unsigned Integer}\\
                 &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(ints)                        &\text{Literal Signed Integer}\\
                 &\vert &\info \id                                                                     &\text{Reference}\\
                 &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
                 &\vert &\info \pds{exp}[\ints]                                                        &\text{Subindex}\\
-                &\vert &\info \kws{Register}(\pds{exp}, \pds{exp}, \id)                               &\text{Structural Register}\\
-                &\vert &\info \kws{WritePort}(\pds{exp}, \pds{exp}, \pds{exp})                        &\text{Write Port}\\
-                &\vert &\info \kws{ReadPort}(\pds{exp}, \pds{exp}, \pds{exp})                         &\text{Read Port}\\
-                &\vert &\info \kws{RdWrPort}(\pds{exp}, \pds{exp}, \pds{exp}, \pds{exp}, \pds{exp})   &\text{Read/Write Port}\\
                 &\vert &\info \pds{primop}(\pds{exp*}, \ints\text{*})                                 &\text{Primitive Operation}\\
 \pd{info}       &=     &\text{filename } \kw{:} \text{line} . \text{col}                              &\text{File Location}\\
                 &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\
@@ -343,13 +355,16 @@ Accessors are used for either connecting to or from a vector-typed expression, f
 An accessor can be instantiated with the following statement.
 \[
 \begin{aligned}
-&\kw{accessor} \text{name} = \pds{exp}[\text{index}] \\
+&\pd{dir} \kw{accessor} \text{name} = \pds{exp}[\text{index}] \\
 \end{aligned}
 \]
-Given a name, an expression to access, and the index at which to access, the above statement creates an accessor that may be used for connecting to or from the expression.
+Given a direction, a name, an expression to access, and the index at which to access, the above statement creates an accessor that may be used for connecting to or from the expression.
 The expression must have a vector type, and the index must be an variable of UInt type.
 
-An accessor is conceptually one-way; it must be consistently used to connect to, or to connect from, but not both.
+A read, write, and inferred accessor is conceptually one-way; it must be consistently used to connect to, or to connect from, but not both.
+
+A rdwr is conceptually two-way; it can be used to connect to, to connect from, or both, {\em but not on the same cycle}.
+If it is written to and read from on the same cycle, its behavior is undefined.
 
 The following example demonstrates using accessors to read and write to a memory.
 The accessor, \pds{reader}, acts as a memory read port that reads from the index specified by the wire \pds{i}.
@@ -358,9 +373,9 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 \begin{aligned}
 &\kw{wire} i : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
 &\kw{wire} j : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
-&\kw{mem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$}[10] \\
-&\kw{accessor} reader = m[i] \\
-&\kw{accessor} writer = m[j] \\
+&\kw{cmem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$}[10] \\
+&\kw{read} \kw{accessor} reader = m[i] \\
+&\kw{write} \kw{accessor} writer = m[j] \\
 &writer := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
 &\kw{node} temp = reader \\
 \end{aligned}
@@ -368,39 +383,6 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 
 As mentioned previously, the only way to read from or write to a memory is through an accessor.
 However, accessors are not restricted to accessing memories.
-They can be used to access {\em any} vector-valued type. 
-
-
-\subsection{Bi-Accessors}
-Bi-accessors are used for connecting to and from a vector-typed expression, from some {\em variable} index.
-A bi-accessor can be instantiated with the following statement.
-\[
-\begin{aligned}
-&\kw{bi-accessor} \text{name} = \pds{exp}[\text{index}] \\
-\end{aligned}
-\]
-Given a name, an expression to access, and the index at which to access, the above statement creates a bi-accessor that may be used for connecting to or from the expression.
-The expression must have a vector type, and the index must be a variable with a UInt type.
-
-A bi-accessor is conceptually two-way; it can be used to connect to, to connect from, or both, {\em but not on the same cycle}.
-If it is written to and read from on the same cycle, its behavior is undefined.
-
-The following example demonstrates using bi-accessors to read and write to a memory.
-The bi-accessor, \pds{readwrite}, acts as a memory read and write port that read/writes from the index specified by the wire \pds{i}.
-\[
-\begin{aligned}
-&\kw{wire} i : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
-&\kw{wire} value : \kws{UInt}\kws{$<$} 10 \kws{$>$} \\
-&\kw{mem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$}[10] \\
-&\kw{bi-accessor} readwrite = m[j] \\
-&\kw{when} p : \\
-&\quad readwrite := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
-&\kw{else} : \\
-&\quad value := readwrite \\
-\end{aligned}
-\]
-
-Bi-accessors are not restricted to accessing memories.
 They can be used to access {\em any} vector-valued type. 
 
 \subsection{Instances}
@@ -517,8 +499,6 @@ The following example demonstrates declaring a \kws{reg}, and changing its initi
 \end{aligned}
 \]
 
-Note that structural registers, \kws{Register}, cannot be assigned an initial value because they can only be used on the right side of a connect statement.
-
 \subsection{The Sub-Word Connect Statement}
 The subword connect statement is used to assigned to a range of bits within a ground-typed element. It is specified by two integers that indicate the high and low bounds of the range, inclusively.
 \[
@@ -560,6 +540,8 @@ It is an error to refer to any component declared within a branch after the bran
 Note that there is still only a single identifier namespace in a module.
 Thus, there cannot be two components with identical names in the same module, {\em even if} they are in separate scopes.
 This is to facilitate writing transformational passes, by ensuring that the component name and module name is sufficient to uniquely identify a component.
+
+\subsubsection{Connect Semantics - IN PROGRESS}
 
 \subsection{Statement Groups}
 Several statements can be grouped into one using the following construct.
@@ -659,42 +641,6 @@ The subfield expression may be used for one of three purposes:
 \]
 The subindex expression is used for referring to a specific element within a vector-valued expression.
 It is legal to use the subindex expression on any vector-valued expression, except for memories. 
-
-\subsection{Structural Register}
-\[
-\kws{Register}(\text{value}, \text{enable}, \text{clk})
-\]
-A structural register is an unnamed register specified by the input value for the register, the enable signal for the register, and the clock port for the register.
-The type of the input must be a ground type and the enable signal must be a 1-bit unsigned integer. 
-
-\subsection{WritePort}
-\[
-\kws{WritePort}(\text{mem},\text{index},\text{enable})
-\]
-A write port is specified given the memory it accesses, the index into the memory, and the enable signal determining when to write the value.
-The index must be an expression with an unsigned integer type and the enable signal must be a 1-bit unsigned integer. 
-The type of the WritePort is the inside type of the memory's vector type.
-A WritePort can only be used as an output (on the left side of a connect statement).
-
-\subsection{ReadPort}
-\[
-\kws{ReadPort}(\text{mem},\text{index},\text{enable})
-\]
-A read port is specified given the memory it accesses, the index into the memory, and the enable signal determining when to read the value.
-The index must be an expression with an unsigned integer type and the enable signal must be a 1-bit unsigned integer. 
-The type of the ReadPort is the inside type of the memory's vector type.
-A ReadPort can only be used as an input (on the right side of a connect statement).
-A ReadPort's value when the enable signal is not asserted is undefined.
-
-\subsection{RdWrPort}
-\[
-\kws{RdWrPort}(\text{mem},\text{index},\text{wenable},\text{wdata},\text{renable})
-\]
-A read/write port is specified given the memory it accesses, the index into the memory, the write-enable signal determining when to write the write-data, the write-data, and the read-enable signal determining when to read the value.
-The index must be an expression with an unsigned integer type and both enable signals must be a 1-bit unsigned integer. 
-The type of the RdWrPort is the inside type of the memory's vector type.
-A RdWrPort can only be used as an input (on the right side of a connect statement).
-A RdWrPort's value is undefined when the renable signal is not asserted, or when both the renable and wenable are asserted.
 
 \subsection{Primitive Operation}
 \[
@@ -1077,18 +1023,25 @@ The resolved form is guaranteed to be well-formed, meaning all restrictions to a
 
 \subsection{Lowered Circuit}
 
-The lowered form has the advantage of not having any high-level constructs or composite types, and hence is a minimal representation that is convenient for low-level transforms. 
+The lowered form has the advantage of not having high-level constructs or composite types, and hence is a minimal representation that is convenient for low-level transforms. 
 
-In lowered form, every module has exactly the following form:
+The body of a lowered module consists of a list of declarations, connect statements, and {\em predicated single connect statements}.
+A predicated single connect statement is a conditional statement containing a single connect statement and no else branch.
+
+The following circuit is lowered:
 \[
 \begin{aligned}
-&\kw{module} \text{name} :                                 \\
-&\quad \pds{port} \ldots                                   \\
-&\quad \text{declarations} \  \vert \  \text{connections} \ldots   \\
+&\kw{module} \text{MyCounter} :                              \\
+&\quad \kw{clock} \text{clk : UInt$<$1$>$}                        \\
+&\quad \kw{input} \text{reset : UInt$<$1$>$}                        \\
+&\quad \kw{input} \text{inc : UInt$<$1$>$}                           \\
+&\quad \kw{output} \text{out : UInt$<$3$>$}                         \\
+&\quad \kw{reg} \text{counter : UInt$<$3$>$, clk, reset} \\
+&\quad \kw{when} \text{inc : counter := addw(counter, UInt(1))}   \\
+&\quad \text{out := counter}  \\
 \end{aligned}
 \]
 
-The body of the module must consist of a list of wire, node, memory and instance declarations, as well as a series of connect statements.
 The following restrictions also hold for modules in lowered form.
 
 \subsubsection{No Nested Expressions}
@@ -1100,11 +1053,28 @@ No module port or wire may be declared with a bundle or vector type.
 The lowering pass will recursively expand ports into its constituent elements until all ports are declared with ground types.
 
 \subsubsection{Single Connect}
-Every wire declared can only be assigned to once within a module.
+Every declared component can only be connected to once within a module.
+This connect could be a predicated single connect.
+
+\subsubsection{No Nested Whens}
+Other than predicated single connect statements, no other conditional statements are allowed.
 
 \subsection{Inlined Lowering Form}
 A further (and optional) pass provided by FIRRTL is the inlining pass, which recursively inlines all instances in the top-level module until the top-level module is the only remaining module in the circuit.
 Inlined lowered form is essentially a flat netlist which specifies every component used in a circuit and their input connections. 
+
+\section{Annotations - IN PROGRESS}
+\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
+\item Writing a correct compiler is difficult.
+\item To make it easier, make things as brittle as possible
+\item If annotations are kept in the FIRRTL graph, it is unclear how they propagate.
+\item If improperly propagated, you either have annotations where they shouldn't be, or lack annotations where they should be.
+\item This is impossible to detect, so turns into a silent failure
+\item If annotations are used for actual manipulations of circuits later on, this could be the cause of a bug that is exceptionally hard to solve
+\item Thus, annotation producer/consumer keeps external datastructure mapping names to annotations
+\item Pass writers must do all they can to preserve names - can provide transform for names that annotation users can run on their tables
+\item If a name is mangled, the annotation consumer can ERROR. Then, they need to look at the pass to see how their annotations should propagate.
+\end{enumerate}
 
 \section{Concrete Syntax}\label{concrete}
 This section describes the text format for FIRRTL that is supported by the provided readers and writers.
@@ -1185,10 +1155,10 @@ The following examples demonstrate declaring wires, registers, memories, nodes, 
 \begin{verbatim}
 wire mywire : UInt<10> 
 reg myreg : UInt<10>, clk, reset 
-mem mymem : UInt<10>[16], clk2 
+cmem mycombmem : UInt<10>[16], clk2 
+smem myseqmem : UInt<10>[16], clk2 
 inst myinst : MyModule 
-accessor myaccessor = e[i] 
-bi-accessor mybiaccessor = e[i] 
+infer accessor myaccessor = e[i] 
 \end{verbatim}
 
 The connect statement is specified using the \verb|:=| operator.
@@ -1270,26 +1240,6 @@ Subindicies are expressed using the \verb|[]| operator.
 x[10]
 \end{verbatim}
 
-Structural registers are expressed using the Register constructor.
-\begin{verbatim}
-ReadPort(m, index, enable, clk)
-\end{verbatim}
-
-Read ports are expressed using the ReadPort constructor.
-\begin{verbatim}
-ReadPort(m, index, enable)
-\end{verbatim}
-
-Write ports are expressed using the WritePort constructor.
-\begin{verbatim}
-WritePort(m, index, enable)
-\end{verbatim}
-
-Read/Write ports are expressed using the RdWrPort constructor.
-\begin{verbatim}
-RdWrPort(m, index, wenable, wdata, renable)
-\end{verbatim}
-
 Primitive operations are expressed by following the name of the primitive with a list containing the operands. 
 \begin{verbatim}
 add(x, y)
@@ -1297,7 +1247,7 @@ add(x, add(x, y))
 shl(x, 42)
 \end{verbatim}
 
-\section{Future FIRRTL Specification Plans}
+\section{Future FIRRTL Specification Plans - IN PROGRESS}
 Some choices were made during the design of this specification which were intentionally conservative, so that future versions could lift the restrictions if suitable semantics and implementations are determined. By restricting this version and potentially lifting them in future versions, all existing FIRRTL circuits will remain valid.
 
 The follow design decisions could potentially be changed in future spec revisions:
@@ -1307,6 +1257,8 @@ The follow design decisions could potentially be changed in future spec revision
 \item Always expanding memories into smaller memories (if the type within the vector type is a non-ground-type)
 \item Not including a \kws{printf} node
 \item Not including a \kws{ROM} node
+\item Custom annotations are not held in FIRRTL nodes
+\item Not requiring that all names are unique
 \end{enumerate}
 
 \end{document}
