@@ -85,16 +85,17 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
 \section{FIRRTL Language Definition}
 
 \subsection{Abstract Syntax Tree}
-{\small
+{ \fontsize{11pt}{1.15em}\selectfont
 \[
 \begin{array}{rrll}
 \pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
 \pd{module}     &=     &\info \kw{module}  \id \kw{:} (\pd{port*} \pd{stmt})                          &\text{Module}\\
                 &\vert &\info \kw{exmodule}  \id \kw{:} (\pd{port*})                                  &\text{External Module}\\
 \pd{port}       &=     &\info \pd{kind} \id \kw{:} \pd{type}                                          &\text{Port}\\
-\pd{kind}       &=     &\kws{input} \vert \kws{output} \vert \kws{clk}                                &\text{Port Kind}\\
+\pd{kind}       &=     &\kws{input} \vert \kws{output}                                                &\text{Port Kind}\\
 \pd{type}       &=     &\kws{UInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Unsigned Integer}\\
                 &\vert &\kws{SInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Signed Integer}\\
+                &\vert &\kws{Clock}                                                                   &\text{Clock}\\
                 &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
                 &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
 \pd{field}      &=     &\pd{orientation} \id \kw{:} \pd{type}                                         &\text{Bundle Field}\\
@@ -104,7 +105,7 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
                 &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \ids , \pds{exp}                      &\text{Register Declaration}\\
                 &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \ids                                  &\text{Sequential Memory Declaration}\\
                 &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \ids                                  &\text{Combinational Memory Declaration}\\
-                &\vert &\info \kw{inst} \id \kw{:} \id , \ids\text{*}                                 &\text{Instance Declaration}\\
+                &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
                 &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}]                       &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
@@ -128,7 +129,7 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
 \]
 }
 \[
-{\small
+{ \fontsize{11pt}{1.15em}\selectfont
 \begin{array}{rrll}
 \pd{primop}   &=               &\kws{add}            &\text{Unsigned/Signed Add}\\
               &\vert           &\kws{sub}            &\text{Unsigned/Signed Subtract}\\
@@ -187,7 +188,7 @@ Readers and writers are provided for converting a FIRRTL datastructure into a pu
 \pd{module}     &=     &\kw{module}  \text{name } \kw{:} (\text{ports* } \text{body}) \\
                 &\vert &\kw{exmodule}  \text{name } \kw{:} (\text{ports* })           \\ 
 \pd{port}       &=     &\pd{kind} \id \kw{:} \pd{type}                                 \\
-\pd{kind}       &=     &\kws{input} \vert \kws{output} \vert \kws{clock}              \\
+\pd{kind}       &=     &\kws{input} \vert \kws{output}                                \\
 \end{array}
 \]
 
@@ -196,19 +197,17 @@ Each module has a given name, a list of ports, and a statement representing the 
 Externally defined modules consist of a given name, and a list of ports, whose types must match the types defined in the associated Verilog.
 Module names exist in their own namespace, and all modules must have a unique name. The name of the top-level module must be specified for a circuit.
 
-A module port is specified by its \pd{kind}, which may be input or output or clock, a name, and the data type for the port.
+A module port is specified by its \pd{kind}, which may be input or output, a name, and the data type for the port.
 The port names exist in the identifier namespace for the module, and must be unique.
 In addition, all references within a module must be unique.
 
-The clock port kind is special in that it cannot be used to connect to any element in the circuit.
-However, a clock port can be referenced in the \kws{reg}, \kws{cmem}, \kws{smem}, and \kws{inst} declarations, as explained in Section \ref{statements}.
-
 The following example is the port declaration of a module that spans two clock domains.
+
 \[
 \begin{aligned}
 &\kw{module} TwoClock : \\
-&\quad \kw{clock} clk1 \\
-&\quad \kw{clock} clk2 \\
+&\quad \kw{input} clk1 : \kw{Clock}\\
+&\quad \kw{input} clk2 : \kw{Clock}\\
 &\quad ... \\
 \end{aligned}
 \]
@@ -220,15 +219,20 @@ The following example is the port declaration of a module that spans two clock d
 \begin{array}{rrl}
 \pd{type}       &=     &\kws{UInt}\kws{$<$} \pds{width} \kws{$>$}      \\
                 &\vert &\kws{SInt}\kws{$<$} \pds{width} \kws{$>$}      \\
+                &\vert &\kws{Clock} \\
 \pd{width}      &=     &\ints                       \\
                 &\vert &\kw{?}                      \\
 \end{array}
 \]
 
-There are only two ground types in FIRRTL, an unsigned and a signed integer type.
-Both of these types require a given bitwidth, which may be some known integer width, which must be non-negative and greater than zero, or an unknown width.
+There are only three ground types in FIRRTL, an unsigned, signed integer type, and clock type.
+
+Both unsigned and signed integer types require a given bitwidth, which may be some known integer width, which must be non-negative and greater than zero, or an unknown width.
 Unknown widths are a declaration for the width to be computed by the FIRRTL width inferencer, instead of manually given by the programmer.
 Zero-valued widths are currently not supported, but future versions will likely support them.
+
+Clock types have a restricted usage, where they can only be connected to other clock types or be referenced to in the \kws{reg}, \kws{cmem}, \kws{smem}, and \kws{inst} declarations, as explained in Section \ref{statements}.
+They cannot be used in primitive operations.
 
 \subsection{Vector Types}
 \[
@@ -298,9 +302,9 @@ Declared wires are {\em bidirectional}, which means that they can be used as bot
 
 \subsection{Registers}
 A register is a named stateful circuit element.
-A register with a given name, type, clock port name, and reset reference, can be instantiated with the following statement.
+A register with a given name, type, clock reference, and reset reference, can be instantiated with the following statement.
 \[
-\kw{reg} \text{name } \kw{:} \pds{type},\text{ clk, } \pds{reset} \\
+\kw{reg} \text{name } \kw{:} \pds{type},\pds{clk,} \pds{reset} \\
 \]
 
 Like wires, registers are also {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement). 
@@ -311,17 +315,17 @@ The on reset statement is used to specify the initialization value for a registe
 A memory is a stateful circuit element containing multiple elements.
 Unlike registers, memories can {\em only} be read from or written to through {\em accessors}.
 Memories always have a synchronous write, but can either be declared to be read combinatorially or synchronously.
-A synchronously read memory with a given name, type and clock port name can be instantiated with the following statement.
+A synchronously read memory with a given name, type and clock reference can be instantiated with the following statement.
 \[
 \begin{aligned}
-\kw{smem} \text{name } \kw{:} \pds{type},\text{ clk} \\
+\kw{smem} \text{name } \kw{:} \pds{type},\pds{clk} \\
 \end{aligned}
 \]
 
-A combinatorially read memory with a given name, type and clock port name can be instantiated with the following statement.
+A combinatorially read memory with a given name, type and clock reference can be instantiated with the following statement.
 \[
 \begin{aligned}
-\kw{cmem} \text{name } \kw{:} \pds{type},\text{ clk} \\
+\kw{cmem} \text{name } \kw{:} \pds{type},\pds{clk} \\
 \end{aligned}
 \]
 
@@ -379,33 +383,30 @@ They can be used to access {\em any} vector-valued type.
 
 \subsection{Instances}
 An instance refers to a particular instantiation of a FIRRTL module.
-An instance is constructed with a given name, a given module name, and a list of clock ports.
+An instance is constructed with a given name and a given module name.
 \[
 \begin{aligned}
-\kw{inst} \text{name } \kw{:} \text{module}, \text{clk*}
+\kw{inst} \text{name } \kw{:} \text{module}
 \end{aligned}
 \]
 
-The instance's clock ports are assigned in order of the specified list of enclosing module clock ports.
-A mismatch in number of clock ports results in an error.
-
-The resulting instance has a bundle type, where the given module's non-clock ports are fields and can be accessed using the subfield expression.
+The resulting instance has a bundle type, where the given module's ports are fields and can be accessed using the subfield expression.
 The orientation of the {\em output} ports are {\em default}, and the orientation of the {\em input} ports are {\em reverse}.
 An instance may be directly connected to another element, but it must be on the right-hand side of the connect statement.
 
 The following example illustrates directly connecting an instance to a wire:
 
-{\footnotesize
+{ \fontsize{11pt}{1.15em}\selectfont
 \[
 \begin{aligned}
 &\kw{exmodule} Queue \ \kws{:} \\
-&\quad \kw{clock} clk  \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} in   \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
 &\quad \kw{output} out \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
 &\kw{module} Top \ \kws{:} \\
-&\quad \kw{clock} clk \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
-&\quad \kw{inst} queue \ \kw{:} Queue, clk \\
-&\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} in \kw{:} \ \kws{UInt$<$}16\kws{$>$}} \\
+&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
+&\quad \kw{inst} queue \ \kw{:} Queue \\
+&\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} in \ \kw{:} \ \kws{UInt$<$}16\kws{$>$},\kw{reverse} clk \ \kw{:} \ \kws{Clock}} \\
 &\quad connect \ \kw{:=} queue \\
 \end{aligned}
 \]
@@ -416,26 +417,30 @@ Conversely, the input ports of an instance may only be connected to, e.g. the le
 
 The following example illustrates a proper use of creating instances with different clock domains:
 
-{\footnotesize
+{ \fontsize{11pt}{1.15em}\selectfont
 \[
 \begin{aligned}
 &\kw{exmodule} AsyncQueue \ \kws{:} \\
-&\quad \kw{clock} clk1 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
-&\quad \kw{clock} clk2 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
+&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} in  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
 &\quad \kw{output} out  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
 &\kw{exmodule} Source \ \kws{:} \\
-&\quad \kw{clock} clk \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
 &\quad \kw{output} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
 &\kw{exmodule} Sink \ \kws{:} \\
-&\quad \kw{clock} clk \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
+&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
 &\kw{module} TwoClock \ \kws{:} \\
-&\quad \kw{clock} clk1 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
-&\quad \kw{clock} clk2 \ \kw{:} \kws{UInt$<$} 1 \kws{$>$} \\
-&\quad \kw{inst} src \ \kw{:} Source, clk1 \\
-&\quad \kw{inst} snk \ \kw{:} Sink, clk2 \\
-&\quad \kw{inst} queue \ \kw{:} AsynchQueue, clk1, clk2 \\
+&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
+&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
+&\quad \kw{inst} src \ \kw{:} Source \\
+&\quad src.clk \ \kw{:=} clk1 \\
+&\quad \kw{inst} snk \ \kw{:} Sink \\
+&\quad snk.clk \ \kw{:=} clk2 \\
+&\quad \kw{inst} queue \ \kw{:} AsynchQueue \\
+&\quad queue.clk1 \ \kw{:=} clk1 \\
+&\quad queue.clk2 \ \kw{:=} clk2 \\
 &\quad queue.in \ \kw{:=} src.packet \\
 &\quad snk.packet \ \kw{:=} queue.out \\
 \end{aligned}
