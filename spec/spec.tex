@@ -1,4 +1,17 @@
-\title{Specification for the FIRRTL Language:\\ Version 0.1.2 \\ PRE-RELEASE VERSION - DO NOT DISTRIBUTE}
+%Useful Macros
+\newcommand{\id}{\text{id }}
+\newcommand{\ids}{\text{id}}
+\newcommand{\ints}{\text{int}}
+\newcommand{\intsp}{\text{int }}
+\newcommand{\kw}[1]{\text{\bf #1\ }}
+\newcommand{\kws}[1]{\text{\bf #1}}
+\newcommand{\pd}[1]{\text{\em #1\ }}
+\newcommand{\pds}[1]{\text{\em #1}}
+\newcommand{\bundleT}[1]{\{#1\}}
+\newcommand{\info}{[\pds{info}]\ }
+\newcommand{\version}{0.1.3}
+
+\title{Specification for the FIRRTL Language:\\ Version \version \\ PRE-RELEASE VERSION - DO NOT DISTRIBUTE}
 \author{Patrick S. Li \\ \href{mailto:psli@eecs.berkeley.edu}{psli@eecs.berkeley.edu}
    \and Adam M. Izraelevitz \\ \href{mailto:adamiz@eecs.berkeley.edu}{adamiz@eecs.berkeley.edu} 
    \and Jonathan Bachrach \\ \href{mailto:jrb@eecs.berkeley.edu}{jrb@eecs.berkeley.edu} }
@@ -19,7 +32,7 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \lhead{Specification for the FIRRTL Language}
-\rhead{Version 0.1.2}
+\rhead{Version \version}
 \cfoot{\thepage \\ \em{PRE-RELEASE VERSION - DO NOT DISTRIBUTE}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
@@ -28,28 +41,20 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\newpage
 
-%Useful Macros
-\newcommand{\id}{\text{id }}
-\newcommand{\ids}{\text{id}}
-\newcommand{\ints}{\text{int}}
-\newcommand{\intsp}{\text{int }}
-\newcommand{\kw}[1]{\text{\bf #1\ }}
-\newcommand{\kws}[1]{\text{\bf #1}}
-\newcommand{\pd}[1]{\text{\em #1\ }}
-\newcommand{\pds}[1]{\text{\em #1}}
-\newcommand{\bundleT}[1]{\{#1\}}
-\newcommand{\info}{[\pds{info}]\ }
 
-\section{Introduction - IN PROGRESS}
+\section{Introduction}
 
 \subsection{Background}
-The ideas for FIRRTL originated from a different UC Berkeley project, Chisel, which embedded a hardware description language in Scala and was used to write highly-parameterized circuit designs.
-(TODO - explain how the concepts of Chisel are great)
+The ideas for FIRRTL originated from a different UC Berkeley project, Chisel, which embedded a hardware description language in Scala and was used to write highly-parameterized circuit design generators.
+Users could manipulate circuit components using Scala functions, encode their interfaces into custom Scala types, and use Scala's object-orientation to write their own circuit libraries.
+All of these features enabled expressive, reliable and typesafe generators that improved RTL design productivity and robustness.
 
-At UC Berkeley, Chisel provided the infrastructure to support computer architecture research, including vector machines, out-of-order processors, silicon photonics and cache coherency.
-Many of these projects were successfully taped-out in actual silicon - our research productivity proved to us the validity of our design methodology.
-(TODO - Number of students and timeline)
+At UC Berkeley, Chisel was a critical part of the infrastructure supporting computer architecture research.
+Many of these research projects, including vector machines, out-of-order processors, silicon photonics and cache coherency, drove ten different silicon tape-outs over a three year period with under 12 graduate student researchers.
+The research productivity gains proved to the graduate students and faculty of the validity of this design methodology.
+
 However, Chisel's external rate of adoption was slow for the following reasons:
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
 \item Learning a functional language (Scala) was a large barrier to entry
@@ -60,7 +65,7 @@ However, Chisel's external rate of adoption was slow for the following reasons:
 \item Chisel IR semantics were ill-defined and thus impossible to target from other languages
 \end{enumerate}
 
-As a consequence, we felt Chisel needed to be redesigned from its ground up to standardize its IR and semantics, modularize its compilation process for robustness, and cleanly separate its frontend (Chisel + Scala), internal representation (FIRRTL), and backends.
+As a consequence, Chisel needed to be redesigned from its ground up to standardize its IR and semantics, modularize its compilation process for robustness, and cleanly separate its frontend (Chisel + Scala), internal representation (FIRRTL), and backends.
 
 \subsection{Design Philosophy}
 FIRRTL represents the formalized elaborated graph that the Chisel DSL produces, prior to any simplification.
@@ -191,20 +196,19 @@ Each module has a given name, a list of ports, and a statement representing the 
 Externally defined modules consist of a given name, and a list of ports, whose types must match the types defined in the associated Verilog.
 Module names exist in their own namespace, and all modules must have a unique name. The name of the top-level module must be specified for a circuit.
 
-A module port is specified by its kind, which may be input or output or clock, a name, and the data type for the port.
+A module port is specified by its \pd{kind}, which may be input or output or clock, a name, and the data type for the port.
 The port names exist in the identifier namespace for the module, and must be unique.
 In addition, all references within a module must be unique.
 
 The clock port kind is special in that it cannot be used to connect to any element in the circuit.
 However, a clock port can be referenced in the \kws{reg}, \kws{cmem}, \kws{smem}, and \kws{inst} declarations, as explained in Section \ref{statements}.
 
-The following example shows how a module can span two clock domains:
+The following example is the port declaration of a module that spans two clock domains.
 \[
 \begin{aligned}
 &\kw{module} TwoClock : \\
 &\quad \kw{clock} clk1 \\
 &\quad \kw{clock} clk2 \\
-&\quad \kw{input} ... \\
 &\quad ... \\
 \end{aligned}
 \]
@@ -343,7 +347,7 @@ Accessors are used for either connecting to or from a vector-typed expression, f
 \[
 \begin{aligned}
 &\pd{dir} \kw{accessor} \text{name} = \pds{exp}[\text{index}] \\
-\pd{dir}        &=     \kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr} \\
+&\pd{dir}        =     \kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr} \\
 \end{aligned}
 \]
 Given an accessor direction, a name, an expression to access, and the index at which to access, the above statement creates an accessor that may be used for connecting to or from the expression.
@@ -351,7 +355,7 @@ The expression must have a vector type, and the index must be an variable of UIn
 
 A read, write, and inferred accessor is conceptually one-way; it must be consistently used to connect to, or to connect from, but not both.
 
-A rdwr is conceptually two-way; it can be used to connect to, to connect from, or both, {\em but not on the same cycle}.
+A read-write accessor (\kws{rdwr}) is conceptually two-way; it can be used to connect to, to connect from, or both, {\em but not on the same cycle}.
 If it is written to and read from on the same cycle, its behavior is undefined.
 
 The following example demonstrates using accessors to read and write to a memory.
@@ -538,9 +542,30 @@ Note that there is still only a single identifier namespace in a module.
 Thus, there cannot be two components with identical names in the same module, {\em even if} they are in separate scopes.
 This is to facilitate writing transformational passes, by ensuring that the component name and module name is sufficient to uniquely identify a component.
 
-\subsubsection{Connect Semantics - IN PROGRESS}
-A when creates a mux between the stuff outside and the stuff inside - acts as a "conditional barrier".
-If you draw a line between being connected to, and being declared, those connections are conditional on the whens on the line
+\subsubsection{Conditional Connect Semantics}
+Inside a when, a connection to a component is conditional on that when only if the component is declared outside the when statement.
+If the component is both declared and connected to inside a when, the connection is {\em not} conditional on that when.
+
+Conceptually, a when creates a mux between the stuff outside and the stuff inside - it acts as type of "conditional barrier".
+Thus, if you draw a line between a component's declaration and a connection to it, that connection is dependent on all intersected when predicates being true.
+
+The following example shows a {\em conditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 only if \pds{enable} is true.
+\[
+\begin{aligned}
+&\kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
+&\kw{when} enable : \\
+&\quad r := \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
+\end{aligned}
+\]
+
+The following shows an {\em unconditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 {\em every cycle}.
+\[
+\begin{aligned}
+&\kw{when} enable : \\
+&\quad \kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
+&\quad r := \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
+\end{aligned}
+\]
 
 \subsection{Statement Groups}
 Several statements can be grouped into one using the following construct.
@@ -1240,7 +1265,7 @@ add(x, add(x, y))
 shl(x, 42)
 \end{verbatim}
 
-\section{Future Plans - IN PROGRESS}
+\section{Future Plans}
 Some choices were made during the design of this specification which were intentionally conservative, so that future versions could lift the restrictions if suitable semantics and implementations are determined.
 By restricting this version and potentially lifting these restrictions in future versions, all existing FIRRTL circuits will remain valid.
 
@@ -1255,7 +1280,7 @@ The follow design decisions could potentially be changed in future spec revision
 \item Not requiring that all names are unique
 \end{enumerate}
 
-\section{FAQ - IN PROGRESS}
+\section{Questions and Answers}
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
 \item Why allow operations to allow inputs of differing widths? 
 We tried restricting widths, but it actually complicated width inference and made supporting frontends with more lax width restrictions very difficult.
@@ -1289,6 +1314,9 @@ On the todo list.
 
 \item Why not require default value for wires? Isn't this a SAT problem?
 We do the same thing that is done in Java, and is standard programming language practice.
+
+\item Why did/didn't you include XXX primop?
+Up for debate.
 
 \end{enumerate}
 
