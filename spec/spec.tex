@@ -90,7 +90,7 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
 \begin{array}{rrll}
 \pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
 \pd{module}     &=     &\info \kw{module}  \id \kw{:} (\pd{port*} \pd{stmt})                          &\text{Module}\\
-                &\vert &\info \kw{exmodule}  \id \kw{:} (\pd{port*})                                  &\text{External Module}\\
+                &\vert &\info \kw{extmodule}  \id \kw{:} (\pd{port*})                                 &\text{External Module}\\
 \pd{port}       &=     &\info \pd{kind} \id \kw{:} \pd{type}                                          &\text{Port}\\
 \pd{kind}       &=     &\kws{input} \vert \kws{output}                                                &\text{Port Kind}\\
 \pd{type}       &=     &\kws{UInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Unsigned Integer}\\
@@ -109,7 +109,7 @@ We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
                 &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}]                       &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
-                &\vert &\info \kw{onreset} \pd{exp} \kw{:=} \pd{exp}                                  &\text{On-Reset Connect}\\
+                &\vert &\info \kw{onreset} \pd{exp} \kw{:=} \pd{exp}                                  &\text{OnReset Connect}\\
                 &\vert &\info \pd{exp} \kw{$<>$} \pd{exp}                                             &\text{Bulk Connect}\\
                 &\vert &\info \pds{exp}[\intsp  \kw{through} \ints] \ \kw{:=} \pds{exp}               &\text{Sub-Word Connect}\\
                 &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
@@ -186,7 +186,7 @@ Readers and writers are provided for converting a FIRRTL datastructure into a pu
 \begin{array}{rrl}
 \pd{circuit}    &=     &\kw{circuit} \text{toplevel-module } \kw{:} (\text{modules*}) \\
 \pd{module}     &=     &\kw{module}  \text{name } \kw{:} (\text{ports* } \text{body}) \\
-                &\vert &\kw{exmodule}  \text{name } \kw{:} (\text{ports* })           \\ 
+                &\vert &\kw{extmodule}  \text{name } \kw{:} (\text{ports* })           \\ 
 \pd{port}       &=     &\pd{kind} \id \kw{:} \pd{type}                                 \\
 \pd{kind}       &=     &\kws{input} \vert \kws{output}                                \\
 \end{array}
@@ -309,7 +309,7 @@ A register with a given name, type, clock reference, and reset reference, can be
 
 Like wires, registers are also {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement). 
 
-The on reset statement is used to specify the initialization value for a register, which is assigned to the register when the declared \pds{reset} signal is asserted.
+The onreset statement is used to specify the initialization value for a register, which is assigned to the register when the declared \pds{reset} signal is asserted.
 
 \subsection{Memories}
 A memory is a stateful circuit element containing multiple elements.
@@ -379,7 +379,7 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 
 As mentioned previously, the only way to read from or write to a memory is through an accessor.
 However, accessors are not restricted to accessing memories.
-They can be used to access {\em any} vector-valued type. 
+They can be used to access {\em any} reg, mem, or wire with vector-valued type.
 
 \subsection{Instances}
 An instance refers to a particular instantiation of a FIRRTL module.
@@ -399,7 +399,7 @@ The following example illustrates directly connecting an instance to a wire:
 { \fontsize{11pt}{1.15em}\selectfont
 \[
 \begin{aligned}
-&\kw{exmodule} Queue \ \kws{:} \\
+&\kw{extmodule} Queue \ \kws{:} \\
 &\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} in   \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
 &\quad \kw{output} out \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
@@ -420,15 +420,15 @@ The following example illustrates a proper use of creating instances with differ
 { \fontsize{11pt}{1.15em}\selectfont
 \[
 \begin{aligned}
-&\kw{exmodule} AsyncQueue \ \kws{:} \\
+&\kw{extmodule} AsyncQueue \ \kws{:} \\
 &\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} in  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
 &\quad \kw{output} out  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{exmodule} Source \ \kws{:} \\
+&\kw{extmodule} Source \ \kws{:} \\
 &\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
 &\quad \kw{output} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{exmodule} Sink \ \kws{:} \\
+&\kw{extmodule} Sink \ \kws{:} \\
 &\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
 &\kw{module} TwoClock \ \kws{:} \\
@@ -470,8 +470,8 @@ If the {\em output} width is unknown, it cannot inferred from this connection.
 
 The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be able to be used as an input.
 
-\subsection{The On-Reset Connect Statement}
-The on reset connect statement is used to specify the default value for a \kws{reg} element.
+\subsection{The OnReset Connect Statement}
+The onreset connect statement is used to specify the default value for a \kws{reg} element.
 \[
 \kw{onreset} \text{r } \kw{:=} \text{output} 
 \]
@@ -481,7 +481,7 @@ The component on the right-hand side must be able to be used as an output, and t
 The widths of the types may mismatch, and the semantics are the same as the connect statements.
 Memories cannot be initialized with this construct.
 
-By default, a \kws{reg} will not have a initialization value and will maintain its current value under the reset signal specified in their declaration.
+By default, a \kws{reg} will not have an initialization value and will maintain its current value under the reset signal specified in their declaration.
 The following example demonstrates declaring a \kws{reg}, and changing its initialization value to forty two.
 
 \[
@@ -506,7 +506,7 @@ A bulk connect between two components of the same ground type is equivalent to a
 All other combinations of types will not error, but will not generate any connect statements.
 
 \subsection{The Sub-Word Connect Statement}
-The subword connect statement is used to assigned to a range of bits within a ground-typed element. It is specified by two integers that indicate the high and low bounds of the range, inclusively.
+The subword connect statement is used to assign to a range of bits within a ground-typed element. It is specified by two integers that indicate the high and low bounds of the range, inclusively.
 \[
 \text{exp}[\text{hi } \kw{through} \text{lo}] \ \kw{:=} \text{output} 
 \]
@@ -548,7 +548,7 @@ Thus, there cannot be two components with identical names in the same module, {\
 This is to facilitate writing transformational passes, by ensuring that the component name and module name is sufficient to uniquely identify a component.
 
 \subsubsection{Conditional Connect Semantics}
-Inside a when, a connection to a component is conditional on that when only if the component is declared outside the when statement.
+Inside a when, a connection to a component is conditional only if the component is declared outside the when statement.
 If the component is both declared and connected to inside a when, the connection is {\em not} conditional on that when.
 
 Conceptually, a when creates a mux between the stuff outside and the stuff inside - it acts as type of "conditional barrier".
@@ -1030,8 +1030,8 @@ An index of zero indicates the least significant bit in the operand, and an inde
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{bits}(\pds{op}:UInt, \text{high}, \text{low})  & UInt & high - low    \\
-\kws{bits}(\pds{op}:SInt, \text{high}, \text{low})  & UInt & high - low    \\
+\kws{bits}(\pds{op}:UInt, \text{high}, \text{low})  & UInt & high - low + 1    \\
+\kws{bits}(\pds{op}:SInt, \text{high}, \text{low})  & UInt & high - low + 1    \\
 \end{array}
 \]
 The bit range extraction operation accepts either an unsigned or a signed integer, plus two integer literals that specify the high (inclusive) and low (inclusive) index of the bit range to extract.
@@ -1189,7 +1189,7 @@ The connect statement is specified using the \verb|:=| operator.
 x := y
 \end{verbatim}
 
-The on reset connect statement is specified using the onreset keyword and the \verb|:=| operator.
+The onreset connect statement is specified using the onreset keyword and the \verb|:=| operator.
 \begin{verbatim}
 onreset x := y 
 \end{verbatim}
