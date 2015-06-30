@@ -49,7 +49,7 @@
 \subsection{Background}
 The ideas for FIRRTL originated from a different UC Berkeley project, Chisel, which embedded a hardware description language in Scala and was used to write highly-parameterized circuit design generators.
 Users could manipulate circuit components using Scala functions, encode their interfaces into custom Scala types, and use Scala's object-orientation to write their own circuit libraries.
-All of these features enabled expressive, reliable and typesafe generators that improved RTL design productivity and robustness.
+All of these features enabled expressive, reliable and type-safe generators that improved RTL design productivity and robustness.
 
 At UC Berkeley, Chisel was a critical part of the infrastructure supporting computer architecture research.
 Many of these research projects, including vector machines, out-of-order processors, silicon photonics and cache coherency, drove ten different silicon tape-outs over a three year period with under 12 graduate student researchers.
@@ -61,19 +61,19 @@ However, Chisel's external rate of adoption was slow for the following reasons:
 \item Conceptually separating the Chisel HDL from the host language was difficult for new users
 \item Verilog generation was unreadable and slow
 \item Writing transformational passes required insider knowledge of the Chisel compiler
-\item Compiler design was unstructured, making error checking difficult and error messages often uncomprehensible
+\item Compiler design was unstructured, making error checking difficult and error messages often incomprehensible
 \item Chisel IR semantics were ill-defined and thus impossible to target from other languages
 \end{enumerate}
 
-As a consequence, Chisel needed to be redesigned from its ground up to standardize its IR and semantics, modularize its compilation process for robustness, and cleanly separate its frontend (Chisel + Scala), internal representation (FIRRTL), and backends.
+As a consequence, Chisel needed to be redesigned from its ground up to standardize its IR and semantics, modularize its compilation process for robustness, and cleanly separate its front-end (Chisel + Scala), internal representation (FIRRTL), and backends.
 
 \subsection{Design Philosophy}
 FIRRTL represents the formalized elaborated graph that the Chisel DSL produces, prior to any simplification.
-By including complicated constructs like vector types, bundle types, and when statements in FIRRTL, the Chisel/Scala frontend can be very light-weight.
+By including complicated constructs like vector types, bundle types, and when statements in FIRRTL, the Chisel/Scala front-end can be very light-weight.
 In addition, other front-ends written in languages other than Scala could be simple to write and increase external adoption.
 
 Lowered FIRRTL represents a simplified FIRRTL circuit with structural invariants, making it essentially a netlist.
-This form enables straightforward translation into another language (e.g. Verilog) by a light-weight backend.
+This form enables straightforward translation into another language (e.g., Verilog) by a light-weight backend.
 
 By defining low FIRRTL as a structured subset of FIRRTL, an external user can write a transformational pass whose input is restricted, but whose output is full-featured.
 After a custom pass, the resulting circuit should undergo lowering prior to passing it to a backend or another custom pass.
@@ -175,10 +175,10 @@ The above definition specifies the structure of the abstract syntax tree corresp
 Nodes in the abstract syntax tree are {\em italicized}.
 Keywords are shown in {\bf bold}.
 The special productions, id and int, indicates an identifier and an integer literal respectively.
-Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurences of the token.
+Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurrences of the token.
 
-Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL datastructure.
-Readers and writers are provided for converting a FIRRTL datastructure into a purely textual representation, which is defined in Section \ref{concrete}.
+Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL data structure.
+Readers and writers are provided for converting a FIRRTL data structure into a purely textual representation, which is defined in Section \ref{concrete}.
 
 
 \section{Circuits and Modules}
@@ -192,7 +192,7 @@ Readers and writers are provided for converting a FIRRTL datastructure into a pu
 \end{array}
 \]
 
-All FIRRTL circuits are comprised of a flat list of modules, each representing one hardware block.
+All FIRRTL circuits consist of a flat list of modules, each representing one hardware block.
 Each module has a given name, a list of ports, and a statement representing the circuit connections within the module.
 Externally defined modules consist of a given name, and a list of ports, whose types must match the types defined in the associated Verilog.
 Module names exist in their own namespace, and all modules must have a unique name. The name of the top-level module must be specified for a circuit.
@@ -227,7 +227,7 @@ The following example is the port declaration of a module that spans two clock d
 
 There are only three ground types in FIRRTL, an unsigned, signed integer type, and clock type.
 
-Both unsigned and signed integer types require a given bitwidth, which may be some known integer width, which must be non-negative and greater than zero, or an unknown width.
+Both unsigned and signed integer types require a given bit width, which may be some known integer width, which must be non-negative and greater than zero, or an unknown width.
 Unknown widths are a declaration for the width to be computed by the FIRRTL width inferencer, instead of manually given by the programmer.
 Zero-valued widths are currently not supported, but future versions will likely support them.
 
@@ -246,7 +246,7 @@ This is akin to array types in the C programming language.
 Note that the number of elements must be known, and non-negative.
 
 As an example, the type $\kws{UInt}\kws{$<$} 16 \kws{$>$}[10]$ indicates a ten element vector of 16-bit unsigned integers.
-The type $\kws{UInt}\kws{$<$} \kws{?} \kws{$>$}[10]$ indicates a ten element vector of unsigned integers, with unknown but the same bitwidths.
+The type $\kws{UInt}\kws{$<$} \kws{?} \kws{$>$}[10]$ indicates a ten element vector of unsigned integers, with unknown but the same bit widths.
 
 Vector types may be nested ad infinitum.
 The type $\kws{UInt}\kws{$<$} 16 \kws{$>$}[10][5]$ indicates a five element vector {\em of} ten element vectors of 16-bit unsigned integers.
@@ -284,8 +284,7 @@ If an output port had this bundle type, the {\em ready} field would be an input 
 
 Note that all field names within a bundle type must be unique.
 
-As in the case of vector types, bundle types may also be nested ad infinitum.
-I.e., the types of the fields themselves may also be bundle types, which will in turn contain more fields, etc. 
+As in the case of vector types, bundle types may also be nested ad infinitum (i.e., the types of the fields themselves may also be bundle types, which will in turn contain more fields, etc.)
 
 \section{Statements} \label{statements}
 
@@ -334,7 +333,7 @@ Additionally, the type for a memory must be completely specified and cannot cont
 It is an error to specify any other type for a memory.
 However, the internal type to the vector type may be a non-ground type, with the caveat that the internal type, if a bundle type, cannot contain any reverse fields.
 
-A memory cannot be explicitly initialized using a special FIRRTL construct - the circuit itself must contain the proper logic to initialize the memory.
+A memory cannot be explicitly initialized using a special FIRRTL construct ? the circuit itself must contain the proper logic to initialize the memory.
 
 \subsection{Nodes}
 A node is simply a named intermediate value in a circuit, and is akin to a pointer in the C programming language.
@@ -355,7 +354,7 @@ Accessors are used for either connecting to or from a vector-typed expression, f
 \end{aligned}
 \]
 Given an accessor direction, a name, an expression to access, and the index at which to access, the above statement creates an accessor that may be used for connecting to or from the expression.
-The expression must have a vector type, and the index must be an variable of UInt type.
+The expression must have a vector type, and the index must be a variable of UInt type.
 
 A read, write, and inferred accessor is conceptually one-way; it must be consistently used to connect to, or to connect from, but not both.
 
@@ -379,7 +378,7 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 
 As mentioned previously, the only way to read from or write to a memory is through an accessor.
 However, accessors are not restricted to accessing memories.
-They can be used to access {\em any} reg, mem, or wire with vector-valued type.
+They can be used to access {\em any} reg, cmem, smem, or wire with vector-valued type.
 
 \subsection{Instances}
 An instance refers to a particular instantiation of a FIRRTL module.
@@ -412,8 +411,8 @@ The following example illustrates directly connecting an instance to a wire:
 \]
 }
 
-The output ports of an instance may only be connected from, e.g. the right-hand side of a connect statement.
-Conversely, the input ports of an instance may only be connected to, e.g. the left-hand side of a connect statement.
+The output ports of an instance may only be connected from, e.g., the right-hand side of a connect statement.
+Conversely, the input ports of an instance may only be connected to, e.g., the left-hand side of a connect statement.
 
 The following example illustrates a proper use of creating instances with different clock domains:
 
@@ -438,7 +437,7 @@ The following example illustrates a proper use of creating instances with differ
 &\quad src.clk \ \kw{:=} clk1 \\
 &\quad \kw{inst} snk \ \kw{:} Sink \\
 &\quad snk.clk \ \kw{:=} clk2 \\
-&\quad \kw{inst} queue \ \kw{:} AsynchQueue \\
+&\quad \kw{inst} queue \ \kw{:} AsyncQueue \\
 &\quad queue.clk1 \ \kw{:=} clk1 \\
 &\quad queue.clk2 \ \kw{:=} clk2 \\
 &\quad queue.in \ \kw{:=} src.packet \\
@@ -482,7 +481,7 @@ The widths of the types may mismatch, and the semantics are the same as the conn
 Memories cannot be initialized with this construct.
 
 By default, a \kws{reg} will not have an initialization value and will maintain its current value under the reset signal specified in their declaration.
-The following example demonstrates declaring a \kws{reg}, and changing its initialization value to forty two.
+The following example demonstrates declaring a \kws{reg}, and changing its initialization value to forty-two.
 
 \[
 \begin{aligned}
@@ -551,7 +550,7 @@ This is to facilitate writing transformational passes, by ensuring that the comp
 Inside a when, a connection to a component is conditional only if the component is declared outside the when statement.
 If the component is both declared and connected to inside a when, the connection is {\em not} conditional on that when.
 
-Conceptually, a when creates a mux between the stuff outside and the stuff inside - it acts as type of "conditional barrier".
+Conceptually, a when creates a mux between the stuff outside and the stuff inside ? it acts as type of "conditional barrier".
 Thus, if you draw a line between a component's declaration and a connection to it, that connection is dependent on all intersected when predicates being true.
 
 The following example shows a {\em conditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 only if \pds{enable} is true.
@@ -584,7 +583,7 @@ Later connect statements take precedence over earlier connect statements, and ci
 
 \subsubsection{Last Connect Semantics}
 Because of the connect statement, FIRRTL statements are {\em ordering} dependent.
-Later connections take precendence over earlier connections.
+Later connections take precedence over earlier connections.
 In the following example, the wire w is connected to 42, not 20. 
 \[
 \begin{aligned}
@@ -683,7 +682,7 @@ Section \ref{primitives} will describe the format and semantics of each operatio
 \section{Primitive Operations} \label{primitives}
 
 All primitive operations expression operands must be ground types.
-In addition, some allow all permutations of operand ground types, while others on allow subsets.
+In addition, some operations allow all permutations of operand ground types, while others on allow subsets.
 When well defined, input arguments are allowed to be differing widths.
 
 \subsection{Add Operation}
@@ -829,7 +828,7 @@ The resultant value follows the following formula : quo(a,b) = floor(a/b) + rem(
 \kws{geq}     (\pds{op1}:SInt, \pds{op2}:SInt) & UInt & 1    \\
 \end{array}
 \]
-Each operation accept any combination of SInt or UInt input arguments, and always returns a single-bit unsigned integer.
+Each operation accepts any combination of SInt or UInt input arguments, and always returns a single-bit unsigned integer.
 
 \subsection{Equality Comparison}
 \[
@@ -1094,8 +1093,8 @@ Inlined lowered form is essentially a flat netlist which specifies every compone
 \item If improperly propagated, you either have annotations where they shouldn't be, or lack annotations where they should be.
 \item This is impossible to detect, so turns into a silent failure
 \item If annotations are used for actual manipulations of circuits later on, this could be the cause of a bug that is exceptionally hard to solve
-\item Thus, annotation producer/consumer keeps external datastructure mapping names to annotations
-\item Pass writers must do all they can to preserve names - can provide transform for names that annotation users can run on their tables
+\item Thus, annotation producer/consumer keeps external data structure mapping names to annotations
+\item Pass writers must do all they can to preserve names ? can provide transform for names that annotation users can run on their tables
 \item If a name is mangled, the annotation consumer can ERROR. Then, they need to look at the pass to see how their annotations should propagate.
 \end{enumerate}
 
@@ -1150,7 +1149,7 @@ module mymodule :
 
 \subsection*{Types}
 The unsigned and signed integer types are specified the following way.
-The following examples demonstrate a unsigned integer with known bitwidth, signed integer with known bitwidth, an unsigned integer with unknown bitwidth, and signed integer with unknown bitwidth.
+The following examples demonstrate an unsigned integer with known bit width, signed integer with known bit width, an unsigned integer with unknown bit width, and signed integer with unknown bit width.
 \begin{verbatim}
 UInt<42>
 SInt<42>
@@ -1239,8 +1238,8 @@ else :
 
 \subsection*{Expressions}
 
-The UInt and SInt constructors create literal integers from a given value and bitwidth.
-The following examples demonstrate creating literal integers of both known and unknown bitwidth.
+The UInt and SInt constructors create literal integers from a given value and bit width.
+The following examples demonstrate creating literal integers of both known and unknown bit width.
 \begin{verbatim}
 UInt<4>(42)
 SInt<4>(-42)
@@ -1248,7 +1247,7 @@ UInt<?>(42)
 SInt<?>(-42)
 \end{verbatim}
 
-References are specified with a identifier.
+References are specified with an identifier.
 \begin{verbatim}
 x
 \end{verbatim}
@@ -1258,7 +1257,7 @@ Subfields are expressed using the dot operator.
 x.data
 \end{verbatim}
 
-Subindicies are expressed using the \verb|[]| operator.
+Subindices are expressed using the \verb|[]| operator.
 \begin{verbatim}
 x[10]
 \end{verbatim}
@@ -1274,7 +1273,7 @@ shl(x, 42)
 Some choices were made during the design of this specification which were intentionally conservative, so that future versions could lift the restrictions if suitable semantics and implementations are determined.
 By restricting this version and potentially lifting these restrictions in future versions, all existing FIRRTL circuits will remain valid.
 
-The follow design decisions could potentially be changed in future spec revisions:
+The following design decisions could potentially be changed in future spec revisions:
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
 \item Disallowing subword assignments to non-ground-typed elements.
 \item Disallowing zero-width types
@@ -1288,27 +1287,27 @@ The follow design decisions could potentially be changed in future spec revision
 \section{Questions and Answers}
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
 \item Why allow operations to allow inputs of differing widths? 
-We tried restricting widths, but it actually complicated width inference and made supporting frontends with more lax width restrictions very difficult.
+We tried restricting widths, but it actually complicated width inference and made supporting front-ends with more lax width restrictions very difficult.
 Because there is perfectly well defined semantics, we opted to allow differing widths.
 In line with the Linux "funnel" philosophy of being accepting with your inputs and restrictive with your outputs.
 
 \item Why require all names unique?
 Passes usually need unique names, so there needs to be a renaming pass somewhere.
 Standardizing how names gets mangled requires a lot of thought, and we didn't feel comfortable putting this into the spec at the moment and potentially regretting it later.
-For now, names have to be unique, and it is the frontend's responsibility to do this.
+For now, names have to be unique, and it is the front-end's responsibility to do this.
 
 \item Why allow declaring components in when statements? 
-We want the important property that a module is just a box of components inside - for any jumble of components, you can always lace them in the box, and it will preserve the semantics.
-You need to declare wires inside whens - because generators could run within a when in a frontend.
+We want the important property that a module is just a box of components inside ? for any jumble of components, you can always lace them in the box, and it will preserve the semantics.
+You need to declare wires inside whens ? because generators could run within a when in a front-end.
 You should always be able to pull them into a module if we want.
 Now its inconsistent if you can't declare registers in the scope.
 
-\item Why not just have low firrtl?
-Low firrtl leaves out general when usage, vector and bundle types, and requires a single connect.
+\item Why not just have low FIRRTL?
+Low FIRRTL leaves out general when usage, vector and bundle types, and requires a single connect.
 For performance backends, we will need to emit arrays and structs.
 If there is only a lowered circuit, we lose that ability.
-We cannot simply add vector/bundle types to low firrtl as frontends cannot easily remove whens without removing the complex types as well.
-Instead, one will need the expressiveness in firrtl to write a performant backend which does not need to operate on low firrtl.
+We cannot simply add vector/bundle types to low FIRRTL as front-ends cannot easily remove whens without removing the complex types as well.
+Instead, one will need the expressiveness in FIRRTL to write a performant backend which does not need to operate on low FIRRTL.
 
 \item Why have asserts? 
 Up for debate.

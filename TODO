@@ -3,8 +3,14 @@
 ================================================
 
 ======== Current Tasks ========
-Add what is FIRRTL for, and what it is not for
-Add print, assert
+Add Unit Tests for each pass
+   Check after each pass
+   write test that checks instance types are correctly lowered
+Change to new low firrtl
+add clock type
+add clock, reset to reg, mem etc
+change parser to accept subword, but error
+
 move width inference earlier
    Required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits
 Temp elimination needs to count # uses
@@ -12,9 +18,6 @@ Declared references needs to understand scope <= check in high form check
 Check for recursively defined instances
 Names in bundles must be unique
 Fix reset scope
-Add Unit Tests for each pass
-   Check after each pass
-   write test that checks instance types are correctly lowered
 Scaling
 Do name-mangling differently, use _xEF or something like that
 Add alpha transform pass
