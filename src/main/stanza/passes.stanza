@@ -26,6 +26,7 @@ public val standard-passes = to-list $ [
    InferWidths()
    Inline()
    SplitExp()
+   CheckLowForm()
    ToRealIR() ]
 ;=============== WORKING IR ================================
 public definterface Kind

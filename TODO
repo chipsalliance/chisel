@@ -3,7 +3,7 @@
 ================================================
 
 ======== Current Tasks ========
-Add Unit Tests for each pass
+Add/Update Unit Tests for each pass
    Check after each pass
    write test that checks instance types are correctly lowered
 Change to new low firrtl
