@@ -160,9 +160,6 @@ defmethod print (o:OutputStream, e:Expression) :
          print-all(o, [op(e) "("])
          print-all(o, join(concat(args(e), consts(e)), ", "))
          print(o, ")")
-      (e:ReadPort) : print-all(o, ["ReadPort(" mem(e) ", " index(e) ", " enable(e) ")"])
-      (e:WritePort) : print-all(o, ["WritePort(" mem(e) ", " index(e) ", " enable(e) ")"])
-      (e:Register) : print-all(o, ["Register(" value(e) ", " enable(e) ")"])
    print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :
@@ -275,9 +272,6 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:Subfield) : Subfield(f(exp(e)), name(e), type(e)) 
       (e:Index) : Index(f(exp(e)), value(e), type(e))
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
-      (e:ReadPort) : ReadPort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
-      (e:WritePort) : WritePort(f(mem(e)), f(index(e)), type(e), f(enable(e)))
-      (e:Register) : Register(type(e),f(value(e)),f(enable(e)))
       (e) : e
 
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
@@ -320,9 +314,6 @@ defmethod map (f: Type -> Type, c:Expression) -> Expression :
       (c:Subfield) : Subfield(exp(c),name(c),f(type(c)))
       (c:Index) : Index(exp(c),value(c),f(type(c)))
       (c:DoPrim) : DoPrim(op(c),args(c),consts(c),f(type(c)))
-      (c:ReadPort) : ReadPort(mem(c),index(c),f(type(c)),enable(c))
-      (c:WritePort) : WritePort(mem(c),index(c),f(type(c)),enable(c))
-      (c:Register) : Register(f(type(c)),value(c),enable(c))
       (c) : c
 
 public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T
