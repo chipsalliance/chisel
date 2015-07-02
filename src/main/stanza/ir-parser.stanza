@@ -243,15 +243,6 @@ defsyntax firrtl :
             (t:UIntType) : UIntValue(v, width(t))
             (t:SIntType) : SIntValue(v, width(t))
 
-      expterm = (WritePort(?m:#exp, ?i:#exp, ?e:#exp)) : WritePort(m, i, UnknownType(), e)
-      expterm != (WritePort) : FPE(form, "Invalid syntax for WritePort expression.")
-
-      expterm = (ReadPort(?m:#exp, ?i:#exp, ?e:#exp)) : ReadPort(m, i, UnknownType(), e)
-      expterm != (ReadPort) : FPE(form, "Invalid syntax for ReadPort expression.")
-
-      expterm = (Register(?v:#exp, ?e:#exp)) : Register(UnknownType(), v, e)
-      expterm != (Register) : FPE(form, "Invalid syntax for Register expression.")
-
       expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Illegal operands to primitive operator.")

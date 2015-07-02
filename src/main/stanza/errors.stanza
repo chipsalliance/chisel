@@ -605,11 +605,6 @@ public defn check-types (c:Circuit) -> Circuit :
                   if value(e) >= size(t) : add(errors,IndexTooLarge(info,value(e)))
                (t) : add(errors,IndexOnNonVector(info))
          (e:DoPrim) : check-types-primop(e,errors,info)
-         (e:ReadPort|WritePort) : 
-            if type(index(e)) != u() : add(errors,IndexNotUInt(info))
-            if type(enable(e)) != u() : add(errors,EnableNotUInt(info))
-         (e:Register) :
-            if type(enable(e)) != u() : add(errors,EnableNotUInt(info))
          (e:UIntValue|SIntValue) : false
       e
    defn check-types-s (s:Stmt) -> Stmt :
@@ -649,9 +644,9 @@ defn WrongGender (info:FileInfo,expr:Symbol,wrong:Symbol,right:Symbol) :
    PassException $ string-join $
    [info ": Expression " expr "has gender " wrong " but requires gender " right "."]
 
-defn UnknownGenders (info:FileInfo,name:Symbol) : 
+defn InferDirection (info:FileInfo,name:Symbol) : 
    PassException $ string-join $
-   [info ": Accessor " name " has an unknown gender."]
+   [info ": Accessor " name " has a direction that requires inference."]
 
 ;---------------- Helper Functions --------------
 defn dir-to-gender (d:Direction) -> Gender :
@@ -678,9 +673,6 @@ public defn check-genders (c:Circuit) -> Circuit :
          (e:DoPrim) : MALE
          (e:UIntValue) : MALE
          (e:SIntValue) : MALE
-         (e:ReadPort) : MALE
-         (e:WritePort) : FEMALE
-         (e:Register) : MALE
 
    defn check-genders-e (info:FileInfo,e:Expression,genders:HashTable<Symbol,Gender>) -> False :
       do(check-genders-e{info,_,genders},e)
@@ -693,9 +685,6 @@ public defn check-genders (c:Circuit) -> Circuit :
                check-gender(info,genders,e,MALE)
          (e:UIntValue) : false
          (e:SIntValue) : false
-         (e:ReadPort) : do(check-gender{info,genders,_,MALE},e)
-         (e:WritePort) : do(check-gender{info,genders,_,MALE},e)
-         (e:Register) : do(check-gender{info,genders,_,MALE},e)
      
    defn check-genders-s (s:Stmt,genders:HashTable<Symbol,Gender>) -> False :
       do(check-genders-e{info(s),_:Expression,genders},s)
@@ -707,8 +696,8 @@ public defn check-genders (c:Circuit) -> Circuit :
             genders[name(s)] = MALE
          (s:DefMemory) : genders[name(s)] = BI-GENDER
          (s:DefInstance) : genders[name(s)] = MALE
-         (s:WDefAccessor) : 
-            if gender(s) == UNKNOWN-GENDER : add(errors,UnknownGenders(info(s),name(s)))
+         (s:DefAccessor) : 
+            if dir(s) == INFER : add(errors,InferDirection(info(s),name(s)))
             check-gender(info(s),genders,index(s),MALE)
             check-gender(info(s),genders,source(s),gender(s))
             genders[name(s)] = gender(s)
@@ -751,26 +740,6 @@ public defmethod name (b:CheckLowForm) -> String : "Low Form Check"
 public defmethod short-name (b:CheckLowForm) -> String : "low-form-check"
 
 ;----------------- Errors ------------------------
-defn IncorrectRegisterUsage (info:FileInfo) :
-   PassException $ string-join $
-   [info ": Register can only be used on the right side of a connect statement."]
-
-defn IncorrectReadPortUsage (info:FileInfo) :
-   PassException $ string-join $
-   [info ": ReadPort can only be used on the right side of a connect statement."]
-
-defn IncorrectWritePortUsage (info:FileInfo) :
-   PassException $ string-join $
-   [info ": WritePort can only be used on the left side of a connect statement."]
-
-defn NoReg (info:FileInfo,name:Symbol) :
-   PassException $ string-join $
-   [info ": Invalid reg declaration " name ". No reg declarations are allowed in low firrtl."]
-
-defn NoAccessor (info:FileInfo,name:Symbol) :
-   PassException $ string-join $
-   [info ": Invalid accessor declaration " name ". No accessor declarations are allowed in low firrtl."]
-
 defn InvalidVec (info:FileInfo,name:Symbol) :
    PassException $ string-join $
    [info ": Expression " name " has an illegal vector type."]
@@ -781,7 +750,7 @@ defn InvalidBundle (info:FileInfo,name:Symbol) :
 
 defn NoWhen (info:FileInfo) :
    PassException $ string-join $
-   [info ": Illegal when statement. No when statements are allowed in low firrtl."]
+   [info ": Illegal when statement. No when statements with multiple statements are allowed in low firrtl."]
 
 defn SingleAssignment (info:FileInfo,name:Symbol) :
    PassException $ string-join $
@@ -823,9 +792,6 @@ public defn check-low-form (c:Circuit) -> Circuit :
                      check-low-form-t(info,type(f),name(e))
                if contains?(mems,name(e)) :
                   check-low-form-t(info,type(type(e) as VectorType),name(e))
-            (e:Register) : add(errors,IncorrectRegisterUsage(info))
-            (e:ReadPort) : add(errors,IncorrectReadPortUsage(info))
-            (e:WritePort) : add(errors,IncorrectWritePortUsage(info))
             (e) : check-low-form-t(info,type(e),to-symbol $ to-string(e))
       defn check-low-form-s (s:Stmt) -> False :
          match(s) : 
@@ -840,27 +806,15 @@ public defn check-low-form (c:Circuit) -> Circuit :
                add(insts,name(s))
             (s:DefNode) : 
                check-correct-exp(info(s),value(s))
-            (s:DefRegister) : add(errors,NoReg(info(s),name(s)))
-            (s:DefAccessor) : add(errors,NoAccessor(info(s),name(s)))
-            (s:Conditionally) : add(errors,NoWhen(info(s)))
+            (s:DefRegister) : false
+            (s:DefAccessor) : false
+            (s:Conditionally) : 
+               if (not alt(s) typeof EmptyStmt) or (conseq(s) typeof Begin) : add(errors,NoWhen(info(s)))
             (s:OnReset) : add(errors,NoOnReset(info(s)))
             (s:BulkConnect) : add(errors,NoBulkConnect(info(s)))
             (s:Connect) :
-               match(exp(s)) :
-                  (e:Register) : 
-                     check-low-form-t(info(s),type(e),to-symbol $ to-string(e))
-                     check-correct-exp(info(s),value(e))
-                     check-correct-exp(info(s),enable(e))
-                  (e:ReadPort) : 
-                     check-low-form-t(info(s),type(e),to-symbol $ to-string(e))
-                     check-correct-exp(info(s),index(e))
-                     check-correct-exp(info(s),enable(e))
-                  (e) : check-correct-exp(info(s),e)
+               check-correct-exp(info(s),e)
                match(loc(s)) :
-                  (e:WritePort) : 
-                     check-low-form-t(info(s),type(e),to-symbol $ to-string(e))
-                     check-correct-exp(info(s),index(e))
-                     check-correct-exp(info(s),enable(e))
                   (e:Ref|Subfield) : 
                      val n* = to-symbol $ to-string $ e
                      if contains?(assigned?,n*) : add(errors,SingleAssignment(info(s),n*))

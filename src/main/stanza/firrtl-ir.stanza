@@ -8,13 +8,19 @@ public defmethod info! (x:?) : FileInfo()
 public val expand-delin = `$
 public val gen-delin = `#
 
-public definterface Direction
-public val INPUT = new Direction
-public val OUTPUT = new Direction
+public definterface PortDirection
+public val INPUT = new PortDirection
+public val OUTPUT = new PortDirection
 
 public definterface Flip
 public val DEFAULT = new Flip
 public val REVERSE = new Flip
+
+public definterface AccDirection
+public val READ = new AccDirection
+public val WRITE = new AccDirection
+public val INFER = new AccDirection
+public val RDWR = new AccDirection
 
 public definterface Width
 public defstruct UnknownWidth <: Width
@@ -83,20 +89,6 @@ public defstruct DoPrim <: Expression :
    args: List<Expression>
    consts: List<Int>
    type: Type with: (as-method => true)
-public defstruct ReadPort <: Expression :
-   mem: Expression
-   index: Expression
-   type: Type with: (as-method => true)
-   enable: Expression
-public defstruct WritePort <: Expression :
-   mem: Expression
-   index: Expression
-   type: Type with: (as-method => true)
-   enable: Expression
-public defstruct Register <: Expression :
-   type: Type with: (as-method => true)
-   value: Expression
-   enable: Expression
 
 public definterface Stmt
 public defmulti info (s:Stmt) -> FileInfo
@@ -124,6 +116,7 @@ public defstruct DefNode <: Stmt : ;LOW
    value: Expression
 public defstruct DefAccessor <: Stmt :
    info: FileInfo with: (as-method => true)
+   dir: AccDirection
    name: Symbol
    source: Expression
    index: Expression
@@ -168,7 +161,7 @@ public defstruct Field :
 public defstruct Port :
    info: FileInfo
    name: Symbol
-   direction: Direction
+   pkind: PKind
    type: Type
 
 public definterface Module
