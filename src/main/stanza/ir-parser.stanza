@@ -3,7 +3,7 @@ defpackage firrtl/parser :
    import verse
    import firrtl/ir2
    import stz/parser
-   import stz/lexer
+   import firrtl/lexer
 
 ;======= Convenience Functions ========
 defn first-info? (form) -> FileInfo|False :

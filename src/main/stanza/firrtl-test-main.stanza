@@ -1,8 +1,9 @@
 #include<"core/stringeater.stanza">
 #include<"core/macro-utils.stanza">
 #include<"compiler/stz-algorithms.stanza">
-#include<"compiler/stz-lexer.stanza">
 #include<"compiler/stz-parser.stanza">
+#include<"compiler/stz-lexer.stanza">
+#include("firrtl-lexer.stanza")
 #include("firrtl-ir.stanza")
 #include("ir-utils.stanza")
 #include("ir-parser.stanza")
@@ -22,7 +23,7 @@ defpackage firrtl-main :
    import verse
    import firrtl/parser
    import firrtl/passes
-   import stz/lexer
+   import firrtl/lexer
    import stz/parser
    import firrtl/ir-utils
    import firrtl/compiler
