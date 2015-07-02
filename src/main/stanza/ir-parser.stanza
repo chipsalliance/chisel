@@ -112,7 +112,10 @@ defsyntax firrtl :
       int$ != () : FPE(form, "Expected a single integer literal here.")
 
       ;Error if not a single long integer
-      long$ = (?i:#intorlong ?rest ...) when empty?(rest) : to-long(i)
+      long$ = (?i:#intorlong ?rest ...) when empty?(rest) : 
+         match(i) :
+            (i:Long) : i
+            (i) : to-long(i)
       long$ != () : FPE(form, "Expected a single long integer literal here.")
 
       ;Error if not a single width

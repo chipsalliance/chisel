@@ -75,9 +75,15 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
    println("Compiling!")
    if PRINT-CIRCUITS : println("Original Circuit")
    if PRINT-CIRCUITS : print(c)
+   val start-time = current-time-us()
+   var t = start-time
    for p in ls do : 
       if PRINT-CIRCUITS : println(name(p))
       c* = pass(p)(c*)
       if PRINT-CIRCUITS : print(c*)
       if PRINT-CIRCUITS : println-all(["Finished " name(p) "\n"])
+      val current-time = current-time-us()
+      println-all(["Time since start: " current-time - start-time])
+      println-all(["Time for this pass: " current-time - t])
+      t = current-time
    println("Done!")
