@@ -5,7 +5,7 @@ int main (int argc, char* argv[]) {
   for (;;) {
     c = getchar();
     if (c == EOF) break;
-    if (c == '#')
+    if (c == '#' || c == '?')
       putchar('_');
     else if (c == '$') {
       putchar(':'); putchar(':');
