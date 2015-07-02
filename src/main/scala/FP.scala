@@ -40,7 +40,7 @@ object Flo {
   def apply(x: Float): Flo = floLit(x)
   def apply(x: Double): Flo = Flo(x.toFloat)
   def floLit(value: Float): Flo = {
-    val b = new Flo(NO_DIR)
+    val b = new Flo(NO_DIR, Some(value))
     pushCommand(DefFlo(b.defd.cid, value))
     b
   }
@@ -78,8 +78,9 @@ object FloPrimOp {
 }
 import FloPrimOp._
 
-class Flo(dir: Direction = NO_DIR) extends Element(dir, 32) with Num[Flo] {
+class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Element(dir, 32) with Num[Flo] {
   type T = Flo;
+  override def floLitValue: Float = value.get
   def cloneTypeWidth(width: Int): this.type = cloneType
   override def fromBits(n: Bits): this.type = {
     val d = cloneType
@@ -150,7 +151,7 @@ object Dbl {
   def apply(x: Float): Dbl = Dbl(x.toDouble);
   def apply(x: Double): Dbl = dblLit(x)
   def dblLit(value: Double): Dbl = {
-    val b = new Dbl(NO_DIR)
+    val b = new Dbl(NO_DIR, Some(value))
     pushCommand(DefDbl(b.defd.cid, value))
     b
   }
@@ -188,12 +189,13 @@ object DblPrimOp {
 }
 import DblPrimOp._
 
-class Dbl(dir: Direction = null) extends Element(dir, 64) with Num[Dbl] { 
+class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir, 64) with Num[Dbl] { 
   // setIsSigned
 
   // override def setIsTypeNode = {inputs(0).setIsSigned; super.setIsTypeNode}
 
   type T = Dbl;
+  override def dblLitValue: Double = value.get
   def cloneTypeWidth(width: Int): this.type = cloneType
   override def fromBits(n: Bits): this.type = {
     val d = cloneType

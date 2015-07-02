@@ -324,6 +324,14 @@ class ManualTester[+T <: Module]
   def expect (data: Bits, expected: Long): Boolean = {
     expect(data, BigInt(expected))
   }
+  def expect (data: Flo, expected: Double): Boolean = {
+    val got = peek(data)
+    expect(got == expected, "EXPECT " + data.debugName + " <- " + got + " == " + expected)
+  }
+  def expect (data: Dbl, expected: Double): Boolean = {
+    val got = peek(data)
+    expect(got == expected, "EXPECT " + data.debugName + " <- " + got + " == " + expected)
+  }
 
   /* Compare the floating point value of a node with an expected floating point value.
    * We will tolerate differences in the bottom bit.
