@@ -15,7 +15,7 @@ public defn firrtl-gensym (s:Symbol) -> Symbol : firrtl-gensym(s,HashTable<Symbo
 public defn firrtl-gensym (s:Symbol,sym-hash:HashTable<Symbol,Int>) -> Symbol :
    defn get-new (s:Symbol, i:Int) -> Symbol :
       val s* = symbol-join([s i])
-      if contains?(keys(sym-hash),s*) :
+      if key?(sym-hash,s*) :
          get-new(s,i + 1)
       else :
          sym-hash[s] = i

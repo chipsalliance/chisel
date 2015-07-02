@@ -128,25 +128,26 @@ defn contains?<?T> (c:?T,cs:Streamable<?T>) -> True|False :
          if x == c : myret(true)
       false
 
-defn is-prefix? (s:Symbol,v:Vector<Symbol>,sym:Symbol) -> Symbol|False :
-   defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
-      var is? = true
-      val s1* = to-string(s1)
-      val s2* = to-string(s2)
-      val st = to-string(sym)
-      for (x in s1*, y in s2*) do :
-         if x != y : is? = false
-      if abs(length(s1*) - length(s2*)) < length(st) : is? = false
-      else :
-         if length(s1*) > length(s2*) :
-            if substring(s1*,length(s2*),length(s2*) + length(st)) != st : is? = false
-         if length(s1*) < length(s2*) :
-            if substring(s2*,length(s1*),length(s1*) + length(st)) != st : is? = false
-      is?
-   label<Symbol|False> myret :
-      for x in v do :
-         if is-prefix?(x,s) : myret(x)
-      false
+defn is-prefix? (s:Symbol,v:HashTable<Symbol,True>,sym:Symbol) -> Symbol|False :
+   ;defn is-prefix? (s1:Symbol,s2:Symbol) -> True|False :
+   ;   var is? = true
+   ;   val s1* = to-string(s1)
+   ;   val s2* = to-string(s2)
+   ;   val st = to-string(sym)
+   ;   for (x in s1*, y in s2*) do :
+   ;      if x != y : is? = false
+   ;   if abs(length(s1*) - length(s2*)) < length(st) : is? = false
+   ;   else :
+   ;      if length(s1*) > length(s2*) :
+   ;         if substring(s1*,length(s2*),length(s2*) + length(st)) != st : is? = false
+   ;      if length(s1*) < length(s2*) :
+   ;         if substring(s2*,length(s1*),length(s1*) + length(st)) != st : is? = false
+   ;   is?
+   ;label<Symbol|False> myret :
+   ;   for x in v do :
+   ;      if is-prefix?(key(x),s) : myret(key(x))
+   ;   false
+   false
 
 defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
    defn correct-num (ne:Int|False,nc:Int) -> False :
@@ -215,10 +216,10 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
          (t) : false
       map(check-high-form-w{info,_:Width},t)
       
-   defn check-high-form-e (info:FileInfo,e:Expression,names:Vector<Symbol>) -> Expression :
+   defn check-high-form-e (info:FileInfo,e:Expression,names:HashTable<Symbol,True>) -> Expression :
       match(map(check-high-form-e{info,_,names},e)) :
          (e:Ref) : 
-            if not contains?(name(e),names) : 
+            if not key?(names,name(e)) : 
                add(errors,UndeclaredReference(info,name(e)))
          (e:Subfield) : 
             match(exp(e)) :
@@ -236,9 +237,9 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
       map(check-high-form-t{info,_:Type},e)
       e
 
-   defn check-high-form-s (s:Stmt,names:Vector<Symbol>) -> Stmt :
+   defn check-high-form-s (s:Stmt,names:HashTable<Symbol,True>) -> Stmt :
       defn check-name (info:FileInfo,name:Symbol) -> False :
-         if contains?(name,names) : add(errors,NotUnique(info,name))
+         if key?(names,name) : add(errors,NotUnique(info,name))
          val prefix = is-prefix?(name,names,sym)
          if prefix typeof Symbol : add(errors,IsPrefix(info,name,prefix as Symbol))
 
@@ -248,22 +249,22 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
          match(map(check-high-form-e{info(s),_,names},s)) :
             (s:DefWire|DefRegister) :
                check-name(info(s),name(s))
-               add(names,name(s))
+               names[name(s)] = true
             (s:DefMemory) : 
                check-name(info(s),name(s))
-               add(names,name(s))
+               names[name(s)] = true
                if has-flip?(type(s)) : add(errors, MemWithFlip(info(s), name(s)))
             (s:DefInstance) : 
                if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
                   add(errors, ModuleNotDefined(info(s),name(module(s) as Ref)))
                check-name(info(s),name(s))
-               add(names,name(s))
+               names[name(s)] = true
             (s:DefNode) : 
                check-name(info(s),name(s))
-               add(names,name(s))
+               names[name(s)] = true
             (s:DefAccessor) :
                check-name(info(s),name(s))
-               add(names,name(s))
+               names[name(s)] = true
             (s:Connect) : 
                check-valid-loc(info(s),loc(s))
             (s:BulkConnect) : 
@@ -272,11 +273,11 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
          s }()
 
    defn check-high-form-m (m:Module) -> False :
-      val names = Vector<Symbol>()
+      val names = HashTable<Symbol,True>(symbol-hash)
       for m in modules(c) do :
-         add(names,name(m))
+         names[name(m)] = true
       for p in ports(m) do :
-         add(names,name(p))
+         names[name(p)] = true
          if name(p) == `reset :
             if direction(p) == OUTPUT : 
                add(errors,WrongReset(info!(m),name(m)))
@@ -289,9 +290,7 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
          map(check-high-form-t{info(p),_},type(p))
          map(check-high-form-w{info(p),_},type(p))
 
-
-      
-      add(names,`reset)
+      names[`reset] = true
       match(m) :
          (m:ExModule) : false
          (m:InModule) : check-high-form-s(body(m),names)

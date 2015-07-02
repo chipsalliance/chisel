@@ -6,6 +6,8 @@
 Add/Update Unit Tests for each pass
    Check after each pass
    write test that checks instance types are correctly lowered
+ensure module names are unique
+add efficient prefix checker 
 Change to new low firrtl
 add clock type
 add clock, reset to reg, mem etc
