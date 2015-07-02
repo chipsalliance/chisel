@@ -350,7 +350,7 @@ abstract class Data(dirArg: Direction) extends Id {
     }
     wire.asInstanceOf[this.type]
   }
-  def toBits: Bits = {
+  def toBits(): Bits = {
     val elts = this.flatten
     Cat(elts.head, elts.tail:_*)
   }
