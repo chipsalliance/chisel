@@ -1890,13 +1890,19 @@ defn split-exp (c:Circuit) :
          (s) : add(v,map(split-exp-e{_,false,info(s)},s))
       false
 
+   val start-time = current-time-us()
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map :
          match(m) :
             (m:InModule) :
                val v = Vector<Stmt>()
                val sh = get-sym-hash(m)
+               val before = current-time-us() - start-time
+               println-all(["Before split: " before])
                split-exp-s(body(m),v,sh)
+               val now = current-time-us() - start-time
+               println-all(["After split: " now])
+               println-all(["Diff: " now - before])
                InModule(info(m),name(m),ports(m),Begin(to-list(v)))
             (m:ExModule) : m
 
