@@ -12,21 +12,21 @@ circuit top :
       ; CHECK: wire a$2 : UInt<32>
       ; CHECK: wire a$3 : UInt<32>
 
-      accessor b = a[i]
+      infer accessor b = a[i]
       ; CHECK: wire b : UInt<32>
       ; CHECK: b := (a$0 a$1 a$2 a$3)[i]
       j := b
 
-      accessor c = a[i]
+      infer accessor c = a[i]
       ; CHECK: wire c : UInt<32>
       ; CHECK: (a$0 a$1 a$2 a$3)[i] := c
       c := j
       
       cmem p : UInt<32>[4]
-      accessor t = p[i]
+      infer accessor t = p[i]
       ; CHECK: accessor t = p[i]
       j := t
-      accessor r = p[i]
+      infer accessor r = p[i]
       ; CHECK: accessor r = p[i]
       r := j
 

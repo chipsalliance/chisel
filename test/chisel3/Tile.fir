@@ -100,19 +100,19 @@ circuit Tile :
     cmem regs : UInt<32>[32]
     node T_1616 = eq(raddr1, UInt<1>(0))
     node T_1617 = bit-not(T_1616)
-    accessor T_1618 = regs[raddr1]
+    infer accessor T_1618 = regs[raddr1]
     node T_1619 = mux(T_1617, T_1618, UInt<1>(0))
     rdata1 := T_1619
     node T_1620 = eq(raddr2, UInt<1>(0))
     node T_1621 = bit-not(T_1620)
-    accessor T_1622 = regs[raddr2]
+    infer accessor T_1622 = regs[raddr2]
     node T_1623 = mux(T_1621, T_1622, UInt<1>(0))
     rdata2 := T_1623
     node T_1624 = eq(waddr, UInt<1>(0))
     node T_1625 = bit-not(T_1624)
     node T_1626 = bit-and(wen, T_1625)
     when T_1626 : 
-      accessor T_1627 = regs[waddr]
+      infer accessor T_1627 = regs[waddr]
       T_1627 := wdata
   module ImmGenWire : 
     output out : UInt<32>
@@ -1046,7 +1046,7 @@ circuit Tile :
     node T_2387 = bit-not(do_flow)
     node do_deq = bit-and(T_2386, T_2387)
     when do_enq : 
-      accessor T_2388 = ram[T_2381]
+      infer accessor T_2388 = ram[T_2381]
       T_2388 := enq.bits
       node T_2389 = eq(T_2381, UInt<2>(3))
       node T_2390 = bit-and(UInt<1>(0), T_2389)
@@ -1069,7 +1069,7 @@ circuit Tile :
     node T_2402 = bit-and(UInt<1>(0), deq.ready)
     node T_2403 = bit-or(T_2401, T_2402)
     enq.ready := T_2403
-    accessor T_2404 = ram[T_2382]
+    infer accessor T_2404 = ram[T_2382]
     wire T_2405 : {mask : UInt<4>, tag : UInt<5>, rw : UInt<1>, addr : UInt<32>}
     node T_2406 = mux(maybe_flow, enq.bits.mask, T_2404.mask)
     T_2405.mask := T_2406
@@ -1109,7 +1109,7 @@ circuit Tile :
     node T_2418 = bit-not(do_flow)
     node do_deq = bit-and(T_2417, T_2418)
     when do_enq : 
-      accessor T_2419 = ram[T_2412]
+      infer accessor T_2419 = ram[T_2412]
       T_2419 := enq.bits
       node T_2420 = eq(T_2412, UInt<2>(3))
       node T_2421 = bit-and(UInt<1>(0), T_2420)
@@ -1132,7 +1132,7 @@ circuit Tile :
     node T_2433 = bit-and(UInt<1>(0), deq.ready)
     node T_2434 = bit-or(T_2432, T_2433)
     enq.ready := T_2434
-    accessor T_2435 = ram[T_2413]
+    infer accessor T_2435 = ram[T_2413]
     wire T_2436 : {data : UInt<32>}
     node T_2437 = mux(maybe_flow, enq.bits.data, T_2435.data)
     T_2436.data := T_2437

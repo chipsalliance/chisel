@@ -207,7 +207,7 @@ defmethod print (o:OutputStream, k:Kind) :
       (k:WriteAccessorKind) : "wacc"
 
 defn hasGender (e:?) :
-   e typeof WRef|WSubfield|WIndex
+   e typeof WRef|WSubfield|WIndex|DefAccessor
 
 defn hasWidth (e:?) :
    e typeof UIntType|SIntType|UIntValue|SIntValue
@@ -622,7 +622,7 @@ defn resolve-genders (c:Circuit) :
                get-gender(name(s),MALE)
                DefInstance(info(s),name(s),resolve-expr(module(s),MALE))
             (s:DefAccessor) : 
-               val gender* = get-gender(name(s),UNKNOWN-GENDER)
+               val gender* = get-gender(name(s),gender(s))
                val index* = resolve-expr(index(s),MALE)
                val source* = resolve-expr(source(s),gender*)
                DefAccessor(info(s),name(s),source*,index*,to-acc-dir(gender*))
@@ -702,17 +702,19 @@ defn expand-stmt (s:Stmt) -> Stmt :
          else :
             val vtype = type(type(source(s)) as VectorType)
             val wire = DefWire(info(s),name(s),vtype)
-            switch {gender(s) == _} :
-               MALE : Begin{list(wire,_)} $ ConnectFromIndexed(
+            switch {acc-dir(s) == _} :
+               READ : Begin{list(wire,_)} $ ConnectFromIndexed(
                   info(s),
                   index(s),
                   WRef(name(wire),vtype,NodeKind(),FEMALE),
                   expand-vector(source(s)))
-               FEMALE: Begin{list(wire,_)} $ ConnectToIndexed(
+               WRITE : Begin{list(wire,_)} $ ConnectToIndexed(
                   info(s),
                   index(s),
                   expand-vector(source(s)),
                   WRef(name(wire),vtype,NodeKind(),MALE))
+               INFER : error("Shouldn't be here")
+               RDWR : error("Haven't implemented RDWR yet")
       (s) : map(expand-stmt,s)
 
 defn expand-accessors (c:Circuit) :

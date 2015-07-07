@@ -13,23 +13,23 @@ circuit Risc :
     cmem code : UInt<32>[256]
     reg pc : UInt<8>
     on-reset pc := UInt<8>(0)
-    accessor inst = code[pc]
+    infer accessor inst = code[pc]
     node op = bits(inst, 31, 24)
     node rci = bits(inst, 23, 16)
     node rai = bits(inst, 15, 8)
     node rbi = bits(inst, 7, 0)
     node T_51 = eq(rai, UInt<1>(0))
-    accessor T_52 = file[rai]
+    infer accessor T_52 = file[rai]
     node ra = mux(T_51, UInt<1>(0), T_52)
     node T_53 = eq(rbi, UInt<1>(0))
-    accessor T_54 = file[rbi]
+    infer accessor T_54 = file[rbi]
     node rb = mux(T_53, UInt<1>(0), T_54)
     wire rc : UInt<32>
     valid := UInt<1>(0)
     out := UInt<1>(0)
     rc := UInt<1>(0)
     when isWr : 
-      accessor T_55 = code[wrAddr]
+      infer accessor T_55 = code[wrAddr]
       T_55 := wrData
     else : when boot : pc := UInt<1>(0)
       else : 
@@ -46,7 +46,7 @@ circuit Risc :
         node T_61 = eq(rci, UInt<8>(255))
         when T_61 : valid := UInt<1>(1)
         else : 
-          accessor T_62 = file[rci]
+          infer accessor T_62 = file[rci]
           T_62 := rc
         node T_63 = add-wrap(pc, UInt<1>(1))
         pc := T_63

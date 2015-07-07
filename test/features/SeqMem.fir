@@ -3,20 +3,21 @@
 circuit Top : 
   module Top : 
     wire i : UInt<5>
+    i := UInt(1)
     wire i0 : UInt<5>
     wire j : UInt<128>
 
     i0 := UInt(10)
 
     cmem m-com : UInt<128>[32]
-    accessor r-com = m-com[i]
-    accessor w-com = m-com[i]
+    infer accessor r-com = m-com[i]
+    infer accessor w-com = m-com[i]
     j := r-com
     w-com := j
 
 
     smem m-seq : UInt<128>[32]
-    accessor r-seq = m-seq[i]
-    accessor w-seq = m-seq[i]
+    infer accessor r-seq = m-seq[i]
+    infer accessor w-seq = m-seq[i]
     j := r-seq
     w-seq := j
