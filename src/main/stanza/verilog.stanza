@@ -140,13 +140,16 @@ defn get-name (e:Expression) -> Symbol :
       (e) : error("Shouldn't be here")
 
 defn emit-module (m:InModule) :
+   val vdecs = Vector<KeyValue<Symbol,Stmt>>() ; all declarations
    val decs = HashTable<Symbol,Stmt>(symbol-hash) ; all declarations
    val cons = HashTable<Symbol,Expression>(symbol-hash) ; all connections
    val ens = HashTable<Symbol,Expression>(symbol-hash) ; all enables
    defn build-table (m:InModule) :
       defn build-table (s:Stmt) -> Stmt :
          match(map(build-table,map(remove-subfield,s))) : 
-            (s:DefWire|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : decs[name(s)] = s
+            (s:DefWire|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : 
+               add(vdecs,name(s) => s)
+               decs[name(s)] = s
             (s:Conditionally) : 
                val n = get-name(loc(conseq(s) as Connect))
                ens[n] = pred(s)
@@ -169,7 +172,7 @@ defn emit-module (m:InModule) :
 
    val sh = get-sym-hash(m)
 
-   for x in decs do :
+   for x in vdecs do :
       val sym = key(x)
       match(value(x)) :
          (s:DefWire) :
@@ -198,6 +201,8 @@ defn emit-module (m:InModule) :
                val n* = to-symbol $ string-join $ [sym "_" name(f)]
                add(wires,["wire " get-width(type(f)) " " n* ";"])
                add(inst-ports[sym], ["." name(f) "( " n* " )"])
+               if flip(f) == REVERSE :
+                  add(assigns,["assign " n* " = " emit(cons[n*]) ";"])
          (s:DefAccessor) : 
             switch {_ == acc-dir(s)} :
                READ :
@@ -210,9 +215,11 @@ defn emit-module (m:InModule) :
                      add(updates,[name(index*) " <= " emit(index(s)) ";"])
 
                      ; emit read accessor
+                     add(wires,["wire " get-width(type(type(source(s)) as VectorType)) " " sym ";"])
                      add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
                   else :
                      ; emit read accessor
+                     add(wires,["wire " get-width(type(type(source(s)) as VectorType)) " " sym ";"])
                      add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
                WRITE : 
                   if key?(ens,sym) :
@@ -231,8 +238,11 @@ defn emit-module (m:InModule) :
          if length(ports(m)) - 1 == i :
             end = "\n);\n"
          switch {_ == direction(p)} :
-            INPUT  : print-all([port-indent "input  " get-width(type(p)) " " name(p) end])
-            OUTPUT : print-all([port-indent "output " get-width(type(p)) " " name(p) end])
+            INPUT  : 
+               print-all([port-indent "input  " get-width(type(p)) " " name(p) end])
+            OUTPUT : 
+               print-all([port-indent "output " get-width(type(p)) " " name(p) end])
+               add(assigns,["assign " name(p) " = " emit(cons[name(p)]) ";"])
 
    for w in wires do :
       print("  ")

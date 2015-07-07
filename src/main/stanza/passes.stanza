@@ -1908,7 +1908,7 @@ defn split-exp (c:Circuit) :
          (s:Begin) : 
             do(f,s)
          (s:Conditionally) : 
-            add(v,map(split-exp-e{_,false,info(s)},s))
+            add(v,map(split-exp-e{_,full-name(loc(conseq(s) as Connect)),info(s)},s))
             do(f,s)
          (s:Connect) :
             match(loc(s)) :
@@ -2089,6 +2089,10 @@ defn pad-widths-s (s:Stmt) -> Stmt :
          val i = int-width!(type(value(s)))
          val exp* = pad-widths-e(i,value(s))
          DefNode(info(s),name(s),exp*)
+      (s:Conditionally) : 
+         val i = int-width!(type(pred(s)))
+         val pred* = pad-widths-e(i,pred(s))
+         Conditionally(info(s),pred*,conseq(s),alt(s))
       (s) : s
 
 public defn pad-widths (c:Circuit) -> Circuit :
