@@ -234,7 +234,6 @@ case class DefUInt(val id: String, val value: BigInt, val width: Int) extends De
 case class DefSInt(val id: String, val value: BigInt, val width: Int) extends Definition;
 case class DefFlo(val id: String, val value: Float) extends Definition;
 case class DefDbl(val id: String, val value: Double) extends Definition;
-case class DefMInt(val id: String, val value: String, val width: Int) extends Definition;
 case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Arg], val lits: Array[BigInt]) extends Definition;
 case class DefWire(val id: String, val kind: Kind) extends Definition;
 case class DefRegister(val id: String, val kind: Kind) extends Definition;
@@ -550,7 +549,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 
 import Literal._
 
-class MInt(val value: String, val width: Int) extends Data(NO_DIR) {
+class BitPat(val value: String, val width: Int) extends Data(NO_DIR) {
   def cloneTypeWidth(width: Int): this.type = cloneType
   def collectElts: Unit = { }
   override def dir: Direction = NO_DIR
@@ -559,8 +558,8 @@ class MInt(val value: String, val width: Int) extends Data(NO_DIR) {
   override def getWidth: Int = width
   override def flatten: Array[Bits] = Array[Bits](Bits(0))
   override def cloneType: this.type = 
-    new MInt(value, width).asInstanceOf[this.type]
-  def fromInt(x: BigInt): MInt = MInt(x.toString(2), -1).asInstanceOf[this.type]
+    new BitPat(value, width).asInstanceOf[this.type]
+  def fromInt(x: BigInt): BitPat = BitPat(x.toString(2), -1).asInstanceOf[this.type]
   val (bits, mask, swidth) = parseLit(value)
   def zEquals(other: Bits): Bool = 
     (Bits(toLitVal(mask, 2)) & other) === Bits(toLitVal(bits, 2))
@@ -568,13 +567,13 @@ class MInt(val value: String, val width: Int) extends Data(NO_DIR) {
   def != (other: Bits): Bool  = !zEquals(other)
 }
 
-object MInt {
+object BitPat {
   def mintLit(n: String, width: Int) = {
     assert(n(0) == 'b', "BINARY MINTS ONLY")
-    new MInt(n.substring(1, n.length), width)
+    new BitPat(n.substring(1, n.length), width)
   }
-  def apply(value: String, width: Int): MInt = mintLit(value, width)
-  def apply(value: String): MInt = apply(value, -1)
+  def apply(value: String, width: Int): BitPat = mintLit(value, width)
+  def apply(value: String): BitPat = apply(value, -1)
 }
 
 abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
