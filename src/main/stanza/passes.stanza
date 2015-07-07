@@ -1867,6 +1867,7 @@ defn inline-instances (c:Circuit) :
    defn rename-s (s:Stmt,n:Symbol) -> Stmt :
       map{rename-e{_,n},_} $ match(map(rename-s{_,n},s)) :
          (s:DefWire) : DefWire(info(s),rename(name(s),n),type(s))
+         (s:DefRegister) : DefRegister(info(s),rename(name(s),n),type(s))
          (s:DefInstance) : error("Shouldn't be here")
          (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s),seq?(s))
          (s:DefNode) : DefNode(info(s),rename(name(s),n),value(s))
