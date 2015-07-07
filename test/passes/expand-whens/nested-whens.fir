@@ -11,6 +11,14 @@ circuit top :
       wire y : UInt
       wire z : UInt
       wire w : UInt
+      p := UInt(1)
+      q := UInt(1)
+      a := UInt(1)
+      b := UInt(1)
+      x := UInt(1)
+      y := UInt(1)
+      z := UInt(1)
+      w := UInt(1)
 
       on-reset r := w
       when p :
@@ -20,5 +28,5 @@ circuit top :
         on-reset r := y
         r := b
       r := z
-; CHECK: r := Register(mux(reset, mux(q, y, mux(p, x, w)), z), UInt(1))
+; CHECK: when UInt(1) : r := mux(reset, mux(q, y, mux(p, x, w)), z)
 ; CHECK: Finished Expand Whens

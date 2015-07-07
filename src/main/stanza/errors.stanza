@@ -247,7 +247,7 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
 
    defn check-valid-loc (info:FileInfo,e:Expression) -> False :
       match(e) : 
-         (e:UIntValue|SIntValue|DoPrim|ReadPort|Register) :
+         (e:UIntValue|SIntValue|DoPrim) :
             add(errors,InvalidLOC(info))
          (e) : false
 
@@ -403,20 +403,7 @@ public defn check-kinds (c:Circuit) -> Circuit :
          (e:WIndex) : check-is-mem(info,exp(e))
          (e) : false
 
-   defn check-kinds-e (info:FileInfo,e:Expression) -> False :
-      do(check-kinds-e{info,_},e)
-      match(e) :
-         (e:ReadPort) : 
-            check-is-mem(info,mem(e))
-            check-not-mem(info,index(e))
-            check-not-mem(info,enable(e))
-         (e:WritePort) : 
-            check-is-mem(info,mem(e))
-            check-not-mem(info,index(e))
-            check-not-mem(info,enable(e))
-         (e) : do(check-not-mem{info,_},e)
    defn check-kinds-s (s:Stmt) -> False :
-      do(check-kinds-e{info(s),_:Expression},s)
       match(s) : 
          (s:DefNode) : check-not-mem(info(s),value(s))
          (s:DefAccessor) : check-not-mem(info(s),index(s))
@@ -649,10 +636,18 @@ defn InferDirection (info:FileInfo,name:Symbol) :
    [info ": Accessor " name " has a direction that requires inference."]
 
 ;---------------- Helper Functions --------------
-defn dir-to-gender (d:Direction) -> Gender :
+defn dir-to-gender (d:PortDirection) -> Gender :
    switch {_ == d} :
       INPUT : MALE
       OUTPUT : FEMALE
+
+defn gender (s:DefAccessor) -> Gender :
+   switch {_ == acc-dir(s)} :
+      READ : MALE
+      WRITE : FEMALE
+      INFER : UNKNOWN-GENDER
+      RDWR : BI-GENDER
+
 
 ;----------------- Check Genders Pass ---------------------
 
@@ -697,7 +692,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (s:DefMemory) : genders[name(s)] = BI-GENDER
          (s:DefInstance) : genders[name(s)] = MALE
          (s:DefAccessor) : 
-            if dir(s) == INFER : add(errors,InferDirection(info(s),name(s)))
+            if acc-dir(s) == INFER : add(errors,InferDirection(info(s),name(s)))
             check-gender(info(s),genders,index(s),MALE)
             check-gender(info(s),genders,source(s),gender(s))
             genders[name(s)] = gender(s)
@@ -813,7 +808,7 @@ public defn check-low-form (c:Circuit) -> Circuit :
             (s:OnReset) : add(errors,NoOnReset(info(s)))
             (s:BulkConnect) : add(errors,NoBulkConnect(info(s)))
             (s:Connect) :
-               check-correct-exp(info(s),e)
+               check-correct-exp(info(s),exp(s))
                match(loc(s)) :
                   (e:Ref|Subfield) : 
                      val n* = to-symbol $ to-string $ e

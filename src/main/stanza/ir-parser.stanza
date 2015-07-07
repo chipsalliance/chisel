@@ -131,6 +131,10 @@ defsyntax firrtl :
          FPE(form, "Expected a vector type here.") when t not-typeof VectorType
          t
 
+      ;Error if not an accessor direction
+      accdir! = (?a:#accdir) : a
+      accdir! != () : FPE(form, "Expected an accessor direction here.")
+
       ;Error if not an expression
       exp! = (?e:#exp) : e
       exp! != () : FPE(form, "Expected an expression here.")
@@ -196,6 +200,12 @@ defsyntax firrtl :
       field = (flip ?name:#id! #:! ?type:#type!) : Field(name, REVERSE, type)
       field = (?name:#id #:! ?type:#type!) : Field(name, DEFAULT, type)
 
+   defrule accdir :
+      accdir = (read) : READ
+      accdir = (write) : WRITE
+      accdir = (infer) : INFER
+      accdir = (rdwr) : RDWR
+
    defrule width :
       width = (?x:#int) : IntWidth(x)
       width = (?) : UnknownWidth()
@@ -208,12 +218,15 @@ defsyntax firrtl :
       stmt = (smem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t, true)
       stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name, m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name, e)
-      stmt = (accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i)
+      stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x, y)
+      stmt = (read accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,READ)
+      stmt = (write accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,WRITE)
+      stmt = (infer accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,INFER)
+      stmt = (rdwr accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,RDWR)
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
       stmt = (?x:#exp <> ?y:#exp!) : BulkConnect(first-info(form),x, y)
-      stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x, y)
 
       stmt = ((?s:#stmt ?ss:#stmt ... ?rest ...)) :
          if not empty?(rest) :

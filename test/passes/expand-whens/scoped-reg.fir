@@ -2,6 +2,7 @@
 circuit top :
    module top :
       wire p : UInt
+      p := UInt(1)
       when p :
          reg r : UInt
          on-reset r := UInt(10)

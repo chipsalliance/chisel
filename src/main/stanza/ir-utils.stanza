@@ -98,7 +98,15 @@ defmethod print (o:OutputStream, d:Flip) :
       DEFAULT : ""
       REVERSE: "flip"
 
-defmethod print (o:OutputStream, d:Direction) :
+defmethod print (o:OutputStream, d:AccDirection) :
+   print{o, _} $
+   switch {d == _} :
+      READ : "read"
+      WRITE: "write"
+      INFER: "infer"
+      RDWR: "rdwr"
+
+defmethod print (o:OutputStream, d:PortDirection) :
    print{o, _} $
    switch {d == _} :
       INPUT : "input"
@@ -177,12 +185,16 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefNode) :
          print-all(o,["node " name(c) " = " value(c)])
       (c:DefAccessor) :
-         print-all(o,["accessor " name(c) " = " source(c) "[" index(c) "]"])      
+         print-all(o,[acc-dir(c) " accessor " name(c) " = " source(c) "[" index(c) "]"])      
       (c:Conditionally) :
-         print-all(o, ["when " pred(c) " :"])
-         print-debug(o,c)
-         print(o,"\n")
-         print(io,conseq(c))
+         if conseq(c) typeof Begin :
+            print-all(o, ["when " pred(c) " :"])
+            print-debug(o,c)
+            print(o,"\n")
+            print(io,conseq(c))
+         else :
+            print-all(o, ["when " pred(c) " : " conseq(c)])
+            print-debug(o,c)
          if alt(c) not-typeof EmptyStmt :
             print(o, "\nelse :")
             print(io, "\n")
@@ -277,7 +289,7 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
 defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
    match(c) :
-      (c:DefAccessor) : DefAccessor(info(c),name(c), f(source(c)), f(index(c)))
+      (c:DefAccessor) : DefAccessor(info(c),name(c), f(source(c)), f(index(c)),acc-dir(c))
       (c:DefNode) : DefNode(info(c),name(c), f(value(c)))
       (c:DefInstance) : DefInstance(info(c),name(c), f(module(c)))
       (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
