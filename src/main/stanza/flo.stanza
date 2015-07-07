@@ -11,8 +11,16 @@ public defstruct Flo <: Pass :
    file : String
 public defmethod pass (b:Flo) -> (Circuit -> Circuit) : emit-flo{file(b),_}
 public defmethod name (b:Flo) -> String : "To Flo"
+
+definterface FloKind
+defstruct FRegKind <: FloKind
+defstruct FWritePortKind <: FloKind :
+   mem: Expression
+   index: Expression
+defstruct FOutputPortKind <: FloKind 
   
 defn is-sint? (arg:Expression) -> True|False : type(arg) typeof SIntType
+defn type (s:DefAccessor) -> Type : type(type(source(s)) as VectorType)
 
 defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
    switch {op == _ } :
@@ -94,12 +102,6 @@ defn emit! (e:Expression,top:Symbol) :
       (e:SIntValue) : emit-all([value(e) "'" sane-width(width(e))], top)
       (e:Subfield) :  emit-all([exp(e) "/" name(e)], top)
       (e:Index) :     emit-all([exp(e) "/" value(e)], top)
-      ;(e:Pad) : 
-         ;emit-all(["rsh'" prim-width(type(e)) " " value(e) " 0"], top)
-      (e:Register) : 
-         emit-all(["reg'" prim-width(type(e)) " " enable(e) " " value(e)], top) 
-      (e:ReadPort) : 
-         emit-all(["rd'" prim-width(type(e)) " " "1" " " mem(e) " " index(e)], top) ;; enable(e)
       (e:DoPrim) : 
          if cmp-op?(op(e)) :
            emit-all([flo-op-name(op(e), args(e)) "'" prim-width(type(args(e)[0]))], top)
@@ -137,41 +139,60 @@ defn maybe-mov (e:Expression) -> String :
       (e) :           false
    if need-mov?: "mov " else: ""
 
-defn emit-s (s:Stmt, v:List<Symbol>, top:Symbol,sh:HashTable<Symbol,Int>) :
+defn emit-s (s:Stmt, flokinds:HashTable<Symbol,FloKind>, top:Symbol,sh:HashTable<Symbol,Int>) :
+   defn emit-connect (s:Connect, en:Expression) :
+      match(loc(s)) :
+        (r:Ref) :
+           val n = name(r)
+           if key?(flokinds,n) :
+              match(flokinds[n]) :
+                 (k:FRegKind) : 
+                    emit-all(["reg'" prim-width(type(r)) " " en " " exp(s)], top) 
+                 (k:FWritePortKind) :
+                    emit-all([top "::" n " = wr'" prim-width(type(r)) " " en " " mem(k) " " index(k) " " exp(s) "\n"], top)
+                 (k:FOutputPortKind) : 
+                    emit-all([top "::" n " = out'" prim-width(type(r)) " " exp(s) "\n"], top)
+                 (k) : error("Shouldn't be here")
+           else :
+              emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
+        (o) :
+           println-all(["CONNEcT LOC " loc(s)])
+           error("Unknown Connect")
    match(s) :
       (s:DefWire) : ""
       (s:DefInstance) : error("Shouldn't be here")
+      (e:DefAccessor) : 
+         if acc-dir == READ :
+            emit-all(["rd'" prim-width(type(e)) " " "1" " " source(e) " " index(e)], top)
       (s:DefMemory) :
          val vtype = type(s) as VectorType
          emit-all([top "::" name(s) " = mem'" prim-width(type(vtype)) " " size(vtype) "\n"], top)
       (s:DefNode) :
          emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
-      (s:Begin) : do(emit-s{_, v, top,sh}, body(s))
-      (s:Connect) : 
-         match(loc(s)) :
-           (r:Ref) :
-             val n = name(r)
-             if contains?(v,n) :
-                emit-all([top "::" n " = out'" prim-width(type(r)) " " exp(s) "\n"], top)
-             else :
-                emit-all([top "::" n " = " maybe-mov(exp(s)) exp(s) "\n"], top)
-           (w:WritePort) :
-             val n = firrtl-gensym(`F,sh)
-             emit-all([top "::" n " = wr'" prim-width(type(w)) " " enable(w) " " mem(w) " " index(w) " " exp(s) "\n"], top)
-           (o) :
-             println-all(["CONNEcT LOC " loc(s)])
-             error("Unknown Connect")
+      (s:Begin) : do(emit-s{_, flokinds, top,sh}, body(s))
+      (s:Connect) : emit-connect(s,UIntValue(to-long(1),IntWidth(1)))
+      (s:Conditionally) : emit-connect(conseq(s) as Connect,pred(s))
       (s) : s 
 
 defn emit-module (m:InModule,sh:HashTable<Symbol,Int>) :
-   val v = Vector<Symbol>()
+   val flokinds = HashTable<Symbol,FloKind>(symbol-hash)
+   defn build-table (s:Stmt) -> False :
+      do(build-table,s)
+      match(s) : 
+         (s:DefRegister) : flokinds[name(s)] = FRegKind()
+         (s:DefAccessor) : 
+            switch {_ == acc-dir(s)} :
+               WRITE : flokinds[name(s)] = FWritePortKind(source(s),index(s))
+               else : false
+         (s) : false
+      
    for port in ports(m) do :
       if name(port) ==`reset :
          emit-all([name(m) "::" name(port) " = rst'1\n"], name(m))
       else : switch {_ == direction(port)} :
          INPUT : print-all([name(m) "::" name(port) " = " "in'" prim-width(type(port)) "\n"])
-         OUTPUT : add(v,name(port))
-   emit-s(body(m), to-list(v), name(m),sh)
+         OUTPUT : flokinds[name(port)] = FOutputPortKind()
+   emit-s(body(m), flokinds, name(m),sh)
 
 public defn emit-flo (file:String, c:Circuit) :
    with-output-file{file, _} $ fn () :
