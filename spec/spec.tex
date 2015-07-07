@@ -80,7 +80,7 @@ After a custom pass, the resulting circuit should undergo lowering prior to pass
 
 \section{Acknowledgements - IN PROGRESS}
 The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, including but not limited to XXXX.
-We'd also like to thank our sponsors XXXX, and the UC Berkeley University.
+We'd also like to thank our sponsors XXXX, and the University of California, Berkeley.
 
 \section{FIRRTL Language Definition}
 
@@ -333,7 +333,7 @@ Additionally, the type for a memory must be completely specified and cannot cont
 It is an error to specify any other type for a memory.
 However, the internal type to the vector type may be a non-ground type, with the caveat that the internal type, if a bundle type, cannot contain any reverse fields.
 
-A memory cannot be explicitly initialized using a special FIRRTL construct ? the circuit itself must contain the proper logic to initialize the memory.
+A memory cannot be explicitly initialized using a special FIRRTL construct - the circuit itself must contain the proper logic to initialize the memory.
 
 \subsection{Nodes}
 A node is simply a named intermediate value in a circuit, and is akin to a pointer in the C programming language.
@@ -550,7 +550,7 @@ This is to facilitate writing transformational passes, by ensuring that the comp
 Inside a when, a connection to a component is conditional only if the component is declared outside the when statement.
 If the component is both declared and connected to inside a when, the connection is {\em not} conditional on that when.
 
-Conceptually, a when creates a mux between the stuff outside and the stuff inside ? it acts as type of "conditional barrier".
+Conceptually, a when creates a mux between the stuff outside and the stuff inside - it acts as type of "conditional barrier".
 Thus, if you draw a line between a component's declaration and a connection to it, that connection is dependent on all intersected when predicates being true.
 
 The following example shows a {\em conditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 only if \pds{enable} is true.
@@ -1094,7 +1094,7 @@ Inlined lowered form is essentially a flat netlist which specifies every compone
 \item This is impossible to detect, so turns into a silent failure
 \item If annotations are used for actual manipulations of circuits later on, this could be the cause of a bug that is exceptionally hard to solve
 \item Thus, annotation producer/consumer keeps external data structure mapping names to annotations
-\item Pass writers must do all they can to preserve names ? can provide transform for names that annotation users can run on their tables
+\item Pass writers must do all they can to preserve names - can provide transform for names that annotation users can run on their tables
 \item If a name is mangled, the annotation consumer can ERROR. Then, they need to look at the pass to see how their annotations should propagate.
 \end{enumerate}
 
@@ -1297,8 +1297,8 @@ Standardizing how names gets mangled requires a lot of thought, and we didn't fe
 For now, names have to be unique, and it is the front-end's responsibility to do this.
 
 \item Why allow declaring components in when statements? 
-We want the important property that a module is just a box of components inside ? for any jumble of components, you can always lace them in the box, and it will preserve the semantics.
-You need to declare wires inside whens ? because generators could run within a when in a front-end.
+We want the important property that a module is just a box of components inside - for any jumble of components, you can always lace them in the box, and it will preserve the semantics.
+You need to declare wires inside whens - because generators could run within a when in a front-end.
 You should always be able to pull them into a module if we want.
 Now its inconsistent if you can't declare registers in the scope.
 

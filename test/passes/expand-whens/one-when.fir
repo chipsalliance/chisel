@@ -7,21 +7,22 @@ circuit top :
       wire i : UInt<1>
       wire p : UInt<1>
       wire j : UInt<1>
+      j := UInt(1)
       reg r : UInt<1>
 
       p := j
       when p :
         on-reset r := i
-        accessor a = m[i] 
+        infer accessor a = m[i] 
         i := a
-        accessor b = m[i]
+        infer accessor b = m[i]
         b := i
       else :
-        accessor c = m[i]
+        infer accessor c = m[i]
         i := c
-        accessor d = m[i] 
+        infer accessor d = m[i] 
         d := i
-      accessor e = m[i]
+      infer accessor e = m[i]
       when p :
         p := i
         when e :

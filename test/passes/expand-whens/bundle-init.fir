@@ -15,8 +15,8 @@ circuit top :
       r.y := b
       on-reset r := w
 
-; CHECK: r$x := Register(mux(reset, w$x, a), UInt(1))
-; CHECK: r$y := Register(b, UInt(1))
+; CHECK: when UInt(1) : r$x := mux(reset, w$x, a)
+; CHECK: when UInt(1) : r$y := b
 ; CHECK: a := UInt(1)
 ; CHECK: b := UInt(2)
 ; CHECK: w$x := b

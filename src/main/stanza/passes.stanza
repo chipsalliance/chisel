@@ -27,7 +27,8 @@ public val standard-passes = to-list $ [
    Inline()
    SplitExp()
    CheckLowForm()
-   ToRealIR() ]
+   ToRealIR() 
+   Pad() ]
 ;=============== WORKING IR ================================
 public definterface Kind
 public defstruct WireKind <: Kind 
@@ -108,13 +109,13 @@ defn swap (f:Flip) -> Flip :
       DEFAULT : REVERSE
       REVERSE : DEFAULT
 
-defn swap (d:Direction) -> Direction :
+defn swap (d:PortDirection) -> PortDirection :
    switch {_ == d} :
       OUTPUT : INPUT
       INPUT : OUTPUT
 
-public defn times (flip:Flip,d:Direction) -> Direction : flip * d
-public defn times (d:Direction,flip:Flip) -> Direction :
+public defn times (flip:Flip,d:PortDirection) -> PortDirection : flip * d
+public defn times (d:PortDirection,flip:Flip) -> PortDirection :
    switch {_ == flip} :
       DEFAULT : d
       REVERSE : swap(d)
@@ -135,13 +136,13 @@ defn to-field (p:Port) -> Field :
    else if direction(p) == INPUT : Field(name(p),REVERSE,type(p))
    else : error("Shouldn't be here")
 
-defn to-dir (g:Gender) -> Direction :
+defn to-dir (g:Gender) -> PortDirection :
    switch {_ == g} :
       MALE : INPUT
       FEMALE : OUTPUT
 
 defn gender (s:DefAccessor) -> Gender :
-   switch {_ == dir(s)} :
+   switch {_ == acc-dir(s)} :
       READ : MALE
       WRITE : FEMALE
       INFER : UNKNOWN-GENDER
@@ -331,6 +332,8 @@ defn to-working-ir (c:Circuit) :
          (e:Subfield) : WSubfield(exp(e), name(e), type(e), UNKNOWN-GENDER)
          (e:Index) : WIndex(exp(e), value(e), type(e), UNKNOWN-GENDER)
          (e) : e
+   defn to-stmt (s:Stmt) -> Stmt : 
+      map{to-stmt,_} $ map(to-exp,s)
 
    Circuit(info(c),modules*, main(c)) where :
       val modules* =
@@ -1342,7 +1345,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
          if direction(p) == OUTPUT :
             val ref = WRef(name(p),type(p),PortKind(),FEMALE)
             if has-nul?(table[name(p)]) : 
-               add(errors,RefNotInitialized(info(p), name(p))
+               add(errors,RefNotInitialized(info(p), name(p)))
             else : add{cons,_} $ Connect(FileInfo(),ref,to-exp(table[name(p)]) as Expression)
    
    defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stmt>,cons:Vector<Stmt>) -> Stmt :
@@ -1352,7 +1355,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
             add(decs,s)
             val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
             if has-nul?(table[name(s)]) : 
-               add(errors,RefNotInitialized(info(s), name(s))
+               add(errors,RefNotInitialized(info(s), name(s)))
             else : add{cons,_} $ Connect(info(s),ref,to-exp(table[name(s)]) as Expression)
          (s:DefRegister) : 
             add(decs,s)
@@ -1361,12 +1364,12 @@ public defn expand-whens (c:Circuit) -> Circuit :
                (e:Expression) : 
                   val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
                   val en = to-exp(optimize $ get-write-enable(table[name(s)])) as Expression
-                  if en == UIntValue(1,UnknownWidth()) : 
+                  if en == UIntValue(to-long(1),UnknownWidth()) : 
                      add{cons,_} $ Connect(info(s),ref,e)
                   else :
-                     add{cons,_} $ Conditionally(en,Connect(info(s),ref,e),EmptyStmt())
+                     add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())
                (e:False) : 
-                  add(errors,RefNotConnected(info(s), name(s))
+                  add(errors,RefNotConnected(info(s), name(s)))
          (s:DefAccessor) : 
             add(decs,s)
             val t = type(type(source(s)) as VectorType)
@@ -1377,12 +1380,12 @@ public defn expand-whens (c:Circuit) -> Circuit :
                match(e) :
                   (e:Expression) : 
                      val en = (to-exp $ optimize $ get-write-enable(table[n])) as Expression
-                     if en == UIntValue(1,UnknownWidth()) : 
+                     if en == UIntValue(to-long(1),UnknownWidth()) : 
                         add{cons,_} $ Connect(info(s),ref,e)
                      else :
-                        add{cons,_} $ Conditionally(en,Connect(info(s),ref,e),EmptyStmt())
+                        add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())
                   (e:False) : 
-                     add(errors,RefNotConnected(info(s), n)
+                     add(errors,RefNotConnected(info(s), n))
          (s:DefInstance) : 
             add(decs,s)
                for f in fields(type(module(s)) as BundleType) map :
@@ -1393,7 +1396,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                      val ref = WRef(x,type(module(s)),InstanceKind(),FEMALE)
                      val sref = WSubfield(ref,f,bundle-field-type(type(module(s)),f),FEMALE)
                      if has-nul?(table[n]) : 
-                        add(errors,RefNotInitialized(info(s), n)
+                        add(errors,RefNotInitialized(info(s), n))
                      else : add{cons,_} $ Connect(info(s),sref,to-exp(table[n]) as Expression)
          (s:Connect|Conditionally|OnReset|Begin|EmptyStmt) : false
       s
@@ -1404,7 +1407,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
          (m:InModule) : 
             val assign = HashTable<Symbol,SymbolicValue>(symbol-hash)
             val resets = HashTable<Symbol,SymbolicValue>(symbol-hash)
-            ;val flattn = HashTable<Symbol,True|False>(symbol-hash)
+            val flattn = HashTable<Symbol,True|False>(symbol-hash)
    
             for p in ports(m) do :
                if direction(p) == OUTPUT :
@@ -1431,10 +1434,12 @@ public defn expand-whens (c:Circuit) -> Circuit :
             expand-whens(body(m),table,decs,cons)
             InModule(info(m),name(m),ports(m),Begin(append(to-list(decs),to-list(cons))))
 
-   Circuit(info(c),modules*, main(c)) where :
+   val c* = Circuit(info(c),modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
             expand-whens(m)
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c*
 
 
 ;;================ INFER WIDTHS =============================
@@ -1654,6 +1659,8 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
    defn gen-constraints-s (s:Stmt) -> Stmt :
       match(map(gen-constraints-s,s)) :
          (s:DefWire) : DefWire(info(s),name(s),h[name(s)])
+         (s:DefRegister) : DefRegister(info(s),name(s),h[name(s)])
+         (s:DefAccessor) : DefAccessor(info(s),name(s),gen-constraints(source(s)),gen-constraints(index(s)), acc-dir(s))
          (s:DefInstance) : DefInstance(info(s),name(s),gen-constraints(module(s)))
          (s:DefMemory) : DefMemory(info(s),name(s),h[name(s)] as VectorType,seq?(s))
          (s:DefNode) : 
@@ -1672,7 +1679,7 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             val p = gen-constraints(pred(s))
             add(v,WGeq(width!(type(p)),IntWidth(1)))
             add(v,WGeq(IntWidth(1),width!(type(p))))
-            Conditionally(info(s),p,conseq(s),alt(s))
+            map(gen-constraints-s,Conditionally(info(s),p,conseq(s),alt(s)))
          (s) : s
 
    defn gen-constraints (e:Expression) -> Expression :
@@ -1708,8 +1715,11 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
    defn build-environment (s:Stmt) -> False :
       match(s) :
          (s:DefWire) : h[name(s)] = remove-unknowns(type(s))
+         (s:DefRegister) : h[name(s)] = remove-unknowns(type(s))
          (s:DefInstance) : h[name(s)] = h[name(module(s) as WRef)]
          (s:DefMemory) : h[name(s)] = remove-unknowns(type(s))
+         (s:DefAccessor) : 
+            h[name(s)] = remove-unknowns(type(type(source(s)) as VectorType))
          (s:DefNode) : h[name(s)] = remove-unknowns(type(value(s)))
          (s) : false
       do(build-environment,s)
@@ -1746,7 +1756,9 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
             (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ - _})
             (w:ExpWidth) : apply(2,solve(arg1(w)),{pow(_,_) - 1})
             (w:IntWidth) : width(w)
-            (w) : error("Shouldn't be here")
+            (w) : 
+               println(w)
+               error("Shouldn't be here")
    
       val s = solve(w)
       if s typeof Int : IntWidth(s as Int)
@@ -1889,14 +1901,16 @@ defn split-exp (c:Circuit) :
                add(v,DefNode(info,n*,e))
                WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
             (e) : e
+      defn f (s:Stmt) -> False: split-exp-s(s,v,sh)
       match(s) :
          (s:Begin) : 
-            defn f (s:Stmt) -> False: split-exp-s(s,v,sh)
             do(f,s)
-         (s:Conditionally) : error("Shouldn't be here")
+         (s:Conditionally) : 
+            add(v,map(split-exp-e{_,false,info(s)},s))
+            do(f,s)
          (s:Connect) :
             match(loc(s)) :
-               (e:WritePort) : add(v,map(split-exp-e{_,full-name(exp(s)),info(s)},s))
+               ;(e:WritePort) : add(v,map(split-exp-e{_,full-name(exp(s)),info(s)},s))
                (e) : add(v,map(split-exp-e{_,full-name(loc(s)),info(s)},s))
          (s:DefNode) : add(v,map(split-exp-e{_,name(s),info(s)},s))
          (s) : add(v,map(split-exp-e{_,false,info(s)},s))
@@ -1934,7 +1948,6 @@ defn to-real-ir (c:Circuit) :
          (e) : e
    defn to-stmt (s:Stmt) :
      match(map(to-exp,s)) :
-        (e:DefAccessor) : error("Shouldn't be here")
         (e:ConnectToIndexed) : error("Shouldn't be here")
         (e:ConnectFromIndexed) : error("Shouldn't be here")
         (e) : map(to-stmt,e)
@@ -1993,7 +2006,7 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
         (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s))
         (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
-        (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s))
+        (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s),acc-dir(s))
         (s) : map(to-stmt,s)
 
    defn to-port (p:Port) -> Port : Port(info(p),rename(name(p)),direction(p),type(p))
@@ -2005,4 +2018,81 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
                (m:InModule) : InModule(info(m),name(m), map(to-port,ports(m)), to-stmt(body(m)))
                (m:ExModule) : m
 
+
+;========== Pad Widths ==================
+
+public defstruct Pad <: Pass
+public defmethod pass (b:Pad) -> (Circuit -> Circuit) : pad-widths
+public defmethod name (b:Pad) -> String : "Pad Widths"
+
+defn int-width! (t:Type) -> Int :
+   match(width!(t)) :
+      (w:IntWidth) : width(w)
+      (w) : error("Non-int width")
+
+defn set-width (desired:Int,t:Type) -> Type :
+   match(t) :
+      (t:UIntType) : UIntType(IntWidth(desired))
+      (t:SIntType) : SIntType(IntWidth(desired))
+      (t) : error("Non-ground type")
+
+defn pad-widths-e (desired:Int,e:Expression) -> Expression :
+   defn trim (desired:Int, e:Expression) :
+     ;; println-all(["TRIM " desired " e " e])
+     DoPrim(BITS-SELECT-OP,list(e),list(desired - 1, 0),set-width(desired,type(e)))
+   defn pad (desired:Int, e:Expression) :
+     ;; println-all(["PAD " desired " e " e])
+     DoPrim(PAD-OP,list(e),list(desired),set-width(desired,type(e)))
+   defn trim-pad (desired:Int, e:Expression) :
+     val i = int-width!(type(e))
+     if i > desired : trim(desired, e)
+     else if i == desired : e
+     else : pad(desired, e)
+   defn self-pad-widths-e (e:Expression) -> Expression :
+     pad-widths-e(int-width!(type(e)), e)
+   ;; println-all(["PAD-E " desired " " e])
+   match(e) :
+      (e:DoPrim) :
+         val new-desired = reduce(max, 0, map(int-width!{type(_)}, args(e)))
+         ;; println-all(["  NEW DESIRED " new-desired])
+         val e* =
+           if contains?([CONCAT-OP, DYN-SHIFT-RIGHT-OP, DYN-SHIFT-LEFT-OP], op(e)) :
+             DoPrim(op(e), map(self-pad-widths-e, args(e)), consts(e), type(e))
+           else if contains?([MUX-OP], op(e)) :
+             DoPrim(op(e), list(pad-widths-e(1, args(e)[0]), pad-widths-e(new-desired, args(e)[1]), pad-widths-e(new-desired, args(e)[2])), consts(e), type(e))
+           else :
+             map(pad-widths-e{new-desired,_},e)
+         trim-pad(desired, e*)
+      (e:WRef|WSubfield|WIndex) : 
+         trim-pad(desired, e)
+      (e:UIntValue) : 
+         val i = int-width!(type(e))
+         if i > desired : trim(desired, e)
+         else : UIntValue(value(e),IntWidth(desired))
+      (e:SIntValue) : 
+         val i = int-width!(type(e))
+         if i > desired : trim(desired, e)
+         else : SIntValue(value(e),IntWidth(desired))
+      (e) : error(to-string $ e)
+
+defn pad-widths-s (s:Stmt) -> Stmt :
+   ;; println-all(["PAD-S " s])
+   match(map(pad-widths-s,s)) :
+      (s:Connect) : 
+         val i = int-width!(type(loc(s)))
+         val loc* = pad-widths-e(i,loc(s))
+         val exp* = pad-widths-e(i,exp(s))
+         Connect(info(s),loc*,exp*)
+      (s:DefNode) : 
+         val i = int-width!(type(value(s)))
+         val exp* = pad-widths-e(i,value(s))
+         DefNode(info(s),name(s),exp*)
+      (s) : s
+
+public defn pad-widths (c:Circuit) -> Circuit :
+   Circuit{info(c),_,main(c)} $
+      for m in modules(c) map :
+         match(m) :
+            (m:ExModule) : m
+            (m:InModule) : InModule(info(m),name(m),ports(m),pad-widths-s(body(m)))
 

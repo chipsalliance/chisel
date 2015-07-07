@@ -3,40 +3,40 @@ defpackage firrtl/compiler :
   import verse
   import firrtl/passes
   import firrtl/errors
-  import firrtl/flo
+;  import firrtl/flo
   import firrtl/verilog
   import firrtl/ir2
   import firrtl/ir-utils
 
-public defstruct StandardFlo <: Compiler :
-   file: String with: (as-method => true)
-public defmethod passes (c:StandardFlo) -> List<Pass> :
-   to-list $ [
-      CheckHighForm(expand-delin)
-      ;; TempElimination()
-      ToWorkingIR()
-      MakeExplicitReset()
-      ResolveKinds()
-      CheckKinds()
-      InferTypes()
-      CheckTypes()
-      ResolveGenders()
-      CheckGenders()
-      ExpandAccessors()
-      LowerToGround()
-      ExpandIndexedConnects()
-      ExpandWhens()
-      InferWidths()
-      Pad()
-      Inline()
-      SplitExp()
-      ToRealIR()
-      SpecialRename(`#,`_)
-      SpecialRename(`$,`::)
-      CheckHighForm(`::)
-      CheckLowForm()
-      Flo(file(c))
-   ]
+;public defstruct StandardFlo <: Compiler :
+;   file: String with: (as-method => true)
+;public defmethod passes (c:StandardFlo) -> List<Pass> :
+;   to-list $ [
+;      CheckHighForm(expand-delin)
+;      ;; TempElimination()
+;      ToWorkingIR()
+;      MakeExplicitReset()
+;      ResolveKinds()
+;      CheckKinds()
+;      InferTypes()
+;      CheckTypes()
+;      ResolveGenders()
+;      CheckGenders()
+;      ExpandAccessors()
+;      LowerToGround()
+;      ExpandIndexedConnects()
+;      ExpandWhens()
+;      InferWidths()
+;      Pad()
+;      Inline()
+;      SplitExp()
+;      ToRealIR()
+;      SpecialRename(`#,`_)
+;      SpecialRename(`$,`::)
+;      CheckHighForm(`::)
+;      CheckLowForm()
+;      Flo(file(c))
+;   ]
 
 public defstruct StandardVerilog <: Compiler :
    file: String with: (as-method => true)

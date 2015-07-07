@@ -12,7 +12,7 @@ circuit top :
       ; CHECK: wire a$1$x : UInt<32>
       ; CHECK: wire a$1$y : UInt<32>
 
-      accessor b = a[i]
+      infer accessor b = a[i]
       ; CHECK: wire b$x : UInt<32>
       ; CHECK: wire b$y : UInt<32>
       ; CHECK: b$x := a$0$x

@@ -116,10 +116,10 @@ public defstruct DefNode <: Stmt : ;LOW
    value: Expression
 public defstruct DefAccessor <: Stmt :
    info: FileInfo with: (as-method => true)
-   dir: AccDirection
    name: Symbol
    source: Expression
    index: Expression
+   acc-dir: AccDirection
 public defstruct Conditionally <: Stmt :
    info: FileInfo with: (as-method => true)
    pred: Expression
@@ -161,7 +161,7 @@ public defstruct Field :
 public defstruct Port :
    info: FileInfo
    name: Symbol
-   pkind: PKind
+   direction: PortDirection
    type: Type
 
 public definterface Module

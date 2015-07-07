@@ -4,43 +4,6 @@ defpackage firrtl/verilog :
    import firrtl/ir-utils
    import firrtl/ir2
 
-public defstruct RemoveSeqMem <: Pass
-public defmethod pass (b:RemoveSeqMem) -> (Circuit -> Circuit) : remove-smem{_}
-public defmethod name (b:RemoveSeqMem) -> String : "Remove SeqMem"
-public defmethod short-name (b:RemoveSeqMem) -> String : "remove-smem"
-
-
-;============ Utilz =============
-
-;============ Remove Seq Mem =============
-
-defn remove-smem (m:InModule) -> InModule :
-   val hash = get-sym-hash(m)
-   val smems = Vector<Symbol>()
-   defn remove-smem-s (s:Stmt) -> Stmt :
-      map{remove-smem-s,_} $ match(s) :
-         (s:DefMemory) : 
-            if seq?(s) : add(smems,name(s))
-            DefMemory(info(s),name(s),type(s),false)
-         (s:DefAccessor) : 
-            if dir(s) == WRITE and contains?(smems, name(source(s) as Ref)) :
-               val regged-index = firrtl-gensym(name(index(s) as Ref),hash)
-               val ref = Ref(regged-index,type(index(s)))
-               Begin $ to-list $ 
-                 [ DefRegister(info(s),regged-index,type(index(s)))
-                   Connect(ref,index(s))
-                   DefAccessor(info(s),dir(s),name(s),source(s),ref) ]
-            else : s
-         (s) : s
-
-   InModule(info(m),name(m),ports(m),remove-smem-s(body(m),hash))
-
-public defn remove-smem (c:Circuit) -> Circuit :
-   for m in modules(c) do :
-      match(m) :
-         (m:InModule) : remove-smem(m)
-         (m:ExModule) : m
-
 ;============ VERILOG ==============
 
 public defstruct Verilog <: Pass :
@@ -48,10 +11,6 @@ public defstruct Verilog <: Pass :
 public defmethod pass (b:Verilog) -> (Circuit -> Circuit) : emit-verilog{file(b),_}
 public defmethod name (b:Verilog) -> String : "To Verilog"
 public defmethod short-name (b:Verilog) -> String : "To Verilog"
-
-defstruct DecAndConnect :
-   dec : Stmt
-   con : Connect
 
 ;============ Utilz =============
 defn width! (w:Width) -> Int :
@@ -105,9 +64,6 @@ defn emit (e:Expression) -> String :
       (e:SIntValue) : string-join $ [width!(type(e)) "'sd" value(e)]
       (e:Subfield) : error("Non-supported expression")
       (e:Index) : error("Non-supported expression")
-      (e:Register) : error("Non-supported expression")
-      (e:ReadPort) : error("Non-supported expression")
-      (e:WritePort) : error("Non-supported expression")
       (e:DoPrim) : 
          val sargs = map(emit-as-type{_,type(e)},args(e))
          val xargs = map(emit-signed-if-any{_,args(e)},args(e))
@@ -184,18 +140,20 @@ defn get-name (e:Expression) -> Symbol :
       (e) : error("Shouldn't be here")
 
 defn emit-module (m:InModule) :
-   val decs = HashTable<Symbol,Stmt>(sym-hash) ; all declarations
-   val cons = HashTable<Symbol,Stmt>(sym-hash) ; all connections
+   val decs = HashTable<Symbol,Stmt>(symbol-hash) ; all declarations
+   val cons = HashTable<Symbol,Expression>(symbol-hash) ; all connections
+   val ens = HashTable<Symbol,Expression>(symbol-hash) ; all enables
    defn build-table (m:InModule) :
       defn build-table (s:Stmt) -> Stmt :
          match(map(build-table,map(remove-subfield,s))) : 
-            (s:DefWire|DefReg|DefAccessor|DefMemory|DefNode|DefInstance) : decs[name(s)] = s
+            (s:DefWire|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : decs[name(s)] = s
             (s:Conditionally) : 
                val n = get-name(loc(conseq(s) as Connect))
-               cons[n] = s
+               ens[n] = pred(s)
+               cons[n] = exp(conseq(s) as Connect)
             (s:Connect) : 
                val n = get-name(loc(s))
-               cons[n] = s
+               cons[n] = exp(s)
             (s) : false
          s
       build-table(body(m))
@@ -211,135 +169,59 @@ defn emit-module (m:InModule) :
 
    val sh = get-sym-hash(m)
 
-   for (sym -> dec) in decs do :
-      match(value(dec)) :
-         (dec:DefWire) :
-            add(wires,["wire " get-width(type(s)) " " name(s) ";"])
-            emit-blocking-connect(cons[sym])
-         (dec:DefRegister) : 
-            add(regs,["reg  " get-width(type(s)) " " name(s) ";"])
-            emit-nonblocking-connect(cons[sym])
-         (dec:DefMemory) :
-            val vtype = type(s) as VectorType
-            add(regs,["reg  " get-width(type(vtype)) " " name(s) " [0:" size(vtype) "];"])
-            add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
-            add(inits,["  " name(s) "[initvar] = {" width!(type(vtype)) "{$random}};"])
-         (s:DefNode) :
-            add(wires,["wire " get-width(type(value(s))) " " name(s) ";"])
-            add(assigns,["assign " name(s) " = " emit(value(s)) ";"])
-         (s:DefInstance) : 
-            inst-ports[name(s)] = Vector<Streamable>()
-            insts[name(s)] = name(module(s) as Ref)
-            for f in fields(type(module(s)) as BundleType) do :
-               val n* = to-symbol $ string-join $ [name(s) "_" name(f)]
-               add(wires,["wire " get-width(type(f)) " " n* ";"])
-               add(inst-ports[name(s)], ["." name(f) "( " n* " )"])
-         (s:DefAccessor) : 
-            switch {_ == dir(s)} :
-               READ :
-                  val mem-declaration = decs[name(source(s) as Ref)]
-                  val con = cons[sym]
-                  if seq?(mem-declaration) :
-                     val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
-                     add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) ; to make it sequential, register the index for an additional cycle
-                     add(inits,[name(index*) " = {" width!(type(index*)) "{$random}};"])
-                     add(updates,[name(index*) " <= " emit(index(s)) ";"])
-                     add(assigns,["assign " n " = " emit(mem(s)) "[" emit(index*) "];"])
-                  else :
-                     add(assigns,["assign " n " = " emit(mem(s)) "[" emit(index(s)) "];"])
-
-            
-            
-         
-   defn emit-blocking-connect (s:Stmt) :
-      match(s) :
-         (s:Connect) : add(assigns,["assign " emit(loc(s)) " = " emit(exp(s)) ";"])
-         (s:Conditionally) : error("Shouldn't be here")
-   defn emit-nonblocking-connect (s:Stmt) :
-      match(s) :
-         (s:Connect) : 
-            add(updates,[n " <= " emit(value(reg)) ";"])
-         (s:Conditionally) : 
-            match(conseq(s)) :
-               (c:Connect) :
-                  add(updates,["if(" emit(pred(s)) ") begin"])
-                  add(updates,["  " emit(loc(c) " <= " emit(exp(c)) ";"])
-                  add(updates,["end"])
-               (c) : error("Shouldn't be here")
-         (s) : error("Shouldn't be here")
-
-
-;         add(updates,["if(" en ") begin"])
-;         add(updates,["  " emit(mem(wp)) "[" emit(index(wp)) "] <= " emit(exp(s)) ";"])
-;         add(updates,["end"])
-;      else :
-;         if exp(s) typeof Register :
-;            val n = name(loc(s) as Ref)
-;            val reg = exp(s) as Register
-;            add(inits,[n " = {" width!(type(reg)) "{$random}};"])
-;            add(updates,["if(" emit(enable(reg)) ") begin"])
-;            add(updates,["  " n " <= " emit(value(reg)) ";"])
-;            add(updates,["end"])
-;         else if exp(s) typeof ReadPort :
-;            val n = name(loc(s) as Ref)
-;            val rp = exp(s) as ReadPort
-;            match(h[name(mem(rp) as Ref)]) :
-;               (k:SeqMemKind) : 
-;                  val index* = Ref(firrtl-gensym(name(index(rp) as Ref),sh),type(index(rp)))
-;                  add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"])
-;                  add(inits,[name(index*) " = {" width!(type(index*)) "{$random}};"])
-;                  add(updates,["if(" emit(enable(rp)) ") begin"])
-;                  add(updates,["  " name(index*) " <= " emit(index(rp)) ";"])
-;                  add(updates,["end"])
-;                  add(assigns,["assign " n " = " emit(mem(rp)) "[" emit(index*) "];"])
-;               (k:ComMemKind) : 
-;                  add(assigns,["assign " n " = " emit(mem(rp)) "[" emit(index(rp)) "];"])
-;         else :
-;            add(assigns,["assign " emit(loc(s)) " = " emit(exp(s)) ";"])
-      
-   defn emit-s (s:Stmt) :
-      match(s) :
-         (s:DefWire) : 
-            add(wires,["wire " get-width(type(s)) " " name(s) ";"])
-            add(assigns,["assign " emit(loc(s)) " = " emit(exp(s)) ";"])
-            
-         (s:DefRegister) : add(regs,["reg  " get-width(type(s)) " " name(s) ";"])
-         (s:DefAccessor) : 
-            switch {_ == dir(s)} :
-               READ :
-                  match(h[name(source(s) as Ref)]) :
-                     (k:SeqMemKind) : 
-                        val index* = Ref(firrtl-gensym(name(index(rp) as Ref),sh),type(index(rp)))
-                        add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"])
-                        add(inits,[name(index*) " = {" width!(type(index*)) "{$random}};"])
-                        add(updates,["if(" emit(enable(rp)) ") begin"])
-                        add(updates,["  " name(index*) " <= " emit(index(rp)) ";"])
-                        add(updates,["end"])
-                        add(assigns,["assign " n " = " emit(mem(rp)) "[" emit(index*) "];"])
-                     (k:ComMemKind) : 
-                        add(assigns,["assign " n " = " emit(mem(rp)) "[" emit(index(rp)) "];"])
-         (s:DefInstance) : 
-            inst-ports[name(s)] = Vector<Streamable>()
-            insts[name(s)] = name(module(s) as Ref)
-            for f in fields(type(module(s)) as BundleType) do :
-               val n* = to-symbol $ string-join $ [name(s) "_" name(f)]
-               add(wires,["wire " get-width(type(f)) " " n* ";"])
-               add(inst-ports[name(s)], ["." name(f) "( " n* " )"])
+   for x in decs do :
+      val sym = key(x)
+      match(value(x)) :
+         (s:DefWire) :
+            add(wires,["wire " get-width(type(s)) " " sym ";"])
+            add(assigns,["assign " sym " = " emit(cons[sym]) ";"])
+         (s:DefRegister) : 
+            add(regs,["reg  " get-width(type(s)) " " sym ";"])
+            if key?(ens,sym) :
+               add(updates,["if(" emit(ens[sym]) ") begin"])
+               add(updates,["  " sym " <= " emit(cons[sym]) ";"])
+               add(updates,["end"])
+            else :
+               add(updates,[sym " <= " emit(cons[sym]) ";"])
          (s:DefMemory) :
             val vtype = type(s) as VectorType
-            add(regs,["reg  " get-width(type(vtype)) " " name(s) " [0:" size(vtype) "];"])
+            add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) "];"])
             add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
-            add(inits,["  " name(s) "[initvar] = {" width!(type(vtype)) "{$random}};"])
+            add(inits,["  " sym "[initvar] = {" width!(type(vtype)) "{$random}};"])
          (s:DefNode) :
-            add(wires,["wire " get-width(type(value(s))) " " name(s) ";"])
-            add(assigns,["assign " name(s) " = " emit(value(s)) ";"])
-         (s:Begin) : do(emit-s, body(s))
-         (s:Conditionally) : emit-pred-connect(pred(s),conseq(s) as Connect)
-         (s:Connect) : emit-pred-connect(UIntValue(1,1),s)
-         (s) : s 
-   
-   
+            add(wires,["wire " get-width(type(value(s))) " " sym ";"])
+            add(assigns,["assign " sym " = " emit(value(s)) ";"])
+         (s:DefInstance) : 
+            inst-ports[sym] = Vector<Streamable>()
+            insts[sym] = name(module(s) as Ref)
+            for f in fields(type(module(s)) as BundleType) do :
+               val n* = to-symbol $ string-join $ [sym "_" name(f)]
+               add(wires,["wire " get-width(type(f)) " " n* ";"])
+               add(inst-ports[sym], ["." name(f) "( " n* " )"])
+         (s:DefAccessor) : 
+            switch {_ == acc-dir(s)} :
+               READ :
+                  val mem-declaration = decs[name(source(s) as Ref)]
+                  if seq?(mem-declaration as DefMemory) :
+                     ; to make it sequential, register the index for an additional cycle
+                     val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
+                     add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) 
+                     add(inits,[name(index*) " = {" width!(type(index*)) "{$random}};"])
+                     add(updates,[name(index*) " <= " emit(index(s)) ";"])
 
+                     ; emit read accessor
+                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
+                  else :
+                     ; emit read accessor
+                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
+               WRITE : 
+                  if key?(ens,sym) :
+                     add(updates,["if(" emit(ens[sym]) ") begin"])
+                     add(updates,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+                     add(updates,["end"])
+                  else : 
+                     add(updates,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+            
    ;==== Actually printing module =====
    val port-indent = "    "
    print-all(["module " name(m) "(input clk, input reset,\n"])

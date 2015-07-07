@@ -11,7 +11,7 @@
 #include("primop.stanza")
 #include("errors.stanza")
 #include("compilers.stanza")
-#include("flo.stanza")
+;#include("flo.stanza")
 #include("verilog.stanza")
 
 ;Custom Packages
@@ -80,7 +80,8 @@ defn main () :
       run-passes(c,get-passes(to-list(pass-names)))
    else :
       switch {_ == compiler} :
-         "flo" : run-passes(c,StandardFlo(output as String))
+         ;"flo" : run-passes(c,StandardFlo(output as String))
+         "flo" : run-passes(c,StandardVerilog(output as String))
          "verilog" : run-passes(c,StandardVerilog(output as String))
          "verilute" : run-passes(c,InstrumentedVerilog(output as String,to-list $ pass-args))
          else : error("Invalid compiler flag")
