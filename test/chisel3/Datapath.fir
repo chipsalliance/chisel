@@ -100,19 +100,19 @@ circuit Datapath :
     cmem regs : UInt<32>[32]
     node T_495 = eq(raddr1, UInt<1>(0))
     node T_496 = bit-not(T_495)
-    accessor T_497 = regs[raddr1]
+    infer accessor T_497 = regs[raddr1]
     node T_498 = mux(T_496, T_497, UInt<1>(0))
     rdata1 := T_498
     node T_499 = eq(raddr2, UInt<1>(0))
     node T_500 = bit-not(T_499)
-    accessor T_501 = regs[raddr2]
+    infer accessor T_501 = regs[raddr2]
     node T_502 = mux(T_500, T_501, UInt<1>(0))
     rdata2 := T_502
     node T_503 = eq(waddr, UInt<1>(0))
     node T_504 = bit-not(T_503)
     node T_505 = bit-and(wen, T_504)
     when T_505 : 
-      accessor T_506 = regs[waddr]
+      infer accessor T_506 = regs[waddr]
       T_506 := wdata
   module ImmGenWire : 
     output out : UInt<32>

@@ -25,5 +25,5 @@ circuit Mul :
     tbl[15] := UInt<4>(9)
     node T_42 = shl(x, 2)
     node T_43 = bit-or(T_42, y)
-    accessor T_44 = tbl[T_43]
+    infer accessor T_44 = tbl[T_43]
     z := T_44

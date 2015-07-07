@@ -17,7 +17,7 @@ circuit MemorySearch :
     elts[4] := UInt<4>(2)
     elts[5] := UInt<4>(5)
     elts[6] := UInt<4>(13)
-    accessor elt = elts[index]
+    infer accessor elt = elts[index]
     node T_35 = bit-not(en)
     node T_36 = eq(elt, target)
     node T_37 = eq(index, UInt<3>(7))

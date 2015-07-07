@@ -100,19 +100,19 @@ circuit Core :
     cmem regs : UInt<32>[32]
     node T_1286 = eq(raddr1, UInt<1>(0))
     node T_1287 = bit-not(T_1286)
-    accessor T_1288 = regs[raddr1]
+    infer accessor T_1288 = regs[raddr1]
     node T_1289 = mux(T_1287, T_1288, UInt<1>(0))
     rdata1 := T_1289
     node T_1290 = eq(raddr2, UInt<1>(0))
     node T_1291 = bit-not(T_1290)
-    accessor T_1292 = regs[raddr2]
+    infer accessor T_1292 = regs[raddr2]
     node T_1293 = mux(T_1291, T_1292, UInt<1>(0))
     rdata2 := T_1293
     node T_1294 = eq(waddr, UInt<1>(0))
     node T_1295 = bit-not(T_1294)
     node T_1296 = bit-and(wen, T_1295)
     when T_1296 : 
-      accessor T_1297 = regs[waddr]
+      infer accessor T_1297 = regs[waddr]
       T_1297 := wdata
   module ImmGenWire : 
     output out : UInt<32>

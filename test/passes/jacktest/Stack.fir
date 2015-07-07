@@ -17,7 +17,7 @@ circuit Stack :
       node T_30 = lt(sp, UInt<5>(16))
       node T_31 = bit-and(push, T_30)
       when T_31 : 
-        accessor T_32 = stack_mem[sp]
+        infer accessor T_32 = stack_mem[sp]
         T_32 := dataIn
         node T_33 = add-wrap(sp, UInt<1>(1))
         sp := T_33
@@ -30,6 +30,6 @@ circuit Stack :
       node T_37 = gt(sp, UInt<1>(0))
       when T_37 : 
         node T_38 = sub-wrap(sp, UInt<1>(1))
-        accessor T_39 = stack_mem[T_38]
+        infer accessor T_39 = stack_mem[T_38]
         out := T_39
     dataOut := out

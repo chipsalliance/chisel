@@ -11,6 +11,9 @@ circuit top :
       wire b : SInt
       wire c : UInt
       wire d : SInt
+      x := UInt(1)
+      y := UInt(1)
+      z := SInt(1)
 
       a := dshl(x,y)
       b := dshl(z,y)
