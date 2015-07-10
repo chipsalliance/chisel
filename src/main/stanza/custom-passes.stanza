@@ -70,7 +70,7 @@ defn when-coverage (port-name:Symbol, reg-name:Symbol, instrument?:HashTable<Sym
    val w-ls = to-list $ when-bits
    if length(w-ls) != 0 :
       val reg-ref = Ref(reg-name,UIntType(IntWidth(length(w-ls))))
-      add{logic,_} $ DefRegister(FileInfo(),name(reg-ref),type(reg-ref))
+      ;add{logic,_} $ DefRegister(FileInfo(),name(reg-ref),type(reg-ref)) TODO add clock and reset
       add{logic,_} $ OnReset(FileInfo(),reg-ref,UIntValue(to-long $ 0,IntWidth(length(w-ls))))
       for (x in w-ls, i in 0 to false) do :
          add{logic,_} $ DefWire(FileInfo(),name(x),type(x))

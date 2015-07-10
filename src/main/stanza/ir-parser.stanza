@@ -38,8 +38,8 @@ OPERATORS[`div] = DIV-OP
 OPERATORS[`mod] = MOD-OP
 OPERATORS[`quo] = QUO-OP
 OPERATORS[`rem] = REM-OP
-OPERATORS[`add-wrap] = ADD-WRAP-OP
-OPERATORS[`sub-wrap] = SUB-WRAP-OP
+OPERATORS[`addw] = ADD-WRAP-OP
+OPERATORS[`subw] = SUB-WRAP-OP
 OPERATORS[`lt] = LESS-OP
 OPERATORS[`leq] = LESS-EQ-OP
 OPERATORS[`gt] = GREATER-OP
@@ -49,20 +49,20 @@ OPERATORS[`neq] = NEQUAL-OP
 OPERATORS[`mux] = MUX-OP
 OPERATORS[`pad] = PAD-OP
 OPERATORS[`neg] = NEG-OP
-OPERATORS[`as-UInt] = AS-UINT-OP
-OPERATORS[`as-SInt] = AS-SINT-OP
+OPERATORS[`asUInt] = AS-UINT-OP
+OPERATORS[`asSInt] = AS-SINT-OP
 OPERATORS[`dshl] = DYN-SHIFT-LEFT-OP
 OPERATORS[`dshr] = DYN-SHIFT-RIGHT-OP
 OPERATORS[`shl] = SHIFT-LEFT-OP
 OPERATORS[`shr] = SHIFT-RIGHT-OP
-OPERATORS[`convert] = CONVERT-OP
-OPERATORS[`bit-and-reduce] = BIT-AND-REDUCE-OP
-OPERATORS[`bit-or-reduce] = BIT-OR-REDUCE-OP
-OPERATORS[`bit-xor-reduce] = BIT-XOR-REDUCE-OP
-OPERATORS[`bit-not] = BIT-NOT-OP
-OPERATORS[`bit-and] = BIT-AND-OP
-OPERATORS[`bit-or] = BIT-OR-OP
-OPERATORS[`bit-xor] = BIT-XOR-OP
+OPERATORS[`cvt] = CONVERT-OP
+OPERATORS[`andr] = BIT-AND-REDUCE-OP
+OPERATORS[`orr] = BIT-OR-REDUCE-OP
+OPERATORS[`xorr] = BIT-XOR-REDUCE-OP
+OPERATORS[`not] = BIT-NOT-OP
+OPERATORS[`and] = BIT-AND-OP
+OPERATORS[`or] = BIT-OR-OP
+OPERATORS[`xor] = BIT-XOR-OP
 OPERATORS[`cat] = CONCAT-OP
 OPERATORS[`bit] = BIT-SELECT-OP
 OPERATORS[`bits] = BITS-SELECT-OP
@@ -187,7 +187,10 @@ defsyntax firrtl :
       inttype = (SInt<?w:#width$>) : SIntType(w)
       inttype = (SInt) : SIntType(UnknownWidth())
 
+      clktype = (Clock) : ClockType()
+
       type = (?t:#typeterm ?ops:#typeop ...) : apply-suffix-ops(t, ops)
+      type = (?t:#clktype) : t
       typeop = ((@get ?size:#int$)) : (fn (t) : VectorType(t, size))
       
       typeterm = (?t:#inttype) : t
@@ -213,16 +216,16 @@ defsyntax firrtl :
    ;Main Statement Productions
    defrule statements :
       stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(first-info(form),name, t)
-      stmt = (reg ?name:#id! #:! ?t:#type!) : DefRegister(first-info(form),name, t)
-      stmt = (cmem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t, false)
-      stmt = (smem ?name:#id! #:! ?t:#vectype!) : DefMemory(first-info(form),name, t, true)
-      stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name, m)
-      stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name, e)
-      stmt = (on-reset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x, y)
-      stmt = (read accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,READ)
-      stmt = (write accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,WRITE)
-      stmt = (infer accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,INFER)
-      stmt = (rdwr accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name, s, i,RDWR)
+      stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! ?reset:#exp!) : DefRegister(first-info(form),name, t,clk,reset)
+      stmt = (cmem ?name:#id! #:! ?t:#vectype! ?clk:#exp!) : DefMemory(first-info(form),name, t, false, clk)
+      stmt = (smem ?name:#id! #:! ?t:#vectype! ?clk:#exp!) : DefMemory(first-info(form),name, t, true, clk)
+      stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name,m)
+      stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name,e)
+      stmt = (onreset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x,y)
+      stmt = (read accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,READ)
+      stmt = (write accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,WRITE)
+      stmt = (infer accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,INFER)
+      stmt = (rdwr accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s, i,RDWR)
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)

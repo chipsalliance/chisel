@@ -12,7 +12,7 @@ public val standard-passes = to-list $ [
    CheckHighForm(expand-delin)
    TempElimination()
    ToWorkingIR()
-   MakeExplicitReset()
+   ;MakeExplicitReset()
    ResolveKinds()
    CheckKinds()
    InferTypes()
@@ -350,47 +350,48 @@ defn to-working-ir (c:Circuit) :
 ; If reset is not explicitly passed to instantiations, then this
 ;   pass autmatically connects the parent module's reset to the
 ;   instantiation's reset
-public defstruct MakeExplicitReset <: Pass
-public defmethod pass (b:MakeExplicitReset) -> (Circuit -> Circuit) : make-explicit-reset
-public defmethod name (b:MakeExplicitReset) -> String : "Make Explicit Reset"
-public defmethod short-name (b:MakeExplicitReset) -> String : "make-explicit-reset"
 
-defn make-explicit-reset (c:Circuit) :
-   defn find-explicit (c:Circuit) -> List<Symbol> :
-      defn explicit? (m:Module) -> True|False :
-         for p in ports(m) any? :
-            name(p) == `reset
-      val explicit-reset = Vector<Symbol>()
-      for m in modules(c) do:
-         if explicit?(m) : add(explicit-reset,name(m))
-      to-list(explicit-reset)
-
-   defn make-explicit (m:Module, explicit-reset:List<Symbol>) -> Module :
-      defn route-reset (s:Stmt) -> Stmt :
-         match(s) :
-            (s:DefInstance) : 
-               val iref = WSubfield(WRef(name(s), UnknownType(), InstanceKind(), UNKNOWN-GENDER),`reset,UnknownType(),UNKNOWN-GENDER)
-               val pref = WRef(`reset, UnknownType(), PortKind(), MALE)
-               Begin(to-list([s,Connect(info(s),iref,pref)]))
-            (s) : map(route-reset,s)
-
-      var ports! = ports(m)
-      if not contains?(explicit-reset,name(m)) :
-         ports! = append(ports(m),list(Port(FileInfo(),`reset,INPUT,UIntType(IntWidth(1)))))
-      match(m) :
-         (m:InModule) : 
-            val body! = route-reset(body(m))
-            InModule(info(m),name(m),ports!,body!)
-         (m:ExModule) : ExModule(info(m),name(m),ports!)
-      
-   defn make-explicit-reset (m:Module, c:Circuit) -> Module :
-      val explicit-reset = find-explicit(c)
-      make-explicit(m,explicit-reset)
-
-   Circuit(info(c),modules*, main(c)) where :
-      val modules* = 
-         for m in modules(c) map :
-            make-explicit-reset(m,c)
+;public defstruct MakeExplicitReset <: Pass
+;public defmethod pass (b:MakeExplicitReset) -> (Circuit -> Circuit) : make-explicit-reset
+;public defmethod name (b:MakeExplicitReset) -> String : "Make Explicit Reset"
+;public defmethod short-name (b:MakeExplicitReset) -> String : "make-explicit-reset"
+;
+;defn make-explicit-reset (c:Circuit) :
+;   defn find-explicit (c:Circuit) -> List<Symbol> :
+;      defn explicit? (m:Module) -> True|False :
+;         for p in ports(m) any? :
+;            name(p) == `reset
+;      val explicit-reset = Vector<Symbol>()
+;      for m in modules(c) do:
+;         if explicit?(m) : add(explicit-reset,name(m))
+;      to-list(explicit-reset)
+;
+;   defn make-explicit (m:Module, explicit-reset:List<Symbol>) -> Module :
+;      defn route-reset (s:Stmt) -> Stmt :
+;         match(s) :
+;            (s:DefInstance) : 
+;               val iref = WSubfield(WRef(name(s), UnknownType(), InstanceKind(), UNKNOWN-GENDER),`reset,UnknownType(),UNKNOWN-GENDER)
+;               val pref = WRef(`reset, UnknownType(), PortKind(), MALE)
+;               Begin(to-list([s,Connect(info(s),iref,pref)]))
+;            (s) : map(route-reset,s)
+;
+;      var ports! = ports(m)
+;      if not contains?(explicit-reset,name(m)) :
+;         ports! = append(ports(m),list(Port(FileInfo(),`reset,INPUT,UIntType(IntWidth(1)))))
+;      match(m) :
+;         (m:InModule) : 
+;            val body! = route-reset(body(m))
+;            InModule(info(m),name(m),ports!,body!)
+;         (m:ExModule) : ExModule(info(m),name(m),ports!)
+;      
+;   defn make-explicit-reset (m:Module, c:Circuit) -> Module :
+;      val explicit-reset = find-explicit(c)
+;      make-explicit(m,explicit-reset)
+;
+;   Circuit(info(c),modules*, main(c)) where :
+;      val modules* = 
+;         for m in modules(c) map :
+;            make-explicit-reset(m,c)
 
 ;=============== Resolve Kinds =============================
 ; It is useful for the compiler to know information about 
@@ -852,7 +853,7 @@ defn lower (body:Stmt) -> Stmt :
                DefWire(info(s),name(x),type(x))
          (s:DefRegister) : Begin{_} $
             for x in generate-entry(name(s),type(s)) map :
-               DefRegister(info(s),name(x),type(x))
+               DefRegister(info(s),name(x),type(x),clock(s),reset(s))
          (s:DefInstance) : 
             val fields = 
                for f in fields(type(module(s)) as BundleType) map-append :
@@ -866,7 +867,7 @@ defn lower (body:Stmt) -> Stmt :
                DefNode(info(s),name(s),exp(x))
          (s:DefMemory) : Begin $ 
             for x in generate-entry(name(s),type(type(s))) map :
-               DefMemory(info(s),name(x),VectorType(type(x),size(s)), seq?(s))
+               DefMemory(info(s),name(x),VectorType(type(x),size(s)),seq?(s),clock(s))
          (s:DefAccessor) : 
             val ls = generate-entry(name(s),type(s))
             val rs = generate-entry(name(source(s) as WRef),type(s))
@@ -1262,14 +1263,13 @@ defn get-write-enable (sv:SymbolicValue) -> SymbolicValue :
       (sv: SVNul) : SVExp(zero)
       (sv) : sv
 
-defn merge-resets (assign:HashTable<Symbol,SymbolicValue>, resets:HashTable<Symbol,SymbolicValue>) -> HashTable<Symbol,SymbolicValue> :
+defn merge-resets (assign:HashTable<Symbol,SymbolicValue>, resets:HashTable<Symbol,SymbolicValue>, rsignals:HashTable<Symbol,Expression>) -> HashTable<Symbol,SymbolicValue> :
    val table = HashTable<Symbol,SymbolicValue>(symbol-hash)
-   val reset = WRef(`reset, UnknownType(), PortKind(), MALE)
    for i in get-unique-keys(list(assign,resets)) do :
       table[i] = match(get?(assign,i,false),get?(resets,i,false)) : 
-            (a:SymbolicValue,r:SymbolicValue) : SVMux(reset,r,a)
+            (a:SymbolicValue,r:SymbolicValue) : SVMux(rsignals[i],r,a)
             (a:SymbolicValue,r:False) : a
-            (a:False,r:SymbolicValue) : SVMux(reset,r,SVNul())
+            (a:False,r:SymbolicValue) : SVMux(rsignals[i],r,SVNul())
             (a:False,r:False) : error("Shouldn't be here")
    table
 
@@ -1277,12 +1277,17 @@ defn build-tables (s:Stmt,
                    assign:HashTable<Symbol,SymbolicValue>,
                    resets:HashTable<Symbol,SymbolicValue>,
                    flattn:HashTable<Symbol,True|False>,
+                   rsignals:HashTable<Symbol,Expression>,
                    ) -> False :
    match(s) :
       (s:DefWire) :
          assign[name(s)] = SVNul()
          flattn[name(s)] = true
-      (s:DefRegister|DefAccessor) : 
+      (s:DefRegister) : 
+         assign[name(s)] = SVNul()
+         flattn[name(s)] = false
+         rsignals[name(s)] = reset(s)
+      (s:DefAccessor) : 
          assign[name(s)] = SVNul()
          flattn[name(s)] = false
       (s:DefInstance) : ;TODO only add instance input ports. This probably involves correcting instance genders
@@ -1313,8 +1318,8 @@ defn build-tables (s:Stmt,
          val assign-a = deepcopy(assign)
          val resets-c = deepcopy(resets)
          val resets-a = deepcopy(resets)
-         build-tables(conseq(s),assign-c,resets-c,flattn)
-         build-tables(alt(s),assign-a,resets-a,flattn)
+         build-tables(conseq(s),assign-c,resets-c,flattn,rsignals)
+         build-tables(alt(s),assign-a,resets-a,flattn,rsignals)
          for i in get-unique-keys(list(assign-c,assign-a)) do :
             assign[i] = combine(flattn,assign-c,assign-a,i) as SymbolicValue
             val r = combine(flattn,resets-c,resets-a,i)
@@ -1334,7 +1339,7 @@ defn build-tables (s:Stmt,
             (e) : error("Shouldn't be here with ~" % [e])
          if s typeof Connect : assign[key*] = SVExp(exp(s))
          if s typeof OnReset : resets[key*] = SVExp(exp(s))
-      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets,flattn)
+      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets,flattn,rsignals)
       (s:DefMemory|DefNode|EmptyStmt) : false
 
 ;--------------- Expand Whens Pass -------------------
@@ -1410,13 +1415,14 @@ public defn expand-whens (c:Circuit) -> Circuit :
             val assign = HashTable<Symbol,SymbolicValue>(symbol-hash)
             val resets = HashTable<Symbol,SymbolicValue>(symbol-hash)
             val flattn = HashTable<Symbol,True|False>(symbol-hash)
+            val rsignals = HashTable<Symbol,Expression>(symbol-hash)
    
             for p in ports(m) do :
                if direction(p) == OUTPUT :
                   assign[name(p)] = SVNul()
                   flattn[name(p)] = false
                   
-            build-tables(body(m),assign,resets,flattn)
+            build-tables(body(m),assign,resets,flattn,rsignals)
             for x in assign do : assign[key(x)] = optimize(value(x))
             for x in resets do : resets[key(x)] = optimize(value(x))
             ;val enables = get-enables(assign,kinds)
@@ -1427,7 +1433,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
             println-debug("====== Resets ======")
             for x in resets do : println-debug(x)
    
-            val table = merge-resets(assign,resets)
+            val table = merge-resets(assign,resets,rsignals)
             println-debug("====== Table ======")
             for x in table do : println-debug(x)
             val decs = Vector<Stmt>()
@@ -1654,6 +1660,7 @@ public defn width! (t:Type) -> Width :
    match(t) :
       (t:UIntType) : width(t)
       (t:SIntType) : width(t)
+      (t:ClockType) : IntWidth(1)
       (t) : error("No width!")
 public defn width! (e:Expression) -> Width : width!(type(e))
 
@@ -1661,10 +1668,10 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
    defn gen-constraints-s (s:Stmt) -> Stmt :
       match(map(gen-constraints-s,s)) :
          (s:DefWire) : DefWire(info(s),name(s),h[name(s)])
-         (s:DefRegister) : DefRegister(info(s),name(s),h[name(s)])
+         (s:DefRegister) : DefRegister(info(s),name(s),h[name(s)],gen-constraints(clock(s)),gen-constraints(reset(s)))
          (s:DefAccessor) : DefAccessor(info(s),name(s),gen-constraints(source(s)),gen-constraints(index(s)), acc-dir(s))
          (s:DefInstance) : DefInstance(info(s),name(s),gen-constraints(module(s)))
-         (s:DefMemory) : DefMemory(info(s),name(s),h[name(s)] as VectorType,seq?(s))
+         (s:DefMemory) : DefMemory(info(s),name(s),h[name(s)] as VectorType,seq?(s),gen-constraints(clock(s)))
          (s:DefNode) : 
             val l = h[name(s)]
             val r = gen-constraints(value(s))
@@ -1720,8 +1727,7 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
          (s:DefRegister) : h[name(s)] = remove-unknowns(type(s))
          (s:DefInstance) : h[name(s)] = h[name(module(s) as WRef)]
          (s:DefMemory) : h[name(s)] = remove-unknowns(type(s))
-         (s:DefAccessor) : 
-            h[name(s)] = remove-unknowns(type(type(source(s)) as VectorType))
+         (s:DefAccessor) : h[name(s)] = remove-unknowns(type(type(source(s)) as VectorType))
          (s:DefNode) : h[name(s)] = remove-unknowns(type(value(s)))
          (s) : false
       do(build-environment,s)
@@ -1867,9 +1873,9 @@ defn inline-instances (c:Circuit) :
    defn rename-s (s:Stmt,n:Symbol) -> Stmt :
       map{rename-e{_,n},_} $ match(map(rename-s{_,n},s)) :
          (s:DefWire) : DefWire(info(s),rename(name(s),n),type(s))
-         (s:DefRegister) : DefRegister(info(s),rename(name(s),n),type(s))
+         (s:DefRegister) : DefRegister(info(s),rename(name(s),n),type(s),clock(s),reset(s))
          (s:DefInstance) : error("Shouldn't be here")
-         (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s),seq?(s))
+         (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s),seq?(s),clock(s))
          (s:DefNode) : DefNode(info(s),rename(name(s),n),value(s))
          (s) : s
    for m in modules(c) do :
@@ -1898,11 +1904,17 @@ defn split-exp (c:Circuit) :
       defn split-exp-e (e:Expression,n:Symbol|False,info:FileInfo) -> Expression :
          match(map(split-exp-e{_,n,info},e)) :
             (e:DoPrim) : 
-               val n* = 
-                  if n typeof False : firrtl-gensym(`T,sh)
-                  else : firrtl-gensym(symbol-join([n as Symbol gen-delin]),sh)
-               add(v,DefNode(info,n*,e))
-               WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
+               var all-same-type? = true
+               for x in args(e) do :
+                  if type(x) != type(e) : all-same-type? = false
+               all-same-type? = false
+               if not all-same-type? : 
+                  val n* = 
+                     if n typeof False : firrtl-gensym(`T,sh)
+                     else : firrtl-gensym(symbol-join([n as Symbol gen-delin]),sh)
+                  add(v,DefNode(info,n*,e))
+                  WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
+               else : e
             (e) : e
       defn f (s:Stmt) -> False: split-exp-s(s,v,sh)
       match(s) :
@@ -1913,25 +1925,24 @@ defn split-exp (c:Circuit) :
             do(f,s)
          (s:Connect) :
             match(loc(s)) :
-               ;(e:WritePort) : add(v,map(split-exp-e{_,full-name(exp(s)),info(s)},s))
                (e) : add(v,map(split-exp-e{_,full-name(loc(s)),info(s)},s))
          (s:DefNode) : add(v,map(split-exp-e{_,name(s),info(s)},s))
          (s) : add(v,map(split-exp-e{_,false,info(s)},s))
       false
 
-   val start-time = current-time-us()
+   ;val start-time = current-time-us()
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map :
          match(m) :
             (m:InModule) :
                val v = Vector<Stmt>()
                val sh = get-sym-hash(m)
-               val before = current-time-us() - start-time
-               println-all(["Before split: " before])
+               ;val before = current-time-us() - start-time
+               ;println-all(["Before split: " before])
                split-exp-s(body(m),v,sh)
-               val now = current-time-us() - start-time
-               println-all(["After split: " now])
-               println-all(["Diff: " now - before])
+               ;val now = current-time-us() - start-time
+               ;println-all(["After split: " now])
+               ;println-all(["Diff: " now - before])
                InModule(info(m),name(m),ports(m),Begin(to-list(v)))
             (m:ExModule) : m
 
@@ -2005,9 +2016,9 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
    defn to-stmt (s:Stmt) -> Stmt :
      map{to-type,_} $ match(map(to-exp,s)) :
         (s:DefWire) : DefWire(info(s),rename(name(s)),type(s))
-        (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s))
+        (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s),clock(s),reset(s))
         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
-        (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s))
+        (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s),clock(s))
         (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
         (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s),acc-dir(s))
         (s) : map(to-stmt,s)

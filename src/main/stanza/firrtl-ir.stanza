@@ -101,6 +101,8 @@ public defstruct DefRegister <: Stmt :
    info: FileInfo with: (as-method => true)
    name: Symbol
    type: Type
+   clock: Expression
+   reset: Expression
 public defstruct DefInstance <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
@@ -110,6 +112,7 @@ public defstruct DefMemory <: Stmt : ;LOW
    name: Symbol
    type: VectorType
    seq?: True|False
+   clock: Expression
 public defstruct DefNode <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
@@ -151,6 +154,7 @@ public defstruct BundleType <: Type :
 public defstruct VectorType <: Type :
    type: Type
    size: Int
+public defstruct ClockType <: Type
 public defstruct UnknownType <: Type
 
 public defstruct Field :

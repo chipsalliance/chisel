@@ -3,22 +3,22 @@
 ================================================
 
 ======== Current Tasks ========
-Add/Update Unit Tests for each pass
-   Check after each pass
-   write test that checks instance types are correctly lowered
+change parser to accept subword, but error
+--Merge with master
+
+Tests:
+   Lowering for instance types with bundle ports
+   More prefix tests
+   Expand-when semantics
+   Ensure module names are unique
+   Large width of dshl
+
 fix expand-whens to have correct semantics
-ensure module names are unique
-add check that limits size of width of dshl
-add efficient prefix checker 
 update high/low firrtl checks
-add clock type
-add clock, reset to reg, mem etc
+add efficient prefix checker 
 need a multi-clock domain example
 need an annotation example
-change parser to accept subword, but error
-
-move width inference earlier
-   Required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits
+move width inference earlier (required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits)
 Temp elimination needs to count # uses
 Declared references needs to understand scope <= check in high form check
 Check for recursively defined instances
