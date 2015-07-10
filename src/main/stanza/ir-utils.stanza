@@ -128,8 +128,8 @@ defmethod print (o:OutputStream, op:PrimOp) :
       MOD-OP : "mod"
       QUO-OP : "quo"
       REM-OP : "rem"
-      ADD-WRAP-OP : "add-wrap"
-      SUB-WRAP-OP : "sub-wrap"
+      ADD-WRAP-OP : "addw"
+      SUB-WRAP-OP : "subw"
       LESS-OP : "lt"
       LESS-EQ-OP : "leq"
       GREATER-OP : "gt"
@@ -138,21 +138,21 @@ defmethod print (o:OutputStream, op:PrimOp) :
       NEQUAL-OP : "neq"
       MUX-OP : "mux"
       PAD-OP : "pad"
-      AS-UINT-OP : "as-UInt"
-      AS-SINT-OP : "as-SInt"
+      AS-UINT-OP : "asUInt"
+      AS-SINT-OP : "asSInt"
       DYN-SHIFT-LEFT-OP : "dshl"
       DYN-SHIFT-RIGHT-OP : "dshr"
       SHIFT-LEFT-OP : "shl"
       SHIFT-RIGHT-OP : "shr"
-      CONVERT-OP : "convert"
+      CONVERT-OP : "cvt"
       NEG-OP : "neg"
-      BIT-NOT-OP : "bit-not"
-      BIT-AND-OP : "bit-and"
-      BIT-OR-OP : "bit-or"
-      BIT-XOR-OP : "bit-xor"
-      BIT-AND-REDUCE-OP : "bit-and-reduce"
-      BIT-OR-REDUCE-OP : "bit-or-reduce"
-      BIT-XOR-REDUCE-OP : "bit-xor-reduce"
+      BIT-NOT-OP : "not"
+      BIT-AND-OP : "and"
+      BIT-OR-OP : "or"
+      BIT-XOR-OP : "xor"
+      BIT-AND-REDUCE-OP : "andr"
+      BIT-OR-REDUCE-OP : "orr"
+      BIT-XOR-REDUCE-OP : "xorr"
       CONCAT-OP : "cat"
       BIT-SELECT-OP : "bit"
       BITS-SELECT-OP : "bits"
@@ -176,10 +176,10 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefWire) :
          print-all(o,["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
-         print-all(o,["reg " name(c) " : " type(c)])
+         print-all(o,["reg " name(c) " : " type(c) ", " clock(c) ", " reset(c)])
       (c:DefMemory) :
-         if seq?(c) : print-all(o,["smem " name(c) " : " type(c)])
-         else       : print-all(o,["cmem " name(c) " : " type(c)])
+         if seq?(c) : print-all(o,["smem " name(c) " : " type(c) ", " clock(c)])
+         else       : print-all(o,["cmem " name(c) " : " type(c) ", " clock(c)])
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :
@@ -206,7 +206,7 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:BulkConnect) :
          print-all(o, [loc(c) " <> " exp(c)])
       (c:OnReset) :
-         print-all(o, ["on-reset " loc(c) " := " exp(c)])
+         print-all(o, ["onreset " loc(c) " := " exp(c)])
       (c:EmptyStmt) :
          print(o, "skip")
    if not c typeof Conditionally|Begin|EmptyStmt : print-debug(o,c)
@@ -215,6 +215,8 @@ defmethod print (o:OutputStream, t:Type) :
    match(t) :
       (t:UnknownType) :
          print(o, "?")
+      (t:ClockType) :
+         print(o, "Clock")
       (t:UIntType) :
          match(width(t)) :
             (w:UnknownWidth) : print-all(o, ["UInt"])
@@ -290,6 +292,8 @@ public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
 defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
    match(c) :
       (c:DefAccessor) : DefAccessor(info(c),name(c), f(source(c)), f(index(c)),acc-dir(c))
+      (c:DefRegister) : DefRegister(info(c),name(c), type(c), f(clock(c)), f(reset(c)))
+      (c:DefMemory) : DefMemory(info(c),name(c), type(c), seq?(c), f(clock(c)))
       (c:DefNode) : DefNode(info(c),name(c), f(value(c)))
       (c:DefInstance) : DefInstance(info(c),name(c), f(module(c)))
       (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
@@ -332,8 +336,8 @@ public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T
 defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
    match(c) :
       (c:DefWire) : DefWire(info(c),name(c),f(type(c)))
-      (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)))
-      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)) as VectorType,seq?(c))
+      (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)),clock(c),reset(c))
+      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)) as VectorType,seq?(c),clock(c))
       (c) : c
 
 public defmulti mapr<?T> (f: Width -> Width, t:?T&Type) -> T

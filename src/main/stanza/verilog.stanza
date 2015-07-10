@@ -36,6 +36,7 @@ defn get-width (t:Type) -> String :
    match(t) :
       (t:UIntType) : emit(width(t))
       (t:SIntType) : emit(width(t))
+      (t:ClockType) : emit(IntWidth(1))
       (t) : error("Non-supported type.")
 
 defn remove-subfield (e:Expression) -> Expression :
@@ -140,8 +141,8 @@ defn get-name (e:Expression) -> Symbol :
       (e) : error("Shouldn't be here")
 
 defn emit-module (m:InModule) :
-   val vdecs = Vector<KeyValue<Symbol,Stmt>>() ; all declarations
-   val decs = HashTable<Symbol,Stmt>(symbol-hash) ; all declarations
+   val vdecs = Vector<KeyValue<Symbol,Stmt>>() ; all declarations in order, to preserve ordering
+   val decs = HashTable<Symbol,Stmt>(symbol-hash) ; all declarations, for fast lookups
    val cons = HashTable<Symbol,Expression>(symbol-hash) ; all connections
    val ens = HashTable<Symbol,Expression>(symbol-hash) ; all enables
    defn build-table (m:InModule) :
@@ -166,7 +167,7 @@ defn emit-module (m:InModule) :
    val regs = Vector<Streamable>()
    val inits = Vector<Streamable>()
    val assigns = Vector<Streamable>()
-   val updates = Vector<Streamable>()
+   val updates = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
    val insts = HashTable<Symbol,Symbol>(symbol-hash) ; inst -> module
    val inst-ports = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
 
@@ -180,12 +181,14 @@ defn emit-module (m:InModule) :
             add(assigns,["assign " sym " = " emit(cons[sym]) ";"])
          (s:DefRegister) : 
             add(regs,["reg  " get-width(type(s)) " " sym ";"])
+            val my-clk-update = get?(updates,get-name(clock(s)),Vector<Streamable>())
             if key?(ens,sym) :
-               add(updates,["if(" emit(ens[sym]) ") begin"])
-               add(updates,["  " sym " <= " emit(cons[sym]) ";"])
-               add(updates,["end"])
+               add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
+               add(my-clk-update,["  " sym " <= " emit(cons[sym]) ";"])
+               add(my-clk-update,["end"])
             else :
-               add(updates,[sym " <= " emit(cons[sym]) ";"])
+               add(my-clk-update,[sym " <= " emit(cons[sym]) ";"])
+            updates[get-name(clock(s))] = my-clk-update
          (s:DefMemory) :
             val vtype = type(s) as VectorType
             add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) "];"])
@@ -204,15 +207,17 @@ defn emit-module (m:InModule) :
                if flip(f) == REVERSE :
                   add(assigns,["assign " n* " = " emit(cons[n*]) ";"])
          (s:DefAccessor) : 
+            val mem-declaration = decs[name(source(s) as Ref)] as DefMemory
             switch {_ == acc-dir(s)} :
                READ :
-                  val mem-declaration = decs[name(source(s) as Ref)]
-                  if seq?(mem-declaration as DefMemory) :
+                  if seq?(mem-declaration) :
                      ; to make it sequential, register the index for an additional cycle
                      val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
                      add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) 
                      add(inits,[name(index*) " = {" width!(type(index*)) "{$random}};"])
-                     add(updates,[name(index*) " <= " emit(index(s)) ";"])
+                     val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
+                     add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"])
+                     updates[get-name(clock(mem-declaration))] = my-clk-update
 
                      ; emit read accessor
                      add(wires,["wire " get-width(type(type(source(s)) as VectorType)) " " sym ";"])
@@ -222,27 +227,28 @@ defn emit-module (m:InModule) :
                      add(wires,["wire " get-width(type(type(source(s)) as VectorType)) " " sym ";"])
                      add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
                WRITE : 
+                  val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
                   if key?(ens,sym) :
-                     add(updates,["if(" emit(ens[sym]) ") begin"])
-                     add(updates,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
-                     add(updates,["end"])
+                     add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
+                     add(my-clk-update,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+                     add(my-clk-update,["end"])
                   else : 
-                     add(updates,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+                     add(my-clk-update,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+                  updates[get-name(clock(mem-declaration))] = my-clk-update
             
    ;==== Actually printing module =====
    val port-indent = "    "
-   print-all(["module " name(m) "(input clk, input reset,\n"])
+   print-all(["module " name(m) "(\n"])
    for (p in ports(m),i in 1 to false) do :
-      if name(p) !=`reset :
-         var end = ",\n"
-         if length(ports(m)) - 1 == i :
-            end = "\n);\n"
-         switch {_ == direction(p)} :
-            INPUT  : 
-               print-all([port-indent "input  " get-width(type(p)) " " name(p) end])
-            OUTPUT : 
-               print-all([port-indent "output " get-width(type(p)) " " name(p) end])
-               add(assigns,["assign " name(p) " = " emit(cons[name(p)]) ";"])
+      var end = ",\n"
+      if length(ports(m)) == i :
+         end = "\n);\n"
+      switch {_ == direction(p)} :
+         INPUT  : 
+            print-all([port-indent "input  " get-width(type(p)) " " name(p) end])
+         OUTPUT : 
+            print-all([port-indent "output " get-width(type(p)) " " name(p) end])
+            add(assigns,["assign " name(p) " = " emit(cons[name(p)]) ";"])
 
    for w in wires do :
       print("  ")
@@ -268,23 +274,22 @@ defn emit-module (m:InModule) :
 
    for x in insts do :
       println-all(["  " value(x) " " key(x) " ("])
-      print("       ")
-      print-all([".clk( clk )"])
+      ;print-all([".clk( clk )"])
       for (y in inst-ports[key(x)],i in 1 to false) do :
-        print(",\n")
         print("       ")
         print-all(y)
-        ;if length(inst-ports[key(x)]) != i :
-          ;print(",\n")
+        if length(inst-ports[key(x)]) != i :
+          print(",\n")
       println("\n  );")
 
-   if length(updates) != 0 :
-      println("  always @(posedge clk) begin")
-      for u in updates do :
-         print("    ")
-         println-all(u)
-      println("  end")
-   
+   for x in updates do :
+      if length(value(x)) != 0 :
+         println-all(["  always @(posedge " key(x) ") begin"])
+         for u in value(x) do :
+            print("    ")
+            println-all(u)
+         println("  end")
+      
    println("endmodule")
 
 

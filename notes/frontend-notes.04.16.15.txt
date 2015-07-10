@@ -1,6 +1,17 @@
 ======= Fixes to Jonathan's Front-end ======
 
 == TODO ==
+convert -> cvt
+as-UInt -> asUInt
+as-SInt -> asSInt
+add-wrap -> addw
+sub-wrap -> subw
+bit-and -> and
+bit-or -> or
+bit-xor -> xor
+
+
+
 Fixing chisel3 front-end bugs:
    LFSR16: "concat" -> "cat"
    MemorySearch: name collision with node done and output done

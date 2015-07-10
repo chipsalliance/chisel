@@ -69,6 +69,7 @@ defn prim-width (type:Type) -> Int :
    match(type) :
       (t:UIntType) : sane-width(width(t))
       (t:SIntType) : sane-width(width(t))
+      (t:ClockType) : 1
       (t) :          error("Bad prim width type")
 
 defn sizeof (in: Int) -> Int :

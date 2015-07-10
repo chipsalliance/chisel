@@ -10,23 +10,23 @@ circuit Datapath :
     input alu_op : UInt<4>
     
     node shamt = bits(B, 4, 0)
-    node T_433 = add-wrap(A, B)
-    node T_434 = sub-wrap(A, B)
-    node T_435 = as-SInt(A)
+    node T_433 = addw(A, B)
+    node T_434 = subw(A, B)
+    node T_435 = asSInt(A)
     node T_436 = dshr(T_435, shamt)
-    node T_437 = as-UInt(T_436)
+    node T_437 = asUInt(T_436)
     node T_438 = dshr(A, shamt)
     node T_439 = dshl(A, shamt)
     node T_440 = bits(T_439, 31, 0)
-    node T_441 = as-SInt(A)
-    node T_442 = as-SInt(B)
+    node T_441 = asSInt(A)
+    node T_442 = asSInt(B)
     node T_443 = lt(T_441, T_442)
-    node T_444 = as-UInt(T_443)
+    node T_444 = asUInt(T_443)
     node T_445 = lt(A, B)
-    node T_446 = as-UInt(T_445)
-    node T_447 = bit-and(A, B)
-    node T_448 = bit-or(A, B)
-    node T_449 = bit-xor(A, B)
+    node T_446 = asUInt(T_445)
+    node T_447 = and(A, B)
+    node T_448 = or(A, B)
+    node T_449 = xor(A, B)
     node T_450 = eq(UInt<4>(10), alu_op)
     node T_451 = mux(T_450, A, B)
     node T_452 = eq(UInt<4>(4), alu_op)
@@ -52,9 +52,9 @@ circuit Datapath :
     node T_471 = bits(oot, 31, 0)
     out := T_471
     node T_472 = bit(alu_op, 0)
-    node T_473 = sub-wrap(UInt<1>(0), B)
+    node T_473 = subw(UInt<1>(0), B)
     node T_474 = mux(T_472, T_473, B)
-    node T_475 = add-wrap(A, T_474)
+    node T_475 = addw(A, T_474)
     sum := T_475
   module BrCond : 
     input rs1 : UInt<32>
@@ -63,32 +63,33 @@ circuit Datapath :
     input br_type : UInt<3>
     
     node eq = eq(rs1, rs2)
-    node neq = bit-not(eq)
-    node T_476 = as-SInt(rs1)
-    node T_477 = as-SInt(rs2)
+    node neq = not(eq)
+    node T_476 = asSInt(rs1)
+    node T_477 = asSInt(rs2)
     node lt = lt(T_476, T_477)
-    node ge = bit-not(lt)
+    node ge = not(lt)
     node ltu = lt(rs1, rs2)
-    node geu = bit-not(ltu)
+    node geu = not(ltu)
     node T_478 = eq(br_type, UInt<3>(2))
-    node T_479 = bit-and(T_478, eq)
+    node T_479 = and(T_478, eq)
     node T_480 = eq(br_type, UInt<3>(6))
-    node T_481 = bit-and(T_480, neq)
-    node T_482 = bit-or(T_479, T_481)
+    node T_481 = and(T_480, neq)
+    node T_482 = or(T_479, T_481)
     node T_483 = eq(br_type, UInt<3>(1))
-    node T_484 = bit-and(T_483, lt)
-    node T_485 = bit-or(T_482, T_484)
+    node T_484 = and(T_483, lt)
+    node T_485 = or(T_482, T_484)
     node T_486 = eq(br_type, UInt<3>(5))
-    node T_487 = bit-and(T_486, ge)
-    node T_488 = bit-or(T_485, T_487)
+    node T_487 = and(T_486, ge)
+    node T_488 = or(T_485, T_487)
     node T_489 = eq(br_type, UInt<3>(0))
-    node T_490 = bit-and(T_489, ltu)
-    node T_491 = bit-or(T_488, T_490)
+    node T_490 = and(T_489, ltu)
+    node T_491 = or(T_488, T_490)
     node T_492 = eq(br_type, UInt<3>(4))
-    node T_493 = bit-and(T_492, geu)
-    node T_494 = bit-or(T_491, T_493)
+    node T_493 = and(T_492, geu)
+    node T_494 = or(T_491, T_493)
     taken := T_494
   module RegFile : 
+    input clk : Clock
     input raddr1 : UInt<5>
     input raddr2 : UInt<5>
     output rdata1 : UInt<32>
@@ -97,20 +98,20 @@ circuit Datapath :
     input waddr : UInt<5>
     input wdata : UInt<32>
     
-    cmem regs : UInt<32>[32]
+    cmem regs : UInt<32>[32], clk
     node T_495 = eq(raddr1, UInt<1>(0))
-    node T_496 = bit-not(T_495)
+    node T_496 = not(T_495)
     infer accessor T_497 = regs[raddr1]
     node T_498 = mux(T_496, T_497, UInt<1>(0))
     rdata1 := T_498
     node T_499 = eq(raddr2, UInt<1>(0))
-    node T_500 = bit-not(T_499)
+    node T_500 = not(T_499)
     infer accessor T_501 = regs[raddr2]
     node T_502 = mux(T_500, T_501, UInt<1>(0))
     rdata2 := T_502
     node T_503 = eq(waddr, UInt<1>(0))
-    node T_504 = bit-not(T_503)
-    node T_505 = bit-and(wen, T_504)
+    node T_504 = not(T_503)
+    node T_505 = and(wen, T_504)
     when T_505 : 
       infer accessor T_506 = regs[waddr]
       T_506 := wdata
@@ -120,11 +121,11 @@ circuit Datapath :
     input sel : UInt<3>
     
     node T_507 = bits(inst, 31, 20)
-    node Iimm = as-SInt(T_507)
+    node Iimm = asSInt(T_507)
     node T_508 = bits(inst, 31, 25)
     node T_509 = bits(inst, 11, 7)
     node T_510 = cat(T_508, T_509)
-    node Simm = as-SInt(T_510)
+    node Simm = asSInt(T_510)
     node T_511 = bit(inst, 31)
     node T_512 = bit(inst, 7)
     node T_513 = bits(inst, 30, 25)
@@ -133,10 +134,10 @@ circuit Datapath :
     node T_516 = cat(T_514, UInt<1>(0))
     node T_517 = cat(T_513, T_516)
     node T_518 = cat(T_515, T_517)
-    node Bimm = as-SInt(T_518)
+    node Bimm = asSInt(T_518)
     node T_519 = bits(inst, 31, 12)
     node T_520 = cat(T_519, UInt<12>(0))
-    node Uimm = as-SInt(T_520)
+    node Uimm = asSInt(T_520)
     node T_521 = bit(inst, 31)
     node T_522 = bits(inst, 19, 12)
     node T_523 = bit(inst, 20)
@@ -147,10 +148,10 @@ circuit Datapath :
     node T_528 = cat(T_525, UInt<1>(0))
     node T_529 = cat(T_524, T_528)
     node T_530 = cat(T_527, T_529)
-    node Jimm = as-SInt(T_530)
+    node Jimm = asSInt(T_530)
     node T_531 = bits(inst, 19, 15)
     node T_532 = pad(T_531, 32)
-    node Zimm = as-SInt(T_532)
+    node Zimm = asSInt(T_532)
     node T_533 = eq(UInt<3>(3), sel)
     node T_534 = mux(T_533, Jimm, Zimm)
     node T_535 = eq(UInt<3>(2), sel)
@@ -161,19 +162,21 @@ circuit Datapath :
     node T_540 = mux(T_539, Simm, T_538)
     node T_541 = eq(UInt<3>(0), sel)
     node T_542 = mux(T_541, Iimm, T_540)
-    node T_543 = as-UInt(T_542)
+    node T_543 = asUInt(T_542)
     out := T_543
   module CSR : 
+    input clk : Clock
+    input reset : UInt<1>
     output host : {status : UInt<32>, tohost : UInt<32>, flip hid : UInt<1>}
     input src : UInt<32>
     input cmd : UInt<2>
     output data : UInt<32>
     input addr : UInt<12>
     
-    reg reg_tohost : UInt<32>
-    on-reset reg_tohost := UInt<32>(0)
-    reg reg_status : UInt<32>
-    on-reset reg_status := UInt<32>(0)
+    reg reg_tohost : UInt<32>, clk, reset
+    onreset reg_tohost := UInt<32>(0)
+    reg reg_status : UInt<32>, clk, reset
+    onreset reg_status := UInt<32>(0)
     host.tohost := reg_tohost
     host.status := reg_status
     node T_544 = eq(UInt<12>(1291), addr)
@@ -191,33 +194,35 @@ circuit Datapath :
       when T_552 : reg_status := src
     node T_553 = eq(cmd, UInt<2>(2))
     node T_554 = neq(src, UInt<1>(0))
-    node T_555 = bit-and(T_553, T_554)
+    node T_555 = and(T_553, T_554)
     when T_555 : 
       node T_556 = eq(addr, UInt<12>(1310))
       when T_556 : 
         node T_557 = dshl(UInt<1>(1), bits(src,5,0))
-        node T_558 = bit-or(data, T_557)
+        node T_558 = or(data, T_557)
         reg_tohost := T_558
       node T_559 = eq(addr, UInt<12>(1290))
       when T_559 : 
         node T_560 = dshl(UInt<1>(1), bits(src,5,0))
-        node T_561 = bit-or(data, T_560)
+        node T_561 = or(data, T_560)
         reg_status := T_561
     node T_562 = eq(cmd, UInt<2>(3))
     node T_563 = neq(src, UInt<1>(0))
-    node T_564 = bit-and(T_562, T_563)
+    node T_564 = and(T_562, T_563)
     when T_564 : 
       node T_565 = eq(addr, UInt<12>(1310))
       when T_565 : 
         node T_566 = dshl(UInt<1>(0), bits(src,5,0))
-        node T_567 = bit-and(data, T_566)
+        node T_567 = and(data, T_566)
         reg_tohost := T_567
       node T_568 = eq(addr, UInt<12>(1290))
       when T_568 : 
         node T_569 = dshl(UInt<1>(0), bits(src,5,0))
-        node T_570 = bit-and(data, T_569)
+        node T_570 = and(data, T_569)
         reg_status := T_570
   module Datapath : 
+    input clk : Clock
+    input reset : UInt<1>
     output host : {status : UInt<32>, tohost : UInt<32>, flip hid : UInt<1>}
     input ctrl : {flip inst : UInt<32>, pc_sel : UInt<1>, inst_type : UInt<1>, inst_re : UInt<1>, flip stall : UInt<1>, imm_sel : UInt<3>, wb_en : UInt<1>, wb_sel : UInt<2>, A_sel : UInt<1>, B_sel : UInt<1>, alu_op : UInt<4>, br_type : UInt<3>, data_re : UInt<1>, st_type : UInt<2>, ld_type : UInt<3>, csr_cmd : UInt<2>}
     output icache : {re : UInt<1>, flip dout : UInt<32>, we : UInt<4>, addr : UInt<32>, din : UInt<32>}
@@ -227,35 +232,36 @@ circuit Datapath :
     inst alu of ALU
     inst brCond of BrCond
     inst regFile of RegFile
+    regFile.clk := clk
     inst immGen of ImmGenWire
-    reg fe_inst : UInt<32>
-    on-reset fe_inst := UInt<32>(0)
-    reg fe_pc : UInt
-    reg ew_inst : UInt<32>
-    on-reset ew_inst := UInt<32>(0)
-    reg ew_pc : UInt
-    reg ew_alu : UInt
-    node T_571 = sub-wrap(UInt<14>(8192), UInt<32>(4))
-    reg pc : UInt<32>
-    on-reset pc := T_571
+    reg fe_inst : UInt<32>, clk, reset
+    onreset fe_inst := UInt<32>(0)
+    reg fe_pc : UInt, clk, reset
+    reg ew_inst : UInt<32>, clk, reset
+    onreset ew_inst := UInt<32>(0)
+    reg ew_pc : UInt, clk, reset
+    reg ew_alu : UInt, clk, reset
+    node T_571 = subw(UInt<14>(8192), UInt<32>(4))
+    reg pc : UInt<32>, clk, reset
+    onreset pc := T_571
     node T_572 = eq(ctrl.pc_sel, UInt<1>(1))
-    node T_573 = bit-or(T_572, brCond.taken)
-    node T_574 = add-wrap(pc, UInt<3>(4))
+    node T_573 = or(T_572, brCond.taken)
+    node T_574 = addw(pc, UInt<3>(4))
     node iaddr = mux(T_573, alu.sum, T_574)
     node T_575 = eq(ctrl.inst_type, UInt<1>(1))
-    node T_576 = bit-or(T_575, brCond.taken)
+    node T_576 = or(T_575, brCond.taken)
     node inst = mux(T_576, UInt<32>(19), icache.dout)
     icache.we := UInt<1>(0)
     icache.din := UInt<1>(0)
     icache.addr := iaddr
     icache.re := ctrl.inst_re
     node T_577 = eq(dcache.we, UInt<1>(0))
-    node T_578 = bit-not(T_577)
-    node T_579 = bit-not(T_578)
-    node T_580 = bit-and(icache.re, T_579)
+    node T_578 = not(T_577)
+    node T_579 = not(T_578)
+    node T_580 = and(icache.re, T_579)
     node T_581 = mux(T_580, iaddr, pc)
     pc := T_581
-    node T_582 = bit-not(stall)
+    node T_582 = not(stall)
     when T_582 : 
       fe_pc := pc
       fe_inst := inst
@@ -269,19 +275,19 @@ circuit Datapath :
     immGen.inst := fe_inst
     immGen.sel := ctrl.imm_sel
     node T_583 = eq(rs1_addr, UInt<1>(0))
-    node rs1NotZero = bit-not(T_583)
+    node rs1NotZero = not(T_583)
     node T_584 = eq(rs2_addr, UInt<1>(0))
-    node rs2NotZero = bit-not(T_584)
+    node rs2NotZero = not(T_584)
     node T_585 = eq(ctrl.wb_sel, UInt<2>(0))
-    node alutype = bit-and(ctrl.wb_en, T_585)
+    node alutype = and(ctrl.wb_en, T_585)
     node ex_rd_addr = bits(ew_inst, 11, 7)
-    node T_586 = bit-and(alutype, rs1NotZero)
+    node T_586 = and(alutype, rs1NotZero)
     node T_587 = eq(rs1_addr, ex_rd_addr)
-    node T_588 = bit-and(T_586, T_587)
+    node T_588 = and(T_586, T_587)
     node rs1 = mux(T_588, ew_alu, regFile.rdata1)
-    node T_589 = bit-and(alutype, rs2NotZero)
+    node T_589 = and(alutype, rs2NotZero)
     node T_590 = eq(rs2_addr, ex_rd_addr)
-    node T_591 = bit-and(T_589, T_590)
+    node T_591 = and(T_589, T_590)
     node rs2 = mux(T_591, ew_alu, regFile.rdata2)
     node T_592 = eq(ctrl.A_sel, UInt<1>(0))
     node T_593 = mux(T_592, rs1, fe_pc)
@@ -297,7 +303,7 @@ circuit Datapath :
     node T_597 = dshl(T_596, UInt<3>(4))
     node T_598 = bit(alu.sum, 0)
     node T_599 = dshl(T_598, UInt<2>(3))
-    node woffset = bit-or(T_597, T_599)
+    node woffset = or(T_597, T_599)
     dcache.re := ctrl.data_re
     node T_600 = mux(stall, ew_alu, alu.sum)
     dcache.addr := T_600
@@ -318,7 +324,7 @@ circuit Datapath :
     node T_614 = dshl(rs2, woffset)
     node T_615 = bits(T_614, 31, 0)
     dcache.din := T_615
-    node T_616 = bit-not(stall)
+    node T_616 = not(stall)
     when T_616 : 
       ew_pc := fe_pc
       ew_inst := fe_inst
@@ -327,16 +333,16 @@ circuit Datapath :
     node T_618 = dshl(T_617, UInt<3>(4))
     node T_619 = bit(ew_alu, 0)
     node T_620 = dshl(T_619, UInt<2>(3))
-    node loffset = bit-or(T_618, T_620)
+    node loffset = or(T_618, T_620)
     node lshift = dshr(dcache.dout, loffset)
     node T_621 = bits(lshift, 15, 0)
-    node T_622 = as-SInt(T_621)
+    node T_622 = asSInt(T_621)
     node T_623 = pad(T_622, 32)
-    node T_624 = as-UInt(T_623)
+    node T_624 = asUInt(T_623)
     node T_625 = bits(lshift, 7, 0)
-    node T_626 = as-SInt(T_625)
+    node T_626 = asSInt(T_625)
     node T_627 = pad(T_626, 32)
-    node T_628 = as-UInt(T_627)
+    node T_628 = asUInt(T_627)
     node T_629 = bits(lshift, 15, 0)
     node T_630 = bits(lshift, 7, 0)
     node T_631 = eq(UInt<3>(4), ctrl.ld_type)
@@ -348,12 +354,14 @@ circuit Datapath :
     node T_637 = eq(UInt<3>(1), ctrl.ld_type)
     node load = mux(T_637, T_624, T_636)
     inst csr of CSR
+    csr.reset := reset
+    csr.clk := clk
     host := csr.host
     csr.src := ew_alu
     node T_638 = bits(ew_inst, 31, 20)
     csr.addr := T_638
     csr.cmd := ctrl.csr_cmd
-    node T_639 = add-wrap(ew_pc, UInt<3>(4))
+    node T_639 = addw(ew_pc, UInt<3>(4))
     node T_640 = eq(UInt<2>(3), ctrl.wb_sel)
     node T_641 = mux(T_640, csr.data, ew_alu)
     node T_642 = eq(UInt<2>(2), ctrl.wb_sel)

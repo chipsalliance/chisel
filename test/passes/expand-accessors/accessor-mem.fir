@@ -3,7 +3,8 @@
 ;CHECK: Expand Accessors
 circuit top :
    module top :
-      cmem m : UInt<32>[2][2][2]
+      input clk : Clock
+      cmem m : UInt<32>[2][2][2], clk
       wire i : UInt<4>
       i := UInt(1)
       infer accessor a = m[i] ;CHECK: read accessor a = m[i]

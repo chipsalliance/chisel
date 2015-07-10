@@ -24,7 +24,6 @@ defpackage firrtl/errors :
 
 ;AFTER ??????
 ; o No combinational loops
-; o cannot connect to a pad, or a register. only connct to a reference
 
 ;================= High Form Check ==========================
 ; * Subexps of Subfield and Index can only be subfields, index, or refs
@@ -32,7 +31,6 @@ defpackage firrtl/errors :
 ; * A module has the same name as main of circuit
 ; * mems cannot be a bundle with flips
 ; * instance module must have the same name as a defined module
-; * reset must be UInt<1>
 ; * Unique names per module
 ; * No name can be a prefix of any other name.
 ; * all references are declared
@@ -88,9 +86,9 @@ defn ModuleNotDefined (info:FileInfo, name:Symbol) :
    PassException $ string-join $
    [info ": Module " name " is not defined."]
 
-defn WrongReset (info:FileInfo, name:Symbol) :
-   PassException $ string-join $
-   [info ": Module " name " has a reset that is not of type UInt<1>."]
+;defn WrongReset (info:FileInfo, name:Symbol) :
+;   PassException $ string-join $
+;   [info ": Module " name " has a reset that is not of type UInt<1>."]
 
 defn IncorrectNumArgs (info:FileInfo, op:Symbol, n:Int) :
    PassException $ string-join $
@@ -324,15 +322,15 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
          names[name(m)] = true
       for p in ports(m) do :
          names[name(p)] = true
-         if name(p) == `reset :
-            if direction(p) == OUTPUT : 
-               add(errors,WrongReset(info!(m),name(m)))
-            else :
-               if type(p) typeof UIntType :
-                  if width(type(p) as UIntType) != IntWidth(1) : 
-                     add(errors,WrongReset(info!(m),name(m)))
-               else :
-                  add(errors,WrongReset(info!(m),name(m)))
+         ;if name(p) == `reset :
+         ;   if direction(p) == OUTPUT : 
+         ;      add(errors,WrongReset(info!(m),name(m)))
+         ;   else :
+         ;      if type(p) typeof UIntType :
+         ;         if width(type(p) as UIntType) != IntWidth(1) : 
+         ;            add(errors,WrongReset(info!(m),name(m)))
+         ;      else :
+         ;         add(errors,WrongReset(info!(m),name(m)))
          map(check-high-form-t{info(p),_},type(p))
          map(check-high-form-w{info(p),_},type(p))
 
@@ -436,6 +434,8 @@ public defn check-kinds (c:Circuit) -> Circuit :
 ; o node's value cannot be a bundle with a flip in it
 ; o := has same types
 ; o 2nd arg in dshr/l must be UInt, in general do primops
+; o clock must be ClockType
+; o reset must be UInt<1>
 
 public defstruct CheckTypes <: Pass
 public defmethod pass (b:CheckTypes) -> (Circuit -> Circuit) : check-types
@@ -499,6 +499,7 @@ defn NodeWithFlips (info:FileInfo) :
 ;---------------- Helper Functions --------------
 defmethod equal? (t1:Type,t2:Type) -> True|False :
    match(t1,t2) : 
+      (t1:ClockType,t2:ClockType) : true
       (t1:UIntType,t2:UIntType) : true
       (t1:SIntType,t2:SIntType) : true
       (t1:BundleType,t2:BundleType) : 
@@ -648,7 +649,6 @@ defn gender (s:DefAccessor) -> Gender :
       INFER : UNKNOWN-GENDER
       RDWR : BI-GENDER
 
-
 ;----------------- Check Genders Pass ---------------------
 
 public defn check-genders (c:Circuit) -> Circuit :
@@ -728,6 +728,7 @@ public defn check-genders (c:Circuit) -> Circuit :
 ; o no accessors
 ; o only vecs are for memories
 ; o no bundles (future, will have them for mems)
+; o only predicated conditional connects
 
 public defstruct CheckLowForm <: Pass 
 public defmethod pass (b:CheckLowForm) -> (Circuit -> Circuit) : check-low-form

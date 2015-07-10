@@ -17,7 +17,7 @@ public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
       CheckHighForm(expand-delin)
       TempElimination()
       ToWorkingIR()
-      MakeExplicitReset()
+      ;; MakeExplicitReset()
       ResolveKinds()
       CheckKinds()
       InferTypes()
