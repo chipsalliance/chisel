@@ -10,6 +10,9 @@ SBT_FLAGS += -DchiselVersion="3.0-SNAPSHOT"
 endif
 
 SRC_DIR	?= .
+CHISEL_BIN ?= $(SRC_DIR)/bin
+export CHISEL_BIN
+
 SYSTEMC ?= $(SRC_DIR)/../../systemc/systemc-2.3.1
 CHISEL_JAR ?= $(SRC_DIR)/target/scala-2.11/chisel_2.11-3.0-SNAPSHOT.jar
 DRIVER	   ?= $(SRC_DIR)/src/test/resources/AddFilterSysCdriver.cpp
@@ -34,7 +37,7 @@ smoke:
 	$(SBT) $(SBT_FLAGS) compile
 
 publish-local:
-	$(SBT) $(SBT_FLAGS) publish-local
+	$(SBT) $(SBT_FLAGS) +publish-local
 
 test:
 	$(SBT) $(SBT_FLAGS) test
