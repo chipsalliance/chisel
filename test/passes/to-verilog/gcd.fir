@@ -6,17 +6,19 @@ circuit top :
       input x : UInt
       input y : UInt
       output q : UInt
-      q := sub-wrap(x, y)
+      q := subw(x, y)
    module gcd :
+      input clk : Clock
+      input reset : UInt<1>
       input a : UInt<16>
       input b : UInt<16>
       input e : UInt<1>
       output z : UInt<16>
       output v : UInt<1>
-      reg x : UInt
-      reg y : UInt
-      on-reset x := UInt(0)
-      on-reset y := UInt(42)
+      reg x : UInt,clk,reset
+      reg y : UInt,clk,reset
+      onreset x := UInt(0)
+      onreset y := UInt(42)
       when gt(x, y) :
          inst s of subtracter
          s.x := x
@@ -35,11 +37,14 @@ circuit top :
    module top :
       input a : UInt<16>
       input b : UInt<16>
+      input clk : Clock
+      input reset : UInt<1>
       output z : UInt
       inst i of gcd
+      i.clk := clk
+      i.reset := reset
       i.a := a
       i.b := b
       i.e := UInt(1)
       z := i.z
 ;CHECK: Done!
-

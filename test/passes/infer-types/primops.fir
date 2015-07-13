@@ -51,17 +51,17 @@ circuit top :
       node yrem = rem(c, b) ;CHECK: node yrem = rem(c@<t:SInt>, b@<t:UInt>)@<t:UInt>
       node zrem = rem(c, d) ;CHECK: node zrem = rem(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
    
-      node vadd-wrap = add-wrap(a, c)    ;CHECK: node vadd-wrap = add-wrap(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
-      node wadd-wrap = add-wrap(a, b) ;CHECK: node wadd-wrap = add-wrap(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node xadd-wrap = add-wrap(a, d) ;CHECK: node xadd-wrap = add-wrap(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
-      node yadd-wrap = add-wrap(c, b) ;CHECK: node yadd-wrap = add-wrap(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
-      node zadd-wrap = add-wrap(c, d) ;CHECK: node zadd-wrap = add-wrap(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+      node vaddw = addw(a, c)    ;CHECK: node vaddw = addw(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
+      node waddw = addw(a, b) ;CHECK: node waddw = addw(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node xaddw = addw(a, d) ;CHECK: node xaddw = addw(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
+      node yaddw = addw(c, b) ;CHECK: node yaddw = addw(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
+      node zaddw = addw(c, d) ;CHECK: node zaddw = addw(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
    
-      node vsub-wrap = sub-wrap(a, c)    ;CHECK: node vsub-wrap = sub-wrap(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
-      node wsub-wrap = sub-wrap(a, b) ;CHECK: node wsub-wrap = sub-wrap(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node xsub-wrap = sub-wrap(a, d) ;CHECK: node xsub-wrap = sub-wrap(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
-      node ysub-wrap = sub-wrap(c, b) ;CHECK: node ysub-wrap = sub-wrap(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
-      node zsub-wrap = sub-wrap(c, d) ;CHECK: node zsub-wrap = sub-wrap(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+      node vsubw = subw(a, c)    ;CHECK: node vsubw = subw(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
+      node wsubw = subw(a, b) ;CHECK: node wsubw = subw(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node xsubw = subw(a, d) ;CHECK: node xsubw = subw(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
+      node ysubw = subw(c, b) ;CHECK: node ysubw = subw(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
+      node zsubw = subw(c, d) ;CHECK: node zsubw = subw(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
    
       node vlt = lt(a, c)    ;CHECK: node vlt = lt(a@<t:UInt>, c@<t:SInt>)@<t:UInt>
       node wlt = lt(a, b) ;CHECK: node wlt = lt(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
@@ -103,13 +103,13 @@ circuit top :
       node wpad = pad(a, 10) ;CHECK: node wpad = pad(a@<t:UInt>, 10)@<t:UInt>
       node zpad = pad(c, 10) ;CHECK: node zpad = pad(c@<t:SInt>, 10)@<t:SInt>
    
-      node vas-UInt = as-UInt(d)   ;CHECK: node vas-UInt = as-UInt(d@<t:SInt>)@<t:UInt>
-      node was-UInt = as-UInt(a) ;CHECK: node was-UInt = as-UInt(a@<t:UInt>)@<t:UInt>
-      node zas-UInt = as-UInt(c) ;CHECK: node zas-UInt = as-UInt(c@<t:SInt>)@<t:UInt>
+      node vasUInt = asUInt(d)   ;CHECK: node vasUInt = asUInt(d@<t:SInt>)@<t:UInt>
+      node wasUInt = asUInt(a) ;CHECK: node wasUInt = asUInt(a@<t:UInt>)@<t:UInt>
+      node zasUInt = asUInt(c) ;CHECK: node zasUInt = asUInt(c@<t:SInt>)@<t:UInt>
    
-      node vas-SInt = as-SInt(a)   ;CHECK: node vas-SInt = as-SInt(a@<t:UInt>)@<t:SInt>
-      node was-SInt = as-SInt(a) ;CHECK: node was-SInt = as-SInt(a@<t:UInt>)@<t:SInt>
-      node zas-SInt = as-SInt(c) ;CHECK: node zas-SInt = as-SInt(c@<t:SInt>)@<t:SInt>
+      node vasSInt = asSInt(a)   ;CHECK: node vasSInt = asSInt(a@<t:UInt>)@<t:SInt>
+      node wasSInt = asSInt(a) ;CHECK: node wasSInt = asSInt(a@<t:UInt>)@<t:SInt>
+      node zasSInt = asSInt(c) ;CHECK: node zasSInt = asSInt(c@<t:SInt>)@<t:SInt>
    
       node vshl = shl(a, 10)   ;CHECK: node vshl = shl(a@<t:UInt>, 10)@<t:UInt>
       node wshl = shl(a, 10) ;CHECK: node wshl = shl(a@<t:UInt>, 10)@<t:UInt>
@@ -127,23 +127,23 @@ circuit top :
       node wshr = shr(a, 10) ;CHECK: node wshr = shr(a@<t:UInt>, 10)@<t:UInt>
       node zshr = shr(c, 10) ;CHECK: node zshr = shr(c@<t:SInt>, 10)@<t:SInt>
    
-      node vconvert = convert(a)   ;CHECK: node vconvert = convert(a@<t:UInt>)@<t:SInt>
-      node wconvert = convert(a) ;CHECK: node wconvert = convert(a@<t:UInt>)@<t:SInt>
-      node zconvert = convert(c) ;CHECK: node zconvert = convert(c@<t:SInt>)@<t:SInt>
+      node vcvt = cvt(a)   ;CHECK: node vcvt = cvt(a@<t:UInt>)@<t:SInt>
+      node wcvt = cvt(a) ;CHECK: node wcvt = cvt(a@<t:UInt>)@<t:SInt>
+      node zcvt = cvt(c) ;CHECK: node zcvt = cvt(c@<t:SInt>)@<t:SInt>
    
       node vneg = neg(a)   ;CHECK: node vneg = neg(a@<t:UInt>)@<t:UInt>
       node wneg = neg(a) ;CHECK: node wneg = neg(a@<t:UInt>)@<t:UInt>
       node zneg = neg(c) ;CHECK: node zneg = neg(c@<t:SInt>)@<t:UInt>
    
-      node uand = bit-and(a, b) ;CHECK: node uand = bit-and(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node vor = bit-or(a, b)  ;CHECK: node vor = bit-or(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node wxor = bit-xor(a, b) ;CHECK: node wxor = bit-xor(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node uand = and(a, b) ;CHECK: node uand = and(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node vor = or(a, b)  ;CHECK: node vor = or(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node wxor = xor(a, b) ;CHECK: node wxor = xor(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
       node xcat = cat(a, b) ;CHECK: node xcat = cat(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
       node ybit = bit(a, 0) ;CHECK: node ybit = bit(a@<t:UInt>, 0)@<t:UInt>
       node zbits = bits(a, 2, 0) ;CHECK: node zbits = bits(a@<t:UInt>, 2, 0)@<t:UInt>
 
-      node uand-reduce = bit-and-reduce(a, b, a) ;CHECK: node uand-reduce = bit-and-reduce(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
-      node uor-reduce = bit-or-reduce(a, b, a) ;CHECK: node uor-reduce = bit-or-reduce(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
-      node uxor-reduce = bit-xor-reduce(a, b, a) ;CHECK: node uxor-reduce = bit-xor-reduce(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
+      node uandr = andr(a, b, a) ;CHECK: node uandr = andr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
+      node uorr = orr(a, b, a) ;CHECK: node uorr = orr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
+      node uxorr = xorr(a, b, a) ;CHECK: node uxorr = xorr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
 
 ;CHECK: Finished Infer Types

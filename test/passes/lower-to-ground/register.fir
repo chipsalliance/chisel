@@ -5,17 +5,19 @@
             module top :
                input a : UInt<16>
                input b : UInt<16>
+               input clk : Clock
+               input reset : UInt<1>
                output z : UInt
 
-               reg r1 : { x : UInt, flip y : SInt }
+               reg r1 : { x : UInt, flip y : SInt },clk,reset
                wire q : { x : UInt, flip y : SInt }
-               on-reset r1 := q    
+               onreset r1 := q    
 
-      ; CHECK: reg r1$x : UInt
-      ; CHECK: reg r1$y : SInt
-      ; CHECK: wire q$x : UInt
-      ; CHECK: wire q$y : SInt
-      ; CHECK: on-reset r1$x := q$x
-      ; CHECK: on-reset q$y := r1$y   
+      ; CHECK: reg r1_x : UInt
+      ; CHECK: reg r1_y : SInt
+      ; CHECK: wire q_x : UInt
+      ; CHECK: wire q_y : SInt
+      ; CHECK: onreset r1_x := q_x
+      ; CHECK: onreset q_y := r1_y   
 
 ; CHECK: Finished Lower To Ground

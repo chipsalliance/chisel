@@ -5,9 +5,11 @@ circuit VendingMachine :
     output valid : UInt<1>
     input nickel : UInt<1>
     input dime : UInt<1>
+    input clk : Clock
+    input reset : UInt<1>
     
-    reg state : UInt<3>
-    on-reset state := UInt<3>(0)
+    reg state : UInt<3>,clk,reset
+    onreset state := UInt<3>(0)
     node T_22 = eq(state, UInt<3>(0))
     when T_22 : 
       when nickel : state := UInt<3>(1)

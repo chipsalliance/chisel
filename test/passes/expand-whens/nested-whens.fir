@@ -2,9 +2,11 @@
 ; CHECK: Expand Whens
 circuit top :
    module top :
+      input clk : Clock
+      input reset : UInt<1>
       wire p : UInt
       wire q : UInt
-      reg r : UInt
+      reg r : UInt, clk, reset
       wire a : UInt
       wire b : UInt
       wire x : UInt
@@ -20,12 +22,12 @@ circuit top :
       z := UInt(1)
       w := UInt(1)
 
-      on-reset r := w
+      onreset r := w
       when p :
-        on-reset r := x
+        onreset r := x
         r := a
       when q :
-        on-reset r := y
+        onreset r := y
         r := b
       r := z
 ; CHECK: when UInt(1) : r := mux(reset, mux(q, y, mux(p, x, w)), z)

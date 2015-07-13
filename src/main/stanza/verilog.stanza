@@ -249,6 +249,7 @@ defn emit-module (m:InModule) :
          OUTPUT : 
             print-all([port-indent "output " get-width(type(p)) " " name(p) end])
             add(assigns,["assign " name(p) " = " emit(cons[name(p)]) ";"])
+   if length(ports(m)) == 0 : print(");\n")
 
    for w in wires do :
       print("  ")

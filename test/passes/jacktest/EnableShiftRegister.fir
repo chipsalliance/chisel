@@ -3,17 +3,19 @@
 circuit EnableShiftRegister : 
   module EnableShiftRegister : 
     input in : UInt<4>
+    input clk : Clock
+    input reset : UInt<1>
     output out : UInt<4>
     input shift : UInt<1>
     
-    reg r0 : UInt<4>
-    on-reset r0 := UInt<4>(0)
-    reg r1 : UInt<4>
-    on-reset r1 := UInt<4>(0)
-    reg r2 : UInt<4>
-    on-reset r2 := UInt<4>(0)
-    reg r3 : UInt<4>
-    on-reset r3 := UInt<4>(0)
+    reg r0 : UInt<4>,clk,reset
+    onreset r0 := UInt<4>(0)
+    reg r1 : UInt<4>,clk,reset
+    onreset r1 := UInt<4>(0)
+    reg r2 : UInt<4>,clk,reset
+    onreset r2 := UInt<4>(0)
+    reg r3 : UInt<4>,clk,reset
+    onreset r3 := UInt<4>(0)
     when shift : 
       r0 := in
       r1 := r0

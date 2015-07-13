@@ -3,7 +3,8 @@
 ; CHECK: Expand Whens
 circuit top :
    module top :
-      cmem m :{ x : UInt<1>, y : UInt<1> }[2] 
+      input clk : Clock
+      cmem m :{ x : UInt<1>, y : UInt<1> }[2], clk
       wire i : UInt<1>
       i := UInt(1)
       wire p : UInt<1>

@@ -39,9 +39,8 @@ defpackage firrtl/errors :
 ; * Width sizes are positive
 ; * Primops have the correct number of arguments
 
-public defstruct CheckHighForm <: Pass :
-   sym : Symbol
-public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form{_,sym(b)}
+public defstruct CheckHighForm <: Pass 
+public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form
 public defmethod name (b:CheckHighForm) -> String : "High Form Check"
 public defmethod short-name (b:CheckHighForm) -> String : "high-form-check"
 
@@ -240,7 +239,7 @@ defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInf
       BITS-SELECT-OP     : correct-num(1,2)
 
 ;--------------- Check High Form Pass -------------------
-public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit : 
+public defn check-high-form (c:Circuit) -> Circuit : 
    val errors = Vector<PassException>()
 
    defn check-valid-loc (info:FileInfo,e:Expression) -> False :
@@ -334,7 +333,6 @@ public defn check-high-form (c:Circuit,sym:Symbol) -> Circuit :
          map(check-high-form-t{info(p),_},type(p))
          map(check-high-form-w{info(p),_},type(p))
 
-      names[`reset] = true
       match(m) :
          (m:ExModule) : false
          (m:InModule) : check-high-form-s(body(m),names)

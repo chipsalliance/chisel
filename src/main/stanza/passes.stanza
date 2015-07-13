@@ -9,10 +9,9 @@ defpackage firrtl/passes :
 
 ;============== Pass List ================
 public val standard-passes = to-list $ [
-   CheckHighForm(expand-delin)
+   CheckHighForm()
    TempElimination()
    ToWorkingIR()
-   ;MakeExplicitReset()
    ResolveKinds()
    CheckKinds()
    InferTypes()
@@ -281,6 +280,155 @@ defmethod map (f: Type -> Type, e: WSubfield) :
    WSubfield(exp(e), name(e), f(type(e)), gender(e))
 defmethod map (f: Type -> Type, e: WIndex) :
    WIndex(exp(e), value(e), f(type(e)), gender(e))
+
+;================= Remove Special Characters ========================
+; Returns a new Circuit where all names have all special characters 
+;    removed, except _.
+
+public defstruct RemoveSpecialChars <: Pass
+public defmethod pass (b:RemoveSpecialChars) -> (Circuit -> Circuit) : remove-special-chars
+public defmethod name (b:RemoveSpecialChars) -> String : "Remove Special Characters"
+public defmethod short-name (b:RemoveSpecialChars) -> String : "rem-spec-chars"
+
+;------------ Helper Functions -------------
+
+defn get-new-string (n:Char) -> String :
+   switch {n == _} :
+      '_' : "__"
+      '~' : "_A"
+      '!' : "_B"
+      '@' : "_C"
+      '#' : "_D"
+      '$' : "_E"
+      '%' : "_F"
+      '^' : "_G"
+      '*' : "_H"
+      '-' : "_I"
+      '+' : "_J"
+      '=' : "_K"
+      '?' : "_L"
+      '/' : "_M"
+      else : to-string(n)
+
+;------------ Pass ------------------
+
+defn remove-special-chars (c:Circuit) :
+   defn rename (n:Symbol) -> Symbol :
+      val n* = Vector<String>()
+      for c in to-string(n) do :
+         add(n*,get-new-string(c))
+      symbol-join(n*)
+   defn rename-t (t:Type) -> Type :
+      match(map(rename-t,t)) :
+         (t:BundleType) : BundleType $
+            for f in fields(t) map :
+               Field(rename(name(f)),flip(f),type(f))
+         (e) : e
+   defn rename-e (e:Expression) -> Expression :
+      map{rename-t,_} $ match(map(rename-e,e)) :
+         (e:Ref) : Ref(rename(name(e)),type(e))
+         (e:Subfield) : Subfield(exp(e),rename(name(e)),type(e))
+         (e) : e
+   defn rename-s (s:Stmt) -> Stmt :
+      map{rename-t,_} $ match(map(rename-e,s)) :
+         (s:DefWire) : DefWire(info(s),rename(name(s)),type(s))
+         (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s),clock(s),reset(s))
+         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
+         (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s),clock(s))
+         (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
+         (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s),acc-dir(s))
+         (s) : map(rename-s,s)
+
+   Circuit(info(c),modules*, main(c)) where :
+      val modules* =
+         for m in modules(c) map :
+            match(m) :
+               (m:InModule) : 
+                  val ports* = for p in ports(m) map :
+                     Port(info(p),rename(name(p)),direction(p),rename-t(type(p)))
+                  InModule(info(m),rename(name(m)), ports*, rename-s(body(m)))
+               (m:ExModule) : m
+
+;================= Remove Scopes ========================
+; Returns a new Circuit where duplicate names have been 
+;    renamed.
+
+public defstruct RemoveScopes <: Pass
+public defmethod pass (b:RemoveScopes) -> (Circuit -> Circuit) : remove-scopes
+public defmethod name (b:RemoveScopes) -> String : "Remove Scopes"
+public defmethod short-name (b:RemoveScopes) -> String : "rem-scopes"
+
+;------------ Helper Functions -------------
+
+defn lookup (n:Symbol, env:Vector<HashTable<Symbol,Int>>) -> Symbol : lookup(n,env,length(env) - 1)
+defn lookup (n:Symbol, env:Vector<HashTable<Symbol,Int>>, index:Int) -> Symbol :
+   if index < 0 : n
+   else :
+      if not key?(env[index],n) : lookup(n,env,index - 1)
+      else : symbol-join([n scope-delin (env[index])[n]])
+
+;------------ Pass ------------------
+
+defn remove-scopes (c:Circuit) :
+   defn remove-scopes (m:InModule) : 
+      val occurrences = HashTable<Symbol,Int>(symbol-hash)
+      val uses = HashTable<Symbol,Int>(symbol-hash)
+      defn rename (n:Symbol,env:Vector<HashTable<Symbol,Int>>) -> Symbol :
+         if occurrences[n] > 1 : 
+            val i = get?(uses,n,0)
+            uses[n] = i + 1
+            env[length(env) - 1][n] = i
+            symbol-join([n `% i])
+         else : n
+      defn build-s (s:Stmt) :
+         match(s) : 
+            (s:DefWire|DefRegister|DefInstance|DefMemory|DefNode|DefAccessor) : 
+               occurrences[name(s)] = get?(occurrences,name(s),0) + 1
+            (s) : do(build-s,s)
+      defn remove-scopes-e (e:Expression,env:Vector<HashTable<Symbol,Int>>) :
+         match(map(remove-scopes-e{_,env},e)) :
+            (e:Ref) : Ref(lookup(name(e),env),type(e))
+            (e) : e
+      defn remove-scopes-s (s:Stmt,env:Vector<HashTable<Symbol,Int>>) -> Stmt :
+         match(map(remove-scopes-e{_,env},s)) :
+            (s:DefWire) : DefWire(info(s),rename(name(s),env),type(s))
+            (s:DefRegister) : DefRegister(info(s),rename(name(s),env),type(s),clock(s),reset(s))
+            (s:DefInstance) : DefInstance(info(s),rename(name(s),env),module(s))
+            (s:DefMemory) : DefMemory(info(s),rename(name(s),env),type(s),seq?(s),clock(s))
+            (s:DefNode) : DefNode(info(s),rename(name(s),env),value(s))
+            (s:DefAccessor) : DefAccessor(info(s),rename(name(s),env),source(s),index(s),acc-dir(s))
+            (s:Conditionally) :
+               add(env,HashTable<Symbol,Int>(symbol-hash))
+               val conseq* = remove-scopes-s(conseq(s),env)
+               pop(env)
+
+               add(env,HashTable<Symbol,Int>(symbol-hash))
+               val alt* = remove-scopes-s(alt(s),env)
+               pop(env)
+               Conditionally(info(s),pred(s),conseq*,alt*)
+            (s) : map(remove-scopes-s{_,env},s)
+
+      ;build occurrences table
+      for p in ports(m) do :
+         occurrences[name(p)] = get?(occurrences,name(p),0) + 1
+      build-s(body(m))
+
+      ;rename
+      val env = Vector<HashTable<Symbol,Int>>()
+      add(env,HashTable<Symbol,Int>(symbol-hash))
+      val ports* = 
+         for p in ports(m) map :
+            Port(info(p),rename(name(p),env),direction(p),type(p))
+      val body* = remove-scopes-s(body(m),env)
+      
+      InModule(info(m),name(m), ports*, body*)
+
+   Circuit(info(c),modules*, main(c)) where :
+      val modules* =
+         for m in modules(c) map :
+            match(m) :
+               (m:InModule) : remove-scopes(m)
+               (m:ExModule) : m
 
 ;================= Temporary Variable Elimination ========================
 ; Returns a new Circuit where temporary variables are removed and returns
@@ -771,18 +919,19 @@ defn index-of-elem (t:BundleType, s:Symbol) -> Int :
       error("Shouldn't be here")
 
 defn generate-entry (n:Symbol,t:Type) -> List<NTF> :
-   defn uniquify (n*:Symbol) -> Symbol : symbol-join([n expand-delin n*])
+   defn v-uniquify (n*:Symbol) -> Symbol : symbol-join([n vector-expand-delin n*])
+   defn b-uniquify (n*:Symbol) -> Symbol : symbol-join([n bundle-expand-delin n*])
    match(t) :
       (t:BundleType) : 
          for f in fields(t) map-append :
             val es = generate-entry(name(f),type(f))
             for e in es map :
-               NTF(uniquify(name(e)),type(e),flip(e) * flip(f))
+               NTF(b-uniquify(name(e)),type(e),flip(e) * flip(f))
       (t:VectorType) :
          for i in 0 to size(t) map-append :
             val es = generate-entry(to-symbol(i),type(t))
             for e in es map :
-               NTF(uniquify(name(e)),type(e),flip(e))
+               NTF(v-uniquify(name(e)),type(e),flip(e))
       (t) : list $ NTF(n,t,DEFAULT)
 
 defn expand-expr (e:Expression) -> List<EF> :
@@ -989,9 +1138,9 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
       DoPrim(EQUAL-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
    defn get-name (e:Expression) -> Symbol :
       match(e) :
-         (e:WRef) : symbol-join([name(e) gen-delin])
-         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) gen-delin])
-         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) gen-delin])
+         (e:WRef) : symbol-join([name(e) temp-delin])
+         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) temp-delin])
+         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) temp-delin])
          (e) : `T
    match(s) :
       (s:ConnectToIndexed) : Begin $
@@ -1860,17 +2009,17 @@ defn inline-instances (c:Circuit) :
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) expand-delin name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) inline-delin name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
-   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n expand-delin ref])
+   defn rename (ref:Symbol,n:Symbol) -> Symbol : symbol-join([n inline-delin ref])
    defn rename-e (e:Expression,n:Symbol) -> Expression :
       match(map(rename-e{_,n},e)) :
          (e:WRef) : WRef(rename(name(e),n),type(e),kind(e),gender(e))
          (e:WSubfield) : 
             match(kind(exp(e) as WRef)) :
                (k:InstanceKind) : 
-                  WRef(symbol-join([name(exp(e) as WRef) expand-delin name(e)]),type(e),k,gender(e))
+                  WRef(symbol-join([name(exp(e) as WRef) inline-delin name(e)]),type(e),k,gender(e))
                (k:MemKind) : e
          (e) : e
    defn rename-s (s:Stmt,n:Symbol) -> Stmt :
@@ -1914,7 +2063,7 @@ defn split-exp (c:Circuit) :
                if not all-same-type? : 
                   val n* = 
                      if n typeof False : firrtl-gensym(`T,sh)
-                     else : firrtl-gensym(symbol-join([n as Symbol gen-delin]),sh)
+                     else : firrtl-gensym(symbol-join([n as Symbol temp-delin]),sh)
                   add(v,DefNode(info,n*,e))
                   WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
                else : e
@@ -1926,10 +2075,12 @@ defn split-exp (c:Circuit) :
          (s:Conditionally) : 
             add(v,map(split-exp-e{_,full-name(loc(conseq(s) as Connect)),info(s)},s))
             do(f,s)
-         (s:Connect) :
-            match(loc(s)) :
-               (e) : add(v,map(split-exp-e{_,full-name(loc(s)),info(s)},s))
-         (s:DefNode) : add(v,map(split-exp-e{_,name(s),info(s)},s))
+         (s:Connect) : 
+            val exp* = map(split-exp-e{_,full-name(loc(s)),info(s)},exp(s))
+            add(v,Connect(info(s),loc(s),exp(s)))
+         (s:DefNode) : 
+            val exp* = map(split-exp-e{_,name(s),info(s)},value(s))
+            add(v,DefNode(info(s),name(s),exp*))
          (s) : add(v,map(split-exp-e{_,false,info(s)},s))
       false
 

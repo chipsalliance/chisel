@@ -1,5 +1,5 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
-;CHECK: Done!
+; CHECK: Done!
 circuit Risc : 
   module Risc : 
     output out : UInt<32>
@@ -8,11 +8,13 @@ circuit Risc :
     input isWr : UInt<1>
     input wrAddr : UInt<8>
     input wrData : UInt<32>
+    input clk : Clock
+    input reset : UInt<1>
     
-    cmem file : UInt<32>[256]
-    cmem code : UInt<32>[256]
-    reg pc : UInt<8>
-    on-reset pc := UInt<8>(0)
+    cmem file : UInt<32>[256],clk
+    cmem code : UInt<32>[256],clk
+    reg pc : UInt<8>,clk,reset
+    onreset pc := UInt<8>(0)
     infer accessor inst = code[pc]
     node op = bits(inst, 31, 24)
     node rci = bits(inst, 23, 16)
@@ -35,12 +37,12 @@ circuit Risc :
       else : 
         node T_56 = eq(UInt<1>(0), op)
         when T_56 : 
-          node T_57 = add-wrap(ra, rb)
+          node T_57 = addw(ra, rb)
           rc := T_57
         node T_58 = eq(UInt<1>(1), op)
         when T_58 : 
           node T_59 = shl(rai, 8)
-          node T_60 = bit-or(T_59, rbi)
+          node T_60 = or(T_59, rbi)
           rc := T_60
         out := rc
         node T_61 = eq(rci, UInt<8>(255))
@@ -48,5 +50,5 @@ circuit Risc :
         else : 
           infer accessor T_62 = file[rci]
           T_62 := rc
-        node T_63 = add-wrap(pc, UInt<1>(1))
+        node T_63 = addw(pc, UInt<1>(1))
         pc := T_63

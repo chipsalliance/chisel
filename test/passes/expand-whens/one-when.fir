@@ -3,16 +3,18 @@
 ; CHECK: Expand Whens
 circuit top :
    module top :
-      cmem m : UInt<1>[2]
+      input clk : Clock
+      input reset : UInt<1>
+      cmem m : UInt<1>[2], clk
       wire i : UInt<1>
       wire p : UInt<1>
       wire j : UInt<1>
       j := UInt(1)
-      reg r : UInt<1>
+      reg r : UInt<1>, clk, reset
 
       p := j
       when p :
-        on-reset r := i
+        onreset r := i
         infer accessor a = m[i] 
         i := a
         infer accessor b = m[i]
@@ -27,7 +29,7 @@ circuit top :
         p := i
         when e :
            p := p
-           on-reset r := p
+           onreset r := p
            r := p
         
 

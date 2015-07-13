@@ -14,7 +14,9 @@ public defstruct InstrumentedVerilog <: Compiler :
 public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
    to-list $ [
       WhenCoverage(args(c)[0],args(c)[1])
-      CheckHighForm(expand-delin)
+      RemoveSpecialChars()
+      RemoveScopes()
+      CheckHighForm()
       TempElimination()
       ToWorkingIR()
       ;; MakeExplicitReset()
@@ -31,8 +33,8 @@ public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
       InferWidths()
       SplitExp()
       ToRealIR()
-      SpecialRename(`#,`_)
-      CheckHighForm(expand-delin)
+      RemoveSpecialChars()
+      CheckHighForm()
       CheckLowForm()
       Verilog(file(c))
    ]

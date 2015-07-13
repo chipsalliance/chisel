@@ -17,37 +17,34 @@ circuit top :
 ;CHECK: Lower To Ground
 ;CHECK: circuit top :
 ;CHECK:    module m :
-;CHECK:       input a$x : UInt<5>
-;CHECK:       output a$y : SInt<5>
-;CHECK:       output b$x : UInt<5>
-;CHECK:       input b$y : SInt<5>
-;CHECK:       input reset : UInt<1>
+;CHECK:       input a_x : UInt<5>
+;CHECK:       output a_y : SInt<5>
+;CHECK:       output b_x : UInt<5>
+;CHECK:       input b_y : SInt<5>
 ;CHECK:    module top :
-;CHECK:       input c$x$0 : UInt<5>
-;CHECK:       input c$x$1 : UInt<5>
-;CHECK:       input c$x$2 : UInt<5>
-;CHECK:       input c$x$3 : UInt<5>
-;CHECK:       input c$x$4 : UInt<5>
-;CHECK:       output c$y$x$0 : UInt<5>
-;CHECK:       output c$y$x$1 : UInt<5>
-;CHECK:       output c$y$x$2 : UInt<5>
-;CHECK:       input c$y$y : SInt<5>
-;CHECK:       input reset : UInt<1>
-;CHECK:       wire a$x : UInt<5>
-;CHECK:       wire a$y : SInt<5>
-;CHECK:       wire b$x : UInt<5>
-;CHECK:       wire b$y : SInt<5>
-;CHECK:       a$x := b$x
-;CHECK:       b$y := a$y
+;CHECK:       input c_x_0 : UInt<5>
+;CHECK:       input c_x_1 : UInt<5>
+;CHECK:       input c_x_2 : UInt<5>
+;CHECK:       input c_x_3 : UInt<5>
+;CHECK:       input c_x_4 : UInt<5>
+;CHECK:       output c_y_x_0 : UInt<5>
+;CHECK:       output c_y_x_1 : UInt<5>
+;CHECK:       output c_y_x_2 : UInt<5>
+;CHECK:       input c_y_y : SInt<5>
+;CHECK:       wire a_x : UInt<5>
+;CHECK:       wire a_y : SInt<5>
+;CHECK:       wire b_x : UInt<5>
+;CHECK:       wire b_y : SInt<5>
+;CHECK:       a_x := b_x
+;CHECK:       b_y := a_y
 ;CHECK:       inst i of m
-;CHECK:       i.reset := reset
-;CHECK:       i.a$x := a$x
-;CHECK:       a$y := i.a$y
-;CHECK:       b$x := i.b$x
-;CHECK:       i.b$y := b$y
-;CHECK:       wire d$0 : UInt<5>
-;CHECK:       wire d$1 : UInt<5>
-;CHECK:       wire d$2 : UInt<5>
-;CHECK:       wire d$3 : UInt<5>
-;CHECK:       wire d$4 : UInt<5>
+;CHECK:       i.a_x := a_x
+;CHECK:       a_y := i.a_y
+;CHECK:       b_x := i.b_x
+;CHECK:       i.b_y := b_y
+;CHECK:       wire d_0 : UInt<5>
+;CHECK:       wire d_1 : UInt<5>
+;CHECK:       wire d_2 : UInt<5>
+;CHECK:       wire d_3 : UInt<5>
+;CHECK:       wire d_4 : UInt<5>
 ;CHECK: Finished Lower To Ground
