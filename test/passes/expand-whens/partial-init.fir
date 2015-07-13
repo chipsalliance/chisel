@@ -3,7 +3,9 @@
 ; CHECK: Expand Whens
 circuit top :
    module top :
-      reg r : UInt<1>[10]
+      input clk : Clock
+      input reset : UInt<1>
+      reg r : UInt<1>[10],clk,reset
       r[0] := UInt(1)
       r[1] := UInt(1)
       r[2] := UInt(1)
@@ -14,6 +16,6 @@ circuit top :
       r[7] := UInt(1)
       r[8] := UInt(1)
       r[9] := UInt(1)
-      on-reset r[3] := UInt(0)
+      onreset r[3] := UInt(0)
 
 ; CHECK: Finished Expand Whens

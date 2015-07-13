@@ -12,10 +12,11 @@ public defstruct StandardFlo <: Compiler :
    file: String with: (as-method => true)
 public defmethod passes (c:StandardFlo) -> List<Pass> :
    to-list $ [
-      CheckHighForm(expand-delin)
+      RemoveSpecialChars()
+      RemoveScopes()
+      CheckHighForm()
       ;; TempElimination()
       ToWorkingIR()
-      ;; MakeExplicitReset()
       ResolveKinds()
       CheckKinds()
       InferTypes()
@@ -31,9 +32,8 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       Inline()
       SplitExp()
       ToRealIR()
-      SpecialRename(`#,`_)
-      SpecialRename(`$,`::)
-      CheckHighForm(`::)
+      RemoveSpecialChars()
+      CheckHighForm()
       CheckLowForm()
       Flo(file(c))
    ]
@@ -42,7 +42,9 @@ public defstruct StandardVerilog <: Compiler :
    file: String with: (as-method => true)
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
-      CheckHighForm(expand-delin)
+      RemoveSpecialChars()
+      RemoveScopes()
+      CheckHighForm()
       TempElimination()
       ToWorkingIR()
       ;; MakeExplicitReset()
@@ -60,9 +62,8 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       Pad()
       SplitExp()
       ToRealIR()
-      SpecialRename(`#,`_)
-      SpecialRename(`$,`__)
-      CheckHighForm(`__)
+      RemoveSpecialChars()
+      CheckHighForm()
       CheckLowForm()
       Verilog(file(c))
    ]

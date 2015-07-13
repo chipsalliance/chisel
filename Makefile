@@ -52,7 +52,7 @@ units = ALUTop Datapath Control Core
 v     = $(addsuffix .fir.v, $(units))
 
 $(units): % :
-	firrtl -X verilog -i test/chisel3/$*.fir -o test/chisel3/$*.fir.v
+	firrtl -X verilog -i test/chisel3/$*.fir -o test/chisel3/$*.fir.v -p c
 	scp test/chisel3/$*.fir.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-src/$*.v
 
 done:

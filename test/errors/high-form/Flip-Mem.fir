@@ -4,5 +4,6 @@
 
 circuit Flip-Mem : 
   module Flip-Mem : 
-    cmem m-c : {x : UInt<3>, flip y : UInt<5>}[10]
-    smem m-s : {x : UInt<3>, flip y : UInt<5>}[10]
+    input clk : Clock
+    cmem m-c : {x : UInt<3>, flip y : UInt<5>}[10], clk
+    smem m-s : {x : UInt<3>, flip y : UInt<5>}[10], clk

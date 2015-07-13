@@ -1,11 +1,13 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 circuit top :
    module top :
+      input clk : Clock
+      input reset : UInt<1>
       wire p : UInt
       p := UInt(1)
       when p :
-         reg r : UInt
-         on-reset r := UInt(10)
+         reg r : UInt, clk, reset
+         onreset r := UInt(10)
          r := UInt(20)
 
 ; CHECK: Expand Whens

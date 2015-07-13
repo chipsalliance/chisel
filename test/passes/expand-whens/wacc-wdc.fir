@@ -1,8 +1,9 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 circuit top :
    module top :
+      input clk : Clock
       wire p : UInt
-      cmem m : UInt<4>[10]
+      cmem m : UInt<4>[10], clk
       p := UInt(1)
       when p :
          write accessor a = m[UInt(3)]

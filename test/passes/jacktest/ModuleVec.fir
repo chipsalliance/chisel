@@ -5,13 +5,13 @@ circuit ModuleVec :
     input in : UInt<32>
     output out : UInt<32>
     
-    node T_33 = add-wrap(in, UInt<1>(1))
+    node T_33 = addw(in, UInt<1>(1))
     out := T_33
   module PlusOne_25 : 
     input in : UInt<32>
     output out : UInt<32>
     
-    node T_34 = add-wrap(in, UInt<1>(1))
+    node T_34 = addw(in, UInt<1>(1))
     out := T_34
   module ModuleVec : 
     input ins : UInt<32>[2]

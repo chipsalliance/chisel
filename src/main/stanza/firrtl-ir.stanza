@@ -5,8 +5,11 @@ defpackage firrtl/ir2 :
 public defmulti info! (x:?) -> FileInfo
 public defmethod info! (x:?) : FileInfo()
 
-public val expand-delin = `$
-public val gen-delin = `#
+public val vector-expand-delin = `_
+public val bundle-expand-delin = `_
+public val scope-delin = `%
+public val temp-delin = `!
+public val inline-delin = `^
 
 public definterface PortDirection
 public val INPUT = new PortDirection

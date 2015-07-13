@@ -3,9 +3,11 @@
 ;CHECK: Infer Widths
 circuit top :
    module top :
+      input clk : Clock
+      input reset : UInt<1>
       wire e : UInt<30>
       e := UInt(1)
-      reg y : UInt
+      reg y : UInt,clk,reset
       y := e
 
       wire a : UInt<20>

@@ -3,11 +3,13 @@
 circuit RegisterVecShift : 
   module RegisterVecShift : 
     input load : UInt<1>
+    input clk : Clock
+    input reset : UInt<1>
     output out : UInt<4>
     input shift : UInt<1>
     input ins : UInt<4>[4]
     
-    reg delays : UInt<4>[4]
+    reg delays : UInt<4>[4],clk,reset
     when reset : 
       wire T_33 : UInt<4>[4]
       T_33[0] := UInt<4>(0)

@@ -4,10 +4,11 @@ circuit Tbl :
   module Tbl : 
     input i : UInt<16>
     input d : UInt<16>
+    input clk : Clock
     output o : UInt<16>
     input we : UInt<1>
     
-    cmem m : UInt<10>[256]
+    cmem m : UInt<10>[256],clk
     o := UInt<1>(0)
     when we : 
       infer accessor T_13 = m[i]
