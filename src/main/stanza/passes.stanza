@@ -286,9 +286,11 @@ defmethod map (f: Type -> Type, e: WIndex) :
 ;    removed, except _.
 
 public defstruct RemoveSpecialChars <: Pass
-public defmethod pass (b:RemoveSpecialChars) -> (Circuit -> Circuit) : remove-special-chars
+public defmethod pass (b:RemoveSpecialChars) -> (Circuit -> Circuit) : 
+   remove-special-chars
 public defmethod name (b:RemoveSpecialChars) -> String : "Remove Special Characters"
 public defmethod short-name (b:RemoveSpecialChars) -> String : "rem-spec-chars"
+public defmulti 
 
 ;------------ Helper Functions -------------
 
@@ -2077,7 +2079,7 @@ defn split-exp (c:Circuit) :
             do(f,s)
          (s:Connect) : 
             val exp* = map(split-exp-e{_,full-name(loc(s)),info(s)},exp(s))
-            add(v,Connect(info(s),loc(s),exp(s)))
+            add(v,Connect(info(s),loc(s),exp*))
          (s:DefNode) : 
             val exp* = map(split-exp-e{_,name(s),info(s)},value(s))
             add(v,DefNode(info(s),name(s),exp*))

@@ -66,25 +66,27 @@ defn emit (e:Expression) -> String :
       (e:Subfield) : error("Non-supported expression")
       (e:Index) : error("Non-supported expression")
       (e:DoPrim) : 
-         val sargs = map(emit-as-type{_,type(e)},args(e))
-         val xargs = map(emit-signed-if-any{_,args(e)},args(e))
+         ;val sargs = map(emit-as-type{_,type(e)},args(e))
+         ;val xargs = map(emit-signed-if-any{_,args(e)},args(e))
          string-join $ switch {_ == op(e)} :
-            ADD-OP : [sargs[0] " + " sargs[1]]
-            SUB-OP : [sargs[0] " - " sargs[1]]
-            MUL-OP : [sargs[0] " * " sargs[1] ]
-            DIV-OP : [sargs[0] " / " sargs[1] ]
-            MOD-OP : [sargs[0] " % " sargs[1] ]
-            QUO-OP : [sargs[0] " / " sargs[1] ]
-            REM-OP : [sargs[0] " % " sargs[1] ]
-            ADD-WRAP-OP : [sargs[0], " + " sargs[1]]
-            SUB-WRAP-OP : [sargs[0], " - " sargs[1]]
-            LESS-OP : [xargs[0] " < " xargs[1]]
-            LESS-EQ-OP : [xargs[0] " <= " xargs[1]]
-            GREATER-OP : [xargs[0] " > " xargs[1]]
-            GREATER-EQ-OP : [xargs[0] " >= " xargs[1]]
-            NEQUAL-OP : [xargs[0] " != " xargs[1]]
-            EQUAL-OP : [xargs[0] " == " xargs[1]]
-            MUX-OP : [emit(args(e)[0]) " ? " sargs[1] " : " sargs[2]]
+            ADD-OP : [emit-as-type(args(e)[0],type(e)) " + " emit-as-type(args(e)[1],type(e))]
+            SUB-OP : [emit-as-type(args(e)[0],type(e)) " - " emit-as-type(args(e)[1],type(e))]
+            MUL-OP : [emit-as-type(args(e)[0],type(e)) " * " emit-as-type(args(e)[1],type(e)) ]
+            DIV-OP : [emit-as-type(args(e)[0],type(e)) " / " emit-as-type(args(e)[1],type(e)) ]
+            MOD-OP : [emit-as-type(args(e)[0],type(e)) " % " emit-as-type(args(e)[1],type(e)) ]
+            QUO-OP : [emit-as-type(args(e)[0],type(e)) " / " emit-as-type(args(e)[1],type(e)) ]
+            REM-OP : [emit-as-type(args(e)[0],type(e)) " % " emit-as-type(args(e)[1],type(e)) ]
+            ADD-WRAP-OP : [emit-as-type(args(e)[0],type(e)), " + " emit-as-type(args(e)[1],type(e))]
+            SUB-WRAP-OP : [emit-as-type(args(e)[0],type(e)), " - " emit-as-type(args(e)[1],type(e))]
+            LESS-OP : [emit-signed-if-any(args(e)[0],args(e)) " < " emit-signed-if-any(args(e)[1],args(e))]
+            LESS-EQ-OP : [emit-signed-if-any(args(e)[0],args(e)) " <= " emit-signed-if-any(args(e)[1],args(e))]
+            GREATER-OP : [emit-signed-if-any(args(e)[0],args(e)) " > " emit-signed-if-any(args(e)[1],args(e))]
+            GREATER-EQ-OP : [emit-signed-if-any(args(e)[0],args(e)) " >= " emit-signed-if-any(args(e)[1],args(e))]
+            NEQUAL-OP : [emit-signed-if-any(args(e)[0],args(e)) " != " emit-signed-if-any(args(e)[1],args(e))]
+            EQUAL-OP : [emit-signed-if-any(args(e)[0],args(e)) " == " emit-signed-if-any(args(e)[1],args(e))]
+            MUX-OP : 
+               val en = emit(args(e)[0])
+               [en " ? " emit-as-type(args(e)[1],type(e)) " : " emit-as-type(args(e)[2],type(e))]
             PAD-OP : 
                val x = args(e)[0]
                val w = width!(type(x))
@@ -97,42 +99,41 @@ defn emit (e:Expression) -> String :
                ["$unsigned(" emit(args(e)[0]) ")"]
             AS-SINT-OP : 
                ["$signed(" emit(args(e)[0]) ")"]
-            DYN-SHIFT-LEFT-OP : [sargs[0] " << " emit(args(e)[1])]
+            DYN-SHIFT-LEFT-OP : [emit-as-type(args(e)[0],type(e)) " << " emit(args(e)[1])]
             DYN-SHIFT-RIGHT-OP : 
-               if type(e) typeof SIntType : [sargs[0] " >>> " emit(args(e)[1])]
-               else : [sargs[0] " >> " emit(args(e)[1])]
-            SHIFT-LEFT-OP : [sargs[0] " << " consts(e)[0]]
+               if type(e) typeof SIntType : [emit-as-type(args(e)[0],type(e)) " >>> " emit(args(e)[1])]
+               else : [emit-as-type(args(e)[0],type(e)) " >> " emit(args(e)[1])]
+            SHIFT-LEFT-OP : [emit-as-type(args(e)[0],type(e)) " << " consts(e)[0]]
             SHIFT-RIGHT-OP : 
-               if type(e) typeof SIntType : [sargs[0] " >>> " consts(e)[0]]
-               else : [sargs[0] " >> " consts(e)[0]]
-            NEG-OP : ["-{" sargs[0] "}"]
+               if type(e) typeof SIntType : [emit-as-type(args(e)[0],type(e)) " >>> " consts(e)[0]]
+               else : [emit-as-type(args(e)[0],type(e)) " >> " consts(e)[0]]
+            NEG-OP : ["-{" emit-as-type(args(e)[0],type(e)) "}"]
             CONVERT-OP : 
                match(type(args(e)[0])) :
-                  (t:UIntType) : ["{1'b0," sargs[0] "}"]
-                  (t:SIntType) : [sargs[0]]
-            BIT-NOT-OP : ["!" sargs[0]]
-            BIT-AND-OP : [sargs[0] " & " sargs[1]]
-            BIT-OR-OP : [sargs[0] " | " sargs[1]]
-            BIT-XOR-OP : [sargs[0] " ^ " sargs[1]]
-            CONCAT-OP : ["{" sargs[0] "," sargs[1] "}"]
-            BIT-SELECT-OP : [sargs[0] "[" consts(e)[0] "]"]
-            BITS-SELECT-OP : [sargs[0] "[" consts(e)[0] ":" consts(e)[1] "]"]
+                  (t:UIntType) : ["{1'b0," emit-as-type(args(e)[0],type(e)) "}"]
+                  (t:SIntType) : [emit-as-type(args(e)[0],type(e))]
+            BIT-NOT-OP : ["!" emit-as-type(args(e)[0],type(e))]
+            BIT-AND-OP : [emit-as-type(args(e)[0],type(e)) " & " emit-as-type(args(e)[1],type(e))]
+            BIT-OR-OP : [emit-as-type(args(e)[0],type(e)) " | " emit-as-type(args(e)[1],type(e))]
+            BIT-XOR-OP : [emit-as-type(args(e)[0],type(e)) " ^ " emit-as-type(args(e)[1],type(e))]
+            CONCAT-OP : ["{" emit-as-type(args(e)[0],type(e)) "," emit-as-type(args(e)[1],type(e)) "}"]
+            BIT-SELECT-OP : [emit-as-type(args(e)[0],type(e)) "[" consts(e)[0] "]"]
+            BITS-SELECT-OP : [emit-as-type(args(e)[0],type(e)) "[" consts(e)[0] ":" consts(e)[1] "]"]
             BIT-AND-REDUCE-OP : 
-               var v = sargs[0]
+               var v = emit-as-type(args(e)[0],type(e))
                for x in tail(args(e)) do :
                   v = concat(v, [" & " emit(x)])
                v
             BIT-OR-REDUCE-OP : 
-               var v = sargs[0]
+               var v = emit-as-type(args(e)[0],type(e))
                for x in tail(args(e)) do :
                   v = concat(v, [" | " emit(x)])
                v
             BIT-XOR-REDUCE-OP : 
-               var v = sargs[0]
+               var v = emit-as-type(args(e)[0],type(e))
                for x in tail(args(e)) do :
                   v = concat(v, [" ^ " emit(x)])
                v
-
 
 defn get-name (e:Expression) -> Symbol :
    match(e) :
@@ -184,20 +185,35 @@ defn emit-module (m:InModule) :
             val my-clk-update = get?(updates,get-name(clock(s)),Vector<Streamable>())
             if key?(ens,sym) :
                add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
-               add(my-clk-update,["  " sym " <= " emit(cons[sym]) ";"])
+               println(STANDARD-ERROR, "In key?, after first update")
+               val x = cons[sym]
+               println(STANDARD-ERROR, "In key?, after cons[sym]")
+               println(STANDARD-ERROR,x)
+               val y = emit(x)
+               println(STANDARD-ERROR, "In key?, after emit")
+               add(my-clk-update,["  " sym " <= " y ";"])
+               println(STANDARD-ERROR, "In key?, after second update")
                add(my-clk-update,["end"])
+               println(STANDARD-ERROR, "In key?, after all updates")
             else :
+               println(STANDARD-ERROR, "In else, before update")
                add(my-clk-update,[sym " <= " emit(cons[sym]) ";"])
+               println(STANDARD-ERROR, "In else, after update")
+            println(STANDARD-ERROR, "After ifelse, befure update")
             updates[get-name(clock(s))] = my-clk-update
+            println(STANDARD-ERROR, "After ifelse, after update")
          (s:DefMemory) :
+            println(STANDARD-ERROR, s)
             val vtype = type(s) as VectorType
             add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) "];"])
             add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
             add(inits,["  " sym "[initvar] = {" width!(type(vtype)) "{$random}};"])
          (s:DefNode) :
+            println(STANDARD-ERROR, s)
             add(wires,["wire " get-width(type(value(s))) " " sym ";"])
             add(assigns,["assign " sym " = " emit(value(s)) ";"])
          (s:DefInstance) : 
+            println(STANDARD-ERROR, s)
             inst-ports[sym] = Vector<Streamable>()
             insts[sym] = name(module(s) as Ref)
             for f in fields(type(module(s)) as BundleType) do :
@@ -207,6 +223,7 @@ defn emit-module (m:InModule) :
                if flip(f) == REVERSE :
                   add(assigns,["assign " n* " = " emit(cons[n*]) ";"])
          (s:DefAccessor) : 
+            println(STANDARD-ERROR, s)
             val mem-declaration = decs[name(source(s) as Ref)] as DefMemory
             switch {_ == acc-dir(s)} :
                READ :

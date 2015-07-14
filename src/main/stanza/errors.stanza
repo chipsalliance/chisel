@@ -774,7 +774,7 @@ public defn check-low-form (c:Circuit) -> Circuit :
       for p in ports(m) do :
          check-low-form-t(info(p),type(p),name(p))
 
-      val assigned? = Vector<Symbol>()
+      val assigned? = HashTable<Symbol,True>(symbol-hash)
       val insts = Vector<Symbol>()
       val mems = Vector<Symbol>()
       defn check-correct-exp (info:FileInfo,e:Expression) -> False :
@@ -811,8 +811,8 @@ public defn check-low-form (c:Circuit) -> Circuit :
                match(loc(s)) :
                   (e:Ref|Subfield) : 
                      val n* = to-symbol $ to-string $ e
-                     if contains?(assigned?,n*) : add(errors,SingleAssignment(info(s),n*))
-                     else : add(assigned?,to-symbol $ to-string $ e)
+                     if key?(assigned?,n*) : add(errors,SingleAssignment(info(s),n*))
+                     else : assigned?[to-symbol $ to-string $ e] = true
                   (e) : check-correct-exp(info(s),e)
             (s:EmptyStmt) : false
             (s:Begin) : do(check-low-form-s,s)

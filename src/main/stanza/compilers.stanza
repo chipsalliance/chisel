@@ -82,8 +82,8 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
       if PRINT-CIRCUITS : println(name(p))
       c* = pass(p)(c*)
       if PRINT-CIRCUITS : print(c*)
-      if PRINT-CIRCUITS : println-all(["Finished " name(p) "\n"])
       val current-time = current-time-us()
+      println-all(["Finished " name(p) "\n"])
       println-all(["Time since start: " current-time - start-time])
       println-all(["Time for this pass: " current-time - t])
       t = current-time
