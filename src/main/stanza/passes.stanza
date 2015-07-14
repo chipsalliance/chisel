@@ -871,10 +871,11 @@ defn lower (body:Stmt) -> Stmt :
          (s:WDefAccessor) : 
             val ls = generate-entry(name(s),type(s))
             val rs = generate-entry(name(source(s) as WRef),type(s))
+            val index* = exp(head $ expand-expr(index(s)))
             Begin $ for (l in ls, r in rs) map:
                if flip(r) == REVERSE : error("Shouldn't be here")
                val memref = WRef(name(r),VectorType(type(r),size(s)),MemKind(),gender(s))
-               WDefAccessor(info(s),name(l),memref,index(s),gender(s))
+               WDefAccessor(info(s),name(l),memref,index*,gender(s))
          (s:OnReset|Connect) : Begin $
             for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
                val lgender = FEMALE * flip(l)
@@ -914,6 +915,7 @@ defn lower (body:Stmt) -> Stmt :
                   [MALE,FEMALE]  : Connect(info(s),r*,l*)
          (s:ConnectFromIndexed) : Begin(ls) where :
             val ctable = HashTable<Symbol,Vector<EF>>(symbol-hash)
+            val index* = exp(head $ expand-expr(index(s)))
             for e in exps(s) do :
                for (r in expand-expr(e),l in expand-expr(loc(s))) do :
                   val n = name(exp(l) as WRef)
@@ -929,10 +931,11 @@ defn lower (body:Stmt) -> Stmt :
                   val l* = set-gender(exp(l),lgender,flip(l))
                   val exps = to-list $ for e in ctable[n] map : set-gender(exp(e),rgender,flip(e))
                   switch fn ([x,y]) : lgender == x and rgender == y :
-                     [FEMALE,MALE]   : ConnectFromIndexed(info(s),index(s),l*,exps)
-                     [MALE,FEMALE]   : ConnectToIndexed(info(s),index(s),exps,l*)
+                     [FEMALE,MALE]   : ConnectFromIndexed(info(s),index*,l*,exps)
+                     [MALE,FEMALE]   : ConnectToIndexed(info(s),index*,exps,l*)
          (s:ConnectToIndexed) : Begin(ls) where :
             val ctable = HashTable<Symbol,Vector<EF>>(symbol-hash)
+            val index* = exp(head $ expand-expr(index(s)))
             for e in locs(s) do :
                for (l in expand-expr(e),r in expand-expr(exp(s))) do :
                   val n = name(exp(r) as WRef)
@@ -948,8 +951,8 @@ defn lower (body:Stmt) -> Stmt :
                   val r* = set-gender(exp(r),rgender,flip(r))
                   val locs = to-list $ for e in ctable[n] map : set-gender(exp(e),lgender,flip(e))
                   switch fn ([x,y]) : lgender == x and rgender == y :
-                     [FEMALE,MALE]   : ConnectToIndexed(info(s),index(s),locs,r*)
-                     [MALE,FEMALE]   : ConnectFromIndexed(info(s),index(s),r*,locs)
+                     [FEMALE,MALE]   : ConnectToIndexed(info(s),index*,locs,r*)
+                     [MALE,FEMALE]   : ConnectFromIndexed(info(s),index*,r*,locs)
          (s:Conditionally) : 
             Conditionally(info(s),exp(head $ expand-expr(pred(s))),lower-stmt(conseq(s)),lower-stmt(alt(s)))
          (s:Begin|EmptyStmt) : map(lower-stmt,s)
