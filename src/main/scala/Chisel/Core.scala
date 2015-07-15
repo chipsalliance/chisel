@@ -451,7 +451,7 @@ class SeqMem[T <: Data](t: T, n: Int) {
 }
 
 object Vec {
-  def apply[T <: Data](gen: => T, n: Int): Vec[T] = 
+  def apply[T <: Data](gen: T, n: Int): Vec[T] = 
     new Vec((0 until n).map(i => gen.cloneType))
   def apply[T <: Data](elts: Iterable[T]): Vec[T] = {
     val vec = new Vec[T](elts.map(e => elts.head.cloneType))
