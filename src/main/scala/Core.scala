@@ -525,7 +525,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 
   def forall(p: T => Bool): Bool = (this map p).fold(Bool(true))(_&&_)
   def exists(p: T => Bool): Bool = (this map p).fold(Bool(false))(_||_)
-  // def contains[T <: Bits](x: T): Bool = this.exists(_ === x)
+  def contains(x: T) (implicit evidence: T <:< Bits): Bool = this.exists(_ === x)
   def count(p: T => Bool): UInt = PopCount((this map p).toSeq)
 
   private def indexWhereHelper(p: T => Bool) = this map p zip (0 until length).map(i => UInt(i))
