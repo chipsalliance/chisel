@@ -78,6 +78,7 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
    if PRINT-CIRCUITS : print(c)
    val start-time = current-time-us()
    var t = start-time
+   val tables = Vector<HashTable<Symbol,HashTable<Symbol,Symbol>>>()
    for p in ls do : 
       if PRINT-CIRCUITS : println(name(p))
       c* = pass(p)(c*)

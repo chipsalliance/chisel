@@ -285,23 +285,21 @@ defmethod map (f: Type -> Type, e: WIndex) :
 ; Returns a new Circuit where all names have all special characters 
 ;    removed, except _.
 
-public defstruct RemoveSpecialChars <: Pass
-public defmethod pass (b:RemoveSpecialChars) -> (Circuit -> Circuit) : 
-   remove-special-chars
+public defstruct RemoveSpecialChars <: Pass 
+public defmethod pass (b:RemoveSpecialChars) -> (Circuit -> Circuit) : remove-special-chars
 public defmethod name (b:RemoveSpecialChars) -> String : "Remove Special Characters"
 public defmethod short-name (b:RemoveSpecialChars) -> String : "rem-spec-chars"
-public defmulti 
 
 ;------------ Helper Functions -------------
 
 defn get-new-string (n:Char) -> String :
    switch {n == _} :
-      '_' : "__"
+      ;'_' : "__"
       '~' : "_A"
       '!' : "_B"
       '@' : "_C"
       '#' : "_D"
-      '$' : "_E"
+      ;'$' : "_E"
       '%' : "_F"
       '^' : "_G"
       '*' : "_H"

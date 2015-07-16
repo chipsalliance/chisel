@@ -5,8 +5,8 @@ defpackage firrtl/ir2 :
 public defmulti info! (x:?) -> FileInfo
 public defmethod info! (x:?) : FileInfo()
 
-public val vector-expand-delin = `_
-public val bundle-expand-delin = `_
+public val vector-expand-delin = `$
+public val bundle-expand-delin = `$
 public val scope-delin = `%
 public val temp-delin = `!
 public val inline-delin = `^
