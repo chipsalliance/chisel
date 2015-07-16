@@ -1137,6 +1137,11 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
   }
 }
 
+// TODO: actually implement BlackBox (this hack just allows them to compile)
+abstract class BlackBox(private[Chisel] _reset: Bool = null) extends Module(_reset) {
+  def setVerilogParameters(s: String): Unit = {}
+}
+
 object when {
   def execBlock(block: => Unit): Command = {
     pushScope
