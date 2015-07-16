@@ -29,6 +29,16 @@ object isPow2
   def apply(in: Int): Boolean = in > 0 && ((in & (in-1)) == 0)
 }
 
+object Log2 {
+  def apply(x: UInt, width: Int): UInt = {
+    if (width < 2) UInt(0)
+    else Mux(x(width-1), UInt(width-1), apply(x, width-1))
+  }
+
+  // TODO: infer the width in the backend
+  def apply(x: UInt): UInt = apply(x, x.getWidth)
+}
+
 object FillInterleaved
 {
   def apply(n: Int, in: Bits): Bits = apply(n, in.toBools)
