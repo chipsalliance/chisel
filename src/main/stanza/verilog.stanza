@@ -185,23 +185,13 @@ defn emit-module (m:InModule) :
             val my-clk-update = get?(updates,get-name(clock(s)),Vector<Streamable>())
             if key?(ens,sym) :
                add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
-               println(STANDARD-ERROR, "In key?, after first update")
                val x = cons[sym]
-               println(STANDARD-ERROR, "In key?, after cons[sym]")
-               println(STANDARD-ERROR,x)
                val y = emit(x)
-               println(STANDARD-ERROR, "In key?, after emit")
                add(my-clk-update,["  " sym " <= " y ";"])
-               println(STANDARD-ERROR, "In key?, after second update")
                add(my-clk-update,["end"])
-               println(STANDARD-ERROR, "In key?, after all updates")
             else :
-               println(STANDARD-ERROR, "In else, before update")
                add(my-clk-update,[sym " <= " emit(cons[sym]) ";"])
-               println(STANDARD-ERROR, "In else, after update")
-            println(STANDARD-ERROR, "After ifelse, befure update")
             updates[get-name(clock(s))] = my-clk-update
-            println(STANDARD-ERROR, "After ifelse, after update")
          (s:DefMemory) :
             println(STANDARD-ERROR, s)
             val vtype = type(s) as VectorType
@@ -223,7 +213,6 @@ defn emit-module (m:InModule) :
                if flip(f) == REVERSE :
                   add(assigns,["assign " n* " = " emit(cons[n*]) ";"])
          (s:DefAccessor) : 
-            println(STANDARD-ERROR, s)
             val mem-declaration = decs[name(source(s) as Ref)] as DefMemory
             switch {_ == acc-dir(s)} :
                READ :
