@@ -589,9 +589,6 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   override def flatten: Array[Bits] = Array[Bits](this)
 
-  final def apply(x: UInt): Bool = 
-    apply(x.litValue())
-
   final def apply(x: BigInt): Bool = {
     val d = new Bool(dir)
     if (isLitValue())
@@ -600,8 +597,10 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
       pushCommand(DefPrim(d.defd.cid, d.toType, BitSelectOp, Array(this.ref), Array(x)))
     d
   }
-  final def apply(x: UInt, y: UInt): UInt = 
-    apply(x.litValue(), y.litValue())
+  final def apply(x: Int): Bool =
+    apply(BigInt(x))
+  final def apply(x: UInt): Bool =
+    apply(x.litValue())
 
   final def apply(x: BigInt, y: BigInt): UInt = {
     val w = (x - y + 1).toInt
@@ -613,6 +612,11 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
       pushCommand(DefPrim(d.defd.cid, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
     d
   }
+  final def apply(x: Int, y: Int): UInt =
+    apply(BigInt(x), BigInt(y))
+  final def apply(x: UInt, y: UInt): UInt =
+    apply(x.litValue(), y.litValue())
+
   def maxWidth(other: Bits, amt: Int): Int = 
     if (getWidth >= 0 && other.getWidth >= 0) ((getWidth max other.getWidth) + amt) else -1
   override def sumWidth(amt: BigInt): Int = if (getWidth >= 0) (getWidth + amt).toInt else -1
@@ -663,8 +667,10 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def / (other: Bits): Bits = binop(DivideOp, other, sumWidth(0))
   def % (other: Bits): Bits = binop(ModOp, other, sumWidth(0))
   def << (other: BigInt): Bits = binop(ShiftLeftOp, other, sumWidth(other))
+  def << (other: Int): Bits = this << BigInt(other)
   def << (other: Bits): Bits = binop(DynamicShiftLeftOp, other, sumLog2Width(other))
   def >> (other: BigInt): Bits = binop(ShiftRightOp, other, sumWidth(-other))
+  def >> (other: Int): Bits = this >> BigInt(other)
   def >> (other: Bits): Bits = binop(DynamicShiftRightOp, other, sumWidth(0))
   def unary_~ : Bits = unop(BitNotOp, sumWidth(0))
   def pad (other: BigInt): Bits = binop(PadOp, other, other.toInt)
@@ -754,8 +760,10 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def / (other: UInt): UInt = binop(DivideOp, other, sumWidth(0))
   def % (other: UInt): UInt = binop(ModOp, other, sumWidth(0))
   override def << (other: BigInt): UInt = binop(ShiftLeftOp, other, sumWidth(other))
+  override def << (other: Int): UInt = this << BigInt(other)
   def << (other: UInt): UInt = binop(DynamicShiftLeftOp, other, sumLog2Width(other))
   override def >> (other: BigInt): UInt = binop(ShiftRightOp, other, sumWidth(-other))
+  override def >> (other: Int): UInt = this >> BigInt(other)
   def >> (other: UInt): UInt = binop(DynamicShiftRightOp, other, sumWidth(0))
 
   override def unary_~ : UInt = unop(BitNotOp, sumWidth(0))
@@ -831,8 +839,10 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   def / (other: SInt): SInt = binop(DivideOp, other, sumWidth(0))
   def % (other: SInt): SInt = binop(ModOp, other, sumWidth(0))
   override def << (other: BigInt): SInt = binop(ShiftLeftOp, other, sumWidth(other))
+  override def << (other: Int): SInt = this << BigInt(other)
   def << (other: UInt): SInt = binop(DynamicShiftLeftOp, other, sumLog2Width(other))
   override def >> (other: BigInt): SInt = binop(ShiftRightOp, other, sumWidth(-other))
+  override def >> (other: Int): SInt = this >> BigInt(other)
   def >> (other: UInt): SInt = binop(DynamicShiftRightOp, other, sumWidth(0))
 
   override def unary_~ : SInt = unop(BitNotOp, sumWidth(0))
