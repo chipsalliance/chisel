@@ -167,6 +167,8 @@ object Driver extends FileSystemUtilities{
   }
 
   private def test[T <: Module](mod: T, ftester: T => Tester[T]): Unit = {
+    // We shouldn't have to do this. There should be a class of Builder that doesn't pushCommand.
+    Builder.pushCommands
     var res = false
     var tester: Tester[T] = null
     try {

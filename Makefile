@@ -1,20 +1,16 @@
 SBT		?= sbt
 SBT_FLAGS	?= -Dsbt.log.noformat=true
 
-# If a chiselVersion is defined, use that.
-# Otherwise, use the snapshot.
-ifneq (,$(chiselVersion))
-SBT_FLAGS += -DchiselVersion="$(chiselVersion)"
-else
-SBT_FLAGS += -DchiselVersion="3.0-SNAPSHOT"
-endif
+CHISEL_VERSION := $(shell "$(SBT)" $(SBT_FLAGS) "show version" | tail -n 1 | cut -d ' ' -f 2)
 
 SRC_DIR	?= .
 CHISEL_BIN ?= $(SRC_DIR)/bin
 export CHISEL_BIN
 
+$(info Build Chisel $(CHISEL_VERSION))
+
 SYSTEMC ?= $(SRC_DIR)/../../systemc/systemc-2.3.1
-CHISEL_JAR ?= $(SRC_DIR)/target/scala-2.11/chisel_2.11-3.0-SNAPSHOT.jar
+CHISEL_JAR ?= $(SRC_DIR)/target/scala-2.11/chisel_2.11-$(CHISEL_VERSION).jar
 DRIVER	   ?= $(SRC_DIR)/src/test/resources/AddFilterSysCdriver.cpp
 # The targetDir will be rm -rf'ed when "make clean"
 targetDir ?= ./generated
