@@ -827,3 +827,69 @@ public defn check-low-form (c:Circuit) -> Circuit :
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
+
+;;================ Initialization Check ==================
+; Error on all componenents that are not connected to.
+
+public defstruct CheckInitialization <: Pass 
+public defmethod pass (b:CheckInitialization) -> (Circuit -> Circuit) : check-init
+public defmethod name (b:CheckInitialization) -> String : "Check Initialization"
+public defmethod short-name (b:CheckInitialization) -> String : "check-init"
+
+;----------------- Errors ------------------------
+
+defn RefNotInitialized (info:FileInfo, name:Symbol) :
+   PassException $ string-join $
+   [info ": Reference " name " is not fully initialized."]
+
+;------------ Helper Functions -------------
+
+;------------ Pass ------------------
+
+public defn check-init (c:Circuit) : 
+   val errors = Vector<PassException>()
+   
+   defn check-init-m (m:InModule) : 
+      val init? = HashTable<Symbol,FileInfo|True>(symbol-hash)
+      defn get-name (e:Expression) -> Symbol :
+         match(e) :
+            (e:Ref) : name(e)
+            (e:Subfield) : symbol-join([get-name(exp(e)) `. name(e)])
+            (e) : error("Shouldn't be here")
+         
+      defn check-init-s (s:Stmt) : 
+         do(check-init-s,s)
+         match(s) :
+            (s:DefWire|DefRegister) : init?[name(s)] = info(s)
+            (s:DefAccessor) : 
+               if acc-dir(s) == WRITE : init?[name(s)] = info(s)
+            (s:DefInstance) : 
+               for f in fields(type(module(s)) as BundleType) do :
+                  if flip(f) == REVERSE : 
+                     init?[symbol-join([name(s) `. name(f)])] = info(s)
+            (s:Connect) : 
+               init?[get-name(loc(s))] = true
+            (s) : false
+
+      for p in ports(m) do :
+         if direction(p) == OUTPUT :
+            init?[name(p)] = info(p)
+
+      check-init-s(body(m))
+
+      for x in init? do :
+         match(value(x)) :
+            (v:FileInfo) : add(errors, RefNotInitialized(v,key(x)))
+            (v) : false
+      
+   for m in modules(c) do :
+      match(m) : 
+         (m:InModule) : check-init-m(m)
+         (m) : false
+
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+
+
+
+

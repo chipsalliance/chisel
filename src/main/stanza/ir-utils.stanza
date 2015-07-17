@@ -117,6 +117,7 @@ defmethod print (o:OutputStream, w:Width) :
    match(w) :
       (w:UnknownWidth) : "?"
       (w:IntWidth) : width(w)
+      (w:LongWidth) : width(w)
 
 defmethod print (o:OutputStream, op:PrimOp) :
    print{o, _} $
@@ -451,13 +452,12 @@ public defn merge!<?K,?V> (a:HashTable<?K,?V>, b:HashTable<K,V>) :
    for e in b do :
       a[key(e)] = value(e)
 
-public defn pow (x:Int,y:Int) -> Int :
+public defn pow (x:Long,y:Long) -> Long :
    var x* = to-long(1)
-   var y* = to-long(y)
+   var y* = y
    while y* != to-long(0) :
-      x* = x* * to-long(x)
-      y* = y* - to-long(1)
-   if x* > to-long(2147483647) : error("Value too big for Int")
-   else : to-int $ to-string(x*)
+      x* = times(x*,x)
+      y* = minus(y*,to-long(1))
+   x*
 
 

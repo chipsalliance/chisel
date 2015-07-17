@@ -210,7 +210,10 @@ defsyntax firrtl :
       accdir = (rdwr) : RDWR
 
    defrule width :
-      width = (?x:#int) : IntWidth(x)
+      width = (?x:#intorlong) : 
+         match(x) : 
+            (x:Int) : IntWidth(x)
+            (x:Long) : LongWidth(x)
       width = (?) : UnknownWidth()
 
    ;Main Statement Productions

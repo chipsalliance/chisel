@@ -65,6 +65,7 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       RemoveSpecialChars()
       CheckHighForm()
       CheckLowForm()
+      CheckInitialization()
       Verilog(file(c))
    ]
 

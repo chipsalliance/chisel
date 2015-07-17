@@ -295,19 +295,19 @@ public defmethod short-name (b:RemoveSpecialChars) -> String : "rem-spec-chars"
 defn get-new-string (n:Char) -> String :
    switch {n == _} :
       ;'_' : "__"
-      '~' : "_A"
-      '!' : "_B"
-      '@' : "_C"
-      '#' : "_D"
-      ;'$' : "_E"
-      '%' : "_F"
-      '^' : "_G"
-      '*' : "_H"
-      '-' : "_I"
-      '+' : "_J"
-      '=' : "_K"
-      '?' : "_L"
-      '/' : "_M"
+      '~' : "$A"
+      '!' : "$B"
+      '@' : "$C"
+      '#' : "$D"
+      ;'$' : "$E"
+      '%' : "$F"
+      '^' : "$G"
+      '*' : "$H"
+      '-' : "$I"
+      '+' : "$J"
+      '=' : "$K"
+      '?' : "$L"
+      '/' : "$M"
       else : to-string(n)
 
 ;------------ Pass ------------------
@@ -1378,16 +1378,6 @@ defn reduce-or (l:List<Expression>) -> Expression :
 ; kinds:  Used to know the kind of reference, so we know whether we should error if it isn't initialized. We also know how we should declare the refernce.
 ; enables:Calculated off of assigns.
 
-;----------------- Errors ------------------------
-
-defn RefNotInitialized (info:FileInfo, name:Symbol) :
-   PassException $ string-join $
-   [info ": Reference " name " is not fully initialized."]
-
-defn RefNotConnected (info:FileInfo, name:Symbol) :
-   PassException $ string-join $
-   [info ": Reference " name " is never connected to."]
-
 ;---------------- Helper Functions --------------
 defn get-read-enable (sym:Symbol,table:HashTable<Symbol,SymbolicValue>) -> Expression :
    defn get-single-read-enable (sym:Symbol,sv:SymbolicValue) -> Expression :
@@ -1497,15 +1487,13 @@ defn build-tables (s:Stmt,
 ;--------------- Expand Whens Pass -------------------
 
 public defn expand-whens (c:Circuit) -> Circuit :
-   val errors = Vector<PassException>()
 
    defn expand-whens (ports:List<Port>, table:HashTable<Symbol,SymbolicValue>,cons:Vector<Stmt>) -> False :
       for p in ports do :
          if direction(p) == OUTPUT :
             val ref = WRef(name(p),type(p),PortKind(),FEMALE)
-            if has-nul?(table[name(p)]) : 
-               add(errors,RefNotInitialized(info(p), name(p)))
-            else : add{cons,_} $ Connect(FileInfo(),ref,to-exp(table[name(p)]) as Expression)
+            if not has-nul?(table[name(p)]) : 
+               add{cons,_} $ Connect(FileInfo(),ref,to-exp(table[name(p)]) as Expression)
    
    defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stmt>,cons:Vector<Stmt>) -> Stmt :
       match(map(expand-whens{_,table,decs,cons},s)) : 
@@ -1513,9 +1501,8 @@ public defn expand-whens (c:Circuit) -> Circuit :
          (s:DefWire) : 
             add(decs,s)
             val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
-            if has-nul?(table[name(s)]) : 
-               add(errors,RefNotInitialized(info(s), name(s)))
-            else : add{cons,_} $ Connect(info(s),ref,to-exp(table[name(s)]) as Expression)
+            if not has-nul?(table[name(s)]) : 
+               add{cons,_} $ Connect(info(s),ref,to-exp(table[name(s)]) as Expression)
          (s:DefRegister) : 
             add(decs,s)
             val e = to-exp(table[name(s)])
@@ -1527,8 +1514,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                      add{cons,_} $ Connect(info(s),ref,e)
                   else :
                      add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())
-               (e:False) : 
-                  add(errors,RefNotConnected(info(s), name(s)))
+               (e:False) : false
          (s:DefAccessor) : 
             add(decs,s)
             val t = type(type(source(s)) as VectorType)
@@ -1543,8 +1529,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                         add{cons,_} $ Connect(info(s),ref,e)
                      else :
                         add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())
-                  (e:False) : 
-                     add(errors,RefNotConnected(info(s), n))
+                  (e:False) : false
          (s:DefInstance) : 
             add(decs,s)
                for f in fields(type(module(s)) as BundleType) map :
@@ -1554,9 +1539,8 @@ public defn expand-whens (c:Circuit) -> Circuit :
                      val f = to-symbol(split(to-string(n),'.')[1])
                      val ref = WRef(x,type(module(s)),InstanceKind(),FEMALE)
                      val sref = WSubfield(ref,f,bundle-field-type(type(module(s)),f),FEMALE)
-                     if has-nul?(table[n]) : 
-                        add(errors,RefNotInitialized(info(s), n))
-                     else : add{cons,_} $ Connect(info(s),sref,to-exp(table[n]) as Expression)
+                     if not has-nul?(table[n]) : 
+                        add{cons,_} $ Connect(info(s),sref,to-exp(table[n]) as Expression)
          (s:Connect|Conditionally|OnReset|Begin|EmptyStmt) : false
       s
    
@@ -1577,6 +1561,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
             build-tables(body(m),assign,resets,flattn,rsignals)
             for x in assign do : assign[key(x)] = optimize(value(x))
             for x in resets do : resets[key(x)] = optimize(value(x))
+            
             ;val enables = get-enables(assign,kinds)
             ;for x in enables do : enables[key(x)] = optimize(value(x))
                   
@@ -1598,9 +1583,69 @@ public defn expand-whens (c:Circuit) -> Circuit :
       val modules* = 
          for m in modules(c) map :
             expand-whens(m)
-   throw(PassExceptions(errors)) when not empty?(errors)
+   ;throw(PassExceptions(errors)) when not empty?(errors)
    c*
 
+;;================ Module Duplication ==================
+; Duplicates modules so that no module is instantiated 
+;   more than once.
+
+public defstruct ModuleDuplication <: Pass 
+public defmethod pass (b:ModuleDuplication) -> (Circuit -> Circuit) : module-duplication
+public defmethod name (b:ModuleDuplication) -> String : "Module Duplication"
+public defmethod short-name (b:ModuleDuplication) -> String : "mod-dup"
+
+;------------ Helper Functions -------------
+
+;------------ Pass ------------------
+
+public defn module-duplication (c:Circuit) :
+   val modules* = Vector<Module>()
+   val m-names = HashTable<Symbol,Int>(symbol-hash)
+   defn rename (n:Symbol) -> Symbol :
+      val int = get?(m-names,n,0)
+      m-names[n] = int + 1
+      val n* = symbol-join([n module-expand-delin int])
+      val m = for x in modules(c) find : name(x) == n
+      match(m) :
+         (m:InModule) : add(modules*,InModule(info(m),n*, ports(m), rename-s(body(m))))
+         (m:ExModule) : add(modules*,ExModule(info(m),n*, ports(m)))
+         (m:False) : error("Shouldn't be here")
+      n*
+
+   defn rename-e (e:Expression) -> Expression :
+      match(e) :
+         (e:Ref) : Ref(rename(name(e)),type(e))
+         (e) : error("Shouldn't be here")
+   defn rename-s (s:Stmt) -> Stmt :
+      match(s) :
+         (s:DefInstance) : DefInstance(info(s),name(s),rename-e(module(s)))
+         (s) : map(rename-s,s)
+
+   val top = for m in modules(c) find : name(m) == main(c)
+   match(top) :
+      (m:InModule) : add(modules*,InModule(info(m),name(m), ports(m), rename-s(body(m))))
+      (m:ExModule) : m
+      (m:False) : error("Shouldn't be here")
+      
+   Circuit(info(c),to-list(modules*), main(c)) 
+
+
+;;================ Deadcode Elimination ===================
+; Walks the circuit, starting from the outputs from the top 
+;   level module. All components that are not reached are
+;   deleted
+
+public defstruct DeadcodeElimination <: Pass 
+public defmethod pass (b:DeadcodeElimination) -> (Circuit -> Circuit) : deadcode-elimination
+public defmethod name (b:DeadcodeElimination) -> String : "Deadcode Elimination"
+public defmethod short-name (b:DeadcodeElimination) -> String : "deadcode-elim"
+
+;------------ Helper Functions -------------
+
+;------------ Pass ------------------
+
+public defn deadcode-elimination (c:Circuit) : c
 
 ;;================ INFER WIDTHS =============================
 ; First, you replace all unknown widths with a unique width
@@ -1627,7 +1672,6 @@ public defstruct MaxWidth <: Width :
    args : List<Width>
 public defstruct ExpWidth <: Width :
    arg1 : Width
-
 val width-name-hash = HashTable<Symbol,Int>(symbol-hash)
 
 public defmulti map<?T> (f: Width -> Width, w:?T&Width) -> T
@@ -1667,6 +1711,9 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
                   if not contains?(args(w2),w) : ret(false)
                ret(true)
       (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
+      (w1:LongWidth,w2:IntWidth) : width(w1) == to-long $ width(w2)
+      (w1:IntWidth,w2:LongWidth) : to-long(width(w1)) == width(w2)
+      (w1:LongWidth,w2:LongWidth) : width(w1) == width(w2)
       (w1:PlusWidth,w2:PlusWidth) : 
          (arg1(w1) == arg1(w2) and arg2(w1) == arg2(w2)) or (arg1(w1) == arg2(w2) and arg2(w1) == arg1(w2))
       (w1:MinusWidth,w2:MinusWidth) :
@@ -1703,14 +1750,21 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
          (w:PlusWidth) : 
             match(arg1(w),arg2(w)) :
                (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) + width(w2))
+               (w1:LongWidth,w2:IntWidth) : LongWidth(plus(width(w1),to-long $ width(w2)))
+               (w1:IntWidth,w2:LongWidth) : LongWidth(plus(to-long $ width(w1), width(w2)))
+               (w1:LongWidth,w2:LongWidth) : LongWidth(plus(width(w1),width(w2)))
                (w1,w2) : w
          (w:MinusWidth) : 
             match(arg1(w),arg2(w)) :
-               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) - width(w2))
+               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) + width(w2))
+               (w1:LongWidth,w2:IntWidth) : LongWidth(minus(width(w1),to-long $ width(w2)))
+               (w1:IntWidth,w2:LongWidth) : LongWidth(minus(to-long $ width(w1), width(w2)))
+               (w1:LongWidth,w2:LongWidth) : LongWidth(minus(width(w1),width(w2)))
                (w1,w2) : w
          (w:ExpWidth) : 
             match(arg1(w)) :
-               (w1:IntWidth) : IntWidth(pow(2,width(w1)) - 1)
+               (w1:IntWidth) : LongWidth(pow(to-long(2),to-long(width(w1) - 1)))
+               (w1:LongWidth) : LongWidth(pow(to-long(2),minus(width(w1), to-long(1))))
                (w1) : w
          (w) : w
    defn substitute (w:Width,h:HashTable<Symbol,Width>) -> Width :
@@ -1893,36 +1947,40 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
          
 defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
    defn evaluate (w:Width) -> Width :
-      defn apply (a:Int|False,f:(Int) -> Int) -> Int|False :
-         if a typeof Int : f(a as Int)
+      defn apply (a:Long|False,f:(Long) -> Long) -> Long|False :
+         if a typeof Long : f(a as Long)
          else : false
-      defn apply (a:Int|False,b:Int|False, f: (Int,Int) -> Int) -> Int|False :
-         if a typeof Int and b typeof Int : f(a as Int, b as Int)
+      defn apply (a:Long|False,b:Long|False, f: (Long,Long) -> Long) -> Long|False :
+         if a typeof Long and b typeof Long : f(a as Long, b as Long)
          else : false
-      defn apply-l (l:List<Int|False>,f:(Int,Int) -> Int) -> Int|False :
-         if length(l) == 0 : 0
+      defn apply-l (l:List<Long|False>,f:(Long,Long) -> Long) -> Long|False :
+         if length(l) == 0 : to-long(0)
          else : apply(head(l),apply-l(tail(l),f),f)
-      defn max (a:Int,b:Int) -> Int :
+      defn max (a:Long,b:Long) -> Long :
          if a >= b : a
          else : b
-      defn solve (w:Width) -> Int|False :
+      defn solve (w:Width) -> False|Long :
          match(w) :
             (w:VarWidth) : 
                val w* = h[name(w)]
                if w* typeof VarWidth : false
                else : solve(w*)
             (w:MaxWidth) : apply-l(map(solve,args(w)),max)
-            (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ + _})
-            (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{_ - _})
-            (w:ExpWidth) : apply(2,solve(arg1(w)),{pow(_,_) - 1})
-            (w:IntWidth) : width(w)
+            (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{plus(_,_)})
+            (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{minus(_,_)})
+            (w:ExpWidth) : apply(to-long(2),solve(arg1(w)),{minus(pow(_,_),to-long(1))})
+            (w:IntWidth) : to-long(width(w))
+            (w:LongWidth) : width(w)
             (w) : 
                println(w)
                error("Shouldn't be here")
    
       val s = solve(w)
-      if s typeof Int : IntWidth(s as Int)
-      else : w
+      match(s) :
+         (s:Long) : 
+            if s > to-long(2147483647) : LongWidth(s)
+            else : IntWidth(to-int $ to-string $ s)
+         (s) : w
 
    defn reduce-var-widths-w (w:Width) -> Width :
       println-all-debug(["REPLACE: " w])
@@ -2193,25 +2251,33 @@ public defstruct Pad <: Pass
 public defmethod pass (b:Pad) -> (Circuit -> Circuit) : pad-widths
 public defmethod name (b:Pad) -> String : "Pad Widths"
 
-defn int-width! (t:Type) -> Int :
+;------------ Helper Functions --------------
+defn int-width! (t:Type) -> Long :
    match(width!(t)) :
-      (w:IntWidth) : width(w)
+      (w:IntWidth) : to-long(width(w))
+      (w:LongWidth) : width(w)
       (w) : error("Non-int width")
 
-defn set-width (desired:Int,t:Type) -> Type :
+defn set-width (desired:Long,t:Type) -> Type :
    match(t) :
-      (t:UIntType) : UIntType(IntWidth(desired))
-      (t:SIntType) : SIntType(IntWidth(desired))
+      (t:UIntType) : UIntType(LongWidth(desired))
+      (t:SIntType) : SIntType(LongWidth(desired))
       (t) : error("Non-ground type")
 
-defn pad-widths-e (desired:Int,e:Expression) -> Expression :
-   defn trim (desired:Int, e:Expression) :
+defn lmax (l1:Long, l2:Long) -> Long :
+   if l1 > l2 : l1
+   else : l2
+
+;------------- Pad Widths -------------------
+
+defn pad-widths-e (desired:Long,e:Expression) -> Expression :
+   defn trim (desired:Long, e:Expression) :
      ;; println-all(["TRIM " desired " e " e])
-     DoPrim(BITS-SELECT-OP,list(e),list(desired - 1, 0),set-width(desired,type(e)))
-   defn pad (desired:Int, e:Expression) :
+     DoPrim(BITS-SELECT-OP,list(e),list(to-int(to-string(desired)) - 1, 0),set-width(desired,type(e)))
+   defn pad (desired:Long, e:Expression) :
      ;; println-all(["PAD " desired " e " e])
-     DoPrim(PAD-OP,list(e),list(desired),set-width(desired,type(e)))
-   defn trim-pad (desired:Int, e:Expression) :
+     DoPrim(PAD-OP,list(e),list(to-int $ to-string(desired)),set-width(desired,type(e)))
+   defn trim-pad (desired:Long, e:Expression) :
      val i = int-width!(type(e))
      if i > desired : trim(desired, e)
      else if i == desired : e
@@ -2221,13 +2287,13 @@ defn pad-widths-e (desired:Int,e:Expression) -> Expression :
    ;; println-all(["PAD-E " desired " " e])
    match(e) :
       (e:DoPrim) :
-         val new-desired = reduce(max, 0, map(int-width!{type(_)}, args(e)))
+         val new-desired = reduce(lmax, to-long(0), map(int-width!{type(_)}, args(e)))
          ;; println-all(["  NEW DESIRED " new-desired])
          val e* =
            if contains?([CONCAT-OP, DYN-SHIFT-RIGHT-OP, DYN-SHIFT-LEFT-OP], op(e)) :
              DoPrim(op(e), map(self-pad-widths-e, args(e)), consts(e), type(e))
            else if contains?([MUX-OP], op(e)) :
-             DoPrim(op(e), list(pad-widths-e(1, args(e)[0]), pad-widths-e(new-desired, args(e)[1]), pad-widths-e(new-desired, args(e)[2])), consts(e), type(e))
+             DoPrim(op(e), list(pad-widths-e(to-long(1), args(e)[0]), pad-widths-e(new-desired, args(e)[1]), pad-widths-e(new-desired, args(e)[2])), consts(e), type(e))
            else :
              map(pad-widths-e{new-desired,_},e)
          trim-pad(desired, e*)
@@ -2236,11 +2302,11 @@ defn pad-widths-e (desired:Int,e:Expression) -> Expression :
       (e:UIntValue) : 
          val i = int-width!(type(e))
          if i > desired : trim(desired, e)
-         else : UIntValue(value(e),IntWidth(desired))
+         else : UIntValue(value(e),LongWidth(desired))
       (e:SIntValue) : 
          val i = int-width!(type(e))
          if i > desired : trim(desired, e)
-         else : SIntValue(value(e),IntWidth(desired))
+         else : SIntValue(value(e),LongWidth(desired))
       (e) : error(to-string $ e)
 
 defn pad-widths-s (s:Stmt) -> Stmt :
