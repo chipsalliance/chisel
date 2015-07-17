@@ -408,11 +408,15 @@ object Mem {
 }
 
 class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
-  def apply(idx: Bits): T = {
+  def apply(idx: UInt): T = {
     val x = t.cloneType
     pushCommand(DefAccessor(x.defd.cid, Alias(t.cid), NO_DIR, idx.ref))
     x
   }
+
+  def read(idx: UInt): T = apply(idx)
+  def write(idx: UInt, data: T): Unit = apply(idx) := data
+
   def name = getRefForId(t.cid).name
   def debugName = t.mod.debugName + "." + getRefForId(t.cid).debugName
 }
@@ -427,11 +431,15 @@ object SeqMem {
 }
 
 class SeqMem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
-  def apply(idx: Bits): T = {
+  def apply(idx: UInt): T = {
     val x = t.cloneType
     pushCommand(DefAccessor(x.defd.cid, Alias(t.cid), NO_DIR, idx.ref))
     x
   }
+
+  def read(idx: UInt): T = apply(idx)
+  def write(idx: UInt, data: T): Unit = apply(idx) := data
+
   def name = getRefForId(t.cid).name
   def debugName = t.mod.debugName + "." + getRefForId(t.cid).debugName
 }
@@ -516,11 +524,14 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
   }
 
   def length: Int = self.size
+
+  def read(idx: UInt): T = apply(idx)
+  def write(idx: UInt, data: T): Unit = apply(idx) := data
 }
 
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
-  // def read(idx: UInt): T
-  // def write(idx: UInt, data: T): Unit
+  def read(idx: UInt): T
+  def write(idx: UInt, data: T): Unit
   def apply(idx: UInt): T
 
   def forall(p: T => Bool): Bool = (this map p).fold(Bool(true))(_&&_)
