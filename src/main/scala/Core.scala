@@ -345,9 +345,9 @@ abstract class Data(dirArg: Direction) extends Id {
     }
     wire.asInstanceOf[this.type]
   }
-  def toBits(): Bits = {
+  def toBits: UInt = {
     val elts = this.flatten
-    Cat(elts.head, elts.tail:_*)
+    Cat(elts.head, elts.tail:_*).asUInt
   }
   def makeLit(value: BigInt, width: Int): this.type = {
     val x = cloneType

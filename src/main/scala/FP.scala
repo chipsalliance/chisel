@@ -87,7 +87,7 @@ class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Eleme
     pushCommand(DefPrim(d.defd.cid, d.toType, BitsToFlo, Array(this.ref), NoLits))
     d
   }
-  override def toBits: Bits = {
+  override def toBits: UInt = {
     val d = new UInt(dir, 32)
     pushCommand(DefPrim(d.defd.cid, d.toType, FloToBits, Array(this.ref), NoLits))
     d
@@ -202,7 +202,7 @@ class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir,
     pushCommand(DefPrim(d.defd.cid, d.toType, BitsToDbl, Array(this.ref), NoLits))
     d
   }
-  override def toBits: Bits = {
+  override def toBits: UInt = {
     val d = new UInt(dir, 64)
     pushCommand(DefPrim(d.defd.cid, d.toType, DblToBits, Array(this.ref), NoLits))
     d
