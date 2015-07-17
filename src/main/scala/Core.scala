@@ -689,6 +689,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def & (other: Bits): Bits = binop(BitAndOp, other, maxWidth(other, 0))
   def | (other: Bits): Bits = binop(BitOrOp, other, maxWidth(other, 0))
   def ^ (other: Bits): Bits = binop(BitXorOp, other, maxWidth(other, 0))
+  def ## (other: Bits): Bits = Cat(this, other)
 
   def < (other: Bits): Bool = compop(LessOp, other)
   def > (other: Bits): Bool = compop(GreaterOp, other)
@@ -781,6 +782,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def & (other: UInt): UInt = binop(BitAndOp, other, maxWidth(other, 0))
   def | (other: UInt): UInt = binop(BitOrOp, other, maxWidth(other, 0))
   def ^ (other: UInt): UInt = binop(BitXorOp, other, maxWidth(other, 0))
+  def ## (other: UInt): UInt = Cat(this, other)
 
   def < (other: UInt): Bool = compop(LessOp, other)
   def > (other: UInt): Bool = compop(GreaterOp, other)
