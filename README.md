@@ -68,7 +68,7 @@ Once you have all the components in place, build and publish Chisel3:
 % sbt clean publish-local
 ```
 
-# Repos of Test Code
+## Repos of Test Code
  - Basic Chisel3 tests https://github.com/ucb-bar/chisel3-tests
 
 bin directory contains shell script wrappers that may need editing for your environment (absolute paths)
