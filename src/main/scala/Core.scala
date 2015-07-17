@@ -697,6 +697,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def != (other: Bits): Bool = compop(NotEqualOp, other)
   def <= (other: Bits): Bool = compop(LessEqOp, other)
   def >= (other: Bits): Bool = compop(GreaterEqOp, other)
+  def unary_! : Bool = this === Bits(0)
 
   private def bits_redop(op: PrimOp): Bool = {
     val d = new Bool(dir)
@@ -912,7 +913,6 @@ class Bool(dir: Direction) extends UInt(dir, 1) {
 
   def || (that: Bool): Bool = this | that
   def && (that: Bool): Bool = this & that
-  def unary_! : Bool = ~this
 }
 object Bool {
   def apply(dir: Direction) : Bool = 
