@@ -398,3 +398,16 @@ object Queue
     q.io.deq
   }
 }
+
+object PriorityEncoderOH
+{
+  private def encode(in: Seq[Bool]): UInt = {
+    val outs = Vec.tabulate(in.size)(i => UInt(BigInt(1) << i, in.size))
+    PriorityMux(in :+ Bool(true), outs :+ UInt(0, in.size))
+  }
+  def apply(in: Seq[Bool]): Vec[Bool] = {
+    val enc = encode(in)
+    Vec.tabulate(in.size)(enc(_))
+  }
+  def apply(in: Bits): UInt = encode((0 until in.getWidth).map(i => in(i)))
+}
