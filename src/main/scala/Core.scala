@@ -237,7 +237,7 @@ case class DefMemory(val id: String, val kind: Kind, val size: Int) extends Defi
 case class DefSeqMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
 case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Arg) extends Definition;
 case class DefInstance(val id: String, val module: String) extends Definition;
-case class Conditionally(val pred: Arg, val conseq: Command, val alt: Command) extends Command;
+case class Conditionally(val prep: Command, val pred: Arg, val conseq: Command, var alt: Command) extends Command;
 case class Begin(val body: Array[Command]) extends Command();
 case class Connect(val loc: Alias, val exp: Arg) extends Command;
 case class BulkConnect(val loc1: Alias, val loc2: Alias) extends Command;
@@ -1167,63 +1167,34 @@ object when {
     popScope
     cmd
   }
-  def execWhen(cond: => Bool)(block: => Unit) {
-    val pred = cond.ref
-    val cmd  = execBlock(block)
-    pushCommand(Conditionally(pred, cmd, EmptyCommand()))
-  }
   def apply(cond: => Bool)(block: => Unit): when = {
-    execWhen(cond){ block }
-    new when
+    new when(cond)( block )
   }
 }
 
 import when._
 
-class when {
+class when(cond: => Bool)(block: => Unit) {
   def elsewhen (cond: => Bool)(block: => Unit): when = {
-    this.otherwise {
-      when.execWhen(cond) { block }
-    }
-    new when
-  }
-
-  private def replaceCondition(cond: Conditionally, elsecmd: Command): Conditionally = {
-    cond.alt match {
-      // this is an elsewhen clause
-      // we have to go deeper
-      case newcond: Conditionally =>
-        Conditionally(cond.pred, cond.conseq, replaceCondition(newcond, elsecmd))
-      // if the alt is empty, we've found the end
-      case empty: EmptyCommand =>
-        Conditionally(cond.pred, cond.conseq, elsecmd)
-      // this shouldn't happen
-      case _ =>
-        throw new Exception("Cannot replace non-empty else clause")
-    }
+    pushCommands
+    val res = new when(cond) ( block )
+    this.cmd.alt = popCommands
+    res
   }
 
   def otherwise (block: => Unit) {
-    // first generate the body
-    val elsecmd = execBlock(block)
-    // now we look back and find the last Conditionally
-    val isConditionally = (x: Command) => {
-      x match {
-        case Conditionally(_, _, _) => true
-        case _ => false
-      }
-    }
-    // replace the last Conditionally with a new one with the
-    // same predicate and consequent but with the last alt replaced
-    // by the commands for the otherwise body
-    val i = commands.lastIndexWhere(isConditionally)
-    commands(i) = commands(i) match {
-      case cond: Conditionally =>
-        replaceCondition(cond, elsecmd)
-      // this should never happen
-      case _ => throw new Exception("That's not a conditionally")
-    }
+   this.cmd.alt = execBlock(block)
   }
+
+  // Capture any commands we need to set up the conditional test.
+  pushCommands
+  val pred = cond.ref
+  val prep = popCommands
+  val conseq  = execBlock(block)
+  // Assume we have an empty alternate clause.
+  //  elsewhen and otherwise will update it if that isn't the case.
+  val cmd = Conditionally(prep, pred, conseq, EmptyCommand())
+  pushCommand(cmd)
 }
 
 
@@ -1284,7 +1255,19 @@ class Emitter {
         setRefForId(mod.io.cid, e.name, true)
         "inst " + e.name + " of " + e.module
       }
-      case e: Conditionally => "when " + emit(e.pred) + " : " + withIndent{ emit(e.conseq) } + (if (e.alt.isInstanceOf[EmptyCommand]) "" else newline + "else : " + withIndent{ emit(e.alt) })
+      case e: Conditionally => {
+        val prefix = if (!e.prep.isInstanceOf[EmptyCommand]) {
+          newline + emit(e.prep) + newline
+        } else {
+          ""
+        }
+        val suffix = if (!e.alt.isInstanceOf[EmptyCommand]) {
+          newline + "else : " + newline + withIndent{ emit(e.alt) }
+        } else {
+          ""
+        }
+        prefix + "when " + emit(e.pred) + " : " + withIndent{ emit(e.conseq) } + suffix
+      }
       case e: Begin => join0(e.body.map(x => emit(x)), newline)
       case e: Connect => emit(e.loc) + " := " + emit(e.exp)
       case e: BulkConnect => emit(e.loc1) + " <> " + emit(e.loc2)
