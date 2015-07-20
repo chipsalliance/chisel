@@ -1,13 +1,13 @@
 SBT		?= sbt
 SBT_FLAGS	?= -Dsbt.log.noformat=true
 
-CHISEL_VERSION := $(shell "$(SBT)" $(SBT_FLAGS) "show version" | tail -n 1 | cut -d ' ' -f 2)
+CHISEL_VERSION = $(shell "$(SBT)" $(SBT_FLAGS) "show version" | tail -n 1 | cut -d ' ' -f 2)
 
 SRC_DIR	?= .
 CHISEL_BIN ?= $(SRC_DIR)/bin
 export CHISEL_BIN
 
-$(info Build Chisel $(CHISEL_VERSION))
+#$(info Build Chisel $(CHISEL_VERSION))
 
 SYSTEMC ?= $(SRC_DIR)/../../systemc/systemc-2.3.1
 CHISEL_JAR ?= $(SRC_DIR)/target/scala-2.11/chisel_2.11-$(CHISEL_VERSION).jar
