@@ -98,4 +98,4 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
    for x in time-table do :
       println-all(STANDARD-ERROR,[x[0] " --- " to-float(x[1] as Int) / to-float(t - start-time) "%"])
    println(STANDARD-ERROR,"==========================")
-   println(STANDARD-ERROR,"Done!")
+   println("Done!")

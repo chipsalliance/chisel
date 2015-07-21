@@ -1495,7 +1495,7 @@ defn build-tables (s:Stmt,
 defn mark-referenced (referenced?:HashTable<Symbol,True>, s:Stmt) -> False :
    defn mark-referenced-e (e:Expression) -> Expression :
       match(map(mark-referenced-e,e)) :
-         (e:Ref) : 
+         (e:WRef) : 
             referenced?[name(e)] = true
             e
          (e) : e
@@ -1506,7 +1506,7 @@ defn mark-referenced (referenced?:HashTable<Symbol,True>, s:Stmt) -> False :
 defn mark-referenced (referenced?:HashTable<Symbol,True>, sv:SymbolicValue) -> False :
    defn mark-referenced-e (e:Expression) -> Expression :
       match(map(mark-referenced-e,e)) :
-         (e:Ref) : 
+         (e:WRef) : 
             referenced?[name(e)] = true
             e
          (e) : e
@@ -1619,6 +1619,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
             val referenced? = HashTable<Symbol,True>(symbol-hash)
             for x in table do :
                mark-referenced(referenced?,value(x))
+               referenced?[key(x)] = true
             for x in decs do :
                mark-referenced(referenced?,x)
             val decs* = Vector<Stmt>()
