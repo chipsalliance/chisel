@@ -957,7 +957,7 @@ object Cat {
 object Bundle {
   val keywords = HashSet[String]("elements", "flip", "toString",
     "flatten", "binding", "asInput", "asOutput", "unary_$tilde",
-    "unary_$bang", "unary_$minus", "cloneType", "doCloneType", 
+    "unary_$bang", "unary_$minus", "cloneType", "doCloneType", "clone",
     "toUInt", "toBits",
     "toBool", "toSInt", "asDirectionless")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
