@@ -5,6 +5,7 @@
 ======== Current Tasks ========
 change parser to accept subword, but error
 --Merge with master
+put clocks on accessors
 
 Tests:
    Lowering for instance types with bundle ports
@@ -99,6 +100,10 @@ Firrtl interpreter (in scala)
 ======== Update Spec ========
 Add explanation of an instance type, ie converting from input/output to default/reverse
    also, can only be used on the right side of :=
+Write a better conditional section
+Improve node section
+Add priority of connect statements to spec
+Use source/sink instead of input/output
 Add assert statement explanation
 think about printfs
 think about subword on accessors, non-ground types
@@ -133,6 +138,7 @@ Generate a ROM, and index with cycle counter, and dynamically check any wire on 
 Variable size FIFOs
 TruthTable node
 Custom types? Parameterized Types?
+Priority encoder/Log2 nodes
 
 ======== Next Layer Components =======
 Accelerator with config registers
