@@ -252,7 +252,7 @@ defmethod print (o:OutputStream, m:InModule) :
    print(io,body(m))
 
 defmethod print (o:OutputStream, m:ExModule) :
-   print-all(o, ["exmodule " name(m) " :"])
+   print-all(o, ["extmodule " name(m) " :"])
    print-debug(o,m)
    print(o,"\n")
    val io = IndentedStream(o, 3)

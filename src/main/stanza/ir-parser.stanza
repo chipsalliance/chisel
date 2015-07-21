@@ -167,7 +167,7 @@ defsyntax firrtl :
          if not empty?(rest) :
             FPE(rest, "Expected a statement here.")
          InModule(first-info(form),name, ps, Begin(cs))
-      module = (exmodule ?name:#id! #:! (?ps:#port ... ?rest ...)) :
+      module = (extmodule ?name:#id! #:! (?ps:#port ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Expected a port here.")
          ExModule(first-info(form),name, ps)

@@ -319,25 +319,25 @@ defn remove-special-chars (c:Circuit) :
          add(n*,get-new-string(c))
       symbol-join(n*)
    defn rename-t (t:Type) -> Type :
-      match(map(rename-t,t)) :
+      match(t) :
          (t:BundleType) : BundleType $
             for f in fields(t) map :
-               Field(rename(name(f)),flip(f),type(f))
-         (e) : e
+               Field(rename(name(f)),flip(f),rename-t(type(f)))
+         (e) : map(rename-t,e)
    defn rename-e (e:Expression) -> Expression :
-      map{rename-t,_} $ match(map(rename-e,e)) :
-         (e:Ref) : Ref(rename(name(e)),type(e))
-         (e:Subfield) : Subfield(exp(e),rename(name(e)),type(e))
-         (e) : e
+      match(e) :
+         (e:Ref) : Ref(rename(name(e)),rename-t(type(e)))
+         (e:Subfield) : Subfield(exp(e),rename(name(e)),rename-t(type(e)))
+         (e) : map(rename-t,map(rename-e,e))
    defn rename-s (s:Stmt) -> Stmt :
-      map{rename-t,_} $ match(map(rename-e,s)) :
-         (s:DefWire) : DefWire(info(s),rename(name(s)),type(s))
-         (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s),clock(s),reset(s))
+      match(map(rename-e,s)) :
+         (s:DefWire) : DefWire(info(s),rename(name(s)),rename-t(type(s)))
+         (s:DefRegister) : DefRegister(info(s),rename(name(s)),rename-t(type(s)),clock(s),reset(s))
          (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
-         (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s),clock(s))
+         (s:DefMemory) : DefMemory(info(s),rename(name(s)),rename-t(type(s)) as VectorType,seq?(s),clock(s))
          (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
          (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s),acc-dir(s))
-         (s) : map(rename-s,s)
+         (s) : map(rename-t,map(rename-s,s))
 
    Circuit(info(c),modules*, main(c)) where :
       val modules* =
@@ -743,16 +743,14 @@ defn resolve-genders (c:Circuit) :
             genders[n] = g
             done? = false
             g
-         val entry = for kv in genders find :
-            key(kv) == n
+         val entry = get?(genders,n,false)
          match(entry) :
-            (e:KeyValue<Symbol,Gender>) :
-               val value = value(e)
-               if      value == UNKNOWN-GENDER and g == UNKNOWN-GENDER : g
-               else if value != UNKNOWN-GENDER and g == UNKNOWN-GENDER : value
-               else if value == UNKNOWN-GENDER and g != UNKNOWN-GENDER : force-gender(n,g)
-               else : value
-            (e:False) : force-gender(n,g)
+            (g*:Gender) :
+               if      g* == UNKNOWN-GENDER and g == UNKNOWN-GENDER : g
+               else if g* != UNKNOWN-GENDER and g == UNKNOWN-GENDER : g*
+               else if g* == UNKNOWN-GENDER and g != UNKNOWN-GENDER : force-gender(n,g)
+               else : g*
+            (g*:False) : force-gender(n,g)
             
       defn resolve-stmt (s:Stmt) -> Stmt :
          match(s) :
@@ -1281,6 +1279,12 @@ defmethod print (o:OutputStream, sv:SymbolicValue) :
       (sv: SVMux) : print-all(o, ["(" pred(sv) " ? " conseq(sv) " : " alt(sv) ")"])
       (sv: SVNul) : print(o, "SVNUL")
 
+defn map (f: Expression -> Expression, sv:SymbolicValue) -> SymbolicValue :
+   match(sv) :
+      (sv:SVMux) : SVMux(f(pred(sv)),conseq(sv),alt(sv))
+      (sv:SVExp) : SVExp(f(exp(sv)))
+      (sv:SVNul) : sv
+
 defmulti map<?T> (f: SymbolicValue -> SymbolicValue, sv:?T&SymbolicValue) -> T 
 defmethod map (f: SymbolicValue -> SymbolicValue, sv:SymbolicValue) -> SymbolicValue :
    match(sv) :
@@ -1288,15 +1292,18 @@ defmethod map (f: SymbolicValue -> SymbolicValue, sv:SymbolicValue) -> SymbolicV
       (sv) : sv
 
 defn do (f:SymbolicValue -> ?, s:SymbolicValue) -> False :
-   for x in s map :
-      f(x)
-      x
+   defn f* (sv:SymbolicValue) -> SymbolicValue : 
+      f(sv)
+      sv
+   map(f*,s)
    false
+
 defn dor (f:SymbolicValue -> ?, e:SymbolicValue) -> False :
    do(f,e)
-   for x in e map :
+   defn f* (x:SymbolicValue) -> SymbolicValue : 
       dor(f,x)
       x
+   map(f*,e)
    false
 
 defmethod equal? (a:SymbolicValue,b:SymbolicValue) -> True|False :
@@ -1328,13 +1335,13 @@ defn deepcopy (t:HashTable<Symbol,SymbolicValue>) -> HashTable<Symbol,SymbolicVa
       val t0 = HashTable<Symbol,SymbolicValue>(symbol-hash)
       for x in t do :
          t0[key(x)] = value(x)
-defn get-unique-keys (ts:List<HashTable<Symbol,SymbolicValue>>) -> Vector<Symbol> :
-   t0 where :
-      val t0 = Vector<Symbol>()
-      for v in ts do : 
-         for t in v do :
-            val duplicate? = for x in t0 any? : x == key(t)
-            if not duplicate? : add(t0,key(t))
+defn get-unique-keys (ts:List<HashTable<Symbol,SymbolicValue>>) -> Streamable<Symbol> :
+   val h = HashTable<Symbol,True>(symbol-hash)
+   for v in ts do : 
+      for t in v do :
+         h[key(t)] = true
+   keys(h)
+
 defn has-nul? (sv:SymbolicValue) -> True|False :
    var has? = false
    if sv typeof SVNul : has? = true
@@ -1484,6 +1491,33 @@ defn build-tables (s:Stmt,
       (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets,flattn,rsignals)
       (s:DefMemory|DefNode|EmptyStmt) : false
 
+
+defn mark-referenced (referenced?:HashTable<Symbol,True>, s:Stmt) -> False :
+   defn mark-referenced-e (e:Expression) -> Expression :
+      match(map(mark-referenced-e,e)) :
+         (e:Ref) : 
+            referenced?[name(e)] = true
+            e
+         (e) : e
+   do(mark-referenced{referenced?,_:Stmt},s)
+   map(mark-referenced-e,s)
+   false
+
+defn mark-referenced (referenced?:HashTable<Symbol,True>, sv:SymbolicValue) -> False :
+   defn mark-referenced-e (e:Expression) -> Expression :
+      match(map(mark-referenced-e,e)) :
+         (e:Ref) : 
+            referenced?[name(e)] = true
+            e
+         (e) : e
+   map(mark-referenced-e,sv)
+   false
+
+defn is-referenced? (referenced?:HashTable<Symbol,True>, s:Stmt) -> True|False :
+   match(s) :
+      (s:DefWire|DefRegister|DefAccessor|DefMemory|DefNode) : key?(referenced?,name(s))
+      (s:DefInstance) : true
+               
 ;--------------- Expand Whens Pass -------------------
 
 public defn expand-whens (c:Circuit) -> Circuit :
@@ -1497,7 +1531,10 @@ public defn expand-whens (c:Circuit) -> Circuit :
    
    defn expand-whens (s:Stmt, table:HashTable<Symbol,SymbolicValue>,decs:Vector<Stmt>,cons:Vector<Stmt>) -> Stmt :
       match(map(expand-whens{_,table,decs,cons},s)) : 
-         (s:DefNode|DefMemory) : add(decs,s)
+         (s:DefNode) : 
+            add(decs,s)
+         (s:DefMemory) : 
+            add(decs,s)
          (s:DefWire) : 
             add(decs,s)
             val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
@@ -1565,19 +1602,30 @@ public defn expand-whens (c:Circuit) -> Circuit :
             ;val enables = get-enables(assign,kinds)
             ;for x in enables do : enables[key(x)] = optimize(value(x))
                   
-            println-debug("====== Assigns ======")
-            for x in assign do : println-debug(x)
-            println-debug("====== Resets ======")
-            for x in resets do : println-debug(x)
+            ;println-debug("====== Assigns ======")
+            ;for x in assign do : println-debug(x)
+            ;println-debug("====== Resets ======")
+            ;for x in resets do : println-debug(x)
    
             val table = merge-resets(assign,resets,rsignals)
-            println-debug("====== Table ======")
-            for x in table do : println-debug(x)
+            ;println-debug("====== Table ======")
+            ;for x in table do : println-debug(x)
+
             val decs = Vector<Stmt>()
             val cons = Vector<Stmt>()
             expand-whens(ports(m),table,cons)
             expand-whens(body(m),table,decs,cons)
-            InModule(info(m),name(m),ports(m),Begin(append(to-list(decs),to-list(cons))))
+
+            val referenced? = HashTable<Symbol,True>(symbol-hash)
+            for x in table do :
+               mark-referenced(referenced?,value(x))
+            for x in decs do :
+               mark-referenced(referenced?,x)
+            val decs* = Vector<Stmt>()
+            for x in decs do :
+               if is-referenced?(referenced?,x) : add(decs*,x)
+               
+            InModule(info(m),name(m),ports(m),Begin(to-list(append(decs*,to-list(cons)))))
 
    val c* = Circuit(info(c),modules*, main(c)) where :
       val modules* = 

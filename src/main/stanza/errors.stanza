@@ -283,20 +283,26 @@ public defn check-high-form (c:Circuit) -> Circuit :
       map(check-high-form-t{info,_:Type},e)
       e
 
-   defn check-high-form-s (s:Stmt,names:HashTable<Symbol,True>) -> Stmt :
+   defn check-high-form-s (s:Stmt,names:HashTable<Symbol,True>,mnames:HashTable<Symbol,True>) -> Stmt :
       defn check-name (info:FileInfo,name:Symbol) -> False :
          if key?(names,name) : add(errors,NotUnique(info,name))
       map(check-high-form-t{info(s),_:Type},s)
 
-      map{check-high-form-s{_,names},_} $ { 
-         match(map(check-high-form-e{info(s),_,names},s)) :
-            (s:DefWire|DefRegister) :
+      map{check-high-form-s{_,names,mnames},_} $ { 
+         match(s) : ;map(check-high-form-e{info(s),_,names},s)) :
+            (s:DefWire) : 
                check-name(info(s),name(s))
                names[name(s)] = true
+            (s:DefRegister) :
+               check-name(info(s),name(s))
+               names[name(s)] = true
+               check-high-form-e(info(s),reset(s),names)
+               check-high-form-e(info(s),clock(s),names)
             (s:DefMemory) : 
                check-name(info(s),name(s))
                names[name(s)] = true
                if has-flip?(type(s)) : add(errors, MemWithFlip(info(s), name(s)))
+               check-high-form-e(info(s),clock(s),names)
             (s:DefInstance) : 
                if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
                   add(errors, ModuleNotDefined(info(s),name(module(s) as Ref)))
@@ -304,21 +310,34 @@ public defn check-high-form (c:Circuit) -> Circuit :
                names[name(s)] = true
             (s:DefNode) : 
                check-name(info(s),name(s))
+               check-high-form-e(info(s),value(s),names)
                names[name(s)] = true
             (s:DefAccessor) :
                check-name(info(s),name(s))
+               check-high-form-e(info(s),index(s),names)
+               check-high-form-e(info(s),source(s),names)
                names[name(s)] = true
             (s:Connect) : 
                check-valid-loc(info(s),loc(s))
+               check-high-form-e(info(s),loc(s),names)
+               check-high-form-e(info(s),exp(s),names)
             (s:BulkConnect) : 
                check-valid-loc(info(s),loc(s))
+               check-high-form-e(info(s),loc(s),names)
+               check-high-form-e(info(s),exp(s),names)
+            (s:OnReset) : 
+               check-high-form-e(info(s),loc(s),names)
+               check-high-form-e(info(s),exp(s),names)
+            (s:Conditionally) : 
+               check-high-form-e(info(s),pred(s),names)
             (s) : false
          s }()
 
    defn check-high-form-m (m:Module) -> False :
       val names = HashTable<Symbol,True>(symbol-hash)
+      val mnames = HashTable<Symbol,True>(symbol-hash)
       for m in modules(c) do :
-         names[name(m)] = true
+         mnames[name(m)] = true
       for p in ports(m) do :
          names[name(p)] = true
          ;if name(p) == `reset :
@@ -335,7 +354,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
 
       match(m) :
          (m:ExModule) : false
-         (m:InModule) : check-high-form-s(body(m),names)
+         (m:InModule) : check-high-form-s(body(m),names,mnames)
       ;match(any-prefixes?(names,to-string(sym),to-string(sym))) :
          ;(s:False) : false
          ;(s:String) : add(errors,IsPrefix(info,to-symbol(s)))
