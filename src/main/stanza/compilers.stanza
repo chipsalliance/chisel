@@ -65,6 +65,7 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       RemoveSpecialChars()
       CheckHighForm()
       CheckLowForm()
+      CheckInitialization()
       Verilog(file(c))
    ]
 
@@ -76,16 +77,25 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
    println("Compiling!")
    if PRINT-CIRCUITS : println("Original Circuit")
    if PRINT-CIRCUITS : print(c)
-   val start-time = current-time-us()
+   ;val start-time = current-time-us()
+   val start-time = to-int(to-string(current-time-us() / to-long(1000)))
    var t = start-time
-   val tables = Vector<HashTable<Symbol,HashTable<Symbol,Symbol>>>()
+   val time-table = Vector<[String,Int]>()
    for p in ls do : 
+      println-all(STANDARD-ERROR,["Starting " name(p)])
       if PRINT-CIRCUITS : println(name(p))
       c* = pass(p)(c*)
       if PRINT-CIRCUITS : print(c*)
-      val current-time = current-time-us()
-      println-all(["Finished " name(p) "\n"])
-      println-all(["Time since start: " current-time - start-time])
-      println-all(["Time for this pass: " current-time - t])
+      val current-time = to-int(to-string(current-time-us() / to-long(1000)))
+      println-all(STANDARD-ERROR,["Finished " name(p)])
+      println-all(STANDARD-ERROR,["Milliseconds since start: " current-time - start-time])
+      println-all(STANDARD-ERROR,["Milliseconds for this pass: " current-time - t])
+      println-all(STANDARD-ERROR,["\n"])
+      add(time-table,[name(p), current-time - t])
       t = current-time
-   println("Done!")
+
+   println(STANDARD-ERROR,"===== Time Breakdown =====")
+   for x in time-table do :
+      println-all(STANDARD-ERROR,[x[0] " --- " to-float(x[1] as Int) / to-float(t - start-time) "%"])
+   println(STANDARD-ERROR,"==========================")
+   println(STANDARD-ERROR,"Done!")

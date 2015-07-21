@@ -7,6 +7,7 @@ public defmethod info! (x:?) : FileInfo()
 
 public val vector-expand-delin = `$
 public val bundle-expand-delin = `$
+public val module-expand-delin = `$
 public val scope-delin = `%
 public val temp-delin = `!
 public val inline-delin = `^
@@ -29,6 +30,8 @@ public definterface Width
 public defstruct UnknownWidth <: Width
 public defstruct IntWidth <: Width :
    width: Int
+public defstruct LongWidth <: Width :
+   width : Long
 
 public definterface PrimOp
 public val ADD-OP = new PrimOp
@@ -174,15 +177,16 @@ public defstruct Port :
 public definterface Module
 public defmulti name (m:Module) -> Symbol
 public defmulti ports (m:Module) -> List<Port>
+public defmulti info (m:Module) -> FileInfo
 
 public defstruct InModule <: Module :
-   info: FileInfo
+   info: FileInfo with: (as-method => true)
    name: Symbol with: (as-method => true)
    ports: List<Port> with: (as-method => true)
    body: Stmt
 
 public defstruct ExModule <: Module :
-   info: FileInfo
+   info: FileInfo with: (as-method => true)
    name: Symbol with: (as-method => true)
    ports: List<Port> with: (as-method => true)
 

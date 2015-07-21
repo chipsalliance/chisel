@@ -13,12 +13,13 @@ public defmethod name (b:Verilog) -> String : "To Verilog"
 public defmethod short-name (b:Verilog) -> String : "To Verilog"
 
 ;============ Utilz =============
-defn width! (w:Width) -> Int :
+defn width! (w:Width) -> Long :
    match(w) : 
-      (w:IntWidth) : width(w)
+      (w:IntWidth) : to-long(width(w))
+      (w:LongWidth) : width(w)
       (w) : error("Non-supported width type.")
 
-defn width! (t:Type) -> Int :
+defn width! (t:Type) -> Long :
    match(t) :
       (t:UIntType) : width!(width(t))
       (t:SIntType) : width!(width(t))
@@ -28,6 +29,9 @@ defn emit (w:Width) -> String :
    match(w) : 
       (w:IntWidth) : 
          if width(w) >= 1 : string-join $ ["[" width(w) - 1 ":0]"] ;TODO check if need to special case 0 or 1 width wires
+         else : ""
+      (w:LongWidth) : 
+         if width(w) >= to-long(1) : string-join $ ["[" width(w) - to-long(1) ":0]"] ;TODO check if need to special case 0 or 1 width wires
          else : ""
 
       (w) : error("Non-supported width type.")
@@ -41,7 +45,7 @@ defn get-width (t:Type) -> String :
 
 defn remove-subfield (e:Expression) -> Expression :
    match(map(remove-subfield,e)) :
-      (e:Subfield) : Ref(to-symbol $ string-join $ [emit(exp(e)) "_" name(e)],type(e))
+      (e:Subfield) : Ref(to-symbol $ string-join $ [emit(exp(e)) bundle-expand-delin name(e)],type(e))
       (e) : e
 
 ;============ Verilog Backend =============
@@ -90,10 +94,10 @@ defn emit (e:Expression) -> String :
             PAD-OP : 
                val x = args(e)[0]
                val w = width!(type(x))
-               val diff = consts(e)[0] - w
-               if w == 0 : [ emit(x) ]
+               val diff = (to-long(consts(e)[0]) - w)
+               if w == to-long(0) : [ emit(x) ]
                else : 
-                  if type(e) typeof SIntType : ["{{" diff "{" emit(x) "[" w - 1 "]}}, " emit(x) " }"]
+                  if type(e) typeof SIntType : ["{{" diff "{" emit(x) "[" w - to-long(1) "]}}, " emit(x) " }"]
                   else : ["{{" diff "'d0 }, " emit(x) " }"]
             AS-UINT-OP : 
                ["$unsigned(" emit(args(e)[0]) ")"]
@@ -207,7 +211,7 @@ defn emit-module (m:InModule) :
             inst-ports[sym] = Vector<Streamable>()
             insts[sym] = name(module(s) as Ref)
             for f in fields(type(module(s)) as BundleType) do :
-               val n* = to-symbol $ string-join $ [sym "_" name(f)]
+               val n* = to-symbol $ string-join $ [sym bundle-expand-delin name(f)]
                add(wires,["wire " get-width(type(f)) " " n* ";"])
                add(inst-ports[sym], ["." name(f) "( " n* " )"])
                if flip(f) == REVERSE :

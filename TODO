@@ -16,8 +16,6 @@ Tests:
 
 fix expand-whens to have correct semantics
 update high/low firrtl checks
-add efficient prefix checker 
-need a multi-clock domain example
 need an annotation example
 move width inference earlier (required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits)
 Temp elimination needs to count # uses
@@ -26,8 +24,15 @@ Check for recursively defined instances
 Names in bundles must be unique
 Fix reset scope
 Scaling
-Do name-mangling differently, use _xEF or something like that
-Add alpha transform pass
+Adam, could you add the following to firrtl (the program)
+ - exit(0) on success, exit(1) on any failure
+ - diagnostic messages (as distinct from transformed firrtl (the code)) should go to stderr
+ - a “-“ as a file indicates stdin for input or stdout for output so:
+    firrtl -i - -o - fir -X flo
+ operates like a filter.
+ - and we should also support:
+    firrtl -X flo < foo.fir > foo.flo
+ (another more common filter form).
 
 ======== Verilog Backend Notes ========
 * 1) Emit module. No Parameters. Include clk and reset signals
