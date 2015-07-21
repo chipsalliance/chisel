@@ -1619,7 +1619,8 @@ public defn expand-whens (c:Circuit) -> Circuit :
             val referenced? = HashTable<Symbol,True>(symbol-hash)
             for x in table do :
                mark-referenced(referenced?,value(x))
-               referenced?[key(x)] = true
+               if value(x) != SVNul() :
+                  referenced?[key(x)] = true
             for x in decs do :
                mark-referenced(referenced?,x)
             val decs* = Vector<Stmt>()

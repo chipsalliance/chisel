@@ -82,12 +82,12 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
    var t = start-time
    val time-table = Vector<[String,Int]>()
    for p in ls do : 
-      println-all(STANDARD-ERROR,["Starting " name(p)])
+      println-all(STANDARD-OUTPUT,["Starting " name(p)])
       if PRINT-CIRCUITS : println(name(p))
       c* = pass(p)(c*)
       if PRINT-CIRCUITS : print(c*)
       val current-time = to-int(to-string(current-time-us() / to-long(1000)))
-      println-all(STANDARD-ERROR,["Finished " name(p)])
+      println-all(STANDARD-OUTPUT,["Finished " name(p)])
       println-all(STANDARD-ERROR,["Milliseconds since start: " current-time - start-time])
       println-all(STANDARD-ERROR,["Milliseconds for this pass: " current-time - t])
       println-all(STANDARD-ERROR,["\n"])
