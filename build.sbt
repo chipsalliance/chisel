@@ -1,6 +1,6 @@
 organization := "edu.berkeley.cs"
 
-version := "0.1"
+version := "3.0"
 
 name := "Chisel"
 
