@@ -72,10 +72,10 @@ FIRRTL represents the formalized elaborated graph that the Chisel DSL produces, 
 By including complicated constructs like vector types, bundle types, and when statements in FIRRTL, the Chisel/Scala front-end can be very light-weight.
 In addition, other front-ends written in languages other than Scala could be simple to write and increase external adoption.
 
-Lowered FIRRTL represents a simplified FIRRTL circuit with structural invariants, making it essentially a netlist.
+Lowered FIRRTL (LoFIRRTL) represents a simplified FIRRTL circuit with structural invariants, making it essentially a netlist.
 This form enables straightforward translation into another language (e.g., Verilog) by a light-weight backend.
 
-By defining low FIRRTL as a structured subset of FIRRTL, an external user can write a transformational pass whose input is restricted, but whose output is full-featured.
+By defining LoFIRRTL as a structured subset of FIRRTL, an external user can write a transformational pass whose input is restricted, but whose output is full-featured.
 After a custom pass, the resulting circuit should undergo lowering prior to passing it to a backend or another custom pass.
 
 \section{Acknowledgements - IN PROGRESS}
@@ -102,12 +102,12 @@ We'd also like to thank our sponsors XXXX, and the University of California, Ber
 \pd{orientation}&=     &\kws{default} \vert \kws{reverse}                                             &\text{Orientation}\\
 \pd{width}      &=     &\ints \vert \kw{?}                                                            &\text{Known/Unknown Integer Width}\\
 \pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
-                &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \ids , \pds{exp}                      &\text{Register Declaration}\\
-                &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \ids                                  &\text{Sequential Memory Declaration}\\
-                &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \ids                                  &\text{Combinational Memory Declaration}\\
+                &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \pds{exp} , \pds{exp}                 &\text{Register Declaration}\\
+                &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \pds{exp}                             &\text{Sequential Memory Declaration}\\
+                &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \pds{exp}                             &\text{Combinational Memory Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
-                &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}]                       &\text{Accessor Declaration}\\
+                &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}] , \pds{exp}           &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
                 &\vert &\info \kw{onreset} \pd{exp} \kw{:=} \pd{exp}                                  &\text{OnReset Connect}\\
                 &\vert &\info \pd{exp} \kw{$<>$} \pd{exp}                                             &\text{Bulk Connect}\\
@@ -231,7 +231,7 @@ Both unsigned and signed integer types require a given bit width, which may be s
 Unknown widths are a declaration for the width to be computed by the FIRRTL width inferencer, instead of manually given by the programmer.
 Zero-valued widths are currently not supported, but future versions will likely support them.
 
-Clock types have a restricted usage, where they can only be connected to other clock types or be referenced to in the \kws{reg}, \kws{cmem}, \kws{smem}, and \kws{inst} declarations, as explained in Section \ref{statements}.
+Clock types have a restricted usage, where they can only be connected to other clock types or be referenced to in the \kws{reg}, \kws{accessor}, and \kws{inst} declarations, as explained in Section \ref{statements}.
 They cannot be used in primitive operations.
 
 \subsection{Vector Types}
@@ -314,17 +314,17 @@ The onreset statement is used to specify the initialization value for a register
 A memory is a stateful circuit element containing multiple elements.
 Unlike registers, memories can {\em only} be read from or written to through {\em accessors}.
 Memories always have a synchronous write, but can either be declared to be read combinatorially or synchronously.
-A synchronously read memory with a given name, type and clock reference can be instantiated with the following statement.
+A synchronously read memory with a given name, and type can be instantiated with the following statement.
 \[
 \begin{aligned}
-\kw{smem} \text{name } \kw{:} \pds{type},\pds{clk} \\
+\kw{smem} \text{name } \kw{:} \pds{type} \\
 \end{aligned}
 \]
 
-A combinatorially read memory with a given name, type and clock reference can be instantiated with the following statement.
+A combinatorially read memory with a given name, and type can be instantiated with the following statement.
 \[
 \begin{aligned}
-\kw{cmem} \text{name } \kw{:} \pds{type},\pds{clk} \\
+\kw{cmem} \text{name } \kw{:} \pds{type} \\
 \end{aligned}
 \]
 
@@ -349,11 +349,11 @@ Consequentially, their expression cannot be a bundle type with any reversed fiel
 Accessors are used for either connecting to or from a vector-typed expression, from some {\em variable} index.
 \[
 \begin{aligned}
-&\pd{dir} \kw{accessor} \text{name} = \pds{exp}[\text{index}] \\
+&\pd{dir} \kw{accessor} \text{name} = \pds{exp}[\text{index}] \pds{,clk} \\
 &\pd{dir}        =     \kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr} \\
 \end{aligned}
 \]
-Given an accessor direction, a name, an expression to access, and the index at which to access, the above statement creates an accessor that may be used for connecting to or from the expression.
+Given an accessor direction, a name, an expression to access, the index at which to access, and the clock domain it is in, the above statement creates an accessor that may be used for connecting to or from the expression.
 The expression must have a vector type, and the index must be a variable of UInt type.
 
 A read, write, and inferred accessor is conceptually one-way; it must be consistently used to connect to, or to connect from, but not both.
@@ -369,8 +369,8 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 &\kw{wire} i : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
 &\kw{wire} j : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
 &\kw{cmem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$}[10] \\
-&\kw{read} \kw{accessor} reader = m[i] \\
-&\kw{write} \kw{accessor} writer = m[j] \\
+&\kw{read} \kw{accessor} reader = m[i] , clk \\
+&\kw{write} \kw{accessor} writer = m[j] , clk \\
 &writer := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
 &\kw{node} temp = reader \\
 \end{aligned}
@@ -1039,7 +1039,7 @@ Regardless of the type of the operand, the resultant value is a $n$-bit unsigned
 
 \section{FIRRTL Forms}
 
-To simplify the writing of transformation passes, any FIRRTL implementation will provide a {\em resolving} pass, which resolves all types, widths, and checks the legality of the circuit, and a {\em lowering} pass, which rewrites any FIRRTL circuit into an equivalent {\em lowered form}.
+To simplify the writing of transformation passes, any FIRRTL implementation will provide a {\em resolving} pass, which resolves all types, widths, and checks the legality of the circuit, and a {\em lowering} pass, which rewrites any FIRRTL circuit into an equivalent {\em lowered form}, or LoFIRRTL.
 
 \subsection{Resolved Form}
 
@@ -1047,7 +1047,7 @@ The resolved form is guaranteed to be well-formed, meaning all restrictions to a
 
 \subsection{Lowered Form}
 
-The lowered form is a structured subset of FIRRTL, making it a minimal representation that is convenient for low-level transforms. 
+The lowered form, LoFIRRTL, is a structured subset of FIRRTL, making it a minimal representation that is convenient for low-level transforms. 
 
 The body of a lowered module consists of a list of declarations, connect statements, and {\em predicated single connect statements}.
 A predicated single connect statement is a conditional statement containing a single connect statement and no else branch.
@@ -1066,7 +1066,7 @@ The following circuit is lowered:
 \end{aligned}
 \]
 
-The following restrictions also hold for modules in lowered form.
+The following restrictions also hold for modules in LoFIRRTL.
 
 \begin{itemize}
 \item \kws{No Nested Expressions} : 
@@ -1082,21 +1082,25 @@ This connect could be a predicated single connect.
 Other than predicated single connect statements, no other conditional statements are allowed.
 \item \kws{Inlined Lowered Form} :
 A further (and optional) pass provided by FIRRTL is the inlining pass, which recursively inlines all instances in the top-level module until the top-level module is the only remaining module in the circuit.
-Inlined lowered form is essentially a flat netlist which specifies every component used in a circuit and their input connections. 
+Inlined LoFIRRTL is essentially a flat netlist which specifies every component used in a circuit and their input connections. 
 \end{itemize}
 
 \section{Annotations - IN PROGRESS}
+Supporting annotations is a critical piece of FIRRTL, yet is a very difficult problem to solve properly.
+We are in the experimental phase of supporting annotations, and our philosophy is outlined below.
+It remains to be seen whether our philosophy is correct - if not, we will certainly devise a new strategy.
+
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Writing a correct compiler is difficult.
-\item To make it easier, make things as brittle as possible
-\item If annotations are kept in the FIRRTL graph, it is unclear how they propagate.
-\item If improperly propagated, you either have annotations where they shouldn't be, or lack annotations where they should be.
-\item This is impossible to detect, so turns into a silent failure
-\item If annotations are used for actual manipulations of circuits later on, this could be the cause of a bug that is exceptionally hard to solve
-\item Thus, annotation producer/consumer keeps external data structure mapping names to annotations
-\item Pass writers must do all they can to preserve names - can provide transform for names that annotation users can run on their tables
-\item If a name is mangled, the annotation consumer can ERROR. Then, they need to look at the pass to see how their annotations should propagate.
+\item Writing a correct circuit is difficult - avoid silent failures at all costs.
+\item If annotations are held in the graph, every pass must properly propagate all possible annotations.
+\item A pass incorrectly propagating an annotation cannot be easily detected (silent failure).
+\item If annotations are held in an exteral data structure mapping names to annotations, the structure must updated after every pass.
+\item Incorrectly updating the structure will cause a mismatching of names between circuit components and annotation entries, which is easily detected.
+\item Thus, we feel the ability to detect failure outweighs the additional burden on annotation writers.
 \end{enumerate}
+
+To implement this philosophy, we encourage passes to either preserve names in the graph, use simple algorithms to transform names, or provide a rename table after a pass.
+The annotation writer then updates their data structure accordingly.
 
 \section{Concrete Syntax}\label{concrete}
 This section describes the text format for FIRRTL that is supported by the provided readers and writers.
@@ -1177,10 +1181,10 @@ The following examples demonstrate declaring wires, registers, memories, nodes, 
 \begin{verbatim}
 wire mywire : UInt<10> 
 reg myreg : UInt<10>, clk, reset 
-cmem mycombmem : UInt<10>[16], clk2 
-smem myseqmem : UInt<10>[16], clk2 
+cmem mycombmem : UInt<10>[16]
+smem myseqmem : UInt<10>[16]
 inst myinst : MyModule 
-infer accessor myaccessor = e[i] 
+infer accessor myaccessor = e[i],clk
 \end{verbatim}
 
 The connect statement is specified using the \verb|:=| operator.
@@ -1286,7 +1290,28 @@ The following design decisions could potentially be changed in future spec revis
 
 \section{Questions and Answers}
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Why allow operations to allow inputs of differing widths? 
+\item Why are there four connect operators?
+Each is needed for a particular use case - the better question is why did we chose to create multiple connect statements instead of other constructs.
+Statements, as opposed to expressions, are very restricted in how they nest.
+Thus, the desired supported behavior (bulk connects, resets, and subword assignments) will never be used in an arbitrary nested expression where the semantics would be unintuitive.
+In addition, both the implementation and the user only needs to look at the single statement to implement it.
+
+\item Aren't there a lot of idiosyncrasies in FIRRTL?
+The FIRRTL specification is an ongoing process, and as we push more code through it, it is likely to change.
+In our opinion, the idiosyncrasies are necessary for a cohesive design (and all languages have idiosyncrasies).
+It remains an unknown whether there are too many idiosyncrasies for frontend writers.
+Because the spec is not frozen, we can certainly adapt it if necessary.
+However, at this point, we just need to push more code through.
+
+\item Why have a separate construct for initializing a register?
+The problem is initializing a register with a vector/bundle type, where a subset of the fields are initialized.
+If the initial value is kept with the declaration, we would need a new construct to specify a subset of values of ALL (potentially) nested vector/bundle types.
+It makes much more sense to separate initialization from the declaration, and use something like a := to initialize the fields/vector sub-components of the register.
+The next question is why not just have users specify the initial value using their own "when reset :" statement.
+This doesn't work because of last connect semantics - the user could easily clobber their initialization when statement without knowing.
+Creating an onreset statement does two things: (1) specifies to the USER exactly what the reset value will be for any sub-component of a register, (2) encapsulates the reset value in a way that is easy for the implementation to special case it (so it doesn't get clobbered).
+
+\item Why do operations allow inputs of differing widths? 
 We tried restricting widths, but it actually complicated width inference and made supporting front-ends with more lax width restrictions very difficult.
 Because there is perfectly well defined semantics, we opted to allow differing widths.
 In line with the Linux "funnel" philosophy of being accepting with your inputs and restrictive with your outputs.
@@ -1302,12 +1327,12 @@ You need to declare wires inside whens - because generators could run within a w
 You should always be able to pull them into a module if we want.
 Now its inconsistent if you can't declare registers in the scope.
 
-\item Why not just have low FIRRTL?
-Low FIRRTL leaves out general when usage, vector and bundle types, and requires a single connect.
+\item Why not just have LoFIRRTL?
+LoFIRRTL leaves out general when usage, vector and bundle types, and requires a single connect.
 For performance backends, we will need to emit arrays and structs.
 If there is only a lowered circuit, we lose that ability.
-We cannot simply add vector/bundle types to low FIRRTL as front-ends cannot easily remove whens without removing the complex types as well.
-Instead, one will need the expressiveness in FIRRTL to write a performant backend which does not need to operate on low FIRRTL.
+We cannot simply add vector/bundle types to LoFIRRTL as front-ends cannot easily remove whens without removing the complex types as well.
+Instead, one will need the expressiveness in FIRRTL to write a performant backend which does not need to operate on LoFIRRTL.
 
 \item Why have asserts? 
 Up for debate.
@@ -1321,6 +1346,7 @@ We do the same thing that is done in Java, and is standard programming language 
 
 \item Why did/didn't you include XXX primop?
 Up for debate.
+
 
 \end{enumerate}
 
