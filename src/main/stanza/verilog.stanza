@@ -197,17 +197,14 @@ defn emit-module (m:InModule) :
                add(my-clk-update,[sym " <= " emit(cons[sym]) ";"])
             updates[get-name(clock(s))] = my-clk-update
          (s:DefMemory) :
-            println(STANDARD-ERROR, s)
             val vtype = type(s) as VectorType
             add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) "];"])
             add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
             add(inits,["  " sym "[initvar] = {" width!(type(vtype)) "{$random}};"])
          (s:DefNode) :
-            println(STANDARD-ERROR, s)
             add(wires,["wire " get-width(type(value(s))) " " sym ";"])
             add(assigns,["assign " sym " = " emit(value(s)) ";"])
          (s:DefInstance) : 
-            println(STANDARD-ERROR, s)
             inst-ports[sym] = Vector<Streamable>()
             insts[sym] = name(module(s) as Ref)
             for f in fields(type(module(s)) as BundleType) do :
