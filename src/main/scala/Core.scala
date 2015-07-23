@@ -476,9 +476,12 @@ abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
 }
 
 class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
-  val elt0 = elts.head
-  val self = new ArrayBuffer[T]()
-  self ++= elts
+  private val self = elts.toIndexedSeq
+  private val elt0 = elts.head
+
+  def <> (that: Iterable[T]): Unit =
+    this <> Vec(that).asInstanceOf[Data]
+
   override def isReg = elt0.isReg
   override def isFlip = {
     val isSubFlip = elt0.isFlip
