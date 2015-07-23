@@ -411,3 +411,147 @@ object PriorityEncoderOH
   }
   def apply(in: Bits): UInt = encode((0 until in.getWidth).map(i => in(i)))
 }
+
+class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
+  val in  = Vec(Decoupled(gen), n).flip
+  val out = Decoupled(gen)
+  val chosen = UInt(OUTPUT, log2Up(n))
+}
+
+object ArbiterCtrl
+{
+  def apply(request: Seq[Bool]): Seq[Bool] = {
+    Bool(true) +: (1 until request.length).map(i => !request.slice(0, i).foldLeft(Bool(false))(_ || _))
+  }
+}
+
+abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None) extends Module {
+  require(isPow2(count))
+  def grant: Seq[Bool]
+  val io = new ArbiterIO(gen, n)
+  val locked  = if(count > 1) Reg(init=Bool(false)) else Bool(false)
+  val lockIdx = if(count > 1) Reg(init=UInt(n-1)) else UInt(n-1)
+  val chosen = Wire(UInt(width = log2Up(n)))
+
+  for ((g, i) <- grant.zipWithIndex)
+    io.in(i).ready := Mux(locked, lockIdx === UInt(i), g) && io.out.ready
+  io.out.valid := io.in(chosen).valid
+  io.out.bits := io.in(chosen).bits
+  io.chosen := chosen
+
+  if(count > 1){
+    val cnt = Reg(init=UInt(0, width = log2Up(count)))
+    val cnt_next = cnt + UInt(1)
+    when(io.out.fire()) {
+      when(needsLock.map(_(io.out.bits)).getOrElse(Bool(true))) {
+        cnt := cnt_next
+        when(!locked) {
+          locked := Bool(true)
+          lockIdx := Vec(io.in.map{ in => in.fire()}).indexWhere{i: Bool => i}
+        }
+      }
+      when(cnt_next === UInt(0)) {
+        locked := Bool(false)
+      }
+    }
+  }
+}
+
+class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None) extends LockingArbiterLike[T](gen, n, count, needsLock) {
+  lazy val last_grant = Reg(init=UInt(0, log2Up(n)))
+  override def grant: Seq[Bool] = {
+    val ctrl = ArbiterCtrl((0 until n).map(i => io.in(i).valid && UInt(i) > last_grant) ++ io.in.map(_.valid))
+    (0 until n).map(i => ctrl(i) && UInt(i) > last_grant || ctrl(i + n))
+  }
+
+  var choose = UInt(n-1)
+  for (i <- n-2 to 0 by -1)
+    choose = Mux(io.in(i).valid, UInt(i), choose)
+  for (i <- n-1 to 1 by -1)
+    choose = Mux(io.in(i).valid && UInt(i) > last_grant, UInt(i), choose)
+  chosen := Mux(locked, lockIdx, choose)
+
+  when (io.out.fire()) { last_grant := chosen }
+}
+
+class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None) extends LockingArbiterLike[T](gen, n, count, needsLock) {
+  def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
+
+  var choose = UInt(n-1)
+  for (i <- n-2 to 0 by -1) {
+    choose = Mux(io.in(i).valid, UInt(i), choose)
+  }
+  chosen := Mux(locked, lockIdx, choose)
+}
+
+/** Hardware module that is used to sequence n producers into 1 consumer.
+  Producers are chosen in round robin order.
+
+  Example usage:
+    val arb = new RRArbiter(2, UInt())
+    arb.io.in(0) <> producer0.io.out
+    arb.io.in(1) <> producer1.io.out
+    consumer.io.in <> arb.io.out
+  */
+class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
+
+/** Hardware module that is used to sequence n producers into 1 consumer.
+ Priority is given to lower producer
+
+ Example usage:
+   val arb = Module(new Arbiter(2, UInt()))
+   arb.io.in(0) <> producer0.io.out
+   arb.io.in(1) <> producer1.io.out
+   consumer.io.in <> arb.io.out
+ */
+class Arbiter[T <: Data](gen: T, n: Int) extends LockingArbiter[T](gen, n, 1)
+
+/** linear feedback shift register
+  */
+object LFSR16
+{
+  def apply(increment: Bool = Bool(true)): UInt =
+  {
+    val width = 16
+    val lfsr = Reg(init=UInt(1, width))
+    when (increment) { lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1,1)) }
+    lfsr
+  }
+}
+
+/** A hardware module that delays data coming down the pipeline
+  by the number of cycles set by the latency parameter. Functionality
+  is similar to ShiftRegister but this exposes a Pipe interface.
+
+  Example usage:
+    val pipe = new Pipe(UInt())
+    pipe.io.enq <> produce.io.out
+    consumer.io.in <> pipe.io.deq
+  */
+object Pipe
+{
+  def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): ValidIO[T] = {
+    if (latency == 0) {
+      val out = Valid(enqBits)
+      out.valid <> enqValid
+      out.bits <> enqBits
+      out
+    } else {
+      val v = Reg(Bool(), next=enqValid, init=Bool(false))
+      val b = RegEnable(enqBits, enqValid)
+      apply(v, b, latency-1)
+    }
+  }
+  def apply[T <: Data](enqValid: Bool, enqBits: T): ValidIO[T] = apply(enqValid, enqBits, 1)
+  def apply[T <: Data](enq: ValidIO[T], latency: Int = 1): ValidIO[T] = apply(enq.valid, enq.bits, latency)
+}
+
+class Pipe[T <: Data](gen: T, latency: Int = 1) extends Module
+{
+  val io = new Bundle {
+    val enq = Valid(gen).flip
+    val deq = Valid(gen)
+  }
+
+  io.deq <> Pipe(io.enq, latency)
+}
