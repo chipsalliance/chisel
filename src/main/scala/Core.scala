@@ -712,7 +712,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def andR = (this === Bits(-1))
   def xorR = bits_redop(XorReduceOp)
 
-  def bitSet(off: BigInt, dat: Bits): Bits = {
+  def bitSet(off: UInt, dat: Bits): Bits = {
     val bit = UInt(1, 1) << off
     this & ~bit | dat.toSInt & bit
   }
