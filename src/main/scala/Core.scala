@@ -412,32 +412,30 @@ class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VEC
 
   def read(idx: UInt): T = apply(idx)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
+  def write(idx: UInt, data: T, mask: T): Unit = {
+    // This is totally fucked, but there's no true write mask support yet
+    val mask1 = mask.toBits
+    write(idx, t.fromBits((read(idx).toBits & ~mask1) | (data.toBits & mask1)))
+  }
 
   def name = getRefForId(t.cid).name
   def debugName = t.mod.debugName + "." + getRefForId(t.cid).debugName
 }
 
 object SeqMem {
-  def apply[T <: Data](t: T, size: Int): SeqMem[T] = {
-    val mt  = t.cloneType
-    val mem = new SeqMem(mt, size)
-    pushCommand(DefSeqMemory(mt.defd.cid, mt.toType, size))
-    mem
-  }
+  def apply[T <: Data](t: T, size: Int): SeqMem[T] =
+    new SeqMem(t, size)
 }
 
-class SeqMem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
-  def apply(idx: UInt): T = {
-    val x = t.cloneType
-    pushCommand(DefAccessor(x.defd.cid, Alias(t.cid), NO_DIR, idx.ref))
-    x
-  }
+// For now, implement SeqMem in terms of Mem
+class SeqMem[T <: Data](t: T, n: Int) {
+  private val mem = Mem(t, n)
 
-  def read(idx: UInt): T = apply(idx)
-  def write(idx: UInt, data: T): Unit = apply(idx) := data
+  def read(addr: UInt): T = mem.read(Reg(next = addr))
+  def read(addr: UInt, enable: Bool): T = mem.read(RegEnable(addr, enable))
 
-  def name = getRefForId(t.cid).name
-  def debugName = t.mod.debugName + "." + getRefForId(t.cid).debugName
+  def write(addr: UInt, data: T): Unit = mem.write(addr, data)
+  def write(addr: UInt, data: T, mask: T): Unit = mem.write(addr, data, mask)
 }
 
 object Vec {
@@ -1125,8 +1123,6 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
               setRefForId(bundle.cid, name)
             }
           case mem: Mem[_] =>
-            setRefForId(mem.t.cid, name)
-          case mem: SeqMem[_] =>
             setRefForId(mem.t.cid, name)
           case vec: Vec[_] =>
             setRefForId(vec.cid, name)
