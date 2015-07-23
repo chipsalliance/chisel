@@ -94,7 +94,7 @@ class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Eleme
   }
   def toType: Kind = FloType(isFlip)
   def cloneType: this.type = new Flo(dir).asInstanceOf[this.type]
-  def flatten: Array[Bits] = Array[Bits](toBits)
+  def flatten: IndexedSeq[Bits] = IndexedSeq(toBits)
 
   def fromInt(x: Int): Flo = 
     Flo(x.toFloat).asInstanceOf[this.type]
@@ -209,7 +209,7 @@ class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir,
   }
   def toType: Kind = DblType(isFlip)
   def cloneType: this.type = new Dbl(dir).asInstanceOf[this.type]
-  def flatten: Array[Bits] = Array[Bits](toBits)
+  def flatten: IndexedSeq[Bits] = IndexedSeq(toBits)
 
   def fromInt(x: Int): this.type = 
     Dbl(x.toDouble).asInstanceOf[this.type]

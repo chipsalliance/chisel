@@ -215,7 +215,7 @@ class ManualTester[+T <: Module]
     longBitsToDouble(peekBits(data).toLong)
   }
 
-  def peek(data: Aggregate /*, off: Int = -1 */): Array[BigInt] = {
+  def peek(data: Aggregate /*, off: Int = -1 */): IndexedSeq[BigInt] = {
     data.flatten.map(peek(_))
   }
 

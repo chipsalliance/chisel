@@ -330,15 +330,14 @@ abstract class Data(dirArg: Direction) extends Id {
   def setLitValue(x: LitArg) {  }
   def floLitValue: Float = intBitsToFloat(litValue().toInt)
   def dblLitValue: Double = longBitsToDouble(litValue().toLong)
-  def getWidth: Int
+  def getWidth: Int = flatten.map(_.getWidth).reduce(_ + _)
   def maxWidth(other: Data, amt: BigInt): Int = -1
   def sumWidth(amt: BigInt): Int = -1
   def sumWidth(other: Data, amt: BigInt): Int = -1
-  def flatten: Array[Bits]
+  def flatten: IndexedSeq[Bits]
   def fromBits(n: Bits): this.type = {
-    val res = this.cloneType
     var i = 0
-    val wire = Wire(res)
+    val wire = Wire(this.cloneType)
     for (x <- wire.flatten.reverse) {
       x := n(i + x.getWidth-1, i)
       i += x.getWidth
@@ -349,11 +348,8 @@ abstract class Data(dirArg: Direction) extends Id {
     val elts = this.flatten.reverse
     Cat(elts.head, elts.tail:_*).asUInt
   }
-  def makeLit(value: BigInt, width: Int): this.type = {
-    val x = cloneType
-    x.fromBits(Bits(value, width))
-    x
-  }
+  def makeLit(value: BigInt, width: Int): this.type =
+    this.fromBits(Bits(value, width))
 
   def toPort: Port = Port(cid, dir, toType)
   def collectElts: Unit
@@ -513,10 +509,8 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
       i += 1;
     }
   }
-  override def flatten: Array[Bits] = 
+  override def flatten: IndexedSeq[Bits] =
     self.map(_.flatten).reduce(_ ++ _)
-  override def getWidth: Int = 
-    flatten.map(_.getWidth).reduce(_ + _)
 
   def collectElts: Unit = {
     for (i <- 0 until self.size) {
@@ -566,7 +560,7 @@ class BitPat(val value: String, val width: Int) extends Data(NO_DIR) {
   override def setDir(dir: Direction): Unit = { }
   override def toType: Kind = UIntType(UnknownWidth(), isFlip)
   override def getWidth: Int = width
-  override def flatten: Array[Bits] = Array[Bits](Bits(0))
+  override def flatten: IndexedSeq[Bits] = throw new Exception("BitPat.flatten")
   override def cloneType: this.type = 
     new BitPat(value, width).asInstanceOf[this.type]
   def fromInt(x: BigInt): BitPat = BitPat(x.toString(2), -1).asInstanceOf[this.type]
@@ -601,7 +595,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   override def cloneType : this.type = cloneTypeWidth(width)
   def fromInt(x: BigInt): this.type = makeLit(x, -1)
 
-  override def flatten: Array[Bits] = Array[Bits](this)
+  override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   final def apply(x: BigInt): Bool = {
     val d = new Bool(dir)
@@ -641,12 +635,6 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   def :=(other: Bits) = 
     pushCommand(Connect(this.lref, other.ref))
-
-  override def fromBits(n: Bits): this.type = {
-    val res = Wire(this.cloneType)
-    res := n
-    res.asInstanceOf[this.type]
-  }
 
   protected[Chisel] def unop(op: PrimOp, width: Int): this.type = {
     val d = cloneTypeWidth(width)
@@ -1008,13 +996,12 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
   def toType: BundleType = 
     BundleType(this.toPorts, isFlipVar)
 
-  override def flatten: Array[Bits] = {
+  override def flatten: IndexedSeq[Bits] = {
     collectElts
-    elts.map(_.flatten).reduce(_ ++ _)
+    elts.map(_.flatten).reduce(_ ++ _).toIndexedSeq
   }
-  override def getWidth: Int = 
-    flatten.map(_.getWidth).reduce(_ + _)
 
+  // This needs to be overhauled, perhaps with a lazy val
   val elts = ArrayBuffer[Data]()
   def collectElts: Unit = {
     elts.clear()
