@@ -801,7 +801,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   }
 
   def asSInt(): SInt = {
-    val x = SInt(width = getWidth + 1)
+    val x = SInt(width = getWidth)
     pushCommand(DefPrim(x.defd.cid, x.toType, AsSIntOp, Array(ref), NoLits))
     x
   }
