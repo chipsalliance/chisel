@@ -1,15 +1,17 @@
 package Chisel
-import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, HashMap}
+import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, HashMap, LinkedHashMap}
 import java.lang.reflect.Modifier._
 import java.lang.Double.longBitsToDouble
 import java.lang.Float.intBitsToFloat
 
 class GenSym {
-  var counter = -1
-  def next(name: String): String = {
+  private var counter = -1
+  def nextInt: Int = {
     counter += 1
-    name + "_" + counter
+    counter
   }
+  def next(name: String): String =
+    name + "_" + nextInt
 }
 
 object Builder {
@@ -278,7 +280,9 @@ import Direction._
 /// CHISEL FRONT-END
 
 abstract class Id {
-  protected[Chisel] val cid = genSym.next("id")
+  protected[Chisel] val _id = genSym.nextInt
+  protected[Chisel] val cid = "id_" + _id
+
   var isDef_ = false
   def defd: this.type = {
     isDef_ = true
@@ -332,15 +336,14 @@ abstract class Data(dirArg: Direction) extends Id {
   def setLitValue(x: LitArg) {  }
   def floLitValue: Float = intBitsToFloat(litValue().toInt)
   def dblLitValue: Double = longBitsToDouble(litValue().toLong)
-  def getWidth: Int
+  def getWidth: Int = flatten.map(_.getWidth).reduce(_ + _)
   def maxWidth(other: Data, amt: BigInt): Int = -1
   def sumWidth(amt: BigInt): Int = -1
   def sumWidth(other: Data, amt: BigInt): Int = -1
-  def flatten: Array[Bits]
+  def flatten: IndexedSeq[Bits]
   def fromBits(n: Bits): this.type = {
-    val res = this.cloneType
     var i = 0
-    val wire = Wire(res)
+    val wire = Wire(this.cloneType)
     for (x <- wire.flatten.reverse) {
       x := n(i + x.getWidth-1, i)
       i += x.getWidth
@@ -351,14 +354,10 @@ abstract class Data(dirArg: Direction) extends Id {
     val elts = this.flatten.reverse
     Cat(elts.head, elts.tail:_*).asUInt
   }
-  def makeLit(value: BigInt, width: Int): this.type = {
-    val x = cloneType
-    x.fromBits(Bits(value, width))
-    x
-  }
+  def makeLit(value: BigInt, width: Int): this.type =
+    this.fromBits(Bits(value, width))
 
   def toPort: Port = Port(cid, dir, toType)
-  def collectElts: Unit
   var isReg_ = false
   def isReg = isReg_
   def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
@@ -371,7 +370,6 @@ object Wire {
       throw new Exception("cannot infer type of Init.")
     val x = mType.cloneType
     // TODO: COME UP WITH MORE ROBUST WAY TO HANDLE THIS
-    x.collectElts
     pushCommand(DefWire(x.defd.cid, x.toType))
     if (init != null) 
       pushCommand(Connect(x.lref, init.ref))
@@ -409,7 +407,9 @@ object Mem {
   }
 }
 
-class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
+class Mem[T <: Data](protected[Chisel] val t: T, n: Int) extends VecLike[T] {
+  def length: Int = n
+  def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T = {
     val x = t.cloneType
     pushCommand(DefAccessor(x.defd.cid, Alias(t.cid), NO_DIR, idx.ref))
@@ -418,32 +418,30 @@ class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VEC
 
   def read(idx: UInt): T = apply(idx)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
+  def write(idx: UInt, data: T, mask: T): Unit = {
+    // This is totally fucked, but there's no true write mask support yet
+    val mask1 = mask.toBits
+    write(idx, t.fromBits((read(idx).toBits & ~mask1) | (data.toBits & mask1)))
+  }
 
   def name = getRefForId(t.cid).name
   def debugName = t.mod.debugName + "." + getRefForId(t.cid).debugName
 }
 
 object SeqMem {
-  def apply[T <: Data](t: T, size: Int): SeqMem[T] = {
-    val mt  = t.cloneType
-    val mem = new SeqMem(mt, size)
-    pushCommand(DefSeqMemory(mt.defd.cid, mt.toType, size))
-    mem
-  }
+  def apply[T <: Data](t: T, size: Int): SeqMem[T] =
+    new SeqMem(t, size)
 }
 
-class SeqMem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
-  def apply(idx: UInt): T = {
-    val x = t.cloneType
-    pushCommand(DefAccessor(x.defd.cid, Alias(t.cid), NO_DIR, idx.ref))
-    x
-  }
+// For now, implement SeqMem in terms of Mem
+class SeqMem[T <: Data](t: T, n: Int) {
+  private val mem = Mem(t, n)
 
-  def read(idx: UInt): T = apply(idx)
-  def write(idx: UInt, data: T): Unit = apply(idx) := data
+  def read(addr: UInt): T = mem.read(Reg(next = addr))
+  def read(addr: UInt, enable: Bool): T = mem.read(RegEnable(addr, enable))
 
-  def name = getRefForId(t.cid).name
-  def debugName = t.mod.debugName + "." + getRefForId(t.cid).debugName
+  def write(addr: UInt, data: T): Unit = mem.write(addr, data)
+  def write(addr: UInt, data: T, mask: T): Unit = mem.write(addr, data, mask)
 }
 
 object Vec {
@@ -451,7 +449,6 @@ object Vec {
     new Vec((0 until n).map(i => gen.cloneType))
   def apply[T <: Data](elts: Iterable[T]): Vec[T] = {
     val vec = new Vec[T](elts.map(e => elts.head.cloneType))
-    vec.collectElts
     val isDef = true || elts.head.isDef
     if (vec.isReg)
       throw new Exception("Vec of Reg Deprecated.")
@@ -474,17 +471,23 @@ object Vec {
 }
 
 abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
-  def cloneTypeWidth(width: Int): this.type = {
-    val res = cloneType
-    res.collectElts
-    res
-  }
+  def cloneTypeWidth(width: Int): this.type = cloneType
 }
 
-class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
-  val elt0 = elts.head
-  val self = new ArrayBuffer[T]()
-  self ++= elts
+class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
+  private val self = elts.toIndexedSeq
+  private val elt0 = elts.head
+
+  // println("BEGIN VEC NAMING")
+  for ((e, i) <- self zipWithIndex) {
+    // println("  NAME " + i + " -> " + cid)
+    setIndexForId(cid, e.cid, i)
+  }
+  // println("DONE VEC NAMING")
+
+  def <> (that: Iterable[T]): Unit =
+    this <> Vec(that).asInstanceOf[Data]
+
   override def isReg = elt0.isReg
   override def isFlip = {
     val isSubFlip = elt0.isFlip
@@ -493,7 +496,6 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
 
   def apply(idx: UInt): T = {
     val x = elt0.cloneType
-    x.collectElts
     pushCommand(DefAccessor(x.defd.cid, Alias(cid), NO_DIR, idx.ref))
     x
   }
@@ -503,15 +505,10 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
     self.map(d => d.toPort).toArray
   def toType: Kind = 
     VectorType(self.size, elt0.toType, isFlipVar)
-  override def cloneType: this.type = {
-    val v = Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
-    v.collectElts
-    v
-  }
-  override def init(dummy:Int = 0) = {
-    collectElts
+  override def cloneType: this.type = 
+    Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
+ override def init(dummy:Int = 0) = 
     for (e <- self) e.init()
-  }
   def inits (f: (Int, T, (Int, T, T) => Unit) => Unit) = {
     var i = 0
     def doInit (index: Int, elt: T, init: T) =
@@ -521,18 +518,8 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
       i += 1;
     }
   }
-  override def flatten: Array[Bits] = 
+  override def flatten: IndexedSeq[Bits] =
     self.map(_.flatten).reduce(_ ++ _)
-  override def getWidth: Int = 
-    flatten.map(_.getWidth).reduce(_ + _)
-
-  def collectElts: Unit = {
-    for (i <- 0 until self.size) {
-      val elt = self(i)
-      setIndexForId(cid, elt.cid, i)
-      elt.collectElts
-    }
-  }
 
   def length: Int = self.size
 
@@ -569,12 +556,11 @@ import Literal._
 
 class BitPat(val value: String, val width: Int) extends Data(NO_DIR) {
   def cloneTypeWidth(width: Int): this.type = cloneType
-  def collectElts: Unit = { }
   override def dir: Direction = NO_DIR
   override def setDir(dir: Direction): Unit = { }
   override def toType: Kind = UIntType(UnknownWidth(), isFlip)
   override def getWidth: Int = width
-  override def flatten: Array[Bits] = Array[Bits](Bits(0))
+  override def flatten: IndexedSeq[Bits] = throw new Exception("BitPat.flatten")
   override def cloneType: this.type = 
     new BitPat(value, width).asInstanceOf[this.type]
   def fromInt(x: BigInt): BitPat = BitPat(x.toString(2), -1).asInstanceOf[this.type]
@@ -595,7 +581,6 @@ object BitPat {
 }
 
 abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
-  def collectElts: Unit = { }
   override def getWidth: Int = width
 }
 
@@ -609,7 +594,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   override def cloneType : this.type = cloneTypeWidth(width)
   def fromInt(x: BigInt): this.type = makeLit(x, -1)
 
-  override def flatten: Array[Bits] = Array[Bits](this)
+  override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   final def apply(x: BigInt): Bool = {
     val d = new Bool(dir)
@@ -649,12 +634,6 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   def :=(other: Bits) = 
     pushCommand(Connect(this.lref, other.ref))
-
-  override def fromBits(n: Bits): this.type = {
-    val res = Wire(this.cloneType)
-    res := n
-    res.asInstanceOf[this.type]
-  }
 
   protected[Chisel] def unop(op: PrimOp, width: Int): this.type = {
     val d = cloneTypeWidth(width)
@@ -720,7 +699,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def andR = (this === Bits(-1))
   def xorR = bits_redop(XorReduceOp)
 
-  def bitSet(off: BigInt, dat: Bits): Bits = {
+  def bitSet(off: UInt, dat: Bits): Bits = {
     val bit = UInt(1, 1) << off
     this & ~bit | dat.toSInt & bit
   }
@@ -812,7 +791,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   }
 
   def asSInt(): SInt = {
-    val x = SInt(width = getWidth + 1)
+    val x = SInt(width = getWidth)
     pushCommand(DefPrim(x.defd.cid, x.toType, AsSIntOp, Array(ref), NoLits))
     x
   }
@@ -881,6 +860,7 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   def != (other: SInt): Bool = compop(NotEqualOp, other)
   def <= (other: SInt): Bool = compop(LessEqOp, other)
   def >= (other: SInt): Bool = compop(GreaterEqOp, other)
+  def abs: UInt = Mux(this < SInt(0), (-this).toUInt, this.toUInt)
 
   override def pad (other: BigInt): SInt = binop(PadOp, other, other.toInt)
 
@@ -941,31 +921,12 @@ object Bool {
 
 object Mux {
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = {
-    def genericMux[T <: Data](cond: Bool, con: T, alt: T): T = {
-      val w = Wire(alt, init = alt)
-      when (cond) {
-        w := con
-      }
-      w
+    val w = Wire(alt, init = alt)
+    when (cond) {
+      w := con
     }
-    con match {
-      case tc: Bits => 
-        alt match {
-          case ta: Bits =>
-            if (tc.isInstanceOf[UInt] != ta.isInstanceOf[UInt])
-              error("Unable to have mixed type mux CON " + con + " ALT " + alt)
-            // println("MUX COND " + cond + " CON(" + con.litValue() + ")'" + con.getWidth + " " + con + " ALT(" + alt.litValue() + ")'" + alt.getWidth + " " + alt)
-            val rb = tc.cloneTypeWidth(tc.maxWidth(ta, 0))
-            pushCommand(DefPrim(rb.defd.cid, rb.toType, MultiplexOp, Array(cond.ref, tc.ref, ta.ref), NoLits))
-            rb.asInstanceOf[T]
-          case _ =>
-            genericMux(cond, con, alt)
-        }
-      case _ =>
-        genericMux(cond, con, alt)
-    }
+    w
   }
-
 }
 
 object Cat {
@@ -995,7 +956,8 @@ object Cat {
 object Bundle {
   val keywords = HashSet[String]("elements", "flip", "toString",
     "flatten", "binding", "asInput", "asOutput", "unary_$tilde",
-    "unary_$bang", "unary_$minus", "cloneType", "toUInt", "toBits",
+    "unary_$bang", "unary_$minus", "cloneType", 
+    "toUInt", "toBits",
     "toBool", "toSInt", "asDirectionless")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
     Driver.parStack.push(p.push)
@@ -1010,74 +972,67 @@ object Bundle {
   private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
-class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
+trait BundleFinalizer extends DelayedInit {
+  def collectElts = { }
+  def delayedInit(body: => Unit) = {
+    body // evaluates the initialization code of C
+    collectElts
+  }
+}
+
+class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with BundleFinalizer {
   def toPorts: Array[Port] = 
-    elts.map(d => d.toPort).toArray
+    elements.map(_._2.toPort).toArray
   def toType: BundleType = 
     BundleType(this.toPorts, isFlipVar)
 
-  override def flatten: Array[Bits] = {
-    collectElts
-    elts.map(_.flatten).reduce(_ ++ _)
+  override def flatten: IndexedSeq[Bits] = {
+    val sortedElts = elements.values.toIndexedSeq sortWith (_._id < _._id)
+    sortedElts.map(_.flatten).reduce(_ ++ _)
   }
-  override def getWidth: Int = 
-    flatten.map(_.getWidth).reduce(_ + _)
 
-  val elts = ArrayBuffer[Data]()
-  override def init(dummy:Int = 0) = {
-    collectElts
-    for (e <- elts) e.init()
-  }
-  def collectElts: Unit = {
-    elts.clear()
+  override def init(dummy:Int = 0) = 
+    for ((s, e) <- elements) e.init()
+  lazy val elements: LinkedHashMap[String, Data] = {
+    val elts = LinkedHashMap[String, Data]()
+    // println("BEGIN BUNDLE NAMING " + cid)
     for (m <- getClass.getMethods) {
       val name = m.getName
-
-      val modifiers = m.getModifiers();
-      val types = m.getParameterTypes()
-      var isInterface = false;
-      var isFound = false;
-      val rtype = m.getReturnType();
-      var c = rtype;
-      val sc = Class.forName("Chisel.Data");
-      do {
-        if (c == sc) {
-          isFound = true; isInterface = true;
-        } else if (c == null || c == Class.forName("java.lang.Object")) {
-          isFound = true; isInterface = false;
-        } else {
-          c = c.getSuperclass();
-        }
-      } while (!isFound);
-      if (types.length == 0 && !isStatic(modifiers) && isInterface
-          && !(Bundle.keywords contains name)) {
+      // println("NAME = " + name)
+      val rtype = m.getReturnType
+      val isInterface = classOf[Data].isAssignableFrom(rtype)
+      if (m.getParameterTypes.isEmpty &&
+          !isStatic(m.getModifiers) &&
+          isInterface &&
+          !(Bundle.keywords contains name)) {
         val obj = m.invoke(this)
         obj match {
           case data: Data =>
+            // println("  NAMING " + name + " -> " + cid)
             setFieldForId(cid, data.cid, name)
-            data.collectElts
-            elts += data
+            elts(name) = data
           case _ => ()
         }
       }
     }
-
-    elts.sortWith { (a, b) => a.cid < b.cid }
+    // println("DONE BUNDLE NAMING " + cid)
+    elts
   }
+  override def collectElts = elements
 
   override def cloneType : this.type = {
     try {
       val constructor = this.getClass.getConstructors.head
       val res = constructor.newInstance(Array.fill(constructor.getParameterTypes.size)(null):_*)
-      val rest = res.asInstanceOf[this.type]
-      rest.collectElts
-      rest
+      res.asInstanceOf[this.type]
     } catch {
       case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
       //   throwException("Parameterized Bundle " + this.getClass + " needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable", npe)
-        error("BAD")
+        val s = "CLONE INVOKATION EXCEPTION " + this.getClass
+        error(s)
       case e: java.lang.Exception =>
-        error("BAD")
+        val s = "CLONE EXCEPTION " + this.getClass
+        error(s)
       //   throwException("Parameterized Bundle " + this.getClass + " needs cloneType  method", e)
     }
   }
@@ -1091,7 +1046,6 @@ object Module {
     val cmd = popCommands
     popScope
     popModule
-    m.io.collectElts
     m.setRefs
     val ports = m.io.toPorts
     val component = UniqueComponent(m.name, ports, cmd)
@@ -1150,8 +1104,6 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
               setRefForId(bundle.cid, name)
             }
           case mem: Mem[_] =>
-            setRefForId(mem.t.cid, name)
-          case mem: SeqMem[_] =>
             setRefForId(mem.t.cid, name)
           case vec: Vec[_] =>
             setRefForId(vec.cid, name)
