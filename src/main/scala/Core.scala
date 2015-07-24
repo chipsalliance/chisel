@@ -720,16 +720,6 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   def toBool(): Bool = this(0)
 }
 
-import UInt._
-
-object Bits {
-  def apply(dir: Direction = OUTPUT, width: Int = -1) = new UInt(dir, width)
-  def apply(value: BigInt, width: Int): UInt = uintLit(value, width)
-  def apply(value: BigInt): UInt = apply(value, -1)
-  def apply(n: String, width: Int): UInt = UInt(n, width)
-  def apply(n: String): UInt = apply(n, -1)
-}
-
 abstract trait Num[T <: Data] {
   // def << (b: T): T;
   // def >> (b: T): T;
@@ -808,7 +798,7 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
   def asUInt(): UInt = this
 }
 
-object UInt {
+trait UIntFactory {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = 
     new UInt(dir, width)
   def uintLit(value: BigInt, width: Int) = {
@@ -828,6 +818,10 @@ object UInt {
   }
   def apply(n: String): UInt = apply(n, -1)
 }
+
+// Bits constructors are identical to UInt constructors.
+object Bits extends UIntFactory
+object UInt extends UIntFactory
 
 class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   override def cloneTypeWidth(w: Int): this.type =
