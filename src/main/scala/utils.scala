@@ -31,8 +31,8 @@ object isPow2
 
 object FillInterleaved
 {
-  def apply(n: Int, in: Bits): Bits = apply(n, in.toBools)
-  def apply(n: Int, in: Seq[Bool]): Bits = Vec(in.map(Fill(n, _))).toBits
+  def apply(n: Int, in: UInt): UInt = apply(n, in.toBools)
+  def apply(n: Int, in: Seq[Bool]): UInt = Vec(in.map(Fill(n, _))).toBits
 }
 
 /** Returns the number of bits set (i.e value is 1) in the input signal.
