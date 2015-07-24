@@ -310,16 +310,20 @@ object Decoupled {
 class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
-  valid := Bool(false);
-  for (io <- bits.flatten)
-    io := UInt(0)
+  override def init(dummy: Int = 0) = {
+    valid := Bool(false);
+    for (io <- bits.flatten)
+      io := UInt(0)
+  }
   override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
 }
 
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   flip()
-  ready := Bool(false);
+  override def init(dummy: Int = 0) = {
+    ready := Bool(false)
+  }
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
 }

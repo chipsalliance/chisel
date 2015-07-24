@@ -148,6 +148,7 @@ object Driver extends FileSystemUtilities{
     // setTopComponent(c)
     if (!isTesting) {
       val s = emitter.emit( c )
+      // println(c.components(0))
       val filename = c.main + ".fir"
       // println("FILENAME " + filename)
       // println("S = " + s)

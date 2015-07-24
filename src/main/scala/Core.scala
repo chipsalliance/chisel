@@ -54,7 +54,7 @@ object Builder {
     else if (cmds.length == 1)
       cmds(0)
     else
-      Begin(cmds.toArray)
+      Begin(cmds.toList)
   }
   def pushCommands = 
     commandz.push(new ArrayBuffer[Command]())
@@ -75,7 +75,8 @@ object Builder {
   def legalizeName (name: String) = {
     if (name == "mem" || name == "node" || name == "wire" ||
         name == "reg" || name == "inst")
-      genSym.next(name)
+      // genSym.next(name)
+      name + "__"
     else
       name
   }
@@ -238,7 +239,7 @@ case class DefSeqMemory(val id: String, val kind: Kind, val size: Int) extends D
 case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Arg) extends Definition;
 case class DefInstance(val id: String, val module: String) extends Definition;
 case class Conditionally(val prep: Command, val pred: Arg, val conseq: Command, var alt: Command) extends Command;
-case class Begin(val body: Array[Command]) extends Command();
+case class Begin(val body: List[Command]) extends Command();
 case class Connect(val loc: Alias, val exp: Arg) extends Command;
 case class BulkConnect(val loc1: Alias, val loc2: Alias) extends Command;
 case class ConnectInit(val loc: Alias, val exp: Arg) extends Command;
@@ -300,6 +301,7 @@ abstract class Data(dirArg: Direction) extends Id {
   def setDir(dir: Direction) {
     isFlipVar = (dir == INPUT)
   }
+  def init(dummy:Int = 0) = { }
   def asInput: this.type = {
     setDir(INPUT)
     this
@@ -445,7 +447,7 @@ class SeqMem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: 
 }
 
 object Vec {
-  def apply[T <: Data](gen: T, n: Int): Vec[T] = 
+  def apply[T <: Data](gen: => T, n: Int): Vec[T] = 
     new Vec((0 until n).map(i => gen.cloneType))
   def apply[T <: Data](elts: Iterable[T]): Vec[T] = {
     val vec = new Vec[T](elts.map(e => elts.head.cloneType))
@@ -472,7 +474,11 @@ object Vec {
 }
 
 abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
-  def cloneTypeWidth(width: Int): this.type = cloneType
+  def cloneTypeWidth(width: Int): this.type = {
+    val res = cloneType
+    res.collectElts
+    res
+  }
 }
 
 class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
@@ -487,6 +493,7 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
 
   def apply(idx: UInt): T = {
     val x = elt0.cloneType
+    x.collectElts
     pushCommand(DefAccessor(x.defd.cid, Alias(cid), NO_DIR, idx.ref))
     x
   }
@@ -500,6 +507,10 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
     val v = Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
     v.collectElts
     v
+  }
+  override def init(dummy:Int = 0) = {
+    collectElts
+    for (e <- self) e.init()
   }
   def inits (f: (Int, T, (Int, T, T) => Unit) => Unit) = {
     var i = 0
@@ -1013,9 +1024,13 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
     flatten.map(_.getWidth).reduce(_ + _)
 
   val elts = ArrayBuffer[Data]()
+  override def init(dummy:Int = 0) = {
+    collectElts
+    for (e <- elts) e.init()
+  }
   def collectElts: Unit = {
     elts.clear()
-    for (m <- getClass.getDeclaredMethods) {
+    for (m <- getClass.getMethods) {
       val name = m.getName
 
       val modifiers = m.getModifiers();
@@ -1212,6 +1227,8 @@ class Emitter {
     parts.foldLeft("")((s, p) => if (s == "") p else s + sep + p)
   def join0(parts: Array[String], sep: String) = 
     parts.foldLeft("")((s, p) => s + sep + p)
+  def join0(parts: List[String], sep: String) = 
+    parts.foldLeft("")((s, p) => s + sep + p)
   def newline = 
     "\n" + join((0 until indenting).map(x => "  ").toArray, "")
   def emitDir(e: Direction, isTop: Boolean): String =
@@ -1262,7 +1279,7 @@ class Emitter {
           ""
         }
         val suffix = if (!e.alt.isInstanceOf[EmptyCommand]) {
-          newline + "else : " + newline + withIndent{ emit(e.alt) }
+          newline + "else : " + withIndent{ newline + emit(e.alt) }
         } else {
           ""
         }
