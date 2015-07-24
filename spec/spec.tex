@@ -462,7 +462,7 @@ For a connection to be legal, the types of the two expressions must match exactl
 
 However, the widths of the types do not need to be equivalent.
 If the {\em output} expression has a smaller width than the {\em input} expression, the {\em output} is padded according to its type.
-If the {\em output} expression has a larger width than the {\em input} expression, the lower bits of the {\em output} are extracted and assigned to the {\em input}.
+If the {\em output} expression has a larger width than the {\em input} expression, this triggers an error.
 
 If the {\em input} width is unknown, it is inferred to be the width of the largest {\em output} that it is connected to.
 If the {\em output} width is unknown, it cannot inferred from this connection.
