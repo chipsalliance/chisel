@@ -322,7 +322,13 @@ abstract class Data(dirArg: Direction) extends Id {
     pushCommand(Connect(this.lref, other.ref))
   def <>(other: Data) = 
     pushCommand(BulkConnect(this.lref, other.lref))
-  def cloneType: this.type
+  final def cloneType: this.type = {
+    val res = doCloneType
+    collectElts
+    res
+  }
+  def collectElts = { }
+  def doCloneType: this.type
   def cloneTypeWidth(width: Int): this.type
   def lref: Alias = 
     Alias(cid)
@@ -478,12 +484,13 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
   private val self = elts.toIndexedSeq
   private val elt0 = elts.head
 
-  // println("BEGIN VEC NAMING")
+  // println("BEGIN VEC NAMING " + this)
   for ((e, i) <- self zipWithIndex) {
     // println("  NAME " + i + " -> " + cid)
+    e.collectElts
     setIndexForId(cid, e.cid, i)
   }
-  // println("DONE VEC NAMING")
+  // println("DONE VEC NAMING " + this)
 
   def <> (that: Iterable[T]): Unit =
     this <> Vec(that).asInstanceOf[Data]
@@ -505,7 +512,7 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
     self.map(d => d.toPort).toArray
   def toType: Kind = 
     VectorType(self.size, elt0.toType, isFlipVar)
-  override def cloneType: this.type = 
+  override def doCloneType: this.type = 
     Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
  override def init(dummy:Int = 0) = 
     for (e <- self) e.init()
@@ -561,7 +568,7 @@ class BitPat(val value: String, val width: Int) extends Data(NO_DIR) {
   override def toType: Kind = UIntType(UnknownWidth(), isFlip)
   override def getWidth: Int = width
   override def flatten: IndexedSeq[Bits] = throw new Exception("BitPat.flatten")
-  override def cloneType: this.type = 
+  override def doCloneType: this.type = 
     new BitPat(value, width).asInstanceOf[this.type]
   def fromInt(x: BigInt): BitPat = BitPat(x.toString(2), -1).asInstanceOf[this.type]
   val (bits, mask, swidth) = parseLit(value)
@@ -591,7 +598,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   override def isLitValue(): Boolean = litValueVar.isDefined
   override def litValue(): BigInt = if (isLitValue) litValueVar.get.num else -1
   override def setLitValue(x: LitArg) { litValueVar = Some(x) }
-  override def cloneType : this.type = cloneTypeWidth(width)
+  override def doCloneType : this.type = cloneTypeWidth(width)
   def fromInt(x: BigInt): this.type = makeLit(x, -1)
 
   override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
@@ -956,7 +963,7 @@ object Cat {
 object Bundle {
   val keywords = HashSet[String]("elements", "flip", "toString",
     "flatten", "binding", "asInput", "asOutput", "unary_$tilde",
-    "unary_$bang", "unary_$minus", "cloneType", 
+    "unary_$bang", "unary_$minus", "cloneType", "doCloneType", 
     "toUInt", "toBits",
     "toBool", "toSInt", "asDirectionless")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
@@ -972,15 +979,7 @@ object Bundle {
   private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
-trait BundleFinalizer extends DelayedInit {
-  def collectElts = { }
-  def delayedInit(body: => Unit) = {
-    body // evaluates the initialization code of C
-    collectElts
-  }
-}
-
-class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with BundleFinalizer {
+class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) { 
   def toPorts: Array[Port] = 
     elements.map(_._2.toPort).toArray
   def toType: BundleType = 
@@ -1020,7 +1019,7 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with BundleFi
   }
   override def collectElts = elements
 
-  override def cloneType : this.type = {
+  override def doCloneType : this.type = {
     try {
       val constructor = this.getClass.getConstructors.head
       val res = constructor.newInstance(Array.fill(constructor.getParameterTypes.size)(null):_*)
@@ -1028,10 +1027,10 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with BundleFi
     } catch {
       case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
       //   throwException("Parameterized Bundle " + this.getClass + " needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable", npe)
-        val s = "CLONE INVOKATION EXCEPTION " + this.getClass
+        val s = "CLONE INVOCATION EXCEPTION " + this.getClass
         error(s)
       case e: java.lang.Exception =>
-        val s = "CLONE EXCEPTION " + this.getClass
+        val s = "CLONE ANY EXCEPTION " + this.getClass
         error(s)
       //   throwException("Parameterized Bundle " + this.getClass + " needs cloneType  method", e)
     }
