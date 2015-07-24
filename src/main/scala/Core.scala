@@ -1,15 +1,17 @@
 package Chisel
-import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, HashMap}
+import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, HashMap, LinkedHashMap}
 import java.lang.reflect.Modifier._
 import java.lang.Double.longBitsToDouble
 import java.lang.Float.intBitsToFloat
 
 class GenSym {
-  var counter = -1
-  def next(name: String): String = {
+  private var counter = -1
+  def nextInt: Int = {
     counter += 1
-    name + "_" + counter
+    counter
   }
+  def next(name: String): String =
+    name + "_" + nextInt
 }
 
 object Builder {
@@ -277,7 +279,9 @@ import Direction._
 /// CHISEL FRONT-END
 
 abstract class Id {
-  protected[Chisel] val cid = genSym.next("id")
+  protected[Chisel] val _id = genSym.nextInt
+  protected[Chisel] val cid = "id_" + _id
+
   var isDef_ = false
   def defd: this.type = {
     isDef_ = true
@@ -352,7 +356,6 @@ abstract class Data(dirArg: Direction) extends Id {
     this.fromBits(Bits(value, width))
 
   def toPort: Port = Port(cid, dir, toType)
-  def collectElts: Unit
   var isReg_ = false
   def isReg = isReg_
   def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
@@ -365,7 +368,6 @@ object Wire {
       throw new Exception("cannot infer type of Init.")
     val x = mType.cloneType
     // TODO: COME UP WITH MORE ROBUST WAY TO HANDLE THIS
-    x.collectElts
     pushCommand(DefWire(x.defd.cid, x.toType))
     if (init != null) 
       pushCommand(Connect(x.lref, init.ref))
@@ -403,7 +405,9 @@ object Mem {
   }
 }
 
-class Mem[T <: Data](val t: T, val n: Int) /* with VecLike[T]  */ { // TODO: VECLIKE
+class Mem[T <: Data](protected[Chisel] val t: T, n: Int) extends VecLike[T] {
+  def length: Int = n
+  def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T = {
     val x = t.cloneType
     pushCommand(DefAccessor(x.defd.cid, Alias(t.cid), NO_DIR, idx.ref))
@@ -443,7 +447,6 @@ object Vec {
     new Vec((0 until n).map(i => gen.cloneType))
   def apply[T <: Data](elts: Iterable[T]): Vec[T] = {
     val vec = new Vec[T](elts.map(e => elts.head.cloneType))
-    vec.collectElts
     val isDef = true || elts.head.isDef
     if (vec.isReg)
       throw new Exception("Vec of Reg Deprecated.")
@@ -469,9 +472,12 @@ abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
   def cloneTypeWidth(width: Int): this.type = cloneType
 }
 
-class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
+class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
   private val self = elts.toIndexedSeq
   private val elt0 = elts.head
+
+  for ((e, i) <- self zipWithIndex)
+    setIndexForId(cid, e.cid, i)
 
   def <> (that: Iterable[T]): Unit =
     this <> Vec(that).asInstanceOf[Data]
@@ -493,11 +499,8 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
     self.map(d => d.toPort).toArray
   def toType: Kind = 
     VectorType(self.size, elt0.toType, isFlipVar)
-  override def cloneType: this.type = {
-    val v = Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
-    v.collectElts
-    v
-  }
+  override def cloneType: this.type =
+    Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
   def inits (f: (Int, T, (Int, T, T) => Unit) => Unit) = {
     var i = 0
     def doInit (index: Int, elt: T, init: T) =
@@ -509,14 +512,6 @@ class Vec[T <: Data](val elts: Iterable[T], dirArg: Direction = NO_DIR) extends 
   }
   override def flatten: IndexedSeq[Bits] =
     self.map(_.flatten).reduce(_ ++ _)
-
-  def collectElts: Unit = {
-    for (i <- 0 until self.size) {
-      val elt = self(i)
-      setIndexForId(cid, elt.cid, i)
-      elt.collectElts
-    }
-  }
 
   def length: Int = self.size
 
@@ -553,7 +548,6 @@ import Literal._
 
 class BitPat(val value: String, val width: Int) extends Data(NO_DIR) {
   def cloneTypeWidth(width: Int): this.type = cloneType
-  def collectElts: Unit = { }
   override def dir: Direction = NO_DIR
   override def setDir(dir: Direction): Unit = { }
   override def toType: Kind = UIntType(UnknownWidth(), isFlip)
@@ -579,7 +573,6 @@ object BitPat {
 }
 
 abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
-  def collectElts: Unit = { }
   override def getWidth: Int = width
 }
 
@@ -859,6 +852,7 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   def != (other: SInt): Bool = compop(NotEqualOp, other)
   def <= (other: SInt): Bool = compop(LessEqOp, other)
   def >= (other: SInt): Bool = compop(GreaterEqOp, other)
+  def abs: UInt = Mux(this < SInt(0), (-this).toUInt, this.toUInt)
 
   override def pad (other: BigInt): SInt = binop(PadOp, other, other.toInt)
 
@@ -919,31 +913,12 @@ object Bool {
 
 object Mux {
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = {
-    def genericMux[T <: Data](cond: Bool, con: T, alt: T): T = {
-      val w = Wire(alt, init = alt)
-      when (cond) {
-        w := con
-      }
-      w
+    val w = Wire(alt, init = alt)
+    when (cond) {
+      w := con
     }
-    con match {
-      case tc: Bits => 
-        alt match {
-          case ta: Bits =>
-            if (tc.isInstanceOf[UInt] != ta.isInstanceOf[UInt])
-              error("Unable to have mixed type mux CON " + con + " ALT " + alt)
-            // println("MUX COND " + cond + " CON(" + con.litValue() + ")'" + con.getWidth + " " + con + " ALT(" + alt.litValue() + ")'" + alt.getWidth + " " + alt)
-            val rb = tc.cloneTypeWidth(tc.maxWidth(ta, 0))
-            pushCommand(DefPrim(rb.defd.cid, rb.toType, MultiplexOp, Array(cond.ref, tc.ref, ta.ref), NoLits))
-            rb.asInstanceOf[T]
-          case _ =>
-            genericMux(cond, con, alt)
-        }
-      case _ =>
-        genericMux(cond, con, alt)
-    }
+    w
   }
-
 }
 
 object Cat {
@@ -990,61 +965,46 @@ object Bundle {
 
 class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
   def toPorts: Array[Port] = 
-    elts.map(d => d.toPort).toArray
+    elements.map(_._2.toPort).toArray
   def toType: BundleType = 
     BundleType(this.toPorts, isFlipVar)
 
   override def flatten: IndexedSeq[Bits] = {
-    collectElts
-    elts.map(_.flatten).reduce(_ ++ _).toIndexedSeq
+    val sortedElts = elements.values.toIndexedSeq sortWith (_._id < _._id)
+    sortedElts.map(_.flatten).reduce(_ ++ _)
   }
 
-  // This needs to be overhauled, perhaps with a lazy val
-  val elts = ArrayBuffer[Data]()
-  def collectElts: Unit = {
-    elts.clear()
+  lazy val elements: LinkedHashMap[String, Data] = {
+    def isInterface(cls: Class[_], supcls: Class[_]): Boolean = {
+      if (cls == supcls) true
+      else if (cls == null || cls == Class.forName("java.lang.Object")) false
+      else isInterface(cls.getSuperclass, supcls)
+    }
+
+    val elts = LinkedHashMap[String, Data]()
     for (m <- getClass.getDeclaredMethods) {
       val name = m.getName
-
-      val modifiers = m.getModifiers();
-      val types = m.getParameterTypes()
-      var isInterface = false;
-      var isFound = false;
-      val rtype = m.getReturnType();
-      var c = rtype;
-      val sc = Class.forName("Chisel.Data");
-      do {
-        if (c == sc) {
-          isFound = true; isInterface = true;
-        } else if (c == null || c == Class.forName("java.lang.Object")) {
-          isFound = true; isInterface = false;
-        } else {
-          c = c.getSuperclass();
-        }
-      } while (!isFound);
-      if (types.length == 0 && !isStatic(modifiers) && isInterface
-          && !(Bundle.keywords contains name)) {
+      if (m.getParameterTypes.isEmpty &&
+          !isStatic(m.getModifiers) &&
+          isInterface(m.getReturnType, Class.forName("Chisel.Data")) &&
+          !(Bundle.keywords contains name)) {
         val obj = m.invoke(this)
         obj match {
           case data: Data =>
             setFieldForId(cid, data.cid, name)
-            data.collectElts
-            elts += data
+            elts(name) = data
           case _ => ()
         }
       }
     }
-
-    elts.sortWith { (a, b) => a.cid < b.cid }
+    elts
   }
 
   override def cloneType : this.type = {
     try {
       val constructor = this.getClass.getConstructors.head
       val res = constructor.newInstance(Array.fill(constructor.getParameterTypes.size)(null):_*)
-      val rest = res.asInstanceOf[this.type]
-      rest.collectElts
-      rest
+      res.asInstanceOf[this.type]
     } catch {
       case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
       //   throwException("Parameterized Bundle " + this.getClass + " needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable", npe)
@@ -1064,7 +1024,6 @@ object Module {
     val cmd = popCommands
     popScope
     popModule
-    m.io.collectElts
     m.setRefs
     val ports = m.io.toPorts
     val component = UniqueComponent(m.name, ports, cmd)
