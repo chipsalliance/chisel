@@ -12,9 +12,6 @@ export CHISEL_BIN
 
 #$(info Build Chisel $(CHISEL_VERSION))
 
-SYSTEMC ?= $(SRC_DIR)/../../systemc/systemc-2.3.1
-CHISEL_JAR ?= $(SRC_DIR)/target/scala-2.11/chisel_2.11-$(CHISEL_VERSION).jar
-DRIVER	   ?= $(SRC_DIR)/src/test/resources/AddFilterSysCdriver.cpp
 # The targetDir will be rm -rf'ed when "make clean"
 targetDir ?= ./generated
 # The TEST_OUTPUT_DIR will be rm -rf'ed when "make clean"
@@ -23,12 +20,12 @@ RM_DIRS 	:= $(TEST_OUTPUT_DIR) test-reports $(targetDir)
 #CLEAN_DIRS	:= doc
 
 test_src_dir := src/test/scala/ChiselTests
-test_results := $(filter-out main,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
+test_results := $(filter-out main DirChange Pads SIntOps,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
 c_resources_dir := src/main/resources
 
 test_outs    := $(addprefix $(targetDir)/, $(addsuffix .out, $(test_results)))
 
-.PHONY:	smoke publish-local check clean jenkins-build sysctest coverage scaladoc test
+.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test
 
 default:	publish-local
 
@@ -69,23 +66,6 @@ jenkins-build: clean
 	$(SBT) $(SBT_FLAGS) +clean +publish-local
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
-
-sysctest:
-	mkdir -p $(TEST_OUTPUT_DIR)
-	$(MAKE) -C $(TEST_OUTPUT_DIR) -f ../Makefile SRC_DIR=.. syscbuildandruntest
-
-syscbuildandruntest:	AddFilter
-	./AddFilter
-
-AddFilter:	AddFilter.h AddFilter.cpp $(SYSC_DRIVER)
-	$(CXX)  AddFilter.cpp $(DRIVER) \
-	   -I. -I$(SYSTEMC)/include -L$(SYSTEMC)/lib-macosx64 -lsystemc -o $@
-
-AddFilter.cpp AddFilter.h:	   AddFilter.class
-	scala -cp $(CHISEL_JAR):. AddFilter --targetDir . --genHarness --backend sysc --design AddFilter
-
-AddFilter.class:  $(CHISEL_JAR) ../src/test/scala/AddFilter.scala
-	scalac -cp $(CHISEL_JAR) ../src/test/scala/AddFilter.scala
 
 $(targetDir)/%.fir: $(test_src_dir)/%.scala
 	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS)"
