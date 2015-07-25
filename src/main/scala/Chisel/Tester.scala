@@ -357,9 +357,9 @@ class ManualTester[+T <: Module]
 
   def start(): Process = {
     val n = Driver.appendString(Some(c.name),Driver.chiselConfigClassName)
-    val target = Driver.targetDir + "/" + n
+    val target = "cd " + Driver.targetDir + " && ./" + n
     val cmd = target
-    println("OPENING " + cmd)
+    println("RUNNING " + cmd)
     /*
       (if (Driver.backend.isInstanceOf[FloBackend]) {
          val dir = Driver.backend.asInstanceOf[FloBackend].floDir
@@ -373,8 +373,8 @@ class ManualTester[+T <: Module]
       })
      */
     println("SEED " + Driver.testerSeed)
-    println("STARTING " + cmd)
-    val processBuilder = Process(cmd)
+    println("STARTING " + n)
+    val processBuilder = Process(Seq("bash", "-c", cmd))
     val pio = new ProcessIO(in => testOut = in, out => testIn = out, err => testErr = err)
     process = processBuilder.run(pio)
     waitForStreams()
