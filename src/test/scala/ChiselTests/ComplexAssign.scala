@@ -3,7 +3,7 @@ import Chisel._
 
 class Complex[T <: Data](val re: T, val im: T, dir: Direction = OUTPUT)
     extends Bundle(dir) {
-  override def doCloneType: this.type = 
+  override def cloneType: this.type =
     new Complex(re.cloneType, im.cloneType, dir).asInstanceOf[this.type]
 }
 

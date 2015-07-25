@@ -280,7 +280,7 @@ class ValidIO[+T <: Data](gen2: T) extends Bundle
   val valid = Bool(OUTPUT)
   val bits = gen2.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = valid
-  override def doCloneType: this.type = new ValidIO(gen2).asInstanceOf[this.type]
+  override def cloneType: this.type = new ValidIO(gen2).asInstanceOf[this.type]
 }
 
 /** Adds a valid protocol to any interface. The standard used is
@@ -296,7 +296,7 @@ class DecoupledIO[+T <: Data](gen: T) extends Bundle
   val valid = Bool(OUTPUT)
   val bits  = gen.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = ready && valid
-  override def doCloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
+  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
 }
 
 /** Adds a ready-valid handshaking protocol to any interface.
@@ -310,22 +310,18 @@ object Decoupled {
 class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
-  override def init(dummy: Int = 0) = {
-    valid := Bool(false);
-    for (io <- bits.flatten)
-      io := UInt(0)
-  }
-  override def doCloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
+  valid := Bool(false)
+  for (io <- bits.flatten)
+    io := UInt(0)
+  override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
 }
 
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   flip()
-  override def init(dummy: Int = 0) = {
-    ready := Bool(false)
-  }
+  ready := Bool(false)
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
-  override def doCloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
+  override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
 }
 
 

@@ -297,7 +297,9 @@ object debug {
 }
 
 abstract class Data(dirArg: Direction) extends Id {
-  val mod = getComponent()
+  private[Chisel] val mod = getComponent()
+  mod._nodes += this
+
   def toType: Kind
   var isFlipVar = dirArg == INPUT
   def isFlip = isFlipVar
@@ -305,7 +307,6 @@ abstract class Data(dirArg: Direction) extends Id {
   def setDir(dir: Direction) {
     isFlipVar = (dir == INPUT)
   }
-  def init(dummy:Int = 0) = { }
   def asInput: this.type = {
     setDir(INPUT)
     this
@@ -322,13 +323,8 @@ abstract class Data(dirArg: Direction) extends Id {
     pushCommand(Connect(this.lref, other.ref))
   def <>(other: Data) = 
     pushCommand(BulkConnect(this.lref, other.lref))
-  final def cloneType: this.type = {
-    val res = doCloneType
-    collectElts
-    res
-  }
-  def collectElts = { }
-  def doCloneType: this.type
+  private[Chisel] def collectElts = { }
+  def cloneType: this.type
   def cloneTypeWidth(width: Int): this.type
   def lref: Alias = 
     Alias(cid)
@@ -484,13 +480,10 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
   private val self = elts.toIndexedSeq
   private val elt0 = elts.head
 
-  // println("BEGIN VEC NAMING " + this)
-  for ((e, i) <- self zipWithIndex) {
-    // println("  NAME " + i + " -> " + cid)
-    e.collectElts
-    setIndexForId(cid, e.cid, i)
+  override def collectElts = {
+    for ((e, i) <- self zipWithIndex)
+      setIndexForId(cid, e.cid, i)
   }
-  // println("DONE VEC NAMING " + this)
 
   def <> (that: Iterable[T]): Unit =
     this <> Vec(that).asInstanceOf[Data]
@@ -512,19 +505,8 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
     self.map(d => d.toPort).toArray
   def toType: Kind = 
     VectorType(self.size, elt0.toType, isFlipVar)
-  override def doCloneType: this.type = 
+  override def cloneType: this.type =
     Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
- override def init(dummy:Int = 0) = 
-    for (e <- self) e.init()
-  def inits (f: (Int, T, (Int, T, T) => Unit) => Unit) = {
-    var i = 0
-    def doInit (index: Int, elt: T, init: T) =
-      pushCommand(ConnectInitIndex(elt.lref, index, init.ref))
-    for (d <- self) {
-      f(i, d, doInit)
-      i += 1;
-    }
-  }
   override def flatten: IndexedSeq[Bits] =
     self.map(_.flatten).reduce(_ ++ _)
 
@@ -568,7 +550,7 @@ class BitPat(val value: String, val width: Int) extends Data(NO_DIR) {
   override def toType: Kind = UIntType(UnknownWidth(), isFlip)
   override def getWidth: Int = width
   override def flatten: IndexedSeq[Bits] = throw new Exception("BitPat.flatten")
-  override def doCloneType: this.type = 
+  override def cloneType: this.type =
     new BitPat(value, width).asInstanceOf[this.type]
   def fromInt(x: BigInt): BitPat = BitPat(x.toString(2), -1).asInstanceOf[this.type]
   val (bits, mask, swidth) = parseLit(value)
@@ -598,7 +580,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   override def isLitValue(): Boolean = litValueVar.isDefined
   override def litValue(): BigInt = if (isLitValue) litValueVar.get.num else -1
   override def setLitValue(x: LitArg) { litValueVar = Some(x) }
-  override def doCloneType : this.type = cloneTypeWidth(width)
+  override def cloneType : this.type = cloneTypeWidth(width)
   def fromInt(x: BigInt): this.type = makeLit(x, -1)
 
   override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
@@ -957,7 +939,7 @@ object Cat {
 object Bundle {
   val keywords = HashSet[String]("elements", "flip", "toString",
     "flatten", "binding", "asInput", "asOutput", "unary_$tilde",
-    "unary_$bang", "unary_$minus", "cloneType", "doCloneType", "clone",
+    "unary_$bang", "unary_$minus", "cloneType", "clone",
     "toUInt", "toBits",
     "toBool", "toSInt", "asDirectionless")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
@@ -979,41 +961,33 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
   def toType: BundleType = 
     BundleType(this.toPorts, isFlipVar)
 
-  override def flatten: IndexedSeq[Bits] = {
-    val sortedElts = elements.values.toIndexedSeq sortWith (_._id < _._id)
-    sortedElts.map(_.flatten).reduce(_ ++ _)
-  }
+  override def flatten: IndexedSeq[Bits] =
+    sortedElts.map(_._2.flatten).reduce(_ ++ _)
 
-  override def init(dummy:Int = 0) = 
-    for ((s, e) <- elements) e.init()
   lazy val elements: LinkedHashMap[String, Data] = {
     val elts = LinkedHashMap[String, Data]()
-    // println("BEGIN BUNDLE NAMING " + cid)
     for (m <- getClass.getMethods) {
       val name = m.getName
-      // println("NAME = " + name)
       val rtype = m.getReturnType
       val isInterface = classOf[Data].isAssignableFrom(rtype)
       if (m.getParameterTypes.isEmpty &&
           !isStatic(m.getModifiers) &&
           isInterface &&
           !(Bundle.keywords contains name)) {
-        val obj = m.invoke(this)
-        obj match {
-          case data: Data =>
-            // println("  NAMING " + name + " -> " + cid)
-            setFieldForId(cid, data.cid, name)
-            elts(name) = data
-          case _ => ()
+        m.invoke(this) match {
+          case data: Data => elts(name) = data
+          case _ =>
         }
       }
     }
-    // println("DONE BUNDLE NAMING " + cid)
     elts
   }
-  override def collectElts = elements
+  private lazy val sortedElts =
+    elements.toIndexedSeq sortWith (_._2._id < _._2._id)
+  override def collectElts =
+    sortedElts.foreach(e => setFieldForId(cid, e._2.cid, e._1))
 
-  override def doCloneType : this.type = {
+  override def cloneType : this.type = {
     try {
       val constructor = this.getClass.getConstructors.head
       val res = constructor.newInstance(Array.fill(constructor.getParameterTypes.size)(null):_*)
@@ -1055,13 +1029,15 @@ object Module {
 }
 
 abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
-  val parent = modulez.headOption
+  private[Chisel] val _parent = modulez.headOption
+  private[Chisel] val _nodes = ArrayBuffer[Data]()
+
   pushModule(this)
   pushScope
   pushCommands
   addModule(this)
 
-  lazy val params = Module.params
+  val params = Module.params
   params.path = this.getClass :: params.path
 
   def io: Bundle
@@ -1075,12 +1051,13 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
     getClass.getName.split('.').last
   }
   def debugName: String = {
-    val p = parent.getOrElse(null)
+    val p = _parent.getOrElse(null)
     val pname = if (p == null) "" else (p.debugName + ".")
     pname + getRefForId(cid).debugName
   }
 
   def setRefs {
+    _nodes.foreach(_.collectElts)
     setRefForId(io.cid, "this")
 
     for (m <- getClass.getDeclaredMethods) {
