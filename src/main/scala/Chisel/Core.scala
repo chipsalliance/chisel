@@ -356,7 +356,7 @@ abstract class Data(dirArg: Direction) extends Id {
     }
     wire.asInstanceOf[this.type]
   }
-  def toBits: UInt = {
+  def toBits(): UInt = {
     val elts = this.flatten.reverse
     Cat(elts.head, elts.tail:_*).asUInt
   }
@@ -861,7 +861,7 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
   def != (other: SInt): Bool = compop(NotEqualOp, other)
   def <= (other: SInt): Bool = compop(LessEqOp, other)
   def >= (other: SInt): Bool = compop(GreaterEqOp, other)
-  def abs: UInt = Mux(this < SInt(0), (-this).toUInt, this.toUInt)
+  def abs(): UInt = Mux(this < SInt(0), (-this).toUInt, this.toUInt)
 
   override def pad (other: BigInt): SInt = binop(PadOp, other, other.toInt)
 
