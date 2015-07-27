@@ -333,7 +333,7 @@ abstract class Data(dirArg: Direction) extends Id {
   def name = getRefForId(cid).name
   def debugName = mod.debugName + "." + getRefForId(cid).debugName
   def litArg(): LitArg = null
-  def litValue(): BigInt = -1
+  def litValue(): BigInt = None.get
   def isLitValue(): Boolean = false
   def setLitValue(x: LitArg) {  }
   def floLitValue: Float = intBitsToFloat(litValue().toInt)
@@ -578,7 +578,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   override def litArg(): LitArg = litValueVar.get
   override def isLitValue(): Boolean = litValueVar.isDefined
-  override def litValue(): BigInt = if (isLitValue) litValueVar.get.num else -1
+  override def litValue(): BigInt = litValueVar.get.num
   override def setLitValue(x: LitArg) { litValueVar = Some(x) }
   override def cloneType : this.type = cloneTypeWidth(width)
   def fromInt(x: BigInt): this.type = makeLit(x, -1)
