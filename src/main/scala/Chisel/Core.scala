@@ -543,30 +543,30 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 
 import Literal._
 
-class BitPat(val value: String, val width: Int) extends Data(NO_DIR) {
-  def cloneTypeWidth(width: Int): this.type = cloneType
-  override def dir: Direction = NO_DIR
-  override def setDir(dir: Direction): Unit = { }
-  override def toType: Kind = UIntType(UnknownWidth(), isFlip)
-  override def getWidth: Int = width
-  override def flatten: IndexedSeq[Bits] = throw new Exception("BitPat.flatten")
-  override def cloneType: this.type =
-    new BitPat(value, width).asInstanceOf[this.type]
-  def fromInt(x: BigInt): BitPat = BitPat(x.toString(2), -1).asInstanceOf[this.type]
-  val (bits, mask, swidth) = parseLit(value)
-  def zEquals(other: Bits): Bool = 
-    (Bits(toLitVal(mask, 2)) & other) === Bits(toLitVal(bits, 2))
-  def === (other: Bits): Bool = zEquals(other)
-  def != (other: Bits): Bool  = !zEquals(other)
+object BitPat {
+  def apply(n: String): BitPat = {
+    require(n(0) == 'b', "BINARY BitPats ONLY")
+    val (bits, mask, swidth) = parseLit(n.substring(1))
+    new BitPat(toLitVal(bits, 2), toLitVal(mask, 2), swidth)
+  }
+
+  def DC(width: Int): BitPat = BitPat("b" + ("?" * width))
+
+  // BitPat <-> UInt
+  implicit def BitPatToUInt(x: BitPat): UInt = {
+    require(x.mask == (BigInt(1) << x.getWidth)-1)
+    UInt(x.value, x.getWidth)
+  }
+  implicit def apply(x: UInt): BitPat = {
+    require(x.isLit)
+    BitPat("b" + x.litValue.toString(2))
+  }
 }
 
-object BitPat {
-  def mintLit(n: String, width: Int) = {
-    assert(n(0) == 'b', "BINARY MINTS ONLY")
-    new BitPat(n.substring(1, n.length), width)
-  }
-  def apply(value: String, width: Int): BitPat = mintLit(value, width)
-  def apply(value: String): BitPat = apply(value, -1)
+class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
+  def getWidth: Int = width
+  def === (other: Bits): Bool = UInt(value) === (other & UInt(mask))
+  def != (other: Bits): Bool = !(this === other)
 }
 
 abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
@@ -683,6 +683,9 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
     pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref), NoLits))
     d
   }
+
+  def === (that: BitPat): Bool = that === this
+  def != (that: BitPat): Bool = that != this
 
   def orR = !(this === Bits(0))
   def andR = (this === Bits(-1))
