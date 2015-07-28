@@ -17,16 +17,12 @@ class GenSym {
 object Builder {
   val components = new ArrayBuffer[Component]()
   val genSym = new GenSym()
-  val scopes = new Stack[HashSet[String]]()
-  def scope = scopes.top
   val switchKeyz = new Stack[Stack[Bits]]()
   def switchKeys = switchKeyz.top
   def pushScope = {
-    scopes.push(new HashSet[String]())
     switchKeyz.push(new Stack[Bits]())
   }
   def popScope = {
-    scopes.pop()
     switchKeyz.pop()
   }
   val modules = new HashMap[String,Module]()
@@ -283,12 +279,7 @@ abstract class Id {
   protected[Chisel] val _id = genSym.nextInt
   protected[Chisel] val cid = "id_" + _id
 
-  var isDef_ = false
-  def defd: this.type = {
-    isDef_ = true
-    this
-  }
-  def isDef = isDef_
+  def defd: this.type = this
 }
 
 object debug {
@@ -451,17 +442,12 @@ object Vec {
     new Vec((0 until n).map(i => gen.cloneType))
   def apply[T <: Data](elts: Iterable[T]): Vec[T] = {
     val vec = new Vec[T](elts.map(e => elts.head.cloneType))
-    val isDef = true || elts.head.isDef
     if (vec.isReg)
       throw new Exception("Vec of Reg Deprecated.")
-    if (isDef) {
-      pushCommand(DefWire(vec.defd.cid, vec.toType))
-      var i = 0
-      for (elt <- elts) {
-        vec(i) := elt
-        i += 1
-      }
-    }
+    pushCommand(DefWire(vec.defd.cid, vec.toType))
+
+    for ((v, e) <- vec zip elts)
+      v := e
     vec
   }
   def apply[T <: Data](elt0: T, elts: T*): Vec[T] =
