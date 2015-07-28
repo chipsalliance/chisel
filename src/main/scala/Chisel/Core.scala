@@ -326,7 +326,6 @@ abstract class Data(dirArg: Direction) extends Id {
   def litArg(): LitArg = null
   def litValue(): BigInt = None.get
   def isLit(): Boolean = false
-  def setLitValue(x: LitArg) {  }
   def floLitValue: Float = intBitsToFloat(litValue().toInt)
   def dblLitValue: Double = longBitsToDouble(litValue().toLong)
   def getWidth: Int = flatten.map(_.getWidth).reduce(_ + _)
@@ -562,25 +561,22 @@ abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
   override def getWidth: Int = width
 }
 
-abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width) {
-  private var litValueVar: Option[LitArg] = None
-
-  override def litArg(): LitArg = litValueVar.get
-  override def isLit(): Boolean = litValueVar.isDefined
-  override def litValue(): BigInt = litValueVar.get.num
-  override def setLitValue(x: LitArg) { litValueVar = Some(x) }
+abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends Element(dirArg, width) {
+  override def litArg(): LitArg = lit.get
+  override def isLit(): Boolean = lit.isDefined
+  override def litValue(): BigInt = lit.get.num
   override def cloneType : this.type = cloneTypeWidth(width)
   def fromInt(x: BigInt): this.type = makeLit(x, -1)
 
   override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   final def apply(x: BigInt): Bool = {
-    val d = new Bool(dir)
-    if (isLit())
-      d.setLitValue(ULit((litValue() >> x.toInt) & 1, 1))
-    else
+    if (isLit()) Bool((litValue() >> x.toInt) & 1)
+    else {
+      val d = Bool()
       pushCommand(DefPrim(d.defd.cid, d.toType, BitSelectOp, Array(this.ref), Array(x)))
-    d
+      d
+    }
   }
   final def apply(x: Int): Bool =
     apply(BigInt(x))
@@ -589,13 +585,12 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   final def apply(x: BigInt, y: BigInt): UInt = {
     val w = (x - y + 1).toInt
-    val d = UInt(width = w)
-    if (isLit()) {
-      val mask = (BigInt(1)<<d.getWidth)-BigInt(1)
-      d.setLitValue(ULit((litValue() >> y.toInt) & mask, w))
-    } else
+    if (isLit()) UInt((litValue >> y.toInt) & ((BigInt(1) << w) - 1), w)
+    else {
+      val d = UInt(width = w)
       pushCommand(DefPrim(d.defd.cid, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
-    d
+      d
+    }
   }
   final def apply(x: Int, y: Int): UInt =
     apply(BigInt(x), BigInt(y))
@@ -712,7 +707,7 @@ abstract trait Num[T <: Data] {
   def max(b: T): T = Mux(this < b, b, this.asInstanceOf[T])
 }
 
-class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
+class UInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(dir, width, lit) with Num[UInt] {
   override def cloneTypeWidth(w: Int): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
 
@@ -775,15 +770,10 @@ class UInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[UInt] {
 trait UIntFactory {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = 
     new UInt(dir, width)
-  def uintLit(value: BigInt, width: Int) = {
+  def apply(value: BigInt, width: Int) = {
     val w = if (width == -1) (1 max bitLength(value)) else width
-    // println("UINT-LIT VALUE = " + value + "(b" + value.toString(2) + ") WIDTH " + w)
-    val b = new UInt(NO_DIR, w)
-    b.setLitValue(ULit(value, w))
-    // pushCommand(DefUInt(b.defd.id, value, w))
-    b
+    new UInt(NO_DIR, w, Some(ULit(value, w)))
   }
-  def apply(value: BigInt, width: Int): UInt = uintLit(value, width)
   def apply(value: BigInt): UInt = apply(value, -1)
   def apply(n: String, width: Int): UInt = {
     val bitsPerDigit = if (n(0) == 'b') 1 else if (n(0) == 'h') 4 else -1
@@ -797,7 +787,7 @@ trait UIntFactory {
 object Bits extends UIntFactory
 object UInt extends UIntFactory
 
-class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
+class SInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(dir, width, lit) with Num[SInt] {
   override def cloneTypeWidth(w: Int): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   def toType: Kind = 
@@ -852,21 +842,17 @@ class SInt(dir: Direction, width: Int) extends Bits(dir, width) with Num[SInt] {
 object SInt {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = 
     new SInt(dir, width)
-  def sintLit(value: BigInt, width: Int) = {
+  def apply(value: BigInt, width: Int) = {
     val w = if (width == -1) bitLength(value) + 1 else width
-    val b = new SInt(NO_DIR, w)
-    b.setLitValue(SLit(value, w))
-    // pushCommand(DefSInt(b.defd.id, value, w))
-    b
+    new SInt(NO_DIR, w, Some(SLit(value, w)))
   }
-  def apply(value: BigInt, width: Int): SInt = sintLit(value, width)
   def apply(value: BigInt): SInt = apply(value, -1)
   def apply(n: String, width: Int): SInt =
     apply(stringToVal(n(0), n.substring(1, n.length)), width)
   def apply(n: String): SInt = apply(n, -1)
 }
 
-class Bool(dir: Direction) extends UInt(dir, 1) {
+class Bool(dir: Direction, lit: Option[LitArg] = None) extends UInt(dir, 1, lit) {
   override def cloneTypeWidth(w: Int): this.type = new Bool(dir).asInstanceOf[this.type]
 
   override def makeLit(value: BigInt, width: Int): this.type =
@@ -885,12 +871,8 @@ object Bool {
     new Bool(dir)
   def apply() : Bool = 
     apply(NO_DIR)
-  def boolLit(value: BigInt) = {
-    val b = new Bool(NO_DIR)
-    b.setLitValue(ULit(value, 1))
-    b
-  }
-  def apply(value: BigInt) : Bool = boolLit(value)
+  def apply(value: BigInt) =
+    new Bool(NO_DIR, Some(ULit(value, 1)))
   def apply(value: Boolean) : Bool = apply(if (value) 1 else 0)
 }
 
