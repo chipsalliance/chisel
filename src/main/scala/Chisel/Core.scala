@@ -1065,7 +1065,7 @@ abstract class BlackBox(private[Chisel] _reset: Bool = null) extends Module(_res
 }
 
 object when {
-  def execBlock(block: => Unit): Command = {
+  private[Chisel] def execBlock(block: => Unit): Command = {
     pushScope
     pushCommands
     block
@@ -1078,8 +1078,6 @@ object when {
   }
 }
 
-import when._
-
 class when(cond: => Bool)(block: => Unit) {
   def elsewhen (cond: => Bool)(block: => Unit): when = {
     pushCommands
@@ -1089,14 +1087,14 @@ class when(cond: => Bool)(block: => Unit) {
   }
 
   def otherwise (block: => Unit) {
-   this.cmd.alt = execBlock(block)
+   this.cmd.alt = when.execBlock(block)
   }
 
   // Capture any commands we need to set up the conditional test.
   pushCommands
   val pred = cond.ref
   val prep = popCommands
-  val conseq  = execBlock(block)
+  val conseq  = when.execBlock(block)
   // Assume we have an empty alternate clause.
   //  elsewhen and otherwise will update it if that isn't the case.
   val cmd = Conditionally(prep, pred, conseq, EmptyCommand())
