@@ -329,12 +329,12 @@ abstract class Data(dirArg: Direction) extends Id {
   def lref: Alias = 
     Alias(cid)
   def ref: Arg = 
-    if (isLitValue) litArg() else Alias(cid)
+    if (isLit) litArg() else Alias(cid)
   def name = getRefForId(cid).name
   def debugName = mod.debugName + "." + getRefForId(cid).debugName
   def litArg(): LitArg = null
   def litValue(): BigInt = None.get
-  def isLitValue(): Boolean = false
+  def isLit(): Boolean = false
   def setLitValue(x: LitArg) {  }
   def floLitValue: Float = intBitsToFloat(litValue().toInt)
   def dblLitValue: Double = longBitsToDouble(litValue().toLong)
@@ -577,7 +577,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   private var litValueVar: Option[LitArg] = None
 
   override def litArg(): LitArg = litValueVar.get
-  override def isLitValue(): Boolean = litValueVar.isDefined
+  override def isLit(): Boolean = litValueVar.isDefined
   override def litValue(): BigInt = litValueVar.get.num
   override def setLitValue(x: LitArg) { litValueVar = Some(x) }
   override def cloneType : this.type = cloneTypeWidth(width)
@@ -587,7 +587,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
 
   final def apply(x: BigInt): Bool = {
     val d = new Bool(dir)
-    if (isLitValue())
+    if (isLit())
       d.setLitValue(ULit((litValue() >> x.toInt) & 1, 1))
     else
       pushCommand(DefPrim(d.defd.cid, d.toType, BitSelectOp, Array(this.ref), Array(x)))
@@ -601,7 +601,7 @@ abstract class Bits(dirArg: Direction, width: Int) extends Element(dirArg, width
   final def apply(x: BigInt, y: BigInt): UInt = {
     val w = (x - y + 1).toInt
     val d = UInt(width = w)
-    if (isLitValue()) {
+    if (isLit()) {
       val mask = (BigInt(1)<<d.getWidth)-BigInt(1)
       d.setLitValue(ULit((litValue() >> y.toInt) & mask, w))
     } else
@@ -921,7 +921,7 @@ object Cat {
     else {
       val l = doCat(r.slice(0, r.length/2))
       val h = doCat(r.slice(r.length/2, r.length))
-      val isConst = (l.isLitValue() && h.isLitValue())
+      val isConst = (l.isLit() && h.isLit())
       val w = if (isConst) l.getWidth + h.getWidth else if (l.getWidth >= 0 && h.getWidth >= 0) l.getWidth + h.getWidth else -1
       val d = l.cloneTypeWidth(w)
       if (isConst) {
