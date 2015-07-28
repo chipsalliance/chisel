@@ -488,6 +488,9 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
   def <> (that: Iterable[T]): Unit =
     this <> Vec(that).asInstanceOf[Data]
 
+  def := (that: Iterable[T]): Unit =
+    this := Vec(that).asInstanceOf[Data]
+
   override def isReg = elt0.isReg
   override def isFlip = {
     val isSubFlip = elt0.isFlip
