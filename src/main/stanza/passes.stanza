@@ -6,6 +6,7 @@ defpackage firrtl/passes :
   import firrtl/primops
   import firrtl-main
   import firrtl/errors
+  import bigint
 
 ;============== Pass List ================
 public val standard-passes = to-list $ [
@@ -1150,7 +1151,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 0 to false, l in locs(s)) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(to-long $ i,UnknownWidth())),
+                     equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
                      Connect(info(s),l,exp(s)),
                      EmptyStmt()
                   )
@@ -1164,7 +1165,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(to-long $ i,UnknownWidth())),
+                     equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
                      Connect(info(s),loc(s),e),
                      EmptyStmt()
                   )
@@ -1210,8 +1211,8 @@ public defmethod short-name (b:ExpandWhens) -> String : "expand-whens"
 
 ; ======== Expression Computation Library ===========
 
-val zero = UIntValue(to-long $ 0,IntWidth(1))
-val one = UIntValue(to-long $ 1,IntWidth(1))
+val zero = UIntValue(BigIntLit("b0"),IntWidth(1))
+val one = UIntValue(BigIntLit("b1"),IntWidth(1))
 
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
@@ -1547,7 +1548,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                (e:Expression) : 
                   val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
                   val en = to-exp(optimize $ get-write-enable(table[name(s)])) as Expression
-                  if en == UIntValue(to-long(1),UnknownWidth()) : 
+                  if en == UIntValue(BigIntLit("b1"),UnknownWidth()) : 
                      add{cons,_} $ Connect(info(s),ref,e)
                   else :
                      add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())
@@ -1562,7 +1563,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                match(e) :
                   (e:Expression) : 
                      val en = (to-exp $ optimize $ get-write-enable(table[n])) as Expression
-                     if en == UIntValue(to-long(1),UnknownWidth()) : 
+                     if en == UIntValue(BigIntLit("b1"),UnknownWidth()) : 
                         add{cons,_} $ Connect(info(s),ref,e)
                      else :
                         add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())
@@ -1957,14 +1958,14 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(to-int $ to-string $ ceil-log2(value(e)))))
+                  add(v,WGeq(w*,IntWidth(length(to-bin(value(e))))))
                   UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(1 + to-int $ to-string $ ceil-log2(abs(value(e))))))
+                  add(v,WGeq(w*,IntWidth(1 + length(to-bin(value(e))))))
                   SIntValue(value(e),w*)
                (w) : e
          (e) : e

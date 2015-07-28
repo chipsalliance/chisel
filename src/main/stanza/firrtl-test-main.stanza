@@ -13,6 +13,7 @@
 #include("compilers.stanza")
 #include("flo.stanza")
 #include("verilog.stanza")
+#include("bigint.stanza")
 
 ;Custom Packages
 #include("custom-passes.stanza")

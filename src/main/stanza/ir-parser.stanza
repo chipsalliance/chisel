@@ -4,6 +4,7 @@ defpackage firrtl/parser :
    import firrtl/ir2
    import stz/parser
    import firrtl/lexer
+   import bigint
 
 ;======= Convenience Functions ========
 defn first-info? (form) -> FileInfo|False :
@@ -88,6 +89,9 @@ defsyntax firrtl :
       ;Parses next form if symbol
       sym = (?x) when unwrap-token(x) typeof Symbol :
          unwrap-token(x)
+
+      bigint = (?x) when unwrap-token(x) typeof BigInt :
+         unwrap-token(x)
          
    ;Error Handling Productions
    defrule :
@@ -106,6 +110,10 @@ defsyntax firrtl :
       ;Error if not a =
       =! = (=) : `=
       =! != () : FPE(form, "Expected a '=' here.")
+
+      ;Error if not a single bigint
+      bigint$ = (?i:#bigint ?rest ...) when empty?(rest) : i
+      bigint$ != () : FPE(form, "Expected a single big integer literal here.")
 
       ;Error if not a single integer
       int$ = (?i:#int ?rest ...) when empty?(rest) : i
@@ -191,7 +199,7 @@ defsyntax firrtl :
 
       type = (?t:#typeterm ?ops:#typeop ...) : apply-suffix-ops(t, ops)
       type = (?t:#clktype) : t
-      typeop = ((@get ?size:#int$)) : (fn (t) : VectorType(t, size))
+      typeop = ((@get ?size:#bigint$)) : (fn (t) : VectorType(t, size[0]))
       
       typeterm = (?t:#inttype) : t
       typeterm = ({?fs:#field ... ?rest ...}) :
@@ -210,10 +218,10 @@ defsyntax firrtl :
       accdir = (rdwr) : RDWR
 
    defrule width :
-      width = (?x:#intorlong) : 
-         match(x) : 
-            (x:Int) : IntWidth(x)
-            (x:Long) : LongWidth(x)
+      width = (?x:#bigint) : 
+         if num-words(x) == 1 : IntWidth(x[0])
+         else if num-words(x) == 2 : LongWidth(to-long(x[1]) * to-long(1 << 32) + to-long(x[0]))
+         else : IntWidth(x[0])
       width = (?) : UnknownWidth()
 
    ;Main Statement Productions
@@ -253,20 +261,20 @@ defsyntax firrtl :
    defrule exp :
       ;Suffix Operators
       exp = (?x:#expterm ?ops:#expop ...) : apply-suffix-ops(x, ops)      
-      expop = ((@get ?f:#int)) : (fn (x) : Index(x, f, UnknownType()))
+      expop = ((@get ?f:#bigint)) : (fn (x) : Index(x, f[0], UnknownType()))
       expop = (. ?f:#id!) : (fn (x) : Subfield(x, f, UnknownType()))
       
       ;Prefix Operators
-      expterm = (?t:#inttype(?v:#long$)) :
+      expterm = (?t:#inttype(?v:#bigint$)) :
          match(t) :
             (t:UIntType) : UIntValue(v, width(t))
             (t:SIntType) : SIntValue(v, width(t))
 
-      expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
+      expterm = (?op:#sym(?es:#exp ... ?ints:#bigint ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Illegal operands to primitive operator.")
          match(primop(op)) :
-            (p:PrimOp) : DoPrim(p, es, ints, UnknownType())
+            (p:PrimOp) : DoPrim(p, es, map(get{_,0},ints), UnknownType())
             (p:False) : FPE(form, "Unrecognized primitive operator '~'." << [op])
       expterm = (?op:#sym) :
          Ref(op, UnknownType())
