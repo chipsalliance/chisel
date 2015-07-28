@@ -581,7 +581,7 @@ abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends 
   final def apply(x: Int): Bool =
     apply(BigInt(x))
   final def apply(x: UInt): Bool =
-    apply(x.litValue())
+    (this >> x)(0)
 
   final def apply(x: BigInt, y: BigInt): UInt = {
     val w = (x - y + 1).toInt
