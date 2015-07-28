@@ -919,25 +919,20 @@ object Mux {
 }
 
 object Cat {
-  def apply[T <: Bits](a: T, r: T*): T = apply(a :: r.toList)
-  def apply[T <: Bits](r: Seq[T]): T = doCat(r)
-  private def doCat[T <: Data](r: Seq[T]): T = {
-    if (r.tail.isEmpty)
-      r.head
+  def apply[T <: Bits](a: T, r: T*): UInt = apply(a :: r.toList)
+  def apply[T <: Bits](r: Seq[T]): UInt = {
+    if (r.tail.isEmpty) r.head.asUInt
     else {
-      val l = doCat(r.slice(0, r.length/2))
-      val h = doCat(r.slice(r.length/2, r.length))
-      val isConst = (l.isLit() && h.isLit())
-      val w = if (isConst) l.getWidth + h.getWidth else if (l.getWidth >= 0 && h.getWidth >= 0) l.getWidth + h.getWidth else -1
-      val d = l.cloneTypeWidth(w)
-      if (isConst) {
-        val c = (l.litValue() << h.getWidth) | h.litValue()
-        // println("DO-CAT L = " + l.litValue() + " LW = " + l.getWidth + " H = " + h.litValue() + " -> " + c)
-
-        d.setLitValue(ULit(c, w))
-      } else
-        pushCommand(DefPrim(d.cid, d.toType, ConcatOp, Array(l.ref, h.ref), NoLits))
-      d
+      val left = apply(r.slice(0, r.length/2))
+      val right = apply(r.slice(r.length/2, r.length))
+      val w = left.sumWidth(right, 0)
+      if (left.isLit && right.isLit) {
+        UInt((left.litValue() << right.getWidth) | right.litValue(), w)
+      } else {
+        val d = UInt(width = w)
+        pushCommand(DefPrim(d.cid, d.toType, ConcatOp, Array(left.ref, right.ref), NoLits))
+        d
+      }
     }
   }
 }
