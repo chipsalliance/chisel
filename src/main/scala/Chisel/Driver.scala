@@ -144,14 +144,12 @@ object Driver extends FileSystemUtilities{
 
   private def execute[T <: Module](gen: () => T): (Circuit, T) = {
     val emitter = new Emitter
+    ChiselError.info("Elaborating design")
     val (c, mod) = build{ gen() }
-    // setTopComponent(c)
     if (!isTesting) {
+      ChiselError.info(s"Emitting circuit ${c.main}")
       val s = emitter.emit( c )
-      // println(c.components(0))
       val filename = c.main + ".fir"
-      // println("FILENAME " + filename)
-      // println("S = " + s)
       val out = createOutputFile(filename)
       out.write(s)
       /* Params - If dumping design, dump space to pDir*/
@@ -163,6 +161,7 @@ object Driver extends FileSystemUtilities{
       }
       out.close()
     }
+    ChiselError.info("Finished")
     (c, mod)
   }
 
