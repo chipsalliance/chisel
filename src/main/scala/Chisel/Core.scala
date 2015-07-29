@@ -972,13 +972,11 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
       res.asInstanceOf[this.type]
     } catch {
       case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
-      //   throwException("Parameterized Bundle " + this.getClass + " needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable", npe)
-        val s = "CLONE INVOCATION EXCEPTION " + this.getClass
-        error(s)
+        ChiselError.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
+        this
       case e: java.lang.Exception =>
-        val s = "CLONE ANY EXCEPTION " + this.getClass
-        error(s)
-      //   throwException("Parameterized Bundle " + this.getClass + " needs cloneType  method", e)
+        ChiselError.error(s"Parameterized Bundle ${this.getClass} needs cloneType  method")
+        this
     }
   }
 }
