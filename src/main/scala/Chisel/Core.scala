@@ -936,7 +936,7 @@ object Bundle {
 
 class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) { 
   def toPorts: Seq[Port] =
-    elements.map(_._2.toPort).toSeq
+    elements.map(_._2.toPort).toSeq.reverse
   def toType: BundleType = 
     BundleType(this.toPorts, isFlipVar)
 
