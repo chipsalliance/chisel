@@ -1032,7 +1032,7 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
     for (m <- getClass.getDeclaredMethods) {
       val name = m.getName()
       val types = m.getParameterTypes()
-      if (types.length == 0) {
+      if (types.length == 0 && isPublic(m.getModifiers())) {
         val obj = m.invoke(this)
         obj match {
           case module: Module =>
