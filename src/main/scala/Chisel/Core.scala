@@ -463,7 +463,7 @@ abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
 
 class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
   private val self = elts.toIndexedSeq
-  private val elt0 = elts.head
+  private lazy val elt0 = elts.head
 
   override def collectElts = {
     for ((e, i) <- self zipWithIndex)
@@ -476,11 +476,7 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
   def := (that: Iterable[T]): Unit =
     this := Vec(that).asInstanceOf[Data]
 
-  override def isReg = elt0.isReg
-  override def isFlip = {
-    val isSubFlip = elt0.isFlip
-    if (isFlipVar) !isSubFlip else isSubFlip
-  }
+  override def isFlip = isFlipVar ^ (!elts.isEmpty && elt0.isFlip)
 
   def apply(idx: UInt): T = {
     val x = elt0.cloneType
@@ -491,8 +487,10 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
     self(idx)
   def toPorts: Array[Port] = 
     self.map(d => d.toPort).toArray
-  def toType: Kind = 
-    VectorType(self.size, elt0.toType, isFlipVar)
+  def toType: Kind = {
+    val eltType = if (elts.isEmpty) UIntType(UnknownWidth(), isFlipVar) else elt0.toType
+    VectorType(self.size, eltType, isFlipVar)
+  }
   override def cloneType: this.type =
     Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
   override def flatten: IndexedSeq[Bits] =
