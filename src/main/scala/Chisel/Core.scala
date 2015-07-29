@@ -1028,38 +1028,36 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
     // getClass.getName.replace('.', '_')
     getClass.getName.split('.').last
   }
-  def debugName: String = {
-    val p = _parent.getOrElse(null)
-    val pname = if (p == null) "" else (p.debugName + ".")
-    pname + getRefForId(cid).debugName
-  }
+  def debugName: String = (_parent match {
+      case Some(p) => p.debugName + "."
+      case None => ""
+    }) + getRefForId(cid).debugName
 
-  def setRefs {
+  private def setRefs: Unit = {
+    val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
+    def isPublicVal(m: java.lang.reflect.Method) =
+      m.getParameterTypes.isEmpty && valNames.contains(m.getName) && isPublic(m.getModifiers)
+
     _nodes.foreach(_.collectElts)
     setRefForId(io.cid, "this")
 
-    for (m <- getClass.getDeclaredMethods) {
-      val name = m.getName()
-      val types = m.getParameterTypes()
-      if (types.length == 0 && isPublic(m.getModifiers())) {
-        val obj = m.invoke(this)
-        obj match {
-          case module: Module =>
-            setRefForId(module.cid, name)
-            module.setRefs
-          case bundle: Bundle =>
-            if (name != "io") {
-              setRefForId(bundle.cid, name)
-            }
-          case mem: Mem[_] =>
-            setRefForId(mem.t.cid, name)
-          case vec: Vec[_] =>
-            setRefForId(vec.cid, name)
-          case data: Data =>
-            setRefForId(data.cid, name)
-          // ignore anything not of those types
-          case _ => null
-        }
+    for (m <- getClass.getDeclaredMethods; if isPublicVal(m)) {
+      m.invoke(this) match {
+        case module: Module =>
+          setRefForId(module.cid, m.getName)
+          module.setRefs
+        case bundle: Bundle =>
+          if (m.getName != "io") {
+            setRefForId(bundle.cid, m.getName)
+          }
+        case mem: Mem[_] =>
+          setRefForId(mem.t.cid, m.getName)
+        case vec: Vec[_] =>
+          setRefForId(vec.cid, m.getName)
+        case data: Data =>
+          setRefForId(data.cid, m.getName)
+        // ignore anything not of those types
+        case _ => null
       }
     }
   }
