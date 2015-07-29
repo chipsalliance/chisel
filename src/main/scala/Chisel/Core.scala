@@ -439,7 +439,7 @@ class SeqMem[T <: Data](t: T, n: Int) {
 object Vec {
   def apply[T <: Data](gen: T, n: Int): Vec[T] = 
     new Vec((0 until n).map(i => gen.cloneType))
-  def apply[T <: Data](elts: Iterable[T]): Vec[T] = {
+  def apply[T <: Data](elts: Seq[T]): Vec[T] = {
     val vec = new Vec[T](elts.map(e => elts.head.cloneType))
     if (vec.isReg)
       throw new Exception("Vec of Reg Deprecated.")
@@ -461,7 +461,7 @@ abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
   def cloneTypeWidth(width: Int): this.type = cloneType
 }
 
-class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
+class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
   private val self = elts.toIndexedSeq
   private lazy val elt0 = elts.head
 
@@ -469,11 +469,11 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
     for ((e, i) <- self zipWithIndex)
       setIndexForId(cid, e.cid, i)
 
-  def <> (that: Iterable[T]): Unit =
+  def <> (that: Seq[T]): Unit =
     for ((a, b) <- this zip that)
       a <> b
 
-  def := (that: Iterable[T]): Unit =
+  def := (that: Seq[T]): Unit =
     for ((a, b) <- this zip that)
       a := b
 

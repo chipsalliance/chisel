@@ -30,6 +30,6 @@ object OHToUInt {
 }
 
 object PriorityEncoder {
-  def apply(in: Iterable[Bool]): UInt = PriorityMux(in, (0 until in.size).map(UInt(_)))
+  def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(UInt(_)))
   def apply(in: Bits): UInt = apply(in.toBools)
 }
