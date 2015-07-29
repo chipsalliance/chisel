@@ -38,7 +38,7 @@ object Builder {
     modulez.pop
   }
   val componentNames = new HashSet[String]()
-  def UniqueComponent(name: String, ports: Array[Port], body: Command) = {
+  def UniqueComponent(name: String, ports: Seq[Port], body: Command) = {
     val res = Component(if (componentNames.contains(name)) genSym.next(name) else name, ports, body)
     componentNames += name
     res
@@ -217,7 +217,7 @@ case class UIntType(val width: Width, flip: Boolean) extends Kind(flip);
 case class SIntType(val width: Width, flip: Boolean) extends Kind(flip);
 case class FloType(flip: Boolean) extends Kind(flip);
 case class DblType(flip: Boolean) extends Kind(flip);
-case class BundleType(val ports: Array[Port], flip: Boolean) extends Kind(flip);
+case class BundleType(val ports: Seq[Port], flip: Boolean) extends Kind(flip);
 case class VectorType(val size: Int, val kind: Kind, flip: Boolean) extends Kind(flip);
 
 abstract class Command;
@@ -244,7 +244,7 @@ case class ConnectInit(val loc: Alias, val exp: Arg) extends Command;
 case class ConnectInitIndex(val loc: Alias, val index: Int, val exp: Arg) extends Command;
 case class EmptyCommand() extends Command;
 
-case class Component(val name: String, val ports: Array[Port], val body: Command);
+case class Component(val name: String, val ports: Seq[Port], val body: Command);
 case class Circuit(val components: Array[Component], val main: String);
 
 object Commands {
@@ -486,8 +486,8 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
   }
   def apply(idx: Int): T = 
     self(idx)
-  def toPorts: Array[Port] = 
-    self.map(d => d.toPort).toArray
+  def toPorts: Seq[Port] =
+    self.map(d => d.toPort)
   def toType: Kind = {
     val eltType = if (elts.isEmpty) UIntType(UnknownWidth(), isFlipVar) else elt0.toType
     VectorType(self.size, eltType, isFlipVar)
@@ -935,8 +935,8 @@ object Bundle {
 }
 
 class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) { 
-  def toPorts: Array[Port] = 
-    elements.map(_._2.toPort).toArray
+  def toPorts: Seq[Port] =
+    elements.map(_._2.toPort).toSeq
   def toType: BundleType = 
     BundleType(this.toPorts, isFlipVar)
 
@@ -1112,21 +1112,19 @@ class when(cond: => Bool)(block: => Unit) {
 /// CHISEL IR EMITTER
 
 class Emitter {
-  var indenting = 0
-  def withIndent(f: => String) = { 
-    indenting += 1;
+  private var indenting = 0
+  def withIndent(f: => String) = {
+    indenting += 1
     val res = f
-    indenting -= 1;
+    indenting -= 1
     res
   }
-  def join(parts: Array[String], sep: String) = 
-    parts.foldLeft("")((s, p) => if (s == "") p else s + sep + p)
-  def join0(parts: Array[String], sep: String) = 
-    parts.foldLeft("")((s, p) => s + sep + p)
-  def join0(parts: List[String], sep: String) = 
-    parts.foldLeft("")((s, p) => s + sep + p)
-  def newline = 
-    "\n" + join((0 until indenting).map(x => "  ").toArray, "")
+
+  def newline = "\n" + ("  " * indenting)
+  def join(parts: Seq[String], sep: String): StringBuilder =
+    parts.tail.foldLeft(new StringBuilder(parts.head))((s, p) => s ++= sep ++= p)
+  def join0(parts: Seq[String], sep: String): StringBuilder =
+    parts.foldLeft(new StringBuilder)((s, p) => s ++= sep ++= p)
   def emitDir(e: Direction, isTop: Boolean): String =
     if (isTop) (e.name + " ") else if (e == INPUT) "flip " else ""
   def emit(e: PrimOp): String = e.name
@@ -1181,7 +1179,7 @@ class Emitter {
         }
         prefix + "when " + emit(e.pred) + " : " + withIndent{ emit(e.conseq) } + suffix
       }
-      case e: Begin => join0(e.body.map(x => emit(x)), newline)
+      case e: Begin => join0(e.body.map(x => emit(x)), newline).toString
       case e: Connect => emit(e.loc) + " := " + emit(e.exp)
       case e: BulkConnect => emit(e.loc1) + " <> " + emit(e.loc2)
       case e: ConnectInit => "on-reset " + emit(e.loc) + " := " + emit(e.exp)
