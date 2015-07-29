@@ -178,7 +178,7 @@ class ManualTester[+T <: Module]
         cmd = "wire_peek " + name;
       }
       val s = emulatorCmd(cmd)
-      val rv = toLitVal(s)
+      val rv = BigInt(s.substring(2), 16)
       if (isTrace) println("  PEEK " + name + " " + (if (off >= 0) (off + " ") else "") + "-> " + s)
       rv
     }

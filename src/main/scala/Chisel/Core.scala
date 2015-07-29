@@ -527,13 +527,24 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 //   }
 // }
 
-import Literal._
-
 object BitPat {
+  private def parse(x: String): (BigInt, BigInt, Int) = {
+    require(x.head == 'b', "BINARY BitPats ONLY")
+    var bits = BigInt(0)
+    var mask = BigInt(0)
+    for (d <- x.tail) {
+      if (d != '_') {
+        if (!"01?".contains(d)) ChiselError.error({"Literal: " + x + " contains illegal character: " + d})
+        mask = (mask << 1) + (if (d == '?') 0 else 1)
+        bits = (bits << 1) + (if (d == '1') 1 else 0)
+      }
+    }
+    (bits, mask, x.length-1)
+  }
+
   def apply(n: String): BitPat = {
-    require(n(0) == 'b', "BINARY BitPats ONLY")
-    val (bits, mask, swidth) = parseLit(n.substring(1))
-    new BitPat(toLitVal(bits, 2), toLitVal(mask, 2), swidth)
+    val (bits, mask, width) = parse(n)
+    new BitPat(bits, mask, width)
   }
 
   def DC(width: Int): BitPat = BitPat("b" + ("?" * width))
@@ -769,13 +780,13 @@ trait UIntFactory {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = 
     new UInt(dir, width)
   def apply(value: BigInt, width: Int) = {
-    val w = if (width == -1) (1 max bitLength(value)) else width
+    val w = if (width == -1) (1 max value.bitLength) else width
     new UInt(NO_DIR, w, Some(ULit(value, w)))
   }
   def apply(value: BigInt): UInt = apply(value, -1)
   def apply(n: String, width: Int): UInt = {
     val bitsPerDigit = if (n(0) == 'b') 1 else if (n(0) == 'h') 4 else -1
-    apply(stringToVal(n(0), n.substring(1, n.length)),
+    apply(Literal.stringToVal(n(0), n.substring(1, n.length)),
           if (width == -1) (bitsPerDigit * (n.length-1)) else width)
   }
   def apply(n: String): UInt = apply(n, -1)
@@ -841,12 +852,12 @@ object SInt {
   def apply(dir: Direction = OUTPUT, width: Int = -1) = 
     new SInt(dir, width)
   def apply(value: BigInt, width: Int) = {
-    val w = if (width == -1) bitLength(value) + 1 else width
+    val w = if (width == -1) 1 + value.bitLength else width
     new SInt(NO_DIR, w, Some(SLit(value, w)))
   }
   def apply(value: BigInt): SInt = apply(value, -1)
   def apply(n: String, width: Int): SInt =
-    apply(stringToVal(n(0), n.substring(1, n.length)), width)
+    apply(Literal.stringToVal(n(0), n.substring(1, n.length)), width)
   def apply(n: String): SInt = apply(n, -1)
 }
 
