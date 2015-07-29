@@ -465,16 +465,17 @@ class Vec[T <: Data](elts: Iterable[T], dirArg: Direction = NO_DIR) extends Aggr
   private val self = elts.toIndexedSeq
   private lazy val elt0 = elts.head
 
-  override def collectElts = {
+  override def collectElts: Unit =
     for ((e, i) <- self zipWithIndex)
       setIndexForId(cid, e.cid, i)
-  }
 
   def <> (that: Iterable[T]): Unit =
-    this <> Vec(that).asInstanceOf[Data]
+    for ((a, b) <- this zip that)
+      a <> b
 
   def := (that: Iterable[T]): Unit =
-    this := Vec(that).asInstanceOf[Data]
+    for ((a, b) <- this zip that)
+      a := b
 
   override def isFlip = isFlipVar ^ (!elts.isEmpty && elt0.isFlip)
 
