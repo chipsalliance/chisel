@@ -1,4 +1,5 @@
 package Chisel
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, HashMap, LinkedHashMap}
 import java.lang.reflect.Modifier._
 import java.lang.Double.longBitsToDouble
@@ -106,7 +107,7 @@ object Builder {
   def build[T <: Module](f: => T): (Circuit, T) = {
     val (cmd, mod) = collectCommands(f)
     setRefForId(mod.cid, mod.name)
-    (Circuit(components.toArray, components.last.name), mod)
+    (Circuit(components, components.last.name), mod)
   }
 
 }
@@ -229,7 +230,7 @@ case class DefUInt(val id: String, val value: BigInt, val width: Int) extends De
 case class DefSInt(val id: String, val value: BigInt, val width: Int) extends Definition;
 case class DefFlo(val id: String, val value: Float) extends Definition;
 case class DefDbl(val id: String, val value: Double) extends Definition;
-case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Array[Arg], val lits: Array[BigInt]) extends Definition;
+case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Seq[Arg], val lits: Seq[BigInt]) extends Definition;
 case class DefWire(val id: String, val kind: Kind) extends Definition;
 case class DefRegister(val id: String, val kind: Kind) extends Definition;
 case class DefMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
@@ -245,10 +246,10 @@ case class ConnectInitIndex(val loc: Alias, val index: Int, val exp: Arg) extend
 case class EmptyCommand() extends Command;
 
 case class Component(val name: String, val ports: Seq[Port], val body: Command);
-case class Circuit(val components: Array[Component], val main: String);
+case class Circuit(val components: Seq[Component], val main: String);
 
 object Commands {
-  val NoLits = Array[BigInt]()
+  val NoLits = Seq[BigInt]()
 }
 
 import Commands._
@@ -523,7 +524,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 //   def apply[S <: Data, T <: Bits](i: S)(gen: Int => T): T = {
 //     val b = i.toBits
 //     val x = gen(b.getWidth)
-//     pushCommand(DefPrim(x.defd.id, x.toType, ConvertOp, Array(b.ref), NoLits))
+//     pushCommand(DefPrim(x.defd.id, x.toType, ConvertOp, Seq(b.ref), NoLits))
 //     x
 //   }
 // }
@@ -584,7 +585,7 @@ abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends 
     if (isLit()) Bool((litValue() >> x.toInt) & 1)
     else {
       val d = Bool()
-      pushCommand(DefPrim(d.defd.cid, d.toType, BitSelectOp, Array(this.ref), Array(x)))
+      pushCommand(DefPrim(d.defd.cid, d.toType, BitSelectOp, Seq(this.ref), Seq(x)))
       d
     }
   }
@@ -598,7 +599,7 @@ abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends 
     if (isLit()) UInt((litValue >> y.toInt) & ((BigInt(1) << w) - 1), w)
     else {
       val d = UInt(width = w)
-      pushCommand(DefPrim(d.defd.cid, d.toType, BitsExtractOp, Array(this.ref), Array(x, y)))
+      pushCommand(DefPrim(d.defd.cid, d.toType, BitsExtractOp, Seq(this.ref), Seq(x, y)))
       d
     }
   }
@@ -620,22 +621,22 @@ abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends 
 
   protected[Chisel] def unop(op: PrimOp, width: Int): this.type = {
     val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref), NoLits))
     d
   }
   protected[Chisel] def binop(op: PrimOp, other: BigInt, width: Int): this.type = {
     val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref), Array(other)))
+    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref), Seq(other)))
     d
   }
   protected[Chisel] def binop(op: PrimOp, other: Bits, width: Int): this.type = {
     val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref, other.ref), NoLits))
     d
   }
   protected[Chisel] def compop(op: PrimOp, other: Bits): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref, other.ref), NoLits))
     d
   }
 
@@ -674,7 +675,7 @@ abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends 
 
   private def bits_redop(op: PrimOp): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref), NoLits))
     d
   }
 
@@ -762,13 +763,13 @@ class UInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(
 
   def zext(): SInt = {
     val x = SInt(width = getWidth + 1)
-    pushCommand(DefPrim(x.defd.cid, x.toType, ConvertOp, Array(ref), NoLits))
+    pushCommand(DefPrim(x.defd.cid, x.toType, ConvertOp, Seq(ref), NoLits))
     x
   }
 
   def asSInt(): SInt = {
     val x = SInt(width = getWidth)
-    pushCommand(DefPrim(x.defd.cid, x.toType, AsSIntOp, Array(ref), NoLits))
+    pushCommand(DefPrim(x.defd.cid, x.toType, AsSIntOp, Seq(ref), NoLits))
     x
   }
 
@@ -841,7 +842,7 @@ class SInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(
 
   def asUInt(): UInt = {
     val x = UInt(width = getWidth)
-    pushCommand(DefPrim(x.defd.cid, x.toType, AsUIntOp, Array(ref), NoLits))
+    pushCommand(DefPrim(x.defd.cid, x.toType, AsUIntOp, Seq(ref), NoLits))
     x
   }
   def toUInt(): UInt = asUInt()
@@ -908,7 +909,7 @@ object Cat {
         UInt((left.litValue() << right.getWidth) | right.litValue(), w)
       } else {
         val d = UInt(width = w)
-        pushCommand(DefPrim(d.cid, d.toType, ConcatOp, Array(left.ref, right.ref), NoLits))
+        pushCommand(DefPrim(d.cid, d.toType, ConcatOp, Seq(left.ref, right.ref), NoLits))
         d
       }
     }
@@ -943,8 +944,10 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
   override def flatten: IndexedSeq[Bits] =
     sortedElts.map(_._2.flatten).reduce(_ ++ _)
 
-  lazy val elements: LinkedHashMap[String, Data] = {
-    val elts = LinkedHashMap[String, Data]()
+  lazy val elements: ListMap[String, Data] = ListMap(sortedElts:_*)
+
+  private lazy val sortedElts = {
+    val elts = ArrayBuffer[(String, Data)]()
     for (m <- getClass.getMethods) {
       val name = m.getName
       val rtype = m.getReturnType
@@ -954,22 +957,20 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
           isInterface &&
           !(Bundle.keywords contains name)) {
         m.invoke(this) match {
-          case data: Data => elts(name) = data
+          case data: Data => elts += name -> data
           case _ =>
         }
       }
     }
-    elts
+    elts sortWith (_._2._id < _._2._id)
   }
-  private lazy val sortedElts =
-    elements.toIndexedSeq sortWith (_._2._id < _._2._id)
   override def collectElts =
     sortedElts.foreach(e => setFieldForId(cid, e._2.cid, e._1))
 
   override def cloneType : this.type = {
     try {
       val constructor = this.getClass.getConstructors.head
-      val res = constructor.newInstance(Array.fill(constructor.getParameterTypes.size)(null):_*)
+      val res = constructor.newInstance(Seq.fill(constructor.getParameterTypes.size)(null):_*)
       res.asInstanceOf[this.type]
     } catch {
       case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
@@ -1038,6 +1039,8 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
       m.getParameterTypes.isEmpty && valNames.contains(m.getName) && isPublic(m.getModifiers)
 
     _nodes.foreach(_.collectElts)
+    _nodes.clear
+
     setRefForId(io.cid, "this")
 
     for (m <- getClass.getDeclaredMethods; if isPublicVal(m)) {
