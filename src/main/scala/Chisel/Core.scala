@@ -1064,8 +1064,9 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
     }
   }
 
-  // TODO: actually implement assert
+  // TODO: actually implement these
   def assert(cond: Bool, msg: String): Unit = {}
+  def printf(message: String, args: Bits*): Unit = {}
 }
 
 // TODO: actually implement BlackBox (this hack just allows them to compile)
