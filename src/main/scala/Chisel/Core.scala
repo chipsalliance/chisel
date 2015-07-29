@@ -337,7 +337,7 @@ abstract class Data(dirArg: Direction) extends Id {
   def fromBits(n: Bits): this.type = {
     var i = 0
     val wire = Wire(this.cloneType)
-    for (x <- wire.flatten.reverse) {
+    for (x <- wire.flatten) {
       x := n(i + x.getWidth-1, i)
       i += x.getWidth
     }
@@ -962,7 +962,7 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
         }
       }
     }
-    elts sortWith (_._2._id < _._2._id)
+    elts sortWith (_._2._id > _._2._id)
   }
   override def collectElts =
     sortedElts.foreach(e => setFieldForId(cid, e._2.cid, e._1))
