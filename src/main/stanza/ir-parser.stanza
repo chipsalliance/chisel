@@ -82,6 +82,9 @@ defsyntax firrtl :
       int = (?x) when unwrap-token(x) typeof Int :
          unwrap-token(x)
 
+      string = (?x) when unwrap-token(x) typeof String :
+         unwrap-token(x)
+
       ;Parses next form if long literal
       intorlong = (?x) when unwrap-token(x) typeof Int|Long :
          unwrap-token(x)
@@ -90,9 +93,6 @@ defsyntax firrtl :
       sym = (?x) when unwrap-token(x) typeof Symbol :
          unwrap-token(x)
 
-      bigint = (?x) when unwrap-token(x) typeof BigInt :
-         unwrap-token(x)
-         
    ;Error Handling Productions
    defrule :
       ;Error if not an identifier
@@ -110,10 +110,6 @@ defsyntax firrtl :
       ;Error if not a =
       =! = (=) : `=
       =! != () : FPE(form, "Expected a '=' here.")
-
-      ;Error if not a single bigint
-      bigint$ = (?i:#bigint ?rest ...) when empty?(rest) : i
-      bigint$ != () : FPE(form, "Expected a single big integer literal here.")
 
       ;Error if not a single integer
       int$ = (?i:#int ?rest ...) when empty?(rest) : i
@@ -199,7 +195,7 @@ defsyntax firrtl :
 
       type = (?t:#typeterm ?ops:#typeop ...) : apply-suffix-ops(t, ops)
       type = (?t:#clktype) : t
-      typeop = ((@get ?size:#bigint$)) : (fn (t) : VectorType(t, size[0]))
+      typeop = ((@get ?size:#int$)) : (fn (t) : VectorType(t, size[0]))
       
       typeterm = (?t:#inttype) : t
       typeterm = ({?fs:#field ... ?rest ...}) :
@@ -218,7 +214,7 @@ defsyntax firrtl :
       accdir = (rdwr) : RDWR
 
    defrule width :
-      width = (?x:#bigint) : 
+      width = (?x:#int) : 
          if num-words(x) == 1 : IntWidth(x[0])
          else if num-words(x) == 2 : LongWidth(to-long(x[1]) * to-long(1 << 32) + to-long(x[0]))
          else : IntWidth(x[0])
@@ -261,16 +257,21 @@ defsyntax firrtl :
    defrule exp :
       ;Suffix Operators
       exp = (?x:#expterm ?ops:#expop ...) : apply-suffix-ops(x, ops)      
-      expop = ((@get ?f:#bigint)) : (fn (x) : Index(x, f[0], UnknownType()))
+      expop = ((@get ?f:#int)) : (fn (x) : Index(x, f[0], UnknownType()))
       expop = (. ?f:#id!) : (fn (x) : Subfield(x, f, UnknownType()))
       
       ;Prefix Operators
-      expterm = (?t:#inttype(?v:#bigint$)) :
+      expterm = (?t:#inttype(?v:#string)) :
          match(t) :
-            (t:UIntType) : UIntValue(v, width(t))
-            (t:SIntType) : SIntValue(v, width(t))
+            (t:UIntType) : UIntValue(BigIntLit(v as String), width(t))
+            (t:SIntType) : SIntValue(BigIntLit(v as String), width(t))
 
-      expterm = (?op:#sym(?es:#exp ... ?ints:#bigint ... ?rest ...)) :
+      expterm = (?t:#inttype(?v:#int$)) :
+         match(t) :
+            (t:UIntType) : UIntValue(BigIntLit(abs(v as Int)), width(t))
+            (t:SIntType) : SIntValue(BigIntLit(v as Int), width(t))
+
+      expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Illegal operands to primitive operator.")
          match(primop(op)) :

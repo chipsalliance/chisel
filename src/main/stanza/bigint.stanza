@@ -2,45 +2,45 @@ defpackage bigint :
    import core
    import verse
 
-
-public defn to-hex (num: Int) -> String :
-  val buf = StringBuffer()
-  print(buf, "0x")
-  var rems = List<Int>()
-  var x : Int = num
-  defn* loop () :
-    rems = List(x % 16, rems)
-    x = x / 16
-    if x > 0: loop()
-  loop()
-  for r in rems do :
-    print(buf, to-char((to-int('0') + r) when r < 10 else (to-int('a') + r - 10)))
-  to-string(buf)
-
-
 val val-n-bytes = 4
 val val-n-bits = val-n-bytes * 8
 val val-all-ones = -1 ;; TODO
 val val-n-half-bits = 32 / 2
-defn val-n-words (nbits: Int) -> Int : 1 + (nbits - 1) / 32 ;val-n-bits
+defn val-n-words (nbits: Int) -> Int : 1 + (nbits - 1) / 32
 defn val-n-half-words (nbits: Int) -> Int : (1 + (nbits - 1)) / val-n-half-bits
 defn val-top-bit (v: Int) -> Int : v >> (32 - 1)
 defn val-n-full-words (nbits: Int) -> Int : nbits / 32
 defn val-n-word-bits (nbits: Int) -> Int : nbits % 32
-defn mask-val (n: Int) : val-all-ones >> (32 - n)
+defn mask-val (n: Int) : -1 >> (32 - n)
 
 public defclass BigInt <: Gettable & Settable & Lengthable
 public defmulti to-bin (b: BigInt) -> String
+public defmulti to-hex (b: BigInt) -> String
 public defmulti num-words (b: BigInt) -> Int
 public defmulti dat (b: BigInt) -> Array<Int>
 public defn BigInt (len: Int) :
   val d = Array<Int>(val-n-words(len))
   new BigInt :
      defmethod get (this, i: Int) -> Int : d[i]
-     defmethod set (this, i: Int, x: Int) : d[i] = x; & (-1) ;val-all-ones
+     defmethod set (this, i: Int, x: Int) : d[i] = x & -1
      defmethod dat (this) -> Array<Int> : d
      defmethod length (this) -> Int : len
      defmethod num-words (this) -> Int : length(d)
+     defmethod to-hex (this) -> String :
+       defn as-hex (i: Int) -> String : 
+          val str = "0123456789abcdef"
+          substring(str,i,i + 1)
+       var str = "h"
+       ;println(to-bin(this))
+       for i in 0 to len by 4 do :
+         val pos = len - 4 - i
+         ;println(pos)
+         val digit = (d[pos / 32] >> (pos % 32)) & 15 
+         ;println(digit)
+         val hex = as-hex(digit)
+         ;println(hex)
+         str = string-join([str hex])
+       string-join([ "\"" str "\""])
      defmethod to-bin (this) -> String :
        string-join $
        generate<Char> :
@@ -49,11 +49,8 @@ public defn BigInt (len: Int) :
              yield(if (d[pos / 32] >> (pos % 32))&1 == 1: '1' else: '0')
              loop(pos - 1)
          loop(len - 1)
-     defmethod to-string (this) : 
-       var s = ""
-       for x in d do : s = string-join([x s])
-       s
      ;defmethod to-string (this) : string-join(["BigInt<" len ">(" to-bin(this) ")"])
+     defmethod to-string (this) : to-hex(this)
 
 defmethod print (o:OutputStream, b:BigInt) :
   print(o, to-string(b))
@@ -78,7 +75,7 @@ defn mask! (d: BigInt) -> BigInt :
   val n-full-words = val-n-full-words(length(d))
   val n-word-bits  = val-n-word-bits(length(d))
   for i in 0 to n-full-words do :
-    d[i] = val-all-ones
+    d[i] = -1
   for i in n-full-words to num-words(d) do :
     d[i] = 0
   if n-word-bits > 0 :
@@ -97,8 +94,8 @@ defn extract! (d:BigInt, s0:BigInt, e:Int, s:Int) -> BigInt : trim!(rsh!(d, s0, 
 public defn bits (s0:BigInt, e:Int, s:Int) -> BigInt : extract!(BigInt(e - s + 1), s0, e, s)
 
 public defn bit (s0:BigInt, s:Int) -> Int :
-  val wi = s / 32 ;val-n-bits
-  val bi = s % 32 ;val-n-bits
+  val wi = s / 32
+  val bi = s % 32
   s0[wi] >> bi
 
 defn inject! (d:BigInt, s0:BigInt, f:BigInt, start:Int) -> BigInt :
@@ -151,70 +148,40 @@ public defn greater-eq?! (diff:BigInt, x:BigInt, y:BigInt) -> True|False : not l
 
 public defn greater-eq? (x:BigInt, y:BigInt) -> True|False : op(greater-eq?!, x, y)
 
+defn as-digit (c: Char) -> Int :
+  index-of("0123456789abcdef", c) as Int
+
 public defn BigIntLit (f: (Int) -> Int, len: Int) :
   fill!(f, BigInt(len))
-
-;val hex-nibbles = "0123456789abcdef"
-
-defn as-digit (c: Char) -> Int :
-  var index = 0
-  for (x in "0123456789abcdef", i in 0 to false) do :
-     if x == c: index = i
-  index
-  ;val x = index-of(hex-nibbles, c)
-  ;x as Int
-
-public defn BigIntLit (s: String) : BigIntLit(s, -1)
-
-;public defn BigIntLit (i: Int) : BigIntLit(string-join(["x" to-hex(to-string(i))]))
-
-public defn BigIntLit (s: String, w:Int) :
-  val hd = s[0]
-  val base = if hd == 'b': 1 else if hd == 'x': 4 else: 'd'
-  val shamt   = if base == 'b': 1 else if base == 'x': 4 else: 4
-  val digits  = if base == 'b': substring(s, 1) else if base == 'x': substring(s, 1) else: s
-  val len     = if w == -1: length(digits) * shamt else: w
-  println-all(["STRING " s])
-  println-all(["BASE " base " SHAMT " shamt " DIGITS " digits " LEN " len])
-  var lit     = BigInt(len)
-  for i in 0 to num-words(lit) do :
-    lit[i] = 0
-
-
-  switch {base == _} :
-    'd' :
-      for i in 0 to length(digits) do :
-        val y = shift-left(lit,3) + shift-left(lit,1)
-        val x = to-int(substring(digits,i,i + 1))
-        val z = BigInt(length(y))
-        z[0] = x
-        lit = y + z
-        println-all(["DIGIT = " x])
-        println-all(["Before LIT = " lit])
-
-        ;println-all(["After LIT = " lit])
-      ;println-all(["RES = " to-bin(lit)])
-      ;println-all(["RES = " lit])
-      lit
-    else : 
-      for i in 0 to length(digits) do :
-        val off   = (length(digits) - 1 - i) * shamt
-        val wi    = off / 32;val-n-bits
-        val bi    = off % 32;val-n-bits
-        ;println-all(["OFF " off " wi " wi " bi " bi " digits " digits])
-        lit[wi] = lit[wi] | ((as-digit(digits[i]) & 1) << bi)
-        ;println-all([" lit[wi] " lit[wi] " => " lit])
-      ;println-all(["RES = " to-bin(lit)])
-      ;println-all(["RES = " lit])
-      lit
-
-public defn sizeof (in: Int) -> Int :
-  max(1, ceil-log2(in + 1))
 
 public defn BigIntLit (x: Int, w: Int) :
   fill!({_ + x}, BigInt(w))
 
 public defn BigIntLit (x: Int) : BigIntLit(x, sizeof(x))
+
+public defn BigIntLit (s: String) : BigIntLit(s, -1)
+
+public defn BigIntLit (s: String, w:Int) :
+  val base    = s[0]
+  val shamt   = if base == 'b': 1 else if base == 'h': 4 else: 2
+  val digits  = substring(s, 1)
+  val len     = if w == -1: length(digits) * shamt else: w
+  val lit     = BigInt(len)
+  ;; println-all(["BASE " base " SHAMT " shamt " DIGITS " digits])
+  for i in 0 to num-words(lit) do :
+    lit[i] = 0
+  for i in 0 to length(digits) do :
+    val off   = (length(digits) - 1 - i) * shamt
+    val wi    = off / 32
+    val bi    = off % 32
+    lit[wi]   = lit[wi] | (as-digit(digits[i]) << bi)
+    ;; println-all(["OFF " off " wi " wi " bi " bi " lit[wi] " lit[wi] " => " lit])
+  ;; println-all(["RES = " lit])
+  lit
+
+public defn sizeof (in: Int) -> Int :
+  println(in)
+  max(1, ceil-log2(in + 1))
 
 defn op (f:(BigInt, BigInt, BigInt) -> True|False, x:BigInt, y:BigInt) -> True|False :
   f(BigInt(max(length(x), length(y))), x, y)
@@ -273,11 +240,11 @@ public defn neg (x:BigInt) -> BigInt : op(neg!, x)
 public defn rsha! (d:BigInt, s0:BigInt, amount:Int) -> BigInt :
   val w = length(s0)
   val nw = num-words(d)
-  val n-shift-bits     = amount % 32;val-n-bits
-  val n-shift-words    = amount / 32;val-n-bits
-  val n-rev-shift-bits = 32 - n-shift-bits;val-n-bits
+  val n-shift-bits     = amount % 32
+  val n-shift-words    = amount / 32
+  val n-rev-shift-bits = 32 - n-shift-bits
   val is-zero-carry    = n-shift-bits == 0
-  val msb              = s0[nw - 1] >> (w - nw * 32 - 1);val-n-bits
+  val msb              = s0[nw - 1] >> (w - nw * 32 - 1)
   var carry = 0;
 
   if msb == 0 :
@@ -297,13 +264,13 @@ public defn rsha! (d:BigInt, s0:BigInt, amount:Int) -> BigInt :
 
     defn* loop (i:Int) :
       if i >= 0 :
-        val idx = i * val-n-bits
+        val idx = i * 32
         if idx  > boundary :
-          d[i] = val-all-ones
+          d[i] = -1
           loop(i - 1)
         else :
-          d[i] = d[i] | (val-all-ones << (boundary - idx))
-          d[nw - 1] = d[nw - 1] & (val-all-ones >> ((nw - 1) * val-n-bits - w))
+          d[i] = d[i] | (-1 << (boundary - idx))
+          d[nw - 1] = d[nw - 1] & (-1 >> ((nw - 1) * 32 - w))
     loop(nw - 1)
   d
 
@@ -312,9 +279,9 @@ public defn signed-shift-right (b:BigInt, n:Int) -> BigInt : rsha!(BigInt(length
 public defn rsh! (d:BigInt, s0:BigInt, amount:Int) -> BigInt :
   val nw               = num-words(d)
   var carry            = 0
-  val n-shift-bits     = amount % val-n-bits
-  val n-shift-words    = amount / val-n-bits
-  val n-rev-shift-bits = val-n-bits - n-shift-bits
+  val n-shift-bits     = amount % 32
+  val n-shift-words    = amount / 32
+  val n-rev-shift-bits = 32 - n-shift-bits
   val is-zero-carry    = n-shift-bits == 0
   for i in 0 to n-shift-words do :
     d[nw - i - 1] = 0
@@ -331,14 +298,14 @@ public defn shift-right (b:BigInt, n:Int) -> BigInt : rsh!(BigInt(length(b)), b,
 
 public defn lsh! (d:BigInt, s0:BigInt, amount:Int) :
   ;; println-all(["LSH " s0 " AMOUNT " amount " INTO BIGINT<" length(d) ">"])
-  val n-shift-bits     = amount % val-n-bits
-  val n-shift-words    = amount / val-n-bits
-  val n-rev-shift-bits = val-n-bits - n-shift-bits
+  val n-shift-bits     = amount % 32
+  val n-shift-words    = amount / 32
+  val n-rev-shift-bits = 32 - n-shift-bits
   val is-zero-carry    = n-shift-bits == 0
   for i in 0 to num-words(d) do :
     d[i] = 0
   var carry = 0;
-  ;; println-all(["LSH AMOUNT " amount " VNB " val-n-bits " NSB " n-shift-bits " NSW " n-shift-words " NRSB " n-rev-shift-bits])
+  ;; println-all(["LSH AMOUNT " amount " VNB " 32 " NSB " n-shift-bits " NSW " n-shift-words " NRSB " n-rev-shift-bits])
   for i in 0 to (num-words(d) - n-shift-words) do :
     val x = if i >= num-words(s0) : 0 else: s0[i]
     ;; println-all(["  SHIFTING " (i + n-shift-words) " VAL " (x << n-shift-bits)])
@@ -410,15 +377,15 @@ defn check (msg:String, x:BigInt) :
 ;; check("B< ", BigIntLit(5, 3) << 10, BigIntLit(5 << 1, 13))
 ;; check("B< ", BigIntLit(5, 3) << 32, BigIntLit(5 << 1, 38))
 ;; check("B< ", BigIntLit("b1010") << 1, BigIntLit(10 << 1, 5))
-;check("S1 ", BigIntLit("xfafa") << 16, BigIntLit("xfafa0000", 32))
-;;; check("B< ", BigIntLit(5, 3) << 64, BigIntLit(5 << 1, 67))
-;;; check("BN ", neg(BigIntLit(2, 8)), BigIntLit(-2, 8))
-;check("S2 ", BigIntLit("b11111010") << 8, BigIntLit("b1111101000000000", 16))
-;check("C1 ", cat(BigIntLit("b11111010", 8), BigIntLit("b10111100", 8)), BigIntLit("b1111101010111100", 16))
-;check("C3 ", cat(cat(BigIntLit("b1111"), BigIntLit("b1010")), cat(BigIntLit("b1011"), BigIntLit("b1100"))), BigIntLit("b1111101010111100", 16))
-;check("C4 ", cat([BigIntLit("b1111"), BigIntLit("b1010"), BigIntLit("b1011"), BigIntLit("b1100")]), BigIntLit("b1111101010111100", 16))
-;check("C5 ", BigIntLit("b101111001"), BigIntLit("b101111001"))
-;check("C6 ", cat(BigIntLit("b1"), BigIntLit("b01111001")), BigIntLit("b101111001"))
-;check("C7 ", cat(BigIntLit("b11101"), BigIntLit("b101111001")), BigIntLit("b11101101111001"))
-;check("C8 ", cat([BigIntLit("b11"), BigIntLit("b101"), BigIntLit("b1011"), BigIntLit("b11001")]), BigIntLit("b11101101111001"))
-;check("C0 ", bits(BigIntLit("b11101101111001"), 10, 1), BigIntLit("b0110111100"))
+check("S1 ", BigIntLit("xfafa") << 16, BigIntLit("xfafa0000", 32))
+;; check("B< ", BigIntLit(5, 3) << 64, BigIntLit(5 << 1, 67))
+;; check("BN ", neg(BigIntLit(2, 8)), BigIntLit(-2, 8))
+check("S2 ", BigIntLit("b11111010") << 8, BigIntLit("b1111101000000000", 16))
+check("C1 ", cat(BigIntLit("b11111010", 8), BigIntLit("b10111100", 8)), BigIntLit("b1111101010111100", 16))
+check("C3 ", cat(cat(BigIntLit("b1111"), BigIntLit("b1010")), cat(BigIntLit("b1011"), BigIntLit("b1100"))), BigIntLit("b1111101010111100", 16))
+check("C4 ", cat([BigIntLit("b1111"), BigIntLit("b1010"), BigIntLit("b1011"), BigIntLit("b1100")]), BigIntLit("b1111101010111100", 16))
+check("C5 ", BigIntLit("b101111001"), BigIntLit("b101111001"))
+check("C6 ", cat(BigIntLit("b1"), BigIntLit("b01111001")), BigIntLit("b101111001"))
+check("C7 ", cat(BigIntLit("b11101"), BigIntLit("b101111001")), BigIntLit("b11101101111001"))
+check("C8 ", cat([BigIntLit("b11"), BigIntLit("b101"), BigIntLit("b1011"), BigIntLit("b11001")]), BigIntLit("b11101101111001"))
+check("C0 ", bits(BigIntLit("b11101101111001"), 10, 1), BigIntLit("b0110111100"))
