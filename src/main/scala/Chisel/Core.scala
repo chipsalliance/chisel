@@ -1195,5 +1195,5 @@ class Emitter {
       newline + emit(e.body) }
   }
   def emit(e: Circuit): String = 
-    withIndent{ "circuit " + e.main + " : " + join0(e.components.map(x => emit(x)), newline) }
+    withIndent{ "circuit " + e.main + " : " + join0(e.components.map(x => emit(x)), newline) } + newline
 }
