@@ -612,8 +612,8 @@ abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends 
   override def sumWidth(amt: BigInt): Int = if (getWidth >= 0) (getWidth + amt).toInt else -1
   def sumWidth(other: Bits, amt: BigInt): Int =
     if (getWidth >= 0 && other.getWidth >= 0) (getWidth + other.getWidth + amt).toInt else -1
-  def sumLog2Width(other: Bits): Int =
-    if (getWidth >= 0 && other.getWidth >= 0) (getWidth + (1<<other.getWidth)).toInt else -1
+  def sumPow2Width(other: Bits): Int =
+    if (getWidth >= 0 && other.getWidth >= 0) (getWidth + (1 << other.getWidth)).toInt else -1
 
   def :=(other: Bits) = 
     pushCommand(Connect(this.lref, other.ref))
@@ -652,7 +652,7 @@ abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends 
   def % (other: Bits): Bits = binop(ModOp, other, sumWidth(0))
   def << (other: BigInt): Bits = binop(ShiftLeftOp, other, sumWidth(other))
   def << (other: Int): Bits = this << BigInt(other)
-  def << (other: Bits): Bits = binop(DynamicShiftLeftOp, other, sumLog2Width(other))
+  def << (other: Bits): Bits = binop(DynamicShiftLeftOp, other, sumPow2Width(other))
   def >> (other: BigInt): Bits = binop(ShiftRightOp, other, sumWidth(-other))
   def >> (other: Int): Bits = this >> BigInt(other)
   def >> (other: Bits): Bits = binop(DynamicShiftRightOp, other, sumWidth(0))
@@ -740,7 +740,7 @@ class UInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(
   def % (other: UInt): UInt = binop(ModOp, other, sumWidth(0))
   override def << (other: BigInt): UInt = binop(ShiftLeftOp, other, sumWidth(other))
   override def << (other: Int): UInt = this << BigInt(other)
-  def << (other: UInt): UInt = binop(DynamicShiftLeftOp, other, sumLog2Width(other))
+  def << (other: UInt): UInt = binop(DynamicShiftLeftOp, other, sumPow2Width(other))
   override def >> (other: BigInt): UInt = binop(ShiftRightOp, other, sumWidth(-other))
   override def >> (other: Int): UInt = this >> BigInt(other)
   def >> (other: UInt): UInt = binop(DynamicShiftRightOp, other, sumWidth(0))
@@ -819,7 +819,7 @@ class SInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(
   def % (other: SInt): SInt = binop(ModOp, other, sumWidth(0))
   override def << (other: BigInt): SInt = binop(ShiftLeftOp, other, sumWidth(other))
   override def << (other: Int): SInt = this << BigInt(other)
-  def << (other: UInt): SInt = binop(DynamicShiftLeftOp, other, sumLog2Width(other))
+  def << (other: UInt): SInt = binop(DynamicShiftLeftOp, other, sumPow2Width(other))
   override def >> (other: BigInt): SInt = binop(ShiftRightOp, other, sumWidth(-other))
   override def >> (other: Int): SInt = this >> BigInt(other)
   def >> (other: UInt): SInt = binop(DynamicShiftRightOp, other, sumWidth(0))
