@@ -1151,7 +1151,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 0 to false, l in locs(s)) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
+                     equality(ref,UIntValue(BigIntLit(i,32),UnknownWidth())),
                      Connect(info(s),l,exp(s)),
                      EmptyStmt()
                   )
@@ -1165,7 +1165,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
+                     equality(ref,UIntValue(BigIntLit(i,32),UnknownWidth())),
                      Connect(info(s),loc(s),e),
                      EmptyStmt()
                   )
@@ -1211,8 +1211,8 @@ public defmethod short-name (b:ExpandWhens) -> String : "expand-whens"
 
 ; ======== Expression Computation Library ===========
 
-val zero = UIntValue(BigIntLit("b0"),IntWidth(1))
-val one = UIntValue(BigIntLit("b1"),IntWidth(1))
+val zero = UIntValue(BigIntLit(0,32),IntWidth(1))
+val one = UIntValue(BigIntLit(1,32),IntWidth(1))
 
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
@@ -1548,7 +1548,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                (e:Expression) : 
                   val ref = WRef(name(s),type(s),NodeKind(),FEMALE)
                   val en = to-exp(optimize $ get-write-enable(table[name(s)])) as Expression
-                  if en == UIntValue(BigIntLit("b1"),UnknownWidth()) : 
+                  if en == one : 
                      add{cons,_} $ Connect(info(s),ref,e)
                   else :
                      add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())
@@ -1563,7 +1563,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                match(e) :
                   (e:Expression) : 
                      val en = (to-exp $ optimize $ get-write-enable(table[n])) as Expression
-                     if en == UIntValue(BigIntLit("b1"),UnknownWidth()) : 
+                     if en == one : 
                         add{cons,_} $ Connect(info(s),ref,e)
                      else :
                         add{cons,_} $ Conditionally(info(s),en,Connect(info(s),ref,e),EmptyStmt())

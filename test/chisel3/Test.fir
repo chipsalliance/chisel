@@ -3,10 +3,16 @@
 
 circuit Test : 
   module Test : 
-     wire x : UInt
-     x := UInt(0)
-     x := UInt(1)
-     x := UInt(10)
-     x := UInt(21474836)
-     x := UInt("h21474836")
+     input clk : Clock
+     input reset : UInt<1>
+     input falling : UInt<1>
+
+     reg hold : UInt<100>, clk, UInt(1)
+
+     hold := UInt("h42")
+     when reset :
+        hold := UInt("h7f")
+     else :
+        when falling :
+           hold := UInt("h8f")
 

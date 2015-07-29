@@ -195,7 +195,7 @@ defsyntax firrtl :
 
       type = (?t:#typeterm ?ops:#typeop ...) : apply-suffix-ops(t, ops)
       type = (?t:#clktype) : t
-      typeop = ((@get ?size:#int$)) : (fn (t) : VectorType(t, size[0]))
+      typeop = ((@get ?size:#int$)) : (fn (t) : VectorType(t, size))
       
       typeterm = (?t:#inttype) : t
       typeterm = ({?fs:#field ... ?rest ...}) :
@@ -214,10 +214,7 @@ defsyntax firrtl :
       accdir = (rdwr) : RDWR
 
    defrule width :
-      width = (?x:#int) : 
-         if num-words(x) == 1 : IntWidth(x[0])
-         else if num-words(x) == 2 : LongWidth(to-long(x[1]) * to-long(1 << 32) + to-long(x[0]))
-         else : IntWidth(x[0])
+      width = (?x:#int) : IntWidth(x)
       width = (?) : UnknownWidth()
 
    ;Main Statement Productions
@@ -257,7 +254,7 @@ defsyntax firrtl :
    defrule exp :
       ;Suffix Operators
       exp = (?x:#expterm ?ops:#expop ...) : apply-suffix-ops(x, ops)      
-      expop = ((@get ?f:#int)) : (fn (x) : Index(x, f[0], UnknownType()))
+      expop = ((@get ?f:#int)) : (fn (x) : Index(x, f, UnknownType()))
       expop = (. ?f:#id!) : (fn (x) : Subfield(x, f, UnknownType()))
       
       ;Prefix Operators
@@ -268,14 +265,14 @@ defsyntax firrtl :
 
       expterm = (?t:#inttype(?v:#int$)) :
          match(t) :
-            (t:UIntType) : UIntValue(BigIntLit(abs(v as Int)), width(t))
-            (t:SIntType) : SIntValue(BigIntLit(v as Int), width(t))
+            (t:UIntType) : UIntValue(BigIntLit(v as Int,32), width(t))
+            (t:SIntType) : SIntValue(BigIntLit(v as Int,32), width(t))
 
       expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Illegal operands to primitive operator.")
          match(primop(op)) :
-            (p:PrimOp) : DoPrim(p, es, map(get{_,0},ints), UnknownType())
+            (p:PrimOp) : DoPrim(p, es, ints, UnknownType())
             (p:False) : FPE(form, "Unrecognized primitive operator '~'." << [op])
       expterm = (?op:#sym) :
          Ref(op, UnknownType())

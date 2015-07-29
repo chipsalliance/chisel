@@ -3,9 +3,11 @@
 ================================================
 
 ======== Current Tasks ========
+add include support
 change parser to accept subword, but error
 --Merge with master
 put clocks on accessors
+add clock check to high firrtl check
 
 Tests:
    Lowering for instance types with bundle ports

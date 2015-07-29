@@ -118,15 +118,18 @@ defn fill! (f: (Int) -> Int, b: BigInt) :
   b
 
 public defmethod equal? (x:BigInt, y:BigInt) -> True|False :
-  if num-words(x) != num-words(y) :
-    false
-  else :
-    var eq? = true
-    for i in 0 to num-words(x) do :
-      val e = (x[i] == y[i])
-      if not e : println-all(["NOT-EQUAL " x " AND " y " i=" i " X[i] " x[i] " Y[i] " y[i]])
-      eq? = eq? and e
-    eq?
+  val tf = 
+    if num-words(x) != num-words(y) :
+      false
+    else :
+      var eq? = true
+      for i in 0 to num-words(x) do :
+        val e = (x[i] == y[i])
+        ;if not e : ;println-all(["NOT-EQUAL " x " AND " y " i=" i " X[i] " x[i] " Y[i] " y[i]])
+        eq? = eq? and e
+      eq?
+  ;println-all(["EQUAL? " x " AND " y " " tf])
+  tf
 
 public defn less?! (diff:BigInt, x:BigInt, y:BigInt) -> True|False :
   sub!(diff, x, y)
@@ -180,7 +183,6 @@ public defn BigIntLit (s: String, w:Int) :
   lit
 
 public defn sizeof (in: Int) -> Int :
-  println(in)
   max(1, ceil-log2(in + 1))
 
 defn op (f:(BigInt, BigInt, BigInt) -> True|False, x:BigInt, y:BigInt) -> True|False :
@@ -377,7 +379,9 @@ defn check (msg:String, x:BigInt) :
 ;; check("B< ", BigIntLit(5, 3) << 10, BigIntLit(5 << 1, 13))
 ;; check("B< ", BigIntLit(5, 3) << 32, BigIntLit(5 << 1, 38))
 ;; check("B< ", BigIntLit("b1010") << 1, BigIntLit(10 << 1, 5))
-check("S1 ", BigIntLit("xfafa") << 16, BigIntLit("xfafa0000", 32))
+check("S1 ", BigIntLit("hfafa") << 16, BigIntLit("hfafa0000", 32))
+check("S1 ", BigIntLit(1,32) , BigIntLit(1,32))
+check("S1 ", BigIntLit(0,32) , BigIntLit(0,32))
 ;; check("B< ", BigIntLit(5, 3) << 64, BigIntLit(5 << 1, 67))
 ;; check("BN ", neg(BigIntLit(2, 8)), BigIntLit(-2, 8))
 check("S2 ", BigIntLit("b11111010") << 8, BigIntLit("b1111101000000000", 16))
