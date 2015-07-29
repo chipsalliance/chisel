@@ -372,13 +372,12 @@ object Wire {
 
 object Reg {
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
-    var mType = t
-    if(mType == null) 
-      mType = next
-    if(mType == null) 
-      mType = init
-    if(mType == null) 
-      throw new Exception("cannot infer type of Reg.")
+    val mType =
+      if (t ne null) t
+      else if (next ne null) next
+      else if (init ne null) init
+      else throwException("cannot infer type of Reg.")
+
     val x = mType.cloneType
     x.isReg_ = true
     pushCommand(DefRegister(x.defd.cid, x.toType))
