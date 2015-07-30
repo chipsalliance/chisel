@@ -122,9 +122,9 @@ case class PrimOp(val name: String) {
 
 object PrimOp {
   val AddOp = PrimOp("add")
-  val AddModOp = PrimOp("add-wrap")
+  val AddModOp = PrimOp("addw")
   val SubOp = PrimOp("sub")
-  val SubModOp = PrimOp("sub-wrap")
+  val SubModOp = PrimOp("subw")
   val TimesOp = PrimOp("mul")
   val DivideOp = PrimOp("div")
   val ModOp = PrimOp("mod")
@@ -132,10 +132,10 @@ object PrimOp {
   val ShiftRightOp = PrimOp("shr")
   val DynamicShiftLeftOp = PrimOp("dshl")
   val DynamicShiftRightOp = PrimOp("dshr")
-  val BitAndOp = PrimOp("bit-and")
-  val BitOrOp = PrimOp("bit-or")
-  val BitXorOp = PrimOp("bit-xor")
-  val BitNotOp = PrimOp("bit-not")
+  val BitAndOp = PrimOp("and")
+  val BitOrOp = PrimOp("or")
+  val BitXorOp = PrimOp("xor")
+  val BitNotOp = PrimOp("not")
   val ConcatOp = PrimOp("cat")
   val BitSelectOp = PrimOp("bit")
   val BitsExtractOp = PrimOp("bits")
@@ -144,15 +144,14 @@ object PrimOp {
   val GreaterOp = PrimOp("gt")
   val GreaterEqOp = PrimOp("geq")
   val EqualOp = PrimOp("eq")
-  val PatternEqualOp = PrimOp("pattern-equal")
   val PadOp = PrimOp("pad")
   val NotEqualOp = PrimOp("neq")
   val NegOp = PrimOp("neg")
   val MultiplexOp = PrimOp("mux")
   val XorReduceOp = PrimOp("xorr")
-  val ConvertOp = PrimOp("convert")
-  val AsUIntOp = PrimOp("as-UInt")
-  val AsSIntOp = PrimOp("as-SInt")
+  val ConvertOp = PrimOp("cvt")
+  val AsUIntOp = PrimOp("asUInt")
+  val AsSIntOp = PrimOp("asSInt")
 }
 import PrimOp._
 
@@ -1164,8 +1163,8 @@ class Emitter {
       case e: Begin => join0(e.body.map(x => emit(x)), newline).toString
       case e: Connect => emit(e.loc) + " := " + emit(e.exp)
       case e: BulkConnect => emit(e.loc1) + " <> " + emit(e.loc2)
-      case e: ConnectInit => "on-reset " + emit(e.loc) + " := " + emit(e.exp)
-      case e: ConnectInitIndex => "on-reset " + emit(e.loc) + "[" + e.index + "] := " + emit(e.exp)
+      case e: ConnectInit => "onreset " + emit(e.loc) + " := " + emit(e.exp)
+      case e: ConnectInitIndex => "onreset " + emit(e.loc) + "[" + e.index + "] := " + emit(e.exp)
       case e: EmptyCommand => "skip"
     }
   }
