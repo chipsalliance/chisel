@@ -963,7 +963,7 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
         }
       }
     }
-    elts sortWith (_._2._id > _._2._id)
+    elts sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
   override def collectElts =
     sortedElts.foreach(e => setFieldForId(cid, e._2.cid, e._1))
