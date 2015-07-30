@@ -27,6 +27,15 @@ defn* apply-suffix-ops (x, fs:List) :
    if empty?(fs) : x
    else : apply-suffix-ops(head(fs)(x), tail(fs))
 
+defn parse-stmts (forms:List) :
+   val cs = Vector<Stmt>()
+   defn* loop (forms:List) :
+      match-syntax(forms) :
+         () : to-list(cs)
+         (?s:#stmt ?rest ...) : (add(cs, s), loop(rest))
+         (?rest ...) : FPE(rest, "Expected a statement here.")
+   loop(forms)  
+
 ;======== Parser Utilities ==============
 defn atom? (x) : unwrap-token(x) not-typeof List
 
@@ -167,6 +176,8 @@ defsyntax firrtl :
 
    ;Main Module Production
    defrule module :
+      ;module = (module ?name:#id! #:! (?ps:#port ... ?rest ...)) :
+      ;   InModule(first-info(form), name, ps, Begin(parse-stmts(rest)))
       module = (module ?name:#id! #:! (?ps:#port ... ?cs:#stmt ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Expected a statement here.")
@@ -235,6 +246,8 @@ defsyntax firrtl :
       stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
       stmt = (?x:#exp <> ?y:#exp!) : BulkConnect(first-info(form),x, y)
 
+      ;stmt = ((?s:#stmt ?rest ...)) :
+      ;   Begin(List(s, parse-stmts(rest)))
       stmt = ((?s:#stmt ?ss:#stmt ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Expected a statement here.")

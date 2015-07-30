@@ -27,9 +27,9 @@ circuit top :
 
 ; CHECK: Lower To Ground
 
-; CHECK: connect_data@<g:f> := src@<g:m>.data@<g:m>
-; CHECK: src@<g:m>.ready@<g:f> := connect_ready@<g:m>
-; CHECK: snk@<g:m>.data@<g:f> := connect2_data@<g:m>
-; CHECK: connect2_ready@<g:f> := snk@<g:m>.ready@<g:m>
+; CHECK: connect{{[_$]+}}data@<g:f> := src@<g:m>.data@<g:m>
+; CHECK: src@<g:m>.ready@<g:f> := connect{{[_$]+}}ready@<g:m>
+; CHECK: snk@<g:m>.data@<g:f> := connect2{{[_$]+}}data@<g:m>
+; CHECK: connect2{{[_$]+}}ready@<g:f> := snk@<g:m>.ready@<g:m>
 
 ; CHECK: Finished Lower To Ground

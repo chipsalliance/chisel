@@ -1,4 +1,5 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; XFAIL: *
 circuit top :
    module top :
       input clk : Clock
@@ -7,8 +8,8 @@ circuit top :
       p := UInt(1)
       when p :
          reg r : UInt,clk,reset
-         onreset r := UInt(10)
-         r := UInt(20)
+         onreset r := UInt(1)
+         r := UInt(2)
 
 ; CHECK: Expand Whens
 
@@ -16,8 +17,8 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt, clk, reset
-; CHECK:     p := UInt(1)
-; CHECK:     r := mux(reset, UInt(10), UInt(20))
+; CHECK:     p := UInt("h00000001")
+; CHECK-NOT:  when p : r := mux(reset, UInt("h00000001"), UInt("h00000002"))
 
 ; CHECK: Finished Expand Whens
 

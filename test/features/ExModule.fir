@@ -6,7 +6,7 @@ circuit Top :
     i.x := UInt(1)
     i.y := UInt(2)
     z := i.z
-  exmodule BlackBox :
+  extmodule BlackBox :
     input x : UInt<4>
     input y : UInt<4>
     output z : UInt<4>

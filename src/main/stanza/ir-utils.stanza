@@ -86,9 +86,13 @@ public defn abs (x:Long) -> Long :
    if x < to-long(0) : to-long(0) - x
    else : x
 
-;public defn to-int (x:Long) -> Int :
-   ;if x > to-long(2147483647) or x < to-long(–2147483648) : error("Long too big to convert to Int")
-   ;else : x + 0
+public defn max (x:Long,y:Long) -> Long :
+   if x < y : y
+   else : x
+
+public defn to-int (x:Long) -> Int :
+   if x > to-long(2147483647) or x < to-long(-2147483648) : error("Long too big to convert to Int")
+   else : to-int(to-string(x))
 
 ;============== PRINTERS ===================================
 

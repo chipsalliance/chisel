@@ -1504,15 +1504,14 @@ defn mark-referenced (referenced?:HashTable<Symbol,True>, s:Stmt) -> False :
    map(mark-referenced-e,s)
    false
 
-defn mark-referenced (referenced?:HashTable<Symbol,True>, sv:SymbolicValue) -> False :
+defn mark-referenced (referenced?:HashTable<Symbol,True>, sv:SymbolicValue) -> SymbolicValue :
    defn mark-referenced-e (e:Expression) -> Expression :
       match(map(mark-referenced-e,e)) :
          (e:WRef) : 
             referenced?[name(e)] = true
             e
          (e) : e
-   map(mark-referenced-e,sv)
-   false
+   map{mark-referenced-e,_} $ map(mark-referenced{referenced?,_:SymbolicValue},sv)
 
 defn is-referenced? (referenced?:HashTable<Symbol,True>, s:Stmt) -> True|False :
    match(s) :
@@ -1609,8 +1608,8 @@ public defn expand-whens (c:Circuit) -> Circuit :
             ;for x in resets do : println-debug(x)
    
             val table = merge-resets(assign,resets,rsignals)
-            ;println-debug("====== Table ======")
-            ;for x in table do : println-debug(x)
+            println("====== Table ======")
+            for x in table do : println(x)
 
             val decs = Vector<Stmt>()
             val cons = Vector<Stmt>()
@@ -1624,6 +1623,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                   referenced?[key(x)] = true
             for x in decs do :
                mark-referenced(referenced?,x)
+            println-all(["Referenced \n" referenced?])
             val decs* = Vector<Stmt>()
             for x in decs do :
                if is-referenced?(referenced?,x) : add(decs*,x)
@@ -1814,8 +1814,8 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
                (w1,w2) : w
          (w:ExpWidth) : 
             match(arg1(w)) :
-               (w1:IntWidth) : LongWidth(pow(to-long(2),to-long(width(w1) - 1)))
-               (w1:LongWidth) : LongWidth(pow(to-long(2),minus(width(w1), to-long(1))))
+               (w1:IntWidth) : LongWidth(pow(to-long(2),to-long(width(w1))) - to-long(1))
+               (w1:LongWidth) : LongWidth(pow(to-long(2),width(w1)) - to-long(1))
                (w1) : w
          (w) : w
    defn substitute (w:Width,h:HashTable<Symbol,Width>) -> Width :

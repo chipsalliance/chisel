@@ -10,23 +10,23 @@ circuit Core :
     input alu_op : UInt<4>
     
     node shamt = bits(B, 4, 0)
-    node T_1224 = add-wrap(A, B)
-    node T_1225 = sub-wrap(A, B)
-    node T_1226 = as-SInt(A)
+    node T_1224 = addw(A, B)
+    node T_1225 = subw(A, B)
+    node T_1226 = asSInt(A)
     node T_1227 = dshr(T_1226, shamt)
-    node T_1228 = as-UInt(T_1227)
+    node T_1228 = asUInt(T_1227)
     node T_1229 = dshr(A, shamt)
     node T_1230 = dshl(A, shamt)
     node T_1231 = bits(T_1230, 31, 0)
-    node T_1232 = as-SInt(A)
-    node T_1233 = as-SInt(B)
+    node T_1232 = asSInt(A)
+    node T_1233 = asSInt(B)
     node T_1234 = lt(T_1232, T_1233)
-    node T_1235 = as-UInt(T_1234)
+    node T_1235 = asUInt(T_1234)
     node T_1236 = lt(A, B)
-    node T_1237 = as-UInt(T_1236)
-    node T_1238 = bit-and(A, B)
-    node T_1239 = bit-or(A, B)
-    node T_1240 = bit-xor(A, B)
+    node T_1237 = asUInt(T_1236)
+    node T_1238 = and(A, B)
+    node T_1239 = or(A, B)
+    node T_1240 = xor(A, B)
     node T_1241 = eq(UInt<4>(10), alu_op)
     node T_1242 = mux(T_1241, A, B)
     node T_1243 = eq(UInt<4>(4), alu_op)
@@ -52,9 +52,9 @@ circuit Core :
     node T_1262 = bits(oot, 31, 0)
     out := T_1262
     node T_1263 = bit(alu_op, 0)
-    node T_1264 = sub-wrap(UInt<1>(0), B)
+    node T_1264 = subw(UInt<1>(0), B)
     node T_1265 = mux(T_1263, T_1264, B)
-    node T_1266 = add-wrap(A, T_1265)
+    node T_1266 = addw(A, T_1265)
     sum := T_1266
   module BrCond : 
     input br_type : UInt<3>
@@ -63,30 +63,30 @@ circuit Core :
     output taken : UInt<1>
     
     node eq = eq(rs1, rs2)
-    node neq = bit-not(eq)
-    node T_1267 = as-SInt(rs1)
-    node T_1268 = as-SInt(rs2)
+    node neq = not(eq)
+    node T_1267 = asSInt(rs1)
+    node T_1268 = asSInt(rs2)
     node lt = lt(T_1267, T_1268)
-    node ge = bit-not(lt)
+    node ge = not(lt)
     node ltu = lt(rs1, rs2)
-    node geu = bit-not(ltu)
+    node geu = not(ltu)
     node T_1269 = eq(br_type, UInt<3>(2))
-    node T_1270 = bit-and(T_1269, eq)
+    node T_1270 = and(T_1269, eq)
     node T_1271 = eq(br_type, UInt<3>(6))
-    node T_1272 = bit-and(T_1271, neq)
-    node T_1273 = bit-or(T_1270, T_1272)
+    node T_1272 = and(T_1271, neq)
+    node T_1273 = or(T_1270, T_1272)
     node T_1274 = eq(br_type, UInt<3>(1))
-    node T_1275 = bit-and(T_1274, lt)
-    node T_1276 = bit-or(T_1273, T_1275)
+    node T_1275 = and(T_1274, lt)
+    node T_1276 = or(T_1273, T_1275)
     node T_1277 = eq(br_type, UInt<3>(5))
-    node T_1278 = bit-and(T_1277, ge)
-    node T_1279 = bit-or(T_1276, T_1278)
+    node T_1278 = and(T_1277, ge)
+    node T_1279 = or(T_1276, T_1278)
     node T_1280 = eq(br_type, UInt<3>(0))
-    node T_1281 = bit-and(T_1280, ltu)
-    node T_1282 = bit-or(T_1279, T_1281)
+    node T_1281 = and(T_1280, ltu)
+    node T_1282 = or(T_1279, T_1281)
     node T_1283 = eq(br_type, UInt<3>(4))
-    node T_1284 = bit-and(T_1283, geu)
-    node T_1285 = bit-or(T_1282, T_1284)
+    node T_1284 = and(T_1283, geu)
+    node T_1285 = or(T_1282, T_1284)
     taken := T_1285
   module RegFile : 
     input raddr1 : UInt<5>
@@ -96,21 +96,22 @@ circuit Core :
     input wen : UInt<1>
     input waddr : UInt<5>
     input wdata : UInt<32>
+    input clk : Clock
     
-    cmem regs : UInt<32>[32]
+    cmem regs : UInt<32>[32],clk
     node T_1286 = eq(raddr1, UInt<1>(0))
-    node T_1287 = bit-not(T_1286)
+    node T_1287 = not(T_1286)
     infer accessor T_1288 = regs[raddr1]
     node T_1289 = mux(T_1287, T_1288, UInt<1>(0))
     rdata1 := T_1289
     node T_1290 = eq(raddr2, UInt<1>(0))
-    node T_1291 = bit-not(T_1290)
+    node T_1291 = not(T_1290)
     infer accessor T_1292 = regs[raddr2]
     node T_1293 = mux(T_1291, T_1292, UInt<1>(0))
     rdata2 := T_1293
     node T_1294 = eq(waddr, UInt<1>(0))
-    node T_1295 = bit-not(T_1294)
-    node T_1296 = bit-and(wen, T_1295)
+    node T_1295 = not(T_1294)
+    node T_1296 = and(wen, T_1295)
     when T_1296 : 
       infer accessor T_1297 = regs[waddr]
       T_1297 := wdata
@@ -120,11 +121,11 @@ circuit Core :
     input inst : UInt<32>
     
     node T_1298 = bits(inst, 31, 20)
-    node Iimm = as-SInt(T_1298)
+    node Iimm = asSInt(T_1298)
     node T_1299 = bits(inst, 31, 25)
     node T_1300 = bits(inst, 11, 7)
     node T_1301 = cat(T_1299, T_1300)
-    node Simm = as-SInt(T_1301)
+    node Simm = asSInt(T_1301)
     node T_1302 = bit(inst, 31)
     node T_1303 = bit(inst, 7)
     node T_1304 = bits(inst, 30, 25)
@@ -133,10 +134,10 @@ circuit Core :
     node T_1307 = cat(T_1305, UInt<1>(0))
     node T_1308 = cat(T_1304, T_1307)
     node T_1309 = cat(T_1306, T_1308)
-    node Bimm = as-SInt(T_1309)
+    node Bimm = asSInt(T_1309)
     node T_1310 = bits(inst, 31, 12)
     node T_1311 = cat(T_1310, UInt<12>(0))
-    node Uimm = as-SInt(T_1311)
+    node Uimm = asSInt(T_1311)
     node T_1312 = bit(inst, 31)
     node T_1313 = bits(inst, 19, 12)
     node T_1314 = bit(inst, 20)
@@ -147,10 +148,10 @@ circuit Core :
     node T_1319 = cat(T_1316, UInt<1>(0))
     node T_1320 = cat(T_1315, T_1319)
     node T_1321 = cat(T_1318, T_1320)
-    node Jimm = as-SInt(T_1321)
+    node Jimm = asSInt(T_1321)
     node T_1322 = bits(inst, 19, 15)
     node T_1323 = pad(T_1322, 32)
-    node Zimm = as-SInt(T_1323)
+    node Zimm = asSInt(T_1323)
     node T_1324 = eq(UInt<3>(3), sel)
     node T_1325 = mux(T_1324, Jimm, Zimm)
     node T_1326 = eq(UInt<3>(2), sel)
@@ -161,7 +162,7 @@ circuit Core :
     node T_1331 = mux(T_1330, Simm, T_1329)
     node T_1332 = eq(UInt<3>(0), sel)
     node T_1333 = mux(T_1332, Iimm, T_1331)
-    node T_1334 = as-UInt(T_1333)
+    node T_1334 = asUInt(T_1333)
     out := T_1334
   module CSR : 
     output host : {status : UInt<32>, flip hid : UInt<1>, tohost : UInt<32>}
@@ -169,11 +170,13 @@ circuit Core :
     input cmd : UInt<2>
     output data : UInt<32>
     input addr : UInt<12>
+    input clk : Clock
+    input reset : UInt<1>
     
-    reg reg_tohost : UInt<32>
-    on-reset reg_tohost := UInt<32>(0)
-    reg reg_status : UInt<32>
-    on-reset reg_status := UInt<32>(0)
+    reg reg_tohost : UInt<32>,clk,reset
+    onreset reg_tohost := UInt<32>(0)
+    reg reg_status : UInt<32>,clk,reset
+    onreset reg_status := UInt<32>(0)
     host.tohost := reg_tohost
     host.status := reg_status
     node T_1335 = eq(UInt<12>(1291), addr)
@@ -191,31 +194,31 @@ circuit Core :
       when T_1343 : reg_status := src
     node T_1344 = eq(cmd, UInt<2>(2))
     node T_1345 = neq(src, UInt<1>(0))
-    node T_1346 = bit-and(T_1344, T_1345)
+    node T_1346 = and(T_1344, T_1345)
     when T_1346 : 
       node T_1347 = eq(addr, UInt<12>(1310))
       when T_1347 : 
         node T_1348 = dshl(UInt<1>(1), bits(src,5,0))
-        node T_1349 = bit-or(data, T_1348)
+        node T_1349 = or(data, T_1348)
         reg_tohost := T_1349
       node T_1350 = eq(addr, UInt<12>(1290))
       when T_1350 : 
         node T_1351 = dshl(UInt<1>(1), bits(src,5,0))
-        node T_1352 = bit-or(data, T_1351)
+        node T_1352 = or(data, T_1351)
         reg_status := T_1352
     node T_1353 = eq(cmd, UInt<2>(3))
     node T_1354 = neq(src, UInt<1>(0))
-    node T_1355 = bit-and(T_1353, T_1354)
+    node T_1355 = and(T_1353, T_1354)
     when T_1355 : 
       node T_1356 = eq(addr, UInt<12>(1310))
       when T_1356 : 
         node T_1357 = dshl(UInt<1>(0), bits(src,5,0))
-        node T_1358 = bit-and(data, T_1357)
+        node T_1358 = and(data, T_1357)
         reg_tohost := T_1358
       node T_1359 = eq(addr, UInt<12>(1290))
       when T_1359 : 
         node T_1360 = dshl(UInt<1>(0), bits(src,5,0))
-        node T_1361 = bit-and(data, T_1360)
+        node T_1361 = and(data, T_1360)
         reg_status := T_1361
   module Datapath : 
     output host : {status : UInt<32>, flip hid : UInt<1>, tohost : UInt<32>}
@@ -223,39 +226,42 @@ circuit Core :
     output icache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
     output dcache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
     input stall : UInt<1>
+    input clk : Clock
+    input reset : UInt<1>
     
     inst alu of ALU
     inst brCond of BrCond
     inst regFile of RegFile
+    regFile.clk := clk
     inst immGen of ImmGenWire
-    reg fe_inst : UInt<32>
-    on-reset fe_inst := UInt<32>(0)
-    reg fe_pc : UInt
-    reg ew_inst : UInt<32>
-    on-reset ew_inst := UInt<32>(0)
-    reg ew_pc : UInt
-    reg ew_alu : UInt
-    node T_1362 = sub-wrap(UInt<14>(8192), UInt<32>(4))
-    reg pc : UInt<32>
-    on-reset pc := T_1362
+    reg fe_inst : UInt<32>,clk,reset
+    onreset fe_inst := UInt<32>(0)
+    reg fe_pc : UInt,clk,reset
+    reg ew_inst : UInt<32>,clk,reset
+    onreset ew_inst := UInt<32>(0)
+    reg ew_pc : UInt,clk,reset
+    reg ew_alu : UInt,clk,reset
+    node T_1362 = subw(UInt<14>(8192), UInt<32>(4))
+    reg pc : UInt<32>,clk,reset
+    onreset pc := T_1362
     node T_1363 = eq(ctrl.pc_sel, UInt<1>(1))
-    node T_1364 = bit-or(T_1363, brCond.taken)
-    node T_1365 = add-wrap(pc, UInt<3>(4))
+    node T_1364 = or(T_1363, brCond.taken)
+    node T_1365 = addw(pc, UInt<3>(4))
     node iaddr = mux(T_1364, alu.sum, T_1365)
     node T_1366 = eq(ctrl.inst_type, UInt<1>(1))
-    node T_1367 = bit-or(T_1366, brCond.taken)
+    node T_1367 = or(T_1366, brCond.taken)
     node inst = mux(T_1367, UInt<32>(19), icache.dout)
     icache.we := UInt<1>(0)
     icache.din := UInt<1>(0)
     icache.addr := iaddr
     icache.re := ctrl.inst_re
     node T_1368 = eq(dcache.we, UInt<1>(0))
-    node T_1369 = bit-not(T_1368)
-    node T_1370 = bit-not(T_1369)
-    node T_1371 = bit-and(icache.re, T_1370)
+    node T_1369 = not(T_1368)
+    node T_1370 = not(T_1369)
+    node T_1371 = and(icache.re, T_1370)
     node T_1372 = mux(T_1371, iaddr, pc)
     pc := T_1372
-    node T_1373 = bit-not(stall)
+    node T_1373 = not(stall)
     when T_1373 : 
       fe_pc := pc
       fe_inst := inst
@@ -269,19 +275,19 @@ circuit Core :
     immGen.inst := fe_inst
     immGen.sel := ctrl.imm_sel
     node T_1374 = eq(rs1_addr, UInt<1>(0))
-    node rs1NotZero = bit-not(T_1374)
+    node rs1NotZero = not(T_1374)
     node T_1375 = eq(rs2_addr, UInt<1>(0))
-    node rs2NotZero = bit-not(T_1375)
+    node rs2NotZero = not(T_1375)
     node T_1376 = eq(ctrl.wb_sel, UInt<2>(0))
-    node alutype = bit-and(ctrl.wb_en, T_1376)
+    node alutype = and(ctrl.wb_en, T_1376)
     node ex_rd_addr = bits(ew_inst, 11, 7)
-    node T_1377 = bit-and(alutype, rs1NotZero)
+    node T_1377 = and(alutype, rs1NotZero)
     node T_1378 = eq(rs1_addr, ex_rd_addr)
-    node T_1379 = bit-and(T_1377, T_1378)
+    node T_1379 = and(T_1377, T_1378)
     node rs1 = mux(T_1379, ew_alu, regFile.rdata1)
-    node T_1380 = bit-and(alutype, rs2NotZero)
+    node T_1380 = and(alutype, rs2NotZero)
     node T_1381 = eq(rs2_addr, ex_rd_addr)
-    node T_1382 = bit-and(T_1380, T_1381)
+    node T_1382 = and(T_1380, T_1381)
     node rs2 = mux(T_1382, ew_alu, regFile.rdata2)
     node T_1383 = eq(ctrl.A_sel, UInt<1>(0))
     node T_1384 = mux(T_1383, rs1, fe_pc)
@@ -297,7 +303,7 @@ circuit Core :
     node T_1388 = dshl(T_1387, UInt<3>(4))
     node T_1389 = bit(alu.sum, 0)
     node T_1390 = dshl(T_1389, UInt<2>(3))
-    node woffset = bit-or(T_1388, T_1390)
+    node woffset = or(T_1388, T_1390)
     dcache.re := ctrl.data_re
     node T_1391 = mux(stall, ew_alu, alu.sum)
     dcache.addr := T_1391
@@ -318,7 +324,7 @@ circuit Core :
     node T_1405 = dshl(rs2, woffset)
     node T_1406 = bits(T_1405, 31, 0)
     dcache.din := T_1406
-    node T_1407 = bit-not(stall)
+    node T_1407 = not(stall)
     when T_1407 : 
       ew_pc := fe_pc
       ew_inst := fe_inst
@@ -327,16 +333,16 @@ circuit Core :
     node T_1409 = dshl(T_1408, UInt<3>(4))
     node T_1410 = bit(ew_alu, 0)
     node T_1411 = dshl(T_1410, UInt<2>(3))
-    node loffset = bit-or(T_1409, T_1411)
+    node loffset = or(T_1409, T_1411)
     node lshift = dshr(dcache.dout, loffset)
     node T_1412 = bits(lshift, 15, 0)
-    node T_1413 = as-SInt(T_1412)
+    node T_1413 = asSInt(T_1412)
     node T_1414 = pad(T_1413, 32)
-    node T_1415 = as-UInt(T_1414)
+    node T_1415 = asUInt(T_1414)
     node T_1416 = bits(lshift, 7, 0)
-    node T_1417 = as-SInt(T_1416)
+    node T_1417 = asSInt(T_1416)
     node T_1418 = pad(T_1417, 32)
-    node T_1419 = as-UInt(T_1418)
+    node T_1419 = asUInt(T_1418)
     node T_1420 = bits(lshift, 15, 0)
     node T_1421 = bits(lshift, 7, 0)
     node T_1422 = eq(UInt<3>(4), ctrl.ld_type)
@@ -348,12 +354,14 @@ circuit Core :
     node T_1428 = eq(UInt<3>(1), ctrl.ld_type)
     node load = mux(T_1428, T_1415, T_1427)
     inst csr of CSR
+    csr.clk := clk
+    csr.reset := reset
     host := csr.host
     csr.src := ew_alu
     node T_1429 = bits(ew_inst, 31, 20)
     csr.addr := T_1429
     csr.cmd := ctrl.csr_cmd
-    node T_1430 = add-wrap(ew_pc, UInt<3>(4))
+    node T_1430 = addw(ew_pc, UInt<3>(4))
     node T_1431 = eq(UInt<2>(3), ctrl.wb_sel)
     node T_1432 = mux(T_1431, csr.data, ew_alu)
     node T_1433 = eq(UInt<2>(2), ctrl.wb_sel)
@@ -364,9 +372,9 @@ circuit Core :
     regFile.waddr := ex_rd_addr
     regFile.wdata := regWrite
   module Control : 
+    output ctrl : {flip inst : UInt<32>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>, pc_sel : UInt<1>, inst_re : UInt<1>, flip stall : UInt<1>, data_re : UInt<1>, inst_type : UInt<1>, A_sel : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>}
     input clk : Clock
     input reset : UInt<1>
-    output ctrl : {flip inst : UInt<32>, st_type : UInt<2>, ld_type : UInt<3>, wb_sel : UInt<2>, wb_en : UInt<1>, csr_cmd : UInt<2>, pc_sel : UInt<1>, inst_re : UInt<1>, flip stall : UInt<1>, data_re : UInt<1>, inst_type : UInt<1>, A_sel : UInt<1>, B_sel : UInt<1>, imm_sel : UInt<3>, alu_op : UInt<4>, br_type : UInt<3>}
     
     node T_831 = and(UInt<7>(127), ctrl.inst)
     node T_832 = eq(T_831, UInt<6>(55))
@@ -1015,9 +1023,15 @@ circuit Core :
     output icache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
     output dcache : {re : UInt<1>, addr : UInt<32>, flip dout : UInt<32>, we : UInt<4>, din : UInt<32>}
     input stall : UInt<1>
+    input clk : Clock
+    input reset : UInt<1>
     
     inst dpath of Datapath
+    dpath.clk := clk
+    dpath.reset := reset
     inst ctrl of Control
+    ctrl.clk := clk
+    ctrl.reset := reset
     host := dpath.host
     icache := dpath.icache
     dcache := dpath.dcache

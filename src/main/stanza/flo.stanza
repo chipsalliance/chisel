@@ -61,12 +61,13 @@ defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
       else :
         error $ string-join $ ["Unable to print Primop: " op]
 
-defn sane-width (wd:Width) -> Int :
+defn sane-width (wd:Width) -> Int|Long :
   match(wd) :
     (w:IntWidth) : max(1, width(w))
+    (w:LongWidth) : max(to-long(1), width(w))
     (w)          : error(string-join(["Unknown width: " w]))
 
-defn prim-width (type:Type) -> Int :
+defn prim-width (type:Type) -> Int|Long :
    match(type) :
       (t:UIntType) : sane-width(width(t))
       (t:SIntType) : sane-width(width(t))

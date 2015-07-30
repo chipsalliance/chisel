@@ -10,7 +10,7 @@ circuit top :
       infer accessor a = m[i] ;CHECK: read accessor a = m[i]
       infer accessor b = a[i] ;CHECK: b := (a[0] a[1])[i]
       infer accessor c = b[i] ;CHECK: c := (b[0] b[1])[i]
-      wire j : UInt
+      wire j : UInt<32>
       j := c
 
       infer accessor x = m[i] ;CHECK: write accessor x = m[i]

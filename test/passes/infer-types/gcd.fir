@@ -18,7 +18,7 @@ circuit top :
       output v : UInt<1>
       reg x : UInt,clk,reset
       reg y : UInt,clk,reset
-; CHECK: reg x : UInt
+; CHECK: reg x : UInt, clk@<t:Clock>, reset@<t:UInt>@<t:UInt>
       onreset x := UInt(0)
       onreset y := UInt(42)
       when gt(x, y) :
@@ -40,7 +40,7 @@ circuit top :
          x := a
          y := b
       v := eq(v, UInt(0))
-      ;CHECK: v@<t:UInt> := eq(v@<t:UInt>, UInt(0))@<t:UInt>
+      ;CHECK: v@<t:UInt> := eq(v@<t:UInt>, UInt("h00000000"))@<t:UInt>
       z := x
    module top :
       input a : UInt<16>

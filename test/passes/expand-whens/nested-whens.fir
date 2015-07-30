@@ -30,5 +30,5 @@ circuit top :
         onreset r := y
         r := b
       r := z
-; CHECK: when UInt(1) : r := mux(reset, mux(q, y, mux(p, x, w)), z)
+; CHECK: r := mux(reset, mux(q, y, mux(p, x, w)), z)
 ; CHECK: Finished Expand Whens

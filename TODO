@@ -8,6 +8,7 @@ change parser to accept subword, but error
 --Merge with master
 put clocks on accessors
 add clock check to high firrtl check
+registers in onreset cannot have flips
 
 Tests:
    Lowering for instance types with bundle ports

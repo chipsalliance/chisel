@@ -13,21 +13,21 @@ circuit top :
       a[0].y := UInt(1)
       a[1].x := UInt(1)
       a[1].y := UInt(1)
-      ; CHECK: wire a_0_x : UInt<32>
-      ; CHECK: wire a_0_y : UInt<32>
-      ; CHECK: wire a_1_x : UInt<32>
-      ; CHECK: wire a_1_y : UInt<32>
+      ; CHECK: wire a{{[_$]+}}0{{[_$]+}}x : UInt<32>
+      ; CHECK: wire a{{[_$]+}}0{{[_$]+}}y : UInt<32>
+      ; CHECK: wire a{{[_$]+}}1{{[_$]+}}x : UInt<32>
+      ; CHECK: wire a{{[_$]+}}1{{[_$]+}}y : UInt<32>
 
 
       infer accessor b = a[i]
-      ; CHECK: wire b_x : UInt<32>
-      ; CHECK: wire b_y : UInt<32>
-      ; CHECK: b_x := a_0_x
+      ; CHECK: wire b{{[_$]+}}x : UInt<32>
+      ; CHECK: wire b{{[_$]+}}y : UInt<32>
+      ; CHECK: b{{[_$]+}}x := a{{[_$]+}}0{{[_$]+}}x
       ; CHECK: node i!0 = i
-      ; CHECK: when eq(i!0, UInt(1)) : b_x := a_1_x      
+      ; CHECK: when eq(i!0, UInt("h00000001")) : b{{[_$]+}}x := a{{[_$]+}}1{{[_$]+}}x      
       ; CHECK: node i!1 = i
-      ; CHECK: when eq(i!1, UInt(0)) : a_0_y := b_y      
-      ; CHECK: when eq(i!1, UInt(1)) : a_1_y := b_y      
+      ; CHECK: when eq(i!1, UInt("h00000000")) : a{{[_$]+}}0{{[_$]+}}y := b{{[_$]+}}y      
+      ; CHECK: when eq(i!1, UInt("h00000001")) : a{{[_$]+}}1{{[_$]+}}y := b{{[_$]+}}y      
       j := b.x
       b.y := UInt(1)
       

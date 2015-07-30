@@ -7,7 +7,7 @@ circuit top :
       p := UInt(1)
       reg r : UInt,clk,reset
       when p :
-         r := UInt(20)
+         r := UInt(2)
 
 ; CHECK: Expand Whens
 
@@ -15,8 +15,8 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt
-; CHECK:     p := UInt(1)
-; CHECK:     when p : r := UInt(20)
+; CHECK:     p := UInt("h00000001")
+; CHECK:     when p : r := UInt("h00000002")
 
 ; CHECK: Finished Expand Whens
 

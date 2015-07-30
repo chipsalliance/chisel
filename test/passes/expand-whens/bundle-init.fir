@@ -4,10 +4,10 @@ circuit top :
    module top :
       input clk : Clock
       input reset : UInt<1>
-      reg r : { x : UInt, flip y : UInt},clk,reset
+      reg r : { x : UInt, y : UInt},clk,reset
       wire a : UInt
       wire b : UInt
-      wire w : { x : UInt, flip y : UInt}
+      wire w : { x : UInt, y : UInt}
       a := UInt(1)
       b := UInt(2)
 
@@ -17,11 +17,11 @@ circuit top :
       r.y := b
       onreset r := w
 
-; CHECK: when UInt(1) : r$x := mux(reset, w$x, a)
-; CHECK: when UInt(1) : r$y := b
-; CHECK: a := UInt(1)
-; CHECK: b := UInt(2)
+; CHECK: r$x := mux(reset, w$x, a)
+; CHECK: r$y := mux(reset, w$y, b)
+; CHECK: a := UInt("h00000001")
+; CHECK: b := UInt("h00000002")
 ; CHECK: w$x := b
-; CHECK: w$y := mux(reset, r$y, a)   
+; CHECK: w$y := a
       
 ; CHECK: Finished Expand Whens
