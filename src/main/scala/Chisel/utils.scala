@@ -93,9 +93,9 @@ object Mux1H
       in.head._2.fromBits(masked.reduceLeft(_|_))
     }
   }
-  def apply[T <: Data](sel: Bits, in: Seq[T]): T =
+  def apply[T <: Data](sel: UInt, in: Seq[T]): T =
     apply((0 until in.size).map(sel(_)), in)
-  def apply(sel: Bits, in: Bits): Bool = (sel & in).orR
+  def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
 }
 
 /** Builds a Mux tree under the assumption that multiple select signals
