@@ -38,6 +38,8 @@ defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
       LESS-EQ-OP :         "lte" ;; todo: swap args
       GREATER-OP :         "lt"  ;; todo: swap args
       GREATER-EQ-OP :      "lte" ;; todo: signed version
+      NEQUIV-OP :          "neq"
+      EQUIV-OP :           "eq"
       NEQUAL-OP :          "neq"
       EQUAL-OP :           "eq"
       MUX-OP :             "mux"

@@ -139,6 +139,8 @@ defmethod print (o:OutputStream, op:PrimOp) :
       LESS-EQ-OP : "leq"
       GREATER-OP : "gt"
       GREATER-EQ-OP : "geq"
+      EQUIV-OP : "eqv"
+      NEQUIV-OP : "neqv"
       EQUAL-OP : "eq"
       NEQUAL-OP : "neq"
       MUX-OP : "mux"

@@ -39,6 +39,9 @@ errors:
 chisel3:
 	cd $(test_dir)/chisel3 && lit -v . --path=$(root_dir)/utils/bin/
 
+refchip:
+	cd $(test_dir)/refchip && lit -v . --path=$(root_dir)/utils/bin/
+
 features:
 	cd $(test_dir)/features && lit -v . --path=$(root_dir)/utils/bin/
 

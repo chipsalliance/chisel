@@ -39,6 +39,8 @@ public defn lower-and-type-primop (e:DoPrim) -> DoPrim :
       GREATER-EQ-OP      : DoPrim(GREATER-EQ-OP,args(e),consts(e),u())
       EQUAL-OP           : DoPrim(EQUAL-OP,args(e),consts(e),u())
       NEQUAL-OP          : DoPrim(NEQUAL-OP,args(e),consts(e),u())
+      EQUIV-OP           : DoPrim(EQUIV-OP,args(e),consts(e),u())
+      NEQUIV-OP          : DoPrim(NEQUIV-OP,args(e),consts(e),u())
       MUX-OP             : DoPrim(MUX-OP,args(e),consts(e),of-type(args(e)[1]))
       PAD-OP             : DoPrim(PAD-OP,args(e),consts(e),of-type(args(e)[0]))
       AS-UINT-OP         : DoPrim(AS-UINT-OP,args(e),consts(e),u())
@@ -98,6 +100,8 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
       GREATER-EQ-OP : IntWidth(1)
       EQUAL-OP : IntWidth(1)
       NEQUAL-OP : IntWidth(1)
+      EQUIV-OP : IntWidth(1)
+      NEQUIV-OP : IntWidth(1)
       MUX-OP : 
          add(v,WGeq(IntWidth(1),width!(args(e)[0])))
          add(v,WGeq(width!(args(e)[0]),IntWidth(1)))

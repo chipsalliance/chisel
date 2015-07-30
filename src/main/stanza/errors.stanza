@@ -218,6 +218,8 @@ defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInf
       GREATER-EQ-OP      : correct-num(2,0)
       EQUAL-OP           : correct-num(2,0)
       NEQUAL-OP          : correct-num(2,0)
+      EQUIV-OP           : correct-num(2,0)
+      NEQUIV-OP          : correct-num(2,0)
       MUX-OP             : correct-num(3,0)
       PAD-OP             : correct-num(1,1)
       AS-UINT-OP         : correct-num(1,0)
@@ -568,8 +570,10 @@ defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -
       LESS-EQ-OP         : false
       GREATER-OP         : false
       GREATER-EQ-OP      : false
-      EQUAL-OP           : all-same-type(args(e))
-      NEQUAL-OP          : all-same-type(args(e))
+      EQUAL-OP           : false
+      NEQUAL-OP          : false
+      EQUIV-OP           : all-same-type(args(e))
+      NEQUIV-OP          : all-same-type(args(e))
       MUX-OP             : 
          all-same-type(tail(args(e)))
          is-uint(head(args(e)))

@@ -87,13 +87,25 @@ circuit top :
       node ygeq = geq(c, b) ;CHECK: node ygeq = geq(c@<t:SInt>, b@<t:UInt>)@<t:UInt>
       node zgeq = geq(c, d) ;CHECK: node zgeq = geq(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
    
-      node vneq = neq(a, b)    ;CHECK: node vneq = neq(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node veq = eq(a, c)    ;CHECK: node veq = eq(a@<t:UInt>, c@<t:SInt>)@<t:UInt>
+      node weq = eq(a, b) ;CHECK: node weq = eq(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node xeq = eq(a, d) ;CHECK: node xeq = eq(a@<t:UInt>, d@<t:SInt>)@<t:UInt>
+      node yeq = eq(c, b) ;CHECK: node yeq = eq(c@<t:SInt>, b@<t:UInt>)@<t:UInt>
+      node zeq = eq(c, d) ;CHECK: node zeq = eq(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
+   
+      node vneq = neq(a, c)    ;CHECK: node vneq = neq(a@<t:UInt>, c@<t:SInt>)@<t:UInt>
       node wneq = neq(a, b) ;CHECK: node wneq = neq(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node xneq = neq(a, d) ;CHECK: node xneq = neq(a@<t:UInt>, d@<t:SInt>)@<t:UInt>
+      node yneq = neq(c, b) ;CHECK: node yneq = neq(c@<t:SInt>, b@<t:UInt>)@<t:UInt>
       node zneq = neq(c, d) ;CHECK: node zneq = neq(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
    
-      node veq = eq(a, b)    ;CHECK: node veq = eq(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node weq = eq(a, b) ;CHECK: node weq = eq(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node zeq = eq(c, d) ;CHECK: node zeq = eq(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
+      node vneqv = neqv(a, b)    ;CHECK: node vneqv = neqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node wneqv = neqv(a, b) ;CHECK: node wneqv = neqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node zneqv = neqv(c, d) ;CHECK: node zneqv = neqv(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
+   
+      node veqv = eqv(a, b)    ;CHECK: node veqv = eqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node weqv = eqv(a, b) ;CHECK: node weqv = eqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node zeqv = eqv(c, d) ;CHECK: node zeqv = eqv(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
    
       node vmux = mux(e, a, b)    ;CHECK: node vmux = mux(e@<t:UInt>, a@<t:UInt>, b@<t:UInt>)@<t:UInt>
       node wmux = mux(e, a, b) ;CHECK: node wmux = mux(e@<t:UInt>, a@<t:UInt>, b@<t:UInt>)@<t:UInt>

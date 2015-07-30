@@ -60,7 +60,10 @@ defn emit-signed-if-any (e:Expression,ls:List<Expression>) -> String :
    for x in ls do :
       if type(x) typeof SIntType : signed? = true
    if not signed? : emit(e)
-   else : string-join(["$signed(" emit(e) ")"])
+   else :
+      match(type(e)) :
+         (t:SIntType) : string-join(["$signed(" emit(e) ")"])
+         (t:UIntType) :  string-join(["$signed({1'b0," emit(e) "})"])
 
 defn emit (e:Expression) -> String :
    match(e) :
@@ -92,6 +95,8 @@ defn emit (e:Expression) -> String :
             LESS-EQ-OP : [emit-signed-if-any(args(e)[0],args(e)) " <= " emit-signed-if-any(args(e)[1],args(e))]
             GREATER-OP : [emit-signed-if-any(args(e)[0],args(e)) " > " emit-signed-if-any(args(e)[1],args(e))]
             GREATER-EQ-OP : [emit-signed-if-any(args(e)[0],args(e)) " >= " emit-signed-if-any(args(e)[1],args(e))]
+            NEQUIV-OP : [emit-signed-if-any(args(e)[0],args(e)) " != " emit-signed-if-any(args(e)[1],args(e))]
+            EQUIV-OP : [emit-signed-if-any(args(e)[0],args(e)) " == " emit-signed-if-any(args(e)[1],args(e))]
             NEQUAL-OP : [emit-signed-if-any(args(e)[0],args(e)) " != " emit-signed-if-any(args(e)[1],args(e))]
             EQUAL-OP : [emit-signed-if-any(args(e)[0],args(e)) " == " emit-signed-if-any(args(e)[1],args(e))]
             MUX-OP : 

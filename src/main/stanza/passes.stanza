@@ -1134,7 +1134,7 @@ public defmethod short-name (b:ExpandIndexedConnects) -> String : "expand-indexe
 
 defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
    defn equality (e1:Expression,e2:Expression) -> Expression :
-      DoPrim(EQUAL-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
+      DoPrim(EQUIV-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
    defn get-name (e:Expression) -> Symbol :
       match(e) :
          (e:WRef) : symbol-join([name(e) temp-delin])
@@ -1254,7 +1254,7 @@ defn OR (e1:Expression,e2:Expression) -> Expression :
 defn NOT (e1:Expression) -> Expression :
    if e1 == one : zero
    else if e1 == zero : one
-   else : DoPrim(EQUAL-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+   else : DoPrim(EQUIV-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
 
 defn children (e:Expression) -> List<Expression> :
    val es = Vector<Expression>()
