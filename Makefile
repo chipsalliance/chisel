@@ -10,8 +10,12 @@ all-noise:
 
 all: build check done
 
-install:
-	cd src/lib && unzip stanza.zip
+install-linux:
+	cd src/lib && unzip stanza-linux.zip
+	cd src/lib/stanza && sudo ./stanza -platform linux -install /usr/local/bin/stanza
+
+install-mac:
+	cd src/lib && unzip stanza-mac.zip
 	cd src/lib/stanza && sudo ./stanza -platform os-x -install /usr/local/bin/stanza
 
 build-deploy: 
