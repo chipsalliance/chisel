@@ -815,6 +815,9 @@ defn resolve-genders (c:Circuit) :
     
    defn resolve-genders (m:Module, c:Circuit) -> Module :
       val genders = HashTable<Symbol,Gender>(symbol-hash)
+      ;for p in ports(m) do :
+         ;if direction(p) == INPUT : genders[name(p)] = MALE
+         ;else : genders[name(p)] = FEMALE
       resolve-module(m,genders)
 
    Circuit(info(c),modules*, main(c)) where :

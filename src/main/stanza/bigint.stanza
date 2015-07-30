@@ -239,6 +239,12 @@ public defn neg! (d: BigInt, s0: BigInt) -> BigInt :
 
 public defn neg (x:BigInt) -> BigInt : op(neg!, x)
 
+public defn neg? (x:BigInt) -> True|False :
+  val nw = num-words(x)
+  val msb = x[nw - 1] >> (length(x) - nw * 32 - 1)
+  if msb == 0 : false
+  else : true
+
 public defn rsha! (d:BigInt, s0:BigInt, amount:Int) -> BigInt :
   val w = length(s0)
   val nw = num-words(d)

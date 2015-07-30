@@ -280,7 +280,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
                (e) : add(errors,InvalidIndex(info))
          (e:DoPrim) : check-high-form-primop(e,errors,info)
          (e:UIntValue) :
-            if value(e) < BigIntLit("h0",length(value(e))) : add(errors,NegUInt(info))
+            if neg?(value(e)) : add(errors,NegUInt(info))
          (e) : false
       map(check-high-form-w{info,_:Width},e)
       map(check-high-form-t{info,_:Type},e)
@@ -622,6 +622,8 @@ public defn check-types (c:Circuit) -> Circuit :
          match(map(check-types-e{info(s),_},s)) : 
             (s:Connect) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
+            (s:Connect) : 
+               if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
             (s:OnReset) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
             (s:Conditionally) :
@@ -652,7 +654,7 @@ public defmethod short-name (b:CheckGenders) -> String : "check-genders"
 ;----------------- Errors ---------------------
 defn WrongGender (info:FileInfo,expr:Symbol,wrong:Symbol,right:Symbol) :
    PassException $ string-join $
-   [info ": Expression " expr "has gender " wrong " but requires gender " right "."]
+   [info ": Expression " expr " is used as a " wrong " but can only be used as a " right "."]
 
 defn InferDirection (info:FileInfo,name:Symbol) : 
    PassException $ string-join $
@@ -671,14 +673,24 @@ defn gender (s:DefAccessor) -> Gender :
       INFER : UNKNOWN-GENDER
       RDWR : BI-GENDER
 
+defn as-srcsnk (g:Gender) -> Symbol :
+   switch {_ == g} :
+      MALE : `source
+      FEMALE : `sink
+      UNKNOWN-GENDER : `unknown
+      BI-GENDER : `sourceOrSink
+
 ;----------------- Check Genders Pass ---------------------
 
 public defn check-genders (c:Circuit) -> Circuit :
    val errors = Vector<PassException>()
    defn check-gender (info:FileInfo,genders:HashTable<Symbol,Gender>,e:Expression,right:Gender) -> False :
       val gender = get-gender(e,genders)
+      ;println(gender)
+      ;println(right)
+      ;println(right == gender)
       if gender != right and gender != BI-GENDER:
-         add(errors,WrongGender(info,to-symbol(e),to-symbol(gender),to-symbol(right)))
+         add(errors,WrongGender(info,to-symbol(e),as-srcsnk(right),as-srcsnk(gender)))
 
    defn get-gender (e:Expression,genders:HashTable<Symbol,Gender>) -> Gender :
       match(e) :
@@ -705,6 +717,7 @@ public defn check-genders (c:Circuit) -> Circuit :
      
    defn check-genders-s (s:Stmt,genders:HashTable<Symbol,Gender>) -> False :
       do(check-genders-e{info(s),_:Expression,genders},s)
+      do(check-genders-s{_:Stmt,genders},s)
       match(s) :
          (s:DefWire) : genders[name(s)] = BI-GENDER
          (s:DefRegister) : genders[name(s)] = BI-GENDER

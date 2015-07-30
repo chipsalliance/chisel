@@ -3,7 +3,7 @@
 ; CHECK: Primop add cannot operate on non-ground types.
 ; CHECK: Primop add cannot operate on non-ground types.
 ; CHECK: Primop bits requires all arguments to be UInt type.
-; CHECK: Primop mux requires argument SInt(1) to be a UInt type.
+; CHECK: Primop mux requires argument SInt("h00000001") to be a UInt type.
 
 circuit Top : 
   module Top :
