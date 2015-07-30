@@ -24,6 +24,7 @@ defpackage firrtl-main :
    import verse
    import firrtl/parser
    import firrtl/passes
+   import firrtl/ir2
    import firrtl/lexer
    import stz/parser
    import firrtl/ir-utils
@@ -84,21 +85,33 @@ defn main () :
    if compiler == false and length(pass-names) == 0 :
       error("Must specify a compiler. Use -X flag.")
 
-   val lexed = for m in firms map-append :
-      lex-file(m as String)
-      
-   val lexed* = append(lex-file(input as String),lexed)
-      
-   val c = parse-firrtl(lexed*)
+   val lexed = lex-file(input as String)
+   val circuit = parse-firrtl(lexed)
+
+   val modules* = Vector<Module>()
+   for m in modules(circuit) do :
+      add(modules*,m)
+
+   val included-c = 
+      for m in firms map :
+         val lexed = lex-file(m as String)
+         parse-firrtl(lexed)
+
+   for c in included-c do :
+      for m in modules(c) do :
+         add(modules*,m)
+
+   val circuit* = Circuit(info(circuit),to-list(modules*),main(circuit))
+
    set-printvars!(to-list(printvars))
    
    if compiler == false :
-      run-passes(c,get-passes(to-list(pass-names)))
+      run-passes(circuit*,get-passes(to-list(pass-names)))
    else :
       switch {_ == compiler} :
-         "flo" : run-passes(c,StandardFlo(output as String))
-         "verilog" : run-passes(c,StandardVerilog(output as String))
-         "verilute" : run-passes(c,InstrumentedVerilog(output as String,to-list $ pass-args))
+         "flo" : run-passes(circuit*,StandardFlo(output as String))
+         "verilog" : run-passes(circuit*,StandardVerilog(output as String))
+         "verilute" : run-passes(circuit*,InstrumentedVerilog(output as String,to-list $ pass-args))
          else : error("Invalid compiler flag")
 
 main()
