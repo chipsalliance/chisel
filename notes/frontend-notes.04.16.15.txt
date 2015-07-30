@@ -9,6 +9,14 @@ sub-wrap -> subw
 bit-and -> and
 bit-or -> or
 bit-xor -> xor
+on-reset -> onreset
+reg now has reset and clock
+cmem/smem now has clock
+accessor -> infer accessor
+"Clock" is now a type, so the following declares a clock port:
+module Queue :
+  input clk : Clock
+  ...
 
 
 
