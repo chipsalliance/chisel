@@ -2,6 +2,7 @@ defpackage firrtl/lexer :
    import core
    import core/stringeater
    import verse
+   import bigint
 
 ;=============== PUBLIC INTERFACE ===========================
 public defn lex (text:String) -> List<Token> :
@@ -286,13 +287,14 @@ defn eat-number () :
          match(to-float(str)) :
             (f:Float) : token-eaten(Token(f, info))
             (f:False) : throw(InvalidNumber(info))
-      else :
-         match(to-long(str)) :
-            (l:Long) :
-               if l < (to-long("2147483647") as Long) and l > (to-long("-2147483648") as Long) : token-eaten(Token(to-int(str), info))
-               else : token-eaten(Token(l, info))
-            (l:False) : token-eaten(Token(to-int(str), info))
-      ;else : token-eaten(Token(to-int(str), info)) <- ADAM CHANGE, FROM THIS
+      else : token-eaten(Token(to-int(str), info)) 
+      ;else : token-eaten(Token(BigIntLit(str),info))
+      ;else :
+         ;match(to-long(str)) :
+         ;   (l:Long) :
+         ;      if l < (to-long("2147483647") as Long) and l > (to-long("-2147483648") as Long) : token-eaten(Token(to-int(str), info))
+         ;      else : token-eaten(Token(l, info))
+         ;   (l:False) : token-eaten(Token(to-int(str), info))
 
 defn eat-here-string () :
    if EATER[0] == '\\' and EATER[1] == '<' :

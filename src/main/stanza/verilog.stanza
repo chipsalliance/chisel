@@ -65,8 +65,14 @@ defn emit-signed-if-any (e:Expression,ls:List<Expression>) -> String :
 defn emit (e:Expression) -> String :
    match(e) :
       (e:Ref) : to-string $ name(e)
-      (e:UIntValue) : string-join $ [width!(type(e)) "'d" value(e)]
-      (e:SIntValue) : string-join $ [width!(type(e)) "'sd" value(e)]
+      (e:UIntValue) : 
+         val str = to-string(value(e))
+         val out = substring(str,1,length(str) - 1)
+         string-join $ [width!(type(e)) "'" out]
+      (e:SIntValue) : ;string-join $ [width!(type(e)) "'s" value(e)]
+         val str = to-string(value(e))
+         val out = substring(str,1,length(str) - 1)
+         string-join $ [width!(type(e)) "'s" out]
       (e:Subfield) : error("Non-supported expression")
       (e:Index) : error("Non-supported expression")
       (e:DoPrim) : 
@@ -116,7 +122,7 @@ defn emit (e:Expression) -> String :
                match(type(args(e)[0])) :
                   (t:UIntType) : ["{1'b0," emit-as-type(args(e)[0],type(e)) "}"]
                   (t:SIntType) : [emit-as-type(args(e)[0],type(e))]
-            BIT-NOT-OP : ["!" emit-as-type(args(e)[0],type(e))]
+            BIT-NOT-OP : ["~ " emit-as-type(args(e)[0],type(e))]
             BIT-AND-OP : [emit-as-type(args(e)[0],type(e)) " & " emit-as-type(args(e)[1],type(e))]
             BIT-OR-OP : [emit-as-type(args(e)[0],type(e)) " | " emit-as-type(args(e)[1],type(e))]
             BIT-XOR-OP : [emit-as-type(args(e)[0],type(e)) " ^ " emit-as-type(args(e)[1],type(e))]
@@ -177,6 +183,7 @@ defn emit-module (m:InModule) :
    val inst-ports = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
 
    val sh = get-sym-hash(m)
+   val rand-value = "0"
 
    for x in vdecs do :
       val sym = key(x)
@@ -196,11 +203,12 @@ defn emit-module (m:InModule) :
             else :
                add(my-clk-update,[sym " <= " emit(cons[sym]) ";"])
             updates[get-name(clock(s))] = my-clk-update
+            add(inits,[sym " = {" width!(type(s)) "{" rand-value "}};"])
          (s:DefMemory) :
             val vtype = type(s) as VectorType
             add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) "];"])
             add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
-            add(inits,["  " sym "[initvar] = {" width!(type(vtype)) "{$random}};"])
+            add(inits,["  " sym "[initvar] = {" width!(type(vtype)) "{" rand-value "}};"])
          (s:DefNode) :
             add(wires,["wire " get-width(type(value(s))) " " sym ";"])
             add(assigns,["assign " sym " = " emit(value(s)) ";"])
@@ -221,7 +229,7 @@ defn emit-module (m:InModule) :
                      ; to make it sequential, register the index for an additional cycle
                      val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
                      add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) 
-                     add(inits,[name(index*) " = {" width!(type(index*)) "{$random}};"])
+                     add(inits,[name(index*) " = {" width!(type(index*)) "{" rand-value "}};"])
                      val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
                      add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"])
                      updates[get-name(clock(mem-declaration))] = my-clk-update

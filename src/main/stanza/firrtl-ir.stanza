@@ -1,6 +1,7 @@
 defpackage firrtl/ir2 :
    import core
    import verse
+   import bigint
    
 public defmulti info! (x:?) -> FileInfo
 public defmethod info! (x:?) : FileInfo()
@@ -31,7 +32,7 @@ public defstruct UnknownWidth <: Width
 public defstruct IntWidth <: Width :
    width: Int
 public defstruct LongWidth <: Width :
-   width : Long
+   width: Long
 
 public definterface PrimOp
 public val ADD-OP = new PrimOp
@@ -85,10 +86,10 @@ public defstruct Index <: Expression :
    value: Int
    type: Type with: (as-method => true)
 public defstruct UIntValue <: Expression :
-   value: Long
+   value: BigInt
    width: Width
 public defstruct SIntValue <: Expression :
-   value: Long
+   value: BigInt
    width: Width
 public defstruct DoPrim <: Expression :
    op: PrimOp

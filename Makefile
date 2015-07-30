@@ -48,12 +48,12 @@ clean:
 riscv:
 	cd $(test_dir)/riscv-mini && lit -v . --path=$(root_dir)/utils/bin/
 
-units = ALUTop Datapath Control Core
+units = ALUTop Datapath Control Core Test
 v     = $(addsuffix .fir.v, $(units))
 
 $(units): % :
-	firrtl -X verilog -i test/chisel3/$*.fir -o test/chisel3/$*.fir.v -p c
-	scp test/chisel3/$*.fir.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-src/$*.v
+	firrtl -X verilog -i test/chisel3/$*.fir -o test/chisel3/$*.fir.v -p c > test/chisel3/$*.fir.out 
+	#scp test/chisel3/$*.fir.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-src/$*.v
 
 done:
 	say "done"
