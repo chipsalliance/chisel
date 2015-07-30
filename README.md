@@ -13,7 +13,7 @@
 #### Installation instructions (for Mac):    
 *Disclaimer*: This project is going through development stages so there is no guarantee anything works.     
     `git clone https://github.com/ucb-bar/firrtl # Clone repository`     
-    `make install # Stanza installation`     
+    `make install-mac # Stanza installation`     
     `pip install lit # Install lit (this assumes you have pip installed)`     
     `make build # Build firrtl`     
     `make check # Run tests`     
