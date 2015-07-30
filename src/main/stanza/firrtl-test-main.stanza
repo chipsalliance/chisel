@@ -54,17 +54,28 @@ defn main () :
    val args = commandline-arguments()
    var input = false
    var output = false
+   var firms = Vector<String>()
    var compiler = false
    val pass-names = Vector<String>()
    val pass-args = Vector<String>()
    var printvars = ""
+   var last-s = ""
    for (s in args, i in 0 to false) do :
-      if s == "-i" : input = args[i + 1]
-      if s == "-o" : output = args[i + 1]
-      if s == "-x" : add(pass-names,args[i + 1])
-      if s == "-X" : compiler = args[i + 1]
-      if s == "-p" : printvars = args[i + 1]
-      if s == "-s" : add(pass-args,args[i + 1])
+      if s == "-i" : last-s = s
+      else if s == "-o" : last-s = s
+      else if s == "-x" : last-s = s
+      else if s == "-X" : last-s = s
+      else if s == "-p" : last-s = s
+      else if s == "-s" : last-s = s
+      else if s == "-m" : last-s = s
+      else :
+         if last-s == "-i" : input = args[i]
+         if last-s == "-o" : output = args[i]
+         if last-s == "-x" : add(pass-names,args[i])
+         if last-s == "-X" : compiler = args[i]
+         if last-s == "-p" : printvars = args[i]
+         if last-s == "-s" : add(pass-args,args[i])
+         if last-s == "-m" : add(firms,args[i])
 
    if input == false : 
       error("No input file provided. Use -i flag.")
@@ -73,8 +84,12 @@ defn main () :
    if compiler == false and length(pass-names) == 0 :
       error("Must specify a compiler. Use -X flag.")
 
-   val lexed = lex-file(input as String)
-   val c = parse-firrtl(lexed)
+   val lexed = for m in firms map-append :
+      lex-file(m as String)
+      
+   val lexed* = append(lex-file(input as String),lexed)
+      
+   val c = parse-firrtl(lexed*)
    set-printvars!(to-list(printvars))
    
    if compiler == false :
