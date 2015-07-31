@@ -65,7 +65,6 @@ object Builder {
   def collectCommands[T <: Module](f: => T): (Command, T) = {
     pushCommands
     val mod = f
-    // mod.setRefs
     (popCommands, mod)
   }
 
@@ -190,14 +189,10 @@ case class Ref(val name: String) extends Immediate {
   def fullname = name
 }
 case class Slot(val imm: Immediate, val name: String) extends Immediate {
-  def fullname = {
-    val imm_fullname = imm.fullname
-    if (imm_fullname == "this") name else imm_fullname + "." + name
-  }
-  override def debugName = {
-    val imm_debugName = imm.debugName
-    if (imm_debugName == "this") name else imm_debugName + "." + name
-  }
+  def fullname =
+    if (imm.fullname isEmpty) name else s"${imm.fullname}.${name}"
+  override def debugName =
+    if (imm.debugName isEmpty) name else s"${imm.debugName}.${name}"
 }
 case class Index(val imm: Immediate, val value: Int) extends Immediate {
   def name = "[" + value + "]"
@@ -219,6 +214,7 @@ case class FloType(flip: Boolean) extends Kind(flip);
 case class DblType(flip: Boolean) extends Kind(flip);
 case class BundleType(val ports: Seq[Port], flip: Boolean) extends Kind(flip);
 case class VectorType(val size: Int, val kind: Kind, flip: Boolean) extends Kind(flip);
+case class ClockType(flip: Boolean) extends Kind(flip)
 
 abstract class Command;
 abstract class Definition extends Command {
@@ -231,9 +227,9 @@ case class DefFlo(val id: String, val value: Float) extends Definition;
 case class DefDbl(val id: String, val value: Double) extends Definition;
 case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Seq[Arg], val lits: Seq[BigInt]) extends Definition;
 case class DefWire(val id: String, val kind: Kind) extends Definition;
-case class DefRegister(val id: String, val kind: Kind) extends Definition;
-case class DefMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
-case class DefSeqMemory(val id: String, val kind: Kind, val size: Int) extends Definition;
+case class DefRegister(id: String, kind: Kind, clock: Clock, reset: Bool) extends Definition
+case class DefMemory(id: String, kind: Kind, size: Int, clock: Clock) extends Definition
+case class DefSeqMemory(val id: String, val kind: Kind, val size: Int) extends Definition
 case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Arg) extends Definition;
 case class DefInstance(val id: String, val module: String) extends Definition;
 case class Conditionally(val prep: Command, val pred: Arg, val conseq: Command, var alt: Command) extends Command;
@@ -315,12 +311,9 @@ abstract class Data(dirArg: Direction) extends Id {
   def <>(other: Data) = 
     pushCommand(BulkConnect(this.lref, other.lref))
   private[Chisel] def collectElts = { }
+  private[Chisel] def lref: Alias = Alias(cid)
+  private[Chisel] def ref: Arg = if (isLit) litArg() else Alias(cid)
   def cloneType: this.type
-  def cloneTypeWidth(width: Int): this.type
-  def lref: Alias = 
-    Alias(cid)
-  def ref: Arg = 
-    if (isLit) litArg() else Alias(cid)
   def name = getRefForId(cid).name
   def debugName = mod.debugName + "." + getRefForId(cid).debugName
   def litArg(): LitArg = null
@@ -379,7 +372,7 @@ object Reg {
 
     val x = mType.cloneType
     x.isReg_ = true
-    pushCommand(DefRegister(x.defd.cid, x.toType))
+    pushCommand(DefRegister(x.defd.cid, x.toType, x.mod.clock, x.mod.reset)) // TODO multi-clock
     if (init != null) 
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
@@ -393,7 +386,7 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mt.defd.cid, mt.toType, size))
+    pushCommand(DefMemory(mt.defd.cid, mt.toType, size, mt.mod.clock)) // TODO multi-clock
     mem
   }
 }
@@ -570,12 +563,23 @@ abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
   override def getWidth: Int = width
 }
 
+object Clock {
+  def apply(dir: Direction = OUTPUT): Clock = new Clock(dir)
+}
+
+sealed class Clock(dirArg: Direction) extends Element(dirArg, 1) {
+  def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
+  def flatten: IndexedSeq[Bits] = throwException("Clock.flatten")
+  def toType: Kind = ClockType(isFlipVar)
+}
+
 sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends Element(dirArg, width) {
   override def litArg(): LitArg = lit.get
   override def isLit(): Boolean = lit.isDefined
   override def litValue(): BigInt = lit.get.num
-  override def cloneType : this.type = cloneTypeWidth(width)
   def fromInt(x: BigInt): this.type = makeLit(x, -1)
+  def cloneTypeWidth(width: Int): this.type
+  def cloneType: this.type = cloneTypeWidth(width)
 
   override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
@@ -920,11 +924,11 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
     BundleType(this.toPorts, isFlipVar)
 
   override def flatten: IndexedSeq[Bits] =
-    sortedElts.map(_._2.flatten).reduce(_ ++ _)
+    allElts.map(_._2.flatten).reduce(_ ++ _)
 
-  lazy val elements: ListMap[String, Data] = ListMap(sortedElts:_*)
+  lazy val elements: ListMap[String, Data] = ListMap(allElts:_*)
 
-  private lazy val sortedElts = {
+  private lazy val allElts = {
     val elts = ArrayBuffer[(String, Data)]()
     for (m <- getClass.getMethods) {
       val name = m.getName
@@ -942,8 +946,14 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
     }
     elts sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
+
+  private lazy val namedElts = LinkedHashMap[String, Data](allElts:_*)
+
+  private[Chisel] def addElt(name: String, elt: Data) =
+    namedElts += name -> elt
+
   override def collectElts =
-    sortedElts.foreach(e => setFieldForId(cid, e._2.cid, e._1))
+    namedElts.foreach {case(name, elt) => setFieldForId(this.cid, elt.cid, name)}
 
   override def cloneType : this.type = {
     try {
@@ -970,11 +980,11 @@ object Module {
     popScope
     popModule
     m.setRefs
-    val ports = m.io.toPorts
-    val component = UniqueComponent(m.name, ports, cmd)
+    val component = UniqueComponent(m.name, m.computePorts, cmd)
     components += component
     pushCommand(DefInstance(m.defd.cid, component.name))
     Driver.parStack.pop
+    m.connectImplicitIOs
     m
   }
   def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
@@ -984,7 +994,7 @@ object Module {
   private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
-abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
+abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   private[Chisel] val _parent = modulez.headOption
   private[Chisel] val _nodes = ArrayBuffer[Data]()
 
@@ -997,47 +1007,54 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
   params.path = this.getClass :: params.path
 
   def io: Bundle
-  def ref = getRefForId(cid)
-  def lref = ref
-  val reset = if (_reset == null) Bool().defd else _reset
-  setRefForId(reset.cid, "reset")
+  val clock = Clock(INPUT)
+  val reset = Bool(INPUT)
 
-  def name = {
-    // getClass.getName.replace('.', '_')
-    getClass.getName.split('.').last
+  private[Chisel] def ref = getRefForId(cid)
+  private[Chisel] def lref = ref
+
+  def name: String = getClass.getName.split('.').last
+  def debugName: String = _parent match {
+    case Some(p) => s"${p.debugName}.${ref.debugName}"
+    case None => ref.debugName
   }
-  def debugName: String = (_parent match {
-      case Some(p) => p.debugName + "."
-      case None => ""
-    }) + getRefForId(cid).debugName
+
+  private def computePorts =
+    clock.toPort +: reset.toPort +: io.toPorts
+
+  private def connectImplicitIOs: Unit = _parent match {
+    case Some(p) =>
+      clock := (if (_clock eq null) p.clock else _clock)
+      reset := (if (_reset eq null) p.reset else _reset)
+    case None =>
+  }
+
+  private def makeImplicitIOs = {
+    io.addElt("clock", clock)
+    io.addElt("reset", reset)
+  }
 
   private def setRefs: Unit = {
     val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
     def isPublicVal(m: java.lang.reflect.Method) =
-      m.getParameterTypes.isEmpty && valNames.contains(m.getName) && isPublic(m.getModifiers)
+      m.getParameterTypes.isEmpty && valNames.contains(m.getName)
 
+    makeImplicitIOs
     _nodes.foreach(_.collectElts)
     _nodes.clear
+    setRefForId(io.cid, "")
 
-    setRefForId(io.cid, "this")
-
-    for (m <- getClass.getDeclaredMethods; if isPublicVal(m)) {
+    for (m <- getClass.getMethods; if isPublicVal(m)) {
       m.invoke(this) match {
         case module: Module =>
           setRefForId(module.cid, m.getName)
-          module.setRefs
-        case bundle: Bundle =>
-          if (m.getName != "io") {
-            setRefForId(bundle.cid, m.getName)
-          }
         case mem: Mem[_] =>
           setRefForId(mem.t.cid, m.getName)
         case vec: Vec[_] =>
           setRefForId(vec.cid, m.getName)
         case data: Data =>
           setRefForId(data.cid, m.getName)
-        // ignore anything not of those types
-        case _ => null
+        case _ =>
       }
     }
   }
@@ -1048,7 +1065,7 @@ abstract class Module(private[Chisel] _reset: Bool = null) extends Id {
 }
 
 // TODO: actually implement BlackBox (this hack just allows them to compile)
-abstract class BlackBox(private[Chisel] _reset: Bool = null) extends Module(_reset) {
+abstract class BlackBox(_clock: Clock = null, _reset: Bool = null) extends Module(_clock = _clock, _reset = _reset) {
   def setVerilogParameters(s: String): Unit = {}
 }
 
@@ -1121,14 +1138,15 @@ class Emitter {
   def emitType(e: Kind): String = {
     e match {
       case e: UnknownType => "?"
-      case e: UIntType => "UInt" + emit(e.width)
-      case e: SIntType => "SInt" + emit(e.width)
-      case e: BundleType => "{" + join(e.ports.map(x => emitPort(x, false)), ", ") + "}"
-      case e: VectorType => emitType(e.kind) + "[" + e.size + "]"
+      case e: UIntType => s"UInt${emit(e.width)}"
+      case e: SIntType => s"SInt${emit(e.width)}"
+      case e: BundleType => s"{${join(e.ports.map(x => emitPort(x, false)), ", ")}}"
+      case e: VectorType => s"${emitType(e.kind)}[${e.size}]"
+      case e: ClockType => s"Clock"
     }
   }
   def emit(e: Command): String = {
-    def maybeWidth (w: Int) = if (w == -1) "<?>" else ("<" + w + ">")
+    def maybeWidth (w: Int) = if (w == -1) "<?>" else (s"<${w}>")
     e match {
       case e: DefUInt => "node " + e.name + " = UInt" + maybeWidth(e.width) + "(" + e.value + ")"
       case e: DefSInt => "node " + e.name + " = SInt" + maybeWidth(e.width) + "(" + e.value + ")"
@@ -1136,11 +1154,11 @@ class Emitter {
       case e: DefDbl => "node " + e.name + " = Dbl(" + e.value + ")"
       case e: DefPrim =>
         "node " + e.name + " = " + emit(e.op) + "(" + join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ") + ")"
-      case e: DefWire => "wire " + e.name + " : " + emitType(e.kind)
-      case e: DefRegister => "reg " + e.name + " : " + emitType(e.kind)
-      case e: DefMemory => "cmem " + e.name + " : " + emitType(e.kind) + "[" + e.size + "]";
-      case e: DefSeqMemory => "smem " + e.name + " : " + emitType(e.kind) + "[" + e.size + "]";
-      case e: DefAccessor => "accessor " + e.name + " = " + emit(e.source) + "[" + emit(e.index) + "]"
+      case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
+      case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.name}, ${e.reset.name}"
+      case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.name}";
+      case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
+      case e: DefAccessor => s"infer accessor ${e.name} = ${emit(e.source)}[${emit(e.index)}]"
       case e: DefInstance => {
         val mod = modules(e.id)
         // update all references to the modules ports
@@ -1165,7 +1183,7 @@ class Emitter {
       case e: BulkConnect => emit(e.loc1) + " <> " + emit(e.loc2)
       case e: ConnectInit => "onreset " + emit(e.loc) + " := " + emit(e.exp)
       case e: ConnectInitIndex => "onreset " + emit(e.loc) + "[" + e.index + "] := " + emit(e.exp)
-      case e: EmptyCommand => "skip"
+      case e: EmptyCommand => ""
     }
   }
   def emit(e: Component): String =  {
