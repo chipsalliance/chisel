@@ -9,7 +9,7 @@ defpackage firrtl/custom-compiler :
    import firrtl/custom-passes
 
 public defstruct InstrumentedVerilog <: Compiler :
-   file: String with: (as-method => true)
+   with-output: (() -> False) -> False   with: (as-method => true)
    args: List<String>
 public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
    to-list $ [
@@ -36,7 +36,7 @@ public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
       RemoveSpecialChars()
       CheckHighForm()
       CheckLowForm()
-      Verilog(file(c))
+      Verilog(with-output(c))
    ]
 
 

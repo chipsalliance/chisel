@@ -1611,8 +1611,8 @@ public defn expand-whens (c:Circuit) -> Circuit :
             ;for x in resets do : println-debug(x)
    
             val table = merge-resets(assign,resets,rsignals)
-            println("====== Table ======")
-            for x in table do : println(x)
+            ;println-debug("====== Table ======")
+            ;for x in table do : println-debug(x)
 
             val decs = Vector<Stmt>()
             val cons = Vector<Stmt>()
@@ -1626,7 +1626,6 @@ public defn expand-whens (c:Circuit) -> Circuit :
                   referenced?[key(x)] = true
             for x in decs do :
                mark-referenced(referenced?,x)
-            println-all(["Referenced \n" referenced?])
             val decs* = Vector<Stmt>()
             for x in decs do :
                if is-referenced?(referenced?,x) : add(decs*,x)

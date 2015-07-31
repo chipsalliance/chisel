@@ -7,8 +7,8 @@ defpackage firrtl/verilog :
 ;============ VERILOG ==============
 
 public defstruct Verilog <: Pass :
-   file : String
-public defmethod pass (b:Verilog) -> (Circuit -> Circuit) : emit-verilog{file(b),_}
+   with-output: (() -> False) -> False  
+public defmethod pass (b:Verilog) -> (Circuit -> Circuit) : emit-verilog{with-output(b),_}
 public defmethod name (b:Verilog) -> String : "To Verilog"
 public defmethod short-name (b:Verilog) -> String : "To Verilog"
 
@@ -314,11 +314,10 @@ defn emit-module (m:InModule) :
    println("endmodule")
 
 
-public defn emit-verilog (file:String, c:Circuit) :
-   with-output-file{file, _} $ fn () :
+public defn emit-verilog (with-output:(() -> False) -> False, c:Circuit) :
+   with-output $ fn () :
       for m in modules(c) do :
          match(m) :
             (m:InModule) : emit-module(m)
             (m:ExModule) : false
-
    c

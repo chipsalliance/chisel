@@ -22,14 +22,12 @@ update high/low firrtl checks
 need an annotation example
 move width inference earlier (required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits)
 Temp elimination needs to count # uses
-Declared references needs to understand scope <= check in high form check
 Check for recursively defined instances
 Names in bundles must be unique
 Fix reset scope
 Scaling
 Adam, could you add the following to firrtl (the program)
  - exit(0) on success, exit(1) on any failure
- - diagnostic messages (as distinct from transformed firrtl (the code)) should go to stderr
  - a “-“ as a file indicates stdin for input or stdout for output so:
     firrtl -i - -o - fir -X flo
  operates like a filter.

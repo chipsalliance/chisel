@@ -45,38 +45,40 @@ public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-for
 public defmethod name (b:CheckHighForm) -> String : "High Form Check"
 public defmethod short-name (b:CheckHighForm) -> String : "high-form-check"
 
+var mname = ""
+
 ;----------------- Errors ------------------------
 defn NotUnique (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Reference " name " does not have a unique name."]
+   [info ": [module " mname "]  Reference " name " does not have a unique name."]
 
 defn IsPrefix (info:FileInfo, prefix:Symbol) :
    PassException $ string-join $
-   [info ": Symbol " prefix " is a prefix."]
-   
+   [info ": [module " mname "]  Symbol " prefix " is a prefix."]
+
 defn InvalidLOC (info:FileInfo) :
    PassException $ string-join $
-   [info ": Invalid connect to an expression that is not a reference or a WritePort."]
+   [info ": [module " mname "]  Invalid connect to an expression that is not a reference or a WritePort."]
    
 defn NegUInt (info:FileInfo) :
    PassException $ string-join $
-   [info ": UIntValue cannot be negative."]
+   [info ": [module " mname "]  UIntValue cannot be negative."]
 
 defn UndeclaredReference (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Reference " name " is not declared."]
+   [info ": [module " mname "]  Reference " name " is not declared."]
 
 defn MemWithFlip (info:FileInfo, name:Symbol) : 
    PassException $ string-join $
-   [info ": Memory " name " cannot be a bundle type with flips."]
+   [info ": [module " mname "]  Memory " name " cannot be a bundle type with flips."]
 
 defn InvalidSubfield (info:FileInfo) :
    PassException $ string-join $
-   [info ": Invalid subfield access to non-reference."]
+   [info ": [module " mname "]  Invalid subfield access to non-reference."]
 
 defn InvalidIndex (info:FileInfo) :
    PassException $ string-join $
-   [info ": Invalid index access to non-reference."]
+   [info ": [module " mname "]  Invalid index access to non-reference."]
    
 defn NoTopModule (info:FileInfo, name:Symbol) :
    PassException $ string-join $
@@ -92,19 +94,19 @@ defn ModuleNotDefined (info:FileInfo, name:Symbol) :
 
 defn IncorrectNumArgs (info:FileInfo, op:Symbol, n:Int) :
    PassException $ string-join $
-   [info ": Primop " op " requires " n " expression arguments."]
+   [info ": [module " mname "]  Primop " op " requires " n " expression arguments."]
 
 defn IncorrectNumConsts (info:FileInfo, op:Symbol, n:Int) :
    PassException $ string-join $
-   [info ": Primop " op " requires " n " integer arguments."]
+   [info ": [module " mname "]  Primop " op " requires " n " integer arguments."]
 
 defn NegWidth (info:FileInfo) :
    PassException $ string-join $
-   [info ": Width cannot be negative."]
+   [info ": [module " mname "]  Width cannot be negative."]
 
 defn NegVecSize (info:FileInfo) :
    PassException $ string-join $
-   [info ": Vector type size cannot be negative."]
+   [info ": [module " mname "]  Vector type size cannot be negative."]
 
 ;---------------- Helper Functions --------------
 defn has-flip? (t:Type) -> True|False :
@@ -337,6 +339,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
          s }()
 
    defn check-high-form-m (m:Module) -> False :
+      mname = name(m)
       val names = HashTable<Symbol,True>(symbol-hash)
       val mnames = HashTable<Symbol,True>(symbol-hash)
       for m in modules(c) do :
@@ -384,15 +387,15 @@ public defmethod short-name (b:CheckKinds) -> String : "check-kinds"
 ;----------------- Errors ---------------------
 defn NotMem (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Reference " name " must be a mem."]
+   [info ": [module " mname "]  Reference " name " must be a mem."]
 
 defn IsMem (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Reference " name " cannot be a mem."]
+   [info ": [module " mname "]  Reference " name " cannot be a mem."]
 
 defn OnResetNotReg (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Illegal on-reset to non-reg reference " name "."]
+   [info ": [module " mname "]  Illegal on-reset to non-reg reference " name "."]
 
 ;----------------- Check Kinds Pass ---------------------
 ; I may have been overeager in looking for places where mems can't be, as mems are guaranteed to have a vector
@@ -439,6 +442,7 @@ public defn check-kinds (c:Circuit) -> Circuit :
       do(check-kinds-s,s)
    
    for m in modules(c) do :
+      mname = name(m)
       match(m) :
          (m:ExModule) : false
          (m:InModule) : check-kinds-s(body(m))
@@ -465,55 +469,55 @@ public defmethod short-name (b:CheckTypes) -> String : "check-types"
 ;----------------- Errors ---------------------
 defn SubfieldNotInBundle (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Subfield " name " is not in bundle."]
+   [info ": [module " mname "]  Subfield " name " is not in bundle."]
 
 defn SubfieldOnNonBundle (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Subfield " name " is accessed on a non-bundle."]
+   [info ": [module " mname "]  Subfield " name " is accessed on a non-bundle."]
 
 defn IndexTooLarge (info:FileInfo, value:Int) :
    PassException $ string-join $
-   [info ": Index with value " value " is too large."]
+   [info ": [module " mname "]  Index with value " value " is too large."]
 
 defn IndexOnNonVector (info:FileInfo) :
    PassException $ string-join $
-   [info ": Index illegal on non-vector type."]
+   [info ": [module " mname "]  Index illegal on non-vector type."]
 
 defn IndexNotUInt (info:FileInfo) :
    PassException $ string-join $
-   [info ": Index is not of UIntType."]
+   [info ": [module " mname "]  Index is not of UIntType."]
 
 defn EnableNotUInt (info:FileInfo) :
    PassException $ string-join $
-   [info ": Enable is not of UIntType."]
+   [info ": [module " mname "]  Enable is not of UIntType."]
 
 defn InvalidConnect (info:FileInfo) :
    PassException $ string-join $
-   [info ": Type mismatch."]
+   [info ": [module " mname "]  Type mismatch."]
 
 defn PredNotUInt (info:FileInfo) :
    PassException $ string-join $
-   [info ": Predicate not a UIntType."]
+   [info ": [module " mname "]  Predicate not a UIntType."]
 
 defn OpNotGround (info:FileInfo, op:Symbol) :
    PassException $ string-join $
-   [info ": Primop " op " cannot operate on non-ground types."]
+   [info ": [module " mname "]  Primop " op " cannot operate on non-ground types."]
 
 defn OpNotUInt (info:FileInfo, op:Symbol,e:Symbol) :
    PassException $ string-join $
-   [info ": Primop " op " requires argument " e " to be a UInt type."]
+   [info ": [module " mname "]  Primop " op " requires argument " e " to be a UInt type."]
 
 defn OpNotAllUInt (info:FileInfo, op:Symbol) :
    PassException $ string-join $
-   [info ": Primop " op " requires all arguments to be UInt type."]
+   [info ": [module " mname "]  Primop " op " requires all arguments to be UInt type."]
 
 defn OpNotAllSameType (info:FileInfo, op:Symbol) :
    PassException $ string-join $
-   [info ": Primop " op " requires all operands to have the same type."]
+   [info ": [module " mname "]  Primop " op " requires all operands to have the same type."]
 
 defn NodeWithFlips (info:FileInfo) :
    PassException $ string-join $
-   [info ": Node cannot be a bundle type with flips."]
+   [info ": [module " mname "]  Node cannot be a bundle type with flips."]
 
 
 ;---------------- Helper Functions --------------
@@ -634,6 +638,7 @@ public defn check-types (c:Circuit) -> Circuit :
          s }()
    
    for m in modules(c) do :
+      mname = name(m)
       match(m) :
          (m:ExModule) : false
          (m:InModule) : check-types-s(body(m))
@@ -654,11 +659,11 @@ public defmethod short-name (b:CheckGenders) -> String : "check-genders"
 ;----------------- Errors ---------------------
 defn WrongGender (info:FileInfo,expr:Symbol,wrong:Symbol,right:Symbol) :
    PassException $ string-join $
-   [info ": Expression " expr " is used as a " wrong " but can only be used as a " right "."]
+   [info ": [module " mname "]  Expression " expr " is used as a " wrong " but can only be used as a " right "."]
 
 defn InferDirection (info:FileInfo,name:Symbol) : 
    PassException $ string-join $
-   [info ": Accessor " name " has a direction that requires inference."]
+   [info ": [module " mname "]  Accessor " name " has a direction that requires inference."]
 
 ;---------------- Helper Functions --------------
 defn dir-to-gender (d:PortDirection) -> Gender :
@@ -747,6 +752,7 @@ public defn check-genders (c:Circuit) -> Circuit :
 
 
    for m in modules(c) do :
+      mname = name(m)
       val genders = HashTable<Symbol,Gender>(symbol-hash)
       for p in ports(m) do :
          genders[name(p)] = dir-to-gender(direction(p))
@@ -773,27 +779,27 @@ public defmethod short-name (b:CheckLowForm) -> String : "low-form-check"
 ;----------------- Errors ------------------------
 defn InvalidVec (info:FileInfo,name:Symbol) :
    PassException $ string-join $
-   [info ": Expression " name " has an illegal vector type."]
+   [info ": [module " mname "]  Expression " name " has an illegal vector type."]
 
 defn InvalidBundle (info:FileInfo,name:Symbol) :
    PassException $ string-join $
-   [info ": Expression " name " has an illegal bundle type."]
+   [info ": [module " mname "]  Expression " name " has an illegal bundle type."]
 
 defn NoWhen (info:FileInfo) :
    PassException $ string-join $
-   [info ": Illegal when statement. No when statements with multiple statements are allowed in low firrtl."]
+   [info ": [module " mname "]  Illegal when statement. No when statements with multiple statements are allowed in low firrtl."]
 
 defn SingleAssignment (info:FileInfo,name:Symbol) :
    PassException $ string-join $
-   [info ": Illegal assignment to " name ". Wires can only be assigned to once."]
+   [info ": [module " mname "]  Illegal assignment to " name ". Wires can only be assigned to once."]
 
 defn NoOnReset (info:FileInfo) :
    PassException $ string-join $
-   [info ": Invalid use of on-reset. No on-resets are allowed in low firrtl."]
+   [info ": [module " mname "]  Invalid use of on-reset. No on-resets are allowed in low firrtl."]
 
 defn NoBulkConnect (info:FileInfo) :
    PassException $ string-join $
-   [info ": Invalid use of <>. No <>'s are allowed in low firrtl."]
+   [info ": [module " mname "]  Invalid use of <>. No <>'s are allowed in low firrtl."]
 
 ;---------------- Helper Functions --------------
 
@@ -860,6 +866,7 @@ public defn check-low-form (c:Circuit) -> Circuit :
       false
    
    for m in modules(c) do :
+      mname = name(m)
       check-low-form-m(m)
    throw(PassExceptions(errors)) when not empty?(errors)
    c
@@ -877,7 +884,7 @@ public defmethod short-name (b:CheckInitialization) -> String : "check-init"
 
 defn RefNotInitialized (info:FileInfo, name:Symbol) :
    PassException $ string-join $
-   [info ": Reference " name " is not fully initialized."]
+   [info ": [module " mname "]  Reference " name " is not fully initialized."]
 
 ;------------ Helper Functions -------------
 
@@ -920,6 +927,7 @@ public defn check-init (c:Circuit) :
             (v) : false
       
    for m in modules(c) do :
+      mname = name(m)
       match(m) : 
          (m:InModule) : check-init-m(m)
          (m) : false

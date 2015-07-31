@@ -9,8 +9,8 @@ defpackage firrtl/flo :
 ;============= Flo Backend ================
 
 public defstruct Flo <: Pass :
-   file : String
-public defmethod pass (b:Flo) -> (Circuit -> Circuit) : emit-flo{file(b),_}
+   with-output: (() -> False) -> False 
+public defmethod pass (b:Flo) -> (Circuit -> Circuit) : emit-flo{with-output(b),_}
 public defmethod name (b:Flo) -> String : "To Flo"
 
 definterface FloKind
@@ -196,8 +196,9 @@ defn emit-module (m:InModule,sh:HashTable<Symbol,Int>) :
          OUTPUT : flokinds[name(port)] = FOutputPortKind()
    emit-s(body(m), flokinds, name(m),sh)
 
-public defn emit-flo (file:String, c:Circuit) :
-   with-output-file{file, _} $ fn () :
+public defn emit-flo (with-output:(() -> False) -> False, c:Circuit) :
+   with-output $ {
       emit-module(modules(c)[0] as InModule,get-sym-hash(modules(c)[0] as InModule))
       false
+      }
    c

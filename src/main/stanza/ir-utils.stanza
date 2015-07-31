@@ -61,7 +61,7 @@ public defn PassExceptions (xs:Streamable<PassException>) :
 
 public definterface Compiler 
 public defmulti passes (c:Compiler) -> List<Pass>
-public defmulti file (c:Compiler) -> String
+public defmulti with-output (c:Compiler) -> ((() -> False) -> False)
 
 public definterface Pass
 public defmulti pass (p:Pass) -> (Circuit -> Circuit)

@@ -9,7 +9,7 @@ defpackage firrtl/compiler :
   import firrtl/ir-utils
 
 public defstruct StandardFlo <: Compiler :
-   file: String with: (as-method => true)
+   with-output : (() -> False) -> False with: (as-method => true)
 public defmethod passes (c:StandardFlo) -> List<Pass> :
    to-list $ [
       RemoveSpecialChars()
@@ -35,11 +35,11 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       RemoveSpecialChars()
       CheckHighForm()
       CheckLowForm()
-      Flo(file(c))
+      Flo(with-output(c))
    ]
 
 public defstruct StandardVerilog <: Compiler :
-   file: String with: (as-method => true)
+   with-output : (() -> False) -> False with: (as-method => true)
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
       RemoveSpecialChars()
@@ -66,8 +66,9 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       CheckHighForm()
       CheckLowForm()
       CheckInitialization()
-      Verilog(file(c))
+      Verilog(with-output(c))
    ]
+
 
 ;============= DRIVER ======================================
 public defn run-passes (c:Circuit,comp:Compiler) : 
@@ -82,20 +83,20 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
    var t = start-time
    val time-table = Vector<[String,Int]>()
    for p in ls do : 
-      println-all(STANDARD-OUTPUT,["Starting " name(p)])
+      println-all(["Starting " name(p)])
       if PRINT-CIRCUITS : println(name(p))
       c* = pass(p)(c*)
       if PRINT-CIRCUITS : print(c*)
       val current-time = to-int(to-string(current-time-us() / to-long(1000)))
-      println-all(STANDARD-OUTPUT,["Finished " name(p)])
-      println-all(STANDARD-ERROR,["Milliseconds since start: " current-time - start-time])
-      println-all(STANDARD-ERROR,["Milliseconds for this pass: " current-time - t])
-      println-all(STANDARD-ERROR,["\n"])
+      println-all(["Finished " name(p)])
+      println-all(["Milliseconds since start: " current-time - start-time])
+      println-all(["Milliseconds for this pass: " current-time - t])
+      println-all(["\n"])
       add(time-table,[name(p), current-time - t])
       t = current-time
 
-   println(STANDARD-ERROR,"===== Time Breakdown =====")
+   println("===== Time Breakdown =====")
    for x in time-table do :
-      println-all(STANDARD-ERROR,[x[0] " --- " to-float(x[1] as Int * 100) / to-float(t - start-time) "%"])
-   println(STANDARD-ERROR,"==========================")
+      println-all([x[0] " --- " to-float(x[1] as Int * 100) / to-float(t - start-time) "%"])
+   println("==========================")
    println("Done!")

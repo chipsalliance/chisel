@@ -61,6 +61,11 @@ defn main () :
    val pass-args = Vector<String>()
    var printvars = ""
    var last-s = ""
+
+   val prev-out = CURRENT-OUTPUT-STREAM
+   CURRENT-OUTPUT-STREAM = STANDARD-ERROR
+
+
    for (s in args, i in 0 to false) do :
       if s == "-i" : last-s = s
       else if s == "-o" : last-s = s
@@ -78,10 +83,25 @@ defn main () :
          if last-s == "-s" : add(pass-args,args[i])
          if last-s == "-m" : add(firms,args[i])
 
+   var with-output = 
+      fn (f:()->False) : 
+         val prev-stream = CURRENT-OUTPUT-STREAM
+         CURRENT-OUTPUT-STREAM = STANDARD-OUTPUT
+         f()
+         CURRENT-OUTPUT-STREAM = prev-stream
+
    if input == false : 
       error("No input file provided. Use -i flag.")
-   if output == false : 
-      error("No output file provided. Use -o flag.")
+   if output != false and output != "-": 
+      with-output = 
+         fn (f:()->False) : 
+            val prev-stream = CURRENT-OUTPUT-STREAM
+            val out-stream = FileOutputStream(output as String)
+            CURRENT-OUTPUT-STREAM = out-stream
+            f()
+            CURRENT-OUTPUT-STREAM = prev-stream
+            close(out-stream)
+
    if compiler == false and length(pass-names) == 0 :
       error("Must specify a compiler. Use -X flag.")
 
@@ -109,10 +129,12 @@ defn main () :
       run-passes(circuit*,get-passes(to-list(pass-names)))
    else :
       switch {_ == compiler} :
-         "flo" : run-passes(circuit*,StandardFlo(output as String))
-         "verilog" : run-passes(circuit*,StandardVerilog(output as String))
-         "verilute" : run-passes(circuit*,InstrumentedVerilog(output as String,to-list $ pass-args))
+         "flo" : run-passes(circuit*,StandardFlo(with-output))
+         "verilog" : run-passes(circuit*,StandardVerilog(with-output))
+         "verilute" : run-passes(circuit*,InstrumentedVerilog(with-output,to-list $ pass-args))
          else : error("Invalid compiler flag")
+
+   CURRENT-OUTPUT-STREAM = prev-out
 
 main()
 
