@@ -284,18 +284,23 @@ abstract class Data(dirArg: Direction) extends Id {
     isFlipVar = !isFlipVar
     this
   }
-  def :=(other: Data) = 
-    pushCommand(Connect(this.lref, other.ref))
-  def <>(other: Data) = 
-    pushCommand(BulkConnect(this.lref, other.lref))
+  private[Chisel] def badConnect(that: Data): Unit =
+    throwException(s"cannot connect ${this} and ${that}")
+  private[Chisel] def connect(that: Data): Unit =
+    pushCommand(Connect(this.lref, that.ref))
+  private[Chisel] def bulkConnect(that: Data): Unit =
+    pushCommand(BulkConnect(this.lref, that.lref))
   private[Chisel] def collectElts = { }
   private[Chisel] def lref: Alias = Alias(this)
   private[Chisel] def ref: Arg = if (isLit) litArg() else lref
+  private[Chisel] def debugName = mod.debugName + "." + getRefForId(this).debugName
+  private[Chisel] def cloneTypeWidth(width: Int): this.type
+
+  def := (that: Data): Unit = this badConnect that
+  def <> (that: Data): Unit = this badConnect that
   def cloneType: this.type
-  def cloneTypeWidth(width: Int): this.type
   def name = getRefForId(this).name
-  def debugName = mod.debugName + "." + getRefForId(this).debugName
-  def litArg(): LitArg = null
+  def litArg(): LitArg = None.get
   def litValue(): BigInt = None.get
   def isLit(): Boolean = false
   def floLitValue: Float = intBitsToFloat(litValue().toInt)
@@ -445,13 +450,30 @@ class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate
     for ((e, i) <- self zipWithIndex)
       setIndexForId(this, e, i)
 
+  override def <> (that: Data): Unit = that match {
+    case _: Vec[_] => this bulkConnect that
+    case _ => this badConnect that
+  }
+
   def <> (that: Seq[T]): Unit =
     for ((a, b) <- this zip that)
       a <> b
 
-  def := (that: Seq[T]): Unit =
+  def <> (that: Vec[T]): Unit = this bulkConnect that
+
+
+  override def := (that: Data): Unit = that match {
+    case _: Vec[_] => this connect that
+    case _ => this badConnect that
+  }
+
+  def := (that: Seq[T]): Unit = {
+    require(this.length == that.length)
     for ((a, b) <- this zip that)
       a := b
+  }
+
+  def := (that: Vec[T]): Unit = this connect that
 
   override def isFlip = isFlipVar ^ (!elts.isEmpty && elt0.isFlip)
 
@@ -551,6 +573,11 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, 1) {
   def cloneTypeWidth(width: Int): this.type = cloneType
   def flatten: IndexedSeq[Bits] = throwException("Clock.flatten")
   def toType: Kind = ClockType(isFlipVar)
+
+  override def := (that: Data): Unit = that match {
+    case _: Clock => this connect that
+    case _ => this badConnect that
+  }
 }
 
 sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) extends Element(dirArg, width) {
@@ -561,6 +588,8 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
   def cloneType: this.type = cloneTypeWidth(width)
 
   override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
+
+  override def <> (that: Data): Unit = this := that
 
   final def apply(x: BigInt): Bool = {
     if (isLit()) Bool((litValue() >> x.toInt) & 1)
@@ -588,9 +617,6 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
     apply(BigInt(x), BigInt(y))
   final def apply(x: UInt, y: UInt): UInt =
     apply(x.litValue(), y.litValue())
-
-  def :=(other: Bits) = 
-    pushCommand(Connect(this.lref, other.ref))
 
   protected[Chisel] def unop(op: PrimOp, width: Int): this.type = {
     val d = cloneTypeWidth(width)
@@ -680,6 +706,11 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[ULit] = None) extends 
   override def makeLit(value: BigInt, width: Int): this.type = 
     UInt(value, width).asInstanceOf[this.type]
 
+  override def := (that: Data): Unit = that match {
+    case _: UInt => this connect that
+    case _ => this badConnect that
+  }
+
   def unary_- = UInt(0) - this
   def unary_-% = UInt(0) -% this
   def +& (other: UInt): UInt = binop(AddOp, other, maxWidth(other, 1))
@@ -760,6 +791,11 @@ sealed class SInt(dir: Direction, width: Int, lit: Option[SLit] = None) extends 
     new SInt(dir, w).asInstanceOf[this.type]
   def toType: Kind = 
     SIntType(if (width == -1) UnknownWidth() else IntWidth(width), isFlipVar)
+
+  override def := (that: Data): Unit = that match {
+    case _: SInt => this badConnect that
+    case _ => this badConnect that
+  }
 
   override def makeLit(value: BigInt, width: Int): this.type =
     SInt(value, width).asInstanceOf[this.type]
@@ -905,6 +941,13 @@ object Bundle {
 
 class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
   private val _namespace = new ChildNamespace(globalNamespace)
+
+  override def <> (that: Data): Unit = that match {
+    case _: Bundle => this bulkConnect that
+    case _ => this badConnect that
+  }
+
+  override def := (that: Data): Unit = this <> that
 
   def toPorts: Seq[Port] =
     elements.map(_._2.toPort).toSeq.reverse
