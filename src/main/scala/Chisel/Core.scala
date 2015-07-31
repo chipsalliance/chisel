@@ -446,7 +446,7 @@ object Vec {
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = 
     apply((0 until n).map(i => gen(i)))
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = 
-    Vec.tabulate(n){ i => gen }
+    apply(gen, n)
 }
 
 abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
