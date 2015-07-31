@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c 2>&1 | tee %s.out | FileCheck %s
 
 ; CHECK: Expand Indexed Connects
 circuit top :

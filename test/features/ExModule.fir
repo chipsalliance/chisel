@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.v -X verilog -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 circuit Top : 
   module Top : 
     output z : UInt<4>

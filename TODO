@@ -3,7 +3,6 @@
 ================================================
 
 ======== Current Tasks ========
-add include support
 change parser to accept subword, but error
 put clocks on accessors
 add clock check to high firrtl check

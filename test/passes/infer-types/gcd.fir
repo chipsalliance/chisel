@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p ct | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p ct 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Types
 circuit top :
@@ -39,8 +39,6 @@ circuit top :
       when e :
          x := a
          y := b
-      v := eq(v, UInt(0))
-      ;CHECK: v@<t:UInt> := eq(v@<t:UInt>, UInt("h00000000"))@<t:UInt>
       z := x
    module top :
       input a : UInt<16>

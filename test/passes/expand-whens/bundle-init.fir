@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p cd | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cd 2>&1 | tee %s.out | FileCheck %s
 ; CHECK: Expand Whens
 circuit top :
    module top :

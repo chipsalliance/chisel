@@ -1,8 +1,8 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c 2>&1 | tee %s.out | FileCheck %s
 ;CHECK: Done!
 circuit Tst : 
   module Tst : 
-    output in : {valid : UInt<1>, flip ready : UInt<1>, bits : UInt<8>}
+    input in : {valid : UInt<1>, flip ready : UInt<1>, bits : UInt<8>}
     output outs : {valid : UInt<1>, flip ready : UInt<1>, bits : UInt<8>}[4]
     
     in.ready := UInt<1>(1)

@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p c 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Flo
 circuit top :
@@ -14,7 +14,6 @@ circuit top :
       input b : UInt<16>
       input e : UInt<1>
       output z : UInt<16>
-      output v : UInt<1>
       reg x : UInt,clk,reset
       reg y : UInt,clk,reset
       onreset x := UInt(0)
@@ -32,7 +31,6 @@ circuit top :
       when e :
          x := a
          y := b
-      v := eq(v, UInt(0))
       z := x
    module top :
       input a : UInt<16>

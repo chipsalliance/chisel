@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p cg | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.flo -X flo -p cg 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Resolve Genders
 circuit top :
