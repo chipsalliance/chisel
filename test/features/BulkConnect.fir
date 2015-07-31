@@ -2,18 +2,14 @@
 ;CHECK: Lower To Ground
 circuit Top : 
   module Top : 
-    wire a : { w : UInt<42>, x : UInt<10>, flip y : UInt<42>, z : SInt<42>}
+    wire a : { w : UInt<42>}
     a.w := UInt(1)
-    a.y := UInt(1)
-    a.z := SInt(1)
-    wire b : { w : UInt<42>, x : UInt<20>, y : UInt<42>, z : UInt<42>}
+    wire b : { w : UInt<42>, x : UInt<20>}
     b.w := UInt(1)
     b.x := UInt(1)
-    b.y := UInt(1)
-    b.z := UInt(1)
     a <> b 
     ; CHECK:     a$w := b$w
-    ; CHECK:     a$x := b$x
+    ; CHECK-NOT: a$x := b$x
     ; CHECK-NOT: a$y := b$y
     ; CHECK-NOT: b$y := a$y
     ; CHECK-NOT: a$z := b$z

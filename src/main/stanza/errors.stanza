@@ -621,13 +621,31 @@ public defn check-types (c:Circuit) -> Circuit :
          (e:DoPrim) : check-types-primop(e,errors,info)
          (e:UIntValue|SIntValue) : false
       e
+
+   defn bulk-equals? (t1:Type,t2:Type) -> True|False :
+      match(t1,t2) :
+         (t1:BundleType,t2:BundleType) : 
+            var same? = true
+            for (f1 in fields(t1),f2 in fields(t2)) do :
+               if name(f1) == name(f2) : 
+                  if flip(f1) != flip(f2) : same? = false
+                  if not bulk-equals?(type(f1),type(f2)) : same? = false
+            same?
+         (t1:ClockType,t2:ClockType) : true
+         (t1:UIntType,t2:UIntType) : true
+         (t1:SIntType,t2:SIntType) : true
+         (t1:VectorType,t2:VectorType) :
+            if bulk-equals?(type(t1),type(t2)) : true
+            else : false
+         (t1,t2) : false
+        
    defn check-types-s (s:Stmt) -> Stmt :
       map{check-types-s,_} $ {
          match(map(check-types-e{info(s),_},s)) : 
             (s:Connect) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
-            (s:Connect) : 
-               if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
+            (s:BulkConnect) : 
+               if not bulk-equals?(type(loc(s)),type(exp(s))) : add(errors,InvalidConnect(info(s)))
             (s:OnReset) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
             (s:Conditionally) :

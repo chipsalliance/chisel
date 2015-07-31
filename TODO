@@ -8,6 +8,7 @@ put clocks on accessors
 add clock check to high firrtl check
 registers in onreset cannot have flips
 add equivalence to spec
+remove SInt from bit/bits in spec
 
 Tests:
    Lowering for instance types with bundle ports
