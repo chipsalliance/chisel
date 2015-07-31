@@ -668,8 +668,8 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
     d
   }
 
-  def orR = !(this === Bits(0))
-  def andR = (this === Bits(-1))
+  def orR = this != Bits(0)
+  def andR = ~this === Bits(0)
   def xorR = bits_redop(XorReduceOp)
 
   def toBools: Vec[Bool] = Vec.tabulate(this.getWidth)(i => this(i))
