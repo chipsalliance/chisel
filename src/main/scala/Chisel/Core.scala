@@ -762,6 +762,11 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extend
   def toSInt(): SInt = asSInt()
   def toUInt(): UInt = this
   def asUInt(): UInt = this
+
+  lit match {
+    case Some(x) => require(x.num >= 0, s"UInt literal ${x.num} is negative")
+    case None =>
+  }
 }
 
 trait UIntFactory {
