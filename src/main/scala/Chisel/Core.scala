@@ -5,19 +5,17 @@ import java.lang.reflect.Modifier._
 import java.lang.Double.longBitsToDouble
 import java.lang.Float.intBitsToFloat
 
-class GenSym {
-  private var counter = -1
-  def nextInt: Int = {
+class IdGen {
+  private var counter = -1L
+  def next: Long = {
     counter += 1
     counter
   }
-  def next(name: String): String =
-    name + "_" + nextInt
 }
 
 object Builder {
   val components = new ArrayBuffer[Component]()
-  val genSym = new GenSym()
+  val idGen = new IdGen
   val switchKeyz = new Stack[Stack[Bits]]()
   def switchKeys = switchKeyz.top
   def pushScope = {
@@ -25,10 +23,6 @@ object Builder {
   }
   def popScope = {
     switchKeyz.pop()
-  }
-  val modules = new HashMap[String,Module]()
-  def addModule(mod: Module) {
-    modules(mod.cid) = mod
   }
   val modulez = new Stack[Module]()
   def pushModule(mod: Module) {
@@ -38,12 +32,8 @@ object Builder {
   def popModule() {
     modulez.pop
   }
-  val componentNames = new HashSet[String]()
-  def UniqueComponent(name: String, ports: Seq[Port], body: Command) = {
-    val res = Component(if (componentNames.contains(name)) genSym.next(name) else name, ports, body)
-    componentNames += name
-    res
-  }
+  val globalNamespace = new FIRRTLNamespace
+  def namespace = if (modulez.isEmpty) globalNamespace else modulez.head._namespace
   val commandz = new Stack[ArrayBuffer[Command]]()
   def commands = commandz.top
   def pushCommand(cmd: Command) = commands += cmd
@@ -68,44 +58,30 @@ object Builder {
     (popCommands, mod)
   }
 
-  private val refmap = new HashMap[String,Immediate]()
+  private[Chisel] val refmap = new HashMap[Long,Immediate]()
 
-  def legalizeName (name: String) = {
-    if (name == "mem" || name == "node" || name == "wire" ||
-        name == "reg" || name == "inst")
-      // genSym.next(name)
-      name + "__"
-    else
-      name
+  def overrideRefForId(id: Id, name: String): Unit =
+    refmap(id._id) = Ref(name)
+
+  def setRefForId(id: Id, name: String): Unit =
+    if (!refmap.contains(id._id))
+      overrideRefForId(id, namespace.name(name))
+
+  def setFieldForId(parentid: Id, id: Id, name: String): Unit = {
+    refmap(id._id) = Slot(Alias(parentid), name)
   }
 
-  def setRefForId(id: String, name: String, overwrite: Boolean = false) {
-    if (overwrite || !refmap.contains(id)) {
-      refmap(id) = Ref(legalizeName(name))
-    }
-  }
+  def setIndexForId(parentid: Id, id: Id, index: Int): Unit =
+    refmap(id._id) = Index(Alias(parentid), index)
 
-  def setFieldForId(parentid: String, id: String, name: String) {
-    refmap(id) = Slot(Alias(parentid), legalizeName(name))
-  }
-
-  def setIndexForId(parentid: String, id: String, index: Int) {
-    refmap(id) = Index(Alias(parentid), index)
-  }
-
-  def getRefForId(id: String): Immediate = {
-    if (refmap.contains(id)) {
-      refmap(id)
-    } else  {
-      val ref = Ref(genSym.next("T"))
-      refmap(id) = ref
-      ref
-    }
+  def getRefForId(id: Id): Immediate = {
+    setRefForId(id, s"T_${id._id}")
+    refmap(id._id)
   }
 
   def build[T <: Module](f: => T): (Circuit, T) = {
     val (cmd, mod) = collectCommands(f)
-    setRefForId(mod.cid, mod.name)
+    setRefForId(mod, mod.name)
     (Circuit(components, components.last.name), mod)
   }
 
@@ -165,7 +141,7 @@ abstract class Arg extends Immediate {
   def name: String
 }
 
-case class Alias(val id: String) extends Arg {
+case class Alias(id: Id) extends Arg {
   def fullname = getRefForId(id).fullname
   def name = getRefForId(id).name
   override def debugName = getRefForId(id).debugName
@@ -205,7 +181,7 @@ case class Index(val imm: Immediate, val value: Int) extends Immediate {
   override def debugName = imm.debugName + "." + value
 }
 
-case class Port(val id: String, val dir: Direction, val kind: Kind);
+case class Port(id: Id, dir: Direction, kind: Kind)
 
 abstract class Width;
 case class UnknownWidth() extends Width;
@@ -223,20 +199,20 @@ case class ClockType(flip: Boolean) extends Kind(flip)
 
 abstract class Command;
 abstract class Definition extends Command {
-  def id: String
+  def id: Id
   def name = getRefForId(id).name
 }
-case class DefUInt(val id: String, val value: BigInt, val width: Int) extends Definition;
-case class DefSInt(val id: String, val value: BigInt, val width: Int) extends Definition;
-case class DefFlo(val id: String, val value: Float) extends Definition;
-case class DefDbl(val id: String, val value: Double) extends Definition;
-case class DefPrim(val id: String, val kind: Kind, val op: PrimOp, val args: Seq[Arg], val lits: Seq[BigInt]) extends Definition;
-case class DefWire(val id: String, val kind: Kind) extends Definition;
-case class DefRegister(id: String, kind: Kind, clock: Clock, reset: Bool) extends Definition
-case class DefMemory(id: String, kind: Kind, size: Int, clock: Clock) extends Definition
-case class DefSeqMemory(val id: String, val kind: Kind, val size: Int) extends Definition
-case class DefAccessor(val id: String, val source: Alias, val direction: Direction, val index: Arg) extends Definition;
-case class DefInstance(val id: String, val module: String) extends Definition;
+case class DefUInt(id: Id, value: BigInt, width: Int) extends Definition
+case class DefSInt(id: Id, value: BigInt, width: Int) extends Definition
+case class DefFlo(id: Id, value: Float) extends Definition
+case class DefDbl(id: Id, value: Double) extends Definition
+case class DefPrim(id: Id, kind: Kind, op: PrimOp, args: Seq[Arg], lits: Seq[BigInt]) extends Definition
+case class DefWire(id: Id, kind: Kind) extends Definition
+case class DefRegister(id: Id, kind: Kind, clock: Clock, reset: Bool) extends Definition
+case class DefMemory(id: Id, kind: Kind, size: Int, clock: Clock) extends Definition
+case class DefSeqMemory(id: Id, kind: Kind, size: Int) extends Definition
+case class DefAccessor(id: Id, source: Alias, direction: Direction, index: Arg) extends Definition
+case class DefInstance(id: Module, module: String) extends Definition
 case class Conditionally(val prep: Command, val pred: Arg, val conseq: Command, var alt: Command) extends Command;
 case class Begin(val body: List[Command]) extends Command();
 case class Connect(val loc: Alias, val exp: Arg) extends Command;
@@ -276,11 +252,8 @@ import Direction._
 
 /// CHISEL FRONT-END
 
-abstract class Id {
-  protected[Chisel] val _id = genSym.nextInt
-  protected[Chisel] val cid = "id_" + _id
-
-  def defd: this.type = this
+trait Id {
+  private[Chisel] val _id = idGen.next
 }
 
 object debug {
@@ -316,11 +289,11 @@ abstract class Data(dirArg: Direction) extends Id {
   def <>(other: Data) = 
     pushCommand(BulkConnect(this.lref, other.lref))
   private[Chisel] def collectElts = { }
-  private[Chisel] def lref: Alias = Alias(cid)
-  private[Chisel] def ref: Arg = if (isLit) litArg() else Alias(cid)
+  private[Chisel] def lref: Alias = Alias(this)
+  private[Chisel] def ref: Arg = if (isLit) litArg() else lref
   def cloneType: this.type
-  def name = getRefForId(cid).name
-  def debugName = mod.debugName + "." + getRefForId(cid).debugName
+  def name = getRefForId(this).name
+  def debugName = mod.debugName + "." + getRefForId(this).debugName
   def litArg(): LitArg = null
   def litValue(): BigInt = None.get
   def isLit(): Boolean = false
@@ -347,20 +320,19 @@ abstract class Data(dirArg: Direction) extends Id {
   def makeLit(value: BigInt, width: Int): this.type =
     this.fromBits(Bits(value, width))
 
-  def toPort: Port = Port(cid, dir, toType)
-  var isReg_ = false
-  def isReg = isReg_
+  def toPort: Port = Port(this, dir, toType)
   def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
 object Wire {
   def apply[T <: Data](t: T = null, init: T = null): T = {
-    val mType = if (t == null) init else t
-    if(mType == null) 
-      throw new Exception("cannot infer type of Init.")
+    val mType =
+      if (t ne null) t
+      else if (init ne null) init
+      else throwException("cannot infer type of Wire.")
+
     val x = mType.cloneType
-    // TODO: COME UP WITH MORE ROBUST WAY TO HANDLE THIS
-    pushCommand(DefWire(x.defd.cid, x.toType))
+    pushCommand(DefWire(x, x.toType))
     if (init != null) 
       pushCommand(Connect(x.lref, init.ref))
     x
@@ -376,9 +348,8 @@ object Reg {
       else throwException("cannot infer type of Reg.")
 
     val x = mType.cloneType
-    x.isReg_ = true
-    pushCommand(DefRegister(x.defd.cid, x.toType, x.mod.clock, x.mod.reset)) // TODO multi-clock
-    if (init != null) 
+    pushCommand(DefRegister(x, x.toType, x.mod.clock, x.mod.reset)) // TODO multi-clock
+    if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
       x := next
@@ -391,7 +362,7 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mt.defd.cid, mt.toType, size, mt.mod.clock)) // TODO multi-clock
+    pushCommand(DefMemory(mt, mt.toType, size, mt.mod.clock)) // TODO multi-clock
     mem
   }
 }
@@ -401,7 +372,7 @@ class Mem[T <: Data](protected[Chisel] val t: T, n: Int) extends VecLike[T] {
   def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T = {
     val x = t.cloneType
-    pushCommand(DefAccessor(x.defd.cid, Alias(t.cid), NO_DIR, idx.ref))
+    pushCommand(DefAccessor(x, Alias(t), NO_DIR, idx.ref))
     x
   }
 
@@ -413,8 +384,8 @@ class Mem[T <: Data](protected[Chisel] val t: T, n: Int) extends VecLike[T] {
     write(idx, t.fromBits((read(idx).toBits & ~mask1) | (data.toBits & mask1)))
   }
 
-  def name = getRefForId(t.cid).name
-  def debugName = t.mod.debugName + "." + getRefForId(t.cid).debugName
+  def name = getRefForId(t).name
+  def debugName = t.mod.debugName + "." + getRefForId(t).debugName
 }
 
 object SeqMem {
@@ -434,14 +405,13 @@ class SeqMem[T <: Data](t: T, n: Int) {
 }
 
 object Vec {
-  def apply[T <: Data](gen: T, n: Int): Vec[T] = 
-    new Vec((0 until n).map(i => gen.cloneType))
+  def apply[T <: Data](gen: T, n: Int): Vec[T] = {
+    if (gen.isLit) apply(Seq.fill(n)(gen))
+    else new Vec((0 until n).map(i => gen.cloneType))
+  }
   def apply[T <: Data](elts: Seq[T]): Vec[T] = {
-    val vec = new Vec[T](elts.map(e => elts.head.cloneType))
-    if (vec.isReg)
-      throw new Exception("Vec of Reg Deprecated.")
-    pushCommand(DefWire(vec.defd.cid, vec.toType))
-
+    val vec = new Vec(elts.map(e => elts.head.cloneType))
+    pushCommand(DefWire(vec, vec.toType))
     for ((v, e) <- vec zip elts)
       v := e
     vec
@@ -464,7 +434,7 @@ class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate
 
   override def collectElts: Unit =
     for ((e, i) <- self zipWithIndex)
-      setIndexForId(cid, e.cid, i)
+      setIndexForId(this, e, i)
 
   def <> (that: Seq[T]): Unit =
     for ((a, b) <- this zip that)
@@ -478,7 +448,7 @@ class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate
 
   def apply(idx: UInt): T = {
     val x = elt0.cloneType
-    pushCommand(DefAccessor(x.defd.cid, Alias(cid), NO_DIR, idx.ref))
+    pushCommand(DefAccessor(x, Alias(this), NO_DIR, idx.ref))
     x
   }
   def apply(idx: Int): T = 
@@ -515,15 +485,6 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
   def lastIndexWhere(p: T => Bool): UInt = PriorityMux(indexWhereHelper(p).reverse)
   def onlyIndexWhere(p: T => Bool): UInt = Mux1H(indexWhereHelper(p))
 }
-
-// object chiselCast {
-//   def apply[S <: Data, T <: Bits](i: S)(gen: Int => T): T = {
-//     val b = i.toBits
-//     val x = gen(b.getWidth)
-//     pushCommand(DefPrim(x.defd.id, x.toType, ConvertOp, Seq(b.ref), NoLits))
-//     x
-//   }
-// }
 
 object BitPat {
   private def parse(x: String): (BigInt, BigInt, Int) = {
@@ -592,7 +553,7 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
     if (isLit()) Bool((litValue() >> x.toInt) & 1)
     else {
       val d = Bool()
-      pushCommand(DefPrim(d.defd.cid, d.toType, BitSelectOp, Seq(this.ref), Seq(x)))
+      pushCommand(DefPrim(d, d.toType, BitSelectOp, Seq(this.ref), Seq(x)))
       d
     }
   }
@@ -606,7 +567,7 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
     if (isLit()) UInt((litValue >> y.toInt) & ((BigInt(1) << w) - 1), w)
     else {
       val d = UInt(width = w)
-      pushCommand(DefPrim(d.defd.cid, d.toType, BitsExtractOp, Seq(this.ref), Seq(x, y)))
+      pushCommand(DefPrim(d, d.toType, BitsExtractOp, Seq(this.ref), Seq(x, y)))
       d
     }
   }
@@ -628,22 +589,22 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
 
   protected[Chisel] def unop(op: PrimOp, width: Int): this.type = {
     val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
     d
   }
   protected[Chisel] def binop(op: PrimOp, other: BigInt, width: Int): this.type = {
     val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref), Seq(other)))
+    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), Seq(other)))
     d
   }
   protected[Chisel] def binop(op: PrimOp, other: Bits, width: Int): this.type = {
     val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref, other.ref), NoLits))
     d
   }
   protected[Chisel] def compop(op: PrimOp, other: Bits): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref, other.ref), NoLits))
     d
   }
   protected[Chisel] def unimp(op: String) =
@@ -669,7 +630,7 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
 
   private def bits_redop(op: PrimOp): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Seq(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
     d
   }
 
@@ -754,13 +715,13 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[ULit] = None) extends 
 
   def zext(): SInt = {
     val x = SInt(width = getWidth + 1)
-    pushCommand(DefPrim(x.defd.cid, x.toType, ConvertOp, Seq(ref), NoLits))
+    pushCommand(DefPrim(x, x.toType, ConvertOp, Seq(ref), NoLits))
     x
   }
 
   def asSInt(): SInt = {
     val x = SInt(width = getWidth)
-    pushCommand(DefPrim(x.defd.cid, x.toType, AsSIntOp, Seq(ref), NoLits))
+    pushCommand(DefPrim(x, x.toType, AsSIntOp, Seq(ref), NoLits))
     x
   }
 
@@ -830,7 +791,7 @@ sealed class SInt(dir: Direction, width: Int, lit: Option[SLit] = None) extends 
 
   def asUInt(): UInt = {
     val x = UInt(width = getWidth)
-    pushCommand(DefPrim(x.defd.cid, x.toType, AsUIntOp, Seq(ref), NoLits))
+    pushCommand(DefPrim(x, x.toType, AsUIntOp, Seq(ref), NoLits))
     x
   }
   def toUInt(): UInt = asUInt()
@@ -898,7 +859,7 @@ object Cat {
         UInt((left.litValue() << right.getWidth) | right.litValue(), w)
       } else {
         val d = UInt(width = w)
-        pushCommand(DefPrim(d.cid, d.toType, ConcatOp, Seq(left.ref, right.ref), NoLits))
+        pushCommand(DefPrim(d, d.toType, ConcatOp, Seq(left.ref, right.ref), NoLits))
         d
       }
     }
@@ -924,7 +885,9 @@ object Bundle {
   private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
-class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) { 
+class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
+  private val _namespace = new ChildNamespace(globalNamespace)
+
   def toPorts: Seq[Port] =
     elements.map(_._2.toPort).toSeq.reverse
   def toType: BundleType = 
@@ -954,13 +917,13 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
     elts sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
 
-  private lazy val namedElts = LinkedHashMap[String, Data](allElts:_*)
+  private[Chisel] lazy val namedElts = LinkedHashMap[String, Data](allElts:_*)
 
   private[Chisel] def addElt(name: String, elt: Data) =
     namedElts += name -> elt
 
   override def collectElts =
-    namedElts.foreach {case(name, elt) => setFieldForId(this.cid, elt.cid, name)}
+    namedElts.foreach {case(name, elt) => setFieldForId(this, elt, _namespace.name(name))}
 
   override def cloneType : this.type = {
     try {
@@ -983,13 +946,13 @@ object Module {
     Driver.modStackPushed = true
     Driver.parStack.push(p.push)
     val m = bc
+    m.setRefs
     val cmd = popCommands
     popScope
     popModule
-    m.setRefs
-    val component = UniqueComponent(m.name, m.computePorts, cmd)
+    val component = Component(m.name, m.computePorts, cmd)
     components += component
-    pushCommand(DefInstance(m.defd.cid, component.name))
+    pushCommand(DefInstance(m, m.name))
     Driver.parStack.pop
     m.connectImplicitIOs
     m
@@ -1004,11 +967,12 @@ object Module {
 abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   private[Chisel] val _parent = modulez.headOption
   private[Chisel] val _nodes = ArrayBuffer[Data]()
+  private[Chisel] val _namespace = new ChildNamespace(globalNamespace)
+  val name = globalNamespace.name(getClass.getName.split('.').last)
 
   pushModule(this)
   pushScope
   pushCommands
-  addModule(this)
 
   val params = Module.params
   params.path = this.getClass :: params.path
@@ -1017,10 +981,9 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   val clock = Clock(INPUT)
   val reset = Bool(INPUT)
 
-  private[Chisel] def ref = getRefForId(cid)
+  private[Chisel] def ref = getRefForId(this)
   private[Chisel] def lref = ref
 
-  def name: String = getClass.getName.split('.').last
   def debugName: String = _parent match {
     case Some(p) => s"${p.debugName}.${ref.debugName}"
     case None => ref.debugName
@@ -1048,19 +1011,22 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
 
     makeImplicitIOs
     _nodes.foreach(_.collectElts)
-    _nodes.clear
-    setRefForId(io.cid, "")
+
+    // FIRRTL: the IO namespace is part of the module namespace
+    setRefForId(io, "")
+    for ((name, field) <- io.namedElts)
+      _namespace.name(name)
 
     for (m <- getClass.getMethods; if isPublicVal(m)) {
       m.invoke(this) match {
         case module: Module =>
-          setRefForId(module.cid, m.getName)
+          setRefForId(module, m.getName)
         case mem: Mem[_] =>
-          setRefForId(mem.t.cid, m.getName)
+          setRefForId(mem.t, m.getName)
         case vec: Vec[_] =>
-          setRefForId(vec.cid, m.getName)
+          setRefForId(vec, m.getName)
         case data: Data =>
-          setRefForId(data.cid, m.getName)
+          setRefForId(data, m.getName)
         case _ =>
       }
     }
@@ -1167,9 +1133,9 @@ class Emitter {
       case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
       case e: DefAccessor => s"infer accessor ${e.name} = ${emit(e.source)}[${emit(e.index)}]"
       case e: DefInstance => {
-        val mod = modules(e.id)
+        val mod = e.id
         // update all references to the modules ports
-        setRefForId(mod.io.cid, e.name, true)
+        overrideRefForId(mod.io, e.name)
         "inst " + e.name + " of " + e.module
       }
       case e: Conditionally => {

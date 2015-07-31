@@ -41,7 +41,7 @@ object Flo {
   def apply(x: Double): Flo = Flo(x.toFloat)
   def floLit(value: Float): Flo = {
     val b = new Flo(NO_DIR, Some(value))
-    pushCommand(DefFlo(b.defd.cid, value))
+    pushCommand(DefFlo(b, value))
     b
   }
   def apply(dir: Direction = null): Flo = 
@@ -84,12 +84,12 @@ class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Eleme
   def cloneTypeWidth(width: Int): this.type = cloneType
   override def fromBits(n: Bits): this.type = {
     val d = cloneType
-    pushCommand(DefPrim(d.defd.cid, d.toType, BitsToFlo, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, BitsToFlo, Array(this.ref), NoLits))
     d
   }
   override def toBits: UInt = {
     val d = UInt(dir, 32)
-    pushCommand(DefPrim(d.defd.cid, d.toType, FloToBits, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, FloToBits, Array(this.ref), NoLits))
     d
   }
   def toType: Kind = FloType(isFlip)
@@ -101,17 +101,17 @@ class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Eleme
 
   private def flo_unop(op: PrimOp): Flo = {
     val d = cloneType
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Array(this.ref), NoLits))
     d
   }
   private def flo_binop(op: PrimOp, other: Flo): Flo = {
     val d = cloneType
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
   private def flo_compop(op: PrimOp, other: Flo): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
 
@@ -152,7 +152,7 @@ object Dbl {
   def apply(x: Double): Dbl = dblLit(x)
   def dblLit(value: Double): Dbl = {
     val b = new Dbl(NO_DIR, Some(value))
-    pushCommand(DefDbl(b.defd.cid, value))
+    pushCommand(DefDbl(b, value))
     b
   }
   def apply(dir: Direction = NO_DIR): Dbl = 
@@ -199,12 +199,12 @@ class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir,
   def cloneTypeWidth(width: Int): this.type = cloneType
   override def fromBits(n: Bits): this.type = {
     val d = cloneType
-    pushCommand(DefPrim(d.defd.cid, d.toType, BitsToDbl, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, BitsToDbl, Array(this.ref), NoLits))
     d
   }
   override def toBits: UInt = {
     val d = UInt(dir, 64)
-    pushCommand(DefPrim(d.defd.cid, d.toType, DblToBits, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, DblToBits, Array(this.ref), NoLits))
     d
   }
   def toType: Kind = DblType(isFlip)
@@ -216,17 +216,17 @@ class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir,
 
   private def dbl_unop(op: PrimOp): Dbl = {
     val d = cloneType
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Array(this.ref), NoLits))
     d
   }
   private def dbl_binop(op: PrimOp, other: Dbl): Dbl = {
     val d = cloneType
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
   private def dbl_compop(op: PrimOp, other: Dbl): Bool = {
     val d = new Bool(dir)
-    pushCommand(DefPrim(d.defd.cid, d.toType, op, Array(this.ref, other.ref), NoLits))
+    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
     d
   }
 
