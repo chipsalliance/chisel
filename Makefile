@@ -8,7 +8,7 @@ firrtl_dir ?= $(root_dir)/src/main/stanza
 all-noise: 
 	${MAKE} all || ${MAKE} fail
 
-all: build check done
+all: done
 
 install-linux:
 	cd src/lib && unzip stanza-linux.zip
@@ -27,7 +27,7 @@ build:
 build-fast: 
 	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
 
-check: 
+check: build
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
 
 passes: 
@@ -62,7 +62,7 @@ $(units): % :
 	firrtl -X verilog -i test/chisel3/$*.fir -o test/chisel3/$*.fir.v -p c > test/chisel3/$*.fir.out 
 	#scp test/chisel3/$*.fir.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-src/$*.v
 
-done:
+done: check
 	say "done"
 
 fail:
