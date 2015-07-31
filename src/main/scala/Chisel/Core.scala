@@ -177,14 +177,17 @@ abstract class LitArg (val num: BigInt, val width: Int) extends Arg {
 
 case class ULit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
   def fullname = name
-  def name = "UInt<" + width + ">(" + num + ")"
+  def name = "UInt<" + width + ">(\"h0" + num.toString(16) + "\")"
 
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
 case class SLit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
   def fullname = name
-  def name = "SInt<" + width + ">(" + num + ")"
+  def name = {
+    val unsigned = if (n < 0) (BigInt(1) << w) + n else n
+    s"asSInt(${ULit(unsigned, w).name})"
+  }
 }
 
 case class Ref(val name: String) extends Immediate {
