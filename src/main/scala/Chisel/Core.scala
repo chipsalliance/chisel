@@ -615,8 +615,6 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
   }
   final def apply(x: Int, y: Int): UInt =
     apply(BigInt(x), BigInt(y))
-  final def apply(x: UInt, y: UInt): UInt =
-    apply(x.litValue(), y.litValue())
 
   protected[Chisel] def unop(op: PrimOp, width: Int): this.type = {
     val d = cloneTypeWidth(width)
