@@ -530,7 +530,7 @@ object Pipe
 {
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): ValidIO[T] = {
     if (latency == 0) {
-      val out = Valid(enqBits)
+      val out = Wire(Valid(enqBits))
       out.valid <> enqValid
       out.bits <> enqBits
       out
