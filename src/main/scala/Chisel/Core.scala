@@ -178,6 +178,8 @@ abstract class LitArg (val num: BigInt, val width: Int) extends Arg {
 case class ULit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
   def fullname = name
   def name = "UInt<" + width + ">(" + num + ")"
+
+  require(n >= 0, s"UInt literal ${n} is negative")
 }
 
 case class SLit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
@@ -699,7 +701,7 @@ abstract trait Num[T <: Data] {
   def max(b: T): T = Mux(this < b, b, this.asInstanceOf[T])
 }
 
-sealed class UInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(dir, width, lit) with Num[UInt] {
+sealed class UInt(dir: Direction, width: Int, lit: Option[ULit] = None) extends Bits(dir, width, lit) with Num[UInt] {
   override def cloneTypeWidth(w: Int): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
 
@@ -762,11 +764,6 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extend
   def toSInt(): SInt = asSInt()
   def toUInt(): UInt = this
   def asUInt(): UInt = this
-
-  lit match {
-    case Some(x) => require(x.num >= 0, s"UInt literal ${x.num} is negative")
-    case None =>
-  }
 }
 
 trait UIntFactory {
@@ -789,7 +786,7 @@ trait UIntFactory {
 object Bits extends UIntFactory
 object UInt extends UIntFactory
 
-sealed class SInt(dir: Direction, width: Int, lit: Option[LitArg] = None) extends Bits(dir, width, lit) with Num[SInt] {
+sealed class SInt(dir: Direction, width: Int, lit: Option[SLit] = None) extends Bits(dir, width, lit) with Num[SInt] {
   override def cloneTypeWidth(w: Int): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   def toType: Kind = 
@@ -851,7 +848,7 @@ object SInt {
   def apply(n: String): SInt = apply(n, -1)
 }
 
-sealed class Bool(dir: Direction, lit: Option[LitArg] = None) extends UInt(dir, 1, lit) {
+sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, 1, lit) {
   override def cloneTypeWidth(w: Int): this.type = new Bool(dir).asInstanceOf[this.type]
 
   override def makeLit(value: BigInt, width: Int): this.type =
@@ -863,6 +860,8 @@ sealed class Bool(dir: Direction, lit: Option[LitArg] = None) extends UInt(dir, 
 
   def || (that: Bool): Bool = this | that
   def && (that: Bool): Bool = this & that
+
+  require(lit.isEmpty || lit.get.num < 2)
 }
 object Bool {
   def apply(dir: Direction) : Bool = 
