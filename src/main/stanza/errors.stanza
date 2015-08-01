@@ -695,7 +695,7 @@ defn InferDirection (info:FileInfo,name:Symbol) :
 defn dir-to-gender (d:PortDirection) -> Gender :
    switch {_ == d} :
       INPUT : MALE
-      OUTPUT : FEMALE
+      OUTPUT : BI-GENDER
 
 defn gender (s:DefAccessor) -> Gender :
    switch {_ == acc-dir(s)} :
