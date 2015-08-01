@@ -543,20 +543,28 @@ defn s () -> SIntType : SIntType(UnknownWidth())
 
 defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
    defn all-same-type (ls:List<Expression>) -> False :
+      var error? = false
       for x in ls do :
          if type(head(ls)) != type(x) : 
-           add(errors,OpNotAllSameType(info,to-symbol $ op(e))) 
+            error? = true
+      if error? : add(errors,OpNotAllSameType(info,to-symbol $ op(e))) 
    defn all-ground (ls:List<Expression>) -> False :
+      var error? = false
       for x in ls do :
          if not (type(x) typeof UIntType or type(x) typeof SIntType) :
-           add(errors,OpNotGround(info,to-symbol $ op(e))) 
+            error? = true
+      if error? : add(errors,OpNotGround(info,to-symbol $ op(e))) 
    defn all-uint (ls:List<Expression>) -> False :
+      var error? = false
       for x in ls do :
          if not (type(x) typeof UIntType) : 
-           add(errors,OpNotAllUInt(info,to-symbol $ op(e))) 
+            error? = true
+      if error? : add(errors,OpNotAllUInt(info,to-symbol $ op(e))) 
    defn is-uint (x:Expression) -> False : 
+      var error? = false
       if not (type(x) typeof UIntType) : 
-        add(errors,OpNotUInt(info,to-symbol $ op(e),to-symbol(x))) 
+            error? = true
+      if error? : add(errors,OpNotUInt(info,to-symbol $ op(e),to-symbol(x))) 
    
    all-ground(args(e))
 
@@ -590,16 +598,16 @@ defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -
       SHIFT-RIGHT-OP     : false
       CONVERT-OP         : false
       NEG-OP             : false
-      BIT-NOT-OP         : all-uint(args(e))
-      BIT-AND-OP         : all-uint(args(e))
-      BIT-OR-OP          : all-uint(args(e))
-      BIT-XOR-OP         : all-uint(args(e))
+      BIT-NOT-OP         : all-same-type(args(e))
+      BIT-AND-OP         : all-same-type(args(e))
+      BIT-OR-OP          : all-same-type(args(e))
+      BIT-XOR-OP         : all-same-type(args(e))
+      BIT-SELECT-OP      : false
+      BITS-SELECT-OP     : false
       BIT-AND-REDUCE-OP  : all-uint(args(e))
       BIT-OR-REDUCE-OP   : all-uint(args(e))
       BIT-XOR-REDUCE-OP  : all-uint(args(e))
       CONCAT-OP          : all-uint(args(e))
-      BIT-SELECT-OP      : all-uint(args(e))
-      BITS-SELECT-OP     : all-uint(args(e))
    
 ;----------------- Check Types Pass ---------------------
 public defn check-types (c:Circuit) -> Circuit : 
