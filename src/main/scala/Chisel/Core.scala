@@ -266,24 +266,20 @@ abstract class Data(dirArg: Direction) extends Id {
   mod._nodes += this
 
   def toType: Kind
-  var isFlipVar = dirArg == INPUT
-  def isFlip = isFlipVar
   def dir: Direction = if (isFlip) INPUT else OUTPUT
-  def setDir(dir: Direction) {
-    isFlipVar = (dir == INPUT)
-  }
-  def asInput: this.type = {
-    setDir(INPUT)
+
+  // Sucks this is mutable state, but cloneType doesn't take a Direction arg
+  private var isFlipVar = dirArg == INPUT
+  private[Chisel] def isFlip = isFlipVar
+  private def setFlip(flip: Boolean): this.type = {
+    isFlipVar = flip
     this
   }
-  def asOutput: this.type = {
-    setDir(OUTPUT)
-    this
-  }
-  def flip(): this.type = {
-    isFlipVar = !isFlipVar
-    this
-  }
+
+  def asInput: this.type = this.cloneType.setFlip(true)
+  def asOutput: this.type = this.cloneType.setFlip(false)
+  def flip(): this.type = this.cloneType.setFlip(!isFlip)
+
   private[Chisel] def badConnect(that: Data): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[Chisel] def connect(that: Data): Unit =
@@ -442,7 +438,9 @@ abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
   def cloneTypeWidth(width: Int): this.type = cloneType
 }
 
-class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate(dirArg) with VecLike[T] {
+class Vec[T <: Data](elts: Seq[T])
+    extends Aggregate(if (elts.isEmpty) NO_DIR else elts.head.dir)
+    with VecLike[T] {
   private val self = elts.toIndexedSeq
   private lazy val elt0 = elts.head
 
@@ -461,7 +459,6 @@ class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate
 
   def <> (that: Vec[T]): Unit = this bulkConnect that
 
-
   override def := (that: Data): Unit = that match {
     case _: Vec[_] => this connect that
     case _ => this badConnect that
@@ -475,8 +472,6 @@ class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate
 
   def := (that: Vec[T]): Unit = this connect that
 
-  override def isFlip = isFlipVar ^ (!elts.isEmpty && elt0.isFlip)
-
   def apply(idx: UInt): T = {
     val x = elt0.cloneType
     pushCommand(DefAccessor(x, Alias(this), NO_DIR, idx.ref))
@@ -487,8 +482,8 @@ class Vec[T <: Data](elts: Seq[T], dirArg: Direction = NO_DIR) extends Aggregate
   def toPorts: Seq[Port] =
     self.map(d => d.toPort)
   def toType: Kind = {
-    val eltType = if (elts.isEmpty) UIntType(UnknownWidth(), isFlipVar) else elt0.toType
-    VectorType(self.size, eltType, isFlipVar)
+    val eltType = if (elts.isEmpty) UIntType(UnknownWidth(), isFlip) else elt0.toType
+    VectorType(self.size, eltType, isFlip)
   }
   override def cloneType: this.type =
     Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
@@ -572,7 +567,7 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, 1) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
   def cloneTypeWidth(width: Int): this.type = cloneType
   def flatten: IndexedSeq[Bits] = throwException("Clock.flatten")
-  def toType: Kind = ClockType(isFlipVar)
+  def toType: Kind = ClockType(isFlip)
 
   override def := (that: Data): Unit = that match {
     case _: Clock => this connect that
@@ -699,7 +694,7 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[ULit] = None) extends 
     new UInt(dir, w).asInstanceOf[this.type]
 
   def toType: Kind = 
-    UIntType(if (width == -1) UnknownWidth() else IntWidth(width), isFlipVar)
+    UIntType(if (width == -1) UnknownWidth() else IntWidth(width), isFlip)
 
   override def makeLit(value: BigInt, width: Int): this.type = 
     UInt(value, width).asInstanceOf[this.type]
@@ -788,7 +783,7 @@ sealed class SInt(dir: Direction, width: Int, lit: Option[SLit] = None) extends 
   override def cloneTypeWidth(w: Int): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   def toType: Kind = 
-    SIntType(if (width == -1) UnknownWidth() else IntWidth(width), isFlipVar)
+    SIntType(if (width == -1) UnknownWidth() else IntWidth(width), isFlip)
 
   override def := (that: Data): Unit = that match {
     case _: SInt => this badConnect that
@@ -937,7 +932,7 @@ object Bundle {
   private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
-class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
+class Bundle extends Aggregate(NO_DIR) {
   private val _namespace = new ChildNamespace(globalNamespace)
 
   override def <> (that: Data): Unit = that match {
@@ -950,7 +945,7 @@ class Bundle(dirArg: Direction = NO_DIR) extends Aggregate(dirArg) {
   def toPorts: Seq[Port] =
     elements.map(_._2.toPort).toSeq.reverse
   def toType: BundleType = 
-    BundleType(this.toPorts, isFlipVar)
+    BundleType(this.toPorts, isFlip)
 
   override def flatten: IndexedSeq[Bits] =
     allElts.map(_._2.flatten).reduce(_ ++ _)
