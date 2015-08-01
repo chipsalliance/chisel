@@ -720,8 +720,10 @@ public defn check-genders (c:Circuit) -> Circuit :
       ;println(gender)
       ;println(right)
       ;println(right == gender)
-      if gender != right and gender != BI-GENDER:
-         add(errors,WrongGender(info,to-symbol(e),as-srcsnk(right),as-srcsnk(gender)))
+      ;if gender != right and gender != BI-GENDER:
+      switch fn ([x,y]) : gender == x and right == y :
+         [MALE, FEMALE] : add(errors,WrongGender(info,to-symbol(e),as-srcsnk(right),as-srcsnk(gender)))
+         else : false
 
    defn get-gender (e:Expression,genders:HashTable<Symbol,Gender>) -> Gender :
       match(e) :
