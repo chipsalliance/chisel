@@ -431,11 +431,13 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
   val lockIdx = if(count > 1) Reg(init=UInt(n-1)) else UInt(n-1)
   val chosen = Wire(UInt(width = log2Up(n)))
 
-  for ((g, i) <- grant.zipWithIndex)
-    io.in(i).ready := Mux(locked, lockIdx === UInt(i), g) && io.out.ready
   io.out.valid := io.in(chosen).valid
   io.out.bits := io.in(chosen).bits
   io.chosen := chosen
+
+  io.in(chosen).ready := Bool(false) // XXX FIRRTL workaround
+  for ((g, i) <- grant.zipWithIndex)
+    io.in(i).ready := Mux(locked, lockIdx === UInt(i), g) && io.out.ready
 
   if(count > 1){
     val cnt = Reg(init=UInt(0, width = log2Up(count)))
