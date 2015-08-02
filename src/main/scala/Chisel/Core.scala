@@ -1071,7 +1071,8 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
     for ((name, field) <- io.namedElts)
       _namespace.name(name)
 
-    for (m <- getClass.getMethods; if isPublicVal(m)) {
+    val methods = getClass.getMethods.sortWith(_.getName > _.getName)
+    for (m <- methods; if isPublicVal(m)) {
       m.invoke(this) match {
         case module: Module =>
           setRefForId(module, m.getName)
