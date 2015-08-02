@@ -181,7 +181,7 @@ case class Index(val imm: Immediate, val value: Int) extends Immediate {
   override def debugName = imm.debugName + "." + value
 }
 
-case class Port(id: Id, dir: Direction, kind: Kind)
+case class Port(id: Data, kind: Kind)
 
 abstract class Width;
 case class UnknownWidth() extends Width;
@@ -232,23 +232,13 @@ import Commands._
 
 /// COMPONENTS
 
-sealed abstract class Direction(val name: String) {
+sealed abstract class Direction(name: String) {
   override def toString = name
+  def flip: Direction
 }
-object INPUT  extends Direction("input")
-object OUTPUT extends Direction("output")
-object NO_DIR extends Direction("?")
-
-object Direction {
-  def flipDirection(dir: Direction) = {
-    dir match {
-      case INPUT => OUTPUT
-      case OUTPUT => INPUT
-      case NO_DIR => NO_DIR
-    }
-  }
-}
-import Direction._
+object INPUT  extends Direction("input") { def flip = OUTPUT }
+object OUTPUT extends Direction("output") { def flip = INPUT }
+object NO_DIR extends Direction("?") { def flip = NO_DIR }
 
 /// CHISEL FRONT-END
 
@@ -266,19 +256,25 @@ abstract class Data(dirArg: Direction) extends Id {
   mod._nodes += this
 
   def toType: Kind
-  def dir: Direction = if (isFlip) INPUT else OUTPUT
+  def dir: Direction = dirVar
 
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
   private var isFlipVar = dirArg == INPUT
+  private var dirVar = dirArg
   private[Chisel] def isFlip = isFlipVar
-  private def setFlip(flip: Boolean): this.type = {
-    isFlipVar = flip
-    this
-  }
 
-  def asInput: this.type = this.cloneType.setFlip(true)
-  def asOutput: this.type = this.cloneType.setFlip(false)
-  def flip(): this.type = this.cloneType.setFlip(!isFlip)
+  private def cloneWithDirection(newDir: Direction => Direction,
+                                 newFlip: Boolean => Boolean): this.type = {
+    val res = this.cloneType
+    res.isFlipVar = newFlip(res.isFlipVar)
+    for ((me, it) <- this.flatten zip res.flatten) {
+      it.dirVar = newDir(me.dirVar)
+    }
+    res
+  }
+  def asInput: this.type = cloneWithDirection(_ => INPUT, _ => true)
+  def asOutput: this.type = cloneWithDirection(_ => OUTPUT, _ => false)
+  def flip(): this.type = cloneWithDirection(_.flip, !_)
 
   private[Chisel] def badConnect(that: Data): Unit =
     throwException(s"cannot connect ${this} and ${that}")
@@ -330,7 +326,7 @@ abstract class Data(dirArg: Direction) extends Id {
   def makeLit(value: BigInt, width: Int): this.type =
     this.fromBits(Bits(value, width))
 
-  def toPort: Port = Port(this, dir, toType)
+  def toPort: Port = Port(this, toType)
   def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
 }
 
@@ -560,7 +556,7 @@ abstract class Element(dirArg: Direction, val width: Int) extends Data(dirArg) {
 }
 
 object Clock {
-  def apply(dir: Direction = OUTPUT): Clock = new Clock(dir)
+  def apply(dir: Direction = NO_DIR): Clock = new Clock(dir)
 }
 
 sealed class Clock(dirArg: Direction) extends Element(dirArg, 1) {
@@ -627,7 +623,7 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
     d
   }
   protected[Chisel] def compop(op: PrimOp, other: Bits): Bool = {
-    val d = new Bool(dir)
+    val d = new Bool(NO_DIR)
     pushCommand(DefPrim(d, d.toType, op, Seq(this.ref, other.ref), NoLits))
     d
   }
@@ -653,7 +649,7 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
   def >> (other: UInt): Bits
 
   private def bits_redop(op: PrimOp): Bool = {
-    val d = new Bool(dir)
+    val d = new Bool(NO_DIR)
     pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
     d
   }
@@ -760,7 +756,7 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[ULit] = None) extends 
 }
 
 trait UIntFactory {
-  def apply(dir: Direction = OUTPUT, width: Int = -1) = 
+  def apply(dir: Direction = NO_DIR, width: Int = -1) =
     new UInt(dir, width)
   def apply(value: BigInt, width: Int) = {
     val w = if (width == -1) (1 max value.bitLength) else width
@@ -834,7 +830,7 @@ sealed class SInt(dir: Direction, width: Int, lit: Option[SLit] = None) extends 
 }
 
 object SInt {
-  def apply(dir: Direction = OUTPUT, width: Int = -1) = 
+  def apply(dir: Direction = NO_DIR, width: Int = -1) =
     new SInt(dir, width)
   def apply(value: BigInt, width: Int) = {
     val w = if (width == -1) 1 + value.bitLength else width
@@ -862,10 +858,8 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, 1,
   require(lit.isEmpty || lit.get.num < 2)
 }
 object Bool {
-  def apply(dir: Direction) : Bool = 
+  def apply(dir: Direction = NO_DIR) : Bool =
     new Bool(dir)
-  def apply() : Bool = 
-    apply(NO_DIR)
   def apply(value: BigInt) =
     new Bool(NO_DIR, Some(ULit(value, 1)))
   def apply(value: Boolean) : Bool = apply(if (value) 1 else 0)
@@ -1151,12 +1145,13 @@ class Emitter {
     parts.tail.foldLeft(new StringBuilder(parts.head))((s, p) => s ++= sep ++= p)
   def join0(parts: Seq[String], sep: String): StringBuilder =
     parts.foldLeft(new StringBuilder)((s, p) => s ++= sep ++= p)
-  def emitDir(e: Direction, isTop: Boolean): String =
-    if (isTop) (e.name + " ") else if (e == INPUT) "flip " else ""
+  def emitDir(e: Port, isTop: Boolean): String =
+    if (isTop) (if (e.id.isFlip) "input " else "output ")
+    else (if (e.id.isFlip) "flip " else "")
   def emit(e: PrimOp): String = e.name
   def emit(e: Arg): String = e.fullname
   def emitPort(e: Port, isTop: Boolean): String =
-    emitDir(e.dir, isTop) + getRefForId(e.id).name + " : " + emitType(e.kind)
+    s"${emitDir(e, isTop)}${getRefForId(e.id).name} : ${emitType(e.kind)}"
   def emit(e: Width): String = {
     e match {
       case e: UnknownWidth => ""

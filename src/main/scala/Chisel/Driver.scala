@@ -30,7 +30,6 @@
 
 package Chisel
 import Builder._
-import Direction._
 import ChiselError._
 
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, Stack, LinkedHashSet, Queue => ScalaQueue}
