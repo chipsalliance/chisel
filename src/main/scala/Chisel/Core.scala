@@ -483,8 +483,7 @@ class Vec[T <: Data](elts: Seq[T])
   }
   override def cloneType: this.type =
     Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
-  override def flatten: IndexedSeq[Bits] =
-    self.map(_.flatten).reduce(_ ++ _)
+  override def flatten: IndexedSeq[Bits] = self.flatMap(_.flatten)
 
   def length: Int = self.size
 
