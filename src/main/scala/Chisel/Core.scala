@@ -212,7 +212,7 @@ case class DefRegister(id: Id, kind: Kind, clock: Clock, reset: Bool) extends De
 case class DefMemory(id: Id, kind: Kind, size: Int, clock: Clock) extends Definition
 case class DefSeqMemory(id: Id, kind: Kind, size: Int) extends Definition
 case class DefAccessor(id: Id, source: Alias, direction: Direction, index: Arg) extends Definition
-case class DefInstance(id: Module, module: String) extends Definition
+case class DefInstance(id: Module, module: String, ports: Seq[Port]) extends Definition
 case class Conditionally(val prep: Command, val pred: Arg, val conseq: Command, var alt: Command) extends Command;
 case class Begin(val body: List[Command]) extends Command();
 case class Connect(val loc: Alias, val exp: Arg) extends Command;
@@ -253,7 +253,7 @@ object debug {
 
 abstract class Data(dirArg: Direction) extends Id {
   private[Chisel] val mod = getComponent()
-  mod._nodes += this
+  if (mod ne null) mod._nodes += this
 
   def toType: Kind
   def dir: Direction = dirVar
@@ -341,6 +341,7 @@ object Wire {
     pushCommand(DefWire(x, x.toType))
     if (init != null) 
       pushCommand(Connect(x.lref, init.ref))
+    x.flatten.foreach(e => e := e.makeLit(0,1))
     x
   }
 }
@@ -561,7 +562,7 @@ object Clock {
 sealed class Clock(dirArg: Direction) extends Element(dirArg, 1) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
   def cloneTypeWidth(width: Int): this.type = cloneType
-  def flatten: IndexedSeq[Bits] = throwException("Clock.flatten")
+  def flatten: IndexedSeq[Bits] = IndexedSeq()
   def toType: Kind = ClockType(isFlip)
 
   override def := (that: Data): Unit = that match {
@@ -997,9 +998,10 @@ object Module {
     val cmd = popCommands
     popScope
     popModule
-    val component = Component(m.name, m.computePorts, cmd)
+    val ports = m.computePorts
+    val component = Component(m.name, ports, cmd)
     components += component
-    pushCommand(DefInstance(m, m.name))
+    pushCommand(DefInstance(m, m.name, ports))
     Driver.parStack.pop
     m.connectImplicitIOs
     m
@@ -1185,7 +1187,7 @@ class Emitter {
         val mod = e.id
         // update all references to the modules ports
         overrideRefForId(mod.io, e.name)
-        "inst " + e.name + " of " + e.module
+        "inst " + e.name + " of " + e.module + newline + join0(e.ports.flatMap(x => initPort(x, INPUT)), newline)
       }
       case e: Conditionally => {
         val prefix = if (!e.prep.isInstanceOf[EmptyCommand]) {
@@ -1208,9 +1210,14 @@ class Emitter {
       case e: EmptyCommand => ""
     }
   }
+  def initPort(p: Port, dir: Direction) = {
+    for (x <- p.id.flatten; if x.dir == dir)
+      yield s"${getRefForId(x).fullname} := ${emit(x.makeLit(0,1).ref)}"
+  }
   def emit(e: Component): String =  {
     withIndent{ "module " + e.name + " : " +
       join0(e.ports.map(x => emitPort(x, true)), newline) +
+      newline + join0(e.ports.flatMap(x => initPort(x, OUTPUT)), newline) +
       newline + emit(e.body) }
   }
   def emit(e: Circuit): String = 
