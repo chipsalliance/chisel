@@ -11,6 +11,7 @@ public val bundle-expand-delin = `$
 public val module-expand-delin = `$
 public val scope-delin = `%
 public val temp-delin = `!
+public val sub-delin = `*
 public val inline-delin = `^
 
 public definterface PortDirection

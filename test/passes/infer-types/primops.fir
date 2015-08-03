@@ -143,16 +143,29 @@ circuit top :
       node wcvt = cvt(a) ;CHECK: node wcvt = cvt(a@<t:UInt>)@<t:SInt>
       node zcvt = cvt(c) ;CHECK: node zcvt = cvt(c@<t:SInt>)@<t:SInt>
    
-      node vneg = neg(a)   ;CHECK: node vneg = neg(a@<t:UInt>)@<t:UInt>
-      node wneg = neg(a) ;CHECK: node wneg = neg(a@<t:UInt>)@<t:UInt>
-      node zneg = neg(c) ;CHECK: node zneg = neg(c@<t:SInt>)@<t:UInt>
+      node vneg = neg(a)   ;CHECK: node vneg = neg(a@<t:UInt>)@<t:SInt>
+      node wneg = neg(a) ;CHECK: node wneg = neg(a@<t:UInt>)@<t:SInt>
+      node zneg = neg(c) ;CHECK: node zneg = neg(c@<t:SInt>)@<t:SInt>
    
-      node uand = and(a, b) ;CHECK: node uand = and(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node vor = or(a, b)  ;CHECK: node vor = or(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node wnot = not(a) ;CHECK: node wnot = not(a@<t:UInt>)@<t:UInt>
+      node unot = not(c) ;CHECK: node unot = not(c@<t:SInt>)@<t:SInt>
+
+      node wand = and(a, b) ;CHECK: node wand = and(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node uand = and(c, d) ;CHECK: node uand = and(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+
+      node wor = or(a, b)  ;CHECK: node wor = or(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node uor = or(c, d)  ;CHECK: node uor = or(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+
       node wxor = xor(a, b) ;CHECK: node wxor = xor(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node uxor = xor(c, d) ;CHECK: node uxor = xor(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+
+      node wbit = bit(a, 0) ;CHECK: node wbit = bit(a@<t:UInt>, 0)@<t:UInt>
+      node ubit = bit(c, 0) ;CHECK: node ubit = bit(c@<t:SInt>, 0)@<t:UInt>
+
+      node wbits = bits(a, 2, 0) ;CHECK: node wbits = bits(a@<t:UInt>, 2, 0)@<t:UInt>
+      node ubits = bits(c, 2, 0) ;CHECK: node ubits = bits(c@<t:SInt>, 2, 0)@<t:UInt>
+
       node xcat = cat(a, b) ;CHECK: node xcat = cat(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node ybit = bit(a, 0) ;CHECK: node ybit = bit(a@<t:UInt>, 0)@<t:UInt>
-      node zbits = bits(a, 2, 0) ;CHECK: node zbits = bits(a@<t:UInt>, 2, 0)@<t:UInt>
 
       node uandr = andr(a, b, a) ;CHECK: node uandr = andr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
       node uorr = orr(a, b, a) ;CHECK: node uorr = orr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>

@@ -10,22 +10,27 @@ public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|M
 ;============== GENSYM STUFF ======================
 
 
-public defn firrtl-gensym (s:Symbol) -> Symbol : firrtl-gensym(s,HashTable<Symbol,Int>(symbol-hash))
-
+public defn firrtl-gensym (s:Symbol) -> Symbol :
+   firrtl-gensym(s,HashTable<Symbol,Int>(symbol-hash))
 public defn firrtl-gensym (s:Symbol,sym-hash:HashTable<Symbol,Int>) -> Symbol :
-   defn get-new (s:Symbol, i:Int) -> Symbol :
-      val s* = symbol-join([s i])
-      if key?(sym-hash,s*) :
-         get-new(s,i + 1)
-      else :
-         sym-hash[s] = i
-         sym-hash[s*] = 0
-         s*
-   get-new(s,0)
-   
+   firrtl-gensym(s,sym-hash,temp-delin)
 public defn firrtl-gensym (sym-hash:HashTable<Symbol,Int>) -> Symbol :
    firrtl-gensym(`gen,sym-hash)
 
+public defn firrtl-gensym (s:Symbol,sym-hash:HashTable<Symbol,Int>,delin:Symbol) -> Symbol :
+   val num = get?(sym-hash,s,0)
+   sym-hash[s] = num + 1
+   symbol-join([s delin num])
+   ;defn get-new (s:Symbol, i:Int) -> Symbol :
+   ;   val s* = symbol-join([s i])
+   ;   if key?(sym-hash,s*) :
+   ;      get-new(s,i + 1)
+   ;   else :
+   ;      sym-hash[s] = i
+   ;      sym-hash[s*] = 0
+   ;      s*
+   ;get-new(s,0)
+   
 public defn get-sym-hash (m:InModule) -> HashTable<Symbol,Int> :
    val sym-hash = HashTable<Symbol,Int>(symbol-hash)
    defn add-name (s:Symbol) -> False :

@@ -1140,15 +1140,15 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
       DoPrim(EQUIV-OP,list(e1,e2),List(),UIntType(UnknownWidth()))
    defn get-name (e:Expression) -> Symbol :
       match(e) :
-         (e:WRef) : symbol-join([name(e) temp-delin])
-         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e) temp-delin])
-         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e)) temp-delin])
+         (e:WRef) : name(e)
+         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e)])
+         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e))])
          (e) : `T
    match(s) :
       (s:ConnectToIndexed) : Begin $
          if length(locs(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(index(s)),sh),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s)),sh,sub-delin),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -1162,7 +1162,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
       (s:ConnectFromIndexed) : Begin $
          if length(exps(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(index(s)),sh),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s)),sh,sub-delin),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(Connect(info(s),loc(s),head(exps(s))),DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -2165,20 +2165,23 @@ defn full-name (e:Expression) -> Symbol|False :
 defn split-exp (c:Circuit) :
    defn split-exp-s (s:Stmt,v:Vector<Stmt>,sh:HashTable<Symbol,Int>) -> False :
       defn split-exp-e (e:Expression,n:Symbol|False,info:FileInfo) -> Expression :
-         match(map(split-exp-e{_,n,info},e)) :
+         match(e) :
             (e:DoPrim) : 
-               var all-same-type? = true
-               for x in args(e) do :
-                  if type(x) != type(e) : all-same-type? = false
-               all-same-type? = false
-               if not all-same-type? : 
+               ;var all-same-type? = true
+               ;for x in args(e) do :
+               ;   if type(x) != type(e) : all-same-type? = false
+               ;all-same-type? = false
+               ;if not all-same-type? : 
+                  ;val n* = 
+                  ;   if n typeof False : firrtl-gensym(`T,sh)
+                  ;   else : firrtl-gensym(symbol-join([n as Symbol temp-delin]),sh)
                   val n* = 
-                     if n typeof False : firrtl-gensym(`T,sh)
-                     else : firrtl-gensym(symbol-join([n as Symbol temp-delin]),sh)
-                  add(v,DefNode(info,n*,e))
+                     if n typeof False : firrtl-gensym(`T,sh,temp-delin)
+                     else : firrtl-gensym(n as Symbol,sh,temp-delin)
+                  add(v,DefNode(info,n*,map(split-exp-e{_,n,info},e)))
                   WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
-               else : e
-            (e) : e
+               ;else : e
+            (e) : map(split-exp-e{_,n,info},e)
       defn f (s:Stmt) -> False: split-exp-s(s,v,sh)
       match(s) :
          (s:Begin) : 

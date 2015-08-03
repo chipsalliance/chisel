@@ -9,6 +9,7 @@ add clock check to high firrtl check
 registers in onreset cannot have flips
 add equivalence to spec
 remove SInt from bit/bits in spec
+naming still doesn't work - x!0 will conflict with x
 
 Tests:
    Lowering for instance types with bundle ports

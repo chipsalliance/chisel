@@ -6,9 +6,11 @@ circuit BTB :
     input clk : Clock
     input reset : UInt<1>
     input req : {valid : UInt<1>, bits : {addr : UInt<39>}}
-    output r : UInt<1>
+
+    output r : { x : UInt<1>, flip y : UInt<1>}
 
     wire x : {valid : UInt<1>, bits : {addr : UInt<39>}}
-
     req <> x
+
+    wire z : {x : UInt<1>, flip y : UInt<1> }
     x.valid := r
