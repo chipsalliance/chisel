@@ -1,17 +1,16 @@
 package ChiselTests
 import Chisel._
 
-class Complex[T <: Data](val re: T, val im: T, dir: Direction = OUTPUT)
-    extends Bundle(dir) {
+class Complex[T <: Data](val re: T, val im: T) extends Bundle {
   override def cloneType: this.type =
-    new Complex(re.cloneType, im.cloneType, dir).asInstanceOf[this.type]
+    new Complex(re.cloneType, im.cloneType).asInstanceOf[this.type]
 }
 
 class ComplexAssign(W: Int) extends Module {
   val io = new Bundle {
     val e   = new Bool(INPUT)
-    val in  = new Complex(Bits(width = W), Bits(width = W), INPUT)
-    val out = new Complex(Bits(width = W), Bits(width = W), OUTPUT)
+    val in  = new Complex(Bits(width = W), Bits(width = W)).asInput
+    val out = new Complex(Bits(width = W), Bits(width = W)).asOutput
   }
   when (io.e) {
     val w = Wire(new Complex(Bits(width = W), Bits(width = W)))
