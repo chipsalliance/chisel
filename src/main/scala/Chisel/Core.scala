@@ -1203,7 +1203,7 @@ class Emitter {
       case e: BulkConnect => emit(e.loc1) + " <> " + emit(e.loc2)
       case e: ConnectInit => "onreset " + emit(e.loc) + " := " + emit(e.exp)
       case e: ConnectInitIndex => "onreset " + emit(e.loc) + "[" + e.index + "] := " + emit(e.exp)
-      case e: EmptyCommand => ""
+      case e: EmptyCommand => s"node ${globalNamespace.name("$shitballs")} = UInt<1>(0)"
     }
   }
   def initPort(p: Port, dir: Direction) = {
