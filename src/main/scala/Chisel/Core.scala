@@ -341,7 +341,8 @@ object Wire {
     pushCommand(DefWire(x, x.toType))
     if (init != null) 
       pushCommand(Connect(x.lref, init.ref))
-    x.flatten.foreach(e => e := e.makeLit(0,1))
+    else
+      x.flatten.foreach(e => e := e.makeLit(0,1))
     x
   }
 }
