@@ -138,7 +138,7 @@ object is {
   def apply(v: Iterable[Bits])(block: => Unit): Unit = {
     val keys = switchKeys
     if (keys.isEmpty) ChiselError.error("The 'is' keyword may not be used outside of a switch.")
-    else if (!v.isEmpty) when (v.map(_ === keys.top).reduce(_||_)) { block }
+    else if (!v.isEmpty) when (v.map(_.toBits === keys.top.toBits).reduce(_||_)) { block }
   }
 }
 

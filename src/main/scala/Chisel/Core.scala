@@ -499,7 +499,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 
   def forall(p: T => Bool): Bool = (this map p).fold(Bool(true))(_&&_)
   def exists(p: T => Bool): Bool = (this map p).fold(Bool(false))(_||_)
-  def contains(x: T) (implicit evidence: T <:< Bits): Bool = this.exists(_ === x)
+  def contains(x: T) (implicit evidence: T <:< UInt): Bool = this.exists(_ === x)
   def count(p: T => Bool): UInt = PopCount((this map p).toSeq)
 
   private def indexWhereHelper(p: T => Bool) = this map p zip (0 until length).map(i => UInt(i))
@@ -607,39 +607,36 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
   final def apply(x: Int, y: Int): UInt =
     apply(BigInt(x), BigInt(y))
 
-  protected[Chisel] def unop(op: PrimOp, width: Int): this.type = {
+  private[Chisel] def unop(op: PrimOp, width: Int): this.type = {
     val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
     d
   }
-  protected[Chisel] def binop(op: PrimOp, other: BigInt, width: Int): this.type = {
+  private[Chisel] def binop(op: PrimOp, other: BigInt, width: Int): this.type = {
     val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), Seq(other)))
     d
   }
-  protected[Chisel] def binop(op: PrimOp, other: Bits, width: Int): this.type = {
+  private[Chisel] def binop(op: PrimOp, other: Bits, width: Int): this.type = {
     val d = cloneTypeWidth(width)
     pushCommand(DefPrim(d, d.toType, op, Seq(this.ref, other.ref), NoLits))
     d
   }
-  protected[Chisel] def compop(op: PrimOp, other: Bits): Bool = {
+  private[Chisel] def compop(op: PrimOp, other: Bits): Bool = {
     val d = new Bool(NO_DIR)
     pushCommand(DefPrim(d, d.toType, op, Seq(this.ref, other.ref), NoLits))
     d
   }
-  protected[Chisel] def unimp(op: String) =
+  private[Chisel] def unimp(op: String) =
     throwException(s"Operator ${op} unsupported for class ${getClass}")
+  private[Chisel] def redop(op: PrimOp): Bool = {
+    val d = new Bool(NO_DIR)
+    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
+    d
+  }
 
   def unary_~ : this.type = unop(BitNotOp, sumWidth(0))
   def pad (other: BigInt): this.type = binop(PadOp, other, other.toInt)
-
-  def < (other: Bits): Bool = compop(LessOp, other)
-  def > (other: Bits): Bool = compop(GreaterOp, other)
-  def === (other: Bits): Bool = compop(EqualOp, other)
-  def != (other: Bits): Bool = compop(NotEqualOp, other)
-  def <= (other: Bits): Bool = compop(LessEqOp, other)
-  def >= (other: Bits): Bool = compop(GreaterEqOp, other)
-  def unary_! : Bool = this === Bits(0)
 
   def << (other: BigInt): Bits
   def << (other: Int): Bits
@@ -647,16 +644,6 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
   def >> (other: BigInt): Bits
   def >> (other: Int): Bits
   def >> (other: UInt): Bits
-
-  private def bits_redop(op: PrimOp): Bool = {
-    val d = new Bool(NO_DIR)
-    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
-    d
-  }
-
-  def orR = this != Bits(0)
-  def andR = ~this === Bits(0)
-  def xorR = bits_redop(XorReduceOp)
 
   def toBools: Vec[Bool] = Vec.tabulate(this.getWidth)(i => this(i))
 
@@ -718,10 +705,17 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[ULit] = None) extends 
   def ^ (other: UInt): UInt = binop(BitXorOp, other, maxWidth(other, 0))
   def ## (other: UInt): UInt = Cat(this, other)
 
+  def orR = this != UInt(0)
+  def andR = ~this === UInt(0)
+  def xorR = redop(XorReduceOp)
+
   def < (other: UInt): Bool = compop(LessOp, other)
   def > (other: UInt): Bool = compop(GreaterOp, other)
   def <= (other: UInt): Bool = compop(LessEqOp, other)
   def >= (other: UInt): Bool = compop(GreaterEqOp, other)
+  def != (other: UInt): Bool = compop(NotEqualOp, other)
+  def === (other: UInt): Bool = compop(EqualOp, other)
+  def unary_! : Bool = this === Bits(0)
 
   def << (other: BigInt): UInt = binop(ShiftLeftOp, other, sumWidth(other.toInt))
   def << (other: Int): UInt = this << BigInt(other)
@@ -810,6 +804,8 @@ sealed class SInt(dir: Direction, width: Int, lit: Option[SLit] = None) extends 
   def > (other: SInt): Bool = compop(GreaterOp, other)
   def <= (other: SInt): Bool = compop(LessEqOp, other)
   def >= (other: SInt): Bool = compop(GreaterEqOp, other)
+  def != (other: SInt): Bool = compop(NotEqualOp, other)
+  def === (other: SInt): Bool = compop(EqualOp, other)
   def abs(): UInt = Mux(this < SInt(0), (-this).toUInt, this.toUInt)
 
   def << (other: BigInt): SInt = binop(ShiftLeftOp, other, sumWidth(other.toInt))
