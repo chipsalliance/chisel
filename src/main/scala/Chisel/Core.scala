@@ -260,7 +260,7 @@ abstract class Data(dirArg: Direction) extends Id {
 
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
   private var isFlipVar = dirArg == INPUT
-  private var dirVar = dirArg
+  private[Chisel] var dirVar = dirArg
   private[Chisel] def isFlip = isFlipVar
 
   private def cloneWithDirection(newDir: Direction => Direction,
