@@ -870,25 +870,22 @@ object Bool {
 }
 
 object Mux {
-  private def multiplex[T <: Data](cond: Bool, con: T, alt: T): T = {
+  def apply[T <: Data](cond: Bool, con: T, alt: T): T = (con, alt) match {
+    case (c: Bits, a: Bits) => doMux(cond, c, a).asInstanceOf[T]
+    case _ => doWhen(cond, con, alt)
+  }
+
+  // These implementations are type-unsafe and rely on FIRRTL for type checking
+  private def doMux[T <: Bits](cond: Bool, con: T, alt: T): T = {
     val d = alt.cloneTypeWidth(con.maxWidth(alt, 0))
-    if (con.getClass != alt.getClass) // TODO: Figure out a better way to do this
-      throwException(s"Can't Mux between types ${con.getClass.getName} and ${alt.getClass.getName}")
     pushCommand(DefPrim(d, d.toType, MultiplexOp, Seq(cond.ref, con.ref, alt.ref), NoLits))
     d
   }
-  def apply[T <: Data](cond: Bool, con: T, alt: T): T = {
-    if (con.getClass == alt.getClass && con.isInstanceOf[Bits]) {
-      // TODO: figure out a better way to dispatch this
-      multiplex(cond, con, alt)
-    } else {
-      // TODO: this shouldn't return an lvalue!
-      val w = Wire(alt, init = alt)
-      when (cond) {
-        w := con
-      }
-      w
-    }
+  // This returns an lvalue, which it most definitely should not
+  private def doWhen[T <: Data](cond: Bool, con: T, alt: T): T = {
+    val res = Wire(alt, init = alt)
+    when (cond) { res := con }
+    res
   }
 }
 
