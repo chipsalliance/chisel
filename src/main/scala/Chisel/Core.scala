@@ -415,10 +415,14 @@ class SeqMem[T <: Data](t: T, n: Int) {
 object Vec {
   def apply[T <: Data](gen: T, n: Int): Vec[T] = {
     if (gen.isLit) apply(Seq.fill(n)(gen))
-    else new Vec((0 until n).map(i => gen.cloneType))
+    else new Vec(gen.cloneType, n)
   }
   def apply[T <: Data](elts: Seq[T]): Vec[T] = {
-    val vec = new Vec(elts.map(e => elts.head.cloneType))
+    require(!elts.isEmpty)
+    val width =
+      if (elts.forall(_.knownWidth)) Some(elts.map(_.getWidth).max)
+      else None
+    val vec = new Vec(elts.head.cloneTypeWidth(width), elts.length)
     pushCommand(DefWire(vec, vec.toType))
     for ((v, e) <- vec zip elts)
       v := e
@@ -436,11 +440,9 @@ abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
   def cloneTypeWidth(width: Int): this.type = cloneType
 }
 
-class Vec[T <: Data](elts: Seq[T])
-    extends Aggregate(if (elts.isEmpty) NO_DIR else elts.head.dir)
-    with VecLike[T] {
-  private val self = elts.toIndexedSeq
-  private lazy val elt0 = elts.head
+class Vec[T <: Data](gen: => T, val length: Int)
+    extends Aggregate(gen.dir) with VecLike[T] {
+  private val self = IndexedSeq.fill(length)(gen)
 
   override def collectElts: Unit =
     for ((e, i) <- self zipWithIndex)
@@ -471,23 +473,20 @@ class Vec[T <: Data](elts: Seq[T])
   def := (that: Vec[T]): Unit = this connect that
 
   def apply(idx: UInt): T = {
-    val x = elt0.cloneType
+    val x = gen
     pushCommand(DefAccessor(x, Alias(this), NO_DIR, idx.ref))
     x
   }
-  def apply(idx: Int): T = 
-    self(idx)
-  def toPorts: Seq[Port] =
-    self.map(d => d.toPort)
-  def toType: Kind = {
-    val eltType = if (elts.isEmpty) UIntType(UnknownWidth(), isFlip) else elt0.toType
-    VectorType(self.size, eltType, isFlip)
-  }
-  override def cloneType: this.type =
-    Vec(elt0.cloneType, self.size).asInstanceOf[this.type]
-  override def flatten: IndexedSeq[Bits] = self.flatMap(_.flatten)
 
-  def length: Int = self.size
+  def apply(idx: Int): T = self(idx)
+
+  def toType: Kind = VectorType(length, gen.toType, isFlip)
+
+  override def cloneType: this.type =
+    Vec(gen, length).asInstanceOf[this.type]
+
+  override lazy val flatten: IndexedSeq[Bits] =
+    (0 until length).flatMap(i => this.apply(i).flatten)
 
   def read(idx: UInt): T = apply(idx)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
