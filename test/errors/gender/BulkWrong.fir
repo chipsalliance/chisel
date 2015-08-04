@@ -1,16 +1,26 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
-; CHECK: Expression req is used as a sink but can only be used as a source.
+; CHECK: Expression in is used as a sink but can only be used as a source.
+; CHECK: Expression out.y is used as a sink but can only be used as a source.
+; CHECK: Expression in.y.z is used as a sink but can only be used as a source.
+; CHECK: Expression in.y.z is used as a sink but can only be used as a source.
 
 circuit BTB :
   module BTB : 
-    input clk : Clock
-    input reset : UInt<1>
-    input req : {valid : UInt<1>, bits : {addr : UInt<39>}}
+    input in : {x : UInt<1>, flip y : {flip z : UInt<1>}}
+    output out : {x : UInt<1>, flip y : {flip z : UInt<1>}}
 
-    output r : { x : UInt<1>, flip y : UInt<1>}
+    in <> out
+    out.y <> in.y
+    out.y.z <> in.y.z
+    
+    wire w : {x : UInt<1>, flip y : {flip z : UInt<1>}}
+    w <> in
+    in.y <> w.y
+    in.y.z <> w.y.z
 
-    wire x : {valid : UInt<1>, bits : {addr : UInt<39>}}
-    req <> x
+    w.x := addw(in.x,in.y.z)
 
-    wire z : {x : UInt<1>, flip y : UInt<1> }
-    x.valid := r.x
+    out <> in
+    in.y <> out.y
+    in.y.z <> out.y.z
+

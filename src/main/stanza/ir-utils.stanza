@@ -67,7 +67,11 @@ public defn get-sym-hash (m:InModule,keywords:List<Symbol>) -> HashTable<Symbol,
          s*[i] == '_' and digits?(substring(s*,i + 1))
       match(i*) :
          (i:False) : 
-            sym-hash[s] = 0
+            if key?(sym-hash,s) :
+               val num = sym-hash[s]
+               sym-hash[s] = max(num,0)
+            else :
+               sym-hash[s] = 0
          (i:Int) :
             val name = to-symbol(substring(s*,0,i))
             val digit = to-int(substring(s*,i + 1))

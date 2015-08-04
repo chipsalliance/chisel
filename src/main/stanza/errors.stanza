@@ -735,7 +735,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          [MALE, FEMALE] : 
             add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
          [FEMALE, MALE] : 
-            if kind* != PortKind() :
+            if kind* != PortKind() and kind* != InstanceKind():
                add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
          else : false
 
@@ -801,7 +801,6 @@ public defn check-genders (c:Circuit) -> Circuit :
       match(m) :
          (m:ExModule) : false
          (m:InModule) : check-genders-s(body(m),genders)
-      println(genders)
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 
