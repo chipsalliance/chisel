@@ -13,6 +13,7 @@ public val scope-delin = `%
 public val temp-delin = `!
 public val sub-delin = `*
 public val inline-delin = `^
+public val delin = `_
 
 public definterface PortDirection
 public val INPUT = new PortDirection

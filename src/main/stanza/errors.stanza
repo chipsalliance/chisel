@@ -695,7 +695,7 @@ defn InferDirection (info:FileInfo,name:Symbol) :
 defn dir-to-gender (d:PortDirection) -> Gender :
    switch {_ == d} :
       INPUT : MALE
-      OUTPUT : BI-GENDER
+      OUTPUT : FEMALE ;BI-GENDER
 
 defn gender (s:DefAccessor) -> Gender :
    switch {_ == acc-dir(s)} :
@@ -715,14 +715,28 @@ defn as-srcsnk (g:Gender) -> Symbol :
 
 public defn check-genders (c:Circuit) -> Circuit :
    val errors = Vector<PassException>()
-   defn check-gender (info:FileInfo,genders:HashTable<Symbol,Gender>,e:Expression,right:Gender) -> False :
+   defn get-kind (e:Expression) -> Kind :
+      match(e) :
+         (e:WRef) : kind(e)
+         (e:WSubfield) : get-kind(exp(e))
+         (e:WIndex) : get-kind(exp(e))
+         (e) : NodeKind()
+
+   defn check-gender (info:FileInfo,genders:HashTable<Symbol,Gender>,e:Expression,desired:Gender) -> False :
       val gender = get-gender(e,genders)
+      val kind* = get-kind(e)
+      ;println(e)
       ;println(gender)
-      ;println(right)
-      ;println(right == gender)
-      ;if gender != right and gender != BI-GENDER:
-      switch fn ([x,y]) : gender == x and right == y :
-         [MALE, FEMALE] : add(errors,WrongGender(info,to-symbol(e),as-srcsnk(right),as-srcsnk(gender)))
+      ;println(desired)
+      ;println(kind*)
+      ;println(desired == gender)
+      ;if gender != desired and gender != BI-GENDER:
+      switch fn ([x,y]) : gender == x and desired == y :
+         [MALE, FEMALE] : 
+            add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
+         [FEMALE, MALE] : 
+            if kind* != PortKind() :
+               add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
          else : false
 
    defn get-gender (e:Expression,genders:HashTable<Symbol,Gender>) -> Gender :
@@ -730,7 +744,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (e:WRef) : genders[name(e)]
          (e:WSubfield) : 
             val f = {_ as Field} $ for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
-            get-gender(exp(e),genders) * flip(f)
+            get-gender(exp(e),genders) * flip(f) 
          (e:WIndex) : get-gender(exp(e),genders)
          (e:DoPrim) : MALE
          (e:UIntValue) : MALE
@@ -787,6 +801,7 @@ public defn check-genders (c:Circuit) -> Circuit :
       match(m) :
          (m:ExModule) : false
          (m:InModule) : check-genders-s(body(m),genders)
+      println(genders)
    throw(PassExceptions(errors)) when not empty?(errors)
    c
 

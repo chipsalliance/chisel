@@ -79,7 +79,7 @@ defn main () :
          if last-s == "-o" : output = args[i]
          if last-s == "-x" : add(pass-names,args[i])
          if last-s == "-X" : compiler = args[i]
-         if last-s == "-p" : printvars = args[i]
+         if last-s == "-p" : printvars = to-string([printvars args[i]])
          if last-s == "-s" : add(pass-args,args[i])
          if last-s == "-m" : add(firms,args[i])
 

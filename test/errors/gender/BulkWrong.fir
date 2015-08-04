@@ -13,4 +13,4 @@ circuit BTB :
     req <> x
 
     wire z : {x : UInt<1>, flip y : UInt<1> }
-    x.valid := r
+    x.valid := r.x

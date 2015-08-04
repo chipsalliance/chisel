@@ -295,12 +295,12 @@ public defmethod short-name (b:RemoveSpecialChars) -> String : "rem-spec-chars"
 
 defn get-new-string (n:Char) -> String :
    switch {n == _} :
-      ;'_' : "__"
+      '_' : "_"
       '~' : "$A"
       '!' : "$B"
       '@' : "$C"
       '#' : "$D"
-      ;'$' : "$E"
+      '$' : "$E"
       '%' : "$F"
       '^' : "$G"
       '*' : "$H"
@@ -340,7 +340,7 @@ defn remove-special-chars (c:Circuit) :
          (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s),acc-dir(s))
          (s) : map(rename-t,map(rename-s,s))
 
-   Circuit(info(c),modules*, main(c)) where :
+   Circuit(info(c),modules*, rename(main(c))) where :
       val modules* =
          for m in modules(c) map :
             match(m) :
@@ -1148,7 +1148,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
       (s:ConnectToIndexed) : Begin $
          if length(locs(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(index(s)),sh,sub-delin),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s)),sh),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -1162,7 +1162,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
       (s:ConnectFromIndexed) : Begin $
          if length(exps(s)) == 0 : list(EmptyStmt())
          else :
-            val ref = WRef(firrtl-gensym(get-name(index(s)),sh,sub-delin),type(index(s)),NodeKind(),UNKNOWN-GENDER)
+            val ref = WRef(firrtl-gensym(get-name(index(s)),sh),type(index(s)),NodeKind(),UNKNOWN-GENDER)
             append(
                list(Connect(info(s),loc(s),head(exps(s))),DefNode(info(s),name(ref),index(s)))
                to-list $
@@ -1178,7 +1178,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
 defn expand-connect-indexed (m: Module) -> Module :
    match(m) :
       (m:InModule) : 
-         val sh = get-sym-hash(m)
+         val sh = get-sym-hash(m,v-keywords)
          InModule(info(m),name(m),ports(m),expand-connect-indexed-stmt(body(m),sh))
       (m:ExModule) : m
 
@@ -2176,8 +2176,8 @@ defn split-exp (c:Circuit) :
                   ;   if n typeof False : firrtl-gensym(`T,sh)
                   ;   else : firrtl-gensym(symbol-join([n as Symbol temp-delin]),sh)
                   val n* = 
-                     if n typeof False : firrtl-gensym(`T,sh,temp-delin)
-                     else : firrtl-gensym(n as Symbol,sh,temp-delin)
+                     if n typeof False : firrtl-gensym(`T,sh)
+                     else : firrtl-gensym(n as Symbol,sh)
                   add(v,DefNode(info,n*,map(split-exp-e{_,n,info},e)))
                   WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
                ;else : e
@@ -2204,7 +2204,7 @@ defn split-exp (c:Circuit) :
          match(m) :
             (m:InModule) :
                val v = Vector<Stmt>()
-               val sh = get-sym-hash(m)
+               val sh = get-sym-hash(m,v-keywords)
                ;val before = current-time-us() - start-time
                ;println-all(["Before split: " before])
                split-exp-s(body(m),v,sh)
