@@ -1754,9 +1754,9 @@ public defmethod print (o:OutputStream, w:VarWidth) :
 public defmethod print (o:OutputStream, w:MaxWidth) :
    print-all(o,["max" args(w)])
 public defmethod print (o:OutputStream, w:PlusWidth) :
-   print-all(o,[ arg1(w) " + " arg2(w)])
+   print-all(o,[ "(" arg1(w) " + " arg2(w) ")"])
 public defmethod print (o:OutputStream, w:MinusWidth) :
-   print-all(o,[ arg1(w) " - " arg2(w)])
+   print-all(o,[ "(" arg1(w) " - " arg2(w) ")"])
 public defmethod print (o:OutputStream, w:ExpWidth) :
    print-all(o,[ "exp(" arg1(w) ")"])
 
