@@ -94,7 +94,10 @@ object Mux1H
     if (in.tail.isEmpty) in.head._2
     else {
       val masked = in map {case (s, i) => Mux(s, i.toBits, Bits(0))}
-      in.head._2.fromBits(masked.reduceLeft(_|_))
+      val width =
+        if (in.forall(_._2.knownWidth)) Some(in.map(_._2.getWidth).max)
+        else None
+      in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
     }
   }
   def apply[T <: Data](sel: UInt, in: Seq[T]): T =

@@ -278,7 +278,9 @@ abstract class Data(dirArg: Direction) extends Id {
   private[Chisel] def lref: Alias = Alias(this)
   private[Chisel] def ref: Arg = if (isLit) litArg() else lref
   private[Chisel] def debugName = mod.debugName + "." + getRefForId(this).debugName
-  private[Chisel] def cloneTypeWidth(width: Int): this.type
+  private[Chisel] def cloneTypeWidth(width: Int): this.type // deprecated
+  private[Chisel] def cloneTypeWidth(width: Option[Int]): this.type =
+    cloneTypeWidth(width.getOrElse(-1))
 
   def := (that: Data): Unit = this badConnect that
   def <> (that: Data): Unit = this badConnect that
@@ -931,7 +933,7 @@ class Bundle extends Aggregate(NO_DIR) {
     BundleType(this.toPorts, isFlip)
 
   override def flatten: IndexedSeq[Bits] =
-    allElts.map(_._2.flatten).reduce(_ ++ _)
+    allElts.flatMap(_._2.flatten)
 
   lazy val elements: ListMap[String, Data] = ListMap(allElts:_*)
 
