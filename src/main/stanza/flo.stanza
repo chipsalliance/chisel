@@ -198,7 +198,7 @@ defn emit-module (m:InModule,sh:HashTable<Symbol,Int>) :
 
 public defn emit-flo (with-output:(() -> False) -> False, c:Circuit) :
    with-output $ {
-      emit-module(modules(c)[0] as InModule,get-sym-hash(modules(c)[0] as InModule,v-keywords))
+      emit-module(modules(c)[0] as InModule,get-sym-hash(modules(c)[0] as InModule))
       false
       }
    c

@@ -315,30 +315,43 @@ defn get-new-string (n:Char) -> String :
 
 defn remove-special-chars (c:Circuit) :
    defn rename (n:Symbol) -> Symbol :
-      val n* = Vector<String>()
+      val v = Vector<String>()
       for c in to-string(n) do :
-         add(n*,get-new-string(c))
-      symbol-join(n*)
+         add(v,get-new-string(c))
+      val n* = symbol-join(v)
+      if key?(v-keywords,n*) : 
+         symbol-join([n* `_])
+      else :
+         n*
    defn rename-t (t:Type) -> Type :
       match(t) :
          (t:BundleType) : BundleType $
             for f in fields(t) map :
                Field(rename(name(f)),flip(f),rename-t(type(f)))
-         (e) : map(rename-t,e)
+         (t:VectorType) : VectorType(rename-t(type(t)),size(t))
+         (t) : t
    defn rename-e (e:Expression) -> Expression :
       match(e) :
          (e:Ref) : Ref(rename(name(e)),rename-t(type(e)))
-         (e:Subfield) : Subfield(exp(e),rename(name(e)),rename-t(type(e)))
-         (e) : map(rename-t,map(rename-e,e))
+         (e:Subfield) : Subfield(rename-e(exp(e)),rename(name(e)),rename-t(type(e)))
+         (e:Index) : Index(rename-e(exp(e)),value(e),rename-t(type(e)))
+         (e:DoPrim) : DoPrim{op(e),_,consts(e),rename-t(type(e))} $ for x in args(e) map : rename-e(x)
+         (e:UIntValue) : e
+         (e:SIntValue) : e
    defn rename-s (s:Stmt) -> Stmt :
-      match(map(rename-e,s)) :
+      match(s) :
          (s:DefWire) : DefWire(info(s),rename(name(s)),rename-t(type(s)))
-         (s:DefRegister) : DefRegister(info(s),rename(name(s)),rename-t(type(s)),clock(s),reset(s))
-         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
-         (s:DefMemory) : DefMemory(info(s),rename(name(s)),rename-t(type(s)) as VectorType,seq?(s),clock(s))
-         (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
-         (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s),acc-dir(s))
-         (s) : map(rename-t,map(rename-s,s))
+         (s:DefRegister) : DefRegister(info(s),rename(name(s)),rename-t(type(s)),rename-e(clock(s)),rename-e(reset(s)))
+         (s:DefInstance) : DefInstance(info(s),rename(name(s)),rename-e(module(s)))
+         (s:DefMemory) : DefMemory(info(s),rename(name(s)),rename-t(type(s)) as VectorType,seq?(s),rename-e(clock(s)))
+         (s:DefNode) : DefNode(info(s),rename(name(s)),rename-e(value(s)))
+         (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),rename-e(source(s)),rename-e(index(s)),acc-dir(s))
+         (s:Conditionally) : Conditionally(info(s),rename-e(pred(s)),rename-s(conseq(s)),rename-s(alt(s)))
+         (s:Begin) : Begin $ for b in body(s) map : rename-s(b)
+         (s:OnReset) : OnReset(info(s),rename-e(loc(s)),rename-e(exp(s)))
+         (s:BulkConnect) : BulkConnect(info(s),rename-e(loc(s)),rename-e(exp(s)))
+         (s:Connect) : Connect(info(s),rename-e(loc(s)),rename-e(exp(s)))
+         (s:EmptyStmt) : s
 
    Circuit(info(c),modules*, rename(main(c))) where :
       val modules* =
@@ -1178,7 +1191,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
 defn expand-connect-indexed (m: Module) -> Module :
    match(m) :
       (m:InModule) : 
-         val sh = get-sym-hash(m,v-keywords)
+         val sh = get-sym-hash(m,keys(v-keywords))
          InModule(info(m),name(m),ports(m),expand-connect-indexed-stmt(body(m),sh))
       (m:ExModule) : m
 
@@ -2204,7 +2217,7 @@ defn split-exp (c:Circuit) :
          match(m) :
             (m:InModule) :
                val v = Vector<Stmt>()
-               val sh = get-sym-hash(m,v-keywords)
+               val sh = get-sym-hash(m,keys(v-keywords))
                ;val before = current-time-us() - start-time
                ;println-all(["Before split: " before])
                split-exp-s(body(m),v,sh)

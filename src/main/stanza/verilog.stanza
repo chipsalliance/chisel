@@ -13,6 +13,7 @@ public defmethod name (b:Verilog) -> String : "To Verilog"
 public defmethod short-name (b:Verilog) -> String : "To Verilog"
 
 ;============ Utilz =============
+
 defn width! (w:Width) -> Long :
    match(w) : 
       (w:IntWidth) : to-long(width(w))
@@ -47,6 +48,12 @@ defn remove-subfield (e:Expression) -> Expression :
    match(map(remove-subfield,e)) :
       (e:Subfield) : Ref(to-symbol $ string-join $ [emit(exp(e)) bundle-expand-delin name(e)],type(e))
       (e) : e
+
+defn get-name (e:Expression) -> Symbol :
+   match(e) :
+      (e:Ref) : name(e)
+      (e:Subfield) : error("Shouldn't be here")
+      (e) : error("Shouldn't be here")
 
 ;============ Verilog Backend =============
 
@@ -149,12 +156,6 @@ defn emit (e:Expression) -> String :
                for x in tail(args(e)) do :
                   v = concat(v, [" ^ " emit(x)])
                v
-
-defn get-name (e:Expression) -> Symbol :
-   match(e) :
-      (e:Ref) : name(e)
-      (e:Subfield) : error("Shouldn't be here")
-      (e) : error("Shouldn't be here")
 
 defn emit-module (m:InModule) :
    val vdecs = Vector<KeyValue<Symbol,Stmt>>() ; all declarations in order, to preserve ordering
