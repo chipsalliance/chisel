@@ -33,7 +33,7 @@ import Literal._
 
 object Enum {
   private def makeLit[T <: Bits](nodeType: T, i: Int, n: Int) =
-    nodeType.cloneType.makeLit(i, BigInt(n-1).bitLength)
+    nodeType.cloneType.makeLit(i, BigInt(1 max (n-1)).bitLength)
 
   /** create n enum values of given type */
   def apply[T <: Bits](nodeType: T, n: Int): List[T] = Range(0, n).map(x => makeLit(nodeType, x, n)).toList
