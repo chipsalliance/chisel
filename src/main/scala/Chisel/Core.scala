@@ -899,11 +899,8 @@ object Cat {
 }
 
 object Bundle {
-  val keywords = HashSet[String]("elements", "flip", "toString",
-    "flatten", "binding", "asInput", "asOutput", "unary_$tilde",
-    "unary_$bang", "unary_$minus", "cloneType", "clone",
-    "toUInt", "toBits",
-    "toBool", "toSInt", "asDirectionless")
+  val keywords = HashSet[String]("flip", "asInput", "asOutput",
+    "cloneType", "clone", "toBits")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
     Driver.parStack.push(p.push)
     val res = b
@@ -937,21 +934,16 @@ class Bundle extends Aggregate(NO_DIR) {
 
   lazy val elements: ListMap[String, Data] = ListMap(allElts:_*)
 
+  private def isBundleField(m: java.lang.reflect.Method) =
+    m.getParameterTypes.isEmpty && !isStatic(m.getModifiers) &&
+    classOf[Data].isAssignableFrom(m.getReturnType) &&
+    !(Bundle.keywords contains m.getName)
+
   private lazy val allElts = {
     val elts = ArrayBuffer[(String, Data)]()
-    for (m <- getClass.getMethods) {
-      val name = m.getName
-      val rtype = m.getReturnType
-      val isInterface = classOf[Data].isAssignableFrom(rtype)
-      if (m.getParameterTypes.isEmpty &&
-          !isStatic(m.getModifiers) &&
-          isInterface &&
-          !(Bundle.keywords contains name)) {
-        m.invoke(this) match {
-          case data: Data => elts += name -> data
-          case _ =>
-        }
-      }
+    for (m <- getClass.getMethods; if isBundleField(m)) m.invoke(this) match {
+      case data: Data => elts += m.getName -> data
+      case _ =>
     }
     elts sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
