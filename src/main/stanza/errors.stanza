@@ -725,6 +725,12 @@ public defn check-genders (c:Circuit) -> Circuit :
    defn check-gender (info:FileInfo,genders:HashTable<Symbol,Gender>,e:Expression,desired:Gender) -> False :
       val gender = get-gender(e,genders)
       val kind* = get-kind(e)
+      val flip? = 
+         match(type(e)) :
+            (t:BundleType) : 
+               for f in fields(t) any? : flip(f) == REVERSE
+            (t) : false
+         
       ;println(e)
       ;println(gender)
       ;println(desired)

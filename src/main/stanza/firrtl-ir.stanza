@@ -9,10 +9,8 @@ public defmethod info! (x:?) : FileInfo()
 public val vector-expand-delin = `$
 public val bundle-expand-delin = `$
 public val module-expand-delin = `$
-public val scope-delin = `%
-public val temp-delin = `!
-public val sub-delin = `*
-public val inline-delin = `^
+public val scope-delin = `_
+public val inline-delin = `_
 public val delin = `_
 
 public definterface PortDirection

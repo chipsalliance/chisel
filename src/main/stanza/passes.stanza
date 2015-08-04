@@ -392,7 +392,7 @@ defn remove-scopes (c:Circuit) :
             val i = get?(uses,n,0)
             uses[n] = i + 1
             env[length(env) - 1][n] = i
-            symbol-join([n `% i])
+            symbol-join([n scope-delin i])
          else : n
       defn build-s (s:Stmt) :
          match(s) : 
