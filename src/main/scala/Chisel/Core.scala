@@ -305,8 +305,8 @@ abstract class Data(dirArg: Direction) extends Id {
   def sumWidth(amt: Int): Int = if (knownWidth) (getWidth + amt).toInt else -1
   def sumWidth(other: Data, amt: Int): Int =
     if (knownWidth && other.knownWidth) (getWidth + other.getWidth + amt).toInt else -1
-  def sumPow2Width(other: Data): Int =
-    if (knownWidth && other.knownWidth) (getWidth + (1 << other.getWidth)).toInt else -1
+  def lshWidth(other: Data): Int =
+    if (knownWidth && other.knownWidth) (0 max (getWidth + (1 << other.getWidth) - 1)).toInt else -1
   def rshWidth(amt: Int): Int = if (knownWidth) (0 max (getWidth - amt)) else -1
 
   def flatten: IndexedSeq[Bits]
@@ -720,7 +720,7 @@ sealed class UInt(dir: Direction, width: Int, lit: Option[ULit] = None) extends 
 
   def << (other: BigInt): UInt = binop(ShiftLeftOp, other, sumWidth(other.toInt))
   def << (other: Int): UInt = this << BigInt(other)
-  def << (other: UInt): UInt = binop(DynamicShiftLeftOp, other, sumPow2Width(other))
+  def << (other: UInt): UInt = binop(DynamicShiftLeftOp, other, lshWidth(other))
   def >> (other: BigInt): UInt = binop(ShiftRightOp, other, rshWidth(other.toInt))
   def >> (other: Int): UInt = this >> BigInt(other)
   def >> (other: UInt): UInt = binop(DynamicShiftRightOp, other, sumWidth(0))
@@ -811,7 +811,7 @@ sealed class SInt(dir: Direction, width: Int, lit: Option[SLit] = None) extends 
 
   def << (other: BigInt): SInt = binop(ShiftLeftOp, other, sumWidth(other.toInt))
   def << (other: Int): SInt = this << BigInt(other)
-  def << (other: UInt): SInt = binop(DynamicShiftLeftOp, other, sumPow2Width(other))
+  def << (other: UInt): SInt = binop(DynamicShiftLeftOp, other, lshWidth(other))
   def >> (other: BigInt): SInt = binop(ShiftRightOp, other, rshWidth(other.toInt))
   def >> (other: Int): SInt = this >> BigInt(other)
   def >> (other: UInt): SInt = binop(DynamicShiftRightOp, other, sumWidth(0))
