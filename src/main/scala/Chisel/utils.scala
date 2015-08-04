@@ -218,13 +218,13 @@ object Reverse
     if (length == 1) {
       in
     } else if (isPow2(length) && length >= 8 && length <= 64) {
-      // Do it in logarithmic time to speed up C++.  Neutral for real HW.
+      // This esoterica improves simulation performance
       var res = in
       var shift = length >> 1
       var mask = UInt((BigInt(1) << length) - 1, length)
       do {
-        mask = mask ^ (mask(length-shift-1,0) << UInt(shift))
-        res = ((res >> UInt(shift)) & mask) | (res(length-shift-1,0) << UInt(shift) & ~mask)
+        mask = mask ^ (mask(length-shift-1,0) << shift)
+        res = ((res >> shift) & mask) | ((res(length-shift-1,0) << shift) & ~mask)
         shift = shift >> 1
       } while (shift > 0)
       res
