@@ -50,7 +50,7 @@ class Snapshot(val t: Int) {
 }
 
 class ManualTester[+T <: Module]
-    (val c: T, val isT: Boolean = true) {
+    (val c: T, val isT: Boolean = true, val skipVPDMessage: Boolean = true) {
   var testIn:  InputStream  = null
   var testOut: OutputStream = null
   var testErr: InputStream  = null
@@ -360,18 +360,6 @@ class ManualTester[+T <: Module]
     val target = "cd " + Driver.targetDir + " && ./" + n
     val cmd = target
     println("RUNNING " + cmd)
-    /*
-      (if (Driver.backend.isInstanceOf[FloBackend]) {
-         val dir = Driver.backend.asInstanceOf[FloBackend].floDir
-         val command = ArrayBuffer(dir + "fix-console", ":is-debug", "true", ":filename", target + ".hex", ":flo-filename", target + ".mwe.flo")
-         if (Driver.isVCD) { command ++= ArrayBuffer(":is-vcd-dump", "true") }
-         if (Driver.emitTempNodes) { command ++= ArrayBuffer(":emit-temp-nodes", "true") }
-         command ++= ArrayBuffer(":target-dir", Driver.targetDir)
-         command.mkString(" ")
-      } else {
-         target + (if (Driver.backend.isInstanceOf[VerilogBackend]) " -q +vcs+initreg+0 " else "")
-      })
-     */
     println("SEED " + Driver.testerSeed)
     println("STARTING " + n)
     val processBuilder = Process(Seq("bash", "-c", cmd))
@@ -380,8 +368,7 @@ class ManualTester[+T <: Module]
     waitForStreams()
     t = 0
     reset(5)
-    // Skip vpd message
-    if (Driver.backend.isInstanceOf[VerilogBackend] && Driver.isDebug) {
+    if (skipVPDMessage) {
       var vpdmsg = testIn.read
       while (vpdmsg != '\n' && vpdmsg != -1)
         vpdmsg = testIn.read
@@ -411,7 +398,7 @@ class ManualTester[+T <: Module]
   }
 }
 
-class Tester[+T <: Module](c: T, isTrace: Boolean = true) extends ManualTester(c, isTrace) {
+class Tester[+T <: Module](c: T, isTrace: Boolean = true, skipVPDMessage: Boolean = false) extends ManualTester(c, isTrace, skipVPDMessage) {
   start()
 }
 

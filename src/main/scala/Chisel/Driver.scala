@@ -264,7 +264,6 @@ object Driver extends FileSystemUtilities{
         case "--vcd" => isVCD = true
         case "--vcdMem" => isVCDMem = true
         case "--v" => backendName = "v"
-        // case "--moduleNamePrefix" => Backend.moduleNamePrefix = args(i + 1); i += 1
         case "--inlineMem" => isInlineMem = true
         case "--noInlineMem" => isInlineMem = false
         case "--assert" => isAssert = true
@@ -300,21 +299,6 @@ object Driver extends FileSystemUtilities{
             isDebug = true
             emitTempNodes = true
         }
-          /*
-        // Dreamer configuration flags
-        case "--numRows" => {
-          if (backend.isInstanceOf[FloBackend]) {
-            backend.asInstanceOf[FloBackend].DreamerConfiguration.numRows = args(i+1).toInt
-          }
-          i += 1
-        }
-        case "--numCols" => {
-          if (backend.isInstanceOf[FloBackend]) {
-            backend.asInstanceOf[FloBackend].DreamerConfiguration.numCols = args(i+1).toInt
-          }
-          i += 1
-        }
-           */
         case any => ChiselError.warning("'" + arg + "' is an unknown argument.")
       }
       i += 1
@@ -322,17 +306,6 @@ object Driver extends FileSystemUtilities{
     // Check for bogus flags
     if (!isVCD) {
       isVCDinline = false
-    }
-    // Set the backend after we've interpreted all the arguments.
-    // (The backend may want to configure itself based on the arguments.)
-    backend = backendName match  {
-      case "v" => new VerilogBackend
-      case "c" => new CppBackend
-      case "flo" => new FloBackend
-      case "dot" => new DotBackend
-      case "fpga" => new FPGABackend
-      case "sysc" => new SysCBackend
-      case _ => Class.forName(backendName).newInstance.asInstanceOf[Backend]
     }
   }
 
@@ -370,7 +343,6 @@ object Driver extends FileSystemUtilities{
   var hasMem = false
   var hasSRAM = false
   var sramMaxSize = 0
-  var backend: Backend = null
   var topComponent: Module = null
   val components = ArrayBuffer[Module]()
   val sortedComps = ArrayBuffer[Module]()
