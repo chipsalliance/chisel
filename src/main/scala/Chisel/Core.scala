@@ -140,22 +140,30 @@ case class Alias(id: Id) extends Arg {
   def emit: String = "Alias(" + id + ")"
 }
 
-abstract class LitArg (val num: BigInt, val width: Int) extends Arg {
+abstract class LitArg(val num: BigInt, widthArg: Int) extends Arg {
+  private[Chisel] def forcedWidth = widthArg >= 0
+  private[Chisel] def width = if (forcedWidth) widthArg else minWidth
+
+  protected def minWidth: Int
+  if (forcedWidth)
+    require(widthArg >= minWidth)
 }
 
-case class ULit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
+case class ULit(n: BigInt, w: Int) extends LitArg(n, w) {
   def fullname = name
   def name = "UInt<" + width + ">(\"h0" + num.toString(16) + "\")"
+  def minWidth = 1 max n.bitLength
 
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
-case class SLit(n: BigInt, w: Int = -1) extends LitArg(n, w) {
+case class SLit(n: BigInt, w: Int) extends LitArg(n, w) {
   def fullname = name
   def name = {
-    val unsigned = if (n < 0) (BigInt(1) << w) + n else n
-    s"asSInt(${ULit(unsigned, w).name})"
+    val unsigned = if (n < 0) (BigInt(1) << width) + n else n
+    s"asSInt(${ULit(unsigned, width).name})"
   }
+  def minWidth = 1 + n.bitLength
 }
 
 case class Ref(val name: String) extends Immediate {
@@ -326,15 +334,10 @@ abstract class Data(dirArg: Direction) extends Id {
 
 object Wire {
   def apply[T <: Data](t: T = null, init: T = null): T = {
-    val mType =
-      if (t ne null) t
-      else if (init ne null) init
-      else throwException("cannot infer type of Wire.")
-
-    val x = mType.cloneType
+    val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x, x.toType))
-    if (init != null) 
-      pushCommand(Connect(x.lref, init.ref))
+    if (init != null)
+      x := init
     else
       x.flatten.foreach(e => e := e.makeLit(0,1))
     x
@@ -342,14 +345,17 @@ object Wire {
 }
 
 object Reg {
-  def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
-    val mType =
-      if (t ne null) t
-      else if (next ne null) next
-      else if (init ne null) init
-      else throwException("cannot infer type of Reg.")
+  private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
+    if (t ne null) t.cloneType
+    else if (next ne null) next.cloneTypeWidth(None)
+    else if (init ne null) {
+      if (init.isLit && init.litArg.forcedWidth) init.cloneType
+      else init.cloneTypeWidth(None)
+    } else throwException("cannot infer type")
+  }
 
-    val x = mType.cloneType
+  def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
+    val x = makeType(t, next, init)
     pushCommand(DefRegister(x, x.toType, x.mod.clock, x.mod.reset)) // TODO multi-clock
     if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
@@ -647,6 +653,13 @@ sealed abstract class Bits(dirArg: Direction, width: Int, lit: Option[LitArg]) e
   def toSInt(): SInt
   def toUInt(): UInt
   def toBool(): Bool = this(0)
+
+  override def toBits = asUInt
+  override def fromBits(n: Bits): this.type = {
+    val res = Wire(this).asInstanceOf[this.type]
+    res := n
+    res
+  }
 }
 
 abstract trait Num[T <: Data] {
@@ -748,8 +761,8 @@ trait UIntFactory {
   def apply(dir: Direction = NO_DIR, width: Int = -1) =
     new UInt(dir, width)
   def apply(value: BigInt, width: Int) = {
-    val w = if (width == -1) (1 max value.bitLength) else width
-    new UInt(NO_DIR, w, Some(ULit(value, w)))
+    val lit = ULit(value, width)
+    new UInt(NO_DIR, lit.width, Some(lit))
   }
   def apply(value: BigInt): UInt = apply(value, -1)
   def apply(n: String, width: Int): UInt = {
@@ -824,8 +837,8 @@ object SInt {
   def apply(dir: Direction = NO_DIR, width: Int = -1) =
     new SInt(dir, width)
   def apply(value: BigInt, width: Int) = {
-    val w = if (width == -1) 1 + value.bitLength else width
-    new SInt(NO_DIR, w, Some(SLit(value, w)))
+    val lit = SLit(value, width)
+    new SInt(NO_DIR, lit.width, Some(lit))
   }
   def apply(value: BigInt): SInt = apply(value, -1)
   def apply(n: String, width: Int): SInt =
