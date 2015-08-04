@@ -168,12 +168,6 @@ object MuxLookup {
 }
 
 object Fill {
-  def apply(n: Int, x: Bool): UInt = n match {
-    case 0 => UInt(width=0)
-    case 1 => x
-    case x if n > 1 => UInt(0,n) - UInt(x)
-    case _ => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
-  }
   def apply(n: Int, y: UInt): UInt = {
     n match {
       case 0 => UInt(width=0)
@@ -187,6 +181,9 @@ object Fill {
       case _ => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
     }
   }
+  def apply(n: Int, x: Bool): UInt =
+    if (n > 1) UInt(0,n) - x
+    else apply(n, x: UInt)
 }
 
 object MuxCase {
