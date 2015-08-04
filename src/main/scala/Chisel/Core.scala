@@ -16,14 +16,6 @@ class IdGen {
 object Builder {
   val components = new ArrayBuffer[Component]()
   val idGen = new IdGen
-  val switchKeyz = new Stack[Stack[Bits]]()
-  def switchKeys = switchKeyz.top
-  def pushScope = {
-    switchKeyz.push(new Stack[Bits]())
-  }
-  def popScope = {
-    switchKeyz.pop()
-  }
   val modulez = new Stack[Module]()
   def pushModule(mod: Module) {
     modulez.push(mod)
@@ -993,7 +985,6 @@ object Module {
     val m = bc
     m.setRefs
     val cmd = popCommands
-    popScope
     popModule
     val ports = m.computePorts
     val component = Component(m.name, ports, cmd)
@@ -1017,7 +1008,6 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   val name = globalNamespace.name(getClass.getName.split('.').last)
 
   pushModule(this)
-  pushScope
   pushCommands
 
   val params = Module.params
@@ -1091,11 +1081,9 @@ abstract class BlackBox(_clock: Clock = null, _reset: Bool = null) extends Modul
 
 object when {
   private[Chisel] def execBlock(block: => Unit): Command = {
-    pushScope
     pushCommands
     block
     val cmd = popCommands
-    popScope
     cmd
   }
   def apply(cond: => Bool)(block: => Unit): when = {

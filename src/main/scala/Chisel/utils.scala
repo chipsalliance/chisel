@@ -1,6 +1,10 @@
 package Chisel
 import Builder._
 import scala.math._
+import scala.language.reflectiveCalls
+import scala.language.experimental.macros
+import scala.reflect.runtime.universe._
+import scala.reflect.macros.whitebox._
 
 object log2Up
 {
@@ -122,23 +126,30 @@ object unless {
   }
 }
 
-object switch {
-  def apply(c: Bits)(block: => Unit) {
-    switchKeys.push(c)
-    block
-    switchKeys.pop()
+class SwitchContext[T <: Bits](cond: T) {
+  def is(v: Iterable[T])(block: => Unit) {
+    if (!v.isEmpty) when (v.map(_.asUInt === cond.asUInt).reduce(_||_)) { block }
   }
+  def is(v: T)(block: => Unit) { is(Seq(v))(block) }
+  def is(v: T, vr: T*)(block: => Unit) { is(v :: vr.toList)(block) }
 }
 
-object is {
-  def apply(v: Bits)(block: => Unit): Unit =
-    apply(Seq(v))(block)
-  def apply(v: Bits, vr: Bits*)(block: => Unit): Unit =
-    apply(v :: vr.toList)(block)
-  def apply(v: Iterable[Bits])(block: => Unit): Unit = {
-    val keys = switchKeys
-    if (keys.isEmpty) ChiselError.error("The 'is' keyword may not be used outside of a switch.")
-    else if (!v.isEmpty) when (v.map(_.toBits === keys.top.toBits).reduce(_||_)) { block }
+object is { // Begin deprecation of non-type-parameterized is statements.
+  def apply(v: Iterable[Bits])(block: => Unit) { ChiselError.error("The 'is' keyword may not be used outside of a switch.") }
+  def apply(v: Bits)(block: => Unit) { ChiselError.error("The 'is' keyword may not be used outside of a switch.") }
+  def apply(v: Bits, vr: Bits*)(block: => Unit) { ChiselError.error("The 'is' keyword may not be used outside of a switch.") }
+}
+
+object switch {
+  def apply[T <: Bits](cond: T)(x: => Unit): Unit = macro impl
+  def impl(c: Context)(cond: c.Tree)(x: c.Tree) = { import c.universe._
+    def extractIsStatement(tree: Tree): List[c.universe.Tree] = tree match {
+      case q"Chisel.is.apply( ..$params )( ..$body )" => List(q"sc.is( ..$params )( ..$body )")
+      case b => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
+    }
+    val q"..$body" = x
+    val ises = body.flatMap(extractIsStatement(_))
+    q"""{ val sc = new SwitchContext($cond); ..$ises }"""
   }
 }
 

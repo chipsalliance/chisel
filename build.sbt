@@ -8,3 +8,4 @@ scalaVersion := "2.11.6"
 
 crossScalaVersions := Seq("2.10.4", "2.11.6")
 
+libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
