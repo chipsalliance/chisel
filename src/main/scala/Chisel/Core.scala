@@ -1,4 +1,5 @@
 package Chisel
+import scala.util.DynamicVariable
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, HashMap, LinkedHashMap}
 import java.lang.reflect.Modifier._
@@ -13,18 +14,53 @@ class IdGen {
   }
 }
 
-object Builder {
-  val components = new ArrayBuffer[Component]()
-  val idGen = new IdGen
-  val paramz = new Stack[Parameters]
-  def pushParameters(p: Parameters) { paramz.push(p) }
-  def popParameters { paramz.pop }
-  val modulez = new Stack[Module]()
-  def pushModule(mod: Module) { modulez.push(mod) }
-  def popModule { modulez.pop }
-  def getComponent(): Module = if (modulez.length > 0) modulez.head else null
+private object DynamicContext {
+  val currentParentVar = new DynamicVariable[Option[Module]](None)
+  val currentParamsVar = new DynamicVariable[Parameters](Parameters.empty)
+
+  def getParentModule = currentParentVar.value
+  def setParentModule[T](m: Option[Module])(body: => T): T = {
+    currentParentVar.withValue(m)(body)
+  }
+  def setParentModule[T](m: Module)(body: => T): T = {
+    currentParentVar.withValue(Some(m))(body)
+  }
+
+  def getParams: Parameters = currentParamsVar.value
+  def setParams[T](p: Parameters)(body: => T): T =  {
+    currentParamsVar.withValue(p)(body)
+  }
+}
+
+private class ChiselRefMap {
+  private val _refmap = new HashMap[Long,Immediate]()
+
+  def overrideRefForId(id: Id, name: String): Unit =
+    _refmap(id._id) = Ref(name)
+
+  def setRefForId(id: Id, name: String)(implicit namespace: Namespace = Builder.globalNamespace): Unit =
+    if (!_refmap.contains(id._id))
+      overrideRefForId(id, namespace.name(name))
+
+  def setFieldForId(parentid: Id, id: Id, name: String): Unit = {
+    _refmap(id._id) = Slot(Alias(parentid), name)
+  }
+
+  def setIndexForId(parentid: Id, id: Id, index: Int): Unit =
+    _refmap(id._id) = Index(Alias(parentid), index)
+
+  def getRefForId(id: Id)(implicit namespace: Namespace = Builder.globalNamespace): Immediate = {
+    setRefForId(id, s"T_${id._id}")
+    _refmap(id._id)
+  }
+}
+
+private object Builder {
   val globalNamespace = new FIRRTLNamespace
-  def namespace = if (modulez.isEmpty) globalNamespace else modulez.head._namespace
+  val globalRefMap = new ChiselRefMap
+  val idGen = new IdGen
+
+  val components = new ArrayBuffer[Component]()
   val commandz = new Stack[ArrayBuffer[Command]]()
   def commands = commandz.top
   def pushCommand(cmd: Command) = commands += cmd
@@ -49,33 +85,11 @@ object Builder {
     (popCommands, mod)
   }
 
-  private[Chisel] val refmap = new HashMap[Long,Immediate]()
-
-  def overrideRefForId(id: Id, name: String): Unit =
-    refmap(id._id) = Ref(name)
-
-  def setRefForId(id: Id, name: String): Unit =
-    if (!refmap.contains(id._id))
-      overrideRefForId(id, namespace.name(name))
-
-  def setFieldForId(parentid: Id, id: Id, name: String): Unit = {
-    refmap(id._id) = Slot(Alias(parentid), name)
-  }
-
-  def setIndexForId(parentid: Id, id: Id, index: Int): Unit =
-    refmap(id._id) = Index(Alias(parentid), index)
-
-  def getRefForId(id: Id): Immediate = {
-    setRefForId(id, s"T_${id._id}")
-    refmap(id._id)
-  }
-
   def build[T <: Module](f: => T): Circuit = {
     val (cmd, mod) = collectCommands(f)
-    setRefForId(mod, mod.name)
+    Builder.globalRefMap.setRefForId(mod, mod.name)
     Circuit(components, components.last.name)
   }
-
 }
 
 object build {
@@ -84,7 +98,9 @@ object build {
   }
 }
 
-import Builder._
+import Builder.pushCommand
+import Builder.pushCommands
+import Builder.popCommands
 
 /// CHISEL IR
 
@@ -139,9 +155,9 @@ abstract class Arg extends Immediate {
 }
 
 case class Alias(id: Id) extends Arg {
-  def fullname = getRefForId(id).fullname
-  def name = getRefForId(id).name
-  override def debugName = getRefForId(id).debugName
+  def fullname = Builder.globalRefMap.getRefForId(id).fullname
+  def name = Builder.globalRefMap.getRefForId(id).name
+  override def debugName = Builder.globalRefMap.getRefForId(id).debugName
   def emit: String = "Alias(" + id + ")"
 }
 
@@ -238,7 +254,7 @@ case class ClockType(flip: Boolean) extends Kind(flip)
 abstract class Command;
 abstract class Definition extends Command {
   def id: Id
-  def name = getRefForId(id).name
+  def name = Builder.globalRefMap.getRefForId(id).name
 }
 case class DefUInt(id: Id, value: BigInt, width: Int) extends Definition
 case class DefSInt(id: Id, value: BigInt, width: Int) extends Definition
@@ -281,7 +297,7 @@ object NO_DIR extends Direction("?") { def flip = NO_DIR }
 /// CHISEL FRONT-END
 
 trait Id {
-  private[Chisel] val _id = idGen.next
+  private[Chisel] val _id = Builder.idGen.next
 }
 
 object debug {
@@ -290,11 +306,17 @@ object debug {
 }
 
 abstract class Data(dirArg: Direction) extends Id {
-  private[Chisel] val mod = getComponent()
-  if (mod ne null) mod._nodes += this
+  private val _mod: Module = DynamicContext.getParentModule.getOrElse(
+    throwException("Data subclasses can only be instantiated inside Modules!"))
+  //TODO: is this true?
+
+  _mod.addNode(Some(this))
+  def params = DynamicContext.getParams
 
   def toType: Kind
   def dir: Direction = dirVar
+  def clock = _mod.clock
+  def reset = _mod.reset
 
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
   private var isFlipVar = dirArg == INPUT
@@ -323,13 +345,13 @@ abstract class Data(dirArg: Direction) extends Id {
   private[Chisel] def collectElts = { }
   private[Chisel] def lref: Alias = Alias(this)
   private[Chisel] def ref: Arg = if (isLit) litArg() else lref
-  private[Chisel] def debugName = mod.debugName + "." + getRefForId(this).debugName
+  private[Chisel] def debugName = _mod.debugName + "." + Builder.globalRefMap.getRefForId(this).debugName
   private[Chisel] def cloneTypeWidth(width: Width): this.type
 
   def := (that: Data): Unit = this badConnect that
   def <> (that: Data): Unit = this badConnect that
   def cloneType: this.type
-  def name = getRefForId(this).name
+  def name = Builder.globalRefMap.getRefForId(this).name
   def litArg(): LitArg = None.get
   def litValue(): BigInt = None.get
   def isLit(): Boolean = false
@@ -355,7 +377,6 @@ abstract class Data(dirArg: Direction) extends Id {
   }
 
   def toPort: Port = Port(this, toType)
-  def params = if(paramz.isEmpty) Parameters.empty else paramz.top
 }
 
 object Wire {
@@ -382,7 +403,7 @@ object Reg {
 
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     val x = makeType(t, next, init)
-    pushCommand(DefRegister(x, x.toType, x.mod.clock, x.mod.reset)) // TODO multi-clock
+    pushCommand(DefRegister(x, x.toType, x.clock, x.reset)) // TODO multi-clock
     if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
@@ -396,13 +417,12 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mt, mt.toType, size, mt.mod.clock)) // TODO multi-clock
+    pushCommand(DefMemory(mt, mt.toType, size, mt.clock)) // TODO multi-clock
     mem
   }
 }
 
-class Mem[T <: Data](protected[Chisel] val t: T, n: Int) extends VecLike[T] {
-  def length: Int = n
+class Mem[T <: Data](protected[Chisel] val t: T, val length: Int) extends VecLike[T] {
   def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T = {
     val x = t.cloneType
@@ -418,8 +438,9 @@ class Mem[T <: Data](protected[Chisel] val t: T, n: Int) extends VecLike[T] {
     write(idx, t.fromBits((read(idx).toBits & ~mask1) | (data.toBits & mask1)))
   }
 
-  def name = getRefForId(t).name
-  def debugName = t.mod.debugName + "." + getRefForId(t).debugName
+  //TODO: is this correct?
+  def name = Builder.globalRefMap.getRefForId(t).name
+  def debugName = Builder.globalRefMap.getRefForId(t).debugName
 }
 
 object SeqMem {
@@ -471,7 +492,7 @@ class Vec[T <: Data](gen: => T, val length: Int)
 
   override def collectElts: Unit =
     for ((e, i) <- self zipWithIndex)
-      setIndexForId(this, e, i)
+      Builder.globalRefMap.setIndexForId(this, e, i)
 
   override def <> (that: Data): Unit = that match {
     case _: Vec[_] => this bulkConnect that
@@ -937,20 +958,16 @@ object Bundle {
   val keywords = HashSet[String]("flip", "asInput", "asOutput",
     "cloneType", "clone", "toBits")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
-    pushParameters(p.push)
-    val res = b
-    popParameters
-    res
+    DynamicContext.setParams(p.push){ b }
   }
   def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
-    val q = params.alterPartial(f)
+    val q = DynamicContext.getParams.alterPartial(f)
     apply(b)(q)
   }
-  private def params = if(paramz.isEmpty) Parameters.empty else paramz.top
 }
 
 class Bundle extends Aggregate(NO_DIR) {
-  private val _namespace = new ChildNamespace(globalNamespace)
+  private implicit val _namespace = new ChildNamespace(Builder.globalNamespace)
 
   override def <> (that: Data): Unit = that match {
     case _: Bundle => this bulkConnect that
@@ -989,7 +1006,7 @@ class Bundle extends Aggregate(NO_DIR) {
     namedElts += name -> elt
 
   override def collectElts =
-    namedElts.foreach {case(name, elt) => setFieldForId(this, elt, _namespace.name(name))}
+    namedElts.foreach {case(name, elt) => Builder.globalRefMap.setFieldForId(this, elt, name)}
 
   override def cloneType : this.type = {
     try {
@@ -1008,45 +1025,50 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 object Module {
-  def apply[T <: Module](bc: => T)(implicit p: Parameters = params): T = {
-    pushParameters(p.push)
-    val m = bc
-    m.setRefs
-    val cmd = popCommands
-    popModule
-    val ports = m.computePorts
-    val component = Component(m.name, ports, cmd)
-    components += component
-    pushCommand(DefInstance(m, m.name, ports))
-    popParameters
-    m.connectImplicitIOs
+  def apply[T <: Module](bc: => T)(
+      implicit currentModule: Option[Module] = None, 
+      currentParameters: Parameters = DynamicContext.getParams): T = {
+    val m = DynamicContext.setParams(currentParameters.push) {
+      val m = DynamicContext.setParentModule(currentModule) {
+        val m = bc
+        m.setRefs()
+        m
+      }
+      val ports = m.computePorts
+      Builder.components += Component(m.name, ports, popCommands)
+      pushCommand(DefInstance(m, m.name, ports))
+      m
+    }
+    m.connectImplicitIOs()
     m
   }
-  def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
-    val q = params.alterPartial(f)
-    apply(m)(q)
+  def apply[T <: Module](m: => T, f: PartialFunction[Any,Any])(
+        implicit currentModule: Option[Module]): T = {
+    val q = DynamicContext.getParams.alterPartial(f)
+    apply(m)(currentModule,q)
   }
-  private def params = if(paramz.isEmpty) Parameters.empty else paramz.top
 }
 
 abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
-  private[Chisel] val _parent = modulez.headOption
-  private[Chisel] val _nodes = ArrayBuffer[Data]()
-  private[Chisel] val _namespace = new ChildNamespace(globalNamespace)
-  val name = globalNamespace.name(getClass.getName.split('.').last)
+  private val _parent = DynamicContext.getParentModule
+  private val _nodes = ArrayBuffer[Data]()
+  private implicit val _namespace = new ChildNamespace(Builder.globalNamespace)
+  private implicit val _self: Option[Module] = Some(this)
+  val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
 
-  pushModule(this)
   pushCommands
 
-  val params = Module.params
-  params.path = this.getClass :: params.path
+  private def params = DynamicContext.getParams
+  params.path = this.getClass :: params.path //TODO: make immutable?
 
   def io: Bundle
   val clock = Clock(INPUT)
   val reset = Bool(INPUT)
 
-  private[Chisel] def ref = getRefForId(this)
+  private[Chisel] def ref = Builder.globalRefMap.getRefForId(this)
   private[Chisel] def lref = ref
+
+  def addNode(d: Option[Data]) { d.map(_nodes += _) }
 
   def debugName: String = _parent match {
     case Some(p) => s"${p.debugName}.${ref.debugName}"
@@ -1056,19 +1078,19 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   private def computePorts =
     clock.toPort +: reset.toPort +: io.toPorts
 
-  private def connectImplicitIOs: Unit = _parent match {
+  private def connectImplicitIOs(): Unit = _parent match {
     case Some(p) =>
       clock := (if (_clock eq null) p.clock else _clock)
       reset := (if (_reset eq null) p.reset else _reset)
     case None =>
   }
 
-  private def makeImplicitIOs = {
+  private def makeImplicitIOs() = {
     io.addElt("clock", clock)
     io.addElt("reset", reset)
   }
 
-  private def setRefs: Unit = {
+  private def setRefs(): Unit = {
     val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
@@ -1077,7 +1099,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
     _nodes.foreach(_.collectElts)
 
     // FIRRTL: the IO namespace is part of the module namespace
-    setRefForId(io, "")
+    Builder.globalRefMap.setRefForId(io, "")
     for ((name, field) <- io.namedElts)
       _namespace.name(name)
 
@@ -1085,13 +1107,13 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
     for (m <- methods; if isPublicVal(m)) {
       m.invoke(this) match {
         case module: Module =>
-          setRefForId(module, m.getName)
+          Builder.globalRefMap.setRefForId(module, m.getName)
         case mem: Mem[_] =>
-          setRefForId(mem.t, m.getName)
+          Builder.globalRefMap.setRefForId(mem.t, m.getName)
         case vec: Vec[_] =>
-          setRefForId(vec, m.getName)
+          Builder.globalRefMap.setRefForId(vec, m.getName)
         case data: Data =>
-          setRefForId(data, m.getName)
+          Builder.globalRefMap.setRefForId(data, m.getName)
         case _ =>
       }
     }
@@ -1165,7 +1187,7 @@ class Emitter {
   def emit(e: PrimOp): String = e.name
   def emit(e: Arg): String = e.fullname
   def emitPort(e: Port, isTop: Boolean): String =
-    s"${emitDir(e, isTop)}${getRefForId(e.id).name} : ${emitType(e.kind)}"
+    s"${emitDir(e, isTop)}${Builder.globalRefMap.getRefForId(e.id).name} : ${emitType(e.kind)}"
   def emitType(e: Kind): String = {
     e match {
       case e: UnknownType => "?"
@@ -1190,7 +1212,7 @@ class Emitter {
     case e: DefInstance => {
       val mod = e.id
       // update all references to the modules ports
-      overrideRefForId(mod.io, e.name)
+       Builder.globalRefMap.overrideRefForId(mod.io, e.name)
       "inst " + e.name + " of " + e.module + newline + join0(e.ports.flatMap(x => initPort(x, INPUT)), newline)
     }
     case e: Conditionally => {
@@ -1215,7 +1237,7 @@ class Emitter {
   }
   def initPort(p: Port, dir: Direction) = {
     for (x <- p.id.flatten; if x.dir == dir)
-      yield s"${getRefForId(x).fullname} := ${emit(x.makeLit(0).ref)}"
+      yield s"${Builder.globalRefMap.getRefForId(x).fullname} := ${emit(x.makeLit(0).ref)}"
   }
   def emit(e: Component): String =  {
     withIndent{ "module " + e.name + " : " +
