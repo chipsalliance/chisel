@@ -31,6 +31,16 @@
 package Chisel
 import scala.collection.mutable.ArrayBuffer
 
+class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
+
+object throwException {
+  def apply(s: String, t: Throwable = null) = {
+    val xcpt = new ChiselException(s, t)
+    ChiselError.findFirstUserLine(xcpt.getStackTrace) foreach { u => xcpt.setStackTrace(Array(u)) }
+    throw xcpt
+  }
+}
+
 /** This Singleton implements a log4j compatible interface.
   It is used through out the Chisel package to report errors and warnings
   detected at runtime.
@@ -38,6 +48,9 @@ import scala.collection.mutable.ArrayBuffer
 object ChiselError {
   var hasErrors: Boolean = false;
   val ChiselErrors = new ArrayBuffer[ChiselError];
+
+  var startTime = System.currentTimeMillis
+  def elapsedTime: Long = System.currentTimeMillis - startTime
 
   def clear() {
     ChiselErrors.clear()
@@ -58,7 +71,7 @@ object ChiselError {
   /** Emit an informational message
     (useful to track long running passes) */
   def info(m: String): Unit =
-    println(tag("info", Console.MAGENTA) + " [%2.3f] ".format(Driver.elapsedTime/1e3) + m)
+    println(tag("info", Console.MAGENTA) + " [%2.3f] ".format(elapsedTime/1e3) + m)
 
   /** emit a warning message */
   def warning(m: => String) {

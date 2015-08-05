@@ -119,6 +119,8 @@ class ChiselConfig(
     }
   }
 
+  def toCollector = new Collector(this.topDefinitions, this.knobValues)
+  def toInstance = new Instance(this.topDefinitions, this.knobValues)
 }
 
 object Dump {
@@ -470,6 +472,10 @@ final class Parameters(
 
   def alterPartial(mask:PartialFunction[Any,Any]) =
     _alter(Parameters.makeMask(mask))
+
+  def getConstraints:String = _world.getConstraints
+
+  def getKnobs:String = _world.getKnobs
 }
 
 

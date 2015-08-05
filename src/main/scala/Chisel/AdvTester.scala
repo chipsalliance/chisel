@@ -32,7 +32,7 @@
   Written by Stephen Twigg, Eric Love
   Version 0.9
 */
-package Chisel.AdvTester // May eventually add this to the base Chisel package
+package Chisel.testers
 import Chisel._
 import scala.collection.mutable.ArrayBuffer
 

@@ -16,14 +16,13 @@ class IdGen {
 object Builder {
   val components = new ArrayBuffer[Component]()
   val idGen = new IdGen
+  val paramz = new Stack[Parameters]
+  def pushParameters(p: Parameters) { paramz.push(p) }
+  def popParameters { paramz.pop }
   val modulez = new Stack[Module]()
-  def pushModule(mod: Module) {
-    modulez.push(mod)
-  }
+  def pushModule(mod: Module) { modulez.push(mod) }
+  def popModule { modulez.pop }
   def getComponent(): Module = if (modulez.length > 0) modulez.head else null
-  def popModule() {
-    modulez.pop
-  }
   val globalNamespace = new FIRRTLNamespace
   def namespace = if (modulez.isEmpty) globalNamespace else modulez.head._namespace
   val commandz = new Stack[ArrayBuffer[Command]]()
@@ -71,12 +70,18 @@ object Builder {
     refmap(id._id)
   }
 
-  def build[T <: Module](f: => T): (Circuit, T) = {
+  def build[T <: Module](f: => T): Circuit = {
     val (cmd, mod) = collectCommands(f)
     setRefForId(mod, mod.name)
-    (Circuit(components, components.last.name), mod)
+    Circuit(components, components.last.name)
   }
 
+}
+
+object build {
+  def apply[T <: Module](f: => T): Circuit = {
+    Builder.build(f)
+  }
 }
 
 import Builder._
@@ -350,7 +355,7 @@ abstract class Data(dirArg: Direction) extends Id {
   }
 
   def toPort: Port = Port(this, toType)
-  def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
+  def params = if(paramz.isEmpty) Parameters.empty else paramz.top
 }
 
 object Wire {
@@ -932,16 +937,16 @@ object Bundle {
   val keywords = HashSet[String]("flip", "asInput", "asOutput",
     "cloneType", "clone", "toBits")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
-    Driver.parStack.push(p.push)
+    pushParameters(p.push)
     val res = b
-    Driver.parStack.pop
+    popParameters
     res
   }
   def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
     val q = params.alterPartial(f)
     apply(b)(q)
   }
-  private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
+  private def params = if(paramz.isEmpty) Parameters.empty else paramz.top
 }
 
 class Bundle extends Aggregate(NO_DIR) {
@@ -1004,8 +1009,7 @@ class Bundle extends Aggregate(NO_DIR) {
 
 object Module {
   def apply[T <: Module](bc: => T)(implicit p: Parameters = params): T = {
-    Driver.modStackPushed = true
-    Driver.parStack.push(p.push)
+    pushParameters(p.push)
     val m = bc
     m.setRefs
     val cmd = popCommands
@@ -1014,7 +1018,7 @@ object Module {
     val component = Component(m.name, ports, cmd)
     components += component
     pushCommand(DefInstance(m, m.name, ports))
-    Driver.parStack.pop
+    popParameters
     m.connectImplicitIOs
     m
   }
@@ -1022,7 +1026,7 @@ object Module {
     val q = params.alterPartial(f)
     apply(m)(q)
   }
-  private def params = if(Driver.parStack.isEmpty) Parameters.empty else Driver.parStack.top
+  private def params = if(paramz.isEmpty) Parameters.empty else paramz.top
 }
 
 abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
@@ -1221,4 +1225,8 @@ class Emitter {
   }
   def emit(e: Circuit): String = 
     withIndent{ "circuit " + e.main + " : " + join0(e.components.map(x => emit(x)), newline) } + newline
+}
+
+object emit {
+  def apply(e: Circuit) = new Emitter().emit(e)
 }
