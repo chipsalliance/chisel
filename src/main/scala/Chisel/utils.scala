@@ -94,9 +94,7 @@ object Mux1H
     if (in.tail.isEmpty) in.head._2
     else {
       val masked = in map {case (s, i) => Mux(s, i.toBits, Bits(0))}
-      val width =
-        if (in.forall(_._2.knownWidth)) Some(in.map(_._2.getWidth).max)
-        else None
+      val width = in.map(_._2.width).reduce(_ max _)
       in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
     }
   }

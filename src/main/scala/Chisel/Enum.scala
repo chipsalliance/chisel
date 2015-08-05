@@ -32,16 +32,12 @@ package Chisel
 import Literal._
 
 object Enum {
-  private def makeLit[T <: Bits](nodeType: T, i: Int, n: Int) =
-    nodeType.cloneType.makeLit(i, BigInt(1 max (n-1)).bitLength)
-
   /** create n enum values of given type */
-  def apply[T <: Bits](nodeType: T, n: Int): List[T] = Range(0, n).map(x => makeLit(nodeType, x, n)).toList
+  def apply[T <: Bits](nodeType: T, n: Int): List[T] = Range(0, n).map(x => nodeType.makeLit(x)).toList
 
   /** create enum values of given type and names */
-  def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = (l.toList zip (Range(0, l.length).map(x => makeLit(nodeType, x, l.length)))).toMap
+  def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = (l.toList zip (Range(0, l.length).map(x => nodeType.makeLit(x)))).toMap
 
   /** create enum values of given type and names */
-  def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = (l zip (Range(0, l.length).map(x => makeLit(nodeType, x, l.length)))).toMap
-
+  def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = (l zip (Range(0, l.length).map(x => nodeType.makeLit(x)))).toMap
 }

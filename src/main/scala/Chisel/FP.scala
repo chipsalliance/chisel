@@ -78,10 +78,10 @@ object FloPrimOp {
 }
 import FloPrimOp._
 
-class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Element(dir, 32) with Num[Flo] {
+class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Element(dir, Width(32)) with Num[Flo] {
   type T = Flo;
   override def floLitValue: Float = value.get
-  def cloneTypeWidth(width: Int): this.type = cloneType
+  def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type = {
     val d = cloneType
     pushCommand(DefPrim(d, d.toType, BitsToFlo, Array(this.ref), NoLits))
@@ -189,14 +189,14 @@ object DblPrimOp {
 }
 import DblPrimOp._
 
-class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir, 64) with Num[Dbl] { 
+class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir, Width(64)) with Num[Dbl] {
   // setIsSigned
 
   // override def setIsTypeNode = {inputs(0).setIsSigned; super.setIsTypeNode}
 
   type T = Dbl;
   override def dblLitValue: Double = value.get
-  def cloneTypeWidth(width: Int): this.type = cloneType
+  def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type = {
     val d = cloneType
     pushCommand(DefPrim(d, d.toType, BitsToDbl, Array(this.ref), NoLits))

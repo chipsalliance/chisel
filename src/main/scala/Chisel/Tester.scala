@@ -189,7 +189,7 @@ class ManualTester[+T <: Module]
   }
 
   def signed_fix(dtype: Element, rv: BigInt): BigInt = {
-    val w = dtype.width
+    val w = dtype.getWidth
     dtype match {
       /* Any "signed" node */
       case _: SInt | _ : Flo | _: Dbl => (if(rv >= (BigInt(1) << w - 1)) (rv - (BigInt(1) << w)) else rv)
