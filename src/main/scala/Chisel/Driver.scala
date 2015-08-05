@@ -99,7 +99,7 @@ object Driver extends FileSystemUtilities {
     try {
       ChiselError.clear()
       ChiselError.info("Elaborating design...")
-      val ir = build(Module(gen())(p))
+      val ir = build(Module(gen())(None,p))
       ChiselError.info("Done elaborating.")
 
       val name = ir.main +"."+ p.getClass.getSimpleName
