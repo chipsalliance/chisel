@@ -29,7 +29,6 @@
 */
 
 package Chisel
-package testers
 
 import collection.mutable.{ArrayBuffer, HashSet, HashMap, Stack, LinkedHashSet, Queue => ScalaQueue}
 import scala.math.min
@@ -112,6 +111,4 @@ object Driver extends FileSystemUtilities {
       ChiselError.report
     }
   }
-
-
 }

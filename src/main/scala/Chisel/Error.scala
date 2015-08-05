@@ -49,9 +49,6 @@ object ChiselError {
   var hasErrors: Boolean = false;
   val ChiselErrors = new ArrayBuffer[ChiselError];
 
-  var startTime = System.currentTimeMillis
-  def elapsedTime: Long = System.currentTimeMillis - startTime
-
   def clear() {
     ChiselErrors.clear()
     hasErrors = false
@@ -71,7 +68,7 @@ object ChiselError {
   /** Emit an informational message
     (useful to track long running passes) */
   def info(m: String): Unit =
-    println(tag("info", Console.MAGENTA) + " [%2.3f] ".format(elapsedTime/1e3) + m)
+    println(tag("info", Console.MAGENTA) + " [%2.3f] ".format(Driver.elapsedTime/1e3) + m)
 
   /** emit a warning message */
   def warning(m: => String) {
