@@ -1172,45 +1172,42 @@ class Emitter {
       case e: ClockType => s"Clock"
     }
   }
-  def emit(e: Command): String = {
-    e match {
-      case e: DefUInt => s"node ${e.name} = UInt<${e.width}>(${e.value})"
-      case e: DefSInt => s"node ${e.name} = SInt<${e.width}>(${e.value})"
-      case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
-      case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
-      case e: DefPrim =>
-        "node " + e.name + " = " + emit(e.op) + "(" + join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ") + ")"
-      case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
-      case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.name}, ${e.reset.name}"
-      case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.name}";
-      case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
-      case e: DefAccessor => s"infer accessor ${e.name} = ${emit(e.source)}[${emit(e.index)}]"
-      case e: DefInstance => {
-        val mod = e.id
-        // update all references to the modules ports
-        overrideRefForId(mod.io, e.name)
-        "inst " + e.name + " of " + e.module + newline + join0(e.ports.flatMap(x => initPort(x, INPUT)), newline)
-      }
-      case e: Conditionally => {
-        val prefix = if (!e.prep.isInstanceOf[EmptyCommand]) {
-          newline + emit(e.prep) + newline
-        } else {
-          ""
-        }
-        val suffix = if (!e.alt.isInstanceOf[EmptyCommand]) {
-          newline + "else : " + withIndent{ newline + emit(e.alt) }
-        } else {
-          ""
-        }
-        prefix + "when " + emit(e.pred) + " : " + withIndent{ emit(e.conseq) } + suffix
-      }
-      case e: Begin => join0(e.body.map(x => emit(x)), newline).toString
-      case e: Connect => emit(e.loc) + " := " + emit(e.exp)
-      case e: BulkConnect => emit(e.loc1) + " <> " + emit(e.loc2)
-      case e: ConnectInit => "onreset " + emit(e.loc) + " := " + emit(e.exp)
-      case e: ConnectInitIndex => "onreset " + emit(e.loc) + "[" + e.index + "] := " + emit(e.exp)
-      case e: EmptyCommand => "skip"
+  def emit(e: Command): String = e match {
+    case e: DefUInt => s"node ${e.name} = UInt<${e.width}>(${e.value})"
+    case e: DefSInt => s"node ${e.name} = SInt<${e.width}>(${e.value})"
+    case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
+    case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
+    case e: DefPrim => s"node ${e.name} = ${emit(e.op)}(${join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ")})"
+    case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
+    case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.name}, ${e.reset.name}"
+    case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.name}";
+    case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
+    case e: DefAccessor => s"infer accessor ${e.name} = ${emit(e.source)}[${emit(e.index)}]"
+    case e: DefInstance => {
+      val mod = e.id
+      // update all references to the modules ports
+      overrideRefForId(mod.io, e.name)
+      "inst " + e.name + " of " + e.module + newline + join0(e.ports.flatMap(x => initPort(x, INPUT)), newline)
     }
+    case e: Conditionally => {
+      val prefix = if (!e.prep.isInstanceOf[EmptyCommand]) {
+        newline + emit(e.prep) + newline
+      } else {
+        ""
+      }
+      val suffix = if (!e.alt.isInstanceOf[EmptyCommand]) {
+        newline + "else : " + withIndent{ newline + emit(e.alt) }
+      } else {
+        ""
+      }
+      prefix + "when " + emit(e.pred) + " : " + withIndent{ emit(e.conseq) } + suffix
+    }
+    case e: Begin => join0(e.body.map(x => emit(x)), newline).toString
+    case e: Connect => s"${emit(e.loc)} := ${emit(e.exp)}"
+    case e: BulkConnect => s"${emit(e.loc1)} <> ${emit(e.loc2)}"
+    case e: ConnectInit => s"onreset ${emit(e.loc)} := ${emit(e.exp)}"
+    case e: ConnectInitIndex => s"onreset ${emit(e.loc)}[${e.index}] := ${emit(e.exp)}"
+    case e: EmptyCommand => "skip"
   }
   def initPort(p: Port, dir: Direction) = {
     for (x <- p.id.flatten; if x.dir == dir)
