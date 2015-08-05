@@ -286,8 +286,9 @@ class ManualTester[+T <: Module]
   }
 
   def int(x: Boolean): BigInt = if (x) 1 else 0
-  def int(x: Int): BigInt = x
-  def int(x: Bits): BigInt = x.litValue()
+  def int(x: Int):     BigInt = (BigInt(x >>> 1) << 1) | x & 1
+  def int(x: Long):    BigInt = (BigInt(x >>> 1) << 1) | x & 1
+  def int(x: Bits):    BigInt = x.litValue()
 
   var ok = true;
   var failureTime = -1
