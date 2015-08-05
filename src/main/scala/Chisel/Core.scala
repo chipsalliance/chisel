@@ -306,7 +306,7 @@ object debug {
 }
 
 abstract class Data(dirArg: Direction) extends Id {
-  private val _mod: Module = DynamicContext.getParentModule.getOrElse(
+  private[Chisel] val _mod: Module = DynamicContext.getParentModule.getOrElse(
     throwException("Data subclasses can only be instantiated inside Modules!"))
   //TODO: is this true?
 
@@ -315,8 +315,6 @@ abstract class Data(dirArg: Direction) extends Id {
 
   def toType: Kind
   def dir: Direction = dirVar
-  def clock = _mod.clock
-  def reset = _mod.reset
 
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
   private var isFlipVar = dirArg == INPUT
@@ -403,7 +401,7 @@ object Reg {
 
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     val x = makeType(t, next, init)
-    pushCommand(DefRegister(x, x.toType, x.clock, x.reset)) // TODO multi-clock
+    pushCommand(DefRegister(x, x.toType, x._mod.clock, x._mod.reset)) // TODO multi-clock
     if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
@@ -417,7 +415,7 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mt, mt.toType, size, mt.clock)) // TODO multi-clock
+    pushCommand(DefMemory(mt, mt.toType, size, mt._mod.clock)) // TODO multi-clock
     mem
   }
 }
