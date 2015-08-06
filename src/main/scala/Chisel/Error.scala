@@ -31,9 +31,9 @@
 package Chisel
 import scala.collection.mutable.ArrayBuffer
 
-class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
+private class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
 
-object throwException {
+private object throwException {
   def apply(s: String, t: Throwable = null) =
     throw new ChiselException(s, t)
 }
@@ -42,10 +42,7 @@ object throwException {
   It is used through out the Chisel package to report errors and warnings
   detected at runtime.
   */
-object ChiselError {
-  val startTime = System.currentTimeMillis
-  def elapsedTime: Long = System.currentTimeMillis - startTime
-
+private object ChiselError {
   def hasErrors = errors.exists(_.isFatal)
 
   def clear(): Unit = errors.clear
@@ -92,9 +89,12 @@ object ChiselError {
     findFirstUserFrame(Thread.currentThread().getStackTrace)
 
   private val errors = ArrayBuffer[LogEntry]()
+
+  private val startTime = System.currentTimeMillis
+  private def elapsedTime: Long = System.currentTimeMillis - startTime
 }
 
-abstract class LogEntry(msg: => String, line: Option[StackTraceElement]) {
+private abstract class LogEntry(msg: => String, line: Option[StackTraceElement]) {
   def isFatal: Boolean = false
   def format: String
 
@@ -107,15 +107,15 @@ abstract class LogEntry(msg: => String, line: Option[StackTraceElement]) {
     s"[${color}${name}${Console.RESET}]"
 }
 
-class Error(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
+private class Error(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
   override def isFatal = true
   def format = tag("error", Console.RED)
 }
 
-class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
+private class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
   def format = tag("warn", Console.YELLOW)
 }
 
-class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
+private class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
   def format = tag("info", Console.MAGENTA)
 }
