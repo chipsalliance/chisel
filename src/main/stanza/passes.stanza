@@ -453,29 +453,31 @@ public defmethod name (b:TempElimination) -> String : "Temp Elimination"
 public defmethod short-name (b:TempElimination) -> String : "temp-elim"
 
 defn temp-elimination (c:Circuit) :
-   val h = HashTable<Symbol,Expression>(symbol-hash)
    defn is-temp? (n:Symbol) -> True|False :
       to-string(n)[0] == 'T'
-   defn temp-elim-e (e:Expression) :
-      match(map(temp-elim-e,e)) :
-         (e:Ref) : 
-            if key?(h,name(e)) : h[name(e)]
-            else : e
-         (e) : e
-   defn temp-elim-s (s:Stmt) :
-      match(map(temp-elim-e,s)) :
-         (s:DefNode) : 
-            if is-temp?(name(s)) :
-               h[name(s)] = value(s)
-               EmptyStmt()
-            else : s
-         (s) : map(temp-elim-s,s)
+   defn temp-elim (m:InModule) : 
+      val h = HashTable<Symbol,Expression>(symbol-hash)
+      defn temp-elim-e (e:Expression) :
+         match(map(temp-elim-e,e)) :
+            (e:Ref) : 
+               if key?(h,name(e)) : h[name(e)]
+               else : e
+            (e) : e
+      defn temp-elim-s (s:Stmt) :
+         match(map(temp-elim-e,s)) :
+            (s:DefNode) : 
+               if is-temp?(name(s)) :
+                  h[name(s)] = value(s)
+                  EmptyStmt()
+               else : s
+            (s) : map(temp-elim-s,s)
+      InModule(info(m),name(m), ports(m), temp-elim-s(body(m)))
 
    Circuit(info(c),modules*, main(c)) where :
       val modules* =
          for m in modules(c) map :
             match(m) :
-               (m:InModule) : InModule(info(m),name(m), ports(m), temp-elim-s(body(m)))
+               (m:InModule) : temp-elim(m)
                (m:ExModule) : m
 
 ;================= Bring to Working IR ========================
@@ -593,6 +595,7 @@ defn resolve-kinds (c:Circuit) :
       kinds[name(m)] = ModuleKind()
       for p in ports(m) do :
          kinds[name(p)] = PortKind()
+      println(name(m))
       match(m) : 
          (m:InModule) : find-stmt(body(m))
          (m:ExModule) : false
