@@ -43,33 +43,6 @@ import scala.sys.process._
 import scala.io.Source._
 import Literal._
 
-object TesterDriver {
-  // Setting this to TRUE will initialize the tester's RNG with the
-  // seed below.
-  //      case "--testerSeed" => {
-  //        testerSeedValid = true
-  //        testerSeed = args(i+1).toLong }
-  var testerSeedValid = false
-  var testerSeed = System.currentTimeMillis()
-
-  // Setting this to TRUE will case the test harness to print its
-  // standard input stream to a file.
-  var dumpTestInput = false
-
-  private def test[T <: Module](mod: T, ftester: T => Tester[T]): Unit = {
-    var res = false
-    var tester: Tester[T] = null
-    try {
-      tester = ftester(mod)
-    } finally {
-      if (tester != null && tester.process != null)
-        res = tester.finish()
-    }
-    println(if (res) "PASSED" else "*** FAILED ***")
-    if(!res) throwException("Module under test FAILED at least one test vector.")
-  }
-
-}
 
 case class Poke(val node: Data, val index: Int, val value: BigInt);
 
