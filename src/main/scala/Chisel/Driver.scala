@@ -34,30 +34,11 @@ import collection.mutable.{ArrayBuffer, HashSet, HashMap, Stack, LinkedHashSet, 
 import scala.math.min
 
 trait FileSystemUtilities {
-  /** Ensures a directory *dir* exists on the filesystem. */
-  def ensureDir(dir: String): String = {
-    val d = dir + (if (dir == "" || dir(dir.length-1) == '/') "" else "/")
-    new java.io.File(d).mkdirs()
-    d
-  }
-
   def createOutputFile(name: String, contents: String) {
     val f = new java.io.FileWriter(name)
     f.write(contents)
     f.close
   }
-
-  def appendString(s1:Option[String],s2:Option[String]):String = {
-    if(s1.isEmpty && s2.isEmpty) "" else {
-      if(!s1.isEmpty) {
-        s1.get + (if(!s2.isEmpty) "." + s2.get else "")
-      } else {
-        if(!s2.isEmpty) s2.get else ""
-      }
-    }
-  }
-
-  def getArg(s:String,i:Int):String = s.split('.')(i)
 }
 
 object Driver extends FileSystemUtilities {
@@ -68,7 +49,10 @@ object Driver extends FileSystemUtilities {
       configClassName: String,
       projectName: Option[String] = None,
       collectConstraints: Boolean = false): Unit = {
-    val className = appendString(projectName,Some(configClassName))
+    val className = projectName match {
+      case Some(pn) => s"$pn.$configClassName"
+      case None => configClassName
+    }
     val config = try {
       Class.forName(className).newInstance.asInstanceOf[ChiselConfig]
     } catch {
