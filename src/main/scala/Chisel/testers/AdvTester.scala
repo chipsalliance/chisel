@@ -36,7 +36,7 @@ package Chisel.testers
 import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
-class AdvTester[+T <: Module](val dut: T, isTrace: Boolean = false) extends Tester[T](dut, isTrace) {
+abstract class AdvTester[+T <: Module](val dut: T, isTrace: Boolean = false) extends Tester[T](dut, isTrace) {
   val defaultMaxCycles = 1024
   var cycles = 0
   var pass = true

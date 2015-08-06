@@ -31,7 +31,55 @@
 package Chisel.testers
 import Chisel._
 
+
+
+object CompilationUtilitiess {
+  import scala.util.Properties.envOrElse
+  import sys.process.stringSeqToProcess
+  protected val CC = envOrElse("CC", "g++" )
+  protected val CXX = envOrElse("CXX", "g++" )
+  protected val CCFLAGS = envOrElse("CCFLAGS", "")
+  protected val CXXFLAGS = envOrElse("CXXFLAGS", "")
+  protected val CPPFLAGS = envOrElse("CPPFLAGS", "")
+  protected val LDFLAGS = envOrElse("LDFLAGS", "")
+  protected val chiselENV = envOrElse("CHISEL", "")
+
+  def run(cmd: String) = {
+    val bashCmd = Seq("bash", "-c", cmd)
+    val c = bashCmd.!
+    ChiselError.info(cmd + " RET " + c)
+    c == 0
+  }
+
+  def cc(dir: String, name: String, flags: String = "", isCC: Boolean = false) {
+    val compiler = if (isCC) CC else CXX
+    val cmd = List(compiler, "-c", "-o", dir + name + ".o", flags, dir + name + ".cpp").mkString(" ")
+    if (!run(cmd)) throw new Exception("failed to compile " + name + ".cpp")
+  }
+
+  def link(dir: String, target: String, objects: Seq[String], isCC: Boolean = false, isLib: Boolean = false) {
+    val compiler = if (isCC) CC else CXX
+    val shared = if (isLib) "-shared" else ""
+    val ac = (List(compiler, LDFLAGS, shared, "-o", dir + target) ++ (objects map (dir + _))).mkString(" ")
+    if (!run(ac)) throw new Exception("failed to link " + objects.mkString(", "))
+  }
+}
+
+abstract class Backend
+class FloBackend extends Backend 
+class VerilogBackend extends Backend {
+  def genHarness(c: Module, name: String) { }
+}
+
 object TesterDriver {
+  val isVCD = false
+  val targetDir = "."
+  val backend: Backend  = new VerilogBackend
+  val name = "test"
+  val circuit = Circuit(Seq(Component("top",Seq(Port(null,null)),Nil)),"main")
+  val testCommand: Option[String] = None
+
+
   // Setting this to TRUE will initialize the tester's RNG with the
   // seed below.
   //      case "--testerSeed" => {
@@ -45,17 +93,7 @@ object TesterDriver {
   var dumpTestInput = false
 
   private def test[T <: Module](mod: T, ftester: T => Tester[T]): Unit = {
-    var res = false
-    var tester: Tester[T] = null
-    try {
-      tester = ftester(mod)
-    } finally {
-      if (tester != null && tester.process != null)
-        res = tester.finish()
-    }
-    println(if (res) "PASSED" else "*** FAILED ***")
-    if(!res) throwException("Module under test FAILED at least one test vector.")
+    ftester(mod).finish
   }
-
 
 }
