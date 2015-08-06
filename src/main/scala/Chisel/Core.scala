@@ -234,7 +234,6 @@ case class WhenEnd() extends Command
 case class Connect(loc: Alias, exp: Arg) extends Command
 case class BulkConnect(loc1: Alias, loc2: Alias) extends Command
 case class ConnectInit(loc: Alias, exp: Arg) extends Command
-case class Nop() extends Command
 
 case class Component(name: String, ports: Seq[Port], commands: Seq[Command])
 case class Circuit(components: Seq[Component], main: String)
@@ -1096,7 +1095,6 @@ class when(cond: => Bool)(block: => Unit) {
     doOtherwise(block)
 
   pushCommand(WhenBegin(cond.ref))
-  pushCommand(Nop())
   val res = block
   pushCommand(WhenEnd())
 
@@ -1145,7 +1143,6 @@ class Emitter(circuit: Circuit) {
     case e: Connect => s"${emit(e.loc)} := ${emit(e.exp)}"
     case e: BulkConnect => s"${emit(e.loc1)} <> ${emit(e.loc2)}"
     case e: ConnectInit => s"onreset ${emit(e.loc)} := ${emit(e.exp)}"
-    case e: Nop => "skip"
     case e: DefInstance => {
       // From now on, all references to the IOs occur from within the parent
       overrideRefForId(e.id.io, e.name)
@@ -1159,13 +1156,13 @@ class Emitter(circuit: Circuit) {
 
     case w: WhenBegin =>
       indent()
-      s"when ${emit(w.pred)} : "
+      s"when ${emit(w.pred)} :"
     case _: WhenElse =>
       indent()
-      "else : "
+      "else :"
     case _: WhenEnd =>
       unindent()
-      ""
+      "skip"
   }
   private def initPort(p: Port, dir: Direction) = {
     for (x <- p.id.flatten; if x.dir == dir)
