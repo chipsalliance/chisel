@@ -43,7 +43,7 @@ import scala.sys.process._
 import scala.io.Source._
 import Literal._
 
-object TesterDriver extends FileSystemUtilities {
+object TesterDriver {
   // Setting this to TRUE will initialize the tester's RNG with the
   // seed below.
   //      case "--testerSeed" => {
