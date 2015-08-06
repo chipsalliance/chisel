@@ -14,27 +14,6 @@ class IdGen {
   }
 }
 
-private object DynamicContext {
-  val currentParentVar = new DynamicVariable[Option[Module]](None)
-  val currentParamsVar = new DynamicVariable[Parameters](Parameters.empty)
-
-  def getParentModule = currentParentVar.value
-  def setParentModule[T](m: Option[Module])(body: => T): T = {
-    currentParentVar.withValue(m)(body)
-  }
-  def setParentModule[T](m: Module)(body: => T): T = {
-    currentParentVar.withValue(Some(m))(body)
-  }
-  def forceParentModule[T](m: Module) {
-    currentParentVar.value = Some(m)
-  }
-
-  def getParams: Parameters = currentParamsVar.value
-  def setParams[T](p: Parameters)(body: => T): T =  {
-    currentParamsVar.withValue(p)(body)
-  }
-}
-
 private class ChiselRefMap {
   private val _refmap = new HashMap[Long,Immediate]()
 
@@ -55,6 +34,42 @@ private class ChiselRefMap {
   def getRefForId(id: Id)(implicit namespace: Namespace = Builder.globalNamespace): Immediate = {
     setRefForId(id, s"T_${id._id}")
     _refmap(id._id)
+  }
+}
+
+private object DynamicContext {
+  val currentParentVar = new DynamicVariable[Option[Module]](None)
+  val currentParamsVar = new DynamicVariable[Parameters](Parameters.empty)
+  val currentCommandsVar = new DynamicVariable[ArrayBuffer[Command]](new ArrayBuffer[Command]())
+
+  def getParentModule = currentParentVar.value
+  def parentModuleScope[T](m: Option[Module])(body: => T): T = {
+    currentParentVar.withValue(m)(body)
+  }
+  def forceParentModule[T](m: Module) {
+    currentParentVar.value = Some(m)
+  }
+
+  def getParams: Parameters = currentParamsVar.value
+  def paramsScope[T](p: Parameters)(body: => T): T = {
+    currentParamsVar.withValue(p)(body)
+  }
+
+  def getCommands: Command = {
+    val cmds = currentCommandsVar.value
+    if (cmds.length == 0) EmptyCommand()
+    else if (cmds.length == 1) cmds(0)
+    else Begin(cmds.toList)
+  }
+  def pushCommand(c: Command) {
+    currentCommandsVar.value += c
+  }
+  def commandsScope[T](body: => T): (T, Command) = {
+    currentCommandsVar.withValue(new ArrayBuffer[Command]()){
+      val r = body
+      val c = getCommands
+      (r, c)
+    }
   }
 }
 
@@ -959,7 +974,7 @@ object Bundle {
   val keywords = HashSet[String]("flip", "asInput", "asOutput",
     "cloneType", "clone", "toBits")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
-    DynamicContext.setParams(p.push){ b }
+    DynamicContext.paramsScope(p.push){ b }
   }
   def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
     val q = DynamicContext.getParams.alterPartial(f)
@@ -1026,21 +1041,14 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 object Module {
-  def apply[T <: Module](bc: => T)(
-      implicit currentParameters: Parameters = DynamicContext.getParams): T = {
-    val m = DynamicContext.setParams(currentParameters.push) {
-      val m = DynamicContext.setParentModule(None) {
-        val m = bc
-        m.setRefs()
-        m
-      }
+  def apply[T <: Module](bc: => T)(implicit currParams: Parameters = DynamicContext.getParams): T = {
+    DynamicContext.paramsScope(currParams.push) {
+      val m = DynamicContext.parentModuleScope(None) { bc.setRefs() }
       val ports = m.computePorts
       Builder.components += Component(m.name, ports, popCommands)
       pushCommand(DefInstance(m, m.name, ports))
       m
-    }
-    m.connectImplicitIOs()
-    m
+    }.connectImplicitIOs()
   }
   def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
     val q = DynamicContext.getParams.alterPartial(f)
@@ -1077,19 +1085,21 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   private def computePorts =
     clock.toPort +: reset.toPort +: io.toPorts
 
-  private def connectImplicitIOs(): Unit = _parent match {
+  private def connectImplicitIOs(): this.type = _parent match {
     case Some(p) =>
       clock := (if (_clock eq null) p.clock else _clock)
       reset := (if (_reset eq null) p.reset else _reset)
-    case None =>
+      this
+    case None => this
   }
 
-  private def makeImplicitIOs() = {
+  private def makeImplicitIOs(): this.type  = {
     io.addElt("clock", clock)
     io.addElt("reset", reset)
+    this
   }
 
-  private def setRefs(): Unit = {
+  private def setRefs(): this.type = {
     val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
@@ -1116,6 +1126,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
         case _ =>
       }
     }
+    this
   }
 
   // TODO: actually implement these
