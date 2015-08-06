@@ -14,7 +14,7 @@ class IdGen {
 }
 
 object Builder {
-  val components = new ArrayBuffer[Component]()
+  val components = ArrayBuffer[Component]()
   val idGen = new IdGen
   val paramz = new Stack[Parameters]
   def pushParameters(p: Parameters) { paramz.push(p) }
@@ -22,32 +22,10 @@ object Builder {
   val modulez = new Stack[Module]()
   def pushModule(mod: Module) { modulez.push(mod) }
   def popModule { modulez.pop }
-  def getComponent(): Module = if (modulez.length > 0) modulez.head else null
+  def getCurrentModule: Module = if (modulez.length > 0) modulez.head else null
   val globalNamespace = new FIRRTLNamespace
   def namespace = if (modulez.isEmpty) globalNamespace else modulez.head._namespace
-  val commandz = new Stack[ArrayBuffer[Command]]()
-  def commands = commandz.top
-  def pushCommand(cmd: Command) = commands += cmd
-  def commandify(cmds: ArrayBuffer[Command]): Command = {
-    if (cmds.length == 0)
-      EmptyCommand()
-    else if (cmds.length == 1)
-      cmds(0)
-    else
-      Begin(cmds.toList)
-  }
-  def pushCommands = 
-    commandz.push(new ArrayBuffer[Command]())
-  def popCommands: Command = {
-    val newCommands = commands
-    commandz.pop()
-    commandify(newCommands)
-  }
-  def collectCommands[T <: Module](f: => T): (Command, T) = {
-    pushCommands
-    val mod = f
-    (popCommands, mod)
-  }
+  def pushCommand(cmd: Command) = getCurrentModule._commands += cmd
 
   private[Chisel] val refmap = new HashMap[Long,Immediate]()
 
@@ -71,11 +49,10 @@ object Builder {
   }
 
   def build[T <: Module](f: => T): Circuit = {
-    val (cmd, mod) = collectCommands(f)
+    val mod = f
     setRefForId(mod, mod.name)
     Circuit(components, components.last.name)
   }
-
 }
 
 object build {
@@ -250,17 +227,17 @@ case class DefRegister(id: Id, kind: Kind, clock: Clock, reset: Bool) extends De
 case class DefMemory(id: Id, kind: Kind, size: Int, clock: Clock) extends Definition
 case class DefSeqMemory(id: Id, kind: Kind, size: Int) extends Definition
 case class DefAccessor(id: Id, source: Alias, direction: Direction, index: Arg) extends Definition
-case class DefInstance(id: Module, module: String, ports: Seq[Port]) extends Definition
-case class Conditionally(val prep: Command, val pred: Arg, val conseq: Command, var alt: Command) extends Command;
-case class Begin(val body: List[Command]) extends Command();
-case class Connect(val loc: Alias, val exp: Arg) extends Command;
-case class BulkConnect(val loc1: Alias, val loc2: Alias) extends Command;
-case class ConnectInit(val loc: Alias, val exp: Arg) extends Command;
-case class ConnectInitIndex(val loc: Alias, val index: Int, val exp: Arg) extends Command;
-case class EmptyCommand() extends Command;
+case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
+case class WhenBegin(pred: Arg) extends Command
+case class WhenElse() extends Command
+case class WhenEnd() extends Command
+case class Connect(loc: Alias, exp: Arg) extends Command
+case class BulkConnect(loc1: Alias, loc2: Alias) extends Command
+case class ConnectInit(loc: Alias, exp: Arg) extends Command
+case class Nop() extends Command
 
-case class Component(val name: String, val ports: Seq[Port], val body: Command);
-case class Circuit(val components: Seq[Component], val main: String);
+case class Component(name: String, ports: Seq[Port], commands: Seq[Command])
+case class Circuit(components: Seq[Component], main: String)
 
 object Commands {
   val NoLits = Seq[BigInt]()
@@ -290,7 +267,7 @@ object debug {
 }
 
 abstract class Data(dirArg: Direction) extends Id {
-  private[Chisel] val mod = getComponent()
+  private[Chisel] val mod = getCurrentModule
   if (mod ne null) mod._nodes += this
 
   def toType: Kind
@@ -298,16 +275,15 @@ abstract class Data(dirArg: Direction) extends Id {
 
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
   private var isFlipVar = dirArg == INPUT
-  private[Chisel] var dirVar = dirArg
+  private var dirVar = dirArg
   private[Chisel] def isFlip = isFlipVar
 
   private def cloneWithDirection(newDir: Direction => Direction,
                                  newFlip: Boolean => Boolean): this.type = {
     val res = this.cloneType
     res.isFlipVar = newFlip(res.isFlipVar)
-    for ((me, it) <- this.flatten zip res.flatten) {
-      it.dirVar = newDir(me.dirVar)
-    }
+    for ((me, it) <- this.flatten zip res.flatten)
+      (it: Data).dirVar = newDir((me: Data).dirVar)
     res
   }
   def asInput: this.type = cloneWithDirection(_ => INPUT, _ => true)
@@ -1000,8 +976,8 @@ class Bundle extends Aggregate(NO_DIR) {
       case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
         ChiselError.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
         this
-      case e: java.lang.Exception =>
-        ChiselError.error(s"Parameterized Bundle ${this.getClass} needs cloneType  method")
+      case npe: java.lang.reflect.InvocationTargetException =>
+        ChiselError.error(s"Parameterized Bundle ${this.getClass} needs cloneType method")
         this
     }
   }
@@ -1012,12 +988,11 @@ object Module {
     pushParameters(p.push)
     val m = bc
     m.setRefs
-    val cmd = popCommands
     popModule
     val ports = m.computePorts
-    val component = Component(m.name, ports, cmd)
-    components += component
-    pushCommand(DefInstance(m, m.name, ports))
+    components += Component(m.name, ports, m._commands)
+    if (!modulez.isEmpty)
+      pushCommand(DefInstance(m, ports))
     popParameters
     m.connectImplicitIOs
     m
@@ -1032,11 +1007,11 @@ object Module {
 abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   private[Chisel] val _parent = modulez.headOption
   private[Chisel] val _nodes = ArrayBuffer[Data]()
+  private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _namespace = new ChildNamespace(globalNamespace)
   val name = globalNamespace.name(getClass.getName.split('.').last)
 
   pushModule(this)
-  pushCommands
 
   val params = Module.params
   params.path = this.getClass :: params.path
@@ -1108,53 +1083,37 @@ abstract class BlackBox(_clock: Clock = null, _reset: Bool = null) extends Modul
 }
 
 object when {
-  private[Chisel] def execBlock(block: => Unit): Command = {
-    pushCommands
-    block
-    val cmd = popCommands
-    cmd
-  }
   def apply(cond: => Bool)(block: => Unit): when = {
     new when(cond)( block )
   }
 }
 
 class when(cond: => Bool)(block: => Unit) {
-  def elsewhen (cond: => Bool)(block: => Unit): when = {
-    pushCommands
-    val res = new when(cond) ( block )
-    this.cmd.alt = popCommands
+  def elsewhen (cond: => Bool)(block: => Unit): when =
+    doOtherwise(when(cond)(block))
+
+  def otherwise(block: => Unit): Unit =
+    doOtherwise(block)
+
+  pushCommand(WhenBegin(cond.ref))
+  pushCommand(Nop())
+  val res = block
+  pushCommand(WhenEnd())
+
+  private def doOtherwise[T](block: => T) = {
+    pushCommand(WhenElse())
+    val res = block
+    pushCommand(WhenEnd())
     res
   }
-
-  def otherwise (block: => Unit) {
-   this.cmd.alt = when.execBlock(block)
-  }
-
-  // Capture any commands we need to set up the conditional test.
-  pushCommands
-  val pred = cond.ref
-  val prep = popCommands
-  val conseq  = when.execBlock(block)
-  // Assume we have an empty alternate clause.
-  //  elsewhen and otherwise will update it if that isn't the case.
-  val cmd = Conditionally(prep, pred, conseq, EmptyCommand())
-  pushCommand(cmd)
 }
 
 
 /// CHISEL IR EMITTER
 
-class Emitter {
-  private var indenting = 0
-  def withIndent(f: => String) = {
-    indenting += 1
-    val res = f
-    indenting -= 1
-    res
-  }
+class Emitter(circuit: Circuit) {
+  override def toString = res.toString
 
-  def newline = "\n" + ("  " * indenting)
   def join(parts: Seq[String], sep: String): StringBuilder =
     parts.tail.foldLeft(new StringBuilder(parts.head))((s, p) => s ++= sep ++= p)
   def join0(parts: Seq[String], sep: String): StringBuilder =
@@ -1176,7 +1135,7 @@ class Emitter {
       case e: ClockType => s"Clock"
     }
   }
-  def emit(e: Command): String = e match {
+  private def emit(e: Command): String = e match {
     case e: DefUInt => s"node ${e.name} = UInt<${e.width}>(${e.value})"
     case e: DefSInt => s"node ${e.name} = SInt<${e.width}>(${e.value})"
     case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
@@ -1187,46 +1146,63 @@ class Emitter {
     case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.name}";
     case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
     case e: DefAccessor => s"infer accessor ${e.name} = ${emit(e.source)}[${emit(e.index)}]"
-    case e: DefInstance => {
-      val mod = e.id
-      // update all references to the modules ports
-      overrideRefForId(mod.io, e.name)
-      "inst " + e.name + " of " + e.module + newline + join0(e.ports.flatMap(x => initPort(x, INPUT)), newline)
-    }
-    case e: Conditionally => {
-      val prefix = if (!e.prep.isInstanceOf[EmptyCommand]) {
-        newline + emit(e.prep) + newline
-      } else {
-        ""
-      }
-      val suffix = if (!e.alt.isInstanceOf[EmptyCommand]) {
-        newline + "else : " + withIndent{ newline + emit(e.alt) }
-      } else {
-        ""
-      }
-      prefix + "when " + emit(e.pred) + " : " + withIndent{ emit(e.conseq) } + suffix
-    }
-    case e: Begin => join0(e.body.map(x => emit(x)), newline).toString
     case e: Connect => s"${emit(e.loc)} := ${emit(e.exp)}"
     case e: BulkConnect => s"${emit(e.loc1)} <> ${emit(e.loc2)}"
     case e: ConnectInit => s"onreset ${emit(e.loc)} := ${emit(e.exp)}"
-    case e: ConnectInitIndex => s"onreset ${emit(e.loc)}[${e.index}] := ${emit(e.exp)}"
-    case e: EmptyCommand => "skip"
+    case e: Nop => "skip"
+    case e: DefInstance => {
+      // From now on, all references to the IOs occur from within the parent
+      overrideRefForId(e.id.io, e.name)
+
+      val res = new StringBuilder(s"inst ${e.name} of ${e.id.name}")
+      res ++= newline
+      for (p <- e.ports; x <- initPort(p, INPUT))
+        res ++= newline + x
+      res.toString
+    }
+
+    case w: WhenBegin =>
+      indent()
+      s"when ${emit(w.pred)} : "
+    case _: WhenElse =>
+      val res = newline + "else : "
+      indent()
+      res
+    case _: WhenEnd =>
+      unindent()
+      ""
   }
-  def initPort(p: Port, dir: Direction) = {
+  private def initPort(p: Port, dir: Direction) = {
     for (x <- p.id.flatten; if x.dir == dir)
       yield s"${getRefForId(x).fullname} := ${emit(x.makeLit(0).ref)}"
   }
-  def emit(e: Component): String =  {
-    withIndent{ "module " + e.name + " : " +
-      join0(e.ports.map(x => emitPort(x, true)), newline) +
-      newline + join0(e.ports.flatMap(x => initPort(x, OUTPUT)), newline) +
-      newline + emit(e.body) }
+
+  private def emit(m: Component): Unit = {
+    println(m.name)
+    res ++= newline + s"module ${m.name} : "
+    withIndent {
+      for (p <- m.ports)
+        res ++= newline + emitPort(p, true)
+      res ++= newline
+      for (p <- m.ports; x <- initPort(p, OUTPUT))
+        res ++= newline + x
+      res ++= newline
+      for (cmd <- m.commands)
+        res ++= newline + emit(cmd)
+      res ++= newline
+    }
   }
-  def emit(e: Circuit): String = 
-    withIndent{ "circuit " + e.main + " : " + join0(e.components.map(x => emit(x)), newline) } + newline
+
+  private var indentLevel = 0
+  private def newline = "\n" + ("  " * indentLevel)
+  private def indent(): Unit = indentLevel += 1
+  private def unindent() { require(indentLevel > 0); indentLevel -= 1 }
+  private def withIndent(f: => Unit) { indent(); f; unindent() }
+
+  private val res = new StringBuilder(s"circuit ${circuit.main} : ")
+  withIndent { circuit.components foreach emit }
 }
 
 object emit {
-  def apply(e: Circuit) = new Emitter().emit(e)
+  def apply(e: Circuit) = new Emitter(e).toString
 }
