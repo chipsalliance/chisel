@@ -30,7 +30,7 @@
 
 package Chisel
 import Chisel._
-import Builder._
+import DynamicContext._
 import ChiselError._
 import Commands.NoLits
 
