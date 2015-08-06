@@ -121,3 +121,8 @@ object Driver extends FileSystemUtilities {
   def elaborate[T <: Module](gen: () => T, p: Parameters, c: ChiselConfig): Unit =
     elaborateWrappedModule(() => Module(gen())(p), p, Some(c))
 }
+
+object chiselMain {
+  def apply[T <: Module](args: Array[String], gen: () => T, p: Parameters = Parameters.empty): Unit =
+    Driver.elaborateWrappedModule(gen, p, None)
+}
