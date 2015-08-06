@@ -25,6 +25,9 @@ private object DynamicContext {
   def setParentModule[T](m: Module)(body: => T): T = {
     currentParentVar.withValue(Some(m))(body)
   }
+  def forceParentModule[T](m: Module) {
+    currentParentVar.value = Some(m)
+  }
 
   def getParams: Parameters = currentParamsVar.value
   def setParams[T](p: Parameters)(body: => T): T =  {
@@ -1024,10 +1027,9 @@ class Bundle extends Aggregate(NO_DIR) {
 
 object Module {
   def apply[T <: Module](bc: => T)(
-      implicit currentModule: Option[Module] = None, 
-      currentParameters: Parameters = DynamicContext.getParams): T = {
+      implicit currentParameters: Parameters = DynamicContext.getParams): T = {
     val m = DynamicContext.setParams(currentParameters.push) {
-      val m = DynamicContext.setParentModule(currentModule) {
+      val m = DynamicContext.setParentModule(None) {
         val m = bc
         m.setRefs()
         m
@@ -1040,10 +1042,9 @@ object Module {
     m.connectImplicitIOs()
     m
   }
-  def apply[T <: Module](m: => T, f: PartialFunction[Any,Any])(
-        implicit currentModule: Option[Module]): T = {
+  def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
     val q = DynamicContext.getParams.alterPartial(f)
-    apply(m)(currentModule,q)
+    apply(m)(q)
   }
 }
 
@@ -1051,9 +1052,9 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   private val _parent = DynamicContext.getParentModule
   private val _nodes = ArrayBuffer[Data]()
   private implicit val _namespace = new ChildNamespace(Builder.globalNamespace)
-  private implicit val _self: Option[Module] = Some(this)
   val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
 
+  DynamicContext.forceParentModule(this)
   pushCommands
 
   private def params = DynamicContext.getParams
