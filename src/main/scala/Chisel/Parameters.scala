@@ -121,6 +121,7 @@ class ChiselConfig(
 
   def toCollector = new Collector(this.topDefinitions, this.knobValues)
   def toInstance = new Instance(this.topDefinitions, this.knobValues)
+  override def toString = this.getClass.getSimpleName
 }
 
 object Dump {

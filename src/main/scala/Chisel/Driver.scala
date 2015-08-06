@@ -87,7 +87,7 @@ object Driver extends FileSystemUtilities {
     val world = if(collectConstraints) config.toCollector else config.toInstance 
     val p = Parameters.root(world)
     config.topConstraints.foreach(c => p.constrain(c))
-    elaborate(gen, p)
+    elaborate(gen, p, config)
   }
     
   /** Elaborates the circuit specified in the gen function, optionally uses
@@ -95,14 +95,17 @@ object Driver extends FileSystemUtilities {
     *  TODO: Distinguish between cases where we dump to file vs return IR for
     *        use by other Drivers.
     */
-  def elaborate[T <: Module](gen: () => T, p: Parameters = Parameters.empty) {
+  private[Chisel] def elaborateWrappedModule[T <: Module](gen: () => T, p: Parameters, c: Option[ChiselConfig]) {
     try {
       ChiselError.clear()
       ChiselError.info("Elaborating design...")
-      val ir = build(Module(gen())(p))
+      val ir = build(gen())
       ChiselError.info("Done elaborating.")
 
-      val name = ir.main +"."+ p.getClass.getSimpleName
+      val name = c match {
+        case None => ir.main
+        case Some(config) => s"${ir.main}.$config"
+      }
       createOutputFile(s"$name.knb", p.getKnobs)
       createOutputFile(s"$name.cst", p.getConstraints)
       createOutputFile(s"$name.prm", Dump.getDump)
@@ -111,4 +114,10 @@ object Driver extends FileSystemUtilities {
       ChiselError.report
     }
   }
+  def elaborate[T <: Module](gen: () => T): Unit =
+    elaborate(gen, Parameters.empty)
+  def elaborate[T <: Module](gen: () => T, p: Parameters): Unit =
+    elaborateWrappedModule(() => Module(gen())(p), p, None)
+  def elaborate[T <: Module](gen: () => T, p: Parameters, c: ChiselConfig): Unit =
+    elaborateWrappedModule(() => Module(gen())(p), p, Some(c))
 }
