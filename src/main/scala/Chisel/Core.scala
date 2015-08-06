@@ -1116,8 +1116,6 @@ class Emitter(circuit: Circuit) {
 
   def join(parts: Seq[String], sep: String): StringBuilder =
     parts.tail.foldLeft(new StringBuilder(parts.head))((s, p) => s ++= sep ++= p)
-  def join0(parts: Seq[String], sep: String): StringBuilder =
-    parts.foldLeft(new StringBuilder)((s, p) => s ++= sep ++= p)
   def emitDir(e: Port, isTop: Boolean): String =
     if (isTop) (if (e.id.isFlip) "input " else "output ")
     else (if (e.id.isFlip) "flip " else "")
@@ -1125,15 +1123,13 @@ class Emitter(circuit: Circuit) {
   def emit(e: Arg): String = e.fullname
   def emitPort(e: Port, isTop: Boolean): String =
     s"${emitDir(e, isTop)}${getRefForId(e.id).name} : ${emitType(e.kind)}"
-  def emitType(e: Kind): String = {
-    e match {
-      case e: UnknownType => "?"
-      case e: UIntType => s"UInt<${e.width}>"
-      case e: SIntType => s"SInt<${e.width}>"
-      case e: BundleType => s"{${join(e.ports.map(x => emitPort(x, false)), ", ")}}"
-      case e: VectorType => s"${emitType(e.kind)}[${e.size}]"
-      case e: ClockType => s"Clock"
-    }
+  private def emitType(e: Kind): String = e match {
+    case e: UnknownType => "?"
+    case e: UIntType => s"UInt<${e.width}>"
+    case e: SIntType => s"SInt<${e.width}>"
+    case e: BundleType => s"{${join(e.ports.map(x => emitPort(x, false)), ", ")}}"
+    case e: VectorType => s"${emitType(e.kind)}[${e.size}]"
+    case e: ClockType => s"Clock"
   }
   private def emit(e: Command): String = e match {
     case e: DefUInt => s"node ${e.name} = UInt<${e.width}>(${e.value})"
@@ -1165,9 +1161,8 @@ class Emitter(circuit: Circuit) {
       indent()
       s"when ${emit(w.pred)} : "
     case _: WhenElse =>
-      val res = newline + "else : "
       indent()
-      res
+      "else : "
     case _: WhenEnd =>
       unindent()
       ""
@@ -1178,7 +1173,6 @@ class Emitter(circuit: Circuit) {
   }
 
   private def emit(m: Component): Unit = {
-    println(m.name)
     res ++= newline + s"module ${m.name} : "
     withIndent {
       for (p <- m.ports)
