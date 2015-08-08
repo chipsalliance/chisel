@@ -51,6 +51,10 @@ private object DynamicContext {
   def pushCommand(c: Command) {
     currentModuleVar.value.foreach(_._commands += c)
   }
+  def pushOp[T <: Data](cmd: DefPrim[T]) = {
+    pushCommand(cmd)
+    cmd.id
+  }
 
   def getParams: Parameters = currentParamsVar.value
   def paramsScope[T](p: Parameters)(body: => T): T = {
@@ -78,6 +82,7 @@ object build {
 }
 
 import DynamicContext.pushCommand
+import DynamicContext.pushOp
 
 /// CHISEL IR
 
@@ -121,21 +126,20 @@ object PrimOp {
 import PrimOp._
 
 abstract class Immediate {
-  def fullname: String
-  def name: String
+  def fullname: String = name
   def debugName = fullname
+  def name: String
 }
 
 abstract class Arg extends Immediate {
-  def fullname: String
   def name: String
 }
 
 case class Alias(id: Id) extends Arg {
-  def fullname = Builder.globalRefMap.getRefForId(id).fullname
-  def name = Builder.globalRefMap.getRefForId(id).name
+  override def fullname = Builder.globalRefMap.getRefForId(id).fullname
   override def debugName = Builder.globalRefMap.getRefForId(id).debugName
-  def emit: String = "Alias(" + id + ")"
+  def name = Builder.globalRefMap.getRefForId(id).name
+  def emit: String = s"Alias($id)"
 }
 
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
@@ -147,8 +151,11 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
     require(widthArg.get >= minWidth)
 }
 
+case class ILit(n: BigInt) extends Arg {
+  def name = n.toString
+}
+
 case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def fullname = name
   def name = "UInt<" + width + ">(\"h0" + num.toString(16) + "\")"
   def minWidth = 1 max n.bitLength
 
@@ -156,7 +163,6 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
 }
 
 case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def fullname = name
   def name = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
@@ -165,18 +171,17 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
 }
 
 case class Ref(val name: String) extends Immediate {
-  def fullname = name
 }
 case class Slot(val imm: Immediate, val name: String) extends Immediate {
-  def fullname =
+  override def fullname =
     if (imm.fullname isEmpty) name else s"${imm.fullname}.${name}"
   override def debugName =
     if (imm.debugName isEmpty) name else s"${imm.debugName}.${name}"
 }
 case class Index(val imm: Immediate, val value: Int) extends Immediate {
-  def name = "[" + value + "]"
-  def fullname = imm.fullname + "[" + value + "]"
-  override def debugName = imm.debugName + "." + value
+  def name = s"[$value]"
+  override def fullname = s"${imm.fullname}[$value]"
+  override def debugName = s"${imm.debugName}.$value"
 }
 
 case class Port(id: Data, kind: Kind)
@@ -237,7 +242,7 @@ case class DefUInt(id: Id, value: BigInt, width: Int) extends Definition
 case class DefSInt(id: Id, value: BigInt, width: Int) extends Definition
 case class DefFlo(id: Id, value: Float) extends Definition
 case class DefDbl(id: Id, value: Double) extends Definition
-case class DefPrim(id: Id, kind: Kind, op: PrimOp, args: Seq[Arg], lits: Seq[BigInt]) extends Definition
+case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
 case class DefWire(id: Id, kind: Kind) extends Definition
 case class DefRegister(id: Id, kind: Kind, clock: Clock, reset: Bool) extends Definition
 case class DefMemory(id: Id, kind: Kind, size: Int, clock: Clock) extends Definition
@@ -253,12 +258,6 @@ case class ConnectInit(loc: Alias, exp: Arg) extends Command
 
 case class Component(name: String, ports: Seq[Port], commands: Seq[Command])
 case class Circuit(components: Seq[Component], main: String)
-
-object Commands {
-  val NoLits = Seq[BigInt]()
-}
-
-import Commands._
 
 /// COMPONENTS
 
@@ -334,7 +333,7 @@ abstract class Data(dirArg: Direction) extends Id {
   def width: Width
   final def getWidth = width.get
 
-  def flatten: IndexedSeq[Bits]
+  def flatten: IndexedSeq[UInt]
   def fromBits(n: Bits): this.type = {
     var i = 0
     val wire = Wire(this.cloneType)
@@ -504,7 +503,7 @@ class Vec[T <: Data](gen: => T, val length: Int)
   override def cloneType: this.type =
     Vec(gen, length).asInstanceOf[this.type]
 
-  override lazy val flatten: IndexedSeq[Bits] =
+  override lazy val flatten: IndexedSeq[UInt] =
     (0 until length).flatMap(i => this.apply(i).flatten)
 
   def read(idx: UInt): T = apply(idx)
@@ -566,7 +565,9 @@ class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def != (other: UInt): Bool = !(this === other)
 }
 
-abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
+abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg) {
+  def flatten: IndexedSeq[UInt] = IndexedSeq(toBits)
+}
 
 object Clock {
   def apply(dir: Direction = NO_DIR): Clock = new Clock(dir)
@@ -575,7 +576,7 @@ object Clock {
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
   def cloneTypeWidth(width: Width): this.type = cloneType
-  def flatten: IndexedSeq[Bits] = IndexedSeq()
+  override def flatten: IndexedSeq[UInt] = IndexedSeq()
   def toType: Kind = ClockType(isFlip)
 
   override def := (that: Data): Unit = that match {
@@ -592,18 +593,11 @@ sealed abstract class Bits(dirArg: Direction, width: Width, lit: Option[LitArg])
   def makeLit(value: BigInt): this.type
   def cloneType: this.type = cloneTypeWidth(width)
 
-  override def flatten: IndexedSeq[Bits] = IndexedSeq(this)
-
   override def <> (that: Data): Unit = this := that
 
-  final def apply(x: BigInt): Bool = {
+  final def apply(x: BigInt): Bool =
     if (isLit()) Bool((litValue() >> x.toInt) & 1)
-    else {
-      val d = Bool()
-      pushCommand(DefPrim(d, d.toType, BitSelectOp, Seq(this.ref), Seq(x)))
-      d
-    }
-  }
+    else pushOp(DefPrim(Bool(), BitSelectOp, this.ref, ILit(x)))
   final def apply(x: Int): Bool =
     apply(BigInt(x))
   final def apply(x: UInt): Bool =
@@ -612,42 +606,21 @@ sealed abstract class Bits(dirArg: Direction, width: Width, lit: Option[LitArg])
   final def apply(x: BigInt, y: BigInt): UInt = {
     val w = (x - y + 1).toInt
     if (isLit()) UInt((litValue >> y.toInt) & ((BigInt(1) << w) - 1), w)
-    else {
-      val d = UInt(width = w)
-      pushCommand(DefPrim(d, d.toType, BitsExtractOp, Seq(this.ref), Seq(x, y)))
-      d
-    }
+    else pushOp(DefPrim(UInt(width = w), BitsExtractOp, this.ref, ILit(x), ILit(y)))
   }
   final def apply(x: Int, y: Int): UInt =
     apply(BigInt(x), BigInt(y))
 
-  private[Chisel] def unop(op: PrimOp, width: Width): this.type = {
-    val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
-    d
-  }
-  private[Chisel] def binop(op: PrimOp, other: BigInt, width: Width): this.type = {
-    val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), Seq(other)))
-    d
-  }
-  private[Chisel] def binop(op: PrimOp, other: Bits, width: Width): this.type = {
-    val d = cloneTypeWidth(width)
-    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref, other.ref), NoLits))
-    d
-  }
-  private[Chisel] def compop(op: PrimOp, other: Bits): Bool = {
-    val d = new Bool(NO_DIR)
-    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref, other.ref), NoLits))
-    d
-  }
-  private[Chisel] def unimp(op: String) =
-    throwException(s"Operator ${op} unsupported for class ${getClass}")
-  private[Chisel] def redop(op: PrimOp): Bool = {
-    val d = new Bool(NO_DIR)
-    pushCommand(DefPrim(d, d.toType, op, Seq(this.ref), NoLits))
-    d
-  }
+  private[Chisel] def unop(op: PrimOp, width: Width): this.type =
+    pushOp(DefPrim(cloneTypeWidth(width), op, this.ref)).asInstanceOf[this.type]
+  private[Chisel] def binop(op: PrimOp, other: BigInt, width: Width): this.type =
+    pushOp(DefPrim(cloneTypeWidth(width), op, this.ref, ILit(other))).asInstanceOf[this.type]
+  private[Chisel] def binop(op: PrimOp, other: Bits, width: Width): this.type =
+    pushOp(DefPrim(cloneTypeWidth(width), op, this.ref, other.ref)).asInstanceOf[this.type]
+  private[Chisel] def compop(op: PrimOp, other: Bits): Bool =
+    pushOp(DefPrim(Bool(), op, this.ref, other.ref))
+  private[Chisel] def redop(op: PrimOp): Bool =
+    pushOp(DefPrim(Bool(), op, this.ref))
 
   def unary_~ : this.type = unop(BitNotOp, width)
   def pad (other: Int): this.type = binop(PadOp, other, Width(other))
@@ -752,18 +725,8 @@ sealed class UInt(dir: Direction, width: Width, lit: Option[ULit] = None) extend
   def === (that: BitPat): Bool = that === this
   def != (that: BitPat): Bool = that != this
 
-  def zext(): SInt = {
-    val x = SInt(NO_DIR, width + 1)
-    pushCommand(DefPrim(x, x.toType, ConvertOp, Seq(ref), NoLits))
-    x
-  }
-
-  def asSInt(): SInt = {
-    val x = SInt(NO_DIR, width)
-    pushCommand(DefPrim(x, x.toType, AsSIntOp, Seq(ref), NoLits))
-    x
-  }
-
+  def zext(): SInt = pushOp(DefPrim(SInt(NO_DIR, width + 1), ConvertOp, ref))
+  def asSInt(): SInt = pushOp(DefPrim(SInt(NO_DIR, width), AsSIntOp, ref))
   def toSInt(): SInt = asSInt()
   def toUInt(): UInt = this
   def asUInt(): UInt = this
@@ -841,11 +804,7 @@ sealed class SInt(dir: Direction, width: Width, lit: Option[SLit] = None) extend
   def >> (other: BigInt): SInt = this >> other.toInt
   def >> (other: UInt): SInt = binop(DynamicShiftRightOp, other, this.width)
 
-  def asUInt(): UInt = {
-    val x = UInt(NO_DIR, width)
-    pushCommand(DefPrim(x, x.toType, AsUIntOp, Seq(ref), NoLits))
-    x
-  }
+  def asUInt(): UInt = pushOp(DefPrim(UInt(NO_DIR, width), AsUIntOp, ref))
   def toUInt(): UInt = asUInt()
   def asSInt(): SInt = this
   def toSInt(): SInt = this
@@ -897,8 +856,7 @@ object Mux {
   // These implementations are type-unsafe and rely on FIRRTL for type checking
   private def doMux[T <: Bits](cond: Bool, con: T, alt: T): T = {
     val d = alt.cloneTypeWidth(con.width max alt.width)
-    pushCommand(DefPrim(d, d.toType, MultiplexOp, Seq(cond.ref, con.ref, alt.ref), NoLits))
-    d
+    pushOp(DefPrim(d, MultiplexOp, cond.ref, con.ref, alt.ref))
   }
   // This returns an lvalue, which it most definitely should not
   private def doWhen[T <: Data](cond: Bool, con: T, alt: T): T = {
@@ -916,13 +874,11 @@ object Cat {
       val left = apply(r.slice(0, r.length/2))
       val right = apply(r.slice(r.length/2, r.length))
       val w = left.width + right.width
-      if (left.isLit && right.isLit) {
+
+      if (left.isLit && right.isLit)
         UInt((left.litValue() << right.getWidth) | right.litValue(), w)
-      } else {
-        val d = UInt(NO_DIR, w)
-        pushCommand(DefPrim(d, d.toType, ConcatOp, Seq(left.ref, right.ref), NoLits))
-        d
-      }
+      else
+        pushOp(DefPrim(UInt(NO_DIR, w), ConcatOp, left.ref, right.ref))
     }
   }
 }
@@ -954,8 +910,7 @@ class Bundle extends Aggregate(NO_DIR) {
   def toType: BundleType = 
     BundleType(this.toPorts, isFlip)
 
-  override def flatten: IndexedSeq[Bits] =
-    allElts.flatMap(_._2.flatten)
+  override def flatten: IndexedSeq[UInt] = allElts.flatMap(_._2.flatten)
 
   lazy val elements: ListMap[String, Data] = ListMap(allElts:_*)
 
@@ -1149,7 +1104,7 @@ class Emitter(circuit: Circuit) {
     case e: DefSInt => s"node ${e.name} = SInt<${e.width}>(${e.value})"
     case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
     case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
-    case e: DefPrim => s"node ${e.name} = ${emit(e.op)}(${join(e.args.map(x => emit(x)) ++ e.lits.map(x => x.toString), ", ")})"
+    case e: DefPrim[_] => s"node ${e.name} = ${emit(e.op)}(${join(e.args.map(x => emit(x)), ", ")})"
     case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
     case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.name}, ${e.reset.name}"
     case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.name}";

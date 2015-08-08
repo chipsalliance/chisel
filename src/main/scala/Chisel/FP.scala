@@ -32,7 +32,6 @@ package Chisel
 import Chisel._
 import DynamicContext._
 import ChiselError._
-import Commands.NoLits
 
 /// FLO
 
@@ -78,69 +77,55 @@ object FloPrimOp {
 }
 import FloPrimOp._
 
-class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends Element(dir, Width(32)) with Num[Flo] {
+sealed abstract class FloBase[T <: Data](dir: Direction, width: Width) extends Element(dir, width) {
+  protected def unop(op: PrimOp): T =
+    pushOp(DefPrim(cloneType, op, this.ref)).asInstanceOf[T]
+  protected def binop(op: PrimOp, other: T): T =
+    pushOp(DefPrim(cloneType, op, this.ref, other.ref)).asInstanceOf[T]
+  protected def compop(op: PrimOp, other: T): Bool =
+    pushOp(DefPrim(Bool(), op, this.ref, other.ref))
+
+  def toUInt = toBits
+}
+
+class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends FloBase[Flo](dir, Width(32)) with Num[Flo] {
   type T = Flo;
   override def floLitValue: Float = value.get
   def cloneTypeWidth(width: Width): this.type = cloneType
-  override def fromBits(n: Bits): this.type = {
-    val d = cloneType
-    pushCommand(DefPrim(d, d.toType, BitsToFlo, Array(this.ref), NoLits))
-    d
-  }
-  override def toBits: UInt = {
-    val d = UInt(dir, 32)
-    pushCommand(DefPrim(d, d.toType, FloToBits, Array(this.ref), NoLits))
-    d
-  }
+  override def fromBits(n: Bits): this.type =
+    pushOp(DefPrim(cloneType, BitsToFlo, this.ref)).asInstanceOf[this.type]
+  override def toBits: UInt =
+    pushOp(DefPrim(UInt(width=32), FloToBits, this.ref))
   def toType: Kind = FloType(isFlip)
   def cloneType: this.type = new Flo(dir).asInstanceOf[this.type]
-  def flatten: IndexedSeq[Bits] = IndexedSeq(toBits)
 
   def fromInt(x: Int): Flo = 
     Flo(x.toFloat).asInstanceOf[this.type]
 
-  private def flo_unop(op: PrimOp): Flo = {
-    val d = cloneType
-    pushCommand(DefPrim(d, d.toType, op, Array(this.ref), NoLits))
-    d
-  }
-  private def flo_binop(op: PrimOp, other: Flo): Flo = {
-    val d = cloneType
-    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
-    d
-  }
-  private def flo_compop(op: PrimOp, other: Flo): Bool = {
-    val d = new Bool(dir)
-    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
-    d
-  }
-
-  def unary_-() = flo_unop(FloNeg)
-  def +  (b: Flo) = flo_binop(FloAdd, b)
-  def -  (b: Flo) = flo_binop(FloSub, b)
-  def *  (b: Flo) = flo_binop(FloMul, b)
-  def /  (b: Flo) = flo_binop(FloDiv, b)
-  def %  (b: Flo) = flo_binop(FloMod, b)
-  def ===(b: Flo) = flo_compop(FloEqual, b)
-  def != (b: Flo) = flo_compop(FloNotEqual, b)
-  def >  (b: Flo) = flo_compop(FloGreater, b)
-  def <  (b: Flo) = flo_compop(FloLess, b)
-  def <= (b: Flo) = flo_compop(FloLessEqual, b)
-  def >= (b: Flo) = flo_compop(FloGreaterEqual, b)
-  def pow (b: Flo) = flo_binop(FloPow, b)
-  def sin = flo_unop(FloSin)
-  def cos = flo_unop(FloCos)
-  def tan = flo_unop(FloTan)
-  def asin = flo_unop(FloAsin)
-  def acos = flo_unop(FloAcos)
-  def atan = flo_unop(FloAtan)
-  def sqrt = flo_unop(FloSqrt)
-  def floor = flo_unop(FloFloor)
-  def ceil = flo_unop(FloCeil)
-  def round = flo_unop(FloRound)
-  def log = flo_unop(FloLog)
-  def toSInt () = SInt(OUTPUT).fromBits(toBits)
-  def toUInt () = UInt(OUTPUT).fromBits(toBits)
+  def unary_-() = unop(FloNeg)
+  def +  (b: Flo) = binop(FloAdd, b)
+  def -  (b: Flo) = binop(FloSub, b)
+  def *  (b: Flo) = binop(FloMul, b)
+  def /  (b: Flo) = binop(FloDiv, b)
+  def %  (b: Flo) = binop(FloMod, b)
+  def ===(b: Flo) = compop(FloEqual, b)
+  def != (b: Flo) = compop(FloNotEqual, b)
+  def >  (b: Flo) = compop(FloGreater, b)
+  def <  (b: Flo) = compop(FloLess, b)
+  def <= (b: Flo) = compop(FloLessEqual, b)
+  def >= (b: Flo) = compop(FloGreaterEqual, b)
+  def pow (b: Flo) = binop(FloPow, b)
+  def sin = unop(FloSin)
+  def cos = unop(FloCos)
+  def tan = unop(FloTan)
+  def asin = unop(FloAsin)
+  def acos = unop(FloAcos)
+  def atan = unop(FloAtan)
+  def sqrt = unop(FloSqrt)
+  def floor = unop(FloFloor)
+  def ceil = unop(FloCeil)
+  def round = unop(FloRound)
+  def log = unop(FloLog)
 }
 
 /// DBL
@@ -189,73 +174,44 @@ object DblPrimOp {
 }
 import DblPrimOp._
 
-class Dbl(dir: Direction, val value: Option[Double] = None) extends Element(dir, Width(64)) with Num[Dbl] {
-  // setIsSigned
-
-  // override def setIsTypeNode = {inputs(0).setIsSigned; super.setIsTypeNode}
-
+class Dbl(dir: Direction, val value: Option[Double] = None) extends FloBase[Dbl](dir, Width(64)) with Num[Dbl] {
   type T = Dbl;
   override def dblLitValue: Double = value.get
   def cloneTypeWidth(width: Width): this.type = cloneType
-  override def fromBits(n: Bits): this.type = {
-    val d = cloneType
-    pushCommand(DefPrim(d, d.toType, BitsToDbl, Array(this.ref), NoLits))
-    d
-  }
-  override def toBits: UInt = {
-    val d = UInt(dir, 64)
-    pushCommand(DefPrim(d, d.toType, DblToBits, Array(this.ref), NoLits))
-    d
-  }
+  override def fromBits(n: Bits): this.type =
+    pushOp(DefPrim(cloneType, BitsToDbl, this.ref)).asInstanceOf[this.type]
+  override def toBits: UInt =
+    pushOp(DefPrim(UInt(width=64), DblToBits, this.ref))
   def toType: Kind = DblType(isFlip)
   def cloneType: this.type = new Dbl(dir).asInstanceOf[this.type]
-  def flatten: IndexedSeq[Bits] = IndexedSeq(toBits)
 
   def fromInt(x: Int): this.type = 
     Dbl(x.toDouble).asInstanceOf[this.type]
 
-  private def dbl_unop(op: PrimOp): Dbl = {
-    val d = cloneType
-    pushCommand(DefPrim(d, d.toType, op, Array(this.ref), NoLits))
-    d
-  }
-  private def dbl_binop(op: PrimOp, other: Dbl): Dbl = {
-    val d = cloneType
-    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
-    d
-  }
-  private def dbl_compop(op: PrimOp, other: Dbl): Bool = {
-    val d = new Bool(dir)
-    pushCommand(DefPrim(d, d.toType, op, Array(this.ref, other.ref), NoLits))
-    d
-  }
-
-  def unary_-() = dbl_unop(DblNeg)
-  def +  (b: Dbl) = dbl_binop(DblAdd, b)
-  def -  (b: Dbl) = dbl_binop(DblSub, b)
-  def *  (b: Dbl) = dbl_binop(DblMul, b)
-  def /  (b: Dbl) = dbl_binop(DblDiv, b)
-  def %  (b: Dbl) = dbl_binop(DblMod, b)
-  def ===(b: Dbl) = dbl_compop(DblEqual, b)
-  def != (b: Dbl) = dbl_compop(DblNotEqual, b)
-  def >  (b: Dbl) = dbl_compop(DblGreater, b)
-  def <  (b: Dbl) = dbl_compop(DblLess, b)
-  def <= (b: Dbl) = dbl_compop(DblLessEqual, b)
-  def >= (b: Dbl) = dbl_compop(DblGreaterEqual, b)
-  def pow (b: Dbl) = dbl_binop(DblPow, b)
-  def sin = dbl_unop(DblSin)
-  def cos = dbl_unop(DblCos)
-  def tan = dbl_unop(DblTan)
-  def asin = dbl_unop(DblAsin)
-  def acos = dbl_unop(DblAcos)
-  def atan = dbl_unop(DblAtan)
-  def sqrt = dbl_unop(DblSqrt)
-  def floor = dbl_unop(DblFloor)
-  def ceil = dbl_unop(DblCeil)
-  def round = dbl_unop(DblRound)
-  def log = dbl_unop(DblLog)
-  def toSInt () = SInt(OUTPUT).fromBits(toBits)
-  def toUInt () = UInt(OUTPUT).fromBits(toBits)
+  def unary_-() = unop(DblNeg)
+  def +  (b: Dbl) = binop(DblAdd, b)
+  def -  (b: Dbl) = binop(DblSub, b)
+  def *  (b: Dbl) = binop(DblMul, b)
+  def /  (b: Dbl) = binop(DblDiv, b)
+  def %  (b: Dbl) = binop(DblMod, b)
+  def ===(b: Dbl) = compop(DblEqual, b)
+  def != (b: Dbl) = compop(DblNotEqual, b)
+  def >  (b: Dbl) = compop(DblGreater, b)
+  def <  (b: Dbl) = compop(DblLess, b)
+  def <= (b: Dbl) = compop(DblLessEqual, b)
+  def >= (b: Dbl) = compop(DblGreaterEqual, b)
+  def pow (b: Dbl) = binop(DblPow, b)
+  def sin = unop(DblSin)
+  def cos = unop(DblCos)
+  def tan = unop(DblTan)
+  def asin = unop(DblAsin)
+  def acos = unop(DblAcos)
+  def atan = unop(DblAtan)
+  def sqrt = unop(DblSqrt)
+  def floor = unop(DblFloor)
+  def ceil = unop(DblCeil)
+  def round = unop(DblRound)
+  def log = unop(DblLog)
 }
 
 object Sin {
