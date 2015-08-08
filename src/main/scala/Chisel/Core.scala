@@ -977,7 +977,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
 
   val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
 
-  private def params = DynamicContext.getParams
+  def params = DynamicContext.getParams
   params.path = this.getClass :: params.path //TODO: make immutable?
 
   def io: Bundle
