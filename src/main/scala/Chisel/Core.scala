@@ -238,8 +238,6 @@ abstract class Definition extends Command {
   def id: Id
   def name = Builder.globalRefMap.getRefForId(id).name
 }
-case class DefUInt(id: Id, value: BigInt, width: Int) extends Definition
-case class DefSInt(id: Id, value: BigInt, width: Int) extends Definition
 case class DefFlo(id: Id, value: Float) extends Definition
 case class DefDbl(id: Id, value: Double) extends Definition
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
@@ -316,7 +314,7 @@ abstract class Data(dirArg: Direction) extends Id {
     pushCommand(BulkConnect(this.lref, that.lref))
   private[Chisel] def collectElts = { }
   private[Chisel] def lref: Alias = Alias(this)
-  private[Chisel] def ref: Arg = if (isLit) litArg() else lref
+  private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
   private[Chisel] def debugName = _mod.debugName + "." + Builder.globalRefMap.getRefForId(this).debugName
   private[Chisel] def cloneTypeWidth(width: Width): this.type
 
@@ -324,9 +322,9 @@ abstract class Data(dirArg: Direction) extends Id {
   def <> (that: Data): Unit = this badConnect that
   def cloneType: this.type
   def name = Builder.globalRefMap.getRefForId(this).name
-  def litArg(): LitArg = None.get
-  def litValue(): BigInt = None.get
-  def isLit(): Boolean = false
+  def litArg(): Option[LitArg] = None
+  def litValue(): BigInt = litArg.get.num
+  def isLit(): Boolean = litArg.isDefined
   def floLitValue: Float = intBitsToFloat(litValue().toInt)
   def dblLitValue: Double = longBitsToDouble(litValue().toLong)
 
@@ -367,9 +365,10 @@ object Reg {
   private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     if (t ne null) t.cloneType
     else if (next ne null) next.cloneTypeWidth(Width())
-    else if (init ne null) {
-      if (init.isLit && init.litArg.forcedWidth) init.cloneType
-      else init.cloneTypeWidth(Width())
+    else if (init ne null) init.litArg match {
+      // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
+      case Some(lit) if lit.forcedWidth => init.cloneType
+      case _ => init.cloneTypeWidth(Width())
     } else throwException("cannot infer type")
   }
 
@@ -585,10 +584,7 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   }
 }
 
-sealed abstract class Bits(dirArg: Direction, width: Width, lit: Option[LitArg]) extends Element(dirArg, width) {
-  override def litArg(): LitArg = lit.get
-  override def isLit(): Boolean = lit.isDefined
-  override def litValue(): BigInt = lit.get.num
+sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg: Option[LitArg]) extends Element(dirArg, width) {
   def fromInt(x: BigInt): this.type = makeLit(x)
   def makeLit(value: BigInt): this.type
   def cloneType: this.type = cloneTypeWidth(width)
@@ -1100,8 +1096,6 @@ class Emitter(circuit: Circuit) {
     case e: ClockType => s"Clock"
   }
   private def emit(e: Command): String = e match {
-    case e: DefUInt => s"node ${e.name} = UInt<${e.width}>(${e.value})"
-    case e: DefSInt => s"node ${e.name} = SInt<${e.width}>(${e.value})"
     case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
     case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
     case e: DefPrim[_] => s"node ${e.name} = ${emit(e.op)}(${join(e.args.map(x => emit(x)), ", ")})"

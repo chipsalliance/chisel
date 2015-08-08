@@ -35,16 +35,18 @@ import ChiselError._
 
 /// FLO
 
+case class FloLit(num: Float) extends Arg {
+  def name = s"Flo(${num.toString})"
+}
+
+case class DblLit(num: Double) extends Arg {
+  def name = s"Dbl(${num.toString})"
+}
+
 object Flo {
-  def apply(x: Float): Flo = floLit(x)
+  def apply(x: Float): Flo = new Flo(NO_DIR, Some(FloLit(x)))
   def apply(x: Double): Flo = Flo(x.toFloat)
-  def floLit(value: Float): Flo = {
-    val b = new Flo(NO_DIR, Some(value))
-    pushCommand(DefFlo(b, value))
-    b
-  }
-  def apply(dir: Direction = null): Flo = 
-    new Flo(dir)
+  def apply(dir: Direction = null): Flo = new Flo(dir)
 }
 
 object FloPrimOp {
@@ -88,9 +90,9 @@ sealed abstract class FloBase[T <: Data](dir: Direction, width: Width) extends E
   def toUInt = toBits
 }
 
-class Flo(dir: Direction = NO_DIR, val value:Option[Float] = None) extends FloBase[Flo](dir, Width(32)) with Num[Flo] {
+class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None) extends FloBase[Flo](dir, Width(32)) with Num[Flo] {
   type T = Flo;
-  override def floLitValue: Float = value.get
+  override def floLitValue: Float = value.get.num
   def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type =
     pushOp(DefPrim(cloneType, BitsToFlo, this.ref)).asInstanceOf[this.type]
@@ -134,14 +136,8 @@ import java.lang.Double.doubleToLongBits
 
 object Dbl {
   def apply(x: Float): Dbl = Dbl(x.toDouble);
-  def apply(x: Double): Dbl = dblLit(x)
-  def dblLit(value: Double): Dbl = {
-    val b = new Dbl(NO_DIR, Some(value))
-    pushCommand(DefDbl(b, value))
-    b
-  }
-  def apply(dir: Direction = NO_DIR): Dbl = 
-    new Dbl(dir)
+  def apply(x: Double): Dbl = new Dbl(NO_DIR, Some(DblLit(x)))
+  def apply(dir: Direction = NO_DIR): Dbl = new Dbl(dir)
 }
 
 object DblPrimOp {
@@ -174,9 +170,9 @@ object DblPrimOp {
 }
 import DblPrimOp._
 
-class Dbl(dir: Direction, val value: Option[Double] = None) extends FloBase[Dbl](dir, Width(64)) with Num[Dbl] {
+class Dbl(dir: Direction, val value: Option[DblLit] = None) extends FloBase[Dbl](dir, Width(64)) with Num[Dbl] {
   type T = Dbl;
-  override def dblLitValue: Double = value.get
+  override def dblLitValue: Double = value.get.num
   def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type =
     pushOp(DefPrim(cloneType, BitsToDbl, this.ref)).asInstanceOf[this.type]
