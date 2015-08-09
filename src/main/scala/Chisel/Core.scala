@@ -279,9 +279,9 @@ object debug {
 }
 
 abstract class Data(dirArg: Direction) extends Id {
-  private[Chisel] val _mod: Module = DynamicContext.getCurrentModule.getOrElse(
-    throwException("Data subclasses can only be instantiated inside Modules!"))
-  //TODO: is this true?
+  private[Chisel] val _mod: Module = DynamicContext.getCurrentModule.getOrElse(null)
+  if (_mod ne null)
+    _mod.addNode(this)
 
   _mod.addNode(this)
   def params = DynamicContext.getParams
