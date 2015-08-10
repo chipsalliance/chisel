@@ -6,30 +6,26 @@ import scala.language.experimental.macros
 import scala.reflect.runtime.universe._
 import scala.reflect.macros.blackbox._
 
-object log2Up
-{
-  def apply(in: Int): Int = if(in == 1) 1 else ceil(log(in)/log(2)).toInt
+object log2Up {
+  def apply(in: Int): Int = 1 max BigInt(in-1).bitLength
 }
 
-object log2Ceil
-{
-  def apply(in: Int): Int = ceil(log(in)/log(2)).toInt
+object log2Ceil {
+  def apply(in: Int): Int = {
+    require(in > 0)
+    BigInt(in-1).bitLength
+  }
 }
 
-
-object log2Down
-{
-  def apply(x : Int): Int = if (x == 1) 1 else floor(log(x)/log(2.0)).toInt
+object log2Down {
+  def apply(in: Int): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
 }
 
-object log2Floor
-{
-  def apply(x : Int): Int = floor(log(x)/log(2.0)).toInt
+object log2Floor {
+  def apply(in: Int): Int = log2Ceil(in) - (if (isPow2(in)) 0 else 1)
 }
 
-
-object isPow2
-{
+object isPow2 {
   def apply(in: Int): Boolean = in > 0 && ((in & (in-1)) == 0)
 }
 
