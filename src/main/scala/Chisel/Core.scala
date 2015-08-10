@@ -60,6 +60,12 @@ private object DynamicContext {
   def paramsScope[T](p: Parameters)(body: => T): T = {
     currentParamsVar.withValue(p)(body)
   }
+  def paramsScope[T,S](mask: Map[S,Any])(body: => T): T = {
+    paramsScope(currentParamsVar.value.alter(mask))(body)
+  }
+  def paramsScope[T](mask: PartialFunction[Any,Any])(body: => T): T = {
+    paramsScope(currentParamsVar.value.alterPartial(mask))(body)
+  }
 }
 
 private object Builder {
@@ -283,7 +289,6 @@ abstract class Data(dirArg: Direction) extends Id {
   if (_mod ne null)
     _mod.addNode(this)
 
-  _mod.addNode(this)
   def params = DynamicContext.getParams
 
   def toType: Kind
@@ -949,8 +954,8 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 object Module {
-  def apply[T <: Module](bc: => T)(implicit currParams: Parameters = DynamicContext.getParams): T = {
-    DynamicContext.paramsScope(currParams.push) {
+  def apply[T <: Module](bc: => T)(implicit currParams: Parameters = DynamicContext.getParams.push): T = {
+    DynamicContext.paramsScope(currParams) {
       val m = DynamicContext.moduleScope{ bc.setRefs() }
       val ports = m.computePorts
       Builder.components += Component(m.name, ports, m._commands)
@@ -959,8 +964,7 @@ object Module {
     }.connectImplicitIOs()
   }
   def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
-    val q = DynamicContext.getParams.alterPartial(f)
-    apply(m)(q)
+    apply(m)(DynamicContext.getParams.alterPartial(f))
   }
 }
 
@@ -974,7 +978,6 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
 
   def params = DynamicContext.getParams
-  params.path = this.getClass :: params.path //TODO: make immutable?
 
   def io: Bundle
   val clock = Clock(INPUT)

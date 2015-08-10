@@ -135,8 +135,6 @@ object Dump {
 
 // objects given to the user in mask functions (site,here,up)
 abstract class View {
-  // the list of classes in our current path down the heirarchy
-  def path: List[Class[_]]
 
   protected val deftSite: View // when views are queried without a specifying a site this is the default
 
@@ -172,7 +170,6 @@ final case class ViewSym(view:View) {
 
 // internal type to represent functions that evaluate parameter values
 abstract class _Lookup {
-  var path:List[Class[_]] = null
 
   def apply[T](pname:Any, site:View):Ex[T]
 
@@ -180,7 +177,6 @@ abstract class _Lookup {
   final def push() = {
     val me = this
     new _Lookup {
-      this.path = me.path
       def apply[T](pname:Any, site:View) = me.apply(pname, site)
     }
   }
@@ -217,7 +213,6 @@ abstract class World(
   val _knobs = new mutable.HashSet[Any]
   abstract class _View extends View {
     val look: _Lookup
-    def path = look.path
 
     def apply[T](pname:Any, site:View):T = {
       _eval(look(pname, site).asInstanceOf[Ex[T]])
@@ -261,7 +256,6 @@ abstract class World(
   // the top level lookup
   def _topLook():_Lookup = {
     class TopLookup extends _Lookup {
-      this.path = Nil
 
       def apply[T](pname:Any, site:View):Ex[T] = {
         val here = _otherView(this, site)
@@ -429,12 +423,6 @@ final class Parameters(
   def push():Parameters =
     new Parameters(_world, _look.push())
 
-  // parameter's paths should be immutable but I foresee that not being sufficient
-  // when integrated into the chisel Module factory.
-  def path = _look.path
-  def path_=(x:List[Class[_]]) =
-    _look.path = x
-
   def apply[T](field:Any):T =
     _world._eval(_look(field, _site())).asInstanceOf[T]
 
@@ -449,7 +437,6 @@ final class Parameters(
 
   private def _alter(mask:(/*field*/Any,/*site*/View,/*here*/View,/*up*/View)=>Any) = {
     class KidLookup extends _Lookup {
-      this.path = _look.path
 
       def apply[T](f:Any, site:View):Ex[T] = {
         val here = _world._otherView(this, site)
