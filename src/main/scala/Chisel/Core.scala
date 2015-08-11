@@ -766,7 +766,7 @@ sealed class SInt(dir: Direction, width: Width, lit: Option[SLit] = None) extend
   def toType: Kind = SIntType(width, isFlip)
 
   override def := (that: Data): Unit = that match {
-    case _: SInt => this badConnect that
+    case _: SInt => this connect that
     case _ => this badConnect that
   }
 
