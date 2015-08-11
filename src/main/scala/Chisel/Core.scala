@@ -637,8 +637,8 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   def asSInt(): SInt
   def asUInt(): UInt
-  def toSInt(): SInt
-  def toUInt(): UInt
+  final def toSInt(): SInt = asSInt
+  final def toUInt(): UInt = asUInt
   def toBool(): Bool = this(0)
 
   override def toBits = asUInt
@@ -728,8 +728,6 @@ sealed class UInt(dir: Direction, width: Width, lit: Option[ULit] = None) extend
 
   def zext(): SInt = pushOp(DefPrim(SInt(NO_DIR, width + 1), ConvertOp, ref))
   def asSInt(): SInt = pushOp(DefPrim(SInt(NO_DIR, width), AsSIntOp, ref))
-  def toSInt(): SInt = asSInt()
-  def toUInt(): UInt = this
   def asUInt(): UInt = this
 }
 
@@ -806,9 +804,7 @@ sealed class SInt(dir: Direction, width: Width, lit: Option[SLit] = None) extend
   def >> (other: UInt): SInt = binop(SInt(NO_DIR, this.width), DynamicShiftRightOp, other)
 
   def asUInt(): UInt = pushOp(DefPrim(UInt(NO_DIR, width), AsUIntOp, ref))
-  def toUInt(): UInt = asUInt()
   def asSInt(): SInt = this
-  def toSInt(): SInt = this
 }
 
 object SInt {
