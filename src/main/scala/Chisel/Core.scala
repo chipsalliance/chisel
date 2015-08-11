@@ -348,7 +348,7 @@ abstract class Data(dirArg: Direction) extends Id {
   }
   def toBits(): UInt = {
     val elts = this.flatten.reverse
-    Cat(elts.head, elts.tail:_*).asUInt
+    Cat(elts.head, elts.tail:_*)
   }
 
   def toPort: Port = Port(this, toType)
