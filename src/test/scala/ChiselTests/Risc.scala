@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 class Risc extends Module {
   val io = new Bundle {

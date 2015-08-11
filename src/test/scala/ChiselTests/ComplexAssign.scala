@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle {
   override def cloneType: this.type =

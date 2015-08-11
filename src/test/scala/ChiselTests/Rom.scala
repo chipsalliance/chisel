@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 class Rom extends Module {
   val io = new Bundle {

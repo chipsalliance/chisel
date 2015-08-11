@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 object MiniChisel {
   def main(gargs: Array[String]): Unit = {

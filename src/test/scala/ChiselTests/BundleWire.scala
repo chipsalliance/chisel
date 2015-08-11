@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 class Coord extends Bundle {
   val x = UInt(width = 32)

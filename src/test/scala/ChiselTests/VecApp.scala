@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 class VecApp(n: Int, W: Int) extends Module {
   val io = new Bundle {

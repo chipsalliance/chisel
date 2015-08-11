@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 import scala.collection.mutable.ArrayBuffer
 
 class Mul(val w: Int) extends Module {

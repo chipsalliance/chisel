@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 object Insts {
   def ADD = BitPat("b0000000??????????000?????0110011")

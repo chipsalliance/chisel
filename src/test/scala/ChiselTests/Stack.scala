@@ -1,6 +1,7 @@
 package ChiselTests
 import scala.collection.mutable.{Stack => ScalaStack}
 import Chisel._
+import Chisel.testers._
 
 class Stack(val depth: Int) extends Module {
   val io = new Bundle {

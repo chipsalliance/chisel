@@ -1,5 +1,6 @@
 package ChiselTests
 import Chisel._
+import Chisel.testers._
 
 object Counter {
   def wrapAround(n: UInt, max: UInt) = 

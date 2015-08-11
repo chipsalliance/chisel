@@ -97,3 +97,8 @@ object TesterDriver {
   }
 
 }
+
+// This should go away.
+object chiselMainTest {
+  def apply[T <: Module](args: Array[String], gen: () => T)(tester: T => Tester[T]): T = ???
+}
