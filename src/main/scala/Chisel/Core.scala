@@ -639,7 +639,11 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   def asUInt(): UInt
   final def toSInt(): SInt = asSInt
   final def toUInt(): UInt = asUInt
-  def toBool(): Bool = this(0)
+
+  def toBool(): Bool = width match {
+    case KnownWidth(1) => this(0)
+    case _ => throwException(s"can't covert UInt<$width> to Bool")
+  }
 
   override def toBits = asUInt
   override def fromBits(n: Bits): this.type = {
