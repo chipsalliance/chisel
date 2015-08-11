@@ -775,8 +775,8 @@ sealed class SInt(dir: Direction, width: Width, lit: Option[SLit] = None) extend
   override def makeLit(value: BigInt): this.type =
     SInt(value).asInstanceOf[this.type]
 
-  def unary_- : SInt = SInt(0, getWidth) - this
-  def unary_-% : SInt = SInt(0, getWidth) -% this
+  def unary_- : SInt = SInt(0) - this
+  def unary_-% : SInt = SInt(0) -% this
   def +& (other: SInt): SInt = binop(SInt(NO_DIR, (this.width max other.width) + 1), AddOp, other)
   def + (other: SInt): SInt = this +% other
   def +% (other: SInt): SInt = binop(SInt(NO_DIR, this.width max other.width), AddModOp, other)
