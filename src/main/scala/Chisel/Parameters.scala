@@ -265,8 +265,8 @@ abstract class World(
             case e:scala.MatchError => throw new ParameterUndefinedException(pname, e)
           }
         ) match {
-          case k:Knob[T] => ExVar[T](_VarKnob[T](k.name))
-          case ex:Ex[T] => _bindLet[T](pname,ex)
+          case k:Knob[T @unchecked] => ExVar[T](_VarKnob[T](k.name))
+          case ex:Ex[T @unchecked] => _bindLet[T](pname,ex)
           case lit => ExLit(lit.asInstanceOf[T])
         }
       }
@@ -443,7 +443,7 @@ final class Parameters(
         val up = _world._otherView(_look, site)
 
         mask(f, site, here, up) match {
-          case e:Ex[T] => e
+          case e:Ex[T @unchecked] => e
           case lit => ExLit(lit.asInstanceOf[T])
         }
       }
