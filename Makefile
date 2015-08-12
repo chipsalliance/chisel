@@ -54,7 +54,10 @@ ifneq (,$(RM_DIRS))
 endif
 
 scaladoc:
-	$(SBT) $(SBT_FLAGS) doc test:doc
+	$(SBT) $(SBT_FLAGS) doc
+
+site:
+	$(SBT) $(SBT_FLAGS) make-site
 
 # Start off clean, then run tests for all supported configurations, and publish those versions of the code.
 # Then run coverage and style tests (for developer's use).
