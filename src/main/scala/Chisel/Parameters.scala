@@ -67,8 +67,30 @@ import scala.collection.mutable
 // Convention: leading _'s on names means private to the outside world
 // but accessible to anything in this file.
 
-abstract trait UsesParameters {
-  def params: Parameters
+@deprecated("params is now globally available as Chisel.params object","08-01-2015")
+abstract trait UsesParameters { }
+
+object params {
+  def apply[T](field:Any):T = Builder.dynamicContext.getParams.apply(field)
+  def apply[T](field:Field[T]):T = Builder.dynamicContext.getParams.apply(field)
+  // TODO: provide other mutators of Parameters? or @deprecate this and make
+  // Parameters private, only mutateable through paramsScope?
+  def alterPartial[T](mask: PartialFunction[Any,Any]): Parameters = {
+    Builder.dynamicContext.getParams.alterPartial(mask)
+  }
+  def constrain(gen:ViewSym=>Ex[Boolean]) = Builder.dynamicContext.getParams.constrain(gen)
+}
+
+object paramsScope {
+  def apply[T](p: Parameters)(body: => T): T = {
+    Builder.dynamicContext.paramsScope(p)(body)
+  }
+  def apply[T,S](mask: Map[S,Any])(body: => T): T = {
+    apply(Builder.dynamicContext.getParams.alter(mask))(body)
+  }
+  def apply[T](mask: PartialFunction[Any,Any])(body: => T): T = {
+    apply(Builder.dynamicContext.getParams.alterPartial(mask))(body)
+  }
 }
 
 class ParameterUndefinedException(field:Any, cause:Throwable=null)
@@ -79,6 +101,8 @@ class KnobUndefinedException(field:Any, cause:Throwable=null)
 // Knobs are top level free variables that go into the constraint solver.
 final case class Knob[T](name:Any)
 
+// Fields are wrappers around particular a particular parameter's type
+class Field[T]
 
 class ChiselConfig(
   val topDefinitions: World.TopDefs = { (a,b,c) => {throw new scala.MatchError(a)}},
@@ -124,6 +148,7 @@ class ChiselConfig(
   override def toString = this.getClass.getSimpleName
 }
 
+// TODO eliminate this or move it to DynamicContext
 object Dump {
   def apply[T](key:Any,value:T):T = Builder.parameterDump.apply(key, value)
   def apply[T](knob:Knob[T]):Knob[T] = Builder.parameterDump.apply(knob)
@@ -140,7 +165,6 @@ class ParameterDump {
 
 // objects given to the user in mask functions (site,here,up)
 abstract class View {
-
   protected val deftSite: View // when views are queried without a specifying a site this is the default
 
   // use `this` view's behavior to query for a parameters value as if
@@ -413,8 +437,6 @@ object Parameters {
     }
   }
 }
-
-class Field[T]
 
 final class Parameters(
     private val _world: World,

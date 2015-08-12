@@ -58,12 +58,6 @@ private class DynamicContext {
   def paramsScope[T](p: Parameters)(body: => T): T = {
     currentParamsVar.withValue(p)(body)
   }
-  def paramsScope[T,S](mask: Map[S,Any])(body: => T): T = {
-    paramsScope(currentParamsVar.value.alter(mask))(body)
-  }
-  def paramsScope[T](mask: PartialFunction[Any,Any])(body: => T): T = {
-    paramsScope(currentParamsVar.value.alterPartial(mask))(body)
-  }
 }
 
 private object Builder {
@@ -298,8 +292,6 @@ abstract class Data(dirArg: Direction) extends Id {
   private[Chisel] val _mod: Module = dynamicContext.getCurrentModule.getOrElse(null)
   if (_mod ne null)
     _mod.addNode(this)
-
-  def params = dynamicContext.getParams
 
   def toType: Kind
   def dir: Direction = dirVar
@@ -906,6 +898,7 @@ object Bundle {
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
     dynamicContext.paramsScope(p.push){ b }
   }
+  //TODO @deprecated("Use Chisel.paramsScope object","08-01-2015")
   def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
     val q = dynamicContext.getParams.alterPartial(f)
     apply(b)(q)
@@ -979,6 +972,7 @@ object Module {
       m
     }.connectImplicitIOs()
   }
+  //TODO @deprecated("Use Chisel.paramsScope object","08-01-2015")
   def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
     apply(m)(dynamicContext.getParams.alterPartial(f))
   }
@@ -998,8 +992,6 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
   }
 
   val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
-
-  def params = dynamicContext.getParams
 
   def io: Bundle
   val clock = Clock(INPUT)
