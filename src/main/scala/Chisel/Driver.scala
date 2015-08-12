@@ -83,17 +83,17 @@ object Driver extends FileSystemUtilities {
     try {
       ChiselError.clear()
       ChiselError.info("Elaborating design...")
-      val ir = build(gen())
+      val ir = Builder.build(gen())
       ChiselError.info("Done elaborating.")
 
       val name = c match {
-        case None => ir.main
-        case Some(config) => s"${ir.main}.$config"
+        case None => ir.name
+        case Some(config) => s"${ir.name}.$config"
       }
       createOutputFile(s"$name.knb", p.getKnobs)
       createOutputFile(s"$name.cst", p.getConstraints)
-      createOutputFile(s"$name.prm", Dump.getDump)
-      createOutputFile(s"$name.fir", emit(ir))
+      createOutputFile(s"$name.prm", ir.parameterDump.getDump)
+      createOutputFile(s"$name.fir", ir.emit)
     } finally {
       ChiselError.report
     }

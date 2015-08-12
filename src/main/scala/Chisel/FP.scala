@@ -30,7 +30,7 @@
 
 package Chisel
 import Chisel._
-import DynamicContext._
+import Builder.pushOp
 import ChiselError._
 
 /// FLO

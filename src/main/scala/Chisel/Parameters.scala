@@ -125,6 +125,11 @@ class ChiselConfig(
 }
 
 object Dump {
+  def apply[T](key:Any,value:T):T = Builder.parameterDump.apply(key, value)
+  def apply[T](knob:Knob[T]):Knob[T] = Builder.parameterDump.apply(knob)
+}
+
+class ParameterDump {
   val dump = mutable.Set[Tuple2[Any,Any]]()
   val knobList = mutable.ListBuffer[Any]()
   def apply[T](key:Any,value:T):T = {addToDump(key,value); value}
@@ -228,7 +233,7 @@ abstract class World(
       case v:_VarKnob[_] => {
         _knobs += v.kname
         val e = _knobValue(v.kname)
-        if(Dump.knobList.contains(v.kname)) {Dump.addToDump(v.kname,e);e} else e
+        if(Builder.parameterDump.knobList.contains(v.kname)) {Builder.parameterDump.addToDump(v.kname,e);e} else e
       }
       case v:_VarLet[_] => _eval(v.expr.asInstanceOf[Ex[T]])
     })
