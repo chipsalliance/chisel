@@ -393,16 +393,16 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mt, mt.toType, size, mt._mod.clock)) // TODO multi-clock
+    pushCommand(DefMemory(mem, mt.toType, size, mt._mod.clock)) // TODO multi-clock
     mem
   }
 }
 
-class Mem[T <: Data](protected[Chisel] val t: T, val length: Int) extends VecLike[T] {
+class Mem[T <: Data](t: T, val length: Int) extends Aggregate(NO_DIR) with VecLike[T] {
   def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T = {
     val x = t.cloneType
-    pushCommand(DefAccessor(x, Alias(t), NO_DIR, idx.ref))
+    pushCommand(DefAccessor(x, Alias(this), NO_DIR, idx.ref))
     x
   }
 
@@ -414,9 +414,9 @@ class Mem[T <: Data](protected[Chisel] val t: T, val length: Int) extends VecLik
     write(idx, t.fromBits((read(idx).toBits & ~mask1) | (data.toBits & mask1)))
   }
 
-  //TODO: is this correct?
-  def name = Builder.globalRefMap.getRefForId(t).name
-  def debugName = Builder.globalRefMap.getRefForId(t).debugName
+  def cloneType = throwException("Mem.cloneType unimplemented")
+  def flatten = throwException("Mem.flatten unimplemented")
+  def toType = throwException("Mem.toType unimplemented")
 }
 
 object SeqMem {
@@ -894,8 +894,8 @@ object Cat {
 }
 
 object Bundle {
-  val keywords = HashSet[String]("flip", "asInput", "asOutput",
-    "cloneType", "clone", "toBits")
+  private val keywords =
+    HashSet[String]("flip", "asInput", "asOutput", "cloneType", "toBits")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
     DynamicContext.paramsScope(p.push){ b }
   }
@@ -1033,18 +1033,9 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
       _namespace.name(name)
 
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
-    for (m <- methods; if isPublicVal(m)) {
-      m.invoke(this) match {
-        case module: Module =>
-          Builder.globalRefMap.setRefForId(module, m.getName)
-        case mem: Mem[_] =>
-          Builder.globalRefMap.setRefForId(mem.t, m.getName)
-        case vec: Vec[_] =>
-          Builder.globalRefMap.setRefForId(vec, m.getName)
-        case data: Data =>
-          Builder.globalRefMap.setRefForId(data, m.getName)
-        case _ =>
-      }
+    for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
+      case id: Id => Builder.globalRefMap.setRefForId(id, m.getName)
+      case _ =>
     }
     this
   }
@@ -1095,7 +1086,6 @@ class Emitter(circuit: Circuit) {
   def emitDir(e: Port, isTop: Boolean): String =
     if (isTop) (if (e.id.isFlip) "input " else "output ")
     else (if (e.id.isFlip) "flip " else "")
-  def emit(e: PrimOp): String = e.name
   def emit(e: Arg): String = e.fullname
   def emitPort(e: Port, isTop: Boolean): String =
     s"${emitDir(e, isTop)}${Builder.globalRefMap.getRefForId(e.id).name} : ${emitType(e.kind)}"
@@ -1110,7 +1100,7 @@ class Emitter(circuit: Circuit) {
   private def emit(e: Command): String = e match {
     case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
     case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
-    case e: DefPrim[_] => s"node ${e.name} = ${emit(e.op)}(${join(e.args.map(x => emit(x)), ", ")})"
+    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${join(e.args.map(x => emit(x)), ", ")})"
     case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
     case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.name}, ${e.reset.name}"
     case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.name}";
