@@ -1168,6 +1168,7 @@ class Emitter(circuit: Circuit) {
 
   private val res = new StringBuilder(s"circuit ${circuit.main} : ")
   withIndent { circuit.components foreach emit }
+  res ++= newline
 }
 
 object emit {
