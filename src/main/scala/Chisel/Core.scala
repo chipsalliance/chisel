@@ -655,7 +655,7 @@ object Bundle {
 }
 
 class Bundle extends Aggregate(NO_DIR) {
-  private implicit val _namespace = Builder.globalNamespace.child
+  private val _namespace = Builder.globalNamespace.child
 
   override def <> (that: Data): Unit = that match {
     case _: Bundle => this bulkConnect that
@@ -693,7 +693,7 @@ class Bundle extends Aggregate(NO_DIR) {
     namedElts += name -> elt
 
   override def collectElts =
-    for ((name, elt) <- namedElts) { elt.setRef(this, name) }
+    for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
 
   override def cloneType : this.type = {
     try {
@@ -728,7 +728,7 @@ object Module {
 }
 
 abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
-  private implicit val _namespace = Builder.globalNamespace.child
+  private val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _nodes = ArrayBuffer[Data]()
   private[Chisel] val _children = ArrayBuffer[Module]()
@@ -782,7 +782,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
 
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
     for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
-      case id: HasId => id.setRef(m.getName)
+      case id: HasId => id.setRef(_namespace.name(m.getName))
       case _ =>
     }
     (_nodes ++ _children).foreach(_.setRef)

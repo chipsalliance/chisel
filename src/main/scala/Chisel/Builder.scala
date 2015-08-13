@@ -2,7 +2,7 @@ package Chisel
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-class Namespace(parent: Option[Namespace], kws: Option[Set[String]]) {
+private class Namespace(parent: Option[Namespace], kws: Option[Set[String]]) {
   private var i = 0L
   private val names = collection.mutable.HashSet[String]()
   private val keywords = kws.getOrElse(Set())
@@ -10,9 +10,8 @@ class Namespace(parent: Option[Namespace], kws: Option[Set[String]]) {
   private def rename(n: String) = { i += 1; s"${n}_${i}" }
 
   def contains(elem: String): Boolean = {
-    keywords.contains(elem) ||
-      names.contains(elem) ||
-        parent.map(_ contains elem).getOrElse(false)
+    keywords.contains(elem) || names.contains(elem) ||
+      parent.map(_ contains elem).getOrElse(false)
   }
 
   def name(elem: String): String = {
@@ -35,12 +34,11 @@ private class IdGen {
   }
 }
 
-trait HasId {
+private[Chisel] trait HasId {
   private[Chisel] val _id = Builder.idGen.next
   def setRef() =  Builder.globalRefMap.setRef(this, s"T_${_id}")
   def setRef(imm: Immediate) = Builder.globalRefMap.setRef(this, imm)
-  def setRef(name: String)(implicit namespace: Namespace = Builder.globalNamespace) =
-    Builder.globalRefMap.setRef(this, name)(namespace)
+  def setRef(name: String) = Builder.globalRefMap.setRef(this, name)
   def setRef(parent: HasId, name: String) = Builder.globalRefMap.setField(parent, this, name)
   def setRef(parent: HasId, index: Int) = Builder.globalRefMap.setIndex(parent, this, index)
 }
@@ -51,9 +49,8 @@ class RefMap {
   def setRef(id: HasId, ref: Immediate): Unit =
     _refmap(id._id) = ref
 
-  def setRef(id: HasId, name: String)(implicit namespace: Namespace = Builder.globalNamespace): Unit =
-    if (!_refmap.contains(id._id))
-      setRef(id, Ref(namespace.name(name)))
+  def setRef(id: HasId, name: String): Unit =
+    if (!_refmap.contains(id._id)) setRef(id, Ref(name))
 
   def setField(parentid: HasId, id: HasId, name: String): Unit = {
     _refmap(id._id) = Slot(Alias(parentid), name)
@@ -111,7 +108,7 @@ private object Builder {
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       val mod = f
-      mod.setRef(mod.name)
+      mod.setRef(globalNamespace.name(mod.name))
       Circuit(components.last.name, components, globalRefMap, parameterDump)
     }
   }
