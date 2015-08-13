@@ -2,25 +2,26 @@ package Chisel
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-private class Namespace(parent: Option[Namespace], keywords: Option[Set[String]]) {
+class Namespace(parent: Option[Namespace], kws: Option[Set[String]]) {
   private var i = 0L
   private val names = collection.mutable.HashSet[String]()
-  def forbidden =  keywords.getOrElse(Set()) ++ names
+  private val keywords = kws.getOrElse(Set())
 
   private def rename(n: String) = { i += 1; s"${n}_${i}" }
 
   def contains(elem: String): Boolean = {
-    forbidden.contains(elem) ||
-      parent.map(_ contains elem).getOrElse(false)
+    keywords.contains(elem) ||
+      names.contains(elem) ||
+        parent.map(_ contains elem).getOrElse(false)
   }
 
   def name(elem: String): String = {
-    val res = if(forbidden contains elem) rename(elem) else elem
+    val res = if(this contains elem) rename(elem) else elem
     names += res
     res
   }
 
-  def child(ks: Option[Set[String]]): Namespace = new Namespace(Some(this), ks)
+  def child(kws: Option[Set[String]]): Namespace = new Namespace(Some(this), kws)
   def child: Namespace = new Namespace(Some(this), None)
 }
 
@@ -38,7 +39,8 @@ trait HasId {
   private[Chisel] val _id = Builder.idGen.next
   def setRef() =  Builder.globalRefMap.setRef(this, s"T_${_id}")
   def setRef(imm: Immediate) = Builder.globalRefMap.setRef(this, imm)
-  def setRef(name: String) = Builder.globalRefMap.setRef(this, name)
+  def setRef(name: String)(implicit namespace: Namespace = Builder.globalNamespace) =
+    Builder.globalRefMap.setRef(this, name)(namespace)
   def setRef(parent: HasId, name: String) = Builder.globalRefMap.setField(parent, this, name)
   def setRef(parent: HasId, index: Int) = Builder.globalRefMap.setIndex(parent, this, index)
 }
@@ -49,9 +51,9 @@ class RefMap {
   def setRef(id: HasId, ref: Immediate): Unit =
     _refmap(id._id) = ref
 
-  def setRef(id: HasId, name: String): Unit =
+  def setRef(id: HasId, name: String)(implicit namespace: Namespace = Builder.globalNamespace): Unit =
     if (!_refmap.contains(id._id))
-      setRef(id, Ref(Builder.globalNamespace.name(name)))
+      setRef(id, Ref(namespace.name(name)))
 
   def setField(parentid: HasId, id: HasId, name: String): Unit = {
     _refmap(id._id) = Slot(Alias(parentid), name)
