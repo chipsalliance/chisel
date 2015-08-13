@@ -1,7 +1,6 @@
 package Chisel
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
-import java.lang.reflect.Modifier._
 import Builder.pushCommand
 import Builder.pushOp
 import Builder.dynamicContext
@@ -670,7 +669,8 @@ class Bundle extends Aggregate(NO_DIR) {
   lazy val elements: ListMap[String, Data] = ListMap(allElts:_*)
 
   private def isBundleField(m: java.lang.reflect.Method) =
-    m.getParameterTypes.isEmpty && !isStatic(m.getModifiers) &&
+    m.getParameterTypes.isEmpty &&
+    !java.lang.reflect.Modifier.isStatic(m.getModifiers) &&
     classOf[Data].isAssignableFrom(m.getReturnType) &&
     !(Bundle.keywords contains m.getName)
 
