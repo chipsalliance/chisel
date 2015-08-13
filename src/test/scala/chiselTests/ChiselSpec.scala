@@ -35,11 +35,11 @@ import org.scalatest.prop._
 import org.scalacheck._
 import Chisel.testers._
 
-class ChiselSpec extends FlatSpec with PropertyChecks {
+class ChiselPropSpec extends PropSpec with PropertyChecks {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(t)
 
   val safeUIntWidth = Gen.choose(1, 31) 
   val safeUInts = Gen.choose(0, (1 << 30))
-
+  val vecSizes = Gen.choose(0, 4)
 }
 

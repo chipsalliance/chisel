@@ -50,7 +50,7 @@ class BitwiseOps(w: Int) extends Module {
   io.xor := io.a ^ io.b
 }
 
-class BitwiseOpsSpec extends ChiselSpec {
+class BitwiseOpsSpec extends ChiselPropSpec {
 
   class BitwiseOpsTester(w: Int, a: Int, b: Int) extends BasicTester {
     val mask = (1 << w)-1;
@@ -64,7 +64,7 @@ class BitwiseOpsSpec extends ChiselSpec {
     when(dut.io.xor != UInt(mask & (a ^ b))) { io.error := UInt(4) }
   }
 
-  "BitwiseOps" should "return the correct result" in {
+  property("All bit-wise ops should return the correct result") {
     forAll(safeUInts, safeUInts) { (a: Int, b: Int) =>
       assert(execute{ new BitwiseOpsTester(32, a, b) }) 
     }
