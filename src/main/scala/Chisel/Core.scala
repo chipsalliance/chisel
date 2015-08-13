@@ -90,7 +90,7 @@ abstract class Data(dirArg: Direction) extends HasId {
     }
     wire.asInstanceOf[this.type]
   }
-  def toBits: UInt = this.flatten.reverse.reduce(_##_)
+  def toBits(): UInt = this.flatten.reverse.reduce(_##_)
   def toPort: Port = Port(this, toType)
 }
 
