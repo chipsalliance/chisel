@@ -31,10 +31,9 @@
 package chiselTests
 
 import Chisel._
-import Chisel.testers._
 import org.scalatest._
 import org.scalatest.prop._
-import org.scalatest.prop.GeneratorDrivenPropertyChecks._
+import Chisel.testers.BasicTester
 
 class BitwiseOps(w: Int) extends Module {
   val io = new Bundle {
@@ -67,7 +66,7 @@ class BitwiseOpsSpec extends ChiselSpec {
 
   "BitwiseOps" should "return the correct result" in {
     forAll(safeUInts, safeUInts) { (a: Int, b: Int) =>
-      assert(TesterDriver.execute{ new BitwiseOpsTester(32, a, b) }) 
+      assert(execute{ new BitwiseOpsTester(32, a, b) }) 
     }
   }
 }

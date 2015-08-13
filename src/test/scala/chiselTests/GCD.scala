@@ -31,10 +31,9 @@
 package chiselTests
 
 import Chisel._
-import Chisel.testers._
+import Chisel.testers.BasicTester
 import org.scalatest._
 import org.scalatest.prop._
-import org.scalatest.prop.TableDrivenPropertyChecks._
 
 class GCD extends Module {
   val io = new Bundle {
@@ -76,7 +75,7 @@ class GCDSpec extends ChiselSpec {
 
   "GCD" should "return the correct result" in {
     forAll (gcds) { (a: Int, b: Int, z: Int) => 
-      assert(TesterDriver.execute{ new GCDTester(a, b, z) })
+      assert(execute{ new GCDTester(a, b, z) })
     }
   }
 }
