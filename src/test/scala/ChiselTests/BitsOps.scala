@@ -1,34 +1,41 @@
-package ChiselTests
-import Chisel._
+package Chisel
 import Chisel.testers._
+import org.scalatest._
+import org.scalatest.prop._
+import org.scalatest.prop.GeneratorDrivenPropertyChecks._
 
-class BitsOps extends Module {
+class BitwiseOps(w: Int) extends Module {
   val io = new Bundle {
-    val a = Bits(INPUT, 16)
-    val b = Bits(INPUT, 16)
-    val notout = Bits(OUTPUT, 16)
-    val andout = Bits(OUTPUT, 16)
-    val orout = Bits(OUTPUT, 16)
-    val xorout = Bits(OUTPUT, 16)
+    val a = Bits(INPUT, w)
+    val b = Bits(INPUT, w)
+    val not = Bits(OUTPUT, w)
+    val and = Bits(OUTPUT, w)
+    val or  = Bits(OUTPUT, w)
+    val xor = Bits(OUTPUT, w)
   }
-
-  io.notout := ~io.a
-  io.andout := io.a & io.b
-  io.orout := io.a | io.b
-  io.xorout := io.a ^ io.b
+  io.not := ~io.a
+  io.and := io.a & io.b
+  io.or := io.a | io.b
+  io.xor := io.a ^ io.b
 }
 
-class BitsOpsTester(c: BitsOps) extends Tester(c) {
-  val mask = (1 << 16)-1;
-  for (t <- 0 until 16) {
-    val test_a = rnd.nextInt(1 << 16)
-    val test_b = rnd.nextInt(1 << 16)
-    poke(c.io.a, test_a)
-    poke(c.io.b, test_b)
-    step(1)
-    expect(c.io.notout, mask & (~test_a))
-    expect(c.io.andout, mask & (test_a & test_b))
-    expect(c.io.orout,  mask & (test_a | test_b))
-    expect(c.io.xorout, mask & (test_a ^ test_b))
+class BitwiseOpsSpec extends ChiselSpec {
+
+  class BitwiseOpsTester(w: Int, a: Int, b: Int) extends BasicTester {
+    val mask = (1 << w)-1;
+    val dut = Module(new BitwiseOps(w))
+    io.done := Bool(true)
+    dut.io.a := UInt(a) 
+    dut.io.b := UInt(b)
+    when(dut.io.not != UInt(mask & ~a)) { io.error := UInt(1) }
+    when(dut.io.and != UInt(mask & (a & b))) { io.error := UInt(2) }
+    when(dut.io.or  != UInt(mask & (a | b))) { io.error := UInt(3) }
+    when(dut.io.xor != UInt(mask & (a ^ b))) { io.error := UInt(4) }
+  }
+
+  "BitwiseOps" should "return the correct result" in {
+    forAll(safeUInts, safeUInts) { (a: Int, b: Int) =>
+      assert(TesterDriver.execute{ new BitwiseOpsTester(32, a, b) }) 
+    }
   }
 }

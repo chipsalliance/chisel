@@ -1,6 +1,8 @@
-package ChiselTests
-import Chisel._
+package Chisel
 import Chisel.testers._
+import org.scalatest._
+import org.scalatest.prop._
+import org.scalatest.prop.TableDrivenPropertyChecks._
 
 class GCD extends Module {
   val io = new Bundle {
@@ -19,14 +21,30 @@ class GCD extends Module {
   io.v := y === Bits(0)
 }
 
-class GCDTester(c: GCD) extends Tester(c) {
-  val (a, b, z) = (64, 48, 16)
-  do {
-    val first = if (t == 0) 1 else 0;
-    poke(c.io.a, a)
-    poke(c.io.b, b)
-    poke(c.io.e, first)
-    step(1)
-  } while (t <= 1 || peek(c.io.v) == 0)
-  expect(c.io.z, z)
+class GCDSpec extends ChiselSpec {
+
+  class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
+    val dut = Module(new GCD)
+    val first = Reg(init=Bool(true))
+    dut.io.a := UInt(a)
+    dut.io.b := UInt(b)
+    dut.io.e := first
+    when(first) { first := Bool(false) }
+    when(dut.io.v) {
+      io.done := Bool(true)
+      io.error := (dut.io.z != UInt(z)).toUInt
+    }
+  }
+  
+  val gcds = Table(
+    ("a", "b", "z"),  // First tuple defines column names
+    ( 64,  48,  16),  // Subsequent tuples define the data
+    ( 12,   9,   3),
+    ( 48,  64,  12))
+
+  "GCD" should "return the correct result" in {
+    forAll (gcds) { (a: Int, b: Int, z: Int) => 
+      assert(TesterDriver.execute{ new GCDTester(a, b, z) })
+    }
+  }
 }
