@@ -90,11 +90,7 @@ abstract class Data(dirArg: Direction) extends HasId {
     }
     wire.asInstanceOf[this.type]
   }
-  def toBits(): UInt = {
-    val elts = this.flatten.reverse
-    Cat(elts.head, elts.tail:_*)
-  }
-
+  def toBits: UInt = this.flatten.reverse.reduce(_##_)
   def toPort: Port = Port(this, toType)
 }
 
@@ -393,6 +389,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     case _ => throwException(s"can't covert UInt<$width> to Bool")
   }
 
+  def ## (other: Bits): UInt = Cat(this, other)
   override def toBits = asUInt
   override def fromBits(n: Bits): this.type = {
     val res = Wire(this).asInstanceOf[this.type]
@@ -449,7 +446,6 @@ sealed class UInt(dir: Direction, width: Width, lit: Option[ULit] = None) extend
   def & (other: UInt): UInt = binop(UInt(this.width max other.width), BitAndOp, other)
   def | (other: UInt): UInt = binop(UInt(this.width max other.width), BitOrOp, other)
   def ^ (other: UInt): UInt = binop(UInt(this.width max other.width), BitXorOp, other)
-  def ## (other: UInt): UInt = Cat(this, other)
 
   def orR = this != UInt(0)
   def andR = ~this === UInt(0)
