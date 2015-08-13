@@ -340,21 +340,25 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   override def <> (that: Data): Unit = this := that
 
-  final def apply(x: BigInt): Bool =
+  final def apply(x: BigInt): Bool = {
+    if (x < 0)
+      ChiselError.error(s"Negative bit indices are illegal (got $x)")
     if (isLit()) Bool((litValue() >> x.toInt) & 1)
     else pushOp(DefPrim(Bool(), BitSelectOp, this.ref, ILit(x)))
+  }
   final def apply(x: Int): Bool =
     apply(BigInt(x))
   final def apply(x: UInt): Bool =
     (this >> x)(0)
 
-  final def apply(x: BigInt, y: BigInt): UInt = {
-    val w = (x - y + 1).toInt
-    if (isLit()) UInt((litValue >> y.toInt) & ((BigInt(1) << w) - 1), w)
+  final def apply(x: Int, y: Int): UInt = {
+    if (x < y || y < 0)
+      ChiselError.error(s"Invalid bit range ($x,$y)")
+    val w = x - y + 1
+    if (isLit()) UInt((litValue >> y) & ((BigInt(1) << w) - 1), w)
     else pushOp(DefPrim(UInt(width = w), BitsExtractOp, this.ref, ILit(x), ILit(y)))
   }
-  final def apply(x: Int, y: Int): UInt =
-    apply(BigInt(x), BigInt(y))
+  final def apply(x: BigInt, y: BigInt): UInt = apply(x.toInt, y.toInt)
 
   private[Chisel] def unop[T <: Data](dest: T, op: PrimOp): T =
     pushOp(DefPrim(dest, op, this.ref))
