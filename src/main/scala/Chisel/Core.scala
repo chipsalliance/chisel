@@ -2,8 +2,6 @@ package Chisel
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 import java.lang.reflect.Modifier._
-import java.lang.Double.longBitsToDouble
-import java.lang.Float.intBitsToFloat
 import Builder.pushCommand
 import Builder.pushOp
 import Builder.dynamicContext
@@ -79,8 +77,6 @@ abstract class Data(dirArg: Direction) extends HasId {
   def litArg(): Option[LitArg] = None
   def litValue(): BigInt = litArg.get.num
   def isLit(): Boolean = litArg.isDefined
-  def floLitValue: Float = intBitsToFloat(litValue().toInt)
-  def dblLitValue: Double = longBitsToDouble(litValue().toLong)
 
   def width: Width
   final def getWidth = width.get

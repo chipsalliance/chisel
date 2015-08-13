@@ -92,7 +92,7 @@ sealed abstract class FloBase[T <: Data](dir: Direction, width: Width) extends E
 
 class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None) extends FloBase[Flo](dir, Width(32)) with Num[Flo] {
   type T = Flo;
-  override def floLitValue: Float = value.get.num
+  def floLitValue: Float = value.get.num
   def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type =
     pushOp(DefPrim(cloneType, BitsToFlo, this.ref)).asInstanceOf[this.type]
@@ -172,7 +172,7 @@ import DblPrimOp._
 
 class Dbl(dir: Direction, val value: Option[DblLit] = None) extends FloBase[Dbl](dir, Width(64)) with Num[Dbl] {
   type T = Dbl;
-  override def dblLitValue: Double = value.get.num
+  def dblLitValue: Double = value.get.num
   def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type =
     pushOp(DefPrim(cloneType, BitsToDbl, this.ref)).asInstanceOf[this.type]
