@@ -17,12 +17,12 @@ private class IdGen {
 class RefMap {
   private val _refmap = new HashMap[Long,Immediate]()
 
-  def overrideRefForId(id: Id, name: String): Unit =
-    _refmap(id._id) = Ref(name)
+  def setRef(id: Id, ref: Immediate): Unit =
+    _refmap(id._id) = ref
 
   def setRefForId(id: Id, name: String)(implicit namespace: Namespace = Builder.globalNamespace): Unit =
     if (!_refmap.contains(id._id))
-      overrideRefForId(id, namespace.name(name))
+      setRef(id, Ref(namespace.name(name)))
 
   def setFieldForId(parentid: Id, id: Id, name: String): Unit = {
     _refmap(id._id) = Slot(Alias(parentid), name)
@@ -132,8 +132,7 @@ object PrimOp {
 import PrimOp._
 
 abstract class Immediate {
-  def fullname: String = name
-  def debugName = fullname
+  def fullName(ctx: Component): String = name
   def name: String
 }
 
@@ -143,8 +142,7 @@ abstract class Arg extends Immediate {
 
 case class Alias(id: Id) extends Arg {
   private val refMap = Builder.globalRefMap
-  override def fullname = refMap(id).fullname
-  override def debugName = refMap(id).debugName
+  override def fullName(ctx: Component) = refMap(id).fullName(ctx)
   def name = refMap(id).name
   def emit: String = s"Alias($id)"
 }
@@ -177,18 +175,20 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def minWidth = 1 + n.bitLength
 }
 
-case class Ref(val name: String) extends Immediate {
+case class Ref(name: String) extends Immediate
+case class ModuleIO(mod: Module) extends Immediate {
+  private val refMap = Builder.globalRefMap
+  def name = refMap(mod).name
+  override def fullName(ctx: Component) = if (mod eq ctx.id) "" else name
 }
-case class Slot(val imm: Immediate, val name: String) extends Immediate {
-  override def fullname =
-    if (imm.fullname isEmpty) name else s"${imm.fullname}.${name}"
-  override def debugName =
-    if (imm.debugName isEmpty) name else s"${imm.debugName}.${name}"
+case class Slot(imm: Alias, name: String) extends Immediate {
+  override def fullName(ctx: Component) =
+    if (imm.fullName(ctx).isEmpty) name
+    else s"${imm.fullName(ctx)}.${name}"
 }
-case class Index(val imm: Immediate, val value: Int) extends Immediate {
+case class Index(imm: Immediate, value: Int) extends Immediate {
   def name = s"[$value]"
-  override def fullname = s"${imm.fullname}[$value]"
-  override def debugName = s"${imm.debugName}.$value"
+  override def fullName(ctx: Component) = s"${imm.fullName(ctx)}[$value]"
 }
 
 case class Port(id: Data, kind: Kind)
@@ -261,8 +261,8 @@ case class WhenEnd() extends Command
 case class Connect(loc: Alias, exp: Arg) extends Command
 case class BulkConnect(loc1: Alias, loc2: Alias) extends Command
 case class ConnectInit(loc: Alias, exp: Arg) extends Command
+case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Immediate
 
-case class Component(name: String, ports: Seq[Port], commands: Seq[Command])
 case class Circuit(name: String, components: Seq[Component], refMap: RefMap, parameterDump: ParameterDump) {
   def emit = new Emitter(this).toString
 }
@@ -967,7 +967,7 @@ object Module {
     dynamicContext.paramsScope(currParams) {
       val m = dynamicContext.moduleScope{ bc.setRefs() }
       val ports = m.computePorts
-      Builder.components += Component(m.name, ports, m._commands)
+      Builder.components += Component(m, m.name, ports, m._commands)
       pushCommand(DefInstance(m, ports))
       m
     }.connectImplicitIOs()
@@ -1002,11 +1002,6 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
 
   def addNode(d: Data) { _nodes += d }
 
-  def debugName: String = _parent match {
-    case Some(p) => s"${p.debugName}.${ref.debugName}"
-    case None => ref.debugName
-  }
-
   private def computePorts =
     clock.toPort +: reset.toPort +: io.toPorts
 
@@ -1033,7 +1028,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
     _nodes.foreach(_.collectElts)
 
     // FIRRTL: the IO namespace is part of the module namespace
-    Builder.globalRefMap.setRefForId(io, "")
+    Builder.globalRefMap.setRef(io, ModuleIO(this))
     for ((name, field) <- io.namedElts)
       _namespace.name(name)
 
@@ -1093,7 +1088,6 @@ class Emitter(circuit: Circuit) {
   def emitDir(e: Port, isTop: Boolean): String =
     if (isTop) (if (e.id.isFlip) "input " else "output ")
     else (if (e.id.isFlip) "flip " else "")
-  def emit(e: Arg): String = e.fullname
   def emitPort(e: Port, isTop: Boolean): String =
     s"${emitDir(e, isTop)}${circuit.refMap(e.id).name} : ${emitType(e.kind)}"
   private def emitType(e: Kind): String = e match {
@@ -1104,32 +1098,29 @@ class Emitter(circuit: Circuit) {
     case e: VectorType => s"${emitType(e.kind)}[${e.size}]"
     case e: ClockType => s"Clock"
   }
-  private def emit(e: Command): String = e match {
+  private def emit(e: Command, ctx: Component): String = e match {
     case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
     case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
-    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${join(e.args.map(x => emit(x)), ", ")})"
+    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${join(e.args.map(x => x.fullName(ctx)), ", ")})"
     case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
-    case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${emit(e.clock)}, ${emit(e.reset)}"
-    case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${emit(e.clock)}";
+    case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
+    case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.fullName(ctx)}";
     case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
-    case e: DefAccessor => s"infer accessor ${e.name} = ${emit(e.source)}[${emit(e.index)}]"
-    case e: Connect => s"${emit(e.loc)} := ${emit(e.exp)}"
-    case e: BulkConnect => s"${emit(e.loc1)} <> ${emit(e.loc2)}"
-    case e: ConnectInit => s"onreset ${emit(e.loc)} := ${emit(e.exp)}"
+    case e: DefAccessor => s"infer accessor ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}]"
+    case e: Connect => s"${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
+    case e: BulkConnect => s"${e.loc1.fullName(ctx)} <> ${e.loc2.fullName(ctx)}"
+    case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
     case e: DefInstance => {
-      // From now on, all references to the IOs occur from within the parent
-      circuit.refMap.overrideRefForId(e.id.io, e.name)
-
       val res = new StringBuilder(s"inst ${e.name} of ${e.id.name}")
       res ++= newline
-      for (p <- e.ports; x <- initPort(p, INPUT))
+      for (p <- e.ports; x <- initPort(p, INPUT, ctx))
         res ++= newline + x
       res.toString
     }
 
     case w: WhenBegin =>
       indent()
-      s"when ${emit(w.pred)} :"
+      s"when ${w.pred.fullName(ctx)} :"
     case _: WhenElse =>
       indent()
       "else :"
@@ -1137,9 +1128,9 @@ class Emitter(circuit: Circuit) {
       unindent()
       "skip"
   }
-  private def initPort(p: Port, dir: Direction) = {
+  private def initPort(p: Port, dir: Direction, ctx: Component) = {
     for (x <- p.id.flatten; if x.dir == dir)
-      yield s"${circuit.refMap(x).fullname} := ${emit(x.makeLit(0))}"
+      yield s"${circuit.refMap(x).fullName(ctx)} := ${x.makeLit(0).name}"
   }
 
   private def emit(m: Component): Unit = {
@@ -1148,11 +1139,11 @@ class Emitter(circuit: Circuit) {
       for (p <- m.ports)
         res ++= newline + emitPort(p, true)
       res ++= newline
-      for (p <- m.ports; x <- initPort(p, OUTPUT))
+      for (p <- m.ports; x <- initPort(p, OUTPUT, m))
         res ++= newline + x
       res ++= newline
       for (cmd <- m.commands)
-        res ++= newline + emit(cmd)
+        res ++= newline + emit(cmd, m)
       res ++= newline
     }
   }
