@@ -6,7 +6,7 @@ import Builder.pushOp
 import Builder.dynamicContext
 import PrimOp._
 
-object Literal {
+private object Literal {
   def sizeof(x: BigInt): Int = x.bitLength
 
   def decodeBase(base: Char): Int = base match {
@@ -138,7 +138,7 @@ object Mem {
   }
 }
 
-class Mem[T <: Data](t: T, val length: Int) extends Aggregate(NO_DIR) with VecLike[T] {
+sealed class Mem[T <: Data](t: T, val length: Int) extends Aggregate(NO_DIR) with VecLike[T] {
   def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T = {
     val x = t.cloneType
@@ -165,7 +165,7 @@ object SeqMem {
 }
 
 // For now, implement SeqMem in terms of Mem
-class SeqMem[T <: Data](t: T, n: Int) {
+sealed class SeqMem[T <: Data](t: T, n: Int) {
   private val mem = Mem(t, n)
 
   def read(addr: UInt): T = mem.read(Reg(next = addr))
@@ -197,12 +197,12 @@ object Vec {
     apply(gen, n)
 }
 
-abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
+sealed abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
   def cloneTypeWidth(width: Width): this.type = cloneType
   def width: Width = flatten.map(_.width).reduce(_ + _)
 }
 
-class Vec[T <: Data](gen: => T, val length: Int)
+sealed class Vec[T <: Data](gen: => T, val length: Int)
     extends Aggregate(gen.dir) with VecLike[T] {
   private val self = IndexedSeq.fill(length)(gen)
 
@@ -303,7 +303,7 @@ object BitPat {
   }
 }
 
-class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
+sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
   def === (other: UInt): Bool = UInt(value) === (other & UInt(mask))
   def != (other: UInt): Bool = !(this === other)

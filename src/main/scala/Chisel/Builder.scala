@@ -36,27 +36,26 @@ private class IdGen {
 
 private[Chisel] trait HasId {
   private[Chisel] val _id = Builder.idGen.next
-  def setRef() =  Builder.globalRefMap.setRef(this, s"T_${_id}")
-  def setRef(imm: Immediate) = Builder.globalRefMap.setRef(this, imm)
-  def setRef(name: String) = Builder.globalRefMap.setRef(this, name)
-  def setRef(parent: HasId, name: String) = Builder.globalRefMap.setField(parent, this, name)
-  def setRef(parent: HasId, index: Int) = Builder.globalRefMap.setIndex(parent, this, index)
+  private[Chisel] def setRef() =  Builder.globalRefMap.setRef(this, s"T_${_id}")
+  private[Chisel] def setRef(imm: Immediate) = Builder.globalRefMap.setRef(this, imm)
+  private[Chisel] def setRef(name: String) = Builder.globalRefMap.setRef(this, name)
+  private[Chisel] def setRef(parent: HasId, name: String) = Builder.globalRefMap.setField(parent, this, name)
+  private[Chisel] def setRef(parent: HasId, index: Int) = Builder.globalRefMap.setIndex(parent, this, index)
 }
 
 class RefMap {
   private val _refmap = new HashMap[Long,Immediate]()
 
-  def setRef(id: HasId, ref: Immediate): Unit =
+  private[Chisel] def setRef(id: HasId, ref: Immediate): Unit =
     _refmap(id._id) = ref
 
-  def setRef(id: HasId, name: String): Unit =
+  private[Chisel] def setRef(id: HasId, name: String): Unit =
     if (!_refmap.contains(id._id)) setRef(id, Ref(name))
 
-  def setField(parentid: HasId, id: HasId, name: String): Unit = {
+  private[Chisel] def setField(parentid: HasId, id: HasId, name: String): Unit =
     _refmap(id._id) = Slot(Alias(parentid), name)
-  }
 
-  def setIndex(parentid: HasId, id: HasId, index: Int): Unit =
+  private[Chisel] def setIndex(parentid: HasId, id: HasId, index: Int): Unit =
     _refmap(id._id) = Index(Alias(parentid), index)
 
   def apply(id: HasId): Immediate = _refmap(id._id)

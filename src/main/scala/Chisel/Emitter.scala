@@ -1,6 +1,6 @@
 package Chisel
 
-class Emitter(circuit: Circuit) {
+private class Emitter(circuit: Circuit) {
   override def toString = res.toString
 
   def join(parts: Seq[String], sep: String): StringBuilder =
