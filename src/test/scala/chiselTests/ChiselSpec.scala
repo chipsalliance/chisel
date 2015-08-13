@@ -41,5 +41,6 @@ class ChiselPropSpec extends PropSpec with PropertyChecks {
   val safeUIntWidth = Gen.choose(1, 31) 
   val safeUInts = Gen.choose(0, (1 << 30))
   val vecSizes = Gen.choose(0, 4)
+  def enSequence(n: Int) = Gen.containerOfN[List,Boolean](n,Gen.oneOf(true,false))
 }
 
