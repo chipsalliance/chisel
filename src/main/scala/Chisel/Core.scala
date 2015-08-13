@@ -32,16 +32,12 @@ object INPUT  extends Direction("input") { def flip = OUTPUT }
 object OUTPUT extends Direction("output") { def flip = INPUT }
 object NO_DIR extends Direction("?") { def flip = NO_DIR }
 
-trait Id {
-  private[Chisel] val _id = Builder.idGen.next
-}
-
 object debug {
   // TODO:
   def apply (arg: Data) = arg
 }
 
-abstract class Data(dirArg: Direction) extends Id {
+abstract class Data(dirArg: Direction) extends HasId {
   private[Chisel] val _mod: Module = dynamicContext.getCurrentModule.getOrElse(null)
   if (_mod ne null)
     _mod.addNode(this)
@@ -72,7 +68,7 @@ abstract class Data(dirArg: Direction) extends Id {
     pushCommand(Connect(this.lref, that.ref))
   private[Chisel] def bulkConnect(that: Data): Unit =
     pushCommand(BulkConnect(this.lref, that.lref))
-  private[Chisel] def collectElts = { }
+  private[Chisel] def collectElts: Unit = { }
   private[Chisel] def lref: Alias = Alias(this)
   private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
   private[Chisel] def cloneTypeWidth(width: Width): this.type
@@ -220,8 +216,8 @@ class Vec[T <: Data](gen: => T, val length: Int)
   private val self = IndexedSeq.fill(length)(gen)
 
   override def collectElts: Unit =
-    for ((e, i) <- self zipWithIndex)
-      Builder.globalRefMap.setIndexForId(this, e, i)
+    for ((elt, i) <- self zipWithIndex)
+      elt.setRef(this, i)
 
   override def <> (that: Data): Unit = that match {
     case _: Vec[_] => this bulkConnect that
@@ -697,7 +693,7 @@ class Bundle extends Aggregate(NO_DIR) {
     namedElts += name -> elt
 
   override def collectElts =
-    namedElts.foreach {case(name, elt) => Builder.globalRefMap.setFieldForId(this, elt, name)}
+    for ((name, elt) <- namedElts) { elt.setRef(this, name) }
 
   override def cloneType : this.type = {
     try {
@@ -731,7 +727,7 @@ object Module {
   }
 }
 
-abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
+abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   private implicit val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _nodes = ArrayBuffer[Data]()
@@ -781,17 +777,15 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
     _nodes.foreach(_.collectElts)
 
     // FIRRTL: the IO namespace is part of the module namespace
-    Builder.globalRefMap.setRef(io, ModuleIO(this))
-    for ((name, field) <- io.namedElts)
-      _namespace.name(name)
+    io.setRef(ModuleIO(this))
+    for((name, elt) <- io.namedElts) { _namespace.name(name) }
 
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
     for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
-      case id: Id => Builder.globalRefMap.setRefForId(id, m.getName)
+      case id: HasId => id.setRef(m.getName)
       case _ =>
     }
-    for (id <- _nodes ++ _children)
-      Builder.globalRefMap.setRefForId(id, s"T_${id._id}")
+    (_nodes ++ _children).foreach(_.setRef)
     this
   }
 

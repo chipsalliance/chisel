@@ -2,6 +2,30 @@ package Chisel
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
+private class Namespace(parent: Option[Namespace], keywords: Option[Set[String]]) {
+  private var i = 0L
+  private val names = collection.mutable.HashSet[String]()
+  def forbidden =  keywords.getOrElse(Set()) ++ names
+
+  private def rename(n: String) = { i += 1; s"${n}_${i}" }
+
+  def contains(elem: String): Boolean = {
+    forbidden.contains(elem) ||
+      parent.map(_ contains elem).getOrElse(false)
+  }
+
+  def name(elem: String): String = {
+    val res = if(forbidden contains elem) rename(elem) else elem
+    names += res
+    res
+  }
+
+  def child(ks: Option[Set[String]]): Namespace = new Namespace(Some(this), ks)
+  def child: Namespace = new Namespace(Some(this), None)
+}
+
+private class FIRRTLNamespace extends Namespace(None, Some(Set("mem", "node", "wire", "reg", "inst")))
+
 private class IdGen {
   private var counter = -1L
   def next: Long = {
@@ -10,24 +34,33 @@ private class IdGen {
   }
 }
 
+trait HasId {
+  private[Chisel] val _id = Builder.idGen.next
+  def setRef() =  Builder.globalRefMap.setRef(this, s"T_${_id}")
+  def setRef(imm: Immediate) = Builder.globalRefMap.setRef(this, imm)
+  def setRef(name: String) = Builder.globalRefMap.setRef(this, name)
+  def setRef(parent: HasId, name: String) = Builder.globalRefMap.setField(parent, this, name)
+  def setRef(parent: HasId, index: Int) = Builder.globalRefMap.setIndex(parent, this, index)
+}
+
 class RefMap {
   private val _refmap = new HashMap[Long,Immediate]()
 
-  def setRef(id: Id, ref: Immediate): Unit =
+  def setRef(id: HasId, ref: Immediate): Unit =
     _refmap(id._id) = ref
 
-  def setRefForId(id: Id, name: String): Unit =
+  def setRef(id: HasId, name: String): Unit =
     if (!_refmap.contains(id._id))
       setRef(id, Ref(Builder.globalNamespace.name(name)))
 
-  def setFieldForId(parentid: Id, id: Id, name: String): Unit = {
+  def setField(parentid: HasId, id: HasId, name: String): Unit = {
     _refmap(id._id) = Slot(Alias(parentid), name)
   }
 
-  def setIndexForId(parentid: Id, id: Id, index: Int): Unit =
+  def setIndex(parentid: HasId, id: HasId, index: Int): Unit =
     _refmap(id._id) = Index(Alias(parentid), index)
 
-  def apply(id: Id): Immediate = _refmap(id._id)
+  def apply(id: HasId): Immediate = _refmap(id._id)
 }
 
 private class DynamicContext {
@@ -76,7 +109,7 @@ private object Builder {
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       val mod = f
-      globalRefMap.setRefForId(mod, mod.name)
+      mod.setRef(mod.name)
       Circuit(components.last.name, components, globalRefMap, parameterDump)
     }
   }

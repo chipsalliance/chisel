@@ -47,7 +47,7 @@ abstract class Arg extends Immediate {
   def name: String
 }
 
-case class Alias(id: Id) extends Arg {
+case class Alias(id: HasId) extends Arg {
   private val refMap = Builder.globalRefMap
   override def fullName(ctx: Component) = refMap(id).fullName(ctx)
   def name = refMap(id).name
@@ -150,17 +150,17 @@ case class ClockType(flip: Boolean) extends Kind(flip)
 abstract class Command;
 abstract class Definition extends Command {
   private val refMap = Builder.globalRefMap
-  def id: Id
+  def id: HasId
   def name = refMap(id).name
 }
-case class DefFlo(id: Id, value: Float) extends Definition
-case class DefDbl(id: Id, value: Double) extends Definition
+case class DefFlo(id: HasId, value: Float) extends Definition
+case class DefDbl(id: HasId, value: Double) extends Definition
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
-case class DefWire(id: Id, kind: Kind) extends Definition
-case class DefRegister(id: Id, kind: Kind, clock: Arg, reset: Arg) extends Definition
-case class DefMemory(id: Id, kind: Kind, size: Int, clock: Arg) extends Definition
-case class DefSeqMemory(id: Id, kind: Kind, size: Int) extends Definition
-case class DefAccessor(id: Id, source: Alias, direction: Direction, index: Arg) extends Definition
+case class DefWire(id: HasId, kind: Kind) extends Definition
+case class DefRegister(id: HasId, kind: Kind, clock: Arg, reset: Arg) extends Definition
+case class DefMemory(id: HasId, kind: Kind, size: Int, clock: Arg) extends Definition
+case class DefSeqMemory(id: HasId, kind: Kind, size: Int) extends Definition
+case class DefAccessor(id: HasId, source: Alias, direction: Direction, index: Arg) extends Definition
 case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
 case class WhenBegin(pred: Arg) extends Command
 case class WhenElse() extends Command
