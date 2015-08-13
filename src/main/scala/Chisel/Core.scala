@@ -631,11 +631,7 @@ object Cat {
       val left = apply(r.slice(0, r.length/2))
       val right = apply(r.slice(r.length/2, r.length))
       val w = left.width + right.width
-
-      if (left.isLit && right.isLit)
-        UInt((left.litValue() << right.getWidth) | right.litValue(), w)
-      else
-        pushOp(DefPrim(UInt(NO_DIR, w), ConcatOp, left.ref, right.ref))
+      pushOp(DefPrim(UInt(NO_DIR, w), ConcatOp, left.ref, right.ref))
     }
   }
 }
