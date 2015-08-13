@@ -1,273 +1,28 @@
 package Chisel
-import scala.util.DynamicVariable
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.{ArrayBuffer, Stack, HashSet, HashMap, LinkedHashMap}
+import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 import java.lang.reflect.Modifier._
 import java.lang.Double.longBitsToDouble
 import java.lang.Float.intBitsToFloat
-
-private class IdGen {
-  private var counter = -1L
-  def next: Long = {
-    counter += 1
-    counter
-  }
-}
-
-class RefMap {
-  private val _refmap = new HashMap[Long,Immediate]()
-
-  def setRef(id: Id, ref: Immediate): Unit =
-    _refmap(id._id) = ref
-
-  def setRefForId(id: Id, name: String)(implicit namespace: Namespace = Builder.globalNamespace): Unit =
-    if (!_refmap.contains(id._id))
-      setRef(id, Ref(namespace.name(name)))
-
-  def setFieldForId(parentid: Id, id: Id, name: String): Unit = {
-    _refmap(id._id) = Slot(Alias(parentid), name)
-  }
-
-  def setIndexForId(parentid: Id, id: Id, index: Int): Unit =
-    _refmap(id._id) = Index(Alias(parentid), index)
-
-  def apply(id: Id): Immediate = _refmap(id._id)
-}
-
-private class DynamicContext {
-  val idGen = new IdGen
-  val globalNamespace = new FIRRTLNamespace
-  val globalRefMap = new RefMap
-  val components = ArrayBuffer[Component]()
-  val currentModuleVar = new DynamicVariable[Option[Module]](None)
-  val currentParamsVar = new DynamicVariable[Parameters](Parameters.empty)
-  val parameterDump = new ParameterDump
-
-  def getCurrentModule = currentModuleVar.value
-  def moduleScope[T](body: => T): T = {
-    currentModuleVar.withValue(getCurrentModule)(body)
-  }
-  def forceCurrentModule[T](m: Module) { // Used in Module constructor
-    currentModuleVar.value = Some(m)
-  }
-  def pushCommand(c: Command) {
-    currentModuleVar.value.foreach(_._commands += c)
-  }
-
-  def getParams: Parameters = currentParamsVar.value
-  def paramsScope[T](p: Parameters)(body: => T): T = {
-    currentParamsVar.withValue(p)(body)
-  }
-}
-
-private object Builder {
-  // All global mutable state must be referenced via dynamicContextVar!!
-  private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
-
-  def dynamicContext = dynamicContextVar.value.get
-  def idGen = dynamicContext.idGen
-  def globalNamespace = dynamicContext.globalNamespace
-  def globalRefMap = dynamicContext.globalRefMap
-  def components = dynamicContext.components
-  def parameterDump = dynamicContext.parameterDump
-
-  def pushCommand(c: Command) = dynamicContext.pushCommand(c)
-  def pushOp[T <: Data](cmd: DefPrim[T]) = {
-    pushCommand(cmd)
-    cmd.id
-  }
-
-  def build[T <: Module](f: => T): Circuit = {
-    dynamicContextVar.withValue(Some(new DynamicContext)) {
-      val mod = f
-      globalRefMap.setRefForId(mod, mod.name)
-      Circuit(components.last.name, components, globalRefMap, parameterDump)
-    }
-  }
-}
-
 import Builder.pushCommand
 import Builder.pushOp
 import Builder.dynamicContext
-
-/// CHISEL IR
-
-case class PrimOp(val name: String) {
-  override def toString = name
-}
-
-object PrimOp {
-  val AddOp = PrimOp("add")
-  val AddModOp = PrimOp("addw")
-  val SubOp = PrimOp("sub")
-  val SubModOp = PrimOp("subw")
-  val TimesOp = PrimOp("mul")
-  val DivideOp = PrimOp("div")
-  val ModOp = PrimOp("mod")
-  val ShiftLeftOp = PrimOp("shl")
-  val ShiftRightOp = PrimOp("shr")
-  val DynamicShiftLeftOp = PrimOp("dshl")
-  val DynamicShiftRightOp = PrimOp("dshr")
-  val BitAndOp = PrimOp("and")
-  val BitOrOp = PrimOp("or")
-  val BitXorOp = PrimOp("xor")
-  val BitNotOp = PrimOp("not")
-  val ConcatOp = PrimOp("cat")
-  val BitSelectOp = PrimOp("bit")
-  val BitsExtractOp = PrimOp("bits")
-  val LessOp = PrimOp("lt")
-  val LessEqOp = PrimOp("leq")
-  val GreaterOp = PrimOp("gt")
-  val GreaterEqOp = PrimOp("geq")
-  val EqualOp = PrimOp("eq")
-  val PadOp = PrimOp("pad")
-  val NotEqualOp = PrimOp("neq")
-  val NegOp = PrimOp("neg")
-  val MultiplexOp = PrimOp("mux")
-  val XorReduceOp = PrimOp("xorr")
-  val ConvertOp = PrimOp("cvt")
-  val AsUIntOp = PrimOp("asUInt")
-  val AsSIntOp = PrimOp("asSInt")
-}
 import PrimOp._
 
-abstract class Immediate {
-  def fullName(ctx: Component): String = name
-  def name: String
-}
+object Literal {
+  def sizeof(x: BigInt): Int = x.bitLength
 
-abstract class Arg extends Immediate {
-  def name: String
-}
-
-case class Alias(id: Id) extends Arg {
-  private val refMap = Builder.globalRefMap
-  override def fullName(ctx: Component) = refMap(id).fullName(ctx)
-  def name = refMap(id).name
-  def emit: String = s"Alias($id)"
-}
-
-abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
-  private[Chisel] def forcedWidth = widthArg.known
-  private[Chisel] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
-
-  protected def minWidth: Int
-  if (forcedWidth)
-    require(widthArg.get >= minWidth)
-}
-
-case class ILit(n: BigInt) extends Arg {
-  def name = n.toString
-}
-
-case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def name = "UInt<" + width + ">(\"h0" + num.toString(16) + "\")"
-  def minWidth = 1 max n.bitLength
-
-  require(n >= 0, s"UInt literal ${n} is negative")
-}
-
-case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def name = {
-    val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-    s"asSInt(${ULit(unsigned, width).name})"
+  def decodeBase(base: Char): Int = base match {
+    case 'x' | 'h' => 16
+    case 'd' => 10
+    case 'o' => 8
+    case 'b' => 2
+    case _ => ChiselError.error("Invalid base " + base); 2
   }
-  def minWidth = 1 + n.bitLength
+
+  def stringToVal(base: Char, x: String): BigInt =
+    BigInt(x, decodeBase(base))
 }
-
-case class Ref(name: String) extends Immediate
-case class ModuleIO(mod: Module) extends Immediate {
-  private val refMap = Builder.globalRefMap
-  def name = refMap(mod).name
-  override def fullName(ctx: Component) = if (mod eq ctx.id) "" else name
-}
-case class Slot(imm: Alias, name: String) extends Immediate {
-  override def fullName(ctx: Component) =
-    if (imm.fullName(ctx).isEmpty) name
-    else s"${imm.fullName(ctx)}.${name}"
-}
-case class Index(imm: Immediate, value: Int) extends Immediate {
-  def name = s"[$value]"
-  override def fullName(ctx: Component) = s"${imm.fullName(ctx)}[$value]"
-}
-
-case class Port(id: Data, kind: Kind)
-
-object Width {
-  def apply(x: Int): Width = KnownWidth(x)
-  def apply(): Width = UnknownWidth()
-}
-
-sealed abstract class Width {
-  type W = Int
-  def max(that: Width): Width = this.op(that, _ max _)
-  def + (that: Width): Width = this.op(that, _ + _)
-  def + (that: Int): Width = this.op(this, (a, b) => a + that)
-  def shiftRight(that: Int): Width = this.op(this, (a, b) => 0 max (a - that))
-  def dynamicShiftLeft(that: Width): Width =
-    this.op(that, (a, b) => a + (1 << b) - 1)
-
-  def known: Boolean
-  def get: W
-  protected def op(that: Width, f: (W, W) => W): Width
-}
-
-sealed case class UnknownWidth() extends Width {
-  def known = false
-  def get = None.get
-  def op(that: Width, f: (W, W) => W) = this
-  override def toString = "?"
-}
-
-sealed case class KnownWidth(value: Int) extends Width {
-  require(value >= 0)
-  def known = true
-  def get = value
-  def op(that: Width, f: (W, W) => W) = that match {
-    case KnownWidth(x) => KnownWidth(f(value, x))
-    case _ => that
-  }
-  override def toString = value.toString
-}
-
-abstract class Kind(val isFlip: Boolean);
-case class UnknownType(flip: Boolean) extends Kind(flip);
-case class UIntType(val width: Width, flip: Boolean) extends Kind(flip);
-case class SIntType(val width: Width, flip: Boolean) extends Kind(flip);
-case class FloType(flip: Boolean) extends Kind(flip);
-case class DblType(flip: Boolean) extends Kind(flip);
-case class BundleType(val ports: Seq[Port], flip: Boolean) extends Kind(flip);
-case class VectorType(val size: Int, val kind: Kind, flip: Boolean) extends Kind(flip);
-case class ClockType(flip: Boolean) extends Kind(flip)
-
-abstract class Command;
-abstract class Definition extends Command {
-  private val refMap = Builder.globalRefMap
-  def id: Id
-  def name = refMap(id).name
-}
-case class DefFlo(id: Id, value: Float) extends Definition
-case class DefDbl(id: Id, value: Double) extends Definition
-case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
-case class DefWire(id: Id, kind: Kind) extends Definition
-case class DefRegister(id: Id, kind: Kind, clock: Arg, reset: Arg) extends Definition
-case class DefMemory(id: Id, kind: Kind, size: Int, clock: Arg) extends Definition
-case class DefSeqMemory(id: Id, kind: Kind, size: Int) extends Definition
-case class DefAccessor(id: Id, source: Alias, direction: Direction, index: Arg) extends Definition
-case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
-case class WhenBegin(pred: Arg) extends Command
-case class WhenElse() extends Command
-case class WhenEnd() extends Command
-case class Connect(loc: Alias, exp: Arg) extends Command
-case class BulkConnect(loc1: Alias, loc2: Alias) extends Command
-case class ConnectInit(loc: Alias, exp: Arg) extends Command
-case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Immediate
-
-case class Circuit(name: String, components: Seq[Component], refMap: RefMap, parameterDump: ParameterDump) {
-  def emit = new Emitter(this).toString
-}
-
-/// COMPONENTS
 
 sealed abstract class Direction(name: String) {
   override def toString = name
@@ -276,8 +31,6 @@ sealed abstract class Direction(name: String) {
 object INPUT  extends Direction("input") { def flip = OUTPUT }
 object OUTPUT extends Direction("output") { def flip = INPUT }
 object NO_DIR extends Direction("?") { def flip = NO_DIR }
-
-/// CHISEL FRONT-END
 
 trait Id {
   private[Chisel] val _id = Builder.idGen.next
@@ -1075,86 +828,4 @@ class WhenContext(cond: => Bool)(block: => Unit) {
     pushCommand(WhenEnd())
     res
   }
-}
-
-
-/// CHISEL IR EMITTER
-
-class Emitter(circuit: Circuit) {
-  override def toString = res.toString
-
-  def join(parts: Seq[String], sep: String): StringBuilder =
-    parts.tail.foldLeft(new StringBuilder(parts.head))((s, p) => s ++= sep ++= p)
-  def emitDir(e: Port, isTop: Boolean): String =
-    if (isTop) (if (e.id.isFlip) "input " else "output ")
-    else (if (e.id.isFlip) "flip " else "")
-  def emitPort(e: Port, isTop: Boolean): String =
-    s"${emitDir(e, isTop)}${circuit.refMap(e.id).name} : ${emitType(e.kind)}"
-  private def emitType(e: Kind): String = e match {
-    case e: UnknownType => "?"
-    case e: UIntType => s"UInt<${e.width}>"
-    case e: SIntType => s"SInt<${e.width}>"
-    case e: BundleType => s"{${join(e.ports.map(x => emitPort(x, false)), ", ")}}"
-    case e: VectorType => s"${emitType(e.kind)}[${e.size}]"
-    case e: ClockType => s"Clock"
-  }
-  private def emit(e: Command, ctx: Component): String = e match {
-    case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
-    case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
-    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${join(e.args.map(x => x.fullName(ctx)), ", ")})"
-    case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
-    case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
-    case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.fullName(ctx)}";
-    case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
-    case e: DefAccessor => s"infer accessor ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}]"
-    case e: Connect => s"${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
-    case e: BulkConnect => s"${e.loc1.fullName(ctx)} <> ${e.loc2.fullName(ctx)}"
-    case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
-    case e: DefInstance => {
-      val res = new StringBuilder(s"inst ${e.name} of ${e.id.name}")
-      res ++= newline
-      for (p <- e.ports; x <- initPort(p, INPUT, ctx))
-        res ++= newline + x
-      res.toString
-    }
-
-    case w: WhenBegin =>
-      indent()
-      s"when ${w.pred.fullName(ctx)} :"
-    case _: WhenElse =>
-      indent()
-      "else :"
-    case _: WhenEnd =>
-      unindent()
-      "skip"
-  }
-  private def initPort(p: Port, dir: Direction, ctx: Component) = {
-    for (x <- p.id.flatten; if x.dir == dir)
-      yield s"${circuit.refMap(x).fullName(ctx)} := ${x.makeLit(0).name}"
-  }
-
-  private def emit(m: Component): Unit = {
-    res ++= newline + s"module ${m.name} : "
-    withIndent {
-      for (p <- m.ports)
-        res ++= newline + emitPort(p, true)
-      res ++= newline
-      for (p <- m.ports; x <- initPort(p, OUTPUT, m))
-        res ++= newline + x
-      res ++= newline
-      for (cmd <- m.commands)
-        res ++= newline + emit(cmd, m)
-      res ++= newline
-    }
-  }
-
-  private var indentLevel = 0
-  private def newline = "\n" + ("  " * indentLevel)
-  private def indent(): Unit = indentLevel += 1
-  private def unindent() { require(indentLevel > 0); indentLevel -= 1 }
-  private def withIndent(f: => Unit) { indent(); f; unindent() }
-
-  private val res = new StringBuilder(s"circuit ${circuit.name} : ")
-  withIndent { circuit.components foreach emit }
-  res ++= newline
 }
