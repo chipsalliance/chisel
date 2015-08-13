@@ -659,7 +659,7 @@ object Bundle {
 }
 
 class Bundle extends Aggregate(NO_DIR) {
-  private implicit val _namespace = new ChildNamespace(Builder.globalNamespace)
+  private implicit val _namespace = Builder.globalNamespace.child
 
   override def <> (that: Data): Unit = that match {
     case _: Bundle => this bulkConnect that
@@ -732,7 +732,7 @@ object Module {
 }
 
 abstract class Module(_clock: Clock = null, _reset: Bool = null) extends Id {
-  private implicit val _namespace = new ChildNamespace(Builder.globalNamespace)
+  private implicit val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _nodes = ArrayBuffer[Data]()
   private[Chisel] val _children = ArrayBuffer[Module]()

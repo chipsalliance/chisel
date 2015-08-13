@@ -16,9 +16,9 @@ class RefMap {
   def setRef(id: Id, ref: Immediate): Unit =
     _refmap(id._id) = ref
 
-  def setRefForId(id: Id, name: String)(implicit namespace: Namespace = Builder.globalNamespace): Unit =
+  def setRefForId(id: Id, name: String): Unit =
     if (!_refmap.contains(id._id))
-      setRef(id, Ref(namespace.name(name)))
+      setRef(id, Ref(Builder.globalNamespace.name(name)))
 
   def setFieldForId(parentid: Id, id: Id, name: String): Unit = {
     _refmap(id._id) = Slot(Alias(parentid), name)

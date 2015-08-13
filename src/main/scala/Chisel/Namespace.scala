@@ -1,35 +1,25 @@
 package Chisel
 
-abstract class Namespace {
-  final def name(n: String): String = {
-    if (nameExists(n)) name(rename(n))
-    else {
-      names += n
-      n
-    }
-  }
-
-  def nameExists(n: String): Boolean
-
-  protected final def nameExistsHere(n: String): Boolean =
-    names contains n
-
-  private def rename(n: String): String = {
-    i += 1
-    s"${n}_${i}"
-  }
-
+private class Namespace(parent: Option[Namespace], keywords: Option[Set[String]]) {
   private var i = 0L
-  protected val names = collection.mutable.HashSet[String]()
+  private val names = collection.mutable.HashSet[String]()
+  def forbidden =  keywords.getOrElse(Set()) ++ names
+
+  private def rename(n: String) = { i += 1; s"${n}_${i}" }
+
+  def contains(elem: String): Boolean = {
+    forbidden.contains(elem) ||
+      parent.map(_ contains elem).getOrElse(false)
+  }
+
+  def name(elem: String): String = {
+    val res = if(forbidden contains elem) rename(elem) else elem
+    names += res
+    res
+  }
+
+  def child(ks: Option[Set[String]]): Namespace = new Namespace(Some(this), ks)
+  def child: Namespace = new Namespace(Some(this), None)
 }
 
-class RootNamespace(initialNames: String*) extends Namespace {
-  names ++= initialNames
-  def nameExists(n: String) = nameExistsHere(n)
-}
-
-class ChildNamespace(parent: Namespace) extends Namespace {
-  def nameExists(n: String) = nameExistsHere(n) || parent.nameExists(n)
-}
-
-class FIRRTLNamespace extends RootNamespace("mem", "node", "wire", "reg", "inst")
+private class FIRRTLNamespace extends Namespace(None, Some(Set("mem", "node", "wire", "reg", "inst")))
