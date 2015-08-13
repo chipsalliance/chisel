@@ -38,7 +38,7 @@ object debug {
 }
 
 abstract class Data(dirArg: Direction) extends HasId {
-  private[Chisel] val _mod: Module = dynamicContext.getCurrentModule.getOrElse(null)
+  private[Chisel] val _mod: Module = dynamicContext.currentModule.getOrElse(null)
   if (_mod ne null)
     _mod.addNode(this)
 
@@ -645,11 +645,11 @@ object Bundle {
   private val keywords =
     HashSet[String]("flip", "asInput", "asOutput", "cloneType", "toBits")
   def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
-    dynamicContext.paramsScope(p.push){ b }
+    Builder.paramsScope(p.push){ b }
   }
   //TODO @deprecated("Use Chisel.paramsScope object","08-01-2015")
   def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
-    val q = dynamicContext.getParams.alterPartial(f)
+    val q = Builder.getParams.alterPartial(f)
     apply(b)(q)
   }
 }
@@ -712,9 +712,11 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 object Module {
-  def apply[T <: Module](bc: => T)(implicit currParams: Parameters = dynamicContext.getParams.push): T = {
-    dynamicContext.paramsScope(currParams) {
-      val m = dynamicContext.moduleScope{ bc.setRefs() }
+  def apply[T <: Module](bc: => T)(implicit currParams: Parameters = Builder.getParams.push): T = {
+    paramsScope(currParams) {
+      val parent = dynamicContext.currentModule
+      val m = bc.setRefs()
+      dynamicContext.currentModule = parent
       val ports = m.computePorts
       Builder.components += Component(m, m.name, ports, m._commands)
       pushCommand(DefInstance(m, ports))
@@ -723,7 +725,7 @@ object Module {
   }
   //TODO @deprecated("Use Chisel.paramsScope object","08-01-2015")
   def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
-    apply(m)(dynamicContext.getParams.alterPartial(f))
+    apply(m)(Builder.getParams.alterPartial(f))
   }
 }
 
@@ -732,9 +734,8 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _nodes = ArrayBuffer[Data]()
   private[Chisel] val _children = ArrayBuffer[Module]()
-  private[Chisel] val _parent = dynamicContext.getCurrentModule
-
-  dynamicContext.forceCurrentModule(this)
+  private[Chisel] val _parent = dynamicContext.currentModule
+  dynamicContext.currentModule = Some(this)
   _parent match {
     case Some(p) => p._children += this
     case _ =>

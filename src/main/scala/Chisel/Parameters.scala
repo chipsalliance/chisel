@@ -71,25 +71,25 @@ import scala.collection.mutable
 abstract trait UsesParameters { }
 
 object params {
-  def apply[T](field:Any):T = Builder.dynamicContext.getParams.apply(field)
-  def apply[T](field:Field[T]):T = Builder.dynamicContext.getParams.apply(field)
+  def apply[T](field:Any):T = Builder.getParams.apply(field)
+  def apply[T](field:Field[T]):T = Builder.getParams.apply(field)
   // TODO: provide other mutators of Parameters? or @deprecate this and make
   // Parameters private, only mutateable through paramsScope?
   def alterPartial[T](mask: PartialFunction[Any,Any]): Parameters = {
-    Builder.dynamicContext.getParams.alterPartial(mask)
+    Builder.getParams.alterPartial(mask)
   }
-  def constrain(gen:ViewSym=>Ex[Boolean]) = Builder.dynamicContext.getParams.constrain(gen)
+  def constrain(gen:ViewSym=>Ex[Boolean]) = Builder.getParams.constrain(gen)
 }
 
 object paramsScope {
   def apply[T](p: Parameters)(body: => T): T = {
-    Builder.dynamicContext.paramsScope(p)(body)
+    Builder.paramsScope(p)(body)
   }
   def apply[T,S](mask: Map[S,Any])(body: => T): T = {
-    apply(Builder.dynamicContext.getParams.alter(mask))(body)
+    apply(Builder.getParams.alter(mask))(body)
   }
   def apply[T](mask: PartialFunction[Any,Any])(body: => T): T = {
-    apply(Builder.dynamicContext.getParams.alterPartial(mask))(body)
+    apply(Builder.getParams.alterPartial(mask))(body)
   }
 }
 
