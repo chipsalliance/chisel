@@ -779,7 +779,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
       case id: HasId => id.setRef(_namespace.name(m.getName))
       case _ =>
     }
-    (_nodes ++ _children).foreach(_.setRef)
+    (_nodes ++ _children).foreach(_.setRef(_namespace.name("T")))
     this
   }
 

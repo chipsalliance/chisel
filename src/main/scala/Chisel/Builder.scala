@@ -36,7 +36,6 @@ private class IdGen {
 
 private[Chisel] trait HasId {
   private[Chisel] val _id = Builder.idGen.next
-  private[Chisel] def setRef() =  Builder.globalRefMap.setRef(this, s"T_${_id}")
   private[Chisel] def setRef(imm: Immediate) = Builder.globalRefMap.setRef(this, imm)
   private[Chisel] def setRef(name: String) = Builder.globalRefMap.setRef(this, name)
   private[Chisel] def setRef(parent: HasId, name: String) = Builder.globalRefMap.setField(parent, this, name)
