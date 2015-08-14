@@ -458,7 +458,7 @@ final class Parameters(
 
   def constrain(gen:ViewSym=>Ex[Boolean]) = {
     val g = gen(new ViewSym(_site()))
-    if(!_world._eval(g)) ChiselError.error("Constraint failed: " + g.toString)
+    if(!_world._eval(g)) Builder.error("Constraint failed: " + g.toString)
     _world._constrain(g)
   }
 

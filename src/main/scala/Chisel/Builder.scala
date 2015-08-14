@@ -67,6 +67,7 @@ private class DynamicContext {
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
   val parameterDump = new ParameterDump
+  val errors = new ErrorLog
 }
 
 private object Builder {
@@ -89,6 +90,9 @@ private object Builder {
     cmd.id
   }
 
+  def errors = dynamicContext.errors
+  def error(m: => String) = errors.error(m)
+
   def getParams: Parameters = currentParamsVar.value
   def paramsScope[T](p: Parameters)(body: => T): T = {
     currentParamsVar.withValue(p)(body)
@@ -96,8 +100,12 @@ private object Builder {
 
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
+      errors.info("Elaborating design...")
       val mod = f
       mod.setRef(globalNamespace.name(mod.name))
+      errors.checkpoint()
+      errors.info("Done elaborating.")
+
       Circuit(components.last.name, components, globalRefMap, parameterDump)
     }
   }

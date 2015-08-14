@@ -143,9 +143,9 @@ class SwitchContext[T <: Bits](cond: T) {
 }
 
 object is { // Begin deprecation of non-type-parameterized is statements.
-  def apply(v: Iterable[Bits])(block: => Unit) { ChiselError.error("The 'is' keyword may not be used outside of a switch.") }
-  def apply(v: Bits)(block: => Unit) { ChiselError.error("The 'is' keyword may not be used outside of a switch.") }
-  def apply(v: Bits, vr: Bits*)(block: => Unit) { ChiselError.error("The 'is' keyword may not be used outside of a switch.") }
+  def apply(v: Iterable[Bits])(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
+  def apply(v: Bits)(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
+  def apply(v: Bits, vr: Bits*)(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
 }
 
 object switch {

@@ -14,7 +14,7 @@ private object Literal {
     case 'd' => 10
     case 'o' => 8
     case 'b' => 2
-    case _ => ChiselError.error("Invalid base " + base); 2
+    case _ => Builder.error("Invalid base " + base); 2
   }
 
   def stringToVal(base: Char, x: String): BigInt =
@@ -277,7 +277,7 @@ object BitPat {
     var mask = BigInt(0)
     for (d <- x.tail) {
       if (d != '_') {
-        if (!"01?".contains(d)) ChiselError.error({"Literal: " + x + " contains illegal character: " + d})
+        if (!"01?".contains(d)) Builder.error({"Literal: " + x + " contains illegal character: " + d})
         mask = (mask << 1) + (if (d == '?') 0 else 1)
         bits = (bits << 1) + (if (d == '1') 1 else 0)
       }
@@ -338,7 +338,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   final def apply(x: BigInt): Bool = {
     if (x < 0)
-      ChiselError.error(s"Negative bit indices are illegal (got $x)")
+      Builder.error(s"Negative bit indices are illegal (got $x)")
     if (isLit()) Bool(((litValue() >> x.toInt) & 1) == 1)
     else pushOp(DefPrim(Bool(), BitSelectOp, this.ref, ILit(x)))
   }
@@ -349,7 +349,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   final def apply(x: Int, y: Int): UInt = {
     if (x < y || y < 0)
-      ChiselError.error(s"Invalid bit range ($x,$y)")
+      Builder.error(s"Invalid bit range ($x,$y)")
     val w = x - y + 1
     if (isLit()) UInt((litValue >> y) & ((BigInt(1) << w) - 1), w)
     else pushOp(DefPrim(UInt(width = w), BitsExtractOp, this.ref, ILit(x), ILit(y)))
@@ -695,10 +695,10 @@ class Bundle extends Aggregate(NO_DIR) {
       res.asInstanceOf[this.type]
     } catch {
       case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
-        ChiselError.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
+        Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
         this
       case npe: java.lang.reflect.InvocationTargetException =>
-        ChiselError.error(s"Parameterized Bundle ${this.getClass} needs cloneType method")
+        Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method")
         this
     }
   }

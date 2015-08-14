@@ -81,11 +81,7 @@ object Driver extends FileSystemUtilities {
     */
   private[Chisel] def elaborateWrappedModule[T <: Module](gen: () => T, p: Parameters, c: Option[ChiselConfig]) {
     try {
-      ChiselError.clear()
-      ChiselError.info("Elaborating design...")
       val ir = Builder.build(gen())
-      ChiselError.info("Done elaborating.")
-
       val name = c match {
         case None => ir.name
         case Some(config) => s"${ir.name}.$config"
@@ -94,8 +90,8 @@ object Driver extends FileSystemUtilities {
       createOutputFile(s"$name.cst", p.getConstraints)
       createOutputFile(s"$name.prm", ir.parameterDump.getDump)
       createOutputFile(s"$name.fir", ir.emit)
-    } finally {
-      ChiselError.report
+    } catch {
+      case e: ChiselException => println(e.getMessage)
     }
   }
   def elaborate[T <: Module](gen: () => T): Unit =
