@@ -33,10 +33,12 @@ package chiselTests
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
+import Chisel._
 import Chisel.testers._
 
 class ChiselPropSpec extends PropSpec with PropertyChecks {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(t)
+  def elaborate(t: => Module): Circuit = TesterDriver.elaborate(t)
 
   def popCount(n: Long) = n.toBinaryString.count(_=='1')
 

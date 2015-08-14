@@ -8,9 +8,9 @@ import Chisel.testers.BasicTester
 class Decoder(bitpats: List[String]) extends Module {
   val io = new Bundle {
     val inst  = UInt(INPUT, 32)
-    val match_idx = UInt(OUTPUT, 5)
+    val matched = Bool(OUTPUT)
   }
-  io.match_idx := Vec(bitpats.map(BitPat(_) === io.inst)).indexWhere{i: Bool => i}
+  io.matched := Vec(bitpats.map(BitPat(_) === io.inst)).reduce(_||_)
 }
 
 class DecoderSpec extends ChiselPropSpec {
@@ -20,7 +20,7 @@ class DecoderSpec extends ChiselPropSpec {
     val (cnt, wrap) = Counter(Bool(true), pairs.size)
     val dut = Module(new Decoder(bitpats))
     dut.io.inst := Vec(insts.map(UInt(_)))(cnt)
-    when(dut.io.match_idx != cnt) { io.done := Bool(true); io.error := cnt }
+    when(!dut.io.matched) { io.done := Bool(true); io.error := cnt }
     when(wrap) { io.done := Bool(true) }
   }
 
