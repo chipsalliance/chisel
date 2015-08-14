@@ -53,7 +53,7 @@ class BitwiseOps(w: Int) extends Module {
 class BitwiseOpsSpec extends ChiselPropSpec {
 
   class BitwiseOpsTester(w: Int, a: Int, b: Int) extends BasicTester {
-    val mask = (1 << w)-1;
+    val mask = (1 << w) - 1
     val dut = Module(new BitwiseOps(w))
     io.done := Bool(true)
     dut.io.a := UInt(a) 

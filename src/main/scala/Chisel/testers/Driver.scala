@@ -33,7 +33,7 @@ import Chisel._
 
 object TesterDriver {
   def execute(t: => BasicTester): Boolean = {
-    val circuit = Builder.build(t)
+    val circuit = Builder.build(Module(t))
     //val executable = invokeFIRRTL(circuit)
     //Process(executable) !
     true

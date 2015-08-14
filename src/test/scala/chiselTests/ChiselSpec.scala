@@ -38,6 +38,9 @@ import Chisel.testers._
 class ChiselPropSpec extends PropSpec with PropertyChecks {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(t)
 
+  def popCount(n: Long) = n.toBinaryString.count(_=='1')
+
+  val smallPosInts = Gen.choose(1, 16)
   val safeUIntWidth = Gen.choose(1, 31) 
   val safeUInts = Gen.choose(0, (1 << 30))
   val vecSizes = Gen.choose(0, 4)
