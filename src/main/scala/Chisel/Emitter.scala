@@ -31,7 +31,8 @@ private class Emitter(circuit: Circuit) {
     case e: BulkConnect => s"${e.loc1.fullName(ctx)} <> ${e.loc2.fullName(ctx)}"
     case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
     case e: DefInstance => {
-      val res = new StringBuilder(s"inst ${e.name} of ${e.id.name}")
+      val modName = moduleMap.getOrElse(e.id.name, e.id.name)
+      val res = new StringBuilder(s"inst ${e.name} of $modName")
       res ++= newline
       for (p <- e.ports; x <- initPort(p, INPUT, ctx))
         res ++= newline + x
@@ -53,18 +54,34 @@ private class Emitter(circuit: Circuit) {
       yield s"${circuit.refMap(x).fullName(ctx)} := ${x.makeLit(0).name}"
   }
 
-  private def emit(m: Component): Unit = {
-    res ++= newline + s"module ${m.name} : "
+  private def emitBody(m: Component) = {
+    val me = new StringBuilder
     withIndent {
       for (p <- m.ports)
-        res ++= newline + emitPort(p, true)
-      res ++= newline
+        me ++= newline + emitPort(p, true)
+      me ++= newline
       for (p <- m.ports; x <- initPort(p, OUTPUT, m))
-        res ++= newline + x
-      res ++= newline
+        me ++= newline + x
+      me ++= newline
       for (cmd <- m.commands)
-        res ++= newline + emit(cmd, m)
-      res ++= newline
+        me ++= newline + emit(cmd, m)
+      me ++= newline
+    }
+    me
+  }
+
+  private val bodyMap = collection.mutable.HashMap[StringBuilder, String]()
+  private val moduleMap = collection.mutable.HashMap[String, String]()
+
+  private def emit(m: Component): String = {
+    val body = emitBody(m)
+    bodyMap get body match {
+      case Some(name) =>
+        moduleMap(m.name) = name
+        ""
+      case None =>
+        bodyMap(body) = m.name
+        newline + s"module ${m.name} : " + body
     }
   }
 
@@ -75,6 +92,6 @@ private class Emitter(circuit: Circuit) {
   private def withIndent(f: => Unit) { indent(); f; unindent() }
 
   private val res = new StringBuilder(s"circuit ${circuit.name} : ")
-  withIndent { circuit.components foreach emit }
+  withIndent { circuit.components.foreach(c => res ++= emit(c)) }
   res ++= newline
 }
