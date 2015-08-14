@@ -42,7 +42,7 @@ class ComplexAssignSpec extends ChiselPropSpec {
   }
      
   property("All complex assignments should return the correct result") {
-    forAll(enSequence(16), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
+    forAll(enSequence(4), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
       assert(execute{ new ComplexAssignTester(en, re, im) }) 
     }
   }
