@@ -41,7 +41,7 @@ class ChiselPropSpec extends PropSpec with PropertyChecks {
   def popCount(n: Long) = n.toBinaryString.count(_=='1')
 
   val smallPosInts = Gen.choose(1, 7)
-  val safeUIntWidth = Gen.choose(1, 31) 
+  val safeUIntWidth = Gen.choose(1, 30) 
   val safeUInts = Gen.choose(0, (1 << 30))
   val vecSizes = Gen.choose(0, 4)
   val binaryString = for(i <- Arbitrary.arbitrary[Int]) yield "b" + i.toBinaryString
@@ -51,10 +51,19 @@ class ChiselPropSpec extends PropSpec with PropertyChecks {
     w <- smallPosInts
     i <- Gen.containerOfN[List,Int](n, Gen.choose(0, (1 << w) - 1))
   } yield (w, i)
+  val safeUInt = for {
+    w <- smallPosInts
+    i <- Gen.choose(0, (1 << w) - 1)
+  } yield (w, i)
 
   def safeUIntPairN(n: Int) = for {
     w <- smallPosInts
     i <- Gen.containerOfN[List,Int](n, Gen.choose(0, (1 << w) - 1))
     j <- Gen.containerOfN[List,Int](n, Gen.choose(0, (1 << w) - 1))
   } yield (w, i zip j)
+  val safeUIntPair= for {
+    w <- smallPosInts
+    i <- Gen.choose(0, (1 << w) - 1)
+    j <- Gen.choose(0, (1 << w) - 1)
+  } yield (w, i, j)
 }
