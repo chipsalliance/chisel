@@ -39,7 +39,8 @@ public defn BigInt (len: Int) :
          ;println(digit)
          val hex = as-hex(digit)
          ;println(hex)
-         str = string-join([str hex])
+         if str == "h" and hex == "0" and (i + 4 < len) : false
+         else : str = string-join([str hex])
        string-join([ "\"" str "\""])
      defmethod to-bin (this) -> String :
        string-join $
