@@ -3,13 +3,13 @@
 ================================================
 
 ======== Current Tasks ========
-change parser to accept subword, but error
 put clocks on accessors
 add clock check to high firrtl check
 registers in onreset cannot have flips
 add equivalence to spec
 remove SInt from bit/bits in spec
 naming still doesn't work - x!0 will conflict with x
+think about inferring read enable from lo firrtl
 
 Tests:
    Lowering for instance types with bundle ports
@@ -21,7 +21,7 @@ Tests:
 fix expand-whens to have correct semantics
 update high/low firrtl checks
 need an annotation example
-move width inference earlier (required for subword assignment, consistent vec width inference, and supporting the new constructs of tobits/frombits)
+move width inference earlier (required for consistent vec width inference)
 Temp elimination needs to count # uses
 Check for recursively defined instances
 Names in bundles must be unique
@@ -56,19 +56,12 @@ Checks:
    zero width?
 
 ======== Update Core ==========
-Add bi-accessor
 Add RdWrPort
-Add SubwordConnect
-Add clock, reset to reg
-Add clock to cmem, smem
-Add clock to Direction, make sure it all works
-Remove concrete syntax from EmptyStmt()
 
 ======== Check Passes ==========
 High-Firrtl
    No combinational loops
    Clocks are used correctly
-   Restrictions on subword assignments
 
 After adding dynamic assertions, insert bounds check with accessor expansion
 Width inference
@@ -91,7 +84,6 @@ deadcode elimination
 Andrew: Way to keep Array information for backends to avoid code explosion
 
 ======== Think About ========
-subword accesses
 verilog style guide
 annotation system
 zero-width wires

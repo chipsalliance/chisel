@@ -212,7 +212,7 @@ defn emit-module (m:InModule) :
             add(inits,[sym " = {" width!(type(s)) "{" rand-value "}};"])
          (s:DefMemory) :
             val vtype = type(s) as VectorType
-            add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) "];"])
+            add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) - 1 "];"])
             add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
             add(inits,["  " sym "[initvar] = {" width!(type(vtype)) "{" rand-value "}};"])
          (s:DefNode) :

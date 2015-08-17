@@ -1,5 +1,4 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c 2>&1 | tee %s.out | FileCheck %s
-; XFAIL: *
 circuit top :
    module top :
       input clk : Clock
