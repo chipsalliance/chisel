@@ -1,3 +1,14 @@
+Support ASIC backend
+   Writemasks for ram's in general (ASICs and FPGAs)
+     Mem of vec, should just work?
+   ASIC rams (pass to replace smem with black box)
+   Readwrite Port
+
+Readenables need work
+
+
+
+
 ================================================
 ========== ADAM's BIG ARSE TODO LIST ============
 ================================================

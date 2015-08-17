@@ -1242,9 +1242,10 @@ defmethod equal? (e1:Expression,e2:Expression) -> True|False :
          if value(e1) == value(e2) : width(e1) == width(e2)
          else : false
       (e1:WRef,e2:WRef) : name(e1) == name(e2)
-      ;(e1:DoPrim,e2:DoPrim) :  TODO
-      (e1:WSubfield,e2:WSubfield) : name(e1) == name(e2)
-      ;(e1:Pad,e2:Pad) : width(e1) == width(e2) and value(e1) == value(e2)
+      (e1:WSubfield,e2:WSubfield) : 
+         (name(e1) == name(e2)) and (exp(e1) == exp(e2))
+      (e1:WIndex,e2:WIndex) : 
+         (value(e1) == value(e2)) and (exp(e1) == exp(e2))
       (e1:DoPrim,e2:DoPrim) : 
          var are-equal? = op(e1) == op(e2)
          for (x in args(e1),y in args(e2)) do :
@@ -1495,12 +1496,12 @@ defn build-tables (s:Stmt,
             match(r) : 
                (r:SymbolicValue) : resets[i] = r
                (r) : false
-         ;println-debug("TABLE-C")
-         ;for x in assign-c do : println-debug(x)
-         ;println-debug("TABLE-A")
-         ;for x in assign-a do : println-debug(x)
-         ;println-debug("TABLE")
-         ;for x in assign do : println-debug(x)
+         println-debug("TABLE-C")
+         for x in assign-c do : println-debug(x)
+         println-debug("TABLE-A")
+         for x in assign-a do : println-debug(x)
+         println-debug("TABLE")
+         for x in assign do : println-debug(x)
       (s:Connect|OnReset) : 
          val key* = match(loc(s)) :
             (e:WRef) : name(e)
