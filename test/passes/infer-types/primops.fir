@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p ct 2>&1 | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p ct 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Types
 circuit top :
@@ -8,6 +8,12 @@ circuit top :
       wire c : SInt<16>
       wire d : SInt<8>
       wire e : UInt<1>
+
+      a := UInt(1)
+      b := UInt(1)
+      c := SInt(1)
+      d := SInt(1)
+      e := UInt(1)
 
       node vadd = add(a, c)    ;CHECK: node vadd = add(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
       node wadd = add(a, b) ;CHECK: node wadd = add(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
@@ -139,6 +145,7 @@ circuit top :
       node wshr = shr(a, 10) ;CHECK: node wshr = shr(a@<t:UInt>, 10)@<t:UInt>
       node zshr = shr(c, 10) ;CHECK: node zshr = shr(c@<t:SInt>, 10)@<t:SInt>
    
+
       node vcvt = cvt(a)   ;CHECK: node vcvt = cvt(a@<t:UInt>)@<t:SInt>
       node wcvt = cvt(a) ;CHECK: node wcvt = cvt(a@<t:UInt>)@<t:SInt>
       node zcvt = cvt(c) ;CHECK: node zcvt = cvt(c@<t:SInt>)@<t:SInt>

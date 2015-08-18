@@ -16,8 +16,8 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt, clk, reset
-; CHECK:     p := UInt("h00000001")
-; CHECK:     when p : r := mux(reset, UInt("h00000001"), UInt("h00000002"))
+; CHECK:     p := UInt("h1")
+; CHECK:     when p : r := mux(reset, UInt("h1"), UInt("h2"))
 
 ; CHECK: Finished Expand Whens
 

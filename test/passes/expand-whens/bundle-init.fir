@@ -19,8 +19,8 @@ circuit top :
 
 ; CHECK: r$x := mux(reset, w$x, a)
 ; CHECK: r$y := mux(reset, w$y, b)
-; CHECK: a := UInt("h00000001")
-; CHECK: b := UInt("h00000002")
+; CHECK: a := UInt("h1")
+; CHECK: b := UInt("h2")
 ; CHECK: w$x := b
 ; CHECK: w$y := a
       

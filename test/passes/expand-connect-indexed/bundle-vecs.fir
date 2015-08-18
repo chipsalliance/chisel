@@ -24,10 +24,10 @@ circuit top :
       ; CHECK: wire b{{[_$]+}}y : UInt<32>
       ; CHECK: b{{[_$]+}}x := a{{[_$]+}}0{{[_$]+}}x
       ; CHECK: node i_1 = i
-      ; CHECK: when eqv(i_1, UInt("h00000001")) : b{{[_$]+}}x := a{{[_$]+}}1{{[_$]+}}x      
+      ; CHECK: when eqv(i_1, UInt("h1")) : b{{[_$]+}}x := a{{[_$]+}}1{{[_$]+}}x      
       ; CHECK: node i_2 = i
-      ; CHECK: when eqv(i_2, UInt("h00000000")) : a{{[_$]+}}0{{[_$]+}}y := b{{[_$]+}}y      
-      ; CHECK: when eqv(i_2, UInt("h00000001")) : a{{[_$]+}}1{{[_$]+}}y := b{{[_$]+}}y      
+      ; CHECK: when eqv(i_2, UInt("h0")) : a{{[_$]+}}0{{[_$]+}}y := b{{[_$]+}}y      
+      ; CHECK: when eqv(i_2, UInt("h1")) : a{{[_$]+}}1{{[_$]+}}y := b{{[_$]+}}y      
       j := b.x
       b.y := UInt(1)
       

@@ -15,8 +15,8 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt
-; CHECK:     p := UInt("h00000001")
-; CHECK:     when p : r := UInt("h00000002")
+; CHECK:     p := UInt("h1")
+; CHECK:     when p : r := UInt("h2")
 
 ; CHECK: Finished Expand Whens
 

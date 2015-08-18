@@ -15,9 +15,9 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     cmem m : UInt<4>[10], clk
-; CHECK:     write accessor a = m[UInt("h00000003")]
-; CHECK:     p := UInt("h00000001")
-; CHECK:     when p : a := UInt("h00000002")
+; CHECK:     write accessor a = m[UInt("h3")]
+; CHECK:     p := UInt("h1")
+; CHECK:     when p : a := UInt("h2")
 
 ; CHECK: Finished Expand Whens
 

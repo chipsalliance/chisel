@@ -20,10 +20,10 @@ circuit top :
       a[8] := UInt(1)
       a[9] := UInt(1)
       node b = a[2]           ;CHECK: node b = a@<t:UInt<3>[10]@<t:UInt>>[2]@<t:UInt>
-      read accessor c = a[UInt(3)] ;CHECK: read accessor c = a@<t:UInt<3>[10]@<t:UInt>>[UInt("h00000003")]
+      read accessor c = a[UInt(3)] ;CHECK: read accessor c = a@<t:UInt<3>[10]@<t:UInt>>[UInt("h3")]
 ; CHECK: Finished Infer Types
 ; CHECK: Resolve Genders 
-; CHECK: read accessor c = a@<t:UInt<3>[10]@<t:UInt>>[UInt("h00000003")]   
+; CHECK: read accessor c = a@<t:UInt<3>[10]@<t:UInt>>[UInt("h3")]   
 ; CHECK: Finished Resolve Genders 
 
 

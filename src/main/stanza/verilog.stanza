@@ -126,9 +126,9 @@ defn emit (e:Expression) -> String :
                if type(e) typeof SIntType : [emit-as-type(args(e)[0],type(e)) " >>> " emit(args(e)[1])]
                else : [emit-as-type(args(e)[0],type(e)) " >> " emit(args(e)[1])]
             SHIFT-LEFT-OP : [emit-as-type(args(e)[0],type(e)) " << " consts(e)[0]]
-            SHIFT-RIGHT-OP : 
-               if type(e) typeof SIntType : [emit-as-type(args(e)[0],type(e)) " >>> " consts(e)[0]]
-               else : [emit-as-type(args(e)[0],type(e)) " >> " consts(e)[0]]
+            SHIFT-RIGHT-OP : [emit-as-type(args(e)[0],type(e)) "[" width!(type(args(e)[0])) - to-long(1) ":" consts(e)[0] "]"]
+               ;if type(e) typeof SIntType : [emit-as-type(args(e)[0],type(e)) " >>> " consts(e)[0]]
+               ;else : [emit-as-type(args(e)[0],type(e)) " >> " consts(e)[0]]
             NEG-OP : ["-{" emit-as-type(args(e)[0],type(e)) "}"]
             CONVERT-OP : 
                match(type(args(e)[0])) :
@@ -190,6 +190,7 @@ defn emit-module (m:InModule) :
 
    val sh = get-sym-hash(m)
    val rand-value = "$rand" ;"0"
+   defn rand-string (w:Long) -> String : string-join(["{" ((w + to-long(31)) / to-long(32)) "{" rand-value "}};"])
 
    for x in vdecs do :
       val sym = key(x)
@@ -209,12 +210,13 @@ defn emit-module (m:InModule) :
             else :
                add(my-clk-update,[sym " <= " emit(cons[sym]) ";"])
             updates[get-name(clock(s))] = my-clk-update
-            add(inits,[sym " = {" width!(type(s)) "{" rand-value "}};"])
+            val w = width!(type(s))
+            add(inits,[sym " = " rand-string(w)])
          (s:DefMemory) :
             val vtype = type(s) as VectorType
             add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) - 1 "];"])
             add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
-            add(inits,["  " sym "[initvar] = {" width!(type(vtype)) "{" rand-value "}};"])
+            add(inits,["  " sym "[initvar] = " rand-string(width!(type(vtype))) ])
          (s:DefNode) :
             add(wires,["wire " get-width(type(value(s))) " " sym ";"])
             add(assigns,["assign " sym " = " emit(value(s)) ";"])
@@ -235,7 +237,8 @@ defn emit-module (m:InModule) :
                      ; to make it sequential, register the index for an additional cycle
                      val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
                      add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) 
-                     add(inits,[name(index*) " = {" width!(type(index*)) "{" rand-value "}};"])
+                     val w = width!(type(index*))
+                     add(inits,[name(index*) " = " rand-string(w)])
                      val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
                      add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"])
                      updates[get-name(clock(mem-declaration))] = my-clk-update
