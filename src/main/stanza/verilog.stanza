@@ -189,7 +189,7 @@ defn emit-module (m:InModule) :
    val inst-ports = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
 
    val sh = get-sym-hash(m)
-   val rand-value = "0"
+   val rand-value = "$rand" ;"0"
 
    for x in vdecs do :
       val sym = key(x)
