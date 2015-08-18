@@ -1867,6 +1867,9 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
       ;println-all-debug(["Removing cycle for " n " inside " w])
       val w* = match(map(remove-cycle{n,_},w)) :
          (w:MaxWidth) : MaxWidth(to-list(filter({_ != VarWidth(n)},args(w))))
+         (w:MinusWidth) :
+            if arg1(w) == VarWidth(n) : arg1(w)
+            else : w
          (w) : w
       ;println-all-debug(["After removing cycle for " n ", returning " w*])
       w*
