@@ -1826,7 +1826,7 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
                (w1,w2) : w
          (w:MinusWidth) : 
             match(arg1(w),arg2(w)) :
-               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) + width(w2))
+               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) - width(w2))
                (w1:LongWidth,w2:IntWidth) : LongWidth(minus(width(w1),to-long $ width(w2)))
                (w1:IntWidth,w2:LongWidth) : LongWidth(minus(to-long $ width(w1), width(w2)))
                (w1:LongWidth,w2:LongWidth) : LongWidth(minus(width(w1),width(w2)))
