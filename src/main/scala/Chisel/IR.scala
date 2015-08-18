@@ -153,8 +153,6 @@ abstract class Definition extends Command {
   def id: HasId
   def name = refMap(id).name
 }
-case class DefFlo(id: HasId, value: Float) extends Definition
-case class DefDbl(id: HasId, value: Double) extends Definition
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
 case class DefWire(id: HasId, kind: Kind) extends Definition
 case class DefRegister(id: HasId, kind: Kind, clock: Arg, reset: Arg) extends Definition

@@ -19,8 +19,6 @@ private class Emitter(circuit: Circuit) {
     case e: ClockType => s"Clock"
   }
   private def emit(e: Command, ctx: Component): String = e match {
-    case e: DefFlo => s"node ${e.name} = Flo(${e.value})"
-    case e: DefDbl => s"node ${e.name} = Dbl(${e.value})"
     case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${join(e.args.map(x => x.fullName(ctx)), ", ")})"
     case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
     case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
