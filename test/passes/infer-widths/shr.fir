@@ -1,5 +1,4 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p cd 2>&1 | tee %s.out | FileCheck %s
-; XFAIL: *
 
 ;CHECK: Infer Widths
 ; CHECK: Finished Infer Widths
