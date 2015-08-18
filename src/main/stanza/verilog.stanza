@@ -189,7 +189,7 @@ defn emit-module (m:InModule) :
    val inst-ports = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
 
    val sh = get-sym-hash(m)
-   val rand-value = "$rand" ;"0"
+   val rand-value = "$random" ;"0"
    defn rand-string (w:Long) -> String : string-join(["{" ((w + to-long(31)) / to-long(32)) "{" rand-value "}};"])
 
    for x in vdecs do :
