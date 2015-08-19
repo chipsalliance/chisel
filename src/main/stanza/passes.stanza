@@ -215,7 +215,7 @@ defn hasWidth (e:?) :
 defn hasType (e:?) :
    e typeof Ref|Subfield|Index|DoPrim|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory
-      |VectorType|Port|Field
+      |VectorType|Port|Field|UIntValue|SIntValue
 
 defn hasKind (e:?) :
    e typeof WRef
@@ -1955,13 +1955,11 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             val l = h[name(s)]
             val r = gen-constraints(value(s))
             add(v,WGeq(width!(l),width!(type(r))))
-            add(v,WGeq(width!(type(r)),width!(l)))
             DefNode(info(s),name(s),r)
          (s:Connect) : 
             val l = gen-constraints(loc(s))
             val e = gen-constraints(exp(s))
             add(v,WGeq(width!(type(l)),width!(type(e))))
-            add(v,WGeq(width!(type(e)),width!(type(l))))
             Connect(info(s),l,e)
          (s:Conditionally) : 
             val p = gen-constraints(pred(s))
