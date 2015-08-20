@@ -2408,3 +2408,43 @@ public defn pad-widths (c:Circuit) -> Circuit :
             (m:ExModule) : m
             (m:InModule) : InModule(info(m),name(m),ports(m),pad-widths-s(body(m)))
 
+
+;============= Constant Propagation ================
+
+public defstruct ConstProp <: Pass
+public defmethod pass (b:ConstProp) -> (Circuit -> Circuit) : const-prop
+public defmethod name (b:ConstProp) -> String : "Constant Propagation"
+public defmethod short-name (b:ConstProp) -> String : "const-prop"
+
+;------------ Helper Functions --------------
+
+
+;------------- Pad Widths -------------------
+
+defn const-prop-e (e:Expression) -> Expression :
+   match(map(const-prop-e,e)) :
+      (e:DoPrim) : 
+         switch {op(e) == _} :
+            BITS-SELECT-OP : 
+               match(args(e)[0]) :
+                  (x:UIntValue) : 
+                     val b = bits(value(x),consts(e)[0],consts(e)[1])
+                     UIntValue(b,width(type(e) as UIntType))
+            BIT-SELECT-OP : 
+               match(args(e)[0]) :
+                  (x:UIntValue) : 
+                     val i = bit(value(x),consts(e)[0])
+                     UIntValue(i,width(type(e) as UIntType))
+            else : e
+      (e) : e
+
+defn const-prop-s (s:Stmt) -> Stmt :
+   map{const-prop-e,_} $ map(const-prop-s,s)
+
+public defn const-prop (c:Circuit) -> Circuit :
+   Circuit{info(c),_,main(c)} $
+      for m in modules(c) map :
+         match(m) :
+            (m:ExModule) : m
+            (m:InModule) : InModule(info(m),name(m),ports(m),const-prop-s(body(m)))
+
