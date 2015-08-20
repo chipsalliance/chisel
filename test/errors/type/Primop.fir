@@ -1,7 +1,7 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c | tee %s.out | FileCheck %s
 ; CHECK: Primop mux requires all operands to have the same type.
 ; CHECK: Primop add cannot operate on non-ground types.
-; CHECK: Primop mux requires argument SInt("h00000001") to be a UInt type.
+; CHECK: Primop mux requires argument SInt("h1") to be a UInt type.
 
 circuit Top : 
   module Top :
