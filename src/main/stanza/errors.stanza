@@ -68,6 +68,10 @@ defn UndeclaredReference (info:FileInfo, name:Symbol) :
    PassException $ string-join $
    [info ": [module " mname "]  Reference " name " is not declared."]
 
+defn PoisonWithFlip (info:FileInfo, name:Symbol) : 
+   PassException $ string-join $
+   [info ": [module " mname "]  Poison " name " cannot be a bundle type with flips."]
+
 defn MemWithFlip (info:FileInfo, name:Symbol) : 
    PassException $ string-join $
    [info ": [module " mname "]  Memory " name " cannot be a bundle type with flips."]
@@ -107,6 +111,10 @@ defn NegWidth (info:FileInfo) :
 defn NegVecSize (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Vector type size cannot be negative."]
+
+defn IllegalUnknownWidth (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Widths must be defined for memories and poison nodes."]
 
 ;---------------- Helper Functions --------------
 defn has-flip? (t:Type) -> True|False :
@@ -253,19 +261,22 @@ public defn check-high-form (c:Circuit) -> Circuit :
             add(errors,InvalidLOC(info))
          (e) : false
 
-   defn check-high-form-w (info:FileInfo,w:Width) -> Width :
+   defn check-high-form-w (info:FileInfo,w:Width,unknown-ok?:True|False) -> Width :
       match(w) :
          (w:IntWidth) : 
             if width(w) < 0 : add(errors,NegWidth(info))
             w
+         (w:UnknownWidth) : 
+            if unknown-ok? == false : add(errors,IllegalUnknownWidth(info))
+            w
          (w) : w
 
-   defn check-high-form-t (info:FileInfo,t:Type) -> Type :
-      match(map(check-high-form-t{info,_},t)) :
+   defn check-high-form-t (info:FileInfo,t:Type,unknown-ok?:True|False) -> Type :
+      match(map(check-high-form-t{info,_,true},t)) :
          (t:VectorType) : 
             if size(t) < 0 : add(errors,NegVecSize(info))
          (t) : false
-      map(check-high-form-w{info,_:Width},t)
+      map(check-high-form-w{info,_:Width,unknown-ok?},t)
       
    defn check-high-form-e (info:FileInfo,e:Expression,names:HashTable<Symbol,True>) -> Expression :
       match(map(check-high-form-e{info,_,names},e)) :
@@ -284,20 +295,25 @@ public defn check-high-form (c:Circuit) -> Circuit :
          (e:UIntValue) : false
             ;if neg?(value(e)) : add(errors,NegUInt(info))
          (e) : false
-      map(check-high-form-w{info,_:Width},e)
-      map(check-high-form-t{info,_:Type},e)
+      map(check-high-form-w{info,_:Width,true},e)
+      map(check-high-form-t{info,_:Type,true},e)
       e
 
    defn check-high-form-s (s:Stmt,names:HashTable<Symbol,True>,mnames:HashTable<Symbol,True>) -> Stmt :
       defn check-name (info:FileInfo,name:Symbol) -> False :
          if key?(names,name) : add(errors,NotUnique(info,name))
-      map(check-high-form-t{info(s),_:Type},s)
+      map(check-high-form-t{info(s),_:Type,true},s)
 
       map{check-high-form-s{_,names,mnames},_} $ { 
          match(s) : ;map(check-high-form-e{info(s),_,names},s)) :
             (s:DefWire) : 
                check-name(info(s),name(s))
                names[name(s)] = true
+            (s:DefPoison) : 
+               check-name(info(s),name(s))
+               if has-flip?(type(s)) : add(errors, PoisonWithFlip(info(s), name(s)))
+               names[name(s)] = true
+               check-high-form-t(info(s),type(s),false)
             (s:DefRegister) :
                check-name(info(s),name(s))
                names[name(s)] = true
@@ -307,6 +323,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
                check-name(info(s),name(s))
                names[name(s)] = true
                if has-flip?(type(s)) : add(errors, MemWithFlip(info(s), name(s)))
+               check-high-form-t(info(s),type(s),false)
                check-high-form-e(info(s),clock(s),names)
             (s:DefInstance) : 
                if not contains?(name(module(s) as Ref),map(name,modules(c))) : 
@@ -355,8 +372,8 @@ public defn check-high-form (c:Circuit) -> Circuit :
          ;            add(errors,WrongReset(info!(m),name(m)))
          ;      else :
          ;         add(errors,WrongReset(info!(m),name(m)))
-         map(check-high-form-t{info(p),_},type(p))
-         map(check-high-form-w{info(p),_},type(p))
+         map(check-high-form-t{info(p),_,true},type(p))
+         map(check-high-form-w{info(p),_,true},type(p))
 
       match(m) :
          (m:ExModule) : false
@@ -773,6 +790,7 @@ public defn check-genders (c:Circuit) -> Circuit :
       do(check-genders-s{_:Stmt,genders},s)
       match(s) :
          (s:DefWire) : genders[name(s)] = BI-GENDER
+         (s:DefPoison) : genders[name(s)] = MALE
          (s:DefRegister) : genders[name(s)] = BI-GENDER
          (s:DefNode) : 
             check-gender(info(s),genders,value(s),MALE)
@@ -881,6 +899,8 @@ public defn check-low-form (c:Circuit) -> Circuit :
       defn check-low-form-s (s:Stmt) -> False :
          match(s) : 
             (s:DefWire) :
+               check-low-form-t(info(s),type(s),name(s))
+            (s:DefPoison) :
                check-low-form-t(info(s),type(s),name(s))
             (s:DefMemory) : 
                check-low-form-t(info(s),type(type(s)),name(s))

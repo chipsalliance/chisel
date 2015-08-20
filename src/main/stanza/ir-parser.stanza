@@ -239,6 +239,7 @@ defsyntax firrtl :
       stmt = (smem ?name:#id! #:! ?t:#vectype! ?clk:#exp!) : DefMemory(first-info(form),name, t, true, clk)
       stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name,m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name,e)
+      stmt = (poison ?name:#id! #:! ?t:#type!) : DefPoison(first-info(form),name, t)
       stmt = (onreset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x,y)
       stmt = (read accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,READ)
       stmt = (write accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,WRITE)

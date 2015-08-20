@@ -132,6 +132,10 @@ public defstruct DefAccessor <: Stmt :
    source: Expression
    index: Expression
    acc-dir: AccDirection
+public defstruct DefPoison <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
+   name: Symbol
+   type: Type
 public defstruct Conditionally <: Stmt :
    info: FileInfo with: (as-method => true)
    pred: Expression

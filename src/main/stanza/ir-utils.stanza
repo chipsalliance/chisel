@@ -71,6 +71,7 @@ public defn get-sym-hash (m:InModule,keywords:Streamable<Symbol>) -> HashTable<S
         (s:DefInstance) : add-name(name(s))
         (s:DefMemory) : add-name(name(s))
         (s:DefNode) : add-name(name(s))
+        (s:DefPoison) : add-name(name(s))
         (s:DefAccessor) : add-name(name(s))
         (s) : false
      map(to-stmt,s)
@@ -219,6 +220,8 @@ defmethod print (o:OutputStream, e:Expression) :
 defmethod print (o:OutputStream, c:Stmt) :
    val io = IndentedStream(o, 3)
    match(c) :
+      (c:DefPoison) :
+         print-all(o,["poison " name(c) " : " type(c)])
       (c:DefWire) :
          print-all(o,["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
@@ -381,6 +384,7 @@ defmethod map (f: Type -> Type, c:Expression) -> Expression :
 public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T
 defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
    match(c) :
+      (c:DefPoison) : DefPoison(info(c),name(c),f(type(c)))
       (c:DefWire) : DefWire(info(c),name(c),f(type(c)))
       (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)),clock(c),reset(c))
       (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)) as VectorType,seq?(c),clock(c))

@@ -162,6 +162,7 @@ defn emit-s (s:Stmt, flokinds:HashTable<Symbol,FloKind>, top:Symbol,sh:HashTable
            error("Unknown Connect")
    match(s) :
       (s:DefWire) : ""
+      (s:DefPoison) : ""
       (s:DefInstance) : error("Shouldn't be here")
       (e:DefAccessor) : 
          if acc-dir == READ :

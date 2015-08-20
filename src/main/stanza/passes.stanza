@@ -32,6 +32,7 @@ public val standard-passes = to-list $ [
 ;=============== WORKING IR ================================
 public definterface Kind
 public defstruct WireKind <: Kind 
+public defstruct PoisonKind <: Kind 
 public defstruct RegKind <: Kind
 public defstruct InstanceKind <: Kind
 public defstruct ReadAccessorKind <: Kind 
@@ -196,6 +197,7 @@ defmethod print (o:OutputStream, k:Kind) :
    print{o, _} $
    match(k) :
       (k:WireKind) : "wire"
+      (k:PoisonKind) : "poison"
       (k:RegKind) : "reg"
       (k:AccessorKind) : "accessor"
       (k:PortKind) : "port"
@@ -214,7 +216,7 @@ defn hasWidth (e:?) :
 
 defn hasType (e:?) :
    e typeof Ref|Subfield|Index|DoPrim|WRef|WSubfield
-      |WIndex|DefWire|DefRegister|DefMemory
+      |WIndex|DefWire|DefRegister|DefMemory|DefPoison
       |VectorType|Port|Field|UIntValue|SIntValue
 
 defn hasKind (e:?) :
@@ -341,6 +343,7 @@ defn remove-special-chars (c:Circuit) :
    defn rename-s (s:Stmt) -> Stmt :
       match(s) :
          (s:DefWire) : DefWire(info(s),rename(name(s)),rename-t(type(s)))
+         (s:DefPoison) : DefPoison(info(s),rename(name(s)),rename-t(type(s)))
          (s:DefRegister) : DefRegister(info(s),rename(name(s)),rename-t(type(s)),rename-e(clock(s)),rename-e(reset(s)))
          (s:DefInstance) : DefInstance(info(s),rename(name(s)),rename-e(module(s)))
          (s:DefMemory) : DefMemory(info(s),rename(name(s)),rename-t(type(s)) as VectorType,seq?(s),rename-e(clock(s)))
@@ -396,7 +399,7 @@ defn remove-scopes (c:Circuit) :
          else : n
       defn build-s (s:Stmt) :
          match(s) : 
-            (s:DefWire|DefRegister|DefInstance|DefMemory|DefNode|DefAccessor) : 
+            (s:DefWire|DefRegister|DefInstance|DefMemory|DefNode|DefAccessor|DefPoison) : 
                occurrences[name(s)] = get?(occurrences,name(s),0) + 1
             (s) : do(build-s,s)
       defn remove-scopes-e (e:Expression,env:Vector<HashTable<Symbol,Int>>) :
@@ -406,6 +409,7 @@ defn remove-scopes (c:Circuit) :
       defn remove-scopes-s (s:Stmt,env:Vector<HashTable<Symbol,Int>>) -> Stmt :
          match(map(remove-scopes-e{_,env},s)) :
             (s:DefWire) : DefWire(info(s),rename(name(s),env),type(s))
+            (s:DefPoison) : DefPoison(info(s),rename(name(s),env),type(s))
             (s:DefRegister) : DefRegister(info(s),rename(name(s),env),type(s),clock(s),reset(s))
             (s:DefInstance) : DefInstance(info(s),rename(name(s),env),module(s))
             (s:DefMemory) : DefMemory(info(s),rename(name(s),env),type(s),seq?(s),clock(s))
@@ -584,6 +588,7 @@ defn resolve-kinds (c:Circuit) :
       defn find-stmt (s:Stmt) -> Stmt :
          match(s) :
             (s:DefWire) : kinds[name(s)] = NodeKind()
+            (s:DefPoison) : kinds[name(s)] = PoisonKind()
             (s:DefNode) : kinds[name(s)] = NodeKind()
             (s:DefRegister) : kinds[name(s)] = RegKind()
             (s:DefInstance) : kinds[name(s)] = InstanceKind()
@@ -676,6 +681,7 @@ defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<
                s*
          [Begin(body*),env]
       (s:DefWire) : [s,List(name(s) => type(s),l)]
+      (s:DefPoison) : [s,List(name(s) => type(s),l)]
       (s:DefRegister) : [s,List(name(s) => type(s),l)]
       (s:DefMemory) : [s,List(name(s) => type(s),l)]
       (s:DefInstance) : [s, List(name(s) => type(module(s)),l)]
@@ -771,6 +777,9 @@ defn resolve-genders (c:Circuit) :
             
       defn resolve-stmt (s:Stmt) -> Stmt :
          match(s) :
+            (s:DefPoison) :
+               get-gender(name(s),MALE)
+               s
             (s:DefWire) :
                get-gender(name(s),BI-GENDER)
                s
@@ -1015,6 +1024,9 @@ defn lower (body:Stmt) -> Stmt :
    defn lower-stmt (s:Stmt) -> Stmt :
       ;; println(s)
       match(s) :
+         (s:DefPoison) : Begin $
+            for x in generate-entry(name(s),type(s)) map :
+               DefPoison(info(s),name(x),type(x))
          (s:DefWire) : Begin $
             for x in generate-entry(name(s),type(s)) map :
                DefWire(info(s),name(x),type(x))
@@ -1510,7 +1522,7 @@ defn build-tables (s:Stmt,
          if s typeof Connect : assign[key*] = SVExp(exp(s))
          if s typeof OnReset : resets[key*] = SVExp(exp(s))
       (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets,flattn,rsignals)
-      (s:DefMemory|DefNode|EmptyStmt) : false
+      (s:DefMemory|DefPoison|DefNode|EmptyStmt) : false
 
 
 defn mark-referenced (referenced?:HashTable<Symbol,True>, s:Stmt) -> False :
@@ -1535,7 +1547,7 @@ defn mark-referenced (referenced?:HashTable<Symbol,True>, sv:SymbolicValue) -> S
 
 defn is-referenced? (referenced?:HashTable<Symbol,True>, s:Stmt) -> True|False :
    match(s) :
-      (s:DefWire|DefRegister|DefAccessor|DefMemory|DefNode) : key?(referenced?,name(s))
+      (s:DefPoison|DefWire|DefRegister|DefAccessor|DefMemory|DefNode) : key?(referenced?,name(s))
       (s:DefInstance) : true
                
 ;--------------- Expand Whens Pass -------------------
@@ -1554,6 +1566,8 @@ public defn expand-whens (c:Circuit) -> Circuit :
          (s:DefNode) : 
             add(decs,s)
          (s:DefMemory) : 
+            add(decs,s)
+         (s:DefPoison) : 
             add(decs,s)
          (s:DefWire) : 
             add(decs,s)
@@ -1947,6 +1961,7 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
    defn gen-constraints-s (s:Stmt) -> Stmt :
       match(map(gen-constraints-s,s)) :
          (s:DefWire) : DefWire(info(s),name(s),h[name(s)])
+         (s:DefPoison) : DefPoison(info(s),name(s),h[name(s)])
          (s:DefRegister) : DefRegister(info(s),name(s),h[name(s)],gen-constraints(clock(s)),gen-constraints(reset(s)))
          (s:DefAccessor) : DefAccessor(info(s),name(s),gen-constraints(source(s)),gen-constraints(index(s)), acc-dir(s))
          (s:DefInstance) : DefInstance(info(s),name(s),gen-constraints(module(s)))
@@ -2001,6 +2016,7 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
    defn build-environment (s:Stmt) -> False :
       match(s) :
          (s:DefWire) : h[name(s)] = remove-unknowns(type(s))
+         (s:DefPoison) : h[name(s)] = remove-unknowns(type(s))
          (s:DefRegister) : h[name(s)] = remove-unknowns(type(s))
          (s:DefInstance) : h[name(s)] = h[name(module(s) as WRef)]
          (s:DefMemory) : h[name(s)] = remove-unknowns(type(s))
@@ -2154,6 +2170,7 @@ defn inline-instances (c:Circuit) :
    defn rename-s (s:Stmt,n:Symbol) -> Stmt :
       map{rename-e{_,n},_} $ match(map(rename-s{_,n},s)) :
          (s:DefWire) : DefWire(info(s),rename(name(s),n),type(s))
+         (s:DefPoison) : DefPoison(info(s),rename(name(s),n),type(s))
          (s:DefRegister) : DefRegister(info(s),rename(name(s),n),type(s),clock(s),reset(s))
          (s:DefInstance) : error("Shouldn't be here")
          (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s),seq?(s),clock(s))
@@ -2302,6 +2319,7 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
    defn to-stmt (s:Stmt) -> Stmt :
      map{to-type,_} $ match(map(to-exp,s)) :
         (s:DefWire) : DefWire(info(s),rename(name(s)),type(s))
+        (s:DefPoison) : DefPoison(info(s),rename(name(s)),type(s))
         (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s),clock(s),reset(s))
         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
         (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s),clock(s))

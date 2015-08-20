@@ -165,7 +165,7 @@ defn emit-module (m:InModule) :
    defn build-table (m:InModule) :
       defn build-table (s:Stmt) -> Stmt :
          match(map(build-table,map(remove-subfield,s))) : 
-            (s:DefWire|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : 
+            (s:DefWire|DefPoison|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : 
                add(vdecs,name(s) => s)
                decs[name(s)] = s
             (s:Conditionally) : 
@@ -195,6 +195,9 @@ defn emit-module (m:InModule) :
    for x in vdecs do :
       val sym = key(x)
       match(value(x)) :
+         (s:DefPoison) :
+            add(regs,["reg  " get-width(type(s)) " " sym ";"])
+            add(inits,[sym " = " rand-string(width!(type(s)))])
          (s:DefWire) :
             add(wires,["wire " get-width(type(s)) " " sym ";"])
             add(assigns,["assign " sym " = " emit(cons[sym]) ";"])
