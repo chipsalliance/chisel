@@ -2428,13 +2428,15 @@ defn const-prop-e (e:Expression) -> Expression :
             BITS-SELECT-OP : 
                match(args(e)[0]) :
                   (x:UIntValue) : 
-                     val b = bits(value(x),consts(e)[0],consts(e)[1])
+                     val b = bits(value(x),consts(e)[0] + 1,consts(e)[1])
                      UIntValue(b,width(type(e) as UIntType))
+                  (x) : e
             BIT-SELECT-OP : 
                match(args(e)[0]) :
                   (x:UIntValue) : 
                      val i = bit(value(x),consts(e)[0])
                      UIntValue(i,width(type(e) as UIntType))
+                  (x) : e
             else : e
       (e) : e
 

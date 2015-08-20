@@ -5,31 +5,38 @@ defpackage bigint2 :
 
 ;============ Big Int Library =============
 
+; d contains the Array<Int>, stored so the least significant word is at
+;  index 0.
+
 ;------------ Helper Functions ------------
 val word-size = 32
+val all-digits = "0123456789abcdef"
 
 defn as-digit (c: Char) -> Int :
-  index-of("0123456789abcdef", c) as Int
+  index-of(all-digits, c) as Int
 
-defn num-words (b:BigInt) : 
-   val n = length(d(b))
-   if num-bits(b) > n * word-size : 
-      error("Number of bits greater than size of BigInt")
-   n
+defn num-words (b:BigInt) : length(d(b))
+
+defn req-words (num-bits:Int) : (num-bits + word-size - 1) / word-size
 
 defn to-hex (b:BigInt) -> String :
-  defn as-hex (i: Int) -> String : 
-     val str = "0123456789abcdef"
-     substring(str,i,i + 1)
-  var str = "h"
-  val len = num-bits(b)
-  for i in 0 to len by 4 do :
-    val pos = len - 4 - i
-    val digit = (d(b)[pos / 32] >> (pos % 32)) & 15 
-    val hex = as-hex(digit)
-    if str == "h" and hex == "0" and (i + 4 < len) : false
-    else : str = string-join([str hex])
-  string-join([ '\"' str '\"'])
+   defn as-hex (i: Int) -> String : substring(all-digits,i,i + 1)
+   var li = List<String>()
+   for i in 0 to num-bits(b) by 4 do :
+      val word-index = i / 32
+      val bit-index = i % 32
+      val digit = (d(b)[word-index] >> (bit-index)) & 15 
+      li = List(as-hex(digit),li)
+   var saw-not-zero? = false
+   val li* = Vector<String>()
+   for i in 0 to length(li) do :
+      val x = li[i]
+      if saw-not-zero? == false and x == "0" and i < length(li) - 1 : false
+      else :
+         saw-not-zero? = true
+         add(li*,x)
+      
+   string-join([ '\"' 'h' string-join(li*) '\"'])
 
 defn to-bin (b:BigInt) -> String :
   string-join $ generate<Char> :
@@ -39,26 +46,64 @@ defn to-bin (b:BigInt) -> String :
         loop(pos - 1)
     loop(num-bits(b) - 1)
 
+defn check-index (index:Int) -> False :
+   if index < 0 : error("Bit index cannot be negative")
+   false
+
+defn check-bit (bit:Int) -> False :
+   if bit != 0 and bit != 1 : error("Cannot set a bit other than 0 or 1")
+
 ;------------ Library ----------------
-public defstruct BigInt :
+public defstruct BigInt <: Gettable & Settable :
    d : Array<Int>
    num-bits : Int
+with : 
+   constructor => #BigInt
 
+public defn BigInt (d:Array<Int>, num-bits:Int) :
+   check-index(num-bits)
+   if num-bits > length(d) * word-size : 
+      error("Number of bits greater than size of BigInt")
+   val msw-index = req-words(num-bits) - 1
+   val msb-index = num-bits % word-size
+   ;Zero out all bits above num-bits
+   if msb-index != 0 :
+      d[msw-index] = d[msw-index] & (2 ^ msb-index - 1)
+      for x in (msw-index + 1) to length(d) do :
+         d[msw-index] = 0
+   #BigInt(d,num-bits)
+
+public defmethod get (b:BigInt, index:Int) -> Int : 
+   check-index(index)
+   if index > num-bits(b) : error("Bit index is too high")
+   val word-index = index / 32
+   val bit-index = index % 32
+   (d(b)[word-index] >> bit-index) & 1
+
+defmethod set (b:BigInt, index:Int, bit:Int) -> False :
+   check-index(index)
+   check-bit(bit)
+   val word-index = index / 32
+   val bit-index = index % 32
+   d(b)[word-index] = ((bit & 1) << bit-index) | d(b)[word-index]
+   
 public defmethod to-string (b:BigInt) : to-hex(b)
 
 public defmethod print (o:OutputStream, b:BigInt) :
   print(o, to-string(b))
 
-public defn BigIntEmpty (num-bits:Int) -> BigInt :
+public defn BigIntZero (num-bits:Int) -> BigInt :
    val num-words = (num-bits + word-size - 1) / word-size
    val d = Array<Int>(num-words)
+   for i in 0 to length(d) do :
+      d[i] = 0
    BigInt(d,num-bits)
 
 public defn BigIntLit (data:Int) -> BigInt : 
    BigIntLit(data,req-num-bits(data))
 
 public defn BigIntLit (data:Int, num-bits:Int) -> BigInt :
-   val b = BigIntEmpty(num-bits)
+   val b = BigIntZero(num-bits)
    d(b)[0] = data
    b
 
@@ -70,7 +115,7 @@ public defn BigIntLit (data:String) -> BigInt :
   BigIntLit(digits,shamt,num-bits)
 
 public defn BigIntLit (digits:String, shamt:Int, num-bits:Int) -> BigInt :
-  val lit     = BigIntEmpty(num-bits)
+  val lit     = BigIntZero(num-bits)
   ;; println-all(["BASE " base " SHAMT " shamt " DIGITS " digits])
   for i in 0 to num-words(lit) do :
     d(lit)[i] = 0
@@ -85,9 +130,29 @@ public defn BigIntLit (digits:String, shamt:Int, num-bits:Int) -> BigInt :
 
 ;------------------- Library API -----------------
 
-public defn bits (b:BigInt, high:Int, low:Int) -> BigInt : b
+
+;High is NOT inclusive
+public defn bits (b:BigInt, high:Int, low:Int) -> BigInt : 
+   check-index(high)
+   check-index(low)
+   if high <= low : error("High bit is less than or equal to low bit")
+   val b* = BigIntZero(high - low)
+   for i in 0 to num-bits(b*) do :
+      b*[i] = b[i + low]
+   b*
    
-public defn bit (b:BigInt, index:Int) -> BigInt : b
+public defn bit (b:BigInt, index:Int) -> BigInt : 
+   check-index(index)
+   val b* = BigIntZero(1)
+   b*[0] = b[index]
+   b*
 
+; For now, rsh does not change the number of bits
+public defn rsh-unsigned (b:BigInt, amount:Int) -> BigInt :
+   val b* = BigIntZero(num-bits(b))
+   for i in 0 to num-bits(b*) do :
+      b*[i] = b[i + amount]
+   b*
 
+      
    
