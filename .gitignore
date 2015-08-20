@@ -22,4 +22,11 @@ src/main/stanza/firrtl-main
 utils/bin/firrtl
 spec/spec.aux
 spec/spec.log
+spec/spec.toc
+spec/spec.out
 spec/spec.synctex.gz
+notes/*.docx
+build.sbt
+target
+project
+src/main/scala
