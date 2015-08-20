@@ -284,8 +284,8 @@ defsyntax firrtl :
             (t:UIntType) : 
                if (v as Int) < 0 : 
                   FPE(form, "UIntValue cannot be negative.")
-               UIntValue(BigIntLit(v as Int,32), width(t))
-            (t:SIntType) : SIntValue(BigIntLit(v as Int,32), width(t))
+               UIntValue(BigIntLit(v as Int), width(t))
+            (t:SIntType) : SIntValue(BigIntLit(v as Int), width(t))
 
       expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :

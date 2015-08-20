@@ -75,7 +75,7 @@ public defn BigInt (d:Array<Int>, num-bits:Int) :
 
 public defmethod get (b:BigInt, index:Int) -> Int : 
    check-index(index)
-   if index > num-bits(b) : error("Bit index is too high")
+   if index >= num-bits(b) : error("Bit index is too high")
    val word-index = index / 32
    val bit-index = index % 32
    (d(b)[word-index] >> bit-index) & 1
@@ -147,12 +147,9 @@ public defn bit (b:BigInt, index:Int) -> BigInt :
    b*[0] = b[index]
    b*
 
-; For now, rsh does not change the number of bits
-public defn rsh-unsigned (b:BigInt, amount:Int) -> BigInt :
-   val b* = BigIntZero(num-bits(b))
-   for i in 0 to num-bits(b*) do :
-      b*[i] = b[i + amount]
-   b*
+public defn rsh (b:BigInt, amount:Int) -> BigInt : 
+   check-index(amount)
+   bits(b,num-bits(b), amount)
 
       
    

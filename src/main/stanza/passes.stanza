@@ -1170,7 +1170,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 0 to false, l in locs(s)) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(BigIntLit(i,32),UnknownWidth())),
+                     equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
                      Connect(info(s),l,exp(s)),
                      EmptyStmt()
                   )
@@ -1184,7 +1184,7 @@ defn expand-connect-indexed-stmt (s: Stmt,sh:HashTable<Symbol,Int>) -> Stmt :
                to-list $
                   for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
                      info(s),
-                     equality(ref,UIntValue(BigIntLit(i,32),UnknownWidth())),
+                     equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
                      Connect(info(s),loc(s),e),
                      EmptyStmt()
                   )
@@ -1230,8 +1230,8 @@ public defmethod short-name (b:ExpandWhens) -> String : "expand-whens"
 
 ; ======== Expression Computation Library ===========
 
-val zero = UIntValue(BigIntLit(0,32),IntWidth(1))
-val one = UIntValue(BigIntLit(1,32),IntWidth(1))
+val zero = UIntValue(BigIntLit(0),IntWidth(1))
+val one = UIntValue(BigIntLit(1),IntWidth(1))
 
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
@@ -2425,6 +2425,15 @@ defn const-prop-e (e:Expression) -> Expression :
    match(map(const-prop-e,e)) :
       (e:DoPrim) : 
          switch {op(e) == _} :
+            SHIFT-RIGHT-OP :
+               match(args(e)[0]) :
+                  (x:UIntValue) : 
+                     val b = rsh(value(x),consts(e)[0])
+                     UIntValue(b,width(type(e) as UIntType))
+                  (x:SIntValue) : 
+                     val b = rsh(value(x),consts(e)[0])
+                     SIntValue(b,width(type(e) as SIntType))
+                  (x) : e
             BITS-SELECT-OP : 
                match(args(e)[0]) :
                   (x:UIntValue) : 
