@@ -127,6 +127,9 @@ public defn to-int (x:Long) -> Int :
    if x > to-long(2147483647) or x < to-long(-2147483648) : error("Long too big to convert to Int")
    else : to-int(to-string(x))
 
+public defn req-num-bits (i: Int) -> Int :
+  max(1, ceil-log2(i + 1))
+
 ;============== PRINTERS ===================================
 
 defmethod print (o:OutputStream, d:Flip) :

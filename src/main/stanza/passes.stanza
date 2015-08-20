@@ -6,7 +6,7 @@ defpackage firrtl/passes :
   import firrtl/primops
   import firrtl-main
   import firrtl/errors
-  import bigint
+  import bigint2
 
 ;============== Pass List ================
 public val standard-passes = to-list $ [
@@ -1978,14 +1978,14 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(length(to-bin(value(e))))))
+                  add(v,WGeq(w*,IntWidth(num-bits(value(e)))))
                   UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(1 + length(to-bin(value(e))))))
+                  add(v,WGeq(w*,IntWidth(1 + num-bits(value(e)))))
                   SIntValue(value(e),w*)
                (w) : e
          (e) : e

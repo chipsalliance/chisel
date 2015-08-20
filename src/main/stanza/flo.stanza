@@ -4,7 +4,7 @@ defpackage firrtl/flo :
    import firrtl/ir-utils
    import firrtl/ir2
    import firrtl/passes
-   import bigint
+   import bigint2
 
 ;============= Flo Backend ================
 
@@ -127,7 +127,7 @@ defn emit! (e:Expression,top:Symbol) :
              print(" ")
              emit!(arg, top)
            for const in consts(e) do :
-             print-all([" " const "'" sizeof(const)])
+             print-all([" " const "'" req-num-bits(const)])
       (e) : error("SHOULDN'T EMIT THIS") ;; print-all(["EMIT(" e ")"])
       ;(e) : emit-all(["mov'" prim-width(type(e)) " " e], top) ;TODO, not sure which one is right
 

@@ -1,0 +1,93 @@
+defpackage bigint2 :
+   import core
+   import verse
+   import firrtl/ir-utils
+
+;============ Big Int Library =============
+
+;------------ Helper Functions ------------
+val word-size = 32
+
+defn as-digit (c: Char) -> Int :
+  index-of("0123456789abcdef", c) as Int
+
+defn num-words (b:BigInt) : 
+   val n = length(d(b))
+   if num-bits(b) > n * word-size : 
+      error("Number of bits greater than size of BigInt")
+   n
+
+defn to-hex (b:BigInt) -> String :
+  defn as-hex (i: Int) -> String : 
+     val str = "0123456789abcdef"
+     substring(str,i,i + 1)
+  var str = "h"
+  val len = num-bits(b)
+  for i in 0 to len by 4 do :
+    val pos = len - 4 - i
+    val digit = (d(b)[pos / 32] >> (pos % 32)) & 15 
+    val hex = as-hex(digit)
+    if str == "h" and hex == "0" and (i + 4 < len) : false
+    else : str = string-join([str hex])
+  string-join([ '\"' str '\"'])
+
+defn to-bin (b:BigInt) -> String :
+  string-join $ generate<Char> :
+    defn* loop (pos:Int) :
+      if (pos >= 0) :
+        yield(if (d(b)[pos / 32] >> (pos % 32))&1 == 1: '1' else: '0')
+        loop(pos - 1)
+    loop(num-bits(b) - 1)
+
+;------------ Library ----------------
+public defstruct BigInt :
+   d : Array<Int>
+   num-bits : Int
+
+public defmethod to-string (b:BigInt) : to-hex(b)
+
+public defmethod print (o:OutputStream, b:BigInt) :
+  print(o, to-string(b))
+
+public defn BigIntEmpty (num-bits:Int) -> BigInt :
+   val num-words = (num-bits + word-size - 1) / word-size
+   val d = Array<Int>(num-words)
+   BigInt(d,num-bits)
+
+public defn BigIntLit (data:Int) -> BigInt : 
+   BigIntLit(data,req-num-bits(data))
+
+public defn BigIntLit (data:Int, num-bits:Int) -> BigInt :
+   val b = BigIntEmpty(num-bits)
+   d(b)[0] = data
+   b
+
+public defn BigIntLit (data:String) -> BigInt :
+  val base    = data[0]
+  val shamt   = if base == 'b': 1 else if base == 'h': 4 else: 2
+  val digits  = substring(data, 1)
+  val num-bits = length(digits) * shamt
+  BigIntLit(digits,shamt,num-bits)
+
+public defn BigIntLit (digits:String, shamt:Int, num-bits:Int) -> BigInt :
+  val lit     = BigIntEmpty(num-bits)
+  ;; println-all(["BASE " base " SHAMT " shamt " DIGITS " digits])
+  for i in 0 to num-words(lit) do :
+    d(lit)[i] = 0
+  for i in 0 to length(digits) do :
+    val off   = (length(digits) - 1 - i) * shamt
+    val wi    = off / word-size
+    val bi    = off % word-size
+    d(lit)[wi]   = d(lit)[wi] | (as-digit(digits[i]) << bi)
+    ;; println-all(["OFF " off " wi " wi " bi " bi " lit[wi] " lit[wi] " => " lit])
+  ;; println-all(["RES = " lit])
+  lit
+
+;------------------- Library API -----------------
+
+public defn bits (b:BigInt, high:Int, low:Int) -> BigInt : b
+   
+public defn bit (b:BigInt, index:Int) -> BigInt : b
+
+
+   

@@ -1,7 +1,7 @@
 defpackage firrtl/ir2 :
    import core
    import verse
-   import bigint
+   import bigint2
    
 public defmulti info! (x:?) -> FileInfo
 public defmethod info! (x:?) : FileInfo()

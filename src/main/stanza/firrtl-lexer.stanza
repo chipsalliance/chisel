@@ -2,7 +2,7 @@ defpackage firrtl/lexer :
    import core
    import core/stringeater
    import verse
-   import bigint
+   import bigint2
 
 ;=============== PUBLIC INTERFACE ===========================
 public defn lex (text:String) -> List<Token> :

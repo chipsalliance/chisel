@@ -4,7 +4,7 @@ defpackage firrtl/parser :
    import firrtl/ir2
    import stz/parser
    import firrtl/lexer
-   import bigint
+   import bigint2
 
 ;======= Convenience Functions ========
 defn first-info? (form) -> FileInfo|False :
