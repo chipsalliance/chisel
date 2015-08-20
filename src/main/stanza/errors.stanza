@@ -6,7 +6,7 @@ defpackage firrtl/errors :
    import firrtl/primops
    import firrtl/passes
    import firrtl-main
-   import bigint
+   import bigint2
 
 ; TODO
 ; make sure it compiles, write tests, look over code to make sure its right
@@ -281,8 +281,8 @@ public defn check-high-form (c:Circuit) -> Circuit :
                (e:Ref|Subfield|Index) : false
                (e) : add(errors,InvalidIndex(info))
          (e:DoPrim) : check-high-form-primop(e,errors,info)
-         (e:UIntValue) :
-            if neg?(value(e)) : add(errors,NegUInt(info))
+         (e:UIntValue) : false
+            ;if neg?(value(e)) : add(errors,NegUInt(info))
          (e) : false
       map(check-high-form-w{info,_:Width},e)
       map(check-high-form-t{info,_:Type},e)

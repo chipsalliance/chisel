@@ -3,7 +3,7 @@ defpackage firrtl/custom-passes :
    import verse
    import firrtl/ir-utils
    import firrtl/ir2
-   import bigint
+   import bigint2
 
 ;============ When Coverage =============
 public defstruct WhenCoverage <: Pass :
