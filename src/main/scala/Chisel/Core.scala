@@ -39,7 +39,6 @@ abstract class Data(dirArg: Direction) extends HasId {
   if (_mod ne null)
     _mod.addNode(this)
 
-  def toType: Kind
   def dir: Direction = dirVar
 
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
@@ -69,6 +68,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   private[Chisel] def lref: Alias = Alias(this)
   private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
   private[Chisel] def cloneTypeWidth(width: Width): this.type
+  private[Chisel] def toType: String
 
   def := (that: Data): Unit = this badConnect that
   def <> (that: Data): Unit = this badConnect that
@@ -80,7 +80,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   def width: Width
   final def getWidth = width.get
 
-  def flatten: IndexedSeq[UInt]
+  private[Chisel] def flatten: IndexedSeq[Bits]
   def fromBits(n: Bits): this.type = {
     var i = 0
     val wire = Wire(this.cloneType)
@@ -90,14 +90,13 @@ abstract class Data(dirArg: Direction) extends HasId {
     }
     wire.asInstanceOf[this.type]
   }
-  def toBits(): UInt = this.flatten.reverse.reduce(_##_)
-  def toPort: Port = Port(this, toType)
+  def toBits(): UInt = Cat(this.flatten.reverse)
 }
 
 object Wire {
   def apply[T <: Data](t: T = null, init: T = null): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
-    pushCommand(DefWire(x, x.toType))
+    pushCommand(DefWire(x))
     if (init != null)
       x := init
     else
@@ -119,7 +118,7 @@ object Reg {
 
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     val x = makeType(t, next, init)
-    pushCommand(DefRegister(x, x.toType, Alias(x._mod.clock), Alias(x._mod.reset))) // TODO multi-clock
+    pushCommand(DefRegister(x, Alias(x._mod.clock), Alias(x._mod.reset))) // TODO multi-clock
     if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
@@ -133,7 +132,7 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mem, mt.toType, size, Alias(mt._mod.clock))) // TODO multi-clock
+    pushCommand(DefMemory(mem, size, Alias(mt._mod.clock))) // TODO multi-clock
     mem
   }
 }
@@ -155,8 +154,8 @@ sealed class Mem[T <: Data](t: T, val length: Int) extends Aggregate(NO_DIR) wit
   }
 
   def cloneType = throwException("Mem.cloneType unimplemented")
-  def flatten = throwException("Mem.flatten unimplemented")
-  def toType = throwException("Mem.toType unimplemented")
+  private[Chisel] def flatten = throwException("Mem.flatten unimplemented")
+  private[Chisel] def toType = t.toType
 }
 
 object SeqMem {
@@ -184,7 +183,7 @@ object Vec {
     require(!elts.isEmpty)
     val width = elts.map(_.width).reduce(_ max _)
     val vec = new Vec(elts.head.cloneTypeWidth(width), elts.length)
-    pushCommand(DefWire(vec, vec.toType))
+    pushCommand(DefWire(vec))
     for ((v, e) <- vec zip elts)
       v := e
     vec
@@ -198,17 +197,13 @@ object Vec {
 }
 
 sealed abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
-  def cloneTypeWidth(width: Width): this.type = cloneType
+  private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
   def width: Width = flatten.map(_.width).reduce(_ + _)
 }
 
 sealed class Vec[T <: Data](gen: => T, val length: Int)
     extends Aggregate(gen.dir) with VecLike[T] {
   private val self = IndexedSeq.fill(length)(gen)
-
-  override def collectElts: Unit =
-    for ((elt, i) <- self zipWithIndex)
-      elt.setRef(this, i)
 
   override def <> (that: Data): Unit = that match {
     case _: Vec[_] => this bulkConnect that
@@ -241,17 +236,19 @@ sealed class Vec[T <: Data](gen: => T, val length: Int)
   }
 
   def apply(idx: Int): T = self(idx)
-
-  def toType: Kind = VectorType(length, gen.toType, isFlip)
+  def read(idx: UInt): T = apply(idx)
+  def write(idx: UInt, data: T): Unit = apply(idx) := data
 
   override def cloneType: this.type =
     Vec(gen, length).asInstanceOf[this.type]
 
-  override lazy val flatten: IndexedSeq[UInt] =
+  private val t = gen
+  private[Chisel] def toType: String = s"${t.toType}[$length]"
+  private[Chisel] lazy val flatten: IndexedSeq[Bits] =
     (0 until length).flatMap(i => this.apply(i).flatten)
-
-  def read(idx: UInt): T = apply(idx)
-  def write(idx: UInt, data: T): Unit = apply(idx) := data
+  private[Chisel] override def collectElts =
+    for ((elt, i) <- self zipWithIndex)
+      elt.setRef(this, i)
 }
 
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
@@ -310,7 +307,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
 }
 
 abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg) {
-  def flatten: IndexedSeq[UInt] = IndexedSeq(toBits)
+  private[Chisel] def flatten: IndexedSeq[UInt] = IndexedSeq(toBits)
 }
 
 object Clock {
@@ -319,9 +316,9 @@ object Clock {
 
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
-  def cloneTypeWidth(width: Width): this.type = cloneType
-  override def flatten: IndexedSeq[UInt] = IndexedSeq()
-  def toType: Kind = ClockType(isFlip)
+  private[Chisel] override def flatten: IndexedSeq[UInt] = IndexedSeq()
+  private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
+  private[Chisel] def toType = "Clock"
 
   override def := (that: Data): Unit = that match {
     case _: Clock => this connect that
@@ -417,10 +414,9 @@ abstract trait Num[T <: Data] {
 }
 
 sealed class UInt(dir: Direction, width: Width, lit: Option[ULit] = None) extends Bits(dir, width, lit) with Num[UInt] {
-  override def cloneTypeWidth(w: Width): this.type =
+  private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
-
-  def toType: Kind = UIntType(width, isFlip)
+  private[Chisel] def toType = s"UInt<$width>"
 
   def fromInt(value: BigInt): this.type = UInt(value).asInstanceOf[this.type]
   def makeLit(value: BigInt): ULit = ULit(value, Width())
@@ -508,9 +504,9 @@ object Bits extends UIntFactory
 object UInt extends UIntFactory
 
 sealed class SInt(dir: Direction, width: Width, lit: Option[SLit] = None) extends Bits(dir, width, lit) with Num[SInt] {
-  override def cloneTypeWidth(w: Width): this.type =
+  private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
-  def toType: Kind = SIntType(width, isFlip)
+  private[Chisel] def toType = s"SInt<$width>"
 
   override def := (that: Data): Unit = that match {
     case _: SInt => this connect that
@@ -572,7 +568,7 @@ object SInt {
 }
 
 sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Width(1), lit) {
-  override def cloneTypeWidth(w: Width): this.type = {
+  private[Chisel] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool(dir).asInstanceOf[this.type]
   }
@@ -656,14 +652,7 @@ class Bundle extends Aggregate(NO_DIR) {
 
   override def := (that: Data): Unit = this <> that
 
-  def toPorts: Seq[Port] =
-    elements.map(_._2.toPort).toSeq.reverse
-  def toType: BundleType = 
-    BundleType(this.toPorts, isFlip)
-
-  override def flatten: IndexedSeq[UInt] = allElts.flatMap(_._2.flatten)
-
-  lazy val elements: ListMap[String, Data] = ListMap(allElts:_*)
+  lazy val elements: ListMap[String, Data] = ListMap(namedElts:_*)
 
   private def isBundleField(m: java.lang.reflect.Method) =
     m.getParameterTypes.isEmpty &&
@@ -671,21 +660,24 @@ class Bundle extends Aggregate(NO_DIR) {
     classOf[Data].isAssignableFrom(m.getReturnType) &&
     !(Bundle.keywords contains m.getName)
 
-  private lazy val allElts = {
-    val elts = ArrayBuffer[(String, Data)]()
-    for (m <- getClass.getMethods; if isBundleField(m)) m.invoke(this) match {
-      case data: Data => elts += m.getName -> data
-      case _ =>
+  private[Chisel] lazy val namedElts = {
+    val nameMap = LinkedHashMap[String, Data]()
+    val seen = HashSet[Data]()
+    for (m <- getClass.getMethods.sortWith(_.getName < _.getName); if isBundleField(m)) {
+      m.invoke(this) match {
+        case d: Data =>
+          if (nameMap contains m.getName) require(nameMap(m.getName) eq d)
+          else if (!seen(d)) { nameMap(m.getName) = d; seen += d }
+        case _ =>
+      }
     }
-    elts sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
+    ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
-
-  private[Chisel] lazy val namedElts = LinkedHashMap[String, Data](allElts:_*)
-
-  private[Chisel] def addElt(name: String, elt: Data) =
+  private[Chisel] def toType = s"{${namedElts.reverse.map(e => (if (e._2.isFlip) "flip " else "")+e._2.getRef.name+" : "+e._2.toType).reduce(_+", "+_)}}"
+  private[Chisel] lazy val flatten = namedElts.flatMap(_._2.flatten)
+  private[Chisel] def addElt(name: String, elt: Data): Unit =
     namedElts += name -> elt
-
-  override def collectElts =
+  private[Chisel] override def collectElts: Unit =
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
 
   override def cloneType : this.type = {
@@ -745,8 +737,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
 
   def addNode(d: Data) { _nodes += d }
 
-  private def computePorts =
-    clock.toPort +: reset.toPort +: io.toPorts
+  private def computePorts = io.namedElts.unzip._2
 
   private def connectImplicitIOs(): this.type = _parent match {
     case Some(p) =>

@@ -48,9 +48,8 @@ abstract class Arg extends Immediate {
 }
 
 case class Alias(id: HasId) extends Arg {
-  private val refMap = Builder.globalRefMap
-  override def fullName(ctx: Component) = refMap(id).fullName(ctx)
-  def name = refMap(id).name
+  override def fullName(ctx: Component) = id.getRef.fullName(ctx)
+  def name = id.getRef.name
   def emit: String = s"Alias($id)"
 }
 
@@ -84,8 +83,7 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
 
 case class Ref(name: String) extends Immediate
 case class ModuleIO(mod: Module) extends Immediate {
-  private val refMap = Builder.globalRefMap
-  def name = refMap(mod).name
+  def name = mod.getRef.name
   override def fullName(ctx: Component) = if (mod eq ctx.id) "" else name
 }
 case class Slot(imm: Alias, name: String) extends Immediate {
@@ -97,8 +95,6 @@ case class Index(imm: Immediate, value: Int) extends Immediate {
   def name = s"[$value]"
   override def fullName(ctx: Component) = s"${imm.fullName(ctx)}[$value]"
 }
-
-case class Port(id: Data, kind: Kind)
 
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
@@ -137,36 +133,25 @@ sealed case class KnownWidth(value: Int) extends Width {
   override def toString = value.toString
 }
 
-abstract class Kind(val isFlip: Boolean);
-case class UnknownType(flip: Boolean) extends Kind(flip);
-case class UIntType(val width: Width, flip: Boolean) extends Kind(flip);
-case class SIntType(val width: Width, flip: Boolean) extends Kind(flip);
-case class FloType(flip: Boolean) extends Kind(flip);
-case class DblType(flip: Boolean) extends Kind(flip);
-case class BundleType(val ports: Seq[Port], flip: Boolean) extends Kind(flip);
-case class VectorType(val size: Int, val kind: Kind, flip: Boolean) extends Kind(flip);
-case class ClockType(flip: Boolean) extends Kind(flip)
-
-abstract class Command;
+abstract class Command
 abstract class Definition extends Command {
-  private val refMap = Builder.globalRefMap
   def id: HasId
-  def name = refMap(id).name
+  def name = id.getRef.name
 }
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
-case class DefWire(id: HasId, kind: Kind) extends Definition
-case class DefRegister(id: HasId, kind: Kind, clock: Arg, reset: Arg) extends Definition
-case class DefMemory(id: HasId, kind: Kind, size: Int, clock: Arg) extends Definition
-case class DefSeqMemory(id: HasId, kind: Kind, size: Int) extends Definition
+case class DefWire(id: Data) extends Definition
+case class DefRegister(id: Data, clock: Arg, reset: Arg) extends Definition
+case class DefMemory(id: Data, size: Int, clock: Arg) extends Definition
+case class DefSeqMemory(id: Data, size: Int) extends Definition
 case class DefAccessor(id: HasId, source: Alias, direction: Direction, index: Arg) extends Definition
-case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
+case class DefInstance(id: Module, ports: Seq[Data]) extends Definition
 case class WhenBegin(pred: Arg) extends Command
 case class WhenElse() extends Command
 case class WhenEnd() extends Command
 case class Connect(loc: Alias, exp: Arg) extends Command
 case class BulkConnect(loc1: Alias, loc2: Alias) extends Command
 case class ConnectInit(loc: Alias, exp: Arg) extends Command
-case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Immediate
+case class Component(id: Module, name: String, ports: Seq[Data], commands: Seq[Command]) extends Immediate
 
 case class Circuit(name: String, components: Seq[Component], refMap: RefMap, parameterDump: ParameterDump) {
   def emit = new Emitter(this).toString

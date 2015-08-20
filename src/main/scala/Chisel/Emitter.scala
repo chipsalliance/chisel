@@ -3,27 +3,17 @@ package Chisel
 private class Emitter(circuit: Circuit) {
   override def toString = res.toString
 
-  def join(parts: Seq[String], sep: String): StringBuilder =
-    parts.tail.foldLeft(new StringBuilder(parts.head))((s, p) => s ++= sep ++= p)
-  def emitDir(e: Port, isTop: Boolean): String =
-    if (isTop) (if (e.id.isFlip) "input " else "output ")
-    else (if (e.id.isFlip) "flip " else "")
-  def emitPort(e: Port, isTop: Boolean): String =
-    s"${emitDir(e, isTop)}${circuit.refMap(e.id).name} : ${emitType(e.kind)}"
-  private def emitType(e: Kind): String = e match {
-    case e: UnknownType => "?"
-    case e: UIntType => s"UInt<${e.width}>"
-    case e: SIntType => s"SInt<${e.width}>"
-    case e: BundleType => s"{${join(e.ports.map(x => emitPort(x, false)), ", ")}}"
-    case e: VectorType => s"${emitType(e.kind)}[${e.size}]"
-    case e: ClockType => s"Clock"
-  }
+  def emitDir(e: Data, isTop: Boolean): String =
+    if (isTop) (if (e.isFlip) "input " else "output ")
+    else (if (e.isFlip) "flip " else "")
+  def emitPort(e: Data, isTop: Boolean): String =
+    s"${emitDir(e, isTop)}${circuit.refMap(e).name} : ${e.toType}"
   private def emit(e: Command, ctx: Component): String = e match {
-    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${join(e.args.map(x => x.fullName(ctx)), ", ")})"
-    case e: DefWire => s"wire ${e.name} : ${emitType(e.kind)}"
-    case e: DefRegister => s"reg ${e.name} : ${emitType(e.kind)}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
-    case e: DefMemory => s"cmem ${e.name} : ${emitType(e.kind)}[${e.size}], ${e.clock.fullName(ctx)}";
-    case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.kind)}[${e.size}]";
+    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_+", "+_)})"
+    case e: DefWire => s"wire ${e.name} : ${e.id.toType}"
+    case e: DefRegister => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
+    case e: DefMemory => s"cmem ${e.name} : ${e.id.toType}[${e.size}], ${e.clock.fullName(ctx)}";
+    case e: DefSeqMemory => s"smem ${e.name} : ${e.id.toType}[${e.size}]";
     case e: DefAccessor => s"infer accessor ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}]"
     case e: Connect => s"${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
     case e: BulkConnect => s"${e.loc1.fullName(ctx)} <> ${e.loc2.fullName(ctx)}"
@@ -47,8 +37,8 @@ private class Emitter(circuit: Circuit) {
       unindent()
       "skip"
   }
-  private def initPort(p: Port, dir: Direction, ctx: Component) = {
-    for (x <- p.id.flatten; if x.dir == dir)
+  private def initPort(p: Data, dir: Direction, ctx: Component) = {
+    for (x <- p.flatten; if x.dir == dir)
       yield s"${circuit.refMap(x).fullName(ctx)} := ${x.makeLit(0).name}"
   }
 

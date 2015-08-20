@@ -35,11 +35,13 @@ private class IdGen {
 }
 
 private[Chisel] trait HasId {
+  private[Chisel] val _refMap = Builder.globalRefMap
   private[Chisel] val _id = Builder.idGen.next
-  private[Chisel] def setRef(imm: Immediate) = Builder.globalRefMap.setRef(this, imm)
-  private[Chisel] def setRef(name: String) = Builder.globalRefMap.setRef(this, name)
-  private[Chisel] def setRef(parent: HasId, name: String) = Builder.globalRefMap.setField(parent, this, name)
-  private[Chisel] def setRef(parent: HasId, index: Int) = Builder.globalRefMap.setIndex(parent, this, index)
+  private[Chisel] def setRef(imm: Immediate) = _refMap.setRef(this, imm)
+  private[Chisel] def setRef(name: String) = _refMap.setRef(this, name)
+  private[Chisel] def setRef(parent: HasId, name: String) = _refMap.setField(parent, this, name)
+  private[Chisel] def setRef(parent: HasId, index: Int) = _refMap.setIndex(parent, this, index)
+  private[Chisel] def getRef = _refMap(this)
 }
 
 class RefMap {

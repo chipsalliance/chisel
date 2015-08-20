@@ -97,7 +97,7 @@ class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None) extends FloB
     pushOp(DefPrim(cloneType, BitsToFlo, this.ref)).asInstanceOf[this.type]
   override def toBits: UInt =
     pushOp(DefPrim(UInt(width=32), FloToBits, this.ref))
-  def toType: Kind = FloType(isFlip)
+  private[Chisel] def toType = "Flo"
   def cloneType: this.type = new Flo(dir).asInstanceOf[this.type]
 
   def fromInt(x: Int): Flo = 
@@ -177,7 +177,7 @@ class Dbl(dir: Direction, val value: Option[DblLit] = None) extends FloBase[Dbl]
     pushOp(DefPrim(cloneType, BitsToDbl, this.ref)).asInstanceOf[this.type]
   override def toBits: UInt =
     pushOp(DefPrim(UInt(width=64), DblToBits, this.ref))
-  def toType: Kind = DblType(isFlip)
+  private[Chisel] def toType = "Dbl"
   def cloneType: this.type = new Dbl(dir).asInstanceOf[this.type]
 
   def fromInt(x: Int): this.type = 
