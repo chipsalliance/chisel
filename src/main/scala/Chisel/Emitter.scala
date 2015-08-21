@@ -3,11 +3,10 @@ package Chisel
 private class Emitter(circuit: Circuit) {
   override def toString = res.toString
 
-  def emitDir(e: Data, isTop: Boolean): String =
-    if (isTop) (if (e.isFlip) "input " else "output ")
-    else (if (e.isFlip) "flip " else "")
-  def emitPort(e: Data, isTop: Boolean): String =
-    s"${emitDir(e, isTop)}${circuit.refMap(e).name} : ${e.toType}"
+  private def emitPort(e: Data): String = {
+    val dir = if (e.isFlip) "input" else "output"
+    s"$dir ${e.getRef.name} : ${e.toType}"
+  }
   private def emit(e: Command, ctx: Component): String = e match {
     case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_+", "+_)})"
     case e: DefWire => s"wire ${e.name} : ${e.id.toType}"
@@ -39,14 +38,14 @@ private class Emitter(circuit: Circuit) {
   }
   private def initPort(p: Data, dir: Direction, ctx: Component) = {
     for (x <- p.flatten; if x.dir == dir)
-      yield s"${circuit.refMap(x).fullName(ctx)} := ${x.makeLit(0).name}"
+      yield s"${x.getRef.fullName(ctx)} := ${x.makeLit(0).name}"
   }
 
   private def emitBody(m: Component) = {
     val me = new StringBuilder
     withIndent {
       for (p <- m.ports)
-        me ++= newline + emitPort(p, true)
+        me ++= newline + emitPort(p)
       me ++= newline
       for (p <- m.ports; x <- initPort(p, OUTPUT, m))
         me ++= newline + x
