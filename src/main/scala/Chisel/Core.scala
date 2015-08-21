@@ -658,7 +658,7 @@ class Bundle extends Aggregate(NO_DIR) {
     m.getParameterTypes.isEmpty &&
     !java.lang.reflect.Modifier.isStatic(m.getModifiers) &&
     classOf[Data].isAssignableFrom(m.getReturnType) &&
-    !(Bundle.keywords contains m.getName)
+    !(Bundle.keywords contains m.getName) && !(m.getName contains '$')
 
   private[Chisel] lazy val namedElts = {
     val nameMap = LinkedHashMap[String, Data]()
