@@ -781,10 +781,16 @@ object Module {
     paramsScope(currParams) {
       val parent = dynamicContext.currentModule
       val m = bc.setRefs()
+      // init module outputs
+      m._commands prependAll (for (p <- m.io.flatten; if p.dir == OUTPUT)
+        yield Connect(p.lref, p.fromInt(0).ref))
       dynamicContext.currentModule = parent
       val ports = m.computePorts
       Builder.components += Component(m, m.name, ports, m._commands)
       pushCommand(DefInstance(m, ports))
+      // init instance inputs
+      for (p <- m.io.flatten; if p.dir == INPUT)
+        p := p.fromInt(0)
       m
     }.connectImplicitIOs()
   }

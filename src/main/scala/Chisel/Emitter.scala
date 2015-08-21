@@ -19,11 +19,7 @@ private class Emitter(circuit: Circuit) {
     case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
     case e: DefInstance => {
       val modName = moduleMap.getOrElse(e.id.name, e.id.name)
-      val res = new StringBuilder(s"inst ${e.name} of $modName")
-      res ++= newline
-      for (p <- e.ports; x <- initPort(p, INPUT, ctx))
-        res ++= newline + x
-      res.toString
+     s"inst ${e.name} of $modName"
     }
 
     case w: WhenBegin =>
@@ -36,19 +32,11 @@ private class Emitter(circuit: Circuit) {
       unindent()
       "skip"
   }
-  private def initPort(p: Data, dir: Direction, ctx: Component) = {
-    for (x <- p.flatten; if x.dir == dir)
-      yield s"${x.getRef.fullName(ctx)} := ${x.makeLit(0).name}"
-  }
-
   private def emitBody(m: Component) = {
     val me = new StringBuilder
     withIndent {
       for (p <- m.ports)
         me ++= newline + emitPort(p)
-      me ++= newline
-      for (p <- m.ports; x <- initPort(p, OUTPUT, m))
-        me ++= newline + x
       me ++= newline
       for (cmd <- m.commands)
         me ++= newline + emit(cmd, m)
