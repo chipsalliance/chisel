@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p cdg 2>&1 | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p cdg 2>&1 | tee %s.out | FileCheck %s
 
 circuit top :
    module source :

@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p ctd 2>&1 | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p ctd 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
 circuit top :

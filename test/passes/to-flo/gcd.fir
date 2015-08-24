@@ -1,4 +1,5 @@
 ; RUN: firrtl -i %s -o %s.flo -X flo -p c 2>&1 | tee %s.out | FileCheck %s
+; XFAIL: *
 
 ;CHECK: Flo
 circuit top :

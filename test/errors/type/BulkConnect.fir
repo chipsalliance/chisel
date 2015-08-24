@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.flo -X flo -p c 2>&1 | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 ;CHECK: BulkConnect.fir@10.4: [module Top]  Type mismatch.
 ;CHECK: BulkConnect.fir@14.4: [module Top]  Type mismatch.
 ;CHECK: BulkConnect.fir@26.4: [module Top]  Type mismatch.
