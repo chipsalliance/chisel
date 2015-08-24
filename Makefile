@@ -27,7 +27,7 @@ build:
 build-fast: 
 	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
 
-check: build
+check:
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
 
 passes: 
@@ -35,12 +35,6 @@ passes:
 
 errors:
 	cd $(test_dir)/errors && lit -v . --path=$(root_dir)/utils/bin/
-
-chisel3:
-	cd $(test_dir)/chisel3 && lit -v . --path=$(root_dir)/utils/bin/
-
-refchip:
-	cd $(test_dir)/refchip && lit -v . --path=$(root_dir)/utils/bin/
 
 features:
 	cd $(test_dir)/features && lit -v . --path=$(root_dir)/utils/bin/
@@ -62,7 +56,7 @@ $(units): % :
 	firrtl -X verilog -i test/chisel3/$*.fir -o test/chisel3/$*.fir.v -p c > test/chisel3/$*.fir.out 
 	#scp test/chisel3/$*.fir.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-src/$*.v
 
-done: check
+done: build check
 	say "done"
 
 fail:

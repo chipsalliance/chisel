@@ -1,13 +1,8 @@
 Support ASIC backend
-   Writemasks for ram's in general (ASICs and FPGAs)
+   Pass to generate writemasks for ram's in general (ASICs and FPGAs)
      Mem of vec, should just work?
    ASIC rams (pass to replace smem with black box)
    Readwrite Port
-
-Readenables need work
-
-
-
 
 ================================================
 ========== ADAM's BIG ARSE TODO LIST ============
@@ -16,8 +11,8 @@ Readenables need work
 ======== Current Tasks ========
 put clocks on accessors
 add clock check to high firrtl check
-registers in onreset cannot have flips
 add equivalence to spec
+
 remove SInt from bit/bits in spec
 naming still doesn't work - x!0 will conflict with x
 think about inferring read enable from lo firrtl
@@ -30,7 +25,6 @@ Tests:
    Large width of dshl
 
 fix expand-whens to have correct semantics
-update high/low firrtl checks
 need an annotation example
 move width inference earlier (required for consistent vec width inference)
 Temp elimination needs to count # uses
