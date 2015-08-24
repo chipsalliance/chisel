@@ -129,7 +129,8 @@ defn main () :
       run-passes(circuit*,get-passes(to-list(pass-names)))
    else :
       switch {_ == compiler} :
-         "flo" : run-passes(circuit*,StandardFlo(with-output))
+         "flo" : error("Flo backend not currently supported.")
+            ; run-passes(circuit*,StandardFlo(with-output))
          "verilog" : run-passes(circuit*,StandardVerilog(with-output))
          "verilute" : run-passes(circuit*,InstrumentedVerilog(with-output,to-list $ pass-args))
          else : error("Invalid compiler flag")
