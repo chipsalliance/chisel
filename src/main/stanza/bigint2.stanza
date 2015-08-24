@@ -109,7 +109,7 @@ public defn BigIntLit (data:Int, num-bits:Int) -> BigInt :
 
 public defn BigIntLit (data:String) -> BigInt :
   val base    = data[0]
-  val shamt   = if base == 'b': 1 else if base == 'h': 4 else: 2
+  val shamt   = if base == 'b': 1 else if base == 'h': 4 else: error("Unsupported BigInt base.")
   val digits  = substring(data, 1)
   val num-bits = length(digits) * shamt
   BigIntLit(digits,shamt,num-bits)
