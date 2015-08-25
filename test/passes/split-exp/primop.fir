@@ -4,7 +4,6 @@
 circuit Top :
    module Top :
       output out : UInt<1>
-      output out2 : UInt<1>
 
       wire m : UInt<1>[3]
       m[0] := UInt(0)

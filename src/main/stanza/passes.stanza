@@ -2183,8 +2183,7 @@ public defmethod short-name (b:SplitExp) -> String : "split-expressions"
 defn full-name (e:Expression) -> Symbol|False :
    match(e) :
       (e:WRef) : name(e)
-      (e:WSubfield) : false
-      (e) : error("Non-supported expression.")
+      (e) : false
 
 defn split-exp (c:Circuit) :
    defn split-exp-s (s:Stmt,v:Vector<Stmt>,sh:HashTable<Symbol,Int>) -> False :
@@ -2211,8 +2210,14 @@ defn split-exp (c:Circuit) :
          (s:Begin) : 
             do(f,s)
          (s:Conditionally) : 
-            add(v,map(split-exp-e{_,full-name(loc(conseq(s) as Connect)),info(s)},s))
-            do(f,s)
+            ;Predicate
+            val pred* = map(split-exp-e{_,full-name(pred(s)),info(s)},pred(s))
+
+            ;Connect
+            val c = conseq(s) as Connect
+            val exp* = map(split-exp-e{_,full-name(loc(c)),info(c)},exp(c))
+            val conseq* = Connect(info(c),loc(c),exp*)
+            add(v,Conditionally(info(s),pred*,conseq*,alt(s)))
          (s:Connect) : 
             val exp* = map(split-exp-e{_,full-name(loc(s)),info(s)},exp(s))
             add(v,Connect(info(s),loc(s),exp*))
