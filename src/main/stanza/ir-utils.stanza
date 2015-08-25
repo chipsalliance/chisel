@@ -160,7 +160,6 @@ defmethod print (o:OutputStream, w:Width) :
    print{o, _} $
    match(w) :
       (w:UnknownWidth) : "?"
-      (w:IntWidth) : width(w)
       (w:LongWidth) : width(w)
 
 defmethod print (o:OutputStream, op:PrimOp) :

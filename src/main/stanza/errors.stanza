@@ -252,8 +252,8 @@ public defn check-high-form (c:Circuit) -> Circuit :
 
    defn check-high-form-w (info:FileInfo,w:Width,unknown-ok?:True|False) -> Width :
       match(w) :
-         (w:IntWidth) : 
-            if width(w) <= 0 : add(errors,NegWidth(info))
+         (w:LongWidth) : 
+            if width(w) <= to-long(0) : add(errors,NegWidth(info))
             w
          (w:UnknownWidth) : 
             if unknown-ok? == false : add(errors,IllegalUnknownWidth(info))
@@ -907,8 +907,6 @@ public defn check-width (c:Circuit) -> Circuit :
    defn check-width-m (m:Module) -> False :
       defn check-width-w (info:FileInfo,w:Width) -> Width :
          match(w) :
-            (w:IntWidth) : 
-               if width(w) <= 0 : add(errors,NegWidth(info))
             (w:LongWidth) :
                if width(w) <= to-long(0) : add(errors,NegWidth(info))
             (w) : 
@@ -917,11 +915,15 @@ public defn check-width (c:Circuit) -> Circuit :
 
       defn check-width-e (info:FileInfo,e:Expression) -> Expression :
          match(map(check-width-e{info,_},e)) :
-            (e:UIntValue|SIntValue) : 
+            (e:UIntValue) : 
                match(width(e)) :
-                  (w:IntWidth) : 
-                     if num-bits(value(e)) > width(w) : 
+                  (w:LongWidth) : 
+                     if max(to-long(1),to-long(num-bits(value(e)) - 1)) > width(w) : 
                         add(errors,WidthTooSmall(info,to-string(value(e))))
+                  (w) : add(errors,UninferredWidth(info))
+               check-width-w(info,width(e))
+            (e:SIntValue) : 
+               match(width(e)) :
                   (w:LongWidth) : 
                      if to-long(num-bits(value(e))) > width(w) : 
                         add(errors,WidthTooSmall(info,to-string(value(e))))

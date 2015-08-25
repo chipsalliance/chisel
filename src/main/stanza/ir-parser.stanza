@@ -5,6 +5,7 @@ defpackage firrtl/parser :
    import stz/parser
    import firrtl/lexer
    import bigint2
+   import firrtl/ir-utils
 
 ;======= Convenience Functions ========
 defn first-info? (form) -> FileInfo|False :
@@ -227,7 +228,7 @@ defsyntax firrtl :
       accdir = (rdwr) : RDWR
 
    defrule width :
-      width = (?x:#int) : IntWidth(x)
+      width = (?x:#int) : LongWidth(x)
       width = (?) : UnknownWidth()
 
    ;Main Statement Productions
@@ -285,8 +286,19 @@ defsyntax firrtl :
             (t:UIntType) : 
                if (v as Int) < 0 : 
                   FPE(form, "UIntValue cannot be negative.")
-               UIntValue(BigIntLit(v as Int), width(t))
-            (t:SIntType) : SIntValue(BigIntLit(v as Int), width(t))
+               match(width(t)) :
+                  (w:LongWidth) : 
+                     UIntValue(BigIntLit(v as Int,to-int(width(w))),w)
+                  (w) : 
+                     val num-bits = req-num-bits(v as Int)
+                     UIntValue(BigIntLit(v as Int,num-bits), LongWidth(max(1,num-bits - 1)))
+            (t:SIntType) :
+               match(width(t)) :
+                  (w:LongWidth) : 
+                     SIntValue(BigIntLit(v as Int,to-int(width(w))),w)
+                  (w) : 
+                     val num-bits = req-num-bits(v as Int)
+                     SIntValue(BigIntLit(v as Int,num-bits), LongWidth(num-bits))
 
       expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :

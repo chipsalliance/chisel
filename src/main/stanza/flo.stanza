@@ -65,7 +65,6 @@ defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
 
 defn sane-width (wd:Width) -> Int|Long :
   match(wd) :
-    (w:IntWidth) : max(1, width(w))
     (w:LongWidth) : max(to-long(1), width(w))
     (w)          : error(string-join(["Unknown width: " w]))
 
@@ -173,7 +172,7 @@ defn emit-s (s:Stmt, flokinds:HashTable<Symbol,FloKind>, top:Symbol,sh:HashTable
       (s:DefNode) :
          emit-all([top "::" name(s) " = " maybe-mov(value(s)) value(s) "\n"], top)
       (s:Begin) : do(emit-s{_, flokinds, top,sh}, body(s))
-      (s:Connect) : emit-connect(s,UIntValue(BigIntLit("1"),IntWidth(1)))
+      (s:Connect) : emit-connect(s,UIntValue(BigIntLit("1"),LongWidth(1)))
       (s:Conditionally) : emit-connect(conseq(s) as Connect,pred(s))
       (s) : s 
 

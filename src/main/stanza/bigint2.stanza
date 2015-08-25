@@ -88,9 +88,10 @@ defmethod set (b:BigInt, index:Int, bit:Int) -> False :
    d(b)[word-index] = ((bit & 1) << bit-index) | d(b)[word-index]
    
 public defmethod to-string (b:BigInt) : to-hex(b)
+   ;string-join([to-hex(b) "'" num-bits(b)])
 
 public defmethod print (o:OutputStream, b:BigInt) :
-  print(o, to-string(b))
+   print(o, to-string(b))
 
 public defn BigIntZero (num-bits:Int) -> BigInt :
    val num-words = (num-bits + word-size - 1) / word-size

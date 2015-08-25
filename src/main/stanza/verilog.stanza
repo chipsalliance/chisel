@@ -16,7 +16,6 @@ public defmethod short-name (b:Verilog) -> String : "To Verilog"
 
 defn width! (w:Width) -> Long :
    match(w) : 
-      (w:IntWidth) : to-long(width(w))
       (w:LongWidth) : width(w)
       (w) : error("Non-supported width type.")
 
@@ -28,9 +27,6 @@ defn width! (t:Type) -> Long :
 
 defn emit (w:Width) -> String :
    match(w) : 
-      (w:IntWidth) : 
-         if width(w) >= 1 : string-join $ ["[" width(w) - 1 ":0]"] ;TODO check if need to special case 0 or 1 width wires
-         else : ""
       (w:LongWidth) : 
          if width(w) >= to-long(1) : string-join $ ["[" width(w) - to-long(1) ":0]"] ;TODO check if need to special case 0 or 1 width wires
          else : ""
@@ -41,7 +37,7 @@ defn get-width (t:Type) -> String :
    match(t) :
       (t:UIntType) : emit(width(t))
       (t:SIntType) : emit(width(t))
-      (t:ClockType) : emit(IntWidth(1))
+      (t:ClockType) : emit(LongWidth(1))
       (t) : error("Non-supported type.")
 
 defn remove-subfield (e:Expression) -> Expression :

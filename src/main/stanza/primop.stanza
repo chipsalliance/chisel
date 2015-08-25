@@ -71,53 +71,53 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
 
    println-all-debug(["Looking at " op(e) " with inputs " args(e)])
    val w* = switch {op(e) == _} :
-      ADD-OP : PlusWidth(get-max(0,1),IntWidth(1))
-      SUB-OP : PlusWidth(get-max(0,1),IntWidth(1))
+      ADD-OP : PlusWidth(get-max(0,1),LongWidth(1))
+      SUB-OP : PlusWidth(get-max(0,1),LongWidth(1))
       MUL-OP : PlusWidth(get-max(0,1),get-max(0,1))
       DIV-OP : 
          match(type(args(e)[0]),type(args(e)[1])) :
-            (t0:UIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),IntWidth(1))
-            (t0:SIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),IntWidth(1))
+            (t0:UIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),LongWidth(1))
+            (t0:SIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),LongWidth(1))
             (t0,t1) : width!(args(e)[0])
       MOD-OP : 
          match(type(args(e)[0]),type(args(e)[1])) :
-            (t0:SIntType,t1:UIntType) : PlusWidth(width!(args(e)[1]),IntWidth(1))
+            (t0:SIntType,t1:UIntType) : PlusWidth(width!(args(e)[1]),LongWidth(1))
             (t0,t1) : width!(args(e)[1])
       QUO-OP : 
          match(type(args(e)[0]),type(args(e)[1])) :
-            (t0:UIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),IntWidth(1))
-            (t0:SIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),IntWidth(1))
+            (t0:UIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),LongWidth(1))
+            (t0:SIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),LongWidth(1))
             (t0,t1) : width!(args(e)[0])
       REM-OP : 
          match(type(args(e)[0]),type(args(e)[1])) :
-            (t0:SIntType,t1:UIntType) : PlusWidth(width!(args(e)[1]),IntWidth(1))
+            (t0:SIntType,t1:UIntType) : PlusWidth(width!(args(e)[1]),LongWidth(1))
             (t0,t1) : width!(args(e)[1])
       ADD-WRAP-OP : get-max(0,1)
       SUB-WRAP-OP : get-max(0,1)
-      LESS-OP : IntWidth(1)
-      LESS-EQ-OP : IntWidth(1)
-      GREATER-OP : IntWidth(1)
-      GREATER-EQ-OP : IntWidth(1)
-      EQUAL-OP : IntWidth(1)
-      NEQUAL-OP : IntWidth(1)
-      EQUIV-OP : IntWidth(1)
-      NEQUIV-OP : IntWidth(1)
+      LESS-OP : LongWidth(1)
+      LESS-EQ-OP : LongWidth(1)
+      GREATER-OP : LongWidth(1)
+      GREATER-EQ-OP : LongWidth(1)
+      EQUAL-OP : LongWidth(1)
+      NEQUAL-OP : LongWidth(1)
+      EQUIV-OP : LongWidth(1)
+      NEQUIV-OP : LongWidth(1)
       MUX-OP : 
-         add(v,WGeq(IntWidth(1),width!(args(e)[0])))
-         add(v,WGeq(width!(args(e)[0]),IntWidth(1)))
+         add(v,WGeq(LongWidth(1),width!(args(e)[0])))
+         add(v,WGeq(width!(args(e)[0]),LongWidth(1)))
          get-max(1,2)
-      PAD-OP : IntWidth(consts(e)[0])
+      PAD-OP : LongWidth(consts(e)[0])
       AS-UINT-OP : width!(args(e)[0])
       AS-SINT-OP : width!(args(e)[0])
-      SHIFT-LEFT-OP : PlusWidth(width!(args(e)[0]),IntWidth(consts(e)[0]))
-      SHIFT-RIGHT-OP : MinusWidth(width!(args(e)[0]),IntWidth(consts(e)[0]))
+      SHIFT-LEFT-OP : PlusWidth(width!(args(e)[0]),LongWidth(consts(e)[0]))
+      SHIFT-RIGHT-OP : MinusWidth(width!(args(e)[0]),LongWidth(consts(e)[0]))
       DYN-SHIFT-LEFT-OP : PlusWidth(width!(args(e)[0]),ExpWidth(width!(args(e)[1])))
       DYN-SHIFT-RIGHT-OP : width!(args(e)[0])
       CONVERT-OP : 
          match(type(args(e)[0])) :
-            (t0:UIntType) : PlusWidth(width!(args(e)[0]),IntWidth(1))
+            (t0:UIntType) : PlusWidth(width!(args(e)[0]),LongWidth(1))
             (t0:SIntType) : width!(args(e)[0])
-      NEG-OP : PlusWidth(width!(args(e)[0]),IntWidth(1))
+      NEG-OP : PlusWidth(width!(args(e)[0]),LongWidth(1))
       BIT-NOT-OP : width!(args(e)[0])
       BIT-AND-OP : get-max(0,1)
       BIT-OR-OP :  get-max(0,1)
@@ -126,8 +126,8 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
       BIT-OR-REDUCE-OP  : all-max()
       BIT-XOR-REDUCE-OP : all-max()
       CONCAT-OP : PlusWidth(width!(args(e)[0]),width!(args(e)[1]))
-      BIT-SELECT-OP  : IntWidth(1)
-      BITS-SELECT-OP : IntWidth(consts(e)[0] - consts(e)[1] + 1)
+      BIT-SELECT-OP  : LongWidth(1)
+      BITS-SELECT-OP : LongWidth(consts(e)[0] - consts(e)[1] + 1)
 
    match(type(e)) :
       (t:UIntType) : UIntType(w*)

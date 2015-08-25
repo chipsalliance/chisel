@@ -29,8 +29,7 @@ public val RDWR = new AccDirection
 
 public definterface Width
 public defstruct UnknownWidth <: Width
-public defstruct IntWidth <: Width :
-   width: Int
+public defn LongWidth (width:Int) : LongWidth(to-long(width))
 public defstruct LongWidth <: Width :
    width: Long
 

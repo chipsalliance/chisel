@@ -545,7 +545,7 @@ defn to-working-ir (c:Circuit) :
 ;
 ;      var ports! = ports(m)
 ;      if not contains?(explicit-reset,name(m)) :
-;         ports! = append(ports(m),list(Port(FileInfo(),`reset,INPUT,UIntType(IntWidth(1)))))
+;         ports! = append(ports(m),list(Port(FileInfo(),`reset,INPUT,UIntType(LongWidth(1)))))
 ;      match(m) :
 ;         (m:InModule) : 
 ;            val body! = route-reset(body(m))
@@ -1242,8 +1242,8 @@ public defmethod short-name (b:ExpandWhens) -> String : "expand-whens"
 
 ; ======== Expression Computation Library ===========
 
-val zero = UIntValue(BigIntLit(0),IntWidth(1))
-val one = UIntValue(BigIntLit(1),IntWidth(1))
+val zero = UIntValue(BigIntLit(0),LongWidth(1))
+val one = UIntValue(BigIntLit(1),LongWidth(1))
 
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
@@ -1274,19 +1274,19 @@ defn AND (e1:Expression,e2:Expression) -> Expression :
    else if e1 == zero or e2 == zero : zero
    else if e1 == one : e2
    else if e2 == one : e1
-   else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(LongWidth(1)))
 
 defn OR (e1:Expression,e2:Expression) -> Expression :
    if e1 == e2 : e1
    else if e1 == one or e2 == one : one
    else if e1 == zero : e2
    else if e2 == zero : e1
-   else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(LongWidth(1)))
 
 defn NOT (e1:Expression) -> Expression :
    if e1 == one : zero
    else if e1 == zero : one
-   else : DoPrim(EQUIV-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+   else : DoPrim(EQUIV-OP,list(e1,zero),list(),UIntType(LongWidth(1)))
 
 defn children (e:Expression) -> List<Expression> :
    val es = Vector<Expression>()
@@ -1395,7 +1395,7 @@ defn to-exp (sv:SymbolicValue) -> Expression|False :
          DoPrim(MUX-OP,
                 list(pred(sv),to-exp(conseq(sv)) as Expression,to-exp(alt(sv)) as Expression),
                 list(),
-                UIntType(IntWidth(1)))
+                UIntType(LongWidth(1)))
       (sv:SVExp) : exp(sv)
       (sv:SVNul) : false
 defn reduce-or (l:List<True|False>) -> True|False :
@@ -1794,9 +1794,6 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
                for w in args(w1) do :
                   if not contains?(args(w2),w) : ret(false)
                ret(true)
-      (w1:IntWidth,w2:IntWidth) : width(w1) == width(w2)
-      (w1:LongWidth,w2:IntWidth) : width(w1) == to-long $ width(w2)
-      (w1:IntWidth,w2:LongWidth) : to-long(width(w1)) == width(w2)
       (w1:LongWidth,w2:LongWidth) : width(w1) == width(w2)
       (w1:PlusWidth,w2:PlusWidth) : 
          (arg1(w1) == arg1(w2) and arg2(w1) == arg2(w2)) or (arg1(w1) == arg2(w2) and arg2(w1) == arg1(w2))
@@ -1833,21 +1830,14 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
             MaxWidth(unique(v))
          (w:PlusWidth) : 
             match(arg1(w),arg2(w)) :
-               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) + width(w2))
-               (w1:LongWidth,w2:IntWidth) : LongWidth(plus(width(w1),to-long $ width(w2)))
-               (w1:IntWidth,w2:LongWidth) : LongWidth(plus(to-long $ width(w1), width(w2)))
                (w1:LongWidth,w2:LongWidth) : LongWidth(plus(width(w1),width(w2)))
                (w1,w2) : w
          (w:MinusWidth) : 
             match(arg1(w),arg2(w)) :
-               (w1:IntWidth,w2:IntWidth) : IntWidth(width(w1) - width(w2))
-               (w1:LongWidth,w2:IntWidth) : LongWidth(minus(width(w1),to-long $ width(w2)))
-               (w1:IntWidth,w2:LongWidth) : LongWidth(minus(to-long $ width(w1), width(w2)))
                (w1:LongWidth,w2:LongWidth) : LongWidth(minus(width(w1),width(w2)))
                (w1,w2) : w
          (w:ExpWidth) : 
             match(arg1(w)) :
-               (w1:IntWidth) : LongWidth(pow(to-long(2),to-long(width(w1))) - to-long(1))
                (w1:LongWidth) : LongWidth(pow(to-long(2),width(w1)) - to-long(1))
                (w1) : w
          (w) : w
@@ -1953,7 +1943,7 @@ public defn width! (t:Type) -> Width :
    match(t) :
       (t:UIntType) : width(t)
       (t:SIntType) : width(t)
-      (t:ClockType) : IntWidth(1)
+      (t:ClockType) : LongWidth(1)
       (t) : error("No width!")
 public defn width! (e:Expression) -> Width : width!(type(e))
 
@@ -1978,8 +1968,8 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             Connect(info(s),l,e)
          (s:Conditionally) : 
             val p = gen-constraints(pred(s))
-            add(v,WGeq(width!(type(p)),IntWidth(1)))
-            add(v,WGeq(IntWidth(1),width!(type(p))))
+            add(v,WGeq(width!(type(p)),LongWidth(1)))
+            add(v,WGeq(LongWidth(1),width!(type(p))))
             map(gen-constraints-s,Conditionally(info(s),p,conseq(s),alt(s)))
          (s) : s
 
@@ -1993,14 +1983,14 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(num-bits(value(e)))))
+                  add(v,WGeq(w*,LongWidth(max(1,num-bits(value(e)) - 1))))
                   UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,IntWidth(1 + num-bits(value(e)))))
+                  add(v,WGeq(w*,LongWidth(num-bits(value(e)))))
                   SIntValue(value(e),w*)
                (w) : e
          (e) : e
@@ -2058,7 +2048,6 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
             (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{plus(_,_)})
             (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{minus(_,_)})
             (w:ExpWidth) : apply(to-long(2),solve(arg1(w)),{minus(pow(_,_),to-long(1))})
-            (w:IntWidth) : to-long(width(w))
             (w:LongWidth) : width(w)
             (w) : 
                println(w)
@@ -2066,9 +2055,7 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
    
       val s = solve(w)
       match(s) :
-         (s:Long) : 
-            if s > to-long(2147483647) : LongWidth(s)
-            else : IntWidth(to-int $ to-string $ s)
+         (s:Long) : LongWidth(s)
          (s) : w
 
    defn reduce-var-widths-w (w:Width) -> Width :
@@ -2348,7 +2335,6 @@ public defmethod name (b:Pad) -> String : "Pad Widths"
 ;------------ Helper Functions --------------
 defn int-width! (t:Type) -> Long :
    match(width!(t)) :
-      (w:IntWidth) : to-long(width(w))
       (w:LongWidth) : width(w)
       (w) : error("Non-int width")
 
