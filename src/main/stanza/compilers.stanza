@@ -32,6 +32,7 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       Inline()
       SplitExp()
       ToRealIR()
+      CheckWidths()
       ;RemoveSpecialChars()
       CheckHighForm()
       CheckLowForm()
@@ -42,34 +43,33 @@ public defstruct StandardVerilog <: Compiler :
    with-output : (() -> False) -> False with: (as-method => true)
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
-      RemoveSpecialChars()
-      RemoveScopes()
-      CheckHighForm()
-      TempElimination()
-      ToWorkingIR()
-      ;; MakeExplicitReset()
-      ResolveKinds()
-      CheckKinds()
-      InferTypes()
-      CheckTypes()
-      ResolveGenders()
-      CheckGenders()
-      ExpandAccessors()
-      LowerToGround()
-      ExpandIndexedConnects()
-      InferTypes()
-      CheckGenders()
-      ExpandWhens()
-      InferWidths()
-      ;Pad()
-      ConstProp()
-      SplitExp()
-      ToRealIR()
-      ;RemoveSpecialChars()
-      CheckHighForm()
-      CheckLowForm()
-      CheckInitialization()
-      Verilog(with-output(c))
+      RemoveSpecialChars()     ;R
+      RemoveScopes()           ;R
+      CheckHighForm()          ;R
+      TempElimination()        ;R
+      ToWorkingIR()            ;R -> W
+      ResolveKinds()           ;W
+      CheckKinds()             ;W
+      InferTypes()             ;R
+      CheckTypes()             ;R
+      ResolveGenders()         ;W
+      CheckGenders()           ;W
+      ExpandAccessors()        ;W
+      LowerToGround()          ;W
+      ExpandIndexedConnects()  ;W
+      InferTypes()             ;R
+      CheckGenders()           ;W
+      ExpandWhens()            ;W
+      InferWidths()            ;R
+      Pad()                    ;R
+      ConstProp()              ;R
+      SplitExp()               ;R
+      ToRealIR()               ;W -> R
+      CheckWidths()            ;R
+      CheckHighForm()          ;R
+      CheckLowForm()           ;R
+      CheckInitialization()    ;R
+      Verilog(with-output(c))  ;R
    ]
 
 

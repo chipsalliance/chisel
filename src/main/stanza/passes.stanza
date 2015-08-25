@@ -2049,9 +2049,11 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
       defn solve (w:Width) -> False|Long :
          match(w) :
             (w:VarWidth) : 
-               val w* = h[name(w)]
-               if w* typeof VarWidth : false
-               else : solve(w*)
+               val w* = get?(h,name(w),false)
+               match(w*) : 
+                  (w:VarWidth) : false
+                  (w:False) : false
+                  (w) : solve(w as Width)
             (w:MaxWidth) : apply-l(map(solve,args(w)),max)
             (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{plus(_,_)})
             (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{minus(_,_)})
