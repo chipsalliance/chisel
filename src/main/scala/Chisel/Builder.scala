@@ -35,6 +35,10 @@ private class IdGen {
 }
 
 private[Chisel] trait HasId {
+  private[Chisel] def _onModuleClose {}
+  private[Chisel] val _parent = Builder.dynamicContext.currentModule
+  _parent.foreach(_.addId(this))
+
   private[Chisel] val _refMap = Builder.globalRefMap
   private[Chisel] val _id = Builder.idGen.next
   private[Chisel] def setRef(imm: Immediate) = _refMap.setRef(this, imm)

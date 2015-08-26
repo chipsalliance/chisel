@@ -44,10 +44,6 @@ object debug {
   generates target code.
   */
 abstract class Data(dirArg: Direction) extends HasId {
-  private[Chisel] val _mod: Module = dynamicContext.currentModule.getOrElse(null)
-  if (_mod ne null)
-    _mod.addNode(this)
-
   def dir: Direction = dirVar
 
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
@@ -73,7 +69,6 @@ abstract class Data(dirArg: Direction) extends HasId {
     pushCommand(Connect(this.lref, that.ref))
   private[Chisel] def bulkConnect(that: Data): Unit =
     pushCommand(BulkConnect(this.lref, that.lref))
-  private[Chisel] def collectElts: Unit = { }
   private[Chisel] def lref: Alias = Alias(this)
   private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
   private[Chisel] def cloneTypeWidth(width: Width): this.type
@@ -128,7 +123,7 @@ object Reg {
 
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     val x = makeType(t, next, init)
-    pushCommand(DefRegister(x, Alias(x._mod.clock), Alias(x._mod.reset))) // TODO multi-clock
+    pushCommand(DefRegister(x, Alias(x._parent.get.clock), Alias(x._parent.get.reset))) // TODO multi-clock
     if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
@@ -142,7 +137,7 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mem, size, Alias(mt._mod.clock))) // TODO multi-clock
+    pushCommand(DefMemory(mem, size, Alias(mt._parent.get.clock))) // TODO multi-clock
     mem
   }
 }
@@ -269,9 +264,9 @@ sealed class Vec[T <: Data](gen: => T, val length: Int)
   private[Chisel] def toType: String = s"${t.toType}[$length]"
   private[Chisel] lazy val flatten: IndexedSeq[Bits] =
     (0 until length).flatMap(i => this.apply(i).flatten)
-  private[Chisel] override def collectElts =
-    for ((elt, i) <- self zipWithIndex)
-      elt.setRef(this, i)
+
+  for ((elt, i) <- self zipWithIndex)
+    elt.setRef(this, i)
 }
 
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
@@ -752,7 +747,7 @@ class Bundle extends Aggregate(NO_DIR) {
   private[Chisel] lazy val flatten = namedElts.flatMap(_._2.flatten)
   private[Chisel] def addElt(name: String, elt: Data): Unit =
     namedElts += name -> elt
-  private[Chisel] override def collectElts: Unit =
+  private[Chisel] override def _onModuleClose: Unit =
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
 
   override def cloneType : this.type = {
@@ -803,14 +798,8 @@ object Module {
 abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   private val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
-  private[Chisel] val _nodes = ArrayBuffer[Data]()
-  private[Chisel] val _children = ArrayBuffer[Module]()
-  private[Chisel] val _parent = dynamicContext.currentModule
+  private[Chisel] val _ids = ArrayBuffer[HasId]()
   dynamicContext.currentModule = Some(this)
-  _parent match {
-    case Some(p) => p._children += this
-    case _ =>
-  }
 
   /** Name of the instance. */
   val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
@@ -820,10 +809,9 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   val clock = Clock(INPUT)
   val reset = Bool(INPUT)
 
+  private[Chisel] def addId(d: HasId) { _ids += d }
   private[Chisel] def ref = Builder.globalRefMap(this)
   private[Chisel] def lref = ref
-
-  def addNode(d: Data) { _nodes += d }
 
   private def computePorts = io.namedElts.unzip._2
 
@@ -847,7 +835,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
 
     makeImplicitIOs
-    _nodes.foreach(_.collectElts)
+    _ids.foreach(_._onModuleClose)
 
     // FIRRTL: the IO namespace is part of the module namespace
     io.setRef(ModuleIO(this))
@@ -858,7 +846,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
       case id: HasId => id.setRef(_namespace.name(m.getName))
       case _ =>
     }
-    (_nodes ++ _children).foreach(_.setRef(_namespace.name("T")))
+    _ids.foreach(_.setRef(_namespace.name("T")))
     this
   }
 
