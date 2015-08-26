@@ -277,9 +277,24 @@ defsyntax firrtl :
       
       ;Prefix Operators
       expterm = (?t:#inttype(?v:#string)) :
+         val b = BigIntLit(v as String)
          match(t) :
-            (t:UIntType) : UIntValue(BigIntLit(v as String), width(t))
-            (t:SIntType) : SIntValue(BigIntLit(v as String), width(t))
+            (t:UIntType) : 
+               match(width(t)) :
+                  (w:LongWidth) :
+                     if to-long(max(1,(req-num-bits(b) - 1))) > width(w) :
+                        FPE(form, "Width too small for UIntValue.")
+                     UIntValue(b, w)
+                  (w) :
+                     UIntValue(b, w)
+            (t:SIntType) : 
+               match(width(t)) :
+                  (w:LongWidth) :
+                     if to-long(req-num-bits(b)) > width(w) :
+                        FPE(form, "Width too small for SIntValue.")
+                     SIntValue(b, w)
+                  (w) :
+                     SIntValue(b, w)
 
       expterm = (?t:#inttype(?v:#int$)) :
          match(t) :
@@ -288,7 +303,7 @@ defsyntax firrtl :
                   FPE(form, "UIntValue cannot be negative.")
                match(width(t)) :
                   (w:LongWidth) : 
-                     UIntValue(BigIntLit(v as Int,to-int(width(w))),w)
+                     UIntValue(BigIntLit(v as Int,to-int(width(w)) + 1),w)
                   (w) : 
                      val num-bits = req-num-bits(v as Int)
                      UIntValue(BigIntLit(v as Int,num-bits), LongWidth(max(1,num-bits - 1)))

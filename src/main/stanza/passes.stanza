@@ -1983,14 +1983,14 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,LongWidth(max(1,num-bits(value(e)) - 1))))
+                  add(v,WGeq(w*,LongWidth(max(1,req-num-bits(value(e)) - 1))))
                   UIntValue(value(e),w*)
                (w) : e
          (e:SIntValue) : 
             match(width(e)) :
                (w:UnknownWidth) : 
                   val w* = VarWidth(firrtl-gensym(`w,width-name-hash))
-                  add(v,WGeq(w*,LongWidth(num-bits(value(e)))))
+                  add(v,WGeq(w*,LongWidth(req-num-bits(value(e)))))
                   SIntValue(value(e),w*)
                (w) : e
          (e) : e

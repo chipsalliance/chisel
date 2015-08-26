@@ -3,10 +3,4 @@
 
 circuit Top : 
   module Top : 
-    output z : UInt
-
-    z := add(UInt<4>("h121"),UInt<3>("h13333"))
-
-
-
-
+    node bar = UInt<1>("h1111")

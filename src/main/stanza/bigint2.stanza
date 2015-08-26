@@ -17,15 +17,27 @@ defn as-digit (c: Char) -> Int :
 
 defn num-words (b:BigInt) : length(d(b))
 
+defn shamt (c:Char) : 
+   if c == 'b': 1 
+   else if c == 'h': 4 
+   else: error("Unsupported BigInt base.")
+
 defn req-words (num-bits:Int) : (num-bits + word-size - 1) / word-size
 
 defn to-hex (b:BigInt) -> String :
    defn as-hex (i: Int) -> String : substring(all-digits,i,i + 1)
    var li = List<String>()
+   val tib = num-bits(b) % 4
    for i in 0 to num-bits(b) by 4 do :
       val word-index = i / 32
       val bit-index = i % 32
-      val digit = (d(b)[word-index] >> (bit-index)) & 15 
+      var mask = 15
+      
+      val digit = 
+         if (i + tib) == num-bits(b) :
+            (d(b)[word-index] >> bit-index) & (pow(2,tib) - 1)
+         else :
+            (d(b)[word-index] >> bit-index) & 15 
       li = List(as-hex(digit),li)
    var saw-not-zero? = false
    val li* = Vector<String>()
@@ -93,6 +105,16 @@ public defmethod to-string (b:BigInt) : to-hex(b)
 public defmethod print (o:OutputStream, b:BigInt) :
    print(o, to-string(b))
 
+public defn req-num-bits (b:BigInt) -> Int :
+   var msb = 0
+   var seen? = false
+   for i in 0 to num-bits(b) do :
+      val index = num-bits(b) - 1 - i
+      if b[index] != 0 and seen? == false :
+         msb = index
+         seen? = true
+   msb + 1
+
 public defn BigIntZero (num-bits:Int) -> BigInt :
    val num-words = (num-bits + word-size - 1) / word-size
    val d = Array<Int>(num-words)
@@ -109,19 +131,17 @@ public defn BigIntLit (data:Int, num-bits:Int) -> BigInt :
    b
 
 public defn BigIntLit (data:String) -> BigInt :
-  val base    = data[0]
-  val shamt   = if base == 'b': 1 else if base == 'h': 4 else: error("Unsupported BigInt base.")
-  val digits  = substring(data, 1)
-  val num-bits = length(digits) * shamt
-  BigIntLit(digits,shamt,num-bits)
+  val num-bits = (length(data) - 1) * shamt(data[0])
+  BigIntLit(data,num-bits)
 
-public defn BigIntLit (digits:String, shamt:Int, num-bits:Int) -> BigInt :
+public defn BigIntLit (data:String, num-bits:Int) -> BigInt :
   val lit     = BigIntZero(num-bits)
+  val digits  = substring(data, 1)
   ;; println-all(["BASE " base " SHAMT " shamt " DIGITS " digits])
   for i in 0 to num-words(lit) do :
     d(lit)[i] = 0
   for i in 0 to length(digits) do :
-    val off   = (length(digits) - 1 - i) * shamt
+    val off   = (length(digits) - 1 - i) * shamt(data[0])
     val wi    = off / word-size
     val bi    = off % word-size
     d(lit)[wi]   = d(lit)[wi] | (as-digit(digits[i]) << bi)

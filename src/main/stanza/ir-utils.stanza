@@ -500,6 +500,14 @@ public defn merge!<?K,?V> (a:HashTable<?K,?V>, b:HashTable<K,V>) :
    for e in b do :
       a[key(e)] = value(e)
 
+public defn pow (x:Int,y:Int) -> Int :
+   var x* = 1
+   var y* = y
+   while y* != 0 :
+      x* = times(x*,x)
+      y* = minus(y*,1)
+   x*
+
 public defn pow (x:Long,y:Long) -> Long :
    var x* = to-long(1)
    var y* = y

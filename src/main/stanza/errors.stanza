@@ -918,14 +918,14 @@ public defn check-width (c:Circuit) -> Circuit :
             (e:UIntValue) : 
                match(width(e)) :
                   (w:LongWidth) : 
-                     if max(to-long(1),to-long(num-bits(value(e)) - 1)) > width(w) : 
+                     if max(to-long(1),to-long(req-num-bits(value(e)) - 1)) > width(w) : 
                         add(errors,WidthTooSmall(info,to-string(value(e))))
                   (w) : add(errors,UninferredWidth(info))
                check-width-w(info,width(e))
             (e:SIntValue) : 
                match(width(e)) :
                   (w:LongWidth) : 
-                     if to-long(num-bits(value(e))) > width(w) : 
+                     if to-long(req-num-bits(value(e))) > width(w) : 
                         add(errors,WidthTooSmall(info,to-string(value(e))))
                   (w) : add(errors,UninferredWidth(info))
                check-width-w(info,width(e))
