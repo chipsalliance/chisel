@@ -137,12 +137,12 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mem, size, Alias(mt._parent.get.clock))) // TODO multi-clock
+    pushCommand(DefMemory(mem, mt, size, Alias(mt._parent.get.clock))) // TODO multi-clock
     mem
   }
 }
 
-sealed class Mem[T <: Data](t: T, val length: Int) extends Aggregate(NO_DIR) with VecLike[T] {
+sealed class Mem[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
   def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T = {
     val x = t.cloneType
@@ -157,10 +157,6 @@ sealed class Mem[T <: Data](t: T, val length: Int) extends Aggregate(NO_DIR) wit
     val mask1 = mask.toBits
     write(idx, t.fromBits((read(idx).toBits & ~mask1) | (data.toBits & mask1)))
   }
-
-  def cloneType = throwException("Mem.cloneType unimplemented")
-  private[Chisel] def flatten = throwException("Mem.flatten unimplemented")
-  private[Chisel] def toType = t.toType
 }
 
 object SeqMem {

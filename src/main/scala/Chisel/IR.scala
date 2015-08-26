@@ -141,7 +141,7 @@ abstract class Definition extends Command {
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
 case class DefWire(id: Data) extends Definition
 case class DefRegister(id: Data, clock: Arg, reset: Arg) extends Definition
-case class DefMemory(id: Data, size: Int, clock: Arg) extends Definition
+case class DefMemory(id: HasId, t: Data, size: Int, clock: Arg) extends Definition
 case class DefSeqMemory(id: Data, size: Int) extends Definition
 case class DefAccessor(id: HasId, source: Alias, direction: Direction, index: Arg) extends Definition
 case class DefInstance(id: Module, ports: Seq[Data]) extends Definition

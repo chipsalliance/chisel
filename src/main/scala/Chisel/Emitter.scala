@@ -11,7 +11,7 @@ private class Emitter(circuit: Circuit) {
     case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_+", "+_)})"
     case e: DefWire => s"wire ${e.name} : ${e.id.toType}"
     case e: DefRegister => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
-    case e: DefMemory => s"cmem ${e.name} : ${e.id.toType}[${e.size}], ${e.clock.fullName(ctx)}";
+    case e: DefMemory => s"cmem ${e.name} : ${e.t.toType}[${e.size}], ${e.clock.fullName(ctx)}"
     case e: DefSeqMemory => s"smem ${e.name} : ${e.id.toType}[${e.size}]";
     case e: DefAccessor => s"infer accessor ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}]"
     case e: Connect => s"${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
