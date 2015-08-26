@@ -33,17 +33,20 @@ defn emit (w:Width) -> String :
 
       (w) : error("Non-supported width type.")
 
+defn remove-subfield-s (s:Stmt) -> Stmt :
+   defn remove-subfield-e (e:Expression) -> Expression :
+      match(map(remove-subfield-e,e)) :
+         (e:Subfield) : 
+            Ref(to-symbol $ string-join $ [emit(exp(e)) bundle-expand-delin name(e)],type(e))
+         (e) : e
+   map{remove-subfield-e,_ } $ map(remove-subfield-s,s)
+
 defn get-width (t:Type) -> String :
    match(t) :
       (t:UIntType) : emit(width(t))
       (t:SIntType) : emit(width(t))
       (t:ClockType) : emit(LongWidth(1))
       (t) : error("Non-supported type.")
-
-defn remove-subfield (e:Expression) -> Expression :
-   match(map(remove-subfield,e)) :
-      (e:Subfield) : Ref(to-symbol $ string-join $ [emit(exp(e)) bundle-expand-delin name(e)],type(e))
-      (e) : e
 
 defn get-name (e:Expression) -> Symbol :
    match(e) :
@@ -79,8 +82,8 @@ defn emit (e:Expression) -> String :
          val str = to-string(value(e))
          val out = substring(str,1,length(str) - 1)
          string-join $ [width!(type(e)) "'s" out]
-      (e:Subfield) : error("Non-supported expression")
-      (e:Index) : error("Non-supported expression")
+      (e:Subfield) : error(string-join(["Non-supported expression: " to-string(e)]))
+      (e:Index) : error(string-join(["Non-supported expression: " to-string(e)]))
       (e:DoPrim) : 
          ;val sargs = map(emit-as-type{_,type(e)},args(e))
          ;val xargs = map(emit-signed-if-any{_,args(e)},args(e))
@@ -154,27 +157,29 @@ defn emit (e:Expression) -> String :
                v
 
 defn emit-module (m:InModule) :
+
+   val body* = remove-subfield-s(body(m))
+
    val vdecs = Vector<KeyValue<Symbol,Stmt>>() ; all declarations in order, to preserve ordering
    val decs = HashTable<Symbol,Stmt>(symbol-hash) ; all declarations, for fast lookups
    val cons = HashTable<Symbol,Expression>(symbol-hash) ; all connections
    val ens = HashTable<Symbol,Expression>(symbol-hash) ; all enables
-   defn build-table (m:InModule) :
-      defn build-table (s:Stmt) -> Stmt :
-         match(map(build-table,map(remove-subfield,s))) : 
-            (s:DefWire|DefPoison|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : 
-               add(vdecs,name(s) => s)
-               decs[name(s)] = s
-            (s:Conditionally) : 
-               val n = get-name(loc(conseq(s) as Connect))
-               ens[n] = pred(s)
-               cons[n] = exp(conseq(s) as Connect)
-            (s:Connect) : 
-               val n = get-name(loc(s))
-               cons[n] = exp(s)
-            (s) : false
-         s
-      build-table(body(m))
-   build-table(m)
+   defn build-table (s:Stmt) -> False :
+      match(s) :
+         (s:DefWire|DefPoison|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : 
+            add(vdecs,name(s) => s)
+            decs[name(s)] = s
+         (s:Conditionally) : 
+            val n = get-name(loc(conseq(s) as Connect))
+            ens[n] = pred(s)
+            cons[n] = exp(conseq(s) as Connect)
+         (s:Connect) : 
+            val n = get-name(loc(s))
+            cons[n] = exp(s)
+         (s:Begin) : do(build-table,s)
+         (s) : false
+
+   build-table(body*)
 
    val wires = Vector<Streamable>()
    val regs = Vector<Streamable>()
