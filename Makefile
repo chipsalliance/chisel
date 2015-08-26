@@ -3,6 +3,7 @@
 
 root_dir ?= $(PWD)
 test_dir ?= $(root_dir)/test
+regress_dir ?= $(root_dir)/regress
 firrtl_dir ?= $(root_dir)/src/main/stanza
 
 all-noise: 
@@ -29,6 +30,9 @@ build-fast:
 
 check:
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
+
+regress: 
+	cd $(regress_dir) && firrtl -i rocket.fir -o rocket.v -X verilog
 
 passes: 
 	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/
@@ -62,4 +66,4 @@ done: build check
 fail:
 	say "fail"
 
-.PHONY: all install build-deploy build check clean fail succeed
+.PHONY: all install build-deploy build check clean fail succeed regress
