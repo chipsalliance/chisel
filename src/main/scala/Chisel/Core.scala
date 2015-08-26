@@ -6,6 +6,7 @@ import Builder.pushOp
 import Builder.dynamicContext
 import PrimOp._
 
+/** A factory for literal values */
 private object Literal {
   def sizeof(x: BigInt): Int = x.bitLength
 
@@ -34,6 +35,14 @@ object debug {
   def apply (arg: Data) = arg
 }
 
+/** *Data* is part of the *Node* Composite Pattern class hierarchy.
+  It is the root of the type system which includes composites (Bundle, Vec)
+  and atomic types (UInt, SInt, etc.).
+
+  Instances of Data are meant to help with construction and correctness
+  of a logic graph. They will trimmed out of the graph before a *Backend*
+  generates target code.
+  */
 abstract class Data(dirArg: Direction) extends HasId {
   private[Chisel] val _mod: Module = dynamicContext.currentModule.getOrElse(null)
   if (_mod ne null)
@@ -105,6 +114,7 @@ object Wire {
   }
 }
 
+/** A factory for Reg objects. */
 object Reg {
   private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     if (t ne null) t.cloneType
@@ -179,6 +189,8 @@ object Vec {
     if (gen.isLit) apply(Seq.fill(n)(gen))
     else new Vec(gen.cloneType, n)
   }
+  /** Returns a new *Vec* from a sequence of *Data* nodes.
+    */
   def apply[T <: Data](elts: Seq[T]): Vec[T] = {
     require(!elts.isEmpty)
     val width = elts.map(_.width).reduce(_ max _)
@@ -188,10 +200,21 @@ object Vec {
       v := e
     vec
   }
+  /** Returns a new *Vec* from the concatenation of a *Data* node
+    and a sequence of *Data* nodes.
+    */
   def apply[T <: Data](elt0: T, elts: T*): Vec[T] =
     apply(elt0 +: elts.toSeq)
+  /** Returns an array containing values of a given function over
+    a range of integer values starting from 0.
+    */
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = 
     apply((0 until n).map(i => gen(i)))
+  /** Returns an array that contains the results of some element computation
+    a number of times.
+
+    Note that this means that elem is computed a total of n times.
+    */
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = 
     apply(gen, n)
 }
@@ -267,6 +290,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
   def onlyIndexWhere(p: T => Bool): UInt = Mux1H(indexWhereHelper(p))
 }
 
+/** A bit pattern object to enable representation of dont cares */
 object BitPat {
   private def parse(x: String): (BigInt, BigInt, Int) = {
     require(x.head == 'b', "BINARY BitPats ONLY")
@@ -282,24 +306,32 @@ object BitPat {
     (bits, mask, x.length-1)
   }
 
+  /** Get a bit pattern from a string
+    * @param n a string with format b---- eg) b1?01
+    * @note legal characters are 0, 1, ? and must be base 2*/
   def apply(n: String): BitPat = {
     val (bits, mask, width) = parse(n)
     new BitPat(bits, mask, width)
   }
 
+  /** Get a bit pattern of don't cares with a specified width */
   def DC(width: Int): BitPat = BitPat("b" + ("?" * width))
 
   // BitPat <-> UInt
+  /** enable conversion of a bit pattern to a UInt */
   implicit def BitPatToUInt(x: BitPat): UInt = {
     require(x.mask == (BigInt(1) << x.getWidth)-1)
     UInt(x.value, x.getWidth)
   }
+  /** create a bit pattern from a UInt */
   implicit def apply(x: UInt): BitPat = {
     require(x.isLit)
     BitPat("b" + x.litValue.toString(2))
   }
 }
 
+/** A class to create bit patterns
+  * Use the [[Chisel.BitPat$ BitPat]] object instead of this class directly */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
   def === (other: UInt): Bool = UInt(value) === (other & UInt(mask))
@@ -310,6 +342,7 @@ abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
   private[Chisel] def flatten: IndexedSeq[UInt] = IndexedSeq(toBits)
 }
 
+/** Create a new Clock */
 object Clock {
   def apply(dir: Direction = NO_DIR): Clock = new Clock(dir)
 }
@@ -333,6 +366,8 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   override def <> (that: Data): Unit = this := that
 
+  /** Extract a single Bool at index *bit*.
+    */
   final def apply(x: BigInt): Bool = {
     if (x < 0)
       Builder.error(s"Negative bit indices are illegal (got $x)")
@@ -344,6 +379,8 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   final def apply(x: UInt): Bool =
     (this >> x)(0)
 
+  /** Extract a range of bits, inclusive from hi to lo
+    * {{{ myBits = 0x5, myBits(1,0) => 0x1 }}} */
   final def apply(x: Int, y: Int): UInt = {
     if (x < y || y < 0)
       Builder.error(s"Invalid bit range ($x,$y)")
@@ -364,16 +401,20 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   private[Chisel] def redop(op: PrimOp): Bool =
     pushOp(DefPrim(Bool(), op, this.ref))
 
+  /** invert all bits with ~ */
   def unary_~ : this.type = unop(cloneTypeWidth(width), BitNotOp)
   def pad (other: Int): this.type = binop(cloneTypeWidth(this.width max Width(other)), PadOp, other)
 
+  /** Shift left operation */
   def << (other: BigInt): Bits
   def << (other: Int): Bits
   def << (other: UInt): Bits
+  /** Shift right operation */
   def >> (other: BigInt): Bits
   def >> (other: Int): Bits
   def >> (other: UInt): Bits
 
+  /** Split up this bits instantiation to a Vec of Bools */
   def toBools: Vec[Bool] = Vec.tabulate(this.getWidth)(i => this(i))
 
   def asSInt(): SInt
@@ -386,6 +427,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     case _ => throwException(s"can't covert UInt<$width> to Bool")
   }
 
+  /** Cat bits together to into a single data object with the width of both combined */
   def ## (other: Bits): UInt = Cat(this, other)
   override def toBits = asUInt
   override def fromBits(n: Bits): this.type = {
@@ -470,6 +512,7 @@ sealed class UInt(dir: Direction, width: Width, lit: Option[ULit] = None) extend
   def === (that: BitPat): Bool = that === this
   def != (that: BitPat): Bool = that != this
 
+  /** Convert a UInt to an SInt by added a MSB zero */
   def zext(): SInt = pushOp(DefPrim(SInt(width + 1), ConvertOp, ref))
   def asSInt(): SInt = pushOp(DefPrim(SInt(width), AsSIntOp, ref))
   def asUInt(): UInt = this
@@ -518,11 +561,17 @@ sealed class SInt(dir: Direction, width: Width, lit: Option[SLit] = None) extend
 
   def unary_- : SInt = SInt(0) - this
   def unary_-% : SInt = SInt(0) -% this
+  /** add (width +1) operator */
   def +& (other: SInt): SInt = binop(SInt((this.width max other.width) + 1), AddOp, other)
+  /** add (default - no growth) operator */
   def + (other: SInt): SInt = this +% other
+  /** add (no growth) operator */
   def +% (other: SInt): SInt = binop(SInt(this.width max other.width), AddModOp, other)
+  /** subtract (width +1) operator */
   def -& (other: SInt): SInt = binop(SInt((this.width max other.width) + 1), SubOp, other)
+  /** subtract (default - no growth) operator */
   def - (other: SInt): SInt = this -% other
+  /** subtract (no growth) operator */
   def -% (other: SInt): SInt = binop(SInt(this.width max other.width), SubModOp, other)
   def * (other: SInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
   def * (other: UInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
@@ -592,6 +641,12 @@ object Bool {
 }
 
 object Mux {
+  /** Create a Mux
+    * @param cond a condition to determine which value to choose
+    * @param con the value chosen when cond is true or 1
+    * @param alt the value chosen when cond is false or 0
+    * @example
+    * {{{ val muxOut = Mux(data_in === UInt(3), UInt(3, 4), UInt(0, 4)) }}} */
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = (con, alt) match {
     // Handle Mux(cond, UInt, Bool) carefully so that the concrete type is UInt
     case (c: Bool, a: Bool) => doMux(cond, c, a).asInstanceOf[T]
@@ -617,7 +672,16 @@ object Mux {
 }
 
 object Cat {
+  /** Combine data elements together
+    * @param a Data to combine with
+    * @param r any number of other Data elements to be combined in order
+    * @return A UInt which is all of the bits combined together
+    */
   def apply[T <: Bits](a: T, r: T*): UInt = apply(a :: r.toList)
+  /** Combine data elements together
+    * @param r any number of other Data elements to be combined in order
+    * @return A UInt which is all of the bits combined together
+    */
   def apply[T <: Bits](r: Seq[T]): UInt = {
     if (r.tail.isEmpty) r.head.asUInt
     else {
@@ -642,9 +706,20 @@ object Bundle {
   }
 }
 
+/** Define a collection of datum of different types into a single coherent
+  whole.
+  */
 class Bundle extends Aggregate(NO_DIR) {
   private val _namespace = Builder.globalNamespace.child
 
+  /** Connect all elements contained in this to node 'that'
+    * @note The elements are checked for compatibility based on their name
+    * If elements are in src that are not in this Bundle no warning will be produced
+    * @example
+    * {{{ // pass through all wires in this modules io to the sub module which have the same name
+    * // Note: ignores any extra defined in io
+    * mySubModule.io <> io }}}
+    */
   override def <> (that: Data): Unit = that match {
     case _: Bundle => this bulkConnect that
     case _ => this badConnect that
@@ -697,6 +772,11 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 object Module {
+  /** The wrapper method for all instantiations of modules
+    * @param m The module newly created
+    * @param p Parameters passed down implicitly from that it is created in
+    * @return A properly wrapped module that has been added to the Driver
+    */
   def apply[T <: Module](bc: => T)(implicit currParams: Parameters = Builder.getParams.push): T = {
     paramsScope(currParams) {
       val parent = dynamicContext.currentModule
@@ -726,8 +806,10 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
     case _ =>
   }
 
+  /** Name of the instance. */
   val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
 
+  /** the I/O for this module */
   def io: Bundle
   val clock = Clock(INPUT)
   val reset = Bool(INPUT)
@@ -779,6 +861,15 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   def printf(message: String, args: Bits*): Unit = {}
 }
 
+/** This class allows the connection to modules defined outside of chisel.
+  * @example
+  * {{{ class DSP48E1 extends BlackBox {
+  *      val io = new Bundle // Create I/O with same as DSP
+  *      val dspParams = new VerilogParameters // Create Parameters to be specified
+  *      setVerilogParams(dspParams)
+  *      // Implement functionality of DSP to allow simulation verification
+  * } }}}
+  */
 // TODO: actually implement BlackBox (this hack just allows them to compile)
 abstract class BlackBox(_clock: Clock = null, _reset: Bool = null) extends Module(_clock = _clock, _reset = _reset) {
   def setVerilogParameters(s: String): Unit = {}
