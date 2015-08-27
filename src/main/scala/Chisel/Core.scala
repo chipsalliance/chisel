@@ -176,10 +176,7 @@ sealed class SeqMem[T <: Data](t: T, n: Int) {
 }
 
 object Vec {
-  def apply[T <: Data](gen: T, n: Int): Vec[T] = {
-    if (gen.isLit) apply(Seq.fill(n)(gen))
-    else new Vec(gen.cloneType, n)
-  }
+  def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
   /** Returns a new *Vec* from a sequence of *Data* nodes.
     */
   def apply[T <: Data](elts: Seq[T]): Vec[T] = {
@@ -206,8 +203,7 @@ object Vec {
 
     Note that this means that elem is computed a total of n times.
     */
-  def fill[T <: Data](n: Int)(gen: => T): Vec[T] = 
-    apply(gen, n)
+  def fill[T <: Data](n: Int)(gen: => T): Vec[T] = apply(Seq.fill(n)(gen))
 }
 
 sealed abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
