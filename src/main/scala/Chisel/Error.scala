@@ -31,7 +31,7 @@
 package Chisel
 import scala.collection.mutable.ArrayBuffer
 
-private class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
+class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
 
 private object throwException {
   def apply(s: String, t: Throwable = null) =

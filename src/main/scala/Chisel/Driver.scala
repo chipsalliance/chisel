@@ -80,19 +80,15 @@ object Driver extends FileSystemUtilities {
     *        use by other Drivers.
     */
   private[Chisel] def elaborateWrappedModule[T <: Module](gen: () => T, p: Parameters, c: Option[ChiselConfig]) {
-    try {
-      val ir = Builder.build(gen())
-      val name = c match {
-        case None => ir.name
-        case Some(config) => s"${ir.name}.$config"
-      }
-      createOutputFile(s"$name.knb", p.getKnobs)
-      createOutputFile(s"$name.cst", p.getConstraints)
-      createOutputFile(s"$name.prm", ir.parameterDump.getDump)
-      createOutputFile(s"$name.fir", ir.emit)
-    } catch {
-      case e: ChiselException => println(e.getMessage)
+    val ir = Builder.build(gen())
+    val name = c match {
+      case None => ir.name
+      case Some(config) => s"${ir.name}.$config"
     }
+    createOutputFile(s"$name.knb", p.getKnobs)
+    createOutputFile(s"$name.cst", p.getConstraints)
+    createOutputFile(s"$name.prm", ir.parameterDump.getDump)
+    createOutputFile(s"$name.fir", ir.emit)
   }
   def elaborate[T <: Module](gen: () => T): Unit =
     elaborate(gen, Parameters.empty)
