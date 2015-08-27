@@ -22,7 +22,6 @@ Currently, those components are:
  - firrtl (Stanza)
 
 and for the C++ simulator
- - filter (Python/C++)
  - flo-llvm (C++)
  - clang
 
@@ -34,15 +33,11 @@ In order to build firrtl, you need a (currently patched) copy of
 Stanza. (We should add this to the firrtl repo in utils/bin.)
 
 ### firrtl
-We assume that copies (or links to) firrtl and filter are in
+We assume that copies (or links to) firrtl are in
 chisel3/bin. flo-llvm and clang should be found in your $PATH.
 
 Follow the instructions on the firrtl repo for building firrtl and put
 the resulting binary (utils/bin/firrtl) in chisel3/bin.
-
-### filter
-filter is available from the chisel3 repo as a .cpp file. ucbjrl has a
-Python version. You could implment it using sed or awk.
 
 ### flo-llvm
 flo-llvm is Palmer's flo to (.o,.v) converter. It's hosted at:
