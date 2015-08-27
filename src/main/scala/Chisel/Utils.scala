@@ -17,10 +17,12 @@ object Enum {
   def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = (l zip (Range(0, l.length).map(x => nodeType.fromInt(x)))).toMap
 }
 
+/** Compute the log2 rounded up with min value of 1 */
 object log2Up {
   def apply(in: Int): Int = 1 max BigInt(in-1).bitLength
 }
 
+/** Compute the log2 rounded up */
 object log2Ceil {
   def apply(in: Int): Int = {
     require(in > 0)
@@ -28,14 +30,17 @@ object log2Ceil {
   }
 }
 
+/** Compute the log2 rounded down with min value of 1 */
 object log2Down {
   def apply(in: Int): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
 }
 
+/** Compute the log2 rounded down */
 object log2Floor {
   def apply(in: Int): Int = log2Ceil(in) - (if (isPow2(in)) 0 else 1)
 }
 
+/** Check if an Integer is a power of 2 */
 object isPow2 {
   def apply(in: Int): Boolean = in > 0 && ((in & (in-1)) == 0)
 }
@@ -76,6 +81,7 @@ object RegInit {
 
 }
 
+/** A register with an Enable signal */
 object RegEnable
 {
   def apply[T <: Data](updateData: T, enable: Bool) = {
@@ -128,6 +134,7 @@ object PriorityMux
   def apply[T <: Bits](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
 }
 
+/** This is identical to [[Chisel.when when]] with the condition inverted */
 object unless {
   def apply(c: Bool)(block: => Unit) {
     when (!c) { block }
@@ -142,12 +149,26 @@ class SwitchContext[T <: Bits](cond: T) {
   def is(v: T, vr: T*)(block: => Unit) { is(v :: vr.toList)(block) }
 }
 
+/** An object for separate cases in [[Chisel.switch switch]]
+  * It is equivalent to a [[Chisel.when$ when]] block comparing to the condition
+  * Use outside of a switch statement is illegal */
 object is { // Begin deprecation of non-type-parameterized is statements.
   def apply(v: Iterable[Bits])(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
   def apply(v: Bits)(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
   def apply(v: Bits, vr: Bits*)(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
 }
 
+/** Conditional logic to form a switch block
+  * @example
+  * {{{ ... // default values here
+  * switch ( myState ) {
+  *   is( state1 ) {
+  *     ... // some logic here
+  *   }
+  *   is( state2 ) {
+  *     ... // some logic here
+  *   }
+  * } }}}*/
 object switch {
   def apply[T <: Bits](cond: T)(x: => Unit): Unit = macro impl
   def impl(c: Context)(cond: c.Tree)(x: c.Tree) = { import c.universe._
@@ -162,7 +183,13 @@ object switch {
   }
 }
 
+/** MuxLookup creates a cascade of n Muxs to search for a key value */
 object MuxLookup {
+  /** @param key a key to search for
+    * @param default a default value if nothing is found
+    * @param mapping a sequence to search of keys and values
+    * @return the value found or the default if not
+    */
   def apply[S <: UInt, T <: Bits] (key: S, default: T, mapping: Seq[(S, T)]): T = {
     var res = default;
     for ((k, v) <- mapping.reverse)
@@ -172,7 +199,9 @@ object MuxLookup {
 
 }
 
+/** Fill fans out a Node to multiple copies */
 object Fill {
+  /** Fan out mod n times */
   def apply(n: Int, y: UInt): UInt = {
     n match {
       case 0 => UInt(width=0)
@@ -186,12 +215,17 @@ object Fill {
       case _ => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
     }
   }
+  /** Fan out mod n times */
   def apply(n: Int, x: Bool): UInt =
     if (n > 1) UInt(0,n) - x
     else apply(n, x: UInt)
 }
 
+/** MuxCase returns the first value that is enabled in a map of values */
 object MuxCase {
+  /** @param default the default value if none are enabled
+    * @param mapping a set of data values with associated enables
+    * @return the first value in mapping that is enabled */
   def apply[T <: Bits] (default: T, mapping: Seq[(Bool, T)]): T = {
     var res = default;
     for ((t, v) <- mapping.reverse){
@@ -245,6 +279,9 @@ object Reverse
   */
 object ShiftRegister
 {
+  /** @param in input to delay
+    * @param n number of cycles to delay
+    * @param en enable the shift */
   def apply[T <: Data](in: T, n: Int, en: Bool = Bool(true)): T =
   {
     // The order of tests reflects the expected use cases.
@@ -258,7 +295,13 @@ object ShiftRegister
   }
 }
 
+/** Compute Log2 with truncation of a UInt in hardware using a Mux Tree
+  * An alternative interpretation is it computes the minimum number of bits needed to represent x
+  * @example
+  * {{{ data_out := Log2(data_in) }}}
+  * @note Truncation is used so Log2(UInt(12412)) = 13*/
 object Log2 {
+  /** Compute the Log2 on the least significant n bits of x */
   def apply(x: Bits, width: Int): UInt = {
     if (width < 2) UInt(0)
     else if (width == 2) x(1)
@@ -268,6 +311,8 @@ object Log2 {
   def apply(x: Bits): UInt = apply(x, x.getWidth)
 }
 
+/** Converts from One Hot Encoding to a UInt indicating which bit is active
+  * This is the inverse of [[Chisel.UIntToOH UIntToOH]]*/
 object OHToUInt {
   def apply(in: Seq[Bool]): UInt = apply(Vec(in))
   def apply(in: Vec[Bool]): UInt = apply(in.toBits, in.size)
@@ -284,10 +329,15 @@ object OHToUInt {
   }
 }
 
+/** @return the bit position of the trailing 1 in the input vector
+  * with the assumption that multiple bits of the input bit vector can be set
+  * @example {{{ data_out := PriorityEncoder(data_in) }}}
+  */
 object PriorityEncoder {
   def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(UInt(_)))
   def apply(in: Bits): UInt = apply(in.toBools)
 }
+
 /** Returns the one hot encoding of the input UInt.
   */
 object UIntToOH
@@ -297,6 +347,9 @@ object UIntToOH
     else (UInt(1) << in(log2Up(width)-1,0))(width-1,0)
 }
 
+/** A counter module
+  * @param n The maximum value of the counter, does not have to be power of 2
+  */
 class Counter(val n: Int) {
   val value = if (n == 1) UInt(0) else Reg(init=UInt(0, log2Up(n)))
   def inc(): Bool = {
@@ -309,6 +362,11 @@ class Counter(val n: Int) {
   }
 }
 
+/** Counter Object
+  * Example Usage:
+  * {{{ val countOn = Bool(true) // increment counter every clock cycle
+  * val myCounter = Counter(countOn, n)
+  * when ( myCounter.value === UInt(3) ) { ... } }}}*/
 object Counter
 {
   def apply(n: Int): Counter = new Counter(n)
@@ -320,6 +378,7 @@ object Counter
   }
 }
 
+/** An I/O Bundle containing data and a signal determining if it is valid */
 class ValidIO[+T <: Data](gen2: T) extends Bundle
 {
   val valid = Bool(OUTPUT)
@@ -335,6 +394,7 @@ object Valid {
   def apply[T <: Data](gen: T): ValidIO[T] = new ValidIO(gen)
 }
 
+/** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
 class DecoupledIO[+T <: Data](gen: T) extends Bundle
 {
   val ready = Bool(INPUT)
@@ -345,13 +405,13 @@ class DecoupledIO[+T <: Data](gen: T) extends Bundle
 }
 
 /** Adds a ready-valid handshaking protocol to any interface.
-  The standard used is that the consumer uses the flipped
-  interface.
+  * The standard used is that the consumer uses the flipped interface.
   */
 object Decoupled {
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 }
 
+/** An I/O bundle for enqueuing data with valid/ready handshaking */
 class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
@@ -361,6 +421,7 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
   override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
 }
 
+/** An I/O bundle for dequeuing data with valid/ready handshaking */
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   flip()
@@ -369,7 +430,7 @@ class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen)
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
 }
 
-
+/** An I/O bundle for dequeuing data with valid/ready handshaking */
 class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 {
   val ready = Bool(INPUT)
@@ -377,13 +438,26 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
   val bits  = gen.cloneType.asOutput
 }
 
+/** An I/O Bundle for Queues
+  * @param gen The type of data to queue
+  * @param entries The max number of entries in the queue */
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
+  /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
   val enq   = Decoupled(gen.cloneType).flip
+  /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq   = Decoupled(gen.cloneType)
+  /** The current amount of data in the queue */
   val count = UInt(OUTPUT, log2Up(entries + 1))
 }
 
+/** A hardware module implmenting a Queue
+  * @param gen the type of data to queue
+  * @param entries the max number of entries in the queue
+  * @param pipe
+  * @param flow
+  * @param _reset
+  */
 class Queue[T <: Data](gen: T, val entries: Int, pipe: Boolean = false, flow: Boolean = false, _reset: Bool = null) extends Module(_reset=_reset)
 {
   val io = new QueueIO(gen, entries)
@@ -444,6 +518,9 @@ object Queue
   }
 }
 
+/** Returns a bit vector in which only the least-significant 1 bit in
+  the input vector, if any, is set.
+  */
 object PriorityEncoderOH
 {
   private def encode(in: Seq[Bool]): UInt = {
@@ -457,12 +534,14 @@ object PriorityEncoderOH
   def apply(in: Bits): UInt = encode((0 until in.getWidth).map(i => in(i)))
 }
 
+/** An I/O bundle for the Arbiter */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
   val in  = Vec(Decoupled(gen), n).flip
   val out = Decoupled(gen)
   val chosen = UInt(OUTPUT, log2Up(n))
 }
 
+/** Arbiter Control determining which producer has access */
 object ArbiterCtrl
 {
   def apply(request: Seq[Bool]): Seq[Bool] = {
