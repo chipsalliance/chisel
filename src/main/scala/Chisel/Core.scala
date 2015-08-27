@@ -865,16 +865,31 @@ abstract class BlackBox(_clock: Clock = null, _reset: Bool = null) extends Modul
   def setVerilogParameters(s: String): Unit = {}
 }
 
+/** An object to create conditional logic.
+  * @example
+  * {{{
+  * when ( myData === UInt(3) ) {
+  *   ... // Some logic
+  * } .elsewhen ( myData === UInt(1) ) {
+  *   ... // Some logic
+  * } .otherwise {
+  *   ... // Some logic
+  * } }}}
+  */
 object when {
+  /** @param cond condition to execute upon
+    * @param block a section of logic to enable if cond is true */
   def apply(cond: => Bool)(block: => Unit): WhenContext = {
     new WhenContext(cond)(block)
   }
 }
 
 class WhenContext(cond: => Bool)(block: => Unit) {
+  /** execute block when alternative cond is true */
   def elsewhen (cond: => Bool)(block: => Unit): WhenContext =
     doOtherwise(when(cond)(block))
 
+  /** execute block by default */
   def otherwise(block: => Unit): Unit =
     doOtherwise(block)
 
