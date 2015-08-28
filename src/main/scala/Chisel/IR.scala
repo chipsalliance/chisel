@@ -145,6 +145,7 @@ case class DefMemory(id: HasId, t: Data, size: Int, clock: Arg) extends Definiti
 case class DefSeqMemory(id: Data, size: Int) extends Definition
 case class DefAccessor(id: HasId, source: Alias, direction: Direction, index: Arg) extends Definition
 case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
+case class DefPoison[T <: Data](id: T) extends Definition
 case class WhenBegin(pred: Arg) extends Command
 case class WhenElse() extends Command
 case class WhenEnd() extends Command

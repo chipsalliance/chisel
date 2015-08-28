@@ -88,13 +88,11 @@ private object Builder {
   def components = dynamicContext.components
   def parameterDump = dynamicContext.parameterDump
 
-  def pushCommand(c: Command) {
+  def pushCommand[T <: Command](c: T) = {
     dynamicContext.currentModule.foreach(_._commands += c)
+    c
   }
-  def pushOp[T <: Data](cmd: DefPrim[T]) = {
-    pushCommand(cmd)
-    cmd.id
-  }
+  def pushOp[T <: Data](cmd: DefPrim[T]) = pushCommand(cmd).id
 
   def errors = dynamicContext.errors
   def error(m: => String) = errors.error(m)

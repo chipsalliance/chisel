@@ -904,3 +904,9 @@ class WhenContext(cond: => Bool)(block: => Unit) {
     res
   }
 }
+
+/** A source of garbage data, used to initialize Wires to a don't-care value. */
+private object Poison extends Command {
+  def apply[T <: Data](t: T): T =
+    pushCommand(DefPoison(t.cloneType)).id
+}
