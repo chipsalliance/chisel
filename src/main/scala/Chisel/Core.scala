@@ -805,7 +805,10 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   private[Chisel] def ref = Builder.globalRefMap(this)
   private[Chisel] def lref = ref
 
-  private def computePorts = io.namedElts.unzip._2
+  private[Chisel] def computePorts = io.namedElts.unzip._2 map { x =>
+    val bundleDir = if (io.isFlip ^ x.isFlip) INPUT else OUTPUT
+    Port(x, if (x.dir == NO_DIR) bundleDir else x.dir)
+  }
 
   private def connectImplicitIOs(): this.type = _parent match {
     case Some(p) =>

@@ -3,10 +3,8 @@ package Chisel
 private class Emitter(circuit: Circuit) {
   override def toString = res.toString
 
-  private def emitPort(e: Data): String = {
-    val dir = if (e.isFlip) "input" else "output"
-    s"$dir ${e.getRef.name} : ${e.toType}"
-  }
+  private def emitPort(e: Port): String =
+    s"${e.dir} ${e.id.getRef.name} : ${e.id.toType}"
   private def emit(e: Command, ctx: Component): String = e match {
     case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_+", "+_)})"
     case e: DefWire => s"wire ${e.name} : ${e.id.toType}"

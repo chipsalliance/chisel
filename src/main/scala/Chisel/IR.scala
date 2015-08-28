@@ -144,14 +144,15 @@ case class DefRegister(id: Data, clock: Arg, reset: Arg) extends Definition
 case class DefMemory(id: HasId, t: Data, size: Int, clock: Arg) extends Definition
 case class DefSeqMemory(id: Data, size: Int) extends Definition
 case class DefAccessor(id: HasId, source: Alias, direction: Direction, index: Arg) extends Definition
-case class DefInstance(id: Module, ports: Seq[Data]) extends Definition
+case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
 case class WhenBegin(pred: Arg) extends Command
 case class WhenElse() extends Command
 case class WhenEnd() extends Command
 case class Connect(loc: Alias, exp: Arg) extends Command
 case class BulkConnect(loc1: Alias, loc2: Alias) extends Command
 case class ConnectInit(loc: Alias, exp: Arg) extends Command
-case class Component(id: Module, name: String, ports: Seq[Data], commands: Seq[Command]) extends Immediate
+case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Immediate
+case class Port(id: Data, dir: Direction)
 
 case class Circuit(name: String, components: Seq[Component], refMap: RefMap, parameterDump: ParameterDump) {
   def emit = new Emitter(this).toString
