@@ -152,10 +152,10 @@ sealed class Mem[T <: Data](t: T, val length: Int) extends HasId with VecLike[T]
 
   def read(idx: UInt): T = apply(idx)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
-  def write(idx: UInt, data: T, mask: T): Unit = {
-    // This is totally fucked, but there's no true write mask support yet
-    val mask1 = mask.toBits
-    write(idx, t.fromBits((read(idx).toBits & ~mask1) | (data.toBits & mask1)))
+  def write(idx: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
+    val accessor = this.asInstanceOf[Mem[Vec[Data]]].apply(idx)
+    for (((cond, port), datum) <- mask zip accessor zip data.asInstanceOf[Vec[Data]])
+      when (cond) { port := datum }
   }
 }
 
@@ -172,7 +172,8 @@ sealed class SeqMem[T <: Data](t: T, n: Int) {
   def read(addr: UInt, enable: Bool): T = mem.read(RegEnable(addr, enable))
 
   def write(addr: UInt, data: T): Unit = mem.write(addr, data)
-  def write(addr: UInt, data: T, mask: T): Unit = mem.write(addr, data, mask)
+  def write(addr: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit =
+    mem.write(addr, data, mask)
 }
 
 object Vec {
