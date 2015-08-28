@@ -49,11 +49,11 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       TempElimination()        ;R
       ToWorkingIR()            ;R -> W
       ResolveKinds()           ;W
-      CheckKinds()             ;W
       InferTypes()             ;R
-      CheckTypes()             ;R
       ResolveGenders()         ;W
       CheckGenders()           ;W
+      CheckKinds()             ;W
+      CheckTypes()             ;R
       ExpandAccessors()        ;W
       LowerToGround()          ;W
       ExpandIndexedConnects()  ;W

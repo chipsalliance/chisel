@@ -217,7 +217,7 @@ defn hasWidth (e:?) :
 defn hasType (e:?) :
    e typeof Ref|Subfield|Index|DoPrim|WRef|WSubfield
       |WIndex|DefWire|DefRegister|DefMemory|DefPoison
-      |VectorType|Port|Field|UIntValue|SIntValue
+      |VectorType|Port|UIntValue|SIntValue
 
 defn hasKind (e:?) :
    e typeof WRef
@@ -600,7 +600,6 @@ defn resolve-kinds (c:Circuit) :
       kinds[name(m)] = ModuleKind()
       for p in ports(m) do :
          kinds[name(p)] = PortKind()
-      println(name(m))
       match(m) : 
          (m:InModule) : find-stmt(body(m))
          (m:ExModule) : false

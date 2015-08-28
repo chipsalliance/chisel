@@ -1,7 +1,7 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p cTd 2>&1 |  tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
-;CHECK: node s1_addr = cat(dtlb<t:{ resp$ppn : UInt<20><t:UInt<20>>}>.resp$ppn<t:UInt<20>>, bits(s1_req$addr<t:UInt<40>>, 11, 0)<t:UInt<12>>)<t:UInt<32>>
+;CEHCK: node s1_addr = cat(dtlb<t:{ resp$ppn : UInt<20>}>.resp$ppn<t:UInt<20>>, bits(s1_req$addr<t:UInt<40>>, 11, 0)<t:UInt<12>>)<t:UInt<32>>
 ;CHECK: Finished Infer Widths
 
 circuit HellaCache : 

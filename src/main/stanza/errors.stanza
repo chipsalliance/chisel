@@ -653,7 +653,8 @@ public defn check-types (c:Circuit) -> Circuit :
             (s:Connect) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
             (s:BulkConnect) : 
-               if not bulk-equals?(type(loc(s)),type(exp(s))) : add(errors,InvalidConnect(info(s)))
+               if not bulk-equals?(type(loc(s)),type(exp(s))) : 
+                  add(errors,InvalidConnect(info(s)))
             (s:OnReset) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
                if has-flip?(type(loc(s))) : add(errors,OnResetIllegalFlips(info(s)))
