@@ -11,8 +11,8 @@ private class Emitter(circuit: Circuit) {
     case e: DefPoison[_] => s"poison ${e.name} : ${e.id.toType}"
     case e: DefRegister => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
     case e: DefMemory => s"cmem ${e.name} : ${e.t.toType}[${e.size}], ${e.clock.fullName(ctx)}"
-    case e: DefSeqMemory => s"smem ${e.name} : ${e.id.toType}[${e.size}]";
-    case e: DefAccessor => s"infer accessor ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}]"
+    case e: DefSeqMemory => s"smem ${e.name} : ${e.t.toType}[${e.size}], ${e.clock.fullName(ctx)}"
+    case e: DefAccessor[_] => s"infer accessor ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}]"
     case e: Connect => s"${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
     case e: BulkConnect => s"${e.loc1.fullName(ctx)} <> ${e.loc2.fullName(ctx)}"
     case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"

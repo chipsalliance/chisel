@@ -142,38 +142,33 @@ object Mem {
   }
 }
 
-sealed class Mem[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
+sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
   def apply(idx: Int): T = apply(UInt(idx))
-  def apply(idx: UInt): T = {
-    val x = t.cloneType
-    pushCommand(DefAccessor(x, Alias(this), NO_DIR, idx.ref))
-    x
-  }
+  def apply(idx: UInt): T =
+    pushCommand(DefAccessor(t.cloneType, Alias(this), NO_DIR, idx.ref)).id
 
   def read(idx: UInt): T = apply(idx)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
   def write(idx: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
-    val accessor = this.asInstanceOf[Mem[Vec[Data]]].apply(idx)
+    val accessor = apply(idx).asInstanceOf[Vec[Data]]
     for (((cond, port), datum) <- mask zip accessor zip data.asInstanceOf[Vec[Data]])
       when (cond) { port := datum }
   }
 }
 
+sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
+
 object SeqMem {
-  def apply[T <: Data](t: T, size: Int): SeqMem[T] =
-    new SeqMem(t, size)
+  def apply[T <: Data](t: T, size: Int): SeqMem[T] = {
+    val mt  = t.cloneType
+    val mem = new SeqMem(mt, size)
+    pushCommand(DefSeqMemory(mem, mt, size, Alias(mt._parent.get.clock))) // TODO multi-clock
+    mem
+  }
 }
 
-// For now, implement SeqMem in terms of Mem
-sealed class SeqMem[T <: Data](t: T, n: Int) {
-  private val mem = Mem(t, n)
-
-  def read(addr: UInt): T = mem.read(Reg(next = addr))
-  def read(addr: UInt, enable: Bool): T = mem.read(RegEnable(addr, enable))
-
-  def write(addr: UInt, data: T): Unit = mem.write(addr, data)
-  def write(addr: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit =
-    mem.write(addr, data, mask)
+sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
+  def read(addr: UInt, enable: Bool): T = read(addr) // TODO read enable
 }
 
 object Vec {
