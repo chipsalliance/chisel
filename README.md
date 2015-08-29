@@ -62,20 +62,3 @@ Once you have all the components in place, build and publish Chisel3:
 % cd chisel3
 % sbt clean publish-local
 ```
-
-## Repos of Test Code
- - Basic Chisel3 tests https://github.com/ucb-bar/chisel3-tests
-
-bin directory contains shell script wrappers that may need editing for your environment (absolute paths)
-
- - Tutorials https://github.com/ucb-bar/chisel-tutorial
-
-branch chisel3prep should be buildable with either Chisel2 or Chisel3.
-
-```shell
-% make chiselVersion=2.3-SNAPSHOT clean check
-```
-or
-```shell
-% make chiselVersion=3.0 clean check
-```
