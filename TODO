@@ -12,9 +12,7 @@ Support ASIC backend
 don't split on asuint and assint, and no need to emit cast of $unsigned
 put clocks on accessors
 add clock check to high firrtl check
-add equivalence to spec
 
-remove SInt from bit/bits in spec
 naming still doesn't work - x!0 will conflict with x
 think about inferring read enable from lo firrtl
 

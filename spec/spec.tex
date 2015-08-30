@@ -3,6 +3,8 @@
 \newcommand{\ids}{\text{id}}
 \newcommand{\ints}{\text{int}}
 \newcommand{\intsp}{\text{int }}
+\newcommand{\strings}{\text{string}}
+\newcommand{\stringsp}{\text{string }}
 \newcommand{\kw}[1]{\text{\bf #1\ }}
 \newcommand{\kws}[1]{\text{\bf #1}}
 \newcommand{\pd}[1]{\text{\em #1\ }}
@@ -103,22 +105,22 @@ We'd also like to thank our sponsors XXXX, and the University of California, Ber
 \pd{width}      &=     &\ints \vert \kw{?}                                                            &\text{Known/Unknown Integer Width}\\
 \pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
                 &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \pds{exp} , \pds{exp}                 &\text{Register Declaration}\\
-                &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \pds{exp}                             &\text{Sequential Memory Declaration}\\
-                &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \pds{exp}                             &\text{Combinational Memory Declaration}\\
+                &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \ints                                 &\text{Sequential Memory Declaration}\\
+                &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \ints                                 &\text{Combinational Memory Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
                 &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}] , \pds{exp}           &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
                 &\vert &\info \kw{onreset} \pd{exp} \kw{:=} \pd{exp}                                  &\text{OnReset Connect}\\
                 &\vert &\info \pd{exp} \kw{$<>$} \pd{exp}                                             &\text{Bulk Connect}\\
-                &\vert &\info \pds{exp}[\intsp  \kw{through} \ints] \ \kw{:=} \pds{exp}               &\text{Sub-Word Connect}\\
                 &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
-                &\vert &\info \kw{assert} \pd{exp}                                                    &\text{Assert Statement}\\
+                &\vert &\info \kw{stop}                                                               &\text{Stop Statement}\\
+                &\vert &\info \kw{printf}(\strings,\pds{exp*})                                          &\text{Printf Statement}\\
                 &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
                 &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
 \pd{dir}        &=     &\kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr}                &\text{Accessor Direction}\\
-\pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(ints)                        &\text{Literal Unsigned Integer}\\
-                &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(ints)                        &\text{Literal Signed Integer}\\
+\pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                        &\text{Literal Unsigned Integer}\\
+                &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                        &\text{Literal Signed Integer}\\
                 &\vert &\info \id                                                                     &\text{Reference}\\
                 &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
                 &\vert &\info \pds{exp}[\ints]                                                        &\text{Subindex}\\
@@ -146,6 +148,8 @@ We'd also like to thank our sponsors XXXX, and the University of California, Ber
               &\vert           &\kws{geq}            &\text{Unsigned/Signed Greater or Equal}\\
               &\vert           &\kws{eq}             &\text{Unsigned/Signed Equal}\\
               &\vert           &\kws{neq}            &\text{Unsigned/Signed Not-Equal}\\
+              &\vert           &\kws{eqv}            &\text{Unsigned/Signed Equivalence}\\
+              &\vert           &\kws{neqv}           &\text{Unsigned/Signed Not-Equivalence}\\
               &\vert           &\kws{mux}            &\text{Unsigned/Signed Multiplex}\\
               &\vert           &\kws{pad}            &\text{Unsigned/Signed Pad to Length}\\
               &\vert           &\kws{asUInt}         &\text{Unsigned/Signed Reinterpret Bits as UInt}\\
@@ -174,7 +178,7 @@ We'd also like to thank our sponsors XXXX, and the University of California, Ber
 The above definition specifies the structure of the abstract syntax tree corresponding to a FIRRTL circuit.
 Nodes in the abstract syntax tree are {\em italicized}.
 Keywords are shown in {\bf bold}.
-The special productions, id and int, indicates an identifier and an integer literal respectively.
+The special productions id, int, and string, indicates an identifier, an integer literal, and a string respectively.
 Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurrences of the token.
 
 Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL data structure.
@@ -314,24 +318,21 @@ The onreset statement is used to specify the initialization value for a register
 A memory is a stateful circuit element containing multiple elements.
 Unlike registers, memories can {\em only} be read from or written to through {\em accessors}.
 Memories always have a synchronous write, but can either be declared to be read combinatorially or synchronously.
-A synchronously read memory with a given name, and type can be instantiated with the following statement.
+A synchronously read memory with a given name, type, and size integer can be instantiated with the following statement.
 \[
 \begin{aligned}
-\kw{smem} \text{name } \kw{:} \pds{type} \\
+\kw{smem} \text{name } \kw{:} \pds{type} , size \\
 \end{aligned}
 \]
 
-A combinatorially read memory with a given name, and type can be instantiated with the following statement.
+A combinatorially read memory with a given name, type, and size integer can be instantiated with the following statement.
 \[
 \begin{aligned}
-\kw{cmem} \text{name } \kw{:} \pds{type} \\
+\kw{cmem} \text{name } \kw{:} \pds{type} , size\\
 \end{aligned}
 \]
 
-Note that, by definition, memories contain multiple elements, and hence {\em must} be declared with a vector type.
-Additionally, the type for a memory must be completely specified and cannot contain any unknown widths.
-It is an error to specify any other type for a memory.
-However, the internal type to the vector type may be a non-ground type, with the caveat that the internal type, if a bundle type, cannot contain any reverse fields.
+The type for a memory must be completely specified; it cannot contain any unknown widths or bundle types with reverse fields.
 
 A memory cannot be explicitly initialized using a special FIRRTL construct - the circuit itself must contain the proper logic to initialize the memory.
 
@@ -368,7 +369,7 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 \begin{aligned}
 &\kw{wire} i : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
 &\kw{wire} j : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
-&\kw{cmem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$}[10] \\
+&\kw{cmem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$},10 \\
 &\kw{read} \kw{accessor} reader = m[i] , clk \\
 &\kw{write} \kw{accessor} writer = m[j] , clk \\
 &writer := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
@@ -378,7 +379,7 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 
 As mentioned previously, the only way to read from or write to a memory is through an accessor.
 However, accessors are not restricted to accessing memories.
-They can be used to access {\em any} reg, cmem, smem, or wire with vector-valued type.
+They can be used to access {\em any} cmem, smem, or wire/reg with vector-valued type.
 
 \subsection{Instances}
 An instance refers to a particular instantiation of a FIRRTL module.
@@ -504,16 +505,6 @@ For a bulk connect between two components of a vector-type, the number of connec
 A bulk connect between two components of the same ground type is equivalent to a normal connect statement.
 All other combinations of types will not error, but will not generate any connect statements.
 
-\subsection{The Sub-Word Connect Statement}
-The subword connect statement is used to assign to a range of bits within a ground-typed element. It is specified by two integers that indicate the high and low bounds of the range, inclusively.
-\[
-\text{exp}[\text{hi } \kw{through} \text{lo}] \ \kw{:=} \text{output} 
-\]
-
-The subword is always UInt type, so for a connection to be legal, the expression on the right must also be of UInt type.
-The expression on the right-hand side must be able to be used as an output, and the component on the left-hand side must be able to be used as an input.
-In addition, the expression on the left-hand side must be a ground type, although this restriction may be relaxed in future spec releases.
-
 \subsection{The Conditional Statement}
 The conditional statement is used to specify a condition that must be asserted under which a list of statements hold.
 The condition must be a 1-bit unsigned integer.
@@ -604,14 +595,23 @@ In the following example, the wire w is connected to 20 unless the enable expres
 \end{aligned}
 \]
 
-\subsection{The Assert Statement}
-The assert statement is used to specify a dynamic assertion on an expression in a circuit.
+\subsection{The Stop Statement}
+The stop statement is used to halt simulations of the circuit.
 \[
 \begin{aligned}
-\kw{assert} \pds{signal}
+\kw{stop}
 \end{aligned}
 \]
-The assertion expression must be a one-bit UInt type.
+If a backend does not support stop, it will omit emitting this node.
+
+\subsection{The Printf Statement}
+The printf statement is used to print a formatted string during simulations of the circuit.
+\[
+\begin{aligned}
+\kw{printf}(\strings,\pds{exp*})
+\end{aligned}
+\] 
+If a backend does not support printf, it will omit emitting this node.
 
 \subsection{The Empty Statement}
 The empty statement is specified using the following.
@@ -835,26 +835,52 @@ Each operation accepts any combination of SInt or UInt input arguments, and alwa
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
 \kws{eq}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
+\kws{eq}(\pds{op1}:UInt, \pds{op2}:SInt)     & UInt & 1 \\
+\kws{eq}(\pds{op1}:SInt, \pds{op2}:UInt)     & UInt & 1 \\
 \kws{eq}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
 \end{array}
 \]
-The equality comparison operator accepts either two unsigned or two signed integers and checks whether they are bitwise equivalent.
+The equality comparison operator accepts either two unsigned or signed integers and checks whether they are arithmetically equal.
 The resulting value is a 1-bit unsigned integer. 
-
-If an arithmetic equals between a signed and unsigned integer is desired, one must first use convert on the unsigned integer, then use the equal primop.
 
 \subsection{Not-Equality Comparison}
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
 \kws{neq}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
+\kws{neq}(\pds{op1}:UInt, \pds{op2}:SInt)     & UInt & 1 \\
+\kws{neq}(\pds{op1}:SInt, \pds{op2}:UInt)     & UInt & 1 \\
 \kws{neq}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
 \end{array}
 \]
-The not-equality comparison operator accepts either two unsigned or two signed integers and checks whether they are not bitwise equivalent.
+The not-equality comparison operator accepts either two unsigned or signed integers and checks whether they are arithmetically not equal.
 The resulting value is a 1-bit unsigned integer. 
 
-If an arithmetic not-equals between a signed and unsigned integer is desired, one must first use convert on the unsigned integer, then use the not-equal primop.
+\subsection{Equivalence Comparison}
+\[
+\begin{array}{rll}
+\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
+\kws{eqv}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
+\kws{eqv}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
+\end{array}
+\]
+The equivalence comparison operator accepts either two unsigned or two signed integers and checks whether they are bitwise equivalent.
+The resulting value is a 1-bit unsigned integer. 
+
+For an arithmetic equals between a signed and unsigned integer, use the equality operator.
+
+\subsection{Not-Equivalence Comparison}
+\[
+\begin{array}{rll}
+\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
+\kws{neqv}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
+\kws{neqv}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
+\end{array}
+\]
+The not-equivalent comparison operator accepts either two unsigned or two signed integers and checks whether they are not bitwise equivalent.
+The resulting value is a 1-bit unsigned integer. 
+
+If an arithmetic not-equals between a signed and unsigned integer is desired, use the not-equals operator.
 
 \subsection{Multiplex}
 \[
@@ -1017,10 +1043,9 @@ The resultant width is the sum of the widths of the two operands.
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
 \kws{bit}(\pds{op}:UInt, \text{index})  & UInt & 1    \\
-\kws{bit}(\pds{op}:SInt, \text{index})  & UInt & 1    \\
 \end{array}
 \]
-The bit extraction operation accepts either an unsigned or a signed integer, plus an integer literal specifying the index of the bit to extract.
+The bit extraction operation accepts an unsigned integer, plus an integer literal specifying the index of the bit to extract.
 The resultant value is a 1-bit unsigned integer.
 The index must be non-negative and less than the width of the operand.
 An index of zero indicates the least significant bit in the operand, and an index of one less than the width the operand indicates the most significant bit in the operand.
@@ -1030,10 +1055,9 @@ An index of zero indicates the least significant bit in the operand, and an inde
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
 \kws{bits}(\pds{op}:UInt, \text{high}, \text{low})  & UInt & high - low + 1    \\
-\kws{bits}(\pds{op}:SInt, \text{high}, \text{low})  & UInt & high - low + 1    \\
 \end{array}
 \]
-The bit range extraction operation accepts either an unsigned or a signed integer, plus two integer literals that specify the high (inclusive) and low (inclusive) index of the bit range to extract.
+The bit range extraction operation accepts either an unsigned integer, plus two integer literals that specify the high (inclusive) and low (inclusive) index of the bit range to extract.
 The index must be non-negative and less than the width of the operand.
 Regardless of the type of the operand, the resultant value is a $n$-bit unsigned integer, where $n = \text{high} - \text{low} + 1$. 
 
@@ -1181,8 +1205,8 @@ The following examples demonstrate declaring wires, registers, memories, nodes, 
 \begin{verbatim}
 wire mywire : UInt<10> 
 reg myreg : UInt<10>, clk, reset 
-cmem mycombmem : UInt<10>[16]
-smem myseqmem : UInt<10>[16]
+cmem mycombmem : UInt<10>,16
+smem myseqmem : UInt<10>,16
 inst myinst : MyModule 
 infer accessor myaccessor = e[i],clk
 \end{verbatim}
@@ -1200,11 +1224,6 @@ onreset x := y
 The bulk connect statement is specified using the \verb|<>| operator.
 \begin{verbatim}
 x <> y 
-\end{verbatim}
-
-The subword connect statement is specified with \verb|[| \verb|]| brackets after the expression on the left of the \verb|:=| operator. Within the brackets is the high bit index, followed by the keyword \verb|through|, followed by the low bit index.
-\begin{verbatim}
-x[3 through 0] := y 
 \end{verbatim}
 
 The assert statement is specified using the assert keyword.
@@ -1279,10 +1298,8 @@ By restricting this version and potentially lifting these restrictions in future
 
 The following design decisions could potentially be changed in future spec revisions:
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Disallowing subword assignments to non-ground-typed elements.
 \item Disallowing zero-width types
-\item Always expanding memories into smaller memories (if the type within the vector type is a non-ground-type)
-\item Not including a \kws{printf} node
+\item Always expanding memories into smaller memories (if its type is a non-ground-type)
 \item Not including a \kws{ROM} node
 \item Custom annotations are not held in FIRRTL nodes
 \item Not requiring that all names are unique
@@ -1290,10 +1307,10 @@ The following design decisions could potentially be changed in future spec revis
 
 \section{Questions and Answers}
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Why are there four connect operators?
+\item Why are there three connect operators?
 Each is needed for a particular use case - the better question is why did we chose to create multiple connect statements instead of other constructs.
 Statements, as opposed to expressions, are very restricted in how they nest.
-Thus, the desired supported behavior (bulk connects, resets, and subword assignments) will never be used in an arbitrary nested expression where the semantics would be unintuitive.
+Thus, the desired supported behavior (bulk connects and resets) will never be used in an arbitrary nested expression where the semantics would be unintuitive.
 In addition, both the implementation and the user only needs to look at the single statement to implement it.
 
 \item Aren't there a lot of idiosyncrasies in FIRRTL?
@@ -1334,8 +1351,8 @@ If there is only a lowered circuit, we lose that ability.
 We cannot simply add vector/bundle types to LoFIRRTL as front-ends cannot easily remove whens without removing the complex types as well.
 Instead, one will need the expressiveness in FIRRTL to write a performant backend which does not need to operate on LoFIRRTL.
 
-\item Why have asserts? 
-Up for debate.
+\item Why the stop statement have no arguements?
+Like the enable for write-accessors, the lowering step will preserve the sequence of when statements under which a simulation will stop.
 
 \item Why disallow zero-width wires? 
 Very tricky to get the semantics correct.
@@ -1347,6 +1364,8 @@ We do the same thing that is done in Java, and is standard programming language 
 \item Why did/didn't you include XXX primop?
 Up for debate.
 
+\item How do you support subword assignment?
+We decided to not support subword assignment directly, and instead require the user to separate the subword assignment into a vector type. Then, the user uses the subindex expression to assign to an element in the vector.
 
 \end{enumerate}
 
