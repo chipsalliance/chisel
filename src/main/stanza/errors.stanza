@@ -1022,7 +1022,7 @@ public defn check-low-form (c:Circuit) -> Circuit :
                      check-low-form-t(info,type(f),name(e))
                if contains?(mems,name(e)) :
                   check-low-form-t(info,type(type(e) as VectorType),name(e))
-            (e) : check-low-form-t(info,type(e),to-symbol $ to-string(e))
+            (e) : false ;check-low-form-t(info,type(e),to-symbol $ to-string(e))
       defn check-low-form-s (s:Stmt) -> False :
          match(s) : 
             (s:DefWire) :
