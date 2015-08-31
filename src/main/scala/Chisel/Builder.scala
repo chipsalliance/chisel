@@ -2,10 +2,9 @@ package Chisel
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-private class Namespace(parent: Option[Namespace], kws: Option[Set[String]]) {
+private class Namespace(parent: Option[Namespace], keywords: Set[String]) {
   private var i = 0L
   private val names = collection.mutable.HashSet[String]()
-  private val keywords = kws.getOrElse(Set())
 
   private def rename(n: String) = { i += 1; s"${n}_${i}" }
 
@@ -20,11 +19,11 @@ private class Namespace(parent: Option[Namespace], kws: Option[Set[String]]) {
     res
   }
 
-  def child(kws: Option[Set[String]]): Namespace = new Namespace(Some(this), kws)
-  def child: Namespace = new Namespace(Some(this), None)
+  def child(kws: Set[String]): Namespace = new Namespace(Some(this), kws)
+  def child: Namespace = child(Set())
 }
 
-private class FIRRTLNamespace extends Namespace(None, Some(Set("mem", "node", "wire", "reg", "inst")))
+private class FIRRTLNamespace extends Namespace(None, Set("mem", "node", "wire", "reg", "inst"))
 
 private class IdGen {
   private var counter = -1L
