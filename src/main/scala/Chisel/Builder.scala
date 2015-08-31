@@ -14,9 +14,12 @@ private class Namespace(parent: Option[Namespace], keywords: Set[String]) {
   }
 
   def name(elem: String): String = {
-    val res = if(this contains elem) rename(elem) else elem
-    names += res
-    res
+    if (this contains elem) {
+      name(rename(elem))
+    } else {
+      names += elem
+      elem
+    }
   }
 
   def child(kws: Set[String]): Namespace = new Namespace(Some(this), kws)
