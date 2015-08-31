@@ -801,9 +801,11 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   private[Chisel] def ref = Builder.globalRefMap(this)
   private[Chisel] def lref = ref
 
-  private[Chisel] def computePorts = io.namedElts.unzip._2 map { x =>
-    val bundleDir = if (io.isFlip ^ x.isFlip) INPUT else OUTPUT
-    Port(x, if (x.dir == NO_DIR) bundleDir else x.dir)
+  private def ports = (clock, "clock") :: (reset, "reset") :: (io, "io") :: Nil
+
+  private[Chisel] def computePorts = ports map { case (port, name) =>
+    val bundleDir = if (port.isFlip) INPUT else OUTPUT
+    Port(port, if (port.dir == NO_DIR) bundleDir else port.dir)
   }
 
   private def connectImplicitIOs(): this.type = _parent match {
@@ -814,30 +816,24 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
     case None => this
   }
 
-  private def makeImplicitIOs(): this.type  = {
-    io.addElt("clock", clock)
-    io.addElt("reset", reset)
-    this
+  private def makeImplicitIOs(): Unit = ports map { case (port, name) =>
   }
 
   private def setRefs(): this.type = {
+    for ((port, name) <- ports)
+      port.setRef(ModuleIO(this, _namespace.name(name)))
+
     val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
-
-    makeImplicitIOs
-    _ids.foreach(_._onModuleClose)
-
-    // FIRRTL: the IO namespace is part of the module namespace
-    io.setRef(ModuleIO(this))
-    for((name, elt) <- io.namedElts) { _namespace.name(name) }
-
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
     for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
       case id: HasId => id.setRef(_namespace.name(m.getName))
       case _ =>
     }
+
     _ids.foreach(_.setRef(_namespace.name("T")))
+    _ids.foreach(_._onModuleClose)
     this
   }
 

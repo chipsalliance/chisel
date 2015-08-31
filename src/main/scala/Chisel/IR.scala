@@ -82,9 +82,9 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
 }
 
 case class Ref(name: String) extends Immediate
-case class ModuleIO(mod: Module) extends Immediate {
-  def name = mod.getRef.name
-  override def fullName(ctx: Component) = if (mod eq ctx.id) "" else name
+case class ModuleIO(mod: Module, name: String) extends Immediate {
+  override def fullName(ctx: Component) =
+    if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
 case class Slot(imm: Alias, name: String) extends Immediate {
   override def fullName(ctx: Component) =
