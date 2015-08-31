@@ -110,17 +110,17 @@ We'd also like to thank our sponsors XXXX, and the University of California, Ber
                 &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
                 &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}] , \pds{exp}           &\text{Accessor Declaration}\\
-                &\vert &\info \pd{exp} \kw{:=} \pd{exp}                                               &\text{Connect}\\
-                &\vert &\info \kw{onreset} \pd{exp} \kw{:=} \pd{exp}                                  &\text{OnReset Connect}\\
-                &\vert &\info \pd{exp} \kw{$<>$} \pd{exp}                                             &\text{Bulk Connect}\\
+                &\vert &\info \pd{exp} \kw{$<$=} \pd{exp}                                             &\text{Connect}\\
+                &\vert &\info \kw{onreset} \pd{exp} \kw{$<$=} \pd{exp}                                &\text{OnReset Connect}\\
+                &\vert &\info \pd{exp} \kw{$<$--} \pd{exp}                                             &\text{Partial Connect}\\
                 &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
                 &\vert &\info \kw{stop}                                                               &\text{Stop Statement}\\
-                &\vert &\info \kw{printf}(\strings,\pds{exp*})                                          &\text{Printf Statement}\\
+                &\vert &\info \kw{printf}(\strings,\pds{exp*})                                        &\text{Printf Statement}\\
                 &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
                 &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
 \pd{dir}        &=     &\kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr}                &\text{Accessor Direction}\\
-\pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                        &\text{Literal Unsigned Integer}\\
-                &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                        &\text{Literal Signed Integer}\\
+\pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Unsigned Integer}\\
+                &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Signed Integer}\\
                 &\vert &\info \id                                                                     &\text{Reference}\\
                 &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
                 &\vert &\info \pds{exp}[\ints]                                                        &\text{Subindex}\\
@@ -372,7 +372,7 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 &\kw{cmem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$},10 \\
 &\kw{read} \kw{accessor} reader = m[i] , clk \\
 &\kw{write} \kw{accessor} writer = m[j] , clk \\
-&writer := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
+&writer <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
 &\kw{node} temp = reader \\
 \end{aligned}
 \]
@@ -407,7 +407,7 @@ The following example illustrates directly connecting an instance to a wire:
 &\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
 &\quad \kw{inst} queue \ \kw{:} Queue \\
 &\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} in \ \kw{:} \ \kws{UInt$<$}16\kws{$>$},\kw{reverse} clk \ \kw{:} \ \kws{Clock}} \\
-&\quad connect \ \kw{:=} queue \\
+&\quad connect \ \kw{$<$=} queue \\
 \end{aligned}
 \]
 }
@@ -435,14 +435,14 @@ The following example illustrates a proper use of creating instances with differ
 &\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
 &\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
 &\quad \kw{inst} src \ \kw{:} Source \\
-&\quad src.clk \ \kw{:=} clk1 \\
+&\quad src.clk \ \kw{$<$=} clk1 \\
 &\quad \kw{inst} snk \ \kw{:} Sink \\
-&\quad snk.clk \ \kw{:=} clk2 \\
+&\quad snk.clk \ \kw{$<$=} clk2 \\
 &\quad \kw{inst} queue \ \kw{:} AsyncQueue \\
-&\quad queue.clk1 \ \kw{:=} clk1 \\
-&\quad queue.clk2 \ \kw{:=} clk2 \\
-&\quad queue.in \ \kw{:=} src.packet \\
-&\quad snk.packet \ \kw{:=} queue.out \\
+&\quad queue.clk1 \ \kw{$<$=} clk1 \\
+&\quad queue.clk2 \ \kw{$<$=} clk2 \\
+&\quad queue.in \ \kw{$<$=} src.packet \\
+&\quad snk.packet \ \kw{$<$=} queue.out \\
 \end{aligned}
 \]
 }
@@ -456,7 +456,7 @@ In general, a {\em level n} module is only allowed to contain instances of modul
 The connect statement is used to specify a physical wired connection between one hardware component to another, and is the most important statement in FIRRTL.
 The following statement is used to connect the output of some component, to the input of another component. 
 \[
-\text{input } \kw{:=} \text{output} 
+\text{input } \kw{$<$=} \text{output} 
 \]
 
 For a connection to be legal, the types of the two expressions must match exactly, including all field orientations if the elements contain bundle types.
@@ -473,7 +473,7 @@ The component on the right-hand side must be able to be used as an output, and t
 \subsection{The OnReset Connect Statement}
 The onreset connect statement is used to specify the default value for a \kws{reg} element.
 \[
-\kw{onreset} \text{r } \kw{:=} \text{output} 
+\kw{onreset} \text{r } \kw{$<$=} \text{output} 
 \]
 
 For a connection to be legal, the types of the two expressions must match exactly, including all field orientations if the elements contain bundle types.
@@ -487,22 +487,22 @@ The following example demonstrates declaring a \kws{reg}, and changing its initi
 \[
 \begin{aligned}
 & \kw{reg} r : \kws{UInt}\kws{$<$} 10 \kws{$>$} \kws{(} clk, \ reset \kws{)}\\
-& \kw{onreset} r := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42)
+& \kw{onreset} r <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42)
 \end{aligned}
 \]
 
-\subsection{The Bulk Connect Statement}
-The bulk connect statement is a connect statement that does not require both expressions to be the same type. 
-During the lowering pass, the bulk connect will expand to some number of connect statements, possibly zero statements.
+\subsection{The Partial Connect Statement}
+The partial connect statement is a connect statement that does not require both expressions to be the same type. 
+During the lowering pass, the partial connect will expand to some number of connect statements, possibly zero statements.
 The following statement is used to connect the output of some component, to the input of another component. 
 \[
-\text{input } \kw{$<>$} \text{output} 
+\text{input } \kw{$<$--} \text{output} 
 \]
 
-For a bulk connect between two components of a bundle-type, fields that are of the same type, orientation, and name will be connected.
+For a partial connect between two components of a bundle-type, fields that are of the same type, orientation, and name will be connected.
 Fields that do not match will not be connected.
-For a bulk connect between two components of a vector-type, the number of connected elements will be equal to the length of the shorter vector.
-A bulk connect between two components of the same ground type is equivalent to a normal connect statement.
+For a partial connect between two components of a vector-type, the number of connected elements will be equal to the length of the shorter vector.
+A partial connect between two components of the same ground type is equivalent to a normal connect statement.
 All other combinations of types will not error, but will not generate any connect statements.
 
 \subsection{The Conditional Statement}
@@ -525,7 +525,7 @@ This is an illegal FIRRTL circuit, and will throw a \kws{wire not initialized} e
 \begin{aligned}
 &\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
 &\kw{when} enable : \\
-&\quad w := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
+&\quad w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
 \end{aligned}
 \]
 
@@ -549,7 +549,7 @@ The following example shows a {\em conditional} connection inside a when stateme
 \begin{aligned}
 &\kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
 &\kw{when} enable : \\
-&\quad r := \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
+&\quad r <= \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
 \end{aligned}
 \]
 
@@ -558,7 +558,7 @@ The following shows an {\em unconditional} connection inside a when statement, w
 \begin{aligned}
 &\kw{when} enable : \\
 &\quad \kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
-&\quad r := \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
+&\quad r <= \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
 \end{aligned}
 \]
 
@@ -579,8 +579,8 @@ In the following example, the wire w is connected to 42, not 20.
 \[
 \begin{aligned}
 &\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&w := \kws{UInt}\kws{$<$} ? \kws{$>$}(20) \\
-&w := \kws{UInt}\kws{$<$} ? \kws{$>$}(42) \\
+&w <= \kws{UInt}\kws{$<$} ? \kws{$>$}(20) \\
+&w <= \kws{UInt}\kws{$<$} ? \kws{$>$}(42) \\
 \end{aligned}
 \]
 
@@ -589,9 +589,9 @@ In the following example, the wire w is connected to 20 unless the enable expres
 \[
 \begin{aligned}
 &\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&w := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(20) \\
+&w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(20) \\
 &\kw{when} enable : \\
-&\quad w := \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
+&\quad w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
 \end{aligned}
 \]
 
@@ -1085,8 +1085,8 @@ The following circuit is lowered:
 &\quad \kw{input} \text{inc : UInt$<$1$>$}                           \\
 &\quad \kw{output} \text{out : UInt$<$3$>$}                         \\
 &\quad \kw{reg} \text{counter : UInt$<$3$>$, clk, reset} \\
-&\quad \kw{when} \text{inc : counter := addw(counter, UInt$<$1$>$(1))}   \\
-&\quad \text{out := counter}  \\
+&\quad \kw{when} \text{inc : counter $<$= addw(counter, UInt$<$1$>$(1))}   \\
+&\quad \text{out $<$= counter}  \\
 \end{aligned}
 \]
 
@@ -1172,7 +1172,7 @@ module mymodule :
    input a: UInt<1>
    output b: UInt<1>
    clock clk: UInt<1>
-   b := a
+   b <= a
 \end{verbatim}
 
 \subsection*{Types}
@@ -1211,19 +1211,19 @@ inst myinst : MyModule
 infer accessor myaccessor = e[i],clk
 \end{verbatim}
 
-The connect statement is specified using the \verb|:=| operator.
+The connect statement is specified using the \verb|<=| operator.
 \begin{verbatim}
-x := y
+x <= y
 \end{verbatim}
 
-The onreset connect statement is specified using the onreset keyword and the \verb|:=| operator.
+The onreset connect statement is specified using the onreset keyword and the \verb|<=| operator.
 \begin{verbatim}
-onreset x := y 
+onreset x <= y 
 \end{verbatim}
 
-The bulk connect statement is specified using the \verb|<>| operator.
+The partial connect statement is specified using the \verb|<-| operator.
 \begin{verbatim}
-x <> y 
+x <- y 
 \end{verbatim}
 
 The assert statement is specified using the assert keyword.
@@ -1233,30 +1233,30 @@ assert x
 
 The conditional statement is specified with the \verb|when| keyword.
 \begin{verbatim}
-when x : x := y else : x := z
+when x : x <= y else : x <= z
 \end{verbatim}
 Or by using indentation structuring:
 \begin{verbatim}
 when x :
-   x := y
+   x <= y
 else :
-   x := z
+   x <= z
 \end{verbatim}
 
 If there is no alternative branch specified, the parser will automatically insert an empty statement.
 \begin{verbatim}
 when x :
-   x := y
+   x <= y
 \end{verbatim}
 
 For convenience when expressing nested conditional statements, the colon following the \verb|else| keyword may be elided if the next statement is another conditional statement.
 \begin{verbatim}
 when x :
-   x := y
+   x <= y
 else when y :
-   x := z
+   x <= z
 else :
-   x := w
+   x <= w
 \end{verbatim}
 
 \subsection*{Expressions}
@@ -1310,7 +1310,7 @@ The following design decisions could potentially be changed in future spec revis
 \item Why are there three connect operators?
 Each is needed for a particular use case - the better question is why did we chose to create multiple connect statements instead of other constructs.
 Statements, as opposed to expressions, are very restricted in how they nest.
-Thus, the desired supported behavior (bulk connects and resets) will never be used in an arbitrary nested expression where the semantics would be unintuitive.
+Thus, the desired supported behavior (partial connects, full connects, and resets) will never be used in an arbitrary nested expression where the semantics would be unintuitive.
 In addition, both the implementation and the user only needs to look at the single statement to implement it.
 
 \item Aren't there a lot of idiosyncrasies in FIRRTL?
@@ -1323,7 +1323,7 @@ However, at this point, we just need to push more code through.
 \item Why have a separate construct for initializing a register?
 The problem is initializing a register with a vector/bundle type, where a subset of the fields are initialized.
 If the initial value is kept with the declaration, we would need a new construct to specify a subset of values of ALL (potentially) nested vector/bundle types.
-It makes much more sense to separate initialization from the declaration, and use something like a := to initialize the fields/vector sub-components of the register.
+It makes much more sense to separate initialization from the declaration, and use something like a <= to initialize the fields/vector sub-components of the register.
 The next question is why not just have users specify the initial value using their own "when reset :" statement.
 This doesn't work because of last connect semantics - the user could easily clobber their initialization when statement without knowing.
 Creating an onreset statement does two things: (1) specifies to the USER exactly what the reset value will be for any sub-component of a register, (2) encapsulates the reset value in a way that is easy for the implementation to special case it (so it doesn't get clobbered).
