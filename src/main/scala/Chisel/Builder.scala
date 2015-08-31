@@ -26,8 +26,6 @@ private class Namespace(parent: Option[Namespace], keywords: Set[String]) {
   def child: Namespace = child(Set())
 }
 
-private class FIRRTLNamespace extends Namespace(None, Set("mem", "node", "wire", "reg", "inst"))
-
 private class IdGen {
   private var counter = -1L
   def next: Long = {
@@ -70,7 +68,7 @@ class RefMap {
 
 private class DynamicContext {
   val idGen = new IdGen
-  val globalNamespace = new FIRRTLNamespace
+  val globalNamespace = new Namespace(None, Set())
   val globalRefMap = new RefMap
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
