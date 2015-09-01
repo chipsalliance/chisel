@@ -207,7 +207,7 @@ sealed abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
   def width: Width = flatten.map(_.width).reduce(_ + _)
 }
 
-sealed class Vec[T <: Data](gen: => T, val length: Int)
+sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     extends Aggregate(gen.dir) with VecLike[T] {
   private val self = IndexedSeq.fill(length)(gen)
 
@@ -438,7 +438,7 @@ abstract trait Num[T <: Data] {
   def max(b: T): T = Mux(this < b, b, this.asInstanceOf[T])
 }
 
-sealed class UInt(dir: Direction, width: Width, lit: Option[ULit] = None) extends Bits(dir, width, lit) with Num[UInt] {
+sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULit] = None) extends Bits(dir, width, lit) with Num[UInt] {
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"UInt<$width>"
@@ -529,7 +529,7 @@ trait UIntFactory {
 object Bits extends UIntFactory
 object UInt extends UIntFactory
 
-sealed class SInt(dir: Direction, width: Width, lit: Option[SLit] = None) extends Bits(dir, width, lit) with Num[SInt] {
+sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = None) extends Bits(dir, width, lit) with Num[SInt] {
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"SInt<$width>"
