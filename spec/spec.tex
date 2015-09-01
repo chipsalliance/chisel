@@ -314,17 +314,19 @@ Like wires, registers are also {\em bidirectional}, which means that they can be
 
 The onreset statement is used to specify the initialization value for a register, which is assigned to the register when the declared \pds{reset} signal is asserted.
 
+smem
+read from same address as write
+
+
 \subsection{Memories}
 A memory is a stateful circuit element containing multiple elements.
-Unlike registers, memories can {\em only} be read from or written to through {\em accessors}.
-Memories always have a synchronous write, but can either be declared to be read combinatorially or synchronously.
-A synchronously read memory with a given name, type, and size integer can be instantiated with the following statement.
-\[
-\begin{aligned}
-\kw{smem} \text{name } \kw{:} \pds{type} , size \\
-\end{aligned}
-\]
+The type for a memory must be completely specified; it cannot contain any unknown widths or bundle types with reverse fields.
+Unlike registers, memories can {\em only} be read from or written to through {\em accessors}, and cannot be initialized using a special FIRRTL construct 
+Instead, the circuit itself must contain the proper logic to initialize the memory.
 
+Additionally, if a memory is written via two or more accessors to the same memory address, the resulting stored value is undefined.
+
+Memories always have a synchronous write, but can either be declared to be read combinatorially or synchronously.
 A combinatorially read memory with a given name, type, and size integer can be instantiated with the following statement.
 \[
 \begin{aligned}
@@ -332,9 +334,14 @@ A combinatorially read memory with a given name, type, and size integer can be i
 \end{aligned}
 \]
 
-The type for a memory must be completely specified; it cannot contain any unknown widths or bundle types with reverse fields.
+A synchronously read memory with a given name, type, and size integer can be instantiated with the following statement.
+\[
+\begin{aligned}
+\kw{smem} \text{name } \kw{:} \pds{type} , size \\
+\end{aligned}
+\]
 
-A memory cannot be explicitly initialized using a special FIRRTL construct - the circuit itself must contain the proper logic to initialize the memory.
+A synchronously read memory has the additional restriction that a read to an address on the same cycle its written returns an undefined value.
 
 \subsection{Nodes}
 A node is simply a named intermediate value in a circuit, and is akin to a pointer in the C programming language.
@@ -380,6 +387,8 @@ The accessor, \pds{writer}, acts as a memory write port that writes 42 to the in
 As mentioned previously, the only way to read from or write to a memory is through an accessor.
 However, accessors are not restricted to accessing memories.
 They can be used to access {\em any} cmem, smem, or wire/reg with vector-valued type.
+
+An accessor passed a poisoned value as an index writes or reads a poisoned value.
 
 \subsection{Instances}
 An instance refers to a particular instantiation of a FIRRTL module.
