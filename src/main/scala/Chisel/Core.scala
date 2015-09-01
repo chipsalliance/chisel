@@ -501,21 +501,32 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def asUInt(): UInt = this
 }
 
-trait UIntFactory {
+sealed trait UIntFactory {
+  /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(NO_DIR, Width())
-  def apply(dir: Direction): UInt = apply(dir, Width())
+  /** Create a UInt type or port with fixed width. */
   def apply(dir: Direction = NO_DIR, width: Int): UInt = apply(dir, Width(width))
-  def apply(dir: Direction, width: Width): UInt = new UInt(dir, width)
-  def apply(width: Width): UInt = new UInt(NO_DIR, width)
+  /** Create a UInt port with inferred width. */
+  def apply(dir: Direction): UInt = apply(dir, Width())
 
+  /** Create a UInt literal with inferred width. */
   def apply(value: BigInt): UInt = apply(value, Width())
+  /** Create a UInt literal with fixed width. */
   def apply(value: BigInt, width: Int): UInt = apply(value, Width(width))
+  /** Create a UInt literal with inferred width. */
+  def apply(n: String): UInt = apply(parse(n), parsedWidth(n))
+  /** Create a UInt literal with fixed width. */
+  def apply(n: String, width: Int): UInt = apply(parse(n), width)
+
+  /** Create a UInt type with specified width. */
+  def apply(width: Width): UInt = apply(NO_DIR, width)
+  /** Create a UInt port with specified width. */
+  def apply(dir: Direction, width: Width): UInt = new UInt(dir, width)
+  /** Create a UInt literal with specified width. */
   def apply(value: BigInt, width: Width): UInt = {
     val lit = ULit(value, width)
     new UInt(NO_DIR, lit.width, Some(lit))
   }
-  def apply(n: String, width: Int): UInt = apply(parse(n), width)
-  def apply(n: String): UInt = apply(parse(n), parsedWidth(n))
 
   private def parse(n: String) =
     Literal.stringToVal(n(0), n.substring(1, n.length))
@@ -525,9 +536,12 @@ trait UIntFactory {
     else Width()
 }
 
-// Bits constructors are identical to UInt constructors.
-object Bits extends UIntFactory
+/** Provides a set of operations to create UInt types and literals. */
 object UInt extends UIntFactory
+
+/** Provides a set of operations to create UInt types and literals.
+  * Identical in functionality to the UInt companion object. */
+object Bits extends UIntFactory
 
 sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = None) extends Bits(dir, width, lit) with Num[SInt] {
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
@@ -584,15 +598,25 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   def asSInt(): SInt = this
 }
 
+/** Provides a set of operations to create SInt types and literals. */
 object SInt {
+  /** Create an SInt type with inferred width. */
   def apply(): SInt = apply(NO_DIR, Width())
-  def apply(dir: Direction): SInt = apply(dir, Width())
+  /** Create an SInt type or port with fixed width. */
   def apply(dir: Direction = NO_DIR, width: Int): SInt = apply(dir, Width(width))
-  def apply(dir: Direction, width: Width): SInt = new SInt(dir, width)
-  def apply(width: Width): SInt = new SInt(NO_DIR, width)
+  /** Create an SInt port with inferred width. */
+  def apply(dir: Direction): SInt = apply(dir, Width())
 
+  /** Create an SInt literal with inferred width. */
   def apply(value: BigInt): SInt = apply(value, Width())
+  /** Create an SInt literal with fixed width. */
   def apply(value: BigInt, width: Int): SInt = apply(value, Width(width))
+
+  /** Create an SInt type with specified width. */
+  def apply(width: Width): SInt = new SInt(NO_DIR, width)
+  /** Create an SInt port with specified width. */
+  def apply(dir: Direction, width: Width): SInt = new SInt(dir, width)
+  /** Create an SInt literal with specified width. */
   def apply(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
     new SInt(NO_DIR, lit.width, Some(lit))
