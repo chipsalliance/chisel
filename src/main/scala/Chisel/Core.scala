@@ -168,7 +168,8 @@ object SeqMem {
 }
 
 sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
-  def read(addr: UInt, enable: Bool): T = read(addr) // TODO read enable
+  def read(addr: UInt, enable: Bool): T =
+    read(Mux(enable, addr, Poison(addr)))
 }
 
 object Vec {
