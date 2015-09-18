@@ -35,9 +35,8 @@ object debug {
   def apply (arg: Data) = arg
 }
 
-/** *Data* is part of the *Node* Composite Pattern class hierarchy.
-  It is the root of the type system which includes composites (Bundle, Vec)
-  and atomic types (UInt, SInt, etc.).
+/** *Data* is the root of the type system which includes
+  Aggregate (Bundle, Vec) and Element (UInt, SInt, etc.).
 
   Instances of Data are meant to help with construction and correctness
   of a logic graph. They will trimmed out of the graph before a *Backend*

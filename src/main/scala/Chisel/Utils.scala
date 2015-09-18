@@ -199,23 +199,23 @@ object MuxLookup {
 
 }
 
-/** Fill fans out a Node to multiple copies */
+/** Fill fans out a UInt to multiple copies */
 object Fill {
-  /** Fan out mod n times */
-  def apply(n: Int, y: UInt): UInt = {
+  /** Fan out x n times */
+  def apply(n: Int, x: UInt): UInt = {
     n match {
       case 0 => UInt(width=0)
-      case 1 => y
-      case x if n > 1 =>
+      case 1 => x
+      case y if n > 1 =>
         val p2 = Array.ofDim[UInt](log2Up(n+1))
-        p2(0) = y
+        p2(0) = x
         for (i <- 1 until p2.length)
           p2(i) = Cat(p2(i-1), p2(i-1))
-        Cat((0 until log2Up(x+1)).filter(i => (x & (1 << i)) != 0).map(p2(_)))
+        Cat((0 until log2Up(y+1)).filter(i => (y & (1 << i)) != 0).map(p2(_)))
       case _ => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
     }
   }
-  /** Fan out mod n times */
+  /** Fan out x n times */
   def apply(n: Int, x: Bool): UInt =
     if (n > 1) UInt(0,n) - x
     else apply(n, x: UInt)
