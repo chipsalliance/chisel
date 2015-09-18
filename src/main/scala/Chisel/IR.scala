@@ -38,19 +38,14 @@ object PrimOp {
   val AsSIntOp = PrimOp("asSInt")
 }
 
-abstract class Immediate {
+abstract class Arg {
   def fullName(ctx: Component): String = name
   def name: String
 }
 
-abstract class Arg extends Immediate {
-  def name: String
-}
-
-case class Alias(id: HasId) extends Arg {
+case class Node(id: HasId) extends Arg {
   override def fullName(ctx: Component) = id.getRef.fullName(ctx)
   def name = id.getRef.name
-  def emit: String = s"Alias($id)"
 }
 
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
@@ -81,17 +76,17 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def minWidth = 1 + n.bitLength
 }
 
-case class Ref(name: String) extends Immediate
-case class ModuleIO(mod: Module, name: String) extends Immediate {
+case class Ref(name: String) extends Arg
+case class ModuleIO(mod: Module, name: String) extends Arg {
   override def fullName(ctx: Component) =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
-case class Slot(imm: Alias, name: String) extends Immediate {
+case class Slot(imm: Node, name: String) extends Arg {
   override def fullName(ctx: Component) =
     if (imm.fullName(ctx).isEmpty) name
     else s"${imm.fullName(ctx)}.${name}"
 }
-case class Index(imm: Immediate, value: Int) extends Immediate {
+case class Index(imm: Arg, value: Int) extends Arg {
   def name = s"[$value]"
   override def fullName(ctx: Component) = s"${imm.fullName(ctx)}[$value]"
 }
@@ -143,16 +138,16 @@ case class DefWire(id: Data) extends Definition
 case class DefRegister(id: Data, clock: Arg, reset: Arg) extends Definition
 case class DefMemory(id: HasId, t: Data, size: Int, clock: Arg) extends Definition
 case class DefSeqMemory(id: HasId, t: Data, size: Int, clock: Arg) extends Definition
-case class DefAccessor[T <: Data](id: T, source: Alias, direction: Direction, index: Arg) extends Definition
+case class DefAccessor[T <: Data](id: T, source: Node, direction: Direction, index: Arg) extends Definition
 case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
 case class DefPoison[T <: Data](id: T) extends Definition
 case class WhenBegin(pred: Arg) extends Command
 case class WhenElse() extends Command
 case class WhenEnd() extends Command
-case class Connect(loc: Alias, exp: Arg) extends Command
-case class BulkConnect(loc1: Alias, loc2: Alias) extends Command
-case class ConnectInit(loc: Alias, exp: Arg) extends Command
-case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Immediate
+case class Connect(loc: Node, exp: Arg) extends Command
+case class BulkConnect(loc1: Node, loc2: Node) extends Command
+case class ConnectInit(loc: Node, exp: Arg) extends Command
+case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
 
 case class Circuit(name: String, components: Seq[Component], refMap: RefMap, parameterDump: ParameterDump) {

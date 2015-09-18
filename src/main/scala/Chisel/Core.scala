@@ -68,7 +68,7 @@ abstract class Data(dirArg: Direction) extends HasId {
     pushCommand(Connect(this.lref, that.ref))
   private[Chisel] def bulkConnect(that: Data): Unit =
     pushCommand(BulkConnect(this.lref, that.lref))
-  private[Chisel] def lref: Alias = Alias(this)
+  private[Chisel] def lref: Node = Node(this)
   private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
   private[Chisel] def cloneTypeWidth(width: Width): this.type
   private[Chisel] def toType: String
@@ -122,7 +122,7 @@ object Reg {
 
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     val x = makeType(t, next, init)
-    pushCommand(DefRegister(x, Alias(x._parent.get.clock), Alias(x._parent.get.reset))) // TODO multi-clock
+    pushCommand(DefRegister(x, Node(x._parent.get.clock), Node(x._parent.get.reset))) // TODO multi-clock
     if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
     if (next != null) 
@@ -136,7 +136,7 @@ object Mem {
   def apply[T <: Data](t: T, size: Int): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mem, mt, size, Alias(mt._parent.get.clock))) // TODO multi-clock
+    pushCommand(DefMemory(mem, mt, size, Node(mt._parent.get.clock))) // TODO multi-clock
     mem
   }
 }
@@ -144,7 +144,7 @@ object Mem {
 sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
   def apply(idx: Int): T = apply(UInt(idx))
   def apply(idx: UInt): T =
-    pushCommand(DefAccessor(t.cloneType, Alias(this), NO_DIR, idx.ref)).id
+    pushCommand(DefAccessor(t.cloneType, Node(this), NO_DIR, idx.ref)).id
 
   def read(idx: UInt): T = apply(idx)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
@@ -161,7 +161,7 @@ object SeqMem {
   def apply[T <: Data](t: T, size: Int): SeqMem[T] = {
     val mt  = t.cloneType
     val mem = new SeqMem(mt, size)
-    pushCommand(DefSeqMemory(mem, mt, size, Alias(mt._parent.get.clock))) // TODO multi-clock
+    pushCommand(DefSeqMemory(mem, mt, size, Node(mt._parent.get.clock))) // TODO multi-clock
     mem
   }
 }
@@ -237,7 +237,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   def apply(idx: UInt): T = {
     val x = gen
-    pushCommand(DefAccessor(x, Alias(this), NO_DIR, idx.ref))
+    pushCommand(DefAccessor(x, Node(this), NO_DIR, idx.ref))
     x
   }
 

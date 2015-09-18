@@ -41,7 +41,7 @@ private[Chisel] trait HasId {
 
   private[Chisel] val _refMap = Builder.globalRefMap
   private[Chisel] val _id = Builder.idGen.next
-  private[Chisel] def setRef(imm: Immediate) = _refMap.setRef(this, imm)
+  private[Chisel] def setRef(imm: Arg) = _refMap.setRef(this, imm)
   private[Chisel] def setRef(name: String) = _refMap.setRef(this, name)
   private[Chisel] def setRef(parent: HasId, name: String) = _refMap.setField(parent, this, name)
   private[Chisel] def setRef(parent: HasId, index: Int) = _refMap.setIndex(parent, this, index)
@@ -49,21 +49,21 @@ private[Chisel] trait HasId {
 }
 
 class RefMap {
-  private val _refmap = new HashMap[Long,Immediate]()
+  private val _refmap = new HashMap[Long,Arg]()
 
-  private[Chisel] def setRef(id: HasId, ref: Immediate): Unit =
+  private[Chisel] def setRef(id: HasId, ref: Arg): Unit =
     _refmap(id._id) = ref
 
   private[Chisel] def setRef(id: HasId, name: String): Unit =
     if (!_refmap.contains(id._id)) setRef(id, Ref(name))
 
   private[Chisel] def setField(parentid: HasId, id: HasId, name: String): Unit =
-    _refmap(id._id) = Slot(Alias(parentid), name)
+    _refmap(id._id) = Slot(Node(parentid), name)
 
   private[Chisel] def setIndex(parentid: HasId, id: HasId, index: Int): Unit =
-    _refmap(id._id) = Index(Alias(parentid), index)
+    _refmap(id._id) = Index(Node(parentid), index)
 
-  def apply(id: HasId): Immediate = _refmap(id._id)
+  def apply(id: HasId): Arg = _refmap(id._id)
 }
 
 private class DynamicContext {
