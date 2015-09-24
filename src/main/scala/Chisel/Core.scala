@@ -172,6 +172,9 @@ sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
 }
 
 object Vec {
+  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.cloneType, n)
+  
+  @deprecated("Chisel3 vec argument order should be n, gen - this will be removed by Chisel3 official release", "now")
   def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
   /** Returns a new *Vec* from a sequence of *Data* nodes.
     */
