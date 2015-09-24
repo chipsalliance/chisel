@@ -9,17 +9,12 @@ circuit CondRead :
 
     smem mem : UInt<20>[128],clk
     
-    poison xxx : UInt<20>
+    poison xxx : UInt<6>
     wire data : UInt<20>
-    data := xxx
-    when pred :
-      read accessor readport = mem[index]
-      data := readport
-    
-    out := data
+    read accessor readport = mem[mux(pred,index,xxx)]
+    out := readport
 
 
-; CHECK: poison index_0 : UInt<6>
 ; CHECK: read accessor readport = mem[mux(pred,index,index_0)]
 ; CHECK: Done!
 
