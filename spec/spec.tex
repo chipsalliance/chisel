@@ -108,6 +108,7 @@ We'd also like to thank our sponsors XXXX, and the University of California, Ber
                 &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \ints                                 &\text{Sequential Memory Declaration}\\
                 &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \ints                                 &\text{Combinational Memory Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
+                &\vert &\info \kw{poison} \id \kw{:} \id                                              &\text{Poison Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
                 &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}] , \pds{exp}           &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{$<$=} \pd{exp}                                             &\text{Connect}\\
@@ -342,6 +343,17 @@ A synchronously read memory with a given name, type, and size integer can be ins
 \]
 
 A synchronously read memory has the additional restriction that a read to an address on the same cycle its written returns an undefined value.
+
+\subsection{Poisons}
+A poison component is a named combinational circuit element that holds a random/garbage value.
+It cannot be connected to using the connect statement, and its type cannot contain a bundle with a flipped value.
+
+A poison component with a given name and type can be instantiated with the following statement.
+\[
+\kw{poison} \text{name } \kw{:} \pd{type} \\
+\]
+
+Declared poisons are {\em unidirectional}, which means that they can only be used as a source (being on the right-hand side of a connect statement).
 
 \subsection{Nodes}
 A node is simply a named intermediate value in a circuit, and is akin to a pointer in the C programming language.
@@ -1210,13 +1222,14 @@ UInt<16>[10]
 \end{verbatim}
 
 \subsection*{Statements}
-The following examples demonstrate declaring wires, registers, memories, nodes, instances, and accessors.
+The following examples demonstrate declaring wires, registers, memories, nodes, instances, poisons, and accessors.
 \begin{verbatim}
 wire mywire : UInt<10> 
 reg myreg : UInt<10>, clk, reset 
 cmem mycombmem : UInt<10>,16
 smem myseqmem : UInt<10>,16
 inst myinst : MyModule 
+poison mypoison : UInt<10> 
 infer accessor myaccessor = e[i],clk
 \end{verbatim}
 
