@@ -766,15 +766,26 @@ class Bundle extends Aggregate(NO_DIR) {
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
 
   override def cloneType : this.type = {
+    // If the user did not provide a cloneType method, try invoking one of
+    // the following constructors, not all of which necessarily exist:
+    // - A zero-parameter constructor
+    // - A one-paramater constructor, with null as the argument
+    // - A one-parameter constructor for a nested Bundle, with the enclosing
+    //   parent Module as the argument
+    val constructor = this.getClass.getConstructors.head
     try {
-      val constructor = this.getClass.getConstructors.head
-      val res = constructor.newInstance(Seq.fill(constructor.getParameterTypes.size)(null):_*)
-      res.asInstanceOf[this.type]
+      val args = Seq.fill(constructor.getParameterTypes.size)(null)
+      constructor.newInstance(args:_*).asInstanceOf[this.type]
     } catch {
-      case npe: java.lang.reflect.InvocationTargetException if npe.getCause.isInstanceOf[java.lang.NullPointerException] =>
-        Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
-        this
-      case npe: java.lang.reflect.InvocationTargetException =>
+      case e: java.lang.reflect.InvocationTargetException if e.getCause.isInstanceOf[java.lang.NullPointerException] =>
+        try {
+          constructor.newInstance(_parent.get).asInstanceOf[this.type]
+        } catch {
+          case _: java.lang.reflect.InvocationTargetException =>
+            Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
+            this
+        }
+      case _: java.lang.reflect.InvocationTargetException =>
         Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method")
         this
     }
