@@ -33,7 +33,7 @@ smoke:
 	$(SBT) $(SBT_FLAGS) compile
 
 publish-local:
-	$(SBT) $(SBT_FLAGS) +publish-local
+	$(SBT) $(SBT_FLAGS) publish-local
 
 test:
 	$(SBT) $(SBT_FLAGS) test
@@ -45,7 +45,7 @@ coverage:
 	$(SBT) $(SBT_FLAGS) coverageReport
 
 clean:
-	$(SBT) $(SBT_FLAGS) +clean
+	$(SBT) $(SBT_FLAGS) clean
 ifneq (,$(CLEAN_DIRS))
 	for dir in $(CLEAN_DIRS); do $(MAKE) -C $$dir clean; done
 endif
@@ -65,8 +65,8 @@ site:
 # and we don't want code with those dependencies published.
 # We need to run the coverage tests last, since Jenkins will fail the build if it can't find their results.
 jenkins-build: clean
-	$(SBT) $(SBT_FLAGS) +test
-	$(SBT) $(SBT_FLAGS) +clean +publish-local
+	$(SBT) $(SBT_FLAGS) test
+	$(SBT) $(SBT_FLAGS) clean publish-local
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
 
