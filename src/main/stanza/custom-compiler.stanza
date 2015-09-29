@@ -28,7 +28,7 @@ public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
       CheckGenders()
       ExpandAccessors()
       LowerToGround()
-      ExpandIndexedConnects()
+      InlineIndexed()
       InferTypes()
       CheckGenders()
       ExpandWhens()
