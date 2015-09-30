@@ -2242,6 +2242,33 @@ defn inline-instances (c:Circuit) :
    val top = (for m in modules(c) find : name(m) == main(c)) as InModule
    Circuit(info(c),list(InModule(info(top),name(top),ports(top),inline-inst(body(top)))),main(c))
 
+;================= Bring to Real IR ========================
+; Returns a new Circuit with only real IR nodes.
+public defstruct ToRealIR <: Pass
+public defmethod pass (b:ToRealIR) -> (Circuit -> Circuit) : to-real-ir
+public defmethod name (b:ToRealIR) -> String : "Real IR"
+public defmethod short-name (b:ToRealIR) -> String : "real-ir"
+
+defn to-real-ir (c:Circuit) :
+   defn to-exp (e:Expression) :
+      match(map(to-exp,e)) :
+         (e:WRef) : Ref(name(e), type(e))
+         (e:WSubfield) : Subfield(exp(e),name(e),type(e))
+         (e:WIndex) : error("Shouldn't be here")
+         (e) : e
+   defn to-stmt (s:Stmt) :
+     match(map(to-exp,s)) :
+        (e:DecFromIndexer) : error("Shouldn't be here")
+        (e:DecToIndexer) : error("Shouldn't be here")
+        (e) : map(to-stmt,e)
+
+   Circuit(info(c),modules*, main(c)) where :
+      val modules* =
+         for m in modules(c) map :
+            match(m) :
+               (m:InModule) : InModule(info(m),name(m), ports(m), to-stmt(body(m)))
+               (m:ExModule) : m
+
 
 ;================= Split Expressions ========================
 ; Intended to only work on low firrtl
@@ -2252,7 +2279,7 @@ public defmethod short-name (b:SplitExp) -> String : "split-expressions"
 
 defn full-name (e:Expression) -> Symbol|False :
    match(e) :
-      (e:WRef) : name(e)
+      (e:Ref) : name(e)
       (e) : false
 
 defn split-exp (c:Circuit) :
@@ -2272,7 +2299,7 @@ defn split-exp (c:Circuit) :
                      if n typeof False : firrtl-gensym(`F,sh)
                      else : firrtl-gensym(n as Symbol,sh)
                   add(v,DefNode(info,n*,map(split-exp-e{_,n,info},e)))
-                  WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
+                  Ref(n*,type(e))
                ;else : e
             (e) : map(split-exp-e{_,n,info},e)
       defn f (s:Stmt) -> False: split-exp-s(s,v,sh)
@@ -2312,33 +2339,6 @@ defn split-exp (c:Circuit) :
                ;println-all(["Diff: " now - before])
                InModule(info(m),name(m),ports(m),Begin(to-list(v)))
             (m:ExModule) : m
-
-;================= Bring to Real IR ========================
-; Returns a new Circuit with only real IR nodes.
-public defstruct ToRealIR <: Pass
-public defmethod pass (b:ToRealIR) -> (Circuit -> Circuit) : to-real-ir
-public defmethod name (b:ToRealIR) -> String : "Real IR"
-public defmethod short-name (b:ToRealIR) -> String : "real-ir"
-
-defn to-real-ir (c:Circuit) :
-   defn to-exp (e:Expression) :
-      match(map(to-exp,e)) :
-         (e:WRef) : Ref(name(e), type(e))
-         (e:WSubfield) : Subfield(exp(e),name(e),type(e))
-         (e:WIndex) : error("Shouldn't be here")
-         (e) : e
-   defn to-stmt (s:Stmt) :
-     match(map(to-exp,s)) :
-        (e:DecFromIndexer) : error("Shouldn't be here")
-        (e:DecToIndexer) : error("Shouldn't be here")
-        (e) : map(to-stmt,e)
-
-   Circuit(info(c),modules*, main(c)) where :
-      val modules* =
-         for m in modules(c) map :
-            match(m) :
-               (m:InModule) : InModule(info(m),name(m), ports(m), to-stmt(body(m)))
-               (m:ExModule) : m
 
 ;================= Special Rename ========================
 ; Returns a new Circuit with only real IR nodes.
@@ -2452,7 +2452,7 @@ defn pad-widths-e (desired:Long,e:Expression) -> Expression :
            else :
              map(pad-widths-e{new-desired,_},e)
          trim-pad(desired, e*)
-      (e:WRef|WSubfield|WIndex) : 
+      (e:Ref|Subfield|Index) : 
          trim-pad(desired, e)
       (e:UIntValue) : 
          val i = int-width!(type(e))
