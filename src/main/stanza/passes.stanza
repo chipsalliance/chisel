@@ -300,7 +300,7 @@ public defmethod short-name (b:RemoveSpecialChars) -> String : "rem-spec-chars"
 
 defn get-new-string (n:Char) -> String :
    switch {n == _} :
-      '_' : "_"
+      '_' : "__"
       '~' : "$A"
       '!' : "$B"
       '@' : "$C"
@@ -1152,7 +1152,7 @@ defn lower-to-ground (c:Circuit) -> Circuit :
 ;         (e:WRef) : name(e)
 ;         (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e)])
 ;         (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e))])
-;         (e) : `T
+;         (e) : `F
 ;   match(s) :
 ;      (s:DecFromIndexer) : Begin $
 ;         if length(locs(s)) == 0 : list(EmptyStmt())
@@ -1212,7 +1212,7 @@ defn get-name (e:Expression) -> Symbol :
       (e:WRef) : name(e)
       (e:WSubfield) : symbol-join([get-name(exp(e)) `. name(e)])
       (e:WIndex) : symbol-join([get-name(exp(e)) `. to-symbol(value(e))])
-      (e) : `T
+      (e) : `F
 
 defn equality (e1:Expression,i:Int) -> Expression :
    DoPrim(EQUIV-OP,list(e1,UIntValue(BigIntLit(i),UnknownWidth())),
@@ -2266,10 +2266,10 @@ defn split-exp (c:Circuit) :
                ;all-same-type? = false
                ;if not all-same-type? : 
                   ;val n* = 
-                  ;   if n typeof False : firrtl-gensym(`T,sh)
+                  ;   if n typeof False : firrtl-gensym(`F,sh)
                   ;   else : firrtl-gensym(symbol-join([n as Symbol temp-delin]),sh)
                   val n* = 
-                     if n typeof False : firrtl-gensym(`T,sh)
+                     if n typeof False : firrtl-gensym(`F,sh)
                      else : firrtl-gensym(n as Symbol,sh)
                   add(v,DefNode(info,n*,map(split-exp-e{_,n,info},e)))
                   WRef(n*,type(e),NodeKind(),UNKNOWN-GENDER)
