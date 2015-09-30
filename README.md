@@ -22,27 +22,72 @@ modifications are:
 ### Overview
 Chisel3 is much more modular than Chisel2, and the compilation pipeline looks
 like:
- - Chisel3 (Scala) to FIRRTL (this is your "Chisel RTL")
- - FIRRTL to Verilog (which then be passed into FPGA or ASIC tools)
- - Optionally, Verilog to C++ (for simulation and testing)
+ - Chisel3 (Scala) to FIRRTL (this is your "Chisel RTL").
+ - FIRRTL to Verilog (which then be passed into FPGA or ASIC tools). Repository
+ with the compiler and installation instructions are
+ [here](https://github.com/ucb-bar/firrtl).
+ - Optionally, Verilog to C++ (for simulation and testing).  
+ *TODO: Verilator support*
 
-#### Stanza
-In order to build firrtl, you need a (currently patched) copy of
-Stanza. (We should add this to the firrtl repo in utils/bin.)
+### Chisel Tutorial
+*TODO: quick howto for running chisel-tutorial*
 
-### Hello, World
+## For Hardware Engineers
+This section describes how to get started using Chisel to create a new RTL
+design from scratch.
 
-*TODO: quick "Hello, World" tutorial*
-
-## For Developers
-
-### Environment Setup
-
+### Project Setup
 *TODO: tools needed*
 
-*TODO: running Scala unit tests locally*
+*TODO: recommended sbt style, project structure* 
 
-*TODO: running circuit regression tests locally*
+### RTL and Verification
+*TODO: project boilerplate: import statements, main() contents*
+
+*TODO: recommended test structure*
+
+### Compiling to Simulation
+*TODO: commands to compile project to simulation*
+
+*TODO: running testbenches*
+
+## For Chisel Developers
+This section describes how to get started developing Chisel itself, including
+how to test your version locally against other projects that pull in Chisel
+using [sbt's managed dependencies](http://www.scala-sbt.org/0.13/tutorial/Library-Dependencies.html).
+
+### Compiling and Testing Chisel
+In the Chisel repository directory, run:
+```
+sbt compile
+```
+to compile the Chisel library. If the compilation succeeded, you can then run
+the included unit tests by invoking:
+```
+sbt *TODO WRITE ME*
+``` 
+
+*TODO: circuit test cases*
+
+### Running Projects Against Local Chisel
+To publish your version of Chisel to the local Ivy (sbt's dependency manager)
+repository, run:  
+```
+sbt publish-local
+```
+
+*PROTIP*: sbt can automatically run commands on a source change if you prefix
+the command with `~`. For example, the above command to publish Chisel locally
+becomes `sbt ~publish-local`.
+
+[sbt's manual](http://www.scala-sbt.org/0.13/docs/Publishing.html#Publishing+Locally)
+recommends that you use a `SNAPSHOT` version suffix to ensure that the local
+repository is checked for updates. 
+
+The compiled version gets placed in `~/.ivy2/local/`. You can nuke the relevant
+subfolder to un-publish your local copy of Chisel.
+
+## Technical Documentation
 
 ### Chisel3 Architecture Overview
 
@@ -62,7 +107,7 @@ Also included is:
  - **The standard library** of circuit generators, currently Utils.scala. These
  contain commonly used interfaces and constructors (like `Decoupled`, which
  wraps a signal with a ready-valid pair) as well as fully parameterizable
- circuit generators (like arbiters and muxes).
+ circuit generators (like arbiters and muxes).  
  *TODO: update once standard library gets properly broken you* 
  - *TODO: add details on the testing framework*
  - *TODO: add details on simulators*
