@@ -1218,62 +1218,65 @@ defn equality (e1:Expression,i:Int) -> Expression :
    DoPrim(EQUIV-OP,list(e1,UIntValue(BigIntLit(i),UnknownWidth())),
           List(),UIntType(UnknownWidth()))
 
-defn expand-indexed (indexer:WRef,
-                indexed-dec:Stmt,
-                stmts:Vector<Stmt>,
-                sh:HashTable<Symbol,Int>) -> Expression :
-
-   val index = index(indexed-dec as DecFromIndexer|DecToIndexer)
-   val index-name =  firrtl-gensym(get-name(index),sh)
-   val index-ref = WRef(index-name,type(index),NodeKind(),MALE) 
-
-   val replace-name = firrtl-gensym(get-name(indexer),sh)
-   val replace-ref = WRef(replace-name,type(indexer),kind(indexer),gender(indexer)) 
-
-   add(stmts, DefWire(info(indexed-dec),name(replace-ref),type(replace-ref)))
-   add(stmts, DefNode(info(indexed-dec),index-name,index))
-   match(indexed-dec) :
-      (s:DecFromIndexer) : 
-         if (gender(replace-ref) != FEMALE) : error("Shouldn't be here")
-         for (i in 0 to false, e in exps(s)) do :
-            val eq = equality(index-ref,i)
-            add(stmts,Conditionally(info(s),eq,
-                      Connect(info(s),e,replace-ref),EmptyStmt()))
-      (s:DecToIndexer) :
-         if (gender(replace-ref) != MALE) : error("Shouldn't be here")
-         add(stmts,Connect(info(s),replace-ref,head(exps(s))))
-         ;println-all(["exps: " exps(s)])
-         for (i in 1 to false, e in tail(exps(s))) do :
-            val eq = equality(index-ref,i)
-            add(stmts,Conditionally(info(s),eq,Connect(info(s),replace-ref,e),EmptyStmt()))
-   replace-ref
 
 ;------------- Inline Accessors -------------
 
+
+
 defn inline-indexed-m (m:InModule) -> InModule :
    val sh = get-sym-hash(m,keys(v-keywords))
-   val indexed-hash = HashTable<Symbol,Stmt>(symbol-hash)
-
+   val ih = HashTable<Symbol,Stmt>(symbol-hash)
    defn inline-indexed-s (s:Stmt)  -> Stmt :
       val stmts = Vector<Stmt>()
+
+      defn expand-indexed (indexer:WRef,indexed-dec:Stmt) -> Expression :
+         val index = index(indexed-dec as DecFromIndexer|DecToIndexer)
+         val index-name =  firrtl-gensym(get-name(index),sh)
+         val index-ref = WRef(index-name,type(index),NodeKind(),MALE) 
+      
+         val replace-name = firrtl-gensym(get-name(indexer),sh)
+         val replace-ref = WRef(replace-name,type(indexer),kind(indexer),gender(indexer)) 
+      
+         add(stmts, DefWire(info(indexed-dec),name(replace-ref),type(replace-ref)))
+         add(stmts, DefNode(info(indexed-dec),index-name,index))
+         match(indexed-dec) :
+            (s:DecFromIndexer) : 
+               if (gender(replace-ref) != FEMALE) : error("Shouldn't be here")
+               for (i in 0 to false, e in exps(s)) do :
+                  val eq = equality(index-ref,i)
+                  val cond = Conditionally(info(s),eq,Connect(info(s),e,replace-ref),EmptyStmt())
+                  add(stmts,map(inline-indexed-s,cond))
+            (s:DecToIndexer) :
+               if (gender(replace-ref) != MALE) : error("Shouldn't be here")
+               val cnct = Connect(info(s),replace-ref,head(exps(s)))
+               add(stmts,map(inline-indexed-e,cnct))
+               ;println-all(["exps: " exps(s)])
+               for (i in 1 to false, e in tail(exps(s))) do :
+                  val eq = equality(index-ref,i)
+                  val cond = Conditionally(info(s),eq,Connect(info(s),replace-ref,e),EmptyStmt())
+                  add(stmts,map(inline-indexed-s,cond))
+         replace-ref
+
       defn inline-indexed-e (e:Expression) -> Expression :
          match(map(inline-indexed-e,e)) :
             (e:WRef) : 
-               if key?(indexed-hash,name(e)) : 
-                  val indexer = indexed-hash[name(e)]
-                  map(inline-indexed-e,indexer)
-                  expand-indexed(e,indexer,stmts,sh)
+               if key?(ih,name(e)) : 
+                  val indexer = ih[name(e)]
+                  expand-indexed(e,indexer)
                else : e
             (e) : e
+
       match(s) :
          (s:DecFromIndexer|DecToIndexer) : 
-            indexed-hash[name(s)] = s
+            ih[name(s)] = s
+            firrtl-gensym(name(s),sh)
             add(stmts,EmptyStmt())
          (s) : 
             val s* = map(inline-indexed-e,s)
             add(stmts,map(inline-indexed-s,s*))
-      Begin(to-list(stmts))
-            
+      if length(stmts) == 1 : stmts[0]
+      else : Begin(to-list(stmts))
+
    InModule(info(m),name(m),ports(m),inline-indexed-s(body(m)))
 
 public defn inline-indexed (c:Circuit) -> Circuit :

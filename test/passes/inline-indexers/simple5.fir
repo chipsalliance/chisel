@@ -15,7 +15,7 @@ circuit top :
          o := a
 
 ;CHECK: when i :
-;CHECK: a := m$0
-;CHECK: when eqv(i_1, UInt("h1")) : a := m$1
+;CHECK: a_1 := m$0
+;CHECK: when eqv(i_1, UInt("h1")) : a_1 := m$1
 ;CHECK: Finished Inline Indexers
 ;CHECK: Done!

@@ -1,6 +1,6 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 
-; CHECK: Expand Indexed Connects
+; CHECK: Inline Indexers
 circuit top :
    module top :
       wire i : UInt
@@ -20,16 +20,17 @@ circuit top :
 
 
       infer accessor b = a[i]
-      ; CHECK: wire b{{[_$]+}}x : UInt<32>
-      ; CHECK: wire b{{[_$]+}}y : UInt<32>
-      ; CHECK: b{{[_$]+}}x := a{{[_$]+}}0{{[_$]+}}x
+      ; CHECK: wire b{{[_$]+}}x_1 : UInt<32>
       ; CHECK: node i_1 = i
-      ; CHECK: when eqv(i_1, UInt("h1")) : b{{[_$]+}}x := a{{[_$]+}}1{{[_$]+}}x      
+      ; CHECK: b{{[_$]+}}x_1 := a{{[_$]+}}0{{[_$]+}}x
+      ; CHECK: when eqv(i_1, UInt("h1")) : b{{[_$]+}}x_1 := a{{[_$]+}}1{{[_$]+}}x      
+      ; CHECK: wire b{{[_$]+}}y_1 : UInt<32>
       ; CHECK: node i_2 = i
-      ; CHECK: when eqv(i_2, UInt("h0")) : a{{[_$]+}}0{{[_$]+}}y := b{{[_$]+}}y      
-      ; CHECK: when eqv(i_2, UInt("h1")) : a{{[_$]+}}1{{[_$]+}}y := b{{[_$]+}}y      
+      ; CHECK: when eqv(i_2, UInt("h0")) : a{{[_$]+}}0{{[_$]+}}y := b{{[_$]+}}y_1
+      ; CHECK: when eqv(i_2, UInt("h1")) : a{{[_$]+}}1{{[_$]+}}y := b{{[_$]+}}y_1
       j := b.x
       b.y := UInt(1)
       
-; CHECK: Finished Expand Indexed Connects
+; CHECK: Finished Inline Indexers
+; CHECK: Done!
 
