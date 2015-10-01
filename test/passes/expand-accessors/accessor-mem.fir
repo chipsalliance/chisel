@@ -21,3 +21,4 @@ circuit top :
       z := j
 
 ; CHECK: Finished Expand Accessors
+; CHECK: Done!

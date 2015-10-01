@@ -101,6 +101,10 @@ defn NegVecSize (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Vector type size cannot be negative."]
 
+defn NegMemSize (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Memory size cannot be negative or zero."]
+
 defn IllegalUnknownWidth (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Widths must be defined for memories and poison nodes."]
@@ -312,6 +316,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
                check-name(info(s),name(s))
                names[name(s)] = true
                if has-flip?(type(s)) : add(errors, MemWithFlip(info(s), name(s)))
+               if size(s) <= 0 : add(errors,NegMemSize(info(s)))
                check-high-form-t(info(s),type(s),false)
                check-high-form-e(info(s),clock(s),names)
             (s:DefInstance) : 
@@ -394,11 +399,20 @@ defn OnResetNotReg (info:FileInfo, name:Symbol) :
    PassException $ string-join $
    [info ": [module " mname "]  Illegal on-reset to non-reg reference " name "."]
 
+defn AccessVecOrMem (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Accessors can only access vector-typed components or memories."]
+
 ;----------------- Check Kinds Pass ---------------------
 ; I may have been overeager in looking for places where mems can't be, as mems are guaranteed to have a vector
 ;   type, and this will get caught in the type check pass
 public defn check-kinds (c:Circuit) -> Circuit : 
    val errors = Vector<PassException>()
+   defn get-kind (e:Expression) -> Kind :
+      match(e) :
+         (e:WRef) : kind(e)
+         (e:WSubfield) : get-kind(exp(e))
+         (e:WIndex) : get-kind(exp(e))
    defn check-not-mem (info:FileInfo,e:Expression) -> False :
       do(check-not-mem{info,_},e) 
       match(e) :
@@ -424,7 +438,12 @@ public defn check-kinds (c:Circuit) -> Circuit :
    defn check-kinds-s (s:Stmt) -> False :
       match(s) : 
          (s:DefNode) : check-not-mem(info(s),value(s))
-         (s:DefAccessor) : check-not-mem(info(s),index(s))
+         (s:DefAccessor) : 
+            check-not-mem(info(s),index(s))
+            if (get-kind(source(s)) != MemKind()) and (not type(source(s)) typeof VectorType) :
+               println(get-kind(source(s)))
+               println(type(source(s)))
+               add(errors,AccessVecOrMem(info(s)))
          (s:Conditionally) : check-not-mem(info(s),pred(s))
          (s:Connect) : 
             check-not-mem(info(s),loc(s))
@@ -518,7 +537,6 @@ defn NodeIllegalFlips (info:FileInfo) :
 defn OnResetIllegalFlips (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  The register in onreset cannot be a bundle type with flips."]
-
 
 ;---------------- Helper Functions --------------
 defmethod equal? (t1:Type,t2:Type) -> True|False :
@@ -1030,7 +1048,7 @@ public defn check-low-form (c:Circuit) -> Circuit :
             (s:DefPoison) :
                check-low-form-t(info(s),type(s),name(s))
             (s:DefMemory) : 
-               check-low-form-t(info(s),type(type(s)),name(s))
+               check-low-form-t(info(s),type(s),name(s))
                add(mems,name(s))
             (s:DefInstance) : 
                for f in fields(type(module(s)) as BundleType) do :

@@ -217,10 +217,9 @@ defn emit-module (m:InModule) :
             val w = width!(type(s))
             add(inits,[sym " = " rand-string(w)])
          (s:DefMemory) :
-            val vtype = type(s) as VectorType
-            add(regs,["reg  " get-width(type(vtype)) " " sym " [0:" size(vtype) - 1 "];"])
-            add(inits,["for (initvar = 0; initvar < " size(vtype) "; initvar = initvar+1)"])
-            add(inits,["  " sym "[initvar] = " rand-string(width!(type(vtype))) ])
+            add(regs,["reg  " get-width(type(s)) " " sym " [0:" size(s) - 1 "];"])
+            add(inits,["for (initvar = 0; initvar < " size(s) "; initvar = initvar+1)"])
+            add(inits,["  " sym "[initvar] = " rand-string(width!(type(s))) ])
          (s:DefNode) :
             add(wires,["wire " get-width(type(value(s))) " " sym ";"])
             add(assigns,["assign " sym " = " emit(value(s)) ";"])
@@ -248,11 +247,11 @@ defn emit-module (m:InModule) :
                      updates[get-name(clock(mem-declaration))] = my-clk-update
 
                      ; emit read accessor
-                     add(wires,["wire " get-width(type(type(source(s)) as VectorType)) " " sym ";"])
+                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
                      add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
                   else :
                      ; emit read accessor
-                     add(wires,["wire " get-width(type(type(source(s)) as VectorType)) " " sym ";"])
+                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
                      add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
                WRITE : 
                   val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
