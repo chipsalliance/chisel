@@ -9,6 +9,11 @@ public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|M
 
 ;============== GENSYM STUFF ======================
 
+defn generated? (s:String) -> False|Int :
+   for i in 1 to length(s) - 1 find :
+      val sub = substring(s,i + 1)
+      s[i] == '_' and digits?(sub) and s[i - 1] != '_'
+
 public defn firrtl-gensym (s:Symbol) -> Symbol :
    firrtl-gensym(s,HashTable<Symbol,Int>(symbol-hash))
 public defn firrtl-gensym (sym-hash:HashTable<Symbol,Int>) -> Symbol :
@@ -31,11 +36,11 @@ public defn firrtl-gensym (s:Symbol,sym-hash:HashTable<Symbol,Int>) -> Symbol :
          sym-hash[s] = 0
          s
    val s* = to-string(s)
-   val i* = for i in 0 to length(s*) - 1 find :
-      s*[i] == '_' and digits?(substring(s*,i + 1))
-   match(i*) :
+   val i* = generated?(s*)
+   val nex = match(i*) :
       (i:False) : get-name(s)
       (i:Int) : get-name(to-symbol(substring(s*,0,i)))
+   nex
 
 public defn get-sym-hash (m:InModule) -> HashTable<Symbol,Int> :
    get-sym-hash(m,list())
@@ -45,8 +50,7 @@ public defn get-sym-hash (m:InModule,keywords:Streamable<Symbol>) -> HashTable<S
       sym-hash[k] = 0
    defn add-name (s:Symbol) -> False :
       val s* = to-string(s)
-      val i* = for i in 0 to length(s*) - 1 find :
-         s*[i] == '_' and digits?(substring(s*,i + 1))
+      val i* = generated?(s*)
       match(i*) :
          (i:False) : 
             if key?(sym-hash,s) :

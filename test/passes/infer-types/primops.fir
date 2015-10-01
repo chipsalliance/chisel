@@ -157,10 +157,10 @@ circuit top :
       node wnot = not(a) ;CHECK: node wnot = not(a@<t:UInt>)@<t:UInt>
       node unot = not(c) ;CHECK: node unot = not(c@<t:SInt>)@<t:SInt>
 
-      node wand_ = and(a, b) ;CHECK: node wand_ = and(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node WAND = and(a, b) ;CHECK: node WAND = and(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
       node uand = and(c, d) ;CHECK: node uand = and(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
 
-      node wor_ = or(a, b)  ;CHECK: node wor_ = or(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node WOR = or(a, b)  ;CHECK: node WOR = or(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
       node uor = or(c, d)  ;CHECK: node uor = or(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
 
       node wxor = xor(a, b) ;CHECK: node wxor = xor(a@<t:UInt>, b@<t:UInt>)@<t:UInt>

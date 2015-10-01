@@ -155,6 +155,10 @@ defn emit (e:Expression) -> String :
                for x in tail(args(e)) do :
                   v = concat(v, [" ^ " emit(x)])
                v
+      (e) : 
+         println(["Expression:" e])
+         error("Unknown expression")
+   
 
 defn emit-module (m:InModule) :
 

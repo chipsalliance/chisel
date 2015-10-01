@@ -1,5 +1,5 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p cd 2>&1 | tee %s.out ; cat %s.v | FileCheck %s
-; CHECK: out_slow_bits <= fromhost_q$deq$valid ? fromhost_q$deq$bits : tohost_q$deq$bits;
+; CHECK: out__slow__bits <= fromhost__q$deq$valid ? fromhost__q$deq$bits : tohost__q$deq$bits;
 circuit Top : 
   module Top : 
     input clock : Clock

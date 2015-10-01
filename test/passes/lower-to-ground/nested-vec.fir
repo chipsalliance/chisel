@@ -15,10 +15,8 @@ circuit top :
       ; CHECK: wire a{{[_$]+}}1{{[_$]+}}y : UInt<32>
 
       infer accessor b = a[i]
-      ; CHECK: wire b{{[_$]+}}x : UInt<32>
-      ; CHECK: wire b{{[_$]+}}y : UInt<32>
-      ; CHECK: b{{[_$]+}}x := (a{{[_$]+}}0{{[_$]+}}x a{{[_$]+}}1{{[_$]+}}x)[i]
-      ; CHECK: (a{{[_$]+}}0{{[_$]+}}y a{{[_$]+}}1{{[_$]+}}y)[i] := b{{[_$]+}}y
+      ; CHECK: indexer b{{[_$]+}}x = (a{{[_$]+}}0{{[_$]+}}x a{{[_$]+}}1{{[_$]+}}x)[i] : UInt<32>
+      ; CHECK: indexer (a{{[_$]+}}0{{[_$]+}}y a{{[_$]+}}1{{[_$]+}}y)[i] = b{{[_$]+}}y : UInt<32>
       j := b
 
       cmem m : { x : UInt<32>, y : UInt<32> }[2],clk
