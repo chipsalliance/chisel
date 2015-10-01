@@ -133,7 +133,10 @@ object Reg {
 }
 
 object Mem {
-  def apply[T <: Data](t: T, size: Int): Mem[T] = {
+  @deprecated("Chisel3 Mem argument order should be size, t - this will be removed by Chisel3 official release", "now")
+  def apply[T <: Data](t: T, size: Int): Mem[T] = apply(size, t)
+
+  def apply[T <: Data](size: Int, t: T): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
     pushCommand(DefMemory(mem, mt, size, Node(mt._parent.get.clock))) // TODO multi-clock
@@ -158,7 +161,10 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
 sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
 
 object SeqMem {
-  def apply[T <: Data](t: T, size: Int): SeqMem[T] = {
+  @deprecated("Chisel3 SeqMem argument order should be size, t - this will be removed by Chisel3 official release", "now")
+  def apply[T <: Data](t: T, size: Int): SeqMem[T] = apply(size, t)
+
+  def apply[T <: Data](size: Int, t: T): SeqMem[T] = {
     val mt  = t.cloneType
     val mem = new SeqMem(mt, size)
     pushCommand(DefSeqMemory(mem, mt, size, Node(mt._parent.get.clock))) // TODO multi-clock
