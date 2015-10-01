@@ -1519,7 +1519,9 @@ defn merge-resets (assign:HashTable<Symbol,SymbolicValue>, resets:HashTable<Symb
    val table = HashTable<Symbol,SymbolicValue>(symbol-hash)
    for i in get-unique-keys(list(assign,resets)) do :
       table[i] = match(get?(assign,i,false),get?(resets,i,false)) : 
-            (a:SymbolicValue,r:SymbolicValue) : SVMux(rsignals[i],r,a)
+            (a:SymbolicValue,r:SymbolicValue) : 
+               if r typeof SVNul : a
+               else : SVMux(rsignals[i],r,a)
             (a:SymbolicValue,r:False) : a
             (a:False,r:SymbolicValue) : SVMux(rsignals[i],r,SVNul())
             (a:False,r:False) : error("Shouldn't be here")
@@ -1537,8 +1539,9 @@ defn build-tables (s:Stmt,
          flattn[name(s)] = true
       (s:DefRegister) : 
          assign[name(s)] = SVNul()
-         flattn[name(s)] = false
+         flattn[name(s)] = true
          rsignals[name(s)] = reset(s)
+         resets[name(s)] = SVNul()
       (s:DefAccessor) : 
          assign[name(s)] = SVNul()
          flattn[name(s)] = false
@@ -1584,6 +1587,12 @@ defn build-tables (s:Stmt,
          for x in assign-a do : println-debug(x)
          println-debug("TABLE")
          for x in assign do : println-debug(x)
+         println-debug("RESET-C")
+         for x in resets-c do : println-debug(x)
+         println-debug("RESET-A")
+         for x in resets-a do : println-debug(x)
+         println-debug("RESET")
+         for x in resets do : println-debug(x)
       (s:Connect|OnReset) : 
          val key* = match(loc(s)) :
             (e:WRef) : name(e)
