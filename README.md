@@ -1,64 +1,113 @@
 # Chisel3
-chisel3 is a new FIRRTL based chisel
+Chisel3 is a new FIRRTL based chisel
 
-the current backward incompatiabilities with chisel 2.x are:
+*TODO: A better description, perhaps lifted off Chisel2's README*
 
-```scala
-val wire = Bits(width = 15)
+## Chisel2 Migration
+For those moving from Chisel2, there were some backwards incompatible changes
+and your RTL needs to be modified to work with Chisel3. The required
+modifications are: 
+
+ - Wire declaration style:  
+   ```
+   val wire = Bits(width = 15)
+   ```  
+   becomes (in Chisel3):  
+   ```
+   val wire = Wire(Bits(width = 15))
+   ```
+
+## Getting Started
+
+### Overview
+Chisel3 is much more modular than Chisel2, and the compilation pipeline looks
+like:
+ - Chisel3 (Scala) to FIRRTL (this is your "Chisel RTL").
+ - FIRRTL to Verilog (which then be passed into FPGA or ASIC tools). Repository
+ with the compiler and installation instructions are
+ [here](https://github.com/ucb-bar/firrtl).
+ - Optionally, Verilog to C++ (for simulation and testing).  
+ *TODO: Verilator support*
+
+### Chisel Tutorial
+*TODO: quick howto for running chisel-tutorial*
+
+## For Hardware Engineers
+This section describes how to get started using Chisel to create a new RTL
+design from scratch.
+
+### Project Setup
+*TODO: tools needed*
+
+*TODO: recommended sbt style, project structure* 
+
+### RTL and Verification
+*TODO: project boilerplate: import statements, main() contents*
+
+*TODO: recommended test structure*
+
+### Compiling to Simulation
+*TODO: commands to compile project to simulation*
+
+*TODO: running testbenches*
+
+## For Chisel Developers
+This section describes how to get started developing Chisel itself, including
+how to test your version locally against other projects that pull in Chisel
+using [sbt's managed dependencies](http://www.scala-sbt.org/0.13/tutorial/Library-Dependencies.html).
+
+### Compiling and Testing Chisel
+In the Chisel repository directory, run:
 ```
-is
+sbt compile
+```
+to compile the Chisel library. If the compilation succeeded, you can then run
+the included unit tests by invoking:
+```
+sbt *TODO WRITE ME*
+``` 
 
-```scala
-val wire = Wire(Bits(width = 15))
+*TODO: circuit test cases*
+
+### Running Projects Against Local Chisel
+To publish your version of Chisel to the local Ivy (sbt's dependency manager)
+repository, run:  
+```
+sbt publish-local
 ```
 
-## Chisel3 Infrastructure.
+*PROTIP*: sbt can automatically run commands on a source change if you prefix
+the command with `~`. For example, the above command to publish Chisel locally
+becomes `sbt ~publish-local`.
 
-Chisel3 is much more modular than Chisel2. What was once provided by a
-monolithic Scala program, is provided by separate components.
+[sbt's manual](http://www.scala-sbt.org/0.13/docs/Publishing.html#Publishing+Locally)
+recommends that you use a `SNAPSHOT` version suffix to ensure that the local
+repository is checked for updates. 
 
-Currently, those components are:
- - Chisel3 (Scala)
- - firrtl (Stanza)
+The compiled version gets placed in `~/.ivy2/local/`. You can nuke the relevant
+subfolder to un-publish your local copy of Chisel.
 
-and for the C++ simulator
- - flo-llvm (C++)
- - clang
+## Technical Documentation
 
-firrtl can generate Verilog output directly, so fewer components are
-required for Verilog testing.
+### Chisel3 Architecture Overview
 
-### Stanza
-In order to build firrtl, you need a (currently patched) copy of
-Stanza. (We should add this to the firrtl repo in utils/bin.)
-
-### firrtl
-We assume that copies (or links to) firrtl are in
-chisel3/bin. flo-llvm and clang should be found in your $PATH.
-
-Follow the instructions on the firrtl repo for building firrtl and put
-the resulting binary (utils/bin/firrtl) in chisel3/bin.
-
-### flo-llvm
-flo-llvm is Palmer's flo to (.o,.v) converter. It's hosted at:
-	 https://github.com/ucb-bar/flo
-and
-	 https://github.com/palmer-dabbelt/flo-llvm
-
-
-Installation instructions can be found at:
-	 https://wiki.eecs.berkeley.edu/dreamer/Main/DistroSetup
-
-### clang
-clang is available for Linux and Mac OS X and usually comes installed
-with development tools. You need to ensure that the version you're
-using is compatible with flo-llvm (currently, clang/llvm 3.6). There
-are instructions on the web for managing multiple versions of
-clang/llvm.
-
-Once you have all the components in place, build and publish Chisel3:
-
-```shell
-% cd chisel3
-% sbt clean publish-local
-```
+The Chisel3 compiler consists of these main parts:
+ - **The frontend**, which is the publicly visible "API" of Chisel and what is
+ used in Chisel RTL. All these do is build...  
+ *TODO: filenames (or package names, once the split is complete*
+ - **The intermediate data structures**, which is syntactically very similar
+ to FIRRTL. Once the entire circuit has been elaborated, the top-level object
+ (a `Circuit`) is then passed to...  
+ *TODO: filenames (or package names, once the split is complete*
+ - **The FIRRTL emitter**, which turns the intermediate data structures into
+ a string that can be written out into a FIRRTL file for further processing.  
+ *TODO: filenames (or package names, once the split is complete*
+ 
+Also included is:
+ - **The standard library** of circuit generators, currently Utils.scala. These
+ contain commonly used interfaces and constructors (like `Decoupled`, which
+ wraps a signal with a ready-valid pair) as well as fully parameterizable
+ circuit generators (like arbiters and muxes).  
+ *TODO: update once standard library gets properly broken you* 
+ - *TODO: add details on the testing framework*
+ - *TODO: add details on simulators*
