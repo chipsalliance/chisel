@@ -3,7 +3,6 @@ Support ASIC backend
      Mem of vec, should just work?
    ASIC rams (pass to replace smem with black box)
    Readwrite Port
-Move WorkingIR->RealIR right after width inference, update other passes accordingly
 
 ================================================
 ========== ADAM's BIG ARSE TODO LIST ============
