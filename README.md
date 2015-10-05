@@ -18,3 +18,9 @@
     `make build # Build firrtl`     
     `make check # Run tests`     
     `make # Build & test`     
+
+#### Scala implementation 
+The Scala FIRRTL implementation relies upon sbt.    
+Example use:    
+  `sbt -mem 2048 "run-main Example <input> <output>`    
+This command will read in &lt;input&gt; FIRRTL file, parse it, then output the AST to &lt;output&gt;    
