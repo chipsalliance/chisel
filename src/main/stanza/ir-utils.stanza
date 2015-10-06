@@ -230,8 +230,8 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefRegister) : 
          print-all(o,["reg " name(c) " : " type(c) ", " clock(c) ", " reset(c)])
       (c:DefMemory) :
-         if seq?(c) : print-all(o,["smem " name(c) " : " type(c) ", " clock(c)])
-         else       : print-all(o,["cmem " name(c) " : " type(c) ", " clock(c)])
+         if seq?(c) : print-all(o,["smem " name(c) " : " VectorType(type(c),size(c)) ", " clock(c)])
+         else       : print-all(o,["cmem " name(c) " : " VectorType(type(c),size(c)) ", " clock(c)])
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :
@@ -345,7 +345,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
    match(c) :
       (c:DefAccessor) : DefAccessor(info(c),name(c), f(source(c)), f(index(c)),acc-dir(c))
       (c:DefRegister) : DefRegister(info(c),name(c), type(c), f(clock(c)), f(reset(c)))
-      (c:DefMemory) : DefMemory(info(c),name(c), type(c), seq?(c), f(clock(c)))
+      (c:DefMemory) : DefMemory(info(c),name(c), type(c), seq?(c), f(clock(c)), size(c))
       (c:DefNode) : DefNode(info(c),name(c), f(value(c)))
       (c:DefInstance) : DefInstance(info(c),name(c), f(module(c)))
       (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
@@ -390,7 +390,7 @@ defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
       (c:DefPoison) : DefPoison(info(c),name(c),f(type(c)))
       (c:DefWire) : DefWire(info(c),name(c),f(type(c)))
       (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)),clock(c),reset(c))
-      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)) as VectorType,seq?(c),clock(c))
+      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)),seq?(c),clock(c),size(c))
       (c) : c
 
 public defmulti mapr<?T> (f: Width -> Width, t:?T&Type) -> T

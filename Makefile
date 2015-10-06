@@ -28,7 +28,7 @@ build:
 build-fast: 
 	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
 
-check:
+check: 
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
 
 regress: 
@@ -60,7 +60,7 @@ $(units): % :
 	firrtl -X verilog -i test/chisel3/$*.fir -o test/chisel3/$*.fir.v -p c > test/chisel3/$*.fir.out 
 	#scp test/chisel3/$*.fir.v adamiz@a5:/scratch/adamiz/firrtl-all/riscv-mini/generated-src/$*.v
 
-done: build check
+done: build-fast check regress
 	say "done"
 
 fail:

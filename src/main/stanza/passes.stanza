@@ -349,7 +349,7 @@ defn remove-special-chars (c:Circuit) :
          (s:DefPoison) : DefPoison(info(s),rename(name(s)),rename-t(type(s)))
          (s:DefRegister) : DefRegister(info(s),rename(name(s)),rename-t(type(s)),rename-e(clock(s)),rename-e(reset(s)))
          (s:DefInstance) : DefInstance(info(s),rename(name(s)),rename-e(module(s)))
-         (s:DefMemory) : DefMemory(info(s),rename(name(s)),rename-t(type(s)) as VectorType,seq?(s),rename-e(clock(s)))
+         (s:DefMemory) : DefMemory(info(s),rename(name(s)),rename-t(type(s)),seq?(s),rename-e(clock(s)),size(s))
          (s:DefNode) : DefNode(info(s),rename(name(s)),rename-e(value(s)))
          (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),rename-e(source(s)),rename-e(index(s)),acc-dir(s))
          (s:Conditionally) : Conditionally(info(s),rename-e(pred(s)),rename-s(conseq(s)),rename-s(alt(s)))
@@ -415,7 +415,7 @@ defn remove-scopes (c:Circuit) :
             (s:DefPoison) : DefPoison(info(s),rename(name(s),env),type(s))
             (s:DefRegister) : DefRegister(info(s),rename(name(s),env),type(s),clock(s),reset(s))
             (s:DefInstance) : DefInstance(info(s),rename(name(s),env),module(s))
-            (s:DefMemory) : DefMemory(info(s),rename(name(s),env),type(s),seq?(s),clock(s))
+            (s:DefMemory) : DefMemory(info(s),rename(name(s),env),type(s),seq?(s),clock(s),size(s))
             (s:DefNode) : DefNode(info(s),rename(name(s),env),value(s))
             (s:DefAccessor) : DefAccessor(info(s),rename(name(s),env),source(s),index(s),acc-dir(s))
             (s:Conditionally) :
@@ -688,7 +688,7 @@ defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<
       (s:DefMemory) : [s,List(name(s) => type(s),l)]
       (s:DefInstance) : [s, List(name(s) => type(module(s)),l)]
       (s:DefNode) : [s, List(name(s) => type(value(s)),l)]
-      (s:DefAccessor) : [s, List(name(s) => get-vector-subtype(type(source(s))),l)]
+      (s:DefAccessor) : [s, List(name(s) => type(s),l)]
       (s:Conditionally) : 
         val [s*,l*] = infer-types(conseq(s),l)
         val [s**,l**] = infer-types(alt(s),l)
@@ -1001,9 +1001,16 @@ defn lower-ports (ports:List<Port>) -> List<Port> :
       for x in generate-entry(name(p),type(p)) map :
          Port(info(p),name(x),direction(p) * flip(x),type(x))
 
-defn type (s:DefAccessor) -> Type : type(type(source(s)) as VectorType)
-defn size (s:DefMemory) -> Int : size(type(s))
-defn size (s:DefAccessor) -> Int : size(type(source(s)) as VectorType)
+defn get-kind (e:Expression) -> Kind :
+   match(e) :
+      (e:WRef) : kind(e)
+      (e:WSubfield) : get-kind(exp(e))
+      (e:WIndex) : get-kind(exp(e))
+
+defn type (s:DefAccessor) -> Type : 
+   if get-kind(source(s)) == MemKind() : type(source(s))
+   else : type(type(source(s)) as VectorType)
+
 defn base-name (e:Expression) -> Symbol :
    match(e) : 
       (e:WRef) : name(e)
@@ -1041,15 +1048,15 @@ defn lower (body:Stmt) -> Stmt :
             for x in expand-expr(value(s)) map : 
                DefNode(info(s),name(s),exp(x))
          (s:DefMemory) : Begin $ 
-            for x in generate-entry(name(s),type(type(s))) map :
-               DefMemory(info(s),name(x),VectorType(type(x),size(s)),seq?(s),clock(s))
+            for x in generate-entry(name(s),type(s)) map :
+               DefMemory(info(s),name(x),type(x),seq?(s),clock(s),size(s))
          (s:DefAccessor) : 
             val ls = generate-entry(name(s),type(s))
             val rs = generate-entry(name(source(s) as WRef),type(s))
             val index* = exp(head $ expand-expr(index(s)))
             Begin $ for (l in ls, r in rs) map:
                if flip(r) == REVERSE : error("Shouldn't be here")
-               val memref = WRef(name(r),VectorType(type(r),size(s)),MemKind(),gender(s))
+               val memref = WRef(name(r),type(r),MemKind(),gender(s))
                DefAccessor(info(s),name(l),memref,index*,to-acc-dir(gender(s)))
          (s:OnReset|Connect) : Begin $
             for (l in expand-expr(loc(s)), r in expand-expr(exp(s))) map :
@@ -1667,7 +1674,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                (e:False) : false
          (s:DefAccessor) : 
             add(decs,s)
-            val t = type(type(source(s)) as VectorType)
+            val t = type(s)
             val n = name(s)
             if gender(s) == FEMALE :
                val ref = WRef(n,t,WriteAccessorKind(),FEMALE)
@@ -2034,7 +2041,7 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
          (s:DefRegister) : DefRegister(info(s),name(s),h[name(s)],gen-constraints(clock(s)),gen-constraints(reset(s)))
          (s:DefAccessor) : DefAccessor(info(s),name(s),gen-constraints(source(s)),gen-constraints(index(s)), acc-dir(s))
          (s:DefInstance) : DefInstance(info(s),name(s),gen-constraints(module(s)))
-         (s:DefMemory) : DefMemory(info(s),name(s),h[name(s)] as VectorType,seq?(s),gen-constraints(clock(s)))
+         (s:DefMemory) : DefMemory(info(s),name(s),h[name(s)],seq?(s),gen-constraints(clock(s)),size(s))
          (s:DefNode) : 
             val l = h[name(s)]
             val r = gen-constraints(value(s))
@@ -2089,7 +2096,7 @@ defn build-environment (c:Circuit,m:Module,h:HashTable<Symbol,Type>) -> HashTabl
          (s:DefRegister) : h[name(s)] = remove-unknowns(type(s))
          (s:DefInstance) : h[name(s)] = h[name(module(s) as WRef)]
          (s:DefMemory) : h[name(s)] = remove-unknowns(type(s))
-         (s:DefAccessor) : h[name(s)] = remove-unknowns(type(type(source(s)) as VectorType))
+         (s:DefAccessor) : h[name(s)] = remove-unknowns(type(s))
          (s:DefNode) : h[name(s)] = remove-unknowns(type(value(s)))
          (s) : false
       do(build-environment,s)
@@ -2241,7 +2248,7 @@ defn inline-instances (c:Circuit) :
          (s:DefPoison) : DefPoison(info(s),rename(name(s),n),type(s))
          (s:DefRegister) : DefRegister(info(s),rename(name(s),n),type(s),clock(s),reset(s))
          (s:DefInstance) : error("Shouldn't be here")
-         (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s),seq?(s),clock(s))
+         (s:DefMemory) : DefMemory(info(s),rename(name(s),n),type(s),seq?(s),clock(s),size(s))
          (s:DefNode) : DefNode(info(s),rename(name(s),n),value(s))
          (s) : s
    for m in modules(c) do :
@@ -2395,7 +2402,7 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
         (s:DefPoison) : DefPoison(info(s),rename(name(s)),type(s))
         (s:DefRegister) : DefRegister(info(s),rename(name(s)),type(s),clock(s),reset(s))
         (s:DefInstance) : DefInstance(info(s),rename(name(s)),module(s))
-        (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s),clock(s))
+        (s:DefMemory) : DefMemory(info(s),rename(name(s)),type(s),seq?(s),clock(s),size(s))
         (s:DefNode) : DefNode(info(s),rename(name(s)),value(s))
         (s:DefAccessor) : DefAccessor(info(s),rename(name(s)),source(s),index(s),acc-dir(s))
         (s) : map(to-stmt,s)
