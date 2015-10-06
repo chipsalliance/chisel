@@ -17,7 +17,7 @@
  1. Clone the repository:   
  `git clone https://github.com/ucb-bar/firrtl`
  1. Install Stanza:  
- `make install-mac`
+ `make install-linux`
  1. Install lit (you need to have pip installed first):  
  `pip install lit`
  1. Build firrtl:  
