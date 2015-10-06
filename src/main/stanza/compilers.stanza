@@ -25,7 +25,7 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
       CheckGenders()
       ExpandAccessors()
       LowerToGround()
-      ExpandIndexedConnects()
+      InlineIndexed()
       ExpandWhens()
       InferWidths()
       Pad()
@@ -44,7 +44,7 @@ public defstruct StandardVerilog <: Compiler :
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
       RemoveSpecialChars()     ;R
-      RemoveScopes()           ;R
+      ;RemoveScopes()           ;R
       CheckHighForm()          ;R
       TempElimination()        ;R
       ToWorkingIR()            ;R -> W
@@ -56,15 +56,17 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       CheckTypes()             ;R
       ExpandAccessors()        ;W
       LowerToGround()          ;W
-      ExpandIndexedConnects()  ;W
+      ;ExpandIndexedConnects()  ;W
+      InlineIndexed()
       InferTypes()             ;R
       CheckGenders()           ;W
       ExpandWhens()            ;W
       InferWidths()            ;R
+      ToRealIR()               ;W -> R
+      CheckWidths()            ;R
       Pad()                    ;R
       ConstProp()              ;R
       SplitExp()               ;R
-      ToRealIR()               ;W -> R
       CheckWidths()            ;R
       CheckHighForm()          ;R
       CheckLowForm()           ;R

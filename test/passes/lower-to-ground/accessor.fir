@@ -14,13 +14,11 @@ circuit top :
       ; CHECK: wire a{{[_$]+}}3 : UInt<32>
 
       infer accessor b = a[i]
-      ; CHECK: wire b : UInt<32>
-      ; CHECK: b := (a{{[_$]+}}0 a{{[_$]+}}1 a{{[_$]+}}2 a{{[_$]+}}3)[i]
+      ; CHECK: indexer b = (a{{[_$]+}}0 a{{[_$]+}}1 a{{[_$]+}}2 a{{[_$]+}}3)[i] : UInt<32>
       j := b
 
       infer accessor c = a[i]
-      ; CHECK: wire c : UInt<32>
-      ; CHECK: (a{{[_$]+}}0 a{{[_$]+}}1 a{{[_$]+}}2 a{{[_$]+}}3)[i] := c
+      ; CHECK: indexer (a{{[_$]+}}0 a{{[_$]+}}1 a{{[_$]+}}2 a{{[_$]+}}3)[i] = c : UInt<32>
       c := j
       
       cmem p : UInt<32>[4],clk

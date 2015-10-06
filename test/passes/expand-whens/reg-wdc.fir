@@ -1,5 +1,4 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
-; XFAIL: *
 circuit top :
    module top :
       input clk : Clock
@@ -16,8 +15,9 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt, clk, reset
-; CHECK:     p := UInt("h00000001")
-; CHECK-NOT: when p : r := UInt("h00000002")
+; CHECK:     p := UInt("h1")
+; CHECK-NOT: when p : r := UInt("h2")
 
 ; CHECK: Finished Expand Whens
 
+; CHECK: Done!
