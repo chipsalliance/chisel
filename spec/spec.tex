@@ -704,7 +704,7 @@ Section \ref{primitives} will describe the format and semantics of each operatio
 
 All primitive operations expression operands must be ground types.
 In addition, some operations allow all permutations of operand ground types, while others on allow subsets.
-When well defined, input arguments are allowed to be differing widths.
+When well defined, input arguments are allowed to be differing widths, with the semantics of sign-extending the input arguments prior to executing the operation.
 
 \subsection{Add Operation}
 \[
