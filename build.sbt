@@ -1,14 +1,18 @@
-organization := "edu.berkeley.cs"
 
-name := "firrtl"
 
-version := "0.1-SNAPSHOT"
+lazy val root = (project in file(".")).
+  settings(
+    organization := "edu.berkeley.cs",
+    name := "firrtl",
+    version := "0.1-SNAPSHOT",
+    scalaVersion := "2.11.4"
+  )
 
-scalaVersion := "2.11.4"
+libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 
 // Assembly
 
-assemblyJarName in assembly := "firrtl.jar"
+//assemblyJarName in assembly := "firrtl.jar"
 
 test in assembly := {} // Should there be tests?
 

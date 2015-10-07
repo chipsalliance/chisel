@@ -2,14 +2,16 @@
 
 /* TODO
  *  - Adopt style more similar to Chisel3 Emitter?
+ *  - Find way to have generic map function instead of mapE and mapS under Stmt implicits
  */
 
 package firrtl
 
 import scala.collection.mutable.StringBuilder
+import scala.reflect.runtime.universe._
 
 object Utils {
-  
+
   implicit class BigIntUtils(bi: BigInt){
     def serialize(): String = 
       "\"h0" + bi.toString(16) + "\""
@@ -68,6 +70,14 @@ object Utils {
         case p: DoPrimOp => 
           s"${p.op.serialize}(" + (p.args.map(_.serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
       } 
+
+    def map(f: Exp => Exp): Exp = 
+      exp match {
+        case s: Subfield => Subfield(f(s.exp), s.name, s.tpe)
+        case s: Subindex => Subindex(f(s.exp), s.value)
+        case p: DoPrimOp => DoPrimOp(p.op, p.args.map(f), p.consts)
+        case e: Exp => e
+      }
   }
   
   // AccessorDir
@@ -81,6 +91,36 @@ object Utils {
       } 
   }
 
+  // Some Scala implicit magic to solve type erasure on Stmt map function overloading
+  private trait StmtMagnet {
+    def map(stmt: Stmt): Stmt
+  }
+  private object StmtMagnet {
+    implicit def forStmt(f: Stmt => Stmt) = new StmtMagnet {
+      override def map(stmt: Stmt): Stmt =
+        stmt match {
+          case w: When => When(w.info, w.pred, f(w.conseq), f(w.alt))
+          case b: Block => Block(b.stmts.map(f))
+          case s: Stmt => s
+        }
+    }
+    implicit def forExp(f: Exp => Exp) = new StmtMagnet {
+      override def map(stmt: Stmt): Stmt =
+        stmt match {
+          case r: DefReg => DefReg(r.info, r.name, r.tpe, f(r.clock), f(r.reset))
+          case m: DefMemory => DefMemory(m.info, m.name, m.seq, m.tpe, f(m.clock))
+          case i: DefInst => DefInst(i.info, i.name, f(i.module))
+          case n: DefNode => DefNode(n.info, n.name, f(n.value))
+          case a: DefAccessor => DefAccessor(a.info, a.name, a.dir, f(a.source), f(a.index))
+          case o: OnReset => OnReset(o.info, f(o.lhs), f(o.rhs))
+          case c: Connect => Connect(c.info, f(c.lhs), f(c.rhs))
+          case b: BulkConnect => BulkConnect(b.info, f(b.lhs), f(b.rhs))
+          case w: When => When(w.info, f(w.pred), w.conseq, w.alt)
+          case a: Assert => Assert(a.info, f(a.pred))
+          case s: Stmt => s 
+        }
+    }
+  }
 
   implicit class StmtUtils(stmt: Stmt) {
     def serialize(): String = 
@@ -114,6 +154,10 @@ object Utils {
         case a: Assert => s"assert ${a.pred.serialize}"
         case EmptyStmt => "skip"
       } 
+
+    // Using implicit types to allow overloading of function type to map, see StmtMagnet above
+    def map[T](f: T => T)(implicit magnet: (T => T) => StmtMagnet): Stmt = magnet(f).map(stmt)
+    
   }
 
   implicit class WidthUtils(w: Width) {
