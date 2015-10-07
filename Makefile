@@ -10,6 +10,9 @@ SRC_DIR	?= .
 CHISEL_BIN ?= $(abspath $(SRC_DIR)/bin)
 export CHISEL_BIN
 
+MV	?= mv
+FIRRTL	?= firrtl
+
 #$(info Build Chisel $(CHISEL_VERSION))
 
 # The targetDir will be rm -rf'ed when "make clean"
@@ -19,11 +22,11 @@ TEST_OUTPUT_DIR ?= ./test-outputs
 RM_DIRS 	:= $(TEST_OUTPUT_DIR) test-reports $(targetDir)
 #CLEAN_DIRS	:= doc
 
-test_src_dir := src/test/scala/ChiselTests
-test_results := $(filter-out main DirChange Pads SIntOps,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
+test_src_dir := src/test/scala/chiselTests
+test_results := $(filter BundleWire ComplexAssign GCD MulLookup Stack Tbl,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
 c_resources_dir := src/main/resources
 
-test_outs    := $(addprefix $(targetDir)/, $(addsuffix .out, $(test_results)))
+test_vs    := $(addprefix $(targetDir)/, $(addsuffix .v, $(test_results)))
 
 .PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test
 
@@ -38,7 +41,7 @@ publish-local:
 test:
 	$(SBT) $(SBT_FLAGS) test
 
-check:	test $(test_outs)
+check:	test $(test_vs)
 
 coverage:
 	$(SBT) $(SBT_FLAGS) coverage test
@@ -71,16 +74,7 @@ jenkins-build: clean
 	$(SBT) $(SBT_FLAGS) coverageReport
 
 $(targetDir)/%.fir: $(test_src_dir)/%.scala
-	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS)"
+	$(SBT) $(SBT_FLAGS) "test:runMain chiselTests.MiniChisel $(notdir $(basename $<)) --targetDir $(targetDir) $(CHISEL_FLAGS)"
 
-$(targetDir)/%.flo: $(targetDir)/%.fir
-	$(CHISEL_BIN)/fir2flo.sh $(targetDir)/$*
-
-$(targetDir)/%: $(targetDir)/%.flo $(targetDir)/emulator.h $(targetDir)/emulator_mod.h $(targetDir)/emulator_api.h
-	(cd $(targetDir); $(CHISEL_BIN)/flo2app.sh $*)
-
-$(targetDir)/%.h:	$(c_resources_dir)/%.h
-	cp $< $@
-
-$(targetDir)/%.out:	$(targetDir)/%
-	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS) --test --targetDir $(targetDir)"
+$(targetDir)/%.v: $(targetDir)/%.fir
+	$(FIRRTL) -i $< -o $@ -X verilog

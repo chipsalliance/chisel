@@ -34,15 +34,29 @@ import collection.mutable.{ArrayBuffer, HashSet, HashMap, Stack, LinkedHashSet, 
 import scala.math.min
 
 trait FileSystemUtilities {
+  var targetDir = ""
+  def setTargetDir(dir: String) {
+    targetDir = dir
+  }
+
+    /** Ensures a directory *dir* exists on the filesystem. */
+  def ensureDir(dir: String): String = {
+    val d = dir + (if (dir == "" || dir(dir.length-1) == '/') "" else "/")
+    new java.io.File(d).mkdirs()
+    d
+  }
+
   def createOutputFile(name: String, contents: String) {
-    val f = new java.io.FileWriter(name)
+    if (targetDir != "") {
+      ensureDir(targetDir)
+    }
+    val f = new java.io.FileWriter(new java.io.File(targetDir, name))
     f.write(contents)
     f.close
   }
 }
 
 object Driver extends FileSystemUtilities {
-
   /** Instantiates a ChiselConfig class with the given name and uses it for elaboration */
   def elaborateWithConfigName[T <: Module](
       gen: () => T,
@@ -99,6 +113,23 @@ object Driver extends FileSystemUtilities {
 }
 
 object chiselMain {
-  def apply[T <: Module](args: Array[String], gen: () => T, p: Parameters = Parameters.empty): Unit =
+  def apply[T <: Module](args: Array[String], gen: () => T, p: Parameters = Parameters.empty): Unit = {
+    parseArgs(args)
     Driver.elaborateWrappedModule(gen, p, None)
+  }
+
+  def parseArgs(args: Array[String]) {
+    var i = 0
+    while (i < args.length) {
+      val arg = args(i)
+      arg match {
+        case "--targetDir" => {
+          i += 1
+          require(i < args.length, "--targetDir requires an argument")
+          Driver.setTargetDir(args(i))
+        }
+      }
+      i += 1
+    }
+  }
 }
