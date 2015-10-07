@@ -30,9 +30,10 @@ like:
  *TODO: Verilator support*
 
 ### Data Types Overview
-These are the base data types for defining circuit wires: 
+These are the base data types for defining circuit wires (abstract types which
+may not be instantiated are greyed out):
 
-![Image](../master/docs/images/type_hierarchy.svg?raw=true)
+![Image](doc/images/type_hierarchy.png?raw=true)
 
 ### Chisel Tutorial
 *TODO: quick howto for running chisel-tutorial*
