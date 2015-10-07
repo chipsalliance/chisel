@@ -29,6 +29,11 @@ like:
  - Optionally, Verilog to C++ (for simulation and testing).  
  *TODO: Verilator support*
 
+### Data Types Overview
+These are the base data types for defining circuit wires: 
+
+![Image](../master/docs/images/type_hierarchy.svg?raw=true)
+
 ### Chisel Tutorial
 *TODO: quick howto for running chisel-tutorial*
 
