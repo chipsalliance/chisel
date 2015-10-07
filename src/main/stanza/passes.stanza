@@ -186,7 +186,7 @@ public var PRINT-GENDERS : True|False = false
 public var PRINT-CIRCUITS : True|False = false
 public var PRINT-DEBUG : True|False = false
 public var PRINT-INFO : True|False = false
-;=== Printers ===
+;=== ThePrinters ===
 
 public defn println-all-debug (l:?) -> False :
    if PRINT-DEBUG : println-all(l)
@@ -358,6 +358,8 @@ defn remove-special-chars (c:Circuit) :
          (s:BulkConnect) : BulkConnect(info(s),rename-e(loc(s)),rename-e(exp(s)))
          (s:Connect) : Connect(info(s),rename-e(loc(s)),rename-e(exp(s)))
          (s:EmptyStmt) : s
+         (s:StopStmt) : s
+         (s:PrintfStmt) : PrintfStmt(info(s),string(s),map(rename-e,args(s)))
 
    Circuit(info(c),modules*, rename(main(c))) where :
       val modules* =
@@ -693,7 +695,7 @@ defn infer-types (s:Stmt, l:List<KeyValue<Symbol,Type>>) -> [Stmt List<KeyValue<
         val [s*,l*] = infer-types(conseq(s),l)
         val [s**,l**] = infer-types(alt(s),l)
         [Conditionally(info(s),pred(s),s*,s**),l]
-      (s:Connect|BulkConnect|OnReset|EmptyStmt) : [s,l]
+      (s:Connect|BulkConnect|OnReset|EmptyStmt|StopStmt|PrintfStmt) : [s,l]
 
 defn infer-types (m:Module, l:List<KeyValue<Symbol,Type>>) -> Module :
    val ptypes = 
@@ -812,6 +814,8 @@ defn resolve-genders (c:Circuit) :
                val conseq* = resolve-stmt(conseq(s))
                val alt* = resolve-stmt(alt(s))
                Conditionally(info(s),pred*,conseq*,alt*)
+            (s:PrintfStmt) : 
+               PrintfStmt(info(s),string(s),map(resolve-expr{_,MALE},args(s)))
             (s) : map(resolve-stmt,s)
 
       defn resolve-expr (e:Expression,desired:Gender) -> Expression :
@@ -1122,7 +1126,10 @@ defn lower (body:Stmt) -> Stmt :
                      [MALE,FEMALE]   : DecFromIndexer(info(s),index*,exps,name(ntf),type(ntf))
          (s:Conditionally) : 
             Conditionally(info(s),exp(head $ expand-expr(pred(s))),lower-stmt(conseq(s)),lower-stmt(alt(s)))
-         (s:Begin|EmptyStmt) : map(lower-stmt,s)
+         (s:PrintfStmt) :
+            val args* = for x in args(s) map : exp(head(expand-expr(x)))
+            PrintfStmt(info(s),string(s),args*)
+         (s:Begin|EmptyStmt|StopStmt) : map(lower-stmt,s)
 
    lower-stmt(body)
 
@@ -1534,11 +1541,23 @@ defn merge-resets (assign:HashTable<Symbol,SymbolicValue>, resets:HashTable<Symb
             (a:False,r:False) : error("Shouldn't be here")
    table
 
+defn mark (vs:Vector<[Stmt,Expression]>,pred:Expression) -> False :
+   for i in 0 to length(vs) do :
+      val [s,e] = vs[i]
+      vs[i] = [s, AND(e,pred)]
+
+; ------ Print Debug Info ------
+defn print-table (t:HashTable<Symbol,SymbolicValue>,s:String) :
+   println-debug(s)
+   for x in t do : println-debug(x)
+
+
 defn build-tables (s:Stmt, 
                    assign:HashTable<Symbol,SymbolicValue>,
                    resets:HashTable<Symbol,SymbolicValue>,
                    flattn:HashTable<Symbol,True|False>,
                    rsignals:HashTable<Symbol,Expression>,
+                   simuls:Vector<[Stmt,Expression]>,
                    ) -> False :
    match(s) :
       (s:DefWire) :
@@ -1580,26 +1599,28 @@ defn build-tables (s:Stmt,
          val assign-a = deepcopy(assign)
          val resets-c = deepcopy(resets)
          val resets-a = deepcopy(resets)
-         build-tables(conseq(s),assign-c,resets-c,flattn,rsignals)
-         build-tables(alt(s),assign-a,resets-a,flattn,rsignals)
+         val simuls-c = Vector<[Stmt,Expression]>()
+         val simuls-a = Vector<[Stmt,Expression]>()
+         build-tables(conseq(s),assign-c,resets-c,flattn,rsignals,simuls-c)
+         build-tables(alt(s),assign-a,resets-a,flattn,rsignals,simuls-a)
          for i in get-unique-keys(list(assign-c,assign-a)) do :
             assign[i] = combine(flattn,assign-c,assign-a,i) as SymbolicValue
             val r = combine(flattn,resets-c,resets-a,i)
             match(r) : 
                (r:SymbolicValue) : resets[i] = r
                (r) : false
-         println-debug("TABLE-C")
-         for x in assign-c do : println-debug(x)
-         println-debug("TABLE-A")
-         for x in assign-a do : println-debug(x)
-         println-debug("TABLE")
-         for x in assign do : println-debug(x)
-         println-debug("RESET-C")
-         for x in resets-c do : println-debug(x)
-         println-debug("RESET-A")
-         for x in resets-a do : println-debug(x)
-         println-debug("RESET")
-         for x in resets do : println-debug(x)
+
+         mark(simuls-c,pred(s))
+         mark(simuls-a,DoPrim(BIT-NOT-OP,list(pred(s)),list(),UIntType(LongWidth(1))))
+         add-all(simuls,simuls-c)
+         add-all(simuls,simuls-a)
+         
+         print-table(assign-c,"TABLE-C")
+         print-table(assign-a,"TABLE-A")
+         print-table(assign,"TABLE")
+         print-table(resets-c,"RESET-C")
+         print-table(resets-a,"RESET-A")
+         print-table(resets,"RESET")
       (s:Connect|OnReset) : 
          val key* = match(loc(s)) :
             (e:WRef) : name(e)
@@ -1607,7 +1628,9 @@ defn build-tables (s:Stmt,
             (e) : error("Shouldn't be here with ~" % [e])
          if s typeof Connect : assign[key*] = SVExp(exp(s))
          if s typeof OnReset : resets[key*] = SVExp(exp(s))
-      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets,flattn,rsignals)
+      (s:Begin) : for s* in body(s) do: build-tables(s*,assign,resets,flattn,rsignals,simuls)
+      (s:StopStmt|PrintfStmt) : 
+         add(simuls,[s one])
       (s:DefMemory|DefPoison|DefNode|EmptyStmt) : false
 
 
@@ -1635,6 +1658,7 @@ defn is-referenced? (referenced?:HashTable<Symbol,True>, s:Stmt) -> True|False :
    match(s) :
       (s:DefPoison|DefWire|DefRegister|DefAccessor|DefMemory|DefNode) : key?(referenced?,name(s))
       (s:DefInstance) : true
+      (s:PrintfStmt|StopStmt|Conditionally) : true
                
 ;--------------- Expand Whens Pass -------------------
 
@@ -1698,7 +1722,7 @@ public defn expand-whens (c:Circuit) -> Circuit :
                      val sref = WSubfield(ref,f,bundle-field-type(type(module(s)),f),FEMALE)
                      if not has-nul?(table[n]) : 
                         add{cons,_} $ Connect(info(s),sref,to-exp(table[n]) as Expression)
-         (s:Connect|Conditionally|OnReset|Begin|EmptyStmt) : false
+         (s:Connect|Conditionally|OnReset|Begin|EmptyStmt|StopStmt|PrintfStmt) : false
       s
    
    defn expand-whens (m:Module) -> Module :
@@ -1709,13 +1733,14 @@ public defn expand-whens (c:Circuit) -> Circuit :
             val resets = HashTable<Symbol,SymbolicValue>(symbol-hash)
             val flattn = HashTable<Symbol,True|False>(symbol-hash)
             val rsignals = HashTable<Symbol,Expression>(symbol-hash)
+            val simuls = Vector<[Stmt,Expression]>()
    
             for p in ports(m) do :
                if direction(p) == OUTPUT :
                   assign[name(p)] = SVNul()
                   flattn[name(p)] = false
                   
-            build-tables(body(m),assign,resets,flattn,rsignals)
+            build-tables(body(m),assign,resets,flattn,rsignals,simuls)
             for x in assign do : assign[key(x)] = optimize(value(x))
             for x in resets do : resets[key(x)] = optimize(value(x))
             
@@ -1735,6 +1760,11 @@ public defn expand-whens (c:Circuit) -> Circuit :
             val cons = Vector<Stmt>()
             expand-whens(ports(m),table,cons)
             expand-whens(body(m),table,decs,cons)
+
+            for se in simuls do :
+               val [s e] = se
+               if e == one : add(decs,s)
+               else : add(decs,Conditionally(info(s),e,s,EmptyStmt()))
 
             val referenced? = HashTable<Symbol,True>(symbol-hash)
             for x in table do :
@@ -2052,6 +2082,8 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             val e = gen-constraints(exp(s))
             add(v,WGeq(width!(type(l)),width!(type(e))))
             Connect(info(s),l,e)
+         (s:PrintfStmt) : 
+            PrintfStmt(info(s),string(s),map(gen-constraints,args(s)))
          (s:Conditionally) : 
             val p = gen-constraints(pred(s))
             add(v,WGeq(width!(type(p)),LongWidth(1)))
@@ -2326,14 +2358,26 @@ defn split-exp (c:Circuit) :
             ;Predicate
             val pred* = map(split-exp-e{_,full-name(pred(s)),info(s)},pred(s))
 
-            ;Connect
-            val c = conseq(s) as Connect
-            val exp* = map(split-exp-e{_,full-name(loc(c)),info(c)},exp(c))
-            val conseq* = Connect(info(c),loc(c),exp*)
-            add(v,Conditionally(info(s),pred*,conseq*,alt(s)))
+            ;Connect TODO Broken for stop/printf
+            match(conseq(s)) :
+               (c:Connect) :
+                  val exp* = map(split-exp-e{_,full-name(loc(c)),info(c)},exp(c))
+                  val conseq* = Connect(info(c),loc(c),exp*)
+                  add(v,Conditionally(info(s),pred*,conseq*,alt(s)))
+               (c:PrintfStmt) :
+                  val args* = for x in args(c) map :
+                     map(split-exp-e{_,false,info(c)},x)
+                  val conseq* = PrintfStmt(info(c),string(c),args*)
+                  add(v,Conditionally(info(s),pred*,conseq*,alt(s)))
+               (c:StopStmt) :
+                  add(v,Conditionally(info(s),pred*,c,alt(s)))
          (s:Connect) : 
             val exp* = map(split-exp-e{_,full-name(loc(s)),info(s)},exp(s))
             add(v,Connect(info(s),loc(s),exp*))
+         (s:PrintfStmt) : 
+            val args* = for x in args(s) map :
+               map(split-exp-e{_,false,info(s)},x)
+            add(v,PrintfStmt(info(s),string(s),args*))
          (s:DefNode) : 
             val exp* = map(split-exp-e{_,name(s),info(s)},value(s))
             add(v,DefNode(info(s),name(s),exp*))
@@ -2488,6 +2532,11 @@ defn pad-widths-s (s:Stmt) -> Stmt :
          val loc* = pad-widths-e(i,loc(s))
          val exp* = pad-widths-e(i,exp(s))
          Connect(info(s),loc*,exp*)
+      (s:PrintfStmt) : 
+         val args* = for x in args(s) map :
+            val i = int-width!(type(x))
+            pad-widths-e(i,x)
+         PrintfStmt(info(s),string(s),args*)
       (s:DefNode) : 
          val i = int-width!(type(value(s)))
          val exp* = pad-widths-e(i,value(s))

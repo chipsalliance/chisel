@@ -155,6 +155,14 @@ public defstruct Connect <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    loc: Expression
    exp: Expression
+public defstruct StopStmt <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
+   ret: Int
+public defstruct PrintfStmt <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
+   string: String
+   args: List<Expression>
+
 public defstruct EmptyStmt <: Stmt ;LOW
 
 public definterface Type

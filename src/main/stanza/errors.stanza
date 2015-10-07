@@ -109,6 +109,19 @@ defn IllegalUnknownWidth (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Widths must be defined for memories and poison nodes."]
 
+defn BadPrintf (info:FileInfo,x:Char) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Bad printf format: \"%" x "\""];"
+
+defn BadPrintfTrailing (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Bad printf format: trailing \"%\""];"
+
+defn BadPrintfIncorrectNum (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Bad printf format: incorrect number of arguments"];"
+
+
 ;---------------- Helper Functions --------------
 defn has-flip? (t:Type) -> True|False :
    var has? = false
@@ -198,7 +211,7 @@ defn contains?<?T> (c:?T,cs:Streamable<?T>) -> True|False :
 ;               (s:False) : false
 ;               (s:String) : myret(string-join([char(trie) s]))
 ;         false
-
+      
 defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
    defn correct-num (ne:Int|False,nc:Int) -> False :
       if not (ne typeof False) : 
@@ -247,6 +260,20 @@ defn check-high-form-primop (e:DoPrim, errors:Vector<PassException>,info:FileInf
 ;--------------- Check High Form Pass -------------------
 public defn check-high-form (c:Circuit) -> Circuit : 
    val errors = Vector<PassException>()
+
+
+   defn check-fstring (info:FileInfo,s:String,i:Int) -> False :
+      val valid-formats = "bedxs"
+      var percent = false
+      var ret = true
+      var npercents = 0
+      for x in s do :
+         if (not contains?(valid-formats,x)) and percent :
+            add(errors,BadPrintf(info,x))
+         if x == '%' : npercents = npercents + 1
+         percent = x == '%'
+      if percent : add(errors,BadPrintfTrailing(info))
+      if npercents != i : add(errors,BadPrintfIncorrectNum(info))
 
    defn check-valid-loc (info:FileInfo,e:Expression) -> False :
       match(e) : 
@@ -337,6 +364,10 @@ public defn check-high-form (c:Circuit) -> Circuit :
                check-valid-loc(info(s),loc(s))
                check-high-form-e(info(s),loc(s),names)
                check-high-form-e(info(s),exp(s),names)
+            (s:PrintfStmt) : 
+               for x in args(s) do:
+                  check-high-form-e(info(s),x,names)
+               check-fstring(info(s),string(s),length(args(s)))
             (s:BulkConnect) : 
                check-valid-loc(info(s),loc(s))
                check-high-form-e(info(s),loc(s),names)
@@ -445,6 +476,9 @@ public defn check-kinds (c:Circuit) -> Circuit :
                println(type(source(s)))
                add(errors,AccessVecOrMem(info(s)))
          (s:Conditionally) : check-not-mem(info(s),pred(s))
+         (s:PrintfStmt) : 
+            for x in args(s) do :
+               check-not-mem(info(s),x)
          (s:Connect) : 
             check-not-mem(info(s),loc(s))
             check-not-mem(info(s),exp(s))
@@ -510,6 +544,10 @@ defn InvalidConnect (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Type mismatch."]
 
+defn PrintfArgNotGround (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Printf arguments must be either UIntType or SIntType."]
+
 defn PredNotUInt (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Predicate not a UIntType."]
@@ -556,8 +594,8 @@ defmethod equal? (t1:Type,t2:Type) -> True|False :
          else : false
       (t1,t2) : false
             
-defn u () -> UIntType : UIntType(UnknownWidth())
-defn s () -> SIntType : SIntType(UnknownWidth())
+defn ut () -> UIntType : UIntType(UnknownWidth())
+defn st () -> SIntType : SIntType(UnknownWidth())
 
 defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
    defn all-same-type (ls:List<Expression>) -> False :
@@ -676,8 +714,12 @@ public defn check-types (c:Circuit) -> Circuit :
             (s:OnReset) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
                if has-flip?(type(loc(s))) : add(errors,OnResetIllegalFlips(info(s)))
+            (s:PrintfStmt) :
+               for x in args(s) do :
+                  if type(x) != ut() and type(x) != st(): 
+                     add(errors,PrintfArgNotGround(info(s)))
             (s:Conditionally) :
-               if type(pred(s)) != u() : add(errors,PredNotUInt(info(s)))
+               if type(pred(s)) != ut() : add(errors,PredNotUInt(info(s)))
             (s:DefNode) :
                if has-flip?(type(value(s))) : add(errors,NodeIllegalFlips(info(s)))
             (s) : false
@@ -808,6 +850,9 @@ public defn check-genders (c:Circuit) -> Circuit :
          (s:Connect) : 
             check-gender(info(s),genders,loc(s),FEMALE)
             check-gender(info(s),genders,exp(s),MALE)
+         (s:PrintfStmt) : 
+            for x in args(s) do :
+               check-gender(info(s),genders,x,MALE)
          (s:BulkConnect) : 
             check-gender(info(s),genders,loc(s),FEMALE)
             check-gender(info(s),genders,exp(s),MALE)
@@ -817,6 +862,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (s:Conditionally) :
             check-gender(info(s),genders,pred(s),MALE)
          (s:EmptyStmt) : false
+         (s:StopStmt) : false
          (s:Begin) : false
 
 
@@ -1056,6 +1102,9 @@ public defn check-low-form (c:Circuit) -> Circuit :
                add(insts,name(s))
             (s:DefNode) : 
                check-correct-exp(info(s),value(s))
+            (s:PrintfStmt) : 
+               for x in args(s) do :
+                  check-correct-exp(info(s),x)
             (s:DefRegister) : false
             (s:DefAccessor) : false
             (s:Conditionally) : 
@@ -1071,6 +1120,7 @@ public defn check-low-form (c:Circuit) -> Circuit :
                      else : assigned?[to-symbol $ to-string $ e] = true
                   (e) : check-correct-exp(info(s),e)
             (s:EmptyStmt) : false
+            (s:StopStmt) : false
             (s:Begin) : do(check-low-form-s,s)
 
       match(m) :

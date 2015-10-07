@@ -110,6 +110,11 @@ public defmethod print (o:OutputStream, p:Pass) :
 
 ;============== Various Useful Functions ==============
 
+public defn add-all (v1:Vector,v2:Vector) -> False :
+   for x in v2 do :
+      add(v1,x)
+
+
 public defn ceil-log2 (i:Long) -> Long :
    defn* loop (n:Long, l:Long) :
       if n < i :
@@ -137,6 +142,17 @@ public defn req-num-bits (i: Int) -> Int :
      if i < 0 : ((-1 * i) - 1)
      else : i
   ceil-log2(i* + 1) + 1
+
+defn escape (s:String) -> String :
+  val s* = Vector<String>()
+  add(s*,"\"");"
+  for c in s do :
+     if c == '\n' :
+        add(s*,"\\n")
+     else : add(s*,to-string(c))
+  add(s*,"\"");"
+  string-join(s*)
+  ;"
 
 ;============== PRINTERS ===================================
 
@@ -261,6 +277,13 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(o, ["onreset " loc(c) " := " exp(c)])
       (c:EmptyStmt) :
          print(o, "skip")
+      (c:StopStmt) :
+         print-all(o, ["stop(" ret(c) ")"])
+      (c:PrintfStmt) :
+         print-all(o, ["printf("]) ;"
+         print-all(o, join(List(escape(string(c)),args(c)), ", "))
+         print(o, ")")
+         
    if not c typeof Conditionally|Begin|EmptyStmt : print-debug(o,c)
 
 defmethod print (o:OutputStream, t:Type) :
@@ -352,6 +375,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:Connect) : Connect(info(c),f(loc(c)), f(exp(c)))
       (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
       (c:OnReset) : OnReset(info(c),f(loc(c)),f(exp(c)))
+      (c:PrintfStmt) : PrintfStmt(info(c),string(c),map(f,args(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T

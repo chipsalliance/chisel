@@ -3,6 +3,7 @@ Support ASIC backend
      Mem of vec, should just work?
    ASIC rams (pass to replace smem with black box)
    Readwrite Port
+Add %s, %b, %e etc. to spec
 
 ================================================
 ========== ADAM's BIG ARSE TODO LIST ============

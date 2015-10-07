@@ -246,6 +246,8 @@ defsyntax firrtl :
       stmt = (write accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,WRITE)
       stmt = (infer accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,INFER)
       stmt = (rdwr accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s, i,RDWR)
+      stmt = (stop(?ret:#int)) : StopStmt(first-info(form),ret)
+      stmt = (printf(?str:#string ?es:#exp ...)) : PrintfStmt(first-info(form),str,es)
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
