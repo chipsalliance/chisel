@@ -34,7 +34,7 @@ import collection.mutable.{ArrayBuffer, HashSet, HashMap, Stack, LinkedHashSet, 
 import scala.math.min
 
 trait FileSystemUtilities {
-  var targetDir = ""
+  var targetDir = "."
   def setTargetDir(dir: String) {
     targetDir = dir
   }
@@ -47,7 +47,7 @@ trait FileSystemUtilities {
   }
 
   def createOutputFile(name: String, contents: String) {
-    if (targetDir != "") {
+    if (targetDir != ".") {
       ensureDir(targetDir)
     }
     val f = new java.io.FileWriter(new java.io.File(targetDir, name))
