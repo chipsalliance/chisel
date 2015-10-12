@@ -66,7 +66,7 @@ object Utils {
         case v: SIntValue => s"SInt${v.width.serialize}(${v.value.serialize})"
         case r: Ref => r.name
         case s: Subfield => s"${s.exp.serialize}.${s.name}"
-        case s: Subindex => s"${s.exp.serialize}[${s.value}]"
+        case s: Index => s"${s.exp.serialize}[${s.value}]"
         case p: DoPrimOp => 
           s"${p.op.serialize}(" + (p.args.map(_.serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
       } 
@@ -74,8 +74,8 @@ object Utils {
     def map(f: Exp => Exp): Exp = 
       exp match {
         case s: Subfield => Subfield(f(s.exp), s.name, s.tpe)
-        case s: Subindex => Subindex(f(s.exp), s.value)
-        case p: DoPrimOp => DoPrimOp(p.op, p.args.map(f), p.consts)
+        case i: Index => Index(f(i.exp), i.value, i.tpe)
+        case p: DoPrimOp => DoPrimOp(p.op, p.args.map(f), p.consts, p.tpe)
         case e: Exp => e
       }
   }

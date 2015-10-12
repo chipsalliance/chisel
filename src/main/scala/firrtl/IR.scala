@@ -54,8 +54,8 @@ case class UIntValue(value: BigInt, width: Width) extends Exp
 case class SIntValue(value: BigInt, width: Width) extends Exp
 case class Ref(name: String, tpe: Type) extends Exp
 case class Subfield(exp: Exp, name: String, tpe: Type) extends Exp
-case class Subindex(exp: Exp, value: BigInt) extends Exp
-case class DoPrimOp(op: PrimOp, args: Seq[Exp], consts: Seq[BigInt]) extends Exp 
+case class Index(exp: Exp, value: BigInt, tpe: Type) extends Exp
+case class DoPrimOp(op: PrimOp, args: Seq[Exp], consts: Seq[BigInt], tpe: Type) extends Exp 
 
 trait AccessorDir extends AST
 case object Infer extends AccessorDir
