@@ -62,8 +62,8 @@ object Utils {
   implicit class ExpUtils(exp: Exp) {
     def serialize(): String = 
       exp match {
-        case v: UIntValue => s"UInt<${v.width}>(${v.value.serialize})"
-        case v: SIntValue => s"SInt<${v.width}>(${v.value.serialize})"
+        case v: UIntValue => s"UInt${v.width.serialize}(${v.value.serialize})"
+        case v: SIntValue => s"SInt${v.width.serialize}(${v.value.serialize})"
         case r: Ref => r.name
         case s: Subfield => s"${s.exp.serialize}.${s.name}"
         case s: Subindex => s"${s.exp.serialize}[${s.value}]"
@@ -163,8 +163,8 @@ object Utils {
   implicit class WidthUtils(w: Width) {
     def serialize(): String = 
       w match {
-        case UnknownWidth => "?"
-        case w: IntWidth => w.width.toString
+        case UnknownWidth => ""
+        case w: IntWidth => s"<${w.width.toString}>"
       } 
   }
 
@@ -187,8 +187,8 @@ object Utils {
         t match {
           case ClockType => "Clock"
           case UnknownType => "UnknownType"
-          case t: UIntType => s"UInt<${t.width.serialize}>"
-          case t: SIntType => s"SInt<${t.width.serialize}>"
+          case t: UIntType => s"UInt${t.width.serialize}"
+          case t: SIntType => s"SInt${t.width.serialize}"
           case t: BundleType => s"{ ${t.fields.map(_.serialize).mkString(commas)} }"
           case t: VectorType => s"${t.tpe.serialize}[${t.size}]"
         } 

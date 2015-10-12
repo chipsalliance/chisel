@@ -1,7 +1,3 @@
-// Jack Koenig
-// UC Berkeley ASPIRE Lab
-// July 9, 2015
-
 grammar FIRRTL;
 
 /*------------------------------------------------------------------
@@ -33,8 +29,8 @@ portKind
   ;
 
 type 
-  : 'UInt' '<' width '>'
-  | 'SInt' '<' width '>'
+  : 'UInt' ('<' width '>')?
+  | 'SInt' ('<' width '>')?
   | 'Clock'
   | '{' field* '}'        // Bundle
   | type '[' IntLit ']'   // Vector
@@ -93,8 +89,8 @@ dir
 // TODO implement
 // What is exp?
 exp
-  : 'UInt' '<' width '>' '(' (IntLit) ')' // FIXME what does "ints" mean?
-  | 'SInt' '<' width '>' '(' (IntLit) ')' // FIXME same
+  : 'UInt' ('<' width '>')? '(' (IntLit) ')' // FIXME what does "ints" mean?
+  | 'SInt' ('<' width '>')? '(' (IntLit) ')' // FIXME same
   | id    // Ref
   | exp '.' id // FIXME Does this work for no space?
   | exp '[' IntLit ']'

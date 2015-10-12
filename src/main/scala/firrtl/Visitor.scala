@@ -3,6 +3,7 @@
  *  - Support all integer types (not just "h...")
  *  - In ANTLR examples they use just visit, why am I having to use visitModule or other specific functions?
  *  - Make visit private?
+ *  - More elegant way to insert UnknownWidth?
 */
 
 package firrtl
@@ -58,8 +59,10 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
   // Match on a type instead of on strings?
 	private def visitType[AST](ctx: FIRRTLParser.TypeContext): Type = {
     ctx.getChild(0).getText match {
-      case "UInt" => UIntType( visitWidth(ctx.width) )
-      case "SInt" => SIntType( visitWidth(ctx.width) )
+      case "UInt" => if (ctx.getChildCount > 1) UIntType( visitWidth(ctx.width) ) 
+                     else UIntType( UnknownWidth )
+      case "SInt" => if (ctx.getChildCount > 1) SIntType( visitWidth(ctx.width) )
+                     else SIntType( UnknownWidth )
       case "Clock" => ClockType
       case "{" => BundleType(ctx.field.map(visitField))
       case _ => new VectorType( visitType(ctx.`type`), string2BigInt(ctx.IntLit.getText) )
@@ -132,8 +135,15 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
       Ref(ctx.getText, UnknownType)
     else
       ctx.getChild(0).getText match {
-        case "UInt" => UIntValue(string2BigInt(ctx.IntLit(0).getText), string2BigInt(ctx.width.getText))
-        case "SInt" => SIntValue(string2BigInt(ctx.IntLit(0).getText), string2BigInt(ctx.width.getText))
+        case "UInt" => {
+          val width = if (ctx.getChildCount > 4) visitWidth(ctx.width) else UnknownWidth
+          UIntValue(string2BigInt(ctx.IntLit(0).getText), width)
+        }
+        //case "SInt" => SIntValue(string2BigInt(ctx.IntLit(0).getText), string2BigInt(ctx.width.getText))
+        case "SInt" => {
+          val width = if (ctx.getChildCount > 4) visitWidth(ctx.width) else UnknownWidth
+          SIntValue(string2BigInt(ctx.IntLit(0).getText), width)
+        }
         case _ => 
           ctx.getChild(1).getText match {
             case "." => new Subfield(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)

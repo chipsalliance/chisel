@@ -50,8 +50,8 @@ case object Bits extends PrimOp
 // Add types, default to UNKNOWN
 // TODO add type
 trait Exp extends AST
-case class UIntValue(value: BigInt, width: BigInt) extends Exp
-case class SIntValue(value: BigInt, width: BigInt) extends Exp
+case class UIntValue(value: BigInt, width: Width) extends Exp
+case class SIntValue(value: BigInt, width: Width) extends Exp
 case class Ref(name: String, tpe: Type) extends Exp
 case class Subfield(exp: Exp, name: String, tpe: Type) extends Exp
 case class Subindex(exp: Exp, value: BigInt) extends Exp
