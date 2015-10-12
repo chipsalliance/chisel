@@ -17,6 +17,21 @@ modifications are:
    val wire = Wire(Bits(width = 15))
    ```
 
+ - Sequential memories:
+   ```
+   val addr = Reg(UInt())
+   val mem = Mem(UInt(width=8), 1024, seqRead = true)
+   val dout = when(enable) { mem(addr) }
+   ```
+   becomes (in Chisel3):
+   ```
+   val addr = UInt()
+   val mem = SeqMem(1024, UInt(width=8))
+   val dout = mem.read(addr, enable)
+   ```
+   Notice the address register is now internal to the SeqMem(), but the data
+   will still return on the subsequent cycle. 
+  
 ## Getting Started
 
 ### Overview
