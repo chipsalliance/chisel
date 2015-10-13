@@ -6,17 +6,18 @@ import Utils._
 object Test
 {
   private val usage = """
-    Usage: java -jar firrtl.jar firrtl.Test [options] -i <input> -o <output>
+    Usage: java -cp utils/bin/firrtl.jar firrtl.Test [options] -i <input> -o <output>
   """
   private val defaultOptions = Map[Symbol, Any]().withDefaultValue(false)
 
   // Parse input file and print to output
-  private def highFIRRTL(input: String, output: String)
+  private def highFIRRTL(input: String, output: String, logger: Logger)
   {
     val ast = Parser.parse(input)
     val writer = new PrintWriter(new File(output))
-    writer.write(ast.serialize)
+    writer.write(ast.serialize())
     writer.close()
+    logger.printDebug(ast)
   }
 
   def main(args: Array[String])
@@ -24,24 +25,54 @@ object Test
     val arglist = args.toList
     type OptionMap = Map[Symbol, Any]
 
+    // Default debug mode is 'debug
+    def decodeDebugMode(mode: Any): Symbol =
+      mode match {
+        case s: String => Symbol(s)
+        case _ => 'debug
+      }
+
+    def nextPrintVar(syms: List[Symbol], chars: List[Char]): List[Symbol] = 
+      chars match {
+        case Nil => syms
+        case 't' :: tail => nextPrintVar(syms ++ List('types), tail)
+        case 'k' :: tail => nextPrintVar(syms ++ List('kinds), tail)
+        case 'w' :: tail => nextPrintVar(syms ++ List('widths), tail)
+        case 'T' :: tail => nextPrintVar(syms ++ List('twidths), tail)
+        case 'g' :: tail => nextPrintVar(syms ++ List('genders), tail)
+        case 'c' :: tail => nextPrintVar(syms ++ List('circuit), tail)
+        case 'd' :: tail => nextPrintVar(syms ++ List('debug), tail) // Currently ignored
+        case 'i' :: tail => nextPrintVar(syms ++ List('info), tail)  
+        case char :: tail => throw new Exception("Unknown print option " + char)
+      }
+
     def nextOption(map: OptionMap, list: List[String]): OptionMap = {
-      def isSwitch(s: String) = (s(0) == '-')
       list match {
         case Nil => map
         case "-X" :: value :: tail => 
                   nextOption(map ++ Map('compiler -> value), tail)
-        //case "-d" :: tail => 
-        //          nextOption(map ++ Map('debug -> true), tail)
+        case "-d" :: value :: tail => 
+                  nextOption(map ++ Map('debugMode -> value), tail)
+        case "-l" :: value :: tail =>
+                  nextOption(map ++ Map('log -> value), tail)
+        case "-p" :: value :: tail =>
+                  nextOption(map ++ Map('printVars -> value), tail)
         case "-i" :: value :: tail =>
                   nextOption(map ++ Map('input -> value), tail)
         case "-o" :: value :: tail =>
                   nextOption(map ++ Map('output -> value), tail)
+        case ("-h" | "--help") :: tail =>
+                  nextOption(map ++ Map('help -> true), tail)
         case option :: tail => 
                   throw new Exception("Unknown option " + option)
       }
     }
     val options = nextOption(defaultOptions, arglist)
-    println(options)
+
+    if (options('help) == true) {
+      println(usage)
+      System.exit(0)
+    }
 
     val input = options('input) match {
       case s: String => s
@@ -51,10 +82,23 @@ object Test
       case s: String => s
       case false => throw new Exception("No output file provided!" + usage)
     }
+    val debugMode = decodeDebugMode(options('debugMode))
+    val printVars = options('printVars) match {
+      case s: String => nextPrintVar(List(), s.toList)
+      case false => List()
+    }
+    implicit val logger = options('log) match {
+      case s: String => Logger(new PrintWriter(new FileOutputStream(s)), debugMode, printVars)
+      case false => Logger(new PrintWriter(System.out, true), debugMode, printVars)
+    }
+
+    // -p "printVars" options only print for debugMode > 'debug, warn if -p enabled and debugMode < 'debug
+    if( !logger.debugEnable && !printVars.isEmpty )
+      logger.warn("-p options will not print unless debugMode (-d) is debug or trace")
 
     options('compiler) match {
       case "Verilog" => throw new Exception("Verilog compiler not currently supported!")
-      case "HighFIRRTL" => highFIRRTL(input, output)
+      case "HighFIRRTL" => highFIRRTL(input, output, logger)
       case other => throw new Exception("Invalid compiler! " + other)
     }
   }

@@ -8,17 +8,47 @@
 package firrtl
 
 import scala.collection.mutable.StringBuilder
-import scala.reflect.runtime.universe._
+//import scala.reflect.runtime.universe._
 
 object Utils {
 
+  // Is there a more elegant way to do this?
+  private type FlagMap = Map[Symbol, Boolean]
+  private val FlagMap = Map[Symbol, Boolean]().withDefaultValue(false)
+
+  def debug(node: AST)(implicit flags: FlagMap): String = {
+    if (!flags.isEmpty) {
+      var str = ""
+      if (flags('types)) {
+        val tpe = node.getType
+        if( tpe.nonEmpty ) str += s"@<t:${tpe.get.wipeWidth.serialize}>" 
+      }
+      str
+    }
+    else {
+      ""
+    }
+  }
+
   implicit class BigIntUtils(bi: BigInt){
-    def serialize(): String = 
+    def serialize(implicit flags: FlagMap = FlagMap): String = 
       "\"h0" + bi.toString(16) + "\""
   }
 
+  implicit class ASTUtils(ast: AST) {
+    def getType(): Option[Type] = 
+      ast match {
+        case e: Exp => e.getType
+        case s: Stmt => s.getType
+        case f: Field => f.getType
+        case t: Type => t.getType
+        case p: Port => p.getType
+        case _ => None
+      }
+  }
+
   implicit class PrimOpUtils(op: PrimOp) {
-    def serialize(): String = {
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
       op match { 
         case Add => "add"
         case Sub => "sub"
@@ -60,8 +90,8 @@ object Utils {
   }
 
   implicit class ExpUtils(exp: Exp) {
-    def serialize(): String = 
-      exp match {
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
+      val ret = exp match {
         case v: UIntValue => s"UInt${v.width.serialize}(${v.value.serialize})"
         case v: SIntValue => s"SInt${v.width.serialize}(${v.value.serialize})"
         case r: Ref => r.name
@@ -70,6 +100,8 @@ object Utils {
         case p: DoPrimOp => 
           s"${p.op.serialize}(" + (p.args.map(_.serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
       } 
+      ret + debug(exp)
+    }
 
     def map(f: Exp => Exp): Exp = 
       exp match {
@@ -78,11 +110,23 @@ object Utils {
         case p: DoPrimOp => DoPrimOp(p.op, p.args.map(f), p.consts, p.tpe)
         case e: Exp => e
       }
+
+    def getType(): Option[Type] = {
+      exp match {
+        case v: UIntValue => Option(UIntType(UnknownWidth))
+        case v: SIntValue => Option(SIntType(UnknownWidth))
+        case r: Ref => Option(r.tpe)
+        case s: Subfield => Option(s.tpe)
+        case i: Index => Option(i.tpe)
+        case p: DoPrimOp => Option(p.tpe)
+        case e: Exp => None
+      }
+    }
   }
   
   // AccessorDir
   implicit class AccessorDirUtils(dir: AccessorDir) {
-    def serialize(): String = 
+    def serialize(implicit flags: FlagMap = FlagMap): String = 
       dir match {
         case Infer => "infer"
         case Read => "read"
@@ -123,8 +167,9 @@ object Utils {
   }
 
   implicit class StmtUtils(stmt: Stmt) {
-    def serialize(): String = 
-      stmt match {
+    def serialize(implicit flags: FlagMap = FlagMap): String =
+    {
+      var ret = stmt match {
         case w: DefWire => s"wire ${w.name} : ${w.tpe.serialize}"
         case r: DefReg => s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize}, ${r.reset.serialize}"
         case m: DefMemory => (if(m.seq) "smem" else "cmem") + 
@@ -149,82 +194,118 @@ object Utils {
         case b: Block => {
           val s = new StringBuilder
           b.stmts.foreach { s ++= newline ++ _.serialize }
-          s.result
-        }
+          s.result + debug(b)
+        } 
         case a: Assert => s"assert ${a.pred.serialize}"
         case EmptyStmt => "skip"
       } 
+      ret + debug(stmt)
+    }
 
     // Using implicit types to allow overloading of function type to map, see StmtMagnet above
     def map[T](f: T => T)(implicit magnet: (T => T) => StmtMagnet): Stmt = magnet(f).map(stmt)
     
+    def getType(): Option[Type] =
+      stmt match {
+        case w: DefWire => Option(w.tpe)
+        case r: DefReg => Option(r.tpe)
+        case m: DefMemory => Option(m.tpe)
+        case p: DefPoison => Option(p.tpe)
+        case s: Stmt => None
+      }
   }
 
   implicit class WidthUtils(w: Width) {
-    def serialize(): String = 
-      w match {
-        case UnknownWidth => ""
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
+      val s = w match {
+        case UnknownWidth => "" //"?"
         case w: IntWidth => s"<${w.width.toString}>"
       } 
+      s + debug(w)
+    }
   }
 
   implicit class FieldDirUtils(dir: FieldDir) {
-    def serialize(): String = 
-      dir match {
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
+      val s = dir match {
         case Reverse => "flip "
         case Default => ""
       } 
+      s + debug(dir)
+    }
   }
 
   implicit class FieldUtils(field: Field) {
-    def serialize(): String = 
-      s"${field.dir.serialize} ${field.name} : ${field.tpe.serialize}"
+    def serialize(implicit flags: FlagMap = FlagMap): String = 
+      s"${field.dir.serialize} ${field.name} : ${field.tpe.serialize}" + debug(field)
+
+    def getType(): Option[Type] = Option(field.tpe)
   }
 
   implicit class TypeUtils(t: Type) {
-    def serialize(): String = {
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
       val commas = ", " // for mkString in BundleType
-        t match {
+        val s = t match {
           case ClockType => "Clock"
-          case UnknownType => "UnknownType"
+          //case UnknownType => "UnknownType"
+          case UnknownType => "?"
           case t: UIntType => s"UInt${t.width.serialize}"
           case t: SIntType => s"SInt${t.width.serialize}"
           case t: BundleType => s"{ ${t.fields.map(_.serialize).mkString(commas)} }"
           case t: VectorType => s"${t.tpe.serialize}[${t.size}]"
         } 
+        s + debug(t)
     }
+
+    // TODO how does this work?
+    def getType(): Option[Type] = 
+      t match {
+        case v: VectorType => Option(v.tpe)
+        case tpe: Type => None
+      }
+
+    def wipeWidth(): Type = 
+      t match {
+        case t: UIntType => UIntType(UnknownWidth)
+        case t: SIntType => SIntType(UnknownWidth)
+        case _ => t
+      }
   }
 
   implicit class PortDirUtils(p: PortDir) {
-    def serialize(): String = 
-      p match {
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
+      val s = p match {
         case Input => "input"
         case Output => "output"
       } 
+      s + debug(p)
+    }
   }
 
   implicit class PortUtils(p: Port) {
-    def serialize(): String = 
-      s"${p.dir.serialize} ${p.name} : ${p.tpe.serialize}"
+    def serialize(implicit flags: FlagMap = FlagMap): String = 
+      s"${p.dir.serialize} ${p.name} : ${p.tpe.serialize}" + debug(p)
+    def getType(): Option[Type] = Option(p.tpe)
   }
 
   implicit class ModuleUtils(m: Module) {
-    def serialize(): String = {
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
       var s = new StringBuilder(s"module ${m.name} : ")
       withIndent {
         s ++= m.ports.map(newline ++ _.serialize).mkString
         s ++= newline ++ m.stmt.serialize
       }
+      s ++= debug(m)
       s.toString
     }
   }
 
   implicit class CircuitUtils(c: Circuit) {
-    def serialize(): String = {
+    def serialize(implicit flags: FlagMap = FlagMap): String = {
       var s = new StringBuilder(s"circuit ${c.name} : ")
-      //withIndent { c.modules.foreach(s ++= newline ++ newline ++ _.serialize) }
       withIndent { s ++= newline ++ c.modules.map(_.serialize).mkString(newline + newline) }
       s ++= newline ++ newline
+      s ++= debug(c)
       s.toString
     }
   }
