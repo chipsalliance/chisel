@@ -21,7 +21,8 @@ object Utils {
       var str = ""
       if (flags('types)) {
         val tpe = node.getType
-        if( tpe.nonEmpty ) str += s"@<t:${tpe.get.wipeWidth.serialize}>" 
+        //if( tpe != UnknownType ) str += s"@<t:${tpe.wipeWidth.serialize}>" 
+        str += s"@<t:${tpe.wipeWidth.serialize}>" 
       }
       str
     }
@@ -36,15 +37,17 @@ object Utils {
   }
 
   implicit class ASTUtils(ast: AST) {
-    def getType(): Option[Type] = 
+    def getType(): Type = 
       ast match {
         case e: Exp => e.getType
         case s: Stmt => s.getType
-        case f: Field => f.getType
+        //case f: Field => f.getType
         case t: Type => t.getType
         case p: Port => p.getType
-        case _ => None
+        case _ => UnknownType
       }
+
+    //def foreach 
   }
 
   implicit class PrimOpUtils(op: PrimOp) {
@@ -111,15 +114,14 @@ object Utils {
         case e: Exp => e
       }
 
-    def getType(): Option[Type] = {
+    def getType(): Type = {
       exp match {
-        case v: UIntValue => Option(UIntType(UnknownWidth))
-        case v: SIntValue => Option(SIntType(UnknownWidth))
-        case r: Ref => Option(r.tpe)
-        case s: Subfield => Option(s.tpe)
-        case i: Index => Option(i.tpe)
-        case p: DoPrimOp => Option(p.tpe)
-        case e: Exp => None
+        case v: UIntValue => UIntType(UnknownWidth)
+        case v: SIntValue => SIntType(UnknownWidth)
+        case r: Ref => r.tpe
+        case s: Subfield => s.tpe
+        case i: Index => i.tpe
+        case p: DoPrimOp => p.tpe
       }
     }
   }
@@ -205,13 +207,13 @@ object Utils {
     // Using implicit types to allow overloading of function type to map, see StmtMagnet above
     def map[T](f: T => T)(implicit magnet: (T => T) => StmtMagnet): Stmt = magnet(f).map(stmt)
     
-    def getType(): Option[Type] =
+    def getType(): Type =
       stmt match {
-        case w: DefWire => Option(w.tpe)
-        case r: DefReg => Option(r.tpe)
-        case m: DefMemory => Option(m.tpe)
-        case p: DefPoison => Option(p.tpe)
-        case s: Stmt => None
+        case w: DefWire => w.tpe
+        case r: DefReg => r.tpe
+        case m: DefMemory => m.tpe
+        case p: DefPoison => p.tpe
+        case s: Stmt => UnknownType
       }
   }
 
@@ -228,7 +230,7 @@ object Utils {
   implicit class FieldDirUtils(dir: FieldDir) {
     def serialize(implicit flags: FlagMap = FlagMap): String = {
       val s = dir match {
-        case Reverse => "flip "
+        case Reverse => "flip"
         case Default => ""
       } 
       s + debug(dir)
@@ -239,7 +241,7 @@ object Utils {
     def serialize(implicit flags: FlagMap = FlagMap): String = 
       s"${field.dir.serialize} ${field.name} : ${field.tpe.serialize}" + debug(field)
 
-    def getType(): Option[Type] = Option(field.tpe)
+    def getType(): Type = field.tpe
   }
 
   implicit class TypeUtils(t: Type) {
@@ -251,17 +253,18 @@ object Utils {
           case UnknownType => "?"
           case t: UIntType => s"UInt${t.width.serialize}"
           case t: SIntType => s"SInt${t.width.serialize}"
-          case t: BundleType => s"{ ${t.fields.map(_.serialize).mkString(commas)} }"
+          case t: BundleType => s"{${t.fields.map(_.serialize).mkString(commas)}}"
           case t: VectorType => s"${t.tpe.serialize}[${t.size}]"
         } 
-        s + debug(t)
+        //s + debug(t)
+        s
     }
 
     // TODO how does this work?
-    def getType(): Option[Type] = 
+    def getType(): Type = 
       t match {
-        case v: VectorType => Option(v.tpe)
-        case tpe: Type => None
+        case v: VectorType => v.tpe
+        case tpe: Type => UnknownType
       }
 
     def wipeWidth(): Type = 
@@ -285,7 +288,7 @@ object Utils {
   implicit class PortUtils(p: Port) {
     def serialize(implicit flags: FlagMap = FlagMap): String = 
       s"${p.dir.serialize} ${p.name} : ${p.tpe.serialize}" + debug(p)
-    def getType(): Option[Type] = Option(p.tpe)
+    def getType(): Type = p.tpe
   }
 
   implicit class ModuleUtils(m: Module) {

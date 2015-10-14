@@ -22,7 +22,7 @@ circuit top :
 
 ; CHECK: circuit top :
 ; CHECK:    module top :
-; CHECK:       wire z : { x : UInt, flip y : SInt }
+; CHECK:       wire z : { x : UInt, flip y : SInt}
 ; CHECK:       z.x := UInt("h1")
 ; CHECK:       z.y := SInt("h1")
 ; CHECK:       node x = z.x            
