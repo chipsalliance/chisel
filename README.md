@@ -20,7 +20,9 @@
     `make # Build & test`     
 
 #### Scala implementation 
-The Scala FIRRTL implementation relies upon sbt.    
+The Scala FIRRTL implementation relies upon sbt 0.13.6. It uses sbt-assembly to create a fat JAR.    
+Using a bash script and a symbolic link it can be used with the same command-line arguments as the stanza implementation.    
 Example use:    
-  `sbt -mem 2048 "run-main Example <input> <output>`    
-This command will read in &lt;input&gt; FIRRTL file, parse it, then output the AST to &lt;output&gt;    
+  `make build-scala`    
+  `make set-scala` # Creates symbolic link, make set-stanza reverts to stanza implementation       
+  `./utils/bin/firrtl -i <input> -o <output> -X <compiler>`    

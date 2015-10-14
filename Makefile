@@ -21,12 +21,15 @@ install-mac:
 
 build-deploy: 
 	cd $(firrtl_dir) && stanza -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza
+	make set-stanza
 
 build: 
 	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza
+	make set-stanza
 
 build-fast: 
 	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza -flags OPTIMIZE
+	make set-stanza
 
 check:
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
@@ -80,4 +83,4 @@ set-scala:
 set-stanza:
 	ln -f -s $(root_dir)/utils/bin/firrtl-stanza $(root_dir)/utils/bin/firrtl
 
-.PHONY: all install build-deploy build check clean fail succeed regress set-scala set-stanza build-scala
+.PHONY: all install build-deploy build check clean fail succeed regress set-scala set-stanza build-scala test-scala
