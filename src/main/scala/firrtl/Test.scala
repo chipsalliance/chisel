@@ -2,6 +2,7 @@ package firrtl
 
 import java.io._
 import Utils._
+import DebugUtils._
 
 object Test
 {
@@ -11,13 +12,28 @@ object Test
   private val defaultOptions = Map[Symbol, Any]().withDefaultValue(false)
 
   // Parse input file and print to output
-  private def highFIRRTL(input: String, output: String, logger: Logger)
+  private def highFIRRTL(input: String, output: String)(implicit logger: Logger)
   {
     val ast = Parser.parse(input)
     val writer = new PrintWriter(new File(output))
     writer.write(ast.serialize())
     writer.close()
     logger.printDebug(ast)
+  }
+  private def verilog(input: String, output: String)(implicit logger: Logger)
+  {
+    logger.warn("Verilog compiler not fully implemented")
+    val ast = time("parse"){ Parser.parse(input) }
+    // Execute passes
+    //val ast2 = time("inferTypes"){ inferTypes(ast) }
+    val ast2 = ast
+
+    // Output
+    val writer = new PrintWriter(new File(output))
+    var outString = time("serialize"){ ast2.serialize() }
+    writer.write(outString)
+    writer.close()
+    logger.printDebug(ast2)
   }
 
   def main(args: Array[String])
@@ -89,7 +105,7 @@ object Test
     }
     implicit val logger = options('log) match {
       case s: String => Logger(new PrintWriter(new FileOutputStream(s)), debugMode, printVars)
-      case false => Logger(new PrintWriter(System.out, true), debugMode, printVars)
+      case false => Logger(new PrintWriter(System.err, true), debugMode, printVars)
     }
 
     // -p "printVars" options only print for debugMode > 'debug, warn if -p enabled and debugMode < 'debug
@@ -97,9 +113,17 @@ object Test
       logger.warn("-p options will not print unless debugMode (-d) is debug or trace")
 
     options('compiler) match {
-      case "Verilog" => throw new Exception("Verilog compiler not currently supported!")
-      case "HighFIRRTL" => highFIRRTL(input, output, logger)
+      case "verilog" => verilog(input, output)
+      case "HighFIRRTL" => highFIRRTL(input, output)
       case other => throw new Exception("Invalid compiler! " + other)
     }
+  }
+
+  def time[R](str: String)(block: => R)(implicit logger: Logger): R = {
+    val t0 = System.currentTimeMillis()
+    val result = block    // call-by-name
+    val t1 = System.currentTimeMillis()
+    logger.info(s"Time to ${str}: ${t1 - t0} ms")
+    result
   }
 }

@@ -32,7 +32,7 @@ object Utils {
 
   implicit class BigIntUtils(bi: BigInt){
     def serialize(implicit flags: FlagMap = FlagMap): String = 
-      "\"h0" + bi.toString(16) + "\""
+      "\"h" + bi.toString(16) + "\""
   }
 
   implicit class ASTUtils(ast: AST) {
