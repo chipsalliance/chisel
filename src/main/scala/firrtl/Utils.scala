@@ -8,6 +8,7 @@
 package firrtl
 
 import scala.collection.mutable.StringBuilder
+import java.io.PrintWriter
 //import scala.reflect.runtime.universe._
 
 object Utils {
@@ -21,8 +22,7 @@ object Utils {
       var str = ""
       if (flags('types)) {
         val tpe = node.getType
-        //if( tpe != UnknownType ) str += s"@<t:${tpe.wipeWidth.serialize}>" 
-        str += s"@<t:${tpe.wipeWidth.serialize}>" 
+        if( tpe != UnknownType ) str += s"@<t:${tpe.wipeWidth.serialize}>"
       }
       str
     }
@@ -46,8 +46,6 @@ object Utils {
         case p: Port => p.getType
         case _ => UnknownType
       }
-
-    //def foreach 
   }
 
   implicit class PrimOpUtils(op: PrimOp) {
@@ -209,11 +207,11 @@ object Utils {
     
     def getType(): Type =
       stmt match {
-        case w: DefWire => w.tpe
-        case r: DefReg => r.tpe
-        case m: DefMemory => m.tpe
-        case p: DefPoison => p.tpe
-        case s: Stmt => UnknownType
+        case s: DefWire   => s.tpe
+        case s: DefReg    => s.tpe
+        case s: DefMemory => s.tpe
+        case s: DefPoison => s.tpe
+        case _ => UnknownType
       }
   }
 
@@ -256,11 +254,9 @@ object Utils {
           case t: BundleType => s"{${t.fields.map(_.serialize).mkString(commas)}}"
           case t: VectorType => s"${t.tpe.serialize}[${t.size}]"
         } 
-        //s + debug(t)
-        s
+        s + debug(t)
     }
 
-    // TODO how does this work?
     def getType(): Type = 
       t match {
         case v: VectorType => v.tpe

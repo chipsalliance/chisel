@@ -3,6 +3,7 @@ package firrtl
 import java.io._
 import Utils._
 import DebugUtils._
+import Passes._
 
 object Test
 {
@@ -18,22 +19,25 @@ object Test
     val writer = new PrintWriter(new File(output))
     writer.write(ast.serialize())
     writer.close()
-    logger.printDebug(ast)
+    logger.printlnDebug(ast)
   }
   private def verilog(input: String, output: String)(implicit logger: Logger)
   {
     logger.warn("Verilog compiler not fully implemented")
     val ast = time("parse"){ Parser.parse(input) }
     // Execute passes
-    //val ast2 = time("inferTypes"){ inferTypes(ast) }
-    val ast2 = ast
+
+    logger.println("Infer Types")
+    val ast2 = time("inferTypes"){ inferTypes(ast) }
+    logger.printlnDebug(ast2)
+    logger.println("Finished Infer Types")
+    //val ast2 = ast
 
     // Output
     val writer = new PrintWriter(new File(output))
     var outString = time("serialize"){ ast2.serialize() }
     writer.write(outString)
     writer.close()
-    logger.printDebug(ast2)
   }
 
   def main(args: Array[String])

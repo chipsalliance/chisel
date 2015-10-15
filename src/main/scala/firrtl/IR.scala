@@ -1,3 +1,9 @@
+
+/* TODO
+ *  - Should FileInfo be a FIRRTL node?
+ *
+ */
+
 package firrtl
 
 import scala.collection.Seq

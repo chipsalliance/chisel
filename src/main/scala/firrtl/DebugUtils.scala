@@ -24,6 +24,9 @@ private object DebugUtils {
     val circuitEnable = printVars contains 'circuit
     val debugFlags = printVars.map(_ -> true).toMap.withDefaultValue(false)
 
+    def println(message: => String){
+      writer.println(message)
+    }
     def error(message: => String){
       if (errorEnable) writer.println(message.split("\n").map("[error] " + _).mkString("\n"))
     }
@@ -39,8 +42,8 @@ private object DebugUtils {
     def trace(message: => String){
       if (traceEnable) writer.println(message.split("\n").map("[trace] " + _).mkString("\n"))
     }
-    def printDebug(circuit: Circuit){
-      if (circuitEnable) this.debug(circuit.serialize(debugFlags))
+    def printlnDebug(circuit: Circuit){
+      if (circuitEnable) this.println(circuit.serialize(debugFlags))
     }
     // Used if not autoflushing
     def flush() = writer.flush()

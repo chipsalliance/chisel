@@ -76,6 +76,7 @@ build-scala:
 
 test-scala:
 	cd $(test_dir)/parser && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/passes/infer-types && lit -v . --path=$(root_dir)/utils/bin/
 
 set-scala:
 	ln -f -s $(root_dir)/utils/bin/firrtl-scala $(root_dir)/utils/bin/firrtl
