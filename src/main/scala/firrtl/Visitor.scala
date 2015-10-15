@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.TerminalNode
 import scala.collection.JavaConversions._
 import antlr._
+import Primops._
 
 class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST] 
 {
@@ -149,48 +150,10 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
             case "." => new Subfield(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)
             case "[" => new Index(visitExp(ctx.exp(0)), string2BigInt(ctx.IntLit(0).getText), UnknownType)
             case "(" => 
-              DoPrimOp(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
+              DoPrimop(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
                   ctx.IntLit.map(x => string2BigInt(x.getText)), UnknownType)
           }
       }
    
-   // TODO can I create this and have the opposite? create map and invert it?
-	private def visitPrimop[AST](ctx: FIRRTLParser.PrimopContext): PrimOp = 
-    ctx.getText match {
-      case "add" => Add
-      case "sub" => Sub
-      case "addw" => Addw
-      case "subw" => Subw
-      case "mul" => Mul
-      case "div" => Div
-      case "mod" => Mod
-      case "quo" => Quo
-      case "rem" => Rem
-      case "lt" => Lt
-      case "leq" => Leq
-      case "gt" => Gt
-      case "geq" => Geq
-      case "eq" => Eq
-      case "neq" => Neq
-      case "mux" => Mux
-      case "pad" => Pad
-      case "asUInt" => AsUInt
-      case "asSInt" => AsSInt
-      case "shl" => Shl
-      case "shr" => Shr
-      case "dshl" => Dshl
-      case "dshr" => Dshr
-      case "cvt" => Cvt
-      case "neg" => Neg
-      case "not" => Not
-      case "and" => And
-      case "or" => Or
-      case "xor" => Xor
-      case "andr" => Andr
-      case "orr" => Orr
-      case "xorr" => Xorr
-      case "cat" => Cat
-      case "bit" => Bit
-      case "bits" => Bits
-    }
+	private def visitPrimop[AST](ctx: FIRRTLParser.PrimopContext): Primop = fromString(ctx.getText)
 }

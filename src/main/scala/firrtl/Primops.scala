@@ -6,8 +6,54 @@ import DebugUtils._
 
 object Primops {
 
+  private val mapPrimop2String = Map[Primop, String](
+    Add -> "add",
+    Sub -> "sub",
+    Addw -> "addw",
+    Subw -> "subw",
+    Mul -> "mul",
+    Div -> "div",
+    Mod -> "mod",
+    Quo -> "quo",
+    Rem -> "rem",
+    Lt -> "lt",
+    Leq -> "leq",
+    Gt -> "gt",
+    Geq -> "geq",
+    Eq -> "eq",
+    Neq -> "neq",
+    Eqv -> "eqv",
+    Neqv -> "neqv",
+    Mux -> "mux",
+    Pad -> "pad",
+    AsUInt -> "asUInt",
+    AsSInt -> "asSInt",
+    Shl -> "shl",
+    Shr -> "shr",
+    Dshl -> "dshl",
+    Dshr -> "dshr",
+    Cvt -> "cvt",
+    Neg -> "neg",
+    Not -> "not",
+    And -> "and",
+    Or -> "or",
+    Xor -> "xor",
+    Andr -> "andr",
+    Orr -> "orr",
+    Xorr -> "xorr",
+    Cat -> "cat",
+    Bit -> "bit",
+    Bits -> "bits"
+  )
+  private val mapString2Primop = mapPrimop2String.map(_.swap)
+  def fromString(op: String): Primop = mapString2Primop(op)
+
+  implicit class PrimopImplicits(op: Primop){
+    def getString(): String = mapPrimop2String(op)
+  }
+
   // Borrowed from Stanza implementation
-  def lowerAndTypePrimop(e: DoPrimOp)(implicit logger: Logger): DoPrimOp = {
+  def lowerAndTypePrimop(e: DoPrimop)(implicit logger: Logger): DoPrimop = {
     def uAnd(op1: Exp, op2: Exp): Type = {
       (op1.getType, op2.getType) match {
         case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
@@ -41,6 +87,8 @@ object Primops {
       case Geq => UIntType(UnknownWidth)
       case Eq => UIntType(UnknownWidth)
       case Neq => UIntType(UnknownWidth)
+      case Eqv => UIntType(UnknownWidth)
+      case Neqv => UIntType(UnknownWidth)
       case Mux => ofType(e.args(1))
       case Pad => ofType(e.args(0))
       case AsUInt => UIntType(UnknownWidth)
@@ -63,7 +111,7 @@ object Primops {
       case Bits => UIntType(UnknownWidth)
       case _ => ??? 
     }
-    DoPrimOp(e.op, e.args, e.consts, tpe)
+    DoPrimop(e.op, e.args, e.consts, tpe)
   }
 
 }

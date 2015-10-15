@@ -9,6 +9,7 @@ package firrtl
 
 import scala.collection.mutable.StringBuilder
 import java.io.PrintWriter
+import Primops._
 //import scala.reflect.runtime.universe._
 
 object Utils {
@@ -48,46 +49,8 @@ object Utils {
       }
   }
 
-  implicit class PrimOpUtils(op: PrimOp) {
-    def serialize(implicit flags: FlagMap = FlagMap): String = {
-      op match { 
-        case Add => "add"
-        case Sub => "sub"
-        case Addw => "addw"
-        case Subw => "subw"
-        case Mul => "mul"
-        case Div => "div"
-        case Mod => "mod"
-        case Quo => "quo"
-        case Rem => "rem"
-        case Lt => "lt"
-        case Leq => "leq"
-        case Gt => "gt"
-        case Geq => "geq"
-        case Eq => "eq"
-        case Neq => "neq"
-        case Mux => "mux"
-        case Pad => "pad"
-        case AsUInt => "asUInt"
-        case AsSInt => "asSInt"
-        case Shl => "shl"
-        case Shr => "shr"
-        case Dshl => "dshl"
-        case Dshr => "dshr"
-        case Cvt => "cvt"
-        case Neg => "neg"
-        case Not => "not"
-        case And => "and"
-        case Or => "or"
-        case Xor => "xor"
-        case Andr => "andr"
-        case Orr => "orr"
-        case Xorr => "xorr"
-        case Cat => "cat"
-        case Bit => "bit"
-        case Bits => "bits"
-      } 
-    }
+  implicit class PrimopUtils(op: Primop) {
+    def serialize(implicit flags: FlagMap = FlagMap): String = op.getString
   }
 
   implicit class ExpUtils(exp: Exp) {
@@ -98,7 +61,7 @@ object Utils {
         case r: Ref => r.name
         case s: Subfield => s"${s.exp.serialize}.${s.name}"
         case s: Index => s"${s.exp.serialize}[${s.value}]"
-        case p: DoPrimOp => 
+        case p: DoPrimop => 
           s"${p.op.serialize}(" + (p.args.map(_.serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
       } 
       ret + debug(exp)
@@ -108,7 +71,7 @@ object Utils {
       exp match {
         case s: Subfield => Subfield(f(s.exp), s.name, s.tpe)
         case i: Index => Index(f(i.exp), i.value, i.tpe)
-        case p: DoPrimOp => DoPrimOp(p.op, p.args.map(f), p.consts, p.tpe)
+        case p: DoPrimop => DoPrimop(p.op, p.args.map(f), p.consts, p.tpe)
         case e: Exp => e
       }
 
@@ -119,7 +82,7 @@ object Utils {
         case r: Ref => r.tpe
         case s: Subfield => s.tpe
         case i: Index => i.tpe
-        case p: DoPrimOp => p.tpe
+        case p: DoPrimop => p.tpe
       }
     }
   }

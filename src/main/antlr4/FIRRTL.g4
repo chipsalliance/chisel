@@ -125,6 +125,8 @@ primop
   | 'geq'
   | 'eq'
   | 'neq'
+  | 'eqv'
+  | 'neqv'
   | 'mux'
   | 'pad'
   | 'asUInt'

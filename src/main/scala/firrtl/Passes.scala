@@ -50,7 +50,7 @@ object Passes {
       case e: Ref => Ref(e.name, typeMap(e.name))
       case e: Subfield => Subfield(e.exp, e.name, getBundleSubtype(e.exp.getType, e.name))
       case e: Index => Index(e.exp, e.value, getVectorSubtype(e.exp.getType))
-      case e: DoPrimOp => lowerAndTypePrimop(e)
+      case e: DoPrimop => lowerAndTypePrimop(e)
       case e: Exp => e
     }
   }
