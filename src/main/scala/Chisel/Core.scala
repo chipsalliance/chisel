@@ -6,22 +6,6 @@ import Builder.pushOp
 import Builder.dynamicContext
 import PrimOp._
 
-/** A factory for literal values */
-private object Literal {
-  def sizeof(x: BigInt): Int = x.bitLength
-
-  def decodeBase(base: Char): Int = base match {
-    case 'x' | 'h' => 16
-    case 'd' => 10
-    case 'o' => 8
-    case 'b' => 2
-    case _ => Builder.error("Invalid base " + base); 2
-  }
-
-  def stringToVal(base: Char, x: String): BigInt =
-    BigInt(x, decodeBase(base))
-}
-
 sealed abstract class Direction(name: String) {
   override def toString = name
   def flip: Direction
@@ -537,8 +521,18 @@ sealed trait UIntFactory {
     new UInt(NO_DIR, lit.width, Some(lit))
   }
 
-  private def parse(n: String) =
-    Literal.stringToVal(n(0), n.substring(1, n.length))
+  private def parse(n: String) = {
+    val (base, num) = n.splitAt(1)
+    val radix = base match {
+      case "x" | "h" => 16
+      case "d" => 10
+      case "o" => 8
+      case "b" => 2
+      case _ => Builder.error(s"Invalid base $base"); 2
+    }
+    BigInt(num, radix)
+  }
+
   private def parsedWidth(n: String) =
     if (n(0) == 'b') Width(n.length-1)
     else if (n(0) == 'h') Width((n.length-1) * 4)
