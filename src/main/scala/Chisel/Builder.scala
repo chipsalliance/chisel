@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package Chisel
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}

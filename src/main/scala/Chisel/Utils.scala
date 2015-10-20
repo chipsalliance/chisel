@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package Chisel
 import Builder._
 import scala.math._
@@ -207,11 +209,11 @@ object Fill {
       case 0 => UInt(width=0)
       case 1 => x
       case y if n > 1 =>
-        val p2 = Array.ofDim[UInt](log2Up(n+1))
+        val p2 = Array.ofDim[UInt](log2Up(n + 1))
         p2(0) = x
         for (i <- 1 until p2.length)
           p2(i) = Cat(p2(i-1), p2(i-1))
-        Cat((0 until log2Up(y+1)).filter(i => (y & (1 << i)) != 0).map(p2(_)))
+        Cat((0 until log2Up(y + 1)).filter(i => (y & (1 << i)) != 0).map(p2(_)))
       case _ => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
     }
   }
@@ -454,9 +456,10 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 /** A hardware module implementing a Queue
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue
-  * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are combinationally coupled.
-  * @param flow True if the inputs can be consumed on the same cycle
-(the inputs "flow" through the queue immediately). The ''valid'' signals are coupled.
+  * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are
+  * combinationally coupled.
+  * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
+  * The ''valid'' signals are coupled.
   *
   * Example usage:
   *    {{{ val q = new Queue(UInt(), 16)
@@ -561,7 +564,8 @@ object ArbiterCtrl
   }
 }
 
-abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None) extends Module {
+abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
+    extends Module {
   require(isPow2(count))
   def grant: Seq[Bool]
   val io = new ArbiterIO(gen, n)
@@ -595,7 +599,8 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
   }
 }
 
-class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None) extends LockingArbiterLike[T](gen, n, count, needsLock) {
+class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
+    extends LockingArbiterLike[T](gen, n, count, needsLock) {
   lazy val last_grant = Reg(init=UInt(0, log2Up(n)))
   override def grant: Seq[Bool] = {
     val ctrl = ArbiterCtrl((0 until n).map(i => io.in(i).valid && UInt(i) > last_grant) ++ io.in.map(_.valid))
@@ -612,7 +617,8 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
   when (io.out.fire()) { last_grant := chosen }
 }
 
-class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None) extends LockingArbiterLike[T](gen, n, count, needsLock) {
+class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
+    extends LockingArbiterLike[T](gen, n, count, needsLock) {
   def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
 
   var choose = UInt(n-1)

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package Chisel
 
 private class Emitter(circuit: Circuit) {
@@ -6,7 +8,7 @@ private class Emitter(circuit: Circuit) {
   private def emitPort(e: Port): String =
     s"${e.dir} ${e.id.getRef.name} : ${e.id.toType}"
   private def emit(e: Command, ctx: Component): String = e match {
-    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_+", "+_)})"
+    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_ + ", " + _)})"
     case e: DefWire => s"wire ${e.name} : ${e.id.toType}"
     case e: DefPoison[_] => s"poison ${e.name} : ${e.id.toType}"
     case e: DefRegister => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
@@ -18,7 +20,7 @@ private class Emitter(circuit: Circuit) {
     case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
     case e: DefInstance => {
       val modName = moduleMap.getOrElse(e.id.name, e.id.name)
-     s"inst ${e.name} of $modName"
+      s"inst ${e.name} of $modName"
     }
 
     case w: WhenBegin =>
