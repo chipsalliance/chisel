@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package Chisel
 
 case class PrimOp(val name: String) {

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package Chisel
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
@@ -143,7 +145,7 @@ object Reg {
     pushCommand(DefRegister(x, Node(x._parent.get.clock), Node(x._parent.get.reset))) // TODO multi-clock
     if (init != null)
       pushCommand(ConnectInit(x.lref, init.ref))
-    if (next != null) 
+    if (next != null)
       x := next
     x
   }
@@ -257,7 +259,7 @@ object Vec {
     * @note elements are NOT assigned by default and have no value
     */
   def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.cloneType, n)
-  
+
   @deprecated("Chisel3 vec argument order should be n, gen - this will be removed by Chisel3 official release", "now")
   def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
 
@@ -559,7 +561,8 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.
   */
-sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg: Option[LitArg]) extends Element(dirArg, width) {
+sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg: Option[LitArg])
+    extends Element(dirArg, width) {
   // REVIEW TODO: should this be abstract? It may be good to use Bits for values
   // where you don't need artihmetic operations / arithmetic doesn't make sense
   // like opcodes and stuff.
@@ -779,7 +782,8 @@ abstract trait Num[T <: Data] {
 /** A data type for unsigned integers, represented as a binary bitvector.
   * Defines arithmetic operations between other integer types.
   */
-sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULit] = None) extends Bits(dir, width, lit) with Num[UInt] {
+sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULit] = None)
+    extends Bits(dir, width, lit) with Num[UInt] {
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"UInt<$width>"
@@ -909,7 +913,8 @@ object UInt extends UIntFactory
   * Identical in functionality to the UInt companion object. */
 object Bits extends UIntFactory
 
-sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = None) extends Bits(dir, width, lit) with Num[SInt] {
+sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = None)
+    extends Bits(dir, width, lit) with Num[SInt] {
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"SInt<$width>"
@@ -1160,7 +1165,7 @@ class Bundle extends Aggregate(NO_DIR) {
     }
     ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
-  private[Chisel] def toType = s"{${namedElts.reverse.map(e => (if (e._2.isFlip) "flip " else "")+e._2.getRef.name+" : "+e._2.toType).reduce(_+", "+_)}}"
+  private[Chisel] def toType = s"{${namedElts.reverse.map(e => (if (e._2.isFlip) "flip " else "") + e._2.getRef.name + " : " + e._2.toType).reduce(_ + ", " + _)}}"
   private[Chisel] lazy val flatten = namedElts.flatMap(_._2.flatten)
   private[Chisel] def addElt(name: String, elt: Data): Unit =
     namedElts += name -> elt
