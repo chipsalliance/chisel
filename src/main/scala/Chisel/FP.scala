@@ -15,6 +15,8 @@ case class DblLit(num: Double) extends Arg {
 }
 
 object Flo {
+  val Width = 32
+
   def apply(x: Float): Flo = new Flo(NO_DIR, Some(FloLit(x)))
   def apply(x: Double): Flo = Flo(x.toFloat)
   def apply(dir: Direction = null): Flo = new Flo(dir)
@@ -61,14 +63,15 @@ sealed abstract class FloBase[T <: Data](dir: Direction, width: Width) extends E
   def toUInt = toBits
 }
 
-class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None) extends FloBase[Flo](dir, Width(32)) with Num[Flo] {
+class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None)
+    extends FloBase[Flo](dir, Width(Flo.Width)) with Num[Flo] {
   type T = Flo;
   def floLitValue: Float = value.get.num
   def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type =
     pushOp(DefPrim(cloneType, BitsToFlo, this.ref)).asInstanceOf[this.type]
   override def toBits: UInt =
-    pushOp(DefPrim(UInt(width=32), FloToBits, this.ref))
+    pushOp(DefPrim(UInt(width=Flo.Width), FloToBits, this.ref))
   private[Chisel] def toType = "Flo"
   def cloneType: this.type = new Flo(dir).asInstanceOf[this.type]
 
@@ -106,6 +109,8 @@ class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None) extends FloB
 import java.lang.Double.doubleToLongBits
 
 object Dbl {
+  val Width = 64
+
   def apply(x: Float): Dbl = Dbl(x.toDouble);
   def apply(x: Double): Dbl = new Dbl(NO_DIR, Some(DblLit(x)))
   def apply(dir: Direction = NO_DIR): Dbl = new Dbl(dir)
@@ -141,14 +146,14 @@ object DblPrimOp {
 }
 import DblPrimOp._
 
-class Dbl(dir: Direction, val value: Option[DblLit] = None) extends FloBase[Dbl](dir, Width(64)) with Num[Dbl] {
+class Dbl(dir: Direction, val value: Option[DblLit] = None) extends FloBase[Dbl](dir, Width(Dbl.Width)) with Num[Dbl] {
   type T = Dbl;
   def dblLitValue: Double = value.get.num
   def cloneTypeWidth(width: Width): this.type = cloneType
   override def fromBits(n: Bits): this.type =
     pushOp(DefPrim(cloneType, BitsToDbl, this.ref)).asInstanceOf[this.type]
   override def toBits: UInt =
-    pushOp(DefPrim(UInt(width=64), DblToBits, this.ref))
+    pushOp(DefPrim(UInt(width=Dbl.Width), DblToBits, this.ref))
   private[Chisel] def toType = "Dbl"
   def cloneType: this.type = new Dbl(dir).asInstanceOf[this.type]
 
