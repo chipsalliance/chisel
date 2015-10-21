@@ -7,11 +7,11 @@ import Builder.pushOp
 /// FLO
 
 case class FloLit(num: Float) extends Arg {
-  def name = s"Flo(${num.toString})"
+  def name: String = s"Flo(${num.toString})"
 }
 
 case class DblLit(num: Double) extends Arg {
-  def name = s"Dbl(${num.toString})"
+  def name: String = s"Dbl(${num.toString})"
 }
 
 object Flo {
@@ -60,7 +60,7 @@ sealed abstract class FloBase[T <: Data](dir: Direction, width: Width) extends E
   protected def compop(op: PrimOp, other: T): Bool =
     pushOp(DefPrim(Bool(), op, this.ref, other.ref))
 
-  def toUInt = toBits
+  def toUInt: UInt = toBits
 }
 
 class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None)
@@ -78,30 +78,30 @@ class Flo(dir: Direction = NO_DIR, val value:Option[FloLit] = None)
   def fromInt(x: Int): Flo =
     Flo(x.toFloat).asInstanceOf[this.type]
 
-  def unary_-() = unop(FloNeg)
-  def +  (b: Flo) = binop(FloAdd, b)
-  def -  (b: Flo) = binop(FloSub, b)
-  def *  (b: Flo) = binop(FloMul, b)
-  def /  (b: Flo) = binop(FloDiv, b)
-  def %  (b: Flo) = binop(FloMod, b)
-  def ===(b: Flo) = compop(FloEqual, b)
-  def != (b: Flo) = compop(FloNotEqual, b)
-  def >  (b: Flo) = compop(FloGreater, b)
-  def <  (b: Flo) = compop(FloLess, b)
-  def <= (b: Flo) = compop(FloLessEqual, b)
-  def >= (b: Flo) = compop(FloGreaterEqual, b)
-  def pow (b: Flo) = binop(FloPow, b)
-  def sin = unop(FloSin)
-  def cos = unop(FloCos)
-  def tan = unop(FloTan)
-  def asin = unop(FloAsin)
-  def acos = unop(FloAcos)
-  def atan = unop(FloAtan)
-  def sqrt = unop(FloSqrt)
-  def floor = unop(FloFloor)
-  def ceil = unop(FloCeil)
-  def round = unop(FloRound)
-  def log = unop(FloLog)
+  def unary_-(): Flo = unop(FloNeg)
+  def +  (b: Flo): Flo = binop(FloAdd, b)
+  def -  (b: Flo): Flo = binop(FloSub, b)
+  def *  (b: Flo): Flo = binop(FloMul, b)
+  def /  (b: Flo): Flo = binop(FloDiv, b)
+  def %  (b: Flo): Flo = binop(FloMod, b)
+  def ===(b: Flo): Bool = compop(FloEqual, b)
+  def != (b: Flo): Bool = compop(FloNotEqual, b)
+  def >  (b: Flo): Bool = compop(FloGreater, b)
+  def <  (b: Flo): Bool = compop(FloLess, b)
+  def <= (b: Flo): Bool = compop(FloLessEqual, b)
+  def >= (b: Flo): Bool = compop(FloGreaterEqual, b)
+  def pow (b: Flo): Flo = binop(FloPow, b)
+  def sin: Flo = unop(FloSin)
+  def cos: Flo = unop(FloCos)
+  def tan: Flo = unop(FloTan)
+  def asin: Flo = unop(FloAsin)
+  def acos: Flo = unop(FloAcos)
+  def atan: Flo = unop(FloAtan)
+  def sqrt: Flo = unop(FloSqrt)
+  def floor: Flo = unop(FloFloor)
+  def ceil: Flo = unop(FloCeil)
+  def round: Flo = unop(FloRound)
+  def log: Flo = unop(FloLog)
 }
 
 /// DBL
@@ -160,30 +160,30 @@ class Dbl(dir: Direction, val value: Option[DblLit] = None) extends FloBase[Dbl]
   def fromInt(x: Int): this.type =
     Dbl(x.toDouble).asInstanceOf[this.type]
 
-  def unary_-() = unop(DblNeg)
-  def +  (b: Dbl) = binop(DblAdd, b)
-  def -  (b: Dbl) = binop(DblSub, b)
-  def *  (b: Dbl) = binop(DblMul, b)
-  def /  (b: Dbl) = binop(DblDiv, b)
-  def %  (b: Dbl) = binop(DblMod, b)
-  def ===(b: Dbl) = compop(DblEqual, b)
-  def != (b: Dbl) = compop(DblNotEqual, b)
-  def >  (b: Dbl) = compop(DblGreater, b)
-  def <  (b: Dbl) = compop(DblLess, b)
-  def <= (b: Dbl) = compop(DblLessEqual, b)
-  def >= (b: Dbl) = compop(DblGreaterEqual, b)
-  def pow (b: Dbl) = binop(DblPow, b)
-  def sin = unop(DblSin)
-  def cos = unop(DblCos)
-  def tan = unop(DblTan)
-  def asin = unop(DblAsin)
-  def acos = unop(DblAcos)
-  def atan = unop(DblAtan)
-  def sqrt = unop(DblSqrt)
-  def floor = unop(DblFloor)
-  def ceil = unop(DblCeil)
-  def round = unop(DblRound)
-  def log = unop(DblLog)
+  def unary_-(): Dbl = unop(DblNeg)
+  def +  (b: Dbl): Dbl = binop(DblAdd, b)
+  def -  (b: Dbl): Dbl = binop(DblSub, b)
+  def *  (b: Dbl): Dbl = binop(DblMul, b)
+  def /  (b: Dbl): Dbl = binop(DblDiv, b)
+  def %  (b: Dbl): Dbl = binop(DblMod, b)
+  def ===(b: Dbl): Bool = compop(DblEqual, b)
+  def != (b: Dbl): Bool = compop(DblNotEqual, b)
+  def >  (b: Dbl): Bool = compop(DblGreater, b)
+  def <  (b: Dbl): Bool = compop(DblLess, b)
+  def <= (b: Dbl): Bool = compop(DblLessEqual, b)
+  def >= (b: Dbl): Bool = compop(DblGreaterEqual, b)
+  def pow (b: Dbl): Dbl = binop(DblPow, b)
+  def sin: Dbl = unop(DblSin)
+  def cos: Dbl = unop(DblCos)
+  def tan: Dbl = unop(DblTan)
+  def asin: Dbl = unop(DblAsin)
+  def acos: Dbl = unop(DblAcos)
+  def atan: Dbl = unop(DblAtan)
+  def sqrt: Dbl = unop(DblSqrt)
+  def floor: Dbl = unop(DblFloor)
+  def ceil: Dbl = unop(DblCeil)
+  def round: Dbl = unop(DblRound)
+  def log: Dbl = unop(DblLog)
 }
 
 object Sin {

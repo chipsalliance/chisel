@@ -3,7 +3,7 @@
 package Chisel
 
 private class Emitter(circuit: Circuit) {
-  override def toString = res.toString
+  override def toString: String = res.toString
 
   private def emitPort(e: Port): String =
     s"${e.dir} ${e.id.getRef.name} : ${e.id.toType}"

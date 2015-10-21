@@ -9,18 +9,18 @@ import Builder.dynamicContext
 import PrimOp._
 
 sealed abstract class Direction(name: String) {
-  override def toString = name
+  override def toString: String = name
   def flip: Direction
 }
-object INPUT  extends Direction("input") { def flip = OUTPUT }
-object OUTPUT extends Direction("output") { def flip = INPUT }
-object NO_DIR extends Direction("?") { def flip = NO_DIR }
+object INPUT  extends Direction("input") { override def flip: Direction = OUTPUT }
+object OUTPUT extends Direction("output") { override def flip: Direction = INPUT }
+object NO_DIR extends Direction("?") { override def flip: Direction = NO_DIR }
 
 // REVIEW TODO: Should this actually be part of the RTL API? RTL should be
 // considered untouchable from a debugging standpoint?
 object debug {
   // TODO:
-  def apply (arg: Data) = arg
+  def apply (arg: Data): Data = arg
 }
 
 /** This forms the root of the type system for wire data types. The data value
@@ -70,7 +70,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   def isLit(): Boolean = litArg.isDefined
 
   def width: Width
-  final def getWidth = width.get
+  final def getWidth: Int = width.get
 
   // REVIEW TODO: should this actually be part of the Data interface? this is
   // an Aggregate function?
@@ -721,7 +721,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   def ## (other: Bits): UInt = Cat(this, other)
 
   // REVIEW TODO: This just _looks_ wrong.
-  override def toBits = asUInt
+  override def toBits: UInt = asUInt
 
   override def fromBits(n: Bits): this.type = {
     val res = Wire(this).asInstanceOf[this.type]
@@ -814,8 +814,8 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   }
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
-  def unary_- = UInt(0) - this
-  def unary_-% = UInt(0) -% this
+  def unary_- : UInt = UInt(0) - this
+  def unary_-% : UInt = UInt(0) -% this
   def +& (other: UInt): UInt = binop(UInt((this.width max other.width) + 1), AddOp, other)
   def + (other: UInt): UInt = this +% other
   def +% (other: UInt): UInt = binop(UInt(this.width max other.width), AddModOp, other)
@@ -832,9 +832,9 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def ^ (other: UInt): UInt = binop(UInt(this.width max other.width), BitXorOp, other)
 
   // REVIEW TODO: Can this be defined on Bits?
-  def orR = this != UInt(0)
-  def andR = ~this === UInt(0)
-  def xorR = redop(XorReduceOp)
+  def orR: Bool = this != UInt(0)
+  def andR: Bool = ~this === UInt(0)
+  def xorR: Bool = redop(XorReduceOp)
 
   def < (other: UInt): Bool = compop(LessOp, other)
   def > (other: UInt): Bool = compop(GreaterOp, other)

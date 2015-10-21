@@ -3,7 +3,7 @@
 package Chisel
 
 case class PrimOp(val name: String) {
-  override def toString = name
+  override def toString: String = name
 }
 
 object PrimOp {
@@ -46,8 +46,8 @@ abstract class Arg {
 }
 
 case class Node(id: HasId) extends Arg {
-  override def fullName(ctx: Component) = id.getRef.fullName(ctx)
-  def name = id.getRef.name
+  override def fullName(ctx: Component): String = id.getRef.fullName(ctx)
+  def name: String = id.getRef.name
 }
 
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
@@ -61,36 +61,37 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
 }
 
 case class ILit(n: BigInt) extends Arg {
-  def name = n.toString
+  def name: String = n.toString
 }
 
 case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def name = "UInt<" + width + ">(\"h0" + num.toString(16) + "\")"
-  def minWidth = 1 max n.bitLength
+  def name: String = "UInt<" + width + ">(\"h0" + num.toString(16) + "\")"
+  def minWidth: Int = 1 max n.bitLength
 
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
 case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def name = {
+  def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
   }
-  def minWidth = 1 + n.bitLength
+  def minWidth: Int = 1 + n.bitLength
 }
 
 case class Ref(name: String) extends Arg
 case class ModuleIO(mod: Module, name: String) extends Arg {
-  override def fullName(ctx: Component) =
+  override def fullName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
 case class Slot(imm: Node, name: String) extends Arg {
-  override def fullName(ctx: Component) =
-    if (imm.fullName(ctx).isEmpty) name else s"${imm.fullName(ctx)}.${name}"
+  override def fullName(ctx: Component): String =
+    if (imm.fullName(ctx).isEmpty) name
+    else s"${imm.fullName(ctx)}.${name}"
 }
 case class Index(imm: Arg, value: Int) extends Arg {
-  def name = s"[$value]"
-  override def fullName(ctx: Component) = s"${imm.fullName(ctx)}[$value]"
+  def name: String = s"[$value]"
+  override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[$value]"
 }
 
 object Width {
@@ -113,27 +114,27 @@ sealed abstract class Width {
 }
 
 sealed case class UnknownWidth() extends Width {
-  def known = false
-  def get = None.get
-  def op(that: Width, f: (W, W) => W) = this
-  override def toString = "?"
+  def known: Boolean = false
+  def get: Int = None.get
+  def op(that: Width, f: (W, W) => W): Width = this
+  override def toString: String = "?"
 }
 
 sealed case class KnownWidth(value: Int) extends Width {
   require(value >= 0)
-  def known = true
-  def get = value
-  def op(that: Width, f: (W, W) => W) = that match {
+  def known: Boolean = true
+  def get: Int = value
+  def op(that: Width, f: (W, W) => W): Width = that match {
     case KnownWidth(x) => KnownWidth(f(value, x))
     case _ => that
   }
-  override def toString = value.toString
+  override def toString: String = value.toString
 }
 
 abstract class Command
 abstract class Definition extends Command {
   def id: HasId
-  def name = id.getRef.name
+  def name: String = id.getRef.name
 }
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
 case class DefWire(id: Data) extends Definition
@@ -153,5 +154,5 @@ case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[C
 case class Port(id: Data, dir: Direction)
 
 case class Circuit(name: String, components: Seq[Component], refMap: RefMap, parameterDump: ParameterDump) {
-  def emit = new Emitter(this).toString
+  def emit: String = new Emitter(this).toString
 }
