@@ -168,7 +168,7 @@ object Reg {
 }
 
 object Mem {
-  @deprecated("Chisel3 Mem argument order should be size, t - this will be removed by Chisel3 official release", "now")
+  @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: Int): Mem[T] = apply(size, t)
 
   /** Creates a combinational-read, sequential-write [[Mem]].
@@ -234,7 +234,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
 sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
 
 object SeqMem {
-  @deprecated("Chisel3 SeqMem argument order should be size, t - this will be removed by Chisel3 official release", "now")
+  @deprecated("SeqMem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: Int): SeqMem[T] = apply(size, t)
 
   /** Creates a sequential-read, sequential-write [[SeqMem]].
@@ -269,7 +269,7 @@ object Vec {
     */
   def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.cloneType, n)
 
-  @deprecated("Chisel3 vec argument order should be n, gen - this will be removed by Chisel3 official release", "now")
+  @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
@@ -1190,7 +1190,13 @@ class Bundle extends Aggregate(NO_DIR) {
     }
     ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
-  private[Chisel] def toType = s"{${namedElts.reverse.map(e => (if (e._2.isFlip) "flip " else "") + e._2.getRef.name + " : " + e._2.toType).reduce(_ + ", " + _)}}"
+  private[Chisel] def toType = {
+    def eltPort(elt: Data): String = {
+      val flipStr = if (elt.isFlip) "flip " else ""
+      s"${flipStr}${elt.getRef.name} : ${elt.toType}"
+    }
+    s"{${namedElts.reverse.map(e => eltPort(e._2)).mkString(", ")}}"
+  }
   private[Chisel] lazy val flatten = namedElts.flatMap(_._2.flatten)
   private[Chisel] def addElt(name: String, elt: Data): Unit =
     namedElts += name -> elt
@@ -1214,7 +1220,8 @@ class Bundle extends Aggregate(NO_DIR) {
           constructor.newInstance(_parent.get).asInstanceOf[this.type]
         } catch {
           case _: java.lang.reflect.InvocationTargetException =>
-            Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
+            Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
+              "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
             this
         }
       case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>

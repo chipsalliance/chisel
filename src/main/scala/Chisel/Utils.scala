@@ -9,14 +9,17 @@ import scala.reflect.runtime.universe._
 import scala.reflect.macros.blackbox._
 
 object Enum {
+  /** Returns a sequence of Bits subtypes with values from 0 until n. Helper method. */
+  private def createValues[T <: Bits](nodeType: T, n: Int): Seq[T] = (0 until n).map(x => nodeType.fromInt(x))
+
   /** create n enum values of given type */
-  def apply[T <: Bits](nodeType: T, n: Int): List[T] = Range(0, n).map(x => nodeType.fromInt(x)).toList
+  def apply[T <: Bits](nodeType: T, n: Int): List[T] = createValues(nodeType, n).toList
 
   /** create enum values of given type and names */
-  def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = (l.toList zip (Range(0, l.length).map(x => nodeType.fromInt(x)))).toMap
+  def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = (l zip createValues(nodeType, l.length)).toMap
 
   /** create enum values of given type and names */
-  def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = (l zip (Range(0, l.length).map(x => nodeType.fromInt(x)))).toMap
+  def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = (l zip createValues(nodeType, l.length)).toMap
 }
 
 /** Compute the log2 rounded up with min value of 1 */
@@ -156,9 +159,17 @@ class SwitchContext[T <: Bits](cond: T) {
   * It is equivalent to a [[Chisel.when$ when]] block comparing to the condition
   * Use outside of a switch statement is illegal */
 object is { // Begin deprecation of non-type-parameterized is statements.
-  def apply(v: Iterable[Bits])(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
-  def apply(v: Bits)(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
-  def apply(v: Bits, vr: Bits*)(block: => Unit) { Builder.error("The 'is' keyword may not be used outside of a switch.") }
+  def apply(v: Iterable[Bits])(block: => Unit) {
+    Builder.error("The 'is' keyword may not be used outside of a switch.")
+  }
+
+  def apply(v: Bits)(block: => Unit) {
+    Builder.error("The 'is' keyword may not be used outside of a switch.")
+  }
+
+  def apply(v: Bits, vr: Bits*)(block: => Unit) {
+    Builder.error("The 'is' keyword may not be used outside of a switch.")
+  }
 }
 
 /** Conditional logic to form a switch block
