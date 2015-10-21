@@ -83,21 +83,21 @@ private object Builder {
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
   private val currentParamsVar = new DynamicVariable[Parameters](Parameters.empty)
 
-  def dynamicContext = dynamicContextVar.value.get
-  def idGen = dynamicContext.idGen
-  def globalNamespace = dynamicContext.globalNamespace
-  def globalRefMap = dynamicContext.globalRefMap
-  def components = dynamicContext.components
-  def parameterDump = dynamicContext.parameterDump
+  def dynamicContext: DynamicContext = dynamicContextVar.value.get
+  def idGen: IdGen = dynamicContext.idGen
+  def globalNamespace: Namespace = dynamicContext.globalNamespace
+  def globalRefMap: RefMap = dynamicContext.globalRefMap
+  def components: ArrayBuffer[Component] = dynamicContext.components
+  def parameterDump: ParameterDump = dynamicContext.parameterDump
 
-  def pushCommand[T <: Command](c: T) = {
+  def pushCommand[T <: Command](c: T): T = {
     dynamicContext.currentModule.foreach(_._commands += c)
     c
   }
-  def pushOp[T <: Data](cmd: DefPrim[T]) = pushCommand(cmd).id
+  def pushOp[T <: Data](cmd: DefPrim[T]): T = pushCommand(cmd).id
 
-  def errors = dynamicContext.errors
-  def error(m: => String) = errors.error(m)
+  def errors: ErrorLog = dynamicContext.errors
+  def error(m: => String): Unit = errors.error(m)
 
   def getParams: Parameters = currentParamsVar.value
   def paramsScope[T](p: Parameters)(body: => T): T = {

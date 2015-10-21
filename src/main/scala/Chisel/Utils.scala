@@ -89,12 +89,12 @@ object RegInit {
 /** A register with an Enable signal */
 object RegEnable
 {
-  def apply[T <: Data](updateData: T, enable: Bool) = {
+  def apply[T <: Data](updateData: T, enable: Bool): T = {
     val r = Reg(updateData)
     when (enable) { r := updateData }
     r
   }
-  def apply[T <: Data](updateData: T, resetData: T, enable: Bool) = {
+  def apply[T <: Data](updateData: T, resetData: T, enable: Bool): T = {
     val r = RegInit(resetData)
     when (enable) { r := updateData }
     r
@@ -185,7 +185,7 @@ object is { // Begin deprecation of non-type-parameterized is statements.
   * } }}}*/
 object switch {
   def apply[T <: Bits](cond: T)(x: => Unit): Unit = macro impl
-  def impl(c: Context)(cond: c.Tree)(x: c.Tree) = { import c.universe._
+  def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
     val sc = c.universe.internal.reificationSupport.freshTermName("sc")
     def extractIsStatement(tree: Tree): List[c.universe.Tree] = tree match {
       case q"Chisel.is.apply( ..$params )( ..$body )" => List(q"$sc.is( ..$params )( ..$body )")

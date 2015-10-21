@@ -6,13 +6,13 @@ import scala.collection.mutable.ArrayBuffer
 class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
 
 private object throwException {
-  def apply(s: String, t: Throwable = null) =
+  def apply(s: String, t: Throwable = null): Nothing =
     throw new ChiselException(s, t)
 }
 
 /** Records and reports runtime errors and warnings. */
 private class ErrorLog {
-  def hasErrors = errors.exists(_.isFatal)
+  def hasErrors: Boolean = errors.exists(_.isFatal)
 
   /** Log an error message */
   def error(m: => String): Unit =
@@ -75,14 +75,14 @@ private abstract class LogEntry(msg: => String, line: Option[StackTraceElement])
 }
 
 private class Error(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
-  override def isFatal = true
-  def format = tag("error", Console.RED)
+  override def isFatal: Boolean = true
+  def format: String = tag("error", Console.RED)
 }
 
 private class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
-  def format = tag("warn", Console.YELLOW)
+  def format: String = tag("warn", Console.YELLOW)
 }
 
 private class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
-  def format = tag("info", Console.MAGENTA)
+  def format: String = tag("info", Console.MAGENTA)
 }
