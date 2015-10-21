@@ -106,8 +106,9 @@ object Mux1H
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
     apply(sel zip in)
   def apply[T <: Data](in: Iterable[(Bool, T)]): T = {
-    if (in.tail.isEmpty) in.head._2
-    else {
+    if (in.tail.isEmpty) {
+      in.head._2
+    } else {
       val masked = in map {case (s, i) => Mux(s, i.toBits, Bits(0))}
       val width = in.map(_._2.width).reduce(_ max _)
       in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
@@ -219,8 +220,11 @@ object Fill {
   }
   /** Fan out x n times */
   def apply(n: Int, x: Bool): UInt =
-    if (n > 1) UInt(0,n) - x
-    else apply(n, x: UInt)
+    if (n > 1) {
+      UInt(0,n) - x
+    } else {
+      apply(n, x: UInt)
+    }
 }
 
 /** MuxCase returns the first value that is enabled in a map of values */
@@ -305,9 +309,13 @@ object ShiftRegister
 object Log2 {
   /** Compute the Log2 on the least significant n bits of x */
   def apply(x: Bits, width: Int): UInt = {
-    if (width < 2) UInt(0)
-    else if (width == 2) x(1)
-    else Mux(x(width-1), UInt(width-1), apply(x, width-1))
+    if (width < 2) {
+      UInt(0)
+    } else if (width == 2) {
+      x(1)
+    } else {
+      Mux(x(width-1), UInt(width-1), apply(x, width-1))
+    }
   }
 
   def apply(x: Bits): UInt = apply(x, x.getWidth)
@@ -321,8 +329,9 @@ object OHToUInt {
   def apply(in: Bits): UInt = apply(in, in.getWidth)
 
   def apply(in: Bits, width: Int): UInt = {
-    if (width <= 2) Log2(in, width)
-    else {
+    if (width <= 2) {
+      Log2(in, width)
+    } else {
       val mid = 1 << (log2Up(width)-1)
       val hi = in(width-1, mid)
       val lo = in(mid-1, 0)
@@ -345,8 +354,11 @@ object PriorityEncoder {
 object UIntToOH
 {
   def apply(in: UInt, width: Int = -1): UInt =
-    if (width == -1) UInt(1) << in
-    else (UInt(1) << in(log2Up(width)-1,0))(width-1,0)
+    if (width == -1) {
+      UInt(1) << in
+    } else {
+      (UInt(1) << in(log2Up(width)-1,0))(width-1,0)
+    }
 }
 
 /** A counter module
@@ -355,8 +367,9 @@ object UIntToOH
 class Counter(val n: Int) {
   val value = if (n == 1) UInt(0) else Reg(init=UInt(0, log2Up(n)))
   def inc(): Bool = {
-    if (n == 1) Bool(true)
-    else {
+    if (n == 1) {
+      Bool(true)
+    } else {
       val wrap = value === UInt(n-1)
       value := Mux(Bool(!isPow2(n)) && wrap, UInt(0), value + UInt(1))
       wrap

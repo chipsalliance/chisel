@@ -111,23 +111,30 @@ object Wire {
   def apply[T <: Data](t: T = null, init: T = null): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x))
-    if (init != null)
+    if (init != null) {
       x := init
-    else
+    } else {
       x.flatten.foreach(e => e := e.fromInt(0))
+    }
     x
   }
 }
 
 object Reg {
   private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
-    if (t ne null) t.cloneType
-    else if (next ne null) next.cloneTypeWidth(Width())
-    else if (init ne null) init.litArg match {
-      // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-      case Some(lit) if lit.forcedWidth => init.cloneType
-      case _ => init.cloneTypeWidth(Width())
-    } else throwException("cannot infer type")
+    if (t ne null) {
+      t.cloneType
+    } else if (next ne null) {
+      next.cloneTypeWidth(Width())
+    } else if (init ne null) {
+      init.litArg match {
+        // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
+        case Some(lit) if lit.forcedWidth => init.cloneType
+        case _ => init.cloneTypeWidth(Width())
+      }
+    } else {
+      throwException("cannot infer type")
+    }
   }
 
   /** Creates a register with optional next and initialization values.
@@ -143,10 +150,12 @@ object Reg {
     // that doesn't need two implementations of apply()
     val x = makeType(t, next, init)
     pushCommand(DefRegister(x, Node(x._parent.get.clock), Node(x._parent.get.reset))) // TODO multi-clock
-    if (init != null)
+    if (init != null) {
       pushCommand(ConnectInit(x.lref, init.ref))
-    if (next != null)
+    }
+    if (next != null) {
       x := next
+    }
     x
   }
 
@@ -580,10 +589,14 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     */
   // REVIEW TODO: Ddeduplicate constructor with apply(Int)
   final def apply(x: BigInt): Bool = {
-    if (x < 0)
+    if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
-    if (isLit()) Bool(((litValue() >> x.toInt) & 1) == 1)
-    else pushOp(DefPrim(Bool(), BitSelectOp, this.ref, ILit(x)))
+    }
+    if (isLit()) {
+      Bool(((litValue() >> x.toInt) & 1) == 1)
+    } else {
+      pushOp(DefPrim(Bool(), BitSelectOp, this.ref, ILit(x)))
+    }
   }
 
   final def apply(x: Int): Bool =
@@ -605,13 +618,17 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     * }}}
     */
   final def apply(x: Int, y: Int): UInt = {
-    if (x < y || y < 0)
+    if (x < y || y < 0) {
       Builder.error(s"Invalid bit range ($x,$y)")
+    }
     // REVIEW TODO: should we support negative indexing Python style, at least
     // where widths are known?
     val w = x - y + 1
-    if (isLit()) UInt((litValue >> y) & ((BigInt(1) << w) - 1), w)
-    else pushOp(DefPrim(UInt(width = w), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+    if (isLit()) {
+      UInt((litValue >> y) & ((BigInt(1) << w) - 1), w)
+    } else {
+      pushOp(DefPrim(UInt(width = w), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+    }
   }
 
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
@@ -900,9 +917,13 @@ sealed trait UIntFactory {
   }
 
   private def parsedWidth(n: String) =
-    if (n(0) == 'b') Width(n.length-1)
-    else if (n(0) == 'h') Width((n.length-1) * 4)
-    else Width()
+    if (n(0) == 'b') {
+      Width(n.length-1)
+    } else if (n(0) == 'h') {
+      Width((n.length-1) * 4)
+    } else {
+      Width()
+    }
 }
 
 object UInt extends UIntFactory
@@ -1084,8 +1105,9 @@ object Cat {
     * @return A UInt which is all of the bits combined together
     */
   def apply[T <: Bits](r: Seq[T]): UInt = {
-    if (r.tail.isEmpty) r.head.asUInt
-    else {
+    if (r.tail.isEmpty) {
+      r.head.asUInt
+    } else {
       val left = apply(r.slice(0, r.length/2))
       val right = apply(r.slice(r.length/2, r.length))
       val w = left.width + right.width
@@ -1158,8 +1180,11 @@ class Bundle extends Aggregate(NO_DIR) {
     for (m <- getClass.getMethods.sortWith(_.getName < _.getName); if isBundleField(m)) {
       m.invoke(this) match {
         case d: Data =>
-          if (nameMap contains m.getName) require(nameMap(m.getName) eq d)
-          else if (!seen(d)) { nameMap(m.getName) = d; seen += d }
+          if (nameMap contains m.getName) {
+            require(nameMap(m.getName) eq d)
+          } else if (!seen(d)) {
+            nameMap(m.getName) = d; seen += d
+          }
         case _ =>
       }
     }

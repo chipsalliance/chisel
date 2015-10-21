@@ -55,8 +55,9 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[Chisel] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
 
   protected def minWidth: Int
-  if (forcedWidth)
+  if (forcedWidth) {
     require(widthArg.get >= minWidth)
+  }
 }
 
 case class ILit(n: BigInt) extends Arg {
@@ -85,8 +86,7 @@ case class ModuleIO(mod: Module, name: String) extends Arg {
 }
 case class Slot(imm: Node, name: String) extends Arg {
   override def fullName(ctx: Component) =
-    if (imm.fullName(ctx).isEmpty) name
-    else s"${imm.fullName(ctx)}.${name}"
+    if (imm.fullName(ctx).isEmpty) name else s"${imm.fullName(ctx)}.${name}"
 }
 case class Index(imm: Arg, value: Int) extends Arg {
   def name = s"[$value]"
