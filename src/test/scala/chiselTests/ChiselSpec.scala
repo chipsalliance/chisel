@@ -8,10 +8,17 @@ import org.scalacheck._
 import Chisel._
 import Chisel.testers._
 
-class ChiselPropSpec extends PropSpec with PropertyChecks {
+/** Common utility functions for Chisel unit tests. */
+trait ChiselRunners {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(t)
   def elaborate(t: => Module): Circuit = TesterDriver.elaborate(t)
+}
 
+/** Spec base class for BDD-style testers. */
+class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
+
+/** Spec base class for property-based testers. */
+class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks {
   def popCount(n: Long) = n.toBinaryString.count(_=='1')
 
   val smallPosInts = Gen.choose(1, 7)
