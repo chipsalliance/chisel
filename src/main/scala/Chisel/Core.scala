@@ -1116,19 +1116,8 @@ object Cat {
   }
 }
 
-object Bundle {
-  private val keywords =
-    HashSet[String]("flip", "asInput", "asOutput", "cloneType", "toBits")
-
-  def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
-    Builder.paramsScope(p.push){ b }
-  }
-
-  //TODO @deprecated("Use Chisel.paramsScope object","08-01-2015")
-  def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
-    val q = Builder.getParams.alterPartial(f)
-    apply(b)(q)
-  }
+private[Chisel] object Bundle {
+  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits")
 }
 
 /** Base class for data types defined as a bundle of other data types.
@@ -1170,7 +1159,8 @@ class Bundle extends Aggregate(NO_DIR) {
     m.getParameterTypes.isEmpty &&
     !java.lang.reflect.Modifier.isStatic(m.getModifiers) &&
     classOf[Data].isAssignableFrom(m.getReturnType) &&
-    !(Bundle.keywords contains m.getName) && !(m.getName contains '$')
+    !(Bundle.keywords contains m.getName) &&
+    !(m.getName contains '$')
 
   /** Returns a list of elements in this Bundle.
     */
@@ -1232,37 +1222,27 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 object Module {
-  // TODO: update documentation when parameters gets removed from core Chisel
-  // and this gets simplified.
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
     * @param m the Module being created
-    * @param p Parameters passed down implicitly from that it is created in
     *
     * @return the input module `m`
     */
-  def apply[T <: Module](bc: => T)(implicit currParams: Parameters = Builder.getParams.push): T = {
-    paramsScope(currParams) {
-      val parent = dynamicContext.currentModule
-      val m = bc.setRefs()
-      // init module outputs
-      m._commands prependAll (for (p <- m.io.flatten; if p.dir == OUTPUT)
-        yield Connect(p.lref, p.fromInt(0).ref))
-      dynamicContext.currentModule = parent
-      val ports = m.computePorts
-      Builder.components += Component(m, m.name, ports, m._commands)
-      pushCommand(DefInstance(m, ports))
-      // init instance inputs
-      for (p <- m.io.flatten; if p.dir == INPUT)
-        p := p.fromInt(0)
-      m
-    }.connectImplicitIOs()
-  }
-
-  //TODO @deprecated("Use Chisel.paramsScope object","08-01-2015")
-  def apply[T <: Module](m: => T, f: PartialFunction[Any,Any]): T = {
-    apply(m)(Builder.getParams.alterPartial(f))
+  def apply[T <: Module](bc: => T): T = {
+    val parent = dynamicContext.currentModule
+    val m = bc.setRefs()
+    // init module outputs
+    m._commands prependAll (for (p <- m.io.flatten; if p.dir == OUTPUT)
+      yield Connect(p.lref, p.fromInt(0).ref))
+    dynamicContext.currentModule = parent
+    val ports = m.computePorts
+    Builder.components += Component(m, m.name, ports, m._commands)
+    pushCommand(DefInstance(m, ports))
+    // init instance inputs
+    for (p <- m.io.flatten; if p.dir == INPUT)
+      p := p.fromInt(0)
+    m.connectImplicitIOs()
   }
 }
 
