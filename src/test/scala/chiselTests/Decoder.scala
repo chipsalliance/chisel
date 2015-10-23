@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 import Chisel._
 import org.scalatest._
@@ -29,8 +31,8 @@ class DecoderSpec extends ChiselPropSpec {
     val rnd = new scala.util.Random(seed)
     val bs = seed.toBinaryString
     val bp = bs.map(if(rnd.nextBoolean) _ else "?").mkString
-    ("b"+bs, "b"+bp)
-  } 
+    ("b" + bs, "b" + bp)
+  }
   def nPairs(n: Int) = Gen.containerOfN[List, (String,String)](n,bitpatPair)
 
   property("BitPat wildcards should be usable in decoding") {
