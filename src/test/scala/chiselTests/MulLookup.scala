@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import Chisel._
@@ -12,7 +14,7 @@ class MulLookup(val w: Int) extends Module {
     val z   = UInt(OUTPUT, 2 * w)
   }
   val tbl = Vec(
-    for {   
+    for {
       i <- 0 until 1 << w
       j <- 0 until 1 << w
     } yield UInt(i * j, 2 * w)
@@ -31,7 +33,7 @@ class MulLookupSpec extends ChiselPropSpec {
   }
 
   property("Mul lookup table should return the correct result") {
-    forAll(smallPosInts, smallPosInts) { (x: Int, y: Int) => 
+    forAll(smallPosInts, smallPosInts) { (x: Int, y: Int) =>
       assert(execute{ new MulLookupTester(3, x, y) })
     }
   }

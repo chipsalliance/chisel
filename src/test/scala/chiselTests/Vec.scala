@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import Chisel._
@@ -10,7 +12,7 @@ class VecSpec extends ChiselPropSpec {
   class ValueTester(w: Int, values: List[Int]) extends BasicTester {
     io.done := Bool(true)
     val v = Vec(values.map(UInt(_, width = w))) // TODO: does this need a Wire? Why no error?
-    io.error := v.zip(values).map { case(a,b) => 
+    io.error := v.zip(values).map { case(a,b) =>
       a != UInt(b)
     }.foldLeft(UInt(0))(_##_)
   }

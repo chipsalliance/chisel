@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 import Chisel._
 import org.scalatest._
@@ -21,7 +23,7 @@ class CounterSpec extends ChiselPropSpec {
     val (cntEn, cntWrap) = Counter(ens(0), 32)
     val cnt = Counter(32)
     when(cnt.value === UInt(31)) {
-      io.done := Bool(true) 
+      io.done := Bool(true)
       io.error := cnt.value != UInt(popCount(seed))
     }
   }
