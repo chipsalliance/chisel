@@ -33,7 +33,7 @@ class DecoderSpec extends ChiselPropSpec {
     val bp = bs.map(if(rnd.nextBoolean) _ else "?").mkString
     ("b" + bs, "b" + bp)
   }
-  def nPairs(n: Int) = Gen.containerOfN[List, (String,String)](n,bitpatPair)
+  private def nPairs(n: Int) = Gen.containerOfN[List, (String,String)](n,bitpatPair)
 
   property("BitPat wildcards should be usable in decoding") {
     forAll(nPairs(16)){ (pairs: List[(String, String)]) =>
