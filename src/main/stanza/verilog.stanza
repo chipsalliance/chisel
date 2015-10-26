@@ -277,8 +277,37 @@ defn emit-module (m:InModule) :
                   add(assigns,["assign " n* " = " emit(cons[n*]) ";"])
          (s:DefAccessor) : 
             val mem-declaration = decs[name(source(s) as Ref)] as DefMemory
+            defn jkjjjjjjj
             switch {_ == acc-dir(s)} :
                READ :
+                  if seq?(mem-declaration) :
+                     val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
+                     add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) ; register index for an additional cycle
+
+                     val w = width!(type(index*))
+                     add(inits,[name(index*) " = " rand-string(w)]) ; initialize registered index
+
+                     val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
+                     add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"]) ; register index
+                     updates[get-name(clock(mem-declaration))] = my-clk-update
+
+                     ; emit read accessor
+                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
+                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
+                  else :
+                     ; emit read accessor
+                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
+                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
+               WRITE : 
+                  val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
+                  if key?(ens,sym) :
+                     add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
+                     add(my-clk-update,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+                     add(my-clk-update,["end"])
+                  else : 
+                     add(my-clk-update,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+                  updates[get-name(clock(mem-declaration))] = my-clk-update
+               RDWR : 
                   if seq?(mem-declaration) :
                      ; to make it sequential, register the index for an additional cycle
                      val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
@@ -296,7 +325,6 @@ defn emit-module (m:InModule) :
                      ; emit read accessor
                      add(wires,["wire " get-width(type(source(s))) " " sym ";"])
                      add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
-               WRITE : 
                   val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
                   if key?(ens,sym) :
                      add(my-clk-update,["if(" emit(ens[sym]) ") begin"])

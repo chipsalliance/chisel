@@ -13,11 +13,11 @@ circuit top :
       infer accessor a = m[i] 
       a.x := in.x
 
-;CHECK: wire a$x_1 : UInt<32>
+;CHECK: wire a$x_2 : UInt<32>
 ;CHECK: node i_1 = i
-;CHECK: when eqv(i_1, UInt("h0")) : m$0$x := a$x_1
-;CHECK: when eqv(i_1, UInt("h1")) : m$1$x := a$x_1
-;CHECK: a$x_1 := in$x
+;CHECK: when eqv(i_1, UInt("h0")) : m$0$x := a$x_2
+;CHECK: when eqv(i_1, UInt("h1")) : m$1$x := a$x_2
+;CHECK: a$x_2 := in$x
 ;CHECK: Finished Inline Indexers
 ;CHECK: Done!
 

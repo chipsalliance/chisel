@@ -48,7 +48,7 @@ public defn get-sym-hash (m:InModule,keywords:Streamable<Symbol>) -> HashTable<S
    val sym-hash = HashTable<Symbol,Int>(symbol-hash)
    for k in keywords do :
       sym-hash[k] = 0
-   defn add-name (s:Symbol) -> False :
+   defn add-name (s:Symbol) -> Symbol :
       val s* = to-string(s)
       val i* = generated?(s*)
       match(i*) :
@@ -66,19 +66,11 @@ public defn get-sym-hash (m:InModule,keywords:Streamable<Symbol>) -> HashTable<S
                sym-hash[name] = max(num,digit)
             else :
                sym-hash[name] = digit
+      s
          
-   defn to-port (p:Port) -> False : add-name(name(p))
+   defn to-port (p:Port) : add-name(name(p))
    defn to-stmt (s:Stmt) -> Stmt :
-     match(s) :
-        (s:DefWire) : add-name(name(s))
-        (s:DefRegister) : add-name(name(s))
-        (s:DefInstance) : add-name(name(s))
-        (s:DefMemory) : add-name(name(s))
-        (s:DefNode) : add-name(name(s))
-        (s:DefPoison) : add-name(name(s))
-        (s:DefAccessor) : add-name(name(s))
-        (s) : false
-     map(to-stmt,s)
+     map{to-stmt,_} $ map(add-name,s)
 
    to-stmt(body(m))
    map(to-port,ports(m))
@@ -363,6 +355,18 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:Index) : Index(f(exp(e)), value(e), type(e))
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
       (e) : e
+
+public defmulti map<?T> (f: Symbol -> Symbol, c:?T&Stmt) -> T
+defmethod map (f: Symbol -> Symbol, c:Stmt) -> Stmt :
+   match(c) :
+      (c:DefWire) : DefWire(info(c),f(name(c)),type(c))
+      (c:DefPoison) : DefPoison(info(c),f(name(c)),type(c))
+      (c:DefAccessor) : DefAccessor(info(c),f(name(c)), source(c), index(c),acc-dir(c))
+      (c:DefRegister) : DefRegister(info(c),f(name(c)), type(c), clock(c), reset(c))
+      (c:DefMemory) : DefMemory(info(c),f(name(c)), type(c), seq?(c), clock(c), size(c))
+      (c:DefNode) : DefNode(info(c),f(name(c)),value(c))
+      (c:DefInstance) : DefInstance(info(c),f(name(c)), module(c))
+      (c) : c
 
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
 defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :

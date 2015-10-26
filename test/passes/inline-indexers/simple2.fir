@@ -14,12 +14,12 @@ circuit top :
       o1 := a
       o2 := a
 
-;CHECK: wire a_1 : UInt<32>
-;CHECK: a_1 := m$0
-;CHECK: when eqv(i_1, UInt("h1")) : a_1 := m$1
 ;CHECK: wire a_2 : UInt<32>
 ;CHECK: a_2 := m$0
-;CHECK: when eqv(i_2, UInt("h1")) : a_2 := m$1
+;CHECK: when eqv(i_1, UInt("h1")) : a_2 := m$1
+;CHECK: wire a_3 : UInt<32>
+;CHECK: a_3 := m$0
+;CHECK: when eqv(i_2, UInt("h1")) : a_3 := m$1
 
 
 

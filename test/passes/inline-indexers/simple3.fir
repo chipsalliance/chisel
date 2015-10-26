@@ -11,9 +11,9 @@ circuit top :
       infer accessor a = m[i] 
       a := in
 
-;CHECK: wire a_1 : UInt<32>
-;CHECK: when eqv(i_1, UInt("h0")) : m$0 := a_1
-;CHECK: when eqv(i_1, UInt("h1")) : m$1 := a_1
+;CHECK: wire a_2 : UInt<32>
+;CHECK: when eqv(i_1, UInt("h0")) : m$0 := a_2
+;CHECK: when eqv(i_1, UInt("h1")) : m$1 := a_2
 
 
 

@@ -286,6 +286,11 @@ defmethod map (f: Expression -> Expression, c:DecFromIndexer) :
 defmethod map (f: Expression -> Expression, c:DecToIndexer) :
    DecToIndexer(info(c),f(index(c)), map(f, exps(c)), name(c), type(c))
 
+defmethod map (f: Symbol -> Symbol, c:DecFromIndexer) :
+   DecFromIndexer(info(c),index(c), exps(c), f(name(c)), type(c))
+defmethod map (f: Symbol -> Symbol, c:DecToIndexer) :
+   DecToIndexer(info(c),index(c), exps(c), f(name(c)), type(c))
+
 defmethod map (f: Type -> Type, e: WRef) :
    WRef(name(e), f(type(e)), kind(e), gender(e))
 defmethod map (f: Type -> Type, e: WSubfield) :
@@ -499,13 +504,14 @@ defn temp-elimination (c:Circuit) :
 ; Returns a new Circuit with Refs, Subfields, Indexes and DefAccessors 
 ;   replaced with IR-internal nodes that contain additional 
 ;   information (kind, gender)
+
 public defstruct ToWorkingIR <: Pass
 public defmethod pass (b:ToWorkingIR) -> (Circuit -> Circuit) : to-working-ir
 public defmethod name (b:ToWorkingIR) -> String : "Working IR"
 public defmethod short-name (b:ToWorkingIR) -> String : "to-working-ir"
 
 defn to-working-ir (c:Circuit) :
-   defn to-exp (e:Expression) :
+   defn to-exp (e:Expression) -> Expression :
       match(map(to-exp,e)) :
          (e:Ref) : WRef(name(e), type(e), NodeKind(), UNKNOWN-GENDER)
          (e:Subfield) : WSubfield(exp(e), name(e), type(e), UNKNOWN-GENDER)
@@ -879,32 +885,60 @@ defn expand-vector (e:Expression) -> List<Expression> :
    for i in 0 to size(t) map-append :
       list(WIndex(e,i,type(t),gender(e as ?))) ;always be WRef|WSubfield|WIndex
 
-defn expand-stmt (s:Stmt) -> Stmt :
-   match(s) :
-      (s:DefAccessor) : 
-         println-all-debug(["Matched DefAcc with " name(s)])
-         val mem? = match(source(s)) :
-            (e:WRef) : kind(e) typeof MemKind
-            (e) : false
-         if mem? : s
-         else :
-            val vtype = type(type(source(s)) as VectorType)
-            switch {acc-dir(s) == _} :
-               READ : DecToIndexer(info(s),index(s),expand-vector(source(s)),
-                                     name(s), vtype)
-               WRITE : DecFromIndexer(info(s),index(s),expand-vector(source(s)),
-                                    name(s), vtype)
-               INFER : error("Shouldn't be here")
-               RDWR : error("Haven't implemented RDWR yet")
-      (s) : map(expand-stmt,s)
+defn set-gender (e:Expression, g:Gender) -> Expression :
+   match(map(set-gender{_,g},e)) :
+      (e:WRef) : WRef(name(e),type(e),kind(e),g)
+      (e) : e
 
 defn expand-accessors (c:Circuit) :
+   var sh = HashTable<Symbol,Int>(symbol-hash)
+   var rds = HashTable<Symbol,Symbol>(symbol-hash)
+   var wrs = HashTable<Symbol,Symbol>(symbol-hash)
+
+   defn expand-exp (e:Expression) -> Expression :
+      match(map(expand-exp,e)) :
+         (e:WRef) : 
+            val n* = 
+               if key?(rds,name(e)) :
+                  switch {_ == gender(e)} :
+                     MALE : rds[name(e)]
+                     FEMALE : wrs[name(e)]
+                     BI-GENDER : error("Bigender")
+                     UNKNOWN-GENDER : error("Unknown")
+               else : name(e)
+            WRef(n*,type(e),kind(e),gender(e))
+         (e) : e
+                  
+   defn expand-stmt (s:Stmt) -> Stmt :
+      match(s) :
+         (s:DefAccessor) : 
+            println-all-debug(["Matched DefAcc with " name(s)])
+            if get-kind(source(s)) typeof MemKind: s
+            else :
+               val vtype = type(type(source(s)) as VectorType)
+               switch {acc-dir(s) == _} :
+                  READ : DecToIndexer(info(s),index(s),expand-vector(source(s)),name(s), vtype)
+                  WRITE : DecFromIndexer(info(s),index(s),expand-vector(source(s)),name(s), vtype)
+                  INFER : error("Shouldn't be here")
+                  RDWR :
+                    rds[name(s)] = firrtl-gensym(name(s),sh)
+                    val msrc = set-gender(source(s),MALE)
+                    val dti = DecToIndexer(info(s),index(s),expand-vector(msrc),rds[name(s)], vtype)
+                    wrs[name(s)] = firrtl-gensym(name(s),sh)
+                    val fsrc = set-gender(source(s),FEMALE)
+                    val dfi = DecFromIndexer(info(s),index(s),expand-vector(fsrc),wrs[name(s)], vtype)
+                    Begin(list(map(expand-exp,dti),map(expand-exp,dfi)))
+         (s) : map{expand-stmt,_} $ map(expand-exp,s)
+
    Circuit(info(c),modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
             match(m) :
                (m:ExModule) : m
                (m:InModule) : 
+                  sh = get-sym-hash(m)
+                  rds = HashTable<Symbol,Symbol>(symbol-hash)
+                  wrs = HashTable<Symbol,Symbol>(symbol-hash)
                   InModule(info(m),name(m),ports(m),expand-stmt(body(m)))
 
 ;;=============== LOWERING TO GROUND TYPES =============================
@@ -1202,7 +1236,7 @@ defn lower-to-ground (c:Circuit) -> Circuit :
 ;               to-list $
 ;                  for (i in 1 to false, e in tail(exps(s))) stream : Conditionally(
 ;                     info(s),
-;                     equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
+;                    equality(ref,UIntValue(BigIntLit(i),UnknownWidth())),
 ;                     Connect(info(s),loc(s),e),
 ;                     EmptyStmt()
 ;                  )
@@ -1258,7 +1292,6 @@ defn inline-indexed-m (m:InModule) -> InModule :
          val index = index(indexed-dec as DecFromIndexer|DecToIndexer)
          val index-name =  firrtl-gensym(get-name(index),sh)
          val index-ref = WRef(index-name,type(index),NodeKind(),MALE) 
-      
          val replace-name = firrtl-gensym(get-name(indexer),sh)
          val replace-ref = WRef(replace-name,type(indexer),kind(indexer),gender(indexer)) 
       
@@ -1266,7 +1299,9 @@ defn inline-indexed-m (m:InModule) -> InModule :
          add(stmts, DefNode(info(indexed-dec),index-name,index))
          match(indexed-dec) :
             (s:DecFromIndexer) : 
-               if (gender(replace-ref) != FEMALE) : error("Shouldn't be here")
+               if (gender(replace-ref) != FEMALE) : 
+                  println(replace-ref)
+                  error("Shouldn't be here")
                for (i in 0 to false, e in exps(s)) do :
                   val eq = equality(index-ref,i)
                   val cond = Conditionally(info(s),eq,Connect(info(s),e,replace-ref),EmptyStmt())

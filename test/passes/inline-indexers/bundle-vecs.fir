@@ -20,14 +20,14 @@ circuit top :
 
 
       infer accessor b = a[i]
-      ; CHECK: wire b{{[_$]+}}x_1 : UInt<32>
+      ; CHECK: wire b{{[_$]+}}x_2 : UInt<32>
       ; CHECK: node i_1 = i
-      ; CHECK: b{{[_$]+}}x_1 := a{{[_$]+}}0{{[_$]+}}x
-      ; CHECK: when eqv(i_1, UInt("h1")) : b{{[_$]+}}x_1 := a{{[_$]+}}1{{[_$]+}}x      
-      ; CHECK: wire b{{[_$]+}}y_1 : UInt<32>
+      ; CHECK: b{{[_$]+}}x_2 := a{{[_$]+}}0{{[_$]+}}x
+      ; CHECK: when eqv(i_1, UInt("h1")) : b{{[_$]+}}x_2 := a{{[_$]+}}1{{[_$]+}}x      
+      ; CHECK: wire b{{[_$]+}}y_2 : UInt<32>
       ; CHECK: node i_2 = i
-      ; CHECK: when eqv(i_2, UInt("h0")) : a{{[_$]+}}0{{[_$]+}}y := b{{[_$]+}}y_1
-      ; CHECK: when eqv(i_2, UInt("h1")) : a{{[_$]+}}1{{[_$]+}}y := b{{[_$]+}}y_1
+      ; CHECK: when eqv(i_2, UInt("h0")) : a{{[_$]+}}0{{[_$]+}}y := b{{[_$]+}}y_2
+      ; CHECK: when eqv(i_2, UInt("h1")) : a{{[_$]+}}1{{[_$]+}}y := b{{[_$]+}}y_2
       j := b.x
       b.y := UInt(1)
       
