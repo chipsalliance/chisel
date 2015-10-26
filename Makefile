@@ -1,32 +1,37 @@
-# Installs stanza into /usr/local/bin
-# TODO Talk to Patrick to fill this in
-
 root_dir ?= $(PWD)
 test_dir ?= $(root_dir)/test
 regress_dir ?= $(root_dir)/regress
 firrtl_dir ?= $(root_dir)/src/main/stanza
+install_dir ?= $(root_dir)/utils/bin
+
+stanza ?= $(install_dir)/stanza
 
 all-noise: 
 	${MAKE} all || ${MAKE} fail
 
 all: done
 
-install-linux:
-	cd src/lib && unzip stanza-linux.zip
-	cd src/lib/stanza && sudo ./stanza -platform linux -install /usr/local/bin/stanza
+# Installs Stanza into $(insall_dir)
+stanza_zip_name = $(subst Darwin,mac,$(subst Linux,linux,$(shell uname)))
+stanza_target_name = $(subst Darwin,os-x,$(subst Linux,linux,$(shell uname)))
 
-install-mac:
-	cd src/lib && unzip stanza-mac.zip
-	cd src/lib/stanza && sudo ./stanza -platform os-x -install /usr/local/bin/stanza
+$(root_dir)/src/lib/stanza/stamp: src/lib/stanza-$(stanza_zip_name).zip
+	rm -rf src/lib/stanza
+	mkdir -p src/lib
+	cd src/lib && unzip stanza-$(stanza_zip_name).zip
+	touch $@
 
-build-deploy: 
-	cd $(firrtl_dir) && stanza -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl
+$(stanza): $(root_dir)/src/lib/stanza/stamp
+	cd src/lib/stanza && ./stanza -platform $(stanza_target_name) -install $(stanza)
 
-build: 
-	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl
+build-deploy: $(stanza)
+	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl
 
-build-fast: 
-	cd $(firrtl_dir) && stanza -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
+build: $(stanza)
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl
+
+build-fast: $(stanza)
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
 
 check: 
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
@@ -49,6 +54,8 @@ custom:
 clean:
 	rm -f $(test_dir)/*/*/*.out
 	rm -f $(test_dir)/*/*.out
+	rm -rf src/lib/stanza
+	rm -f $(stanza)
 
 riscv:
 	cd $(test_dir)/riscv-mini && lit -v . --path=$(root_dir)/utils/bin/

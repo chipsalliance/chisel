@@ -23,6 +23,7 @@ src/lib/stanza
 src/*/__MACOSX
 src/main/stanza/firrtl-main
 utils/bin/firrtl
+utils/bin/stanza
 spec/spec.aux
 spec/spec.log
 spec/spec.toc
