@@ -146,7 +146,7 @@ object PriorityMux
 }
 
 /** This is identical to [[Chisel.when when]] with the condition inverted */
-object unless {
+object unless {  // scalastyle:ignore object.name
   def apply(c: Bool)(block: => Unit) {
     when (!c) { block }
   }
@@ -163,7 +163,8 @@ class SwitchContext[T <: Bits](cond: T) {
 /** An object for separate cases in [[Chisel.switch switch]]
   * It is equivalent to a [[Chisel.when$ when]] block comparing to the condition
   * Use outside of a switch statement is illegal */
-object is { // Begin deprecation of non-type-parameterized is statements.
+object is {   // scalastyle:ignore object.name
+  // Begin deprecation of non-type-parameterized is statements.
   def apply(v: Iterable[Bits])(block: => Unit) {
     Builder.error("The 'is' keyword may not be used outside of a switch.")
   }
@@ -188,7 +189,7 @@ object is { // Begin deprecation of non-type-parameterized is statements.
   *     ... // some logic here
   *   }
   * } }}}*/
-object switch {
+object switch {  // scalastyle:ignore object.name
   def apply[T <: Bits](cond: T)(x: => Unit): Unit = macro impl
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
     val sc = c.universe.internal.reificationSupport.freshTermName("sc")
@@ -679,6 +680,7 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
  */
 class Arbiter[T <: Data](gen: T, n: Int) extends LockingArbiter[T](gen, n, 1)
 
+// scalastyle:off magic.number
 /** linear feedback shift register
   */
 object LFSR16
@@ -691,6 +693,7 @@ object LFSR16
     lfsr
   }
 }
+// scalastyle:on magic.number
 
 /** A hardware module that delays data coming down the pipeline
   by the number of cycles set by the latency parameter. Functionality

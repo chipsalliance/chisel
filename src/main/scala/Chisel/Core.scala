@@ -18,7 +18,7 @@ object NO_DIR extends Direction("?") { override def flip: Direction = NO_DIR }
 
 // REVIEW TODO: Should this actually be part of the RTL API? RTL should be
 // considered untouchable from a debugging standpoint?
-object debug {
+object debug {  // scalastyle:ignore object.name
   // TODO:
   def apply (arg: Data): Data = arg
 }
@@ -1353,7 +1353,7 @@ abstract class BlackBox(_clock: Clock = null, _reset: Bool = null) extends Modul
   def setVerilogParameters(s: String): Unit = {}
 }
 
-object when {
+object when {  // scalastyle:ignore object.name
   /** Create a `when` condition block, where whether a block of logic is
     * executed or not depends on the conditional.
     *
