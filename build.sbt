@@ -1,9 +1,24 @@
+
+
 lazy val root = (project in file(".")).
   settings(
+    organization := "edu.berkeley.cs",
     name := "firrtl",
-    version := "1.0",
+    version := "0.1-SNAPSHOT",
     scalaVersion := "2.11.4"
   )
+
+libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+
+// Assembly
+
+//assemblyJarName in assembly := "firrtl.jar"
+
+test in assembly := {} // Should there be tests?
+
+assemblyOutputPath in assembly := file("./utils/bin/firrtl.jar")
+
+// ANTLRv4
 
 antlr4Settings
 

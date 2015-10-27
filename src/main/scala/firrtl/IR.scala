@@ -1,3 +1,9 @@
+
+/* TODO
+ *  - Should FileInfo be a FIRRTL node?
+ *
+ */
+
 package firrtl
 
 import scala.collection.Seq
@@ -9,53 +15,55 @@ case class FileInfo(file: String, line: Int, column: Int) {
 
 trait AST 
 
-trait PrimOp extends AST
-case object Add extends PrimOp 
-case object Sub extends PrimOp
-case object Addw extends PrimOp
-case object Subw extends PrimOp
-case object Mul extends PrimOp
-case object Div extends PrimOp
-case object Mod extends PrimOp
-case object Quo extends PrimOp
-case object Rem extends PrimOp
-case object Lt extends PrimOp
-case object Leq extends PrimOp
-case object Gt extends PrimOp
-case object Geq extends PrimOp
-case object Eq extends PrimOp
-case object Neq extends PrimOp
-case object Mux extends PrimOp
-case object Pad extends PrimOp
-case object AsUInt extends PrimOp
-case object AsSInt extends PrimOp
-case object Shl extends PrimOp
-case object Shr extends PrimOp
-case object Dshl extends PrimOp
-case object Dshr extends PrimOp
-case object Cvt extends PrimOp
-case object Neg extends PrimOp
-case object Not extends PrimOp
-case object And extends PrimOp
-case object Or extends PrimOp
-case object Xor extends PrimOp
-case object Andr extends PrimOp
-case object Orr extends PrimOp
-case object Xorr extends PrimOp
-case object Cat extends PrimOp
-case object Bit extends PrimOp
-case object Bits extends PrimOp
+trait Primop extends AST
+case object Add extends Primop 
+case object Sub extends Primop
+case object Addw extends Primop
+case object Subw extends Primop
+case object Mul extends Primop
+case object Div extends Primop
+case object Mod extends Primop
+case object Quo extends Primop
+case object Rem extends Primop
+case object Lt extends Primop
+case object Leq extends Primop
+case object Gt extends Primop
+case object Geq extends Primop
+case object Eq extends Primop
+case object Neq extends Primop
+case object Eqv extends Primop
+case object Neqv extends Primop
+case object Mux extends Primop
+case object Pad extends Primop
+case object AsUInt extends Primop
+case object AsSInt extends Primop
+case object Shl extends Primop
+case object Shr extends Primop
+case object Dshl extends Primop
+case object Dshr extends Primop
+case object Cvt extends Primop
+case object Neg extends Primop
+case object Not extends Primop
+case object And extends Primop
+case object Or extends Primop
+case object Xor extends Primop
+case object Andr extends Primop
+case object Orr extends Primop
+case object Xorr extends Primop
+case object Cat extends Primop
+case object Bit extends Primop
+case object Bits extends Primop
 
 // TODO stanza ir has types on many of these, why? Is it the type of what we're referencing?
 // Add types, default to UNKNOWN
 // TODO add type
 trait Exp extends AST
-case class UIntValue(value: BigInt, width: BigInt) extends Exp
-case class SIntValue(value: BigInt, width: BigInt) extends Exp
+case class UIntValue(value: BigInt, width: Width) extends Exp
+case class SIntValue(value: BigInt, width: Width) extends Exp
 case class Ref(name: String, tpe: Type) extends Exp
 case class Subfield(exp: Exp, name: String, tpe: Type) extends Exp
-case class Subindex(exp: Exp, value: BigInt) extends Exp
-case class DoPrimOp(op: PrimOp, args: Seq[Exp], consts: Seq[BigInt]) extends Exp 
+case class Index(exp: Exp, value: BigInt, tpe: Type) extends Exp
+case class DoPrimop(op: Primop, args: Seq[Exp], consts: Seq[BigInt], tpe: Type) extends Exp 
 
 trait AccessorDir extends AST
 case object Infer extends AccessorDir

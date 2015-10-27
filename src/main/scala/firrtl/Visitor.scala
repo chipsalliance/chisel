@@ -3,6 +3,7 @@
  *  - Support all integer types (not just "h...")
  *  - In ANTLR examples they use just visit, why am I having to use visitModule or other specific functions?
  *  - Make visit private?
+ *  - More elegant way to insert UnknownWidth?
 */
 
 package firrtl
@@ -13,6 +14,7 @@ import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.TerminalNode
 import scala.collection.JavaConversions._
 import antlr._
+import Primops._
 
 class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST] 
 {
@@ -58,8 +60,10 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
   // Match on a type instead of on strings?
 	private def visitType[AST](ctx: FIRRTLParser.TypeContext): Type = {
     ctx.getChild(0).getText match {
-      case "UInt" => UIntType( visitWidth(ctx.width) )
-      case "SInt" => SIntType( visitWidth(ctx.width) )
+      case "UInt" => if (ctx.getChildCount > 1) UIntType( visitWidth(ctx.width) ) 
+                     else UIntType( UnknownWidth )
+      case "SInt" => if (ctx.getChildCount > 1) SIntType( visitWidth(ctx.width) )
+                     else SIntType( UnknownWidth )
       case "Clock" => ClockType
       case "{" => BundleType(ctx.field.map(visitField))
       case _ => new VectorType( visitType(ctx.`type`), string2BigInt(ctx.IntLit.getText) )
@@ -132,54 +136,24 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
       Ref(ctx.getText, UnknownType)
     else
       ctx.getChild(0).getText match {
-        case "UInt" => UIntValue(string2BigInt(ctx.IntLit(0).getText), string2BigInt(ctx.width.getText))
-        case "SInt" => SIntValue(string2BigInt(ctx.IntLit(0).getText), string2BigInt(ctx.width.getText))
+        case "UInt" => {
+          val width = if (ctx.getChildCount > 4) visitWidth(ctx.width) else UnknownWidth
+          UIntValue(string2BigInt(ctx.IntLit(0).getText), width)
+        }
+        //case "SInt" => SIntValue(string2BigInt(ctx.IntLit(0).getText), string2BigInt(ctx.width.getText))
+        case "SInt" => {
+          val width = if (ctx.getChildCount > 4) visitWidth(ctx.width) else UnknownWidth
+          SIntValue(string2BigInt(ctx.IntLit(0).getText), width)
+        }
         case _ => 
           ctx.getChild(1).getText match {
             case "." => new Subfield(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)
-            case "[" => new Subindex(visitExp(ctx.exp(0)), string2BigInt(ctx.IntLit(0).getText))
+            case "[" => new Index(visitExp(ctx.exp(0)), string2BigInt(ctx.IntLit(0).getText), UnknownType)
             case "(" => 
-              DoPrimOp(visitPrimop(ctx.primop), ctx.exp.map(visitExp), ctx.IntLit.map(x => string2BigInt(x.getText)))
+              DoPrimop(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
+                  ctx.IntLit.map(x => string2BigInt(x.getText)), UnknownType)
           }
       }
    
-   // TODO can I create this and have the opposite? create map and invert it?
-	private def visitPrimop[AST](ctx: FIRRTLParser.PrimopContext): PrimOp = 
-    ctx.getText match {
-      case "add" => Add
-      case "sub" => Sub
-      case "addw" => Addw
-      case "subw" => Subw
-      case "mul" => Mul
-      case "div" => Div
-      case "mod" => Mod
-      case "quo" => Quo
-      case "rem" => Rem
-      case "lt" => Lt
-      case "leq" => Leq
-      case "gt" => Gt
-      case "geq" => Geq
-      case "eq" => Eq
-      case "neq" => Neq
-      case "mux" => Mux
-      case "pad" => Pad
-      case "asUInt" => AsUInt
-      case "asSInt" => AsSInt
-      case "shl" => Shl
-      case "shr" => Shr
-      case "dshl" => Dshl
-      case "dshr" => Dshr
-      case "cvt" => Cvt
-      case "neg" => Neg
-      case "not" => Not
-      case "and" => And
-      case "or" => Or
-      case "xor" => Xor
-      case "andr" => Andr
-      case "orr" => Orr
-      case "xorr" => Xorr
-      case "cat" => Cat
-      case "bit" => Bit
-      case "bits" => Bits
-    }
+	private def visitPrimop[AST](ctx: FIRRTLParser.PrimopContext): Primop = fromString(ctx.getText)
 }

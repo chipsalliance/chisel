@@ -33,6 +33,18 @@ build: $(stanza)
 build-fast: $(stanza)
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
 
+build-deploy: 
+	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza
+	make set-stanza
+
+build: 
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza
+	make set-stanza
+
+build-fast: 
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza -flags OPTIMIZE
+	make set-stanza
+
 check: 
 	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
 
@@ -73,4 +85,19 @@ done: build-fast check regress
 fail:
 	say "fail"
 
-.PHONY: all install build-deploy build check clean fail succeed regress
+# Scala Added Makefile commands
+
+build-scala:
+	sbt "assembly"
+
+test-scala:
+	cd $(test_dir)/parser && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/passes/infer-types && lit -v . --path=$(root_dir)/utils/bin/
+
+set-scala:
+	ln -f -s $(root_dir)/utils/bin/firrtl-scala $(root_dir)/utils/bin/firrtl
+
+set-stanza:
+	ln -f -s $(root_dir)/utils/bin/firrtl-stanza $(root_dir)/utils/bin/firrtl
+
+.PHONY: all install build-deploy build check clean fail succeed regress set-scala set-stanza build-scala test-scala

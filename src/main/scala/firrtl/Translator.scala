@@ -21,6 +21,7 @@ object Translator
 
   def addBrackets(inputIt: Iterator[String]): StringBuilder = {
     def countSpaces(s: String): Int = s.prefixLength(_ == ' ')
+    def stripComments(s: String): String = s takeWhile (!";".contains(_))
 
     val Scopers = """\s*(circuit|module|when|else)(.*)""".r
 
@@ -45,7 +46,8 @@ object Translator
     var newScope = true // indicates if increasing scope spacing is legal on next line
 
     while( it.hasNext ) {
-      it.next match { case (text, lineNum) =>
+      it.next match { case (lineText, lineNum) =>
+        val text = stripComments(lineText)
         val spaces = countSpaces(text)
 
         val l = if (text.length > spaces ) { // Check that line has text in it
