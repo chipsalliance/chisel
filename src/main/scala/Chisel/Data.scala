@@ -11,10 +11,8 @@ object INPUT  extends Direction("input") { override def flip: Direction = OUTPUT
 object OUTPUT extends Direction("output") { override def flip: Direction = INPUT }
 object NO_DIR extends Direction("?") { override def flip: Direction = NO_DIR }
 
-// REVIEW TODO: Should this actually be part of the RTL API? RTL should be
-// considered untouchable from a debugging standpoint?
+@deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
 object debug {  // scalastyle:ignore object.name
-  // TODO:
   def apply (arg: Data): Data = arg
 }
 
@@ -54,9 +52,6 @@ abstract class Data(dirArg: Direction) extends HasId {
   private[Chisel] def cloneTypeWidth(width: Width): this.type
   private[Chisel] def toType: String
 
-  // REVIEW TODO: Can these just be abstract, and left to implementing classes
-  // to define them (or even undefined)? Bonus: compiler can help you catch
-  // unimplemented functions.
   def := (that: Data): Unit = this badConnect that
   def <> (that: Data): Unit = this badConnect that
   def cloneType: this.type
@@ -67,8 +62,15 @@ abstract class Data(dirArg: Direction) extends HasId {
   def width: Width
   final def getWidth: Int = width.get
 
-  // REVIEW TODO: should this actually be part of the Data interface? this is
-  // an Aggregate function?
+  // While this being in the Data API doesn't really make sense (should be in
+  // Aggregate, right?) this is because of an implementation limitation:
+  // cloneWithDirection, which is private and defined here, needs flatten to
+  // set element directionality.
+  // Related: directionality is mutable state. A possible solution for both is
+  // to define directionality relative to the container, but these parent links
+  // currently don't exist (while this information may be available during
+  // FIRRTL emission, it would break directionality querying from Chisel, which
+  // does get used).
   private[Chisel] def flatten: IndexedSeq[Bits]
 
   /** Creates an new instance of this type, unpacking the input Bits into
@@ -77,14 +79,12 @@ abstract class Data(dirArg: Direction) extends HasId {
     *
     * This performs the inverse operation of toBits.
     *
-    * @note does NOT assign to the object this is called on, instead creating a
-    * NEW object
+    * @note does NOT assign to the object this is called on, instead creates
+    * and returns a NEW object (useful in a clone-and-assign scenario)
+    * @note does NOT check bit widths, may drop bits during assignment
+    * @note what fromBits assigs to must have known widths
     */
   def fromBits(n: Bits): this.type = {
-    // REVIEW TODO: width match checking?
-    // REVIEW TODO: perhaps have a assign version, especially since this is
-    // called from a specific object, instead of a factory constructor. It's
-    // not immediately obvious that this creates a new object.
     var i = 0
     val wire = Wire(this.cloneType)
     for (x <- wire.flatten) {
