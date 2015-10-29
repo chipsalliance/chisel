@@ -26,13 +26,19 @@ object Vec {
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
     *
-    * @note input elements should be of the same type
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
     * @note the width of all output elements is the width of the largest input
     * element
     * @note output elements are connected from the input elements
     */
   def apply[T <: Data](elts: Seq[T]): Vec[T] = {
-    // REVIEW TODO: error checking to guard against type mismatch?
+    // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
+    // varargs constructor, which is more in line with the style of the Scala
+    // collection API. However, a deprecation phase isn't possible, since
+    // changing apply(elt0, elts*) to apply(elts*) causes a function collision
+    // with apply(Seq) after type erasure. Workarounds by either introducing a
+    // DummyImplicit or additional type parameter will break some code.
 
     require(!elts.isEmpty)
     val width = elts.map(_.width).reduce(_ max _)
@@ -45,13 +51,13 @@ object Vec {
 
   /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
     *
-    * @note input elements should be of the same type
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
     * @note the width of all output elements is the width of the largest input
     * element
     * @note output elements are connected from the input elements
     */
   def apply[T <: Data](elt0: T, elts: T*): Vec[T] =
-    // REVIEW TODO: does this really need to exist as a standard function?
     apply(elt0 +: elts.toSeq)
 
   /** Creates a new [[Vec]] of length `n` composed of the results of the given
@@ -92,48 +98,53 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     case _ => this badConnect that
   }
 
+  /** Weak bulk connect, assigning elements in this Vec from elements in a Seq.
+    *
+    * @note length mismatches silently ignored
+    */
   def <> (that: Seq[T]): Unit =
-    // REVIEW TODO: come up with common style: match on type in body or
-    // multiple invocation signatures
     for ((a, b) <- this zip that)
       a <> b
 
+  // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
   def <> (that: Vec[T]): Unit = this bulkConnect that
-    // REVIEW TODO: standardize as above
 
   override def := (that: Data): Unit = that match {
     case _: Vec[_] => this connect that
     case _ => this badConnect that
   }
 
+  /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
+    *
+    * @note the length of this Vec must match the length of the input Seq
+    */
   def := (that: Seq[T]): Unit = {
-    // REVIEW TODO: standardize as above
     require(this.length == that.length)
     for ((a, b) <- this zip that)
       a := b
   }
 
+  // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
   def := (that: Vec[T]): Unit = this connect that
 
-  /** Creates a dynamically indexed read accessor into the array. Generates
-    * logic (likely some kind of multiplexer).
+  /** Creates a dynamically indexed read or write accessor into the array.
+    * Generates logic (likely some kind of multiplexer).
     */
   def apply(idx: UInt): T = {
     val x = gen
-    // REVIEW TODO: what happens when people try to assign into this?
-    // Should this be a read-only reference?
     pushCommand(DefAccessor(x, Node(this), NO_DIR, idx.ref))
     x
   }
 
-  /** Creates a statically indexed read accessor into the array. Generates no
-    * logic.
+  /** Creates a statically indexed read or write accessor into the array.
+    * Generates no logic.
     */
   def apply(idx: Int): T = self(idx)
 
+  @deprecated("Use Vec.apply instead", "chisel3")
   def read(idx: UInt): T = apply(idx)
-  // REVIEW TODO: does this need to exist?
 
+  @deprecated("Use Vec.apply instead", "chisel3")
   def write(idx: UInt, data: T): Unit = apply(idx) := data
 
   override def cloneType: this.type =
@@ -152,11 +163,13 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   * operations.
   */
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
-  def read(idx: UInt): T
-  // REVIEW TODO: does this need to exist? (does the same thing as apply)
-
-  def write(idx: UInt, data: T): Unit
   def apply(idx: UInt): T
+
+  @deprecated("Use Vec.apply instead", "chisel3")
+  def read(idx: UInt): T
+
+  @deprecated("Use Vec.apply instead", "chisel3")
+  def write(idx: UInt, data: T): Unit
 
   /** Outputs true if p outputs true for every element.
     *
@@ -209,9 +222,12 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
     * This generates into a function evaluation followed by a one-hot mux. The
     * implementation may be more efficient than a priority mux, but incorrect
     * results are possible if there is not exactly one true element.
+    *
+    * @note the assumption that there is only one element for which p outputs
+    * true is NOT checked (useful in cases where the condition doesn't always
+    * hold, but the results are not used in those cases)
     */
   def onlyIndexWhere(p: T => Bool): UInt = Mux1H(indexWhereHelper(p))
-  // REVIEW TODO: can (should?) this be assertion checked?
 }
 
 /** Base class for data types defined as a bundle of other data types.
@@ -222,8 +238,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 class Bundle extends Aggregate(NO_DIR) {
   private val _namespace = Builder.globalNamespace.child
 
-  // REVIEW TODO: perhaps deprecate to match FIRRTL semantics? Also needs
-  // strong connect operator.
+  // TODO: replace with better defined FIRRTL weak-connect operator
   /** Connect elements in this Bundle to elements in `that` on a best-effort
     * (weak) basis, matching by type, orientation, and name.
     *
@@ -241,7 +256,7 @@ class Bundle extends Aggregate(NO_DIR) {
     case _ => this badConnect that
   }
 
-  // REVIEW TODO: should there be different semantics for this? Or just ban it?
+  // TODO: replace with better defined FIRRTL strong-connect operator
   override def := (that: Data): Unit = this <> that
 
   lazy val elements: ListMap[String, Data] = ListMap(namedElts:_*)
