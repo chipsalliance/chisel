@@ -11,10 +11,11 @@ object BitPat {
     * don't cares.
     */
   private def parse(x: String): (BigInt, BigInt, Int) = {
-    // REVIEW TODO: can this be merged with literal parsing creating one unified
-    // Chisel string to value decoder (which can also be invoked by libraries
-    // and testbenches?
-    // REVIEW TODO: Verilog Xs also handle octal and hex cases.
+    // Notes:
+    // While Verilog Xs also handle octal and hex cases, there isn't a
+    // compelling argument and no one has asked for it.
+    // If ? parsing is to be exposed, the return API needs further scrutiny
+    // (especially with things like mask polarity).
     require(x.head == 'b', "BitPats must be in binary and be prefixed with 'b'")
     var bits = BigInt(0)
     var mask = BigInt(0)
@@ -39,21 +40,27 @@ object BitPat {
     new BitPat(bits, mask, width)
   }
 
-  /** Creates a [[BitPat]] of all don't cares of a specified width. */
-  // REVIEW TODO: is this really necessary? if so, can there be a better name?
-  def DC(width: Int): BitPat = BitPat("b" + ("?" * width))
+  /** Creates a [[BitPat]] of all don't cares of the specified bitwidth. */
+  def dontCare(width: Int): BitPat = BitPat("b" + ("?" * width))
 
-  // BitPat <-> UInt
-  /** enable conversion of a bit pattern to a UInt */
-  // REVIEW TODO: Doesn't having a BitPat with all mask bits high defeat the
-  // point of using a BitPat in the first place?
-  implicit def BitPatToUInt(x: BitPat): UInt = {
+  @deprecated("Use BitPat.dontCare", "chisel3")
+  def DC(width: Int): BitPat = dontCare(width)  // scalastyle:ignore method.name
+
+  /** Allows BitPats to be used where a UInt is expected.
+    *
+    * @note the BitPat must not have don't care bits (will error out otherwise)
+    */
+  implicit def bitPatToUInt(x: BitPat): UInt = {
     require(x.mask == (BigInt(1) << x.getWidth) - 1)
     UInt(x.value, x.getWidth)
   }
 
-  /** create a bit pattern from a UInt */
-  // REVIEW TODO: Similar, what is the point of this?
+  /** Allows UInts to be used where a BitPat is expected, useful for when an
+    * interface is defined with BitPats but not all cases need the partial
+    * matching capability.
+    *
+    * @note the UInt must be a literal
+    */
   implicit def apply(x: UInt): BitPat = {
     require(x.isLit)
     BitPat("b" + x.litValue.toString(2))
