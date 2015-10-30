@@ -14,6 +14,7 @@
 #include("compilers.stanza")
 #include("flo.stanza")
 #include("verilog.stanza")
+#include("firrtl.stanza")
 
 ;Custom Packages
 #include("custom-passes.stanza")
@@ -61,6 +62,7 @@ defn main () :
    val pass-args = Vector<String>()
    var printvars = ""
    var last-s = ""
+   var backend = ""
 
    val prev-out = CURRENT-OUTPUT-STREAM
    CURRENT-OUTPUT-STREAM = STANDARD-ERROR
@@ -74,6 +76,7 @@ defn main () :
       else if s == "-p" : last-s = s
       else if s == "-s" : last-s = s
       else if s == "-m" : last-s = s
+      else if s == "-b" : last-s = s
       else :
          if last-s == "-i" : input = args[i]
          if last-s == "-o" : output = args[i]
@@ -82,6 +85,7 @@ defn main () :
          if last-s == "-p" : printvars = to-string([printvars args[i]])
          if last-s == "-s" : add(pass-args,args[i])
          if last-s == "-m" : add(firms,args[i])
+         if last-s == "-b" : backend = args[i]
 
    var with-output = 
       fn (f:()->False) : 
@@ -126,12 +130,17 @@ defn main () :
    set-printvars!(to-list(printvars))
    
    if compiler == false :
-      run-passes(circuit*,get-passes(to-list(pass-names)))
+      var c*:Circuit = run-passes(circuit*,get-passes(to-list(pass-names)))
+      switch {_ == backend} :
+        "verilog" : run-backend(c*,StandardVerilog(with-output))
+        "firrtl" : run-backend(c*,StandardFIRRTL(with-output))
+        else : error("Invalid backend flag!")
    else :
       switch {_ == compiler} :
          "flo" : error("Flo backend not currently supported.")
             ; run-passes(circuit*,StandardFlo(with-output))
          "verilog" : run-passes(circuit*,StandardVerilog(with-output))
+         "firrtl" : run-passes(circuit*,StandardFIRRTL(with-output))
          "verilute" : run-passes(circuit*,InstrumentedVerilog(with-output,to-list $ pass-args))
          else : error("Invalid compiler flag")
 

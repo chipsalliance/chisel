@@ -5,6 +5,7 @@ defpackage firrtl/compiler :
   import firrtl/errors
   import firrtl/flo
   import firrtl/verilog
+  import firrtl/firrtl
   import firrtl/ir2
   import firrtl/ir-utils
 
@@ -41,6 +42,8 @@ public defmethod passes (c:StandardFlo) -> List<Pass> :
 
 public defstruct StandardVerilog <: Compiler :
    with-output : (() -> False) -> False with: (as-method => true)
+public defmethod backend (c:StandardVerilog) -> List<Pass> :
+  to-list $ [ Verilog(with-output(c)) ]
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
       RemoveSpecialChars()     ;R
@@ -74,11 +77,23 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       Verilog(with-output(c))  ;R
    ]
 
+public defstruct StandardFIRRTL <: Compiler :
+   with-output : (() -> False) -> False with: (as-method => true)
+public defmethod backend (c:StandardFIRRTL) -> List<Pass> :
+  to-list $ [ FIRRTL(with-output(c)) ]
+public defmethod passes (c:StandardFIRRTL) -> List<Pass> :
+   to-list $ [
+      CheckHighForm()
+      FIRRTL(with-output(c))
+    ]
+
 
 ;============= DRIVER ======================================
-public defn run-passes (c:Circuit,comp:Compiler) : 
+public defn run-backend (c:Circuit,comp:Compiler) :
+   run-passes(c,backend(comp))
+public defn run-passes (c:Circuit,comp:Compiler) -> Circuit: 
    run-passes(c,passes(comp))
-public defn run-passes (c:Circuit,ls:List<Pass>) :
+public defn run-passes (c:Circuit,ls:List<Pass>) -> Circuit:
    var c*:Circuit = c
    println("Compiling!")
    if PRINT-CIRCUITS : println("Original Circuit")
@@ -105,3 +120,4 @@ public defn run-passes (c:Circuit,ls:List<Pass>) :
       println-all([x[0] " --- " to-float(x[1] as Int * 100) / to-float(t - start-time) "%"])
    println("==========================")
    println("Done!")
+   c*

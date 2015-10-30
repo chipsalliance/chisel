@@ -1,0 +1,21 @@
+defpackage firrtl/firrtl :
+  import core
+  import verse
+  import firrtl/ir-utils
+  import firrtl/ir2
+
+
+;============ FIRRTL ==============
+
+public defstruct FIRRTL <: Pass :
+   with-output: (() -> False) -> False  
+public defmethod pass (b:FIRRTL) -> (Circuit -> Circuit) : emit-firrtl{with-output(b),_}
+public defmethod name (b:FIRRTL) -> String : "To FIRRTL"
+public defmethod short-name (b:FIRRTL) -> String : "To FIRRTL"
+
+;============ Utilz =============
+
+public defn emit-firrtl (with-output:(() -> False) -> False, c:Circuit) :
+  with-output $ fn () :
+    print(c)
+  c

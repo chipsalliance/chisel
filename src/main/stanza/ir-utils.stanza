@@ -99,6 +99,7 @@ public defn PassExceptions (xs:Streamable<PassException>) :
 
 public definterface Compiler 
 public defmulti passes (c:Compiler) -> List<Pass>
+public defmulti backend (c:Compiler) -> List<Pass>
 public defmulti with-output (c:Compiler) -> ((() -> False) -> False)
 
 public definterface Pass

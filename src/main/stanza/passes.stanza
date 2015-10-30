@@ -6,30 +6,62 @@ defpackage firrtl/passes :
   import firrtl/primops
   import firrtl-main
   import firrtl/errors
+  import firrtl/verilog
+  import firrtl/firrtl
   import bigint2
 
 ;============== Pass List ================
 public val standard-passes = to-list $ [
-   CheckHighForm()
-   TempElimination()
-   ToWorkingIR()
-   ResolveKinds()
-   CheckKinds()
-   InferTypes()
-   CheckTypes()
-   ResolveGenders()
-   CheckGenders()
-   ExpandAccessors()
-   LowerToGround()
-   ;ExpandIndexedConnects()
-   InlineIndexed()
-   ExpandWhens()
-   InferWidths()
-   Inline()
-   SplitExp()
-   CheckLowForm()
-   ToRealIR() 
-   Pad() ]
+      RemoveSpecialChars()     ;R
+      ;RemoveScopes()           ;R
+      CheckHighForm()          ;R
+      TempElimination()        ;R
+      ToWorkingIR()            ;R -> W
+      ResolveKinds()           ;W
+      InferTypes()             ;R
+      ResolveGenders()         ;W
+      CheckGenders()           ;W
+      CheckKinds()             ;W
+      CheckTypes()             ;R
+      ExpandAccessors()        ;W
+      LowerToGround()          ;W
+      ;ExpandIndexedConnects()  ;W
+      InlineIndexed()
+      InferTypes()             ;R
+      CheckGenders()           ;W
+      ExpandWhens()            ;W
+      InferWidths()            ;R
+      ToRealIR()               ;W -> R
+      CheckWidths()            ;R
+      Pad()                    ;R
+      ConstProp()              ;R
+      SplitExp()               ;R
+      CheckWidths()            ;R
+      CheckHighForm()          ;R
+      CheckLowForm()           ;R
+      CheckInitialization()    ;R
+   ]
+
+   ;CheckHighForm()
+   ;TempElimination()
+   ;ToWorkingIR()
+   ;ResolveKinds()
+   ;CheckKinds()
+   ;InferTypes()
+   ;CheckTypes()
+   ;ResolveGenders()
+   ;CheckGenders()
+   ;ExpandAccessors()
+   ;LowerToGround()
+   ;;ExpandIndexedConnects()
+   ;InlineIndexed()
+   ;ExpandWhens()
+   ;InferWidths()
+   ;Inline()
+   ;SplitExp()
+   ;CheckLowForm()
+   ;ToRealIR() 
+   ;Pad() ]
 ;=============== WORKING IR ================================
 public definterface Kind
 public defstruct WireKind <: Kind 
@@ -2466,6 +2498,7 @@ public defn special-rename (original-sym:Symbol,new-sym:Symbol,c:Circuit) :
 public defstruct Pad <: Pass
 public defmethod pass (b:Pad) -> (Circuit -> Circuit) : pad-widths
 public defmethod name (b:Pad) -> String : "Pad Widths"
+public defmethod short-name (b:Pad) -> String : "pad-widths"
 
 ;------------ Helper Functions --------------
 defn int-width! (t:Type) -> Long :
