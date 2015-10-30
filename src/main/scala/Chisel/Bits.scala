@@ -200,16 +200,16 @@ object Bits extends UIntFactory
   * types.
   */
 abstract trait Num[T <: Data] {
-  // def << (b: T): T;
-  // def >> (b: T): T;
-  //def unary_-(): T;
+  // def << (b: T): T
+  // def >> (b: T): T
+  //def unary_-(): T
 
   // REVIEW TODO: double check ops conventions against FIRRTL
 
   /** Outputs the sum of `this` and `b`. The resulting width is the max of the
     * operands plus 1 (should not overflow).
     */
-  def +  (b: T): T;
+  def +  (b: T): T
 
   /** Outputs the product of `this` and `b`. The resulting width is the sum of
     * the operands.
@@ -217,36 +217,36 @@ abstract trait Num[T <: Data] {
     * @note can generate a single-cycle multiplier, which can result in
     * significant cycle time and area costs
     */
-  def *  (b: T): T;
+  def *  (b: T): T
 
   /** Outputs the quotient of `this` and `b`.
     *
     * TODO: full rules
     */
-  def /  (b: T): T;
+  def /  (b: T): T
 
-  def %  (b: T): T;
+  def %  (b: T): T
 
   /** Outputs the difference of `this` and `b`. The resulting width is the max
    *  of the operands plus 1 (should not overflow).
     */
-  def -  (b: T): T;
+  def -  (b: T): T
 
   /** Outputs true if `this` < `b`.
     */
-  def <  (b: T): Bool;
+  def <  (b: T): Bool
 
   /** Outputs true if `this` <= `b`.
     */
-  def <= (b: T): Bool;
+  def <= (b: T): Bool
 
   /** Outputs true if `this` > `b`.
     */
-  def >  (b: T): Bool;
+  def >  (b: T): Bool
 
   /** Outputs true if `this` >= `b`.
     */
-  def >= (b: T): Bool;
+  def >= (b: T): Bool
 
   /** Outputs the minimum of `this` and `b`. The resulting width is the max of
     * the operands. Generates a comparison followed by a mux.
