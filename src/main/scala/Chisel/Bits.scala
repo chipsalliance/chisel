@@ -175,7 +175,10 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     *
     * The width of the output is sum of the inputs. Generates no logic.
     */
-  def ## (other: Bits): UInt = Cat(this, other)
+  def ## (other: Bits): UInt = {
+    val w = this.width + other.width
+    pushOp(DefPrim(UInt(w), ConcatOp, this.ref, other.ref))
+  }
 
   @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
   override def toBits: UInt = asUInt
