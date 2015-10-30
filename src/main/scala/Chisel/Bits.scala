@@ -42,7 +42,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   /** Returns the specified bit on this wire as a [[Bool]], statically
     * addressed. Generates no logic.
-    * 
+    *
     * @note convenience method allowing direct use of Ints without implicits
     */
   final def apply(x: Int): Bool =
@@ -149,9 +149,9 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     * 3 and value 7 (0b111) would become a SInt with value -1
     */
   def asSInt(): SInt
-  
+
   /** Reinterpret cast to an UInt.
-    * 
+    *
     * @note value not guaranteed to be preserved: for example, a SInt of width
     * 3 and value -1 (0b111) would become an UInt with value 7
     */
@@ -159,7 +159,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   /** Reinterpret cast to Bits. */
   def asBits(): Bits = asUInt
-  
+
   @deprecated("Use asSInt, which makes the reinterpret cast more explicit", "chisel3")
   final def toSInt(): SInt = asSInt
   @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
