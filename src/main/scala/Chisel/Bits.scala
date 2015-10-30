@@ -8,9 +8,6 @@ import PrimOp._
   * uses are for representing primitive data types, like integers and bits.
   */
 abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg) {
-  // REVIEW TODO: toBits is implemented in terms of flatten... inheriting this
-  // without rewriting toBits will break things. Perhaps have a specific element
-  // API?
   private[Chisel] def flatten: IndexedSeq[UInt] = IndexedSeq(toBits)
 }
 
@@ -19,14 +16,12 @@ abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
   */
 sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg: Option[LitArg])
     extends Element(dirArg, width) {
-  // REVIEW TODO: should this be abstract? It may be good to use Bits for values
-  // where you don't need artihmetic operations / arithmetic doesn't make sense
-  // like opcodes and stuff.
+  // TODO: perhaps make this concrete?
+  // Arguments for: self-checking code (can't do arithmetic on bits)
+  // Arguments against: generates down to a FIRRTL UInt anyways
 
-  // REVIEW TODO: Why do we need a fromInt? Why does it drop the argument?
-  def fromInt(x: BigInt): this.type
-  // REVIEW TODO: purpose of dedicated lit logic?
-  def makeLit(value: BigInt): LitArg
+  private[Chisel] def fromInt(x: BigInt): this.type
+
   def cloneType: this.type = cloneTypeWidth(width)
 
   override def <> (that: Data): Unit = this := that
@@ -34,7 +29,6 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   /** Returns the specified bit on this wire as a [[Bool]], statically
     * addressed. Generates no logic.
     */
-  // REVIEW TODO: Ddeduplicate constructor with apply(Int)
   final def apply(x: BigInt): Bool = {
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
@@ -46,6 +40,11 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     }
   }
 
+  /** Returns the specified bit on this wire as a [[Bool]], statically
+    * addressed. Generates no logic.
+    * 
+    * @note convenience method allowing direct use of Ints without implicits
+    */
   final def apply(x: Int): Bool =
     apply(BigInt(x))
 
@@ -68,8 +67,6 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     if (x < y || y < 0) {
       Builder.error(s"Invalid bit range ($x,$y)")
     }
-    // REVIEW TODO: should we support negative indexing Python style, at least
-    // where widths are known?
     val w = x - y + 1
     if (isLit()) {
       UInt((litValue >> y) & ((BigInt(1) << w) - 1), w)
@@ -146,12 +143,26 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     */
   def toBools: Vec[Bool] = Vec.tabulate(this.getWidth)(i => this(i))
 
-  // REVIEW TODO: is this appropriate here? Should this be a (implicit?) cast in
-  // the SInt object instead? Bits shouldn't know about UInt/SInt, which are
-  // downstream?
+  /** Reinterpret cast to a SInt.
+    *
+    * @note value not guaranteed to be preserved: for example, an UInt of width
+    * 3 and value 7 (0b111) would become a SInt with value -1
+    */
   def asSInt(): SInt
+  
+  /** Reinterpret cast to an UInt.
+    * 
+    * @note value not guaranteed to be preserved: for example, a SInt of width
+    * 3 and value -1 (0b111) would become an UInt with value 7
+    */
   def asUInt(): UInt
+
+  /** Reinterpret cast to Bits. */
+  def asBits(): Bits = asUInt
+  
+  @deprecated("Use asSInt, which makes the reinterpret cast more explicit", "chisel3")
   final def toSInt(): SInt = asSInt
+  @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
   final def toUInt(): UInt = asUInt
 
   def toBool(): Bool = width match {
@@ -159,7 +170,6 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     case _ => throwException(s"can't covert UInt<$width> to Bool")
   }
 
-  // REVIEW TODO: where did this syntax come from?
   /** Returns this wire concatenated with `other`, where this wire forms the
     * most significant part and `other` forms the least significant part.
     *
@@ -167,7 +177,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     */
   def ## (other: Bits): UInt = Cat(this, other)
 
-  // REVIEW TODO: This just _looks_ wrong.
+  @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
   override def toBits: UInt = asUInt
 
   override def fromBits(n: Bits): this.type = {
@@ -177,15 +187,12 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   }
 }
 
-// REVIEW TODO: Wait, wha?! Why does this exist? Things should be DRY and
-// unambiguous.
 /** Provides a set of operations to create UInt types and literals.
-  * Identical in functionality to the UInt companion object. */
+  * Identical in functionality to the UInt companion object.
+  */
 object Bits extends UIntFactory
 
-// REVIEW TODO: Numeric (strictly UInt/SInt/float) or numeric-like (complex,
-// etc)? First is easy to define, second not so much. Perhaps rename IntLike?
-// Also should add intended purpose.
+// REVIEW TODO: Further discussion needed on what Num actually is.
 /** Abstract trait defining operations available on numeric-like wire data
   * types.
   */
@@ -258,8 +265,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
     new UInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"UInt<$width>"
 
-  def fromInt(value: BigInt): this.type = UInt(value).asInstanceOf[this.type]
-  def makeLit(value: BigInt): ULit = ULit(value, Width())
+  override private[Chisel] def fromInt(value: BigInt): this.type = UInt(value).asInstanceOf[this.type]
 
   override def := (that: Data): Unit = that match {
     case _: UInt => this connect that
@@ -313,10 +319,10 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def === (that: BitPat): Bool = that === this
   def != (that: BitPat): Bool = that != this
 
-  // REVIEW TODO: Is this really the common definition of zero extend?
-  // Can we just define UInt/SInt constructors on Bits as a reinterpret case?
   /** Returns this UInt as a [[SInt]] with an additional zero in the MSB.
     */
+  // TODO: this eventually will be renamed as toSInt, once the existing toSInt
+  // completes its deprecation phase.
   def zext(): SInt = pushOp(DefPrim(SInt(width + 1), ConvertOp, ref))
 
   /** Returns this UInt as a [[SInt]], without changing width or bit value. The
@@ -328,9 +334,8 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def asUInt(): UInt = this
 }
 
-// REVIEW TODO: why not just have this be a companion object? Why the trait
-// instead of object UInt?
-sealed trait UIntFactory {
+// This is currently a factory because both Bits and UInt inherit it.
+private[Chisel] sealed trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(NO_DIR, Width())
   /** Create a UInt type or port with fixed width. */
@@ -392,8 +397,7 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
     case _ => this badConnect that
   }
 
-  def fromInt(value: BigInt): this.type = SInt(value).asInstanceOf[this.type]
-  def makeLit(value: BigInt): SLit = SLit(value, Width())
+  override private[Chisel] def fromInt(value: BigInt): this.type = SInt(value).asInstanceOf[this.type]
 
   def unary_- : SInt = SInt(0) - this
   def unary_-% : SInt = SInt(0) -% this
@@ -471,7 +475,7 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
     new Bool(dir).asInstanceOf[this.type]
   }
 
-  override def fromInt(value: BigInt): this.type = {
+  override private[Chisel] def fromInt(value: BigInt): this.type = {
     require(value == 0 || value == 1)
     Bool(value == 1).asInstanceOf[this.type]
   }
