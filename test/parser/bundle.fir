@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.out -X HighFIRRTL && cat %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.out -X firrtl && cat %s.out | FileCheck %s
 circuit top :
    module top :
       wire z : { x : UInt, flip y: SInt}

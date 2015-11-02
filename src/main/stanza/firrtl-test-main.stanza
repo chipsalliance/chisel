@@ -62,7 +62,7 @@ defn main () :
    val pass-args = Vector<String>()
    var printvars = ""
    var last-s = ""
-   var backend = ""
+   var backend = false
 
    val prev-out = CURRENT-OUTPUT-STREAM
    CURRENT-OUTPUT-STREAM = STANDARD-ERROR
@@ -106,8 +106,8 @@ defn main () :
             CURRENT-OUTPUT-STREAM = prev-stream
             close(out-stream)
 
-   if compiler == false and length(pass-names) == 0 :
-      error("Must specify a compiler. Use -X flag.")
+   if compiler == false and backend == false and length(pass-names) == 0 :
+      error("Must specify a compiler or a backend. Use -X flag or -b flag.")
 
    val lexed = lex-file(input as String)
    val circuit = parse-firrtl(lexed)

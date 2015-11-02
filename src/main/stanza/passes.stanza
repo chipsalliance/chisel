@@ -12,56 +12,30 @@ defpackage firrtl/passes :
 
 ;============== Pass List ================
 public val standard-passes = to-list $ [
-      RemoveSpecialChars()     ;R
-      ;RemoveScopes()           ;R
-      CheckHighForm()          ;R
-      TempElimination()        ;R
-      ToWorkingIR()            ;R -> W
-      ResolveKinds()           ;W
-      InferTypes()             ;R
-      ResolveGenders()         ;W
-      CheckGenders()           ;W
-      CheckKinds()             ;W
-      CheckTypes()             ;R
-      ExpandAccessors()        ;W
-      LowerToGround()          ;W
-      ;ExpandIndexedConnects()  ;W
+      RemoveSpecialChars()
+      CheckHighForm()
+      TempElimination()
+      ToWorkingIR()
+      ResolveKinds()
+      InferTypes()
+      ResolveGenders()
+      CheckGenders()
+      CheckKinds()
+      CheckTypes()
+      ExpandAccessors()
+      LowerToGround()
       InlineIndexed()
-      InferTypes()             ;R
-      CheckGenders()           ;W
-      ExpandWhens()            ;W
-      InferWidths()            ;R
-      ToRealIR()               ;W -> R
-      CheckWidths()            ;R
-      Pad()                    ;R
-      ConstProp()              ;R
-      SplitExp()               ;R
-      CheckWidths()            ;R
-      CheckHighForm()          ;R
-      CheckLowForm()           ;R
-      CheckInitialization()    ;R
+      ExpandWhens()
+      InferWidths()
+      ToRealIR()
+      CheckWidths()
+      Pad()
+      ConstProp()
+      SplitExp()
+      CheckLowForm()
+      CheckInitialization()
    ]
 
-   ;CheckHighForm()
-   ;TempElimination()
-   ;ToWorkingIR()
-   ;ResolveKinds()
-   ;CheckKinds()
-   ;InferTypes()
-   ;CheckTypes()
-   ;ResolveGenders()
-   ;CheckGenders()
-   ;ExpandAccessors()
-   ;LowerToGround()
-   ;;ExpandIndexedConnects()
-   ;InlineIndexed()
-   ;ExpandWhens()
-   ;InferWidths()
-   ;Inline()
-   ;SplitExp()
-   ;CheckLowForm()
-   ;ToRealIR() 
-   ;Pad() ]
 ;=============== WORKING IR ================================
 public definterface Kind
 public defstruct WireKind <: Kind 
