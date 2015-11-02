@@ -128,7 +128,6 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def := (that: Vec[T]): Unit = this connect that
 
   /** Creates a dynamically indexed read or write accessor into the array.
-    * Generates logic (likely some kind of multiplexer).
     */
   def apply(idx: UInt): T = {
     val x = gen
@@ -137,7 +136,6 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   }
 
   /** Creates a statically indexed read or write accessor into the array.
-    * Generates no logic.
     */
   def apply(idx: Int): T = self(idx)
 
