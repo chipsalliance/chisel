@@ -14,13 +14,4 @@ object TesterDriver extends BackendCompilationUtilities with FileSystemUtilities
     val returnValue = 0 //Process(executable) !
     (returnValue == 0)
   }
-
-  def test(): Boolean = {
-    val vHarness = BasicTester.makeVerilogHarness("our")
-    val cppHarness = BasicTester.makeCppHarness("our")
-    val dir = new File(System.getProperty("java.io.tmpdir"))
-    cppToExe("our", dir).!
-    executeExpectingSuccess("our", dir)
-    true
-  }
 }

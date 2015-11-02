@@ -6,7 +6,7 @@ import scala.sys.process._
 import java.io._
 
 trait FileSystemUtilities {
-  def createTempOutputFile(pre: String, post: String, contents: String): File = {
+  def writeTempFile(pre: String, post: String, contents: String): File = {
     val t = File.createTempFile(pre, post)
     val w = new FileWriter(t)
     w.write(contents)
@@ -32,22 +32,29 @@ trait BackendCompilationUtilities {
   def firrtlToVerilog(prefix: String, dir: String): ProcessBuilder =
     Seq("firrtl", "-i", s"$prefix.fir", "-o", s"$prefix.v", "-X", "verilog")
 
-  def verilogToCpp(dir: File, vDUT: File, vHarness: File, cppHarness: File): ProcessBuilder =
-    Seq("verilator", "-Wall", "--cc", vDUT.toString, vHarness.toString, s"-M$dir", "--exe", cppHarness.toString)
+  def verilogToCpp(dir: File, vFiles: Seq[File], cppHarness: File): ProcessBuilder =
+    Seq("verilator",
+        "--cc", vFiles.mkString(" "),
+        "--assert",
+        "-CFLAGS", "-Wno-undefined-bool-conversion",
+        "-Mdir", dir.toString,
+        "--exe", cppHarness.toString)
 
   def cppToExe(prefix: String, dir: File): ProcessBuilder =
-    Seq("make", "-C", dir.toString, "-j", "-f", "V$prefix.mk", "V$prefix")
+    Seq("make", "-C", dir.toString, "-j", "-f", s"V${prefix}Harness.mk", s"V${prefix}Harness")
 
-  def executeExpectingFailure(prefix: String, dir: File, assertionMsg: String): Boolean = {
+  def executeExpectingFailure(
+      prefix: String,
+      dir: File,
+      assertionMsg: String = "Assertion failed"): Boolean = {
     var triggered = false
-    val assertionFinder = ProcessLogger(line =>
-                            triggered = triggered || line.contains(assertionMsg))
-    Process(s"V$prefix", dir) ! assertionFinder
+    val e = Process(s"./V${prefix}Harness", dir) ! ProcessLogger(line =>
+      triggered = triggered || line.contains(assertionMsg))
     triggered
   }
 
   def executeExpectingSuccess(prefix: String, dir: File): Boolean = {
-    !executeExpectingFailure(prefix, dir, "Assertion Failed")
+    !executeExpectingFailure(prefix, dir)
   }
 
 }
