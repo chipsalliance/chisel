@@ -60,6 +60,12 @@
  <check level="warning" class="org.scalastyle.scalariform.StructuralTypeChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.file.RegexChecker" enabled="true">
   <parameters>
+   <parameter name="regex"><![CDATA[^.*;(\r|)\n]]></parameter>
+  </parameters>
+  <customMessage>No lines ending with a ;</customMessage>
+ </check>
+ <check level="warning" class="org.scalastyle.file.RegexChecker" enabled="true">
+  <parameters>
    <parameter name="regex"><![CDATA[println]]></parameter>
   </parameters>
  </check>
