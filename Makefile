@@ -25,11 +25,11 @@ c_resources_dir := src/main/resources
 
 test_outs    := $(addprefix $(targetDir)/, $(addsuffix .out, $(test_results)))
 
-.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test
+.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test checkstyle compile
 
 default:	publish-local
 
-smoke:
+smoke compile:
 	$(SBT) $(SBT_FLAGS) compile
 
 publish-local:
@@ -39,6 +39,9 @@ test:
 	$(SBT) $(SBT_FLAGS) test
 
 check:	test $(test_outs)
+
+checkstyle:
+	$(SBT) $(SBT_FLAGS) scalastyle test:scalastyle
 
 coverage:
 	$(SBT) $(SBT_FLAGS) coverage test
