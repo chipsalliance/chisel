@@ -27,7 +27,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   override def <> (that: Data): Unit = this := that
 
   /** Returns the specified bit on this wire as a [[Bool]], statically
-    * addressed. Generates no logic.
+    * addressed.
     */
   final def apply(x: BigInt): Bool = {
     if (x < 0) {
@@ -41,7 +41,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   }
 
   /** Returns the specified bit on this wire as a [[Bool]], statically
-    * addressed. Generates no logic.
+    * addressed.
     *
     * @note convenience method allowing direct use of Ints without implicits
     */
@@ -49,13 +49,13 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     apply(BigInt(x))
 
   /** Returns the specified bit on this wire as a [[Bool]], dynamically
-    * addressed. Generates logic: implemented as a variable shifter.
+    * addressed.
     */
   final def apply(x: UInt): Bool =
     (this >> x)(0)
 
   /** Returns a subset of bits on this wire from `hi` to `lo` (inclusive),
-    * statically addressed. Generates no logic.
+    * statically addressed.
     *
     * @example
     * {{{
@@ -106,8 +106,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   /** Returns this wire statically left shifted by the specified amount,
     * inserting zeros into the least significant bits.
     *
-    * The width of the output is `other` larger than the input. Generates no
-    * logic.
+    * The width of the output is `other` larger than the input.
     */
   def << (other: Int): Bits
 
@@ -115,7 +114,6 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     * inserting zeros into the least significant bits.
     *
     * The width of the output is `pow(2, width(other))` larger than the input.
-    * Generates a dynamic shifter.
     */
   def << (other: UInt): Bits
 
@@ -126,20 +124,18 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   /** Returns this wire statically right shifted by the specified amount,
     * inserting zeros into the most significant bits.
     *
-    * The width of the output is the same as the input. Generates no logic.
+    * The width of the output is the same as the input.
     */
   def >> (other: Int): Bits
 
   /** Returns this wire dynamically right shifted by the specified amount,
     * inserting zeros into the most significant bits.
     *
-    * The width of the output is the same as the input. Generates a dynamic
-    * shifter.
+    * The width of the output is the same as the input.
     */
   def >> (other: UInt): Bits
 
-  /** Returns the contents of this wire as a [[Vec]] of [[Bool]]s. Generates no
-    * logic.
+  /** Returns the contents of this wire as a [[Vec]] of [[Bool]]s.
     */
   def toBools: Vec[Bool] = Vec.tabulate(this.getWidth)(i => this(i))
 
@@ -173,7 +169,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   /** Returns this wire concatenated with `other`, where this wire forms the
     * most significant part and `other` forms the least significant part.
     *
-    * The width of the output is sum of the inputs. Generates no logic.
+    * The width of the output is sum of the inputs.
     */
   def ## (other: Bits): UInt = {
     val w = this.width + other.width
@@ -249,12 +245,12 @@ abstract trait Num[T <: Data] {
   def >= (b: T): Bool
 
   /** Outputs the minimum of `this` and `b`. The resulting width is the max of
-    * the operands. Generates a comparison followed by a mux.
+    * the operands.
     */
   def min(b: T): T = Mux(this < b, this.asInstanceOf[T], b)
 
   /** Outputs the maximum of `this` and `b`. The resulting width is the max of
-    * the operands. Generates a comparison followed by a mux.
+    * the operands.
     */
   def max(b: T): T = Mux(this < b, b, this.asInstanceOf[T])
 }

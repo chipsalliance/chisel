@@ -74,8 +74,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   private[Chisel] def flatten: IndexedSeq[Bits]
 
   /** Creates an new instance of this type, unpacking the input Bits into
-    * structured data. Generates no logic (should be either wires or a syntactic
-    * transformation).
+    * structured data.
     *
     * This performs the inverse operation of toBits.
     *
@@ -94,8 +93,7 @@ abstract class Data(dirArg: Direction) extends HasId {
     wire.asInstanceOf[this.type]
   }
 
-  /** Packs the value of this object as plain Bits. Generates no logic (should
-    * be either wires or a syntactic transformation).
+  /** Packs the value of this object as plain Bits.
     *
     * This performs the inverse operation of fromBits(Bits).
     */
