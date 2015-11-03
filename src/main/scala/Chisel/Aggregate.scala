@@ -170,30 +170,19 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
   def write(idx: UInt, data: T): Unit
 
   /** Outputs true if p outputs true for every element.
-    *
-    * This generates into a function evaluation followed by a logical AND
-    * reduction.
     */
   def forall(p: T => Bool): Bool = (this map p).fold(Bool(true))(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
-    *
-    * This generates into a function evaluation followed by a logical OR
-    * reduction.
     */
   def exists(p: T => Bool): Bool = (this map p).fold(Bool(false))(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
     * the === operator).
-    *
-    * This generates into an equality comparison followed by a logical OR
-    * reduction.
     */
   def contains(x: T)(implicit evidence: T <:< UInt): Bool = this.exists(_ === x)
 
   /** Outputs the number of elements for which p is true.
-    *
-    * This generates into a function evaluation followed by a set bit counter.
     */
   def count(p: T => Bool): UInt = PopCount((this map p).toSeq)
 
@@ -203,23 +192,18 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
   private def indexWhereHelper(p: T => Bool) = this map p zip (0 until length).map(i => UInt(i))
 
   /** Outputs the index of the first element for which p outputs true.
-    *
-    * This generates into a function evaluation followed by a priority mux.
     */
   def indexWhere(p: T => Bool): UInt = PriorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
-    *
-    * This generates into a function evaluation followed by a priority mux.
     */
   def lastIndexWhere(p: T => Bool): UInt = PriorityMux(indexWhereHelper(p).reverse)
 
   /** Outputs the index of the element for which p outputs true, assuming that
     * the there is exactly one such element.
     *
-    * This generates into a function evaluation followed by a one-hot mux. The
-    * implementation may be more efficient than a priority mux, but incorrect
-    * results are possible if there is not exactly one true element.
+    * The implementation may be more efficient than a priority mux, but
+    * incorrect results are possible if there is not exactly one true element.
     *
     * @note the assumption that there is only one element for which p outputs
     * true is NOT checked (useful in cases where the condition doesn't always
