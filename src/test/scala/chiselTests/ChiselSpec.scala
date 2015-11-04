@@ -40,12 +40,10 @@ class ChiselPropSpec extends PropSpec with PropertyChecks {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
   def elaborate(t: => Module): Circuit = Driver.elaborate(() => t)
 
-  def popCount(n: Long) = n.toBinaryString.count(_=='1')
-
-  val smallPosInts = Gen.choose(1, 7)
+  val smallPosInts = Gen.choose(1, 4)
   val safeUIntWidth = Gen.choose(1, 30) 
   val safeUInts = Gen.choose(0, (1 << 30))
-  val vecSizes = Gen.choose(0, 4)
+  val vecSizes = Gen.choose(1, 4)
   val binaryString = for(i <- Arbitrary.arbitrary[Int]) yield "b" + i.toBinaryString
   def enSequence(n: Int) = Gen.containerOfN[List,Boolean](n,Gen.oneOf(true,false))
 
