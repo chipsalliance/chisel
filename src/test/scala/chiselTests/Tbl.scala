@@ -9,8 +9,8 @@ import Chisel.testers.BasicTester
 
 class Tbl(w: Int, n: Int) extends Module {
   val io = new Bundle {
-    val wi  = UInt(INPUT, log2Ceil(w))
-    val ri  = UInt(INPUT, log2Ceil(w))
+    val wi  = UInt(INPUT, log2Up(n))
+    val ri  = UInt(INPUT, log2Up(n))
     val we  = Bool(INPUT)
     val  d  = UInt(INPUT, w)
     val  o  = UInt(OUTPUT, w)
@@ -42,8 +42,10 @@ class TblSpec extends ChiselPropSpec {
 
   property("All table reads should return the previous write") {
     forAll(safeUIntPairN(8)) { case(w: Int, pairs: List[(Int, Int)]) =>
-      val (idxs, values) = pairs.unzip
-      assert(execute{ new TblTester(w, 1 << w, idxs, values) })
+      whenever(w > 0) {
+        val (idxs, values) = pairs.unzip
+        assert(execute{ new TblTester(w, 1 << w, idxs, values) })
+      }
     }
   }
 }
