@@ -74,21 +74,18 @@ private class DynamicContext {
   val globalRefMap = new RefMap
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
-  val parameterDump = new ParameterDump
   val errors = new ErrorLog
 }
 
 private object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
-  private val currentParamsVar = new DynamicVariable[Parameters](Parameters.empty)
 
   def dynamicContext: DynamicContext = dynamicContextVar.value.get
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def globalRefMap: RefMap = dynamicContext.globalRefMap
   def components: ArrayBuffer[Component] = dynamicContext.components
-  def parameterDump: ParameterDump = dynamicContext.parameterDump
 
   def pushCommand[T <: Command](c: T): T = {
     dynamicContext.currentModule.foreach(_._commands += c)
@@ -99,11 +96,6 @@ private object Builder {
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
 
-  def getParams: Parameters = currentParamsVar.value
-  def paramsScope[T](p: Parameters)(body: => T): T = {
-    currentParamsVar.withValue(p)(body)
-  }
-
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       errors.info("Elaborating design...")
@@ -112,7 +104,7 @@ private object Builder {
       errors.checkpoint()
       errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components, globalRefMap, parameterDump)
+      Circuit(components.last.name, components, globalRefMap)
     }
   }
 }

@@ -10,8 +10,8 @@ import Chisel.testers._
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners {
-  def execute(t: => BasicTester): Boolean = TesterDriver.execute(t)
-  def elaborate(t: => Module): Circuit = TesterDriver.elaborate(t)
+  def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
+  def elaborate(t: => Module): Circuit = Driver.elaborate(() => t)
 }
 
 /** Spec base class for BDD-style testers. */
@@ -19,11 +19,9 @@ class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
 class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks {
-  /** Returns the number of 1s in the binary representation of the input. */
-  def popCount(n: Long): Int = n.toBinaryString.count(_ == '1')
 
   // Generator for small positive integers.
-  val smallPosInts = Gen.choose(1, 7)
+  val smallPosInts = Gen.choose(1, 4)
 
   // Generator for widths considered "safe".
   val safeUIntWidth = Gen.choose(1, 30)

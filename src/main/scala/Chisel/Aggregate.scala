@@ -313,17 +313,6 @@ class Bundle extends Aggregate(NO_DIR) {
   }
 }
 
-object Bundle {
-  private val keywords =
-    HashSet[String]("flip", "asInput", "asOutput", "cloneType", "toBits")
-
-  def apply[T <: Bundle](b: => T)(implicit p: Parameters): T = {
-    Builder.paramsScope(p.push){ b }
-  }
-
-  //TODO @deprecated("Use Chisel.paramsScope object","08-01-2015")
-  def apply[T <: Bundle](b: => T,  f: PartialFunction[Any,Any]): T = {
-    val q = Builder.getParams.alterPartial(f)
-    apply(b)(q)
-  }
+private[Chisel] object Bundle {
+  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits")
 }

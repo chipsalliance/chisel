@@ -29,23 +29,23 @@ class ComplexAssign(w: Int) extends Module {
   }
 }
 
+class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends BasicTester {
+  val (cnt, wrap) = Counter(Bool(true), enList.size)
+  val dut = Module(new ComplexAssign(32))
+  dut.io.in.re := UInt(re)
+  dut.io.in.im := UInt(im)
+  dut.io.e := Vec(enList.map(Bool(_)))(cnt)
+  val re_correct = dut.io.out.re === Mux(dut.io.e, dut.io.in.re, UInt(0))
+  val im_correct = dut.io.out.im === Mux(dut.io.e, dut.io.in.im, UInt(0))
+  when(!re_correct || !im_correct) {
+    io.done := Bool(true); io.error := cnt
+  } .elsewhen(wrap) { io.done := Bool(true) }
+}
+   
 class ComplexAssignSpec extends ChiselPropSpec {
 
-  class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends BasicTester {
-    val (cnt, wrap) = Counter(Bool(true), enList.size)
-    val dut = Module(new ComplexAssign(32))
-    dut.io.in.re := UInt(re)
-    dut.io.in.im := UInt(im)
-    dut.io.e := Vec(enList.map(Bool(_)))(cnt)
-    val re_correct = dut.io.out.re === Mux(dut.io.e, dut.io.in.re, UInt(0))
-    val im_correct = dut.io.out.im === Mux(dut.io.e, dut.io.in.im, UInt(0))
-    when(!re_correct || !im_correct) {
-      io.done := Bool(true); io.error := cnt
-    } .elsewhen(wrap) { io.done := Bool(true) }
-  }
-
   property("All complex assignments should return the correct result") {
-    forAll(enSequence(4), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
+    forAll(enSequence(2), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
       assert(execute{ new ComplexAssignTester(en, re, im) })
     }
   }

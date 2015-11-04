@@ -152,6 +152,6 @@ case class ConnectInit(loc: Node, exp: Arg) extends Command
 case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
 
-case class Circuit(name: String, components: Seq[Component], refMap: RefMap, parameterDump: ParameterDump) {
+case class Circuit(name: String, components: Seq[Component], refMap: RefMap) {
   def emit: String = new Emitter(this).toString
 }

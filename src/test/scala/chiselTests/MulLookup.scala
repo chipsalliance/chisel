@@ -22,15 +22,15 @@ class MulLookup(val w: Int) extends Module {
   io.z := tbl(((io.x << w) | io.y))
 }
 
-class MulLookupSpec extends ChiselPropSpec {
+class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
+  val dut = Module(new MulLookup(w))
+  dut.io.x := UInt(x)
+  dut.io.y := UInt(y)
+  io.done := Bool(true)
+  io.error := dut.io.z != UInt(x * y)
+}
 
-  class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
-    val dut = Module(new MulLookup(w))
-    dut.io.x := UInt(x)
-    dut.io.y := UInt(y)
-    io.done := Bool(true)
-    io.error := dut.io.z != UInt(x * y)
-  }
+class MulLookupSpec extends ChiselPropSpec {
 
   property("Mul lookup table should return the correct result") {
     forAll(smallPosInts, smallPosInts) { (x: Int, y: Int) =>
