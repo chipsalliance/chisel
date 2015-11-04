@@ -1,13 +1,15 @@
+// See LICENSE for license details.
+
 package chiselTests
 import Chisel.testers.BasicTester
 import org.scalatest._
 import org.scalatest.prop._
 import java.io.File
 
-class HarnessSpec extends ChiselPropSpec 
+class HarnessSpec extends ChiselPropSpec
   with Chisel.BackendCompilationUtilities {
 
-  def makeTrivialVerilog = makeHarness((prefix: String) => s"""
+  def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
 module ${prefix};
   initial begin
     $$display("$prefix!");
@@ -16,7 +18,7 @@ module ${prefix};
 endmodule
 """, ".v") _
 
-  def makeFailingVerilog = makeHarness((prefix: String) => s"""
+  def makeFailingVerilog: (File => File) = makeHarness((prefix: String) => s"""
 module $prefix;
   initial begin
     assert (1 == 0) else $$error("My specific, expected error message!");
@@ -26,7 +28,7 @@ module $prefix;
 endmodule
 """, ".v") _
 
-  def makeCppHarness = makeHarness((prefix: String) => s"""
+  def makeCppHarness: (File => File) = makeHarness((prefix: String) => s"""
 #include "V$prefix.h"
 #include "verilated.h"
 
@@ -72,4 +74,4 @@ int main(int argc, char **argv, char **env) {
     assert(!executeExpectingFailure(prefix, dir, "A string that doesn't match any test output"))
   }
 }
- 
+
