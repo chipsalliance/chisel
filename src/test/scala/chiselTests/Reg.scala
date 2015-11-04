@@ -18,7 +18,7 @@ class RegSpec extends ChiselFlatSpec {
       val reg = Reg(t=UInt(width=2), next=UInt(width=3), init=UInt(20))
       reg.width.get should be (2)
     }
-    assert(execute{new RegOutTypeWidthTester})
+    elaborate{ new RegOutTypeWidthTester }
   }
 
   "A Reg" should "be of unknown width if outType is not specified and width is not forced" in {
@@ -30,7 +30,7 @@ class RegSpec extends ChiselFlatSpec {
       val reg3 = Reg(next=UInt(width=3), init=UInt(width=5))
       reg3.width.known should be (false)
     }
-    assert(execute{new RegUnknownWidthTester})
+    elaborate { new RegUnknownWidthTester }
   }
 
   "A Reg" should "be of width of init if outType and next are missing and init is a literal of forced width" in {
@@ -38,6 +38,6 @@ class RegSpec extends ChiselFlatSpec {
       val reg2 = Reg(init=UInt(20, width=7))
       reg2.width.get should be (7)
     }
-    assert(execute{new RegForcedWidthTester})
+    elaborate{ new RegForcedWidthTester }
   }
 }
