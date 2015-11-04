@@ -13,7 +13,7 @@ object Module {
     *
     * @return the input module `m` with Chisel metadata properly set
     */
-  def apply[T <: Module](bc: => T)(implicit currParams: Parameters = Builder.getParams.push): T = {
+  def apply[T <: Module](bc: => T): T = {
     val parent = dynamicContext.currentModule
     val m = bc.setRefs()
     // init module outputs
