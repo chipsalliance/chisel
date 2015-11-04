@@ -15,16 +15,16 @@ class Decoder(bitpats: List[String]) extends Module {
   io.matched := Vec(bitpats.map(BitPat(_) === io.inst)).reduce(_||_)
 }
 
-class DecoderSpec extends ChiselPropSpec {
+class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
+  val (insts, bitpats) = pairs.unzip
+  val (cnt, wrap) = Counter(Bool(true), pairs.size)
+  val dut = Module(new Decoder(bitpats))
+  dut.io.inst := Vec(insts.map(UInt(_)))(cnt)
+  when(!dut.io.matched) { io.done := Bool(true); io.error := cnt }
+  when(wrap) { io.done := Bool(true) }
+}
 
-  class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
-    val (insts, bitpats) = pairs.unzip
-    val (cnt, wrap) = Counter(Bool(true), pairs.size)
-    val dut = Module(new Decoder(bitpats))
-    dut.io.inst := Vec(insts.map(UInt(_)))(cnt)
-    when(!dut.io.matched) { io.done := Bool(true); io.error := cnt }
-    when(wrap) { io.done := Bool(true) }
-  }
+class DecoderSpec extends ChiselPropSpec {
 
   // Use a single Int to make both a specific instruction and a BitPat that will match it
   val bitpatPair = for(seed <- Arbitrary.arbitrary[Int]) yield {
@@ -36,7 +36,7 @@ class DecoderSpec extends ChiselPropSpec {
   private def nPairs(n: Int) = Gen.containerOfN[List, (String,String)](n,bitpatPair)
 
   property("BitPat wildcards should be usable in decoding") {
-    forAll(nPairs(16)){ (pairs: List[(String, String)]) =>
+    forAll(nPairs(4)){ (pairs: List[(String, String)]) =>
       assert(execute{ new DecoderTester(pairs) })
     }
   }

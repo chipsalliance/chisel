@@ -2,75 +2,100 @@
 
 package Chisel
 
-import collection.mutable.{ArrayBuffer, HashSet, HashMap, Stack, LinkedHashSet, Queue => ScalaQueue}
-import scala.math.min
+import scala.sys.process._
+import java.io._
 
 trait FileSystemUtilities {
-  def createOutputFile(name: String, contents: String) {
-    val f = new java.io.FileWriter(name)
-    f.write(contents)
-    f.close
+  def writeTempFile(pre: String, post: String, contents: String): File = {
+    val t = File.createTempFile(pre, post)
+    val w = new FileWriter(t)
+    w.write(contents)
+    w.close()
+    t
+  }
+
+  // This "fire-and-forgets" the method, which can be lazily read through
+  // a Stream[String], and accumulates all errors on a StringBuffer
+  def sourceFilesAt(baseDir: String): (Stream[String], StringBuffer) = {
+    val buffer = new StringBuffer()
+    val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
+    val lines = cmd lines_! ProcessLogger(buffer append _)
+    (lines, buffer)
   }
 }
 
-object Driver extends FileSystemUtilities {
-
-  /** Instantiates a ChiselConfig class with the given name and uses it for elaboration */
-  def elaborateWithConfigName[T <: Module](
-      gen: () => T,
-      configClassName: String,
-      projectName: Option[String] = None,
-      collectConstraints: Boolean = false): Unit = {
-    val className = projectName match {
-      case Some(pn) => s"$pn.$configClassName"
-      case None => configClassName
-    }
-    val config = try {
-      Class.forName(className).newInstance.asInstanceOf[ChiselConfig]
-    } catch {
-      case e: java.lang.ClassNotFoundException =>
-        throwException("Could not find the ChiselConfig subclass you asked for (i.e. \"" +
-                          className + "\"), did you misspell it?", e)
-    }
-    elaborateWithConfig(gen, config, collectConstraints)
+trait BackendCompilationUtilities {
+  def makeHarness(template: String => String, post: String)(f: File): File = {
+    val prefix = f.toString.split("/").last
+    val vf = new File(f.toString + post)
+    val w = new FileWriter(vf)
+    w.write(template(prefix))
+    w.close()
+    vf
   }
 
-  /** Uses the provided ChiselConfig for elaboration */
-  def elaborateWithConfig[T <: Module](
-      gen: () => T,
-      config: ChiselConfig,
-      collectConstraints: Boolean = false): Unit = {
-    val world = if(collectConstraints) config.toCollector else config.toInstance
-    val p = Parameters.root(world)
-    config.topConstraints.foreach(c => p.constrain(c))
-    elaborate(gen, p, config)
+  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = {
+    Process(
+      Seq("firrtl",
+          "-i", s"$prefix.fir",
+          "-o", s"$prefix.v",
+          "-X", "verilog"),
+      dir)
   }
 
-  /** Elaborates the circuit specified in the gen function, optionally uses
-    * a parameter space to supply context-aware values.
-    *  TODO: Distinguish between cases where we dump to file vs return IR for
-    *        use by other Drivers.
+  def verilogToCpp(
+      prefix: String,
+      dir: File,
+      vDut: File,
+      cppHarness: File,
+      vH: File): ProcessBuilder =
+    Seq("verilator",
+        "--cc", vDut.toString,
+        "--assert",
+        "--Wno-fatal",
+        "--trace",
+        "-O2",
+        "+define+TOP_TYPE=V"+prefix,
+        "-CFLAGS", s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$prefix -include ${vH.toString}""",
+        "-Mdir", dir.toString,
+        "--exe", cppHarness.toString)
+
+  def cppToExe(prefix: String, dir: File): ProcessBuilder =
+    Seq("make", "-C", dir.toString, "-j", "-f", s"V${prefix}.mk", s"V${prefix}")
+
+  def executeExpectingFailure(
+      prefix: String,
+      dir: File,
+      assertionMsg: String = "Assertion failed"): Boolean = {
+    var triggered = false
+    val e = Process(s"./V${prefix}", dir) ! ProcessLogger(line =>
+      triggered = triggered || line.contains(assertionMsg))
+    triggered
+  }
+
+  def executeExpectingSuccess(prefix: String, dir: File): Boolean = {
+    !executeExpectingFailure(prefix, dir)
+  }
+
+}
+
+object Driver extends FileSystemUtilities with BackendCompilationUtilities {
+
+  /** Elaborates the Module specified in the gen function into a Circuit 
+    *
+    *  @param gen a function that creates a Module hierarchy
+    *
+    *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
-  private[Chisel] def elaborateWrappedModule[T <: Module](gen: () => T, p: Parameters, c: Option[ChiselConfig]) {
-    val ir = Builder.build(gen())
-    val name = c match {
-      case None => ir.name
-      case Some(config) => s"${ir.name}.$config"
-    }
-    createOutputFile(s"$name.knb", p.getKnobs)
-    createOutputFile(s"$name.cst", p.getConstraints)
-    createOutputFile(s"$name.prm", ir.parameterDump.getDump)
-    createOutputFile(s"$name.fir", ir.emit)
-  }
-  def elaborate[T <: Module](gen: () => T): Unit =
-    elaborate(gen, Parameters.empty)
-  def elaborate[T <: Module](gen: () => T, p: Parameters): Unit =
-    elaborateWrappedModule(() => Module(gen())(p), p, None)
-  private def elaborate[T <: Module](gen: () => T, p: Parameters, c: ChiselConfig): Unit =
-    elaborateWrappedModule(() => Module(gen())(p), p, Some(c))
-}
+  def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
+  
+  def emit[T <: Module](gen: () => T): String = elaborate(gen).emit
 
-object chiselMain {
-  def apply[T <: Module](args: Array[String], gen: () => T, p: Parameters = Parameters.empty): Unit =
-    Driver.elaborateWrappedModule(gen, p, None)
+  def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
+    val f = optName.getOrElse(new File(ir.name + ".fir"))
+    val w = new FileWriter(f)
+    w.write(ir.emit)
+    w.close()
+    f
+  }
 }

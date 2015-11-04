@@ -23,15 +23,15 @@ class BundleWire(n: Int) extends Module {
   }
 }
 
-class BundleWireSpec extends ChiselPropSpec {
+class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
+  val dut = Module(new BundleWire(n))
+  io.done := Bool(true)
+  dut.io.in.x := UInt(x)
+  dut.io.in.y := UInt(y)
+  io.error := dut.io.outs.map(o => o.x != UInt(x) || o.y != UInt(y)).foldLeft(UInt(0))(_##_)
+}
 
-  class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
-    val dut = Module(new BundleWire(n))
-    io.done := Bool(true)
-    dut.io.in.x := UInt(x)
-    dut.io.in.y := UInt(y)
-    io.error := dut.io.outs.map(o => o.x != UInt(x) || o.y != UInt(y)).foldLeft(UInt(0))(_##_)
-  }
+class BundleWireSpec extends ChiselPropSpec {
 
   property("All vec elems should match the inputs") {
     forAll(vecSizes, safeUInts, safeUInts) { (n: Int, x: Int, y: Int) =>

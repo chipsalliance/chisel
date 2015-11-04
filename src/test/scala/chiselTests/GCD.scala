@@ -24,21 +24,21 @@ class GCD extends Module {
   io.v := y === UInt(0)
 }
 
-class GCDSpec extends ChiselPropSpec {
-
-  class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
-    val dut = Module(new GCD)
-    val first = Reg(init=Bool(true))
-    dut.io.a := UInt(a)
-    dut.io.b := UInt(b)
-    dut.io.e := first
-    when(first) { first := Bool(false) }
-    when(dut.io.v) {
-      io.done := Bool(true)
-      io.error := (dut.io.z != UInt(z)).toUInt
-    }
+class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
+  val dut = Module(new GCD)
+  val first = Reg(init=Bool(true))
+  dut.io.a := UInt(a)
+  dut.io.b := UInt(b)
+  dut.io.e := first
+  when(first) { first := Bool(false) }
+  when(dut.io.v) {
+    io.done := Bool(true)
+    io.error := (dut.io.z != UInt(z)).toUInt
   }
+}
 
+class GCDSpec extends ChiselPropSpec {
+  
   //TODO: use generators and this function to make z's
   def gcd(a: Int, b: Int): Int = if(b == 0) a else gcd(b, a%b)
 
