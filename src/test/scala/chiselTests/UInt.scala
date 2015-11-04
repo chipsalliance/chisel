@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import Chisel._
@@ -8,7 +10,7 @@ import Chisel.testers.BasicTester
 class GoodBoolConversion extends Module {
   val io = new Bundle {
     val u = UInt(1, width = 1).asInput
-    val b = Bool(OUTPUT) 
+    val b = Bool(OUTPUT)
   }
   io.b := io.u.toBool
 }
@@ -16,7 +18,7 @@ class GoodBoolConversion extends Module {
 class BadBoolConversion extends Module {
   val io = new Bundle {
     val u = UInt(1, width = 5).asInput
-    val b = Bool(OUTPUT) 
+    val b = Bool(OUTPUT)
   }
   io.b := io.u.toBool
 }
@@ -28,5 +30,5 @@ class UIntSpec extends ChiselPropSpec with Matchers {
 
   property("Bools cannot be created from >1 bit UInts") {
     a [Exception] should be thrownBy { elaborate(new BadBoolConversion) }
-  } 
+  }
 }

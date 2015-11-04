@@ -17,3 +17,5 @@ site.includeScaladoc()
 ghpages.settings
 
 git.remoteRepo := "git@github.com:ucb-bar/chisel3.git"
+
+(scalastyleConfig in Test) := baseDirectory.value / "scalastyle-test-config.xml"

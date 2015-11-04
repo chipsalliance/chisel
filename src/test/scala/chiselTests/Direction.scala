@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import Chisel._
@@ -30,6 +32,6 @@ class DirectionSpec extends ChiselPropSpec {
 
   property("Inputs should not be assignable") {
     elaborate(new BadDirection)
-  } 
+  }
 
 }

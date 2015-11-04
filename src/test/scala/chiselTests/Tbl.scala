@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import Chisel._
@@ -15,7 +17,7 @@ class Tbl(w: Int, n: Int) extends Module {
   }
   val m = Mem(UInt(width = w), n)
   io.o := m(io.ri)
-  when (io.we) { 
+  when (io.we) {
     m(io.wi) := io.d
     when(io.ri === io.wi) { io.o := io.d }
   }
@@ -41,7 +43,7 @@ class TblSpec extends ChiselPropSpec {
   property("All table reads should return the previous write") {
     forAll(safeUIntPairN(8)) { case(w: Int, pairs: List[(Int, Int)]) =>
       val (idxs, values) = pairs.unzip
-      assert(execute{ new TblTester(w, 1 << w, idxs, values) }) 
+      assert(execute{ new TblTester(w, 1 << w, idxs, values) })
     }
   }
 }

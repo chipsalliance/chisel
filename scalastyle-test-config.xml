@@ -1,5 +1,5 @@
 <scalastyle>
- <name>Scalastyle standard configuration</name>
+ <name>Scalastyle configuration for Chisel3 unit tests</name>
  <check level="warning" class="org.scalastyle.file.FileTabChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.file.FileLengthChecker" enabled="true">
   <parameters>
@@ -46,12 +46,11 @@
    <parameter name="maxParameters"><![CDATA[8]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.MagicNumberChecker" enabled="true">
-  <parameters>
-   <parameter name="ignore"><![CDATA[-1,0,1,2,8,10,16]]></parameter>
-  </parameters>
- </check>
- <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceBeforeLeftBracketChecker" enabled="true"></check>
+ <!-- Numerical constants are used a lot in test setups, it would be burdensome to require each one be its own val
+ declaration. -->
+ <check level="warning" class="org.scalastyle.scalariform.MagicNumberChecker" enabled="false"></check>
+ <!-- Scalatest's exception checking syntax looks like "a [ChiselException] should be thrownBy". -->
+ <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceBeforeLeftBracketChecker" enabled="false"></check>
  <check level="warning" class="org.scalastyle.scalariform.NoWhitespaceAfterLeftBracketChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.scalariform.ReturnChecker" enabled="false"></check>
  <check level="warning" class="org.scalastyle.scalariform.NullChecker" enabled="false"></check>
@@ -61,7 +60,7 @@
  <check level="warning" class="org.scalastyle.scalariform.StructuralTypeChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.file.RegexChecker" enabled="true">
   <parameters>
-   <parameter name="regex"><![CDATA[;(\r|)\n]]></parameter>
+   <parameter name="regex"><![CDATA[^.*;(\r|)\n]]></parameter>
   </parameters>
   <customMessage>No lines ending with a ;</customMessage>
  </check>

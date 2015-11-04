@@ -1,7 +1,10 @@
+// See LICENSE for license details.
+
 package chiselTests
 import Chisel._
 import org.scalatest._
 import org.scalatest.prop._
+
 import Chisel.testers.BasicTester
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle {
@@ -35,7 +38,7 @@ class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Basic
   val re_correct = dut.io.out.re === Mux(dut.io.e, dut.io.in.re, UInt(0))
   val im_correct = dut.io.out.im === Mux(dut.io.e, dut.io.in.im, UInt(0))
   when(!re_correct || !im_correct) {
-    io.done := Bool(true); io.error := cnt 
+    io.done := Bool(true); io.error := cnt
   } .elsewhen(wrap) { io.done := Bool(true) }
 }
    
@@ -43,7 +46,7 @@ class ComplexAssignSpec extends ChiselPropSpec {
 
   property("All complex assignments should return the correct result") {
     forAll(enSequence(2), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
-      assert(execute{ new ComplexAssignTester(en, re, im) }) 
+      assert(execute{ new ComplexAssignTester(en, re, im) })
     }
   }
 }

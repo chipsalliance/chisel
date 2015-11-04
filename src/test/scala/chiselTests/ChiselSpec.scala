@@ -1,32 +1,4 @@
-/*
- Copyright (c) 2011-2015 The Regents of the University of
- California (Regents). All Rights Reserved.  Redistribution and use in
- source and binary forms, with or without modification, are permitted
- provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above
-      copyright notice, this list of conditions and the following
-      two paragraphs of disclaimer.
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      two paragraphs of disclaimer in the documentation and/or other materials
-      provided with the distribution.
-    * Neither the name of the Regents nor the names of its contributors
-      may be used to endorse or promote products derived from this
-      software without specific prior written permission.
-
- IN NO EVENT SHALL REGENTS BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT,
- SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS,
- ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF
- REGENTS HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
- REGENTS SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT
- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- A PARTICULAR PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF
- ANY, PROVIDED HEREUNDER IS PROVIDED "AS IS". REGENTS HAS NO OBLIGATION
- TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
- MODIFICATIONS.
-*/
+// See LICENSE for license details.
 
 package chiselTests
 
@@ -36,32 +8,57 @@ import org.scalacheck._
 import Chisel._
 import Chisel.testers._
 
-class ChiselPropSpec extends PropSpec with PropertyChecks {
+/** Common utility functions for Chisel unit tests. */
+trait ChiselRunners {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
   def elaborate(t: => Module): Circuit = Driver.elaborate(() => t)
+}
 
+/** Spec base class for BDD-style testers. */
+class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
+
+/** Spec base class for property-based testers. */
+class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks {
+
+  // Generator for small positive integers.
   val smallPosInts = Gen.choose(1, 4)
-  val safeUIntWidth = Gen.choose(1, 30) 
-  val safeUInts = Gen.choose(0, (1 << 30))
-  val vecSizes = Gen.choose(1, 4)
-  val binaryString = for(i <- Arbitrary.arbitrary[Int]) yield "b" + i.toBinaryString
-  def enSequence(n: Int) = Gen.containerOfN[List,Boolean](n,Gen.oneOf(true,false))
 
-  def safeUIntN(n: Int) = for {
+  // Generator for widths considered "safe".
+  val safeUIntWidth = Gen.choose(1, 30)
+
+  // Generators for integers that fit within "safe" widths.
+  val safeUInts = Gen.choose(0, (1 << 30))
+
+  // Generators for vector sizes.
+  val vecSizes = Gen.choose(0, 4)
+
+  // Generator for string representing an arbitrary integer.
+  val binaryString = for (i <- Arbitrary.arbitrary[Int]) yield "b" + i.toBinaryString
+
+  // Generator for a sequence of Booleans of size n.
+  def enSequence(n: Int): Gen[List[Boolean]] = Gen.containerOfN[List, Boolean](n, Gen.oneOf(true, false))
+
+  // Generator which gives a width w and a list (of size n) of numbers up to w bits.
+  def safeUIntN(n: Int): Gen[(Int, List[Int])] = for {
     w <- smallPosInts
-    i <- Gen.containerOfN[List,Int](n, Gen.choose(0, (1 << w) - 1))
+    i <- Gen.containerOfN[List, Int](n, Gen.choose(0, (1 << w) - 1))
   } yield (w, i)
+
+  // Generator which gives a width w and a numbers up to w bits.
   val safeUInt = for {
     w <- smallPosInts
     i <- Gen.choose(0, (1 << w) - 1)
   } yield (w, i)
 
-  def safeUIntPairN(n: Int) = for {
+  // Generator which gives a width w and a list (of size n) of a pair of numbers up to w bits.
+  def safeUIntPairN(n: Int): Gen[(Int, List[(Int, Int)])] = for {
     w <- smallPosInts
-    i <- Gen.containerOfN[List,Int](n, Gen.choose(0, (1 << w) - 1))
-    j <- Gen.containerOfN[List,Int](n, Gen.choose(0, (1 << w) - 1))
+    i <- Gen.containerOfN[List, Int](n, Gen.choose(0, (1 << w) - 1))
+    j <- Gen.containerOfN[List, Int](n, Gen.choose(0, (1 << w) - 1))
   } yield (w, i zip j)
-  val safeUIntPair= for {
+
+  // Generator which gives a width w and a pair of numbers up to w bits.
+  val safeUIntPair = for {
     w <- smallPosInts
     i <- Gen.choose(0, (1 << w) - 1)
     j <- Gen.choose(0, (1 << w) - 1)
