@@ -41,7 +41,7 @@ class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Basic
     io.done := Bool(true); io.error := cnt
   } .elsewhen(wrap) { io.done := Bool(true) }
 }
-   
+
 class ComplexAssignSpec extends ChiselPropSpec {
 
   property("All complex assignments should return the correct result") {
