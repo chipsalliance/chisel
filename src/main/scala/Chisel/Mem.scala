@@ -66,6 +66,9 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   * Writes take effect on the rising clock edge after the request. Reads are
   * combinational (requests will return data on the same cycle).
   * Read-after-write hazards are not an issue.
+  *
+  * @note when multiple conflicting writes are performed on a Mem element, the
+  * result is undefined (unlike Vec, where the last assignment wins)
   */
 sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
 
@@ -92,6 +95,9 @@ object SeqMem {
   * data on the rising edge after the request. Read-after-write behavior (when
   * a read and write to the same address are requested on the same cycle) is
   * undefined.
+  *
+  * @note when multiple conflicting writes are performed on a Mem element, the
+  * result is undefined (unlike Vec, where the last assignment wins)
   */
 sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T =

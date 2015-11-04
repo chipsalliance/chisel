@@ -27,10 +27,20 @@ object Reg {
     * empty to not update unless assigned to using the := operator)
     * @param init: initialization value on reset (or empty for uninitialized,
     * where the register value persists across a reset)
+    *
+    * @note this may result in a type error if called from a type parameterized
+    * function, since the Scala compiler isn't smart enough to know that null
+    * is a valid value. In those cases, you can either use the outType only Reg
+    * constructor or pass in `null.asInstanceOf[T]`.
     */
   def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
-    // REVIEW TODO: rewrite this in a less brittle way, perhaps also in a way
-    // that doesn't need two implementations of apply()
+    // TODO: write this in a way that doesn't need nulls (bad Scala style),
+    // null.asInstanceOf[T], and two constructors. Using Option types are an
+    // option, but introduces cumbersome syntax (wrap everything in a Some()).
+    // Implicit conversions to Option (or similar) types were also considered,
+    // but Scala's type inferencer and implicit insertion isn't smart enough
+    // to resolve all use cases. If the type inferencer / implicit resolution
+    // system improves, this may be changed.
     val x = makeType(t, next, init)
     pushCommand(DefRegister(x, Node(x._parent.get.clock), Node(x._parent.get.reset))) // TODO multi-clock
     if (init != null) {

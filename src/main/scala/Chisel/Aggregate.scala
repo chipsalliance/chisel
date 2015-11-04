@@ -86,6 +86,8 @@ object Vec {
   * collection transformation functions found in software array implementations.
   *
   * @tparam T type of elements
+  * @note when multiple conflicting assignments are performed on a Vec element,
+  * the last one takes effect (unlike Mem, where the result is undefined)
   */
 sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     extends Aggregate(gen.dir) with VecLike[T] {
