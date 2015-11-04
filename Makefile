@@ -38,7 +38,14 @@ publish-local:
 test:
 	$(SBT) $(SBT_FLAGS) test
 
-check:	test $(test_outs)
+# Define the (quick) checks we should run to validate a commit
+CHECKS	?= $(addprefix chiselTests.,DirectionSpec ChiselPropSpec)
+check:
+ifneq (,$(CHECKS))
+	$(SBT) $(SBT_FLAGS) "testOnly $(CHECKS)"
+else
+	echo "no checks"
+endif
 
 checkstyle:
 	$(SBT) $(SBT_FLAGS) scalastyle test:scalastyle
