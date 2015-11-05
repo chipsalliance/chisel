@@ -23,9 +23,7 @@ test_src_dir := src/test/scala/ChiselTests
 test_results := $(filter-out main DirChange Pads SIntOps,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
 c_resources_dir := src/main/resources
 
-test_outs    := $(addprefix $(targetDir)/, $(addsuffix .out, $(test_results)))
-
-.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test checkstyle compile
+.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test checkstyle compile setup
 
 default:	publish-local
 
@@ -34,6 +32,15 @@ smoke compile:
 
 publish-local:
 	$(SBT) $(SBT_FLAGS) publish-local
+
+# We use java.io.tmpdir to specify the test output directory for tests.
+# Set it and make it available to the JVM.
+# NOTE: Since this is now Java's java.io.tmpdir, it better exist before
+# we run any Java code. Any targets that set the JAVA_OPTIONS variable
+# must also include a dependency on setup to create the directory.
+TARGETS_SET_JAVA_TMPDIR ?= jenkins-build coverage test check
+$(TARGETS_SET_JAVA_TMPDIR): export _JAVA_OPTIONS += -Djava.io.tmpdir=$(abspath $(TEST_OUTPUT_DIR))
+$(TARGETS_SET_JAVA_TMPDIR): setup
 
 test:
 	$(SBT) $(SBT_FLAGS) test
@@ -74,23 +81,14 @@ site:
 # Don't publish the coverage test code since it contains hooks/references to the coverage test package
 # and we don't want code with those dependencies published.
 # We need to run the coverage tests last, since Jenkins will fail the build if it can't find their results.
-jenkins-build: clean
-	$(SBT) $(SBT_FLAGS) test
-	$(SBT) $(SBT_FLAGS) clean publish-local
+jenkins-build: clean check
+	$(SBT) $(SBT_FLAGS) publish-local
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
 
-$(targetDir)/%.fir: $(test_src_dir)/%.scala
-	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS)"
+# Use the order-only-prerequisites to ensure the TEST_OUTPUT_DIR exists.
+#  http://www.gnu.org/software/make/manual/make.html#Prerequisite-Types
+setup:	| $(TEST_OUTPUT_DIR)
 
-$(targetDir)/%.flo: $(targetDir)/%.fir
-	$(CHISEL_BIN)/fir2flo.sh $(targetDir)/$*
-
-$(targetDir)/%: $(targetDir)/%.flo $(targetDir)/emulator.h $(targetDir)/emulator_mod.h $(targetDir)/emulator_api.h
-	(cd $(targetDir); $(CHISEL_BIN)/flo2app.sh $*)
-
-$(targetDir)/%.h:	$(c_resources_dir)/%.h
-	cp $< $@
-
-$(targetDir)/%.out:	$(targetDir)/%
-	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS) --test --targetDir $(targetDir)"
+$(TEST_OUTPUT_DIR):
+	mkdir $@
