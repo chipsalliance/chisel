@@ -17,7 +17,7 @@ class EnableTester(seed: Int) extends BasicTester {
   ens := ens >> 1
   val (cntEn, cntWrap) = Counter(ens(0), 32)
   val cnt = Counter(Bool(true), 32)._1
-  when(cnt === UInt(30)) {
+  when(cnt === UInt(31)) {
     io.done := Bool(true)
     io.error := cnt != UInt(popCount(seed))
   }

@@ -48,7 +48,11 @@ class GCDSpec extends ChiselPropSpec {
     ( 12,   9,   3),
     ( 48,  64,  12))
 
-  property("GCD should return the correct result") {
+  property("GCD should elaborate") {
+    elaborate { new GCD }
+  }
+
+  property("GCDTester should return the correct result") {
     forAll (gcds) { (a: Int, b: Int, z: Int) =>
       assert(execute{ new GCDTester(a, b, z) })
     }
