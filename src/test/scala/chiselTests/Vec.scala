@@ -29,7 +29,7 @@ class ShiftRegisterTester(n: Int) extends BasicTester {
   val (cnt, wrap) = Counter(Bool(true), n*2)
   when(wrap) { io.done := Bool(true) }
 
-  val shifter = Vec(Reg(UInt(width = log2Up(n))), n)
+  val shifter = Reg(Vec(UInt(width = log2Up(n)), n))
   (shifter, shifter drop 1).zipped.foreach(_ := _)
   shifter(n-1) := cnt
   val expected = cnt - UInt(n)
@@ -48,7 +48,7 @@ class VecSpec extends ChiselPropSpec {
     forAll(smallPosInts) { (n: Int) => assert(execute{ new TabulateTester(n) }) }
   }
 
-  property("Vecs of regs should be usable as shift registers") {
+  property("Regs of vecs should be usable as shift registers") {
     forAll(smallPosInts) { (n: Int) => assert(execute{ new ShiftRegisterTester(n) }) }
   }
 }
