@@ -78,14 +78,14 @@ int main(int argc, char** argv) {
     if (tfp) tfp->close();
 #endif
 
-  if (main_time >= timeout)
+  if (main_time >= timeout) {
     cout << "Simulation terminated by timeout at cycle " << main_time << endl;
-  else 
+    return -1;
+  } else {
     cout << "Simulation completed at cycle " << main_time << endl;
-
-  int error = top->io__024error;
-  cout << "Simulation return value: " << error << endl;
-
-  return error;
+    int error = top->io__024error;
+    cout << "Simulation return value: " << error << endl;
+    return error;
+  }
 }
 
