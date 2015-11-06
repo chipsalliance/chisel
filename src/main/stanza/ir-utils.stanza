@@ -2,6 +2,7 @@ defpackage firrtl/ir-utils :
    import core
    import verse
    import firrtl/ir2
+   import bigint2
 
 ;============== DEBUG STUFF =============================
 
@@ -13,19 +14,18 @@ defn generated? (s:String) -> False|Int :
    for i in 1 to length(s) - 1 find :
       val sub = substring(s,i + 1)
       s[i] == '_' and digits?(sub) and s[i - 1] != '_'
-
-public defn firrtl-gensym (s:Symbol) -> Symbol :
-   firrtl-gensym(s,HashTable<Symbol,Int>(symbol-hash))
-public defn firrtl-gensym (sym-hash:HashTable<Symbol,Int>) -> Symbol :
-   firrtl-gensym(`gen,sym-hash)
-
 defn digits? (s:String) -> True|False :
    val digits = "0123456789"
    var yes = true
    for c in s do :
       if not contains?(digits,c) : yes = false
    yes
-      
+
+val gen-names = HashTable<Symbol,Int>(symbol-hash)
+public defn firrtl-gensym (s:Symbol) -> Symbol :
+   firrtl-gensym(s,HashTable<Symbol,Int>(symbol-hash))
+public defn firrtl-gensym (sym-hash:HashTable<Symbol,Int>) -> Symbol :
+   firrtl-gensym(`gen,sym-hash)
 public defn firrtl-gensym (s:Symbol,sym-hash:HashTable<Symbol,Int>) -> Symbol :
    defn get-name (s:Symbol) -> Symbol :
       if key?(sym-hash,s) :
@@ -76,6 +76,57 @@ public defn get-sym-hash (m:InModule,keywords:Streamable<Symbol>) -> HashTable<S
    map(to-port,ports(m))
    sym-hash
    
+; ======== Expression Computation Library ===========
+
+public defn BoolType () : UIntType(IntWidth(1))
+public val zero = UIntValue(BigIntLit(0),IntWidth(1))
+public val one = UIntValue(BigIntLit(1),IntWidth(1))
+public defn uint (i:Int) -> UIntValue :
+   UIntValue(BigIntLit(i),UnknownWidth())
+public defn sint (i:Int) -> SIntValue :
+   SIntValue(BigIntLit(i),UnknownWidth())
+
+public defn AND (e1:Expression,e2:Expression) -> Expression :
+   if e1 == e2 : e1
+   else if e1 == zero or e2 == zero : zero
+   else if e1 == one : e2
+   else if e2 == one : e1
+   else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+
+public defn OR (e1:Expression,e2:Expression) -> Expression :
+   if e1 == e2 : e1
+   else if e1 == one or e2 == one : one
+   else if e1 == zero : e2
+   else if e2 == zero : e1
+   else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+
+public defn EQV (e1:Expression,e2:Expression) -> Expression :
+   DoPrim(EQUIV-OP,list(e1,e2),list(),type(e1))
+
+public defn MUX (p:Expression,e1:Expression,e2:Expression) -> Expression :
+   DoPrim(MUX-OP,list(p,e1,e2),list(),type(e1))
+
+public defn CAT (e1:Expression,e2:Expression) -> Expression :
+   DoPrim(CAT-OP,list(e1,e2),list(),type(e1))
+
+public defn NOT (e1:Expression) -> Expression :
+   if e1 == one : zero
+   else if e1 == zero : one
+   else : DoPrim(EQUIV-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+
+public defn children (e:Expression) -> List<Expression> :
+   val es = Vector<Expression>()
+   defn f (e:Expression) :
+      add(es,e)
+      e
+   map(f,e)
+   to-list(es)
+   
+public defn exp-hash (e:Expression) -> Int :
+   turn-off-debug()
+   val i = symbol-hash(to-symbol(to-string(e)))
+   turn-on-debug()
+   i
 ;============== Exceptions =====================
 
 public definterface PassException <: Exception
@@ -155,15 +206,7 @@ defmethod print (o:OutputStream, d:Flip) :
       DEFAULT : ""
       REVERSE: "flip"
 
-defmethod print (o:OutputStream, d:AccDirection) :
-   print{o, _} $
-   switch {d == _} :
-      READ : "read"
-      WRITE: "write"
-      INFER: "infer"
-      RDWR: "rdwr"
-
-defmethod print (o:OutputStream, d:PortDirection) :
+defmethod print (o:OutputStream, d:Direction) :
    print{o, _} $
    switch {d == _} :
       INPUT : "input"
@@ -173,7 +216,7 @@ defmethod print (o:OutputStream, w:Width) :
    print{o, _} $
    match(w) :
       (w:UnknownWidth) : "?"
-      (w:LongWidth) : width(w)
+      (w:IntWidth) : width(w)
 
 defmethod print (o:OutputStream, op:PrimOp) :
    print{o, _} $
@@ -219,8 +262,9 @@ defmethod print (o:OutputStream, op:PrimOp) :
 defmethod print (o:OutputStream, e:Expression) :
    match(e) :
       (e:Ref) : print(o, name(e))
-      (e:Subfield) : print-all(o, [exp(e) "." name(e)])
-      (e:Index) : print-all(o, [exp(e) "[" value(e) "]"])
+      (e:SubField) : print-all(o, [exp(e) "." name(e)])
+      (e:SubIndex) : print-all(o, [exp(e) "[" value(e) "]"])
+      (e:SubAccess) : print-all(o, [exp(e) "[" index(e) "]"])
       (e:UIntValue) : print-all(o, ["UInt(" value(e) ")"])
       (e:SIntValue) : print-all(o, ["SInt(" value(e) ")"])
       (e:DoPrim) :
@@ -237,16 +281,22 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefWire) :
          print-all(o,["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
-         print-all(o,["reg " name(c) " : " type(c) ", " clock(c) ", " reset(c)])
+         print-all(o,["reg " name(c) " : " type(c) ", " clock(c) ", " reset(c) ", " init(c)])
       (c:DefMemory) :
-         if seq?(c) : print-all(o,["smem " name(c) " : " VectorType(type(c),size(c)) ", " clock(c)])
-         else       : print-all(o,["cmem " name(c) " : " VectorType(type(c),size(c)) ", " clock(c)])
+         print-all(o,["mem " name(c) " : "])
+         print-debug(o,c)
+         print(o,"\n")
+         print-all(io,["data-type: " data-type(c) "\n"])
+         print-all(io,["depth: " depth(c) "\n"])
+         print-all(io,["write-latency: " write-latency(c) "\n"])
+         print-all(io,["read-latency: " read-latency(c) "\n"])
+         print-all(io,["readers: " readers(c) "\n"])
+         print-all(io,["writers: " writers(c) "\n"])
+         print-all(io,["readwriters: " readwriters(c) "\n"])
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :
          print-all(o,["node " name(c) " = " value(c)])
-      (c:DefAccessor) :
-         print-all(o,[acc-dir(c) " accessor " name(c) " = " source(c) "[" index(c) "]"])      
       (c:Conditionally) :
          if conseq(c) typeof Begin :
             print-all(o, ["when " pred(c) " :"])
@@ -256,7 +306,7 @@ defmethod print (o:OutputStream, c:Stmt) :
          else :
             print-all(o, ["when " pred(c) " : " conseq(c)])
             print-debug(o,c)
-         if alt(c) not-typeof EmptyStmt :
+         if alt(c) not-typeof Empty:
             print(o, "\nelse :")
             print(io, "\n")
             print(io,alt(c))
@@ -266,18 +316,16 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(o, [loc(c) " := " exp(c)])
       (c:BulkConnect) :
          print-all(o, [loc(c) " <> " exp(c)])
-      (c:OnReset) :
-         print-all(o, ["onreset " loc(c) " := " exp(c)])
-      (c:EmptyStmt) :
+      (c:Empty) :
          print(o, "skip")
-      (c:StopStmt) :
-         print-all(o, ["stop(" clk(c) ", " ret(c) ")"])
-      (c:PrintfStmt) :
-         print-all(o, ["printf(" clk(c) ", " ]) ;"
+      (c:Stop) :
+         print-all(o, ["stop(" ret(c) ", " clk(c) ")"])
+      (c:Print) :
+         print-all(o, ["printf(" clk(c) ", "]) ;"
          print-all(o, join(List(escape(string(c)),args(c)), ", "))
          print(o, ")")
          
-   if not c typeof Conditionally|Begin|EmptyStmt : print-debug(o,c)
+   if not c typeof Conditionally|Begin|Empty: print-debug(o,c)
 
 defmethod print (o:OutputStream, t:Type) :
    match(t) :
@@ -351,8 +399,9 @@ public defn map<?T> (f: Type -> Type, t:?T&Type) -> T :
 public defmulti map<?T> (f: Expression -> Expression, e:?T&Expression) -> T 
 defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
    match(e) :
-      (e:Subfield) : Subfield(f(exp(e)), name(e), type(e)) 
-      (e:Index) : Index(f(exp(e)), value(e), type(e))
+      (e:SubField) : SubField(f(exp(e)), name(e), type(e)) 
+      (e:SubIndex) : SubIndex(f(exp(e)), value(e), type(e))
+      (e:SubAccess) : SubAccess(f(exp(e)), f(index(e)), type(e)) 
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
       (e) : e
 
@@ -361,9 +410,8 @@ defmethod map (f: Symbol -> Symbol, c:Stmt) -> Stmt :
    match(c) :
       (c:DefWire) : DefWire(info(c),f(name(c)),type(c))
       (c:DefPoison) : DefPoison(info(c),f(name(c)),type(c))
-      (c:DefAccessor) : DefAccessor(info(c),f(name(c)), source(c), index(c),acc-dir(c))
-      (c:DefRegister) : DefRegister(info(c),f(name(c)), type(c), clock(c), reset(c))
-      (c:DefMemory) : DefMemory(info(c),f(name(c)), type(c), seq?(c), clock(c), size(c))
+      (c:DefRegister) : DefRegister(info(c),f(name(c)), type(c), clock(c), reset(c), init(c))
+      (c:DefMemory) : DefMemory(info(c),f(name(c)), data-type(c), depth(c), write-latency(c), read-latency(c), readers(c), writers(c), readwriters(c))
       (c:DefNode) : DefNode(info(c),f(name(c)),value(c))
       (c:DefInstance) : DefInstance(info(c),f(name(c)), module(c))
       (c) : c
@@ -371,17 +419,14 @@ defmethod map (f: Symbol -> Symbol, c:Stmt) -> Stmt :
 public defmulti map<?T> (f: Expression -> Expression, c:?T&Stmt) -> T
 defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
    match(c) :
-      (c:DefAccessor) : DefAccessor(info(c),name(c), f(source(c)), f(index(c)),acc-dir(c))
-      (c:DefRegister) : DefRegister(info(c),name(c), type(c), f(clock(c)), f(reset(c)))
-      (c:DefMemory) : DefMemory(info(c),name(c), type(c), seq?(c), f(clock(c)), size(c))
+      (c:DefRegister) : DefRegister(info(c),name(c), type(c), f(clock(c)), f(reset(c)), f(init(c)))
       (c:DefNode) : DefNode(info(c),name(c), f(value(c)))
-      (c:DefInstance) : DefInstance(info(c),name(c), f(module(c)))
+      ;(c:DefInstance) : DefInstance(info(c),name(c), f(module(c)))
       (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
       (c:Connect) : Connect(info(c),f(loc(c)), f(exp(c)))
       (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
-      (c:OnReset) : OnReset(info(c),f(loc(c)),f(exp(c)))
-      (c:PrintfStmt) : PrintfStmt(info(c),string(c),map(f,args(c)),f(clk(c)))
-      (c:StopStmt) : StopStmt(info(c),ret(c),f(clk(c)))
+      (c:Stop) : Stop(info(c),ret(c),f(clk(c)))
+      (c:Print) : Print(info(c),string(c),map(f,args(c)),f(clk(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T
@@ -409,8 +454,9 @@ public defmulti map<?T> (f: Type -> Type, c:?T&Expression) -> T
 defmethod map (f: Type -> Type, c:Expression) -> Expression :
    match(c) :
       (c:Ref) : Ref(name(c),f(type(c)))
-      (c:Subfield) : Subfield(exp(c),name(c),f(type(c)))
-      (c:Index) : Index(exp(c),value(c),f(type(c)))
+      (c:SubField) : SubField(exp(c),name(c),f(type(c)))
+      (c:SubIndex) : SubIndex(exp(c),value(c),f(type(c)))
+      (c:SubAccess) : SubAccess(exp(c),index(c),f(type(c)))
       (c:DoPrim) : DoPrim(op(c),args(c),consts(c),f(type(c)))
       (c) : c
 
@@ -419,8 +465,8 @@ defmethod map (f: Type -> Type, c:Stmt) -> Stmt :
    match(c) :
       (c:DefPoison) : DefPoison(info(c),name(c),f(type(c)))
       (c:DefWire) : DefWire(info(c),name(c),f(type(c)))
-      (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)),clock(c),reset(c))
-      (c:DefMemory) : DefMemory(info(c),name(c),f(type(c)),seq?(c),clock(c),size(c))
+      (c:DefRegister) : DefRegister(info(c),name(c),f(type(c)),clock(c),reset(c),init(c))
+      (c:DefMemory) : DefMemory(info(c),name(c), f(data-type(c)), depth(c), write-latency(c), read-latency(c), readers(c), writers(c), readwriters(c))
       (c) : c
 
 public defmulti mapr<?T> (f: Width -> Width, t:?T&Type) -> T

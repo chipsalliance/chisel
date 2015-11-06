@@ -283,7 +283,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
 
    defn check-high-form-w (info:FileInfo,w:Width,unknown-ok?:True|False) -> Width :
       match(w) :
-         (w:LongWidth) : 
+         (w:IntWidth) : 
             if width(w) <= to-long(0) : add(errors,NegWidth(info))
             w
          (w:UnknownWidth) : 
@@ -364,7 +364,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
                check-valid-loc(info(s),loc(s))
                check-high-form-e(info(s),loc(s),names)
                check-high-form-e(info(s),exp(s),names)
-            (s:PrintfStmt) : 
+            (s:Print) : 
                for x in args(s) do:
                   check-high-form-e(info(s),x,names)
                check-fstring(info(s),string(s),length(args(s)))
@@ -476,7 +476,7 @@ public defn check-kinds (c:Circuit) -> Circuit :
                println(type(source(s)))
                add(errors,AccessVecOrMem(info(s)))
          (s:Conditionally) : check-not-mem(info(s),pred(s))
-         (s:PrintfStmt) : 
+         (s:Print) : 
             for x in args(s) do :
                check-not-mem(info(s),x)
          (s:Connect) : 
@@ -714,7 +714,7 @@ public defn check-types (c:Circuit) -> Circuit :
             (s:OnReset) : 
                if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
                if has-flip?(type(loc(s))) : add(errors,OnResetIllegalFlips(info(s)))
-            (s:PrintfStmt) :
+            (s:Print) :
                for x in args(s) do :
                   if type(x) != ut() and type(x) != st(): 
                      add(errors,PrintfArgNotGround(info(s)))
@@ -850,7 +850,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (s:Connect) : 
             check-gender(info(s),genders,loc(s),FEMALE)
             check-gender(info(s),genders,exp(s),MALE)
-         (s:PrintfStmt) : 
+         (s:Print) : 
             for x in args(s) do :
                check-gender(info(s),genders,x,MALE)
          (s:BulkConnect) : 
@@ -861,8 +861,8 @@ public defn check-genders (c:Circuit) -> Circuit :
             check-gender(info(s),genders,exp(s),MALE)
          (s:Conditionally) :
             check-gender(info(s),genders,pred(s),MALE)
-         (s:EmptyStmt) : false
-         (s:StopStmt) : false
+         (s:Empty) : false
+         (s:Stop) : false
          (s:Begin) : false
 
 
@@ -972,7 +972,7 @@ public defn check-width (c:Circuit) -> Circuit :
    defn check-width-m (m:Module) -> False :
       defn check-width-w (info:FileInfo,w:Width) -> Width :
          match(w) :
-            (w:LongWidth) :
+            (w:IntWidth) :
                if width(w) <= to-long(0) : add(errors,NegWidth(info))
             (w) : 
                add(errors,UninferredWidth(info))
@@ -982,14 +982,14 @@ public defn check-width (c:Circuit) -> Circuit :
          match(map(check-width-e{info,_},e)) :
             (e:UIntValue) : 
                match(width(e)) :
-                  (w:LongWidth) : 
+                  (w:IntWidth) : 
                      if max(to-long(1),to-long(req-num-bits(value(e)) - 1)) > width(w) : 
                         add(errors,WidthTooSmall(info,to-string(value(e))))
                   (w) : add(errors,UninferredWidth(info))
                check-width-w(info,width(e))
             (e:SIntValue) : 
                match(width(e)) :
-                  (w:LongWidth) : 
+                  (w:IntWidth) : 
                      if to-long(req-num-bits(value(e))) > width(w) : 
                         add(errors,WidthTooSmall(info,to-string(value(e))))
                   (w) : add(errors,UninferredWidth(info))
@@ -1102,13 +1102,13 @@ public defn check-low-form (c:Circuit) -> Circuit :
                add(insts,name(s))
             (s:DefNode) : 
                check-correct-exp(info(s),value(s))
-            (s:PrintfStmt) : 
+            (s:Print) : 
                for x in args(s) do :
                   check-correct-exp(info(s),x)
             (s:DefRegister) : false
             (s:DefAccessor) : false
             (s:Conditionally) : 
-               if (not alt(s) typeof EmptyStmt) or (conseq(s) typeof Begin) : add(errors,NoWhen(info(s)))
+               if (not alt(s) typeof Empty) or (conseq(s) typeof Begin) : add(errors,NoWhen(info(s)))
             (s:OnReset) : add(errors,NoOnReset(info(s)))
             (s:BulkConnect) : add(errors,NoBulkConnect(info(s)))
             (s:Connect) :
@@ -1119,8 +1119,8 @@ public defn check-low-form (c:Circuit) -> Circuit :
                      if key?(assigned?,n*) : add(errors,SingleAssignment(info(s),n*))
                      else : assigned?[to-symbol $ to-string $ e] = true
                   (e) : check-correct-exp(info(s),e)
-            (s:EmptyStmt) : false
-            (s:StopStmt) : false
+            (s:Empty) : false
+            (s:Stop) : false
             (s:Begin) : do(check-low-form-s,s)
 
       match(m) :

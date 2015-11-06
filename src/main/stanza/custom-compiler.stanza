@@ -1,47 +1,47 @@
-defpackage firrtl/custom-compiler :
-   import core
-   import verse
-   import firrtl/ir-utils
-   import firrtl/ir2
-   import firrtl/passes
-   import firrtl/errors
-   import firrtl/verilog
-   import firrtl/custom-passes
-
-public defstruct InstrumentedVerilog <: Compiler :
-   with-output: (() -> False) -> False   with: (as-method => true)
-   args: List<String>
-public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
-   to-list $ [
-      WhenCoverage(args(c)[0],args(c)[1])
-      RemoveSpecialChars()
-      RemoveScopes()
-      CheckHighForm()
-      TempElimination()
-      ToWorkingIR()
-      ;; MakeExplicitReset()
-      ResolveKinds()
-      CheckKinds()
-      InferTypes()
-      CheckTypes()
-      ResolveGenders()
-      CheckGenders()
-      ExpandAccessors()
-      LowerToGround()
-      InlineIndexed()
-      InferTypes()
-      CheckGenders()
-      ExpandWhens()
-      InferWidths()
-      ;Pad()
-      ConstProp()
-      SplitExp()
-      ToRealIR()
-      ;RemoveSpecialChars()
-      CheckHighForm()
-      CheckLowForm()
-      CheckInitialization()
-      Verilog(with-output(c))
-   ]
-
-
+;defpackage firrtl/custom-compiler :
+;   import core
+;   import verse
+;   import firrtl/ir-utils
+;   import firrtl/ir2
+;   import firrtl/passes
+;   import firrtl/errors
+;   import firrtl/verilog
+;   import firrtl/custom-passes
+;
+;public defstruct InstrumentedVerilog <: Compiler :
+;   with-output: (() -> False) -> False   with: (as-method => true)
+;   args: List<String>
+;public defmethod passes (c:InstrumentedVerilog) -> List<Pass> :
+;   to-list $ [
+;      WhenCoverage(args(c)[0],args(c)[1])
+;      RemoveSpecialChars()
+;      RemoveScopes()
+;      CheckHighForm()
+;      TempElimination()
+;      ToWorkingIR()
+;      ;; MakeExplicitReset()
+;      ResolveKinds()
+;      CheckKinds()
+;      InferTypes()
+;      CheckTypes()
+;      ResolveGenders()
+;      CheckGenders()
+;      ExpandAccessors()
+;      LowerToGround()
+;      InlineIndexed()
+;      InferTypes()
+;      CheckGenders()
+;      ExpandWhens()
+;      InferWidths()
+;      ;Pad()
+;      ConstProp()
+;      SplitExp()
+;      ToRealIR()
+;      ;RemoveSpecialChars()
+;      CheckHighForm()
+;      CheckLowForm()
+;      CheckInitialization()
+;      Verilog(with-output(c))
+;   ]
+;
+;

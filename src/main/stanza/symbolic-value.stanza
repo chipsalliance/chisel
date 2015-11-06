@@ -1,0 +1,71 @@
+defpackage firrtl/symbolic-value :
+  import core
+  import verse
+  import firrtl/ir2
+  import firrtl/ir-utils
+
+; ======= Symbolic Value Library ==========
+public definterface SymbolicValue
+public defstruct SVExp <: SymbolicValue :
+   exp : Expression
+public defstruct SVMux <: SymbolicValue :
+   pred : Expression
+   conseq : SymbolicValue
+   alt : SymbolicValue
+public defstruct SVNul <: SymbolicValue
+
+defmethod print (o:OutputStream, sv:SymbolicValue) :
+   match(sv) :
+      (sv: SVExp) : print(o, exp(sv))
+      (sv: SVMux) : print-all(o, ["(" pred(sv) " ? " conseq(sv) " : " alt(sv) ")"])
+      (sv: SVNul) : print(o, "SVNUL")
+
+defn map (f: Expression -> Expression, sv:SymbolicValue) -> SymbolicValue :
+   match(sv) :
+      (sv:SVMux) : SVMux(f(pred(sv)),conseq(sv),alt(sv))
+      (sv:SVExp) : SVExp(f(exp(sv)))
+      (sv:SVNul) : sv
+
+defmulti map<?T> (f: SymbolicValue -> SymbolicValue, sv:?T&SymbolicValue) -> T 
+defmethod map (f: SymbolicValue -> SymbolicValue, sv:SymbolicValue) -> SymbolicValue :
+   match(sv) :
+      (sv: SVMux) : SVMux(pred(sv),f(conseq(sv)),f(alt(sv)))
+      (sv) : sv
+
+defn do (f:SymbolicValue -> ?, s:SymbolicValue) -> False :
+   defn f* (sv:SymbolicValue) -> SymbolicValue : 
+      f(sv)
+      sv
+   map(f*,s)
+   false
+
+defn dor (f:SymbolicValue -> ?, e:SymbolicValue) -> False :
+   do(f,e)
+   defn f* (x:SymbolicValue) -> SymbolicValue : 
+      dor(f,x)
+      x
+   map(f*,e)
+   false
+
+defmethod equal? (a:SymbolicValue,b:SymbolicValue) -> True|False :
+   match(a,b) :
+      (a:SVNul,b:SVNul) : true
+      (a:SVExp,b:SVExp) : exp(a) == exp(b)
+      (a:SVMux,b:SVMux) : pred(a) == pred(b) and conseq(a) == conseq(b) and alt(a) == alt(b)
+      (a,b) : false
+
+;TODO add invert to primop
+defn optimize (sv:SymbolicValue) -> SymbolicValue :
+   match(map(optimize,sv)) :
+      (sv:SVMux) : 
+         if conseq(sv) == alt(sv) : conseq(sv)
+         else : 
+            match(conseq(sv),alt(sv)) :
+               (c:SVExp,a:SVExp) : 
+                  if exp(c) == one and exp(a) == zero : SVExp(pred(sv))
+                  else if exp(c) == zero and exp(a) == one : SVExp(NOT(pred(sv)))
+                  else if exp(c) == exp(a) : c
+                  else : sv
+               (c,a) : sv
+      (sv) : sv
+

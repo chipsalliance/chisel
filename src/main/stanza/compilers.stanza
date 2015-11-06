@@ -2,43 +2,42 @@ defpackage firrtl/compiler :
   import core
   import verse
   import firrtl/passes
-  import firrtl/errors
-  import firrtl/flo
-  import firrtl/verilog
-  import firrtl/firrtl
+  ;import firrtl/errors
+  ;import firrtl/flo
+  ;import firrtl/verilog
   import firrtl/ir2
   import firrtl/ir-utils
 
-public defstruct StandardFlo <: Compiler :
-   with-output : (() -> False) -> False with: (as-method => true)
-public defmethod passes (c:StandardFlo) -> List<Pass> :
-   to-list $ [
-      RemoveSpecialChars()
-      RemoveScopes()
-      CheckHighForm()
-      ;; TempElimination()
-      ToWorkingIR()
-      ResolveKinds()
-      CheckKinds()
-      InferTypes()
-      CheckTypes()
-      ResolveGenders()
-      CheckGenders()
-      ExpandAccessors()
-      LowerToGround()
-      InlineIndexed()
-      ExpandWhens()
-      InferWidths()
-      Pad()
-      Inline()
-      SplitExp()
-      ToRealIR()
-      CheckWidths()
-      ;RemoveSpecialChars()
-      CheckHighForm()
-      CheckLowForm()
-      Flo(with-output(c))
-   ]
+;public defstruct StandardFlo <: Compiler :
+;   with-output : (() -> False) -> False with: (as-method => true)
+;public defmethod passes (c:StandardFlo) -> List<Pass> :
+;   to-list $ [
+;      RemoveSpecialChars()
+;      RemoveScopes()
+;      CheckHighForm()
+;      ;; TempElimination()
+;      ToWorkingIR()
+;      ResolveKinds()
+;      CheckKinds()
+;      InferTypes()
+;      CheckTypes()
+;      ResolveGenders()
+;      CheckGenders()
+;      ExpandAccessors()
+;      LowerToGround()
+;      InlineIndexed()
+;      ExpandWhens()
+;      InferWidths()
+;      Pad()
+;      Inline()
+;      SplitExp()
+;      ToRealIR()
+;      CheckWidths()
+;      ;RemoveSpecialChars()
+;      CheckHighForm()
+;      CheckLowForm()
+;      Flo(with-output(c))
+;   ]
 
 public defstruct StandardVerilog <: Compiler :
    with-output : (() -> False) -> False with: (as-method => true)
@@ -46,37 +45,37 @@ public defmethod backend (c:StandardVerilog) -> List<Pass> :
   to-list $ [ Verilog(with-output(c)) ]
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
-      RemoveSpecialChars()     ;R
+      ;RemoveSpecialChars()     ;R
       ;RemoveScopes()           ;R
-      CheckHighForm()          ;R
-      TempElimination()        ;R
+      ;CheckHighForm()          ;R
+      ;TempElimination()        ;R         ; Needs to check number of uses
       ToWorkingIR()            ;R -> W
       ResolveKinds()           ;W
       InferTypes()             ;R
       ResolveGenders()         ;W
-      CheckGenders()           ;W
-      CheckKinds()             ;W
-      CheckTypes()             ;R
-      ExpandAccessors()        ;W
-      LowerToGround()          ;W
-      ;ExpandIndexedConnects()  ;W
-      InlineIndexed()
-      InferTypes()             ;R
+      ;CheckGenders()           ;W
+      ;CheckKinds()             ;W
+      ;CheckTypes()             ;R
+      ExpandAccesses()        ;W
+      ExpandConnects()        ;W
       ResolveGenders()         ;W
-      CheckTypes()             ;R
-      CheckGenders()           ;W
+      ;LowerToGround()          ;W
+      ;ExpandIndexedConnects()  ;W
+      ReplaceIndexers()
+      ;InferTypes()             ;R
+      ;CheckGenders()           ;W
       ExpandWhens()            ;W
       InferWidths()            ;R
-      ToRealIR()               ;W -> R
-      CheckWidths()            ;R
-      Pad()                    ;R
+      ;ToRealIR()               ;W -> R
+      ;CheckWidths()            ;R
+      ;Pad()                    ;R
       ConstProp()              ;R
       SplitExp()               ;R
-      CheckWidths()            ;R
-      CheckHighForm()          ;R
-      CheckLowForm()           ;R
-      CheckInitialization()    ;R
-      Verilog(with-output(c))  ;R
+      ;CheckWidths()            ;R
+      ;CheckHighForm()          ;R
+      ;CheckLowForm()           ;R
+      ;CheckInitialization()    ;R
+      ;Verilog(with-output(c))  ;R
    ]
 
 public defstruct StandardFIRRTL <: Compiler :

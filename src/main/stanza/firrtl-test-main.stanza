@@ -10,15 +10,15 @@
 #include("ir-parser.stanza")
 #include("passes.stanza")
 #include("primop.stanza")
-#include("errors.stanza")
+;#include("errors.stanza")
 #include("compilers.stanza")
-#include("flo.stanza")
-#include("verilog.stanza")
-#include("firrtl.stanza")
+;#include("flo.stanza")
+;#include("verilog.stanza")
+#include("symbolic-value.stanza")
 
 ;Custom Packages
-#include("custom-passes.stanza")
-#include("custom-compiler.stanza")
+;#include("custom-passes.stanza")
+;#include("custom-compiler.stanza")
 
 defpackage firrtl-main :
    import core
@@ -31,8 +31,8 @@ defpackage firrtl-main :
    import firrtl/ir-utils
    import firrtl/compiler
    ;Custom Packages
-   import firrtl/custom-passes
-   import firrtl/custom-compiler
+   ;import firrtl/custom-passes
+   ;import firrtl/custom-compiler
 
 defn set-printvars! (p:List<Char>) :
    if contains(p,'t') : PRINT-TYPES = true
@@ -137,7 +137,7 @@ defn main () :
         else : error("Invalid backend flag!")
    else :
       switch {_ == compiler} :
-         "flo" : error("Flo backend not currently supported.")
+         ;"flo" : error("Flo backend not currently supported.")
             ; run-passes(circuit*,StandardFlo(with-output))
          "verilog" : run-passes(circuit*,StandardVerilog(with-output))
          "firrtl" : run-passes(circuit*,StandardFIRRTL(with-output))

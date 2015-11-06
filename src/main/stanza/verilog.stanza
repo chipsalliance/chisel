@@ -4,19 +4,9 @@ defpackage firrtl/verilog :
    import firrtl/ir-utils
    import firrtl/ir2
 
-;============ VERILOG ==============
-
-public defstruct Verilog <: Pass :
-   with-output: (() -> False) -> False  
-public defmethod pass (b:Verilog) -> (Circuit -> Circuit) : emit-verilog{with-output(b),_}
-public defmethod name (b:Verilog) -> String : "To Verilog"
-public defmethod short-name (b:Verilog) -> String : "To Verilog"
-
-;============ Utilz =============
-
 defn width! (w:Width) -> Long :
    match(w) : 
-      (w:LongWidth) : width(w)
+      (w:IntWidth) : width(w)
       (w) : error("Non-supported width type.")
 
 defn width! (t:Type) -> Long :
@@ -27,7 +17,7 @@ defn width! (t:Type) -> Long :
 
 defn emit (w:Width) -> String :
    match(w) : 
-      (w:LongWidth) : 
+      (w:IntWidth) : 
          if width(w) >= to-long(1) : string-join $ ["[" width(w) - to-long(1) ":0]"] ;TODO check if need to special case 0 or 1 width wires
          else : ""
 
@@ -36,7 +26,7 @@ defn emit (w:Width) -> String :
 defn remove-subfield-s (s:Stmt) -> Stmt :
    defn remove-subfield-e (e:Expression) -> Expression :
       match(map(remove-subfield-e,e)) :
-         (e:Subfield) : 
+         (e:SubField) : 
             Ref(to-symbol $ string-join $ [emit(exp(e)) bundle-expand-delin name(e)],type(e))
          (e) : e
    map{remove-subfield-e,_ } $ map(remove-subfield-s,s)
@@ -45,13 +35,13 @@ defn get-width (t:Type) -> String :
    match(t) :
       (t:UIntType) : emit(width(t))
       (t:SIntType) : emit(width(t))
-      (t:ClockType) : emit(LongWidth(1))
+      (t:ClockType) : emit(IntWidth(1))
       (t) : error("Non-supported type.")
 
 defn get-name (e:Expression) -> Symbol :
    match(e) :
       (e:Ref) : name(e)
-      (e:Subfield) : error("Shouldn't be here")
+      (e:SubField) : error("Shouldn't be here")
       (e) : error("Shouldn't be here")
 
 defn escape (s:String) -> String :
@@ -96,8 +86,8 @@ defn emit (e:Expression) -> String :
          val str = to-string(value(e))
          val out = substring(str,1,length(str) - 1)
          string-join $ [width!(type(e)) "'s" out]
-      (e:Subfield) : error(string-join(["Non-supported expression: " to-string(e)]))
-      (e:Index) : error(string-join(["Non-supported expression: " to-string(e)]))
+      (e:SubField) : error(string-join(["Non-supported expression: " to-string(e)]))
+      (e:SubIndex) : error(string-join(["Non-supported expression: " to-string(e)]))
       (e:DoPrim) : 
          ;val sargs = map(emit-as-type{_,type(e)},args(e))
          ;val xargs = map(emit-signed-if-any{_,args(e)},args(e))
@@ -185,7 +175,7 @@ defn emit-module (m:InModule) :
    val simuls = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
    defn build-table (s:Stmt) -> False :
       match(s) :
-         (s:DefWire|DefPoison|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : 
+         (s:DefWire|DefPoison|DefRegister|DefMemory|DefNode|DefInstance) : 
             add(vdecs,name(s) => s)
             decs[name(s)] = s
          (s:Conditionally) : 
@@ -275,64 +265,63 @@ defn emit-module (m:InModule) :
                add(inst-ports[sym], ["." name(f) "( " n* " )"])
                if flip(f) == REVERSE :
                   add(assigns,["assign " n* " = " emit(cons[n*]) ";"])
-         (s:DefAccessor) : 
-            val mem-declaration = decs[name(source(s) as Ref)] as DefMemory
-            defn jkjjjjjjj
-            switch {_ == acc-dir(s)} :
-               READ :
-                  if seq?(mem-declaration) :
-                     val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
-                     add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) ; register index for an additional cycle
+         ;(s:DefAccessor) : 
+         ;   val mem-declaration = decs[name(source(s) as Ref)] as DefMemory
+         ;   switch {_ == acc-dir(s)} :
+         ;      READ :
+         ;         if seq?(mem-declaration) :
+         ;            val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
+         ;            add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) ; register index for an additional cycle
 
-                     val w = width!(type(index*))
-                     add(inits,[name(index*) " = " rand-string(w)]) ; initialize registered index
+         ;            val w = width!(type(index*))
+         ;            add(inits,[name(index*) " = " rand-string(w)]) ; initialize registered index
 
-                     val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
-                     add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"]) ; register index
-                     updates[get-name(clock(mem-declaration))] = my-clk-update
+         ;            val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
+         ;            add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"]) ; register index
+         ;            updates[get-name(clock(mem-declaration))] = my-clk-update
 
-                     ; emit read accessor
-                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
-                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
-                  else :
-                     ; emit read accessor
-                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
-                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
-               WRITE : 
-                  val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
-                  if key?(ens,sym) :
-                     add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
-                     add(my-clk-update,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
-                     add(my-clk-update,["end"])
-                  else : 
-                     add(my-clk-update,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
-                  updates[get-name(clock(mem-declaration))] = my-clk-update
-               RDWR : 
-                  if seq?(mem-declaration) :
-                     ; to make it sequential, register the index for an additional cycle
-                     val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
-                     add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) 
-                     val w = width!(type(index*))
-                     add(inits,[name(index*) " = " rand-string(w)])
-                     val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
-                     add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"])
-                     updates[get-name(clock(mem-declaration))] = my-clk-update
+         ;            ; emit read accessor
+         ;            add(wires,["wire " get-width(type(source(s))) " " sym ";"])
+         ;            add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
+         ;         else :
+         ;            ; emit read accessor
+         ;            add(wires,["wire " get-width(type(source(s))) " " sym ";"])
+         ;            add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
+         ;      WRITE : 
+         ;         val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
+         ;         if key?(ens,sym) :
+         ;            add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
+         ;            add(my-clk-update,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+         ;            add(my-clk-update,["end"])
+         ;         else : 
+         ;            add(my-clk-update,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+         ;         updates[get-name(clock(mem-declaration))] = my-clk-update
+         ;      RDWR : 
+         ;         if seq?(mem-declaration) :
+         ;            ; to make it sequential, register the index for an additional cycle
+         ;            val index* = Ref(firrtl-gensym(name(index(s) as Ref),sh),type(index(s)))
+         ;            add(regs,[ "reg  " get-width(type(index*)) " " name(index*) ";"]) 
+         ;            val w = width!(type(index*))
+         ;            add(inits,[name(index*) " = " rand-string(w)])
+         ;            val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
+         ;            add(my-clk-update,[name(index*) " <= " emit(index(s)) ";"])
+         ;            updates[get-name(clock(mem-declaration))] = my-clk-update
 
-                     ; emit read accessor
-                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
-                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
-                  else :
-                     ; emit read accessor
-                     add(wires,["wire " get-width(type(source(s))) " " sym ";"])
-                     add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
-                  val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
-                  if key?(ens,sym) :
-                     add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
-                     add(my-clk-update,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
-                     add(my-clk-update,["end"])
-                  else : 
-                     add(my-clk-update,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
-                  updates[get-name(clock(mem-declaration))] = my-clk-update
+         ;            ; emit read accessor
+         ;            add(wires,["wire " get-width(type(source(s))) " " sym ";"])
+         ;            add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index*) "];"])
+         ;         else :
+         ;            ; emit read accessor
+         ;            add(wires,["wire " get-width(type(source(s))) " " sym ";"])
+         ;            add(assigns,["assign " sym " = " emit(source(s)) "[" emit(index(s)) "];"])
+         ;         val my-clk-update = get?(updates,get-name(clock(mem-declaration)),Vector<Streamable>())
+         ;         if key?(ens,sym) :
+         ;            add(my-clk-update,["if(" emit(ens[sym]) ") begin"])
+         ;            add(my-clk-update,["  " emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+         ;            add(my-clk-update,["end"])
+         ;         else : 
+         ;            add(my-clk-update,[emit(source(s)) "[" emit(index(s)) "] <= " emit(cons[sym]) ";"])
+         ;         updates[get-name(clock(mem-declaration))] = my-clk-update
             
    ;==== Actually printing module =====
    val port-indent = "    "

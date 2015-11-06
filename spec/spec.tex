@@ -990,8 +990,8 @@ The output width of a dynamic shift left operation is the width of the original 
 \[
 \begin{array}{rll}
 \kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{dshr}(\pds{op}:UInt, \pds{op2}:UInt)  & UInt & width(op) \\
-\kws{dshr}(\pds{op}:SInt, \pds{op2}:UInt)  & SInt & width(op) \\
+\kws{dshr}(\pds{op1}:UInt, \pds{op2}:UInt)  & UInt & width(op1) \\
+\kws{dshr}(\pds{op1}:SInt, \pds{op2}:UInt)  & SInt & width(op1) \\
 \end{array}
 \]
 The shift right operation accepts either an unsigned or a signed integer, plus a non-negative integer literal specifying the number of bits to shift.

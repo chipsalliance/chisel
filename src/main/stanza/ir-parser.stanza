@@ -7,6 +7,22 @@ defpackage firrtl/parser :
    import bigint2
    import firrtl/ir-utils
 
+;======= Convenience Types ===========
+;definterface MStat 
+;defstruct Reader <: MStat :
+;   value: Symbol
+;defstruct Writer <: MStat :
+;   value: Symbol
+;defstruct ReadWriter <: MStat :
+;   value: Symbol
+;defstruct ReadLatency <: MStat :
+;   value: Int
+;defstruct WriteLatency <: MStat :
+;   value: Int
+;defstruct DataType <: MStat :
+;   value: Type
+;defstruct Depth <: MStat :
+;   value: Int
 ;======= Convenience Functions ========
 defn first-info? (form) -> FileInfo|False :
    match(form) :
@@ -147,10 +163,6 @@ defsyntax firrtl :
          FPE(form, "Expected a vector type here.") when t not-typeof VectorType
          t
 
-      ;Error if not an accessor direction
-      accdir! = (?a:#accdir) : a
-      accdir! != () : FPE(form, "Expected an accessor direction here.")
-
       ;Error if not an expression
       exp! = (?e:#exp) : e
       exp! != () : FPE(form, "Expected an expression here.")
@@ -221,33 +233,51 @@ defsyntax firrtl :
       field = (flip ?name:#id! #:! ?type:#type!) : Field(name, REVERSE, type)
       field = (?name:#id #:! ?type:#type!) : Field(name, DEFAULT, type)
 
-   defrule accdir :
-      accdir = (read) : READ
-      accdir = (write) : WRITE
-      accdir = (infer) : INFER
-      accdir = (rdwr) : RDWR
-
    defrule width :
-      width = (?x:#int) : LongWidth(x)
+      width = (?x:#int) : IntWidth(x)
       width = (?) : UnknownWidth()
 
    ;Main Statement Productions
+   ;defrule mstat :
+   ;   mstat = (reader ?name:#id!) : Reader(name)
+   ;   mstat = (writer ?name:#id!) : Writer(name)
+   ;   mstat = (read-writer ?name:#id!) : ReadWriter(name)
+   ;   mstat = (read-latency #:! ?i:#int!) : ReadLatency(i)
+   ;   mstat = (write-latency #:! ?i:#int!) : WriteLatency(i)
+   ;   mstat = (data-type #:! ?t:#type!) : DataType(t)
+   ;   mstat = (depth #:! ?i:#int!) : Depth(i)
    defrule statements :
-      stmt = (skip) : EmptyStmt()
+      stmt = (skip) : Empty()
       stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(first-info(form),name, t)
-      stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! ?reset:#exp!) : DefRegister(first-info(form),name, t,clk,reset)
-      stmt = (cmem ?name:#id! #:! ?t:#vectype! ?clk:#exp!) : DefMemory(first-info(form),name, type(t), false, clk, size(t))
-      stmt = (smem ?name:#id! #:! ?t:#vectype! ?clk:#exp!) : DefMemory(first-info(form),name, type(t), true, clk, size(t))
-      stmt = (inst ?name:#id! #of! ?m:#ref!) : DefInstance(first-info(form),name,m)
+      stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! ?reset:#exp! ?init:#exp!) : DefRegister(first-info(form),name, t,clk,reset,init)
+      stmt = (mem ?name:#id! #:! ?data-type:#type! ?depth:#int ?writers:#id! ... ?wl:#int ?readers:#id! ... ?rl:#int ?readwriters:#id! ...) : 
+         DefMemory(first-info(form),name,data-type,depth,wl,rl,readers,writers,readwriters)
+         ;val rl = Vector<Int>()
+         ;var wl = Vector<Int>()
+         ;var de = Vector<Int>()
+         ;var dt = Vector<Type>()
+         ;val rs = Vector<Symbol>()
+         ;val ws = Vector<Symbol>()
+         ;val rws = Vector<Symbol>()
+         ;for x in stats do :
+         ;   match(x as MStat) :
+         ;      (x:Reader) : add(rs,value(x))
+         ;      (x:Writer) : add(ws,value(x))
+         ;      (x:ReadWriter) : add(rws,value(x))
+         ;      (x:ReadLatency) : add(rl,value(x))
+         ;      (x:WriteLatency) : add(wl,value(x))
+         ;      (x:DataType) : add(dt,value(x))
+         ;      (x:Depth) : add(de,value(x))
+         ;if length(rl) != 1 : FPE(stats, "Can only specify one read-latency.")
+         ;if length(wl) != 1 : FPE(stats, "Can only specify one write-latency.")
+         ;if length(de) != 1 : FPE(stats, "Can only specify one depth.")
+         ;if length(dt) != 1 : FPE(stats, "Can only specify one data-type.")
+         ;DefMemory(first-info(form),name,dt[0],de[0],wl[0],rl[0],to-list(rs),to-list(ws),to-list(rws))
+      stmt = (inst ?name:#id! #of! ?m:#id!) : DefInstance(first-info(form),name,m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name,e)
       stmt = (poison ?name:#id! #:! ?t:#type!) : DefPoison(first-info(form),name, t)
-      stmt = (onreset ?x:#exp := ?y:#exp!) : OnReset(first-info(form),x,y)
-      stmt = (read accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,READ)
-      stmt = (write accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,WRITE)
-      stmt = (infer accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s,i,INFER)
-      stmt = (rdwr accessor ?name:#id! #=! ?s:#exp![?i:#exp$]) : DefAccessor(first-info(form),name,s, i,RDWR)
-      stmt = (stop( ?clk:#exp!, ?ret:#int)) : StopStmt(first-info(form),ret,clk)
-      stmt = (printf( ?clk:#exp!, ?str:#string ?es:#exp ...)) : PrintfStmt(first-info(form),str,es,clk)
+      stmt = (stop(?ret:#int,)) : Stop(first-info(form),ret,clk)
+      stmt = (printf(?clk:#exp ?str:#string ?es:#exp ...)) : Print(first-info(form),str,es,clk)
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
@@ -268,14 +298,15 @@ defsyntax firrtl :
       stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt! else #:! ?alt:#stmt!) :
          Conditionally(first-info(form),pred, conseq, alt)
       stmt/when = (when ?pred:#exp! #:! ?conseq:#stmt!) :
-         Conditionally(first-info(form),pred, conseq, EmptyStmt())
+         Conditionally(first-info(form),pred, conseq, Empty())
 
    ;Main Expressions
    defrule exp :
       ;Suffix Operators
       exp = (?x:#expterm ?ops:#expop ...) : apply-suffix-ops(x, ops)      
-      expop = ((@get ?f:#int)) : (fn (x) : Index(x, f, UnknownType()))
-      expop = (. ?f:#id!) : (fn (x) : Subfield(x, f, UnknownType()))
+      expop = ((@get ?f:#int)) : (fn (x) : SubIndex(x, f, UnknownType()))
+      expop = ((@get ?f:#exp!)) : (fn (x) : SubAccess(x, f, UnknownType()))
+      expop = (. ?f:#id!) : (fn (x) : SubField(x, f, UnknownType()))
       
       ;Prefix Operators
       expterm = (?t:#inttype(?v:#string)) :
@@ -283,7 +314,7 @@ defsyntax firrtl :
          match(t) :
             (t:UIntType) : 
                match(width(t)) :
-                  (w:LongWidth) :
+                  (w:IntWidth) :
                      if to-long(max(1,(req-num-bits(b) - 1))) > width(w) :
                         FPE(form, "Width too small for UIntValue.")
                      UIntValue(b, w)
@@ -291,7 +322,7 @@ defsyntax firrtl :
                      UIntValue(b, w)
             (t:SIntType) : 
                match(width(t)) :
-                  (w:LongWidth) :
+                  (w:IntWidth) :
                      if to-long(req-num-bits(b)) > width(w) :
                         FPE(form, "Width too small for SIntValue.")
                      SIntValue(b, w)
@@ -304,18 +335,18 @@ defsyntax firrtl :
                if (v as Int) < 0 : 
                   FPE(form, "UIntValue cannot be negative.")
                match(width(t)) :
-                  (w:LongWidth) : 
+                  (w:IntWidth) : 
                      UIntValue(BigIntLit(v as Int,to-int(width(w)) + 1),w)
                   (w) : 
                      val num-bits = req-num-bits(v as Int)
-                     UIntValue(BigIntLit(v as Int,num-bits), LongWidth(max(1,num-bits - 1)))
+                     UIntValue(BigIntLit(v as Int,num-bits), IntWidth(max(1,num-bits - 1)))
             (t:SIntType) :
                match(width(t)) :
-                  (w:LongWidth) : 
+                  (w:IntWidth) : 
                      SIntValue(BigIntLit(v as Int,to-int(width(w))),w)
                   (w) : 
                      val num-bits = req-num-bits(v as Int)
-                     SIntValue(BigIntLit(v as Int,num-bits), LongWidth(num-bits))
+                     SIntValue(BigIntLit(v as Int,num-bits), IntWidth(num-bits))
 
       expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :

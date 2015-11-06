@@ -1,122 +1,17 @@
-defpackage firrtl/custom-passes :
-   import core
-   import verse
-   import firrtl/ir-utils
-   import firrtl/ir2
-   import bigint2
-
-;============ When Coverage =============
-public defstruct WhenCoverage <: Pass :
-   port-name : String
-   reg-name : String
-public defmethod pass (b:WhenCoverage) -> (Circuit -> Circuit) : when-coverage{port-name(b),reg-name(b),_}
-public defmethod name (b:WhenCoverage) -> String : "When Coverage"
-public defmethod short-name (b:WhenCoverage) -> String : "when-coverage"
-
-;============ Utilz =============
-defn concat-all (ls:List<Expression>) -> Expression :
-   if length(ls) == 0 : error("Shouldn't be here")
-   if length(ls) == 1 : head(ls)
-   else : DoPrim( CONCAT-OP,
-                  list(head(ls),concat-all(tail(ls))),
-                  list(),
-                  UIntType(UnknownWidth()))
-
-;============ When Coverage Pass =============
-;port width = 1 bit per scope + portwidths of all instances
-
-defn needs-instrumentation (m:Module,ms:List<Module>,instrument?:HashTable<Symbol,True|False>) -> False :
-   defn needs-instrumentation-s (s:Stmt) -> False :
-      match(s) :
-         (s:Conditionally) :instrument?[name(m)] = true
-         (s:DefInstance) : 
-            val module-of-inst = for x in ms find : name(x) == name(module(s) as Ref)
-            if module-of-inst != false : 
-               needs-instrumentation(module-of-inst as Module,ms,instrument?)
-               instrument?[name(m)] = instrument?[name(module-of-inst as Module)]
-         (s) : false
-      do(needs-instrumentation-s,s)
-
-   match(m) : 
-      (m:InModule) : do(needs-instrumentation-s,body(m))
-      (m:ExModule) : false
-   
-defn when-coverage (port-name:Symbol, reg-name:Symbol, instrument?:HashTable<Symbol,True|False>, m:InModule) -> InModule :
-   val when-bits = Vector<Ref>()
-   val inst-bits = Vector<Ref>()
-   val sym = HashTable<Symbol,Int>(symbol-hash)
-   val w1 = LongWidth(1)
-   val t1 = UIntType(w1)
-   val u1 = UIntValue(BigIntLit("h1"),w1)
-   defn when-coverage (s:Stmt) -> Stmt :
-      match(s) :
-         (s:Conditionally) : 
-            val ref = Ref(firrtl-gensym(reg-name,sym),t1)
-            add(when-bits,ref)
-            val conseq* = Begin(list(Connect(FileInfo()ref,u1),conseq(s)))
-            map(when-coverage,Conditionally(info(s),pred(s),conseq*,alt(s)))
-         (s:DefInstance) : 
-            if instrument?[name(module(s) as Ref)] :
-               val ref = Ref(firrtl-gensym(port-name,sym),UIntType(UnknownWidth()))
-               add(inst-bits,ref)
-               val sfld = Subfield(Ref(name(s),UnknownType()),port-name,UnknownType())
-               Begin(list(s,Connect(FileInfo(),ref,sfld)))
-            else : s
-         (s) : map(when-coverage,s)
-
-   val body* = when-coverage(body(m))
-   val logic = Vector<Stmt>()
-   val port-ref = Ref(port-name,UIntType(UnknownWidth()))
-
-   val w-ls = to-list $ when-bits
-   if length(w-ls) != 0 :
-      val reg-ref = Ref(reg-name,UIntType(LongWidth(length(w-ls))))
-      ;add{logic,_} $ DefRegister(FileInfo(),name(reg-ref),type(reg-ref)) TODO add clock and reset
-      for (x in w-ls, i in 0 to false) do :
-         add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
-         add{logic,_} $ Connect(FileInfo(),x,DoPrim(BIT-SELECT-OP,list(reg-ref),list(i),UIntType(w1)))
-      add{logic,_} $ Connect(FileInfo(),reg-ref,concat-all(w-ls))
-      add{logic,_} $ OnReset(FileInfo(),reg-ref,UIntValue(BigIntLit("h0"),LongWidth(length(w-ls))))
-
-   val i-ls = to-list $ inst-bits
-   if length(i-ls) != 0 :
-      for (x in i-ls, i in 0 to false) do :
-         add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
-         add{logic,_} $ Connect(FileInfo(),x,UIntValue(BigIntLit("h0"),UnknownWidth()))
-
-   if instrument?[name(m)] : add{logic,_} $ Connect(FileInfo(),port-ref,concat-all(append(w-ls,i-ls)))
-
-   if length(logic) != 0 :
-      val ports* = List(Port(FileInfo(),port-name,OUTPUT,UIntType(UnknownWidth())),ports(m))
-      val body** = Begin(list(Begin(to-list $ logic),body*))
-      InModule(info(m),name(m),ports*,body**)
-   else : m
-
-public defn when-coverage (port-name:String, reg-name:String, c:Circuit) :
-   val instrument? = HashTable<Symbol,True|False>(symbol-hash)
-   for m in modules(c) do :
-      instrument?[name(m)] = false
-   val top = for m in modules(c) find : name(m) == main(c)
-   if top != false : needs-instrumentation(top as Module,modules(c),instrument?)
-
-   val modules* = for m in modules(c) map :
-      match(m) :
-         (m:InModule) : 
-            when-coverage(to-symbol $ port-name,to-symbol $ reg-name,instrument?,m)
-         (m:ExModule) : m
-   Circuit(info(c),modules*,main(c))
-
-;;============ Temporal Check =============
-;public defstruct TemporalAssert :
-;    module : String
-;    name : String
-;    value : Int
-;    cycle : Int
-;public defstruct InsertTemporalAsserts <: Pass :
-;    asserts : List<TemporalAssert>
-;public defmethod pass (b:InsertTemporalAsserts) -> (Circuit -> Circuit) : insert-temporal-assert{asserts(b),_}
-;public defmethod name (b:InsertTemporalAsserts) -> String : "Insert Temporal Assert"
-;public defmethod short-name (b:InsertTemporalAsserts) -> String : "insert-temporal-assert"
+;defpackage firrtl/custom-passes :
+;   import core
+;   import verse
+;   import firrtl/ir-utils
+;   import firrtl/ir2
+;   import bigint2
+;
+;;============ When Coverage =============
+;public defstruct WhenCoverage <: Pass :
+;   port-name : String
+;   reg-name : String
+;public defmethod pass (b:WhenCoverage) -> (Circuit -> Circuit) : when-coverage{port-name(b),reg-name(b),_}
+;public defmethod name (b:WhenCoverage) -> String : "When Coverage"
+;public defmethod short-name (b:WhenCoverage) -> String : "when-coverage"
 ;
 ;;============ Utilz =============
 ;defn concat-all (ls:List<Expression>) -> Expression :
@@ -127,28 +22,17 @@ public defn when-coverage (port-name:String, reg-name:String, c:Circuit) :
 ;                  list(),
 ;                  UIntType(UnknownWidth()))
 ;
-;;============ Insert Temporal Asserts Pass =============
+;;============ When Coverage Pass =============
+;;port width = 1 bit per scope + portwidths of all instances
 ;
-;
-;public defn insert-temporal-assert (asserts:List<TemporalAssert>,m:Module) -> Module :
-;   
-;   for statement in body(m) do :
-;      
-;   for a in asserts do :
-;      val mod* = for m in modules(c) find : name(m) == module(a)
-;      match(mod*) : 
-;         (m:False) : error("Module not found")
-;         (m:Module) : 
-;
-;
-;defn needs-ita-instrumentation (m:Module,ms:List<Module>,instrument?:HashTable<Symbol,True|False>,asserts:List<TemporalAssert>) -> False :
+;defn needs-instrumentation (m:Module,ms:List<Module>,instrument?:HashTable<Symbol,True|False>) -> False :
 ;   defn needs-instrumentation-s (s:Stmt) -> False :
 ;      match(s) :
-;         (s:DefWire|DefRegister) : instrument?[name(m)] = contains?(name(s),map(name,asserts))
+;         (s:Conditionally) :instrument?[name(m)] = true
 ;         (s:DefInstance) : 
 ;            val module-of-inst = for x in ms find : name(x) == name(module(s) as Ref)
 ;            if module-of-inst != false : 
-;               needs-ita-instrumentation(module-of-inst as Module,ms,instrument?,asserts)
+;               needs-instrumentation(module-of-inst as Module,ms,instrument?)
 ;               instrument?[name(m)] = instrument?[name(module-of-inst as Module)]
 ;         (s) : false
 ;      do(needs-instrumentation-s,s)
@@ -157,17 +41,17 @@ public defn when-coverage (port-name:String, reg-name:String, c:Circuit) :
 ;      (m:InModule) : do(needs-instrumentation-s,body(m))
 ;      (m:ExModule) : false
 ;   
-;defn insert-temporal-asserts (port-name:Symbol,assert-name:Symbol,asserts:List<TemporalAssert>,instrument?:HashTable<Symbol,True|False>, m:InModule) -> InModule :
+;defn when-coverage (port-name:Symbol, reg-name:Symbol, instrument?:HashTable<Symbol,True|False>, m:InModule) -> InModule :
 ;   val when-bits = Vector<Ref>()
 ;   val inst-bits = Vector<Ref>()
 ;   val sym = HashTable<Symbol,Int>(symbol-hash)
 ;   val w1 = LongWidth(1)
 ;   val t1 = UIntType(w1)
-;   val u1 = UIntValue(to-long $ 1,w1)
-;   defn insert-temporal-asserts (s:Stmt) -> Stmt :
+;   val u1 = UIntValue(BigIntLit("h1"),w1)
+;   defn when-coverage (s:Stmt) -> Stmt :
 ;      match(s) :
-;         (s:DefWire|DefRegister) : 
-;            val ref = Ref(firrtl-gensym(name(s),sym),t1)
+;         (s:Conditionally) : 
+;            val ref = Ref(firrtl-gensym(reg-name,sym),t1)
 ;            add(when-bits,ref)
 ;            val conseq* = Begin(list(Connect(FileInfo()ref,u1),conseq(s)))
 ;            map(when-coverage,Conditionally(info(s),pred(s),conseq*,alt(s)))
@@ -187,18 +71,18 @@ public defn when-coverage (port-name:String, reg-name:String, c:Circuit) :
 ;   val w-ls = to-list $ when-bits
 ;   if length(w-ls) != 0 :
 ;      val reg-ref = Ref(reg-name,UIntType(LongWidth(length(w-ls))))
-;      add{logic,_} $ DefRegister(FileInfo(),name(reg-ref),type(reg-ref))
-;      add{logic,_} $ OnReset(FileInfo(),reg-ref,UIntValue(to-long $ 0,LongWidth(length(w-ls))))
+;      ;add{logic,_} $ DefRegister(FileInfo(),name(reg-ref),type(reg-ref)) TODO add clock and reset
 ;      for (x in w-ls, i in 0 to false) do :
 ;         add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
 ;         add{logic,_} $ Connect(FileInfo(),x,DoPrim(BIT-SELECT-OP,list(reg-ref),list(i),UIntType(w1)))
 ;      add{logic,_} $ Connect(FileInfo(),reg-ref,concat-all(w-ls))
+;      add{logic,_} $ OnReset(FileInfo(),reg-ref,UIntValue(BigIntLit("h0"),LongWidth(length(w-ls))))
 ;
 ;   val i-ls = to-list $ inst-bits
 ;   if length(i-ls) != 0 :
 ;      for (x in i-ls, i in 0 to false) do :
 ;         add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
-;         add{logic,_} $ Connect(FileInfo(),x,UIntValue(to-long $ 0,UnknownWidth()))
+;         add{logic,_} $ Connect(FileInfo(),x,UIntValue(BigIntLit("h0"),UnknownWidth()))
 ;
 ;   if instrument?[name(m)] : add{logic,_} $ Connect(FileInfo(),port-ref,concat-all(append(w-ls,i-ls)))
 ;
@@ -222,3 +106,119 @@ public defn when-coverage (port-name:String, reg-name:String, c:Circuit) :
 ;         (m:ExModule) : m
 ;   Circuit(info(c),modules*,main(c))
 ;
+;;;============ Temporal Check =============
+;;public defstruct TemporalAssert :
+;;    module : String
+;;    name : String
+;;    value : Int
+;;    cycle : Int
+;;public defstruct InsertTemporalAsserts <: Pass :
+;;    asserts : List<TemporalAssert>
+;;public defmethod pass (b:InsertTemporalAsserts) -> (Circuit -> Circuit) : insert-temporal-assert{asserts(b),_}
+;;public defmethod name (b:InsertTemporalAsserts) -> String : "Insert Temporal Assert"
+;;public defmethod short-name (b:InsertTemporalAsserts) -> String : "insert-temporal-assert"
+;;
+;;;============ Utilz =============
+;;defn concat-all (ls:List<Expression>) -> Expression :
+;;   if length(ls) == 0 : error("Shouldn't be here")
+;;   if length(ls) == 1 : head(ls)
+;;   else : DoPrim( CONCAT-OP,
+;;                  list(head(ls),concat-all(tail(ls))),
+;;                  list(),
+;;                  UIntType(UnknownWidth()))
+;;
+;;;============ Insert Temporal Asserts Pass =============
+;;
+;;
+;;public defn insert-temporal-assert (asserts:List<TemporalAssert>,m:Module) -> Module :
+;;   
+;;   for statement in body(m) do :
+;;      
+;;   for a in asserts do :
+;;      val mod* = for m in modules(c) find : name(m) == module(a)
+;;      match(mod*) : 
+;;         (m:False) : error("Module not found")
+;;         (m:Module) : 
+;;
+;;
+;;defn needs-ita-instrumentation (m:Module,ms:List<Module>,instrument?:HashTable<Symbol,True|False>,asserts:List<TemporalAssert>) -> False :
+;;   defn needs-instrumentation-s (s:Stmt) -> False :
+;;      match(s) :
+;;         (s:DefWire|DefRegister) : instrument?[name(m)] = contains?(name(s),map(name,asserts))
+;;         (s:DefInstance) : 
+;;            val module-of-inst = for x in ms find : name(x) == name(module(s) as Ref)
+;;            if module-of-inst != false : 
+;;               needs-ita-instrumentation(module-of-inst as Module,ms,instrument?,asserts)
+;;               instrument?[name(m)] = instrument?[name(module-of-inst as Module)]
+;;         (s) : false
+;;      do(needs-instrumentation-s,s)
+;;
+;;   match(m) : 
+;;      (m:InModule) : do(needs-instrumentation-s,body(m))
+;;      (m:ExModule) : false
+;;   
+;;defn insert-temporal-asserts (port-name:Symbol,assert-name:Symbol,asserts:List<TemporalAssert>,instrument?:HashTable<Symbol,True|False>, m:InModule) -> InModule :
+;;   val when-bits = Vector<Ref>()
+;;   val inst-bits = Vector<Ref>()
+;;   val sym = HashTable<Symbol,Int>(symbol-hash)
+;;   val w1 = LongWidth(1)
+;;   val t1 = UIntType(w1)
+;;   val u1 = UIntValue(to-long $ 1,w1)
+;;   defn insert-temporal-asserts (s:Stmt) -> Stmt :
+;;      match(s) :
+;;         (s:DefWire|DefRegister) : 
+;;            val ref = Ref(firrtl-gensym(name(s),sym),t1)
+;;            add(when-bits,ref)
+;;            val conseq* = Begin(list(Connect(FileInfo()ref,u1),conseq(s)))
+;;            map(when-coverage,Conditionally(info(s),pred(s),conseq*,alt(s)))
+;;         (s:DefInstance) : 
+;;            if instrument?[name(module(s) as Ref)] :
+;;               val ref = Ref(firrtl-gensym(port-name,sym),UIntType(UnknownWidth()))
+;;               add(inst-bits,ref)
+;;               val sfld = Subfield(Ref(name(s),UnknownType()),port-name,UnknownType())
+;;               Begin(list(s,Connect(FileInfo(),ref,sfld)))
+;;            else : s
+;;         (s) : map(when-coverage,s)
+;;
+;;   val body* = when-coverage(body(m))
+;;   val logic = Vector<Stmt>()
+;;   val port-ref = Ref(port-name,UIntType(UnknownWidth()))
+;;
+;;   val w-ls = to-list $ when-bits
+;;   if length(w-ls) != 0 :
+;;      val reg-ref = Ref(reg-name,UIntType(LongWidth(length(w-ls))))
+;;      add{logic,_} $ DefRegister(FileInfo(),name(reg-ref),type(reg-ref))
+;;      add{logic,_} $ OnReset(FileInfo(),reg-ref,UIntValue(to-long $ 0,LongWidth(length(w-ls))))
+;;      for (x in w-ls, i in 0 to false) do :
+;;         add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
+;;         add{logic,_} $ Connect(FileInfo(),x,DoPrim(BIT-SELECT-OP,list(reg-ref),list(i),UIntType(w1)))
+;;      add{logic,_} $ Connect(FileInfo(),reg-ref,concat-all(w-ls))
+;;
+;;   val i-ls = to-list $ inst-bits
+;;   if length(i-ls) != 0 :
+;;      for (x in i-ls, i in 0 to false) do :
+;;         add{logic,_} $ DefWire(FileInfo(),name(x),type(x))
+;;         add{logic,_} $ Connect(FileInfo(),x,UIntValue(to-long $ 0,UnknownWidth()))
+;;
+;;   if instrument?[name(m)] : add{logic,_} $ Connect(FileInfo(),port-ref,concat-all(append(w-ls,i-ls)))
+;;
+;;   if length(logic) != 0 :
+;;      val ports* = List(Port(FileInfo(),port-name,OUTPUT,UIntType(UnknownWidth())),ports(m))
+;;      val body** = Begin(list(Begin(to-list $ logic),body*))
+;;      InModule(info(m),name(m),ports*,body**)
+;;   else : m
+;;
+;;public defn when-coverage (port-name:String, reg-name:String, c:Circuit) :
+;;   val instrument? = HashTable<Symbol,True|False>(symbol-hash)
+;;   for m in modules(c) do :
+;;      instrument?[name(m)] = false
+;;   val top = for m in modules(c) find : name(m) == main(c)
+;;   if top != false : needs-instrumentation(top as Module,modules(c),instrument?)
+;;
+;;   val modules* = for m in modules(c) map :
+;;      match(m) :
+;;         (m:InModule) : 
+;;            when-coverage(to-symbol $ port-name,to-symbol $ reg-name,instrument?,m)
+;;         (m:ExModule) : m
+;;   Circuit(info(c),modules*,main(c))
+;;

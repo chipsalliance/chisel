@@ -10,6 +10,7 @@
 #include("passes.stanza")
 #include("primop.stanza")
 #include("errors.stanza")
+#include("symbolic-value.stanza")
 
 defpackage firrtl-main :
    import core

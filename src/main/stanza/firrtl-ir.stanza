@@ -13,24 +13,18 @@ public val scope-delin = `_
 public val inline-delin = `_
 public val delin = `_
 
-public definterface PortDirection
-public val INPUT = new PortDirection
-public val OUTPUT = new PortDirection
+public definterface Direction
+public val INPUT = new Direction
+public val OUTPUT = new Direction
 
 public definterface Flip
 public val DEFAULT = new Flip
 public val REVERSE = new Flip
 
-public definterface AccDirection
-public val READ = new AccDirection
-public val WRITE = new AccDirection
-public val INFER = new AccDirection
-public val RDWR = new AccDirection
-
 public definterface Width
 public defstruct UnknownWidth <: Width
-public defn LongWidth (width:Int) : LongWidth(to-long(width))
-public defstruct LongWidth <: Width :
+public defn IntWidth (width:Int) : IntWidth(to-long(width))
+public defstruct IntWidth <: Width :
    width: Long
 
 public definterface PrimOp
@@ -78,13 +72,17 @@ public defmulti type (e:Expression) -> Type
 public defstruct Ref <: Expression :
    name: Symbol
    type: Type with: (as-method => true)
-public defstruct Subfield <: Expression :
+public defstruct SubField <: Expression :
    exp: Expression
    name: Symbol
    type: Type with: (as-method => true)
-public defstruct Index <: Expression :
+public defstruct SubIndex <: Expression :
    exp: Expression
    value: Int
+   type: Type with: (as-method => true)
+public defstruct SubAccess <: Expression :
+   exp: Expression
+   index: Expression
    type: Type with: (as-method => true)
 public defstruct UIntValue <: Expression :
    value: BigInt
@@ -111,27 +109,25 @@ public defstruct DefRegister <: Stmt :
    type: Type
    clock: Expression
    reset: Expression
+   init: Expression
 public defstruct DefInstance <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
-   module: Expression
+   module: Symbol
 public defstruct DefMemory <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
-   type: Type
-   seq?: True|False
-   clock: Expression
-   size: Int
+   data-type: Type
+   depth: Int
+   write-latency: Int
+   read-latency: Int
+   readers: List<Symbol>
+   writers: List<Symbol>
+   readwriters: List<Symbol>
 public defstruct DefNode <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
    value: Expression
-public defstruct DefAccessor <: Stmt :
-   info: FileInfo with: (as-method => true)
-   name: Symbol
-   source: Expression
-   index: Expression
-   acc-dir: AccDirection
 public defstruct DefPoison <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
@@ -143,10 +139,6 @@ public defstruct Conditionally <: Stmt :
    alt: Stmt
 public defstruct Begin <: Stmt : ;LOW
    body: List<Stmt>
-public defstruct OnReset <: Stmt : 
-   info: FileInfo with: (as-method => true)
-   loc: Expression
-   exp: Expression
 public defstruct BulkConnect <: Stmt : 
    info: FileInfo with: (as-method => true)
    loc: Expression
@@ -155,17 +147,17 @@ public defstruct Connect <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    loc: Expression
    exp: Expression
-public defstruct StopStmt <: Stmt : ;LOW
+public defstruct Stop <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    ret: Int
    clk: Expression
-public defstruct PrintfStmt <: Stmt : ;LOW
+public defstruct Print <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    string: String
    args: List<Expression>
    clk: Expression
 
-public defstruct EmptyStmt <: Stmt ;LOW
+public defstruct Empty <: Stmt ;LOW
 
 public definterface Type
 public defstruct UIntType <: Type :
@@ -188,7 +180,7 @@ public defstruct Field :
 public defstruct Port :
    info: FileInfo
    name: Symbol
-   direction: PortDirection
+   direction: Direction
    type: Type
 
 public definterface Module
