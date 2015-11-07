@@ -1,0 +1,994 @@
+defpackage firrtl/errors :
+   import core
+   import verse
+   import firrtl/ir2
+   import firrtl/ir-utils
+   import firrtl/primops
+   import firrtl/passes
+   import firrtl-main
+   import bigint2
+
+; TODO
+; make sure it compiles, write tests, look over code to make sure its right
+;========== ALL CHECKS =================
+;PARSER CHECK
+; * No nested modules <- parser
+; * Only modules in circuit (no statements or expressions) <- parser
+; * Module must be a reference in inst declaration
+
+;AFTER ??????
+; o No combinational loops
+
+;================= High Form Check ==========================
+; * Subexps of Subfield and Index can only be subfields, index, or refs
+; * Can only connect to a Ref or Subfield or Index or WritePort
+; * A module has the same name as main of circuit
+; * mems cannot be a bundle with flips
+; * instance module must have the same name as a defined module
+; * Unique names per module
+; * No name can be a prefix of any other name.
+; * all references are declared
+; * UInt only has positive ints
+; * Vector types has positive size
+; * Width sizes are positive
+; * Primops have the correct number of arguments
+
+public defstruct CheckHighForm <: Pass 
+public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-form
+public defmethod name (b:CheckHighForm) -> String : "High Form Check"
+public defmethod short-name (b:CheckHighForm) -> String : "high-form-check"
+
+var sinfo! = FileInfo()
+
+;----------------- Errors ------------------------
+defn NotUnique (name:Symbol) :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Reference " name " does not have a unique name."]
+
+defn IsPrefix (prefix:Symbol) :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Symbol " prefix " is a prefix."]
+
+defn InvalidLOC () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Invalid connect to an expression that is not a reference or a WritePort."]
+   
+defn NegUInt () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  UIntValue cannot be negative."]
+
+defn UndeclaredReference (name:Symbol) :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Reference " name " is not declared."]
+
+defn PoisonWithFlip (name:Symbol) : 
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Poison " name " cannot be a bundle type with flips."]
+
+defn MemWithFlip (name:Symbol) : 
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Memory " name " cannot be a bundle type with flips."]
+
+defn InvalidAccess () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Invalid access to non-reference."]
+
+defn NoTopModule (name:Symbol) :
+   PassException $ string-join $
+   [sinfo! ": A single module must be named " name "."]
+
+defn ModuleNotDefined (name:Symbol) :
+   PassException $ string-join $
+   [sinfo! ": Module " name " is not defined."]
+
+defn IncorrectNumArgs (op:Symbol, n:Int) :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Primop " op " requires " n " expression arguments."]
+
+defn IncorrectNumConsts (op:Symbol, n:Int) :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Primop " op " requires " n " integer arguments."]
+
+defn NegWidth () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Width cannot be negative or zero."]
+
+defn NegVecSize () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Vector type size cannot be negative."]
+
+defn NegMemSize () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Memory size cannot be negative or zero."]
+
+defn IllegalUnknownWidth () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Widths must be defined for memories and poison nodes."]
+
+defn BadPrintf (x:Char) :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Bad printf format: \"%" x "\""];"
+
+defn BadPrintfTrailing () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Bad printf format: trailing \"%\""];"
+
+defn BadPrintfIncorrectNum () :
+   PassException $ string-join $
+   [sinfo! ": [module " mname "]  Bad printf format: incorrect number of arguments"];"
+
+
+;---------------- Helper Functions --------------
+defn has-flip? (t:Type) -> True|False :
+   var has? = false
+   defn find-flip (t:Type) -> Type :
+      match(t) : 
+         (t:BundleType) : 
+            for f in fields(t) do : 
+               if flip(f) == REVERSE : has? = true
+            t
+         (t) : t
+   find-flip(t)
+   map(find-flip,t)
+   has?
+
+defn contains?<?T> (c:?T,cs:Streamable<?T>) -> True|False : 
+   label<True|False> myret :
+      for x in cs do :
+         if x == c : myret(true)
+      false
+
+;defstruct Trie :
+;   char : Char
+;   children : HashTable<Char,Trie>
+;
+;defn char-hash (c:Char) -> Int : symbol-hash(to-symbol(c))
+;defn new-trie (c:Char) -> Trie : Trie(c,HashTable<Char,Trie>(char-hash))
+;defn tail (s:String) -> String : substring(s,1,length(s))
+;
+;defn insert-top (trie:Trie,symbol:Symbol) -> True|False : true
+;   insert(trie,string-join([" " symbol]))
+;
+;defn insert (trie:Trie,string:String) -> True|False :
+;   if length(string) == 0 : char(trie)
+;
+;   val child = get?(children(trie),string[0],false)
+;   if length(string) == 1 :
+;      match(child) :
+;         (c:Trie) : false
+;         (c:False) : 
+;            children(trie)[string[0]] = new-trie(string[0])
+;            true
+;   else :
+;      match(child) :
+;         (c:Trie) : insert(c,tail(string))
+;         (c:False) : 
+;            val t = new-trie(string[0])
+;            insert(t,tail(string))
+;            children(trie)[string[0]] = t
+;
+;defn has? (trie:Trie, string:String) -> True|False :
+;   if length(string) == 0 : true
+;   if length(string) >= 1 :
+;      if key?(children(trie),string[0]) :
+;         has?(tail(string), children(trie)[string[0]])
+;      else : false
+;
+;defn any-prefixes? (trie:Trie,delim:String) -> String|False :
+;   if has?(trie,delim) :
+;      val c = get-children-after(trie:Trie,delim:String)
+;      if length(keys(c)) > 1 :
+;         
+;   
+;   if length(partial-delim) == 0 : to-string(char(trie))
+;   if length(partial-delim) == 1 :
+;      if key?(children(trie),partial-delim[0]) : any-prefixes?(...WAS HERE
+;      if char(trie) == partial-delim[0] :
+;         if length(keys(children(trie))) >= 2 : to-string(char(trie))
+;         else : false
+;      else :
+;         label<String|False> myret :
+;            for x in children(trie) do :
+;               match(any-prefixes?(value(x),full-delim,full-delim)) :
+;                  (s:False) : false
+;                  (s:String) : myret(string-join([char(trie) s]))
+;            false
+;   else :
+;      label<String|False> myret :
+;         for x in children(trie) do :
+;            if char(trie) == partial-delim[0] :
+;               match(any-prefixes?(value(x),tail(partial-delim),full-delim)) :
+;                  (s:False) : false
+;                  (s:String) : myret(string-join([char(trie) s]))
+;            match(any-prefixes?(value(x),partial-delim,full-delim)) :
+;               (s:False) : false
+;               (s:String) : myret(string-join([char(trie) s]))
+;            match(any-prefixes?(value(x),full-delim,full-delim)) :
+;               (s:False) : false
+;               (s:String) : myret(string-join([char(trie) s]))
+;         false
+      
+
+;--------------- Check High Form Pass -------------------
+public defn check-high-form (c:Circuit) -> Circuit : 
+   val errors = Vector<PassException>()
+   defn check-high-form-primop (e:DoPrim) -> False :
+      defn correct-num (ne:Int|False,nc:Int) -> False :
+         if not (ne typeof False) : 
+            if length(args(e)) != ne as Int : add(errors,IncorrectNumArgs(to-symbol(op(e)),ne as Int))
+         if length(consts(e)) != nc : add(errors,IncorrectNumConsts(to-symbol $ op(e),nc))
+   
+      switch {op(e) == _} :
+         ADD-OP             : correct-num(2,0)
+         SUB-OP             : correct-num(2,0)
+         MUL-OP             : correct-num(2,0)
+         DIV-OP             : correct-num(2,0)
+         MOD-OP             : correct-num(2,0)
+         QUO-OP             : correct-num(2,0)
+         REM-OP             : correct-num(2,0)
+         ADD-WRAP-OP        : correct-num(2,0)
+         SUB-WRAP-OP        : correct-num(2,0)
+         LESS-OP            : correct-num(2,0)
+         LESS-EQ-OP         : correct-num(2,0)
+         GREATER-OP         : correct-num(2,0)
+         GREATER-EQ-OP      : correct-num(2,0)
+         EQUAL-OP           : correct-num(2,0)
+         NEQUAL-OP          : correct-num(2,0)
+         EQUIV-OP           : correct-num(2,0)
+         NEQUIV-OP          : correct-num(2,0)
+         MUX-OP             : correct-num(3,0)
+         PAD-OP             : correct-num(1,1)
+         AS-UINT-OP         : correct-num(1,0)
+         AS-SINT-OP         : correct-num(1,0)
+         DYN-SHIFT-LEFT-OP  : correct-num(2,0)
+         DYN-SHIFT-RIGHT-OP : correct-num(2,0)
+         SHIFT-LEFT-OP      : correct-num(1,1)
+         SHIFT-RIGHT-OP     : correct-num(1,1)
+         CONVERT-OP         : correct-num(1,0)
+         NEG-OP             : correct-num(1,0)
+         BIT-NOT-OP         : correct-num(1,0)
+         BIT-AND-OP         : correct-num(2,0)
+         BIT-OR-OP          : correct-num(2,0)
+         BIT-XOR-OP         : correct-num(2,0)
+         BIT-AND-REDUCE-OP  : correct-num(false,0)
+         BIT-OR-REDUCE-OP   : correct-num(false,0)
+         BIT-XOR-REDUCE-OP  : correct-num(false,0)
+         CONCAT-OP          : correct-num(2,0)
+         BIT-SELECT-OP      : correct-num(1,1)
+         BITS-SELECT-OP     : correct-num(1,2)
+
+   defn check-fstring (s:String,i:Int) -> False :
+      val valid-formats = "bedxs"
+      var percent = false
+      var ret = true
+      var npercents = 0
+      for x in s do :
+         if (not contains?(valid-formats,x)) and percent :
+            add(errors,BadPrintf(x))
+         if x == '%' : npercents = npercents + 1
+         percent = x == '%'
+      if percent : add(errors,BadPrintfTrailing())
+      if npercents != i : add(errors,BadPrintfIncorrectNum())
+   defn check-valid-loc (e:Expression) -> False :
+      match(e) : 
+         (e:UIntValue|SIntValue|DoPrim) :
+            add(errors,InvalidLOC())
+         (e) : false
+   defn check-high-form-w (w:Width) -> Width :
+      match(w) :
+         (w:IntWidth) : 
+            if width(w) <= to-long(0) : add(errors,NegWidth())
+            w
+         (w) : w
+   defn check-high-form-t (t:Type) -> Type :
+      match(map(check-high-form-t,t)) :
+         (t:VectorType) : 
+            if size(t) < 0 : add(errors,NegVecSize())
+         (t) : false
+      map(check-high-form-w,t)
+
+   defn check-high-form-m (m:Module) -> Module :
+      val names = HashTable<Symbol,True>(symbol-hash)
+      val mnames = HashTable<Symbol,True>(symbol-hash)
+      defn check-high-form-e (e:Expression) -> Expression :
+         defn valid-subexp (e:Expression) -> Expression :
+            match(e) :
+               (e:Ref|SubField|SubIndex|SubAccess) : false
+               (e) : add(errors,InvalidAccess())
+            e
+         match(map(check-high-form-e,e)) :
+            (e:Ref) : 
+               if not key?(names,name(e)) : 
+                  add(errors,UndeclaredReference(name(e)))
+            (e:DoPrim) : check-high-form-primop(e)
+            (e:UIntValue) : false
+            (e:SubAccess) : 
+               valid-subexp(exp(e))
+               e
+            (e) : map(valid-subexp,e)
+         map(check-high-form-w,e)
+         map(check-high-form-t,e)
+         e
+      defn check-high-form-s (s:Stmt) -> Stmt :
+         defn check-name (name:Symbol) -> Symbol :
+            if key?(names,name) : add(errors,NotUnique(name))
+            else : names[name] = true
+            name
+         sinfo! = info(s)
+         map(check-name,s)
+         map(check-high-form-t,s)
+         map(check-high-form-e,s)
+         match(s) :
+            (s:DefWire|DefRegister|DefNode|Conditionally|Stop|Begin) : false
+            (s:DefPoison) : 
+               if has-flip?(type(s)) : add(errors, PoisonWithFlip(name(s)))
+               check-high-form-t(type(s))
+            (s:DefMemory) : 
+               if has-flip?(data-type(s)) : add(errors, MemWithFlip(name(s)))
+               if depth(s) <= 0 : add(errors,NegMemSize())
+            (s:DefInstance) : 
+               if not contains?(module(s),map(name,modules(c))) : 
+                  add(errors, ModuleNotDefined(module(s)))
+            (s:Connect) : check-valid-loc(loc(s))
+            (s:Print) : check-fstring(string(s),length(args(s)))
+            (s:BulkConnect) : check-valid-loc(loc(s))
+            (s) : false
+
+         map(check-high-form-s,s)
+
+      mname = name(m)
+      for m in modules(c) do :
+         mnames[name(m)] = true
+      for p in ports(m) do :
+         names[name(p)] = true
+         map(check-high-form-t,type(p))
+         map(check-high-form-w,type(p))
+
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-high-form-s(body(m))
+      m
+   
+   var number-top-m = 0
+   for m in modules(c) do :
+      if name(m) == main(c) : number-top-m = number-top-m + 1
+      check-high-form-m(m)
+   sinfo! = info!(c)
+   if number-top-m != 1 : add(errors,NoTopModule(main(c)))
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+
+;==================== CHECK TYPES =====================
+; o Subfields are only on bundles, before type inference <- need to not error, just do unknown-type
+; o Indexes are only on vectors
+; o pred in conditionally must be of type UInt
+; o enable/index in read/writeports must be UInt
+; o node's value cannot be a bundle with a flip in it
+; o := has same types
+; o 2nd arg in dshr/l must be UInt, in general do primops
+; o clock must be ClockType
+; o reset must be UInt<1>
+
+public defstruct CheckTypes <: Pass
+public defmethod pass (b:CheckTypes) -> (Circuit -> Circuit) : check-types
+public defmethod name (b:CheckTypes) -> String : "Check Types"
+public defmethod short-name (b:CheckTypes) -> String : "check-types"
+
+;----------------- Errors ---------------------
+defn SubfieldNotInBundle (info:FileInfo, name:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Subfield " name " is not in bundle."]
+
+defn SubfieldOnNonBundle (info:FileInfo, name:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Subfield " name " is accessed on a non-bundle."]
+
+defn IndexTooLarge (info:FileInfo, value:Int) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Index with value " value " is too large."]
+
+defn IndexOnNonVector (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Index illegal on non-vector type."]
+
+defn IndexNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Index is not of UIntType."]
+
+defn EnableNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Enable is not of UIntType."]
+
+defn InvalidConnect (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Type mismatch."]
+
+defn PrintfArgNotGround (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Printf arguments must be either UIntType or SIntType."]
+
+defn ReqClk (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Requires a clock typed signal."]
+
+defn EnNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Enable must be a UIntType typed signal."]
+
+defn PredNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Predicate not a UIntType."]
+
+defn OpNotGround (info:FileInfo, op:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Primop " op " cannot operate on non-ground types."]
+
+defn OpNotUInt (info:FileInfo, op:Symbol,e:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Primop " op " requires argument " e " to be a UInt type."]
+
+defn OpNotAllUInt (info:FileInfo, op:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Primop " op " requires all arguments to be UInt type."]
+
+defn OpNotAllSameType (info:FileInfo, op:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Primop " op " requires all operands to have the same type."]
+
+defn NodeIllegalFlips (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Node cannot be a bundle type with flips."]
+
+defn OnResetIllegalFlips (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  The register in onreset cannot be a bundle type with flips."]
+
+;---------------- Helper Functions --------------
+defmethod equal? (t1:Type,t2:Type) -> True|False :
+   match(t1,t2) : 
+      (t1:ClockType,t2:ClockType) : true
+      (t1:UIntType,t2:UIntType) : true
+      (t1:SIntType,t2:SIntType) : true
+      (t1:BundleType,t2:BundleType) : 
+         var same? = true
+         for (f1 in fields(t1),f2 in fields(t2)) do :
+            if flip(f1) != flip(f2) : same? = false
+            if name(f1) != name(f2) : same? = false
+            if type(f1) != type(f2) : same? = false
+         same?
+      (t1:VectorType,t2:VectorType) :
+         if type(t1) == type(t2) and size(t1) == size(t2) : true
+         else : false
+      (t1,t2) : false
+            
+defn ut () -> UIntType : UIntType(UnknownWidth())
+defn st () -> SIntType : SIntType(UnknownWidth())
+
+defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -> False :
+   defn all-same-type (ls:List<Expression>) -> False :
+      var error? = false
+      for x in ls do :
+         if type(head(ls)) != type(x) : 
+            error? = true
+      if error? : add(errors,OpNotAllSameType(info,to-symbol $ op(e))) 
+   defn all-ground (ls:List<Expression>) -> False :
+      var error? = false
+      for x in ls do :
+         if not (type(x) typeof UIntType or type(x) typeof SIntType) :
+            error? = true
+      if error? : add(errors,OpNotGround(info,to-symbol $ op(e))) 
+   defn all-uint (ls:List<Expression>) -> False :
+      var error? = false
+      for x in ls do :
+         if not (type(x) typeof UIntType) : 
+            error? = true
+      if error? : add(errors,OpNotAllUInt(info,to-symbol $ op(e))) 
+   defn is-uint (x:Expression) -> False : 
+      var error? = false
+      if not (type(x) typeof UIntType) : 
+            error? = true
+      if error? : add(errors,OpNotUInt(info,to-symbol $ op(e),to-symbol(x))) 
+   
+   all-ground(args(e))
+
+   switch {op(e) == _} :
+      ADD-OP             : false
+      SUB-OP             : false
+      MUL-OP             : false
+      DIV-OP             : false
+      MOD-OP             : false
+      QUO-OP             : false
+      REM-OP             : false
+      ADD-WRAP-OP        : false
+      SUB-WRAP-OP        : false
+      LESS-OP            : false
+      LESS-EQ-OP         : false
+      GREATER-OP         : false
+      GREATER-EQ-OP      : false
+      EQUAL-OP           : false
+      NEQUAL-OP          : false
+      EQUIV-OP           : all-same-type(args(e))
+      NEQUIV-OP          : all-same-type(args(e))
+      MUX-OP             : 
+         all-same-type(tail(args(e)))
+         is-uint(head(args(e)))
+      PAD-OP             : false
+      AS-UINT-OP         : false
+      AS-SINT-OP         : false
+      DYN-SHIFT-LEFT-OP  : is-uint(args(e)[1])
+      DYN-SHIFT-RIGHT-OP : is-uint(args(e)[1])
+      SHIFT-LEFT-OP      : false
+      SHIFT-RIGHT-OP     : false
+      CONVERT-OP         : false
+      NEG-OP             : false
+      BIT-NOT-OP         : all-same-type(args(e))
+      BIT-AND-OP         : all-same-type(args(e))
+      BIT-OR-OP          : all-same-type(args(e))
+      BIT-XOR-OP         : all-same-type(args(e))
+      BIT-SELECT-OP      : false
+      BITS-SELECT-OP     : false
+      BIT-AND-REDUCE-OP  : all-uint(args(e))
+      BIT-OR-REDUCE-OP   : all-uint(args(e))
+      BIT-XOR-REDUCE-OP  : all-uint(args(e))
+      CONCAT-OP          : all-uint(args(e))
+   
+;----------------- Check Types Pass ---------------------
+public defn check-types (c:Circuit) -> Circuit : 
+   val errors = Vector<PassException>()
+   defn check-types-e (info:FileInfo,e:Expression) -> Expression :
+      match(map(check-types-e{info,_},e)) :
+         (e:WRef) : e
+         (e:WSubField) : 
+            match(type(exp(e))) : 
+               (t:BundleType) : 
+                  val ft = for p in fields(t) find : name(p) == name(e)
+                  if ft == false : add(errors,SubfieldNotInBundle(info,name(e)))
+               (t) : add(errors,SubfieldOnNonBundle(info,name(e)))
+         (e:WSubIndex) : 
+            match(type(exp(e))) :
+               (t:VectorType) : 
+                  if value(e) >= size(t) : add(errors,IndexTooLarge(info,value(e)))
+               (t) : add(errors,IndexOnNonVector(info))
+         (e:WSubAccess) : 
+            match(type(exp(e))) :
+               (t:VectorType) : false
+               (t) : add(errors,IndexOnNonVector(info))
+         (e:DoPrim) : check-types-primop(e,errors,info)
+         (e:UIntValue|SIntValue) : false
+      e
+
+   defn bulk-equals? (t1:Type,t2:Type) -> True|False :
+      match(t1,t2) :
+         (t1:BundleType,t2:BundleType) : 
+            var same? = true
+            for (f1 in fields(t1),f2 in fields(t2)) do :
+               if name(f1) == name(f2) : 
+                  if flip(f1) != flip(f2) : same? = false
+                  if not bulk-equals?(type(f1),type(f2)) : same? = false
+            same?
+         (t1:ClockType,t2:ClockType) : true
+         (t1:UIntType,t2:UIntType) : true
+         (t1:SIntType,t2:SIntType) : true
+         (t1:VectorType,t2:VectorType) :
+            if bulk-equals?(type(t1),type(t2)) : true
+            else : false
+         (t1,t2) : false
+        
+   defn check-types-s (s:Stmt) -> Stmt :
+      map{check-types-s,_} $ {
+         match(map(check-types-e{info(s),_},s)) : 
+            (s:Connect) : 
+               if type(loc(s)) != type(exp(s)) : add(errors,InvalidConnect(info(s)))
+            (s:BulkConnect) : 
+               if not bulk-equals?(type(loc(s)),type(exp(s))) : 
+                  add(errors,InvalidConnect(info(s)))
+            (s:Stop) :
+               if type(clk(s)) != ClockType() : add(errors,ReqClk(info(s)))
+               if type(en(s)) != ut() : add(errors,EnNotUInt(info(s)))
+            (s:Print) :
+               for x in args(s) do :
+                  if type(x) != ut() and type(x) != st(): 
+                     add(errors,PrintfArgNotGround(info(s)))
+               if type(clk(s)) != ClockType() : add(errors,ReqClk(info(s)))
+               if type(en(s)) != ut() : add(errors,EnNotUInt(info(s)))
+            (s:Conditionally) :
+               if type(pred(s)) != ut() : add(errors,PredNotUInt(info(s)))
+            (s:DefNode) :
+               if has-flip?(type(value(s))) : add(errors,NodeIllegalFlips(info(s)))
+            (s) : false
+         s }()
+   
+   for m in modules(c) do :
+      mname = name(m)
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-types-s(body(m))
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+
+;================= GENDER CHECK  ==========================
+; o Nodes always male
+; o Accessors only have one gender, unless rdwr
+; o output/input only one gender
+; o correctly check for the base bundle
+
+public defstruct CheckGenders <: Pass
+public defmethod pass (b:CheckGenders) -> (Circuit -> Circuit) : check-genders
+public defmethod name (b:CheckGenders) -> String : "Check Genders"
+public defmethod short-name (b:CheckGenders) -> String : "check-genders"
+
+;----------------- Errors ---------------------
+defn WrongGender (info:FileInfo,expr:Symbol,wrong:Symbol,right:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Expression " expr " is used as a " wrong " but can only be used as a " right "."]
+
+;---------------- Helper Functions --------------
+defn dir-to-gender (d:Direction) -> Gender :
+   switch {_ == d} :
+      INPUT : MALE
+      OUTPUT : FEMALE ;BI-GENDER
+
+defn as-srcsnk (g:Gender) -> Symbol :
+   switch {_ == g} :
+      MALE : `source
+      FEMALE : `sink
+      UNKNOWN-GENDER : `unknown
+      BI-GENDER : `sourceOrSink
+
+;----------------- Check Genders Pass ---------------------
+
+public defn check-genders (c:Circuit) -> Circuit :
+   val errors = Vector<PassException>()
+   defn get-kind (e:Expression) -> Kind :
+      match(e) :
+         (e:WRef) : kind(e)
+         (e:WSubField) : get-kind(exp(e))
+         (e:WSubIndex) : get-kind(exp(e))
+         (e:WSubAccess) : get-kind(exp(e))
+         (e) : NodeKind()
+
+   defn check-gender (info:FileInfo,genders:HashTable<Symbol,Gender>,e:Expression,desired:Gender) -> False :
+      val gender = get-gender(e,genders)
+      val kind* = get-kind(e)
+      val flip? = 
+         match(type(e)) :
+            (t:BundleType) : 
+               for f in fields(t) any? : flip(f) == REVERSE
+            (t) : false
+         
+      ;println(e)
+      ;println(gender)
+      ;println(desired)
+      ;println(kind*)
+      ;println(desired == gender)
+      ;if gender != desired and gender != BI-GENDER:
+      switch fn ([x,y]) : gender == x and desired == y :
+         [MALE, FEMALE] : 
+            add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
+         [FEMALE, MALE] : 
+            if (kind* == PortKind() or kind* == InstanceKind()) and flip? == false : 
+               ; OK!
+               false
+            else : 
+               ; Not Ok!
+               add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
+         else : false
+
+   defn get-gender (e:Expression,genders:HashTable<Symbol,Gender>) -> Gender :
+      match(e) :
+         (e:WRef) : genders[name(e)]
+         (e:WSubField) : 
+            val f = {_ as Field} $ for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
+            get-gender(exp(e),genders) * flip(f) 
+         (e:WSubIndex) : get-gender(exp(e),genders)
+         (e:WSubAccess) : get-gender(exp(e),genders)
+         (e:DoPrim) : MALE
+         (e:UIntValue) : MALE
+         (e:SIntValue) : MALE
+
+   defn check-genders-e (info:FileInfo,e:Expression,genders:HashTable<Symbol,Gender>) -> False :
+      do(check-genders-e{info,_,genders},e)
+      match(e) :
+         (e:WRef) : false
+         (e:WSubField) : false
+         (e:WSubIndex) : false
+         (e:WSubAccess) : false
+         (e:DoPrim) : 
+            for e in args(e) do :
+               check-gender(info,genders,e,MALE)
+         (e:UIntValue) : false
+         (e:SIntValue) : false
+     
+   defn check-genders-s (s:Stmt,genders:HashTable<Symbol,Gender>) -> False :
+      do(check-genders-e{info(s),_:Expression,genders},s)
+      do(check-genders-s{_:Stmt,genders},s)
+      match(s) :
+         (s:DefWire) : genders[name(s)] = BI-GENDER
+         (s:DefPoison) : genders[name(s)] = MALE
+         (s:DefRegister) : genders[name(s)] = BI-GENDER
+         (s:DefNode) : 
+            check-gender(info(s),genders,value(s),MALE)
+            genders[name(s)] = MALE
+         (s:DefMemory) : genders[name(s)] = FEMALE
+         (s:WDefInstance) : genders[name(s)] = MALE
+         (s:Connect) : 
+            check-gender(info(s),genders,loc(s),FEMALE)
+            check-gender(info(s),genders,exp(s),MALE)
+         (s:Print) : 
+            for x in args(s) do :
+               check-gender(info(s),genders,x,MALE)
+            check-gender(info(s),genders,en(s),MALE)
+            check-gender(info(s),genders,clk(s),MALE)
+         (s:BulkConnect) : 
+            check-gender(info(s),genders,loc(s),FEMALE)
+            check-gender(info(s),genders,exp(s),MALE)
+         (s:Conditionally) :
+            check-gender(info(s),genders,pred(s),MALE)
+         (s:Empty) : false
+         (s:Stop) : 
+            check-gender(info(s),genders,en(s),MALE)
+            check-gender(info(s),genders,clk(s),MALE)
+         (s:Begin) : false
+
+
+   for m in modules(c) do :
+      mname = name(m)
+      val genders = HashTable<Symbol,Gender>(symbol-hash)
+      for p in ports(m) do :
+         genders[name(p)] = dir-to-gender(direction(p))
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-genders-s(body(m),genders)
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+
+;================= Width Check ==========================
+;AFTER WIDTH INFERENCE
+; * No names
+; * No Unknowns
+; * All widths are positive
+; * widths are large enough to contain value
+
+
+public defstruct CheckWidths <: Pass 
+public defmethod pass (b:CheckWidths) -> (Circuit -> Circuit) : check-width
+public defmethod name (b:CheckWidths) -> String : "Width Check"
+public defmethod short-name (b:CheckWidths) -> String : "width-check"
+
+;----------------- Errors ------------------------
+
+defn UninferredWidth (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Uninferred width."]
+
+defn WidthTooSmall (info:FileInfo,v:String) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Width too small for constant " v "."]
+
+;---------------- Helper Functions --------------
+
+;--------------- Check Width Pass -------------------
+public defn check-width (c:Circuit) -> Circuit : 
+   val errors = Vector<PassException>()
+
+   defn check-width-m (m:Module) -> False :
+      defn check-width-w (info:FileInfo,w:Width) -> Width :
+         match(w) :
+            (w:IntWidth) :
+               if width(w) <= to-long(0) : add(errors,NegWidth())
+            (w) : 
+               add(errors,UninferredWidth(info))
+         w
+
+      defn check-width-e (info:FileInfo,e:Expression) -> Expression :
+         match(map(check-width-e{info,_},e)) :
+            (e:UIntValue) : 
+               match(width(e)) :
+                  (w:IntWidth) : 
+                     if max(to-long(1),to-long(req-num-bits(value(e)) - 1)) > width(w) : 
+                        add(errors,WidthTooSmall(info,to-string(value(e))))
+                  (w) : add(errors,UninferredWidth(info))
+               check-width-w(info,width(e))
+            (e:SIntValue) : 
+               match(width(e)) :
+                  (w:IntWidth) : 
+                     if to-long(req-num-bits(value(e))) > width(w) : 
+                        add(errors,WidthTooSmall(info,to-string(value(e))))
+                  (w) : add(errors,UninferredWidth(info))
+               check-width-w(info,width(e))
+            (e:DoPrim) : false
+            (e) : false
+
+         ;mapr(check-width-w{info,_},type(map(check-width-e{info,_},e)))
+         e
+         
+      defn check-width-s (s:Stmt) -> Stmt :
+         sinfo! = info(s)
+         map(check-width-e{info(s),_},map(check-width-s,s))
+         map(mapr{check-width-w{info(s),_},_:Type},s)
+   
+      for p in ports(m) do :
+         mapr(check-width-w{info(p),_},type(p))
+
+      match(m) :
+         (m:ExModule) : false
+         (m:InModule) : check-width-s(body(m))
+      false
+   
+   for m in modules(c) do :
+      mname = name(m)
+      check-width-m(m)
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+
+
+;================ Initialization Check ==================
+; Error on all componenents that are not connected to.
+
+public defstruct CheckInitialization <: Pass 
+public defmethod pass (b:CheckInitialization) -> (Circuit -> Circuit) : check-init
+public defmethod name (b:CheckInitialization) -> String : "Check Initialization"
+public defmethod short-name (b:CheckInitialization) -> String : "check-init"
+
+;----------------- Errors ------------------------
+
+defn RefNotInitialized (info:FileInfo, name:Symbol) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Reference " name " is not fully initialized."]
+
+;------------ Helper Functions -------------
+
+;------------ Pass ------------------
+
+public defn check-init (c:Circuit) : 
+   val errors = Vector<PassException>()
+   
+   defn check-init-m (m:InModule) : 
+      defn get-name (e:Expression) -> Symbol :
+         match(e) :
+            (e:WRef) : name(e)
+            (e:WSubField) : symbol-join([get-name(exp(e)) `. name(e)])
+            (e) : error("Shouldn't be here")
+      defn has-void? (e:Expression) -> True|False :
+         var void? = false
+         defn has-void (e:Expression) -> Expression :
+            match(e) :
+               (e:WVoid) : 
+                  void? = true
+                  e
+               (e) : map(has-void,e)
+         has-void(e)
+         void?
+      defn check-init-s (s:Stmt) -> Stmt :
+         match(s) :
+            (s:Connect) : 
+               if has-void?(exp(s)) : add(errors,RefNotInitialized(info(s),get-name(loc(s))))
+               s
+            (s) : map(check-init-s,s)
+
+      check-init-s(body(m))
+      
+   for m in modules(c) do :
+      mname = name(m)
+      match(m) : 
+         (m:InModule) : check-init-m(m)
+         (m) : false
+
+   throw(PassExceptions(errors)) when not empty?(errors)
+   c
+
+;;================= Low Form Check ==========================
+;;AFTER LOWERING
+;; o All things connect to once
+;; o no reg
+;; o no accessors
+;; o only vecs are for memories
+;; o no bundles (future, will have them for mems)
+;; o only predicated conditional connects
+;
+;public defstruct CheckLowForm <: Pass 
+;public defmethod pass (b:CheckLowForm) -> (Circuit -> Circuit) : check-low-form
+;public defmethod name (b:CheckLowForm) -> String : "Low Form Check"
+;public defmethod short-name (b:CheckLowForm) -> String : "low-form-check"
+;
+;;----------------- Errors ------------------------
+;defn InvalidVec (info:FileInfo,name:Symbol) :
+;   PassException $ string-join $
+;   [info ": [module " mname "]  Expression " name " has an illegal vector type."]
+;
+;defn InvalidBundle (info:FileInfo,name:Symbol) :
+;   PassException $ string-join $
+;   [info ": [module " mname "]  Expression " name " has an illegal bundle type."]
+;
+;defn NoWhen (info:FileInfo) :
+;   PassException $ string-join $
+;   [info ": [module " mname "]  Illegal when statement. No when statements with multiple statements are allowed in low firrtl."]
+;
+;defn SingleAssignment (info:FileInfo,name:Symbol) :
+;   PassException $ string-join $
+;   [info ": [module " mname "]  Illegal assignment to " name ". Wires can only be assigned to once."]
+;
+;defn NoOnReset (info:FileInfo) :
+;   PassException $ string-join $
+;   [info ": [module " mname "]  Invalid use of on-reset. No on-resets are allowed in low firrtl."]
+;
+;defn NoBulkConnect (info:FileInfo) :
+;   PassException $ string-join $
+;   [info ": [module " mname "]  Invalid use of <>. No <>'s are allowed in low firrtl."]
+;
+;;---------------- Helper Functions --------------
+;
+;;--------------- Check Low Form Pass -------------------
+;public defn check-low-form (c:Circuit) -> Circuit : 
+;   val errors = Vector<PassException>()
+;
+;   defn check-low-form-t (info:FileInfo,t:Type,name:Symbol) -> False :
+;      match(t) :
+;         (t:VectorType) : add(errors,InvalidVec(info,name))
+;         (t:BundleType) : add(errors,InvalidBundle(info,name))
+;         (t) : false
+;
+;   defn check-low-form-m (m:Module) -> False :
+;      for p in ports(m) do :
+;         check-low-form-t(info(p),type(p),name(p))
+;
+;      val assigned? = HashTable<Symbol,True>(symbol-hash)
+;      val insts = Vector<Symbol>()
+;      val mems = Vector<Symbol>()
+;      defn check-correct-exp (info:FileInfo,e:Expression) -> False :
+;         do(check-correct-exp{info,_:Expression},e)
+;         match(e) :
+;            (e:Ref) : 
+;               if contains?(insts,name(e)) : 
+;                  for f in fields(type(e) as BundleType) do :
+;                     check-low-form-t(info,type(f),name(e))
+;               if contains?(mems,name(e)) :
+;                  check-low-form-t(info,type(type(e) as VectorType),name(e))
+;            (e) : false ;check-low-form-t(info,type(e),to-symbol $ to-string(e))
+;      defn check-low-form-s (s:Stmt) -> False :
+;         match(s) : 
+;            (s:DefWire) :
+;               check-low-form-t(info(s),type(s),name(s))
+;            (s:DefPoison) :
+;               check-low-form-t(info(s),type(s),name(s))
+;            (s:DefMemory) : 
+;               check-low-form-t(info(s),type(s),name(s))
+;               add(mems,name(s))
+;            (s:DefInstance) : 
+;               for f in fields(type(module(s)) as BundleType) do :
+;                  check-low-form-t(info(s),type(f),name(s))
+;               add(insts,name(s))
+;            (s:DefNode) : 
+;               check-correct-exp(info(s),value(s))
+;            (s:Print) : 
+;               for x in args(s) do :
+;                  check-correct-exp(info(s),x)
+;            (s:DefRegister) : false
+;            (s:DefAccessor) : false
+;            (s:Conditionally) : 
+;               if (not alt(s) typeof Empty) or (conseq(s) typeof Begin) : add(errors,NoWhen(info(s)))
+;            (s:OnReset) : add(errors,NoOnReset(info(s)))
+;            (s:BulkConnect) : add(errors,NoBulkConnect(info(s)))
+;            (s:Connect) :
+;               check-correct-exp(info(s),exp(s))
+;               match(loc(s)) :
+;                  (e:Ref|Subfield) : 
+;                     val n* = to-symbol $ to-string $ e
+;                     if key?(assigned?,n*) : add(errors,SingleAssignment(info(s),n*))
+;                     else : assigned?[to-symbol $ to-string $ e] = true
+;                  (e) : check-correct-exp(info(s),e)
+;            (s:Empty) : false
+;            (s:Stop) : false
+;            (s:Begin) : do(check-low-form-s,s)
+;
+;      match(m) :
+;         (m:ExModule) : false
+;         (m:InModule) : check-low-form-s(body(m))
+;      false
+;   
+;   for m in modules(c) do :
+;      mname = name(m)
+;      check-low-form-m(m)
+;   throw(PassExceptions(errors)) when not empty?(errors)
+;   c
+;

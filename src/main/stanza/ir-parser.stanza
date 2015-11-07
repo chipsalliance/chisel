@@ -276,7 +276,7 @@ defsyntax firrtl :
       stmt = (inst ?name:#id! #of! ?m:#id!) : DefInstance(first-info(form),name,m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name,e)
       stmt = (poison ?name:#id! #:! ?t:#type!) : DefPoison(first-info(form),name, t)
-      stmt = (stop(?ret:#int,)) : Stop(first-info(form),ret,clk)
+      stmt = (stop(?clk:#exp,?ret:#int)) : Stop(first-info(form),ret,clk)
       stmt = (printf(?clk:#exp ?str:#string ?es:#exp ...)) : Print(first-info(form),str,es,clk)
       stmt = (?s:#stmt/when) : s
 

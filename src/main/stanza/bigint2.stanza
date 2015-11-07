@@ -1,7 +1,6 @@
 defpackage bigint2 :
    import core
    import verse
-   import firrtl/ir-utils
 
 ;============ Big Int Library =============
 
@@ -9,6 +8,30 @@ defpackage bigint2 :
 ;  index 0.
 
 ;------------ Helper Functions ------------
+public defn pow (x:Int,y:Int) -> Int :
+   var x* = 1
+   var y* = y
+   while y* != 0 :
+      x* = times(x*,x)
+      y* = minus(y*,1)
+   x*
+
+public defn pow (x:Long,y:Long) -> Long :
+   var x* = to-long(1)
+   var y* = y
+   while y* != to-long(0) :
+      x* = times(x*,x)
+      y* = minus(y*,to-long(1))
+   x*
+public defn to-int (x:Long) -> Int :
+   if x > to-long(2147483647) or x < to-long(-2147483648) : error("Long too big to convert to Int")
+   else : to-int(to-string(x))
+
+public defn req-num-bits (i: Int) -> Int :
+  val i* = 
+     if i < 0 : ((-1 * i) - 1)
+     else : i
+  ceil-log2(i* + 1) + 1
 val word-size = 32
 val all-digits = "0123456789abcdef"
 

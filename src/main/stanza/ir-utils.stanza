@@ -7,6 +7,11 @@ defpackage firrtl/ir-utils :
 ;============== DEBUG STUFF =============================
 
 public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|Module|Circuit) -> False
+public defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|Module|Circuit) -> False : false
+public defmulti turn-off-debug (x:False) -> False
+public defmethod turn-off-debug (x:False) : false
+public defmulti turn-on-debug (x:False)
+public defmethod turn-on-debug (x:False) : false
 
 ;============== GENSYM STUFF ======================
 
@@ -75,7 +80,7 @@ public defn get-sym-hash (m:InModule,keywords:Streamable<Symbol>) -> HashTable<S
    to-stmt(body(m))
    map(to-port,ports(m))
    sym-hash
-   
+  
 ; ======== Expression Computation Library ===========
 
 public defn BoolType () : UIntType(IntWidth(1))
@@ -107,7 +112,7 @@ public defn MUX (p:Expression,e1:Expression,e2:Expression) -> Expression :
    DoPrim(MUX-OP,list(p,e1,e2),list(),type(e1))
 
 public defn CAT (e1:Expression,e2:Expression) -> Expression :
-   DoPrim(CAT-OP,list(e1,e2),list(),type(e1))
+   DoPrim(CONCAT-OP,list(e1,e2),list(),type(e1))
 
 public defn NOT (e1:Expression) -> Expression :
    if e1 == one : zero
@@ -123,9 +128,9 @@ public defn children (e:Expression) -> List<Expression> :
    to-list(es)
    
 public defn exp-hash (e:Expression) -> Int :
-   turn-off-debug()
+   turn-off-debug(false)
    val i = symbol-hash(to-symbol(to-string(e)))
-   turn-on-debug()
+   turn-on-debug(false)
    i
 ;============== Exceptions =====================
 
@@ -143,12 +148,17 @@ public defn PassExceptions (xs:Streamable<PassException>) :
 public definterface Compiler 
 public defmulti passes (c:Compiler) -> List<Pass>
 public defmulti backend (c:Compiler) -> List<Pass>
+defmethod passes (c:Compiler) : List<Pass>()
 public defmulti with-output (c:Compiler) -> ((() -> False) -> False)
+defmethod with-output (c:Compiler) : 1 as ?
 
 public definterface Pass
 public defmulti pass (p:Pass) -> (Circuit -> Circuit)
+public defmethod pass (p:Pass) : fn (c:Circuit) : c
 public defmulti name (p:Pass) -> String
+public defmethod name (p:Pass) -> String : "--"
 public defmulti short-name (p:Pass) -> String
+public defmethod short-name (p:Pass) -> String : "--"
 public defmethod print (o:OutputStream, p:Pass) :
    print(o,name(p))
 
@@ -177,15 +187,6 @@ public defn max (x:Long,y:Long) -> Long :
    if x < y : y
    else : x
 
-public defn to-int (x:Long) -> Int :
-   if x > to-long(2147483647) or x < to-long(-2147483648) : error("Long too big to convert to Int")
-   else : to-int(to-string(x))
-
-public defn req-num-bits (i: Int) -> Int :
-  val i* = 
-     if i < 0 : ((-1 * i) - 1)
-     else : i
-  ceil-log2(i* + 1) + 1
 
 defn escape (s:String) -> String :
   val s* = Vector<String>()
@@ -397,7 +398,7 @@ public defn map<?T> (f: Type -> Type, t:?T&Type) -> T :
    type as T&Type
 
 public defmulti map<?T> (f: Expression -> Expression, e:?T&Expression) -> T 
-defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
+defmethod map (f: Expression -> Expression, e:Expression) -> Expression : 
    match(e) :
       (e:SubField) : SubField(f(exp(e)), name(e), type(e)) 
       (e:SubIndex) : SubIndex(f(exp(e)), value(e), type(e))
@@ -406,7 +407,7 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e) : e
 
 public defmulti map<?T> (f: Symbol -> Symbol, c:?T&Stmt) -> T
-defmethod map (f: Symbol -> Symbol, c:Stmt) -> Stmt :
+defmethod map (f: Symbol -> Symbol, c:Stmt) -> Stmt : 
    match(c) :
       (c:DefWire) : DefWire(info(c),f(name(c)),type(c))
       (c:DefPoison) : DefPoison(info(c),f(name(c)),type(c))
@@ -580,21 +581,6 @@ public defn merge!<?K,?V> (a:HashTable<?K,?V>, b:HashTable<K,V>) :
    for e in b do :
       a[key(e)] = value(e)
 
-public defn pow (x:Int,y:Int) -> Int :
-   var x* = 1
-   var y* = y
-   while y* != 0 :
-      x* = times(x*,x)
-      y* = minus(y*,1)
-   x*
-
-public defn pow (x:Long,y:Long) -> Long :
-   var x* = to-long(1)
-   var y* = y
-   while y* != to-long(0) :
-      x* = times(x*,x)
-      y* = minus(y*,to-long(1))
-   x*
 
 
 ;=================== VERILOG KEYWORDS =======================

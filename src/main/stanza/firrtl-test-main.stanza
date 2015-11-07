@@ -14,7 +14,7 @@
 #include("compilers.stanza")
 ;#include("flo.stanza")
 ;#include("verilog.stanza")
-#include("symbolic-value.stanza")
+;#include("symbolic-value.stanza")
 
 ;Custom Packages
 ;#include("custom-passes.stanza")
@@ -34,24 +34,24 @@ defpackage firrtl-main :
    ;import firrtl/custom-passes
    ;import firrtl/custom-compiler
 
-defn set-printvars! (p:List<Char>) :
-   if contains(p,'t') : PRINT-TYPES = true
-   if contains(p,'k') : PRINT-KINDS = true
-   if contains(p,'w') : PRINT-WIDTHS = true
-   if contains(p,'T') : PRINT-TWIDTHS = true
-   if contains(p,'g') : PRINT-GENDERS = true
-   if contains(p,'c') : PRINT-CIRCUITS = true
-   if contains(p,'d') : PRINT-DEBUG = true
-   if contains(p,'i') : PRINT-INFO = true
-
-defn get-passes (pass-names:List<String>) -> List<Pass> :
-   for n in pass-names map :
-      val p = for p in standard-passes find :
-         n == short-name(p)
-      if p == false :
-         error(to-string $ ["Unrecognized pass flag: " n])
-      p as Pass
-         
+;defn set-printvars! (p:List<Char>) :
+;   if contains(p,'t') : PRINT-TYPES = true
+;   if contains(p,'k') : PRINT-KINDS = true
+;   if contains(p,'w') : PRINT-WIDTHS = true
+;   if contains(p,'T') : PRINT-TWIDTHS = true
+;   if contains(p,'g') : PRINT-GENDERS = true
+;   if contains(p,'c') : PRINT-CIRCUITS = true
+;   if contains(p,'d') : PRINT-DEBUG = true
+;   if contains(p,'i') : PRINT-INFO = true
+;
+;defn get-passes (pass-names:List<String>) -> List<Pass> :
+;   for n in pass-names map :
+;      val p = for p in standard-passes find :
+;         n == short-name(p)
+;      if p == false :
+;         error(to-string $ ["Unrecognized pass flag: " n])
+;      p as Pass
+;         
 defn main () :
    val args = commandline-arguments()
    var input = false
@@ -148,4 +148,3 @@ defn main () :
    CURRENT-OUTPUT-STREAM = prev-out
 
 main()
-
