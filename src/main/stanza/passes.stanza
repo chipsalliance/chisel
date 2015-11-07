@@ -366,7 +366,7 @@ defn remove-unknowns-w (w:Width) -> Width :
    match(w) :
       (w:UnknownWidth) : VarWidth(firrtl-gensym(`w,width-name-hash))
       (w) : w
-defn remove-unknowns (t:Type) -> Type : t;mapr(remove-unknowns-w,t) TODO FIX!!!
+defn remove-unknowns (t:Type) -> Type : mapr(remove-unknowns-w,t)
 
 defmethod equal? (w1:Width,w2:Width) -> True|False :
    match(w1,w2) :

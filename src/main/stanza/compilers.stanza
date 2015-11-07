@@ -71,11 +71,12 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;Pad()                    ;R
       ConstProp()              ;R
       SplitExp()               ;R
+      LowerTypes()               ;R
       ;CheckWidths()            ;R
       ;CheckHighForm()          ;R
       ;CheckLowForm()           ;R
       ;CheckInitialization()    ;R
-      ;Verilog(with-output(c))  ;R
+      Verilog(with-output(c))  ;R
    ]
 
 public defstruct StandardFIRRTL <: Compiler :
