@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
-package Chisel
+package Chisel.firrtl
+import Chisel._
 
 private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString

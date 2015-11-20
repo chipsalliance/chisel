@@ -1,17 +1,20 @@
 // See LICENSE for license details.
 
-package Chisel
+package Chisel.internal
+
 import scala.collection.mutable.ArrayBuffer
+
+import Chisel._
 
 class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
 
-private object throwException {
+private[Chisel] object throwException {
   def apply(s: String, t: Throwable = null): Nothing =
     throw new ChiselException(s, t)
 }
 
 /** Records and reports runtime errors and warnings. */
-private class ErrorLog {
+private[Chisel] class ErrorLog {
   def hasErrors: Boolean = errors.exists(_.isFatal)
 
   /** Log an error message */
