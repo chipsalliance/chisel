@@ -1,19 +1,34 @@
 package firrtl
 
 import java.io._
+import scala.sys.process._
+import java.nio.file.{Paths, Files}
 import Utils._
 import DebugUtils._
 import Passes._
 
-object Test
+object Driver
 {
   private val usage = """
-    Usage: java -cp utils/bin/firrtl.jar firrtl.Test [options] -i <input> -o <output>
+    Usage: java -cp utils/bin/firrtl.jar firrtl.Driver [options] -i <input> -o <output>
   """
   private val defaultOptions = Map[Symbol, Any]().withDefaultValue(false)
 
+  // Appends 0 to the filename and appends .tmp to the extension
+  private def genTempFilename(filename: String): String = {
+    val pat = """(.*/)([^/]*)([.][^/.]*)""".r 
+    val (path, name, ext) = filename match {
+      case pat(path, name, ext) => (path, name, ext + ".tmp")
+      case _ => ("./", "temp", ".tmp")
+    }
+    var count = 0
+    while( Files.exists(Paths.get(path + name + count + ext )) ) 
+      count += 1
+    path + name + count + ext
+  }
+
   // Parse input file and print to output
-  private def highFIRRTL(input: String, output: String)(implicit logger: Logger)
+  private def firrtl(input: String, output: String)(implicit logger: Logger)
   {
     val ast = Parser.parse(input)
     val writer = new PrintWriter(new File(output))
@@ -21,23 +36,59 @@ object Test
     writer.close()
     logger.printlnDebug(ast)
   }
-  private def verilog(input: String, output: String)(implicit logger: Logger)
+
+  private def verilog(input: String, output: String, stanza: String)(implicit logger: Logger)
   {
-    logger.warn("Verilog compiler not fully implemented")
-    val ast = time("parse"){ Parser.parse(input) }
-    // Execute passes
+    val stanzaPass = //List( 
+      List("rem-spec-chars", "high-form-check",
+      "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
+      "resolve-genders", "check-genders", "check-kinds", "check-types",
+      "expand-accessors", "lower-to-ground", "inline-indexers", "infer-types",
+      "check-genders", "expand-whens", "infer-widths", "real-ir", "width-check",
+      "pad-widths", "const-prop", "split-expressions", "width-check",
+      "high-form-check", "low-form-check", "check-init")
+    //)
+    val scalaPass = List(List[String]())
 
-    logger.println("Infer Types")
-    val ast2 = time("inferTypes"){ inferTypes(ast) }
-    logger.printlnDebug(ast2)
-    logger.println("Finished Infer Types")
-    //val ast2 = ast
+    val mapString2Pass = Map[String, Circuit => Circuit] (
+      "infer-types" -> inferTypes
+    )
 
-    // Output
-    val writer = new PrintWriter(new File(output))
-    var outString = time("serialize"){ ast2.serialize() }
-    writer.write(outString)
-    writer.close()
+    if (stanza.isEmpty || !Files.exists(Paths.get(stanza)))
+      throw new FileNotFoundException("Stanza binary not found! " + stanza)
+
+    // For now, just use the stanza implementation in its entirety
+    val cmd = Seq(stanza, "-i", input, "-o", output, "-b", "verilog") ++ stanzaPass.flatMap(Seq("-x", _))
+    println(cmd.mkString(" "))
+    val ret = cmd.!!
+    println(ret)
+
+    // Switch between stanza and scala implementations
+    //var scala2Stanza = input
+    //for ((stanzaPass, scalaPass) <- stanzaPass zip scalaPass) {
+    //  val stanza2Scala = genTempFilename(output)
+    //  val cmd: Seq[String] = Seq[String](stanza, "-i", scala2Stanza, "-o", stanza2Scala, "-b", "firrtl") ++ stanzaPass.flatMap(Seq("-x", _))
+    //  println(cmd.mkString(" "))
+    //  val ret = cmd.!!
+    //  println(ret)
+
+    //  if( scalaPass.isEmpty ) {
+    //    scala2Stanza = stanza2Scala
+    //  } else {
+    //    var ast = Parser.parse(stanza2Scala) 
+    //    //scalaPass.foreach( f => (ast = f(ast)) ) // Does this work?
+    //    for ( f <- scalaPass ) yield { ast = mapString2Pass(f)(ast) }
+
+    //    scala2Stanza = genTempFilename(output)
+    //    val writer = new PrintWriter(new File(scala2Stanza))
+    //    writer.write(ast.serialize())
+    //    writer.close()
+    //  }
+    //}
+    //val cmd = Seq(stanza, "-i", scala2Stanza, "-o", output, "-b", "verilog") 
+    //println(cmd.mkString(" "))
+    //val ret = cmd.!!
+    //println(ret)
   }
 
   def main(args: Array[String])
@@ -81,6 +132,8 @@ object Test
                   nextOption(map ++ Map('input -> value), tail)
         case "-o" :: value :: tail =>
                   nextOption(map ++ Map('output -> value), tail)
+        case "--stanza-bin" :: value :: tail =>
+                  nextOption(map ++ Map('stanza -> value), tail)
         case ("-h" | "--help") :: tail =>
                   nextOption(map ++ Map('help -> true), tail)
         case option :: tail => 
@@ -102,6 +155,10 @@ object Test
       case s: String => s
       case false => throw new Exception("No output file provided!" + usage)
     }
+    val stanza = options('stanza) match {
+      case s: String => s
+      case false => ""
+    }
     val debugMode = decodeDebugMode(options('debugMode))
     val printVars = options('printVars) match {
       case s: String => nextPrintVar(List(), s.toList)
@@ -117,8 +174,8 @@ object Test
       logger.warn("-p options will not print unless debugMode (-d) is debug or trace")
 
     options('compiler) match {
-      case "verilog" => verilog(input, output)
-      case "HighFIRRTL" => highFIRRTL(input, output)
+      case "verilog" => verilog(input, output, stanza)
+      case "firrtl" => firrtl(input, output)
       case other => throw new Exception("Invalid compiler! " + other)
     }
   }
