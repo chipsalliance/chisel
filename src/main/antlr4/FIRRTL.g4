@@ -4,17 +4,20 @@ grammar FIRRTL;
  * PARSER RULES
  *------------------------------------------------------------------*/
 
-// TODO add [info] support (all over the place)
-// TODO Fix connect
-// TODO Add partial connect
-// TODO Should FIRRTL keywords be legal IDs?
+/* TODO 
+ *  - Add [info] support (all over the place)
+ *  - Add support for indexers
+ *  - Add support for extmodule
+ *  - Fix connect
+ *  - Add partial connect
+ *  - Should FIRRTL keywords be legal IDs?
+*/
 
 // Does there have to be at least one module?
 circuit
   : 'circuit' id ':' '{' module* '}'
   ;
 
-// TODO Add support for extmodule
 module
   : 'module' id ':' '{' port* blockStmt '}'
   ;
@@ -40,11 +43,6 @@ field
   : orientation id ':' type
   ;
 
-// FIXME This is what the spec says it should be
-//orientation
-//  : 'default'
-//  | 'reverse'
-//  ;
 orientation
   :  'flip'
   |  // Nothing
@@ -166,8 +164,6 @@ IdNondigit
   | [~!@#$%^*-+=?/]
   ;
 
-// Should enforcing signed, non-neg, and positive ints be done in parser?
-//   =>  YES
 IntLit
   : '0'
   | ( '+' | '-' )? [1-9] ( Digit )*

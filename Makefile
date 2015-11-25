@@ -5,6 +5,10 @@ firrtl_dir ?= $(root_dir)/src/main/stanza
 install_dir ?= $(root_dir)/utils/bin
 
 stanza ?= $(install_dir)/stanza
+stanza_bin ?= $(install_dir)/firrtl-stanza
+scala_jar ?= $(install_dir)/firrtl.jar
+scala_src=$(shell ls src/main/scala/firrtl/*.scala)
+stanza_src=$(shell ls src/main/stanza/*.stanza)
 
 all-noise: 
 	${MAKE} all || ${MAKE} fail
@@ -23,6 +27,9 @@ $(root_dir)/src/lib/stanza/stamp: src/lib/stanza-$(stanza_zip_name).zip
 
 $(stanza): $(root_dir)/src/lib/stanza/stamp
 	cd src/lib/stanza && ./stanza -platform $(stanza_target_name) -install $(stanza)
+
+$(stanza_bin): $(stanza) $(stanza_src)
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $@
 
 build-deploy: $(stanza)
 	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl
@@ -68,6 +75,9 @@ clean:
 	rm -f $(test_dir)/*/*.out
 	rm -rf src/lib/stanza
 	rm -f $(stanza)
+	rm -f $(install_dir)/firrtl.jar
+	rm -f $(install_dir)/firrtl
+	rm -f $(install_dir)/firrtl-stanza
 
 riscv:
 	cd $(test_dir)/riscv-mini && lit -v . --path=$(root_dir)/utils/bin/
@@ -87,17 +97,25 @@ fail:
 
 # Scala Added Makefile commands
 
-build-scala:
+build-scala: $(scala_jar) $(stanza_bin) $(firrtl_bin)
+	make set-scala
+
+$(scala_jar): $(scala_src)
 	sbt "assembly"
 
 test-scala:
 	cd $(test_dir)/parser && lit -v . --path=$(root_dir)/utils/bin/
-	cd $(test_dir)/passes/infer-types && lit -v . --path=$(root_dir)/utils/bin/
 
 set-scala:
 	ln -f -s $(root_dir)/utils/bin/firrtl-scala $(root_dir)/utils/bin/firrtl
 
 set-stanza:
 	ln -f -s $(root_dir)/utils/bin/firrtl-stanza $(root_dir)/utils/bin/firrtl
+
+set-linux:
+	ln -f -s $(root_dir)/utils/bin/FileCheck_linux $(root_dir)/utils/bin/FileCheck
+
+set-osx:
+	ln -f -s $(root_dir)/utils/bin/FileCheck_osx $(root_dir)/utils/bin/FileCheck
 
 .PHONY: all install build-deploy build check clean fail succeed regress set-scala set-stanza build-scala test-scala

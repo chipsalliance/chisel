@@ -51,29 +51,31 @@ object Translator
         val spaces = countSpaces(text)
 
         val l = if (text.length > spaces ) { // Check that line has text in it
-          if (newScope) {
-            scope.push(countSpaces(text)) 
-          } else { 
-
-            // Check if change in current scope
-            if( spaces < scope.top ) {
-              while( spaces < scope.top ) {
-                // Close scopes (adding brackets as we go)
-                scope.pop() 
-                ret.deleteCharAt(ret.lastIndexOf("\n")) // Put on previous line
-                ret ++= " }\n"
-              }
-              if( spaces != scope.top ) 
-                throw new Exception("Spacing does not match scope on line : " + lineNum + " : " + scope.top)
-            }
-            else if( spaces > scope.top ) 
-              throw new Exception("Invalid increase in scope on line " + lineNum)
+          if (newScope) { 
+            if( spaces == scope.top ) scope.push(spaces+2) // Hack for one-line scopes
+            else scope.push(spaces) 
           }
+
+          // Check if change in current scope
+          if( spaces < scope.top ) {
+            while( spaces < scope.top ) {
+              // Close scopes (adding brackets as we go)
+              scope.pop() 
+              ret.deleteCharAt(ret.lastIndexOf("\n")) // Put on previous line
+              ret ++= " }\n"
+            }
+            if( spaces != scope.top ) 
+              throw new Exception("Spacing does not match scope on line : " + lineNum + " : " + scope.top)
+          }
+          else if( spaces > scope.top ) 
+            throw new Exception("Invalid increase in scope on line " + lineNum)
+          
           // Now match on legal scope increasers
           text match {
             case Scopers(keyword, _* ) => {
               newScope = true
-              text + " { "
+              //text + " { "
+              text.replaceFirst(":", ": {")
             }
             case _ => { 
               newScope = false

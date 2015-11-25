@@ -1,12 +1,12 @@
 
 
-lazy val root = (project in file(".")).
-  settings(
-    organization := "edu.berkeley.cs",
-    name := "firrtl",
-    version := "0.1-SNAPSHOT",
-    scalaVersion := "2.11.4"
-  )
+organization := "edu.berkeley.cs"
+
+name := "firrtl"
+
+version := "0.1-SNAPSHOT"
+
+scalaVersion := "2.11.4"
 
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 

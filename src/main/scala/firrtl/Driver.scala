@@ -37,7 +37,40 @@ object Driver
     logger.printlnDebug(ast)
   }
 
-  private def verilog(input: String, output: String, stanza: String)(implicit logger: Logger)
+  def toVerilogWithFame(input: String, output: String)
+  {
+    val stanzaPreTransform = List("rem-spec-chars", "high-form-check",
+      "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
+      "resolve-genders", "check-genders", "check-kinds", "check-types",
+      "expand-accessors", "lower-to-ground", "inline-indexers")
+    val stanzaPostTransform = List("rem-spec-chars", "high-form-check",
+      "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
+      "resolve-genders", "check-genders", "check-kinds", "check-types",
+      "expand-accessors", "lower-to-ground", "inline-indexers", "infer-types",
+      "check-genders", "expand-whens", "infer-widths", "real-ir", "width-check",
+      "pad-widths", "const-prop", "split-expressions", "width-check",
+      "high-form-check", "low-form-check", "check-init")
+
+    // Lower-to-Ground with Stanza FIRRTL
+    val temp1 = genTempFilename(input)
+    val preCmd = Seq("firrtl-stanza", "-i", input, "-o", temp1, "-b", "firrtl") ++ stanzaPreTransform.flatMap(Seq("-x", _))
+    println(preCmd.mkString(" "))
+    preCmd.!
+   
+    // FAME-1 Transformation
+    val temp2 = genTempFilename(input)
+    val ast = Parser.parse(temp1)
+    val writer = new PrintWriter(new File(temp2))
+    val ast2 = fame1Transform(ast)
+    writer.write(ast2.serialize())
+    writer.close()
+    
+    //val postCmd = Seq("firrtl-stanza", "-i", temp2, "-o", output, "-b", "firrtl") ++ stanzaPostTransform.flatMap(Seq("-x", _))
+    //println(postCmd.mkString(" "))
+    //postCmd.!
+  }
+
+  private def verilog(input: String, output: String)(implicit logger: Logger)
   {
     val stanzaPass = //List( 
       List("rem-spec-chars", "high-form-check",
@@ -54,11 +87,11 @@ object Driver
       "infer-types" -> inferTypes
     )
 
-    if (stanza.isEmpty || !Files.exists(Paths.get(stanza)))
-      throw new FileNotFoundException("Stanza binary not found! " + stanza)
+    //if (stanza.isEmpty || !Files.exists(Paths.get(stanza)))
+    //  throw new FileNotFoundException("Stanza binary not found! " + stanza)
 
     // For now, just use the stanza implementation in its entirety
-    val cmd = Seq(stanza, "-i", input, "-o", output, "-b", "verilog") ++ stanzaPass.flatMap(Seq("-x", _))
+    val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "verilog") ++ stanzaPass.flatMap(Seq("-x", _))
     println(cmd.mkString(" "))
     val ret = cmd.!!
     println(ret)
@@ -132,8 +165,6 @@ object Driver
                   nextOption(map ++ Map('input -> value), tail)
         case "-o" :: value :: tail =>
                   nextOption(map ++ Map('output -> value), tail)
-        case "--stanza-bin" :: value :: tail =>
-                  nextOption(map ++ Map('stanza -> value), tail)
         case ("-h" | "--help") :: tail =>
                   nextOption(map ++ Map('help -> true), tail)
         case option :: tail => 
@@ -155,10 +186,6 @@ object Driver
       case s: String => s
       case false => throw new Exception("No output file provided!" + usage)
     }
-    val stanza = options('stanza) match {
-      case s: String => s
-      case false => ""
-    }
     val debugMode = decodeDebugMode(options('debugMode))
     val printVars = options('printVars) match {
       case s: String => nextPrintVar(List(), s.toList)
@@ -174,7 +201,7 @@ object Driver
       logger.warn("-p options will not print unless debugMode (-d) is debug or trace")
 
     options('compiler) match {
-      case "verilog" => verilog(input, output, stanza)
+      case "verilog" => verilog(input, output)
       case "firrtl" => firrtl(input, output)
       case other => throw new Exception("Invalid compiler! " + other)
     }

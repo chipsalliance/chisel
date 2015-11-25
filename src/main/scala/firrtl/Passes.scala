@@ -99,4 +99,61 @@ object Passes {
     Circuit(c.info, c.name, c.modules.map(inferTypes(typeMap, _)))
   }
 
+  /** FAME-1
+   *
+   *  This pass takes a lowered-to-ground circuit and performs a 
+   *    FAME-1 (Decoupled) transformation to the circuit
+   *
+   *  TODO
+   *   - SWITCH TO USING HIGH-LEVEL FIRRTL SO WE CAN MAINTAIN STRUCTURE OF BUNDLES
+   *   - Add midas$fire : indicates when the module can operate
+   *   - Add transform on each assignment to inputs/outputs to assign to data part of bundle
+   *   - Add enable logic for each register
+   *      * This should just be a when not(midas$fire) : reg := reg
+   *        At bottom of module
+   *   - QUESTIONS
+   *      * Should we have Reset be a special Type?
+   *
+   *  NOTES
+   *    - How do output consumes tie in to MIDAS fire? If all of our outputs are not consumed
+   *      in a given cycle, do we block midas$fire on the next cycle? Perhaps there should be 
+   *      a register for not having consumed all outputs last cycle
+   *    - If our outputs are not consumed we also need to be sure not to consume out inputs,
+   *      so the logic for this must depend on the previous cycle being consumed as well
+   *    - We also need a way to determine the difference between the MIDAS modules and their
+   *      connecting Queues, perhaps they should be MIDAS queues, which then perhaps prints
+   *      out a listing of all queues so that they can be properly transformed
+   *        * What do these MIDAS queues look like since we're enforcing true decoupled 
+   *          interfaces?
+   */
+  private type PortMap = Map[String, Port]
+  //private val PortMap = Map[String, Type]().withDefaultValue(UnknownType)
+  private val f1TAvail = Field("avail", Default, UIntType(IntWidth(1)))
+  private val f1TConsume = Field("consume", Reverse, UIntType(IntWidth(1)))
+  private def fame1Transform(p: Port): Port = {
+    if( p.name == "reset" ) p // omit reset
+    else {
+      p.tpe match {
+        case ClockType => p // Omit clocktype
+        case t: BundleType => throw new Exception("Bundle Types not supported in FAME-1 Transformation!")
+        case t: VectorType => throw new Exception("Vector Types not supported in FAME-1 Transformation!")
+        case t: Type => {
+            Port(p.info, p.name, p.dir, BundleType(
+                  Seq(f1TAvail, f1TConsume, Field("data", Default, t)))
+                )
+        }
+      }
+    }
+  }
+  private def fame1Transform(m: Module): Module = {
+    println("fame1Transform called on module " + m.name)
+    val ports = m.ports.map(fame1Transform)
+    val portMap = Map(ports.map(p => (p.name, p)))
+    println(portMap)
+    Module(m.info, m.name, ports, m.stmt)
+  }
+  def fame1Transform(c: Circuit): Circuit = {
+    Circuit(c.info, c.name, c.modules.map(fame1Transform))
+  }
+
 }
