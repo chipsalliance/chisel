@@ -8,21 +8,21 @@ defpackage firrtl/parser :
    import firrtl/ir-utils
 
 ;======= Convenience Types ===========
-;definterface MStat 
-;defstruct Reader <: MStat :
-;   value: Symbol
-;defstruct Writer <: MStat :
-;   value: Symbol
-;defstruct ReadWriter <: MStat :
-;   value: Symbol
-;defstruct ReadLatency <: MStat :
-;   value: Int
-;defstruct WriteLatency <: MStat :
-;   value: Int
-;defstruct DataType <: MStat :
-;   value: Type
-;defstruct Depth <: MStat :
-;   value: Int
+definterface MStat 
+defstruct Reader <: MStat :
+   value: Symbol
+defstruct Writer <: MStat :
+   value: Symbol
+defstruct ReadWriter <: MStat :
+   value: Symbol
+defstruct ReadLatency <: MStat :
+   value: Int
+defstruct WriteLatency <: MStat :
+   value: Int
+defstruct DataType <: MStat :
+   value: Type
+defstruct Depth <: MStat :
+   value: Int
 ;======= Convenience Functions ========
 defn first-info? (form) -> FileInfo|False :
    match(form) :
@@ -127,6 +127,10 @@ defsyntax firrtl :
       id! = (?x:#id) : x
       id! != () : FPE(form, "Expected an identifier here.")
 
+      ;Error if not =>
+      =>! = (=>) : (`=>)
+      =>! != () : FPE(form, "Expected => here.")
+
       ;Error if not a colon
       :! = (:) : (`:)
       :! != () : FPE(form, "Expected a colon here.")
@@ -142,6 +146,10 @@ defsyntax firrtl :
       ;Error if not a single integer
       int$ = (?i:#int ?rest ...) when empty?(rest) : i
       int$ != () : FPE(form, "Expected a single integer literal here.")
+
+      ;Error if not an integer
+      int! = (?i:#int) : i
+      int! != () : FPE(form, "Expected an integer literal here.")
 
       ;Error if not a single long integer
       long$ = (?i:#intorlong ?rest ...) when empty?(rest) : 
@@ -238,41 +246,35 @@ defsyntax firrtl :
       width = (?) : UnknownWidth()
 
    ;Main Statement Productions
-   ;defrule mstat :
-   ;   mstat = (reader ?name:#id!) : Reader(name)
-   ;   mstat = (writer ?name:#id!) : Writer(name)
-   ;   mstat = (read-writer ?name:#id!) : ReadWriter(name)
-   ;   mstat = (read-latency #:! ?i:#int!) : ReadLatency(i)
-   ;   mstat = (write-latency #:! ?i:#int!) : WriteLatency(i)
-   ;   mstat = (data-type #:! ?t:#type!) : DataType(t)
-   ;   mstat = (depth #:! ?i:#int!) : Depth(i)
+   defrule mstat :
+      mstat = (reader #=>! ?name:#id!) : Reader(name)
+      mstat = (writer #=>! ?name:#id!) : Writer(name)
+      mstat = (read-writer #=>! ?name:#id!) : ReadWriter(name)
+      mstat = (read-latency #=>! ?i:#int!) : ReadLatency(i)
+      mstat = (write-latency #=>! ?i:#int!) : WriteLatency(i)
+      mstat = (data-type #=>! ?t:#type!) : DataType(t)
+      mstat = (depth #=>! ?i:#int!) : Depth(i)
    defrule statements :
       stmt = (skip) : Empty()
       stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(first-info(form),name, t)
       stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! ?reset:#exp! ?init:#exp!) : DefRegister(first-info(form),name, t,clk,reset,init)
-      stmt = (mem ?name:#id! #:! ?data-type:#type! ?depth:#int ?writers:#id! ... ?wl:#int ?readers:#id! ... ?rl:#int ?readwriters:#id! ...) : 
-         DefMemory(first-info(form),name,data-type,depth,wl,rl,readers,writers,readwriters)
-         ;val rl = Vector<Int>()
-         ;var wl = Vector<Int>()
-         ;var de = Vector<Int>()
-         ;var dt = Vector<Type>()
-         ;val rs = Vector<Symbol>()
-         ;val ws = Vector<Symbol>()
-         ;val rws = Vector<Symbol>()
-         ;for x in stats do :
-         ;   match(x as MStat) :
-         ;      (x:Reader) : add(rs,value(x))
-         ;      (x:Writer) : add(ws,value(x))
-         ;      (x:ReadWriter) : add(rws,value(x))
-         ;      (x:ReadLatency) : add(rl,value(x))
-         ;      (x:WriteLatency) : add(wl,value(x))
-         ;      (x:DataType) : add(dt,value(x))
-         ;      (x:Depth) : add(de,value(x))
-         ;if length(rl) != 1 : FPE(stats, "Can only specify one read-latency.")
-         ;if length(wl) != 1 : FPE(stats, "Can only specify one write-latency.")
-         ;if length(de) != 1 : FPE(stats, "Can only specify one depth.")
-         ;if length(dt) != 1 : FPE(stats, "Can only specify one data-type.")
-         ;DefMemory(first-info(form),name,dt[0],de[0],wl[0],rl[0],to-list(rs),to-list(ws),to-list(rws))
+      ;stmt = (mem ?name:#id! #:! ?data-type:#type! ?depth:#int ?writers:#id! ... ?wl:#int ?readers:#id! ... ?rl:#int ?readwriters:#id! ...) : 
+      ;   DefMemory(first-info(form),name,data-type,depth,wl,rl,readers,writers,readwriters)
+      stmt = (mem ?name:#id! #:! (?ms:#mstat ...)) :
+         defn grab (f:MStat -> True|False) :
+            map(value,to-list(filter(f,ms))) as List
+         defn grab1 (f:MStat -> True|False,s:String) :
+            val ls = grab(f)
+            if length(ls) != 1 : FPE(form,"Must declare one ~." << [s])
+            head(ls)
+         val readers = grab({_ typeof Reader})
+         val writers = grab({_ typeof Writer})
+         val readwriters = grab({_ typeof ReadWriter})
+         val write-latency = grab1({_ typeof WriteLatency},"write-latency")
+         val read-latency = grab1({_ typeof ReadLatency},"read-latency")
+         val depth = grab1({_ typeof Depth},"depth")
+         val data-type = grab1({_ typeof DataType},"data type")
+         DefMemory(first-info(form),name,data-type,depth,write-latency,read-latency,readers,writers,readwriters)
       stmt = (inst ?name:#id! #of! ?m:#id!) : DefInstance(first-info(form),name,m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name,e)
       stmt = (poison ?name:#id! #:! ?t:#type!) : DefPoison(first-info(form),name, t)
@@ -280,8 +282,8 @@ defsyntax firrtl :
       stmt = (printf(?clk:#exp ?str:#string ?es:#exp ...)) : Print(first-info(form),str,es,clk)
       stmt = (?s:#stmt/when) : s
 
-      stmt = (?x:#exp := ?y:#exp!) : Connect(first-info(form),x, y)
-      stmt = (?x:#exp <> ?y:#exp!) : BulkConnect(first-info(form),x, y)
+      stmt = (?x:#exp <= ?y:#exp!) : Connect(first-info(form),x, y) ;>
+      stmt = (?x:#exp <- ?y:#exp!) : BulkConnect(first-info(form),x, y);>
 
       ;stmt = ((?s:#stmt ?rest ...)) :
       ;   Begin(List(s, parse-stmts(rest)))

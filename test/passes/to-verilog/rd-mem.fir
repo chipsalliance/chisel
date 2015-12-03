@@ -9,9 +9,9 @@ circuit top :
 
       smem m : UInt<32>[4],clk
       read accessor c = m[index] 
-      rdata := UInt(0)
+      rdata <= UInt(0)
       when ren :
-         rdata := c
+         rdata <= c
 
 : CHECK: module top(
 : CHECK:     output [31:0] rdata,

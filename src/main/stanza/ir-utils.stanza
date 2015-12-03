@@ -9,9 +9,9 @@ defpackage firrtl/ir-utils :
 public defmulti print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|Module|Circuit) -> False
 public defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|Module|Circuit) -> False : false
 public defmulti turn-off-debug (x:False) -> False
-public defmethod turn-off-debug (x:False) : false
+;public defmethod turn-off-debug (x:False) : false
 public defmulti turn-on-debug (x:False)
-public defmethod turn-on-debug (x:False) : false
+;public defmethod turn-on-debug (x:False) : false
 
 ;============== GENSYM STUFF ======================
 
@@ -314,9 +314,9 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:Begin) :
          do(print{o,_}, join(body(c), "\n"))
       (c:Connect) :
-         print-all(o, [loc(c) " := " exp(c)])
+         print-all(o, [loc(c) " <= " exp(c)])
       (c:BulkConnect) :
-         print-all(o, [loc(c) " <> " exp(c)])
+         print-all(o, [loc(c) " <- " exp(c)])
       (c:Empty) :
          print(o, "skip")
       (c:Stop) :

@@ -7,6 +7,6 @@ circuit top :
       output read : UInt<30>
       cmem m : UInt<30>[128], clk
       read accessor x = m[UInt(0)]
-      read := x
+      read <= x
       
 

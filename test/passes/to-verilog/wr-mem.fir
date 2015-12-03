@@ -10,7 +10,7 @@ circuit top :
       smem m : UInt<32>[4],clk
       write accessor c = m[index] 
       when wen :
-         c := wdata
+         c <= wdata
 
 ; CHECK: module top(
 ; CHECK:     input  [31:0] wdata,

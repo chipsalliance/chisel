@@ -12,9 +12,9 @@ circuit top :
       smem m : UInt<32>[4],clk
       rdwr accessor c = m[index] 
       when ren :
-         rdata := c
+         rdata <= c
       when wen :
-         c := wdata
+         c <= wdata
 
 
 ; CHECK: module top(

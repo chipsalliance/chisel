@@ -58,6 +58,8 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;CheckTypes()             ;R
       ExpandAccesses()        ;W
       ExpandConnects()        ;W
+      ResolveKinds()           ;W
+      InferTypes()             ;R
       ResolveGenders()         ;W
       ;LowerToGround()          ;W
       ;ExpandIndexedConnects()  ;W
@@ -65,6 +67,9 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;InferTypes()             ;R
       ;CheckGenders()           ;W
       ExpandWhens()            ;W
+      ResolveKinds()           ;W
+      InferTypes()             ;R
+      ResolveGenders()         ;W
       InferWidths()            ;R
       ;ToRealIR()               ;W -> R
       ;CheckWidths()            ;R

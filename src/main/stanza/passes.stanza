@@ -96,7 +96,17 @@ defn get-gender (s:Stmt|Port) -> Gender :
             OUTPUT : FEMALE
 
 defmulti kind (e:Expression) -> Kind
-defmethod kind (e:Expression) : ExpKind()
+defmethod kind (e:Expression) : 
+   match(e) :
+      (e:WRef) : kind(e)
+      (e:WSubField) : kind(exp(e))
+      (e:WSubIndex) : kind(exp(e))
+      (e:WIndexer) :
+         val k = kind(exps(e)[0])
+         for x in exps(e) do :
+            if k != kind(x) : error("All kinds of exps of WIndexer must be the same")
+         k
+      (e) : ExpKind()
 
 defmethod info (stmt:Begin) -> FileInfo : FileInfo()
 defmethod info (stmt:Empty) -> FileInfo : FileInfo()
@@ -213,6 +223,15 @@ defmethod turn-off-debug (x:False) :
    old-PRINT-CIRCUITS = PRINT-CIRCUITS
    old-PRINT-DEBUG = PRINT-DEBUG
    old-PRINT-INFO = PRINT-INFO
+
+   PRINT-TYPES = false
+   PRINT-KINDS = false
+   PRINT-WIDTHS = false
+   PRINT-TWIDTHS = false
+   PRINT-GENDERS = false
+   PRINT-CIRCUITS = false
+   PRINT-DEBUG = false
+   PRINT-INFO = false
 defmethod turn-on-debug (x:False) :
    PRINT-TYPES = old-PRINT-TYPES
    PRINT-KINDS = old-PRINT-KINDS
@@ -713,7 +732,9 @@ defn infer-types (c:Circuit) -> Circuit :
             (e:DoPrim) : set-primop-type(e)
             (e:UIntValue|SIntValue) : e
       defn infer-types-s (s:Stmt) -> Stmt :
-         match(map(infer-types-e,s)) :
+         map{infer-types-e,_} $ map(infer-types-s,s)
+      defn build-types (s:Stmt) -> Stmt :
+         match(s) :
             (s:DefWire|DefPoison|DefRegister|DefMemory|DefNode) : 
                val t = remove-unknowns(get-type(s))
                types[name(s)] = t
@@ -721,13 +742,13 @@ defn infer-types (c:Circuit) -> Circuit :
             (s:WDefInstance) :
                types[name(s)] = module-types[module(s)]
                WDefInstance(info(s),name(s),module(s),module-types[module(s)])
-            (s) : map(infer-types-s,s)
+            (s) : map(build-types,s)
       for p in ports(m) do :
          types[name(p)] = type(p)
       match(m) :
          (m:InModule) :
-            val s* = infer-types-s(body(m))
-            InModule(info(m),name(m),ports(m),s*)
+            val s* = build-types(body(m))
+            InModule(info(m),name(m),ports(m),infer-types-s(s*))
          (m:ExModule) : m
 
    ; MAIN
@@ -1965,7 +1986,11 @@ defn split-exp (m:InModule) -> InModule :
                if i > 0 : split(e)
                else : e
             (e) : e
-      map{split-exp-e{_,0},_} $ map(split-exp-s,s)
+      match(s) :
+         (s:Begin) : map(split-exp-s,s)
+         (s) : 
+            add(v,map{split-exp-e{_,0},_} $ map(split-exp-s,s))
+            s
    split-exp-s(body(m))
    InModule(info(m),name(m),ports(m),Begin(to-list(v)))
 
@@ -2391,7 +2416,7 @@ defn lowered-name (e:Expression) -> Symbol :
 defn root-ref (e:Expression) -> Expression :
    match(e) :
       (e:WRef) : e
-      (e:WSubField|WSubIndex) : root-ref(e)
+      (e:WSubField|WSubIndex) : root-ref(exp(e))
 
 ;------------- Pass ------------------
 
@@ -2500,7 +2525,7 @@ defn emit (x:?, top:Int) :
          match(e) :
             (e:DoPrim) : op-print(e)
             (e:WRef) : print(e)
-            ;(e:WSubField) : print-all([exp(e) `_ name(f)])
+            (e:WSubField) : print(lowered-name(e))
             (e:WSubAccess) : print(e)
             (e:WSubIndex) : print(e)
             (e:UIntValue|SIntValue) : v-print(e)
@@ -2513,6 +2538,7 @@ defn emit (x:?, top:Int) :
                else : ""
       (s:Symbol) : print(s)
       (i:Int) : print(i)
+      (i:Long) : print(i)
       (s:String) : print(s)
       (t:VIndent) : print("   ")
       (r:VRandom) : print("$random")
@@ -2623,20 +2649,25 @@ defn emit-verilog (m:InModule) -> Module :
       s
 
    val declares = Vector<Streamable>()
+   val assigns = Vector<Streamable>()
    val at-clock = HashTable<Expression,Vector<Streamable>>(exp-hash)
    val initials = Vector<Streamable>()
    val simulates = Vector<Streamable>()
    defn declare (b:Symbol,n:Symbol,t:Type) : 
       add(declares,[b t n ";"])
    defn assign (e:Expression,value:Expression) : 
-      add(declares,["assign " e " = " value])
+      add(assigns,["assign " e " = " value])
    defn update-reset (e:Expression,clk:Expression,reset?:Expression,init:Expression) :
+      if not key?(at-clock,clk) :
+         at-clock[clk] = Vector<Streamable>()
       add(at-clock[clk],["if(" reset? ") begin"])
       add(at-clock[clk],[tab e " <= " init])
       add(at-clock[clk],["end else"])
       add(at-clock[clk],[tab e " <= " netlist[e]])
       add(at-clock[clk],["end"])
    defn update (e:Expression,clk:Expression,en:Expression) :
+      if not key?(at-clock,clk) :
+         at-clock[clk] = Vector<Streamable>()
       add(at-clock[clk],["if(" en ") begin"])
       add(at-clock[clk],[tab e " <= " netlist[e]])
       add(at-clock[clk],["end"])
@@ -2649,11 +2680,16 @@ defn emit-verilog (m:InModule) -> Module :
    defn instantiate (n:Symbol,m:Symbol,es:List<Expression>) :
       add(declares,[m " " n " ("])
       for (e in es,i in 1 to false) do :
-         val s = [tab "." remove-root(e) "(" netlist[e] ")"]
+         val s = [tab "." remove-root(e) "(" lowered-name(e) ")"]
          if i == length(es) : add(declares,[s ","])
          else : add(declares,s)
       add(declares,[");"])
+      for e in es do :
+         val e* = WRef(lowered-name(e),type(e),kind(e),gender(e))
+         if (gender(e) == FEMALE) : assign(e*,netlist[e])
    defn simulate (clk:Expression,en:Expression,s:Streamable) :
+      if not key?(at-clock,clk) :
+         at-clock[clk] = Vector<Streamable>()
       add(at-clock[clk],["`ifndef SYNTHESIS"])
       add(at-clock[clk],[tab "if(" en ") begin"])
       add(at-clock[clk],[tab tab s])
@@ -2676,6 +2712,7 @@ defn emit-verilog (m:InModule) -> Module :
 
    defn build-streams (s:Stmt) -> Stmt :
       match(s) :
+         (s:Connect) : s
          (s:DefWire) : 
             val es = create-exps(WRef(name(s),type(s),WireKind(),BI-GENDER))
             for e in es do : 
@@ -2690,7 +2727,7 @@ defn emit-verilog (m:InModule) -> Module :
          (s:DefPoison) :
             val es = create-exps(WRef(name(s),type(s),PoisonKind(),MALE))
             for e in es do :
-               declare(`wire,lowered-name(e),type(e))
+               declare(`reg,lowered-name(e),type(e))
                initialize(e)
          (s:DefNode) :
             declare(`wire,name(s),type(value(s)))
@@ -2748,8 +2785,13 @@ defn emit-verilog (m:InModule) -> Module :
       s
 
    defn emit-streams () :
+      emit(["module " name(m) "("])
       if !empty?(declares) :
          for x in declares do :
+            emit(x)
+      
+      if !empty?(assigns) :
+         for x in assigns do :
             emit(x)
 
       if !empty?(initials) :
@@ -2768,6 +2810,7 @@ defn emit-verilog (m:InModule) -> Module :
             for x in value(clk-stream) do :
                emit([tab x])
             emit(["end"])
+      emit(["endmodule"])
 
    build-netlist(body(m))
    build-streams(body(m))

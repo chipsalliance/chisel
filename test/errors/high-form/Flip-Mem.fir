@@ -5,5 +5,9 @@
 circuit Flip-Mem : 
   module Flip-Mem : 
     input clk : Clock
-    cmem mc : {x : UInt<3>, flip y : UInt<5>}[10], clk
-    smem ms : {x : UInt<3>, flip y : UInt<5>}[10], clk
+    mem mc : 
+       depth => 10
+       data-type => {x : UInt<3>, flip y : UInt<5>}
+       write-latency => 1
+       read-latency => 0
+    ;smem ms : {x : UInt<3>, flip y : UInt<5>}[10], clk
