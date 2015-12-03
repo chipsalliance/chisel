@@ -6,6 +6,7 @@ import java.nio.file.{Paths, Files}
 import Utils._
 import DebugUtils._
 import Passes._
+import midas.Fame1
 
 object Driver
 {
@@ -39,10 +40,15 @@ object Driver
 
   def toVerilogWithFame(input: String, output: String)
   {
+    val logger = Logger(new PrintWriter(System.err, true))
+
     val stanzaPreTransform = List("rem-spec-chars", "high-form-check",
       "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
       "resolve-genders", "check-genders", "check-kinds", "check-types",
-      "expand-accessors", "lower-to-ground", "inline-indexers")
+      "expand-accessors", "lower-to-ground", "inline-indexers", "infer-types",
+      "check-genders", "expand-whens", "infer-widths", "real-ir", "width-check",
+      "pad-widths", "const-prop", "split-expressions", "width-check",
+      "high-form-check", "low-form-check", "check-init")
     val stanzaPostTransform = List("rem-spec-chars", "high-form-check",
       "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
       "resolve-genders", "check-genders", "check-kinds", "check-types",
@@ -51,18 +57,29 @@ object Driver
       "pad-widths", "const-prop", "split-expressions", "width-check",
       "high-form-check", "low-form-check", "check-init")
 
+    //// Don't lower
+    //val temp1 = genTempFilename(input)
+    //val ast = Parser.parse(input)
+    //val writer = new PrintWriter(new File(temp1))
+    //val ast2 = fame1Transform(ast)
+    //writer.write(ast2.serialize())
+    //writer.close()
+
     // Lower-to-Ground with Stanza FIRRTL
     val temp1 = genTempFilename(input)
     val preCmd = Seq("firrtl-stanza", "-i", input, "-o", temp1, "-b", "firrtl") ++ stanzaPreTransform.flatMap(Seq("-x", _))
     println(preCmd.mkString(" "))
     preCmd.!
+
+    // Read in and execute infer-types
+    val ast = Parser.parse(temp1)
+    val ast2 = inferTypes(ast)(logger)
    
     // FAME-1 Transformation
     val temp2 = genTempFilename(input)
-    val ast = Parser.parse(temp1)
     val writer = new PrintWriter(new File(temp2))
-    val ast2 = fame1Transform(ast)
-    writer.write(ast2.serialize())
+    val ast3 = Fame1.transform(ast2)
+    writer.write(ast3.serialize())
     writer.close()
     
     //val postCmd = Seq("firrtl-stanza", "-i", temp2, "-o", output, "-b", "firrtl") ++ stanzaPostTransform.flatMap(Seq("-x", _))
