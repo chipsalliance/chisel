@@ -1,6 +1,6 @@
 
 /* TODO
- *  - Should FileInfo be a FIRRTL node?
+ *  - Should Info be a FIRRTL node?
  *
  */
 
@@ -9,7 +9,9 @@ package firrtl
 import scala.collection.Seq
 
 // Should this be defined elsewhere?
-case class FileInfo(file: String, line: Int, column: Int) {
+trait Info
+case object NoInfo extends Info
+case class FileInfo(file: String, line: Int, column: Int) extends Info {
   override def toString(): String = s"$file@$line.$column"
 }
 
@@ -72,18 +74,18 @@ case object Write extends AccessorDir
 case object RdWr extends AccessorDir
 
 trait Stmt extends AST
-case class DefWire(info: FileInfo, name: String, tpe: Type) extends Stmt
-case class DefReg(info: FileInfo, name: String, tpe: Type, clock: Exp, reset: Exp) extends Stmt
-case class DefMemory(info: FileInfo, name: String, seq: Boolean, tpe: Type, clock: Exp) extends Stmt
-case class DefInst(info: FileInfo, name: String, module: Exp) extends Stmt 
-case class DefNode(info: FileInfo, name: String, value: Exp) extends Stmt
-case class DefPoison(info: FileInfo, name: String, tpe: Type) extends Stmt
-case class DefAccessor(info: FileInfo, name: String, dir: AccessorDir, source: Exp, index: Exp) extends Stmt
-case class OnReset(info: FileInfo, lhs: Exp, rhs: Exp) extends Stmt
-case class Connect(info: FileInfo, lhs: Exp, rhs: Exp) extends Stmt
-case class BulkConnect(info: FileInfo, lhs: Exp, rhs: Exp) extends Stmt
-case class When(info: FileInfo, pred: Exp, conseq: Stmt, alt: Stmt) extends Stmt
-case class Assert(info: FileInfo, pred: Exp) extends Stmt
+case class DefWire(info: Info, name: String, tpe: Type) extends Stmt
+case class DefReg(info: Info, name: String, tpe: Type, clock: Exp, reset: Exp) extends Stmt
+case class DefMemory(info: Info, name: String, seq: Boolean, tpe: Type, clock: Exp) extends Stmt
+case class DefInst(info: Info, name: String, module: Exp) extends Stmt 
+case class DefNode(info: Info, name: String, value: Exp) extends Stmt
+case class DefPoison(info: Info, name: String, tpe: Type) extends Stmt
+case class DefAccessor(info: Info, name: String, dir: AccessorDir, source: Exp, index: Exp) extends Stmt
+case class OnReset(info: Info, lhs: Exp, rhs: Exp) extends Stmt
+case class Connect(info: Info, lhs: Exp, rhs: Exp) extends Stmt
+case class BulkConnect(info: Info, lhs: Exp, rhs: Exp) extends Stmt
+case class When(info: Info, pred: Exp, conseq: Stmt, alt: Stmt) extends Stmt
+case class Assert(info: Info, pred: Exp) extends Stmt
 case class Block(stmts: Seq[Stmt]) extends Stmt
 case object EmptyStmt extends Stmt
 
@@ -109,10 +111,10 @@ trait PortDir extends AST
 case object Input extends PortDir
 case object Output extends PortDir
 
-case class Port(info: FileInfo, name: String, dir: PortDir, tpe: Type) extends AST
+case class Port(info: Info, name: String, dir: PortDir, tpe: Type) extends AST
 
-case class Module(info: FileInfo, name: String, ports: Seq[Port], stmt: Stmt) extends AST
+case class Module(info: Info, name: String, ports: Seq[Port], stmt: Stmt) extends AST
 
-case class Circuit(info: FileInfo, name: String, modules: Seq[Module]) extends AST
+case class Circuit(info: Info, name: String, modules: Seq[Module]) extends AST
 
 

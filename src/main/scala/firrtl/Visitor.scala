@@ -39,17 +39,17 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
       case  _  => throw new Exception("Invalid String for conversion to BigInt " + s)
     }
   }
-  private def getFileInfo(ctx: ParserRuleContext): FileInfo = 
+  private def getInfo(ctx: ParserRuleContext): Info = 
     FileInfo(filename, ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine())
 
 	private def visitCircuit[AST](ctx: FIRRTLParser.CircuitContext): Circuit = 
-    Circuit(getFileInfo(ctx), ctx.id.getText, ctx.module.map(visitModule)) 
+    Circuit(getInfo(ctx), ctx.id.getText, ctx.module.map(visitModule)) 
     
   private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): Module = 
-    Module(getFileInfo(ctx), ctx.id.getText, ctx.port.map(visitPort), visitBlockStmt(ctx.blockStmt))
+    Module(getInfo(ctx), ctx.id.getText, ctx.port.map(visitPort), visitBlockStmt(ctx.blockStmt))
 
 	private def visitPort[AST](ctx: FIRRTLParser.PortContext): Port = 
-    Port(getFileInfo(ctx), ctx.id.getText, visitPortKind(ctx.portKind), visitType(ctx.`type`))
+    Port(getInfo(ctx), ctx.id.getText, visitPortKind(ctx.portKind), visitType(ctx.`type`))
   
 	private def visitPortKind[AST](ctx: FIRRTLParser.PortKindContext): PortDir =
     ctx.getText match {
@@ -91,7 +91,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     Block(ctx.stmt.map(visitStmt)) 
 
 	private def visitStmt[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
-    val info = getFileInfo(ctx)
+    val info = getInfo(ctx)
 
     ctx.getChild(0).getText match {
       case "wire" => DefWire(info, ctx.id(0).getText, visitType(ctx.`type`))

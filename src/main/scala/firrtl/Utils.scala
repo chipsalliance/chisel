@@ -196,6 +196,12 @@ object Utils {
       } 
       s + debug(dir)
     }
+    def toPortDir(): PortDir = {
+      dir match {
+        case Default => Output
+        case Reverse => Input
+      }
+    }
   }
 
   implicit class FieldUtils(field: Field) {
@@ -203,6 +209,7 @@ object Utils {
       s"${field.dir.serialize} ${field.name} : ${field.tpe.serialize}" + debug(field)
 
     def getType(): Type = field.tpe
+    def toPort(): Port = Port(NoInfo, field.name, field.dir.toPortDir, field.tpe)
   }
 
   implicit class TypeUtils(t: Type) {
@@ -242,12 +249,19 @@ object Utils {
       } 
       s + debug(p)
     }
+    def toFieldDir(): FieldDir = {
+      p match {
+        case Input => Reverse
+        case Output => Default
+      }
+    }
   }
 
   implicit class PortUtils(p: Port) {
     def serialize(implicit flags: FlagMap = FlagMap): String = 
       s"${p.dir.serialize} ${p.name} : ${p.tpe.serialize}" + debug(p)
     def getType(): Type = p.tpe
+    def toField(): Field = Field(p.name, p.dir.toFieldDir, p.tpe)
   }
 
   implicit class ModuleUtils(m: Module) {
