@@ -29,6 +29,7 @@ object Utils {
     }
     rec(names.reverse) // Let user specify in more natural format
   }
+  def buildExp(name: Any): Exp = buildExp(Seq(name))
 
   def genPrimopReduce(op: Primop, args: Seq[Exp]): DoPrimop = {
     if( args.length == 2 ) DoPrimop(op, Seq(args.head, args.last), Seq(), UnknownType)
