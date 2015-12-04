@@ -153,21 +153,29 @@ object Fame1 {
     val instIO = getDefInstType(inst)
     val nameToField = (instIO.fields map (f => f.name -> f)).toMap
 
-    val connections = (portMap map(_._2)).toSeq.distinct // modules we connect to
+    val connections = (portMap map(_._2)).toSeq.distinct // modules this inst connects to
     // Build simPort for each connecting module
+    // TODO This whole chunk really ought to be rewritten or made a function
     val connPorts = connections map {  c =>
       // Get ports that connect to this particular module as fields
       val fields = (portMap filter (_._2 == c)).keySet.toSeq.sorted map (nameToField(_))
       val noClock = fields filter (_.tpe != ClockType) // Remove clock
       val inputSet  = noClock filter (_.dir == Reverse) map (f => Field(f.name, Default, f.tpe))
       val outputSet = noClock filter (_.dir == Default)
-      Port(inst.info, c, Output, BundleType(Seq( 
-        Field("hostIn", Reverse, BundleType(Seq(hostReady, hostValid) :+
-          Field("hostData", Default, BundleType(inputSet)))),
-        Field("hostOut", Default, BundleType(Seq(hostReady, hostValid) ++ outputSet))
-      )))
+      Port(inst.info, c, Output, BundleType(
+        (if (inputSet.isEmpty) Seq()
+        else
+          Seq(Field("hostIn",  Reverse, BundleType(Seq(hostReady, hostValid) :+
+                                          Field("hostBits", Default, BundleType(inputSet)))))
+        ) ++
+        (if (outputSet.isEmpty) Seq()
+        else
+          Seq(Field("hostOut", Reverse, BundleType(Seq(hostReady, hostValid) :+
+                                          Field("hostBits", Default, BundleType(outputSet)))))
+        )
+      ))
     }
-    val ports = hostClock +: connPorts // Add clock back
+    val ports = hostClock +: connPorts // Add host Clock
 
     // targetFire is signal to indicate when a simulation module can execute, this is indicated by all of its inputs
     //   being valid and all of its outputs being ready
@@ -179,34 +187,29 @@ object Fame1 {
         }
       }
     }).flatten
+
     val targetFire = DefNode(inst.info, "targetFire", genPrimopReduce(And, targetFireInputs))
     // targetClock is the simple AND of targetFire and the hostClock so that the rtl module only executes when data 
     //   is available and outputs are ready
     val targetClock = DefNode(inst.info, "targetClock", DoPrimop(And, 
                      Seq(buildExp(targetFire.name), buildExp(hostClock.name)), Seq(), UnknownType))
+
     // As a simple RTL module, we're always ready
     val inputsReady = (connPorts map { port => 
       getFields(port) filter (_.dir == Reverse) map { field =>
         Connect(inst.info, buildExp(Seq(port.name, field.name, hostReady.name)), UIntValue(1, IntWidth(1)))
       }
     }).flatten
+
     // Outputs are valid on cycles where we fire
     val outputsValid = (connPorts map { port => 
       getFields(port) filter (_.dir == Default) map { field =>
         Connect(inst.info, buildExp(Seq(port.name, field.name, hostValid.name)), buildExp(targetFire.name))
       }
     }).flatten
-    //// Connect up all of the IO of the RTL module to sim module IO, except clock which should be connected
-    ////   to simClock
-    //val instIOConnect = instIO.fields.map{ io => 
-    //    io.tpe match {
-    //      case ClockType => Connect(inst.info, Ref(io.name, io.tpe), Ref(simClock.name, UnknownType))
-    //      case _ =>
-    //        io.dir match {
-    //          case Default => Connect(inst.info, Ref(io.name, io.tpe), buildExp(Seq(inst.name, io.name)))
-    //          case Reverse => Connect(inst.info, buildExp(Seq(inst.name, io.name)), Ref(io.name, io.tpe))
-    //     } } }
-    //// TODO this doesn't actually work yet : portMap
+
+    // Connect up all of the IO of the RTL module to sim module IO, except clock which should be connected
+    // This currently assumes naming things that are also done above when generating connPorts
     val instIOConnect = instIO.fields map { field =>
       field.tpe match {
         case ClockType => Connect(inst.info, Ref(field.name, field.tpe), Ref(targetClock.name, ClockType))
@@ -219,7 +222,7 @@ object Fame1 {
       }
     }
     //val stmts = Block(Seq(simFire, simClock, inst) ++ inputsReady ++ outputsValid ++ instIOConnect)
-    val stmts = Block(Seq(targetFire, targetClock) ++ inputsReady ++ outputsValid ++ instIOConnect)
+    val stmts = Block(Seq(targetFire, targetClock) ++ inputsReady ++ outputsValid ++ Seq(inst) ++ instIOConnect)
 
     Module(inst.info, s"SimWrap_${inst.name}", ports, stmts)
   }
@@ -227,16 +230,14 @@ object Fame1 {
   // ***** transform *****
   // Perform FAME-1 Transformation for MIDAS
   def transform(c: Circuit): Circuit = {
-    // We should do a check low firrtl
+    // We should check that the invariants mentioned above are true
     val nameToModule = (c.modules map (m => m.name -> m))(collection.breakOut): Map[String, Module] 
     val top = nameToModule(c.name)
-
-    println("Top Module:")
-    println(top.serialize)
 
     val insts = getDefInsts(top)
 
     val portConn = findPortConn(top, insts)
+    // Check that port Connections include all ports for each instance?
 
     val wrappers = insts map (inst => genWrapperModule(inst, portConn(inst.name)))
 
