@@ -142,6 +142,9 @@ object Fame1 {
     findPortConn(initConnMap, topStmts)
   }
 
+  private def wrapName(name: String): String = "SimWrap_" + name
+  private def unwrapName(name: String): String = name.stripPrefix("SimWrap_")
+
   // ***** genWrapperModule *****
   // Generates FAME-1 Decoupled wrappers for simulation module instances
   private val hostReady = Field("hostReady", Reverse, UIntType(IntWidth(1)))
@@ -149,14 +152,15 @@ object Fame1 {
   private val hostClock = Port(NoInfo, "hostClock", Input, ClockType)
 
   private def genWrapperModule(inst: DefInst, portMap: PortMap): Module = {
-
+    println(s"Wrapping ${inst.name}")
+    println(portMap)
     val instIO = getDefInstType(inst)
     val nameToField = (instIO.fields map (f => f.name -> f)).toMap
 
     val connections = (portMap map(_._2)).toSeq.distinct // modules this inst connects to
     // Build simPort for each connecting module
     // TODO This whole chunk really ought to be rewritten or made a function
-    val connPorts = connections map {  c =>
+    val connPorts = connections map { c =>
       // Get ports that connect to this particular module as fields
       val fields = (portMap filter (_._2 == c)).keySet.toSeq.sorted map (nameToField(_))
       val noClock = fields filter (_.tpe != ClockType) // Remove clock
@@ -170,7 +174,7 @@ object Fame1 {
         ) ++
         (if (outputSet.isEmpty) Seq()
         else
-          Seq(Field("hostOut", Reverse, BundleType(Seq(hostReady, hostValid) :+
+          Seq(Field("hostOut", Default, BundleType(Seq(hostReady, hostValid) :+
                                           Field("hostBits", Default, BundleType(outputSet)))))
         )
       ))
@@ -196,22 +200,23 @@ object Fame1 {
 
     // As a simple RTL module, we're always ready
     val inputsReady = (connPorts map { port => 
-      getFields(port) filter (_.dir == Reverse) map { field =>
+      getFields(port) filter (_.dir == Reverse) map { field => // filter to only take inputs
         Connect(inst.info, buildExp(Seq(port.name, field.name, hostReady.name)), UIntValue(1, IntWidth(1)))
       }
     }).flatten
 
     // Outputs are valid on cycles where we fire
     val outputsValid = (connPorts map { port => 
-      getFields(port) filter (_.dir == Default) map { field =>
+      getFields(port) filter (_.dir == Default) map { field => // filter to only take outputs
         Connect(inst.info, buildExp(Seq(port.name, field.name, hostValid.name)), buildExp(targetFire.name))
       }
     }).flatten
 
     // Connect up all of the IO of the RTL module to sim module IO, except clock which should be connected
     // This currently assumes naming things that are also done above when generating connPorts
-    val instIOConnect = instIO.fields map { field =>
-      field.tpe match {
+    val connectedInstIOFields = instIO.fields filter(field => portMap.contains(field.name)) // skip unconnected IO
+    val instIOConnect = connectedInstIOFields map { field =>
+      field.tpe match {             
         case ClockType => Connect(inst.info, Ref(field.name, field.tpe), Ref(targetClock.name, ClockType))
         case _ => field.dir match {
           case Default => Connect(inst.info, buildExp(Seq(portMap(field.name), "hostOut", field.name)), 
@@ -224,7 +229,32 @@ object Fame1 {
     //val stmts = Block(Seq(simFire, simClock, inst) ++ inputsReady ++ outputsValid ++ instIOConnect)
     val stmts = Block(Seq(targetFire, targetClock) ++ inputsReady ++ outputsValid ++ Seq(inst) ++ instIOConnect)
 
-    Module(inst.info, s"SimWrap_${inst.name}", ports, stmts)
+    Module(inst.info, wrapName(inst.name), ports, stmts)
+  }
+
+
+
+  // ***** generateSimQueues *****
+  // Takes Seq of SimWrapper modules
+  // Returns Map of (src, dest) -> SimQueue
+  def generateSimQueues(wrappers: Seq[Module]): Map[(String, String), Module] = {
+    def rec(wrappers: Seq[Module], map: Map[(String, String), Module]): Map[(String, String), Module] = {
+      if (wrappers.isEmpty) map
+      else {
+        val w = wrappers.head
+        val name = unwrapName(w.name)
+        val newMap = w.ports filter(isSimPort) map { port =>
+          splitSimPort(port) map { field =>
+            val (src, dst) = if (field.dir == Default) (name, port.name) else (port.name, name)
+            if (map.contains((src, dst))) Map[(String, String), Module]()
+            else (src, dst) -> buildSimQueue(s"SimQueue_${src}_${dst}", getHostBits(field).tpe)
+          }
+        }
+        println(newMap)
+        rec(wrappers.tail, map ++ Map())
+      }
+    }
+    rec(wrappers, Map[(String, String), Module]())
   }
 
   // ***** transform *****
@@ -241,7 +271,16 @@ object Fame1 {
 
     val wrappers = insts map (inst => genWrapperModule(inst, portConn(inst.name)))
 
-    wrappers foreach (w => println(w.serialize))
+    generateSimQueues(wrappers)
+    //val w = wrappers.head
+    //println(w.serialize)
+    //w.ports filter (isSimPort) map { p => 
+    //  splitSimPort(p) foreach { f => 
+    //    val queueName = if (f.dir == Default) s"${w.name}_${p.name}" else s"${p.name}_${w.name}"
+    //    println(buildSimQueue("SimQueue_" + queueName, getHostBits(f).tpe))
+    //  }
+    //  //println(buildSimQueue(,p.tpe)) 
+    //}
 
     c
   }

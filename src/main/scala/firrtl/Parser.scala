@@ -11,6 +11,29 @@ import antlr._
 
 object Parser
 {
+  def parseModule(string: String): Module = {
+    val fixedInput = Translator.addBrackets(Iterator(string))
+    val antlrStream = new ANTLRInputStream(fixedInput.result)
+    val lexer = new FIRRTLLexer(antlrStream)
+    val tokens = new CommonTokenStream(lexer)
+    val parser = new FIRRTLParser(tokens)
+
+    // FIXME Dangerous
+    parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+
+    // Concrete Syntax Tree
+    val cst = parser.module
+
+    val visitor = new Visitor("none") 
+    //val ast = visitor.visitCircuit(cst) match {
+    val ast = visitor.visit(cst) match {
+      case m: Module => m
+      case x => throw new ClassCastException("Error! AST not rooted with Module node!")
+    }
+
+    ast
+
+  }
 
   /** Takes a firrtl filename, returns AST (root node is Circuit)
     *

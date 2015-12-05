@@ -31,19 +31,21 @@ object Translator
 
     if( !it.hasNext ) throw new Exception("Empty file!")
     
-    // Find circuit before starting scope checks
-    var line = it.next 
-    while ( it.hasNext && !line._1.contains("circuit") ) {  
-      ret ++= line._1 + "\n"
-      line = it.next
-    }
-    ret ++= line._1 + " { \n"
-    if( !it.hasNext ) throw new Exception("No circuit in file!")
+    //// Find circuit before starting scope checks
+    //var line = it.next 
+    //while ( it.hasNext && !line._1.contains("circuit") ) {  
+    //  ret ++= line._1 + "\n"
+    //  line = it.next
+    //}
+    //ret ++= line._1 + " { \n"
+    //if( !it.hasNext ) throw new Exception("No circuit in file!")
 
 
     val scope = Stack[Int]()
-    scope.push(countSpaces(line._1)) 
-    var newScope = true // indicates if increasing scope spacing is legal on next line
+    scope.push(0)
+    var newScope = false
+    //scope.push(countSpaces(line._1)) 
+    //var newScope = true // indicates if increasing scope spacing is legal on next line
 
     while( it.hasNext ) {
       it.next match { case (lineText, lineNum) =>
@@ -52,7 +54,7 @@ object Translator
 
         val l = if (text.length > spaces ) { // Check that line has text in it
           if (newScope) { 
-            if( spaces == scope.top ) scope.push(spaces+2) // Hack for one-line scopes
+            if( spaces <= scope.top ) scope.push(spaces+2) // Hack for one-line scopes
             else scope.push(spaces) 
           }
 
