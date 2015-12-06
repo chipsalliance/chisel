@@ -11,38 +11,12 @@ import antlr._
 
 object Parser
 {
-  def parseModule(string: String): Module = {
-    val fixedInput = Translator.addBrackets(Iterator(string))
-    val antlrStream = new ANTLRInputStream(fixedInput.result)
-    val lexer = new FIRRTLLexer(antlrStream)
-    val tokens = new CommonTokenStream(lexer)
-    val parser = new FIRRTLParser(tokens)
-
-    // FIXME Dangerous
-    parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
-
-    // Concrete Syntax Tree
-    val cst = parser.module
-
-    val visitor = new Visitor("none") 
-    //val ast = visitor.visitCircuit(cst) match {
-    val ast = visitor.visit(cst) match {
-      case m: Module => m
-      case x => throw new ClassCastException("Error! AST not rooted with Module node!")
-    }
-
-    ast
-
-  }
-
-  /** Takes a firrtl filename, returns AST (root node is Circuit)
+  /** Takes Iterator over lines of FIRRTL, returns AST (root node is Circuit)
     *
-    * Currently must be standard FIRRTL file
     * Parser performs conversion to machine firrtl
     */
-  def parse(filename: String): Circuit = {
-    //val antlrStream = new ANTLRInputStream(input.reader) 
-    val fixedInput = Translator.addBrackets(Source.fromFile(filename).getLines)
+  def parse(filename: String, lines: Iterator[String]): Circuit = {
+    val fixedInput = Translator.addBrackets(lines)
     val antlrStream = new ANTLRInputStream(fixedInput.result)
     val lexer = new FIRRTLLexer(antlrStream)
     val tokens = new CommonTokenStream(lexer)
@@ -63,5 +37,7 @@ object Parser
 
     ast
   }
+
+  def parse(lines: Seq[String]): Circuit = parse("<None>", lines.iterator)
 
 }

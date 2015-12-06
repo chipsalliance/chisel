@@ -3,6 +3,7 @@ package firrtl
 import java.io._
 import scala.sys.process._
 import java.nio.file.{Paths, Files}
+import scala.io.Source
 import Utils._
 import DebugUtils._
 import Passes._
@@ -31,7 +32,7 @@ object Driver
   // Parse input file and print to output
   private def firrtl(input: String, output: String)(implicit logger: Logger)
   {
-    val ast = Parser.parse(input)
+    val ast = Parser.parse(input, Source.fromFile(input).getLines)
     val writer = new PrintWriter(new File(output))
     writer.write(ast.serialize())
     writer.close()
@@ -59,7 +60,7 @@ object Driver
 
     //// Don't lower
     //val temp1 = genTempFilename(input)
-    //val ast = Parser.parse(input)
+    //val ast = Parser.parse(Source.fromFile(input).getLines)
     //val writer = new PrintWriter(new File(temp1))
     //val ast2 = fame1Transform(ast)
     //writer.write(ast2.serialize())
@@ -72,7 +73,7 @@ object Driver
     preCmd.!
 
     // Read in and execute infer-types
-    val ast = Parser.parse(temp1)
+    val ast = Parser.parse(input, Source.fromFile(temp1).getLines)
     val ast2 = inferTypes(ast)(logger)
    
     // FAME-1 Transformation
@@ -125,7 +126,7 @@ object Driver
     //  if( scalaPass.isEmpty ) {
     //    scala2Stanza = stanza2Scala
     //  } else {
-    //    var ast = Parser.parse(stanza2Scala) 
+    //    var ast = Parser.parse(input, stanza2Scala) 
     //    //scalaPass.foreach( f => (ast = f(ast)) ) // Does this work?
     //    for ( f <- scalaPass ) yield { ast = mapString2Pass(f)(ast) }
 
