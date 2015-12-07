@@ -1,9 +1,13 @@
 // See LICENSE for license details.
 
 package Chisel
+
 import scala.collection.mutable.{ArrayBuffer, HashSet}
-import Builder.pushCommand
-import Builder.dynamicContext
+
+import internal._
+import internal.Builder.pushCommand
+import internal.Builder.dynamicContext
+import firrtl._
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in

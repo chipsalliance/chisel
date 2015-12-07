@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 
-package Chisel
+package Chisel.firrtl
+import Chisel._
+import Chisel.internal._
 
 case class PrimOp(val name: String) {
   override def toString: String = name

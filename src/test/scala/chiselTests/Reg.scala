@@ -8,7 +8,7 @@ import Chisel.testers.BasicTester
 
 class RegSpec extends ChiselFlatSpec {
   "A Reg" should "throw an exception if not given any parameters" in {
-    a [ChiselException] should be thrownBy {
+    a [Exception] should be thrownBy {
       val reg = Reg()
     }
   }

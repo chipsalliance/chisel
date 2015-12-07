@@ -11,7 +11,7 @@ import Chisel.testers._
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
-  def elaborate(t: => Module): Circuit = Driver.elaborate(() => t)
+  def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
 }
 
 /** Spec base class for BDD-style testers. */

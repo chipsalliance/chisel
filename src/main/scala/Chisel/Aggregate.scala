@@ -1,9 +1,13 @@
 // See LICENSE for license details.
 
 package Chisel
+
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
-import Builder.pushCommand
+
+import internal._
+import internal.Builder.pushCommand
+import firrtl._
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.

@@ -5,6 +5,9 @@ package Chisel
 import scala.sys.process._
 import java.io._
 
+import internal._
+import firrtl._
+
 trait FileSystemUtilities {
   def writeTempFile(pre: String, post: String, contents: String): File = {
     val t = File.createTempFile(pre, post)
