@@ -88,10 +88,14 @@ object Vec {
   * @tparam T type of elements
   * @note when multiple conflicting assignments are performed on a Vec element,
   * the last one takes effect (unlike Mem, where the result is undefined)
+  * @note Vecs, unlike classes in Scala's collection library, are propagated
+  * intact to FIRRTL as a vector type, which may make debugging easier
   */
 sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     extends Aggregate(gen.dir) with VecLike[T] {
-  // REVIEW TODO: should this take a Seq instead of a gen()?
+  // Note: the constructor takes a gen() function instead of a Seq to enforce
+  // that all elements must be the same and because it makes FIRRTL generation
+  // simpler.
 
   private val self = IndexedSeq.fill(length)(gen)
 
