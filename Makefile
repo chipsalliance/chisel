@@ -25,9 +25,18 @@ c_resources_dir := src/main/resources
 
 .PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test checkstyle compile setup
 
+# Define the (quick) checks we should run to validate a commit
+SMOKES	?= $(addprefix chiselTests.,DirectionSpec ChiselPropSpec)
+smoke:
+ifneq (,$(SMOKES))
+	$(SBT) $(SBT_FLAGS) "testOnly $(SMOKES)"
+else
+	echo "no smokes"
+endif
+
 default:	publish-local
 
-smoke compile:
+compile:
 	$(SBT) $(SBT_FLAGS) compile
 
 publish-local:
@@ -38,21 +47,14 @@ publish-local:
 # NOTE: Since this is now Java's java.io.tmpdir, it better exist before
 # we run any Java code. Any targets that set the JAVA_OPTIONS variable
 # must also include a dependency on setup to create the directory.
-TARGETS_SET_JAVA_TMPDIR ?= jenkins-build coverage test check
+TARGETS_SET_JAVA_TMPDIR ?= jenkins-build coverage test check smoke
 $(TARGETS_SET_JAVA_TMPDIR): export _JAVA_OPTIONS += -Djava.io.tmpdir=$(abspath $(TEST_OUTPUT_DIR))
 $(TARGETS_SET_JAVA_TMPDIR): setup
 
 test:
 	$(SBT) $(SBT_FLAGS) test
 
-# Define the (quick) checks we should run to validate a commit
-CHECKS	?= $(addprefix chiselTests.,DirectionSpec ChiselPropSpec)
-check:
-ifneq (,$(CHECKS))
-	$(SBT) $(SBT_FLAGS) "testOnly $(CHECKS)"
-else
-	echo "no checks"
-endif
+check:	test
 
 checkstyle:
 	$(SBT) $(SBT_FLAGS) scalastyle test:scalastyle
@@ -81,7 +83,11 @@ site:
 # Don't publish the coverage test code since it contains hooks/references to the coverage test package
 # and we don't want code with those dependencies published.
 # We need to run the coverage tests last, since Jenkins will fail the build if it can't find their results.
-jenkins-build: clean check
+# We explicitly invoke Make to build the clean and test targets (rather than
+#  simply list them as prerequisites) to avoid parallel make issues.
+jenkins-build:
+	$(MAKE) clean
+	$(MAKE) test
 	$(SBT) $(SBT_FLAGS) publish-local
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
