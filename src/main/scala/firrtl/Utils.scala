@@ -196,6 +196,13 @@ object Utils {
       } 
       s + debug(dir)
     }
+    def flip(): FieldDir = {
+      dir match {
+        case Reverse => Default
+        case Default => Reverse
+      }
+    }
+        
     def toPortDir(): PortDir = {
       dir match {
         case Default => Output
@@ -207,6 +214,7 @@ object Utils {
   implicit class FieldUtils(field: Field) {
     def serialize(implicit flags: FlagMap = FlagMap): String = 
       s"${field.dir.serialize} ${field.name} : ${field.tpe.serialize}" + debug(field)
+    def flip(): Field = Field(field.name, field.dir.flip, field.tpe)
 
     def getType(): Type = field.tpe
     def toPort(): Port = Port(NoInfo, field.name, field.dir.toPortDir, field.tpe)

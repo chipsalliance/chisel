@@ -83,9 +83,9 @@ object Driver
     writer.write(ast3.serialize())
     writer.close()
     
-    //val postCmd = Seq("firrtl-stanza", "-i", temp2, "-o", output, "-b", "firrtl") ++ stanzaPostTransform.flatMap(Seq("-x", _))
-    //println(postCmd.mkString(" "))
-    //postCmd.!
+    val postCmd = Seq("firrtl-stanza", "-i", temp2, "-o", output, "-X", "verilog")
+    println(postCmd.mkString(" "))
+    postCmd.!
   }
 
   private def verilog(input: String, output: String)(implicit logger: Logger)
