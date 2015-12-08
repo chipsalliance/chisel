@@ -7,6 +7,19 @@ import Primops._
 
 object Passes {
 
+  // TODO Perhaps we should get rid of Logger since this map would be nice
+  ////private val defaultLogger = Logger()
+  //private def mapNameToPass = Map[String, Circuit => Circuit] (
+  //  "infer-types" -> inferTypes
+  //)
+  def nameToPass(name: String): Circuit => Circuit = {
+    implicit val logger = Logger() // throw logging away
+    //mapNameToPass.getOrElse(name, throw new Exception("No Standard FIRRTL Pass of name " + name))
+    name match {
+      case "infer-types" => inferTypes
+    }
+  }
+
   private def toField(p: Port)(implicit logger: Logger): Field = {
     logger.trace(s"toField called on port ${p.serialize}")
     p.dir match {

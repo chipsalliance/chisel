@@ -7,7 +7,6 @@ import scala.io.Source
 import Utils._
 import DebugUtils._
 import Passes._
-import midas.Fame1
 
 object Driver
 {
@@ -39,55 +38,15 @@ object Driver
     logger.printlnDebug(ast)
   }
 
-  def toVerilogWithFame(input: String, output: String)
-  {
-    val logger = Logger(new PrintWriter(System.err, true))
+  // Should we just remove logger?
+  private def executePassesWithLogger(ast: Circuit, passes: Seq[Circuit => Circuit])(implicit logger: Logger): Circuit = {
+    if (passes.isEmpty) ast
+    else executePasses(passes.head(ast), passes.tail)
+  }
 
-    val stanzaPreTransform = List("rem-spec-chars", "high-form-check",
-      "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
-      "resolve-genders", "check-genders", "check-kinds", "check-types",
-      "expand-accessors", "lower-to-ground", "inline-indexers", "infer-types",
-      "check-genders", "expand-whens", "infer-widths", "real-ir", "width-check",
-      "pad-widths", "const-prop", "split-expressions", "width-check",
-      "high-form-check", "low-form-check", "check-init")
-    val stanzaPostTransform = List("rem-spec-chars", "high-form-check",
-      "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
-      "resolve-genders", "check-genders", "check-kinds", "check-types",
-      "expand-accessors", "lower-to-ground", "inline-indexers", "infer-types",
-      "check-genders", "expand-whens", "infer-widths", "real-ir", "width-check",
-      "pad-widths", "const-prop", "split-expressions", "width-check",
-      "high-form-check", "low-form-check", "check-init")
-
-    //// Don't lower
-    //val temp1 = genTempFilename(input)
-    //val ast = Parser.parse(Source.fromFile(input).getLines)
-    //val writer = new PrintWriter(new File(temp1))
-    //val ast2 = fame1Transform(ast)
-    //writer.write(ast2.serialize())
-    //writer.close()
-
-    // Lower-to-Ground with Stanza FIRRTL
-    //val temp1 = genTempFilename(input)
-    val temp1 = input + ".1.tmp"
-    val preCmd = Seq("firrtl-stanza", "-i", input, "-o", temp1, "-b", "firrtl") ++ stanzaPreTransform.flatMap(Seq("-x", _))
-    println(preCmd.mkString(" "))
-    preCmd.!
-
-    // Read in and execute infer-types
-    val ast = Parser.parse(input, Source.fromFile(temp1).getLines)
-    val ast2 = inferTypes(ast)(logger)
-   
-    // FAME-1 Transformation
-    //val temp2 = genTempFilename(input)
-    val temp2 = input + ".2.tmp"
-    val writer = new PrintWriter(new File(temp2))
-    val ast3 = Fame1.transform(ast2)
-    writer.write(ast3.serialize())
-    writer.close()
-    
-    val postCmd = Seq("firrtl-stanza", "-i", temp2, "-o", output, "-X", "verilog")
-    println(postCmd.mkString(" "))
-    postCmd.!
+  def executePasses(ast: Circuit, passes: Seq[Circuit => Circuit]): Circuit = {
+    implicit val logger = Logger() // No logging
+    executePassesWithLogger(ast, passes)
   }
 
   private def verilog(input: String, output: String)(implicit logger: Logger)
