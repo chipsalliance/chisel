@@ -43,7 +43,8 @@ import firrtl.Utils._
  *        v.   Connect target IO to wrapper IO, except connect target clock to simClock
  *
  * TODO 
- *  - Change from clock gating to reg enable, dont' forget to change sequential memory read enable
+ *  - Is it okay to have ready signals for input queues depend on valid signals for those queues? This is generally bad
+ *  - Change sequential memory read enable to work with targetFire
  *  - Implement Flatten RTL
  *  - Refactor important strings/naming to API (eg. "topIO" needs to be a constant defined somewhere or something)
  *  - Check that circuit is in LowFIRRTL?
@@ -199,10 +200,11 @@ object Fame1 {
     val defTargetFire = DefNode(inst.info, targetFire.name, genPrimopReduce(And, targetFireInputs))
     val connectTargetFire = Connect(NoInfo, buildExp(Seq(inst.name, targetFire.name)), buildExp(targetFire.name))
 
-    // As a simple RTL module, we're always ready
+    // Only consume tokens when the module fires
+    // TODO is it bad to have the input readys depend on the input valid signals?
     val inputsReady = (connPorts map { port => 
       getFields(port) filter (_.dir == Reverse) map { field => // filter to only take inputs
-        Connect(inst.info, buildExp(Seq(port.name, field.name, hostReady.name)), UIntValue(1, IntWidth(1)))
+        Connect(inst.info, buildExp(Seq(port.name, field.name, hostReady.name)), buildExp(targetFire.name))
       }
     }).flatten
 

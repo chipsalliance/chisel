@@ -67,7 +67,8 @@ object Driver
     //writer.close()
 
     // Lower-to-Ground with Stanza FIRRTL
-    val temp1 = genTempFilename(input)
+    //val temp1 = genTempFilename(input)
+    val temp1 = input + ".1.tmp"
     val preCmd = Seq("firrtl-stanza", "-i", input, "-o", temp1, "-b", "firrtl") ++ stanzaPreTransform.flatMap(Seq("-x", _))
     println(preCmd.mkString(" "))
     preCmd.!
@@ -77,7 +78,8 @@ object Driver
     val ast2 = inferTypes(ast)(logger)
    
     // FAME-1 Transformation
-    val temp2 = genTempFilename(input)
+    //val temp2 = genTempFilename(input)
+    val temp2 = input + ".2.tmp"
     val writer = new PrintWriter(new File(temp2))
     val ast3 = Fame1.transform(ast2)
     writer.write(ast3.serialize())
