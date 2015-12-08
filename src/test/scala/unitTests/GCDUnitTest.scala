@@ -36,15 +36,21 @@ class GCDUnitTester extends UnitTester {
 
   val gcd = Module(new GCD)
 
-  for {
-    value_1 <- 0 to 64
-    value_2 <- 0 to 64
-  } {
-    poke(gcd.io.a, value_1)
-    poke(gcd.io.b, value_2)
+  poke(gcd.io.a, UInt(17))
 
-    expect(gcd.io.v, compute_gcd(value_1, value_2))
+  for {
+    value_1 <- 0 to 2
+    value_2 <- 0 to 2
+  } {
+    poke(gcd.io.a, UInt(value_1))
+    poke(gcd.io.b, UInt(value_2))
+
+    expect(gcd.io.v, UInt(compute_gcd(value_1, value_2)))
+    step(1)
   }
+
+  install(gcd)
+
 }
 
 class GCDTester extends UnitTestRunners {
