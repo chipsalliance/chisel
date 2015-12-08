@@ -8,7 +8,7 @@ import java.io.File
 object TesterDriver extends BackendCompilationUtilities with FileSystemUtilities {
   /** For use with modules that should successfully be elaborated by the
     * frontend, and which can be turned into executeables with assertions. */
-  def execute(t: () => BasicTester): Boolean = {
+  def execute(t: () => Module): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(t)
 

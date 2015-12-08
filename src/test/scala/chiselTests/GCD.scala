@@ -33,20 +33,29 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
   when(first) { first := Bool(false) }
   when(dut.io.v) {
     io.done := Bool(true)
-    io.error := (dut.io.z != UInt(z)).toUInt
+    io.error := (dut.io.z != UInt(z)).asUInt
   }
 }
 
 class GCDSpec extends ChiselPropSpec {
 
-  //TODO: use generators and this function to make z's
   def gcd(a: Int, b: Int): Int = if(b == 0) a else gcd(b, a%b)
 
+//  val gcds = Table(
+//    ("a", "b", "z"),  // First tuple defines column names
+//    ( 64,  48,  16),  // Subsequent tuples define the data
+//    ( 12,   9,   3),
+//    ( 48,  64,  12))
+//
+  val gcd_inputs = Array(
+    ( 64,  48),  // Subsequent tuples define the data
+    ( 12,   9),
+    ( 48,  64))
+
   val gcds = Table(
-    ("a", "b", "z"),  // First tuple defines column names
-    ( 64,  48,  16),  // Subsequent tuples define the data
-    ( 12,   9,   3),
-    ( 48,  64,  12))
+    ("a", "b", "z"),
+    gcd_inputs.map { case (a: Int, b: Int) => (a, b, gcd(a, b))} :_*
+  )
 
   property("GCD should elaborate") {
     elaborate { new GCD }

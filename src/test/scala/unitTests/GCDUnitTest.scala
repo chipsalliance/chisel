@@ -1,0 +1,61 @@
+// See LICENSE for license details.
+
+package unitTests
+
+import Chisel._
+import Chisel.testers.{TesterDriver, BasicTester, UnitTester}
+
+trait UnitTestRunners {
+  def execute(t: => UnitTester): Boolean = {
+    TesterDriver.execute(() => t)
+  }
+  def elaborate(t: => Module): Circuit = {
+    Driver.elaborate(() => t)
+  }
+}
+
+class GCD extends Module {
+  val io = new Bundle {
+    val a  = UInt(INPUT, 32)
+    val b  = UInt(INPUT, 32)
+    val e  = Bool(INPUT)
+    val z  = UInt(OUTPUT, 32)
+    val v  = Bool(OUTPUT)
+  }
+  val x = Reg(UInt(width = 32))
+  val y = Reg(UInt(width = 32))
+  when (x > y)   { x := x -% y }
+  .otherwise     { y := y -% x }
+  when (io.e) { x := io.a; y := io.b }
+  io.z := x
+  io.v := y === UInt(0)
+}
+
+class GCDUnitTester extends UnitTester {
+  def compute_gcd(a: Int, b: Int): Int = if(b == 0) a else compute_gcd(b, a%b)
+
+  val gcd = Module(new GCD)
+
+  for {
+    value_1 <- 0 to 64
+    value_2 <- 0 to 64
+  } {
+    poke(gcd.io.a, value_1)
+    poke(gcd.io.b, value_2)
+
+    expect(gcd.io.v, compute_gcd(value_1, value_2))
+  }
+}
+
+class GCDTester extends UnitTestRunners {
+  execute { new GCDUnitTester }
+}
+
+object GCDUnitTest {
+  def main(args: Array[String]): Unit = {
+    val tutorial_args = args.slice(1, args.length)
+
+    new GCDTester
+  }
+}
+
