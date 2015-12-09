@@ -54,7 +54,7 @@ int main(int argc, char **argv, char **env) {
     val vDut = make(fname)
     val vH = new File(path + "/V" + prefix + ".h")
     val cppHarness = makeCppHarness(fname)
-    verilogToCpp(target, dir, vDut, cppHarness, vH).!
+    verilogToCpp(target, dir, vDut, Seq(), cppHarness, vH).!
     cppToExe(prefix, dir).!
     prefix
   }

@@ -29,7 +29,7 @@ object TesterDriver extends BackendCompilationUtilities with FileSystemUtilities
     // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
     if (((new File(System.getProperty("user.dir") + "/src/main/resources/top.cpp") #> cppHarness) #&&
         firrtlToVerilog(prefix, dir) #&&
-        verilogToCpp(prefix, dir, vDut, cppHarness, vH) #&&
+        verilogToCpp(prefix, dir, vDut, Seq(), cppHarness, vH) #&&
         cppToExe(prefix, dir)).! == 0) {
       executeExpectingSuccess(prefix, dir)
     } else {
