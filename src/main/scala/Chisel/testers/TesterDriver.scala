@@ -8,7 +8,7 @@ import java.io.File
 object TesterDriver extends BackendCompilationUtilities with FileSystemUtilities {
   /** For use with modules that should successfully be elaborated by the
     * frontend, and which can be turned into executeables with assertions. */
-  def execute(t: () => BasicTester): Boolean = {
+  def execute(t: () => BasicTester, additionalVSources: Seq[File] = Seq()): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(t)
 
@@ -29,7 +29,7 @@ object TesterDriver extends BackendCompilationUtilities with FileSystemUtilities
     // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
     if (((new File(System.getProperty("user.dir") + "/src/main/resources/top.cpp") #> cppHarness) #&&
         firrtlToVerilog(prefix, dir) #&&
-        verilogToCpp(prefix, dir, vDut, Seq(), cppHarness, vH) #&&
+        verilogToCpp(prefix, dir, vDut, additionalVSources, cppHarness, vH) #&&
         cppToExe(prefix, dir)).! == 0) {
       executeExpectingSuccess(prefix, dir)
     } else {
