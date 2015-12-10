@@ -113,8 +113,8 @@ class UnitTester extends Module {
           io_input_register_from_index.map { case (key, element) =>
             is(port_index) {
               when( ! element === element.fromBits(operand_1) ) {
-                io.done := Bool(true)
-                io.error := Bool(true)
+                io.done          := Bool(true)
+                io.error         := Bool(true)
                 io.step_at_error := pc
               }
             }
