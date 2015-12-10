@@ -1,6 +1,6 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 
-;CHECK: Lower To Ground
+;CHECK: Expand Whens
 
 circuit Top : 
   module Top : 
@@ -8,14 +8,13 @@ circuit Top :
     input q : UInt<1>
     input clk : Clock
     when p :
-       stop(clk,0)
+       stop(clk,UInt(1),0)
     when q :
-       stop(clk,1)
-    stop(clk,3)
+       stop(clk,UInt(1),1)
+    stop(clk,UInt(1),3)
 
-;CHECK: when p : stop(clk, 0)
-;CHECK: when q : stop(clk, 1)
-;CHECK: stop(clk, 3)   
-
+;CHECK: stop(clk, and(p, UInt("h1")), 0)
+;CHECK: stop(clk, and(q, UInt("h1")), 1)
+;CHECK: stop(clk, UInt("h1"), 3)   
 ;CHECK: Done!
 

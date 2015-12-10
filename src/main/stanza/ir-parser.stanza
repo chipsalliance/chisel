@@ -274,8 +274,6 @@ defsyntax firrtl :
          val read-latency = grab1({_ typeof ReadLatency},"read-latency")
          val depth = grab1({_ typeof Depth},"depth")
          val dt = grab1({_ typeof DataType},"data type")
-         println("Parser!")
-         println(dt)
          DefMemory(first-info(form),name,dt,depth,write-latency,read-latency,readers,writers,readwriters)
       stmt = (inst ?name:#id! #of! ?m:#id!) : DefInstance(first-info(form),name,m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name,e)

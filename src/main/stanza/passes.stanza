@@ -5,12 +5,12 @@ defpackage firrtl/passes :
   import firrtl/ir-utils
   import firrtl/primops
   import firrtl-main
-  ;import firrtl/errors
+  import firrtl/errors
   import bigint2
 
 ;============== Pass List ================
 public val standard-passes = to-list $ [
-   ;CheckHighForm()
+   CheckHighForm()
    ;TempElimination()
    ToWorkingIR()
    ResolveKinds()
@@ -843,23 +843,38 @@ defn expand-vector (e:Expression,g:Gender) -> List<Expression> :
       list(WSubIndex(e,i,type(t),g)) ;always be WRef|WSubField|WSubIndex
 
 defn expand-accesses (c:Circuit) :
-   defn expand-e (e:Expression) -> Expression :
-      match(map(expand-e,e)) :
-         (e:WSubAccess) : 
-            val ls = expand-vector(exp(e),gender(e))
-            WIndexer(ls,index(e),type(e),gender(e))
-         (e) : e
-                  
-   defn expand-s (s:Stmt) -> Stmt :
-      map{expand-s,_} $ map(expand-e,s)
+   defn expand-m (m:InModule) -> InModule :
+      val sh = get-sym-hash(m,keys(v-keywords))
+      defn expand-s (s:Stmt) -> Stmt :
+         val stmts = Vector<Stmt>()
+         defn when-chain (exps:List<Expression>,e:Expression,index:Expression,to?:True|False) :
+            for (x in exps,i in 0 to length(exps)) do :
+               if to? :
+                  add(stmts,Conditionally(info(s),EQV(uint(i),index),Connect(info(s),x,e),Empty()))
+               else : 
+                  add(stmts,Conditionally(info(s),EQV(uint(i),index),Connect(info(s),e,x),Empty()))
+         defn expand-e (e:Expression) -> Expression :
+            match(map(expand-e,e)) :
+               (e:WSubAccess) : 
+                  val n = firrtl-gensym(`GEN,sh)
+                  add(stmts,DefWire(info(s),n,type(e)))
+                  val ls = expand-vector(exp(e),gender(e))
+                  val e* = WRef(n,type(e),kind(e),gender(e))
+                  when-chain(ls,e*,index(e),gender(e) == FEMALE)
+                  e*
+               (e) : e
+         val s* = map(expand-e,s)
+         add(stmts,s*)
+         map{expand-s,_} $ Begin(to-list(stmts))
+
+      InModule(info(m),name(m),ports(m),expand-s(body(m)))
 
    Circuit(info(c),modules*, main(c)) where :
       val modules* = 
          for m in modules(c) map :
             match(m) :
                (m:ExModule) : m
-               (m:InModule) : 
-                  InModule(info(m),name(m),ports(m),expand-s(body(m)))
+               (m:InModule) : expand-m(m)
 
 
 ;================ EXPAND CONNECTS ==================
@@ -981,8 +996,12 @@ defn expand-connects (c:Circuit) -> Circuit :
                println-all(["get-point: " get-point(e)])
                exp-lib[name(root-ref(e))][get-point(e) + point]
             (e:WIndexer) : 
+               println-all(["lib: " exp-lib[name(root-ref(e))]])
+               println-all(["get-point: " get-point(e)])
                val exps* = for e* in exps(e) map :
                   expand-e(e*,point)
+               println-all(["exps: " exps*])
+               println("HERE!!!")
                WIndexer(exps*,index(e),type(exps*[0]),gender(exps*[0]))
             (e:DoPrim) : e
             (e) : e
@@ -1045,17 +1064,16 @@ public defn replace-indexer (c:Circuit) -> Circuit :
       Begin(to-list(stmts))
    defn replace-e (e:Expression) -> Expression :
       match(map(replace-e,e)) :
-         (e:WIndexer) : 
-            if gender(e) == MALE : mux-chain(exps(e),0,index(e))
-            else : e ;is handled in replace-s
+         (e:WIndexer) : mux-chain(exps(e),0,index(e))
          (e) : e
    defn replace-s (s:Stmt) -> Stmt :
-      match(map(replace-e,s)) :
+      match(s) :
          (s:Connect) :
+            val exp* = replace-e(exp(s))
             match(loc(s)) :
-               (e:WIndexer) : when-chain(exps(e),exp(s),index(e),info(s))
+               (e:WIndexer) : when-chain(exps(e),exp*,index(e),info(s))
                (e) : s
-         (s) : map(replace-s, s)
+         (s) : map(replace-s, map(replace-e,s))
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map :
          match(m) :
@@ -1997,7 +2015,8 @@ defn lowered-name (e:Expression) -> Symbol :
 defn root-ref (e:Expression) -> WRef :
    match(e) :
       (e:WRef) : e
-      (e:WSubField|WSubIndex) : root-ref(exp(e))
+      (e:WSubField|WSubIndex|WSubAccess) : root-ref(exp(e))
+      (e:WIndexer) : root-ref(exps(e)[0])
 
 ;------------- Pass ------------------
 

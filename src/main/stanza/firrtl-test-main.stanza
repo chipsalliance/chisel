@@ -10,7 +10,7 @@
 #include("ir-parser.stanza")
 #include("passes.stanza")
 #include("primop.stanza")
-;#include("errors.stanza")
+#include("errors.stanza")
 #include("compilers.stanza")
 ;#include("flo.stanza")
 ;#include("verilog.stanza")

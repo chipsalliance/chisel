@@ -319,7 +319,7 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:Empty) :
          print(o, "skip")
       (c:Stop) :
-         print-all(o, ["stop(" ret(c) ", " clk(c) ", " en(c) ")"])
+         print-all(o, ["stop(" clk(c) ", " en(c) ", " ret(c) ")"])
       (c:Print) :
          print-all(o, ["printf(" clk(c) ", " en(c) ", "]) ;"
          print-all(o, join(List(escape(string(c)),args(c)), ", "))
