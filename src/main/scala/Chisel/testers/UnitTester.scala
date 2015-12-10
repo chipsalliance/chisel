@@ -5,9 +5,13 @@ import Chisel._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-trait chiselUnitRunners {
-  def execute(t: => UnitTester): Boolean = TesterDriver.execute(() => t)
-  def elaborate(t: => Module): Circuit = Driver.elaborate(() => t)
+trait UnitTestRunners {
+  def execute(t: => UnitTester): Boolean = {
+    TesterDriver.execute(() => t)
+  }
+  def elaborate(t: => Module): Circuit = {
+    Driver.elaborate(() => t)
+  }
 }
 
 case class TestAction(op_code: Bits, port : Data, value: Data)
@@ -86,27 +90,14 @@ class UnitTester extends Module {
     val port_index  = instruction(15, 8)
     val operand_1   = instruction(47, 16)
 
-    /**
-     * This is how I would prefer to do the demux of the operand into the input port
-     */
-//    switch(operation) {
-//      is(Bits(0)) {
-//      switch(port_index) {
-//        input_port_from_index.map { case (key, element) =>
-//          is(port_index) { element := element.fromBits(operand_1) }
-//        }
-//      }
-//    }
-
-    // TODO: make switches below look like this
-
     switch(operation) {
       is(Bits(0)) {
         io_input_register_from_index.map { case (index, port)=>
           when(UInt(index) === port_index) {
             port := operand_1
           }
-        }      }
+        }
+      }
       is(Bits(1)) {
         io_output_port_from_index.map { case (index, port) =>
           when(UInt(index) === port_index && Bool(port.fromBits(operand_1) != port)) {

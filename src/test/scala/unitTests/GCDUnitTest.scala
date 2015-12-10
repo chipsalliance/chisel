@@ -3,16 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{TesterDriver, BasicTester, UnitTester}
-
-trait UnitTestRunners {
-  def execute(t: => UnitTester): Boolean = {
-    TesterDriver.execute(() => t)
-  }
-  def elaborate(t: => Module): Circuit = {
-    Driver.elaborate(() => t)
-  }
-}
+import Chisel.testers.{UnitTestRunners, UnitTester}
 
 class GCD extends Module {
   val io = new Bundle {
