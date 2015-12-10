@@ -11,5 +11,5 @@ class BasicTester extends Module {
   io.done := Bool(false)
   io.error := UInt(0)
 
-  def popCount(n: Long) = n.toBinaryString.count(_=='1')
+  def popCount(n: Long): Int = n.toBinaryString.count(_=='1')
 }

@@ -5,6 +5,9 @@ package Chisel
 import scala.sys.process._
 import java.io._
 
+import internal._
+import firrtl._
+
 trait FileSystemUtilities {
   def writeTempFile(pre: String, post: String, contents: String): File = {
     val t = File.createTempFile(pre, post)
@@ -55,7 +58,7 @@ trait BackendCompilationUtilities {
         "--Wno-fatal",
         "--trace",
         "-O2",
-        "+define+TOP_TYPE=V"+prefix,
+        "+define+TOP_TYPE=V" + prefix,
         "-CFLAGS", s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$prefix -include ${vH.toString}""",
         "-Mdir", dir.toString,
         "--exe", cppHarness.toString)
@@ -81,14 +84,14 @@ trait BackendCompilationUtilities {
 
 object Driver extends FileSystemUtilities with BackendCompilationUtilities {
 
-  /** Elaborates the Module specified in the gen function into a Circuit 
+  /** Elaborates the Module specified in the gen function into a Circuit
     *
     *  @param gen a function that creates a Module hierarchy
     *
     *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
   def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
-  
+
   def emit[T <: Module](gen: () => T): String = elaborate(gen).emit
 
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
