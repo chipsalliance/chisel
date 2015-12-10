@@ -8,26 +8,20 @@ import java.io._
 import internal._
 import firrtl._
 
-trait FileSystemUtilities {
-  def writeTempFile(pre: String, post: String, contents: String): File = {
-    val t = File.createTempFile(pre, post)
-    val w = new FileWriter(t)
-    w.write(contents)
-    w.close()
-    t
-  }
-
-  // This "fire-and-forgets" the method, which can be lazily read through
-  // a Stream[String], and accumulates all errors on a StringBuffer
-  def sourceFilesAt(baseDir: String): (Stream[String], StringBuffer) = {
-    val buffer = new StringBuffer()
-    val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    val lines = cmd lines_! ProcessLogger(buffer append _)
-    (lines, buffer)
-  }
-}
-
 trait BackendCompilationUtilities {
+  /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.
+    */
+  def createTempDirectory(prefix: String): File = {
+    val temp = File.createTempFile(prefix, "")
+    if (!temp.delete()) {
+      throw new IOException(s"Unable to delete temp file '$temp'")
+    }
+    if (!temp.mkdir()) {
+      throw new IOException(s"Unable to create temp directory '$temp'")
+    }
+    temp
+  }
+
   def makeHarness(template: String => String, post: String)(f: File): File = {
     val prefix = f.toString.split("/").last
     val vf = new File(f.toString + post)
@@ -49,29 +43,33 @@ trait BackendCompilationUtilities {
   /** Generates a Verilator invocation to convert Verilog sources to C++
     * simulation sources.
     *
-    * @param prefix output class name
+    * The Verilator prefix will be V$dutFile, and running this will generate
+    * C++ sources and headers as well as a makefile to compile them.
+    *
+    * Verilator will automatically locate the top-level module as the one among
+    * all the files which are not included elsewhere. If multiple ones exist,
+    * the compilation will fail.
+    *
+    * @param dutFile name of the DUT .v without the .v extension
     * @param dir output directory
-    * @oaran vDut .v file containing the top-level DUR
     * @param vSources list of additional Verilog sources to compile
     * @param cppHarness C++ testharness to compile/link against
-    * @param vH .h file to generate
     */
   def verilogToCpp(
-      prefix: String,
+      dutFile: String,
       dir: File,
-      vDut: File,
       vSources: Seq[File],
-      cppHarness: File,
-      vH: File): ProcessBuilder =
+      cppHarness: File): ProcessBuilder =
+
     Seq("verilator",
-        "--cc", vDut.toString) ++
+        "--cc", s"$dutFile.v") ++
         vSources.map(file => Seq("-v", file.toString)).flatten ++
         Seq("--assert",
             "--Wno-fatal",
             "--trace",
             "-O2",
-            "+define+TOP_TYPE=V" + prefix,
-            "-CFLAGS", s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$prefix -include ${vH.toString}""",
+            "+define+TOP_TYPE=V" + dutFile,
+            "-CFLAGS", s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
             "-Mdir", dir.toString,
             "--exe", cppHarness.toString)
 
@@ -91,10 +89,9 @@ trait BackendCompilationUtilities {
   def executeExpectingSuccess(prefix: String, dir: File): Boolean = {
     !executeExpectingFailure(prefix, dir)
   }
-
 }
 
-object Driver extends FileSystemUtilities with BackendCompilationUtilities {
+object Driver extends BackendCompilationUtilities {
 
   /** Elaborates the Module specified in the gen function into a Circuit
     *
