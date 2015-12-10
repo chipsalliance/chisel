@@ -46,23 +46,11 @@ class UnitTester extends Module {
 
   def step(number_of_cycles: Int) {}
 
-  def construct_fsm(dut: Module): Unit = {
-
-//    switch(operation) {
-//      is(set_input_op) {
-//        for ( (io_element, index) <- dut.io.elements.zipWithIndex) {
-//
-//        }
-//        reference_to_port(port_index) := operand_1
-//      }
-//      is(expect_op) {}
-//    }
-  }
   def install[T <: Module](dut: T): Unit = {
     /**
      * connect to the device under test by connecting each of it's io ports to an appropriate register
      */
-    val dut_input_registers = dut.io.elements.flatMap { case (name, element) =>
+    val io_input_registers = dut.io.elements.flatMap { case (name, element) =>
       if(element.dir == INPUT) {
         val new_reg = Reg(init = UInt(0, element.width))
         element := new_reg
@@ -71,25 +59,19 @@ class UnitTester extends Module {
         None
       }
     }
+    val io_input_register_from_index = io_input_registers.zipWithIndex.map { case(port, index) => index -> port }
+
+    val io_output_ports = dut.io.elements.flatMap { case (name, element) =>
+      if(element.dir == OUTPUT) Some(element) else None
+    }
+    val io_output_port_from_index = io_output_ports.zipWithIndex.map { case(port, index) => index -> port }.toMap
 
     io.done  := Bool(false)
     io.error := Bool(false)
-//    val new_io = dut.io.fromBits(operand_1)
-//    dut.io <> new_io
 
     def make_instruction(op_code: Int, port_index: Int, value: Int) = {
       Cat(UInt(op_code, 8), UInt(port_index, 8), UInt(value, 32))
     }
-
-    val port_to_index   = dut.io.elements.zipWithIndex.map { case ((name, element), index) =>
-      element -> index
-    }.toMap
-
-    val input_port_from_index = dut.io.elements.zipWithIndex.flatMap { case ((name, element), index) =>
-      if( element.dir == INPUT) {
-        Some(index -> element)
-      } else None
-    }.toMap
 
     val program = Vec(
       Array(
@@ -111,7 +93,7 @@ class UnitTester extends Module {
 //      is(Bits(0)) {
 //      switch(operation) {
 //        input_port_from_index.map { case (key, element) =>
-//          is(port_index) { element := operand_1 }
+//          is(port_index) { element := element.fromBits(operand_1) }
 //        }
 //      }
 //    }
@@ -119,9 +101,22 @@ class UnitTester extends Module {
     switch(operation) {
       is(Bits(0)) {
         new SwitchContext(operation) {
-          input_port_from_index.map { case (key, element) =>
+          io_input_register_from_index.map { case (key, element) =>
             is(port_index) {
               element := element.fromBits(operand_1)
+            }
+          }
+        }
+      }
+      is(Bits(1)) {
+        new SwitchContext(operation) {
+          io_input_register_from_index.map { case (key, element) =>
+            is(port_index) {
+              when( ! element === element.fromBits(operand_1) ) {
+                io.done := Bool(true)
+                io.error := Bool(true)
+                io.step_at_error := pc
+              }
             }
           }
         }
@@ -130,18 +125,9 @@ class UnitTester extends Module {
 
     pc := pc + UInt(1)
 
-    for {
-      io_element      <- dut.io.elements
-      input_reference <- test_actions
-    } {
-      if ( io_element._2 == input_reference.port ) { print("---->")}
-      println(s"x is ${io_element._2} $input_reference")
-
-//      input_port_from_index(input_reference.port) := input_reference.output.toBits()
+    when(pc === UInt(program.length)) {
+      io.done := Bool(true)
     }
-
-    construct_fsm(dut)
-
 
   }
 }
