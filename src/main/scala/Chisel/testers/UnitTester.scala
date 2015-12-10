@@ -59,6 +59,24 @@ class UnitTester extends Module {
 //    }
   }
   def install[T <: Module](dut: T): Unit = {
+    /**
+     * connect to the device under test by connecting each of it's io ports to an appropriate register
+     */
+    val dut_input_registers = dut.io.elements.flatMap { case (name, element) =>
+      if(element.dir == INPUT) {
+        val new_reg = Reg(init = UInt(0, element.width))
+        element := new_reg
+        Some(new_reg)
+      } else {
+        None
+      }
+    }
+
+    io.done  := Bool(false)
+    io.error := Bool(false)
+//    val new_io = dut.io.fromBits(operand_1)
+//    dut.io <> new_io
+
     def make_instruction(op_code: Int, port_index: Int, value: Int) = {
       Cat(UInt(op_code, 8), UInt(port_index, 8), UInt(value, 32))
     }
@@ -84,36 +102,29 @@ class UnitTester extends Module {
     val instruction = program(pc)
     val operation   = instruction(7, 0)
     val port_index  = instruction(15, 8)
-    val operand_1   = instruction(48, 16)
+    val operand_1   = instruction(47, 16)
 
-    io.done  := Bool(false)
-    io.error := Bool(false)
-
-    /*
-    Wire a series of registers in front of the DUT's inputs
+    /**
+     * This is how I would prefer to do the demux of the operand into the input port
      */
-    val dut_input_registers = dut.io.elements.flatMap { case (name, element) =>
-      if(element.dir == INPUT) {
-        val new_reg = Reg(init = UInt(0, element.width))
-        element := new_reg
-        Some(new_reg)
-      } else {
-        None
-      }
-    }
-
-    val new_io = dut.io.fromBits(operand_1)
-    dut.io <> new_io
-
 //    switch(operation) {
-//      input_port_from_index.map { case (key, element) =>
-//        is(port_index) { element := operand_1 }
+//      is(Bits(0)) {
+//      switch(operation) {
+//        input_port_from_index.map { case (key, element) =>
+//          is(port_index) { element := operand_1 }
+//        }
 //      }
 //    }
 
-    val sc = new SwitchContext(operation) {
-      input_port_from_index.map { case (key, element) =>
-        is(port_index) { element := operand_1 }
+    switch(operation) {
+      is(Bits(0)) {
+        new SwitchContext(operation) {
+          input_port_from_index.map { case (key, element) =>
+            is(port_index) {
+              element := element.fromBits(operand_1)
+            }
+          }
+        }
       }
     }
 
