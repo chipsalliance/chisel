@@ -77,6 +77,9 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ConstProp()              ;R
       SplitExp()               ;R
       LowerTypes()               ;R
+      ResolveKinds()           ;W
+      InferTypes()             ;R
+      ResolveGenders()         ;W
       ;CheckWidths()            ;R
       ;CheckHighForm()          ;R
       ;CheckLowForm()           ;R

@@ -6,12 +6,12 @@ circuit BTB :
   module Queue :
     input in : UInt<1>
     output out : UInt<1>
-    out := in
+    out <= in
   module BTB : 
     input time : UInt<1>
     output out : UInt<1>
     
     inst queue of Queue
-    queue.in := time
-    out := queue.in
+    queue.in <= time
+    out <= queue.in
 

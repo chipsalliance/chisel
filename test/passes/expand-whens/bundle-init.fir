@@ -8,20 +8,20 @@ circuit top :
       wire a : UInt
       wire b : UInt
       wire w : { x : UInt, y : UInt}
-      a := UInt(1)
-      b := UInt(2)
+      a <= UInt(1)
+      b <= UInt(2)
 
-      w.x := b
-      w.y := a
-      r.x := a
-      r.y := b
-      onreset r := w
+      w.x <= b
+      w.y <= a
+      r.x <= a
+      r.y <= b
+      onreset r <= w
 
-; CHECK: r$x := mux(reset, w$x, a)
-; CHECK: r$y := mux(reset, w$y, b)
-; CHECK: a := UInt("h1")
-; CHECK: b := UInt("h2")
-; CHECK: w$x := b
-; CHECK: w$y := a
+; CHECK: r$x <= mux(reset, w$x, a)
+; CHECK: r$y <= mux(reset, w$y, b)
+; CHECK: a <= UInt("h1")
+; CHECK: b <= UInt("h2")
+; CHECK: w$x <= b
+; CHECK: w$y <= a
       
 ; CHECK: Finished Expand Whens

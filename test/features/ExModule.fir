@@ -3,9 +3,9 @@ circuit Top :
   module Top : 
     output z : UInt<4>
     inst i of BlackBox
-    i.x := UInt(1)
-    i.y := UInt(2)
-    z := i.z
+    i.x <= UInt(1)
+    i.y <= UInt(2)
+    z <= i.z
   extmodule BlackBox :
     input x : UInt<4>
     input y : UInt<4>

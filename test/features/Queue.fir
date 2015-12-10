@@ -7,6 +7,6 @@ circuit Queue :
     input clk : Clock
     input reset : UInt<1>
   
-    reg r : UInt<10>,clk,reset
-    r := in
-    out := r
+    reg r : UInt<10>,clk,reset,in
+    r <= in
+    out <= r

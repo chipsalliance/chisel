@@ -6,7 +6,7 @@ circuit BTB :
     output out : {x : UInt<1>, flip y : UInt<1>}
 
     wire w : {x : UInt<1>, flip y : UInt<1>}
-    w.x := UInt(1)
-    w.y := UInt(1)
-    out.x := UInt(1)
-    w <> out
+    w.x <= UInt(1)
+    w.y <= UInt(1)
+    out.x <= UInt(1)
+    w <- out

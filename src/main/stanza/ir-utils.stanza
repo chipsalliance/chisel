@@ -286,14 +286,13 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefMemory) :
          print-all(o,["mem " name(c) " : "])
          print-debug(o,c)
-         print(o,"\n")
-         print-all(io,["data-type: " data-type(c) "\n"])
-         print-all(io,["depth: " depth(c) "\n"])
-         print-all(io,["write-latency: " write-latency(c) "\n"])
-         print-all(io,["read-latency: " read-latency(c) "\n"])
-         print-all(io,["readers: " readers(c) "\n"])
-         print-all(io,["writers: " writers(c) "\n"])
-         print-all(io,["readwriters: " readwriters(c) "\n"])
+         print-all(io,["\ndata-type: " data-type(c)])
+         print-all(io,["\ndepth: " depth(c)])
+         print-all(io,["\nwrite-latency: " write-latency(c)])
+         print-all(io,["\nread-latency: " read-latency(c)])
+         for r in readers(c) do : print-all(io,["\nreader: " r])
+         for w in writers(c) do : print-all(io,["\nwriter: " w])
+         for rw in readwriters(c) do : print-all(io,["\nread-writer: " rw])
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :
@@ -320,9 +319,9 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:Empty) :
          print(o, "skip")
       (c:Stop) :
-         print-all(o, ["stop(" ret(c) ", " clk(c) ")"])
+         print-all(o, ["stop(" ret(c) ", " clk(c) ", " en(c) ")"])
       (c:Print) :
-         print-all(o, ["printf(" clk(c) ", "]) ;"
+         print-all(o, ["printf(" clk(c) ", " en(c) ", "]) ;"
          print-all(o, join(List(escape(string(c)),args(c)), ", "))
          print(o, ")")
          
@@ -426,8 +425,8 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
       (c:Connect) : Connect(info(c),f(loc(c)), f(exp(c)))
       (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
-      (c:Stop) : Stop(info(c),ret(c),f(clk(c)))
-      (c:Print) : Print(info(c),string(c),map(f,args(c)),f(clk(c)))
+      (c:Stop) : Stop(info(c),ret(c),f(clk(c)),f(en(c)))
+      (c:Print) : Print(info(c),string(c),map(f,args(c)),f(clk(c)),f(en(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T

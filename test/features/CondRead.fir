@@ -12,7 +12,7 @@ circuit CondRead :
     poison xxx : UInt<6>
     wire data : UInt<20>
     read accessor readport = mem[mux(pred,index,xxx)]
-    out := readport
+    out <= readport
 
 
 ; CHECK: read accessor readport = mem[mux(pred,index,index_0)]

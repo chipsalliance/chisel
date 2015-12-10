@@ -6,19 +6,19 @@ circuit top :
       input clk : Clock
       cmem m : UInt<32>[2][2][2], clk
       wire i : UInt<4>
-      i := UInt(1)
+      i <= UInt(1)
       infer accessor a = m[i] ;CHECK: read accessor a = m[i]
       infer accessor b = a[i] ;CHECK: indexer b = (a[0] a[1])[i] : UInt<32>[2]
       infer accessor c = b[i] ;CHECK: indexer c = (b[0] b[1])[i] : UInt<32>
       wire j : UInt<32>
-      j := c
+      j <= c
 
       infer accessor x = m[i] ;CHECK: write accessor x = m[i]
       infer accessor y = x[i] ;CHECK: indexer (x[0] x[1])[i] = y : UInt<32>[2]
-      y[0] := UInt(1)
-      y[1] := UInt(1)
+      y[0] <= UInt(1)
+      y[1] <= UInt(1)
       infer accessor z = y[i] ;CHECK: indexer (y[0] y[1])[i] = z : UInt<32>
-      z := j
+      z <= j
 
 ; CHECK: Finished Expand Accessors
 ; CHECK: Done!

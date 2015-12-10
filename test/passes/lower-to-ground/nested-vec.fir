@@ -17,7 +17,7 @@ circuit top :
       infer accessor b = a[i]
       ; CHECK: indexer b{{[_$]+}}x = (a{{[_$]+}}0{{[_$]+}}x a{{[_$]+}}1{{[_$]+}}x)[i] : UInt<32>
       ; CHECK: indexer (a{{[_$]+}}0{{[_$]+}}y a{{[_$]+}}1{{[_$]+}}y)[i] = b{{[_$]+}}y : UInt<32>
-      j := b
+      j <= b
 
       cmem m : { x : UInt<32>, y : UInt<32> }[2],clk
       ; CHECK: cmem m{{[_$]+}}x : UInt<32>[2]
@@ -27,9 +27,9 @@ circuit top :
       ; CHECK: accessor c{{[_$]+}}x = m{{[_$]+}}x[i]
       ; CHECK: accessor c{{[_$]+}}y = m{{[_$]+}}y[i]
 
-      c := k
-      ; CHECK: c{{[_$]+}}x := k{{[_$]+}}x
-      ; CHECK: c{{[_$]+}}y := k{{[_$]+}}y
+      c <= k
+      ; CHECK: c{{[_$]+}}x <= k{{[_$]+}}x
+      ; CHECK: c{{[_$]+}}y <= k{{[_$]+}}y
 
 ; CHECK: Finished Lower To Ground
 

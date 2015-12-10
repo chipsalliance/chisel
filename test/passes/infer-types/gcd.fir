@@ -6,8 +6,8 @@ circuit top :
       input x : UInt
       input y : UInt
       output z : UInt
-      z := subw(x, y)
-      ;CHECK: z@<t:UInt> := subw(x@<t:UInt>, y@<t:UInt>)@<t:UInt>
+      z <= subw(x, y)
+      ;CHECK: z@<t:UInt> <= subw(x@<t:UInt>, y@<t:UInt>)@<t:UInt>
    module gcd :
       input a : UInt<16>
       input b : UInt<16>
@@ -19,27 +19,27 @@ circuit top :
       reg x : UInt,clk,reset
       reg y : UInt,clk,reset
 ; CHECK: reg x : UInt, clk@<t:Clock>, reset@<t:UInt>@<t:UInt>
-      onreset x := UInt(0)
-      onreset y := UInt(42)
+      onreset x <= UInt(0)
+      onreset y <= UInt(42)
       when gt(x, y) :
       ;CHECK: when gt(x@<t:UInt>, y@<t:UInt>)@<t:UInt> :
          inst s of subtracter
          ;CHECK: inst s of subtracter@<t:{flip x : UInt, flip y : UInt,  z : UInt}>
-         s.x := x
-         s.y := y
-         x := s.z
-         ;CHECK: s@<t:{flip x : UInt, flip y : UInt,  z : UInt}>.x@<t:UInt> := x@<t:UInt>
-         ;CHECK: s@<t:{flip x : UInt, flip y : UInt,  z : UInt}>.y@<t:UInt> := y@<t:UInt>
-         ;CHECK: x@<t:UInt> := s@<t:{flip x : UInt, flip y : UInt,  z : UInt}>.z@<t:UInt>      
+         s.x <= x
+         s.y <= y
+         x <= s.z
+         ;CHECK: s@<t:{flip x : UInt, flip y : UInt,  z : UInt}>.x@<t:UInt> <= x@<t:UInt>
+         ;CHECK: s@<t:{flip x : UInt, flip y : UInt,  z : UInt}>.y@<t:UInt> <= y@<t:UInt>
+         ;CHECK: x@<t:UInt> <= s@<t:{flip x : UInt, flip y : UInt,  z : UInt}>.z@<t:UInt>      
       else :
          inst s2 of subtracter
-         s2.x := x
-         s2.y := y
-         y := s2.z
+         s2.x <= x
+         s2.y <= y
+         y <= s2.z
       when e :
-         x := a
-         y := b
-      z := x
+         x <= a
+         y <= b
+      z <= x
    module top :
       input a : UInt<16>
       input b : UInt<16>
@@ -47,11 +47,11 @@ circuit top :
       input reset : UInt<1>
       output z : UInt
       inst i of gcd
-      i.a := a
-      i.b := b
-      i.clk := clk
-      i.reset := reset
-      i.e := UInt(1)
-      z := i.z
+      i.a <= a
+      i.b <= b
+      i.clk <= clk
+      i.reset <= reset
+      i.e <= UInt(1)
+      z <= i.z
 
 ; CHECK: Finished Infer Types

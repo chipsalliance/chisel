@@ -12,19 +12,19 @@ circuit RegisterVecShift :
     reg delays : UInt<4>[4],clk,reset
     when reset : 
       wire T_33 : UInt<4>[4]
-      T_33[0] := UInt<4>(0)
-      T_33[1] := UInt<4>(0)
-      T_33[2] := UInt<4>(0)
-      T_33[3] := UInt<4>(0)
-      delays := T_33
+      T_33[0] <= UInt<4>(0)
+      T_33[1] <= UInt<4>(0)
+      T_33[2] <= UInt<4>(0)
+      T_33[3] <= UInt<4>(0)
+      delays <= T_33
     when load : 
-      delays[0] := ins[0]
-      delays[1] := ins[1]
-      delays[2] := ins[2]
-      delays[3] := ins[3]
+      delays[0] <= ins[0]
+      delays[1] <= ins[1]
+      delays[2] <= ins[2]
+      delays[3] <= ins[3]
     else : when shift : 
-        delays[0] := ins[0]
-        delays[1] := delays[0]
-        delays[2] := delays[1]
-        delays[3] := delays[2]
-    out := delays[3]
+        delays[0] <= ins[0]
+        delays[1] <= delays[0]
+        delays[2] <= delays[1]
+        delays[3] <= delays[2]
+    out <= delays[3]

@@ -9,10 +9,10 @@ circuit top :
     input clock : Clock
     output out : UInt<1>
     reg T_4590 : UInt<1>[2], clock, reset
-    T_4590[0] := UInt(0)
-    T_4590[1] := UInt(0)
-    out := UInt(0)
+    T_4590[0] <= UInt(0)
+    T_4590[1] <= UInt(0)
+    out <= UInt(0)
     when T_4910 :
       infer accessor T_4911 = T_4590[T_4581]
-      out := T_4911
+      out <= T_4911
 ;CHECK: Done!

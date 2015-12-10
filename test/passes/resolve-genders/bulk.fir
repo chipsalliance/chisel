@@ -9,6 +9,6 @@ circuit top :
    module top :
       inst src of source
       inst snk of sink
-      snk.bundle := src.bundle
+      snk.bundle <= src.bundle
 
 ; CHECK: Finished Resolve Genders

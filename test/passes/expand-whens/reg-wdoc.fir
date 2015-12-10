@@ -4,11 +4,11 @@ circuit top :
       input clk : Clock
       input reset : UInt<1>
       wire p : UInt
-      p := UInt(1)
+      p <= UInt(1)
       when p :
          reg r : UInt,clk,reset
-         onreset r := UInt(1)
-         r := UInt(2)
+         onreset r <= UInt(1)
+         r <= UInt(2)
 
 ; CHECK: Expand Whens
 
@@ -16,8 +16,8 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt, clk, reset
-; CHECK:     p := UInt("h1")
-; CHECK-NOT:  when p : r := mux(reset, UInt("h1"), UInt("h2"))
+; CHECK:     p <= UInt("h1")
+; CHECK-NOT:  when p : r <= mux(reset, UInt("h1"), UInt("h2"))
 
 ; CHECK: Finished Expand Whens
 

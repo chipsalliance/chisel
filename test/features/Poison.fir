@@ -5,14 +5,36 @@ circuit Poison :
     input clk : Clock
     input reset : UInt<1>
     input index : UInt<7>
+    input wmask : {x:UInt<1>, y:UInt<1>}
     input p : UInt<1>
     output out : {x : UInt<10>, y : UInt<10>}
-     
     poison q : {x : UInt<10>, y : UInt<10>}
-    smem m : {x : UInt<10>, y : UInt<10>}[128],clk
-    infer accessor r = m[index]
+    mem m : 
+       data-type => {x : UInt<10>, y : UInt<10>}
+       depth => 128
+       read-latency => 1
+       write-latency => 2
+       reader => r
+       writer => w
+       read-writer => rw
+    m.r.addr <= index
+    m.r.en <= UInt(1)
+    m.r.clk <= clk
+    m.w.addr <= index
+    m.w.en <= UInt(1)
+    m.w.mask <= wmask
+    m.w.clk <= clk
+    m.w.data <= q
+
+    m.rw.clk <= clk
+    m.rw.raddr <= index
+    m.rw.ren <= UInt(1)
+    m.rw.waddr <= index
+    m.rw.wen <= UInt(1)
+    m.rw.wmask <= wmask
+    m.rw.wdata <= q
     when p : 
-      out := r
+      out <= m.r.data
     else :
-      out := q
+      out <= q
 

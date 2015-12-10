@@ -151,12 +151,13 @@ public defstruct Stop <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    ret: Int
    clk: Expression
+   en: Expression
 public defstruct Print <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    string: String
    args: List<Expression>
    clk: Expression
-
+   en: Expression
 public defstruct Empty <: Stmt ;LOW
 
 public definterface Type

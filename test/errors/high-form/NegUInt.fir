@@ -4,4 +4,4 @@
 circuit Top :
   module Top :
     wire x : UInt<4>
-    x := UInt(-2)
+    x <= UInt(-2)

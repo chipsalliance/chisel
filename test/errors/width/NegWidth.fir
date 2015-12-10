@@ -6,4 +6,4 @@ circuit Top :
     output y : UInt
 
     wire x : UInt<2>
-    y := shr(x,4)
+    y <= shr(x,4)

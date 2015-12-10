@@ -273,13 +273,15 @@ defsyntax firrtl :
          val write-latency = grab1({_ typeof WriteLatency},"write-latency")
          val read-latency = grab1({_ typeof ReadLatency},"read-latency")
          val depth = grab1({_ typeof Depth},"depth")
-         val data-type = grab1({_ typeof DataType},"data type")
-         DefMemory(first-info(form),name,data-type,depth,write-latency,read-latency,readers,writers,readwriters)
+         val dt = grab1({_ typeof DataType},"data type")
+         println("Parser!")
+         println(dt)
+         DefMemory(first-info(form),name,dt,depth,write-latency,read-latency,readers,writers,readwriters)
       stmt = (inst ?name:#id! #of! ?m:#id!) : DefInstance(first-info(form),name,m)
       stmt = (node ?name:#id! #=! ?e:#exp!) : DefNode(first-info(form),name,e)
       stmt = (poison ?name:#id! #:! ?t:#type!) : DefPoison(first-info(form),name, t)
-      stmt = (stop(?clk:#exp,?ret:#int)) : Stop(first-info(form),ret,clk)
-      stmt = (printf(?clk:#exp ?str:#string ?es:#exp ...)) : Print(first-info(form),str,es,clk)
+      stmt = (stop(?clk:#exp, ?en:#exp, ?ret:#int)) : Stop(first-info(form),ret,clk,en)
+      stmt = (printf(?clk:#exp ?en:#exp ?str:#string ?es:#exp ...)) : Print(first-info(form),str,es,clk,en)
       stmt = (?s:#stmt/when) : s
 
       stmt = (?x:#exp <= ?y:#exp!) : Connect(first-info(form),x, y) ;>
@@ -317,11 +319,13 @@ defsyntax firrtl :
             (t:UIntType) : 
                match(width(t)) :
                   (w:IntWidth) :
-                     if to-long(max(1,(req-num-bits(b) - 1))) > width(w) :
+                     if to-long(req-num-bits(b)) > width(w) :
                         FPE(form, "Width too small for UIntValue.")
                      UIntValue(b, w)
                   (w) :
-                     UIntValue(b, w)
+                     ;UIntValue(b, w)
+                     val num-bits = req-num-bits(b)
+                     UIntValue(b,IntWidth(max(1,num-bits)))
             (t:SIntType) : 
                match(width(t)) :
                   (w:IntWidth) :

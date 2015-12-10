@@ -6,8 +6,8 @@ circuit top :
       output out : UInt<64>
       input index : UInt<1>
       wire T_292 : UInt<64>[2]
-      T_292[0] := UInt(1)
-      T_292[1] := UInt(1)
+      T_292[0] <= UInt(1)
+      T_292[1] <= UInt(1)
       infer accessor T_297 = T_292[index]
-      out := T_297
+      out <= T_297
 ;CHECK: Done!

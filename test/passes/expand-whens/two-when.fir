@@ -6,34 +6,34 @@ circuit top :
       input clk : Clock
       cmem m :{ x : UInt<1>, y : UInt<1> }[2], clk
       wire i : UInt<1>
-      i := UInt(1)
+      i <= UInt(1)
       wire p : UInt<1>
-      p := UInt(1)
+      p <= UInt(1)
       wire q : { x : UInt<1>, y : UInt<1> }
       when p :
         wire p2 : UInt<1>
-        p2 := UInt(1)
+        p2 <= UInt(1)
         when p2 :
           infer accessor a = m[i] 
-          q := a
+          q <= a
           infer accessor b = m[i]
-          b := q
+          b <= q
         else :
           infer accessor c = m[i] 
-          q := c
+          q <= c
           infer accessor d = m[i]
-          d := q
+          d <= q
       else :
         wire p3 : UInt<1>
-        p3 := UInt(1)
+        p3 <= UInt(1)
         when p3 :
           infer accessor w = m[i] 
-          q := w
+          q <= w
           infer accessor x = m[i]
-          x := q
+          x <= q
         else :
           infer accessor y = m[i] 
-          q := y
+          q <= y
           infer accessor z = m[i]
-          z := q
+          z <= q
 ; CHECK: Finished Expand Whens

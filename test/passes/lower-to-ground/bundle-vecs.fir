@@ -15,12 +15,12 @@ circuit top :
       infer accessor b = a[i]
       ; CHECK: indexer b{{[_$]+}}x = (a{{[_$]+}}0{{[_$]+}}x a{{[_$]+}}1{{[_$]+}}x)[i] : UInt<32>
       ; CHECK: indexer (a{{[_$]+}}0{{[_$]+}}y a{{[_$]+}}1{{[_$]+}}y)[i] = b{{[_$]+}}y : UInt<32>
-      j := b
+      j <= b
       
       infer accessor c = a[i]
       ; CHECK: indexer (a{{[_$]+}}0{{[_$]+}}x a{{[_$]+}}1{{[_$]+}}x)[i] = c{{[_$]+}}x : UInt<32>
       ; CHECK: indexer c{{[_$]+}}y = (a{{[_$]+}}0{{[_$]+}}y a{{[_$]+}}1{{[_$]+}}y)[i] : UInt<32>
-      c := j
+      c <= j
 
 
 ; CHECK: Finished Lower To Ground

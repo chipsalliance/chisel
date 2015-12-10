@@ -9,24 +9,24 @@ circuit VendingMachine :
     input reset : UInt<1>
     
     reg state : UInt<3>,clk,reset
-    onreset state := UInt<3>(0)
+    onreset state <= UInt<3>(0)
     node T_22 = eq(state, UInt<3>(0))
     when T_22 : 
-      when nickel : state := UInt<3>(1)
-      when dime : state := UInt<3>(2)
+      when nickel : state <= UInt<3>(1)
+      when dime : state <= UInt<3>(2)
     node T_23 = eq(state, UInt<3>(1))
     when T_23 : 
-      when nickel : state := UInt<3>(2)
-      when dime : state := UInt<3>(3)
+      when nickel : state <= UInt<3>(2)
+      when dime : state <= UInt<3>(3)
     node T_24 = eq(state, UInt<3>(2))
     when T_24 : 
-      when nickel : state := UInt<3>(3)
-      when dime : state := UInt<3>(4)
+      when nickel : state <= UInt<3>(3)
+      when dime : state <= UInt<3>(4)
     node T_25 = eq(state, UInt<3>(3))
     when T_25 : 
-      when nickel : state := UInt<3>(4)
-      when dime : state := UInt<3>(4)
+      when nickel : state <= UInt<3>(4)
+      when dime : state <= UInt<3>(4)
     node T_26 = eq(state, UInt<3>(4))
-    when T_26 : state := UInt<3>(0)
+    when T_26 : state <= UInt<3>(0)
     node T_27 = eq(state, UInt<3>(4))
-    valid := T_27
+    valid <= T_27

@@ -8,4 +8,4 @@ circuit top :
    module top :
       output out : UInt
       node x = bits(UInt(127),2,0)
-      out := x
+      out <= x

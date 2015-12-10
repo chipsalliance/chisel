@@ -7,4 +7,4 @@ circuit Top :
     wire y : UInt<1>
 
     when UInt(0) : 
-      y := UInt(1)
+      y <= UInt(1)

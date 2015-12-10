@@ -9,10 +9,10 @@ circuit Counter :
     input amt : UInt<4>
     
     reg T_13 : UInt<8>,clk,reset
-    onreset T_13 := UInt<8>(0)
+    onreset T_13 <= UInt<8>(0)
     when inc : 
       node T_14 = addw(T_13, amt)
       node T_15 = gt(T_14, UInt<8>(255))
       node T_16 = mux(T_15, UInt<1>(0), T_14)
-      T_13 := T_16
-    tot := T_13
+      T_13 <= T_16
+    tot <= T_13

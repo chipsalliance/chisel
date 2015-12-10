@@ -4,10 +4,10 @@ circuit top :
       input clk : Clock
       input reset : UInt<1>
       wire p : UInt
-      p := UInt(1)
+      p <= UInt(1)
       reg r : UInt,clk,reset
       when p :
-         r := UInt(2)
+         r <= UInt(2)
 
 ; CHECK: Expand Whens
 
@@ -15,8 +15,8 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt
-; CHECK:     p := UInt("h1")
-; CHECK:     when p : r := UInt("h2")
+; CHECK:     p <= UInt("h1")
+; CHECK:     when p : r <= UInt("h2")
 
 ; CHECK: Finished Expand Whens
 

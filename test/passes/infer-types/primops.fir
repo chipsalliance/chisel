@@ -9,11 +9,11 @@ circuit top :
       wire d : SInt<8>
       wire e : UInt<1>
 
-      a := UInt(1)
-      b := UInt(1)
-      c := SInt(1)
-      d := SInt(1)
-      e := UInt(1)
+      a <= UInt(1)
+      b <= UInt(1)
+      c <= SInt(1)
+      d <= SInt(1)
+      e <= UInt(1)
 
       node vadd = add(a, c)    ;CHECK: node vadd = add(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
       node wadd = add(a, b) ;CHECK: node wadd = add(a@<t:UInt>, b@<t:UInt>)@<t:UInt>

@@ -9,18 +9,18 @@ circuit BTB :
     input in : {x : UInt<1>, flip y : {flip z : UInt<1>}}
     output out : {x : UInt<1>, flip y : {flip z : UInt<1>}}
 
-    in <> out
-    out.y <> in.y
-    out.y.z <> in.y.z
+    in <- out
+    out.y <- in.y
+    out.y.z <- in.y.z
     
     wire w : {x : UInt<1>, flip y : {flip z : UInt<1>}}
-    w <> in
-    in.y <> w.y
-    in.y.z <> w.y.z
+    w <- in
+    in.y <- w.y
+    in.y.z <- w.y.z
 
-    w.x := addw(in.x,in.y.z)
+    w.x <= addw(in.x,in.y.z)
 
-    out <> in
-    in.y <> out.y
-    in.y.z <> out.y.z
+    out <- in
+    in.y <- out.y
+    in.y.z <- out.y.z
 

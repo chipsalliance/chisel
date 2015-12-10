@@ -49,12 +49,12 @@ circuit ALUTop :
     node T_194 = eq(UInt<4>(0), alu_op)
     node oot = mux(T_194, T_157, T_193)
     node T_195 = bits(oot, 31, 0)
-    out := T_195
+    out <= T_195
     node T_196 = bit(alu_op, 0)
     node T_197 = subw(UInt<1>(0), B)
     node T_198 = mux(T_196, T_197, B)
     node T_199 = addw(A, T_198)
-    sum := T_199
+    sum <= T_199
   module ALUdec : 
     input opcode : UInt<7>
     input funct : UInt<3>
@@ -97,7 +97,7 @@ circuit ALUTop :
     node T_232 = mux(T_231, UInt<4>(0), T_230)
     node T_233 = eq(UInt<7>(55), opcode)
     node alu_op2 = mux(T_233, UInt<4>(11), T_232)
-    alu_op := alu_op2
+    alu_op <= alu_op2
   module ALUTop : 
     input B : UInt<32>
     output out : UInt<32>
@@ -108,10 +108,10 @@ circuit ALUTop :
     
     inst alu of ALU
     inst alu_dec of ALUdec
-    alu_dec.opcode := opcode
-    alu_dec.funct := funct
-    alu_dec.add_rshift_type := add_rshift_type
-    alu.A := A
-    alu.B := B
-    out := alu.out
-    alu.alu_op := alu_dec.alu_op
+    alu_dec.opcode <= opcode
+    alu_dec.funct <= funct
+    alu_dec.add_rshift_type <= add_rshift_type
+    alu.A <= A
+    alu.B <= B
+    out <= alu.out
+    alu.alu_op <= alu_dec.alu_op

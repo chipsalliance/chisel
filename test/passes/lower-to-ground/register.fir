@@ -11,13 +11,13 @@
 
                reg r1 : { x : UInt, y : SInt },clk,reset
                wire q : { x : UInt, y : SInt }
-               onreset r1 := q    
+               onreset r1 <= q    
 
       ; CHECK: reg r1{{[_$]+}}x : UInt
       ; CHECK: reg r1{{[_$]+}}y : SInt
       ; CHECK: wire q{{[_$]+}}x : UInt
       ; CHECK: wire q{{[_$]+}}y : SInt
-      ; CHECK: onreset r1{{[_$]+}}x := q{{[_$]+}}x
-      ; CHECK: onreset r1{{[_$]+}}y := q{{[_$]+}}y
+      ; CHECK: onreset r1{{[_$]+}}x <= q{{[_$]+}}x
+      ; CHECK: onreset r1{{[_$]+}}y <= q{{[_$]+}}y
 
 ; CHECK: Finished Lower To Ground

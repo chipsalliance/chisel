@@ -8,14 +8,14 @@ circuit Top :
     reg src : UInt<10>, clk1, reset1
     reg sink : UInt<10>, clk2, reset2
 
-    onreset src := UInt(0)
-    src := addw(src,UInt(1))
+    onreset src <= UInt(0)
+    src <= addw(src,UInt(1))
 
     reg sync_A : UInt<10>, clk2, reset2
-    sync_A := src
+    sync_A <= src
     reg sync_B : UInt<10>, clk2, reset2
-    sync_B := sync_A
+    sync_B <= sync_A
 
-    sink := sync_B
+    sink <= sync_B
 
 ;CHECK: Done!

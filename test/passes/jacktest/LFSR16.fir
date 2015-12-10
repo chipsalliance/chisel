@@ -8,7 +8,7 @@ circuit LFSR16 :
     input reset : UInt<1>
     
     reg res : UInt<16>,clk,reset
-    onreset res := UInt<16>(1)
+    onreset res <= UInt<16>(1)
     when inc : 
       node T_16 = bit(res, 0)
       node T_17 = bit(res, 2)
@@ -19,5 +19,5 @@ circuit LFSR16 :
       node T_22 = xor(T_20, T_21)
       node T_23 = bits(res, 15, 1)
       node T_24 = cat(T_22, T_23)
-      res := T_24
-    out := res
+      res <= T_24
+    out <= res

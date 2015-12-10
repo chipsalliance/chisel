@@ -15,18 +15,18 @@ circuit top :
 
       infer accessor b = a[i]
       ; CHECK: indexer b = (a{{[_$]+}}0 a{{[_$]+}}1 a{{[_$]+}}2 a{{[_$]+}}3)[i] : UInt<32>
-      j := b
+      j <= b
 
       infer accessor c = a[i]
       ; CHECK: indexer (a{{[_$]+}}0 a{{[_$]+}}1 a{{[_$]+}}2 a{{[_$]+}}3)[i] = c : UInt<32>
-      c := j
+      c <= j
       
       cmem p : UInt<32>[4],clk
       infer accessor t = p[i]
       ; CHECK: read accessor t = p[i]
-      j := t
+      j <= t
       infer accessor r = p[i]
       ; CHECK: write accessor r = p[i]
-      r := j
+      r <= j
 
 ; CHECK: Finished Lower To Ground

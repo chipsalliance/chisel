@@ -7,9 +7,9 @@ circuit ComplexAssign :
     input e : UInt<1>
     when e : 
       wire T_18 : {re : UInt<10>, im : UInt<10>}
-      T_18 := in
-      out.re := T_18.re
-      out.im := T_18.im
+      T_18 <= in
+      out.re <= T_18.re
+      out.im <= T_18.im
     else : 
-      out.re := UInt<1>(0)
-      out.im := UInt<1>(0)
+      out.re <= UInt<1>(0)
+      out.im <= UInt<1>(0)

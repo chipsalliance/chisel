@@ -6,7 +6,7 @@
 circuit Top :
   module Top :
     wire x : UInt
-    add(x,x) := UInt(1)
-    UInt(1) := UInt(1)
-    SInt(1) := UInt(1)
+    add(x,x) <= UInt(1)
+    UInt(1) <= UInt(1)
+    SInt(1) <= UInt(1)
 

@@ -3,4 +3,4 @@
 circuit Top : 
   module Top : 
     wire a : UInt
-    a := UInt("h4261441663")
+    a <= UInt("h4261441663")
