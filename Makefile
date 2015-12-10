@@ -12,18 +12,11 @@ export CHISEL_BIN
 
 #$(info Build Chisel $(CHISEL_VERSION))
 
-# The targetDir will be rm -rf'ed when "make clean"
-targetDir ?= ./generated
-# The TEST_OUTPUT_DIR will be rm -rf'ed when "make clean"
-TEST_OUTPUT_DIR ?= ./test-outputs
-RM_DIRS 	:= $(TEST_OUTPUT_DIR) test-reports $(targetDir)
-#CLEAN_DIRS	:= doc
-
 test_src_dir := src/test/scala/ChiselTests
 test_results := $(filter-out main DirChange Pads SIntOps,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
 c_resources_dir := src/main/resources
 
-.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test checkstyle compile setup
+.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test checkstyle compile
 
 # Define the (quick) checks we should run to validate a commit
 SMOKES	?= $(addprefix chiselTests.,DirectionSpec ChiselPropSpec)
@@ -41,15 +34,6 @@ compile:
 
 publish-local:
 	$(SBT) $(SBT_FLAGS) publish-local
-
-# We use java.io.tmpdir to specify the test output directory for tests.
-# Set it and make it available to the JVM.
-# NOTE: Since this is now Java's java.io.tmpdir, it better exist before
-# we run any Java code. Any targets that set the JAVA_OPTIONS variable
-# must also include a dependency on setup to create the directory.
-TARGETS_SET_JAVA_TMPDIR ?= jenkins-build coverage test check smoke
-$(TARGETS_SET_JAVA_TMPDIR): export _JAVA_OPTIONS += -Djava.io.tmpdir=$(abspath $(TEST_OUTPUT_DIR))
-$(TARGETS_SET_JAVA_TMPDIR): setup
 
 test:
 	$(SBT) $(SBT_FLAGS) test
@@ -91,10 +75,3 @@ jenkins-build:
 	$(SBT) $(SBT_FLAGS) publish-local
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
-
-# Use the order-only-prerequisites to ensure the TEST_OUTPUT_DIR exists.
-#  http://www.gnu.org/software/make/manual/make.html#Prerequisite-Types
-setup:	| $(TEST_OUTPUT_DIR)
-
-$(TEST_OUTPUT_DIR):
-	mkdir $@
