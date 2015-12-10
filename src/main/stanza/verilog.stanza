@@ -182,7 +182,7 @@ defn emit-module (m:InModule) :
    val decs = HashTable<Symbol,Stmt>(symbol-hash) ; all declarations, for fast lookups
    val cons = HashTable<Symbol,Expression>(symbol-hash) ; all connections
    val ens = HashTable<Symbol,Expression>(symbol-hash) ; all enables
-   val simuls = Vector<Streamable>()
+   val simuls = HashTable<Symbol,Vector<Streamable>>(symbol-hash)
    defn build-table (s:Stmt) -> False :
       match(s) :
          (s:DefWire|DefPoison|DefRegister|DefAccessor|DefMemory|DefNode|DefInstance) : 
@@ -195,19 +195,27 @@ defn emit-module (m:InModule) :
                   ens[n] = pred(s)
                   cons[n] = exp(conseq(s) as Connect)
                (c:PrintfStmt) :
-                  add(simuls,["if(" emit(pred(s)) ") begin"])
-                  add(simuls,["  $fdisplay(32/'h80000002," string-join(List(escape(string(c)),map(emit,args(c))), ", ") ");"])
-                  add(simuls,["end"])
+                  val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
+                  add(my-clk-simuls,["if(" emit(pred(s)) ") begin"])
+                  add(my-clk-simuls,["  $fdisplay(32/'h80000002," string-join(List(escape(string(c)),map(emit,args(c))), ", ") ");"])
+                  add(my-clk-simuls,["end"])
+                  simuls[get-name(clk(c))] = my-clk-simuls
                (c:StopStmt) : 
-                  add(simuls,["if(" emit(pred(s)) ") begin"])
-                  add(simuls,["  $fdisplay(32/'h80000002," ret(c) ");"])
-                  add(simuls,["  $finish;"])
-                  add(simuls,["end"])
+                  val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
+                  add(my-clk-simuls,["if(" emit(pred(s)) ") begin"])
+                  add(my-clk-simuls,["  $fdisplay(32/'h80000002," ret(c) ");"])
+                  add(my-clk-simuls,["  $finish;"])
+                  add(my-clk-simuls,["end"])
+                  simuls[get-name(clk(c))] = my-clk-simuls
          (s:PrintfStmt) : 
-            add(simuls,["$fdisplay(32/'h80000002," string-join(List(escape(string(s)),map(emit,args(s))), ", ") ");"])
+            val my-clk-simuls = get?(simuls,get-name(clk(s)),Vector<Streamable>())
+            add(my-clk-simuls,["$fdisplay(32/'h80000002," string-join(List(escape(string(s)),map(emit,args(s))), ", ") ");"])
+            simuls[get-name(clk(s))] = my-clk-simuls
          (c:StopStmt) : 
-            add(simuls,["$fdisplay(32/'h80000002," ret(c) ");"])
-            add(simuls,["$finish;"])
+            val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
+            add(my-clk-simuls,["$fdisplay(32/'h80000002," ret(c) ");"])
+            add(my-clk-simuls,["$finish;"])
+            simuls[get-name(clk(c))] = my-clk-simuls
          (s:Connect) : 
             val n = get-name(loc(s))
             cons[n] = exp(s)
@@ -353,14 +361,15 @@ defn emit-module (m:InModule) :
             println-all(u)
          println("  end")
 
-   if length(simuls) != 0 :
-      println("`ifndef SYNTHESIS")
-      println("  always @(*) begin")
-      for x in simuls do :
-         print("    ")
-         println-all(x)
-      println("  end")
-      println("`endif")
+   for x in simuls do :
+      if length(value(x)) != 0 :
+         println("`ifndef SYNTHESIS")
+         println-all(["  always @(posedge " key(x) ") begin"])
+         for u in value(x) do :
+            print("    ")
+            println-all(u)
+         println("  end")
+         println("`endif")
       
    println("endmodule")
 

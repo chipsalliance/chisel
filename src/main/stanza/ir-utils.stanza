@@ -279,9 +279,9 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:EmptyStmt) :
          print(o, "skip")
       (c:StopStmt) :
-         print-all(o, ["stop(" ret(c) ")"])
+         print-all(o, ["stop(" clk(c) ", " ret(c) ")"])
       (c:PrintfStmt) :
-         print-all(o, ["printf("]) ;"
+         print-all(o, ["printf(" clk(c) ", " ]) ;"
          print-all(o, join(List(escape(string(c)),args(c)), ", "))
          print(o, ")")
          
@@ -376,7 +376,8 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:Connect) : Connect(info(c),f(loc(c)), f(exp(c)))
       (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
       (c:OnReset) : OnReset(info(c),f(loc(c)),f(exp(c)))
-      (c:PrintfStmt) : PrintfStmt(info(c),string(c),map(f,args(c)))
+      (c:PrintfStmt) : PrintfStmt(info(c),string(c),map(f,args(c)),f(clk(c)))
+      (c:StopStmt) : StopStmt(info(c),ret(c),f(clk(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T

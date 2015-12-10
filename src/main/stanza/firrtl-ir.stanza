@@ -158,10 +158,12 @@ public defstruct Connect <: Stmt : ;LOW
 public defstruct StopStmt <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    ret: Int
+   clk: Expression
 public defstruct PrintfStmt <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    string: String
    args: List<Expression>
+   clk: Expression
 
 public defstruct EmptyStmt <: Stmt ;LOW
 

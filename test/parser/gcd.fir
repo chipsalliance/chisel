@@ -47,6 +47,6 @@ circuit GCD :
 ; CHECK:       x := a
 ; CHECK:       y := b
 ; CHECK:     z := x
-; CHECK:     node T_20 = eq(y, UInt<1>("h0"))
+; CHECK:     node T_20 = eq(y, UInt("h0"))
 ; CHECK:     v := T_20
 

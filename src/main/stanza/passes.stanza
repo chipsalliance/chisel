@@ -365,7 +365,7 @@ defn remove-special-chars (c:Circuit) :
          (s:Connect) : Connect(info(s),rename-e(loc(s)),rename-e(exp(s)))
          (s:EmptyStmt) : s
          (s:StopStmt) : s
-         (s:PrintfStmt) : PrintfStmt(info(s),string(s),map(rename-e,args(s)))
+         (s:PrintfStmt) : PrintfStmt(info(s),string(s),map(rename-e,args(s)),rename-e(clk(s)))
 
    Circuit(info(c),modules*, rename(main(c))) where :
       val modules* =
@@ -821,7 +821,7 @@ defn resolve-genders (c:Circuit) :
                val alt* = resolve-stmt(alt(s))
                Conditionally(info(s),pred*,conseq*,alt*)
             (s:PrintfStmt) : 
-               PrintfStmt(info(s),string(s),map(resolve-expr{_,MALE},args(s)))
+               PrintfStmt(info(s),string(s),map(resolve-expr{_,MALE},args(s)),clk(s))
             (s) : map(resolve-stmt,s)
 
       defn resolve-expr (e:Expression,desired:Gender) -> Expression :
@@ -1134,7 +1134,7 @@ defn lower (body:Stmt) -> Stmt :
             Conditionally(info(s),exp(head $ expand-expr(pred(s))),lower-stmt(conseq(s)),lower-stmt(alt(s)))
          (s:PrintfStmt) :
             val args* = for x in args(s) map : exp(head(expand-expr(x)))
-            PrintfStmt(info(s),string(s),args*)
+            PrintfStmt(info(s),string(s),args*,clk(s))
          (s:Begin|EmptyStmt|StopStmt) : map(lower-stmt,s)
 
    lower-stmt(body)
@@ -2089,7 +2089,7 @@ defn gen-constraints (m:Module, h:HashTable<Symbol,Type>, v:Vector<WGeq>) -> Mod
             add(v,WGeq(width!(type(l)),width!(type(e))))
             Connect(info(s),l,e)
          (s:PrintfStmt) : 
-            PrintfStmt(info(s),string(s),map(gen-constraints,args(s)))
+            PrintfStmt(info(s),string(s),map(gen-constraints,args(s)),gen-constraints(clk(s)))
          (s:Conditionally) : 
             val p = gen-constraints(pred(s))
             add(v,WGeq(width!(type(p)),LongWidth(1)))
@@ -2373,7 +2373,7 @@ defn split-exp (c:Circuit) :
                (c:PrintfStmt) :
                   val args* = for x in args(c) map :
                      map(split-exp-e{_,false,info(c)},x)
-                  val conseq* = PrintfStmt(info(c),string(c),args*)
+                  val conseq* = PrintfStmt(info(c),string(c),args*,clk(c))
                   add(v,Conditionally(info(s),pred*,conseq*,alt(s)))
                (c:StopStmt) :
                   add(v,Conditionally(info(s),pred*,c,alt(s)))
@@ -2383,7 +2383,7 @@ defn split-exp (c:Circuit) :
          (s:PrintfStmt) : 
             val args* = for x in args(s) map :
                map(split-exp-e{_,false,info(s)},x)
-            add(v,PrintfStmt(info(s),string(s),args*))
+            add(v,PrintfStmt(info(s),string(s),args*,clk(s)))
          (s:DefNode) : 
             val exp* = map(split-exp-e{_,name(s),info(s)},value(s))
             add(v,DefNode(info(s),name(s),exp*))
@@ -2543,7 +2543,7 @@ defn pad-widths-s (s:Stmt) -> Stmt :
          val args* = for x in args(s) map :
             val i = int-width!(type(x))
             pad-widths-e(i,x)
-         PrintfStmt(info(s),string(s),args*)
+         PrintfStmt(info(s),string(s),args*,clk(s))
       (s:DefNode) : 
          val i = int-width!(type(value(s)))
          val exp* = pad-widths-e(i,value(s))
