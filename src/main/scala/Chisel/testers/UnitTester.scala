@@ -91,33 +91,28 @@ class UnitTester extends Module {
      */
 //    switch(operation) {
 //      is(Bits(0)) {
-//      switch(operation) {
+//      switch(port_index) {
 //        input_port_from_index.map { case (key, element) =>
 //          is(port_index) { element := element.fromBits(operand_1) }
 //        }
 //      }
 //    }
 
+    // TODO: make switches below look like this
+
     switch(operation) {
       is(Bits(0)) {
-        new SwitchContext(operation) {
-          io_input_register_from_index.map { case (key, element) =>
-            is(port_index) {
-              element := element.fromBits(operand_1)
-            }
+        io_input_register_from_index.map { case (index, port)=>
+          when(UInt(index) === port_index) {
+            port := operand_1
           }
-        }
-      }
+        }      }
       is(Bits(1)) {
-        new SwitchContext(operation) {
-          io_input_register_from_index.map { case (key, element) =>
-            is(port_index) {
-              when( ! element === element.fromBits(operand_1) ) {
-                io.done          := Bool(true)
-                io.error         := Bool(true)
-                io.step_at_error := pc
-              }
-            }
+        io_output_port_from_index.map { case (index, port) =>
+          when(UInt(index) === port_index && Bool(port.fromBits(operand_1) != port)) {
+            io.done          := Bool(true)
+            io.error         := Bool(true)
+            io.step_at_error := pc
           }
         }
       }
@@ -125,7 +120,7 @@ class UnitTester extends Module {
 
     pc := pc + UInt(1)
 
-    when(pc === UInt(program.length)) {
+    when(pc >= UInt(program.length)) {
       io.done := Bool(true)
     }
 
