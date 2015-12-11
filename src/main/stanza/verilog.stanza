@@ -197,23 +197,23 @@ defn emit-module (m:InModule) :
                (c:PrintfStmt) :
                   val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
                   add(my-clk-simuls,["if(" emit(pred(s)) ") begin"])
-                  add(my-clk-simuls,["  $fdisplay(32/'h80000002," string-join(List(escape(string(c)),map(emit,args(c))), ", ") ");"])
+                  add(my-clk-simuls,["  $fdisplay(STDERR," string-join(List(escape(string(c)),map(emit,args(c))), ", ") ");"])
                   add(my-clk-simuls,["end"])
                   simuls[get-name(clk(c))] = my-clk-simuls
                (c:StopStmt) : 
                   val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
                   add(my-clk-simuls,["if(" emit(pred(s)) ") begin"])
-                  add(my-clk-simuls,["  $fdisplay(32/'h80000002," ret(c) ");"])
+                  add(my-clk-simuls,["  $fdisplay(STDERR," ret(c) ");"])
                   add(my-clk-simuls,["  $finish;"])
                   add(my-clk-simuls,["end"])
                   simuls[get-name(clk(c))] = my-clk-simuls
          (s:PrintfStmt) : 
             val my-clk-simuls = get?(simuls,get-name(clk(s)),Vector<Streamable>())
-            add(my-clk-simuls,["$fdisplay(32/'h80000002," string-join(List(escape(string(s)),map(emit,args(s))), ", ") ");"])
+            add(my-clk-simuls,["$fdisplay(STDERR," string-join(List(escape(string(s)),map(emit,args(s))), ", ") ");"])
             simuls[get-name(clk(s))] = my-clk-simuls
          (c:StopStmt) : 
             val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
-            add(my-clk-simuls,["$fdisplay(32/'h80000002," ret(c) ");"])
+            add(my-clk-simuls,["$fdisplay(STDERR," ret(c) ");"])
             add(my-clk-simuls,["$finish;"])
             simuls[get-name(clk(c))] = my-clk-simuls
          (s:Connect) : 
@@ -307,6 +307,7 @@ defn emit-module (m:InModule) :
                   updates[get-name(clock(mem-declaration))] = my-clk-update
             
    ;==== Actually printing module =====
+   if length(simuls) != 0 : print-all(["integer STDERR = 32'h80000002;\n"])
    val port-indent = "    "
    print-all(["module " name(m) "(\n"])
    for (p in ports(m),i in 1 to false) do :
