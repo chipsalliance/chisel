@@ -151,6 +151,8 @@ case class WhenEnd() extends Command
 case class Connect(loc: Node, exp: Arg) extends Command
 case class BulkConnect(loc1: Node, loc2: Node) extends Command
 case class ConnectInit(loc: Node, exp: Arg) extends Command
+case class Stop(clk: Arg, ret: Int) extends Command
+case class Printf(clk: Arg, format: String, ids: Seq[Arg]) extends Command
 case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
 

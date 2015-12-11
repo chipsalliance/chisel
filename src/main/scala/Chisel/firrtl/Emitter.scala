@@ -19,6 +19,8 @@ private class Emitter(circuit: Circuit) {
     case e: Connect => s"${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
     case e: BulkConnect => s"${e.loc1.fullName(ctx)} <> ${e.loc2.fullName(ctx)}"
     case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
+    case e: Stop => s"stop(${e.clk.fullName(ctx)}, ${e.ret})"
+    case e: Printf => s"""printf(${e.clk.fullName(ctx)}, "${e.format}"${e.ids.map(_.fullName(ctx)).fold(""){_ + ", " + _}})"""
     case e: DefInstance => {
       val modName = moduleMap.getOrElse(e.id.name, e.id.name)
       s"inst ${e.name} of $modName"
