@@ -307,7 +307,6 @@ defn emit-module (m:InModule) :
                   updates[get-name(clock(mem-declaration))] = my-clk-update
             
    ;==== Actually printing module =====
-   if length(simuls) != 0 : print-all(["integer STDERR = 32'h80000002;\n"])
    val port-indent = "    "
    print-all(["module " name(m) "(\n"])
    for (p in ports(m),i in 1 to false) do :
@@ -321,6 +320,8 @@ defn emit-module (m:InModule) :
             print-all([port-indent "output " get-width(type(p)) " " name(p) end])
             add(assigns,["assign " name(p) " = " emit(cons[name(p)]) ";"])
    if length(ports(m)) == 0 : print(");\n")
+
+   if length(simuls) != 0 : print-all(["  integer STDERR = 32'h80000002;\n"])
 
    for w in wires do :
       print("  ")
