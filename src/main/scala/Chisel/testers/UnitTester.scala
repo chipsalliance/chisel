@@ -129,6 +129,12 @@ class UnitTester extends Module {
       )
 
 //      when(ok_to_test_output_values(pc) && output_port === output_values(pc))) {
+
+      printf("pc %x ok_to_test %x port_value %X expected %X",
+        pc, ok_to_test_output_values(pc),
+        output_port.toBits(),
+        output_values(pc).toBits())
+
       when(ok_to_test_output_values(pc)) {
         when(output_port.toBits() != output_values(pc).toBits()) {
           io.error := Bool(true)
