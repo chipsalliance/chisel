@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import java.io.File
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
@@ -9,9 +10,15 @@ import Chisel._
 import Chisel.testers._
 
 /** Common utility functions for Chisel unit tests. */
-trait ChiselRunners {
-  def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
+trait ChiselRunners extends Assertions {
+  def runTester(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
+    TesterDriver.execute(() => t, additionalVResources)
+  }
+  def assertTesterPasses(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
+    assert(runTester(t, additionalVResources))
+  }
   def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
+
 }
 
 /** Spec base class for BDD-style testers. */
