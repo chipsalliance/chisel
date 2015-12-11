@@ -23,19 +23,24 @@ class GCD extends Module {
 }
 
 class GCDUnitTester extends UnitTester {
-  def compute_gcd(a: Int, b: Int): Int = if(b == 0) a else compute_gcd(b, a%b)
+  def compute_gcd(a: Int, b: Int, depth: Int = 1): Tuple2[Int, Int] = {
+    if(b == 0) (a, depth)
+    else compute_gcd(b, a%b, depth+1 )
+  }
 
   val gcd = Module(new GCD)
 
   for {
-    value_1 <- 0 to 2
-    value_2 <- 0 to 2
+    value_1 <- 4 to 8
+    value_2 <- 2 to 4
   } {
     poke(gcd.io.a, value_1)
     poke(gcd.io.b, value_2)
 
-    expect(gcd.io.z, compute_gcd(value_1, value_2))
-    step(1)
+    val (expected_gcd, steps) = compute_gcd(value_1, value_2)
+
+    step(steps)
+    expect(gcd.io.z, expected_gcd)
   }
 
   install(gcd)

@@ -58,10 +58,12 @@ class UnitTester extends Module {
   }
 
   def step(number_of_cycles: Int): Unit = {
-    test_actions += new Step(
-      new mutable.HashMap[Data, Int](),
-      new mutable.HashMap[Data, Int]()
-    )
+    test_actions ++= Array.fill(number_of_cycles) {
+      new Step(
+        new mutable.HashMap[Data, Int](),
+        new mutable.HashMap[Data, Int]()
+      )
+    }
   }
 
   def install[T <: Module](dut: T): Unit = {
@@ -129,12 +131,13 @@ class UnitTester extends Module {
 
 //      when(ok_to_test_output_values(pc) && output_port === output_values(pc))) {
       when(ok_to_test_output_values(pc)) {
-        when(output_port.toBits() === output_values(pc).toBits()) {
+        when(output_port.toBits() != output_values(pc).toBits()) {
           io.error := Bool(true)
           io.done  := Bool(true)
         }
       }
     }
+
 
     pc := pc + UInt(1)
 
