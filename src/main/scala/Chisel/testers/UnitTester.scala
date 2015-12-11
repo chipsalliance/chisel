@@ -99,7 +99,10 @@ class UnitTester extends Module {
     io.done  := Bool(false)
     io.error := Bool(false)
 
+
     val pc             = Reg(init=UInt(0, 8))
+
+    io.step_at_error := pc
 
     dut_inputs.foreach { input_port =>
       var default_value = 0
@@ -118,7 +121,6 @@ class UnitTester extends Module {
           output_port.fromBits(UInt(step.output_map.getOrElse(output_port, 0)))
         }
       )
-      val x = output_port
       val ok_to_test_output_values = Vec(
         test_actions.map { step =>
           Bool(step.output_map.contains(output_port))
@@ -129,8 +131,7 @@ class UnitTester extends Module {
       when(ok_to_test_output_values(pc)) {
         when(output_port.toBits() === output_values(pc).toBits()) {
           io.error := Bool(true)
-          io.done := Bool(true)
-          io.step_at_error := pc
+          io.done  := Bool(true)
         }
       }
     }
