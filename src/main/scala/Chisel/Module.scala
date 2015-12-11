@@ -95,8 +95,4 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
     _ids.foreach(_._onModuleClose)
     this
   }
-
-  // TODO: actually implement these
-  def assert(cond: Bool, msg: String): Unit = {}
-  def printf(message: String, args: Bits*): Unit = {}
 }
