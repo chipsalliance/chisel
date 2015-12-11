@@ -1,9 +1,13 @@
 // See LICENSE for license details.
 
 package Chisel
+
 import scala.collection.mutable.{ArrayBuffer, HashSet}
-import Builder.pushCommand
-import Builder.dynamicContext
+
+import internal._
+import internal.Builder.pushCommand
+import internal.Builder.dynamicContext
+import firrtl._
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -91,8 +95,4 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
     _ids.foreach(_._onModuleClose)
     this
   }
-
-  // TODO: actually implement these
-  def assert(cond: Bool, msg: String): Unit = {}
-  def printf(message: String, args: Bits*): Unit = {}
 }

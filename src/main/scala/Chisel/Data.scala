@@ -1,7 +1,10 @@
 // See LICENSE for license details.
 
 package Chisel
-import Builder.pushCommand
+
+import internal._
+import internal.Builder.pushCommand
+import firrtl._
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name

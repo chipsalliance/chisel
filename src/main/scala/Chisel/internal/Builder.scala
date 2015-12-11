@@ -1,10 +1,14 @@
 // See LICENSE for license details.
 
-package Chisel
+package Chisel.internal
+
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
-private class Namespace(parent: Option[Namespace], keywords: Set[String]) {
+import Chisel._
+import Chisel.firrtl._
+
+private[Chisel] class Namespace(parent: Option[Namespace], keywords: Set[String]) {
   private var i = 0L
   private val names = collection.mutable.HashSet[String]()
 
@@ -28,7 +32,7 @@ private class Namespace(parent: Option[Namespace], keywords: Set[String]) {
   def child: Namespace = child(Set())
 }
 
-private class IdGen {
+private[Chisel] class IdGen {
   private var counter = -1L
   def next: Long = {
     counter += 1
@@ -68,7 +72,7 @@ class RefMap {
   def apply(id: HasId): Arg = _refmap(id._id)
 }
 
-private class DynamicContext {
+private[Chisel] class DynamicContext {
   val idGen = new IdGen
   val globalNamespace = new Namespace(None, Set())
   val globalRefMap = new RefMap
@@ -77,7 +81,7 @@ private class DynamicContext {
   val errors = new ErrorLog
 }
 
-private object Builder {
+private[Chisel] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
 

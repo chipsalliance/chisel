@@ -21,7 +21,7 @@ object BitPat {
     var mask = BigInt(0)
     for (d <- x.tail) {
       if (d != '_') {
-        if (!"01?".contains(d)) Builder.error({"Literal: " + x + " contains illegal character: " + d})
+        require("01?".contains(d), "Literal: " + x + " contains illegal character: " + d)
         mask = (mask << 1) + (if (d == '?') 0 else 1)
         bits = (bits << 1) + (if (d == '1') 1 else 0)
       }

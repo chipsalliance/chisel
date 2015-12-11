@@ -1,9 +1,13 @@
 // See LICENSE for license details.
 
 package Chisel
+
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
-import Builder.pushCommand
+
+import internal._
+import internal.Builder.pushCommand
+import firrtl._
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -88,10 +92,14 @@ object Vec {
   * @tparam T type of elements
   * @note when multiple conflicting assignments are performed on a Vec element,
   * the last one takes effect (unlike Mem, where the result is undefined)
+  * @note Vecs, unlike classes in Scala's collection library, are propagated
+  * intact to FIRRTL as a vector type, which may make debugging easier
   */
 sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     extends Aggregate(gen.dir) with VecLike[T] {
-  // REVIEW TODO: should this take a Seq instead of a gen()?
+  // Note: the constructor takes a gen() function instead of a Seq to enforce
+  // that all elements must be the same and because it makes FIRRTL generation
+  // simpler.
 
   private val self = IndexedSeq.fill(length)(gen)
 
@@ -246,28 +254,50 @@ class Bundle extends Aggregate(NO_DIR) {
   lazy val elements: ListMap[String, Data] = ListMap(namedElts:_*)
 
   /** Returns a best guess at whether a field in this Bundle is a user-defined
-    * Bundle element.
+    * Bundle element without looking at type signatures.
     */
   private def isBundleField(m: java.lang.reflect.Method) =
     m.getParameterTypes.isEmpty &&
     !java.lang.reflect.Modifier.isStatic(m.getModifiers) &&
-    classOf[Data].isAssignableFrom(m.getReturnType) &&
     !(Bundle.keywords contains m.getName) && !(m.getName contains '$')
+
+  /** Returns a field's contained user-defined Bundle element if it appears to
+    * be one, otherwise returns None.
+    */
+  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = {
+    if (isBundleField(m) &&
+        (classOf[Data].isAssignableFrom(m.getReturnType) ||
+         classOf[Option[_]].isAssignableFrom(m.getReturnType))) {
+      m.invoke(this) match {
+        case d: Data =>
+          Some(d)
+        case o: Option[_] =>
+          o.getOrElse(None) match {
+            case d: Data =>
+              Some(d)
+            case _ => None
+          }
+        case _ => None
+      }
+    } else {
+      None
+    }
+  }
 
   /** Returns a list of elements in this Bundle.
     */
   private[Chisel] lazy val namedElts = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
-    for (m <- getClass.getMethods.sortWith(_.getName < _.getName); if isBundleField(m)) {
-      m.invoke(this) match {
-        case d: Data =>
+    for (m <- getClass.getMethods.sortWith(_.getName < _.getName)) {
+      getBundleField(m) match {
+        case Some(d) =>
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else if (!seen(d)) {
             nameMap(m.getName) = d; seen += d
           }
-        case _ =>
+        case None =>
       }
     }
     ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
