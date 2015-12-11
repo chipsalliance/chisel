@@ -56,9 +56,9 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;CheckGenders()           ;W
       ;CheckKinds()             ;W
       ;CheckTypes()             ;R
-      ExpandAccesses()        ;W
+      ;ExpandAccesses()        ;W
       ExpandConnects()        ;W
-      ;ReplaceIndexers()
+      RemoveAccesses()
       ResolveKinds()           ;W
       InferTypes()             ;R
       ResolveGenders()         ;W

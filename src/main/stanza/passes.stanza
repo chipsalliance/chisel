@@ -832,49 +832,17 @@ defn resolve-genders (c:Circuit) :
 ;   of the accessor, it is transformed into DecFromIndexer (male) or
 ;   DecToIndexer (female)
 
-public defstruct ExpandAccesses <: Pass
-public defmethod pass (b:ExpandAccesses) -> (Circuit -> Circuit) : expand-accesses
-public defmethod name (b:ExpandAccesses) -> String : "Expand Accesses"
-public defmethod short-name (b:ExpandAccesses) -> String : "expand-accesses"
+;public defstruct ExpandAccesses <: Pass
+;public defmethod pass (b:ExpandAccesses) -> (Circuit -> Circuit) : expand-accesses
+;public defmethod name (b:ExpandAccesses) -> String : "Expand Accesses"
+;public defmethod short-name (b:ExpandAccesses) -> String : "expand-accesses"
+;
 
 defn expand-vector (e:Expression,g:Gender) -> List<Expression> :
    val t = type(e) as VectorType
    for i in 0 to size(t) map-append :
       list(WSubIndex(e,i,type(t),g)) ;always be WRef|WSubField|WSubIndex
 
-defn expand-accesses (c:Circuit) :
-   defn expand-m (m:InModule) -> InModule :
-      val sh = get-sym-hash(m,keys(v-keywords))
-      defn expand-s (s:Stmt) -> Stmt :
-         val stmts = Vector<Stmt>()
-         defn when-chain (exps:List<Expression>,e:Expression,index:Expression,to?:True|False) :
-            for (x in exps,i in 0 to length(exps)) do :
-               if to? :
-                  add(stmts,Conditionally(info(s),EQV(uint(i),index),Connect(info(s),x,e),Empty()))
-               else : 
-                  add(stmts,Conditionally(info(s),EQV(uint(i),index),Connect(info(s),e,x),Empty()))
-         defn expand-e (e:Expression) -> Expression :
-            match(map(expand-e,e)) :
-               (e:WSubAccess) : 
-                  val n = firrtl-gensym(`GEN,sh)
-                  add(stmts,DefWire(info(s),n,type(e)))
-                  val ls = expand-vector(exp(e),gender(e))
-                  val e* = WRef(n,type(e),kind(e),gender(e))
-                  when-chain(ls,e*,index(e),gender(e) == FEMALE)
-                  e*
-               (e) : e
-         val s* = map(expand-e,s)
-         add(stmts,s*)
-         map{expand-s,_} $ Begin(to-list(stmts))
-
-      InModule(info(m),name(m),ports(m),expand-s(body(m)))
-
-   Circuit(info(c),modules*, main(c)) where :
-      val modules* = 
-         for m in modules(c) map :
-            match(m) :
-               (m:ExModule) : m
-               (m:InModule) : expand-m(m)
 
 
 ;================ EXPAND CONNECTS ==================
@@ -923,11 +891,11 @@ defn get-point (e:Expression) -> Int :
             val b = name(f) == name(e)
             if not b : i = i + get-size(type(f))
             b
-         get-point(exp(e)) + i
+         i
       (e:WSubIndex) :
-         get-point(exp(e)) + value(e) * get-size(e)
-      (e:WIndexer) :
-         get-point(exps(e)[0])
+         value(e) * get-size(e)
+      (e:WSubAccess) :
+         get-point(exp(e))
 defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]> :
    match(t1,t2) :
       (t1:UIntType,t2:UIntType) : 
@@ -965,7 +933,7 @@ defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]>
          to-list(points)
 defn create-exps (n:Symbol, t:Type) -> List<Expression> :
    create-exps(WRef(n,t,ExpKind(),UNKNOWN-GENDER))
-defn create-exps (e:WRef|WSubField|WSubIndex) -> List<Expression> :
+defn create-exps (e:Expression) -> List<Expression> :
    match(type(e)) : 
       (t:UIntType|SIntType|ClockType) : list(e)
       (t:BundleType) : 
@@ -979,40 +947,14 @@ defn create-exps (e:WRef|WSubField|WSubIndex) -> List<Expression> :
 
 defn expand-connects (c:Circuit) -> Circuit :
    defn expand-connects (m:InModule) -> InModule :
-      val exp-lib = HashTable<Symbol,List<Expression>>(symbol-hash)
-      defn create-lib (s:Stmt) -> Stmt :
-         match(s) :
-            (s:DefWire|DefRegister|WDefInstance|DefNode|DefPoison|DefMemory) : ;TODO Memories?
-               exp-lib[name(s)] = create-exps(name(s),get-type(s))
-               println(get-type(s))
-               s
-            (s) : map(create-lib,s)
-      defn expand-e (e:Expression, point:Int) -> Expression :
-         println-all(["Expression: " e])
-         println-all(["point: " point])
-         match(e) :
-            (e:WRef|WSubField|WSubIndex) : 
-               println-all(["lib: " exp-lib[name(root-ref(e))]])
-               println-all(["get-point: " get-point(e)])
-               exp-lib[name(root-ref(e))][get-point(e) + point]
-            (e:WIndexer) : 
-               println-all(["lib: " exp-lib[name(root-ref(e))]])
-               println-all(["get-point: " get-point(e)])
-               val exps* = for e* in exps(e) map :
-                  expand-e(e*,point)
-               println-all(["exps: " exps*])
-               println("HERE!!!")
-               WIndexer(exps*,index(e),type(exps*[0]),gender(exps*[0]))
-            (e:DoPrim) : e
-            (e) : e
       defn expand-s (s:Stmt) -> Stmt :
          match(s) :
             (s:Connect) :
                val n = get-size(loc(s))
                val connects = Vector<Stmt>()
                for i in 0 to n do :
-                  val loc* = expand-e(loc(s),i)
-                  val exp* = expand-e(exp(s),i)
+                  val loc* = create-exps(loc(s))[i]
+                  val exp* = create-exps(exp(s))[i]
                   add{connects,_} $
                      switch { _ == get-flip(type(loc(s)),i,DEFAULT) } :
                         DEFAULT : Connect(info(s),loc*,exp*)
@@ -1022,8 +964,8 @@ defn expand-connects (c:Circuit) -> Circuit :
                val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
                val connects = Vector<Stmt>()
                for x in ls do :
-                  val loc* = expand-e(loc(s),x[0])
-                  val exp* = expand-e(exp(s),x[1])
+                  val loc* = create-exps(loc(s))[x[0]]
+                  val exp* = create-exps(exp(s))[x[1]]
                   add{connects,_} $
                      switch { _ == get-flip(type(loc(s)),x[0],DEFAULT) } :
                         DEFAULT : Connect(info(s),loc*,exp*)
@@ -1031,9 +973,6 @@ defn expand-connects (c:Circuit) -> Circuit :
                Begin(to-list(connects))
             (s) : map(expand-s,s)
 
-      for p in ports(m) do :
-         exp-lib[name(p)] = create-exps(name(p),type(p))
-      create-lib(body(m))
       InModule(info(m),name(m),ports(m),expand-s(body(m)))
 
    Circuit(info(c),modules*, main(c)) where :
@@ -1048,37 +987,95 @@ defn expand-connects (c:Circuit) -> Circuit :
 ; This pass inlines all accessors to non-memory vector typed
 ;   components.
 
-public defstruct ReplaceIndexers <: Pass
-public defmethod pass (b:ReplaceIndexers) -> (Circuit -> Circuit) : replace-indexer
-public defmethod name (b:ReplaceIndexers) -> String : "Replace Indexer"
-public defmethod short-name (b:ReplaceIndexers) -> String : "replace-indexers"
+public defstruct RemoveAccesses <: Pass
+public defmethod pass (b:RemoveAccesses) -> (Circuit -> Circuit) : remove-access
+public defmethod name (b:RemoveAccesses) -> String : "Remove Accesses"
+public defmethod short-name (b:RemoveAccesses) -> String : "remove-access"
 
-public defn replace-indexer (c:Circuit) -> Circuit :
-   defn mux-chain (exps:List<Expression>,i:Int,index:Expression) -> Expression :
-      if length(exps) == 1 : head(exps)
-      else : MUX(EQV(uint(i),index),head(exps),mux-chain(tail(exps),i + 1,index))
-   defn when-chain (exps:List<Expression>,e:Expression,index:Expression,info:FileInfo) -> Stmt :
-      val stmts = Vector<Stmt>()
-      for (x in exps,i in 0 to length(exps)) do :
-         add(stmts,Conditionally(info,EQV(uint(i),index),Connect(info,x,e),Empty()))
-      Begin(to-list(stmts))
-   defn replace-e (e:Expression) -> Expression :
-      match(map(replace-e,e)) :
-         (e:WIndexer) : mux-chain(exps(e),0,index(e))
-         (e) : e
-   defn replace-s (s:Stmt) -> Stmt :
-      match(s) :
-         (s:Connect) :
-            val exp* = replace-e(exp(s))
-            match(loc(s)) :
-               (e:WIndexer) : when-chain(exps(e),exp*,index(e),info(s))
-               (e) : s
-         (s) : map(replace-s, map(replace-e,s))
-   Circuit{info(c),_,main(c)} $
-      for m in modules(c) map :
-         match(m) :
-            (m:ExModule) : m
-            (m:InModule) : InModule(info(m),name(m),ports(m),replace-s(body(m)))
+defstruct Location :
+   base : Expression
+   guard : Expression
+defmethod print (o:OutputStream,x:Location) :
+   print-all(o,["[" base(x) " , " guard(x) "]"])
+
+defn get-locations (e:Expression) -> List<Location> :
+   val x = match(e) :
+      (e:WRef) : map(Location{_,one},create-exps(e))
+      (e:WSubIndex|WSubField) :
+         val ls = get-locations(exp(e))
+         val start = get-point(e)
+         val end = start + get-size(e)
+         val stride = get-size(exp(e))
+         val ls* = Vector<Location>()
+         var c = 0
+         for i in 0 to length(ls) do :
+            if (i % stride >= start and i % stride < end) :
+               add(ls*,ls[i])
+         to-list(ls*)
+      (e:WSubAccess) : 
+         val ls = get-locations(exp(e))
+         val stride = get-size(e)
+         val wrap = size(type(exp(e)) as VectorType)
+         val ls* = Vector<Location>()
+         var c = 0
+         for i in 0 to length(ls) do :
+            if c % wrap == 0 : c = 0
+            val base* = base(ls[i])
+            val guard* = AND(guard(ls[i]),EQV(uint(c),index(e)))
+            add(ls*,Location(base*,guard*))
+            if (i + 1) % stride == 0 : c = c + 1
+         to-list(ls*)
+   ;println-all(["Looking at " e ":" x])
+   x
+
+defn remove-access (c:Circuit) :
+   defn remove-m (m:InModule) -> InModule :
+      val sh = get-sym-hash(m,keys(v-keywords))
+      defn remove-s (s:Stmt) -> Stmt :
+         val stmts = Vector<Stmt>()
+         defn create-temp (e:Expression) -> Expression :
+            val n = firrtl-gensym(`GEN,sh)
+            add(stmts,DefWire(info(s),n,type(e)))
+            WRef(n,type(e),kind(e),gender(e))
+         defn remove-e (e:Expression) -> Expression : ;NOT RECURSIVE (except primops) INTENTIONALLY!
+            match(e) :
+               (e:DoPrim) : map(remove-e,e)
+               (e:UIntValue|SIntValue) : e
+               (e) :
+                  val rs = get-locations(e)
+                  if length(rs) == 1 and guard(head(rs)) == one : e
+                  else :
+                     val temp = create-temp(e)
+                     for (x in rs, i in 0 to false) do :
+                        if i == 0 :
+                           add(stmts,Connect(info(s),temp,base(x)))
+                        else :
+                           add(stmts,Conditionally(info(s),guard(x),Connect(info(s),temp,base(x)),Empty()))
+                     temp
+         val s* = match(s) :
+            (s:Connect) :
+               val ls = get-locations(loc(s))
+               val loc* = 
+                  if length(ls) == 1 and guard(head(ls)) == one : loc(s)
+                  else :
+                     val temp = create-temp(loc(s))
+                     for x in ls do :
+                        add(stmts,Conditionally(info(s),guard(x),Connect(info(s),base(x),temp),Empty()))
+                     temp
+               Connect(info(s),loc*,remove-e(exp(s)))
+            (s) : map{remove-s,_} $ map(remove-e,s)
+         add(stmts,s*)
+         if length(stmts) != 1 : Begin(to-list(stmts))
+         else : stmts[0]
+
+      InModule(info(m),name(m),ports(m),remove-s(body(m)))
+
+   Circuit(info(c),modules*, main(c)) where :
+      val modules* = 
+         for m in modules(c) map :
+            match(m) :
+               (m:ExModule) : m
+               (m:InModule) : remove-m(m)
 
 ;;================ EXPAND WHENS =============================
 ; This pass does three things: remove last connect semantics,
@@ -1168,10 +1165,10 @@ defn expand-whens (c:Circuit) -> Circuit :
       val netlist = HashTable<Expression,Expression>(exp-hash)
       expand-whens(body(m),netlist,one)
 
-      println("Netlist:")
-      println(netlist)
-      println("Simlist:")
-      println(simlist)
+      ;println("Netlist:")
+      ;println(netlist)
+      ;println("Simlist:")
+      ;println(simlist)
       [ netlist simlist ]
 
    defn create-module (netlist:HashTable<Expression,Expression>,simlist:Vector<Stmt>,m:InModule) -> InModule :
@@ -1185,7 +1182,6 @@ defn expand-whens (c:Circuit) -> Circuit :
             (s:DefWire|DefRegister|WDefInstance|DefMemory) : 
                add(stmts,s)
                for e in get-female-refs(name(s),get-type(s),get-gender(s)) do :
-                  println(e)
                   val rvalue = 
                      if s typeof DefRegister : replace-void(e,netlist[e])
                      else : netlist[e]

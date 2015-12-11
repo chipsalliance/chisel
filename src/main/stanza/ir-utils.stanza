@@ -87,9 +87,13 @@ public defn BoolType () : UIntType(IntWidth(1))
 public val zero = UIntValue(BigIntLit(0),IntWidth(1))
 public val one = UIntValue(BigIntLit(1),IntWidth(1))
 public defn uint (i:Int) -> UIntValue :
-   UIntValue(BigIntLit(i),UnknownWidth())
+   val num-bits = req-num-bits(i)
+   val w = IntWidth(max(1,num-bits - 1))
+   UIntValue(BigIntLit(i),w)
 public defn sint (i:Int) -> SIntValue :
-   SIntValue(BigIntLit(i),UnknownWidth())
+   val num-bits = req-num-bits(i)
+   val w = IntWidth(max(1,num-bits))
+   SIntValue(BigIntLit(i),w)
 
 public defn AND (e1:Expression,e2:Expression) -> Expression :
    if e1 == e2 : e1
