@@ -34,7 +34,7 @@ class GCDUnitTester extends UnitTester {
     poke(gcd.io.a, value_1)
     poke(gcd.io.b, value_2)
 
-    expect(gcd.io.v, compute_gcd(value_1, value_2))
+    expect(gcd.io.z, compute_gcd(value_1, value_2))
     step(1)
   }
 

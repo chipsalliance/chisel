@@ -91,23 +91,28 @@ class UnitTester extends Module {
       input_port := input_values(pc)
     }
 
-//    dut_outputs.foreach { output_port =>
-//      val output_values = Vec(
-//        test_actions.map { step =>
-//          output_port.fromBits(UInt(step.output_map.getOrElse(output_port, 0)))
-//        }
-//      )
-//      val ok_to_test_output_values = Vec(
-//        test_actions.map { step =>
-//          Bool(step.output_map.contains(output_port))
-//        }
-//      )
-//      when(ok_to_test_output_values(pc) && Bool(output_port != output_values(pc))) {
-//        io.error          := Bool(true)
-//        io.done           := Bool(true)
-//        io.step_at_error  := pc
-//      }
-//    }
+    dut_outputs.foreach { output_port =>
+      val output_values = Vec(
+        test_actions.map { step =>
+          output_port.fromBits(UInt(step.output_map.getOrElse(output_port, 0)))
+        }
+      )
+      val x = output_port
+      val ok_to_test_output_values = Vec(
+        test_actions.map { step =>
+          Bool(step.output_map.contains(output_port))
+        }
+      )
+
+//      when(ok_to_test_output_values(pc) && output_port === output_values(pc))) {
+      when(ok_to_test_output_values(pc)) {
+        when(output_port.toBits() === output_values(pc).toBits()) {
+          io.error := Bool(true)
+          io.done := Bool(true)
+          io.step_at_error := pc
+        }
+      }
+    }
 
     pc := pc + UInt(1)
 
