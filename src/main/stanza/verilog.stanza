@@ -203,7 +203,7 @@ defn emit-module (m:InModule) :
                (c:StopStmt) : 
                   val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
                   add(my-clk-simuls,["if(" emit(pred(s)) ") begin"])
-                  add(my-clk-simuls,["  $fdisplay(STDERR," ret(c) ");"])
+                  add(my-clk-simuls,["  $fdisplay(STDERR,\"" ret(c) "\");"])
                   add(my-clk-simuls,["  $finish;"])
                   add(my-clk-simuls,["end"])
                   simuls[get-name(clk(c))] = my-clk-simuls
@@ -213,7 +213,7 @@ defn emit-module (m:InModule) :
             simuls[get-name(clk(s))] = my-clk-simuls
          (c:StopStmt) : 
             val my-clk-simuls = get?(simuls,get-name(clk(c)),Vector<Streamable>())
-            add(my-clk-simuls,["$fdisplay(STDERR," ret(c) ");"])
+            add(my-clk-simuls,["$fdisplay(STDERR,\"" ret(c) "\");"])
             add(my-clk-simuls,["$finish;"])
             simuls[get-name(clk(c))] = my-clk-simuls
          (s:Connect) : 
