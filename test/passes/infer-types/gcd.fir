@@ -15,16 +15,13 @@ circuit top :
       input clk : Clock
       input reset : UInt<1>
       output z : UInt<16>
-      output v : UInt<1>
-      reg x : UInt,clk,reset
-      reg y : UInt,clk,reset
-; CHECK: reg x : UInt, clk@<t:Clock>, reset@<t:UInt>@<t:UInt>
-      onreset x <= UInt(0)
-      onreset y <= UInt(42)
+      reg x : UInt,clk,reset,UInt(0)
+      reg y : UInt,clk,reset,UInt(42)
+      ; CHECK: reg x : UInt, clk@<t:Clock>, reset@<t:UInt>, UInt("h0")@<t:UInt>@<t:UInt>
       when gt(x, y) :
       ;CHECK: when gt(x@<t:UInt>, y@<t:UInt>)@<t:UInt> :
          inst s of subtracter
-         ;CHECK: inst s of subtracter@<t:{flip x : UInt, flip y : UInt,  z : UInt}>
+         ;CHECK: inst s of subtracter : {flip x : UInt, flip y : UInt,  z : UInt}
          s.x <= x
          s.y <= y
          x <= s.z

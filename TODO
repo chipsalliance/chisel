@@ -1,4 +1,12 @@
-
+Add check passes
+Fix all test cases
+Add chirrtl support
+Test with real RTL
+Add optimization passes
+Figure out naming
+Convert to scala
+Tech Report
+ROM node
 
 
 Support ASIC backend

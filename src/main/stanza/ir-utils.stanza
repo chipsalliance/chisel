@@ -339,12 +339,12 @@ defmethod print (o:OutputStream, t:Type) :
          print(o, "Clock")
       (t:UIntType) :
          match(width(t)) :
-            (w:UnknownWidth) : print-all(o, ["UInt"])
-            (w) : print-all(o, ["UInt<" width(t) ">"])
+            (w:IntWidth) : print-all(o, ["UInt<" width(t) ">"])
+            (w) : print-all(o, ["UInt"])
       (t:SIntType) :
          match(width(t)) :
-            (w:UnknownWidth) : print-all(o, ["SInt"])
-            (w) : print-all(o, ["SInt<" width(t) ">"])
+            (w:IntWidth) : print-all(o, ["SInt<" width(t) ">"])
+            (w) : print-all(o, ["SInt"])
       (t:BundleType) :
          print(o, "{")
          print-all(o, join(fields(t), ", "))

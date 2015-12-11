@@ -298,7 +298,7 @@ defmethod print-debug (o:OutputStream, e:Expression|Stmt|Type|Port|Field|Module|
      match(t) :
         (t:UIntType) : UIntType(UnknownWidth())
         (t:SIntType) : SIntType(UnknownWidth())
-        (t) : t
+        (t) : map(wipe-width,t)
       
    if any-debug?(e) : print(o,"@")
    if PRINT-KINDS and hasKind(e) : print-all(o,["<k:" kind(e as ?) ">"])
@@ -727,9 +727,7 @@ defn infer-types (c:Circuit) -> Circuit :
             (e:DoPrim) : set-primop-type(e)
             (e:UIntValue|SIntValue) : e
       defn infer-types-s (s:Stmt) -> Stmt :
-         map{infer-types-e,_} $ map(infer-types-s,s)
-      defn build-types (s:Stmt) -> Stmt :
-         match(s) :
+         match(map(infer-types-e,s)) :
             (s:DefWire|DefPoison|DefRegister|DefNode) : 
                val t = remove-unknowns(get-type(s))
                types[name(s)] = t
@@ -742,13 +740,12 @@ defn infer-types (c:Circuit) -> Circuit :
             (s:WDefInstance) :
                types[name(s)] = module-types[module(s)]
                WDefInstance(info(s),name(s),module(s),module-types[module(s)])
-            (s) : map(build-types,s)
+            (s) : map(infer-types-s,s)
       for p in ports(m) do :
          types[name(p)] = type(p)
       match(m) :
          (m:InModule) :
-            val s* = build-types(body(m))
-            InModule(info(m),name(m),ports(m),infer-types-s(s*))
+            InModule(info(m),name(m),ports(m),infer-types-s(body(m)))
          (m:ExModule) : m
 
    ; MAIN
