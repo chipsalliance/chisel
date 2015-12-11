@@ -44,34 +44,36 @@ int main(int argc, char **argv, char **env) {
 }
 """, ".cpp") _
 
-  val dir = new File(System.getProperty("java.io.tmpdir"))
-
-  def simpleHarnessBackend(make: File => File): String = {
+  /** Compiles a C++ emulator from Verilog and returns the path to the
+    * executable and the executable filename as a tuple.
+    */
+  def simpleHarnessBackend(make: File => File): (File, String) = {
     val target = "test"
-    val fname = File.createTempFile(target, "")
-    val path = fname.getParentFile.toString
+    val path = createTempDirectory(target)
+    val fname = File.createTempFile(target, "", path)
     val prefix = fname.toString.split("/").last
-    val vDut = make(fname)
-    val vH = new File(path + "/V" + prefix + ".h")
+
     val cppHarness = makeCppHarness(fname)
-    verilogToCpp(target, dir, vDut, cppHarness, vH).!
-    cppToExe(prefix, dir).!
-    prefix
+
+    make(fname)
+    verilogToCpp(prefix, path, Seq(), cppHarness).!
+    cppToExe(prefix, path).!
+    (path, prefix)
   }
 
   property("Test making trivial verilog harness and executing") {
-    val prefix = simpleHarnessBackend(makeTrivialVerilog)
+    val (path, prefix) = simpleHarnessBackend(makeTrivialVerilog)
 
-    assert(executeExpectingSuccess(prefix, dir))
+    assert(executeExpectingSuccess(prefix, path))
   }
 
   property("Test that assertion failues in Verilog are caught") {
-    val prefix = simpleHarnessBackend(makeFailingVerilog)
+    val (path, prefix) = simpleHarnessBackend(makeFailingVerilog)
 
-    assert(!executeExpectingSuccess(prefix, dir))
-    assert(executeExpectingFailure(prefix, dir))
-    assert(executeExpectingFailure(prefix, dir, "My specific, expected error message!"))
-    assert(!executeExpectingFailure(prefix, dir, "A string that doesn't match any test output"))
+    assert(!executeExpectingSuccess(prefix, path))
+    assert(executeExpectingFailure(prefix, path))
+    assert(executeExpectingFailure(prefix, path, "My specific, expected error message!"))
+    assert(!executeExpectingFailure(prefix, path, "A string that doesn't match any test output"))
   }
 }
 
