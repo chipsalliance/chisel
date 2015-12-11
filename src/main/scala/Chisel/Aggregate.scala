@@ -254,28 +254,50 @@ class Bundle extends Aggregate(NO_DIR) {
   lazy val elements: ListMap[String, Data] = ListMap(namedElts:_*)
 
   /** Returns a best guess at whether a field in this Bundle is a user-defined
-    * Bundle element.
+    * Bundle element without looking at type signatures.
     */
   private def isBundleField(m: java.lang.reflect.Method) =
     m.getParameterTypes.isEmpty &&
     !java.lang.reflect.Modifier.isStatic(m.getModifiers) &&
-    classOf[Data].isAssignableFrom(m.getReturnType) &&
     !(Bundle.keywords contains m.getName) && !(m.getName contains '$')
+
+  /** Returns a field's contained user-defined Bundle element if it appears to
+    * be one, otherwise returns None.
+    */
+  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = {
+    if (isBundleField(m) &&
+        (classOf[Data].isAssignableFrom(m.getReturnType) ||
+         classOf[Option[_]].isAssignableFrom(m.getReturnType))) {
+      m.invoke(this) match {
+        case d: Data =>
+          Some(d)
+        case o: Option[_] =>
+          o.getOrElse(None) match {
+            case d: Data =>
+              Some(d)
+            case _ => None
+          }
+        case _ => None
+      }
+    } else {
+      None
+    }
+  }
 
   /** Returns a list of elements in this Bundle.
     */
   private[Chisel] lazy val namedElts = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
-    for (m <- getClass.getMethods.sortWith(_.getName < _.getName); if isBundleField(m)) {
-      m.invoke(this) match {
-        case d: Data =>
+    for (m <- getClass.getMethods.sortWith(_.getName < _.getName)) {
+      getBundleField(m) match {
+        case Some(d) =>
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else if (!seen(d)) {
             nameMap(m.getName) = d; seen += d
           }
-        case _ =>
+        case None =>
       }
     }
     ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
