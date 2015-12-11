@@ -9,27 +9,33 @@ import Chisel.testers.BasicTester
 class CountTester(max: Int) extends BasicTester {
   val cnt = Counter(max)
   when(Bool(true)) { cnt.inc() }
-  when(cnt.value === UInt(max-1)) { io.done := Bool(true) }
+  when(cnt.value === UInt(max-1)) {
+    stop()
+  }
 }
 
 class EnableTester(seed: Int) extends BasicTester {
   val ens = Reg(init = UInt(seed))
   ens := ens >> 1
-  val (cntEn, cntWrap) = Counter(ens(0), 32)
-  val cnt = Counter(Bool(true), 32)._1
-  when(cnt === UInt(31)) {
-    io.done := Bool(true)
-    io.error := cnt != UInt(popCount(seed))
+
+  val (cntEnVal, _) = Counter(ens(0), 32)
+  val (_, done) = Counter(Bool(true), 33)
+
+  when(done) {
+    assert(cntEnVal === UInt(popCount(seed)))
+    stop()
   }
 }
 
 class WrapTester(max: Int) extends BasicTester {
   val (cnt, wrap) = Counter(Bool(true), max)
-  when(wrap) { io.done := Bool(true); io.error := cnt != UInt(max) }
+  when(wrap) {
+    assert(cnt === UInt(max - 1))
+    stop()
+  }
 }
 
 class CounterSpec extends ChiselPropSpec {
-
   property("Counter should count up") {
     forAll(smallPosInts) { (max: Int) => assert(execute{ new CountTester(max) }) }
   }

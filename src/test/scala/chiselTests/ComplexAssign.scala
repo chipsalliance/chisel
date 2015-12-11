@@ -37,13 +37,13 @@ class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Basic
   dut.io.e := Vec(enList.map(Bool(_)))(cnt)
   val re_correct = dut.io.out.re === Mux(dut.io.e, dut.io.in.re, UInt(0))
   val im_correct = dut.io.out.im === Mux(dut.io.e, dut.io.in.im, UInt(0))
-  when(!re_correct || !im_correct) {
-    io.done := Bool(true); io.error := cnt
-  } .elsewhen(wrap) { io.done := Bool(true) }
+  assert(re_correct && im_correct)
+  when(wrap) {
+    stop()
+  }
 }
 
 class ComplexAssignSpec extends ChiselPropSpec {
-
   property("All complex assignments should return the correct result") {
     forAll(enSequence(2), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
       assert(execute{ new ComplexAssignTester(en, re, im) })

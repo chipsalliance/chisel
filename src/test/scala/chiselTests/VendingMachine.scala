@@ -58,7 +58,6 @@ class VendingMachineTester(c: VendingMachine) extends Tester(c) {
 */
 
 class VendingMachineSpec extends ChiselPropSpec {
-  
   property("VendingMachine should elaborate") {
     elaborate { new VendingMachine }
   }
