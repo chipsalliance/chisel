@@ -52,9 +52,9 @@ class OverlappedWhenTester() extends BasicTester {
 
 class WhenSpec extends ChiselFlatSpec {
   "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
-    assert(execute{ new WhenTester })
+    assertTesterPasses{ new WhenTester }
   }
   "When, elsewhen, and otherwise with overlapped conditions" should "work" in {
-    assert(execute{ new OverlappedWhenTester })
+    assertTesterPasses{ new OverlappedWhenTester }
   }
 }

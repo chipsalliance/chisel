@@ -18,9 +18,9 @@ class SucceedingAssertTester() extends BasicTester {
 
 class AssertSpec extends ChiselFlatSpec {
   "A failing assertion" should "fail the testbench" in {
-    assert(!execute{ new FailingAssertTester })
+    assert(!runTester{ new FailingAssertTester })
   }
   "A succeeding assertion" should "not fail the testbench" in {
-    assert(execute{ new SucceedingAssertTester })
+    assertTesterPasses{ new SucceedingAssertTester }
   }
 }
