@@ -23,9 +23,20 @@ class GCD extends Module {
 }
 
 class GCDUnitTester extends UnitTester {
-  def compute_gcd(a: Int, b: Int, depth: Int = 1): Tuple2[Int, Int] = {
-    if(b == 0) (a, depth)
-    else compute_gcd(b, a%b, depth+1 )
+  def compute_gcd(a: Int, b: Int): Tuple2[Int, Int] = {
+    var x = a
+    var y = b
+    var depth = 1
+    while(y > 0 ) {
+      if (x > y) {
+        x -= y
+      }
+      else {
+        y -= x
+      }
+      if(y > 0) depth += 1
+    }
+    return (x, depth)
   }
 
   val gcd = Module(new GCD)
@@ -44,6 +55,7 @@ class GCDUnitTester extends UnitTester {
 
     step(steps-1) // -1 is because we step(1) already to toggle the enable
     expect(gcd.io.z, expected_gcd)
+    expect(gcd.io.v, 1 )
   }
 
   install(gcd)
