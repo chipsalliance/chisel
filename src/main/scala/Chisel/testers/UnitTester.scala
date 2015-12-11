@@ -75,6 +75,27 @@ class UnitTester extends Module {
       if(element.dir == OUTPUT) Some(element) else None
     }
 
+    /**
+     * prints out a table form of input and expected outputs
+     */
+    println(
+      "%6s".format("step") +
+        dut_inputs.map { dut_input => "%8s".format(port_name(dut, dut_input))}.mkString +
+        dut_outputs.map { dut_output => "%8s".format(port_name(dut, dut_output))}.mkString
+    )
+    def val_str(hash : mutable.HashMap[Data, Int], key: Data) : String = {
+      if( hash.contains(key) ) hash(key).toString else "-"
+    }
+    test_actions.zipWithIndex.foreach { case (step, step_number) =>
+      print("%6d".format(step_number))
+      for(port <- dut_inputs) {
+        print("%8s".format(val_str(step.input_map, port)))
+      }
+      for(port <- dut_outputs) {
+        print("%8s".format(val_str(step.output_map, port)))
+      }
+      println()
+    }
     io.done  := Bool(false)
     io.error := Bool(false)
 
