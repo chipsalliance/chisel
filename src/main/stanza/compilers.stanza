@@ -88,6 +88,43 @@ public defmethod passes (c:StandardFIRRTL) -> List<Pass> :
     ]
 
 
+public defstruct StandardLoFIRRTL <: Compiler :
+   with-output : (() -> False) -> False with: (as-method => true)
+public defmethod backend (c:StandardLoFIRRTL) -> List<Pass> :
+  to-list $ [ FIRRTL(with-output(c)) ]
+public defmethod passes (c:StandardLoFIRRTL) -> List<Pass> :
+   to-list $ [
+      RemoveSpecialChars()     ;R
+      ;RemoveScopes()           ;R
+      CheckHighForm()          ;R
+      TempElimination()        ;R
+      ToWorkingIR()            ;R -> W
+      ResolveKinds()           ;W
+      InferTypes()             ;R
+      ResolveGenders()         ;W
+      CheckGenders()           ;W
+      CheckKinds()             ;W
+      CheckTypes()             ;R
+      ExpandAccessors()        ;W
+      LowerToGround()          ;W
+      ;ExpandIndexedConnects()  ;W
+      InlineIndexed()
+      InferTypes()             ;R
+      CheckGenders()           ;W
+      ExpandWhens()            ;W
+      InferWidths()            ;R
+      ToRealIR()               ;W -> R
+      CheckWidths()            ;R
+      Pad()                    ;R
+      ConstProp()              ;R
+      SplitExp()               ;R
+      CheckWidths()            ;R
+      CheckHighForm()          ;R
+      CheckLowForm()           ;R
+      CheckInitialization()    ;R
+      FIRRTL(with-output(c))  ;R
+   ]
+
 ;============= DRIVER ======================================
 public defn run-backend (c:Circuit,comp:Compiler) :
    run-passes(c,backend(comp))

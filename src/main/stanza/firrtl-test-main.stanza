@@ -141,6 +141,7 @@ defn main () :
             ; run-passes(circuit*,StandardFlo(with-output))
          "verilog" : run-passes(circuit*,StandardVerilog(with-output))
          "firrtl" : run-passes(circuit*,StandardFIRRTL(with-output))
+         "lofirrtl" : run-passes(circuit*,StandardLoFIRRTL(with-output))
          "verilute" : run-passes(circuit*,InstrumentedVerilog(with-output,to-list $ pass-args))
          else : error("Invalid compiler flag")
 
