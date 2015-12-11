@@ -38,8 +38,8 @@ class UnitTester extends Module {
   step(1) // gives us a slot to put in our input and outputs from beginning
 
   def poke(io_port: Data, value: Int): Unit = {
-    println(s"io_port $io_port, len ${test_actions.last.input_map.size}")
-    println(s"ip_port.dir ${io_port.dir}")
+//    println(s"io_port $io_port, len ${test_actions.last.input_map.size} " +
+//            s"ip_port.dir ${io_port.dir}")
 
     require(io_port.dir == INPUT, s"poke error: $io_port not an input")
 //    require(test_actions.last.input_map.contains(io_port) == false,
@@ -52,8 +52,7 @@ class UnitTester extends Module {
     require(io_port.dir == OUTPUT, s"expect error: $io_port not an output")
     require(!test_actions.last.output_map.contains(io_port), s"second expect to $io_port without step")
 
-    println(s"io_port $io_port")
-    println(s"ip_port.dir ${io_port.dir}")
+//    println(s"io_port $io_port ip_port.dir ${io_port.dir}")
     test_actions.last.output_map(io_port) = value
   }
 
