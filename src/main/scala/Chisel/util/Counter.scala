@@ -8,8 +8,9 @@ package Chisel
   */
 class Counter(val n: Int) {
   val value = if (n == 1) UInt(0) else Reg(init=UInt(0, log2Up(n)))
-  /** Increment the counter this cycle. Returns whether the counter is at its
-    * maximum (and will wrap around on the next inc() call).
+  /** Increment the counter, returning whether the counter currently is at the
+    * maximum and will wrap. The incremented value is registered and will be
+    * visible on the next cycle.
     */
   def inc(): Bool = {
     if (n == 1) {
