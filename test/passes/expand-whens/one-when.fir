@@ -1,20 +1,25 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
+; XFAIL: *
 
 ; CHECK: Expand Whens
 circuit top :
    module top :
       input clk : Clock
       input reset : UInt<1>
-      cmem m : UInt<1>[2], clk
+      mem m : 
+         data-type => UInt<1>
+         depth => 2
+         read-latency => 0
+         write-latency => 1
       wire i : UInt<1>
       wire p : UInt<1>
       wire j : UInt<1>
       j <= UInt(1)
-      reg r : UInt<1>, clk, reset
+      reg r : UInt<1>, clk, reset,i
 
       p <= j
       when p :
-        onreset r <= i
+        
         infer accessor a = m[i] 
         i <= a
         infer accessor b = m[i]
@@ -29,7 +34,6 @@ circuit top :
         p <= i
         when e :
            p <= p
-           onreset r <= p
            r <= p
         
 

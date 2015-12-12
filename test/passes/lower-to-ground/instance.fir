@@ -8,9 +8,14 @@ circuit top :
    module sink :
       input data : UInt<16>
       output ready : UInt<1>
+      ready <= UInt(1)
    module top: 
       wire connect : { data : UInt<16>, flip ready: UInt<1> }
+      connect.ready <= UInt(1)
+      connect.data <= UInt(1)
       wire connect2 : { flip data : UInt<16>, ready: UInt<1> }
+      connect2.ready <= UInt(1)
+      connect2.data <= UInt(1)
       inst src of source         
       inst snk of sink           
       connect <= src   
@@ -25,11 +30,12 @@ circuit top :
 ; CHECK: Finished Resolve Genders
 
 
-; CHECK: Lower To Ground
+; CHECK: Lower Types
 
 ; CHECK: connect{{[_$]+}}data@<g:f> <= src@<g:m>.data@<g:m>
+; CHECK: connect2{{[_$]+}}ready@<g:f> <= snk@<g:m>.ready@<g:m>
 ; CHECK: src@<g:m>.ready@<g:f> <= connect{{[_$]+}}ready@<g:m>
 ; CHECK: snk@<g:m>.data@<g:f> <= connect2{{[_$]+}}data@<g:m>
-; CHECK: connect2{{[_$]+}}ready@<g:f> <= snk@<g:m>.ready@<g:m>
 
-; CHECK: Finished Lower To Ground
+; CHECK: Finished Lower Types
+; CHECK: Done!

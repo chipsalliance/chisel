@@ -14,10 +14,8 @@ circuit top :
       input b : UInt<16>
       input e : UInt<1>
       output z : UInt<16>
-      reg x : UInt,clk,reset
-      reg y : UInt,clk,reset
-      onreset x <= UInt(0)
-      onreset y <= UInt(42)
+      reg x : UInt,clk,reset,UInt(0)
+      reg y : UInt,clk,reset,UInt(42)
       when gt(x, y) :
          inst s of subtracter
          s.x <= x

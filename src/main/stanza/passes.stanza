@@ -13,6 +13,7 @@ public val standard-passes = to-list $ [
    CheckHighForm()
    ;TempElimination()
    ToWorkingIR()
+   Resolve()
    ResolveKinds()
    ;CheckKinds()
    InferTypes()
@@ -727,11 +728,16 @@ defn infer-types (c:Circuit) -> Circuit :
             (e:DoPrim) : set-primop-type(e)
             (e:UIntValue|SIntValue) : e
       defn infer-types-s (s:Stmt) -> Stmt :
-         match(map(infer-types-e,s)) :
-            (s:DefWire|DefPoison|DefRegister|DefNode) : 
+         match(s) :
+            (s:DefRegister) : 
                val t = remove-unknowns(get-type(s))
                types[name(s)] = t
-               set-type(s,t)
+               map(infer-types-e,set-type(s,t))
+            (s:DefWire|DefPoison|DefNode) : 
+               val s* = map(infer-types-e,s)
+               val t = remove-unknowns(get-type(s*))
+               types[name(s*)] = t
+               set-type(s*,t)
             (s:DefMemory) :
                val t = remove-unknowns(get-type(s))
                types[name(s)] = t
@@ -740,7 +746,7 @@ defn infer-types (c:Circuit) -> Circuit :
             (s:WDefInstance) :
                types[name(s)] = module-types[module(s)]
                WDefInstance(info(s),name(s),module(s),module-types[module(s)])
-            (s) : map(infer-types-s,s)
+            (s) : map{infer-types-e,_} $ map(infer-types-s,s)
       for p in ports(m) do :
          types[name(p)] = type(p)
       match(m) :
@@ -894,6 +900,7 @@ defn get-point (e:Expression) -> Int :
       (e:WSubAccess) :
          get-point(exp(e))
 defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]> :
+   println-all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
    match(t1,t2) :
       (t1:UIntType,t2:UIntType) : 
          if flip1 == flip2 : list([0, 0])
@@ -907,6 +914,10 @@ defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]>
          var jlen = 0
          for i in 0 to length(fields(t1)) do :
             for j in 0 to length(fields(t2)) do :
+               println(i)
+               println(j)
+               println(ilen)
+               println(jlen)
                val f1 = fields(t1)[i]
                val f2 = fields(t2)[j]
                if name(f1) == name(f2) :
@@ -914,8 +925,10 @@ defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]>
                      flip2 * flip(f2)) 
                   for x in ls do :
                      add(points,[x[0] + ilen, x[1] + jlen])
-               ilen = ilen + get-size(type(fields(t1)[i]))
+               println(points)
                jlen = jlen + get-size(type(fields(t2)[j]))
+            ilen = ilen + get-size(type(fields(t1)[i]))
+            jlen = 0
          to-list(points)
       (t1:VectorType,t2:VectorType) :
          val points = Vector<[Int,Int]>()
@@ -1040,7 +1053,9 @@ defn remove-access (c:Circuit) :
                (e:UIntValue|SIntValue) : e
                (e) :
                   val rs = get-locations(e)
-                  if length(rs) == 1 and guard(head(rs)) == one : e
+                  val foo = for x in rs find :
+                     (guard(x)) != one
+                  if foo == false : e 
                   else :
                      val temp = create-temp(e)
                      for (x in rs, i in 0 to false) do :
@@ -1170,6 +1185,7 @@ defn expand-whens (c:Circuit) -> Circuit :
 
    defn create-module (netlist:HashTable<Expression,Expression>,simlist:Vector<Stmt>,m:InModule) -> InModule :
       val stmts = Vector<Stmt>()
+      val connections = Vector<Stmt>()
       defn replace-void (e:Expression,rvalue:Expression) -> Expression :
          match(rvalue) :
             (rv:WVoid) : e
@@ -1182,7 +1198,7 @@ defn expand-whens (c:Circuit) -> Circuit :
                   val rvalue = 
                      if s typeof DefRegister : replace-void(e,netlist[e])
                      else : netlist[e]
-                  add(stmts,Connect(info(s),e,rvalue))
+                  add(connections,Connect(info(s),e,rvalue))
             (s:DefPoison|DefNode) : 
                add(stmts,s)
             (s) : map(create,s)
@@ -1190,10 +1206,10 @@ defn expand-whens (c:Circuit) -> Circuit :
       create(body(m))
       for p in ports(m) do :
          for e in get-female-refs(name(p),type(p),get-gender(p)) do :
-            add(stmts,Connect(info(p),e,netlist[e]))
+            add(connections,Connect(info(p),e,netlist[e]))
       for x in simlist do :
          add(stmts,x)
-      InModule(info(m),name(m),ports(m),Begin(to-list(stmts)))
+      InModule(info(m),name(m),ports(m),Begin(list(Begin(to-list(stmts)),Begin(to-list(connections)))))
 
    val voided-modules = 
       for m in modules(c) map :
@@ -1515,7 +1531,27 @@ defn infer-widths (c:Circuit) -> Circuit :
    defn get-constraints (s:Stmt) -> Stmt :
       match(map(get-constraints-e,s)) : 
          (s:Connect) : 
-            constrain(width!(loc(s)),width!(exp(s)))
+            ;constrain(width!(loc(s)),width!(exp(s)))
+            ;s
+            val n = get-size(loc(s))
+            for i in 0 to n do :
+               val loc* = create-exps(loc(s))[i]
+               val exp* = create-exps(exp(s))[i]
+               switch { _ == get-flip(type(loc(s)),i,DEFAULT) } :
+                  DEFAULT : constrain(width!(loc*),width!(exp*))
+                  REVERSE : constrain(width!(exp*),width!(loc*))
+            s
+         (s:BulkConnect) :
+            val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
+            for x in ls do :
+               println(x)
+               println(create-exps(loc(s)))
+               println(create-exps(exp(s)))
+               val loc* = create-exps(loc(s))[x[0]]
+               val exp* = create-exps(exp(s))[x[1]]
+               switch { _ == get-flip(type(loc(s)),x[0],DEFAULT) } :
+                  DEFAULT : constrain(width!(loc*),width!(exp*))
+                  REVERSE : constrain(width!(exp*),width!(loc*))
             s
          (s:DefRegister) :
             constrain(width!(reset(s)),ONE)
@@ -1541,6 +1577,17 @@ defn infer-widths (c:Circuit) -> Circuit :
    println-debug("====================================")
    reduce-var-widths(Circuit(info(c),modules(c),main(c)),h)
 
+; ================ All Resolving Passes ================
+public defstruct Resolve <: Pass
+public defmethod pass (b:Resolve) -> (Circuit -> Circuit) : resolve
+public defmethod name (b:Resolve) -> String : "Resolve"
+public defmethod short-name (b:Resolve) -> String : "resolve"
+
+defn resolve (c:Circuit) -> Circuit :
+   infer-widths $
+   resolve-genders $
+   infer-types $
+   resolve-kinds $ c
 
 ;;================= Inline Instances ========================
 ;; Inlines instances. Assumes module with same name as the
@@ -1629,7 +1676,7 @@ defn split-exp (m:InModule) -> InModule :
                if i > 0 : split(e)
                else : e
             (e) : e
-      match(s) :
+      match(map(split-exp-e{_,0},s)) :
          (s:Begin) : map(split-exp-s,s)
          (s) : 
             add(v,s)
@@ -2028,8 +2075,11 @@ defn lower-types (m:Module) -> Module :
             (e:WSubField) : 
                match(kind(e)) :
                   (k:InstanceKind) : 
-                     val temp = lowered-name(WRef(name(e),UnknownType(),InstanceKind(),MALE))
-                     WSubField(root-ref(e),temp,type(e),gender(e))
+                     val names = expand-name(e)
+                     var n = names[1]
+                     for (x in names,i in 0 to false) do :
+                        if i > 1 : n = symbol-join([n `_ x])
+                     WSubField(root-ref(e),n,type(e),gender(e))
                   (k:MemKind) : 
                      if not gender(e) == FEMALE :
                         lower-mem(e)[0]
@@ -2038,14 +2088,21 @@ defn lower-types (m:Module) -> Module :
             (e:WSubIndex) : WRef(lowered-name(e),type(e),kind(e),gender(e))
             (e:DoPrim) : map(lower-types-e,e)
       match(map(lower-types-e,s)) :
-         (s:DefWire|DefRegister|DefPoison) :
+         (s:DefWire|DefPoison) :
             if is-ground?(type(s)) : s
             else :
                val es = create-exps(name(s),type(s))
-               Begin $ for e in es map :
+               Begin $ for (e in es, i in 0 to false) map :
                   defn replace-type (t:Type) -> Type : type(e)
                   defn replace-name (n:Symbol) -> Symbol : lowered-name(e)
                   map{replace-name,_} $ map(replace-type,s)
+         (s:DefRegister) :
+            if is-ground?(type(s)) : s
+            else :
+               val es = create-exps(name(s),type(s))
+               Begin $ for (e in es, i in 0 to false) map :
+                  val init = lower-types-e(create-exps(init(s))[i])
+                  DefRegister(info(s),lowered-name(e),type(e),clock(s),reset(s),init)
          (s:WDefInstance) :
             val fields* = for f in fields(type(s) as BundleType) map-append :
                val es = create-exps(WRef(name(f),type(f),ExpKind(),flip(f) * MALE))
@@ -2278,7 +2335,9 @@ defn emit-verilog (m:InModule) -> Module :
    val initials = Vector<Streamable>()
    val simulates = Vector<Streamable>()
    defn declare (b:Symbol,n:Symbol,t:Type) : 
-      add(declares,[b " " t " " n ";"])
+      match(t) :
+         (t:VectorType) : add(declares,[b " " type(t) " " n " [0:" size(t) - 1 "];"])
+         (t) : add(declares,[b " " t " " n ";"])
    defn assign (e:Expression,value:Expression) : 
       add(assigns,["assign " e " = " value])
    defn update-and-reset (e:Expression,clk:Expression,reset?:Expression,init:Expression) :
@@ -2503,7 +2562,7 @@ defn emit-verilog (m:InModule) -> Module :
 
       for clk-stream in at-clock do :
          if !empty?(value(clk-stream)) :
-            emit([tab "always @(posedge " key(clk-stream) " ) begin"])
+            emit([tab "always @(posedge " key(clk-stream) ") begin"])
             for x in value(clk-stream) do :
                emit([tab tab x])
             emit([tab "end"])

@@ -7,7 +7,7 @@ circuit top :
       input reset : UInt<1>
       wire e : UInt<30>
       e <= UInt(1)
-      reg y : UInt,clk,reset
+      reg y : UInt,clk,reset,y
       y <= e
 
       wire a : UInt<20>
@@ -23,4 +23,5 @@ circuit top :
    
 
 ; CHECK: Finished Infer Widths
+; CHECK: Done!
 

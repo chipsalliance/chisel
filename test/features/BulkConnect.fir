@@ -2,7 +2,7 @@
 ;CHECK: Expand Connects
 circuit Top : 
   module Top : 
-    wire a : { w : UInt<42>}
+    wire a : { w : UInt}
     a.w <= UInt(1)
     wire b : { w : UInt<42>, x : UInt<20>}
     b.w <= UInt(1)

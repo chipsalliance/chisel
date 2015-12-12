@@ -260,6 +260,16 @@ defsyntax firrtl :
       stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! ?reset:#exp! ?init:#exp!) : DefRegister(first-info(form),name, t,clk,reset,init)
       ;stmt = (mem ?name:#id! #:! ?data-type:#type! ?depth:#int ?writers:#id! ... ?wl:#int ?readers:#id! ... ?rl:#int ?readwriters:#id! ...) : 
       ;   DefMemory(first-info(form),name,data-type,depth,wl,rl,readers,writers,readwriters)
+      stmt = (cmem ?name:#id! #:! ?t:#type!) : CDefMemory(first-info(form),name,t,false)
+      stmt = (smem ?name:#id! #:! ?t:#type!) : CDefMemory(first-info(form),name,t,true)
+
+      stmt = (read mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
+         CDefMPort(first-info(form),name,mem,index,clk,MRead)
+      stmt = (write mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
+         CDefMPort(first-info(form),name,mem,index,clk,MWrite)
+      stmt = (rdwr mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
+         CDefMPort(first-info(form),name,mem,index,clk,MReadWrite)
+
       stmt = (mem ?name:#id! #:! (?ms:#mstat ...)) :
          defn grab (f:MStat -> True|False) :
             map(value,to-list(filter(f,ms))) as List

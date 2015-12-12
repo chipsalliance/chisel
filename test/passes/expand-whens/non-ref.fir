@@ -9,4 +9,4 @@ circuit top :
 
 ; CHECK-NOT: wire x : UInt<1>
 ; CHECK: Finished Expand Whens
-
+; CHECK: Done!

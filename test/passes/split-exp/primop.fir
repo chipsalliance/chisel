@@ -12,7 +12,8 @@ circuit Top :
 
       wire x : UInt<1>
       x <= not(UInt(1))
-      infer accessor a = m[x]
+      wire a : UInt<1>
+      a <= m[x]
       
       out <= a
 

@@ -46,40 +46,38 @@ public defmethod backend (c:StandardVerilog) -> List<Pass> :
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
       ;RemoveSpecialChars()     ;R
-      ;RemoveScopes()           ;R
       ;CheckHighForm()          ;R
       ;TempElimination()        ;R         ; Needs to check number of uses
       ToWorkingIR()            ;R -> W
       ResolveKinds()           ;W
       InferTypes()             ;R
       ResolveGenders()         ;W
+      InferWidths()            ;R
+      Resolve()
       ;CheckGenders()           ;W
       ;CheckKinds()             ;W
       ;CheckTypes()             ;R
-      ;ExpandAccesses()        ;W
-      ExpandConnects()        ;W
-      RemoveAccesses()
-      ResolveKinds()           ;W
-      InferTypes()             ;R
-      ResolveGenders()         ;W
-      ;LowerToGround()          ;W
-      ;ExpandIndexedConnects()  ;W
-      ;InferTypes()             ;R
       ;CheckGenders()           ;W
-      ExpandWhens()            ;W
-      ResolveKinds()           ;W
-      InferTypes()             ;R
-      ResolveGenders()         ;W
-      InferWidths()            ;R
+      ExpandConnects()
+      RemoveAccesses()
+      ExpandWhens()
+      ConstProp()
+      SplitExp()
+
+      ResolveKinds()
+      InferTypes()
+      ResolveGenders()
+      InferWidths()
+
+      LowerTypes()
+
+      ResolveKinds()
+      InferTypes()
+      ResolveGenders()
+      InferWidths()
       ;ToRealIR()               ;W -> R
       ;CheckWidths()            ;R
       ;Pad()                    ;R
-      ConstProp()              ;R
-      SplitExp()               ;R
-      LowerTypes()               ;R
-      ResolveKinds()           ;W
-      InferTypes()             ;R
-      ResolveGenders()         ;W
       ;CheckWidths()            ;R
       ;CheckHighForm()          ;R
       ;CheckLowForm()           ;R

@@ -9,15 +9,16 @@ circuit Top :
       input b : UInt<10>
       input c : UInt<10>
       
-      reg out : UInt<10>,clk,p
+      reg out : UInt<10>,clk,p,a
 
       when bit(subw(a,c),3) : out <= mux(eqv(bits(UInt(32),4,0),UInt(13)),addw(a,addw(b,c)),subw(c,b))
 
-;CHECK: node F = subw(a, c)
-;CHECK: node out_1 = eqv(UInt("h0"), UInt("hd"))
-;CHECK: node out_3 = addw(b, c)
-;CHECK: node out_2 = addw(a, out_3)
-;CHECK: node out_4 = subw(c, b)
-;CHECK: when bit(F, 3) : out <= mux(out_1, out_2, out_4)   
+;CHECK: node out_1 = subw(a, c)
+;CHECK: node out_2 = bit(out_1, 3)
+;CHECK: node out_3 = eqv(UInt("h0"), UInt("hd"))
+;CHECK: node out_4 = addw(b, c)
+;CHECK: node out_5 = addw(a, out_4)
+;CHECK: node out_6 = subw(c, b)
+;CHECK: node out_7 = mux(out_3, out_5, out_6)
 
 ;CHECK: Finished Split Expressions

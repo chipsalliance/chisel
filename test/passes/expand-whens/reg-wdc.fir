@@ -6,7 +6,7 @@ circuit top :
       wire p : UInt
       p <= UInt(1)
       when p :
-         reg r : UInt,clk,reset
+         reg r : UInt,clk,reset,r
          r <= UInt(2)
 
 ; CHECK: Expand Whens
@@ -14,9 +14,10 @@ circuit top :
 ; CHECK: circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
-; CHECK:     reg r : UInt, clk, reset
+; CHECK:     reg r : UInt<2>, clk, reset, r
 ; CHECK:     p <= UInt("h1")
-; CHECK-NOT: when p : r <= UInt("h2")
+; CHECK-NOT: r <= mux(p, UInt("h2"), r)
+; CHECK:     r <= UInt("h2")
 
 ; CHECK: Finished Expand Whens
 

@@ -328,8 +328,21 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(o, ["printf(" clk(c) ", " en(c) ", "]) ;"
          print-all(o, join(List(escape(string(c)),args(c)), ", "))
          print(o, ")")
+      (c:CDefMemory) : 
+         if seq?(c) :
+            print-all(o, ["smem " name(c) " : " type(c)])
+         else :
+            print-all(o, ["cmem " name(c) " : " type(c)])
+      (c:CDefMPort) :
+         print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" index(c) "], " clk(c)])
          
    if not c typeof Conditionally|Begin|Empty: print-debug(o,c)
+
+defmethod print (o:OutputStream, m:MPortDir) :
+   switch { m == _ } :
+      MRead : print(o,"read")
+      MWrite : print(o,"write")
+      MReadWrite : print(o,"rdwr")
 
 defmethod print (o:OutputStream, t:Type) :
    match(t) :

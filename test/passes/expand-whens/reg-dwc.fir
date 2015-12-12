@@ -5,7 +5,7 @@ circuit top :
       input reset : UInt<1>
       wire p : UInt
       p <= UInt(1)
-      reg r : UInt,clk,reset
+      reg r : UInt,clk,reset,r
       when p :
          r <= UInt(2)
 
@@ -16,8 +16,9 @@ circuit top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt
 ; CHECK:     p <= UInt("h1")
-; CHECK:     when p : r <= UInt("h2")
+; CHECK:     r <= mux(p, UInt("h2"), r)
 
 ; CHECK: Finished Expand Whens
 
+; CHECK: Done!
 

@@ -5,13 +5,13 @@ defpackage firrtl/primops :
   import firrtl/ir-utils
   import firrtl/passes
 
-defn PLUS (w1:Width,w2:Width) -> Width : PlusWidth(w1,w2)
-defn MAX (w1:Width,w2:Width) -> Width : MaxWidth(list(w1,w2))
-defn MINUS (w1:Width,w2:Width) -> Width : MinusWidth(w1,w2)
-defn POW (w1:Width) -> Width : ExpWidth(w1)
 
 public defn set-primop-type (e:DoPrim) -> DoPrim :
    ;println-all(["Inferencing primop type: " e])
+   defn PLUS (w1:Width,w2:Width) -> Width : PlusWidth(w1,w2)
+   defn MAX (w1:Width,w2:Width) -> Width : MaxWidth(list(w1,w2))
+   defn MINUS (w1:Width,w2:Width) -> Width : MinusWidth(w1,w2)
+   defn POW (w1:Width) -> Width : ExpWidth(w1)
    val o = op(e)
    val a = args(e)
    val c = consts(e)

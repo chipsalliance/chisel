@@ -16,15 +16,12 @@ circuit top :
       input reset : UInt<1>
       output z : UInt<16>
       output v : UInt<1>
-      reg x : UInt,clk,reset
-      reg y : UInt,clk,reset
+      reg x : UInt,clk,reset,UInt(0)
+      reg y : UInt,clk,reset,UInt(42)
 ; CHECK: reg x : UInt
-      onreset x <= UInt(0)
-      onreset y <= UInt(42)
       when gt(x, y) :
-      ;CHECK: when gt(x@<g:m>, y@<g:m>) :
+      ;CHECK: when gt(x@<g:m>, y@<g:m>)@<g:m> :
          inst s of subtracter
-         ;CHECK: inst s of subtracter@<g:m>
          s.x <= x
          s.y <= y
          x <= s.z

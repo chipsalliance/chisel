@@ -1,8 +1,9 @@
-; RUN: firrtl -i %s -o %s.v -X verilog -p cTd 2>&1 |  tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 |  tee %s.out | FileCheck %s
 
-;CHECK: Infer Widths
-;CEHCK: node s1_addr = cat(dtlb<t:{ resp$ppn : UInt<20>}>.resp$ppn<t:UInt<20>>, bits(s1_req$addr<t:UInt<40>>, 11, 0)<t:UInt<12>>)<t:UInt<32>>
-;CHECK: Finished Infer Widths
+;CHECK: Lower Types
+;CHECK: node T_928 = bits(s1_req_addr, 11, 0)
+;CHECK: node s1_addr = cat(dtlb.resp_ppn, T_928)
+;CHECK: Finished Lower Types
 
 circuit HellaCache : 
   module TLB_60 : 
@@ -14,9 +15,10 @@ circuit HellaCache :
     input reset : UInt<1>
 
     inst dtlb of TLB_60
-    reg s1_req : {addr : UInt<40>}, clock, reset
-    reg s2_req : {addr : UInt<40>}, clock, reset
-    reg s1_clk_en : UInt<1>, clock, reset
+    poison init : {addr : UInt<40>}
+    reg s1_req : {addr : UInt<40>}, clock, reset, init
+    reg s2_req : {addr : UInt<40>}, clock, reset, init
+    reg s1_clk_en : UInt<1>, clock, reset, UInt(0)
 
     node T_928 = bits(s1_req.addr, 11, 0)
     node s1_addr = cat(dtlb.resp.ppn, T_928)

@@ -16,14 +16,12 @@ circuit top :
       input e : UInt<1>
       output z : UInt<16>
       output v : UInt<1>
-      reg x : UInt,clk,reset
-      reg y : UInt,clk,reset
-      onreset x <= UInt(0)
-      onreset y <= UInt(42)
+      reg x : UInt,clk,reset,UInt(0)
+      reg y : UInt,clk,reset,UInt(42)
       when gt(x, y) :
          inst s of subtracter
          s.x <= x
-         ;CHECK: s@<k:inst>.x <= x@<k:reg>
+         ;CHECK: s@<k:inst>.x@<k:inst> <= x@<k:reg>
          s.y <= y
          x <= s.z
       else :
@@ -43,14 +41,13 @@ circuit top :
       input reset : UInt<1>
       output z : UInt
       inst i of gcd
-      ;CHECK: inst i of gcd@<k:module>
       i.a <= a
       i.b <= b
       i.clk <= clk
       i.reset <= reset
       i.e <= UInt(1)
       z <= i.z
-      ;CHECK: z@<k:port> <= i@<k:inst>.z
+      ;CHECK: z@<k:port> <= i@<k:inst>.z@<k:inst>
 ; CHECK: Finished Resolve Kinds
 
 

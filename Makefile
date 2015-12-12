@@ -70,6 +70,9 @@ errors:
 features:
 	cd $(test_dir)/features && lit -v . --path=$(root_dir)/utils/bin/
 
+chirrtl:
+	cd $(test_dir)/chirrtl && lit -v . --path=$(root_dir)/utils/bin/
+
 custom:
 	cd $(test_dir)/custom && lit -v . --path=$(root_dir)/utils/bin/ --max-time=10
 

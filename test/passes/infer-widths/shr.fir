@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.v -X verilog -p cd 2>&1 | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Infer Widths
 ; CHECK: Finished Infer Widths
@@ -20,14 +20,11 @@ circuit MemSerdes :
     
     node T_218961 = cat(wide.req_cmd.bits.tag, wide.req_cmd.bits.rw)
     node T_218962 = cat(wide.req_cmd.bits.addr, T_218961)
-    reg out_buf : UInt, clock, reset
-    reg in_buf : UInt, clock, reset
-    reg state : UInt<3>, clock, reset
-    onreset state <= UInt<3>("h00")
-    reg send_cnt : UInt<3>, clock, reset
-    onreset send_cnt <= UInt<3>("h00")
-    reg data_send_cnt : UInt<2>, clock, reset
-    onreset data_send_cnt <= UInt<2>("h00")
+    reg out_buf : UInt, clock, reset, out_buf
+    reg in_buf : UInt, clock, reset, in_buf
+    reg state : UInt<3>, clock, reset,UInt<3>("h00")
+    reg send_cnt : UInt<3>, clock, reset, UInt<3>("h00")
+    reg data_send_cnt : UInt<2>, clock, reset, UInt<2>("h00")
     node T_218984 = eq(send_cnt, UInt<2>("h02"))
     node adone = and(narrow.req.ready, T_218984)
     node T_218987 = eq(send_cnt, UInt<3>("h07"))
@@ -96,12 +93,9 @@ circuit MemSerdes :
       node T_219021 = mux(T_219020, UInt<3>("h00"), UInt<3>("h03"))
       state <= T_219021
       send_cnt <= UInt<1>("h00")
-    reg recv_cnt : UInt<4>, clock, reset
-    onreset recv_cnt <= UInt<4>("h00")
-    reg data_recv_cnt : UInt<2>, clock, reset
-    onreset data_recv_cnt <= UInt<2>("h00")
-    reg resp_val : UInt<1>, clock, reset
-    onreset resp_val <= UInt<1>("h00")
+    reg recv_cnt : UInt<4>, clock, reset, UInt<4>("h00")
+    reg data_recv_cnt : UInt<2>, clock, reset, UInt<2>("h00")
+    reg resp_val : UInt<1>, clock, reset, UInt<1>("h00")
     resp_val <= UInt<1>("h00")
     when narrow.resp.valid : 
       node T_219031 = addw(recv_cnt, UInt<1>("h01"))

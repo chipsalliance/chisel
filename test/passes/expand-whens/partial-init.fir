@@ -5,7 +5,19 @@ circuit top :
    module top :
       input clk : Clock
       input reset : UInt<1>
-      reg r : UInt<1>[10],clk,reset
+      poison x : UInt<1>
+      wire init : UInt<1>[10]
+      init[0] <= x
+      init[1] <= x
+      init[2] <= x
+      init[3] <= UInt(3)
+      init[4] <= x
+      init[5] <= x
+      init[6] <= x
+      init[7] <= x
+      init[8] <= x
+      init[9] <= x
+      reg r : UInt<1>[10],clk,reset,init
       r[0] <= UInt(1)
       r[1] <= UInt(1)
       r[2] <= UInt(1)
@@ -16,6 +28,6 @@ circuit top :
       r[7] <= UInt(1)
       r[8] <= UInt(1)
       r[9] <= UInt(1)
-      onreset r[3] <= UInt(0)
 
 ; CHECK: Finished Expand Whens
+; CHECK: Done!
