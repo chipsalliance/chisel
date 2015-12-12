@@ -8,18 +8,20 @@ import internal.Builder.pushCommand
 import firrtl._
 
 class BasicTester extends Module {
-  val io = new Bundle {
-    val done = Bool()
-    val error = UInt(width = 4)
-  }
-  io.done := Bool(false)
-  io.error := UInt(0)
+  // The testbench has no IOs, rather it should communicate using printf, assert, and stop.
+  val io = new Bundle()
 
   def popCount(n: Long): Int = n.toBinaryString.count(_=='1')
 
-  /** Ends the test, reporting success.
+  /** Ends the test reporting success.
+    *
+    * Does not fire when in reset (defined as the encapsulating Module's
+    * reset). If your definition of reset is not the encapsulating Module's
+    * reset, you will need to gate this externally.
     */
   def stop() {
-    pushCommand(Stop(Node(clock), 0))
+    when (!reset) {
+      pushCommand(Stop(Node(clock), 0))
+    }
   }
 }

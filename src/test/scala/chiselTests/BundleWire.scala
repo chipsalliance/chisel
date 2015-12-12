@@ -25,10 +25,13 @@ class BundleWire(n: Int) extends Module {
 
 class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new BundleWire(n))
-  io.done := Bool(true)
   dut.io.in.x := UInt(x)
   dut.io.in.y := UInt(y)
-  io.error := dut.io.outs.map(o => o.x != UInt(x) || o.y != UInt(y)).foldLeft(UInt(0))(_##_)
+  for (elt <- dut.io.outs) {
+    assert(elt.x === UInt(x))
+    assert(elt.y === UInt(y))
+  }
+  stop()
 }
 
 class BundleWireSpec extends ChiselPropSpec {

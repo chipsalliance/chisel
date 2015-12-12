@@ -32,8 +32,8 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
   dut.io.e := first
   when(first) { first := Bool(false) }
   when(dut.io.v) {
-    io.done := Bool(true)
-    io.error := (dut.io.z != UInt(z)).toUInt
+    assert(dut.io.z === UInt(z))
+    stop()
   }
 }
 
@@ -46,7 +46,7 @@ class GCDSpec extends ChiselPropSpec {
     ("a", "b", "z"),  // First tuple defines column names
     ( 64,  48,  16),  // Subsequent tuples define the data
     ( 12,   9,   3),
-    ( 48,  64,  12))
+    ( 48,  64,  16))
 
   property("GCD should elaborate") {
     elaborate { new GCD }

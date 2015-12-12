@@ -20,8 +20,13 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   val (cnt, wrap) = Counter(Bool(true), pairs.size)
   val dut = Module(new Decoder(bitpats))
   dut.io.inst := Vec(insts.map(UInt(_)))(cnt)
-  when(!dut.io.matched) { io.done := Bool(true); io.error := cnt }
-  when(wrap) { io.done := Bool(true) }
+  when(!dut.io.matched) {
+    assert(cnt === UInt(0))
+    stop()
+  }
+  when(wrap) {
+    stop()
+  }
 }
 
 class DecoderSpec extends ChiselPropSpec {

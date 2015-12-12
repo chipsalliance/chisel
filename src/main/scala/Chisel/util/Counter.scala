@@ -3,10 +3,14 @@
 package Chisel
 
 /** A counter module
-  * @param n The maximum value of the counter, does not have to be power of 2
+  * @param n number of counts before the counter resets (or one more than the
+  * maximum output value of the counter), need not be a power of two
   */
 class Counter(val n: Int) {
   val value = if (n == 1) UInt(0) else Reg(init=UInt(0, log2Up(n)))
+  /** Increment the counter this cycle. Returns whether the counter is at its
+    * maximum (and will wrap around on the next inc() call).
+    */
   def inc(): Bool = {
     if (n == 1) {
       Bool(true)

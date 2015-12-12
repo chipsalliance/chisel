@@ -7,7 +7,6 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class StopTester() extends BasicTester {
-  io.done := Bool(false)
   stop()
 }
 
