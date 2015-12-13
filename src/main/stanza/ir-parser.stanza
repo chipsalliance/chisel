@@ -260,8 +260,8 @@ defsyntax firrtl :
       stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! ?reset:#exp! ?init:#exp!) : DefRegister(first-info(form),name, t,clk,reset,init)
       ;stmt = (mem ?name:#id! #:! ?data-type:#type! ?depth:#int ?writers:#id! ... ?wl:#int ?readers:#id! ... ?rl:#int ?readwriters:#id! ...) : 
       ;   DefMemory(first-info(form),name,data-type,depth,wl,rl,readers,writers,readwriters)
-      stmt = (cmem ?name:#id! #:! ?t:#type!) : CDefMemory(first-info(form),name,t,false)
-      stmt = (smem ?name:#id! #:! ?t:#type!) : CDefMemory(first-info(form),name,t,true)
+      stmt = (cmem ?name:#id! #:! ?t:#vectype! ) : CDefMemory(first-info(form),name,type(t),size(t),false)
+      stmt = (smem ?name:#id! #:! ?t:#vectype! ) : CDefMemory(first-info(form),name,type(t),size(t),true)
 
       stmt = (read mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
          CDefMPort(first-info(form),name,mem,index,clk,MRead)

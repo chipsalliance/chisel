@@ -9,6 +9,7 @@
 #include("ir-utils.stanza")
 #include("ir-parser.stanza")
 #include("passes.stanza")
+#include("chirrtl.stanza")
 #include("primop.stanza")
 #include("errors.stanza")
 #include("compilers.stanza")

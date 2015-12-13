@@ -330,12 +330,12 @@ defmethod print (o:OutputStream, c:Stmt) :
          print(o, ")")
       (c:CDefMemory) : 
          if seq?(c) :
-            print-all(o, ["smem " name(c) " : " type(c)])
+            print-all(o, ["smem " name(c) " : " type(c) "[" size(c) "]"])
          else :
-            print-all(o, ["cmem " name(c) " : " type(c)])
+            print-all(o, ["cmem " name(c) " : " type(c) "[" size(c) "]"])
       (c:CDefMPort) :
          print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" index(c) "], " clk(c)])
-         
+
    if not c typeof Conditionally|Begin|Empty: print-debug(o,c)
 
 defmethod print (o:OutputStream, m:MPortDir) :

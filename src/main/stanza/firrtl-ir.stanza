@@ -171,6 +171,7 @@ public defstruct CDefMemory <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    name: Symbol
    type: Type
+   size: Int
    seq?: True|False
 public defstruct CDefMPort <: Stmt :
    info: FileInfo with: (as-method => true)

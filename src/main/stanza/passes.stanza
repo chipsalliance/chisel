@@ -230,7 +230,6 @@ defmethod turn-off-debug (x:False) :
    old-PRINT-CIRCUITS = PRINT-CIRCUITS
    old-PRINT-DEBUG = PRINT-DEBUG
    old-PRINT-INFO = PRINT-INFO
-
    PRINT-TYPES = false
    PRINT-KINDS = false
    PRINT-WIDTHS = false
@@ -239,6 +238,7 @@ defmethod turn-off-debug (x:False) :
    PRINT-CIRCUITS = false
    PRINT-DEBUG = false
    PRINT-INFO = false
+
 defmethod turn-on-debug (x:False) :
    PRINT-TYPES = old-PRINT-TYPES
    PRINT-KINDS = old-PRINT-KINDS

@@ -2,6 +2,7 @@ defpackage firrtl/compiler :
   import core
   import verse
   import firrtl/passes
+  import firrtl/chirrtl
   ;import firrtl/errors
   ;import firrtl/flo
   ;import firrtl/verilog
@@ -48,6 +49,7 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;RemoveSpecialChars()     ;R
       ;CheckHighForm()          ;R
       ;TempElimination()        ;R         ; Needs to check number of uses
+      ToIR()            ;R -> W
       ToWorkingIR()            ;R -> W
       ResolveKinds()           ;W
       InferTypes()             ;R
