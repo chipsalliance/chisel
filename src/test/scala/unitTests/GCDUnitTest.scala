@@ -3,7 +3,8 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{UnitTestRunners, UnitTester}
+import Chisel.testers.{BasicTester, UnitTestRunners, UnitTester}
+import chiselTests.ChiselFlatSpec
 
 class GCD extends Module {
   val io = new Bundle {
@@ -23,20 +24,9 @@ class GCD extends Module {
 }
 
 class GCDUnitTester extends UnitTester {
-  def compute_gcd(a: Int, b: Int): Tuple2[Int, Int] = {
-    var x = a
-    var y = b
-    var depth = 1
-    while(y > 0 ) {
-      if (x > y) {
-        x -= y
-      }
-      else {
-        y -= x
-      }
-      if(y > 0) depth += 1
-    }
-    return (x, depth)
+  def compute_gcd(a: Int, b: Int, depth: Int = 1): Tuple2[Int, Int] = {
+    if(b == 0) (a, depth)
+    else compute_gcd(b, a%b, depth+1 )
   }
 
   val gcd = Module(new GCD)
@@ -47,30 +37,28 @@ class GCDUnitTester extends UnitTester {
   } {
     poke(gcd.io.a, value_1)
     poke(gcd.io.b, value_2)
-    poke(gcd.io.e, 1)
-    step(1)
-    poke(gcd.io.e, 0)
 
     val (expected_gcd, steps) = compute_gcd(value_1, value_2)
 
-    step(steps-1) // -1 is because we step(1) already to toggle the enable
+    step(steps)
     expect(gcd.io.z, expected_gcd)
-    expect(gcd.io.v, 1 )
   }
 
   install(gcd)
 
 }
 
-class GCDTester extends UnitTestRunners {
-  execute { new GCDUnitTester }
-}
-
-object GCDUnitTest {
-  def main(args: Array[String]): Unit = {
-    val tutorial_args = args.slice(1, args.length)
-
-    new GCDTester
+class GCDTester extends ChiselFlatSpec {
+  "a" should "b" in {
+    assert( execute { new GCDUnitTester } )
   }
 }
 
+//object GCDUnitTest {
+//  def main(args: Array[String]): Unit = {
+//    val tutorial_args = args.slice(1, args.length)
+//
+//    new GCDTester
+//  }
+//}
+//
