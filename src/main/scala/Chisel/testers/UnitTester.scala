@@ -70,7 +70,7 @@ class UnitTester extends BasicTester {
         dut_outputs.map { dut_output => "%8s".format(port_name(dut, dut_output))}.mkString
     )
     def val_str(hash : mutable.HashMap[Data, Int], key: Data) : String = {
-      if( hash.contains(key) ) hash(key).toString else "-"
+      if( hash.contains(key) ) "%x".format(hash(key)) else "-"
     }
     test_actions.zipWithIndex.foreach { case (step, step_number) =>
       print("%6d".format(step_number))
@@ -116,13 +116,16 @@ class UnitTester extends BasicTester {
 
 //      TODO: Figure out why this assert is failing
       when(ok_to_test_output_values(pc)) {
-        printf(
-          "Exerciser error: at step %d port " + port_name(dut, output_port) + " value %x != %x, the expected value",
-          pc,
-          output_port.toBits(),
-          output_values(pc).toBits()
-        )
-        assert(output_port.toBits() === output_values(pc).toBits())
+        when(output_port.toBits() != output_values(pc).toBits()) {
+          printf(
+            "Exerciser error: at step %d port io." + port_name(dut, output_port) + " value %x != %x, the expected value",
+            pc,
+            output_port.toBits(),
+            output_values(pc).toBits()
+          )
+          assert(Bool(false), "Failed test")
+
+        }
       }
     }
 
@@ -130,6 +133,7 @@ class UnitTester extends BasicTester {
     pc := pc + UInt(1)
 
     when(pc >= UInt(test_actions.length)) {
+      printf("Stopping, end of tests\n")
       stop()
     }
 
