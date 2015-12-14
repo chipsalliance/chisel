@@ -85,7 +85,7 @@ class UnitTester extends BasicTester {
 
     val pc             = Reg(init=UInt(0, 8))
 
-    dut_inputs.foreach { input_port =>
+    def create_vectors_for_input(input_port: Data): Unit = {
       var default_value = 0
       val input_values = Vec(
         test_actions.map { step =>
@@ -96,7 +96,20 @@ class UnitTester extends BasicTester {
       input_port := input_values(pc)
     }
 
-    dut_outputs.foreach { output_port =>
+    dut_inputs.foreach { port =>
+      port match {
+        case vector : Aggregate => {
+          for( vector_input <- vector.flatten) {
+            create_vectors_for_input(vector_input)
+          }
+        }
+        case input_port => {
+          create_vectors_for_input(input_port)
+        }
+      }
+    }
+
+    def create_vectors_and_tests_for_output(output_port: Data): Unit = {
       val output_values = Vec(
         test_actions.map { step =>
           output_port.fromBits(UInt(step.output_map.getOrElse(output_port, 0)))
@@ -108,12 +121,12 @@ class UnitTester extends BasicTester {
         }
       )
 
-//      printf("XXXX pc %x ok_to_test %x port_value %x expected %x",
-//        pc, ok_to_test_output_values(pc),
-//        output_port.toBits(),
-//        output_values(pc).toBits())
+      printf("XXXX pc %x ok_to_test %x port_value %x expected %x",
+        pc, ok_to_test_output_values(pc),
+        output_port.toBits(),
+        output_values(pc).toBits())
 
-//      TODO: Figure out why this assert is failing
+      //      TODO: Figure out why this assert is failing
       when(ok_to_test_output_values(pc)) {
         when(output_port.toBits() != output_values(pc).toBits()) {
           printf(
@@ -124,6 +137,19 @@ class UnitTester extends BasicTester {
           )
           assert(Bool(false), "Failed test")
 
+        }
+      }
+    }
+
+    dut_outputs.foreach { port =>
+      port match {
+        case vector: Vec[Data] => {
+          for (vector_port <- vector) {
+            create_vectors_and_tests_for_output(vector_port)
+          }
+        }
+        case output_port => {
+          create_vectors_and_tests_for_output(output_port)
         }
       }
     }
