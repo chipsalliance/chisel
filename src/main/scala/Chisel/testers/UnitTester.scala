@@ -108,11 +108,10 @@ class UnitTester extends BasicTester {
         }
       )
 
-      // TODO: Why is this printf not showing up
-      printf("XXXX pc %x ok_to_test %x port_value %x expected %x",
-        pc, ok_to_test_output_values(pc),
-        output_port.toBits(),
-        output_values(pc).toBits())
+//      printf("XXXX pc %x ok_to_test %x port_value %x expected %x",
+//        pc, ok_to_test_output_values(pc),
+//        output_port.toBits(),
+//        output_values(pc).toBits())
 
 //      TODO: Figure out why this assert is failing
       when(ok_to_test_output_values(pc)) {

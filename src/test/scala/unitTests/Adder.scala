@@ -2,6 +2,7 @@ package unitTests
 
 import Chisel._
 import Chisel.testers.UnitTester
+import chiselTests.ChiselFlatSpec
 import scala.util.Random
 
 class Adder(val w: Int) extends Module {
@@ -28,3 +29,11 @@ class AdderTests extends UnitTester {
 
   install(c)
 }
+
+class AdderTester extends ChiselFlatSpec {
+  "a" should "b" in {
+    assert( execute { new AdderTests } )
+  }
+}
+
+
