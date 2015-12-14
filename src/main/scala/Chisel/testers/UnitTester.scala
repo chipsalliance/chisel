@@ -13,13 +13,6 @@ trait UnitTestRunners {
 case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
 class UnitTester extends BasicTester {
-//  override val io = new Bundle {
-//    val running       = Bool(INPUT)
-//    val error         = Bool(OUTPUT)
-//    val step_at_error = UInt(OUTPUT)
-//    val done          = Bool(OUTPUT)
-//  }
-
   def port_name(dut: Module, port_to_find: Data) : String = {
     dut.io.elements.foreach { case (name, port) =>
         if( port == port_to_find) return name
@@ -126,9 +119,15 @@ class UnitTester extends BasicTester {
         output_values(pc).toBits())
 
 //      TODO: Figure out why this assert is failing
-//      when(ok_to_test_output_values(pc)) {
-//        assert(output_port.toBits() === output_values(pc).toBits())
-//      }
+      when(ok_to_test_output_values(pc)) {
+        printf(
+          "Exerciser error: at step %d port " + port_name(dut, output_port) + " value %x != %x, the expected value",
+          pc,
+          output_port.toBits(),
+          output_values(pc).toBits()
+        )
+        assert(output_port.toBits() === output_values(pc).toBits())
+      }
     }
 
 
@@ -138,11 +137,5 @@ class UnitTester extends BasicTester {
       stop()
     }
 
-  }
-}
-
-object UnitTester {
-  def apply[T <: Module](gen: () => T): T = {
-    gen()
   }
 }
