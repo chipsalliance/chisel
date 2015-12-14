@@ -4,6 +4,7 @@ import Chisel._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 trait UnitTestRunners {
   def execute(t: => UnitTester): Boolean = TesterDriver.execute(() => t)
@@ -13,6 +14,7 @@ trait UnitTestRunners {
 class UnitTester extends BasicTester {
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
+  def rnd = Random
   def port_name(dut: Module, port_to_find: Data) : String = {
     dut.io.elements.foreach { case (name, port) =>
         if( port == port_to_find) return name
