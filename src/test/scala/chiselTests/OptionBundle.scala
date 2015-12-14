@@ -27,21 +27,21 @@ class OptionBundleModule(hasIn: Boolean) extends Module {
 class SomeOptionBundleTester(expected: Boolean) extends BasicTester {
   val mod = Module(new OptionBundleModule(true))
   mod.io.in.get := Bool(expected)
-  io.error := mod.io.out != Bool(expected)
-  io.done := Bool(true)
+  assert(mod.io.out === Bool(expected))
+  stop()
 }
 
 class NoneOptionBundleTester() extends BasicTester {
   val mod = Module(new OptionBundleModule(true))
-  io.error := mod.io.out != Bool(false)
-  io.done := Bool(true)
+  assert(mod.io.out === Bool(false))
+  stop()
 }
 
 class InvalidOptionBundleTester() extends BasicTester {
   val mod = Module(new OptionBundleModule(false))
   mod.io.in.get := Bool(true)
-  io.error := UInt(1)
-  io.done := Bool(true)
+  assert(Bool(false))
+  stop()
 }
 
 class OptionBundleSpec extends ChiselFlatSpec {

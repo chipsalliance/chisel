@@ -7,15 +7,16 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class SinglePrintfTester() extends BasicTester {
-  printf("done=%x", io.done)
-  io.done := Bool(true)
-  io.error := Bool(false)
+  val x = UInt(254)
+  printf("x=%x", x)
+  stop()
 }
 
 class MultiPrintfTester() extends BasicTester {
-  printf("done=%x error=%x", io.done, io.error)
-  io.done := Bool(true)
-  io.error := Bool(false)
+  val x = UInt(254)
+  val y = UInt(255)
+  printf("x=%x y=%x", x, y)
+  stop()
 }
 
 class PrintfSpec extends ChiselFlatSpec {

@@ -19,7 +19,9 @@ class Tbl(w: Int, n: Int) extends Module {
   io.o := m(io.ri)
   when (io.we) {
     m(io.wi) := io.d
-    when(io.ri === io.wi) { io.o := io.d }
+    when(io.ri === io.wi) {
+      io.o := io.d
+    }
   }
 }
 
@@ -34,18 +36,24 @@ class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends Basi
   dut.io.ri := prev_idx
   dut.io.we := Bool(true) //TODO enSequence
   dut.io.d := vvalues(cnt)
-  when(cnt > UInt(0) && dut.io.o != prev_value) { io.done := Bool(true); io.error := prev_idx }
-  when(wrap) { io.done := Bool(true) }
+  when (cnt > UInt(0)) {
+    when (prev_idx === vidxs(cnt)) {
+      assert(dut.io.o === vvalues(cnt))
+    } .otherwise {
+      assert(dut.io.o === prev_value)
+    }
+  }
+  when(wrap) {
+    stop()
+  }
 }
 
 class TblSpec extends ChiselPropSpec {
-
   property("All table reads should return the previous write") {
     forAll(safeUIntPairN(8)) { case(w: Int, pairs: List[(Int, Int)]) =>
-      whenever(w > 0) {
-        val (idxs, values) = pairs.unzip
-        assert(execute{ new TblTester(w, 1 << w, idxs, values) })
-      }
+      require(w > 0)
+      val (idxs, values) = pairs.unzip
+      assert(execute{ new TblTester(w, 1 << w, idxs, values) })
     }
   }
 }

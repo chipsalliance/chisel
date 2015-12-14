@@ -8,14 +8,12 @@ import Chisel.testers.BasicTester
 
 class FailingAssertTester() extends BasicTester {
   assert(Bool(false))
-  io.done := Bool(true)
-  io.error := Bool(false)
+  stop()
 }
 
 class SucceedingAssertTester() extends BasicTester {
   assert(Bool(true))
-  io.done := Bool(true)
-  io.error := Bool(false)
+  stop()
 }
 
 class AssertSpec extends ChiselFlatSpec {

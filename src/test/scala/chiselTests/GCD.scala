@@ -32,8 +32,8 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
   dut.io.e := first
   when(first) { first := Bool(false) }
   when(dut.io.v) {
-    io.done := Bool(true)
-    io.error := (dut.io.z != UInt(z)).asUInt
+    assert(dut.io.z === UInt(z))
+    stop()
   }
 }
 

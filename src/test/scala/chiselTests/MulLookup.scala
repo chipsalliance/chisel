@@ -26,8 +26,8 @@ class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new MulLookup(w))
   dut.io.x := UInt(x)
   dut.io.y := UInt(y)
-  io.done := Bool(true)
-  io.error := dut.io.z != UInt(x * y)
+  assert(dut.io.z === UInt(x * y))
+  stop()
 }
 
 class MulLookupSpec extends ChiselPropSpec {

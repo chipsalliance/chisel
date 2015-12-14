@@ -23,7 +23,6 @@ double sc_time_stamp () { // Called by $time in Verilog
 const long timeout = 100000000L;
 
 int main(int argc, char** argv) {
-  vluint32_t done = 0;
   Verilated::commandArgs(argc, argv);   // Remember args
   top = new TOP_TYPE;
 
@@ -36,11 +35,11 @@ int main(int argc, char** argv) {
 #endif
 
 
-  top->reset = 1; 
+  top->reset = 1;
 
   cout << "Starting simulation!\n";
 
-  while (!Verilated::gotFinish() && !done && main_time < timeout) {
+  while (!Verilated::gotFinish() && main_time < timeout) {
     if (main_time > 10) {
       top->reset = 0;   // Deassert reset
     }
@@ -54,8 +53,16 @@ int main(int argc, char** argv) {
 #if VM_TRACE
 	if (tfp) tfp->dump (main_time);	// Create waveform trace for this timestamp
 #endif
-    done = top->io__024done;
     main_time++;               // Time passes...
+  }
+
+  if (main_time >= timeout) {
+      cout << "Simulation terminated by timeout at time " << main_time <<
+              " (cycle " << main_time / 10 << ")"<< endl;
+      return -1;
+  } else {
+      cout << "Simulation completed at time " << main_time <<
+              " (cycle " << main_time / 10 << ")"<< endl;
   }
 
   // Run for 10 more clocks
@@ -77,15 +84,5 @@ int main(int argc, char** argv) {
 #if VM_TRACE
     if (tfp) tfp->close();
 #endif
-
-  if (main_time >= timeout) {
-    cout << "Simulation terminated by timeout at cycle " << main_time << endl;
-    return -1;
-  } else {
-    cout << "Simulation completed at cycle " << main_time << endl;
-    int error = top->io__024error;
-    cout << "Simulation return value: " << error << endl;
-    return error;
-  }
 }
 
