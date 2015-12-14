@@ -7,12 +7,12 @@ import scala.collection.mutable.ArrayBuffer
 
 trait UnitTestRunners {
   def execute(t: => UnitTester): Boolean = TesterDriver.execute(() => t)
-  def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
+  def elaborate(t: => Module):   Unit    = Driver.elaborate(() => t)
 }
 
-case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
-
 class UnitTester extends BasicTester {
+  case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
+
   def port_name(dut: Module, port_to_find: Data) : String = {
     dut.io.elements.foreach { case (name, port) =>
         if( port == port_to_find) return name
@@ -25,12 +25,9 @@ class UnitTester extends BasicTester {
   step(1) // gives us a slot to put in our input and outputs from beginning
 
   def poke(io_port: Data, value: Int): Unit = {
-//    println(s"io_port $io_port, len ${test_actions.last.input_map.size} " +
-//            s"ip_port.dir ${io_port.dir}")
-
     require(io_port.dir == INPUT, s"poke error: $io_port not an input")
-//    require(test_actions.last.input_map.contains(io_port) == false,
-//      s"second poke to $io_port without step\nkeys ${test_actions.last.input_map.keys.mkString(",")}")
+    require(test_actions.last.input_map.contains(io_port) == false,
+      s"second poke to $io_port without step\nkeys ${test_actions.last.input_map.keys.mkString(",")}")
 
     test_actions.last.input_map(io_port) = value
   }
@@ -39,7 +36,6 @@ class UnitTester extends BasicTester {
     require(io_port.dir == OUTPUT, s"expect error: $io_port not an output")
     require(!test_actions.last.output_map.contains(io_port), s"second expect to $io_port without step")
 
-//    println(s"io_port $io_port ip_port.dir ${io_port.dir}")
     test_actions.last.output_map(io_port) = value
   }
 
@@ -86,8 +82,6 @@ class UnitTester extends BasicTester {
     }
 
     val pc             = Reg(init=UInt(0, 8))
-
-//    io.step_at_error := pc
 
     dut_inputs.foreach { input_port =>
       var default_value = 0
