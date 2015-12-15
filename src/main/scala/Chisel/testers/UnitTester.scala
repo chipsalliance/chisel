@@ -97,15 +97,8 @@ class UnitTester extends BasicTester {
     }
 
     dut_inputs.foreach { port =>
-      port match {
-        case vector : Aggregate => {
-          for( vector_input <- vector.flatten) {
-            create_vectors_for_input(vector_input)
-          }
-        }
-        case input_port => {
-          create_vectors_for_input(input_port)
-        }
+      for( vector_input <- port.flatten) {
+        create_vectors_for_input(vector_input)
       }
     }
 
@@ -126,7 +119,6 @@ class UnitTester extends BasicTester {
         output_port.toBits(),
         output_values(pc).toBits())
 
-      //      TODO: Figure out why this assert is failing
       when(ok_to_test_output_values(pc)) {
         when(output_port.toBits() != output_values(pc).toBits()) {
           printf(
@@ -142,15 +134,8 @@ class UnitTester extends BasicTester {
     }
 
     dut_outputs.foreach { port =>
-      port match {
-        case vector: Vec[Data] => {
-          for (vector_port <- vector) {
-            create_vectors_and_tests_for_output(vector_port)
-          }
-        }
-        case output_port => {
-          create_vectors_and_tests_for_output(output_port)
-        }
+      for (vector_port <- port.flatten) {
+        create_vectors_and_tests_for_output(vector_port)
       }
     }
 
