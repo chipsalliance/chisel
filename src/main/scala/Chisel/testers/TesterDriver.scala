@@ -11,13 +11,16 @@ object TesterDriver extends BackendCompilationUtilities {
     */
   def copyResourceToFile(name: String, file: File) {
     val in = getClass().getResourceAsStream(name)
+    if (in == null) {
+      throw new FileNotFoundException(s"Resource '$name'")
+    }
     val out = new FileOutputStream(file)
     Iterator.continually(in.read).takeWhile(-1 !=).foreach(out.write)
     out.close()
   }
 
   /** For use with modules that should successfully be elaborated by the
-    * frontend, and which can be turned into executeables with assertions. */
+    * frontend, and which can be turned into executables with assertions. */
   def execute(t: () => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(t)
