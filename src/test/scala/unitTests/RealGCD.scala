@@ -12,6 +12,7 @@ class RealGCD extends Module {
   val io  = new Bundle {
     val in  = Decoupled(new RealGCDInput()).flip()
     val out = Valid(Bits(width = 16))
+    val vec = Vec(4, UInt(OUTPUT, width=4))
   }
 
   val x = Reg(UInt())

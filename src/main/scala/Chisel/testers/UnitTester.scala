@@ -54,21 +54,21 @@ class UnitTester extends BasicTester {
     /**
      * connect to the device under test by connecting each of it's io ports to an appropriate register
      */
-    val dut_inputs = dut.io.elements.flatMap { case (name, element) =>
-      if(element.dir == INPUT) Some(element) else None
-    }
-    val dut_outputs = dut.io.elements.flatMap { case (name, element) =>
-      if(element.dir == OUTPUT) Some(element) else None
-    }
+    val dut_inputs  = dut.io.flatten.filter(_.dir == INPUT)
+    val dut_outputs = dut.io.flatten.filter(_.dir == OUTPUT)
 
+    /**
+     *  commented below was supposed to print a title for the testing state table
+     */
+    println("UnitTester state table")
+//    println(
+//      "%6s".format("step") +
+//        dut_inputs.map { dut_input => "%8s".format(port_name(dut, dut_input))}.mkString +
+//        dut_outputs.map { dut_output => "%8s".format(port_name(dut, dut_output))}.mkString
+//    )
     /**
      * prints out a table form of input and expected outputs
      */
-    println(
-      "%6s".format("step") +
-        dut_inputs.map { dut_input => "%8s".format(port_name(dut, dut_input))}.mkString +
-        dut_outputs.map { dut_output => "%8s".format(port_name(dut, dut_output))}.mkString
-    )
     def val_str(hash : mutable.HashMap[Data, Int], key: Data) : String = {
       if( hash.contains(key) ) "%x".format(hash(key)) else "-"
     }
