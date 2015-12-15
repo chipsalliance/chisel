@@ -143,7 +143,7 @@ class UnitTester extends BasicTester {
     pc := pc + UInt(1)
 
     when(pc >= UInt(test_actions.length)) {
-      printf("Stopping, end of tests\n")
+      printf(s"Stopping, end of tests, ${test_actions.length} steps\n")
       stop()
     }
 
