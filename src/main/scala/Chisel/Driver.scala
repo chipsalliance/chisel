@@ -81,8 +81,11 @@ trait BackendCompilationUtilities {
       dir: File,
       assertionMsg: String = "Assertion failed"): Boolean = {
     var triggered = false
-    val e = Process(s"./V${prefix}", dir) ! ProcessLogger(line =>
-      triggered = triggered || line.contains(assertionMsg))
+    val e = Process(s"./V${prefix}", dir) !
+      ProcessLogger(line => {
+        triggered = triggered || line.contains(assertionMsg)
+        System.out.println(line)
+      })
     triggered
   }
 
