@@ -14,13 +14,9 @@ trait UnitTestRunners {
 class UnitTester extends BasicTester {
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
-  def rnd = Random
-  def port_name(dut: Module, port_to_find: Data) : String = {
-    dut.io.elements.foreach { case (name, port) =>
-        if( port == port_to_find) return name
-    }
-    port_to_find.toString
-  }
+  def rnd = Random  // convenience method for writing tests
+
+  val ports_referenced = new mutable.HashSet[Data]
 
   // Scala stuff
   val test_actions = new ArrayBuffer[Step]()
@@ -31,6 +27,7 @@ class UnitTester extends BasicTester {
     require(test_actions.last.input_map.contains(io_port) == false,
       s"second poke to $io_port without step\nkeys ${test_actions.last.input_map.keys.mkString(",")}")
 
+    ports_referenced += io_port
     test_actions.last.input_map(io_port) = value
   }
 
@@ -38,6 +35,7 @@ class UnitTester extends BasicTester {
     require(io_port.dir == OUTPUT, s"expect error: $io_port not an output")
     require(!test_actions.last.output_map.contains(io_port), s"second expect to $io_port without step")
 
+    ports_referenced += io_port
     test_actions.last.output_map(io_port) = value
   }
 
@@ -54,21 +52,22 @@ class UnitTester extends BasicTester {
     /**
      * connect to the device under test by connecting each of it's io ports to an appropriate register
      */
-    val dut_inputs  = dut.io.flatten.filter(_.dir == INPUT)
-    val dut_outputs = dut.io.flatten.filter(_.dir == OUTPUT)
+    val dut_inputs  = dut.io.flatten.filter( port => port.dir == INPUT  && ports_referenced.contains(port) )
+    val dut_outputs = dut.io.flatten.filter( port => port.dir == OUTPUT && ports_referenced.contains(port))
 
     val port_to_name = {
       val port_to_name_accumulator = new mutable.HashMap[Data, String]()
 
-      def names(b: Bundle, name: String = ""): Unit = {
+      println("%10s %10s %s".format("direction", "referenced", "name"))
+      def parse_bundle(b: Bundle, name: String = ""): Unit = {
         for ((n, e) <- b.elements) {
           val new_name = name + (if(name.length > 0 ) "." else "" ) + n
           port_to_name_accumulator(e) = new_name
-          println(s"port_name ${new_name}")
+          println("%10s %5s      %s".format(e.dir, if( ports_referenced.contains(e)) "Y" else " ", new_name))
 
           e match {
-            case bb: Bundle  => names(bb, new_name)
-            case vv: Vec[_]  => vnames(vv, new_name)
+            case bb: Bundle  => parse_bundle(bb, new_name)
+            case vv: Vec[_]  => parse_vecs(vv, new_name)
             case ee: Element => {}
             case _           => {
               throw new Exception(s"bad bundle member ${new_name} $e")
@@ -76,15 +75,15 @@ class UnitTester extends BasicTester {
           }
         }
       }
-      def vnames[T<:Data](b: Vec[T], name: String = ""): Unit = {
+      def parse_vecs[T<:Data](b: Vec[T], name: String = ""): Unit = {
         for ((e, i) <- b.zipWithIndex) {
           val new_name = name + s"($i)"
           port_to_name_accumulator(e) = new_name
-          println(s"port_name ${new_name}")
+          println("%10s %5s      %s".format(e.dir, if( ports_referenced.contains(e)) "Y" else " ", new_name))
 
           e match {
-            case bb: Bundle  => names(bb, new_name)
-            case vv: Vec[_]  => vnames(vv, new_name)
+            case bb: Bundle  => parse_bundle(bb, new_name)
+            case vv: Vec[_]  => parse_vecs(vv, new_name)
             case ee: Element => {}
             case _           => {
               throw new Exception(s"bad bundle member ${new_name} $e")
@@ -93,18 +92,20 @@ class UnitTester extends BasicTester {
         }
       }
 
-      names(dut.io)
+      parse_bundle(dut.io)
       port_to_name_accumulator
     }
     /**
      *  commented below was supposed to print a title for the testing state table
      */
-    println("UnitTester state table")
-//    println(
-//      "%6s".format("step") +
-//        dut_inputs.map { dut_input => "%8s".format(port_name(dut, dut_input))}.mkString +
-//        dut_outputs.map { dut_output => "%8s".format(port_name(dut, dut_output))}.mkString
-//    )
+    val max_col_width = ports_referenced.map(port => port_to_name(port).length).max + 2
+    val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}d")
+    println("UnitTester state table" + string_col_template)
+    println(
+      "%6s".format("step") +
+        dut_inputs.map { dut_input   => string_col_template.format(port_to_name(dut_input))}.mkString +
+        dut_outputs.map { dut_output => string_col_template.format(port_to_name(dut_output))}.mkString
+    )
     /**
      * prints out a table form of input and expected outputs
      */
@@ -114,10 +115,10 @@ class UnitTester extends BasicTester {
     test_actions.zipWithIndex.foreach { case (step, step_number) =>
       print("%6d".format(step_number))
       for(port <- dut_inputs) {
-        print("%8s".format(val_str(step.input_map, port)))
+        print(string_col_template.format(val_str(step.input_map, port)))
       }
       for(port <- dut_outputs) {
-        print("%8s".format(val_str(step.output_map, port)))
+        print(string_col_template.format(val_str(step.output_map, port)))
       }
       println()
     }
@@ -161,7 +162,7 @@ class UnitTester extends BasicTester {
       when(ok_to_test_output_values(pc)) {
         when(output_port.toBits() != output_values(pc).toBits()) {
           printf(
-            "Exerciser error: at step %d port io." + port_name(dut, output_port) + " value %x != %x, the expected value",
+            "Exerciser error: at step %d port io." + port_to_name(output_port) + " value %x != %x, the expected value",
             pc,
             output_port.toBits(),
             output_values(pc).toBits()
