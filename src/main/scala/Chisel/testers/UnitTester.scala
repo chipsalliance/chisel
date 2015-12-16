@@ -2,6 +2,7 @@ package Chisel.testers
 
 import Chisel._
 
+import scala.StringBuilder
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -59,8 +60,9 @@ class UnitTester extends BasicTester {
       val port_to_name_accumulator = new mutable.HashMap[Data, String]()
 
       println("="*80)
-      println("Device under tests io bundle")
+      println("Device under test: io bundle")
       println("%10s %10s %s".format("direction", "referenced", "name"))
+      println("-"*80)
       def parse_bundle(b: Bundle, name: String = ""): Unit = {
         for ((n, e) <- b.elements) {
           val new_name = name + (if(name.length > 0 ) "." else "" ) + n
@@ -100,10 +102,13 @@ class UnitTester extends BasicTester {
       port_to_name_accumulator
     }
     /**
-     *  commented below was supposed to print a title for the testing state table
+     *  Print a title for the testing state table
      */
-    val max_col_width = ports_referenced.map(port => port_to_name(port).length).max + 2
-    val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}d")
+    val max_col_width = ports_referenced.map { port =>
+      Array(port_to_name(port).length, port.getWidth / 4).max  // width/4 is how wide value might be in hex
+    }.max + 2
+    val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}x")
+
     println("="*80)
     println("UnitTester state table")
     println(
@@ -111,6 +116,7 @@ class UnitTester extends BasicTester {
         dut_inputs.map  { dut_input  => string_col_template.format(port_to_name(dut_input))}.mkString +
         dut_outputs.map { dut_output => string_col_template.format(port_to_name(dut_output))}.mkString
     )
+    println("-"*80)
     /**
      * prints out a table form of input and expected outputs
      */
@@ -131,6 +137,24 @@ class UnitTester extends BasicTester {
 
     val pc             = Reg(init=UInt(0, 8))
 
+    def log_referenced_ports: Unit = {
+      val format_statement = new StringBuilder()
+      val port_to_display  = new ArrayBuffer[Data]()
+      format_statement.append("pc: %x")
+      port_to_display.append(pc)
+
+      for( dut_input <- dut_inputs ) {
+        format_statement.append(",  " + port_to_name(dut_input)+": %x")
+        port_to_display.append(dut_input)
+      }
+      for( dut_output <- dut_outputs ) {
+        format_statement.append(",   " + port_to_name(dut_output)+": %x")
+        port_to_display.append(dut_output)
+      }
+      printf(format_statement.toString(), port_to_display.map{_.toBits()}.toSeq :_* )
+    }
+
+    log_referenced_ports
 
 
     def create_vectors_for_input(input_port: Data): Unit = {
@@ -158,21 +182,19 @@ class UnitTester extends BasicTester {
         }
       )
 
-      printf("XXXX pc %x ok_to_test %x port_value %x expected %x",
-        pc, ok_to_test_output_values(pc),
-        output_port.toBits(),
-        output_values(pc).toBits())
-
       when(ok_to_test_output_values(pc)) {
-        when(output_port.toBits() != output_values(pc).toBits()) {
-          printf(
-            "Exerciser error: at step %d port io." + port_to_name(output_port) + " value %x != %x, the expected value",
-            pc,
+        when(output_port.toBits() === output_values(pc).toBits()) {
+//          printf("    passed -- " + port_to_name(output_port) + ":  %x",
+//            output_port.toBits()
+//          )
+        }.otherwise {
+          printf("    failed -- port " + port_to_name(output_port) + ":  %x expected %x",
             output_port.toBits(),
             output_values(pc).toBits()
           )
           assert(Bool(false), "Failed test")
-
+          // TODO: Figure out if we want to stop here
+//          stop()
         }
       }
     }
