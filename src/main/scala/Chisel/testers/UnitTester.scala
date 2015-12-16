@@ -57,6 +57,45 @@ class UnitTester extends BasicTester {
     val dut_inputs  = dut.io.flatten.filter(_.dir == INPUT)
     val dut_outputs = dut.io.flatten.filter(_.dir == OUTPUT)
 
+    val port_to_name = {
+      val port_to_name_accumulator = new mutable.HashMap[Data, String]()
+
+      def names(b: Bundle, name: String = ""): Unit = {
+        for ((n, e) <- b.elements) {
+          val new_name = name + (if(name.length > 0 ) "." else "" ) + n
+          port_to_name_accumulator(e) = new_name
+          println(s"port_name ${new_name}")
+
+          e match {
+            case bb: Bundle  => names(bb, new_name)
+            case vv: Vec[_]  => vnames(vv, new_name)
+            case ee: Element => {}
+            case _           => {
+              throw new Exception(s"bad bundle member ${new_name} $e")
+            }
+          }
+        }
+      }
+      def vnames[T<:Data](b: Vec[T], name: String = ""): Unit = {
+        for ((e, i) <- b.zipWithIndex) {
+          val new_name = name + s"($i)"
+          port_to_name_accumulator(e) = new_name
+          println(s"port_name ${new_name}")
+
+          e match {
+            case bb: Bundle  => names(bb, new_name)
+            case vv: Vec[_]  => vnames(vv, new_name)
+            case ee: Element => {}
+            case _           => {
+              throw new Exception(s"bad bundle member ${new_name} $e")
+            }
+          }
+        }
+      }
+
+      names(dut.io)
+      port_to_name_accumulator
+    }
     /**
      *  commented below was supposed to print a title for the testing state table
      */
@@ -143,7 +182,7 @@ class UnitTester extends BasicTester {
     pc := pc + UInt(1)
 
     when(pc >= UInt(test_actions.length)) {
-      printf(s"Stopping, end of tests, ${test_actions.length} steps\n")
+      printf(s"Stopping, end of tests, ${test_actions.length} steps XXX\n")
       stop()
     }
 
