@@ -6,6 +6,9 @@ import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
 
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
+
 object assert {
   /** Checks for a condition to be valid in the circuit at all times. If the
     * condition evaluates to false, the circuit simulation stops with an error.
@@ -20,24 +23,40 @@ object assert {
     *
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional message to print when the assertion fires
+    *
+    * @note currently cannot be used in core Chisel / libraries because macro
+    * defs need to be compiled first and the SBT project is not set up to do
+    * that
     */
-  def apply(cond: Bool, message: String) {
+  def apply(cond: Bool, message: String): Unit = macro apply_impl_msg
+  def apply(cond: Bool): Unit = macro apply_impl  // macros currently can't take default arguments
+
+  def apply_impl_msg(c: Context)(cond: c.Tree, message: c.Tree): c.Tree = {
+    import c.universe._
+    val p = c.enclosingPosition
+    val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("apply_impl_do"))
+    q"$apply_impl_do($cond, $condStr, _root_.scala.Some($message))"
+  }
+
+  def apply_impl(c: Context)(cond: c.Tree): c.Tree = {
+    import c.universe._
+    val p = c.enclosingPosition
+    val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
+    val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("apply_impl_do"))
+    q"$apply_impl_do($cond, $condStr, _root_.scala.None)"
+  }
+
+  def apply_impl_do(cond: Bool, line: String, message: Option[String]) {
     when (!Builder.dynamicContext.currentModule.get.reset) {
       when(!cond) {
-        if (message.isEmpty()) {
-          printf(s"Assertion failed: (TODO: code / lineno)")
-        } else {
-          printf(s"Assertion failed: (TODO: code / lineno): $message")
+        message match {
+          case Some(str) => printf(s"Assertion failed: $line: $str\n")
+          case None => printf(s"Assertion failed: $line\n")
         }
         pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
       }
     }
-  }
-
-  /** A workaround for default-value overloading problems in Scala, just
-    * 'assert(cond, "")' */
-  def apply(cond: Bool) {
-    assert(cond, "")
   }
 
   /** An elaboration-time assertion, otherwise the same as the above run-time
