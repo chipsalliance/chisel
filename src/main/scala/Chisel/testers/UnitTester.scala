@@ -58,6 +58,8 @@ class UnitTester extends BasicTester {
     val port_to_name = {
       val port_to_name_accumulator = new mutable.HashMap[Data, String]()
 
+      println("="*80)
+      println("Device under tests io bundle")
       println("%10s %10s %s".format("direction", "referenced", "name"))
       def parse_bundle(b: Bundle, name: String = ""): Unit = {
         for ((n, e) <- b.elements) {
@@ -93,6 +95,8 @@ class UnitTester extends BasicTester {
       }
 
       parse_bundle(dut.io)
+      println("="*80)
+
       port_to_name_accumulator
     }
     /**
@@ -100,10 +104,11 @@ class UnitTester extends BasicTester {
      */
     val max_col_width = ports_referenced.map(port => port_to_name(port).length).max + 2
     val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}d")
-    println("UnitTester state table" + string_col_template)
+    println("="*80)
+    println("UnitTester state table")
     println(
       "%6s".format("step") +
-        dut_inputs.map { dut_input   => string_col_template.format(port_to_name(dut_input))}.mkString +
+        dut_inputs.map  { dut_input  => string_col_template.format(port_to_name(dut_input))}.mkString +
         dut_outputs.map { dut_output => string_col_template.format(port_to_name(dut_output))}.mkString
     )
     /**
@@ -122,8 +127,11 @@ class UnitTester extends BasicTester {
       }
       println()
     }
+    println("="*80)
 
     val pc             = Reg(init=UInt(0, 8))
+
+
 
     def create_vectors_for_input(input_port: Data): Unit = {
       var default_value = 0
@@ -136,11 +144,7 @@ class UnitTester extends BasicTester {
       input_port := input_values(pc)
     }
 
-    dut_inputs.foreach { port =>
-      for( vector_input <- port.flatten) {
-        create_vectors_for_input(vector_input)
-      }
-    }
+    dut_inputs.foreach { port => create_vectors_for_input(port) }
 
     def create_vectors_and_tests_for_output(output_port: Data): Unit = {
       val output_values = Vec(
@@ -173,12 +177,7 @@ class UnitTester extends BasicTester {
       }
     }
 
-    dut_outputs.foreach { port =>
-      for (vector_port <- port.flatten) {
-        create_vectors_and_tests_for_output(vector_port)
-      }
-    }
-
+    dut_outputs.foreach { port => create_vectors_and_tests_for_output(port) }
 
     pc := pc + UInt(1)
 
