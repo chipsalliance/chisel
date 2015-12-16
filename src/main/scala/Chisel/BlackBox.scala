@@ -8,16 +8,14 @@ package Chisel
   *
   * @example
   * {{{
-  * class DSP48E1 extends BlackBox {
-  *   val io = new Bundle // Create I/O with same as DSP
-  *   val dspParams = new VerilogParameters // Create Parameters to be specified
-  *   setVerilogParams(dspParams)
-  *   // Implement functionality of DSP to allow simulation verification
-  * }
+  * ... to be written once a spec is finalized ...
   * }}}
   */
-// TODO: actually implement BlackBox (this hack just allows them to compile)
 // REVIEW TODO: make Verilog parameters part of the constructor interface?
-abstract class BlackBox(_clock: Clock = null, _reset: Bool = null) extends Module(_clock = _clock, _reset = _reset) {
+abstract class BlackBox(_clock: Clock = null, _reset: Bool = null)
+    extends Module(_clock = _clock, _reset = _reset) {
+  // TODO: actually implement this.
   def setVerilogParameters(s: String): Unit = {}
+
+  // The body of a BlackBox is empty, the real logic happens in firrtl/Emitter.scala
 }

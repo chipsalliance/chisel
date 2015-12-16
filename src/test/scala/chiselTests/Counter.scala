@@ -37,14 +37,14 @@ class WrapTester(max: Int) extends BasicTester {
 
 class CounterSpec extends ChiselPropSpec {
   property("Counter should count up") {
-    forAll(smallPosInts) { (max: Int) => assert(execute{ new CountTester(max) }) }
+    forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new CountTester(max) } }
   }
 
   property("Counter can be en/disabled") {
-    forAll(safeUInts) { (seed: Int) => assert(execute{ new EnableTester(seed) }) }
+    forAll(safeUInts) { (seed: Int) => assertTesterPasses{ new EnableTester(seed) } }
   }
 
   property("Counter should wrap") {
-    forAll(smallPosInts) { (max: Int) => assert(execute{ new WrapTester(max) }) }
+    forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new WrapTester(max) } }
   }
 }

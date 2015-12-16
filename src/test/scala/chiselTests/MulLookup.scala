@@ -34,7 +34,7 @@ class MulLookupSpec extends ChiselPropSpec {
 
   property("Mul lookup table should return the correct result") {
     forAll(smallPosInts, smallPosInts) { (x: Int, y: Int) =>
-      assert(execute{ new MulLookupTester(3, x, y) })
+      assertTesterPasses{ new MulLookupTester(3, x, y) }
     }
   }
 }

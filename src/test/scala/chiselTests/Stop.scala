@@ -12,6 +12,6 @@ class StopTester() extends BasicTester {
 
 class StopSpec extends ChiselFlatSpec {
   "stop()" should "stop and succeed the testbench" in {
-    assert(execute{ new StopTester })
+    assertTesterPasses { new StopTester }
   }
 }

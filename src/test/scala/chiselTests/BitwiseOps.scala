@@ -21,7 +21,7 @@ class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
 class BitwiseOpsSpec extends ChiselPropSpec {
   property("All bit-wise ops should return the correct result") {
     forAll(safeUIntPair) { case(w: Int, a: Int, b: Int) =>
-      assert(execute{ new BitwiseOpsTester(w, a, b) })
+      assertTesterPasses{ new BitwiseOpsTester(w, a, b) }
     }
   }
 }

@@ -46,12 +46,12 @@ class InvalidOptionBundleTester() extends BasicTester {
 
 class OptionBundleSpec extends ChiselFlatSpec {
   "A Bundle with an Option field" should "work properly if the Option field is not None" in {
-    assert(execute { new SomeOptionBundleTester(true) })
-    assert(execute { new SomeOptionBundleTester(false) })
+    assertTesterPasses { new SomeOptionBundleTester(true) }
+    assertTesterPasses { new SomeOptionBundleTester(false) }
   }
 
   "A Bundle with an Option field" should "compile if the Option field is None" in {
-    assert(execute { new NoneOptionBundleTester() })
+    assertTesterPasses { new NoneOptionBundleTester() }
   }
 
   "A Bundle with an Option field" should "assert out accessing a None Option field" in {
