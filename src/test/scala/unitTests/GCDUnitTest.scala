@@ -8,44 +8,54 @@ import chiselTests.ChiselFlatSpec
 
 class GCD extends Module {
   val io = new Bundle {
-    val a  = UInt(INPUT, 32)
-    val b  = UInt(INPUT, 32)
+    val a  = UInt(INPUT,  16)
+    val b  = UInt(INPUT,  16)
     val e  = Bool(INPUT)
-    val z  = UInt(OUTPUT, 32)
+    val z  = UInt(OUTPUT, 16)
     val v  = Bool(OUTPUT)
   }
-  val x = Reg(UInt(width = 32))
-  val y = Reg(UInt(width = 32))
-  when (x > y)   { x := x -% y }
-  .otherwise     { y := y -% x }
+  val x  = Reg(UInt())
+  val y  = Reg(UInt())
+  when   (x > y) { x := x - y }
+  unless (x > y) { y := y - x }
   when (io.e) { x := io.a; y := io.b }
   io.z := x
   io.v := y === UInt(0)
 }
 
 class GCDUnitTester extends UnitTester {
-  def compute_gcd(a: Int, b: Int, depth: Int = 1): Tuple2[Int, Int] = {
-    if(b == 0) (a, depth)
-    else compute_gcd(b, a%b, depth+1 )
+  def compute_gcd(a: Int, b: Int): Tuple2[Int, Int] = {
+    var x = a
+    var y = b
+    var depth = 1
+    while(y > 0 ) {
+      if (x > y) {
+        x -= y
+      }
+      else {
+        y -= x
+      }
+      depth += 1
+    }
+    return (x, depth)
   }
 
+  val (a, b, z) = (64, 48, 16)
   val gcd = Module(new GCD)
 
-  for {
-    value_1 <- 4 to 8
-    value_2 <- 2 to 4
-  } {
-    poke(gcd.io.a, value_1)
-    poke(gcd.io.b, value_2)
+  poke(gcd.io.a, a)
+  poke(gcd.io.b, b)
+  poke(gcd.io.e, 1)
+  step(1)
+  poke(gcd.io.e, 0)
 
-    val (expected_gcd, steps) = compute_gcd(value_1, value_2)
+  val (expected_gcd, steps) = compute_gcd(a, b)
 
-    step(steps)
-    expect(gcd.io.z, expected_gcd)
-  }
+  step(steps-1) // -1 is because we step(1) already to toggle the enable
+  expect(gcd.io.z, expected_gcd)
+  expect(gcd.io.v, 1 )
 
   install(gcd)
-
 }
 
 class GCDTester extends ChiselFlatSpec {
