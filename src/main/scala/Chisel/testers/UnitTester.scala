@@ -2,7 +2,6 @@ package Chisel.testers
 
 import Chisel._
 
-import scala.StringBuilder
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -12,6 +11,29 @@ trait UnitTestRunners {
   def elaborate(t: => Module):   Unit    = Driver.elaborate(() => t)
 }
 
+/**
+ * Use a UnitTester to constuct a test harness for a chisel module
+ * this module will be canonically referred to as the device_under_test, often simply as c in
+ * a unit test, and also dut
+ * The UnitTester is used to put series of values (as chisel.Vec's) into the ports of the dut io which are INPUTs
+ * At specified times it check the dut's io OUTPUT ports to see that they match a specific value
+ * The vec's are assembled through the following API
+ * poke, expect and step, pokes
+ *
+ * Example:
+ *
+ * class Adder(width:Int) extends Module {
+ *   val io = new Bundle {
+ *     val in0 : UInt(INPUT, width=width)
+ *     val in1 : UInt(INPUT, width=width)
+ *     val out : UInt(OUTPUT, width=width)
+ *   }
+ * class AdderTester extends UnitTester {
+ *   val device_under_test = Module( new Adder(32) )
+ *   val c = device_under_test
+ *   poke(c.io.in0, 5); poke(c.io.in1, ); poke(
+ *
+ */
 class UnitTester extends BasicTester {
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
@@ -31,6 +53,7 @@ class UnitTester extends BasicTester {
     ports_referenced += io_port
     test_actions.last.input_map(io_port) = value
   }
+//  def poke(io_port: Data, bool_value: Boolean) = poke(io_port, if(bool_value) 1 else 0)
 
   def expect(io_port: Data, value: Int): Unit = {
     require(io_port.dir == OUTPUT, s"expect error: $io_port not an output")
@@ -39,6 +62,7 @@ class UnitTester extends BasicTester {
     ports_referenced += io_port
     test_actions.last.output_map(io_port) = value
   }
+  def expect(io_port: Data, bool_value: Boolean): Unit = expect(io_port, if(bool_value) 1 else 0)
 
   def step(number_of_cycles: Int): Unit = {
     test_actions ++= Array.fill(number_of_cycles) {
@@ -135,7 +159,7 @@ class UnitTester extends BasicTester {
     }
     println("="*80)
 
-    val pc             = Reg(init=UInt(0, 8))
+    val pc             = Reg(init=UInt(0, log2Up(test_actions.length)))
 
     def log_referenced_ports: Unit = {
       val format_statement = new StringBuilder()
