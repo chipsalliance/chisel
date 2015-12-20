@@ -7,31 +7,39 @@ import Chisel.testers.DecoupledTester
  * Created by chick on 12/18/15.
  */
 
-class SimpleAdder extends Module {
-  val io = new Bundle {
-    val a = UInt(INPUT, width=16)
-    val b = UInt(INPUT, width=16)
-    val c = UInt(OUTPUT, width=16)
+class DecoupledAdderIO extends Bundle {
+  val a = UInt(INPUT, width=16)
+  val b = UInt(INPUT, width=16)
+}
 
-    c := a + b
+class DecoupledAdder extends Module {
+  val io = new Bundle {
+    val in = Decoupled(new DecoupledAdderIO).flip()
+    val out = Valid(UInt(INPUT, width = 16))
   }
+  io.out.bits := io.in.bits.a + io.in.bits.b
 }
 
 class DecoupledTesterSpec extends ChiselFlatSpec {
   elaborate {
     new DecoupledTester {
-      val device_under_test = new SimpleAdder()
+      val device_under_test = new DecoupledAdder()
       finish()
 
       "A DecoupledTester" should "parse identify all the io ports of a Module" in {
-        assert(io_info.dut_inputs.size == 2)
-        assert(io_info.dut_outputs.size == 1)
+//        assert(io_info.dut_inputs.size == 2)
+//        assert(io_info.dut_outputs.size == 1)
 
-        val io = device_under_test.io
-        for(port <- List(io.a, io.b, io.c)){
+        val dut_io = device_under_test.io
+        for(port <- List(dut_io.in.bits.a, dut_io.in.bits.b, dut_io.out.bits)){
           assert(io_info.port_to_name.contains(port))
           println(io_info.port_to_name(port))
         }
+
+        io_info.show_ports(".*".r)
+      }
+      it should "identify the decoupled interfaces" in {
+
       }
     }
   }
