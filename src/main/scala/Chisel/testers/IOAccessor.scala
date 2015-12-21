@@ -38,9 +38,6 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
         val new_name = name + (if(name.length > 0 ) "." else "" ) + n
         port_to_name_accumulator(e) = new_name
 
-        if(verbose) {
-          println("%10s %5s      %s".format(e.dir, "-", new_name))
-        }
         e match {
           case bb: Bundle  => parse_bundle(bb, new_name)
           case vv: Vec[_]  => parse_vecs(vv, new_name)
@@ -70,9 +67,6 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     }
 
     parse_bundle(device_io)
-    if(verbose) {
-      println("=" * 80)
-    }
     port_to_name_accumulator
   }
 
@@ -98,21 +92,31 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
         find_parent_valid_port_name(port_name).getOrElse("")
       }
     }
+    def show_dir(dir: Direction) = dir match {
+      case INPUT  => "I"
+      case OUTPUT => "O"
+      case _      => "-"
+    }
 
     println("=" * 80)
     println("Device under test: io bundle")
-    println("%10s %10s %s".format("direction", "referenced", "name"))
+    println("%3s  %3s  %-4s  %4s   %-25s %s".format(
+            "#", "Dir", "D/V", "Used", "Name", "Parent"
+    ))
     println("-" * 80)
 
     for((port,index) <- port_to_name.keys.toList.sortWith(order_ports).zipWithIndex) {
       val port_name = port_to_name(port)
-      println("%3d %20s   %-8s %8s %-25s %s".format(
+      println("%3d  %3s   %-4s%4s    %-25s %s".format(
         index,
-        port.dir,
+        show_dir(port.dir),
         show_decoupled_code(port_name),
         "n", port_name,
         show_decoupled_parent(port_name)
       ))
+    }
+    if(verbose) {
+      println("=" * 80)
     }
   }
 
