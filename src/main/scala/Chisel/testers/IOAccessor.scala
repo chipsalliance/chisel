@@ -22,13 +22,6 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
   val port_to_name = {
     val port_to_name_accumulator = new mutable.HashMap[Data, String]()
 
-    if(verbose) {
-      println("=" * 80)
-      println("Device under test: io bundle")
-      println("%10s %10s %s".format("direction", "referenced", "name"))
-      println("-" * 80)
-    }
-
     def check_decoupled_or_valid(port: Data, name: String): Unit = {
       if(port.isInstanceOf[DecoupledIO[_]]) {
         decoupled_ports += port
@@ -100,6 +93,17 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
       else ""
 
     }
+    def show_decoupled_parent(port_name:String): String = {
+      find_parent_decoupled_port_name(port_name).getOrElse {
+        find_parent_valid_port_name(port_name).getOrElse("")
+      }
+    }
+
+    println("=" * 80)
+    println("Device under test: io bundle")
+    println("%10s %10s %s".format("direction", "referenced", "name"))
+    println("-" * 80)
+
     for((port,index) <- port_to_name.keys.toList.sortWith(order_ports).zipWithIndex) {
       val port_name = port_to_name(port)
       println("%3d %20s   %-8s %8s %-25s %s".format(
@@ -107,7 +111,7 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
         port.dir,
         show_decoupled_code(port_name),
         "n", port_name,
-        find_parent_decoupled_port_name(port_name).getOrElse("")
+        show_decoupled_parent(port_name)
       ))
     }
   }
@@ -122,8 +126,6 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     if(possible_parents.isEmpty) return None
     possible_parents.sorted.lastOption
   }
-
-
 
   /**
    * return the name of a parent in the io hierarchy which is of type decoupled

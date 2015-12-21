@@ -14,7 +14,7 @@ class DecoupledAdderIO extends Bundle {
 
 class DecoupledAdder extends Module {
   val io = new Bundle {
-    val in = Decoupled(new DecoupledAdderIO).flip()
+    val in  = Decoupled(new DecoupledAdderIO).flip()
     val out = Valid(UInt(INPUT, width = 16))
   }
   io.out.bits := io.in.bits.a + io.in.bits.b
@@ -39,6 +39,10 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
         io_info.show_ports(".*".r)
       }
       it should "identify the decoupled interfaces" in {
+        assert(io_info.find_parent_decoupled_port_name("in.bits") == Some("in"))
+        assert(io_info.find_parent_decoupled_port_name("in.bits.a") == Some("in"))
+        assert(io_info.find_parent_decoupled_port_name("in.bits.b") == Some("in"))
+        assert(io_info.find_parent_valid_port_name("out.bits") == Some("out"))
 
       }
     }
