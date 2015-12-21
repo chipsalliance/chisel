@@ -114,7 +114,8 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
         index,
         show_dir(port.dir),
         show_decoupled_code(port_name),
-        "n", port_name,
+        if(ports_referenced.contains(port)) "y" else "",
+        port_name,
         show_decoupled_parent(port_name)
       ))
     }

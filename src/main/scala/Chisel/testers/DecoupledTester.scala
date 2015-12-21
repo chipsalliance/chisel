@@ -5,8 +5,6 @@ import Chisel._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-//TODO: all ins for a given event must be part of same DecoupledIO
-//TODO: all outs for a given event must be part of the same ValidIO
 //TODO: io not allowed directly on ready or valid
 /**
  * Base class supports implementation of engines that test circuits whose use Decoupled IO
@@ -83,7 +81,6 @@ abstract class DecoupledTester extends BasicTester {
    */
   def event(pokes: Seq[Tuple2[Data, Int]], expects: Seq[Tuple2[Data, Int]]): Unit = {
     event_list += ((pokes, expects))
-
   }
 
   def process_events(): Unit = {
@@ -98,6 +95,8 @@ abstract class DecoupledTester extends BasicTester {
       for( (port, value) <- pokes) poke(port, value)
       for( (port, value) <- expects) poke(port, value)
 
+      io_info.ports_referenced ++= (pokes ++ expects).map { case (port, value) => port}
+
       num_events += 1
     }
   }
@@ -108,7 +107,6 @@ abstract class DecoupledTester extends BasicTester {
     process_events()
 
     val event_counter = Reg(init=UInt(0, width=log2Up(num_events)))
-
 
 //    def create_vectors_for_input(input_port: Data): Unit = {
 //      var default_value = 0
