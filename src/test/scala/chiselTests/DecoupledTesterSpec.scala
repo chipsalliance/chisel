@@ -24,6 +24,11 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
   elaborate {
     new DecoupledTester {
       val device_under_test = new DecoupledAdder()
+
+      event(
+      Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7),
+      Array(device_under_test.io.out.bits -> 11)
+      )
       finish()
 
       "A DecoupledTester" should "parse identify all the io ports of a Module" in {

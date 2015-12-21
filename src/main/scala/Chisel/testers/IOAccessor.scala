@@ -16,20 +16,23 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
 
   val decoupled_ports        = new mutable.ArrayBuffer[Data]()
   val valid_ports            = new mutable.ArrayBuffer[Data]()
-  val name_to_decoupled_port = new mutable.HashMap[String, Data]()
-  val name_to_valid_port     = new mutable.HashMap[String, Data]()
+  val name_to_decoupled_port = new mutable.HashMap[String, DecoupledIO[_]]()
+  val name_to_valid_port     = new mutable.HashMap[String, ValidIO[_]]()
 
   val port_to_name = {
     val port_to_name_accumulator = new mutable.HashMap[Data, String]()
 
     def check_decoupled_or_valid(port: Data, name: String): Unit = {
-      if(port.isInstanceOf[DecoupledIO[_]]) {
-        decoupled_ports += port
-        name_to_decoupled_port(name) = port
-      }
-      if(port.isInstanceOf[ValidIO[_]]) {
-        valid_ports += port
-        name_to_valid_port(name) = port
+      port match {
+        case decoupled_port : DecoupledIO[_] => {
+          decoupled_ports += decoupled_port
+          name_to_decoupled_port(name) = decoupled_port
+        }
+        case valid_port : ValidIO[_] => {
+          valid_ports += valid_port
+          name_to_valid_port(name) = valid_port
+        }
+        case _ => {}
       }
     }
 
