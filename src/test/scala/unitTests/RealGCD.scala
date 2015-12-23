@@ -11,7 +11,7 @@ class RealGCDInput extends Bundle {
 class RealGCD extends Module {
   val io  = new Bundle {
     val in  = Decoupled(new RealGCDInput()).flip()
-    val out = Valid(Bits(width = 16))
+    val out = Decoupled(UInt(width = 16))
   }
 
   val x = Reg(UInt())
@@ -42,13 +42,17 @@ class DecoupledRealGCDTester extends DecoupledTester {
   val device_under_test = Module(new RealGCD)
   val c = device_under_test // alias for dut
 
-  event(
-    Array(
-      c.io.in.bits.a -> 14,
-      c.io.in.bits.b -> 35
-    ),
-    Array(c.io.out.bits -> 7)
-  )
+  for(x <- 0 until 9) {
+    event(
+      Array(
+        c.io.in.bits.a -> 14,
+        c.io.in.bits.b -> 35
+      ),
+      Array(c.io.out.bits -> 7)
+    )
+  }
+  finish()
+  io_info.show_ports("".r)
 }
 
 class RealGCDTests extends UnitTester {

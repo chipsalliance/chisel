@@ -14,8 +14,11 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
   val dut_outputs = device_io.flatten.filter( port => port.dir == OUTPUT)
   val ports_referenced = new mutable.HashSet[Data]
 
-  val decoupled_ports        = new mutable.ArrayBuffer[Data]()
-  val valid_ports            = new mutable.ArrayBuffer[Data]()
+  def referenced_inputs  = dut_inputs.filter { case port => ports_referenced.contains(port) }
+  def referenced_outputs = dut_inputs.filter { case port => ports_referenced.contains(port) }
+
+  val decoupled_ports        = new mutable.ArrayBuffer[DecoupledIO[_]]()
+  val valid_ports            = new mutable.ArrayBuffer[ValidIO[_]]()
   val name_to_decoupled_port = new mutable.HashMap[String, DecoupledIO[_]]()
   val name_to_valid_port     = new mutable.HashMap[String, ValidIO[_]]()
 
@@ -91,8 +94,12 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
 
     }
     def show_decoupled_parent(port_name:String): String = {
-      find_parent_decoupled_port_name(port_name).getOrElse {
-        find_parent_valid_port_name(port_name).getOrElse("")
+      find_parent_decoupled_port_name(port_name) match {
+        case Some(decoupled_name) => {
+          val index = decoupled_ports.indexOf(name_to_decoupled_port(decoupled_name))
+          s"$decoupled_name is $index"
+        }
+        case _ => find_parent_valid_port_name(port_name).getOrElse("")
       }
     }
     def show_dir(dir: Direction) = dir match {

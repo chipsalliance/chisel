@@ -7,7 +7,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 trait UnitTestRunners {
-  def execute(t: => UnitTester): Boolean = TesterDriver.execute(() => t)
+  def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
   def elaborate(t: => Module):   Unit    = Driver.elaborate(() => t)
 }
 

@@ -21,13 +21,17 @@ class DecoupledAdder extends Module {
 }
 
 class DecoupledTesterSpec extends ChiselFlatSpec {
-  elaborate {
+  execute {
     new DecoupledTester {
       val device_under_test = new DecoupledAdder()
 
       event(
-      Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7),
-      Array(device_under_test.io.out.bits -> 11)
+        Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7),
+        Array(device_under_test.io.out.bits -> 11)
+      )
+      event(
+        Array(device_under_test.io.in.bits.a -> 1, device_under_test.io.in.bits.b -> 2),
+        Array(device_under_test.io.out.bits -> 3)
       )
       finish()
 
@@ -38,7 +42,6 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
         val dut_io = device_under_test.io
         for(port <- List(dut_io.in.bits.a, dut_io.in.bits.b, dut_io.out.bits)){
           assert(io_info.port_to_name.contains(port))
-          println(io_info.port_to_name(port))
         }
 
         io_info.show_ports(".*".r)
@@ -48,6 +51,15 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
         assert(io_info.find_parent_decoupled_port_name("in.bits.a") == Some("in"))
         assert(io_info.find_parent_decoupled_port_name("in.bits.b") == Some("in"))
         assert(io_info.find_parent_valid_port_name("out.bits") == Some("out"))
+      }
+      it should "know which ports are referenced in events" in {
+        assert(io_info.ports_referenced.contains(device_under_test.io.in.bits.a))
+        assert(io_info.ports_referenced.contains(device_under_test.io.in.bits.b))
+        assert(io_info.ports_referenced.contains(device_under_test.io.out.bits))
+
+        assert( ! io_info.ports_referenced.contains(device_under_test.io.in.valid))
+        assert( ! io_info.ports_referenced.contains(device_under_test.io.in.ready))
+        assert( ! io_info.ports_referenced.contains(device_under_test.io.out.valid))
 
       }
     }

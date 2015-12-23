@@ -7,7 +7,8 @@ import Chisel.testers.{UnitTestRunners, UnitTester}
  */
 object Solutions extends UnitTestRunners {
   def main(args: Array[String]) {
-    execute( { new RealGCDTests })
+    execute( { new DecoupledRealGCDTester })
+//    execute( { new RealGCDTests })
 //    execute( { new AdderTests })
   }
 }
