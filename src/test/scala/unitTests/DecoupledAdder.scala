@@ -50,7 +50,7 @@ class DecoupledAdderTests extends DecoupledTester {
     Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7)
   )
   output_event(
-    Array(device_under_test.io.out.bits.c -> 3)
+    Array(device_under_test.io.out.bits.c -> 11)
   )
   finish()
   io_info.show_ports("".r)

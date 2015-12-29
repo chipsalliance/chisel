@@ -112,11 +112,15 @@ abstract class DecoupledTester extends BasicTester {
 
       input_steps += new InputStep(pokes.toMap, parent_port)
       parent_to_child_port(parent_port) ++= pokes.map(_._1)
+      io_info.referenced_inputs ++= pokes.map(_._1)
+
     }
   }
 
   def process_output_events(): Unit = {
+    println(s"processing ${output_event_list.size} output events")
     output_event_list.foreach { case (expects) =>
+      io_info.referenced_outputs ++= expects.map(_._1)
       check_and_get_common_decoupled_or_valid_parent_port_and_name(expects, must_be_decoupled=false) match {
         case (parent_name, Left(decoupled_port)) => {
           output_steps += OutputStep(expects.toMap, Left(decoupled_port))
@@ -156,6 +160,7 @@ abstract class DecoupledTester extends BasicTester {
     val output_complete = Reg(init = Bool(false))
 
     when(input_complete && output_complete) {
+      printf("All input and output events completed")
       stop()
     }
 
@@ -169,6 +174,10 @@ abstract class DecoupledTester extends BasicTester {
       input_steps.map { case (step) => step.parent_port }
     )
     def create_vectors_for_input(input_port: Data): Unit = {
+      println(
+        s"bulding input loaders for ${io_info.port_to_name(input_port)}" +
+        s"controlled by ${io_info.port_to_name(port_to_decoupled(input_port))}"
+      )
       val input_values = Vec(
         input_steps.map { step =>
           val default_value = step.pokes.getOrElse(input_port, 0)
@@ -191,23 +200,14 @@ abstract class DecoupledTester extends BasicTester {
     /**
      * Test values on ports moderated with a decoupled interface
      */
-
-    /**
-     * figure out how to do the ready valid
-     */
-//    val output_event_has_decoupled_tests = Vec(
-//      output_steps.map {
-//        case (step) => step match {
-//          case (_, Left(decoupled_port)) => decoupled_port
-//          case _                         => 0.asInstanceOf[DecoupledIO[Data]]
-//        }
-//      }
-//    )
-
     def create_vectors_for_output(output_port: Data): Unit = {
+      println(
+        s"bulding output test for ${io_info.port_to_name(output_port)}" +
+        s"controlled by ${io_info.port_to_name(port_to_decoupled(output_port))}"
+      )
       val port_used_this_event = Vec(output_steps.map {case step => Bool(step.expects.contains(output_port))})
       val output_test_values = Vec(
-        output_steps.map { step => UInt(step.expects.getOrElse(output_port, 0)) }
+        output_steps.map { step => UInt(step.expects.getOrElse(output_port, 0), width=output_port.width) }
       )
 
       when(!output_complete && port_used_this_event(output_event_counter) && port_to_decoupled(output_port).valid) {
@@ -225,6 +225,7 @@ abstract class DecoupledTester extends BasicTester {
       output_complete := output_event_counter >= UInt(num_events)
     }
 
+    println(s"creating output tests [${io_info.referenced_outputs.mkString(",")}]")
     io_info.referenced_outputs.foreach { port => create_vectors_for_output(port) }
   }
 }
