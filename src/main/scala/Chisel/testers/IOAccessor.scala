@@ -75,6 +75,7 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     parse_bundle(device_io)
     port_to_name_accumulator
   }
+  val name_to_port = port_to_name.map(_.swap)
 
   def show_ports(pattern : Regex): Unit = {
     def order_ports(a: Data, b: Data) : Boolean = {
