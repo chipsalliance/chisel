@@ -17,21 +17,21 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
   def referenced_inputs  = dut_inputs.filter { case port => ports_referenced.contains(port) }
   def referenced_outputs = dut_inputs.filter { case port => ports_referenced.contains(port) }
 
-  val decoupled_ports        = new mutable.ArrayBuffer[DecoupledIO[_]]()
-  val valid_ports            = new mutable.ArrayBuffer[ValidIO[_]]()
-  val name_to_decoupled_port = new mutable.HashMap[String, DecoupledIO[_]]()
-  val name_to_valid_port     = new mutable.HashMap[String, ValidIO[_]]()
+  val decoupled_ports        = new mutable.ArrayBuffer[DecoupledIO[Data]]()
+  val valid_ports            = new mutable.ArrayBuffer[ValidIO[Data]]()
+  val name_to_decoupled_port = new mutable.HashMap[String, DecoupledIO[Data]]()
+  val name_to_valid_port     = new mutable.HashMap[String, ValidIO[Data]]()
 
   val port_to_name = {
     val port_to_name_accumulator = new mutable.HashMap[Data, String]()
 
     def check_decoupled_or_valid(port: Data, name: String): Unit = {
       port match {
-        case decoupled_port : DecoupledIO[_] => {
+        case decoupled_port : DecoupledIO[Data] => {
           decoupled_ports += decoupled_port
           name_to_decoupled_port(name) = decoupled_port
         }
-        case valid_port : ValidIO[_] => {
+        case valid_port : ValidIO[Data] => {
           valid_ports += valid_port
           name_to_valid_port(name) = valid_port
         }
@@ -46,7 +46,7 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
 
         e match {
           case bb: Bundle  => parse_bundle(bb, new_name)
-          case vv: Vec[_]  => parse_vecs(vv, new_name)
+          case vv: Vec[Data]  => parse_vecs(vv, new_name)
           case ee: Element => {}
           case _           => {
             throw new Exception(s"bad bundle member ${new_name} $e")
@@ -62,7 +62,7 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
 
         e match {
           case bb: Bundle  => parse_bundle(bb, new_name)
-          case vv: Vec[_]  => parse_vecs(vv, new_name)
+          case vv: Vec[Data]  => parse_vecs(vv, new_name)
           case ee: Element => {}
           case _           => {
             throw new Exception(s"bad bundle member ${new_name} $e")

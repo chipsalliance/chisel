@@ -43,13 +43,13 @@ class DecoupledRealGCDTester extends DecoupledTester {
   val c = device_under_test // alias for dut
 
   for(x <- 0 until 9) {
-    event(
-      Array(
-        c.io.in.bits.a -> 14,
-        c.io.in.bits.b -> 35
-      ),
-      Array(c.io.out.bits -> 7)
-    )
+//    event(
+//      Array(
+//        c.io.in.bits.a -> 14,
+//        c.io.in.bits.b -> 35
+//      ),
+//      Array(c.io.out.bits -> 7)
+//    )
   }
   finish()
   io_info.show_ports("".r)

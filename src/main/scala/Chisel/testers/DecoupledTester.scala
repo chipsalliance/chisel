@@ -25,14 +25,14 @@ abstract class DecoupledTester extends BasicTester {
   val parent_to_child_port = new mutable.HashMap[Data, mutable.HashSet[Data]] {
     override def default(port: Data) = new mutable.HashSet[Data]()
   }
-  val port_to_decoupled    = new mutable.HashMap[Data, DecoupledIO[_]]
-  val port_to_valid        = new mutable.HashMap[Data, ValidIO[_]]
+  val port_to_decoupled    = new mutable.HashMap[Data, DecoupledIO[Data]]
+  val port_to_valid        = new mutable.HashMap[Data, ValidIO[Data]]
   var num_events = 0
 
-  case class InputStep(pokes:    Map[Data,Int], parent_port: DecoupledIO[_])
-  case class OutputStep(expects: Map[Data,Int], parent_port: Either[DecoupledIO[_],ValidIO[_]])
+  case class InputStep[+T<:Data](pokes:    Map[Data,Int], parent_port: DecoupledIO[T])
+  case class OutputStep(expects: Map[Data,Int], parent_port: Either[DecoupledIO[Data],ValidIO[Data]])
 
-  val input_steps  = new ArrayBuffer[InputStep]()
+  val input_steps  = new ArrayBuffer[InputStep[Data]]()
   val output_steps = new ArrayBuffer[OutputStep]()
 
   /**
@@ -42,7 +42,7 @@ abstract class DecoupledTester extends BasicTester {
   def check_and_get_common_decoupled_or_valid_parent_port_and_name(
                                                  pokes:             Seq[(Data, Int)],
                                                  must_be_decoupled: Boolean = true
-                                               ) : (String, Either[DecoupledIO[_],ValidIO[_]]) = {
+                                               ) : (String, Either[DecoupledIO[Data],ValidIO[Data]]) = {
     val decoupled_parent_names = pokes.flatMap { case (port, value) =>
       io_info.find_parent_decoupled_port_name(io_info.port_to_name(port)) match {
         case None => {
@@ -73,7 +73,7 @@ abstract class DecoupledTester extends BasicTester {
    * Validate that all pokes ports are members of the same DecoupledIO or ValidIO
    * makes a list of all decoupled parents based on the ports referenced in pokes
    */
-  def get_common_valid_parent_port_and_name(expects: Seq[(Data, Int)]) : (String, Either[DecoupledIO[_],ValidIO[_]]) = {
+  def get_common_valid_parent_port_and_name(expects: Seq[(Data, Int)]) : (String, Either[DecoupledIO[Data],ValidIO[Data]]) = {
     val valid_parent_names = expects.flatMap { case (port, value) =>
       io_info.find_parent_valid_port_name(io_info.port_to_name(port)) match {
         case None => {
@@ -165,7 +165,7 @@ abstract class DecoupledTester extends BasicTester {
     /**
      * the decoupled inputs are run here
      */
-    val input_event_selector = Vec[DecoupledIO[_]](
+    val input_event_selector = Vec[DecoupledIO[Data]](
       input_steps.map { case (step) => step.parent_port }
     )
     def create_vectors_for_input(input_port: Data): Unit = {
@@ -199,7 +199,7 @@ abstract class DecoupledTester extends BasicTester {
 //      output_steps.map {
 //        case (step) => step match {
 //          case (_, Left(decoupled_port)) => decoupled_port
-//          case _                         => 0.asInstanceOf[DecoupledIO[_]]
+//          case _                         => 0.asInstanceOf[DecoupledIO[Data]]
 //        }
 //      }
 //    )
