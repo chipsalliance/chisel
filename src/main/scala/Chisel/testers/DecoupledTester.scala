@@ -113,7 +113,7 @@ abstract class DecoupledTester extends BasicTester {
       input_steps += new InputStep(pokes.toMap, parent_port)
       parent_to_child_port(parent_port) ++= pokes.map(_._1)
       io_info.referenced_inputs ++= pokes.map(_._1)
-
+      io_info.referenced_decoupled_ports += parent_port
     }
   }
 
@@ -156,57 +156,64 @@ abstract class DecoupledTester extends BasicTester {
       )
     }
 
-    val input_complete  = Reg(init = Bool(false))
-    val output_complete = Reg(init = Bool(false))
+    val input_event_counter  = Reg(init = UInt(0, width = log2Up(input_steps.size)))
+    val output_event_counter = Reg(init = UInt(0, width = log2Up(output_steps.size)))
+    val input_complete       = Reg(init = Bool(false))
+    val output_complete      = Reg(init = Bool(false))
 
+    input_complete  := input_event_counter  >= UInt(input_steps.size)
+    output_complete := output_event_counter >= UInt(output_steps.size)
     when(input_complete && output_complete) {
       printf("All input and output events completed")
       stop()
     }
 
-    val input_event_counter  = Reg(init = UInt(0, width = log2Up(num_events)))
-    val output_event_counter = Reg(init = UInt(0, width = log2Up(num_events)))
 
     /**
      * the decoupled inputs are run here
      */
-    val input_event_selector = Vec[DecoupledIO[Data]](
-      input_steps.map { case (step) => step.parent_port }
-    )
     def create_vectors_for_input(input_port: Data): Unit = {
       println(
         s"bulding input loaders for ${io_info.port_to_name(input_port)}" +
         s"controlled by ${io_info.port_to_name(port_to_decoupled(input_port))}"
       )
+      val decoupled_port = port_to_decoupled(input_port)
+      val port_used_this_event = Vec(input_steps.map {case step => Bool(step.pokes.contains(input_port))})
       val input_values = Vec(
         input_steps.map { step =>
           val default_value = step.pokes.getOrElse(input_port, 0)
           UInt(default_value, input_port.width)
         }
       )
-      when(!input_complete && input_event_selector(input_event_counter).ready) {
-        printf("input_event_counter %d", input_event_counter)
+      when(!input_complete && decoupled_port.ready) {
+        printf(s"loading input ${io_info.port_to_name(input_port)} input_event_counter %d", input_event_counter)
         input_port := input_values(input_event_counter)
       }
     }
     io_info.referenced_inputs.foreach { port => create_vectors_for_input(port) }
 
-    when(!input_complete && input_event_selector(input_event_counter).ready) {
-      input_event_selector(input_event_counter).valid := Bool(true)
-      input_event_counter := input_event_counter + UInt(1)
-      input_complete := input_event_counter >= UInt(num_events)
-    }
+//    io_info.referenced_decoupled_ports.foreach { port =>
+//      val decoupled_used_this_step = Vec(
+//        input_steps.map { case step => Bool(port == step.parent_port)}
+//      )
+//      when(decoupled_used_this_step(input_event_counter) && port.ready) {
+//        port.valid := Bool(true)
+//        input_event_counter := input_event_counter + UInt(1)
+//      }
+//    }
 
     /**
      * Test values on ports moderated with a decoupled interface
      */
     def create_vectors_for_output(output_port: Data): Unit = {
       println(
-        s"bulding output test for ${io_info.port_to_name(output_port)}" +
+        s"bulding output test for ${io_info.port_to_name(output_port)} " +
         s"controlled by ${io_info.port_to_name(port_to_decoupled(output_port))}"
       )
-      val port_used_this_event = Vec(output_steps.map {case step => Bool(step.expects.contains(output_port))})
-      val output_test_values = Vec(
+      val port_used_this_event = Vec(
+        output_steps.map {case step => Bool(step.expects.contains(output_port))}
+      )
+      val output_test_values   = Vec(
         output_steps.map { step => UInt(step.expects.getOrElse(output_port, 0), width=output_port.width) }
       )
 
@@ -217,12 +224,11 @@ abstract class DecoupledTester extends BasicTester {
             output_event_counter, output_port.toBits(), output_test_values(output_event_counter))
 
         }
+        .otherwise {
+          //TODO: set ready if the port is a DecoupledIO
+          output_event_counter := output_event_counter + UInt(1)
+        }
       }
-    }
-
-    when(!output_complete) {
-      output_event_counter := output_event_counter + UInt(1)
-      output_complete := output_event_counter >= UInt(num_events)
     }
 
     println(s"creating output tests [${io_info.referenced_outputs.mkString(",")}]")

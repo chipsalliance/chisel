@@ -14,8 +14,9 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
   val dut_outputs = device_io.flatten.filter( port => port.dir == OUTPUT)
   val ports_referenced = new mutable.HashSet[Data]
 
-  val referenced_inputs  = new mutable.HashSet[Data]
-  val referenced_outputs = new mutable.HashSet[Data]
+  val referenced_decoupled_ports = new mutable.HashSet[DecoupledIO[Data]]()
+  val referenced_inputs          = new mutable.HashSet[Data]()
+  val referenced_outputs         = new mutable.HashSet[Data]()
 
   val decoupled_ports        = new mutable.ArrayBuffer[DecoupledIO[Data]]()
   val valid_ports            = new mutable.ArrayBuffer[ValidIO[Data]]()
