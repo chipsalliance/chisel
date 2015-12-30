@@ -145,7 +145,7 @@ abstract class DecoupledTester extends BasicTester {
     ticker := ticker + UInt(1)
     printf("ticker %d", ticker)
 
-    when(ticker > UInt(100)) {
+    when(ticker > UInt(10)) {
       stop()
     }
 
@@ -186,21 +186,29 @@ abstract class DecoupledTester extends BasicTester {
         }
       )
       when(!input_complete && decoupled_port.ready) {
-        printf(s"loading input ${io_info.port_to_name(input_port)} input_event_counter %d", input_event_counter)
+        printf(s"loading ${io_info.port_to_name(input_port)} value %d input_event_counter %d",
+          input_values(input_event_counter), input_event_counter)
         input_port := input_values(input_event_counter)
+//        decoupled_port.valid := Bool(true)
       }
     }
     io_info.referenced_inputs.foreach { port => create_vectors_for_input(port) }
 
-//    io_info.referenced_decoupled_ports.foreach { port =>
-//      val decoupled_used_this_step = Vec(
-//        input_steps.map { case step => Bool(port == step.parent_port)}
-//      )
-//      when(decoupled_used_this_step(input_event_counter) && port.ready) {
+    io_info.referenced_decoupled_ports.foreach { port =>
+      println(s"building valid for port ${io_info.port_to_name(port)}")
+      val decoupled_used_this_step = Vec(
+        input_steps.map { case step =>
+          println(s"Creating bool ${io_info.port_to_name(port)} ${io_info.port_to_name(step.parent_port)} " +
+            s" => ${port == step.parent_port}")
+          Bool(port == step.parent_port)
+        }
+      )
+      println(s"used_this_step ${decoupled_used_this_step.map(_.asUInt()).mkString(",")}")
+      when(!input_complete && decoupled_used_this_step(input_event_counter) && port.ready) {
 //        port.valid := Bool(true)
-//        input_event_counter := input_event_counter + UInt(1)
-//      }
-//    }
+        input_event_counter := input_event_counter + UInt(1)
+      }
+    }
 
     /**
      * Test values on ports moderated with a decoupled interface

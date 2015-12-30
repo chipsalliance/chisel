@@ -46,12 +46,18 @@ class NewDecoupledAdder extends Module {
 class DecoupledAdderTests extends DecoupledTester {
   val device_under_test = Module(new NewDecoupledAdder())
 
-  input_event(
-    Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7)
-  )
-  output_event(
-    Array(device_under_test.io.out.bits.c -> 11)
-  )
+  for {
+    x <- 1 to 3
+    y <- 3 to 4
+    z = x + y
+  } {
+    input_event(
+      Array(device_under_test.io.in.bits.a -> x, device_under_test.io.in.bits.b -> y)
+    )
+    output_event(
+      Array(device_under_test.io.out.bits.c -> z)
+    )
+  }
   finish()
   io_info.show_ports("".r)
 }
