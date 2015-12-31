@@ -302,6 +302,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def <= (other: UInt): Bool = compop(LessEqOp, other)
   def >= (other: UInt): Bool = compop(GreaterEqOp, other)
   def != (other: UInt): Bool = compop(NotEqualOp, other)
+  def =/= (other: UInt): Bool = compop(NotEqualOp, other)
   def === (other: UInt): Bool = compop(EqualOp, other)
   def unary_! : Bool = this === Bits(0)
 
