@@ -2,6 +2,7 @@ package unitTests
 
 import Chisel._
 import Chisel.testers.{DecoupledTester, UnitTester}
+import chiselTests.ChiselFlatSpec
 
 class RealGCDInput extends Bundle {
   val a = Bits(width = 16)
@@ -18,6 +19,9 @@ class RealGCD extends Module {
   val y = Reg(UInt())
   val p = Reg(init=Bool(false))
 
+  val ti = Reg(init=UInt(0, width = 16))
+  ti := ti + UInt(1)
+
   io.in.ready := !p
 
   when (io.in.valid && !p) {
@@ -31,6 +35,9 @@ class RealGCD extends Module {
       .otherwise    { y := y - x }
   }
 
+  printf("ti %d x %d y %d in_ready %d  in_valid %d  out_ready %d  out_valid %d==============",
+      ti, x, y, io.in.ready, io.in.valid, io.out.ready, io.out.valid)
+
   io.out.bits  := x
   io.out.valid := y === Bits(0) && p
   when (io.out.valid) {
@@ -38,11 +45,13 @@ class RealGCD extends Module {
   }
 }
 
-class DecoupledRealGCDTester extends DecoupledTester {
-  val device_under_test = Module(new RealGCD)
-  val c = device_under_test // alias for dut
 
-  for(x <- 0 until 9) {
+
+//class DecoupledRealGCDTester extends DecoupledTester {
+//  val device_under_test = Module(new RealGCD)
+//  val c = device_under_test // alias for dut
+//
+//  for(x <- 0 until 9) {
 //    event(
 //      Array(
 //        c.io.in.bits.a -> 14,
@@ -50,10 +59,10 @@ class DecoupledRealGCDTester extends DecoupledTester {
 //      ),
 //      Array(c.io.out.bits -> 7)
 //    )
-  }
-  finish()
-  io_info.show_ports("".r)
-}
+//  }
+//  finish()
+//  io_info.show_ports("".r)
+//}
 
 class RealGCDTests extends UnitTester {
   val c = Module( new RealGCD )
@@ -105,3 +114,57 @@ class RealGCDTests extends UnitTester {
 
   install(c)
 }
+
+class DecoupledRealGCDTests3 extends DecoupledTester {
+  val device_under_test = Module(new RealGCD())
+  val c = device_under_test
+
+  val a_values = Vec(Array(UInt(12, width = 16), UInt(33, width = 16)))
+  val b_values = Vec(Array(UInt(24, width = 16), UInt(24, width = 16)))
+
+  val ti = Reg(init=UInt(0, width = 16))
+  val pc = Reg(init=UInt(0, width = 16))
+  val oc = Reg(init=UInt(0, width = 16))
+
+  val in_done  = Reg(init=Bool(false))
+  val out_done = Reg(init=Bool(false))
+
+  ti := ti + UInt(1)
+  when(ti >= UInt(30)) { stop() }
+  when(in_done && out_done) { stop() }
+
+  //printf("ti %d pc %d oc %d in_ready %d out_valid %d==============",
+  //    ti, pc, oc, c.io.in.ready, c.io.out.valid)
+  when(c.io.in.ready) {
+    //    printf(s"pc %d a %d b %d", pc, a_values(pc), b_values(pc))
+    c.io.in.bits.a := a_values(pc)
+    c.io.in.bits.b := b_values(pc)
+    c.io.in.valid  := Bool(true)
+    pc := pc + UInt(1)
+    when(pc >= UInt(a_values.length)) {
+      in_done := Bool(true)
+    }
+  }
+
+  val c_values = Vec(Array(UInt(12, width = 16), UInt(3, width = 16)))
+  c.io.out.ready := Bool(true)
+
+  when(c.io.out.valid) {
+    printf("oc %d go %d expected %d", oc, c.io.out.bits, c_values(oc))
+    assert(c.io.out.bits === c_values(oc))
+    c.io.out.ready := Bool(true)
+    oc := oc + UInt(1)
+    when(oc >= UInt(c_values.length)) {
+      out_done := Bool(true)
+    }
+  }
+  //  finish()
+  //  io_info.show_ports("".r)
+}
+
+class DecoupledRealGCDTester extends ChiselFlatSpec {
+  "a" should "b" in {
+    assert( execute { new DecoupledRealGCDTests3 } )
+  }
+}
+

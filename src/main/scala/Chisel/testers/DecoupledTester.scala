@@ -168,7 +168,6 @@ abstract class DecoupledTester extends BasicTester {
       stop()
     }
 
-
     /**
      * the decoupled inputs are run here
      */
@@ -189,7 +188,7 @@ abstract class DecoupledTester extends BasicTester {
         printf(s"loading ${io_info.port_to_name(input_port)} value %d input_event_counter %d",
           input_values(input_event_counter), input_event_counter)
         input_port := input_values(input_event_counter)
-//        decoupled_port.valid := Bool(true)
+        decoupled_port.valid := Bool(true)
       }
     }
     io_info.referenced_inputs.foreach { port => create_vectors_for_input(port) }
