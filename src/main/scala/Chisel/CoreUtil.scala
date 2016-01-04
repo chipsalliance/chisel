@@ -21,7 +21,7 @@ object assert {
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional message to print when the assertion fires
     */
-  def apply(cond: Bool, message: String="") {
+  def apply(cond: Bool, message: String) {
     when (!Builder.dynamicContext.currentModule.get.reset) {
       when(!cond) {
         if (message.isEmpty()) {
@@ -32,6 +32,24 @@ object assert {
         pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
       }
     }
+  }
+
+  /** A workaround for default-value overloading problems in Scala, just
+    * 'assert(cond, "")' */
+  def apply(cond: Bool) {
+    assert(cond, "")
+  }
+
+  /** An elaboration-time assertion, otherwise the same as the above run-time
+    * assertion. */
+  def apply(cond: Boolean, message: String) {
+    apply(Bool(cond), message)
+  }
+
+  /** A workaround for default-value overloading problems in Scala, just
+    * 'assert(cond, "")' */
+  def apply(cond: Boolean) {
+    apply(cond, "")
   }
 }
 
