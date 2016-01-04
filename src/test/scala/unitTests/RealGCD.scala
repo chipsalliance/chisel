@@ -135,7 +135,7 @@ class DecoupledRealGCDTests3 extends DecoupledTester {
 
   //printf("ti %d pc %d oc %d in_ready %d out_valid %d==============",
   //    ti, pc, oc, c.io.in.ready, c.io.out.valid)
-  when(c.io.in.ready) {
+  when(!in_done && c.io.in.ready) {
     //    printf(s"pc %d a %d b %d", pc, a_values(pc), b_values(pc))
     c.io.in.bits.a := a_values(pc)
     c.io.in.bits.b := b_values(pc)
@@ -149,8 +149,8 @@ class DecoupledRealGCDTests3 extends DecoupledTester {
   val c_values = Vec(Array(UInt(12, width = 16), UInt(3, width = 16)))
   c.io.out.ready := Bool(true)
 
-  when(c.io.out.valid) {
-    printf("oc %d go %d expected %d", oc, c.io.out.bits, c_values(oc))
+  when(!out_done && c.io.out.valid) {
+    printf("oc %d   got %d   expected %d", oc, c.io.out.bits, c_values(oc))
     assert(c.io.out.bits === c_values(oc))
     c.io.out.ready := Bool(true)
     oc := oc + UInt(1)
