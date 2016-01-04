@@ -171,8 +171,9 @@ class DecoupledRealGCDTests4 extends DecoupledTester {
     j <- Array(24, 24)
   } {
     input_event(Array(c.io.in.bits.a -> i, c.io.in.bits.b -> j))
-    output_event(Array(c.io.out.bits -> 3))
   }
+  output_event(Array(c.io.out.bits -> 12))
+  output_event(Array(c.io.out.bits -> 3))
 
   val a_values = Vec(Array(UInt(12, width = 16), UInt(33, width = 16)))
   val b_values = Vec(Array(UInt(24, width = 16), UInt(24, width = 16)))
