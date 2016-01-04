@@ -44,7 +44,7 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
 //        assert(io_info.dut_outputs.size == 1)
 
         val dut_io = device_under_test.io
-        for(port <- List(dut_io.in.bits.a, dut_io.in.bits.b, dut_io.out.bits)){
+        for(port <- List(dut_io.in.bits.a, dut_io.in.bits.b, dut_io.out.bits.c)){
           assert(io_info.port_to_name.contains(port))
         }
 
@@ -57,9 +57,9 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
         assert(io_info.find_parent_decoupled_port_name("out.bits") == Some("out"))
       }
       it should "know which ports are referenced in events" in {
-        assert(io_info.ports_referenced.contains(device_under_test.io.in.bits.a))
-        assert(io_info.ports_referenced.contains(device_under_test.io.in.bits.b))
-        assert(io_info.ports_referenced.contains(device_under_test.io.out.bits.c))
+        assert(io_info.referenced_inputs.contains(device_under_test.io.in.bits.a))
+        assert(io_info.referenced_inputs.contains(device_under_test.io.in.bits.b))
+        assert(io_info.referenced_outputs.contains(device_under_test.io.out.bits.c))
 
         assert( ! io_info.ports_referenced.contains(device_under_test.io.in.valid))
         assert( ! io_info.ports_referenced.contains(device_under_test.io.in.ready))

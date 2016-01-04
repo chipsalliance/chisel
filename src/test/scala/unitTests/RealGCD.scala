@@ -162,9 +162,39 @@ class DecoupledRealGCDTests3 extends DecoupledTester {
   //  io_info.show_ports("".r)
 }
 
+class DecoupledRealGCDTests4 extends DecoupledTester {
+  val device_under_test = Module(new RealGCD())
+  val c = device_under_test
+
+  for {
+    i <- Array(12, 33)
+    j <- Array(24, 24)
+  } {
+    input_event(Array(c.io.in.bits.a -> i, c.io.in.bits.b -> j))
+    output_event(Array(c.io.out.bits -> 3))
+  }
+
+  val a_values = Vec(Array(UInt(12, width = 16), UInt(33, width = 16)))
+  val b_values = Vec(Array(UInt(24, width = 16), UInt(24, width = 16)))
+
+  val ti = Reg(init=UInt(0, width = 16))
+  val pc = Reg(init=UInt(0, width = 16))
+  val oc = Reg(init=UInt(0, width = 16))
+
+  val in_done  = Reg(init=Bool(false))
+  val out_done = Reg(init=Bool(false))
+
+  ti := ti + UInt(1)
+  when(ti >= UInt(30)) { stop() }
+  when(in_done && out_done) { stop() }
+
+  finish()
+  io_info.show_ports("".r)
+}
+
 class DecoupledRealGCDTester extends ChiselFlatSpec {
   "a" should "b" in {
-    assert( execute { new DecoupledRealGCDTests3 } )
+    assert( execute { new DecoupledRealGCDTests4 } )
   }
 }
 
