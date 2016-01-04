@@ -6,13 +6,13 @@
 package Chisel
 
 /** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
-class DecoupledIO[+T <: Data](gen: T) extends Bundle
+class DecoupledIO[+T <: Data](gen: T, do_flip: Boolean = false) extends Bundle
 {
-  val ready = Bool(INPUT)
-  val valid = Bool(OUTPUT)
-  val bits  = gen.cloneType.asOutput
+  val ready = if(do_flip) Bool(OUTPUT) else Bool(INPUT)
+  val valid = if(do_flip) Bool(INPUT) else Bool(OUTPUT)
+  val bits  = if(do_flip) gen.cloneType.asInput else gen.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = ready && valid
-  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
+  override def cloneType: this.type = new DecoupledIO(gen, do_flip).asInstanceOf[this.type]
 }
 
 /** Adds a ready-valid handshaking protocol to any interface.
@@ -33,9 +33,9 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 }
 
 /** An I/O bundle for dequeuing data with valid/ready handshaking */
-class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen)
+class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, do_flip = true)
 {
-  flip()
+//  flip(), in chisel2 this worked in place, causes infinte recursion in chisel3
   ready := Bool(false)
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
