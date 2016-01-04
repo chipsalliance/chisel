@@ -141,6 +141,8 @@ abstract class DecoupledTester extends BasicTester {
     process_input_events()
     process_output_events()
 
+    io_info.ports_referenced ++= (io_info.referenced_inputs ++ io_info.referenced_outputs)
+
     val ticker = Reg(init = UInt(0, width = 32 + log2Up(num_events)))
     ticker := ticker + UInt(1)
     printf("ticker %d", ticker)
