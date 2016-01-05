@@ -156,8 +156,8 @@ abstract class DecoupledTester extends BasicTester {
 
     io_info.ports_referenced ++= (io_info.referenced_inputs ++ io_info.referenced_outputs)
 
-    val input_event_counter  = Reg(init = UInt(0, width = log2Up(input_event_list.size)))
-    val output_event_counter = Reg(init = UInt(0, width = log2Up(output_event_list.size)))
+    val input_event_counter  = Reg(init = UInt(0, width = log2Up(input_event_list.size) + 1))
+    val output_event_counter = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
     val input_complete       = Reg(init = Bool(false))
     val output_complete      = Reg(init = Bool(false))
 
@@ -210,7 +210,7 @@ abstract class DecoupledTester extends BasicTester {
      * Test values on ports moderated with a decoupled interface
      */
     decoupled_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(output_event_list.size)))
+      val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
 
       val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
@@ -246,7 +246,7 @@ abstract class DecoupledTester extends BasicTester {
      * Test values on output ports moderated with a valid interface
      */
     valid_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_valid = Reg(init = UInt(0, width = log2Up(output_event_list.size)))
+      val counter_for_this_valid = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
 
       val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
@@ -276,7 +276,6 @@ abstract class DecoupledTester extends BasicTester {
           output_event_counter        := output_event_counter + UInt(1)
         }
       }
-
     }
   }
 }

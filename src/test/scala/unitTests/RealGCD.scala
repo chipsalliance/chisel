@@ -4,6 +4,13 @@ import Chisel._
 import Chisel.testers.{DecoupledTester, UnitTester}
 import chiselTests.ChiselFlatSpec
 
+object GCDCaluculator {
+  def compute_gcd_results_and_cycles(a: Int, b: Int, depth: Int = 1): Tuple2[Int, Int] = {
+    if(b == 0) (a, depth)
+    else compute_gcd_results_and_cycles(b, a%b, depth+1 )
+  }
+}
+
 class RealGCDInput extends Bundle {
   val a = Bits(width = 16)
   val b = Bits(width = 16)
@@ -130,7 +137,7 @@ class DecoupledRealGCDTestHandCodedExample extends DecoupledTester {
   val out_done = Reg(init=Bool(false))
 
   ti := ti + UInt(1)
-  when(ti >= UInt(40)) { stop() }
+  when(ti >= UInt(50)) { stop() }
   when(in_done && out_done) { stop() }
 
   //printf("ti %d pc %d oc %d in_ready %d out_valid %d==============",
@@ -168,28 +175,13 @@ class DecoupledRealGCDTests4 extends DecoupledTester {
 
   for {
     i <- Array(12, 33)
-    j <- Array(24, 24)
+    j <- Array(24, 10)
   } {
+    val (gcd_value, cycles) = GCDCaluculator.compute_gcd_results_and_cycles(i, j)
+
     input_event(Array(c.io.in.bits.a -> i, c.io.in.bits.b -> j))
+    output_event(Array(c.io.out.bits -> gcd_value))
   }
-  output_event(Array(c.io.out.bits -> 12))
-  output_event(Array(c.io.out.bits -> 12))
-  output_event(Array(c.io.out.bits -> 3))
-  output_event(Array(c.io.out.bits -> 3))
-
-  val a_values = Vec(Array(UInt(12, width = 16), UInt(33, width = 16)))
-  val b_values = Vec(Array(UInt(24, width = 16), UInt(24, width = 16)))
-
-  val ti = Reg(init=UInt(0, width = 16))
-  val pc = Reg(init=UInt(0, width = 16))
-  val oc = Reg(init=UInt(0, width = 16))
-
-  val in_done  = Reg(init=Bool(false))
-  val out_done = Reg(init=Bool(false))
-
-  ti := ti + UInt(1)
-  when(ti >= UInt(40)) { stop() }
-  when(in_done && out_done) { stop() }
 
   finish()
   io_info.show_ports("".r)
