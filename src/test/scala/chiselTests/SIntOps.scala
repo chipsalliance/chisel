@@ -29,7 +29,7 @@ class SIntOps extends Module {
 
   io.addout := a +% b
   io.subout := a -% b
-  // TODO: 
+  // TODO:
   //io.timesout := (a * b)(15, 0)
   //io.divout := a / Mux(b === SInt(0), SInt(1), b)
   //io.divout := (a / b)(15, 0)
@@ -83,7 +83,7 @@ class SIntOpsTester(c: SIntOps) extends Tester(c) {
 */
 
 class SIntOpsSpec extends ChiselPropSpec {
-  
+
   property("SIntOps should elaborate") {
     elaborate { new SIntOps }
   }

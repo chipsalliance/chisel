@@ -32,7 +32,7 @@ class UIntOps extends Module {
   io.timesout := (a * b)(15, 0)
   io.divout := a / Mux(b === UInt(0), UInt(1), b)
   // io.modout := a % b
-  // TODO: 
+  // TODO:
   io.modout := UInt(0)
   io.lshiftout := (a << b(3, 0))(15, 0)
   io.rshiftout := a >> b
@@ -48,13 +48,13 @@ class UIntOps extends Module {
 class UIntOpsTester(c: UIntOps) extends Tester(c) {
   def uintExpect(d: Bits, x: BigInt) {
     val mask = (1 << 16) - 1
-    println(" E = " + x + " X&M = " + (x & mask))
+    println(" E = " + x + " X&M = " + (x & mask))  // scalastyle:ignore regex
     expect(d, x & mask)
   }
   for (t <- 0 until 16) {
     val test_a = rnd.nextInt(1 << 16)
     val test_b = rnd.nextInt(1 << 16)
-    println("A = " + test_a + " B = " + test_b)
+    println("A = " + test_a + " B = " + test_b)  // scalastyle:ignore regex
     poke(c.io.a, test_a)
     poke(c.io.b, test_b)
     step(1)
@@ -99,7 +99,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
   property("Bools cannot be created from >1 bit UInts") {
     a [Exception] should be thrownBy { elaborate(new BadBoolConversion) }
   }
-  
+
   property("UIntOps should elaborate") {
     elaborate { new UIntOps }
   }

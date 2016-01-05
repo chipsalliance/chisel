@@ -15,7 +15,7 @@ class Risc extends Module {
   val file = Mem(Bits(width = 32), 256)
   val code = Mem(Bits(width = 32), 256)
   val pc   = Reg(init=UInt(0, 8))
-  
+
   val add_op :: imm_op :: Nil = Enum(Bits(width = 8), 2)
 
   val inst = code(pc)
@@ -72,7 +72,7 @@ class RiscTester(c: Risc) extends Tester(c) {
   def I (op: UInt, rc: Int, ra: Int, rb: Int) = {
     // val cr = Cat(op, UInt(rc, 8), UInt(ra, 8), UInt(rb, 8)).litValue()
     val cr = op.litValue() << 24 | rc << 16 | ra << 8 | rb
-    println("I = " + cr)
+    println("I = " + cr)    // scalastyle:ignore regex
     cr
   }
 
@@ -81,10 +81,10 @@ class RiscTester(c: Risc) extends Tester(c) {
                    I(c.add_op,   1, 1, 1), // r1 <- r1 + r1
                    I(c.add_op, 255, 1, 0)) // rh <- r1
   wr(0, 0) // skip reset
-  for (addr <- 0 until app.length) 
+  for (addr <- 0 until app.length)
     wr(addr, app(addr))
   def dump(k: Int) {
-    println("K = " + k)
+    println("K = " + k)  // scalastyle:ignore regex
     peek(c.ra)
     peek(c.rb)
     peek(c.rc)
@@ -110,7 +110,7 @@ class RiscTester(c: Risc) extends Tester(c) {
 */
 
 class RiscSpec extends ChiselPropSpec {
-  
+
   property("Risc should elaborate") {
     elaborate { new Risc }
   }
