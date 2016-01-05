@@ -115,7 +115,7 @@ class RealGCDTests extends UnitTester {
   install(c)
 }
 
-class DecoupledRealGCDTests3 extends DecoupledTester {
+class DecoupledRealGCDTestHandCodedExample extends DecoupledTester {
   val device_under_test = Module(new RealGCD())
   val c = device_under_test
 

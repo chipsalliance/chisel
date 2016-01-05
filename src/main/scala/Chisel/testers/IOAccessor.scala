@@ -14,12 +14,9 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
   val dut_outputs = device_io.flatten.filter( port => port.dir == OUTPUT)
   val ports_referenced = new mutable.HashSet[Data]
 
-  val referenced_decoupled_ports = new mutable.HashSet[DecoupledIO[Data]]()
   val referenced_inputs          = new mutable.HashSet[Data]()
   val referenced_outputs         = new mutable.HashSet[Data]()
 
-  val decoupled_ports        = new mutable.ArrayBuffer[DecoupledIO[Data]]()
-  val valid_ports            = new mutable.ArrayBuffer[ValidIO[Data]]()
   val name_to_decoupled_port = new mutable.HashMap[String, DecoupledIO[Data]]()
   val name_to_valid_port     = new mutable.HashMap[String, ValidIO[Data]]()
 
@@ -29,11 +26,9 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     def check_decoupled_or_valid(port: Data, name: String): Unit = {
       port match {
         case decoupled_port : DecoupledIO[Data] => {
-          decoupled_ports += decoupled_port
           name_to_decoupled_port(name) = decoupled_port
         }
         case valid_port : ValidIO[Data] => {
-          valid_ports += valid_port
           name_to_valid_port(name) = valid_port
         }
         case _ => {}
@@ -98,8 +93,7 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     def show_decoupled_parent(port_name:String): String = {
       find_parent_decoupled_port_name(port_name) match {
         case Some(decoupled_name) => {
-          val index = decoupled_ports.indexOf(name_to_decoupled_port(decoupled_name))
-          s"$decoupled_name is $index"
+          s"$decoupled_name"
         }
         case _ => find_parent_valid_port_name(port_name).getOrElse("")
       }
