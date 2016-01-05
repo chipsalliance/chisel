@@ -35,7 +35,7 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 /** An I/O bundle for dequeuing data with valid/ready handshaking */
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, do_flip = true)
 {
-//  flip(), in chisel2 this worked in place, causes infinte recursion in chisel3
+//  flip(), in chisel2 this worked in place, causes infinite recursion in chisel3
   ready := Bool(false)
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
