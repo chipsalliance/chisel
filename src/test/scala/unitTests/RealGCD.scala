@@ -35,8 +35,8 @@ class RealGCD extends Module {
       .otherwise    { y := y - x }
   }
 
-  printf("ti %d x %d y %d in_ready %d  in_valid %d  out_ready %d  out_valid %d==============",
-      ti, x, y, io.in.ready, io.in.valid, io.out.ready, io.out.valid)
+  printf("ti %d  x %d y %d  in_ready %d  in_valid %d  out %d  out_ready %d  out_valid %d==============",
+      ti, x, y, io.in.ready, io.in.valid, io.out.bits, io.out.ready, io.out.valid)
 
   io.out.bits  := x
   io.out.valid := y === Bits(0) && p
@@ -173,6 +173,8 @@ class DecoupledRealGCDTests4 extends DecoupledTester {
     input_event(Array(c.io.in.bits.a -> i, c.io.in.bits.b -> j))
   }
   output_event(Array(c.io.out.bits -> 12))
+  output_event(Array(c.io.out.bits -> 12))
+  output_event(Array(c.io.out.bits -> 3))
   output_event(Array(c.io.out.bits -> 3))
 
   val a_values = Vec(Array(UInt(12, width = 16), UInt(33, width = 16)))
