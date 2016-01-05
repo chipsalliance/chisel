@@ -130,7 +130,7 @@ class DecoupledRealGCDTests3 extends DecoupledTester {
   val out_done = Reg(init=Bool(false))
 
   ti := ti + UInt(1)
-  when(ti >= UInt(30)) { stop() }
+  when(ti >= UInt(40)) { stop() }
   when(in_done && out_done) { stop() }
 
   //printf("ti %d pc %d oc %d in_ready %d out_valid %d==============",
@@ -188,7 +188,7 @@ class DecoupledRealGCDTests4 extends DecoupledTester {
   val out_done = Reg(init=Bool(false))
 
   ti := ti + UInt(1)
-  when(ti >= UInt(30)) { stop() }
+  when(ti >= UInt(40)) { stop() }
   when(in_done && out_done) { stop() }
 
   finish()

@@ -22,17 +22,12 @@ abstract class DecoupledTester extends BasicTester {
 
   val input_event_list     = new ArrayBuffer[Seq[(Data, Int)]]()
   val output_event_list    = new ArrayBuffer[Seq[(Data, Int)]]()
-  val parent_to_child_port = new mutable.HashMap[Data, mutable.HashSet[Data]] {
-    override def default(port: Data) = {
-      this(port) = new mutable.HashSet[Data]()
-      this(port)
-    }
-  }
+
   val port_to_decoupled    = new mutable.HashMap[Data, DecoupledIO[Data]]
   val port_to_valid        = new mutable.HashMap[Data, ValidIO[Data]]
   def num_events           = input_event_list.length
 
-  case class InputStep[+T<:Data](pokes:    Map[Data,Int], event_number: Int)
+  case class InputStep[+T<:Data](pokes: Map[Data,Int], event_number: Int)
   case class OutputStep(expects: Map[Data,Int], event_number: Int)
 
   val control_port_to_input_steps  = new mutable.HashMap[DecoupledIO[Data], ArrayBuffer[InputStep[Data]]] {
@@ -131,7 +126,6 @@ abstract class DecoupledTester extends BasicTester {
       )
 
       control_port_to_input_steps(parent_port) += new InputStep(pokes.toMap, event_number)
-      parent_to_child_port(parent_port) ++= pokes.map(_._1)
       io_info.referenced_inputs ++= pokes.map(_._1)
       io_info.referenced_decoupled_ports += parent_port
     }
@@ -146,13 +140,11 @@ abstract class DecoupledTester extends BasicTester {
       check_and_get_common_decoupled_or_valid_parent_port_and_name(expects, must_be_decoupled = false) match {
         case (parent_name, Left(parent_port)) => {
           decoupled_control_port_to_output_steps(parent_port) += new OutputStep(expects.toMap, event_number)
-          parent_to_child_port(parent_port) ++= expects.map(_._1)
           io_info.referenced_outputs ++= expects.map(_._1)
           io_info.referenced_decoupled_ports += parent_port
         }
         case (parent_name, Right(parent_port)) => {
           valid_control_port_to_output_steps(parent_port) += new OutputStep(expects.toMap, event_number)
-          parent_to_child_port(parent_port) ++= expects.map(_._1)
           io_info.referenced_outputs ++= expects.map(_._1)
 //          io_info.referenced_valid_ports += parent_port
         }
@@ -160,9 +152,12 @@ abstract class DecoupledTester extends BasicTester {
     }
   }
 
+  /**
+   * this builds a circuit to load inputs and circuits to test outputs that are controlled
+   * by either a decoupled or valid
+   */
   def finish(): Unit = {
     io_info = new IOAccessor(device_under_test.io)
-    val port_to_decoupled_io = mutable.HashMap[Data, Data]()
 
     process_input_events()
     process_output_events()
@@ -261,44 +256,42 @@ abstract class DecoupledTester extends BasicTester {
           output_event_counter        := output_event_counter + UInt(1)
         }
       }
-
     }
     /**
      * Test values on output ports moderated with a valid interface
      */
+    valid_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
+      val counter_for_this_valid = Reg(init = UInt(0, width = output_event_list.size))
+      val associated_event_numbers = steps.map { step => step.event_number }.toSet
 
-//    valid_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-//      val counter_for_this_valid = Reg(init = UInt(0, width = output_event_list.size))
-//      val associated_event_numbers = steps.map { step => step.event_number }.toSet
-//
-//      val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
-//      steps.foreach { step =>
-//        step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
-//      }
-//      val is_this_my_turn = Vec(
-//        (0 until output_event_list.length).map {event_number => Bool(associated_event_numbers.contains(event_number))}
-//      )
-//      val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
-//        port -> Vec(steps.map { step => UInt(step.expects.getOrElse(port, 0))})
-//      }.toMap
-//
-//      when(!output_complete && is_this_my_turn(output_event_counter)) {
-//        when(controlling_port.valid) {
-//          ports_referenced_for_this_controlling_port.foreach { port =>
-//            printf(s"output test event %d testing ${io_info.port_to_name(port)} = %d, should be %d",
-//              output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(output_event_counter)
-//            )
-//            when(port.asInstanceOf[UInt] != port_vector_values(port)(output_event_counter)) {
-//              printf(s"Error: event %d ${io_info.port_to_name(port)} was %x should be %x",
-//                output_event_counter, port.toBits(), port_vector_values(port)(output_event_counter))
-//              assert(Bool(false))
-//            }
-//          }
-//          counter_for_this_valid      := counter_for_this_valid + UInt(1)
-//          output_event_counter        := output_event_counter + UInt(1)
-//        }
-//      }
-//
-//    }
+      val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
+      steps.foreach { step =>
+        step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
+      }
+      val is_this_my_turn = Vec(
+        (0 until output_event_list.length).map {event_number => Bool(associated_event_numbers.contains(event_number))}
+      )
+      val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
+        port -> Vec(steps.map { step => UInt(step.expects.getOrElse(port, 0))})
+      }.toMap
+
+      when(!output_complete && is_this_my_turn(output_event_counter)) {
+        when(controlling_port.valid) {
+          ports_referenced_for_this_controlling_port.foreach { port =>
+            printf(s"output test event %d testing ${io_info.port_to_name(port)} = %d, should be %d",
+              output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(output_event_counter)
+            )
+            when(port.asInstanceOf[UInt] != port_vector_values(port)(output_event_counter)) {
+              printf(s"Error: event %d ${io_info.port_to_name(port)} was %x should be %x",
+                output_event_counter, port.toBits(), port_vector_values(port)(output_event_counter))
+              assert(Bool(false))
+            }
+          }
+          counter_for_this_valid      := counter_for_this_valid + UInt(1)
+          output_event_counter        := output_event_counter + UInt(1)
+        }
+      }
+
+    }
   }
 }
