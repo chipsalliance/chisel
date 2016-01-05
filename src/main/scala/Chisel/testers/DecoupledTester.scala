@@ -4,7 +4,6 @@ import Chisel._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.parallel.immutable
 
 //TODO: io not allowed directly on ready or valid, this must be enforced
 /**
@@ -184,7 +183,7 @@ abstract class DecoupledTester extends BasicTester {
         step.pokes.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
       }
       val is_this_my_turn = Vec(
-        (0 until input_event_list.length).map {event_number => Bool(associated_event_numbers.contains(event_number))}
+        input_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
       )
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0))})
@@ -219,7 +218,7 @@ abstract class DecoupledTester extends BasicTester {
         step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
       }
       val is_this_my_turn = Vec(
-        (0 until output_event_list.length).map {event_number => Bool(associated_event_numbers.contains(event_number))}
+        output_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
       )
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         port -> Vec(steps.map { step => UInt(step.expects.getOrElse(port, 0))})
@@ -255,7 +254,7 @@ abstract class DecoupledTester extends BasicTester {
         step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
       }
       val is_this_my_turn = Vec(
-        (0 until output_event_list.length).map {event_number => Bool(associated_event_numbers.contains(event_number))}
+        output_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
       )
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         port -> Vec(steps.map { step => UInt(step.expects.getOrElse(port, 0))})
