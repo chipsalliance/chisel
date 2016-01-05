@@ -1,8 +1,5 @@
-package chiselTests
+// See LICENSE for license details.
 
-/**
- * Created by chick on 1/4/16.
- */
 package chiselTests
 
 import Chisel._
