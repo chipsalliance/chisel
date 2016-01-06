@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package Chisel.testers
 
 import Chisel._
@@ -25,13 +27,11 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
 
     def check_decoupled_or_valid(port: Data, name: String): Unit = {
       port match {
-        case decoupled_port : DecoupledIO[Data] => {
+        case decoupled_port : DecoupledIO[Data] =>
           name_to_decoupled_port(name) = decoupled_port
-        }
-        case valid_port : ValidIO[Data] => {
+        case valid_port : ValidIO[Data] =>
           name_to_valid_port(name) = valid_port
-        }
-        case _ => {}
+        case _ =>
       }
     }
 
@@ -41,12 +41,11 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
         port_to_name_accumulator(e) = new_name
 
         e match {
-          case bb: Bundle  => parse_bundle(bb, new_name)
-          case vv: Vec[Data]  => parse_vecs(vv, new_name)
-          case ee: Element => {}
-          case _           => {
-            throw new Exception(s"bad bundle member ${new_name} $e")
-          }
+          case bb: Bundle     => parse_bundle(bb, new_name)
+          case vv: Vec[_]  => parse_vecs(vv, new_name)
+          case ee: Element    =>
+          case _              =>
+            throw new Exception(s"bad bundle member $new_name $e")
         }
         check_decoupled_or_valid(e, new_name)
       }
@@ -57,12 +56,11 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
         port_to_name_accumulator(e) = new_name
 
         e match {
-          case bb: Bundle  => parse_bundle(bb, new_name)
-          case vv: Vec[Data]  => parse_vecs(vv, new_name)
-          case ee: Element => {}
-          case _           => {
-            throw new Exception(s"bad bundle member ${new_name} $e")
-          }
+          case bb: Bundle     => parse_bundle(bb, new_name)
+          case vv: Vec[_]  => parse_vecs(vv, new_name)
+          case ee: Element    =>
+          case _              =>
+            throw new Exception(s"bad bundle member $new_name $e")
         }
         check_decoupled_or_valid(e, new_name)
       }
@@ -75,11 +73,6 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
 
   def show_ports(pattern : Regex): Unit = {
     def order_ports(a: Data, b: Data) : Boolean = {
-//      (a.dir, b.dir) match {
-//        case (INPUT, OUTPUT) => true
-//        case (OUTPUT, INPUT) => false
-//        case _ => port_to_name(a) < port_to_name(b)
-//      }
       port_to_name(a) < port_to_name(b)
     }
     def show_decoupled_code(port_name:String): String = {
@@ -92,10 +85,8 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     }
     def show_decoupled_parent(port_name:String): String = {
       find_parent_decoupled_port_name(port_name) match {
-        case Some(decoupled_name) => {
-          s"$decoupled_name"
-        }
-        case _ => find_parent_valid_port_name(port_name).getOrElse("")
+        case Some(decoupled_name) => s"$decoupled_name"
+        case _                    => find_parent_valid_port_name(port_name).getOrElse("")
       }
     }
     def show_dir(dir: Direction) = dir match {
@@ -136,16 +127,6 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     val possible_parents = name_to_valid_port.keys.toList.filter(s => name.startsWith(s))
     if(possible_parents.isEmpty) return None
     possible_parents.sorted.lastOption
-  }
-
-  /**
-   * return the name of a parent in the io hierarchy which is of type decoupled
-   *
-   * @param name
-   * @return
-   */
-  def find_decoupled_parent_ref(name: String) : Option[String] = {
-    None
   }
 
   def register(port: Data): Unit = {

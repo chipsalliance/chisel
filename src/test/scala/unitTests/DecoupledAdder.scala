@@ -60,8 +60,8 @@ class DecoupledAdderTests extends DecoupledTester {
   val device_under_test = Module(new SlowDecoupledAdder())
 
   for {
-    x <- 0 to 10
-    y <- 0 to 20 by 2
+    x <- 0 to 4
+    y <- 0 to 6 by 2
     z = x + y
   } {
     input_event(
