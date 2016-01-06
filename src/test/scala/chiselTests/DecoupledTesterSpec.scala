@@ -1,25 +1,24 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import Chisel._
 
 import Chisel.testers.DecoupledTester
-/**
- * Created by chick on 12/18/15.
- */
 
-class DecoupledAdderInput extends Bundle {
+class DecoupledExampleInput extends Bundle {
   val a = UInt(INPUT, width=16)
   val b = UInt(INPUT, width=16)
 }
 
-class DecoupledAdderOutput extends Bundle {
+class DecoupledExampleOutput extends Bundle {
   val c = UInt(OUTPUT, width = 16)
 }
 
-class DecoupledAdder extends Module {
+class DecoupledExample extends Module {
   val io = new Bundle {
-    val in  = Decoupled(new DecoupledAdderInput).flip()
-    val out = Decoupled(new DecoupledAdderOutput)
+    val in  = Decoupled(new DecoupledExampleInput).flip()
+    val out = Decoupled(new DecoupledExampleOutput)
   }
   io.out.bits.c := io.in.bits.a + io.in.bits.b
 }
@@ -27,7 +26,7 @@ class DecoupledAdder extends Module {
 class DecoupledTesterSpec extends ChiselFlatSpec {
   execute {
     new DecoupledTester {
-      val device_under_test = new DecoupledAdder()
+      val device_under_test = new DecoupledExample()
 
       input_event(
         Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7)
@@ -51,10 +50,10 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
         io_info.show_ports(".*".r)
       }
       it should "identify the decoupled interfaces" in {
-        assert(io_info.find_parent_decoupled_port_name("in.bits") == Some("in"))
-        assert(io_info.find_parent_decoupled_port_name("in.bits.a") == Some("in"))
-        assert(io_info.find_parent_decoupled_port_name("in.bits.b") == Some("in"))
-        assert(io_info.find_parent_decoupled_port_name("out.bits") == Some("out"))
+        assert(io_info.find_parent_decoupled_port_name("in.bits").contains("in"))
+        assert(io_info.find_parent_decoupled_port_name("in.bits.a").contains("in"))
+        assert(io_info.find_parent_decoupled_port_name("in.bits.b").contains("in"))
+        assert(io_info.find_parent_decoupled_port_name("out.bits").contains("out"))
       }
       it should "know which ports are referenced in events" in {
         assert(io_info.referenced_inputs.contains(device_under_test.io.in.bits.a))
