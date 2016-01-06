@@ -48,13 +48,13 @@ class UIntOps extends Module {
 class UIntOpsTester(c: UIntOps) extends Tester(c) {
   def uintExpect(d: Bits, x: BigInt) {
     val mask = (1 << 16) - 1
-    println(" E = " + x + " X&M = " + (x & mask))  // scalastyle:ignore regex
+    println(" E = " + x + " X&M = " + (x & mask))
     expect(d, x & mask)
   }
   for (t <- 0 until 16) {
     val test_a = rnd.nextInt(1 << 16)
     val test_b = rnd.nextInt(1 << 16)
-    println("A = " + test_a + " B = " + test_b)  // scalastyle:ignore regex
+    println("A = " + test_a + " B = " + test_b)
     poke(c.io.a, test_a)
     poke(c.io.b, test_b)
     step(1)

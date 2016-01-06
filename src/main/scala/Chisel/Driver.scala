@@ -84,7 +84,7 @@ trait BackendCompilationUtilities {
     val e = Process(s"./V${prefix}", dir) !
       ProcessLogger(line => {
         triggered = triggered || line.contains(assertionMsg)
-        System.out.println(line)  // scalastyle:ignore regex
+        System.out.println(line)
       })
     triggered
   }
