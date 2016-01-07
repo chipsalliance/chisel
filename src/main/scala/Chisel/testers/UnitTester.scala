@@ -128,38 +128,40 @@ class UnitTester extends BasicTester {
     /**
      *  Print a title for the testing state table
      */
-    val max_col_width = ports_referenced.map { port =>
-      Array(port_to_name(port).length, port.getWidth / 4).max  // width/4 is how wide value might be in hex
-    }.max + 2
-    val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}x")
+    if(ports_referenced.nonEmpty) {
+      val max_col_width = ports_referenced.map { port =>
+        Array(port_to_name(port).length, port.getWidth / 4).max // width/4 is how wide value might be in hex
+      }.max + 2
+      val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}x")
 
-    println("="*80)
-    println("UnitTester state table")
-    println(
-      "%6s".format("step") +
-        dut_inputs.map  { dut_input  => string_col_template.format(port_to_name(dut_input))}.mkString +
-        dut_outputs.map { dut_output => string_col_template.format(port_to_name(dut_output))}.mkString
-    )
-    println("-"*80)
-    /**
-     * prints out a table form of input and expected outputs
-     */
-    def val_str(hash : mutable.HashMap[Data, Int], key: Data) : String = {
-      if( hash.contains(key) ) "%x".format(hash(key)) else "-"
-    }
-    test_actions.zipWithIndex.foreach { case (step, step_number) =>
-      print("%6d".format(step_number))
-      for(port <- dut_inputs) {
-        print(string_col_template.format(val_str(step.input_map, port)))
+      println("=" * 80)
+      println("UnitTester state table")
+      println(
+        "%6s".format("step") +
+          dut_inputs.map { dut_input => string_col_template.format(port_to_name(dut_input)) }.mkString +
+          dut_outputs.map { dut_output => string_col_template.format(port_to_name(dut_output)) }.mkString
+      )
+      println("-" * 80)
+      /**
+        * prints out a table form of input and expected outputs
+        */
+      def val_str(hash: mutable.HashMap[Data, Int], key: Data): String = {
+        if (hash.contains(key)) "%x".format(hash(key)) else "-"
       }
-      for(port <- dut_outputs) {
-        print(string_col_template.format(val_str(step.output_map, port)))
+      test_actions.zipWithIndex.foreach { case (step, step_number) =>
+        print("%6d".format(step_number))
+        for (port <- dut_inputs) {
+          print(string_col_template.format(val_str(step.input_map, port)))
+        }
+        for (port <- dut_outputs) {
+          print(string_col_template.format(val_str(step.output_map, port)))
+        }
+        println()
       }
-      println()
+      println("=" * 80)
     }
-    println("="*80)
 
-    val pc             = Reg(init=UInt(0, log2Up(test_actions.length)))
+    val pc             = Reg(init=UInt(0, log2Up(test_actions.length)+2))
 
     def log_referenced_ports: Unit = {
       val format_statement = new StringBuilder()
