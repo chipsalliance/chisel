@@ -150,7 +150,7 @@ abstract class DecoupledTester extends BasicTester {
    * this builds a circuit to load inputs and circuits to test outputs that are controlled
    * by either a decoupled or valid
    */
-  def finish(): Unit = {
+  def finish(show_io_table: Boolean = false): Unit = {
     io_info = new IOAccessor(device_under_test.io)
 
     process_input_events()
@@ -279,5 +279,6 @@ abstract class DecoupledTester extends BasicTester {
         }
       }
     }
+    io_info.show_ports("".r)
   }
 }

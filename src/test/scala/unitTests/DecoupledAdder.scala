@@ -71,14 +71,13 @@ class DecoupledAdderTests extends DecoupledTester {
       Array(device_under_test.io.out.bits.c -> z)
     )
   }
-  finish()
-  io_info.show_ports("".r)
+  finish(show_io_table = true)
 }
 
 
 class DecoupledAdderTester extends ChiselFlatSpec {
   "a" should "b" in {
-    assert( execute { new DecoupledAdderTests } )
+    assert( execute( new DecoupledAdderTests ) )
   }
 }
 
