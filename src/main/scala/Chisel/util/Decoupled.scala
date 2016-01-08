@@ -25,10 +25,21 @@ object Decoupled {
 /** An I/O bundle for enqueuing data with valid/ready handshaking */
 class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
-  def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
-  valid := Bool(false)
-  for (io <- bits.flatten)
-    io := UInt(0)
+  /**
+    * @param dat
+    * @return
+    */
+  def enq(dat: T): T = {
+    // TODO: Figure out why valid had been set to false here orginally
+    valid := Bool(true)
+    bits  := dat
+    dat
+  }
+  def init = {
+    valid := Bool(false)
+    for (io <- bits.flatten)
+      io := UInt(0)
+  }
   override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
 }
 
@@ -36,7 +47,9 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, do_flip = true)
 {
 //  flip(), in chisel2 this worked in place, causes infinte recursion in chisel3
-  ready := Bool(false)
+  def init {
+    ready := Bool(true)
+  }
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
 }

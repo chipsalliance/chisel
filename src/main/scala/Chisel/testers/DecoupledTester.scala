@@ -203,7 +203,9 @@ abstract class DecoupledTester extends BasicTester {
             input_event_counter := input_event_counter + UInt(1)
           }
         }.otherwise {
-          printf(s"controller ${io_info.port_to_name(controlling_port)} says not my turn")
+          when(is_this_my_turn(input_event_counter)) {
+            printf(s"controller ${io_info.port_to_name(controlling_port)} says waiting for valid")
+          }
         }
       }
     }
