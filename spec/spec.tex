@@ -84,10 +84,10 @@ After a custom pass, the resulting circuit should undergo lowering prior to pass
 The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, including but not limited to XXXX.
 We'd also like to thank our sponsors XXXX, and the University of California, Berkeley.
 
-\section{FIRRTL Language Definition}
+%\section{FIRRTL Language Definition}
 
-\subsection{Abstract Syntax Tree}
-{ \fontsize{11pt}{1.15em}\selectfont
+%\subsection{Abstract Syntax Tree}
+{ \fontsize{10pt}{1.10em}\selectfont
 \[
 \begin{array}{rrll}
 \pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
@@ -104,36 +104,47 @@ We'd also like to thank our sponsors XXXX, and the University of California, Ber
 \pd{orientation}&=     &\kws{default} \vert \kws{reverse}                                             &\text{Orientation}\\
 \pd{width}      &=     &\ints \vert \kw{?}                                                            &\text{Known/Unknown Integer Width}\\
 \pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
-                &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \pds{exp} , \pds{exp}                 &\text{Register Declaration}\\
-                &\vert &\info \kw{smem} \id \kw{:} \pds{type} , \ints                                 &\text{Sequential Memory Declaration}\\
-                &\vert &\info \kw{cmem} \id \kw{:} \pds{type} , \ints                                 &\text{Combinational Memory Declaration}\\
+                &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \pds{exp} , \pds{exp} , \pds{exp}     &\text{Register Declaration}\\
+                &\vert &\info \kw{mem} \id \kw{:} \pds{type} , \pds{mstat*}                           &\text{Memory Declaration}\\
                 &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
-                &\vert &\info \kw{poison} \id \kw{:} \id                                              &\text{Poison Declaration}\\
+                &\vert &\info \kw{poison} \id \kw{:} \pds{type}                                              &\text{Poison Declaration}\\
                 &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
-                &\vert &\info \pd{dir} \kw{accessor} \id = \pds{exp}[\pds{exp}] , \pds{exp}           &\text{Accessor Declaration}\\
                 &\vert &\info \pd{exp} \kw{$<$=} \pd{exp}                                             &\text{Connect}\\
-                &\vert &\info \kw{onreset} \pd{exp} \kw{$<$=} \pd{exp}                                &\text{OnReset Connect}\\
-                &\vert &\info \pd{exp} \kw{$<$--} \pd{exp}                                             &\text{Partial Connect}\\
+                &\vert &\info \pd{exp} \kw{$<$--} \pd{exp}                                            &\text{Partial Connect}\\
                 &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
-                &\vert &\info \kw{stop}                                                               &\text{Stop Statement}\\
-                &\vert &\info \kw{printf}(\strings,\pds{exp*})                                        &\text{Printf Statement}\\
+                &\vert &\info \kw{stop}(\pds{exp},\pds{exp},\ints)                                    &\text{Stop Statement}\\
+                &\vert &\info \kw{printf}(\pds{exp},\pds{exp},\strings,\pds{exp*})                    &\text{Printf Statement}\\
                 &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
                 &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
-\pd{dir}        &=     &\kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr}                &\text{Accessor Direction}\\
 \pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Unsigned Integer}\\
                 &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Signed Integer}\\
                 &\vert &\info \id                                                                     &\text{Reference}\\
                 &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
                 &\vert &\info \pds{exp}[\ints]                                                        &\text{Subindex}\\
+                &\vert &\info \pds{exp}[\pds{exp}]                                                    &\text{Subaccess}\\
                 &\vert &\info \pds{primop}(\pds{exp*}, \ints\text{*})                                 &\text{Primitive Operation}\\
 \pd{info}       &=     &\text{filename } \kw{:} \text{line} . \text{col}                              &\text{File Location}\\
                 &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\
+                \pd{mstat}      &=     &\kw{writer =$>$} \id                                                          &\text{Write Port Name}\\
+                &\vert &\kw{reader =$>$} \id                                                          &\text{Read Port Name}\\
+                &\vert &\kw{read-writer =$>$} \id                                                     &\text{ReadWrite Port Name}\\
+                &\vert &\kw{read-latency =$>$} \ints                                                  &\text{Read Latency}\\
+                &\vert &\kw{write-latency =$>$} \ints                                                 &\text{Write Latency}\\
+                &\vert &\kw{data-type =$>$} \pds{type}                                                &\text{Memory Data Type}\\
+                &\vert &\kw{depth =$>$} \ints                                                         &\text{Memory Depth}\\
 \end{array}
 \]
 }
 \[
-{ \fontsize{11pt}{1.15em}\selectfont
+{ \fontsize{10pt}{1.07em}\selectfont
 \begin{array}{rrll}
+\pd{mstat}      &=     &\kw{writer =$>$} \id                                                          &\text{Write Port Name}\\
+                &\vert &\kw{reader =$>$} \id                                                          &\text{Read Port Name}\\
+                &\vert &\kw{read-writer =$>$} \id                                                     &\text{ReadWrite Port Name}\\
+                &\vert &\kw{read-latency =$>$} \ints                                                  &\text{Read Latency}\\
+                &\vert &\kw{write-latency =$>$} \ints                                                 &\text{Write Latency}\\
+                &\vert &\kw{data-type =$>$} \pds{type}                                                &\text{Memory Data Type}\\
+                &\vert &\kw{depth =$>$} \ints                                                         &\text{Memory Depth}\\
 \pd{primop}   &=               &\kws{add}            &\text{Unsigned/Signed Add}\\
               &\vert           &\kws{sub}            &\text{Unsigned/Signed Subtract}\\
               &\vert           &\kws{addw}           &\text{Unsigned/Signed Add Wrap}\\

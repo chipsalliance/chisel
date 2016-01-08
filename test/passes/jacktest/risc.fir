@@ -11,26 +11,26 @@ circuit Risc :
     input clk : Clock
     input reset : UInt<1>
     
-    cmem file : UInt<32>[256],clk
-    cmem code : UInt<32>[256],clk
+    cmem file : UInt<32>[256]
+    cmem code : UInt<32>[256]
     reg pc : UInt<8>,clk,reset,UInt<8>(0)
-    infer accessor inst = code[pc]
+    read mport inst = code[pc],clk
     node op = bits(inst, 31, 24)
     node rci = bits(inst, 23, 16)
     node rai = bits(inst, 15, 8)
     node rbi = bits(inst, 7, 0)
     node T_51 = eq(rai, UInt<1>(0))
-    infer accessor T_52 = file[rai]
+    read mport T_52 = file[rai],clk
     node ra = mux(T_51, UInt<1>(0), T_52)
     node T_53 = eq(rbi, UInt<1>(0))
-    infer accessor T_54 = file[rbi]
+    read mport T_54 = file[rbi],clk
     node rb = mux(T_53, UInt<1>(0), T_54)
     wire rc : UInt<32>
     valid <= UInt<1>(0)
     out <= UInt<1>(0)
     rc <= UInt<1>(0)
     when isWr : 
-      infer accessor T_55 = code[wrAddr]
+      write mport T_55 = code[wrAddr],clk,UInt(1)
       T_55 <= wrData
     else : when boot : pc <= UInt<1>(0)
       else : 
@@ -47,7 +47,7 @@ circuit Risc :
         node T_61 = eq(rci, UInt<8>(255))
         when T_61 : valid <= UInt<1>(1)
         else : 
-          infer accessor T_62 = file[rci]
+          write mport T_62 = file[rci],clk,UInt(1)
           T_62 <= rc
         node T_63 = addw(pc, UInt<1>(1))
         pc <= T_63

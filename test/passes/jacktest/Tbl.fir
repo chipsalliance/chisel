@@ -8,12 +8,12 @@ circuit Tbl :
     output o : UInt<16>
     input we : UInt<1>
     
-    cmem m : UInt<10>[256],clk
+    cmem m : UInt<10>[256]
     o <= UInt<1>(0)
     when we : 
-      infer accessor T_13 = m[i]
+      write mport T_13 = m[i],clk,UInt(1)
       node T_14 = bits(d, 9, 0)
       T_13 <= T_14
     else : 
-      infer accessor T_15 = m[i]
+      read mport T_15 = m[i],clk
       o <= T_15

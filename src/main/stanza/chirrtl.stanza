@@ -58,19 +58,20 @@ defn to-ir (c:Circuit) :
          match(s) :
             (s:CDefMemory) :
                val stmts = Vector<Stmt>()
-               val n = firrtl-gensym(`GEN,sh)
-               val t = UIntType(IntWidth(ceil-log2(size(s))))
-               add(stmts,DefPoison(info(s),n,t))
+               val naddr = firrtl-gensym(`GEN,sh)
+               val taddr = UIntType(IntWidth(ceil-log2(size(s))))
+               add(stmts,DefPoison(info(s),naddr,taddr))
+               val ndata = firrtl-gensym(`GEN,sh)
+               val tdata = type(s)
+               add(stmts,DefPoison(info(s),ndata,tdata))
                defn set-poison (vec:List<MPort>,addr:Symbol) -> False :
                   for r in vec do :
-                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),addr,t),Ref(n,t)))
-                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),`clk,t),clk(r)))
-                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),`en,t),zero))
-                        
+                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),addr,taddr),Ref(naddr,taddr)))
+                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),`clk,taddr),clk(r)))
+               defn set-enable (vec:List<MPort>,en:Symbol) -> False:
+                  for r in vec do :
+                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),en,taddr),zero))
                defn set-write (vec:List<MPort>,data:Symbol,mask:Symbol) -> False :
-                  val ndata = firrtl-gensym(`GEN,sh)
-                  val tdata = type(s)
-                  add(stmts,DefPoison(info(s),ndata,tdata))
                   val tmask = type(create-mask(`blah,type(s)))
                   for r in vec do :
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),data,tdata),Ref(ndata,tdata)))
@@ -79,12 +80,16 @@ defn to-ir (c:Circuit) :
                         
                val rds = to-list $ readers $ get?(hash,name(s),EMPs())
                set-poison(rds,`addr)
+               set-enable(rds,`en)
                val wrs = to-list $ writers $ get?(hash,name(s),EMPs())
                set-poison(wrs,`addr)
+               set-enable(wrs,`en)
                set-write(wrs,`data,`mask)
                val rws = to-list $ readwriters $ get?(hash,name(s),EMPs())
                set-poison(rws,`waddr)
                set-poison(rws,`raddr)
+               set-enable(rws,`wen)
+               set-enable(rws,`ren)
                set-write(rws,`wdata,`wmask)
                val read-l = 
                   if seq?(s) : 1
@@ -101,15 +106,24 @@ defn to-ir (c:Circuit) :
                      add(addrs,`addr)
                      add(ens,`wen)
                      add(ens,`ren)
+                     add(masks,`wmask)
+                  MWrite :
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data)
+                     add(addrs,`addr)
+                     add(ens,`en)
+                     add(masks,`mask)
                   else : ; TODO add MWrite for mask
                      repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data)
                      add(addrs,`addr)
                      add(ens,`en)
+
                val stmts = Vector<Stmt>()
                for x in addrs do :
                   add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),exps(s)[0]))
                for x in ens do :
                   add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),one))
+               for x in masks do :
+                  add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),exps(s)[2]))
                Begin $ to-list $ stmts   
             (s) : map(collect-refs,s)
       defn to-ir-e (e:Expression,g:Gender) -> Expression :
