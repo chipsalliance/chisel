@@ -22,5 +22,5 @@ circuit Rom :
     r[13] <= UInt<5>(26)
     r[14] <= UInt<5>(28)
     r[15] <= UInt<5>(30)
-    infer accessor T_39 = r[addr]
+    node T_39 = r[addr]
     out <= T_39

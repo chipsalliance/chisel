@@ -1,5 +1,5 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
-; CHECK: Expression out$y is used as a sink but can only be used as a source.
+; CHECK: Expression out is used as a source but can only be used as a sink.
 
 circuit BTB :
   module BTB : 

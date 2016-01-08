@@ -4,9 +4,10 @@ circuit Top :
   module Top : 
     input x : {y : UInt<1>}
     input p : UInt<1>
-    printf("Hello World%!\n",x)
-    printf("Hello World%")
-    printf("Hello World%d %s %h %x",x,x,x)
+    input clk : Clock
+    printf(clk,p,"Hello World%!\n",x)
+    printf(clk,p,"Hello World%")
+    printf(clk,p,"Hello World%d %s %h %x",x,x,x)
 
 ;CHECK: Bad printf format: "%!"
 ;CHECK: Bad printf format: trailing "%"

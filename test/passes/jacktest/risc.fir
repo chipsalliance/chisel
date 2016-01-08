@@ -13,8 +13,7 @@ circuit Risc :
     
     cmem file : UInt<32>[256],clk
     cmem code : UInt<32>[256],clk
-    reg pc : UInt<8>,clk,reset
-    onreset pc <= UInt<8>(0)
+    reg pc : UInt<8>,clk,reset,UInt<8>(0)
     infer accessor inst = code[pc]
     node op = bits(inst, 31, 24)
     node rci = bits(inst, 23, 16)

@@ -264,11 +264,11 @@ defsyntax firrtl :
       stmt = (smem ?name:#id! #:! ?t:#vectype! ) : CDefMemory(first-info(form),name,type(t),size(t),true)
 
       stmt = (read mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
-         CDefMPort(first-info(form),name,mem,index,clk,MRead)
+         CDefMPort(first-info(form),name,mem,list(index,clk),MRead)
       stmt = (write mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
-         CDefMPort(first-info(form),name,mem,index,clk,MWrite)
+         CDefMPort(first-info(form),name,mem,list(index,clk),MWrite)
       stmt = (rdwr mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
-         CDefMPort(first-info(form),name,mem,index,clk,MReadWrite)
+         CDefMPort(first-info(form),name,mem,list(index,clk),MReadWrite)
 
       stmt = (mem ?name:#id! #:! (?ms:#mstat ...)) :
          defn grab (f:MStat -> True|False) :

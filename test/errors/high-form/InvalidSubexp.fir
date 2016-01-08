@@ -1,6 +1,6 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
-; CHECK: Invalid index access to non-reference.
-; CHECK: Invalid subfield access to non-reference.
+; CHECK: Invalid access to non-reference.
+; CHECK: Invalid access to non-reference.
 
 circuit Top :
   module Top :

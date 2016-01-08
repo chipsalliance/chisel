@@ -6,8 +6,8 @@ defpackage firrtl/chirrtl :
 
 public defstruct ToIR <: Pass
 public defmethod pass (b:ToIR) -> (Circuit -> Circuit) : to-ir
-public defmethod name (b:ToIR) -> String : "To IR"
-public defmethod short-name (b:ToIR) -> String : "to-ir"
+public defmethod name (b:ToIR) -> String : "To FIRRTL"
+public defmethod short-name (b:ToIR) -> String : "to-firrtl"
 
 defstruct MPort :
    name : Symbol
@@ -24,6 +24,16 @@ defstruct DataRef :
 public definterface Gender
 public val MALE = new Gender
 public val FEMALE = new Gender
+
+defn create-exps (e:Expression) -> List<Expression> :
+   match(type(e)) : 
+      (t:UIntType|SIntType|ClockType) : list(e)
+      (t:BundleType) : 
+         for f in fields(t) map-append :
+            create-exps(SubField(e,name(f),type(f)))
+      (t:VectorType) :
+         for i in 0 to size(t) map-append :
+            create-exps(SubIndex(e,i,type(t)))
 
 defn to-ir (c:Circuit) :
    defn to-ir-m (m:InModule) -> InModule :
@@ -55,13 +65,27 @@ defn to-ir (c:Circuit) :
                   for r in vec do :
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),addr,t),Ref(n,t)))
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),`clk,t),clk(r)))
+                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),`en,t),zero))
+                        
+               defn set-write (vec:List<MPort>,data:Symbol,mask:Symbol) -> False :
+                  val ndata = firrtl-gensym(`GEN,sh)
+                  val tdata = type(s)
+                  add(stmts,DefPoison(info(s),ndata,tdata))
+                  val tmask = type(create-mask(`blah,type(s)))
+                  for r in vec do :
+                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),data,tdata),Ref(ndata,tdata)))
+                     for x in create-exps(SubField(SubField(Ref(name(s),ut),name(r),ut),mask,tmask)) do :
+                        add(stmts,Connect(info(s),x,zero))
+                        
                val rds = to-list $ readers $ get?(hash,name(s),EMPs())
                set-poison(rds,`addr)
                val wrs = to-list $ writers $ get?(hash,name(s),EMPs())
                set-poison(wrs,`addr)
+               set-write(wrs,`data,`mask)
                val rws = to-list $ readwriters $ get?(hash,name(s),EMPs())
                set-poison(rws,`waddr)
                set-poison(rws,`raddr)
+               set-write(rws,`wdata,`wmask)
                val read-l = 
                   if seq?(s) : 1
                   else : 0
@@ -100,10 +124,14 @@ defn to-ir (c:Circuit) :
             (e) : e
       defn to-ir-s (s:Stmt) -> Stmt :
          match(s) :
-            (s:Connect|BulkConnect) : 
+            (s:Connect) : 
                val loc* = to-ir-e(loc(s),FEMALE)
                val roc* = to-ir-e(exp(s),MALE)
                Connect(info(s),loc*,roc*)
+            (s:BulkConnect) : 
+               val loc* = to-ir-e(loc(s),FEMALE)
+               val roc* = to-ir-e(exp(s),MALE)
+               BulkConnect(info(s),loc*,roc*)
             (s) : map(to-ir-e{_,MALE}, map(to-ir-s,s))
       collect-mports(body(m))
       val s* = collect-refs(body(m))

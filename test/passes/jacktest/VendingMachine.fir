@@ -8,8 +8,7 @@ circuit VendingMachine :
     input clk : Clock
     input reset : UInt<1>
     
-    reg state : UInt<3>,clk,reset
-    onreset state <= UInt<3>(0)
+    reg state : UInt<3>,clk,reset,UInt<3>(0)
     node T_22 = eq(state, UInt<3>(0))
     when T_22 : 
       when nickel : state <= UInt<3>(1)

@@ -30,54 +30,63 @@ public defn set-primop-type (e:DoPrim) -> DoPrim :
             (t1:UIntType, t2:SIntType) : SIntType(PLUS(MAX(w1(),w2()),ONE))
             (t1:SIntType, t2:UIntType) : SIntType(PLUS(MAX(w1(),w2()),ONE))
             (t1:SIntType, t2:SIntType) : SIntType(PLUS(MAX(w1(),w2()),ONE))
+            (t1, t2) : UnknownType()
       SUB-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : SIntType(PLUS(MAX(w1(),w2()),ONE))
             (t1:UIntType, t2:SIntType) : SIntType(PLUS(MAX(w1(),w2()),ONE))
             (t1:SIntType, t2:UIntType) : SIntType(PLUS(MAX(w1(),w2()),ONE))
             (t1:SIntType, t2:SIntType) : SIntType(PLUS(MAX(w1(),w2()),ONE))
+            (t1, t2) : UnknownType()
       ADD-WRAP-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(MAX(w1(),w2()))
             (t1:UIntType, t2:SIntType) : SIntType(MAX(w1(),w2()))
             (t1:SIntType, t2:UIntType) : SIntType(MAX(w1(),w2()))
             (t1:SIntType, t2:SIntType) : SIntType(MAX(w1(),w2()))
+            (t1, t2) : UnknownType()
       SUB-WRAP-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(MAX(w1(),w2()))
             (t1:UIntType, t2:SIntType) : SIntType(MAX(w1(),w2()))
             (t1:SIntType, t2:UIntType) : SIntType(MAX(w1(),w2()))
             (t1:SIntType, t2:SIntType) : SIntType(MAX(w1(),w2()))
+            (t1, t2) : UnknownType()
       MUL-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(PLUS(w1(),w2()))
             (t1:UIntType, t2:SIntType) : SIntType(PLUS(w1(),w2()))
             (t1:SIntType, t2:UIntType) : SIntType(PLUS(w1(),w2()))
             (t1:SIntType, t2:SIntType) : SIntType(PLUS(w1(),w2()))
+            (t1, t2) : UnknownType()
       DIV-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(w1())
             (t1:UIntType, t2:SIntType) : SIntType(PLUS(w1(),w2()))
             (t1:SIntType, t2:UIntType) : SIntType(w1())
             (t1:SIntType, t2:SIntType) : SIntType(PLUS(w1(),w2()))
+            (t1, t2) : UnknownType()
       MOD-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(w2())
             (t1:UIntType, t2:SIntType) : UIntType(w2())
             (t1:SIntType, t2:UIntType) : SIntType(PLUS(w2(),ONE))
             (t1:SIntType, t2:SIntType) : SIntType(w2())
+            (t1, t2) : UnknownType()
       QUO-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(PLUS(w1(),ONE))
             (t1:UIntType, t2:SIntType) : SIntType(w1())
             (t1:SIntType, t2:UIntType) : SIntType(PLUS(w1(),ONE))
             (t1:SIntType, t2:SIntType) : SIntType(w1())
+            (t1, t2) : UnknownType()
       REM-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(w2())
             (t1:UIntType, t2:SIntType) : SIntType(w2())
             (t1:SIntType, t2:UIntType) : UIntType(PLUS(w2(),ONE))
             (t1:SIntType, t2:SIntType) : SIntType(w2())
+            (t1, t2) : UnknownType()
       LESS-OP : DoPrim(o,a,c,BoolType())
       LESS-EQ-OP : DoPrim(o,a,c,BoolType())
       GREATER-OP : DoPrim(o,a,c,BoolType())
@@ -90,42 +99,52 @@ public defn set-primop-type (e:DoPrim) -> DoPrim :
          match(t2(),t3()) :
             (t2:UIntType, t3:UIntType) : UIntType(MAX(w2(),w3()))
             (t2:SIntType, t3:SIntType) : SIntType(MAX(w2(),w3()))
+            (t2, t3) : UnknownType()
       PAD-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : UIntType(c1())
             (t1:SIntType) : SIntType(c1())
+            (t1) : UnknownType()
       AS-UINT-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : UIntType(w1())
             (t1:SIntType) : UIntType(w1())
+            (t1) : UnknownType()
       AS-SINT-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : SIntType(w1())
             (t1:SIntType) : SIntType(w1())
+            (t1) : UnknownType()
       SHIFT-LEFT-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : UIntType(PLUS(w1(),c1()))
             (t1:SIntType) : SIntType(PLUS(w1(),c1()))
+            (t1) : UnknownType()
       SHIFT-RIGHT-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : UIntType(MINUS(w1(),c1()))
             (t1:SIntType) : SIntType(MINUS(w1(),c1()))
+            (t1) : UnknownType()
       DYN-SHIFT-LEFT-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : UIntType(PLUS(w1(),POW(w2())))
             (t1:SIntType) : SIntType(PLUS(w1(),POW(w2())))
+            (t1) : UnknownType()
       DYN-SHIFT-RIGHT-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : UIntType(w1())
             (t1:SIntType) : SIntType(w1())
+            (t1) : UnknownType()
       CONVERT-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : SIntType(PLUS(w1(),ONE))
             (t1:SIntType) : SIntType(w1())
+            (t1) : UnknownType()
       NEG-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : SIntType(PLUS(w1(),ONE))
             (t1:SIntType) : SIntType(w1())
+            (t1) : UnknownType()
       BIT-NOT-OP : DoPrim(o,a,c,t1())
       BIT-AND-OP : DoPrim(o,a,c,UIntType(MAX(w1(),w2())))
       BIT-OR-OP : DoPrim(o,a,c,UIntType(MAX(w1(),w2())))

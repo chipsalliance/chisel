@@ -25,20 +25,20 @@ circuit top :
 ;CHECK: wire GEN_3 : UInt<32>
 ;CHECK: j_x <= GEN
 ;CHECK: j_y <= GEN_3
-;CHECK: node a_0_x = eqv(UInt("h0"), i)
-;CHECK: a_0_x <= mux(a_0_x, GEN_2, UInt("h0"))
-;CHECK: node a_0_y = eqv(UInt("h0"), i)
-;CHECK: a_0_y <= mux(a_0_y, GEN_1, UInt("h0"))
-;CHECK: node a_1_x = eqv(UInt("h1"), i)
-;CHECK: a_1_x <= mux(a_1_x, GEN_2, UInt("h0"))
-;CHECK: node a_1_y = eqv(UInt("h1"), i)
-;CHECK: a_1_y <= mux(a_1_y, GEN_1, UInt("h0"))
-;CHECK: node GEN_4 = eqv(UInt("h1"), i)
-;CHECK: GEN <= mux(GEN_4, a_1_x, a_0_x)
+;CHECK: node GEN_4 = eqv(UInt("h0"), i)
+;CHECK: a_0_x <= mux(GEN_4, GEN_2, UInt("h0"))
+;CHECK: node GEN_5 = eqv(UInt("h0"), i)
+;CHECK: a_0_y <= mux(GEN_5, GEN_1, UInt("h0"))
+;CHECK: node GEN_6 = eqv(UInt("h1"), i)
+;CHECK: a_1_x <= mux(GEN_6, GEN_2, UInt("h0"))
+;CHECK: node GEN_7 = eqv(UInt("h1"), i)
+;CHECK: a_1_y <= mux(GEN_7, GEN_1, UInt("h0"))
+;CHECK: node GEN_8 = eqv(UInt("h1"), i)
+;CHECK: GEN <= mux(GEN_8, a_1_x, a_0_x)
 ;CHECK: GEN_1 <= j_y
 ;CHECK: GEN_2 <= j_x
-;CHECK: node GEN_5 = eqv(UInt("h1"), i)
-;CHECK: GEN_3 <= mux(GEN_5, a_1_y, a_0_y)   
+;CHECK: node GEN_9 = eqv(UInt("h1"), i)
+;CHECK: GEN_3 <= mux(GEN_9, a_1_y, a_0_y)   
 
 ; CHECK: Finished Lower Types
 

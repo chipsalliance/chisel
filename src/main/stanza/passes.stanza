@@ -75,8 +75,8 @@ defstruct WIndexer <: Expression :
    index: Expression
    type: Type with: (as-method => true)
    gender : Gender with: (as-method => true)
-defstruct WVoid <: Expression
-defstruct WDefInstance <: Stmt :
+public defstruct WVoid <: Expression
+public defstruct WDefInstance <: Stmt :
    info: FileInfo with: (as-method => true)
    name: Symbol
    module: Symbol
@@ -97,7 +97,7 @@ defn get-gender (s:Stmt|Port) -> Gender :
             INPUT : MALE
             OUTPUT : FEMALE
 
-defmulti kind (e:Expression) -> Kind
+public defmulti kind (e:Expression) -> Kind
 defmethod kind (e:Expression) : 
    match(e) :
       (e:WRef) : kind(e)
@@ -121,14 +121,6 @@ defn get-type (s:Stmt) -> Type :
       (s:DefWire|DefPoison|DefRegister|WDefInstance) : type(s)
       (s:DefNode) : type(value(s))
       (s:DefMemory) : 
-         defn create-mask (n:Symbol) -> Field :
-            Field{n,DEFAULT,_} $ match(data-type(s)) :
-               (t:VectorType) : VectorType(BoolType(),size(t))
-               (t:BundleType) : 
-                  val fields* = for f in fields(t) map :
-                     Field(name(f),flip(f),BoolType())
-                  BundleType(fields*)
-               (t:UIntType|SIntType) : BoolType()
          val depth = depth(s)
          ; Fields
          val addr = Field(`addr,DEFAULT,UIntType(IntWidth(ceil-log2(depth))))
@@ -138,8 +130,8 @@ defn get-type (s:Stmt) -> Type :
          val rev-data = Field(`data,REVERSE,data-type(s))
          val rdata = Field(`rdata,REVERSE,data-type(s))
          val wdata = Field(`wdata,DEFAULT,data-type(s))
-         val mask = create-mask(`mask)
-         val wmask = create-mask(`wmask)
+         val mask = create-mask(`mask,data-type(s))
+         val wmask = create-mask(`wmask,data-type(s))
          val ren = Field(`ren,DEFAULT,UIntType(IntWidth(1)))
          val wen = Field(`wen,DEFAULT,UIntType(IntWidth(1)))
          val raddr = Field(`raddr,DEFAULT,UIntType(IntWidth(ceil-log2(depth))))
@@ -1534,9 +1526,11 @@ defn infer-widths (c:Circuit) -> Circuit :
             ;constrain(width!(loc(s)),width!(exp(s)))
             ;s
             val n = get-size(loc(s))
+            val ce-loc = create-exps(loc(s))
+            val ce-exp = create-exps(exp(s))
             for i in 0 to n do :
-               val loc* = create-exps(loc(s))[i]
-               val exp* = create-exps(exp(s))[i]
+               val loc* = ce-loc[i]
+               val exp* = ce-exp[i]
                switch { _ == get-flip(type(loc(s)),i,DEFAULT) } :
                   DEFAULT : constrain(width!(loc*),width!(exp*))
                   REVERSE : constrain(width!(exp*),width!(loc*))
@@ -1667,7 +1661,7 @@ defn split-exp (m:InModule) -> InModule :
          (s:DefRegister) : name(s)
          (s) : `F
       defn split (e:Expression) -> Expression :
-         val n = firrtl-gensym(base,sh)
+         val n = firrtl-gensym(`GEN,sh)
          add(v,DefNode(info(s),n,e))
          WRef(n,type(e),kind(e),gender(e))
       defn split-exp-e (e:Expression,i:Int) -> Expression :
@@ -1847,6 +1841,47 @@ defn split-exp (c:Circuit) -> Circuit :
 ;            (m:InModule) : InModule(info(m),name(m),ports(m),pad-widths-s(body(m)))
 ;
 ;
+
+;============== Common Subexpression Elimination ===========
+;NOT DONE
+
+;public defstruct CSE <: Pass
+;public defmethod pass (b:CSE) -> (Circuit -> Circuit) : const-prop
+;public defmethod name (b:CSE) -> String : "Common Subexpression Elimination"
+;public defmethod short-name (b:ConstProp) -> String : "cse"
+;
+;defn cse-m (m:InModule) -> InModule :
+;   val cse-hash = HashTable<Expression,Int>(exp-hash)
+;   val placed? = HashTable<Expression,True|False>(exp-hash)
+;
+;   defn cse-s (s:Stmt) -> Stmt :
+;      val stmts = Vector<Stmt>()
+;      defn cse-e (e:Expression) -> Expression 
+;      match(s) : 
+;
+;   defn build-e (e:Expression) -> Expression :
+;      match(e) :
+;         (e:DoPrim) : 
+;            if key?(cse-hash,e) :
+;               cse-hash[e] = cse-hash[e] + 1
+;            else :
+;               cse-hash[e] = 1
+;            placed?[e] = false
+;         (e) : e
+;   defn build-s (s:Stmt) -> Stmt : map{build-s,_} $ map(build-e,s)
+;
+;   build-s(body(m))
+;   InModule(info(m),name(m),ports(m),cse-s(body(m)))
+;
+;public defn cse (c:Circuit) -> Circuit :
+;   Circuit{info(c),_,main(c)} $
+;      for m in modules(c) map :
+;         match(m) :
+;            (m:ExModule) : m
+;            (m:InModule) : cse-m(m)
+
+
+
 ;;============= Constant Propagation ================
 ;
 public defstruct ConstProp <: Pass
@@ -1858,6 +1893,16 @@ defn const-prop-e (e:Expression) -> Expression :
    match(map(const-prop-e,e)) :
       (e:DoPrim) : 
          switch {op(e) == _} :
+            DYN-SHIFT-RIGHT-OP :
+               match(args(e)[1]) :
+                  (x:UIntValue|SIntValue) :
+                     DoPrim(SHIFT-RIGHT-OP,list(args(e)[0]),list(to-int(value(x))),UnknownType())
+                  (x) : e
+            DYN-SHIFT-LEFT-OP :
+               match(args(e)[1]) :
+                  (x:UIntValue|SIntValue) :
+                     DoPrim(SHIFT-LEFT-OP,list(args(e)[0]),list(to-int(value(x))),UnknownType())
+                  (x) : e
             SHIFT-RIGHT-OP :
                match(args(e)[0]) :
                   (x:UIntValue) : 
@@ -2582,3 +2627,5 @@ defn emit-verilog (with-output:(() -> False) -> False, c:Circuit) :
             (m:InModule) : emit-verilog(m)
             (m:ExModule) : false
    c
+
+

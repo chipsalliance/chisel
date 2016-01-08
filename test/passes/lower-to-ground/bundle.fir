@@ -4,7 +4,7 @@ circuit top :
    module m :
       input  a : { x : UInt<5>, flip y: SInt<5>}
       output b : { x : UInt<5>, flip y: SInt<5>}
-      a.y <= UInt(0)
+      a.y <= SInt(0)
       b.x <= UInt(0)
    module top :
       input c : { x : UInt<5>[5], flip y : { x : UInt<5>[3], flip y : SInt<5> } }

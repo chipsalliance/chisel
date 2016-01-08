@@ -1,4 +1,6 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
+;CHECK: Finished Low Form Check
+;CHECK-NOT: stack_mem.T_32.mask <= UInt("h0")
 ;CHECK: Done!
 circuit Stack : 
   module Stack : 
@@ -10,16 +12,14 @@ circuit Stack :
     output dataOut : UInt<32>
     input dataIn : UInt<32>
     
-    cmem stack_mem : UInt<32>[16],clk
-    reg sp : UInt<5>,clk,reset
-    onreset sp <= UInt<5>(0)
-    reg out : UInt<32>,clk,reset
-    onreset out <= UInt<32>(0)
+    cmem stack_mem : UInt<32>[16]
+    reg sp : UInt<5>,clk,reset,UInt<5>(0)
+    reg out : UInt<32>,clk,reset,UInt<32>(0)
     when en : 
       node T_30 = lt(sp, UInt<5>(16))
       node T_31 = and(push, T_30)
       when T_31 : 
-        infer accessor T_32 = stack_mem[sp]
+        write mport T_32 = stack_mem[sp],clk
         T_32 <= dataIn
         node T_33 = addw(sp, UInt<1>(1))
         sp <= T_33
@@ -32,6 +32,6 @@ circuit Stack :
       node T_37 = gt(sp, UInt<1>(0))
       when T_37 : 
         node T_38 = subw(sp, UInt<1>(1))
-        infer accessor T_39 = stack_mem[T_38]
+        read mport T_39 = stack_mem[T_38],clk
         out <= T_39
     dataOut <= out

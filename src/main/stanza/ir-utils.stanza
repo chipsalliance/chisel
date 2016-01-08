@@ -136,6 +136,17 @@ public defn exp-hash (e:Expression) -> Int :
    val i = symbol-hash(to-symbol(to-string(e)))
    turn-on-debug(false)
    i
+
+;============= Useful functions ==============
+public defn create-mask (n:Symbol,dt:Type) -> Field :
+   Field{n,DEFAULT,_} $ match(dt) :
+      (t:VectorType) : VectorType(BoolType(),size(t))
+      (t:BundleType) : 
+         val fields* = for f in fields(t) map :
+            Field(name(f),flip(f),BoolType())
+         BundleType(fields*)
+      (t:UIntType|SIntType) : BoolType()
+
 ;============== Exceptions =====================
 
 public definterface PassException <: Exception
@@ -334,7 +345,7 @@ defmethod print (o:OutputStream, c:Stmt) :
          else :
             print-all(o, ["cmem " name(c) " : " type(c) "[" size(c) "]"])
       (c:CDefMPort) :
-         print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" index(c) "], " clk(c)])
+         print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" exps(c)[0] "], " exps(c)[1]])
 
    if not c typeof Conditionally|Begin|Empty: print-debug(o,c)
 

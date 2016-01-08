@@ -10,8 +10,8 @@ circuit GCD :
     input a : UInt<16>
     input b : UInt<16>
     
-    reg x : UInt<16>,clk,reset
-    reg y : UInt<16>,clk,reset
+    reg x : UInt<16>,clk,reset,x
+    reg y : UInt<16>,clk,reset,y
     node T_17 = gt(x, y)
     when T_17 : 
       node T_18 = subw(x, y)

@@ -7,8 +7,7 @@ circuit LFSR16 :
     input clk : Clock
     input reset : UInt<1>
     
-    reg res : UInt<16>,clk,reset
-    onreset res <= UInt<16>(1)
+    reg res : UInt<16>,clk,reset,UInt<16>(1)
     when inc : 
       node T_16 = bit(res, 0)
       node T_17 = bit(res, 2)

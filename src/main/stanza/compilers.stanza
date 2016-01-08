@@ -3,7 +3,7 @@ defpackage firrtl/compiler :
   import verse
   import firrtl/passes
   import firrtl/chirrtl
-  ;import firrtl/errors
+  import firrtl/errors
   ;import firrtl/flo
   ;import firrtl/verilog
   import firrtl/ir2
@@ -46,45 +46,61 @@ public defmethod backend (c:StandardVerilog) -> List<Pass> :
   to-list $ [ Verilog(with-output(c)) ]
 public defmethod passes (c:StandardVerilog) -> List<Pass> :
    to-list $ [
-      ;RemoveSpecialChars()     ;R
-      ;CheckHighForm()          ;R
-      ;TempElimination()        ;R         ; Needs to check number of uses
-      ToIR()            ;R -> W
-      ToWorkingIR()            ;R -> W
-      ResolveKinds()           ;W
-      InferTypes()             ;R
-      ResolveGenders()         ;W
-      InferWidths()            ;R
+      ;RemoveSpecialChars()     
+      ;TempElimination()                 ; Needs to check number of uses
+      ;===============
+      ToIR()            
+      ;===============
+      CheckHighForm()          
+      ;===============
+      ToWorkingIR()            
+      ;===============
+      ResolveKinds()           
+      InferTypes()             
+      CheckTypes()            
+      ResolveGenders()         
+      CheckGenders()          
+      InferWidths()            
+      CheckWidths()          
+      ;===============
       Resolve()
-      ;CheckGenders()           ;W
-      ;CheckKinds()             ;W
-      ;CheckTypes()             ;R
-      ;CheckGenders()           ;W
+      ;===============
       ExpandConnects()
+      ;===============
       RemoveAccesses()
+      ;===============
       ExpandWhens()
+      ;===============
+      CheckInitialization()   
+      ;===============
       ConstProp()
+      ;===============
       SplitExp()
-
+      ;===============
       ResolveKinds()
       InferTypes()
+      CheckTypes()
       ResolveGenders()
+      CheckGenders()
       InferWidths()
-
+      CheckWidths()
+      ;===============
       LowerTypes()
-
+      ;===============
       ResolveKinds()
       InferTypes()
+      CheckTypes()
       ResolveGenders()
+      CheckGenders()
       InferWidths()
-      ;ToRealIR()               ;W -> R
-      ;CheckWidths()            ;R
-      ;Pad()                    ;R
-      ;CheckWidths()            ;R
-      ;CheckHighForm()          ;R
-      ;CheckLowForm()           ;R
-      ;CheckInitialization()    ;R
-      Verilog(with-output(c))  ;R
+      CheckWidths()
+      ;===============
+      ;ToRealIR()             
+      ;Pad()                  
+      ;CheckWidths()          
+      ;CheckHighForm()        
+      ;CheckLowForm()           
+      Verilog(with-output(c)) 
    ]
 
 public defstruct StandardFIRRTL <: Compiler :

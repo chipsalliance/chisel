@@ -13,12 +13,13 @@ circuit Top :
 
       when bit(subw(a,c),3) : out <= mux(eqv(bits(UInt(32),4,0),UInt(13)),addw(a,addw(b,c)),subw(c,b))
 
-;CHECK: node out_1 = subw(a, c)
-;CHECK: node out_2 = bit(out_1, 3)
-;CHECK: node out_3 = eqv(UInt("h0"), UInt("hd"))
-;CHECK: node out_4 = addw(b, c)
-;CHECK: node out_5 = addw(a, out_4)
-;CHECK: node out_6 = subw(c, b)
-;CHECK: node out_7 = mux(out_3, out_5, out_6)
+;CHECK: node GEN = subw(a, c)
+;CHECK: node GEN_1 = bit(GEN, 3)
+;CHECK: node GEN_2 = eqv(UInt("h0"), UInt("hd"))
+;CHECK: node GEN_3 = addw(b, c)
+;CHECK: node GEN_4 = addw(a, GEN_3)
+;CHECK: node GEN_5 = subw(c, b)
+;CHECK: node GEN_6 = mux(GEN_2, GEN_4, GEN_5)
+;CHECK: out <= mux(GEN_1, GEN_6, out)   
 
 ;CHECK: Finished Split Expressions

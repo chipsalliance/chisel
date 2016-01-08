@@ -58,6 +58,9 @@ check:
 regress: 
 	cd $(regress_dir) && firrtl -i rocket.fir -o rocket.v -X verilog
 
+jack: 
+	cd $(test_dir)/passes/jacktest && lit -v . --path=$(root_dir)/utils/bin/
+
 passes: 
 	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/
 

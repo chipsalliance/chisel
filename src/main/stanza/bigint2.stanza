@@ -27,6 +27,10 @@ public defn to-int (x:Long) -> Int :
    if x > to-long(2147483647) or x < to-long(-2147483648) : error("Long too big to convert to Int")
    else : to-int(to-string(x))
 
+public defn to-int (x:BigInt) -> Int :
+   if length(d(x)) > 1 : error("BigInt too big to convert to Int")
+   else : d(x)[0]
+
 public defn req-num-bits (i: Int) -> Int :
   val i* = 
      if i < 0 : ((-1 * i) - 1)
