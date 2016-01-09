@@ -27,10 +27,8 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   /**
     * @param dat
-    * @return
     */
   def enq(dat: T): T = {
-    // TODO: Figure out why valid had been set to false here orginally
     valid := Bool(true)
     bits  := dat
     dat

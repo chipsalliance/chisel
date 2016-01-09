@@ -32,7 +32,7 @@ class ByteSelectorUnitTester extends BasicTester {
 }
 
 class BytesSelectorSpec extends ChiselPropSpec {
-  property("All bit-wise ops should return the correct result") {
+  property("elsewen clauses need to generate valid firrtl") {
     assert(execute { new ByteSelectorUnitTester})
   }
 }

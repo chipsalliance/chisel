@@ -54,8 +54,9 @@ class Router extends Module {
   )
 
   when(io.read_routing_table_request.fire()) {
-    val cmd = io.read_routing_table_request.deq()
-    io.read_routing_table_response.enq(tbl(cmd.addr))
+    io.read_routing_table_response.enq(tbl(
+      io.read_routing_table_request.deq().addr
+    ))
   }
 
   when(io.load_routing_table_request.fire()) {
