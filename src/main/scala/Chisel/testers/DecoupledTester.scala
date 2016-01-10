@@ -191,13 +191,13 @@ abstract class DecoupledTester extends BasicTester {
         port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0))})
       }.toMap
 
+      ports_referenced_for_this_controlling_port.foreach { port =>
+        println(s"  adding input connection for ${io_info.port_to_name(port)}")
+        port := port_vector_values(port)(counter_for_this_decoupled)
+      }
       when(!input_complete) {
         when(is_this_my_turn(input_event_counter)) {
           when(controlling_port.ready) {
-            ports_referenced_for_this_controlling_port.foreach { port =>
-              println(s"  adding input connection for ${io_info.port_to_name(port)}")
-              port := port_vector_values(port)(counter_for_this_decoupled)
-            }
             controlling_port.valid := Bool(true)
             counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
             input_event_counter := input_event_counter + UInt(1)

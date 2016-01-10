@@ -38,6 +38,10 @@ class Router extends Module {
   val io    = new RouterIO(n)
   val tbl   = Mem(depth, UInt(width = BigInt(n).bitLength))
 
+  tbl.indices.map { index =>
+    tbl(index) := UInt(0, width = 32)
+  }
+
   io.read_routing_table_request.init
   io.load_routing_table_request.init
   io.read_routing_table_response.init
@@ -102,7 +106,10 @@ class RouterUnitTester extends DecoupledTester {
   }
 
   def rt(header: Int, body: Int)  = {
-
+    for(i <- 0 until 4) {
+      input_event(List(c.io.in.bits.header -> i, c.io.in.bits.body -> 3*i))
+      output_event(List(c.io.outs(i).bits.body -> 3*i))
+    }
     //    for (out <- c.io.outs)
     //      poke(out.ready, 1)
     //    poke(c.io.read_routing_table_request.valid,    0)
