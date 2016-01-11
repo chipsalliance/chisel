@@ -50,6 +50,7 @@ class Router extends Module {
 
   val ti = Reg(init=UInt(0, width = 16))
   ti := ti + UInt(1)
+
   printf("                    tbl: %d : %d : %d : %d",
     tbl(0),
     tbl(1),
@@ -82,6 +83,11 @@ class RouterUnitTester extends DecoupledTester {
   val ti = Reg(init=UInt(0, width = 16))
   ti := ti + UInt(1)
   when(ti >= UInt(50)) { stop() }
+
+  for(out <- c.io.outs) {
+    out.ready := Bool(true)
+  }
+
 
   printf("ti %d, read %d %d,   write %d %d   in.ready %d %d",
         ti,
