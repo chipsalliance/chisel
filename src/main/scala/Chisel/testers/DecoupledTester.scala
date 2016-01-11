@@ -176,8 +176,8 @@ abstract class DecoupledTester extends BasicTester {
     val input_complete       = Reg(init = Bool(false))
     val output_complete      = Reg(init = Bool(false))
 
-    input_complete  := input_event_counter  >= UInt(input_event_list.size)
-    output_complete := output_event_counter >= UInt(output_event_list.size)
+    input_complete  := input_event_counter  >= UInt(input_event_list.size - 1)
+    output_complete := output_event_counter >= UInt(output_event_list.size - 1)
     when(input_complete && output_complete) {
       printf("All input and output events completed")
       stop()
@@ -212,12 +212,13 @@ abstract class DecoupledTester extends BasicTester {
       when(!input_complete) {
         when(is_this_my_turn(input_event_counter)) {
           when(controlling_port.ready) {
+            printf(s"  setting input ${io_info.port_to_name(controlling_port)}")
             controlling_port.valid := Bool(true)
             counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-            input_event_counter := input_event_counter + UInt(1)
-          }
-        }.otherwise {
-          when(is_this_my_turn(input_event_counter)) {
+            when(output_event_counter < UInt(input_event_list.size - 1)) {
+              input_event_counter := input_event_counter + UInt(1)
+            }
+          }.otherwise {
             printf(s"controller ${io_info.port_to_name(controlling_port)} says waiting for valid")
           }
         }
@@ -260,9 +261,9 @@ abstract class DecoupledTester extends BasicTester {
             }
             controlling_port.ready := Bool(true)
             counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-            output_event_counter := output_event_counter + UInt(1)
-          }.otherwise {
-            printf(s"== out event %d, port ${io_info.port_to_name(controlling_port)} is my turn", output_event_counter)
+            when(output_event_counter < UInt(output_event_list.size - 1)) {
+              output_event_counter := output_event_counter + UInt(1)
+            }
           }
         }
       }
@@ -298,10 +299,14 @@ abstract class DecoupledTester extends BasicTester {
             }
           }
           counter_for_this_valid      := counter_for_this_valid + UInt(1)
-          output_event_counter        := output_event_counter + UInt(1)
+          when(output_event_counter < UInt(output_event_list.size - 1)) {
+            output_event_counter := output_event_counter + UInt(1)
+          }
         }
       }
     }
+
+    printf(s"in_event_counter %d, out_event_counter %d", input_event_counter, output_event_counter)
     io_info.show_ports("".r)
   }
 }

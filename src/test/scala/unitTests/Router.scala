@@ -38,8 +38,10 @@ class Router extends Module {
   val io    = new RouterIO(n)
   val tbl   = Mem(depth, UInt(width = BigInt(n).bitLength))
 
-  tbl.indices.map { index =>
-    tbl(index) := UInt(0, width = 32)
+  when(reset) {
+    tbl.indices.map { index =>
+      tbl(index) := UInt(0, width = 32)
+    }
   }
 
   io.read_routing_table_request.init
@@ -58,7 +60,7 @@ class Router extends Module {
     tbl(3)
   )
 
-  when(io.read_routing_table_request.fire()) {
+  when(io.read_routing_table_request.valid && io.read_routing_table_response.ready) {
     io.read_routing_table_response.enq(tbl(
       io.read_routing_table_request.deq().addr
     ))
@@ -67,12 +69,14 @@ class Router extends Module {
   when(io.load_routing_table_request.fire()) {
     val cmd = io.load_routing_table_request.deq()
     tbl(cmd.addr) := cmd.data
+    printf("setting tbl(%d) to %d", cmd.addr, cmd.data)
   }
 
   when(io.in.fire()) {
     val pkt = io.in.deq()
-    val idx = tbl(pkt.header(0))
+    val idx = tbl(pkt.header(1, 0))
     io.outs(idx).enq(pkt)
+    printf("got packet to route header %d, data %d, being routed to out(%d) ", pkt.header, pkt.body, tbl(pkt.header))
   }
 }
 
@@ -83,11 +87,6 @@ class RouterUnitTester extends DecoupledTester {
   val ti = Reg(init=UInt(0, width = 16))
   ti := ti + UInt(1)
   when(ti >= UInt(50)) { stop() }
-
-  for(out <- c.io.outs) {
-    out.ready := Bool(true)
-  }
-
 
   printf("ti %d, read %d %d,   write %d %d   in.ready %d %d",
         ti,
@@ -114,29 +113,16 @@ class RouterUnitTester extends DecoupledTester {
   def rt(header: Int, body: Int)  = {
     for(i <- 0 until 4) {
       input_event(List(c.io.in.bits.header -> i, c.io.in.bits.body -> 3*i))
-      output_event(List(c.io.outs(i).bits.body -> 3*i))
+      output_event(List(c.io.outs((i + 1) % 4).bits.body -> 3*i))
     }
-    //    for (out <- c.io.outs)
-    //      poke(out.ready, 1)
-    //    poke(c.io.read_routing_table_request.valid,    0)
-    //    poke(c.io.load_routing_table_request.valid,   0)
-    //    poke(c.io.in.valid,       1)
-    //    poke(c.io.in.bits.header, header)
-    //    poke(c.io.in.bits.body,   body)
-
-    //    for (out <- c.io.outs) {
-    //      when(out.valid) {
-    //        printf("io.valid, io.pc %d\n", pc)
-    ////      stop(0)
-    //      } otherwise {
-    //        step(1)
-    //      }
-    //    }
-    //    expect(io.pc < UInt(10))
   }
+
   rd(0, 0)
   wr(0, 1)
-  rd(0, 1)
+  wr(1, 2)
+  wr(2, 3)
+  wr(3, 0)
+  rd(1, 2)
   rt(0, 1)
 
   finish(show_io_table = true)
