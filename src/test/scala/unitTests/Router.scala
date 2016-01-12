@@ -4,6 +4,8 @@ import Chisel._
 import Chisel.testers._
 import chiselTests.ChiselFlatSpec
 
+import scala.util.Random
+
 class ReadCmd extends Bundle {
   val addr = UInt(width = 32)
 }
@@ -117,13 +119,27 @@ class RouterUnitTester extends DecoupledTester {
     }
   }
 
-  rd(0, 0)
-  wr(0, 1)
-  wr(1, 2)
-  wr(2, 3)
-  wr(3, 0)
-  rd(1, 2)
-  rt(0, 1)
+//  rd(0, 0)
+//  wr(0, 1)
+//  wr(1, 2)
+//  wr(2, 3)
+//  wr(3, 0)
+//  rd(1, 2)
+//  rt(0, 1)
+
+  val new_routing_table = Array(3, 0, 2, 1)
+
+  for((destination, index) <- new_routing_table.zipWithIndex) {
+    wr(index, destination)
+  }
+
+  for(i <- 0 to 20) {
+//    val data = Random.nextInt(1000)
+    val data = i
+    println(s"rout_packet ${i % 4} ${data} should go to ${new_routing_table(i % 4)}")
+    input_event(List(c.io.in.bits.header -> i % 4, c.io.in.bits.body -> data))
+    output_event(List(c.io.outs(new_routing_table(i % 4)).bits.body -> data))
+  }
 
   finish(show_io_table = true)
 }
