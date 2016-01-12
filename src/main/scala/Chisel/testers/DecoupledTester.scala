@@ -7,26 +7,27 @@ import Chisel._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-//TODO: io not allowed directly on ready or valid, this must be enforced
 /**
- * Base class supports implementation of test circuits of modules
- * that use Decoupled inputs and either Decoupled or Valid outputs
- * Multiple decoupled inputs are supported.
- * Testers that subclass this will be strictly ordered.
- * Input will flow into their devices asynchronosly but in order they were generated
- * be compared in the order they are generated
- */
+  * Base class supports implementation of test circuits of modules
+  * that use Decoupled inputs and either Decoupled or Valid outputs
+  * Multiple decoupled inputs are supported.
+  * Testers that subclass this will be strictly ordered.
+  * Input will flow into their devices asynchronosly but in order they were generated
+  * be compared in the order they are generated
+  *
+  */
 
 abstract class DecoupledTester extends BasicTester {
   def device_under_test : Module
   var io_info           : IOAccessor = null
+  var verbose           = false
 
-  val input_event_list     = new ArrayBuffer[Seq[(Data, Int)]]()
-  val output_event_list    = new ArrayBuffer[Seq[(Data, Int)]]()
+  val input_event_list  = new ArrayBuffer[Seq[(Data, Int)]]()
+  val output_event_list = new ArrayBuffer[Seq[(Data, Int)]]()
 
-  val port_to_decoupled    = new mutable.HashMap[Data, DecoupledIO[Data]]
-  val port_to_valid        = new mutable.HashMap[Data, ValidIO[Data]]
-  def num_input_events           = input_event_list.length
+  val port_to_decoupled = new mutable.HashMap[Data, DecoupledIO[Data]]
+  val port_to_valid     = new mutable.HashMap[Data, ValidIO[Data]]
+  def num_input_events  = input_event_list.length
 
   case class InputStep[+T<:Data](pokes: Map[Data,Int], event_number: Int)
   case class OutputStep(expects: Map[Data,Int], event_number: Int)
@@ -54,9 +55,9 @@ abstract class DecoupledTester extends BasicTester {
    * makes a list of all decoupled parents based on the ports referenced in pokes
    */
   def check_and_get_common_decoupled_or_valid_parent_port(
-                                                 pokes:             Seq[(Data, Int)],
-                                                 must_be_decoupled: Boolean = true
-                                               ) : Either[DecoupledIO[Data],ValidIO[Data]] = {
+                                                           pokes:             Seq[(Data, Int)],
+                                                           must_be_decoupled: Boolean = true
+                                                         ) : Either[DecoupledIO[Data],ValidIO[Data]] = {
     val decoupled_parent_names = pokes.flatMap { case (port, value) =>
       Predef.assert(
         ! io_info.port_to_name(port).endsWith(".valid"),
@@ -114,10 +115,6 @@ abstract class DecoupledTester extends BasicTester {
     Right(io_info.name_to_valid_port(valid_parent_names.head))
   }
 
-  def non_decoupled_event(block: => Unit): Unit = {
-
-  }
-
   def input_event(pokes: Seq[(Data, Int)]): Unit = {
     input_event_list += pokes
   }
@@ -139,7 +136,7 @@ abstract class DecoupledTester extends BasicTester {
       io_info.referenced_inputs ++= pokes.map(_._1)
     }
     println(
-      s"Processing input events done, controlling ports " +
+      s"Processing input events done, referenced controlling ports " +
       control_port_to_input_steps.keys.map{p => io_info.port_to_name(p)}.mkString(",")
     )
   }
@@ -157,6 +154,23 @@ abstract class DecoupledTester extends BasicTester {
 
       }
     }
+    println(
+      s"Processing output events done, referenced controlling ports" +
+        (
+          if(decoupled_control_port_to_output_steps.nonEmpty)
+            decoupled_control_port_to_output_steps.keys.map {
+              p => io_info.port_to_name(p)
+            }.mkString(", decoupled : ", ",", "")
+          else ""
+        ) +
+        (
+          if(valid_control_port_to_output_steps.nonEmpty)
+            valid_control_port_to_output_steps.keys.map {
+              p => io_info.port_to_name(p)
+            }.mkString(", valid : ", ",", "")
+          else ""
+        )
+    )
   }
 
   /**
@@ -184,16 +198,14 @@ abstract class DecoupledTester extends BasicTester {
     }
 
     /**
-     * for each decoupled controller referenced, see if it is it's turn, if it is check
-     * for ready, and when ready load with the values associated with that event
-     */
-
+      * for each input event only one controller is active (determined by it's private is_my_turn vector)
+      * each controller has a private counter indicating which event specific to that controller
+      * is on deck.  those values are wired to the inputs of the decoupled input and the valid is asserted
+      */
     control_port_to_input_steps.foreach { case (controlling_port, steps) =>
-      println(s"Building input events for ${io_info.port_to_name(controlling_port)}")
       val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(steps.length)))
 
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
-      println(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
       val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
       steps.foreach { step =>
         step.pokes.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
@@ -205,8 +217,11 @@ abstract class DecoupledTester extends BasicTester {
         port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0))})
       }.toMap
 
+      println(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
+        s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port)}.mkString(",")}" )
+      println(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+
       ports_referenced_for_this_controlling_port.foreach { port =>
-        println(s"  adding input connection for ${io_info.port_to_name(port)}")
         port := port_vector_values(port)(counter_for_this_decoupled)
       }
       when(!input_complete) {
@@ -229,10 +244,8 @@ abstract class DecoupledTester extends BasicTester {
      * Test values on ports moderated with a decoupled interface
      */
     decoupled_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-      println(s"Building output events for ${io_info.port_to_name(controlling_port)}")
       val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
-      println(s"  associated event numbers ${associated_event_numbers.mkString(",")}")
       val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
       steps.foreach { step =>
         step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
@@ -240,10 +253,13 @@ abstract class DecoupledTester extends BasicTester {
       val is_this_my_turn = Vec(
         output_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
       )
-      println(s"  my turn table ${output_event_list.indices.map {event_number => associated_event_numbers.contains(event_number)}.mkString(",")}")
+      println(s"Output decoupled controller ${io_info.port_to_name(controlling_port)} : ports " +
+        s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port)}.mkString(",")}" )
+      println(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         val values_vector = steps.map { step => step.expects.getOrElse(port, 0)}
-        println(s"output vector generation for ${io_info.port_to_name(port)} : ${values_vector}")
+        println(s"  output vector generation for ${io_info.port_to_name(port)} : ${values_vector.mkString(",")}")
         port -> Vec(values_vector.map { value => UInt(value)})
       }.toMap
 
@@ -300,7 +316,7 @@ abstract class DecoupledTester extends BasicTester {
               assert(Bool(false))
             }
           }
-          counter_for_this_valid      := counter_for_this_valid + UInt(1)
+          counter_for_this_valid := counter_for_this_valid + UInt(1)
           when(output_event_counter < UInt(output_event_list.size - 1)) {
             output_event_counter := output_event_counter + UInt(1)
           }

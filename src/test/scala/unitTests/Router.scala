@@ -41,7 +41,7 @@ class Router extends Module {
   val tbl   = Mem(depth, UInt(width = BigInt(n).bitLength))
 
   when(reset) {
-    tbl.indices.map { index =>
+    tbl.indices.foreach { index =>
       tbl(index) := UInt(0, width = 32)
     }
   }
@@ -100,52 +100,60 @@ class RouterUnitTester extends DecoupledTester {
         c.io.in.valid
   )
 
-  def rd(addr: Int, data: Int) = {
+  def read_routing_table(addr: Int, data: Int) = {
     input_event(List(c.io.read_routing_table_request.bits.addr -> addr))
     output_event(List(c.io.read_routing_table_response.bits -> data))
   }
 
-  def wr(addr: Int, data: Int)  = {
+  def write_routing_table(addr: Int, data: Int)  = {
     input_event(List(
       c.io.load_routing_table_request.bits.addr -> addr,
       c.io.load_routing_table_request.bits.data -> data
     ))
   }
 
-  def rt(header: Int, body: Int)  = {
-    for(i <- 0 until 4) {
-      input_event(List(c.io.in.bits.header -> i, c.io.in.bits.body -> 3*i))
-      output_event(List(c.io.outs((i + 1) % 4).bits.body -> 3*i))
-    }
+  def write_routing_table_with_confirm(addr: Int, data: Int): Unit = {
+    write_routing_table(addr, data)
+    read_routing_table(addr, data)
   }
 
-//  rd(0, 0)
-//  wr(0, 1)
-//  wr(1, 2)
-//  wr(2, 3)
-//  wr(3, 0)
-//  rd(1, 2)
-//  rt(0, 1)
+  def route_packet(header: Int, body: Int, routed_to: Int)  = {
+
+    input_event(List(c.io.in.bits.header -> header, c.io.in.bits.body -> body))
+    output_event(List(c.io.outs(routed_to).bits.body -> body))
+    println(s"rout_packet $header $body should go to out($routed_to)")
+  }
+
+  read_routing_table(0, 0)                // confirm we initialized the routing table
+  write_routing_table_with_confirm(0, 1)  // load a routing table, confirm each write as built
+  write_routing_table_with_confirm(1, 2)
+  write_routing_table_with_confirm(2, 3)
+  write_routing_table_with_confirm(3, 0)
+  read_routing_table(1, 2)
+
+  // send some regular packets
+  for(i <- 0 until 4) {
+    route_packet(i, i*3, (i+1) % 4)
+  }
 
   val new_routing_table = Array(3, 0, 2, 1)
 
+  // load a new routing table
   for((destination, index) <- new_routing_table.zipWithIndex) {
-    wr(index, destination)
+    write_routing_table(index, destination)
   }
 
+  // send a bunch of packets, with random values
   for(i <- 0 to 20) {
-//    val data = Random.nextInt(1000)
-    val data = i
-    println(s"rout_packet ${i % 4} ${data} should go to ${new_routing_table(i % 4)}")
-    input_event(List(c.io.in.bits.header -> i % 4, c.io.in.bits.body -> data))
-    output_event(List(c.io.outs(new_routing_table(i % 4)).bits.body -> data))
+    val data = Random.nextInt(1000)
+    route_packet(i % 4, data, new_routing_table(i % 4))
   }
 
   finish(show_io_table = true)
 }
 
 class RouterUnitTesterSpec extends ChiselFlatSpec {
-  "a" should "b" in {
+  "a router" should "can have it's rout table loaded and changed and route a bunch of packets" in {
     assert( execute { new RouterUnitTester } )
   }
 }
