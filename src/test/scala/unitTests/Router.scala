@@ -85,6 +85,7 @@ class Router extends Module {
 class RouterUnitTester extends DecoupledTester {
   val device_under_test = Module(new Router)
   val c = device_under_test
+  verbose = true
 
   val ti = Reg(init=UInt(0, width = 16))
   ti := ti + UInt(1)
@@ -121,7 +122,7 @@ class RouterUnitTester extends DecoupledTester {
 
     input_event(List(c.io.in.bits.header -> header, c.io.in.bits.body -> body))
     output_event(List(c.io.outs(routed_to).bits.body -> body))
-    println(s"rout_packet $header $body should go to out($routed_to)")
+    log_scala(s"rout_packet $header $body should go to out($routed_to)")
   }
 
   read_routing_table(0, 0)                // confirm we initialized the routing table

@@ -20,7 +20,11 @@ import scala.collection.mutable.ArrayBuffer
 abstract class DecoupledTester extends BasicTester {
   def device_under_test : Module
   var io_info           : IOAccessor = null
+
   var verbose           = false
+  def log_scala(msg: => String): Unit = {
+    if(verbose) println(msg)
+  }
 
   val input_event_list  = new ArrayBuffer[Seq[(Data, Int)]]()
   val output_event_list = new ArrayBuffer[Seq[(Data, Int)]]()
@@ -135,7 +139,7 @@ abstract class DecoupledTester extends BasicTester {
       control_port_to_input_steps(parent_port) += new InputStep(pokes.toMap, event_number)
       io_info.referenced_inputs ++= pokes.map(_._1)
     }
-    println(
+    log_scala(
       s"Processing input events done, referenced controlling ports " +
       control_port_to_input_steps.keys.map{p => io_info.port_to_name(p)}.mkString(",")
     )
@@ -154,7 +158,7 @@ abstract class DecoupledTester extends BasicTester {
 
       }
     }
-    println(
+    log_scala(
       s"Processing output events done, referenced controlling ports" +
         (
           if(decoupled_control_port_to_output_steps.nonEmpty)
@@ -217,9 +221,9 @@ abstract class DecoupledTester extends BasicTester {
         port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0))})
       }.toMap
 
-      println(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
+      log_scala(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port)}.mkString(",")}" )
-      println(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+      log_scala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
       ports_referenced_for_this_controlling_port.foreach { port =>
         port := port_vector_values(port)(counter_for_this_decoupled)
@@ -253,13 +257,13 @@ abstract class DecoupledTester extends BasicTester {
       val is_this_my_turn = Vec(
         output_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
       )
-      println(s"Output decoupled controller ${io_info.port_to_name(controlling_port)} : ports " +
+      log_scala(s"Output decoupled controller ${io_info.port_to_name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port)}.mkString(",")}" )
-      println(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+      log_scala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         val values_vector = steps.map { step => step.expects.getOrElse(port, 0)}
-        println(s"  output vector generation for ${io_info.port_to_name(port)} : ${values_vector.mkString(",")}")
+        log_scala(s"  output vector generation for ${io_info.port_to_name(port)} : ${values_vector.mkString(",")}")
         port -> Vec(values_vector.map { value => UInt(value)})
       }.toMap
 
