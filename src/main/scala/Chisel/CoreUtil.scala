@@ -43,13 +43,13 @@ object assert {
   /** An elaboration-time assertion, otherwise the same as the above run-time
     * assertion. */
   def apply(cond: Boolean, message: String) {
-    apply(Bool(cond), message)
+    Predef.assert(cond, message)
   }
 
   /** A workaround for default-value overloading problems in Scala, just
     * 'assert(cond, "")' */
   def apply(cond: Boolean) {
-    apply(cond, "")
+    Predef.assert(cond, "")
   }
 }
 
