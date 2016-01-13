@@ -137,7 +137,7 @@ class RouterUnitTester extends DecoupledTester {
     route_packet(i, i*3, (i+1) % 4)
   }
 
-  val new_routing_table = Array(3, 0, 2, 1)
+  val new_routing_table = scala.util.Random.shuffle((0 until c.n).toList)
 
   // load a new routing table
   for((destination, index) <- new_routing_table.zipWithIndex) {
