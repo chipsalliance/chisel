@@ -38,7 +38,6 @@ public defmethod pass (b:CheckHighForm) -> (Circuit -> Circuit) : check-high-for
 public defmethod name (b:CheckHighForm) -> String : "High Form Check"
 public defmethod short-name (b:CheckHighForm) -> String : "high-form-check"
 
-var mname = ""
 var sinfo! = FileInfo()
 
 ;----------------- Errors ------------------------

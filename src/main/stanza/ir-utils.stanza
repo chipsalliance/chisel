@@ -131,11 +131,16 @@ public defn children (e:Expression) -> List<Expression> :
    map(f,e)
    to-list(es)
    
+public var mname : Symbol = `blah
 public defn exp-hash (e:Expression) -> Int :
    turn-off-debug(false)
-   val i = symbol-hash(to-symbol(to-string(e)))
+   val i = symbol-hash(to-symbol(string-join(map(to-string,list(mname `.... e)))))
+   ;val i = symbol-hash(to-symbol(to-string(e)))
    turn-on-debug(false)
    i
+
+public defn type-hash (t:Type) -> Int :
+   symbol-hash(to-symbol(to-string(t)))
 
 ;============= Useful functions ==============
 public defn create-mask (n:Symbol,dt:Type) -> Field :

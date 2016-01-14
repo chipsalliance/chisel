@@ -847,6 +847,7 @@ public defmethod name (b:ExpandConnects) -> String : "Expand Connects"
 public defmethod short-name (b:ExpandConnects) -> String : "expand-connects"
 
 ;---------------- UTILS ------------------
+
 defn get-size (e:Expression) -> Int : get-size(type(e))
 defn get-size (t:Type) -> Int :
    match(t) :
@@ -935,6 +936,7 @@ defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]>
          to-list(points)
 
 
+val hashed-create-exps = HashTable<Expression,List<Expression>>(exp-hash)
 defn create-exps (n:Symbol, t:Type) -> List<Expression> :
    create-exps(WRef(n,t,ExpKind(),UNKNOWN-GENDER))
 defn create-exps (e:Expression) -> List<Expression> :
@@ -950,31 +952,38 @@ defn create-exps (e:Expression) -> List<Expression> :
 defn fast-create-exps (n:Symbol, t:Type) -> List<Expression> :
    fast-create-exps(WRef(n,t,ExpKind(),UNKNOWN-GENDER))
 defn fast-create-exps (e:Expression) -> List<Expression> :
-   val es = Vector<Expression>()
-   defn create-exps (e:Expression) -> False :
-      match(type(e)) : 
-         (t:UIntType|SIntType|ClockType) : add(es,e)
-         (t:BundleType) : 
-            for f in fields(t) do :
-               create-exps(WSubField(e,name(f),type(f),gender(e) * flip(f)))
-         (t:VectorType) :
-            for i in 0 to size(t) do :
-               create-exps(WSubIndex(e,i,type(t),gender(e)))
-   create-exps(e)
-   to-list(es)
+   if key?(hashed-create-exps,e) : hashed-create-exps[e]
+   else :
+      val es = Vector<Expression>()
+      defn create-exps (e:Expression) -> False :
+         match(type(e)) : 
+            (t:UIntType|SIntType|ClockType) : add(es,e)
+            (t:BundleType) : 
+               for f in fields(t) do :
+                  create-exps(WSubField(e,name(f),type(f),gender(e) * flip(f)))
+            (t:VectorType) :
+               for i in 0 to size(t) do :
+                  create-exps(WSubIndex(e,i,type(t),gender(e)))
+      create-exps(e)
+      val x = to-list(es)
+      hashed-create-exps[e] = x
+      x
 
 ;---------------- Pass ---------------------
 
 defn expand-connects (c:Circuit) -> Circuit :
    defn expand-connects (m:InModule) -> InModule :
+      mname = name(m)
       defn expand-s (s:Stmt) -> Stmt :
          match(s) :
             (s:Connect) :
                val n = get-size(loc(s))
                val connects = Vector<Stmt>()
+               val locs = fast-create-exps(loc(s))
+               val exps = fast-create-exps(exp(s))
                for i in 0 to n do :
-                  val loc* = fast-create-exps(loc(s))[i]
-                  val exp* = fast-create-exps(exp(s))[i]
+                  val loc* = locs[i]
+                  val exp* = exps[i]
                   add{connects,_} $
                      switch { _ == get-flip(type(loc(s)),i,DEFAULT) } :
                         DEFAULT : Connect(info(s),loc*,exp*)
@@ -983,9 +992,11 @@ defn expand-connects (c:Circuit) -> Circuit :
             (s:BulkConnect) :
                val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
                val connects = Vector<Stmt>()
+               val locs = fast-create-exps(loc(s))
+               val exps = fast-create-exps(exp(s))
                for x in ls do :
-                  val loc* = fast-create-exps(loc(s))[x[0]]
-                  val exp* = fast-create-exps(exp(s))[x[1]]
+                  val loc* = locs[x[0]]
+                  val exp* = exps[x[1]]
                   add{connects,_} $
                      switch { _ == get-flip(type(loc(s)),x[0],DEFAULT) } :
                         DEFAULT : Connect(info(s),loc*,exp*)
@@ -1018,39 +1029,44 @@ defstruct Location :
 defmethod print (o:OutputStream,x:Location) :
    print-all(o,["[" base(x) " , " guard(x) "]"])
 
+
+val hashed-locations = HashTable<Expression,List<Location>>(exp-hash)
 defn get-locations (e:Expression) -> List<Location> :
-   val x = match(e) :
-      (e:WRef) : map(Location{_,one},fast-create-exps(e))
-      (e:WSubIndex|WSubField) :
-         val ls = get-locations(exp(e))
-         val start = get-point(e)
-         val end = start + get-size(e)
-         val stride = get-size(exp(e))
-         val ls* = Vector<Location>()
-         var c = 0
-         for i in 0 to length(ls) do :
-            if (i % stride >= start and i % stride < end) :
-               add(ls*,ls[i])
-         to-list(ls*)
-      (e:WSubAccess) : 
-         val ls = get-locations(exp(e))
-         val stride = get-size(e)
-         val wrap = size(type(exp(e)) as VectorType)
-         val ls* = Vector<Location>()
-         var c = 0
-         for i in 0 to length(ls) do :
-            if c % wrap == 0 : c = 0
-            val base* = base(ls[i])
-            val guard* = AND(guard(ls[i]),EQV(uint(c),index(e)))
-            add(ls*,Location(base*,guard*))
-            if (i + 1) % stride == 0 : c = c + 1
-         to-list(ls*)
-   ;println-all(["Looking at " e ":" x])
-   x
+   if key?(hashed-locations,e) : hashed-locations[e]
+   else :
+      val x = match(e) :
+         (e:WRef) : map(Location{_,one},fast-create-exps(e))
+         (e:WSubIndex|WSubField) :
+            val ls = get-locations(exp(e))
+            val start = get-point(e)
+            val end = start + get-size(e)
+            val stride = get-size(exp(e))
+            val ls* = Vector<Location>()
+            var c = 0
+            for i in 0 to length(ls) do :
+               if (i % stride >= start and i % stride < end) :
+                  add(ls*,ls[i])
+            to-list(ls*)
+         (e:WSubAccess) : 
+            val ls = get-locations(exp(e))
+            val stride = get-size(e)
+            val wrap = size(type(exp(e)) as VectorType)
+            val ls* = Vector<Location>()
+            var c = 0
+            for i in 0 to length(ls) do :
+               if c % wrap == 0 : c = 0
+               val base* = base(ls[i])
+               val guard* = AND(guard(ls[i]),EQV(uint(c),index(e)))
+               add(ls*,Location(base*,guard*))
+               if (i + 1) % stride == 0 : c = c + 1
+            to-list(ls*)
+      hashed-locations[e] = x
+      x
 
 defn remove-access (c:Circuit) :
    defn remove-m (m:InModule) -> InModule :
       val sh = get-sym-hash(m,keys(v-keywords))
+      mname = name(m)
       defn remove-s (s:Stmt) -> Stmt :
          val stmts = Vector<Stmt>()
          defn create-temp (e:Expression) -> Expression :
@@ -1137,6 +1153,7 @@ defn print-hash (h:HashTable<Expression,Expression>) :
 ; ------------ Pass -------------------
 defn expand-whens (c:Circuit) -> Circuit :
    defn void-all (m:InModule) -> InModule :
+      mname = name(m)
       defn void-all-s (s:Stmt) -> Stmt :
          match(s) : 
             (s:DefWire|DefRegister|WDefInstance|DefMemory) : 
@@ -1154,6 +1171,7 @@ defn expand-whens (c:Circuit) -> Circuit :
 
    defn expand-whens (m:InModule) -> [HashTable<Expression,Expression> Vector<Stmt>] :
       val simlist = Vector<Stmt>()
+      mname = name(m)
       defn expand-whens (s:Stmt,netlist:HashTable<Expression,Expression>,p:Expression) -> Stmt :
          match(s) : 
             (s:Connect) : netlist[loc(s)] = exp(s)
@@ -1194,6 +1212,7 @@ defn expand-whens (c:Circuit) -> Circuit :
       [ netlist simlist ]
 
    defn create-module (netlist:HashTable<Expression,Expression>,simlist:Vector<Stmt>,m:InModule) -> InModule :
+      mname = name(m)
       val stmts = Vector<Stmt>()
       val connections = Vector<Stmt>()
       defn replace-void (e:Expression,rvalue:Expression) -> Expression :
@@ -1510,7 +1529,9 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
 
       match(m) :
          (m:ExModule) : ExModule(info(m),name(m),ports*)
-         (m:InModule) : InModule(info(m),name(m),ports*,mapr(reduce-var-widths-w,body(m)))
+         (m:InModule) : 
+            mname = name(m)
+            InModule(info(m),name(m),ports*,mapr(reduce-var-widths-w,body(m)))
 
    Circuit(info(c),modules*,main(c))
 
@@ -1578,7 +1599,9 @@ defn infer-widths (c:Circuit) -> Circuit :
    
    for m in modules(c) do :
       match(m) :
-         (m:InModule) : get-constraints(body(m))
+         (m:InModule) : 
+            mname = name(m)
+            get-constraints(body(m))
          (m) : false
    println-debug("======== ALL CONSTRAINTS ========")
    for x in v do : println-debug(x)
@@ -1670,6 +1693,7 @@ public defmethod name (b:SplitExp) -> String : "Split Expressions"
 public defmethod short-name (b:SplitExp) -> String : "split-expressions"
 
 defn split-exp (m:InModule) -> InModule :
+   mname = name(m)
    val v = Vector<Stmt>()
    val sh = get-sym-hash(m,keys(v-keywords))
    defn split-exp-s (s:Stmt) -> Stmt :
@@ -1953,7 +1977,9 @@ public defn const-prop (c:Circuit) -> Circuit :
       for m in modules(c) map :
          match(m) :
             (m:ExModule) : m
-            (m:InModule) : InModule(info(m),name(m),ports(m),const-prop-s(body(m)))
+            (m:InModule) : 
+               mname = name(m)
+               InModule(info(m),name(m),ports(m),const-prop-s(body(m)))
 
 ;============= Condense Mems ================
 ;
@@ -2125,6 +2151,7 @@ defn root-ref (e:Expression) -> WRef :
 
 defn lower-types (m:Module) -> Module :
    val mdt = HashTable<Symbol,Type>(symbol-hash)
+   mname = name(m)
    defn lower-types (s:Stmt) -> Stmt :
       defn lower-mem (e:Expression) -> List<Expression> :
          val names = expand-name(e)
@@ -2378,6 +2405,7 @@ defn op-stream (doprim:DoPrim) -> Streamable :
          join(v," ^ ")
 
 defn emit-verilog (m:InModule) -> Module :
+   mname = name(m)
    val netlist = HashTable<Expression,Expression>(exp-hash)
    val simlist = Vector<Stmt>()
    val namehash = get-sym-hash(m,keys(v-keywords))
