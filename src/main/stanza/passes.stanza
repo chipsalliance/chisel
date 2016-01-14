@@ -892,7 +892,7 @@ defn get-point (e:Expression) -> Int :
       (e:WSubAccess) :
          get-point(exp(e))
 defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]> :
-   println-all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
+   ;println-all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
    match(t1,t2) :
       (t1:UIntType,t2:UIntType) : 
          if flip1 == flip2 : list([0, 0])
@@ -906,10 +906,10 @@ defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]>
          var jlen = 0
          for i in 0 to length(fields(t1)) do :
             for j in 0 to length(fields(t2)) do :
-               println(i)
-               println(j)
-               println(ilen)
-               println(jlen)
+               ;println(i)
+               ;println(j)
+               ;println(ilen)
+               ;println(jlen)
                val f1 = fields(t1)[i]
                val f2 = fields(t2)[j]
                if name(f1) == name(f2) :
@@ -933,6 +933,8 @@ defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]>
             ilen = ilen + get-size(type(t1))
             jlen = jlen + get-size(type(t2))
          to-list(points)
+
+
 defn create-exps (n:Symbol, t:Type) -> List<Expression> :
    create-exps(WRef(n,t,ExpKind(),UNKNOWN-GENDER))
 defn create-exps (e:Expression) -> List<Expression> :
@@ -945,6 +947,22 @@ defn create-exps (e:Expression) -> List<Expression> :
          for i in 0 to size(t) map-append :
             create-exps(WSubIndex(e,i,type(t),gender(e)))
 
+defn fast-create-exps (n:Symbol, t:Type) -> List<Expression> :
+   fast-create-exps(WRef(n,t,ExpKind(),UNKNOWN-GENDER))
+defn fast-create-exps (e:Expression) -> List<Expression> :
+   val es = Vector<Expression>()
+   defn create-exps (e:Expression) -> False :
+      match(type(e)) : 
+         (t:UIntType|SIntType|ClockType) : add(es,e)
+         (t:BundleType) : 
+            for f in fields(t) do :
+               create-exps(WSubField(e,name(f),type(f),gender(e) * flip(f)))
+         (t:VectorType) :
+            for i in 0 to size(t) do :
+               create-exps(WSubIndex(e,i,type(t),gender(e)))
+   create-exps(e)
+   to-list(es)
+
 ;---------------- Pass ---------------------
 
 defn expand-connects (c:Circuit) -> Circuit :
@@ -955,8 +973,8 @@ defn expand-connects (c:Circuit) -> Circuit :
                val n = get-size(loc(s))
                val connects = Vector<Stmt>()
                for i in 0 to n do :
-                  val loc* = create-exps(loc(s))[i]
-                  val exp* = create-exps(exp(s))[i]
+                  val loc* = fast-create-exps(loc(s))[i]
+                  val exp* = fast-create-exps(exp(s))[i]
                   add{connects,_} $
                      switch { _ == get-flip(type(loc(s)),i,DEFAULT) } :
                         DEFAULT : Connect(info(s),loc*,exp*)
@@ -966,8 +984,8 @@ defn expand-connects (c:Circuit) -> Circuit :
                val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
                val connects = Vector<Stmt>()
                for x in ls do :
-                  val loc* = create-exps(loc(s))[x[0]]
-                  val exp* = create-exps(exp(s))[x[1]]
+                  val loc* = fast-create-exps(loc(s))[x[0]]
+                  val exp* = fast-create-exps(exp(s))[x[1]]
                   add{connects,_} $
                      switch { _ == get-flip(type(loc(s)),x[0],DEFAULT) } :
                         DEFAULT : Connect(info(s),loc*,exp*)
@@ -1002,7 +1020,7 @@ defmethod print (o:OutputStream,x:Location) :
 
 defn get-locations (e:Expression) -> List<Location> :
    val x = match(e) :
-      (e:WRef) : map(Location{_,one},create-exps(e))
+      (e:WRef) : map(Location{_,one},fast-create-exps(e))
       (e:WSubIndex|WSubField) :
          val ls = get-locations(exp(e))
          val start = get-point(e)
@@ -1101,7 +1119,7 @@ defn get-entries (hash:HashTable<Expression,Expression>,exps:Streamable<Expressi
          (value:False) : false
    hash*
 defn get-female-refs (n:Symbol,t:Type,g:Gender) -> List<Expression> :
-   val exps = create-exps(WRef(n,t,ExpKind(),g))
+   val exps = fast-create-exps(WRef(n,t,ExpKind(),g))
    val exps* = Vector<Expression>()
    for i in 0 to length(exps) do :
       switch { _ == get-gender(t,i,g)} :
@@ -1526,8 +1544,8 @@ defn infer-widths (c:Circuit) -> Circuit :
             ;constrain(width!(loc(s)),width!(exp(s)))
             ;s
             val n = get-size(loc(s))
-            val ce-loc = create-exps(loc(s))
-            val ce-exp = create-exps(exp(s))
+            val ce-loc = fast-create-exps(loc(s))
+            val ce-exp = fast-create-exps(exp(s))
             for i in 0 to n do :
                val loc* = ce-loc[i]
                val exp* = ce-exp[i]
@@ -1539,10 +1557,10 @@ defn infer-widths (c:Circuit) -> Circuit :
             val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
             for x in ls do :
                println(x)
-               println(create-exps(loc(s)))
-               println(create-exps(exp(s)))
-               val loc* = create-exps(loc(s))[x[0]]
-               val exp* = create-exps(exp(s))[x[1]]
+               println(fast-create-exps(loc(s)))
+               println(fast-create-exps(exp(s)))
+               val loc* = fast-create-exps(loc(s))[x[0]]
+               val exp* = fast-create-exps(exp(s))[x[1]]
                switch { _ == get-flip(type(loc(s)),x[0],DEFAULT) } :
                   DEFAULT : constrain(width!(loc*),width!(exp*))
                   REVERSE : constrain(width!(exp*),width!(loc*))
@@ -2072,7 +2090,7 @@ defn expand-name (e:Expression) -> List<Symbol> :
 defn lower-other-mem (e:Expression, dt:Type) -> List<Expression> :
    val names = expand-name(e)
    if length(names) < 3 : error("Shouldn't be here")
-   for x in create-exps(names[0],dt) map :
+   for x in fast-create-exps(names[0],dt) map :
       var base = lowered-name(x)
       for (x in names,i in 0 to false) do :
          if i >= 3 : base = symbol-join([base `_ x])
@@ -2136,7 +2154,7 @@ defn lower-types (m:Module) -> Module :
          (s:DefWire|DefPoison) :
             if is-ground?(type(s)) : s
             else :
-               val es = create-exps(name(s),type(s))
+               val es = fast-create-exps(name(s),type(s))
                Begin $ for (e in es, i in 0 to false) map :
                   defn replace-type (t:Type) -> Type : type(e)
                   defn replace-name (n:Symbol) -> Symbol : lowered-name(e)
@@ -2144,13 +2162,13 @@ defn lower-types (m:Module) -> Module :
          (s:DefRegister) :
             if is-ground?(type(s)) : s
             else :
-               val es = create-exps(name(s),type(s))
+               val es = fast-create-exps(name(s),type(s))
                Begin $ for (e in es, i in 0 to false) map :
-                  val init = lower-types-e(create-exps(init(s))[i])
+                  val init = lower-types-e(fast-create-exps(init(s))[i])
                   DefRegister(info(s),lowered-name(e),type(e),clock(s),reset(s),init)
          (s:WDefInstance) :
             val fields* = for f in fields(type(s) as BundleType) map-append :
-               val es = create-exps(WRef(name(f),type(f),ExpKind(),flip(f) * MALE))
+               val es = fast-create-exps(WRef(name(f),type(f),ExpKind(),flip(f) * MALE))
                for e in es map :
                   switch { _ == gender(e) } :
                      MALE : Field(lowered-name(e),DEFAULT,type(f))
@@ -2160,7 +2178,7 @@ defn lower-types (m:Module) -> Module :
             mdt[name(s)] = data-type(s)
             if is-ground?(data-type(s)) : s
             else :
-               val es = create-exps(name(s),data-type(s))
+               val es = fast-create-exps(name(s),data-type(s))
                Begin $ for e in es map :
                   DefMemory(info(s),lowered-name(e),type(e),depth(s),write-latency(s),read-latency(s),readers(s),writers(s),readwriters(s))
          (s:Connect) :
@@ -2173,7 +2191,7 @@ defn lower-types (m:Module) -> Module :
 
    val ports* = 
       for p in ports(m) map-append :
-         val es = create-exps(WRef(name(p),type(p),PortKind(),to-gender(direction(p))))
+         val es = fast-create-exps(WRef(name(p),type(p),PortKind(),to-gender(direction(p))))
          for e in es map :
             Port(info(p),lowered-name(e),to-dir(gender(e)),type(e))
    match(m) :
@@ -2476,7 +2494,7 @@ defn emit-verilog (m:InModule) -> Module :
          (s:Stop) : simulate(clk(s),en(s),stop(ret(s)))
          (s:Print) : simulate(clk(s),en(s),printf(string(s),args(s)))
          (s:WDefInstance) :
-            val es = create-exps(WRef(name(s),type(s),InstanceKind(),MALE))
+            val es = fast-create-exps(WRef(name(s),type(s),InstanceKind(),MALE))
             instantiate(name(s),module(s),es)
          (s:DefMemory) : 
             val mem = WRef(name(s),get-type(s),MemKind(append-all([readers(s) writers(s) readwriters(s)])),UNKNOWN-GENDER)
