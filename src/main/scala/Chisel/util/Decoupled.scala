@@ -26,14 +26,14 @@ object Decoupled {
 class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
   /**
-    * @param dat
+    * @param dat data to be loaded when device is ready
     */
   def enq(dat: T): T = {
     valid := Bool(true)
     bits  := dat
     dat
   }
-  def init = {
+  def init(): Unit = {
     valid := Bool(false)
     for (io <- bits.flatten)
       io := UInt(0)
@@ -45,7 +45,7 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, do_flip = true)
 {
 //  flip(), in chisel2 this worked in place, causes infinte recursion in chisel3
-  def init {
+  def init(): Unit = {
     ready := Bool(true)
   }
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
@@ -66,7 +66,7 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType).flip
+  val enq   = Decoupled(gen.cloneType).flip()
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq   = Decoupled(gen.cloneType)
   /** The current amount of data in the queue */
