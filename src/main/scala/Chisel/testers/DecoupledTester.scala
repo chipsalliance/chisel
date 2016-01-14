@@ -12,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
   * that use Decoupled inputs and either Decoupled or Valid outputs
   * Multiple decoupled inputs are supported.
   * Testers that subclass this will be strictly ordered.
-  * Input will flow into their devices asynchronosly but in order they were generated
+  * Input will flow into their devices asynchronously but in order they were generated
   * be compared in the order they are generated
   *
   */
@@ -23,6 +23,7 @@ abstract class DecoupledTester extends BasicTester {
 
   var verbose           = false
   def log_scala(msg: => String): Unit = {
+    //noinspection ScalaStyle
     if(verbose) println(msg)
   }
 
@@ -31,7 +32,6 @@ abstract class DecoupledTester extends BasicTester {
 
   val port_to_decoupled = new mutable.HashMap[Data, DecoupledIO[Data]]
   val port_to_valid     = new mutable.HashMap[Data, ValidIO[Data]]
-  def num_input_events  = input_event_list.length
 
   case class InputStep[+T<:Data](pokes: Map[Data,Int], event_number: Int)
   case class OutputStep(expects: Map[Data,Int], event_number: Int)
@@ -60,7 +60,8 @@ abstract class DecoupledTester extends BasicTester {
    */
   def check_and_get_common_decoupled_or_valid_parent_port(
                                                            pokes:             Seq[(Data, Int)],
-                                                           must_be_decoupled: Boolean = true
+                                                           must_be_decoupled: Boolean = true,
+                                                           event_number:      Int
                                                          ) : Either[DecoupledIO[Data],ValidIO[Data]] = {
     val decoupled_parent_names = pokes.flatMap { case (port, value) =>
       Predef.assert(
@@ -75,11 +76,13 @@ abstract class DecoupledTester extends BasicTester {
       io_info.find_parent_decoupled_port_name(io_info.port_to_name(port)) match {
         case None =>
           if (must_be_decoupled) {
-            throw new Exception(s"Error: event $num_input_events port ${io_info.port_to_name(port)} not member of DecoupledIO")
+            throw new Exception(
+              s"Error: event $event_number port ${io_info.port_to_name(port)} not member of DecoupledIO"
+            )
             None
           }
           else {
-            return get_common_valid_parent_port(pokes)
+            return get_common_valid_parent_port(pokes, event_number)
           }
         case Some(parent) =>
           val decoupled_port = io_info.name_to_decoupled_port(parent)
@@ -89,7 +92,8 @@ abstract class DecoupledTester extends BasicTester {
     }
     if( decoupled_parent_names.toSet.size != 1 ) {
       throw new Exception(
-        s"Error: event $num_input_events multiple DecoupledIO's referenced ${decoupled_parent_names.toSet.mkString(",")}"
+        s"Error: event $event_number multiple DecoupledIO's referenced " +
+          decoupled_parent_names.toSet.mkString(",")
       )
     }
 
@@ -99,11 +103,15 @@ abstract class DecoupledTester extends BasicTester {
    * Validate that all pokes ports are members of the same DecoupledIO or ValidIO
    * makes a list of all decoupled parents based on the ports referenced in pokes
    */
-  def get_common_valid_parent_port(expects: Seq[(Data, Int)]) : Either[DecoupledIO[Data],ValidIO[Data]] = {
+  def get_common_valid_parent_port(
+                                    expects: Seq[(Data, Int)],
+                                    event_number: Int
+                                  ) : Either[DecoupledIO[Data],ValidIO[Data]] = {
     val valid_parent_names = expects.flatMap { case (port, value) =>
       io_info.find_parent_valid_port_name(io_info.port_to_name(port)) match {
         case None =>
-          throw new Exception(s"Error: event $num_input_events port ${io_info.port_to_name(port)} not member of ValidIO")
+          throw new Exception(s"Error: event $event_number " +
+            s"port ${io_info.port_to_name(port)} not member of ValidIO")
           None
         case Some(parent) =>
           val valid_port = io_info.name_to_valid_port(parent)
@@ -113,7 +121,7 @@ abstract class DecoupledTester extends BasicTester {
     }
     if( valid_parent_names.toSet.size != 1 ) {
       throw new Exception(
-        s"Error: event $num_input_events multiple ValidIO's referenced ${valid_parent_names.toSet.mkString(",")}"
+        s"Error: event $event_number multiple ValidIO's referenced ${valid_parent_names.toSet.mkString(",")}"
       )
     }
     Right(io_info.name_to_valid_port(valid_parent_names.head))
@@ -133,7 +141,7 @@ abstract class DecoupledTester extends BasicTester {
   def process_input_events(): Unit = {
     input_event_list.zipWithIndex.foreach { case (pokes, event_number) =>
       val Left(parent_port) = check_and_get_common_decoupled_or_valid_parent_port(
-        pokes, must_be_decoupled=true
+        pokes, must_be_decoupled=true, event_number
       )
 
       control_port_to_input_steps(parent_port) += new InputStep(pokes.toMap, event_number)
@@ -147,7 +155,11 @@ abstract class DecoupledTester extends BasicTester {
 
   def process_output_events(): Unit = {
     output_event_list.zipWithIndex.foreach { case (expects, event_number) =>
-      check_and_get_common_decoupled_or_valid_parent_port(expects, must_be_decoupled = false) match {
+      check_and_get_common_decoupled_or_valid_parent_port(
+        expects,
+        must_be_decoupled = false,
+        event_number = event_number
+      ) match {
         case Left(parent_port) =>
           decoupled_control_port_to_output_steps(parent_port) += new OutputStep(expects.toMap, event_number)
           io_info.referenced_outputs ++= expects.map(_._1)
@@ -161,18 +173,24 @@ abstract class DecoupledTester extends BasicTester {
     log_scala(
       s"Processing output events done, referenced controlling ports" +
         (
-          if(decoupled_control_port_to_output_steps.nonEmpty)
+          if(decoupled_control_port_to_output_steps.nonEmpty) {
             decoupled_control_port_to_output_steps.keys.map {
               p => io_info.port_to_name(p)
             }.mkString(", decoupled : ", ",", "")
-          else ""
+          }
+          else {
+            ""
+          }
         ) +
         (
-          if(valid_control_port_to_output_steps.nonEmpty)
+          if(valid_control_port_to_output_steps.nonEmpty) {
             valid_control_port_to_output_steps.keys.map {
               p => io_info.port_to_name(p)
             }.mkString(", valid : ", ",", "")
-          else ""
+          }
+          else {
+            ""
+          }
         )
     )
   }
@@ -206,39 +224,41 @@ abstract class DecoupledTester extends BasicTester {
       * each controller has a private counter indicating which event specific to that controller
       * is on deck.  those values are wired to the inputs of the decoupled input and the valid is asserted
       */
-    control_port_to_input_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(steps.length)))
+    def build_input_event_handlers() {
+      control_port_to_input_steps.foreach { case (controlling_port, steps) =>
+        val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(steps.length)))
 
-      val associated_event_numbers = steps.map { step => step.event_number }.toSet
-      val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
-      steps.foreach { step =>
-        step.pokes.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
-      }
-      val is_this_my_turn = Vec(
-        input_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
-      )
-      val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
-        port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0))})
-      }.toMap
+        val associated_event_numbers = steps.map { step => step.event_number }.toSet
+        val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
+        steps.foreach { step =>
+          step.pokes.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
+        }
+        val is_this_my_turn = Vec(
+          input_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) }
+        )
+        val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
+          port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0)) })
+        }.toMap
 
-      log_scala(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
-        s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port)}.mkString(",")}" )
-      log_scala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+        log_scala(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
+          s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port) }.mkString(",")}")
+        log_scala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
-      ports_referenced_for_this_controlling_port.foreach { port =>
-        port := port_vector_values(port)(counter_for_this_decoupled)
-      }
-      when(!input_complete) {
-        when(is_this_my_turn(input_event_counter)) {
-          when(controlling_port.ready) {
-            printf(s"  setting input ${io_info.port_to_name(controlling_port)}")
-            controlling_port.valid := Bool(true)
-            counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-            when(output_event_counter < UInt(input_event_list.size - 1)) {
-              input_event_counter := input_event_counter + UInt(1)
+        ports_referenced_for_this_controlling_port.foreach { port =>
+          port := port_vector_values(port)(counter_for_this_decoupled)
+        }
+        when(!input_complete) {
+          when(is_this_my_turn(input_event_counter)) {
+            when(controlling_port.ready) {
+              printf(s"  setting input ${io_info.port_to_name(controlling_port)}")
+              controlling_port.valid := Bool(true)
+              counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
+              when(output_event_counter < UInt(input_event_list.size - 1)) {
+                input_event_counter := input_event_counter + UInt(1)
+              }
+            }.otherwise {
+              printf(s"controller ${io_info.port_to_name(controlling_port)} says waiting for valid")
             }
-          }.otherwise {
-            printf(s"controller ${io_info.port_to_name(controlling_port)} says waiting for valid")
           }
         }
       }
@@ -247,44 +267,46 @@ abstract class DecoupledTester extends BasicTester {
     /**
      * Test values on ports moderated with a decoupled interface
      */
-    decoupled_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
-      val associated_event_numbers = steps.map { step => step.event_number }.toSet
-      val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
-      steps.foreach { step =>
-        step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
-      }
-      val is_this_my_turn = Vec(
-        output_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
-      )
-      log_scala(s"Output decoupled controller ${io_info.port_to_name(controlling_port)} : ports " +
-        s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port)}.mkString(",")}" )
-      log_scala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+    def build_decoupled_output_event_handlers() {
+      decoupled_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
+        val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
+        val associated_event_numbers = steps.map { step => step.event_number }.toSet
+        val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
+        steps.foreach { step =>
+          step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
+        }
+        val is_this_my_turn = Vec(
+          output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) }
+        )
+        log_scala(s"Output decoupled controller ${io_info.port_to_name(controlling_port)} : ports " +
+          s" ${ports_referenced_for_this_controlling_port.map { port => io_info.port_to_name(port) }.mkString(",")}")
+        log_scala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
-      val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
-        val values_vector = steps.map { step => step.expects.getOrElse(port, 0)}
-        log_scala(s"  output vector generation for ${io_info.port_to_name(port)} : ${values_vector.mkString(",")}")
-        port -> Vec(values_vector.map { value => UInt(value)})
-      }.toMap
+        val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
+          val values_vector = steps.map { step => step.expects.getOrElse(port, 0) }
+          log_scala(s"  output vector generation for ${io_info.port_to_name(port)} : ${values_vector.mkString(",")}")
+          port -> Vec(values_vector.map { value => UInt(value) })
+        }.toMap
 
-      when(!output_complete) {
-        when(is_this_my_turn(output_event_counter)) {
-          controlling_port.ready := Bool(true)
-          when(controlling_port.valid) {
-            ports_referenced_for_this_controlling_port.foreach { port =>
-              printf(s"output test event %d testing ${io_info.port_to_name(port)} = %d, should be %d",
-                output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_decoupled)
-              )
-              when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_decoupled)) {
-                printf(s"Error: event %d ${io_info.port_to_name(port)} was %d should be %d",
-                  output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_decoupled))
-                assert(Bool(false))
-              }
-            }
+        when(!output_complete) {
+          when(is_this_my_turn(output_event_counter)) {
             controlling_port.ready := Bool(true)
-            counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-            when(output_event_counter < UInt(output_event_list.size - 1)) {
-              output_event_counter := output_event_counter + UInt(1)
+            when(controlling_port.valid) {
+              ports_referenced_for_this_controlling_port.foreach { port =>
+                printf(s"output test event %d testing ${io_info.port_to_name(port)} = %d, should be %d",
+                  output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_decoupled)
+                )
+                when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_decoupled)) {
+                  printf(s"Error: event %d ${io_info.port_to_name(port)} was %d should be %d",
+                    output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_decoupled))
+                  assert(Bool(false))
+                }
+              }
+              controlling_port.ready := Bool(true)
+              counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
+              when(output_event_counter < UInt(output_event_list.size - 1)) {
+                output_event_counter := output_event_counter + UInt(1)
+              }
             }
           }
         }
@@ -293,40 +315,46 @@ abstract class DecoupledTester extends BasicTester {
     /**
      * Test values on output ports moderated with a valid interface
      */
-    valid_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_valid = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
-      val associated_event_numbers = steps.map { step => step.event_number }.toSet
+    def build_valid_io_port_event_handlers() {
+      valid_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
+        val counter_for_this_valid = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
+        val associated_event_numbers = steps.map { step => step.event_number }.toSet
 
-      val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
-      steps.foreach { step =>
-        step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
-      }
-      val is_this_my_turn = Vec(
-        output_event_list.indices.map {event_number => Bool(associated_event_numbers.contains(event_number))}
-      )
-      val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
-        port -> Vec(steps.map { step => UInt(step.expects.getOrElse(port, 0))})
-      }.toMap
+        val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
+        steps.foreach { step =>
+          step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
+        }
+        val is_this_my_turn = Vec(
+          output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) }
+        )
+        val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
+          port -> Vec(steps.map { step => UInt(step.expects.getOrElse(port, 0)) })
+        }.toMap
 
-      when(!output_complete && is_this_my_turn(output_event_counter)) {
-        when(controlling_port.valid) {
-          ports_referenced_for_this_controlling_port.foreach { port =>
-            printf(s"output test event %d testing ${io_info.port_to_name(port)} = %d, should be %d",
-              output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_valid)
-            )
-            when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_valid)) {
-              printf(s"Error: event %d ${io_info.port_to_name(port)} was %x should be %x",
-                output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_valid))
-              assert(Bool(false))
+        when(!output_complete && is_this_my_turn(output_event_counter)) {
+          when(controlling_port.valid) {
+            ports_referenced_for_this_controlling_port.foreach { port =>
+              printf(s"output test event %d testing ${io_info.port_to_name(port)} = %d, should be %d",
+                output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_valid)
+              )
+              when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_valid)) {
+                printf(s"Error: event %d ${io_info.port_to_name(port)} was %x should be %x",
+                  output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_valid))
+                assert(Bool(false))
+              }
             }
-          }
-          counter_for_this_valid := counter_for_this_valid + UInt(1)
-          when(output_event_counter < UInt(output_event_list.size - 1)) {
-            output_event_counter := output_event_counter + UInt(1)
+            counter_for_this_valid := counter_for_this_valid + UInt(1)
+            when(output_event_counter < UInt(output_event_list.size - 1)) {
+              output_event_counter := output_event_counter + UInt(1)
+            }
           }
         }
       }
     }
+
+    build_input_event_handlers()
+    build_decoupled_output_event_handlers()
+    build_valid_io_port_event_handlers()
 
     printf(s"in_event_counter %d, out_event_counter %d", input_event_counter, output_event_counter)
     io_info.show_ports("".r)
