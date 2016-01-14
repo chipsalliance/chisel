@@ -62,6 +62,8 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;ExpandIndexedConnects()  ;W
       InlineIndexed()
       InferTypes()             ;R
+      ResolveGenders()         ;W
+      CheckTypes()             ;R
       CheckGenders()           ;W
       ExpandWhens()            ;W
       InferWidths()            ;R

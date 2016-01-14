@@ -977,10 +977,10 @@ defn expand-expr (e:Expression) -> List<EF> :
          if inst?(e) : 
             for f in fields(type(e) as BundleType) map-append :
                for x in generate-entry(name(f),type(f)) map :
-                  EF(WSubfield(e,name(x),type(x),gender(e)),flip(f) * flip(x))
+                  EF(WSubfield(e,name(x),type(x),gender(e) * flip(x)),flip(f) * flip(x))
          else :
             for x in generate-entry(name(e),type(e)) map :
-               EF(WRef(name(x),type(x),kind(e),gender(e)), flip(x))
+               EF(WRef(name(x),type(x),kind(e),gender(e) * flip(x)), flip(x))
       (e:WSubfield) : 
          val f = {_ as Field} $
             for f in fields(type(exp(e)) as BundleType) find : name(f) == name(e)
@@ -1002,8 +1002,16 @@ defn expand-expr (e:Expression) -> List<EF> :
          ;val v = exp(head(expand-expr(value(e))))
          ;list(EF(Pad(v,width(e),type(e)),DEFAULT))
       (e:DoPrim) :
-         val args = for x in args(e) map : exp(head(expand-expr(x)))
-         list(EF(DoPrim(op(e),args,consts(e),type(e)),DEFAULT))
+         println(e)
+         val vargs = Vector<Expression>()
+         val vflips = Vector<Flip>()
+         for x in args(e) do : 
+            val r = head(expand-expr(x))
+            add(vargs,exp(r))
+            add(vflips,flip(r))
+         println(vargs)
+         println(vflips)
+         list(EF(DoPrim(op(e),to-list(vargs),consts(e),type(e)),DEFAULT))
       (e) : list(EF(e,DEFAULT))
 
 defn lower-ports (ports:List<Port>) -> List<Port> :
@@ -1267,7 +1275,12 @@ defn inline-indexed-m (m:InModule) -> InModule :
                   val cond = Conditionally(info(s),eq,Connect(info(s),e,replace-ref),EmptyStmt())
                   add(stmts,map(inline-indexed-s,cond))
             (s:DecToIndexer) :
-               if (gender(replace-ref) != MALE) : error("Shouldn't be here")
+               if (gender(replace-ref) != MALE) : 
+                  println(gender(replace-ref))
+                  println(replace-ref)
+                  println(indexed-dec)
+                  println(indexer)
+                  error("Shouldn't be here")
                val cnct = Connect(info(s),replace-ref,head(exps(s)))
                add(stmts,map(inline-indexed-e,cnct))
                ;println-all(["exps: " exps(s)])
