@@ -123,7 +123,7 @@ object Clock {
 // TODO: Document this.
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
-  private[Chisel] override def flatten: IndexedSeq[UInt] = IndexedSeq()
+  private[Chisel] override def flatten: IndexedSeq[Bits] = IndexedSeq()
   private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
   private[Chisel] def toType = "Clock"
 

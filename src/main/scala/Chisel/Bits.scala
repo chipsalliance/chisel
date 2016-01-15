@@ -10,9 +10,7 @@ import firrtl.PrimOp._
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
   */
-abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg) {
-  private[Chisel] def flatten: IndexedSeq[UInt] = IndexedSeq(toBits)
-}
+abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
 
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.
@@ -24,6 +22,8 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   // Arguments against: generates down to a FIRRTL UInt anyways
 
   private[Chisel] def fromInt(x: BigInt): this.type
+
+  private[Chisel] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   def cloneType: this.type = cloneTypeWidth(width)
 
