@@ -1002,15 +1002,12 @@ defn expand-expr (e:Expression) -> List<EF> :
          ;val v = exp(head(expand-expr(value(e))))
          ;list(EF(Pad(v,width(e),type(e)),DEFAULT))
       (e:DoPrim) :
-         println(e)
          val vargs = Vector<Expression>()
          val vflips = Vector<Flip>()
          for x in args(e) do : 
             val r = head(expand-expr(x))
             add(vargs,exp(r))
             add(vflips,flip(r))
-         println(vargs)
-         println(vflips)
          list(EF(DoPrim(op(e),to-list(vargs),consts(e),type(e)),DEFAULT))
       (e) : list(EF(e,DEFAULT))
 
