@@ -152,8 +152,8 @@ defn emit (e:Expression) -> String :
             BIT-OR-OP : [emit-as-type(args(e)[0],type(e)) " | " emit-as-type(args(e)[1],type(e))]
             BIT-XOR-OP : [emit-as-type(args(e)[0],type(e)) " ^ " emit-as-type(args(e)[1],type(e))]
             CONCAT-OP : ["{" emit-as-type(args(e)[0],type(e)) "," emit-as-type(args(e)[1],type(e)) "}"]
-            BIT-SELECT-OP : [emit-as-type(args(e)[0],type(e)) "[" consts(e)[0] "]"]
-            BITS-SELECT-OP : [emit-as-type(args(e)[0],type(e)) "[" consts(e)[0] ":" consts(e)[1] "]"]
+            BIT-SELECT-OP : [emit(args(e)[0]) "[" consts(e)[0] "]"]
+            BITS-SELECT-OP : [emit(args(e)[0]) "[" consts(e)[0] ":" consts(e)[1] "]"]
             BIT-AND-REDUCE-OP : 
                var v = emit-as-type(args(e)[0],type(e))
                for x in tail(args(e)) do :
