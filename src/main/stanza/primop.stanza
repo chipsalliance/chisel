@@ -73,7 +73,7 @@ public defn primop-gen-constraints (e:DoPrim,v:Vector<WGeq>) -> Type :
    val w* = switch {op(e) == _} :
       ADD-OP : PlusWidth(get-max(0,1),LongWidth(1))
       SUB-OP : PlusWidth(get-max(0,1),LongWidth(1))
-      MUL-OP : PlusWidth(get-max(0,1),get-max(0,1))
+      MUL-OP : PlusWidth(width!(args(e)[0]),width!(args(e)[1]))
       DIV-OP : 
          match(type(args(e)[0]),type(args(e)[1])) :
             (t0:UIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),LongWidth(1))
