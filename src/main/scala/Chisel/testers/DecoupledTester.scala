@@ -409,8 +409,8 @@ abstract class DecoupledTester extends BasicTester {
 }
 
 object DecoupledTester {
-  val defaultMaxTickCount = 100
-  val defaultMaxIdleCount =  30
+  val defaultMaxTickCount = 1000
+  val defaultMaxIdleCount =   30
 
   var max_tick_count = defaultMaxTickCount
   var max_idle_count = defaultMaxIdleCount

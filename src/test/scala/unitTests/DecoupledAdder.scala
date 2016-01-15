@@ -1,14 +1,16 @@
 // See LICENSE for license details.
 
-package chiselTests
+package unitTests
 
 import Chisel._
-
 import Chisel.testers.DecoupledTester
-/**
- * Created by chick on 12/18/15.
- */
+import chiselTests.ChiselFlatSpec
 
+/**
+  * Implements an adder that used decoupledIO for both input and output
+  * This adder has a manual delay that is 10 cycles per add, just
+  * to exercise the ready valid stuff
+  */
 class SlowDecoupledAdderIn extends Bundle {
   val a = UInt(width=16)
   val b = UInt(width=16)
@@ -59,6 +61,8 @@ class SlowDecoupledAdder extends Module {
 class DecoupledAdderTests extends DecoupledTester {
   val device_under_test = Module(new SlowDecoupledAdder())
 
+//  verbose = true
+
   for {
     x <- 0 to 4
     y <- 0 to 6 by 2
@@ -76,7 +80,7 @@ class DecoupledAdderTests extends DecoupledTester {
 
 
 class DecoupledAdderTester extends ChiselFlatSpec {
-  "a" should "b" in {
+  "decoupled adder" should "add a bunch numbers slowly but correctly" in {
     assert( execute( new DecoupledAdderTests ) )
   }
 }
