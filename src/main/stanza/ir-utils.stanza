@@ -142,6 +142,12 @@ public defn exp-hash (e:Expression) -> Int :
 public defn type-hash (t:Type) -> Int :
    symbol-hash(to-symbol(to-string(t)))
 
+public defn list-hash (l:List) -> Int :
+   turn-off-debug(false)
+   val i = symbol-hash(to-symbol(string-join(map(to-string,l))))
+   turn-on-debug(false)
+   i
+
 ;============= Useful functions ==============
 public defn create-mask (n:Symbol,dt:Type) -> Field :
    Field{n,DEFAULT,_} $ match(dt) :

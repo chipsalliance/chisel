@@ -850,7 +850,7 @@ public defmethod short-name (b:ExpandConnects) -> String : "expand-connects"
 
 defn get-size (e:Expression) -> Int : get-size(type(e))
 defn get-size (t:Type) -> Int :
-   match(t) :
+   val x = match(t) :
       (t:BundleType) : 
          var sum = 0
          for f in fields(t) do : 
@@ -858,26 +858,34 @@ defn get-size (t:Type) -> Int :
          sum
       (t:VectorType) : size(t) * get-size(type(t))
       (t) : 1
+   x
+
+val hashed-get-flip = HashTable<List,Flip>(list-hash)
 defn get-flip (t:Type, i:Int, f:Flip) -> Flip :
-   if i >= get-size(t) : error("Shouldn't be here")
-   match(t) :
-      (t:UIntType|SIntType|ClockType) : f
-      (t:BundleType) : label<Flip> ret : 
-         var n = i
-         for x in fields(t) do :
-            if n < get-size(type(x)) : 
-               ret(get-flip(type(x),n,flip(x) * f))
-            else : 
-               n = n - get-size(type(x))
-         error("Shouldn't be here")
-      (t:VectorType) : label<Flip> ret : 
-         var n = i
-         for j in 0 to size(t) do :
-            if n < get-size(type(t)) : 
-               ret(get-flip(type(t),n,f))
-            else : 
-               n = n - get-size(type(t))
-         error("Shouldn't be here")
+   if key?(hashed-get-flip,list(t,i,f)) : hashed-get-flip[list(t,i,f)]
+   else :
+      if i >= get-size(t) : error("Shouldn't be here")
+      val x = match(t) :
+         (t:UIntType|SIntType|ClockType) : f
+         (t:BundleType) : label<Flip> ret : 
+            var n = i
+            for x in fields(t) do :
+               if n < get-size(type(x)) : 
+                  ret(get-flip(type(x),n,flip(x) * f))
+               else : 
+                  n = n - get-size(type(x))
+            error("Shouldn't be here")
+         (t:VectorType) : label<Flip> ret : 
+            var n = i
+            for j in 0 to size(t) do :
+               if n < get-size(type(t)) : 
+                  ret(get-flip(type(t),n,f))
+               else : 
+                  n = n - get-size(type(t))
+            error("Shouldn't be here")
+      hashed-get-flip[list(t,i,f)] = x
+      x
+
 defn get-point (e:Expression) -> Int :
    match(e) :
       (e:WRef) : 0
