@@ -28,10 +28,10 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
     new DecoupledTester {
       val device_under_test = new DecoupledExample()
 
-      input_event(
+      inputEvent(
         Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7)
       )
-      output_event(
+      outputEvent(
         Array(device_under_test.io.out.bits.c -> 3)
       )
       finish()

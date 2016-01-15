@@ -1,4 +1,6 @@
-package examples
+// See LICENSE for license details.
+
+package unitTests
 
 import Chisel._
 import Chisel.testers._
@@ -26,7 +28,7 @@ class Packet extends Bundle {
   * @param n is number of fanned outputs for the routed packet
   */
 class RouterIO(n: Int) extends Bundle {
-  override def cloneType           = new RouterIO(n).asInstanceOf[this.type]
+//  override def cloneType           = new RouterIO(n).asInstanceOf[this.type]
   val read_routing_table_request   = new DeqIO(new ReadCmd())
   val read_routing_table_response  = new EnqIO(UInt(width = 8))
   val load_routing_table_request   = new DeqIO(new WriteCmd())
@@ -46,11 +48,11 @@ class Router extends Module {
     }
   }
 
-  io.read_routing_table_request.init
-  io.load_routing_table_request.init
-  io.read_routing_table_response.init
-  io.in.init
-  io.outs.foreach { out => out.init}
+  io.read_routing_table_request.init()
+  io.load_routing_table_request.init()
+  io.read_routing_table_response.init()
+  io.in.init()
+  io.outs.foreach { out => out.init() }
 
   val ti = Reg(init=UInt(0, width = 16))
   ti := ti + UInt(1)
@@ -82,7 +84,7 @@ class Router extends Module {
   }
 }
 
-class RouterUnitTester extends DecoupledTester {
+class RouterUnitTester(number_of_packets_to_send: Int) extends DecoupledTester {
   val device_under_test = Module(new Router)
   val c = device_under_test
   verbose = true
@@ -102,12 +104,12 @@ class RouterUnitTester extends DecoupledTester {
   )
 
   def read_routing_table(addr: Int, data: Int) = {
-    input_event(List(c.io.read_routing_table_request.bits.addr -> addr))
-    output_event(List(c.io.read_routing_table_response.bits -> data))
+    inputEvent(List(c.io.read_routing_table_request.bits.addr -> addr))
+    outputEvent(List(c.io.read_routing_table_response.bits -> data))
   }
 
   def write_routing_table(addr: Int, data: Int)  = {
-    input_event(List(
+    inputEvent(List(
       c.io.load_routing_table_request.bits.addr -> addr,
       c.io.load_routing_table_request.bits.data -> data
     ))
@@ -120,9 +122,9 @@ class RouterUnitTester extends DecoupledTester {
 
   def route_packet(header: Int, body: Int, routed_to: Int)  = {
 
-    input_event(List(c.io.in.bits.header -> header, c.io.in.bits.body -> body))
-    output_event(List(c.io.outs(routed_to).bits.body -> body))
-    log_scala(s"rout_packet $header $body should go to out($routed_to)")
+    inputEvent(List(c.io.in.bits.header -> header, c.io.in.bits.body -> body))
+    outputEvent(List(c.io.outs(routed_to).bits.body -> body))
+    logScala(s"rout_packet $header $body should go to out($routed_to)")
   }
 
   read_routing_table(0, 0)                // confirm we initialized the routing table
@@ -145,7 +147,7 @@ class RouterUnitTester extends DecoupledTester {
   }
 
   // send a bunch of packets, with random values
-  for(i <- 0 to 20) {
+  for(i <- 0 to number_of_packets_to_send) {
     val data = Random.nextInt(1000)
     route_packet(i % 4, data, new_routing_table(i % 4))
   }
@@ -155,6 +157,8 @@ class RouterUnitTester extends DecoupledTester {
 
 class RouterUnitTesterSpec extends ChiselFlatSpec {
   "a router" should "can have it's rout table loaded and changed and route a bunch of packets" in {
-    assert( execute { new RouterUnitTester } )
+    assert(execute {
+      new RouterUnitTester(number_of_packets_to_send = 20)
+    })
   }
 }

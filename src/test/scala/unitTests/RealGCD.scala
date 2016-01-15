@@ -136,8 +136,8 @@ class DecoupledRealGCDTests4 extends DecoupledTester {
   } {
     val (gcd_value, cycles) = GCDCalculator.compute_gcd_results_and_cycles(i, j)
 
-    input_event(Array(c.io.in.bits.a -> i, c.io.in.bits.b -> j))
-    output_event(Array(c.io.out.bits -> gcd_value))
+    inputEvent(Array(c.io.in.bits.a -> i, c.io.in.bits.b -> j))
+    outputEvent(Array(c.io.out.bits -> gcd_value))
   }
 
   finish()

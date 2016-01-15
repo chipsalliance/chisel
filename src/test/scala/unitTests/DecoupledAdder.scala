@@ -64,10 +64,10 @@ class DecoupledAdderTests extends DecoupledTester {
     y <- 0 to 6 by 2
     z = x + y
   } {
-    input_event(
+    inputEvent(
       Array(device_under_test.io.in.bits.a -> x, device_under_test.io.in.bits.b -> y)
     )
-    output_event(
+    outputEvent(
       Array(device_under_test.io.out.bits.c -> z)
     )
   }
