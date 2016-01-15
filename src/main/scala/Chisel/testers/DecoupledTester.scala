@@ -18,10 +18,12 @@ import scala.collection.mutable.ArrayBuffer
   */
 
 abstract class DecoupledTester extends BasicTester {
+  //noinspection ScalaStyle
   def device_under_test     : Module
   var io_info               : IOAccessor = null
 
   val internal_counter_size = 24
+  val maxIdleCount          = 30
 
   var verbose           = false
   def logScala(msg: => String): Unit = {
@@ -33,6 +35,9 @@ abstract class DecoupledTester extends BasicTester {
   private val output_event_counter = Reg(init = UInt(0, width = internal_counter_size))
   private val input_complete       = Reg(init = Bool(false))
   private val output_complete      = Reg(init = Bool(false))
+
+  private val idle_counter         = Reg(init = UInt(0, width = internal_counter_size))
+  idle_counter := idle_counter + UInt(1)
 
   val input_event_list  = new ArrayBuffer[Seq[(Data, Int)]]()
   val output_event_list = new ArrayBuffer[Seq[(Data, Int)]]()
@@ -66,10 +71,10 @@ abstract class DecoupledTester extends BasicTester {
    * makes a list of all decoupled parents based on the ports referenced in pokes
    */
   def checkAndGetCommonDecoupledOrValidParentPort(
-                                                           pokes:             Seq[(Data, Int)],
-                                                           must_be_decoupled: Boolean = true,
-                                                           event_number:      Int
-                                                         ) : Either[DecoupledIO[Data],ValidIO[Data]] = {
+                                                   pokes:             Seq[(Data, Int)],
+                                                   must_be_decoupled: Boolean = true,
+                                                   event_number:      Int
+                                                 ) : Either[DecoupledIO[Data],ValidIO[Data]] = {
     val decoupled_parent_names = pokes.flatMap { case (port, value) =>
       Predef.assert(
         ! io_info.port_to_name(port).endsWith(".valid"),
@@ -207,12 +212,25 @@ abstract class DecoupledTester extends BasicTester {
 
   def name(port: Data): String = io_info.port_to_name(port)
 
+  def checkIdle(controller_name: String, is_input: Boolean): Unit = {
+//    when(idle_counter > UInt(maxIdleCount)) {
+//      printf(
+//        s"Idle for too many cycles for ${controller_name} ${if(is_input) "input" else "output"} event %d",
+//        if(is_input) input_event_counter else output_event_counter
+//      )
+//      stop()
+//    }
+  }
+  def clearIdle: Unit = {
+//    idle_counter := UInt(0)
+  }
+
   /**
     * for each input event only one controller is active (determined by it's private is_my_turn vector)
     * each controller has a private counter indicating which event specific to that controller
     * is on deck.  those values are wired to the inputs of the decoupled input and the valid is asserted
     */
-  def buildInputEventHandlers() {
+  private def buildInputEventHandlers() {
     control_port_to_input_steps.foreach { case (controlling_port, steps) =>
       val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(steps.length)))
 
@@ -238,6 +256,7 @@ abstract class DecoupledTester extends BasicTester {
       when(!input_complete) {
         when(is_this_my_turn(input_event_counter)) {
           when(controlling_port.ready) {
+            clearIdle
             printf(s"  setting input ${name(controlling_port)}")
             controlling_port.valid := Bool(true)
             counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
@@ -245,7 +264,7 @@ abstract class DecoupledTester extends BasicTester {
               input_event_counter := input_event_counter + UInt(1)
             }
           }.otherwise {
-            printf(s"controller ${name(controlling_port)} says waiting for valid")
+            checkIdle(name(controlling_port), is_input = true)
           }
         }
       }
@@ -255,7 +274,7 @@ abstract class DecoupledTester extends BasicTester {
   /**
     * Test values on ports moderated with a decoupled interface
     */
-  def buildDecoupledOutputEventHandlers() {
+  private def buildDecoupledOutputEventHandlers() {
     decoupled_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
       val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
@@ -280,6 +299,7 @@ abstract class DecoupledTester extends BasicTester {
         when(is_this_my_turn(output_event_counter)) {
           controlling_port.ready := Bool(true)
           when(controlling_port.valid) {
+            clearIdle
             ports_referenced_for_this_controlling_port.foreach { port =>
               printf(s"output test event %d testing ${name(port)} = %d, should be %d",
                 output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_decoupled)
@@ -288,6 +308,7 @@ abstract class DecoupledTester extends BasicTester {
                 printf(s"Error: event %d ${name(port)} was %d should be %d",
                   output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_decoupled))
                 assert(Bool(false))
+                stop()
               }
             }
             controlling_port.ready := Bool(true)
@@ -295,6 +316,8 @@ abstract class DecoupledTester extends BasicTester {
             when(output_event_counter < UInt(output_event_list.size - 1)) {
               output_event_counter := output_event_counter + UInt(1)
             }
+          }.otherwise {
+            checkIdle(name(controlling_port), is_input = false)
           }
         }
       }
@@ -304,7 +327,7 @@ abstract class DecoupledTester extends BasicTester {
   /**
     * Test values on output ports moderated with a valid interface
     */
-  def buildValidIoPortEventHandlers() {
+  private def buildValidIoPortEventHandlers() {
     valid_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
       val counter_for_this_valid = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
@@ -322,6 +345,7 @@ abstract class DecoupledTester extends BasicTester {
 
       when(!output_complete && is_this_my_turn(output_event_counter)) {
         when(controlling_port.valid) {
+          clearIdle
           ports_referenced_for_this_controlling_port.foreach { port =>
             printf(s"output test event %d testing ${name(port)} = %d, should be %d",
               output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_valid)
@@ -336,6 +360,8 @@ abstract class DecoupledTester extends BasicTester {
           when(output_event_counter < UInt(output_event_list.size - 1)) {
             output_event_counter := output_event_counter + UInt(1)
           }
+        }.otherwise {
+          checkIdle(name(controlling_port), is_input = false)
         }
       }
     }
@@ -355,6 +381,14 @@ abstract class DecoupledTester extends BasicTester {
     output_complete := output_event_counter >= UInt(output_event_list.size - 1)
     when(input_complete && output_complete) {
       printf("All input and output events completed")
+      stop()
+    }
+
+
+    val ti = Reg(init= UInt(0, width = 32))
+    ti := ti + UInt(1)
+    when(ti > UInt(100)) {
+      printf("TOO MANY TICKS")
       stop()
     }
 
