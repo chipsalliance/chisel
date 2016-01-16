@@ -26,6 +26,7 @@ utils/bin/firrtl
 utils/bin/stanza
 utils/bin/firrtl-scala
 utils/bin/firrtl-stanza
+utils/bin/FileCheck
 spec/spec.aux
 spec/spec.log
 spec/spec.toc
