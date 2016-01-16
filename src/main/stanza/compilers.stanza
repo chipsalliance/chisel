@@ -181,7 +181,8 @@ public defn run-passes (c:Circuit,ls:List<Pass>) -> Circuit:
 
    println("===== Time Breakdown =====")
    for x in time-table do :
-      println-all([x[0] " --- " to-float(x[1] as Int * 100) / to-float(t - start-time) "%"])
+      println-all([x[0] " --- " to-float(x[1] as Int * 100) / to-float(t - start-time) "%" " --- " to-float(x[1] as Int * 100) "ms"])
+   println-all(["Total Time --- " to-float(t - start-time) "ms"])
    println("==========================")
    println("Done!")
    c*
