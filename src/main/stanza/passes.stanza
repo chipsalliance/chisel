@@ -2383,7 +2383,7 @@ defn op-stream (doprim:DoPrim) -> Streamable :
             (t:SIntType) : [cast(a0()) " >>> " a1()]
             (t) : [cast(a0()) " >> " a1()]
       SHIFT-LEFT-OP : [cast(a0()) " << " c0()]
-      SHIFT-RIGHT-OP : [cast(a0()) "[" long!(type(a0())) - to-long(1) ":" c0() "]"]
+      SHIFT-RIGHT-OP : [a0() "[" long!(type(a0())) - to-long(1) ":" c0() "]"]
       NEG-OP : ["-{" cast(a0()) "}"]
       CONVERT-OP : 
          match(type(a0())) :
@@ -2394,8 +2394,8 @@ defn op-stream (doprim:DoPrim) -> Streamable :
       BIT-OR-OP : [cast(a0()) " | " cast(a1())]
       BIT-XOR-OP : [cast(a0()) " ^ " cast(a1())]
       CONCAT-OP : ["{" cast(a0()) "," cast(a1()) "}"]
-      BIT-SELECT-OP : [cast(a0()) "[" c0() "]"]
-      BITS-SELECT-OP : [cast(a0()) "[" c0() ":" c1() "]"]
+      BIT-SELECT-OP : [a0() "[" c0() "]"]
+      BITS-SELECT-OP : [a0() "[" c0() ":" c1() "]"]
       BIT-AND-REDUCE-OP : 
          val v = Vector<Streamable>()
          for b in 0 to to-int(long!(type(doprim))) do :
