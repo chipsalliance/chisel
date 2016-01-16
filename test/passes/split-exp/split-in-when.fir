@@ -19,7 +19,6 @@ circuit Top :
 ;CHECK: node GEN_3 = addw(b, c)
 ;CHECK: node GEN_4 = addw(a, GEN_3)
 ;CHECK: node GEN_5 = subw(c, b)
-;CHECK: node GEN_6 = mux(GEN_2, GEN_4, GEN_5)
-;CHECK: out <= mux(GEN_1, GEN_6, out)   
+;CHECK: out <= mux(GEN_1, mux(GEN_2, GEN_4, GEN_5), out)   
 
 ;CHECK: Finished Split Expressions
