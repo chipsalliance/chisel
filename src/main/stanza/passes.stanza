@@ -1070,6 +1070,16 @@ defn get-locations (e:Expression) -> List<Location> :
             to-list(ls*)
       hashed-locations[e] = x
       x
+defn has-access? (e:Expression) -> True|False :
+   var ret = false
+   defn rec-has-access (e:Expression) -> Expression :
+      match(e) :
+         (e:WSubAccess) : 
+            ret = true
+            e
+         (e) : map(rec-has-access,e)
+   rec-has-access(e)
+   ret
 
 defn remove-access (c:Circuit) :
    defn remove-m (m:InModule) -> InModule :
@@ -1086,29 +1096,34 @@ defn remove-access (c:Circuit) :
                (e:DoPrim) : map(remove-e,e)
                (e:UIntValue|SIntValue) : e
                (e) :
-                  val rs = get-locations(e)
-                  val foo = for x in rs find :
-                     (guard(x)) != one
-                  if foo == false : e 
-                  else :
-                     val temp = create-temp(e)
-                     for (x in rs, i in 0 to false) do :
-                        if i == 0 :
-                           add(stmts,Connect(info(s),temp,base(x)))
-                        else :
-                           add(stmts,Conditionally(info(s),guard(x),Connect(info(s),temp,base(x)),Empty()))
-                     temp
+                  if has-access?(e) :
+                     val rs = get-locations(e)
+                     val foo = for x in rs find :
+                        (guard(x)) != one
+                     if foo == false : error("Shouldn't be here")
+                     else :
+                        val temp = create-temp(e)
+                        for (x in rs, i in 0 to false) do :
+                           if i == 0 :
+                              add(stmts,Connect(info(s),temp,base(x)))
+                           else :
+                              add(stmts,Conditionally(info(s),guard(x),Connect(info(s),temp,base(x)),Empty()))
+                        temp
+                  else : e
          val s* = match(s) :
             (s:Connect) :
-               val ls = get-locations(loc(s))
-               val loc* = 
-                  if length(ls) == 1 and guard(head(ls)) == one : loc(s)
-                  else :
-                     val temp = create-temp(loc(s))
-                     for x in ls do :
-                        add(stmts,Conditionally(info(s),guard(x),Connect(info(s),base(x),temp),Empty()))
-                     temp
-               Connect(info(s),loc*,remove-e(exp(s)))
+               if has-access?(loc(s)) :
+                  val ls = get-locations(loc(s))
+                  val loc* = 
+                     if length(ls) == 1 and guard(head(ls)) == one : loc(s)
+                     else :
+                        val temp = create-temp(loc(s))
+                        for x in ls do :
+                           add(stmts,Conditionally(info(s),guard(x),Connect(info(s),base(x),temp),Empty()))
+                        temp
+                  Connect(info(s),loc*,remove-e(exp(s)))
+               else : 
+                  Connect(info(s),loc(s),remove-e(exp(s)))
             (s) : map{remove-s,_} $ map(remove-e,s)
          add(stmts,s*)
          if length(stmts) != 1 : Begin(to-list(stmts))
