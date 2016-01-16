@@ -139,7 +139,7 @@ defn emit (e:Expression) -> String :
                if type(e) typeof SIntType : [emit-as-type(args(e)[0],type(e)) " >>> " emit(args(e)[1])]
                else : [emit-as-type(args(e)[0],type(e)) " >> " emit(args(e)[1])]
             SHIFT-LEFT-OP : [emit-as-type(args(e)[0],type(e)) " << " consts(e)[0]]
-            SHIFT-RIGHT-OP : [emit-as-type(args(e)[0],type(e)) "[" width!(type(args(e)[0])) - to-long(1) ":" consts(e)[0] "]"]
+            SHIFT-RIGHT-OP : [emit(args(e)[0]) "[" width!(type(args(e)[0])) - to-long(1) ":" consts(e)[0] "]"]
                ;if type(e) typeof SIntType : [emit-as-type(args(e)[0],type(e)) " >>> " consts(e)[0]]
                ;else : [emit-as-type(args(e)[0],type(e)) " >> " consts(e)[0]]
             NEG-OP : ["-{" emit-as-type(args(e)[0],type(e)) "}"]
