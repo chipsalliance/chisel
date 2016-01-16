@@ -1,0 +1,24 @@
+; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
+
+;CHECK: Remove Accesses
+circuit top :
+   module top :
+      input in : UInt<32>
+      input i : UInt<1>
+      wire m : UInt<32>[2]
+      m[0] <= UInt("h1")
+      m[1] <= UInt("h1")
+      wire a : UInt<32>
+      m[i] <= a
+      a <= in
+
+;CHECK: wire GEN : UInt<32>
+;CHECK: when eqv(UInt("h0"), i) : m[0] <= GEN
+;CHECK: when eqv(UInt("h1"), i) : m[1] <= GEN
+;CHECK: GEN <= a
+
+;CHECK: Finished Remove Accesses
+
+
+
+;CHECK: Done!

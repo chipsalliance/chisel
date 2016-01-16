@@ -1642,8 +1642,11 @@ public defmethod name (b:Resolve) -> String : "Resolve"
 public defmethod short-name (b:Resolve) -> String : "resolve"
 
 defn resolve (c:Circuit) -> Circuit :
+   check-width $
    infer-widths $
+   check-genders $
    resolve-genders $
+   check-types $
    infer-types $
    resolve-kinds $ c
 

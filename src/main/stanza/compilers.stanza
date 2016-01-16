@@ -56,15 +56,13 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;===============
       ToWorkingIR()            
       ;===============
-      ResolveKinds()           
-      InferTypes()             
-      CheckTypes()            
-      ResolveGenders()         
-      CheckGenders()          
-      InferWidths()            
-      CheckWidths()          
-      ;===============
-      Resolve()
+      ResolveKinds()
+      InferTypes()
+      CheckTypes()
+      ResolveGenders()
+      CheckGenders()
+      InferWidths()
+      CheckWidths()
       ;===============
       ExpandConnects()
       ;===============
@@ -96,12 +94,14 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       InferWidths()
       CheckWidths()
       ;===============
+      Verilog(with-output(c)) 
+      ;===============
       ;ToRealIR()             
       ;Pad()                  
       ;CheckWidths()          
       ;CheckHighForm()        
       ;CheckLowForm()           
-      Verilog(with-output(c)) 
+      ;Verilog(with-output(c)) 
    ]
 
 public defstruct StandardFIRRTL <: Compiler :
@@ -113,7 +113,6 @@ public defmethod passes (c:StandardFIRRTL) -> List<Pass> :
       CheckHighForm()
       FIRRTL(with-output(c))
     ]
-
 
 public defstruct StandardLoFIRRTL <: Compiler :
    with-output : (() -> False) -> False with: (as-method => true)

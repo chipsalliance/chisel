@@ -24,6 +24,8 @@ src/*/__MACOSX
 src/main/stanza/firrtl-main
 utils/bin/firrtl
 utils/bin/stanza
+utils/bin/firrtl-scala
+utils/bin/firrtl-stanza
 spec/spec.aux
 spec/spec.log
 spec/spec.toc
