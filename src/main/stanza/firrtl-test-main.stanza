@@ -13,6 +13,7 @@
 #include("primop.stanza")
 #include("errors.stanza")
 #include("compilers.stanza")
+#include("firrtl.stanza")
 ;#include("flo.stanza")
 ;#include("verilog.stanza")
 ;#include("symbolic-value.stanza")
@@ -77,10 +78,7 @@ defn main () :
       else if s == "-p" : last-s = s
       else if s == "-s" : last-s = s
       else if s == "-m" : last-s = s
-<<<<<<< HEAD
       else if s == "-b" : last-s = s
-=======
->>>>>>> WIP. Compiles and there's some output
       else :
          if last-s == "-i" : input = args[i]
          if last-s == "-o" : output = args[i]
@@ -89,10 +87,7 @@ defn main () :
          if last-s == "-p" : printvars = to-string([printvars args[i]])
          if last-s == "-s" : add(pass-args,args[i])
          if last-s == "-m" : add(firms,args[i])
-<<<<<<< HEAD
          if last-s == "-b" : backend = args[i]
-=======
->>>>>>> WIP. Compiles and there's some output
 
    var with-output = 
       fn (f:()->False) : 
@@ -113,13 +108,8 @@ defn main () :
             CURRENT-OUTPUT-STREAM = prev-stream
             close(out-stream)
 
-<<<<<<< HEAD
    if compiler == false and backend == false and length(pass-names) == 0 :
       error("Must specify a compiler or a backend. Use -X flag or -b flag.")
-=======
-   if compiler == false and length(pass-names) == 0 :
-      error("Must specify a compiler. Use -X flag.")
->>>>>>> WIP. Compiles and there's some output
 
    val lexed = lex-file(input as String)
    val circuit = parse-firrtl(lexed)
@@ -142,29 +132,20 @@ defn main () :
    set-printvars!(to-list(printvars))
    
    if compiler == false :
-<<<<<<< HEAD
       var c*:Circuit = run-passes(circuit*,get-passes(to-list(pass-names)))
       switch {_ == backend} :
         "verilog" : run-backend(c*,StandardVerilog(with-output))
         "firrtl" : run-backend(c*,StandardFIRRTL(with-output))
         else : error("Invalid backend flag!")
-=======
-      run-passes(circuit*,get-passes(to-list(pass-names)))
->>>>>>> WIP. Compiles and there's some output
    else :
       switch {_ == compiler} :
          ;"flo" : error("Flo backend not currently supported.")
             ; run-passes(circuit*,StandardFlo(with-output))
          "verilog" : run-passes(circuit*,StandardVerilog(with-output))
-<<<<<<< HEAD
          "firrtl" : run-passes(circuit*,StandardFIRRTL(with-output))
          "lofirrtl" : run-passes(circuit*,StandardLoFIRRTL(with-output))
-         "verilute" : run-passes(circuit*,InstrumentedVerilog(with-output,to-list $ pass-args))
-=======
          ;"verilute" : run-passes(circuit*,InstrumentedVerilog(with-output,to-list $ pass-args))
->>>>>>> WIP. Compiles and there's some output
          else : error("Invalid compiler flag")
 
    CURRENT-OUTPUT-STREAM = prev-out
-
 main()
