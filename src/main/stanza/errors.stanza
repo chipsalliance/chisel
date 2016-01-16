@@ -435,13 +435,9 @@ defn OpNotAllSameType (info:FileInfo, op:Symbol) :
    PassException $ string-join $
    [info ": [module " mname "]  Primop " op " requires all operands to have the same type."]
 
-defn NodeIllegalFlips (info:FileInfo) :
+defn NodeGroundType (info:FileInfo) :
    PassException $ string-join $
-   [info ": [module " mname "]  Node cannot be a bundle type with flips."]
-
-defn OnResetIllegalFlips (info:FileInfo) :
-   PassException $ string-join $
-   [info ": [module " mname "]  The register in onreset cannot be a bundle type with flips."]
+   [info ": [module " mname "]  Node must be a ground type."]
 
 ;---------------- Helper Functions --------------
 defmethod equal? (t1:Type,t2:Type) -> True|False :
@@ -594,7 +590,8 @@ public defn check-types (c:Circuit) -> Circuit :
             (s:Conditionally) :
                if type(pred(s)) != ut() : add(errors,PredNotUInt(info(s)))
             (s:DefNode) :
-               if has-flip?(type(value(s))) : add(errors,NodeIllegalFlips(info(s)))
+               if not type(value(s)) typeof UIntType|SIntType :
+                  add(errors,NodeGroundType(info(s)))
             (s) : false
          s }()
    
