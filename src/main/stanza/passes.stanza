@@ -2185,7 +2185,7 @@ defn lower-types (m:Module) -> Module :
       defn lower-types-e (e:Expression) -> Expression :
          match(e) : 
             (e:WRef|UIntValue|SIntValue) : e
-            (e:WSubField) : 
+            (e:WSubField|WSubIndex) : 
                match(kind(e)) :
                   (k:InstanceKind) : 
                      val names = expand-name(e)
@@ -2198,7 +2198,6 @@ defn lower-types (m:Module) -> Module :
                         lower-mem(e)[0]
                      else : e
                   (k) : WRef(lowered-name(e),type(e),kind(e),gender(e))
-            (e:WSubIndex) : WRef(lowered-name(e),type(e),kind(e),gender(e))
             (e:DoPrim) : map(lower-types-e,e)
       match(map(lower-types-e,s)) :
          (s:DefWire|DefPoison) :
