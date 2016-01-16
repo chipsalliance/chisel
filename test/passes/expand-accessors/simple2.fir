@@ -1,6 +1,6 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 
-;CHECK: Expand Accessors
+;CHECK: Done!
 circuit top :
    module top :
       output o1 : UInt
@@ -10,7 +10,8 @@ circuit top :
       m[0] <= UInt("h1")
       m[1] <= UInt("h1")
       i <= UInt("h1")
-      infer accessor a = m[i] ;CHECK: indexer a = (m$0 m$1)[i] : UInt<32>
+      wire a : UInt<32>
+      a <= m[i]
       o1 <= a
       o2 <= a
 
