@@ -1732,7 +1732,7 @@ defn split-exp (m:InModule) -> InModule :
       defn split-exp-e (e:Expression,i:Int) -> Expression :
          match(map(split-exp-e{_,i + 1},e)) :
             (e:DoPrim) :
-               if i > 0 : split(e)
+               if i > 0 and op(e) != MUX-OP : split(e)
                else : e
             (e) : e
       match(map(split-exp-e{_,0},s)) :
