@@ -1,24 +1,36 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 
-;CHECK: Expand Accessors
 circuit top :
    module top :
       input clk : Clock
-      cmem m : UInt<32>[2][2][2], clk
       wire i : UInt<4>
-      i <= UInt(1)
-      infer accessor a = m[i] ;CHECK: read accessor a = m[i]
-      infer accessor b = a[i] ;CHECK: indexer b = (a[0] a[1])[i] : UInt<32>[2]
-      infer accessor c = b[i] ;CHECK: indexer c = (b[0] b[1])[i] : UInt<32>
       wire j : UInt<32>
+      wire z : UInt<32>
+      i <= UInt(1)
+      mem m : 
+         data-type => UInt<32>[2]
+         depth => 2
+         reader => a
+         writer => x
+         read-latency => 0
+         write-latency => 1
+      m.a.addr <= i
+      m.a.clk <= clk
+      m.a.en <= UInt(1)
+      m.x.addr <= i
+      m.x.clk <= clk
+      m.x.en <= UInt(1)
+      m.x.mask[0] <= UInt(1)
+      m.x.mask[1] <= UInt(1)
+      wire b : UInt<32>[2]
+      b <= m.a.data
+      node c = b[i]
+      z <= j
       j <= c
-
-      infer accessor x = m[i] ;CHECK: write accessor x = m[i]
-      infer accessor y = x[i] ;CHECK: indexer (x[0] x[1])[i] = y : UInt<32>[2]
+      wire y : UInt<32>[2]
       y[0] <= UInt(1)
       y[1] <= UInt(1)
-      infer accessor z = y[i] ;CHECK: indexer (y[0] y[1])[i] = z : UInt<32>
-      z <= j
+      m.x.data <= y
+      y[i] <= z
 
-; CHECK: Finished Expand Accessors
 ; CHECK: Done!
