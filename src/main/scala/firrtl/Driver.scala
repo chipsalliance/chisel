@@ -17,13 +17,13 @@ object Driver
 
   // Appends 0 to the filename and appends .tmp to the extension
   private def genTempFilename(filename: String): String = {
-    val pat = """(.*/)([^/]*)([.][^/.]*)""".r 
+    val pat = """(.*/)([^/]*)([.][^/.]*)""".r
     val (path, name, ext) = filename match {
       case pat(path, name, ext) => (path, name, ext + ".tmp")
       case _ => ("./", "temp", ".tmp")
     }
     var count = 0
-    while( Files.exists(Paths.get(path + name + count + ext )) ) 
+    while( Files.exists(Paths.get(path + name + count + ext )) )
       count += 1
     path + name + count + ext
   }
@@ -49,58 +49,101 @@ object Driver
     executePassesWithLogger(ast, passes)
   }
 
+  trait Pass
+  case class StanzaPass(val name : String) extends Pass
+  case class AggregatedStanzaPass(val passes : Seq[StanzaPass]) extends Pass
+  case class ScalaPass(val func : Circuit => Circuit) extends Pass
+
+  def aggregateStanzaPasses(l : Seq[Pass]) : Seq[Pass] = {
+    if (l.isEmpty) return Seq()
+    val span = l.span(x => x match {
+      case p : StanzaPass => true
+      case _ => false
+    })
+    if (span._1.isEmpty) {
+      val tail = if(span._2.length > 1)
+        aggregateStanzaPasses(span._2.tail)
+      else
+        Seq()
+      Seq(span._2.head) ++ tail
+    } else {
+      Seq(AggregatedStanzaPass(span._1.asInstanceOf[Seq[StanzaPass]])) ++ aggregateStanzaPasses(span._2)
+    }
+  }
+
+  def run(pass : Pass, input : String, output : String)(implicit logger : Logger) : Unit = pass match {
+    case p : StanzaPass =>
+      val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl", "-x", p.name)
+      println(cmd.mkString(" "))
+      val ret = cmd.!!
+      println(ret)
+    case p : AggregatedStanzaPass =>
+      val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl") ++ p.passes.flatMap(x=>Seq("-x", x.name))
+      println(cmd.mkString(" "))
+      val ret = cmd.!!
+      println(ret)
+    case p : ScalaPass =>
+      var ast = Parser.parse(input, Source.fromFile(input).getLines)
+      val newast = p.func(ast)
+      println("Writing to " + output)
+      val writer = new PrintWriter(new File(output))
+      writer.write(newast.serialize())
+      writer.close()
+    case _ => logger.warn("Pass " + pass + " cannot be run")
+  }
+
   private def verilog(input: String, output: String)(implicit logger: Logger)
   {
-    val stanzaPass = //List( 
-      List("rem-spec-chars", "high-form-check",
-      "temp-elim", "to-working-ir", "resolve-kinds", "infer-types",
-      "resolve-genders", "check-genders", "check-kinds", "check-types",
-      "expand-accessors", "lower-to-ground", "inline-indexers", "infer-types",
-      "check-genders", "expand-whens", "infer-widths", "real-ir", "width-check",
-      "pad-widths", "const-prop", "split-expressions", "width-check",
-      "high-form-check", "low-form-check", "check-init")
-    //)
-    val scalaPass = List(List[String]())
 
-    val mapString2Pass = Map[String, Circuit => Circuit] (
-      "infer-types" -> inferTypes
-    )
+    val passes = aggregateStanzaPasses(Seq(
+      StanzaPass("rem-spec-chars"),
+      StanzaPass("high-form-check"),
+      ScalaPass(renameall(Map(
+        "c"->"ccc",
+        "z"->"zzz",
+        "top"->"its_a_top_module"
+      ))),
+      StanzaPass("temp-elim"),
+      StanzaPass("to-working-ir"),
+      StanzaPass("resolve-kinds"),
+      StanzaPass("infer-types"),
+      StanzaPass("resolve-genders"),
+      StanzaPass("check-genders"),
+      StanzaPass("check-kinds"),
+      StanzaPass("check-types"),
+      StanzaPass("expand-accessors"),
+      StanzaPass("lower-to-ground"),
+      StanzaPass("inline-indexers"),
+      StanzaPass("infer-types"),
+      //ScalaPass(inferTypes),
+      StanzaPass("check-genders"),
+      StanzaPass("expand-whens"),
+      StanzaPass("infer-widths"),
+      StanzaPass("real-ir"),
+      StanzaPass("width-check"),
+      StanzaPass("pad-widths"),
+      StanzaPass("const-prop"),
+      StanzaPass("split-expressions"),
+      StanzaPass("width-check"),
+      StanzaPass("high-form-check"),
+      StanzaPass("low-form-check"),
+      StanzaPass("check-init")//,
+      //ScalaPass(renamec)
+    ))
 
-    //if (stanza.isEmpty || !Files.exists(Paths.get(stanza)))
-    //  throw new FileNotFoundException("Stanza binary not found! " + stanza)
+    val outfile = passes.foldLeft( input ) ( (infile, pass) => {
+      val outfile = genTempFilename(output)
+      run(pass, infile, outfile)
+      outfile
+    })
 
-    // For now, just use the stanza implementation in its entirety
-    val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "verilog") ++ stanzaPass.flatMap(Seq("-x", _))
+    println(outfile)
+
+    // finally, convert to verilog at the end
+    val cmd = Seq("firrtl-stanza", "-i", outfile, "-o", output, "-X", "verilog")
     println(cmd.mkString(" "))
     val ret = cmd.!!
     println(ret)
-
-    // Switch between stanza and scala implementations
-    //var scala2Stanza = input
-    //for ((stanzaPass, scalaPass) <- stanzaPass zip scalaPass) {
-    //  val stanza2Scala = genTempFilename(output)
-    //  val cmd: Seq[String] = Seq[String](stanza, "-i", scala2Stanza, "-o", stanza2Scala, "-b", "firrtl") ++ stanzaPass.flatMap(Seq("-x", _))
-    //  println(cmd.mkString(" "))
-    //  val ret = cmd.!!
-    //  println(ret)
-
-    //  if( scalaPass.isEmpty ) {
-    //    scala2Stanza = stanza2Scala
-    //  } else {
-    //    var ast = Parser.parse(input, stanza2Scala) 
-    //    //scalaPass.foreach( f => (ast = f(ast)) ) // Does this work?
-    //    for ( f <- scalaPass ) yield { ast = mapString2Pass(f)(ast) }
-
-    //    scala2Stanza = genTempFilename(output)
-    //    val writer = new PrintWriter(new File(scala2Stanza))
-    //    writer.write(ast.serialize())
-    //    writer.close()
-    //  }
-    //}
-    //val cmd = Seq(stanza, "-i", scala2Stanza, "-o", output, "-b", "verilog") 
-    //println(cmd.mkString(" "))
-    //val ret = cmd.!!
-    //println(ret)
   }
 
   def main(args: Array[String])
@@ -115,7 +158,7 @@ object Driver
         case _ => 'debug
       }
 
-    def nextPrintVar(syms: List[Symbol], chars: List[Char]): List[Symbol] = 
+    def nextPrintVar(syms: List[Symbol], chars: List[Char]): List[Symbol] =
       chars match {
         case Nil => syms
         case 't' :: tail => nextPrintVar(syms ++ List('types), tail)
@@ -125,16 +168,16 @@ object Driver
         case 'g' :: tail => nextPrintVar(syms ++ List('genders), tail)
         case 'c' :: tail => nextPrintVar(syms ++ List('circuit), tail)
         case 'd' :: tail => nextPrintVar(syms ++ List('debug), tail) // Currently ignored
-        case 'i' :: tail => nextPrintVar(syms ++ List('info), tail)  
+        case 'i' :: tail => nextPrintVar(syms ++ List('info), tail)
         case char :: tail => throw new Exception("Unknown print option " + char)
       }
 
     def nextOption(map: OptionMap, list: List[String]): OptionMap = {
       list match {
         case Nil => map
-        case "-X" :: value :: tail => 
+        case "-X" :: value :: tail =>
                   nextOption(map ++ Map('compiler -> value), tail)
-        case "-d" :: value :: tail => 
+        case "-d" :: value :: tail =>
                   nextOption(map ++ Map('debugMode -> value), tail)
         case "-l" :: value :: tail =>
                   nextOption(map ++ Map('log -> value), tail)
@@ -146,7 +189,7 @@ object Driver
                   nextOption(map ++ Map('output -> value), tail)
         case ("-h" | "--help") :: tail =>
                   nextOption(map ++ Map('help -> true), tail)
-        case option :: tail => 
+        case option :: tail =>
                   throw new Exception("Unknown option " + option)
       }
     }

@@ -17,6 +17,8 @@ object Passes {
     //mapNameToPass.getOrElse(name, throw new Exception("No Standard FIRRTL Pass of name " + name))
     name match {
       case "infer-types" => inferTypes
+        // errrrrrrrrrr...
+      case "renameall" => renameall(Map())
     }
   }
 
@@ -28,7 +30,7 @@ object Passes {
     }
   }
 
-  /** INFER TYPES 
+  /** INFER TYPES
    *
    *  This pass infers the type field in all IR nodes by updating
    *    and passing an environment to all statements in pre-order
@@ -84,7 +86,7 @@ object Passes {
       case s: DefInst => (s, typeMap ++ Map(s.name -> s.module.getType))
       case s: DefNode => (s, typeMap ++ Map(s.name -> s.value.getType))
       case s: DefPoison => (s, typeMap ++ Map(s.name -> s.tpe))
-      case s: DefAccessor => (s, typeMap ++ Map(s.name -> getVectorSubtype(s.source.getType))) 
+      case s: DefAccessor => (s, typeMap ++ Map(s.name -> getVectorSubtype(s.source.getType)))
       case s: When => { // TODO Check: Assuming else block won't see when scope
         val (conseq, cMap) = inferTypes(typeMap, s.conseq)
         val (alt, aMap) = inferTypes(typeMap, s.alt)
@@ -110,4 +112,74 @@ object Passes {
     Circuit(c.info, c.name, c.modules.map(inferTypes(typeMap, _)))
   }
 
+  def renameall(s : String)(implicit map : Map[String,String]) : String =
+    map getOrElse (s, s)
+
+  def renameall(e : Exp)(implicit logger : Logger, map : Map[String,String]) : Exp = {
+    logger.trace(s"renameall called on expression ${e.toString}")
+    e match {
+      case p : Ref =>
+        Ref(renameall(p.name), p.tpe)
+      case p : Subfield =>
+        Subfield(renameall(p.exp), renameall(p.name), p.tpe)
+      case p : Index =>
+        Index(renameall(p.exp), p.value, p.tpe)
+      case p : DoPrimop =>
+        println( p.args.map(x => renameall(x)) )
+        DoPrimop(p.op, p.args.map(x => renameall(x)), p.consts, p.tpe)
+      case p : Exp => p
+    }
+  }
+
+  def renameall(s : Stmt)(implicit logger : Logger, map : Map[String,String]) : Stmt = {
+    logger.trace(s"renameall called on statement ${s.toString}")
+
+    s match {
+      case p : DefWire =>
+        DefWire(p.info, renameall(p.name), p.tpe)
+      case p: DefReg =>
+        DefReg(p.info, renameall(p.name), p.tpe, p.clock, p.reset)
+      case p : DefMemory =>
+        DefMemory(p.info, renameall(p.name), p.seq, p.tpe, p.clock)
+      case p : DefInst =>
+        DefInst(p.info, renameall(p.name), renameall(p.module))
+      case p : DefNode =>
+        DefNode(p.info, renameall(p.name), renameall(p.value))
+      case p : DefPoison =>
+        DefPoison(p.info, renameall(p.name), p.tpe)
+      case p : DefAccessor =>
+        DefAccessor(p.info, renameall(p.name), p.dir, renameall(p.source), renameall(p.index))
+      case p : OnReset =>
+        OnReset(p.info, renameall(p.lhs), renameall(p.rhs))
+      case p : Connect =>
+        Connect(p.info, renameall(p.lhs), renameall(p.rhs))
+      case p : BulkConnect =>
+        BulkConnect(p.info, renameall(p.lhs), renameall(p.rhs))
+      case p : When =>
+        When(p.info, renameall(p.pred), renameall(p.conseq), renameall(p.alt))
+      case p : Assert =>
+        Assert(p.info, renameall(p.pred))
+      case p : Block =>
+        Block(p.stmts.map(renameall))
+      case p : Stmt => p
+    }
+  }
+
+  def renameall(p : Port)(implicit logger : Logger, map : Map[String,String]) : Port = {
+    logger.trace(s"renameall called on port ${p.name}")
+    Port(p.info, renameall(p.name), p.dir, p.tpe)
+  }
+
+  def renameall(m : Module)(implicit logger : Logger, map : Map[String,String]) : Module = {
+    logger.trace(s"renameall called on module ${m.name}")
+    Module(m.info, renameall(m.name), m.ports.map(renameall(_)), renameall(m.stmt))
+  }
+
+  def renameall(map : Map[String,String])(implicit logger : Logger) : Circuit => Circuit = {
+    c => {
+      implicit val imap = map
+      logger.trace(s"renameall called on circuit ${c.name} with %{renameto}")
+      Circuit(c.info, renameall(c.name), c.modules.map(renameall(_)))
+    }
+  }
 }
