@@ -2263,7 +2263,7 @@ public defmethod short-name (b:Verilog) -> String : "To Verilog"
 ;============ Utilz =============
 defstruct VIndent
 defstruct VRandom
-val tab = VIndent()
+val tab = "   "
 val ran = VRandom()
 defn wref (n:Symbol,t:Type) : WRef(n,t,ExpKind(),UNKNOWN-GENDER)
 defn escape (s:String) -> String :
@@ -2454,14 +2454,29 @@ defn emit-verilog (m:InModule) -> Module :
          (t) : add(declares,[b " " t " " n ";"])
    defn assign (e:Expression,value:Expression) : 
       add(assigns,["assign " e " = " value])
-   defn update-and-reset (e:Expression,clk:Expression,reset?:Expression,init:Expression) :
-      if not key?(at-clock,clk) :
-         at-clock[clk] = Vector<Streamable>()
-      add(at-clock[clk],["if(" reset? ") begin"])
-      add(at-clock[clk],[tab e " <= " init])
-      add(at-clock[clk],["end else"])
-      add(at-clock[clk],[tab e " <= " netlist[e]])
-      add(at-clock[clk],["end"])
+   defn update-and-reset (r:Expression,clk:Expression,reset?:Expression,init:Expression) :
+      if not key?(at-clock,clk) : at-clock[clk] = Vector<Streamable>()
+
+      defn mux? (e:Expression) -> True|False :
+         match(e) :
+            (e:DoPrim) : 
+               if (op(e) == MUX-OP) : true
+               else : false
+            (e) : false
+
+      defn add-update (e:Expression,tabs:String) :
+         if mux?(e) :
+            val e* = e as DoPrim
+            add(at-clock[clk],[tabs "if(" args(e*)[0] ") begin"])
+            add-update(args(e*)[1],string-join([tabs tab]))
+            add(at-clock[clk],[tabs "end else begin"])
+            add-update(args(e*)[2],string-join([tabs tab]))
+            add(at-clock[clk],[tabs "end"])
+         else :
+            if e == r : add(at-clock[clk],[tabs ";"])
+            else : add(at-clock[clk],[tabs r " <= " e ";"])
+
+      add-update(MUX(reset?,init,netlist[r]),"");"
    defn update (e:Expression,value:Expression,clk:Expression,en:Expression) :
       if not key?(at-clock,clk) :
          at-clock[clk] = Vector<Streamable>()
