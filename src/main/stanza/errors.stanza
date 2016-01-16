@@ -845,6 +845,7 @@ public defn check-init (c:Circuit) :
          match(e) :
             (e:WRef) : name(e)
             (e:WSubField) : symbol-join([get-name(exp(e)) `. name(e)])
+            (e:WSubIndex) : symbol-join([get-name(exp(e)) to-symbol("[") value(e) to-symbol("]")])
             (e) : error("Shouldn't be here")
       defn has-void? (e:Expression) -> True|False :
          var void? = false
