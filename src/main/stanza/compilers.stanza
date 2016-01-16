@@ -166,16 +166,16 @@ public defn run-passes (c:Circuit,ls:List<Pass>) -> Circuit:
    var t = start-time
    val time-table = Vector<[String,Int]>()
    for p in ls do : 
-      ;println-all(["Starting " name(p)])
+      println-all(["Starting " name(p)])
       if PRINT-CIRCUITS : println(name(p))
       c* = pass(p)(c*)
       if PRINT-CIRCUITS : print(c*)
       val current-time = to-int(to-string(current-time-us() / to-long(1000)))
-      ;println-all(["Finished " name(p)])
-      ;println-all(["Milliseconds since start: " current-time - start-time])
-      ;println-all(["Milliseconds for this pass: " current-time - t])
-      ;println-all(["\n"])
-      println-all([current-time - t])
+      println-all(["Finished " name(p)])
+      println-all(["Milliseconds since start: " current-time - start-time])
+      println-all(["Milliseconds for this pass: " current-time - t])
+      println-all(["\n"])
+      ;println-all([current-time - t])
       add(time-table,[name(p), current-time - t])
       t = current-time
 
