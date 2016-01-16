@@ -34,9 +34,7 @@ object Passes {
    *    and passing an environment to all statements in pre-order
    *    traversal, and resolving types in expressions in post-
    *    order traversal.
-   *  Type propagation for primary ops are defined here.
-   *  Notable cases: LetRec requires updating environment before
-   *    resolving the subexpressions in its elements.
+   *  Type propagation for primary ops are defined in Primops.scala.
    *  Type errors are not checked in this pass, as this is
    *    postponed for a later/earlier pass.
    */

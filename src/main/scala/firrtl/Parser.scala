@@ -22,7 +22,7 @@ object Parser
     val tokens = new CommonTokenStream(lexer)
     val parser = new FIRRTLParser(tokens)
 
-    // FIXME Dangerous
+    // FIXME Dangerous (TODO)
     parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
 
     // Concrete Syntax Tree

@@ -9,6 +9,10 @@ package firrtl
 import scala.collection.Seq
 
 // Should this be defined elsewhere?
+/*
+Structure containing source locator information.
+Member of most Stmt case classes.
+*/
 trait Info
 case object NoInfo extends Info
 case class FileInfo(file: String, line: Int, column: Int) extends Info {
