@@ -61,6 +61,9 @@ regress:
 passes: 
 	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/
 
+perf: 
+	cd $(test_dir)/performance && lit -v . --path=$(root_dir)/utils/bin/
+
 errors:
 	cd $(test_dir)/errors && lit -v . --path=$(root_dir)/utils/bin/
 
