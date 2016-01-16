@@ -2485,7 +2485,7 @@ defn emit-verilog (m:InModule) -> Module :
       ["$fdisplay(32/'h80000002," ret ");$finish;"]
    defn printf (str:String,args:List<Expression>) -> Streamable :
       val str* = join(List(escape(str),args),",")
-      ["$fdisplay(32/'h80000002," str* ");"]
+      ["$fwrite(32/'h80000002," str* ");"]
    defn delay (e:Expression, n:Int, clk:Expression) -> Expression :
       var e* = e
       for i in 0 to n do :
