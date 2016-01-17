@@ -538,6 +538,9 @@ object Mux {
   // This returns an lvalue, which it most definitely should not
   private def doWhen[T <: Data](cond: Bool, con: T, alt: T): T = {
     require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
+    for ((c, a) <- con.flatten zip alt.flatten)
+      require(c.width == a.width, "can't Mux between aggregates of different width")
+
     val res = Wire(t = alt.cloneTypeWidth(con.width max alt.width), init = alt)
     when (cond) { res := con }
     res
