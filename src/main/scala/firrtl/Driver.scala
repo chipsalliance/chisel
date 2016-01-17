@@ -170,7 +170,7 @@ object Driver extends LazyLogging {
         case 'T' :: tail => nextPrintVar(syms ++ List('twidths), tail)
         case 'g' :: tail => nextPrintVar(syms ++ List('genders), tail)
         case 'c' :: tail => nextPrintVar(syms ++ List('circuit), tail)
-        case 'd' :: tail => nextPrintVar(syms ++ List('debug), tail) // Currently ignored
+        case 'd' :: tail => nextPrintVar(syms ++ List('debug), tail)
         case 'i' :: tail => nextPrintVar(syms ++ List('info), tail)
         case char :: tail => throw new Exception("Unknown print option " + char)
       }
@@ -180,10 +180,6 @@ object Driver extends LazyLogging {
         case Nil => map
         case "-X" :: value :: tail =>
                   nextOption(map ++ Map('compiler -> value), tail)
-        case "-d" :: value :: tail =>
-                  nextOption(map ++ Map('debugMode -> value), tail)
-        case "-l" :: value :: tail =>
-                  nextOption(map ++ Map('log -> value), tail)
         case "-p" :: value :: tail =>
                   nextOption(map ++ Map('printVars -> value), tail)
         case "-i" :: value :: tail =>
@@ -211,14 +207,17 @@ object Driver extends LazyLogging {
       case s: String => s
       case false => throw new Exception("No output file provided!" + usage)
     }
-    val debugMode = decodeDebugMode(options('debugMode))
     val printVars = options('printVars) match {
       case s: String => nextPrintVar(List(), s.toList)
       case false => List()
     }
 
-    if (!logger.underlying.isDebugEnabled && !printVars.isEmpty )
-      logger.warn("-p options will only print at DEBUG log level")
+    if (!printVars.isEmpty) {
+      logger.warn("-p options currently ignored")
+      if (!logger.underlying.isDebugEnabled) {
+        logger.warn("-p options will only print at DEBUG log level, logging configuration can be edited in src/main/resources/logback.xml")
+      }
+    }
 
     options('compiler) match {
       case "verilog" => verilog(input, output)
