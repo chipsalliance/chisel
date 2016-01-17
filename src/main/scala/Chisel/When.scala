@@ -25,31 +25,31 @@ object when {  // scalastyle:ignore object.name
     * }}}
     */
   def apply(cond: => Bool)(block: => Unit): WhenContext = {
-    new WhenContext(cond)(block)
+    new WhenContext(cond, Bool(true))(block)
   }
 }
 
-class WhenContext(cond: => Bool)(block: => Unit) {
+/** Internal mechanism for generating a when. Because of the way FIRRTL
+  * commands are emitted, generating a FIRRTL elsewhen or nested whens inside
+  * elses would be difficult. Instead, this keeps track of the negative of the
+  * previous conditions, so when an elsewhen or otherwise is used, it checks
+  * that both the condition is true and all the previous conditions have been
+  * false.
+  */
+class WhenContext(cond: => Bool, prevCond: Bool)(block: => Unit) {
   /** This block of logic gets executed if above conditions have been false
     * and this condition is true.
     */
-  def elsewhen (cond: => Bool)(block: => Unit): WhenContext =
-    doOtherwise(when(cond)(block))
+  def elsewhen (elseCond: => Bool)(block: => Unit): WhenContext =
+    new WhenContext(elseCond, prevCond && !cond)(block)
 
   /** This block of logic gets executed only if the above conditions were all
     * false. No additional logic blocks may be appended past the `otherwise`.
     */
   def otherwise(block: => Unit): Unit =
-    doOtherwise(block)
+    new WhenContext(Bool(true), prevCond && !cond)(block)
 
-  pushCommand(WhenBegin(cond.ref))
+  pushCommand(WhenBegin((cond && prevCond).ref))
   block
   pushCommand(WhenEnd())
-
-  private def doOtherwise[T](block: => T): T = {
-    pushCommand(WhenElse())
-    val res = block
-    pushCommand(WhenEnd())
-    res
-  }
 }
