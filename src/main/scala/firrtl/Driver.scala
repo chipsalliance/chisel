@@ -217,14 +217,8 @@ object Driver extends LazyLogging {
       case false => List()
     }
 
-    /*implicit val logger = options('log) match {
-      case s: String => Logger(new PrintWriter(new FileOutputStream(s)), debugMode, printVars)
-      case false => Logger(new PrintWriter(System.err, true), debugMode, printVars)
-    }*/
-
-    // -p "printVars" options only print for debugMode > 'debug, warn if -p enabled and debugMode < 'debug
-    if (!printVars.isEmpty)
-      logger.warn("-p options will not print unless debugMode (-d) is debug or trace")
+    if (!logger.underlying.isDebugEnabled && !printVars.isEmpty )
+      logger.warn("-p options will only print at DEBUG log level")
 
     options('compiler) match {
       case "verilog" => verilog(input, output)
