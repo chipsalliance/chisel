@@ -321,6 +321,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
 
   def === (that: BitPat): Bool = that === this
   def != (that: BitPat): Bool = that != this
+  def =/= (that: BitPat): Bool = that =/= this
 
   /** Returns this UInt as a [[SInt]] with an additional zero in the MSB.
     */
