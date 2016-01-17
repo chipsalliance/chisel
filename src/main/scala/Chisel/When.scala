@@ -24,8 +24,8 @@ object when {  // scalastyle:ignore object.name
     * }
     * }}}
     */
-  def apply(cond: => Bool)(block: => Unit): WhenContext = {
-    new WhenContext(cond, Bool(true))(block)
+  def apply(cond: Bool)(block: => Unit): WhenContext = {
+    new WhenContext(cond, !cond)(block)
   }
 }
 
@@ -36,20 +36,21 @@ object when {  // scalastyle:ignore object.name
   * that both the condition is true and all the previous conditions have been
   * false.
   */
-class WhenContext(cond: => Bool, prevCond: Bool)(block: => Unit) {
+class WhenContext(cond: Bool, prevCond: => Bool)(block: => Unit) {
   /** This block of logic gets executed if above conditions have been false
     * and this condition is true.
     */
-  def elsewhen (elseCond: => Bool)(block: => Unit): WhenContext =
-    new WhenContext(elseCond, prevCond && !cond)(block)
+  def elsewhen (elseCond: Bool)(block: => Unit): WhenContext = {
+    new WhenContext(prevCond && elseCond, prevCond && !elseCond)(block)
+  }
 
   /** This block of logic gets executed only if the above conditions were all
     * false. No additional logic blocks may be appended past the `otherwise`.
     */
   def otherwise(block: => Unit): Unit =
-    new WhenContext(Bool(true), prevCond && !cond)(block)
+    new WhenContext(prevCond, null)(block)
 
-  pushCommand(WhenBegin((cond && prevCond).ref))
+  pushCommand(WhenBegin(cond.ref))
   block
   pushCommand(WhenEnd())
 }
