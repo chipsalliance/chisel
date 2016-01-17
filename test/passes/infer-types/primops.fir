@@ -1,6 +1,4 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p ct 2>&1 | tee %s.out | FileCheck %s
-; XFAIL: *
-; TODO Talk to Andrew about bit operations (and, or, etc.) on SInts
 
 ;CHECK: Infer Types
 circuit top :

@@ -517,16 +517,16 @@ defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -
       SHIFT-RIGHT-OP     : false
       CONVERT-OP         : false
       NEG-OP             : false
-      BIT-NOT-OP         : all-same-type(args(e))
-      BIT-AND-OP         : all-same-type(args(e))
-      BIT-OR-OP          : all-same-type(args(e))
-      BIT-XOR-OP         : all-same-type(args(e))
-      BIT-SELECT-OP      : false
-      BITS-SELECT-OP     : false
-      BIT-AND-REDUCE-OP  : all-uint(args(e))
-      BIT-OR-REDUCE-OP   : all-uint(args(e))
-      BIT-XOR-REDUCE-OP  : all-uint(args(e))
-      CONCAT-OP          : all-uint(args(e))
+      BIT-NOT-OP         : all-same-type(args(e)) ;can be either uint or sint
+      BIT-AND-OP         : all-same-type(args(e)) ;can be either uint or sint
+      BIT-OR-OP          : all-same-type(args(e)) ;can be either uint or sint
+      BIT-XOR-OP         : all-same-type(args(e)) ;can be either uint or sint
+      BIT-SELECT-OP      : false ;can be either uint or sint
+      BITS-SELECT-OP     : false ;can be either uint or sint
+      BIT-AND-REDUCE-OP  : false ;can be either uint or sint
+      BIT-OR-REDUCE-OP   : false ;can be either uint or sint
+      BIT-XOR-REDUCE-OP  : false ;can be either uint or sint
+      CONCAT-OP          : false ;can be either uint or sint
    
 ;----------------- Check Types Pass ---------------------
 public defn check-types (c:Circuit) -> Circuit : 

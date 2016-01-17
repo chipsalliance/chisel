@@ -146,9 +146,21 @@ public defn set-primop-type (e:DoPrim) -> DoPrim :
             (t1:SIntType) : SIntType(w1())
             (t1) : UnknownType()
       BIT-NOT-OP : DoPrim(o,a,c,t1())
-      BIT-AND-OP : DoPrim(o,a,c,UIntType(MAX(w1(),w2())))
-      BIT-OR-OP : DoPrim(o,a,c,UIntType(MAX(w1(),w2())))
-      BIT-XOR-OP : DoPrim(o,a,c,UIntType(MAX(w1(),w2())))
+      BIT-AND-OP : DoPrim{o,a,c,_} $
+         match(t1()) :
+            (t1:UIntType) : UIntType(MAX(w1(),w2()))
+            (t1:SIntType) : SIntType(MAX(w1(),w2()))
+            (t1) : UnknownType()
+      BIT-OR-OP : DoPrim{o,a,c,_} $
+         match(t1()) :
+            (t1:UIntType) : UIntType(MAX(w1(),w2()))
+            (t1:SIntType) : SIntType(MAX(w1(),w2()))
+            (t1) : UnknownType()
+      BIT-XOR-OP : DoPrim{o,a,c,_} $
+         match(t1()) :
+            (t1:UIntType) : UIntType(MAX(w1(),w2()))
+            (t1:SIntType) : SIntType(MAX(w1(),w2()))
+            (t1) : UnknownType()
       BIT-AND-REDUCE-OP : DoPrim(o,a,c,BoolType())
       BIT-OR-REDUCE-OP : DoPrim(o,a,c,BoolType())
       BIT-XOR-REDUCE-OP : DoPrim(o,a,c,BoolType())
