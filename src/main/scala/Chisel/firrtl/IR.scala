@@ -146,7 +146,6 @@ case class DefAccessor[T <: Data](id: T, source: Node, direction: Direction, ind
 case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
 case class DefPoison[T <: Data](id: T) extends Definition
 case class WhenBegin(pred: Arg) extends Command
-case class WhenElse() extends Command
 case class WhenEnd() extends Command
 case class Connect(loc: Node, exp: Arg) extends Command
 case class BulkConnect(loc1: Node, loc2: Node) extends Command
