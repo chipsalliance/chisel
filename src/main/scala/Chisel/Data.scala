@@ -104,7 +104,16 @@ abstract class Data(dirArg: Direction) extends HasId {
 }
 
 object Wire {
-  def apply[T <: Data](t: T = null, init: T = null): T = {
+  def apply[T <: Data](t: T): T =
+    makeWire(t, null.asInstanceOf[T])
+
+  def apply[T <: Data](dummy: Int = 0, init: T): T =
+    makeWire(null.asInstanceOf[T], init)
+
+  def apply[T <: Data](t: T, init: T): T =
+    makeWire(t, init)
+
+  private def makeWire[T <: Data](t: T, init: T): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x))
     if (init != null) {
