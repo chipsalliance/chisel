@@ -8,6 +8,51 @@ import Utils._
 import DebugUtils._
 import Passes._
 
+
+trait DriverPass {
+  def run(input: String, output: String)(implicit logger: Logger) : Unit
+}
+case class StanzaPass(val passes : Seq[String]) extends DriverPass {
+  def run(input : String, output : String)(implicit logger : Logger) : Unit = {
+    val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl") ++ passes.flatMap(x=>Seq("-x", x))
+    println(cmd.mkString(" "))
+    val ret = cmd.!!
+    println(ret)
+  }
+}
+case class ScalaPass(val func : Circuit => Circuit) extends DriverPass {
+  def run(input : String, output : String)(implicit logger : Logger) : Unit = {
+    var ast = Parser.parse(input, Source.fromFile(input).getLines)
+    val newast = func(ast)
+    println("Writing to " + output)
+    val writer = new PrintWriter(new File(output))
+    writer.write(newast.serialize())
+    writer.close()
+  }
+}
+object StanzaPass {
+  def apply(pass: String): StanzaPass = StanzaPass(Seq(pass))
+}
+
+object DriverPasses {
+  private def aggregateStanzaPasses(passes: Seq[DriverPass]): Seq[DriverPass] = {
+    if (passes.isEmpty) return Seq()
+    val span = passes.span(x => x match {
+      case p : StanzaPass => true
+      case _ => false
+    })
+    if (span._1.isEmpty) {
+      Seq(span._2.head) ++ aggregateStanzaPasses(span._2.tail)
+    } else {
+      Seq(StanzaPass(span._1.flatMap(x=>x.asInstanceOf[StanzaPass].passes))) ++ aggregateStanzaPasses(span._2)
+    }
+  }
+
+  def optimize(passes: Seq[DriverPass]): Seq[DriverPass] = {
+    aggregateStanzaPasses(passes)
+  }
+}
+
 object Driver
 {
   private val usage = """
@@ -27,6 +72,49 @@ object Driver
       count += 1
     path + name + count + ext
   }
+
+  val defaultPasses = DriverPasses.optimize(Seq(
+    StanzaPass("to-firrtl"),
+
+    StanzaPass("high-form-check"),
+
+//  ScalaPass(renameall(Map(
+//    "c"->"ccc",
+//    "z"->"zzz",
+//    "top"->"its_a_top_module"
+//  ))),
+    // StanzaPass("temp-elim"), // performance pass
+    StanzaPass("to-working-ir"),
+
+    StanzaPass("resolve-kinds"),
+    StanzaPass("infer-types"),
+    StanzaPass("check-types"),
+    StanzaPass("resolve-genders"),
+    StanzaPass("check-genders"),
+    StanzaPass("infer-widths"),
+    StanzaPass("width-check"),
+
+    StanzaPass("check-kinds"),
+
+    StanzaPass("expand-accessors"),
+    StanzaPass("lower-to-ground"),
+    StanzaPass("inline-indexers"),
+    StanzaPass("infer-types"),
+    //ScalaPass(inferTypes),
+    StanzaPass("check-genders"),
+    StanzaPass("expand-whens"),
+
+    StanzaPass("real-ir"),
+
+    StanzaPass("pad-widths"),
+    StanzaPass("const-prop"),
+    StanzaPass("split-expressions"),
+    StanzaPass("width-check"),
+    StanzaPass("high-form-check"),
+    StanzaPass("low-form-check"),
+    StanzaPass("check-init")//,
+    //ScalaPass(renamec)
+  ))
 
   // Parse input file and print to output
   private def firrtl(input: String, output: String)(implicit logger: Logger)
@@ -49,91 +137,10 @@ object Driver
     executePassesWithLogger(ast, passes)
   }
 
-  trait Pass
-  case class StanzaPass(val name : String) extends Pass
-  case class AggregatedStanzaPass(val passes : Seq[StanzaPass]) extends Pass
-  case class ScalaPass(val func : Circuit => Circuit) extends Pass
-
-  def aggregateStanzaPasses(l : Seq[Pass]) : Seq[Pass] = {
-    if (l.isEmpty) return Seq()
-    val span = l.span(x => x match {
-      case p : StanzaPass => true
-      case _ => false
-    })
-    if (span._1.isEmpty) {
-      val tail = if(span._2.length > 1)
-        aggregateStanzaPasses(span._2.tail)
-      else
-        Seq()
-      Seq(span._2.head) ++ tail
-    } else {
-      Seq(AggregatedStanzaPass(span._1.asInstanceOf[Seq[StanzaPass]])) ++ aggregateStanzaPasses(span._2)
-    }
-  }
-
-  def run(pass : Pass, input : String, output : String)(implicit logger : Logger) : Unit = pass match {
-    case p : StanzaPass =>
-      val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl", "-x", p.name)
-      println(cmd.mkString(" "))
-      val ret = cmd.!!
-      println(ret)
-    case p : AggregatedStanzaPass =>
-      val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl") ++ p.passes.flatMap(x=>Seq("-x", x.name))
-      println(cmd.mkString(" "))
-      val ret = cmd.!!
-      println(ret)
-    case p : ScalaPass =>
-      var ast = Parser.parse(input, Source.fromFile(input).getLines)
-      val newast = p.func(ast)
-      println("Writing to " + output)
-      val writer = new PrintWriter(new File(output))
-      writer.write(newast.serialize())
-      writer.close()
-    case _ => logger.warn("Pass " + pass + " cannot be run")
-  }
-
-  private def verilog(input: String, output: String)(implicit logger: Logger)
-  {
-
-    val passes = aggregateStanzaPasses(Seq(
-      StanzaPass("rem-spec-chars"),
-      StanzaPass("high-form-check"),
-      ScalaPass(renameall(Map(
-        "c"->"ccc",
-        "z"->"zzz",
-        "top"->"its_a_top_module"
-      ))),
-      StanzaPass("temp-elim"),
-      StanzaPass("to-working-ir"),
-      StanzaPass("resolve-kinds"),
-      StanzaPass("infer-types"),
-      StanzaPass("resolve-genders"),
-      StanzaPass("check-genders"),
-      StanzaPass("check-kinds"),
-      StanzaPass("check-types"),
-      StanzaPass("expand-accessors"),
-      StanzaPass("lower-to-ground"),
-      StanzaPass("inline-indexers"),
-      StanzaPass("infer-types"),
-      //ScalaPass(inferTypes),
-      StanzaPass("check-genders"),
-      StanzaPass("expand-whens"),
-      StanzaPass("infer-widths"),
-      StanzaPass("real-ir"),
-      StanzaPass("width-check"),
-      StanzaPass("pad-widths"),
-      StanzaPass("const-prop"),
-      StanzaPass("split-expressions"),
-      StanzaPass("width-check"),
-      StanzaPass("high-form-check"),
-      StanzaPass("low-form-check"),
-      StanzaPass("check-init")//,
-      //ScalaPass(renamec)
-    ))
-
-    val outfile = passes.foldLeft( input ) ( (infile, pass) => {
+  private def verilog(input: String, output: String)(implicit logger: Logger) {
+    val outfile = defaultPasses.foldLeft( input ) ( (infile, pass) => {
       val outfile = genTempFilename(output)
-      run(pass, infile, outfile)
+      pass.run(infile, outfile)
       outfile
     })
 
