@@ -1,10 +1,12 @@
 
 package firrtl
 
+import com.typesafe.scalalogging.LazyLogging
+
 import Utils._
 import DebugUtils._
 
-object Primops {
+object Primops extends LazyLogging {
 
   private val mapPrimop2String = Map[Primop, String](
     Add -> "add",
@@ -53,7 +55,7 @@ object Primops {
   }
 
   // Borrowed from Stanza implementation
-  def lowerAndTypePrimop(e: DoPrimop)(implicit logger: Logger): DoPrimop = {
+  def lowerAndTypePrimop(e: DoPrimop): DoPrimop = {
     def uAnd(op1: Exp, op2: Exp): Type = {
       (op1.getType, op2.getType) match {
         case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
@@ -69,7 +71,7 @@ object Primops {
         case _ => UnknownType
       }
     }
-   
+
     logger.debug(s"lowerAndTypePrimop on ${e.op.getClass.getSimpleName}")
     val tpe = e.op match {
       case Add => uAnd(e.args(0), e.args(1))
@@ -109,7 +111,7 @@ object Primops {
       case Cat => UIntType(UnknownWidth)
       case Bit => UIntType(UnknownWidth)
       case Bits => UIntType(UnknownWidth)
-      case _ => ??? 
+      case _ => ???
     }
     DoPrimop(e.op, e.args, e.consts, tpe)
   }

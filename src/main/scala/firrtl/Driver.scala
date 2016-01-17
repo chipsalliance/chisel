@@ -1,30 +1,33 @@
 package firrtl
 
 import java.io._
-import scala.sys.process._
 import java.nio.file.{Paths, Files}
+
 import scala.io.Source
+import scala.sys.process._
+
+import com.typesafe.scalalogging.LazyLogging
+
 import Utils._
 import DebugUtils._
 import Passes._
 
-
 trait DriverPass {
-  def run(input: String, output: String)(implicit logger: Logger) : Unit
+  def run(input: String, output: String) : Unit
 }
-case class StanzaPass(val passes : Seq[String]) extends DriverPass {
-  def run(input : String, output : String)(implicit logger : Logger) : Unit = {
+case class StanzaPass(val passes : Seq[String]) extends DriverPass with LazyLogging {
+  def run(input : String, output : String): Unit = {
     val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl") ++ passes.flatMap(x=>Seq("-x", x))
-    println(cmd.mkString(" "))
+    logger.info(cmd.mkString(" "))
     val ret = cmd.!!
-    println(ret)
+    logger.info(ret)
   }
 }
-case class ScalaPass(val func : Circuit => Circuit) extends DriverPass {
-  def run(input : String, output : String)(implicit logger : Logger) : Unit = {
+case class ScalaPass(val func : Circuit => Circuit) extends DriverPass with LazyLogging {
+  def run(input : String, output : String): Unit = {
     var ast = Parser.parse(input, Source.fromFile(input).getLines)
     val newast = func(ast)
-    println("Writing to " + output)
+    logger.info("Writing to " + output)
     val writer = new PrintWriter(new File(output))
     writer.write(newast.serialize())
     writer.close()
@@ -53,8 +56,7 @@ object DriverPasses {
   }
 }
 
-object Driver
-{
+object Driver extends LazyLogging {
   private val usage = """
     Usage: java -cp utils/bin/firrtl.jar firrtl.Driver [options] -i <input> -o <output>
   """
@@ -117,40 +119,34 @@ object Driver
   ))
 
   // Parse input file and print to output
-  private def firrtl(input: String, output: String)(implicit logger: Logger)
+  private def firrtl(input: String, output: String)
   {
     val ast = Parser.parse(input, Source.fromFile(input).getLines)
     val writer = new PrintWriter(new File(output))
     writer.write(ast.serialize())
     writer.close()
-    logger.printlnDebug(ast)
+    logger.debug(ast.toString)
   }
 
-  // Should we just remove logger?
-  private def executePassesWithLogger(ast: Circuit, passes: Seq[Circuit => Circuit])(implicit logger: Logger): Circuit = {
+  def executePasses(ast: Circuit, passes: Seq[Circuit => Circuit]): Circuit = {
     if (passes.isEmpty) ast
     else executePasses(passes.head(ast), passes.tail)
   }
 
-  def executePasses(ast: Circuit, passes: Seq[Circuit => Circuit]): Circuit = {
-    implicit val logger = Logger() // No logging
-    executePassesWithLogger(ast, passes)
-  }
-
-  private def verilog(input: String, output: String)(implicit logger: Logger) {
+  private def verilog(input: String, output: String) {
     val outfile = defaultPasses.foldLeft( input ) ( (infile, pass) => {
       val outfile = genTempFilename(output)
       pass.run(infile, outfile)
       outfile
     })
 
-    println(outfile)
+    logger.info(outfile)
 
     // finally, convert to verilog at the end
     val cmd = Seq("firrtl-stanza", "-i", outfile, "-o", output, "-X", "verilog")
-    println(cmd.mkString(" "))
+    logger.info(cmd.mkString(" "))
     val ret = cmd.!!
-    println(ret)
+    logger.info(ret)
   }
 
   def main(args: Array[String])
@@ -220,13 +216,14 @@ object Driver
       case s: String => nextPrintVar(List(), s.toList)
       case false => List()
     }
-    implicit val logger = options('log) match {
+
+    /*implicit val logger = options('log) match {
       case s: String => Logger(new PrintWriter(new FileOutputStream(s)), debugMode, printVars)
       case false => Logger(new PrintWriter(System.err, true), debugMode, printVars)
-    }
+    }*/
 
     // -p "printVars" options only print for debugMode > 'debug, warn if -p enabled and debugMode < 'debug
-    if( !logger.debugEnable && !printVars.isEmpty )
+    if (!printVars.isEmpty)
       logger.warn("-p options will not print unless debugMode (-d) is debug or trace")
 
     options('compiler) match {
@@ -236,7 +233,7 @@ object Driver
     }
   }
 
-  def time[R](str: String)(block: => R)(implicit logger: Logger): R = {
+  def time[R](str: String)(block: => R): R = {
     val t0 = System.currentTimeMillis()
     val result = block    // call-by-name
     val t1 = System.currentTimeMillis()

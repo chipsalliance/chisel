@@ -1,11 +1,13 @@
 
 package firrtl
 
+import com.typesafe.scalalogging.LazyLogging
+
 import Utils._
 import DebugUtils._
 import Primops._
 
-object Passes {
+object Passes extends LazyLogging {
 
   // TODO Perhaps we should get rid of Logger since this map would be nice
   ////private val defaultLogger = Logger()
@@ -13,7 +15,6 @@ object Passes {
   //  "infer-types" -> inferTypes
   //)
   def nameToPass(name: String): Circuit => Circuit = {
-    implicit val logger = Logger() // throw logging away
     //mapNameToPass.getOrElse(name, throw new Exception("No Standard FIRRTL Pass of name " + name))
     name match {
       case "infer-types" => inferTypes
@@ -22,8 +23,8 @@ object Passes {
     }
   }
 
-  private def toField(p: Port)(implicit logger: Logger): Field = {
-    logger.trace(s"toField called on port ${p.serialize}")
+  private def toField(p: Port): Field = {
+    logger.debug(s"toField called on port ${p.serialize}")
     p.dir match {
       case Input  => Field(p.name, Reverse, p.tpe)
       case Output => Field(p.name, Default, p.tpe)
@@ -55,8 +56,8 @@ object Passes {
   }
   private def getVectorSubtype(t: Type): Type = t.getType // Added for clarity
   // TODO Add genders
-  private def inferExpTypes(typeMap: TypeMap)(exp: Exp)(implicit logger: Logger): Exp = {
-    logger.trace(s"inferTypes called on ${exp.getClass.getSimpleName}")
+  private def inferExpTypes(typeMap: TypeMap)(exp: Exp): Exp = {
+    logger.debug(s"inferTypes called on ${exp.getClass.getSimpleName}")
     exp.map(inferExpTypes(typeMap)) match {
       case e: UIntValue => e
       case e: SIntValue => e
@@ -67,8 +68,8 @@ object Passes {
       case e: Exp => e
     }
   }
-  private def inferTypes(typeMap: TypeMap, stmt: Stmt)(implicit logger: Logger): (Stmt, TypeMap) = {
-    logger.trace(s"inferTypes called on ${stmt.getClass.getSimpleName} ")
+  private def inferTypes(typeMap: TypeMap, stmt: Stmt): (Stmt, TypeMap) = {
+    logger.debug(s"inferTypes called on ${stmt.getClass.getSimpleName} ")
     stmt.map(inferExpTypes(typeMap)) match {
       case b: Block => {
         var tMap = typeMap
@@ -95,15 +96,15 @@ object Passes {
       case s: Stmt => (s, typeMap)
     }
   }
-  private def inferTypes(typeMap: TypeMap, m: Module)(implicit logger: Logger): Module = {
-    logger.trace(s"inferTypes called on module ${m.name}")
+  private def inferTypes(typeMap: TypeMap, m: Module): Module = {
+    logger.debug(s"inferTypes called on module ${m.name}")
 
     val pTypeMap = m.ports.map( p => p.name -> p.tpe ).toMap
 
     Module(m.info, m.name, m.ports, inferTypes(typeMap ++ pTypeMap, m.stmt)._1)
   }
-  def inferTypes(c: Circuit)(implicit logger: Logger): Circuit = {
-    logger.trace(s"inferTypes called on circuit ${c.name}")
+  def inferTypes(c: Circuit): Circuit = {
+    logger.debug(s"inferTypes called on circuit ${c.name}")
 
     // initialize typeMap with each module of circuit mapped to their bundled IO (ports converted to fields)
     val typeMap = c.modules.map(m => m.name -> BundleType(m.ports.map(toField(_)))).toMap
@@ -115,8 +116,8 @@ object Passes {
   def renameall(s : String)(implicit map : Map[String,String]) : String =
     map getOrElse (s, s)
 
-  def renameall(e : Exp)(implicit logger : Logger, map : Map[String,String]) : Exp = {
-    logger.trace(s"renameall called on expression ${e.toString}")
+  def renameall(e : Exp)(implicit map : Map[String,String]) : Exp = {
+    logger.debug(s"renameall called on expression ${e.toString}")
     e match {
       case p : Ref =>
         Ref(renameall(p.name), p.tpe)
@@ -131,8 +132,8 @@ object Passes {
     }
   }
 
-  def renameall(s : Stmt)(implicit logger : Logger, map : Map[String,String]) : Stmt = {
-    logger.trace(s"renameall called on statement ${s.toString}")
+  def renameall(s : Stmt)(implicit map : Map[String,String]) : Stmt = {
+    logger.debug(s"renameall called on statement ${s.toString}")
 
     s match {
       case p : DefWire =>
@@ -165,20 +166,20 @@ object Passes {
     }
   }
 
-  def renameall(p : Port)(implicit logger : Logger, map : Map[String,String]) : Port = {
-    logger.trace(s"renameall called on port ${p.name}")
+  def renameall(p : Port)(implicit map : Map[String,String]) : Port = {
+    logger.debug(s"renameall called on port ${p.name}")
     Port(p.info, renameall(p.name), p.dir, p.tpe)
   }
 
-  def renameall(m : Module)(implicit logger : Logger, map : Map[String,String]) : Module = {
-    logger.trace(s"renameall called on module ${m.name}")
+  def renameall(m : Module)(implicit map : Map[String,String]) : Module = {
+    logger.debug(s"renameall called on module ${m.name}")
     Module(m.info, renameall(m.name), m.ports.map(renameall(_)), renameall(m.stmt))
   }
 
-  def renameall(map : Map[String,String])(implicit logger : Logger) : Circuit => Circuit = {
+  def renameall(map : Map[String,String]) : Circuit => Circuit = {
     c => {
       implicit val imap = map
-      logger.trace(s"renameall called on circuit ${c.name} with %{renameto}")
+      logger.debug(s"renameall called on circuit ${c.name} with %{renameto}")
       Circuit(c.info, renameall(c.name), c.modules.map(renameall(_)))
     }
   }
