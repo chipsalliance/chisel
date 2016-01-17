@@ -59,7 +59,7 @@ defn to-ir (c:Circuit) :
             (s:CDefMemory) :
                val stmts = Vector<Stmt>()
                val naddr = firrtl-gensym(`GEN,sh)
-               val taddr = UIntType(IntWidth(ceil-log2(size(s))))
+               val taddr = UIntType(IntWidth(max(1,ceil-log2(size(s)))))
                add(stmts,DefPoison(info(s),naddr,taddr))
                val ndata = firrtl-gensym(`GEN,sh)
                val tdata = type(s)

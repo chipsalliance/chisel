@@ -391,6 +391,10 @@ defn IndexOnNonVector (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Index illegal on non-vector type."]
 
+defn AccessIndexNotUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Access index must be a UInt type."]
+
 defn IndexNotUInt (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  Index is not of UIntType."]
@@ -549,6 +553,9 @@ public defn check-types (c:Circuit) -> Circuit :
             match(type(exp(e))) :
                (t:VectorType) : false
                (t) : add(errors,IndexOnNonVector(info))
+            match(type(index(e))) :
+               (t:UIntType) : false
+               (t) : add(errors,AccessIndexNotUInt(info))
          (e:DoPrim) : check-types-primop(e,errors,info)
          (e:UIntValue|SIntValue) : false
       e
