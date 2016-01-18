@@ -10,9 +10,7 @@ import firrtl.PrimOp._
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
   */
-abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg) {
-  private[Chisel] def flatten: IndexedSeq[UInt] = IndexedSeq(toBits)
-}
+abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
 
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.
@@ -24,6 +22,8 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   // Arguments against: generates down to a FIRRTL UInt anyways
 
   private[Chisel] def fromInt(x: BigInt): this.type
+
+  private[Chisel] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   def cloneType: this.type = cloneTypeWidth(width)
 
@@ -321,6 +321,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
 
   def === (that: BitPat): Bool = that === this
   def != (that: BitPat): Bool = that != this
+  def =/= (that: BitPat): Bool = that =/= this
 
   /** Returns this UInt as a [[SInt]] with an additional zero in the MSB.
     */
@@ -538,6 +539,9 @@ object Mux {
   // This returns an lvalue, which it most definitely should not
   private def doWhen[T <: Data](cond: Bool, con: T, alt: T): T = {
     require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
+    for ((c, a) <- con.flatten zip alt.flatten)
+      require(c.width == a.width, "can't Mux between aggregates of different width")
+
     val res = Wire(t = alt.cloneTypeWidth(con.width max alt.width), init = alt)
     when (cond) { res := con }
     res

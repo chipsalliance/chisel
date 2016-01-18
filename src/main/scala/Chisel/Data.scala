@@ -104,7 +104,16 @@ abstract class Data(dirArg: Direction) extends HasId {
 }
 
 object Wire {
-  def apply[T <: Data](t: T = null, init: T = null): T = {
+  def apply[T <: Data](t: T): T =
+    makeWire(t, null.asInstanceOf[T])
+
+  def apply[T <: Data](dummy: Int = 0, init: T): T =
+    makeWire(null.asInstanceOf[T], init)
+
+  def apply[T <: Data](t: T, init: T): T =
+    makeWire(t, init)
+
+  private def makeWire[T <: Data](t: T, init: T): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x))
     if (init != null) {
@@ -123,7 +132,7 @@ object Clock {
 // TODO: Document this.
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
-  private[Chisel] override def flatten: IndexedSeq[UInt] = IndexedSeq()
+  private[Chisel] override def flatten: IndexedSeq[Bits] = IndexedSeq()
   private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
   private[Chisel] def toType = "Clock"
 

@@ -29,9 +29,6 @@ private class Emitter(circuit: Circuit) {
     case w: WhenBegin =>
       indent()
       s"when ${w.pred.fullName(ctx)} :"
-    case _: WhenElse =>
-      indent()
-      "else :"
     case _: WhenEnd =>
       unindent()
       "skip"

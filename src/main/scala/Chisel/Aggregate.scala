@@ -331,7 +331,7 @@ class Bundle extends Aggregate(NO_DIR) {
         try {
           constructor.newInstance(_parent.get).asInstanceOf[this.type]
         } catch {
-          case _: java.lang.reflect.InvocationTargetException =>
+          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
             Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
               "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
             this
