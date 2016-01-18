@@ -141,7 +141,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     */
   def apply(idx: UInt): T = {
     val x = gen
-    pushCommand(DefAccessor(x, Node(this), NO_DIR, idx.ref))
+    x.setRef(this, idx)
     x
   }
 
