@@ -1,5 +1,6 @@
 %Useful Macros
 \newcommand{\id}{\text{id }}
+\newcommand{\idst}{\text{id*}}
 \newcommand{\ids}{\text{id}}
 \newcommand{\ints}{\text{int}}
 \newcommand{\intsp}{\text{int }}
@@ -49,264 +50,220 @@
 \section{Introduction}
 
 \subsection{Background}
-The ideas for FIRRTL originated from a different UC Berkeley project, Chisel, which embedded a hardware description language in Scala and was used to write highly-parameterized circuit design generators.
-Users could manipulate circuit components using Scala functions, encode their interfaces into custom Scala types, and use Scala's object-orientation to write their own circuit libraries.
-All of these features enabled expressive, reliable and type-safe generators that improved RTL design productivity and robustness.
+The ideas for FIRRTL originated from work on Chisel, a hardware description language embedded in Scala used for writing highly-parameterized circuit design generators. Chisel designers manipulate circuit components using Scala functions, encode their interfaces in Scala types, and use Scala's object-orientation features to write their own circuit libraries. This form of meta-programming enables expressive, reliable and type-safe generators that improve RTL design productivity and robustness.
 
-At UC Berkeley, Chisel was a critical part of the infrastructure supporting computer architecture research.
-Many of these research projects, including vector machines, out-of-order processors, silicon photonics and cache coherency, drove ten different silicon tape-outs over a three year period with under 12 graduate student researchers.
-The research productivity gains proved to the graduate students and faculty of the validity of this design methodology.
+The computer architecture research at U.C. Berkeley relied critically on Chisel to allow small teams of graduate students to design sophisticated RTL circuits. Over a three year period with under twelve graduate students, the architecture team has taped-out over ten different designs. 
 
-However, Chisel's external rate of adoption was slow for the following reasons:
+Internally, the investment in developing and learning Chisel was rewarded in huge gains in productivity. However, Chisel's external rate of adoption was slow for the following reasons:
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Learning a functional language (Scala) was a large barrier to entry
-\item Conceptually separating the Chisel HDL from the host language was difficult for new users
-\item Verilog generation was unreadable and slow
-\item Writing transformational passes required insider knowledge of the Chisel compiler
-\item Compiler design was unstructured, making error checking difficult and error messages often incomprehensible
-\item Chisel IR semantics were ill-defined and thus impossible to target from other languages
+\item Learning a functional programming language (Scala) is difficult for RTL designers with limited software-engineering experience
+\item Confounding the previous point, conceptually separating the Chisel HDL from the host language is difficult for new users
+\item The output of Chisel (Verilog) is unreadable and slow to simulate
+\item Writing custom circuit transformers requires intimate knowledge about the internals of the Chisel compiler
+\item Chisel semantics are ill-defined and thus impossible to target from other languages
+\item Error checking is unprincipled due to ill-defined semantics resulting in incomprehensible error messages
 \end{enumerate}
 
-As a consequence, Chisel needed to be redesigned from its ground up to standardize its IR and semantics, modularize its compilation process for robustness, and cleanly separate its front-end (Chisel + Scala), internal representation (FIRRTL), and backends.
+As a consequence, Chisel needed to be redesigned from the ground up to standardize its semantics, modularize its compilation process for robustness, and cleanly separate its front-end, intermediate representation, and backends. A well defined intermediate representation (IR) allows the system to be targeted by other host programming languages, making it possible for RTL designers to work within a language they are already comfortable with. A clearly defined IR with a concrete syntax also allows inspection of the output of circuit generators/transformers thus making clear the distinction between the host language and the constructed circuit. A clearly defined semantics allows users without knowledge of the compiler implementation to write circuit transformers. Examples include optimization of circuits for simulation speed, and automatic insertion of signal activity counters. An additional benefit of a well defined IR is the structural invariants that can be enforced before and after each compilation stage, resulting in a more robust compiler and structured mechanism for error checking. 
 
 \subsection{Design Philosophy}
-FIRRTL represents the formalized elaborated graph that the Chisel DSL produces, prior to any simplification.
-By including complicated constructs like vector types, bundle types, and when statements in FIRRTL, the Chisel/Scala front-end can be very light-weight.
-In addition, other front-ends written in languages other than Scala could be simple to write and increase external adoption.
+FIRRTL (Flexible Intermediate Representation for RTL) represents the standardized elaborated circuit that the Chisel DSL produces. FIRRTL represents the circuit immediately after Chisel's elaboration but before any circuit simplification. It is designed to resemble the Chisel DSL after all meta-programming has executed. Thus a user program that makes little use of meta-programming facilities should look almost indentical to the generated FIRRTL.
 
-Lowered FIRRTL (LoFIRRTL) represents a simplified FIRRTL circuit with structural invariants, making it essentially a netlist.
-This form enables straightforward translation into another language (e.g., Verilog) by a light-weight backend.
+For this reason, FIRRTL has first-class support for high-level constructs such as vector types, bundle types, when statements, partial connects, and modules. These high-level constructs are then gradually removed by a sequence of "lowering" transformations. During each lowering transformation the circuit is rewritten into an equivalent circuit using simpler, lower-level constructs. Eventually the circuit is simplified to its most restricted form, resembling a structured netlist, which allows for easy translation to an output language (e.g. Verilog). This form is given the name "lowered FIRRTL" (LoFIRRTL) and is a strict subset of the full FIRRTL language.
 
-By defining LoFIRRTL as a structured subset of FIRRTL, an external user can write a transformational pass whose input is restricted, but whose output is full-featured.
-After a custom pass, the resulting circuit should undergo lowering prior to passing it to a backend or another custom pass.
+Because the host language is now used solely for its meta-programming facilities, the frontend can be very light-weight, and additional frontends in other languages can target FIRRTL and reuse the majority of the compiler toolchain.
 
-\section{Acknowledgements - IN PROGRESS}
-The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, including but not limited to XXXX.
-We'd also like to thank our sponsors XXXX, and the University of California, Berkeley.
+Similar to backends, it is often convenient to write transformers that accept only the restricted LoFIRRTL subset. However, the transformed circuit is allowed to contain any FIRRTL construct, as it can be subsequently lowered again. We intentionally designed LoFIRRTL to be a subset of the full FIRRTL language to provide this feature.
 
-%\section{FIRRTL Language Definition}
+\section{Acknowledgements}
+The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, and the University of California, Berkeley.
 
-%\subsection{Abstract Syntax Tree}
-{ \fontsize{10pt}{1.10em}\selectfont
-\[
-\begin{array}{rrll}
-\pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
-\pd{module}     &=     &\info \kw{module}  \id \kw{:} (\pd{port*} \pd{stmt})                          &\text{Module}\\
-                &\vert &\info \kw{extmodule}  \id \kw{:} (\pd{port*})                                 &\text{External Module}\\
-\pd{port}       &=     &\info \pd{kind} \id \kw{:} \pd{type}                                          &\text{Port}\\
-\pd{kind}       &=     &\kws{input} \vert \kws{output}                                                &\text{Port Kind}\\
-\pd{type}       &=     &\kws{UInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Unsigned Integer}\\
-                &\vert &\kws{SInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Signed Integer}\\
-                &\vert &\kws{Clock}                                                                   &\text{Clock}\\
-                &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
-                &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
-\pd{field}      &=     &\pd{orientation} \id \kw{:} \pd{type}                                         &\text{Bundle Field}\\
-\pd{orientation}&=     &\kws{default} \vert \kws{reverse}                                             &\text{Orientation}\\
-\pd{width}      &=     &\ints \vert \kw{?}                                                            &\text{Known/Unknown Integer Width}\\
-\pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
-                &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \pds{exp} , \pds{exp} , \pds{exp}     &\text{Register Declaration}\\
-                &\vert &\info \kw{mem} \id \kw{:} \pds{type} , \pds{mstat*}                           &\text{Memory Declaration}\\
-                &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
-                &\vert &\info \kw{poison} \id \kw{:} \pds{type}                                              &\text{Poison Declaration}\\
-                &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
-                &\vert &\info \pd{exp} \kw{$<$=} \pd{exp}                                             &\text{Connect}\\
-                &\vert &\info \pd{exp} \kw{$<$--} \pd{exp}                                            &\text{Partial Connect}\\
-                &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
-                &\vert &\info \kw{stop}(\pds{exp},\pds{exp},\ints)                                    &\text{Stop Statement}\\
-                &\vert &\info \kw{printf}(\pds{exp},\pds{exp},\strings,\pds{exp*})                    &\text{Printf Statement}\\
-                &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
-                &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
-\pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Unsigned Integer}\\
-                &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Signed Integer}\\
-                &\vert &\info \id                                                                     &\text{Reference}\\
-                &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
-                &\vert &\info \pds{exp}[\ints]                                                        &\text{Subindex}\\
-                &\vert &\info \pds{exp}[\pds{exp}]                                                    &\text{Subaccess}\\
-                &\vert &\info \pds{primop}(\pds{exp*}, \ints\text{*})                                 &\text{Primitive Operation}\\
-\pd{info}       &=     &\text{filename } \kw{:} \text{line} . \text{col}                              &\text{File Location}\\
-                &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\
-                \pd{mstat}      &=     &\kw{writer =$>$} \id                                                          &\text{Write Port Name}\\
-                &\vert &\kw{reader =$>$} \id                                                          &\text{Read Port Name}\\
-                &\vert &\kw{read-writer =$>$} \id                                                     &\text{ReadWrite Port Name}\\
-                &\vert &\kw{read-latency =$>$} \ints                                                  &\text{Read Latency}\\
-                &\vert &\kw{write-latency =$>$} \ints                                                 &\text{Write Latency}\\
-                &\vert &\kw{data-type =$>$} \pds{type}                                                &\text{Memory Data Type}\\
-                &\vert &\kw{depth =$>$} \ints                                                         &\text{Memory Depth}\\
-\end{array}
-\]
-}
-\[
-{ \fontsize{10pt}{1.07em}\selectfont
-\begin{array}{rrll}
-\pd{mstat}      &=     &\kw{writer =$>$} \id                                                          &\text{Write Port Name}\\
-                &\vert &\kw{reader =$>$} \id                                                          &\text{Read Port Name}\\
-                &\vert &\kw{read-writer =$>$} \id                                                     &\text{ReadWrite Port Name}\\
-                &\vert &\kw{read-latency =$>$} \ints                                                  &\text{Read Latency}\\
-                &\vert &\kw{write-latency =$>$} \ints                                                 &\text{Write Latency}\\
-                &\vert &\kw{data-type =$>$} \pds{type}                                                &\text{Memory Data Type}\\
-                &\vert &\kw{depth =$>$} \ints                                                         &\text{Memory Depth}\\
-\pd{primop}   &=               &\kws{add}            &\text{Unsigned/Signed Add}\\
-              &\vert           &\kws{sub}            &\text{Unsigned/Signed Subtract}\\
-              &\vert           &\kws{addw}           &\text{Unsigned/Signed Add Wrap}\\
-              &\vert           &\kws{subw}           &\text{Unsigned/Signed Subtract Wrap}\\
-              &\vert           &\kws{mul}            &\text{Unsigned/Signed Multiply}\\
-              &\vert           &\kws{div}            &\text{Unsigned/Signed Divide}\\
-              &\vert           &\kws{mod}            &\text{Unsigned/Signed Modulo}\\
-              &\vert           &\kws{quo}            &\text{Unsigned/Signed Quotient}\\
-              &\vert           &\kws{rem}            &\text{Unsigned/Signed Remainder}\\
-              &\vert           &\kws{lt}             &\text{Unsigned/Signed Less Than}\\
-              &\vert           &\kws{leq}            &\text{Unsigned/Signed Less or Equal}\\
-              &\vert           &\kws{gt}             &\text{Unsigned/Signed Greater Than}\\
-              &\vert           &\kws{geq}            &\text{Unsigned/Signed Greater or Equal}\\
-              &\vert           &\kws{eq}             &\text{Unsigned/Signed Equal}\\
-              &\vert           &\kws{neq}            &\text{Unsigned/Signed Not-Equal}\\
-              &\vert           &\kws{eqv}            &\text{Unsigned/Signed Equivalence}\\
-              &\vert           &\kws{neqv}           &\text{Unsigned/Signed Not-Equivalence}\\
-              &\vert           &\kws{mux}            &\text{Unsigned/Signed Multiplex}\\
-              &\vert           &\kws{pad}            &\text{Unsigned/Signed Pad to Length}\\
-              &\vert           &\kws{asUInt}         &\text{Unsigned/Signed Reinterpret Bits as UInt}\\
-              &\vert           &\kws{asSInt}         &\text{Unsigned/Signed Reinterpret Bits as SInt}\\
-              &\vert           &\kws{shl}            &\text{Unsigned/Signed Shift Left}\\
-              &\vert           &\kws{shr}            &\text{Unsigned/Signed Shift Right}\\
-              &\vert           &\kws{dshl}           &\text{Unsigned/Signed Dynamic Shift Left}\\
-              &\vert           &\kws{dshr}           &\text{Unsigned/Signed Dynamic Shift Right}\\
-              &\vert           &\kws{cvt}            &\text{Unsigned/Signed to Signed Logical Conversion}\\
-              &\vert           &\kws{neg}            &\text{Unsigned/Signed Negate}\\
-              &\vert           &\kws{not}            &\text{Unsigned Not}\\
-              &\vert           &\kws{and}            &\text{Unsigned And}\\
-              &\vert           &\kws{or}             &\text{Unsigned Or}\\
-              &\vert           &\kws{xor}            &\text{Unsigned Xor}\\
-              &\vert           &\kws{andr}           &\text{Unsigned And Reduce}\\
-              &\vert           &\kws{orr}            &\text{Unsigned Or Reduce}\\
-              &\vert           &\kws{xorr}           &\text{Unsigned Xor Reduce}\\
-              &\vert           &\kws{cat}            &\text{Unsigned Concatenation}\\
-              &\vert           &\kws{bit}            &\text{Single Bit Extraction}\\
-              &\vert           &\kws{bits}           &\text{Multiple Bit Extraction}\\
-\end{array}
-}
-\]
+This project originated from discussions with our advisor, Jonathan Bachrach, who indicated the need for a structural redesign of the Chisel system around a well-defined intermediate representation. Patrick Li designed and implemented the first prototype of the FIRRTL language, wrote the initial specification for the language, and presented it to the Chisel group consisting of Scott Beamer, David Biancolin, Christopher Celio, Henry Cook, Palmer Dabbelt, Donggyu Kim, Jack Koenig, Martin Maas, Albert Magyar, Colin Schmidt, Andrew Waterman, Yunsup Lee, Richard Lin, Eric Love, Albert Ou, Stephen Twigg, Jim Lawson, Brian Richards, Krste Asanovic, and John Wawrzynek.
 
-\subsection{Notation}
-The above definition specifies the structure of the abstract syntax tree corresponding to a FIRRTL circuit.
-Nodes in the abstract syntax tree are {\em italicized}.
-Keywords are shown in {\bf bold}.
-The special productions id, int, and string, indicates an identifier, an integer literal, and a string respectively.
-Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurrences of the token.
+Adam Izraelevitz then led the design and reimplemented FIRRTL, and after many discussions with the Chisel group, refined the design to its present version.
 
-Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL data structure.
-Readers and writers are provided for converting a FIRRTL data structure into a purely textual representation, which is defined in Section \ref{concrete}.
+The authors would like to thank the following individuals for their contributions to the FIRRTL project:
+\begin{enumerate}
+\item Andrew Waterman: for his many contributions to the design of FIRRTL's constructs, for his work on Chisel 3.0, and for porting architecture research infrastructure
+\item Richard Lin: for improving the Chisel 3.0 code base for release quality
+\item Jack Koenig: for implementing the FIRRTL parser in Scala
+\item Henry Cook: for porting and cleaning up many aspects of Chisel 3.0, including the testing infrastructure and the parameterization library
+\item Stephen Twigg: for his expertise in hardware intermediate representations and for providing many corner cases to consider
+\item Palmer Dabbelt, Eric Love, Martin Maas, Christopher Celio, and Scott Beamer: for their feedback on previous drafts of the FIRRTL specification
+\end{enumerate}
 
+And finally this project would not have been possible without the continuous feedback and encouragement of our advisor, Jonathan Bachrach, and his leadership on and implementation of Chisel 3.0.
+
+Research is partially funded by DARPA Award Number XXXX, the Center for Future Architectures Research, a member of STARnet, a Semiconductor Research Corporation program sponsored by MARCO and DARPA, and ASPIRE Lab industrial sponsors and affiliates Intel, Google, Nokia, NVIDIA, Oracle, and Samsung. Any opinions, findings, conclusions, or recommendations in this paper are solely those of the authors and do not necessarily reflect the position or the policy of the sponsors.
 
 \section{Circuits and Modules}
-\[
-\begin{array}{rrl}
-\pd{circuit}    &=     &\kw{circuit} \text{toplevel-module } \kw{:} (\text{modules*}) \\
-\pd{module}     &=     &\kw{module}  \text{name } \kw{:} (\text{ports* } \text{body}) \\
-                &\vert &\kw{extmodule}  \text{name } \kw{:} (\text{ports* })           \\ 
-\pd{port}       &=     &\pd{kind} \id \kw{:} \pd{type}                                 \\
-\pd{kind}       &=     &\kws{input} \vert \kws{output}                                \\
-\end{array}
-\]
 
-All FIRRTL circuits consist of a flat list of modules, each representing one hardware block.
-Each module has a given name, a list of ports, and a statement representing the circuit connections within the module.
-Externally defined modules consist of a given name, and a list of ports, whose types must match the types defined in the associated Verilog.
-Module names exist in their own namespace, and all modules must have a unique name. The name of the top-level module must be specified for a circuit.
+\subsection{Circuits}
+All FIRRTL circuits consist of a list of modules, each representing one hardware block that could be instantiated. The circuit must specify the name of the top-level module.
 
-A module port is specified by its \pd{kind}, which may be input or output, a name, and the data type for the port.
-The port names exist in the identifier namespace for the module, and must be unique.
-In addition, all references within a module must be unique.
+\begin{verbatim}
+circuit MyTop :
+   module MyTop :
+      ...
+   module MyModule :
+      ...   
+\end{verbatim}   
 
-The following example is the port declaration of a module that spans two clock domains.
+All module names in a circuit exist in the same namespace, and thus all modules must have a unique name. 
 
-\[
-\begin{aligned}
-&\kw{module} TwoClock : \\
-&\quad \kw{input} clk1 : \kw{Clock}\\
-&\quad \kw{input} clk2 : \kw{Clock}\\
-&\quad ... \\
-\end{aligned}
-\]
+\subsection{Modules}
+Each module has a given name, a list of ports, and a statement representing the circuit connections within the module. A module port is specified by its \pd{direction}, which may be input or output, a name, and the data type for the port. The port names exist in the module identifier namespace, and must be unique.
+
+\begin{verbatim}
+module MyModule :
+   input foo: UInt
+   output bar: UInt
+   bar <= foo
+\end{verbatim}  
+
+Note that a module definition does {\em not} indicate that the module will be physically present in the final circuit. Refer to the description of the instance statement for details on how to instantiate a module (section \ref{XXX}).
+
+\subsection{Externally Defined Modules}
+Externally defined modules consist of a given name, and a list of ports, whose types and names must match its external definition.
+
+\begin{verbatim}
+module MyExternalModule :
+   input foo: UInt
+   output bar: UInt
+   output baz: SInt
+\end{verbatim}  
+
+
+% The following example is the port declaration of a module that spans two clock domains.
+
+% \[
+% \begin{aligned}
+% &\kw{module} TwoClock : \\
+% &\quad \kw{input} clk1 : \kw{Clock}\\
+% &\quad \kw{input} clk2 : \kw{Clock}\\
+% &\quad ... \\
+% \end{aligned}
+% \]
 
 \section{Types}
 
 \subsection{Ground Types}
-\[
-\begin{array}{rrl}
-\pd{type}       &=     &\kws{UInt}\kws{$<$} \pds{width} \kws{$>$}      \\
-                &\vert &\kws{SInt}\kws{$<$} \pds{width} \kws{$>$}      \\
-                &\vert &\kws{Clock} \\
-\pd{width}      &=     &\ints                       \\
-                &\vert &\kw{?}                      \\
-\end{array}
-\]
 
-There are only three ground types in FIRRTL, an unsigned, signed integer type, and clock type.
+All types in FIRRTL are either one of the fundamental ground types or are built up from aggregating other types. There are three ground types in FIRRTL, an unsigned integer type, a signed integer type, and a clock type.
 
-Both unsigned and signed integer types require a given bit width, which may be some known integer width, which must be non-negative and greater than zero, or an unknown width.
-Unknown widths are a declaration for the width to be computed by the FIRRTL width inferencer, instead of manually given by the programmer.
-Zero-valued widths are currently not supported, but future versions will likely support them.
+\subsubsection{Integer Types}
 
-Clock types have a restricted usage, where they can only be connected to other clock types or be referenced to in the \kws{reg}, \kws{accessor}, and \kws{inst} declarations, as explained in Section \ref{statements}.
-They cannot be used in primitive operations.
+Both unsigned and signed integer types may optionally be given a known positive integer bit width.
+
+\begin{verbatim}
+UInt<10>
+SInt<32>
+\end{verbatim}  
+
+Alternatively, if the bit width is omitted, it will be automatically inferred by FIRRTL's width inferencer, as detailed in section \ref{XXX}.
+
+\begin{verbatim}
+UInt
+SInt
+\end{verbatim}  
+
+An unsigned integer type is equivalent ot
+
+\subsubsection{Clock Type}
+
+The clock type is used to describe wires and ports meant for carrying clock signals. The usage of components with clock types are restricted. Clock signals cannot be used in most primitive operations, and clock signals can only be connected to components that have been declared with the clock type. 
+
+The clock type is specified as follows:
+\begin{verbatim}
+Clock
+\end{verbatim}  
 
 \subsection{Vector Types}
-\[
-\begin{array}{rrl}
-\pd{type}       &=     &\pds{type}[\ints]           \\
-\end{array}
-\]
 
-Vector types in FIRRTL indicate a structure consisting of multiple elements of some given type.
-This is akin to array types in the C programming language.
-Note that the number of elements must be known, and non-negative.
+A vector type is used to express an ordered sequence of elements of a given type. The length of the sequence must be non-negative and known. This is akin to array types in the C programming language.
 
-As an example, the type $\kws{UInt}\kws{$<$} 16 \kws{$>$}[10]$ indicates a ten element vector of 16-bit unsigned integers.
-The type $\kws{UInt}\kws{$<$} \kws{?} \kws{$>$}[10]$ indicates a ten element vector of unsigned integers, with unknown but the same bit widths.
+The following example specifies a ten element vector of 16-bit unsigned integers.
+\begin{verbatim}
+UInt<16>[10]
+\end{verbatim}  
 
-Vector types may be nested ad infinitum.
-The type $\kws{UInt}\kws{$<$} 16 \kws{$>$}[10][5]$ indicates a five element vector {\em of} ten element vectors of 16-bit unsigned integers.
+The next example specifies a ten element vector of unsigned integers of omitted but identical bit widths.
+\begin{verbatim}
+UInt[10]
+\end{verbatim}
+
+Note that any type, including other aggregate types, may be used as the element type in the sequence. The following example specifies a twenty element vector, each of which is a ten element vector of 16-bit unsigned integers.
+\begin{verbatim}
+UInt<16>[10][20]
+\end{verbatim} 
 
 \subsection{Bundle Types}
-\[
-\begin{array}{rrl}
-\pd{type}       &=     &\bundleT{\pd{field*}}                         \\
-\pd{field}      &=     &\pd{orientation} \text{name } \kw{:} \pd{type}        \\
-\pd{orientation}&=     &\kws{default} \vert \kws{reverse}    \\ 
-\end{array}
-\]
 
-Bundle types in FIRRTL are composite types formed from an ordered sequence of named, nested types.
-All fields in a bundle must have a given orientation, name, and type.
+A bundle type is used to express a collection of nested and named types. All fields in a bundle type must have a given name, and type. 
 
-The following is an example of a possible type for representing a complex number.
-\[
-\bundleT{\kw{default} \text{real } \kw{:} \kws{SInt}\kws{$<$} 10 \kws{$>$},
-         \kw{default} \text{imag } \kw{:} \kws{SInt}\kws{$<$} 10 \kws{$>$}}
-\]
-It has two fields, real, and imag, both 10-bit signed integers.
-By convention, we specify the directions within a bundle type with their relative orientation.
-For this reason, the real and imag fields for the complex number bundle type are both specified to be {\em default}.
+The following is an example of a possible type for representing a complex number. It has two fields, \verb|real|, and \verb|imag|, both 10-bit signed integers.
+\begin{verbatim}
+{real:SInt<10>, imag:SInt<10>}
+\end{verbatim}
 
-The following bundle type has a data field that is specified to be a 10-bit unsigned integer type, a valid signal that must be a 1-bit unsigned integer type, and a reversed ready signal that must be a 1-bit unsigned integer type.
-\[
-\begin{aligned}
-\{ \kw{default} &\text{data } \kw{:} \kws{UInt}\kws{$<$} 10 \kws{$>$}, \\
-   \kw{default} &\text{valid } \kw{:} \kws{UInt}\kws{$<$} 1 \kws{$>$}, \\
-   \kw{reverse} &\text{ready } \kw{:} \kws{UInt}\kws{$<$} 1 \kws{$>$}\} \\
-\end{aligned}
-\]
-If an output port had this bundle type, the {\em ready} field would be an input to the module.
+Additionally, a field may optionally be declared with a {\em flipped} orientation.
+\begin{verbatim}
+{word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
+\end{verbatim}
+In a connection between elements declared with the same bundle type, the data carried by the flipped fields flow in the opposite direction as the data carried by the non-flipped fields.
 
-Note that all field names within a bundle type must be unique.
+As an example, consider a module output port declared with the following type:
+\begin{verbatim}
+output mysignal: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
+\end{verbatim}
+In a connection to the \verb|mysignal| port, the data carried by the \verb|word| and \verb|valid| subfields will flow out of the module, while data carried by the \verb|ready| subfield will flow into the module. More details about how the bundle field orientation affects connections are explained in section \ref{XXX}.
 
-As in the case of vector types, bundle types may also be nested ad infinitum (i.e., the types of the fields themselves may also be bundle types, which will in turn contain more fields, etc.)
+As in the case of vector types, a bundle field may be declared with any type, including other aggregate types. 
+\begin{verbatim}
+{real: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
+ imag: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}}
+\end{verbatim}
+
+When calculating the final direction of data flow, the orientation of a field is applied recursively to all nested types in the field. As an example, consider the following module port declared with a bundle type containing a nested bundle type.
+\begin{verbatim}
+output myport: {a: UInt, flip b: {c: UInt, flip d:UInt}}
+\end{verbatim}
+In a connection to \verb|myport|, the \verb|a| subfield flows out of the module. The \verb|c| subfield contained in the \verb|b| subfield flows into the module, and the \verb|d| subfield contained in the \verb|b| subfield flows out of the module.
+
+Note that when determining whether two bundle types are equivalent, the order of declaration, the orientation, name, and type of each field must match exactly.
+\verb|{a:UInt, b:UInt}| is a different type than \verb|{b:UInt, a:UInt}|. \verb|{a: {flip b:UInt}}| is a different type than \verb|{flip a: {b: UInt}}|.
+
+Additionally, note that within a bundle, all field names must be unique.
 
 \section{Statements} \label{statements}
 
-FIRRTL circuit components are instantiated and connected together using {\em statements}.
+Statements are used to instantiate and connect circuit elements together.
 
-\subsection{Wires}
+\subsection{The Connect Statement}
+The connect statement is used to specify a physically wired connection between two circuit elements. The following example demonstrates connecting a module's input port to its output port.
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   output b: UInt
+   b <= a
+\end{verbatim}
+
+For a connection to be legal, the types of the two expressions must be equivalent.
+
+===== BOOKMARK =====
+
+However, the widths of the types do not need to be equivalent.
+If the {\em output} expression has a smaller width than the {\em input} expression, the {\em output} is padded according to its type.
+If the {\em output} expression has a larger width than the {\em input} expression, this triggers an error.
+
+If the {\em input} width is unknown, it is inferred to be the width of the largest {\em output} that it is connected to.
+If the {\em output} width is unknown, it cannot inferred from this connection.
+
+The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be able to be used as an input.
+
+
+
+\subsection{Wire Declarations}
 A wire is a named combinational circuit element that can be connected to using the connect statement.
 A wire with a given name and type can be instantiated with the following statement.
 \[
@@ -483,24 +440,6 @@ There are restrictions upon which modules the user is allowed to instantiate, so
 We define a module with no instances as a {\em level 0} module.
 A module containing only instances of {\em level 0} modules is a {\em level 1} module, and a module containing only instances of {\em level 1} or below modules is a {\em level 2} module.
 In general, a {\em level n} module is only allowed to contain instances of modules of level $n-1$ or below. 
-
-\subsection{The Connect Statement}
-The connect statement is used to specify a physical wired connection between one hardware component to another, and is the most important statement in FIRRTL.
-The following statement is used to connect the output of some component, to the input of another component. 
-\[
-\text{input } \kw{$<$=} \text{output} 
-\]
-
-For a connection to be legal, the types of the two expressions must match exactly, including all field orientations if the elements contain bundle types.
-
-However, the widths of the types do not need to be equivalent.
-If the {\em output} expression has a smaller width than the {\em input} expression, the {\em output} is padded according to its type.
-If the {\em output} expression has a larger width than the {\em input} expression, this triggers an error.
-
-If the {\em input} width is unknown, it is inferred to be the width of the largest {\em output} that it is connected to.
-If the {\em output} width is unknown, it cannot inferred from this connection.
-
-The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be able to be used as an input.
 
 \subsection{The OnReset Connect Statement}
 The onreset connect statement is used to specify the default value for a \kws{reg} element.
@@ -1324,6 +1263,106 @@ add(x, y)
 add(x, add(x, y))
 shl(x, 42)
 \end{verbatim}
+
+\section{FIRRTL Language Definition}
+
+\subsection{Abstract Syntax Tree}
+{ \fontsize{10pt}{1.10em}\selectfont
+\[
+\begin{array}{rrll}
+\pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
+\pd{module}     &=     &\info \kw{module}  \id \kw{:} (\pd{port*} \pd{stmt})                          &\text{Module}\\
+                &\vert &\info \kw{extmodule}  \id \kw{:} (\pd{port*})                                 &\text{External Module}\\
+\pd{port}       &=     &\info \pd{dir} \id \kw{:} \pd{type}                                           &\text{Port}\\
+\pd{dir}        &=     &\kws{input} \vert \kws{output}                                                &\text{Port Direction}\\
+\pd{type}       &=     &\kws{UInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Unsigned Integer}\\
+                &\vert &\kws{SInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Signed Integer}\\
+                &\vert &\kws{Clock}                                                                   &\text{Clock}\\
+                &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
+                &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
+\pd{field}      &=     &\pd{orientation} \id \kw{:} \pd{type}                                         &\text{Bundle Field}\\
+\pd{orientation}&=     &\kws{default} \vert \kws{reverse}                                             &\text{Orientation}\\
+\pd{width}      &=     &\ints \vert \kw{?}                                                            &\text{Known/Unknown Integer Width}\\
+\pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
+                &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \pds{exp} , \pds{exp} , \pds{exp}     &\text{Register Declaration}\\
+                &\vert &\info \kw{mem} \id \kw{:} \pds{type}, 
+                        \ints,\ints,\ints,(\idst),(\idst),(\idst)                                     &\text{Memory Declaration}\\
+                &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
+                &\vert &\info \kw{poison} \id \kw{:} \pds{type}                                       &\text{Poison Declaration}\\
+                &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
+                &\vert &\info \pd{exp} \kw{$<$=} \pd{exp}                                             &\text{Connect}\\
+                &\vert &\info \pd{exp} \kw{$<$--} \pd{exp}                                            &\text{Partial Connect}\\
+                &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
+                &\vert &\info \kw{stop}(\pds{exp},\pds{exp},\ints)                                    &\text{Stop Statement}\\
+                &\vert &\info \kw{printf}(\pds{exp},\pds{exp},\strings,\pds{exp*})                    &\text{Printf Statement}\\
+                &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
+                &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
+\pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Unsigned Integer}\\
+                &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Signed Integer}\\
+                &\vert &\info \id                                                                     &\text{Reference}\\
+                &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
+                &\vert &\info \pds{exp}[\ints]                                                        &\text{Subindex}\\
+                &\vert &\info \pds{exp}[\pds{exp}]                                                    &\text{Subaccess}\\
+                &\vert &\info \pds{primop}(\pds{exp*}, \ints\text{*})                                 &\text{Primitive Operation}\\
+\pd{info}       &=     &\text{filename } \kw{:} \text{line } . \text{ col}                            &\text{File Location}\\
+                &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\
+\end{array}
+\]
+}
+\[
+{ \fontsize{10pt}{1.07em}\selectfont
+\begin{array}{rrll}
+\pd{primop}   &=               &\kws{add}            &\text{Unsigned/Signed Add}\\
+              &\vert           &\kws{sub}            &\text{Unsigned/Signed Subtract}\\
+              &\vert           &\kws{addw}           &\text{Unsigned/Signed Add Wrap}\\
+              &\vert           &\kws{subw}           &\text{Unsigned/Signed Subtract Wrap}\\
+              &\vert           &\kws{mul}            &\text{Unsigned/Signed Multiply}\\
+              &\vert           &\kws{div}            &\text{Unsigned/Signed Divide}\\
+              &\vert           &\kws{mod}            &\text{Unsigned/Signed Modulo}\\
+              &\vert           &\kws{quo}            &\text{Unsigned/Signed Quotient}\\
+              &\vert           &\kws{rem}            &\text{Unsigned/Signed Remainder}\\
+              &\vert           &\kws{lt}             &\text{Unsigned/Signed Less Than}\\
+              &\vert           &\kws{leq}            &\text{Unsigned/Signed Less or Equal}\\
+              &\vert           &\kws{gt}             &\text{Unsigned/Signed Greater Than}\\
+              &\vert           &\kws{geq}            &\text{Unsigned/Signed Greater or Equal}\\
+              &\vert           &\kws{eq}             &\text{Unsigned/Signed Equal}\\
+              &\vert           &\kws{neq}            &\text{Unsigned/Signed Not-Equal}\\
+              &\vert           &\kws{mux}            &\text{Unsigned/Signed/Clock Multiplex}\\
+              &\vert           &\kws{pad}            &\text{Unsigned/Signed Pad to Length}\\
+              &\vert           &\kws{asUInt}         &\text{Unsigned/Signed Reinterpret Bits as UInt}\\
+              &\vert           &\kws{asSInt}         &\text{Unsigned/Signed Reinterpret Bits as SInt}\\
+              &\vert           &\kws{shl}            &\text{Unsigned/Signed Shift Left}\\
+              &\vert           &\kws{shr}            &\text{Unsigned/Signed Shift Right}\\
+              &\vert           &\kws{dshl}           &\text{Unsigned/Signed Dynamic Shift Left}\\
+              &\vert           &\kws{dshr}           &\text{Unsigned/Signed Dynamic Shift Right}\\
+              &\vert           &\kws{cvt}            &\text{Unsigned/Signed to Signed Logical Conversion}\\
+              &\vert           &\kws{neg}            &\text{Unsigned/Signed Negate}\\
+              &\vert           &\kws{not}            &\text{Unsigned Not}\\
+              &\vert           &\kws{and}            &\text{Unsigned And}\\
+              &\vert           &\kws{or}             &\text{Unsigned Or}\\
+              &\vert           &\kws{xor}            &\text{Unsigned Xor}\\
+              &\vert           &\kws{andr}           &\text{Unsigned And Reduce}\\
+              &\vert           &\kws{orr}            &\text{Unsigned Or Reduce}\\
+              &\vert           &\kws{xorr}           &\text{Unsigned Xor Reduce}\\
+              &\vert           &\kws{cat}            &\text{Unsigned Concatenation}\\
+              &\vert           &\kws{bit}            &\text{Single Bit Extraction}\\
+              &\vert           &\kws{bits}           &\text{Multiple Bit Extraction}\\
+              &\vert           &\kws{toClock}        &\text{Interpret Unsigned Bit as Clock}\\
+              &\vert           &\kws{fromClock}      &\text{Interpret Clock as Unsigned Bit}
+\end{array}
+}
+\]
+
+\subsection{Notation}
+The above definition specifies the structure of the abstract syntax tree corresponding to a FIRRTL circuit.
+Nodes in the abstract syntax tree are {\em italicized}.
+Keywords are shown in {\bf bold}.
+The special productions id, int, and string, indicates an identifier, an integer literal, and a string respectively.
+Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurrences of the token.
+
+Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL data structure.
+Readers and writers are provided for converting a FIRRTL data structure into a purely textual representation, which is defined in Section \ref{concrete}.
+
 
 \section{Future Plans}
 Some choices were made during the design of this specification which were intentionally conservative, so that future versions could lift the restrictions if suitable semantics and implementations are determined.
