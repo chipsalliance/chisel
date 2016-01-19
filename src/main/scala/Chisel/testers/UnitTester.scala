@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package Chisel.testers
 
 import Chisel._
@@ -37,7 +39,7 @@ trait UnitTestRunners {
 class UnitTester extends BasicTester {
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
-  def rnd = Random  // convenience method for writing tests
+  def rnd: Random = Random  // convenience method for writing tests
 
   val ports_referenced = new mutable.HashSet[Data]
 
@@ -47,7 +49,7 @@ class UnitTester extends BasicTester {
 
   def poke(io_port: Data, value: Int): Unit = {
     require(io_port.dir == INPUT, s"poke error: $io_port not an input")
-    require(test_actions.last.input_map.contains(io_port) == false,
+    require(!test_actions.last.input_map.contains(io_port),
       s"second poke to $io_port without step\nkeys ${test_actions.last.input_map.keys.mkString(",")}")
 
     ports_referenced += io_port
@@ -229,7 +231,7 @@ class UnitTester extends BasicTester {
 
     pc := pc + UInt(1)
 
-    when(pc >= UInt(test_actions.length)) {
+    when(pc >= UInt(test_actions.length - 1)) {
       printf(s"Stopping, end of tests, ${test_actions.length} steps\n")
       stop()
     }

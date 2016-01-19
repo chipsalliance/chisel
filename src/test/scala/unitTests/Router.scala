@@ -72,19 +72,44 @@ class Router extends Module {
     ))
   }
 
-  when(io.load_routing_table_request.fire()) {
+  when(io.load_routing_table_request.valid) {
     val cmd = io.load_routing_table_request.deq()
     tbl(cmd.addr) := cmd.data
     printf("setting tbl(%d) to %d", cmd.addr, cmd.data)
   }
 
-  when(io.in.fire()) {
-    val pkt = io.in.deq()
+  when(io.in.valid) {
+    val pkt = io.in.bits
     val idx = tbl(pkt.header(log2Up(Router.routeTableSize), 0))
-//    val idx = tbl(pkt.header(3, 0))
-    io.outs(idx).enq(pkt)
-    printf("got packet to route header %d, data %d, being routed to out(%d) ", pkt.header, pkt.body, tbl(pkt.header))
+//    TODO: uncomment next line for correctness and to reveal firrtl indexing error
+//    when(io.outs(idx).ready) {
+      io.in.deq()
+      io.outs(idx).enq(pkt)
+      printf("got packet to route header %d, data %d, being routed to out(%d) ", pkt.header, pkt.body, tbl(pkt.header))
+//    TODO: uncomment following line for correctness and to reveal firrtl indexing error
+//    }
   }
+
+//  FOLLOWING CODE COMPILES AND PASSES TESTS BUT HAS DUBIOUS WHEN STRUCTURE AND VALID SIGNAL TESTING
+//  when(io.read_routing_table_request.valid && io.read_routing_table_response.ready) {
+//    io.read_routing_table_response.enq(tbl(
+//      io.read_routing_table_request.deq().addr
+//    ))
+//  }
+//
+//  when(io.load_routing_table_request.fire()) {
+//    val cmd = io.load_routing_table_request.deq()
+//    tbl(cmd.addr) := cmd.data
+//    printf("setting tbl(%d) to %d", cmd.addr, cmd.data)
+//  }
+//
+//  when(io.in.fire()) {
+//    val pkt = io.in.deq()
+//    val idx = tbl(pkt.header(log2Up(Router.routeTableSize), 0))
+////    val idx = tbl(pkt.header(3, 0))
+//    io.outs(idx).enq(pkt)
+//    printf("got packet to route header %d, data %d, being routed to out(%d) ", pkt.header, pkt.body, tbl(pkt.header))
+//  }
 }
 
 class RouterUnitTester(number_of_packets_to_send: Int) extends DecoupledTester {
