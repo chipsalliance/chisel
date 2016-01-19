@@ -71,14 +71,12 @@ class Router extends Module {
       io.read_routing_table_request.deq().addr
     ))
   }
-
-  when(io.load_routing_table_request.valid) {
+  .elsewhen(io.load_routing_table_request.valid) {
     val cmd = io.load_routing_table_request.deq()
     tbl(cmd.addr) := cmd.data
     printf("setting tbl(%d) to %d", cmd.addr, cmd.data)
   }
-
-  when(io.in.valid) {
+  .elsewhen(io.in.valid) {
     val pkt = io.in.bits
     val idx = tbl(pkt.header(log2Up(Router.routeTableSize), 0))
 //    TODO: uncomment next line for correctness and to reveal firrtl indexing error
