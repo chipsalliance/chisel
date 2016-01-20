@@ -356,10 +356,7 @@ defmethod print (o:OutputStream, c:Stmt) :
          else :
             print-all(o, ["cmem " name(c) " : " type(c) "[" size(c) "]"])
       (c:CDefMPort) :
-         if direction(c) == MRead : 
-            print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" exps(c)[0] "], " exps(c)[1]])
-         else : 
-            print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" exps(c)[0] "], " exps(c)[1] ", " exps(c)[2]])
+         print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" exps(c)[0] "], " exps(c)[1]])
 
    if not c typeof Conditionally|Begin|Empty: print-debug(o,c)
 
@@ -469,6 +466,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
       (c:Stop) : Stop(info(c),ret(c),f(clk(c)),f(en(c)))
       (c:Print) : Print(info(c),string(c),map(f,args(c)),f(clk(c)),f(en(c)))
+      (c:CDefMPort) : CDefMPort(info(c),name(c), mem(c), f(clock(c)), f(reset(c)), f(init(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T

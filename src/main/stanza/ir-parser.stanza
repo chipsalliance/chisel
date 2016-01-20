@@ -265,10 +265,10 @@ defsyntax firrtl :
 
       stmt = (read mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
          CDefMPort(first-info(form),name,mem,list(index,clk),MRead)
-      stmt = (write mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp! ?mask:#exp!) :
-         CDefMPort(first-info(form),name,mem,list(index,clk,mask),MWrite)
-      stmt = (rdwr mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp! ?mask:#exp!) :
-         CDefMPort(first-info(form),name,mem,list(index,clk,mask),MReadWrite)
+      stmt = (write mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
+         CDefMPort(first-info(form),name,mem,list(index,clk),MWrite)
+      stmt = (rdwr mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
+         CDefMPort(first-info(form),name,mem,list(index,clk),MReadWrite)
 
       stmt = (mem ?name:#id! #:! (?ms:#mstat ...)) :
          defn grab (f:MStat -> True|False) :

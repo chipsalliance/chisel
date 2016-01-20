@@ -713,6 +713,10 @@ defn infer-types (c:Circuit) -> Circuit :
       val types = HashTable<Symbol,Type>(symbol-hash)
       defn infer-types-e (e:Expression) -> Expression :
          match(map(infer-types-e,e)) :
+            (e:Ref) : Ref(name(e), types[name(e)])
+            (e:SubField) : SubField(exp(e),name(e),field-type(type(exp(e)),name(e)))
+            (e:SubIndex) : SubIndex(exp(e),value(e),sub-type(type(exp(e))))
+            (e:SubAccess) : SubAccess(exp(e),index(e),sub-type(type(exp(e))))
             (e:WRef) : WRef(name(e), types[name(e)],kind(e),gender(e))
             (e:WSubField) : WSubField(exp(e),name(e),field-type(type(exp(e)),name(e)),gender(e))
             (e:WSubIndex) : WSubIndex(exp(e),value(e),sub-type(type(exp(e))),gender(e))

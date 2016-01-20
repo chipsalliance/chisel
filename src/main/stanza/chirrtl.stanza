@@ -20,6 +20,7 @@ defstruct DataRef :
    exp : Expression
    male : Symbol
    female : Symbol
+   mask : Symbol
 
 public definterface Gender
 public val MALE = new Gender
@@ -41,6 +42,7 @@ defn to-ir (c:Circuit) :
       val sh = get-sym-hash(m,keys(v-keywords))
       val repl = HashTable<Symbol,DataRef>(symbol-hash)
       val ut = UnknownType()
+      val mport-types = HashTable<Symbol,Type>(symbol-hash)
       defn EMPs () -> MPorts : 
          MPorts(Vector<MPort>(),Vector<MPort>(),Vector<MPort>())
       defn collect-mports (s:Stmt) -> Stmt :
@@ -57,6 +59,7 @@ defn to-ir (c:Circuit) :
       defn collect-refs (s:Stmt) -> Stmt :
          match(s) :
             (s:CDefMemory) :
+               mport-types[name(s)] = type(s)
                val stmts = Vector<Stmt>()
                val naddr = firrtl-gensym(`GEN,sh)
                val taddr = UIntType(IntWidth(max(1,ceil-log2(size(s)))))
@@ -97,23 +100,24 @@ defn to-ir (c:Circuit) :
                val mem = DefMemory(info(s),name(s),type(s),size(s),1,read-l,map(name,rds),map(name,wrs),map(name,rws))
                Begin $ List(mem,to-list(stmts))
             (s:CDefMPort) :
+               mport-types[name(s)] = mport-types[mem(s)]
                val addrs = Vector<Symbol>()
                val ens = Vector<Symbol>()
                val masks = Vector<Symbol>()
                switch { _ == direction(s) } :
                   MReadWrite : 
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`wdata,`rdata)
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`wdata,`rdata,`wmask)
                      add(addrs,`addr)
                      add(ens,`wen)
                      add(ens,`ren)
                      add(masks,`wmask)
                   MWrite :
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data)
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data,`mask)
                      add(addrs,`addr)
                      add(ens,`en)
                      add(masks,`mask)
-                  else : ; TODO add MWrite for mask
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data)
+                  else :
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data,`blah)
                      add(addrs,`addr)
                      add(ens,`en)
 
@@ -126,26 +130,54 @@ defn to-ir (c:Circuit) :
                   add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),exps(s)[2]))
                Begin $ to-list $ stmts   
             (s) : map(collect-refs,s)
-      defn to-ir-e (e:Expression,g:Gender) -> Expression :
-         match(map(to-ir-e{_,g},e)) :
-            (e:Ref) : 
-               if key?(repl,name(e)) : 
-                  val vt = repl[name(e)]
-                  switch {g == _ }:
-                     MALE : SubField(exp(vt),male(vt),ut)
-                     FEMALE : SubField(exp(vt),female(vt),ut)
-               else : e
-            (e) : e
       defn to-ir-s (s:Stmt) -> Stmt :
+         var has-write-mport? = false
+         defn to-ir-e (e:Expression,g:Gender) -> Expression :
+            match(map(to-ir-e{_,g},e)) :
+               (e:Ref) : 
+                  if key?(repl,name(e)) : 
+                     val vt = repl[name(e)]
+                     switch {g == _ }:
+                        MALE : SubField(exp(vt),male(vt),type(e))
+                        FEMALE : 
+                           has-write-mport? = true
+                           SubField(exp(vt),female(vt),type(e))
+                  else : e
+               (e) : e
+         defn get-mask (e:Expression) -> Expression :
+            match(map(get-mask,e)) :
+               (e:Ref) :
+                  if key?(repl,name(e)) : 
+                     val vt = repl[name(e)]
+                     val f = create-mask(`blah,mport-types[name(e)])
+                     SubField(exp(vt),mask(vt),type(f))
+                  else : e
+               (e) : e
          match(s) :
             (s:Connect) : 
-               val loc* = to-ir-e(loc(s),FEMALE)
+               val stmts = Vector<Stmt>()
                val roc* = to-ir-e(exp(s),MALE)
-               Connect(info(s),loc*,roc*)
+               val loc* = to-ir-e(loc(s),FEMALE)
+               add(stmts,Connect(info(s),loc*,roc*))
+               if has-write-mport? :
+                  val e = get-mask(loc(s))
+                  for x in create-exps(e) do :
+                     add(stmts,Connect(info(s),x,UInt(1)))
+               if length(stmts > 1) : Begin(to-list(stmts))
+               else : stmts[0]
             (s:BulkConnect) : 
+               val stmts = Vector<Stmt>()
                val loc* = to-ir-e(loc(s),FEMALE)
                val roc* = to-ir-e(exp(s),MALE)
-               BulkConnect(info(s),loc*,roc*)
+               add(stmts,BulkConnect(info(s),loc*,roc*))
+               if has-write-mport? :
+                  val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
+                  val locs = create-exps(get-mask(loc(s)))
+                  for x in ls do :
+                     val loc* = locs[x[0]]
+                     add(stmts,Connect(info(s),loc*,UInt(1)))
+               if length(stmts > 1) : Begin(to-list(stmts))
+               else : stmts[0]
             (s) : map(to-ir-e{_,MALE}, map(to-ir-s,s))
       collect-mports(body(m))
       val s* = collect-refs(body(m))

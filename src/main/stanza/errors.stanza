@@ -654,11 +654,18 @@ public defn check-genders (c:Circuit) -> Circuit :
    defn check-gender (info:FileInfo,genders:HashTable<Symbol,Gender>,e:Expression,desired:Gender) -> False :
       val gender = get-gender(e,genders)
       val kind* = get-kind(e)
-      val flip? = 
-         match(type(e)) :
-            (t:BundleType) : 
-               for f in fields(t) any? : flip(f) == REVERSE
-            (t) : false
+      defn flip? (t:Type) -> True|False :
+         var f? = false
+         defn flip-rec (t:Type,f:Flip) -> Type :
+            match(t) :
+               (t:BundleType) : 
+                  for field in fields(t) do : 
+                     flip-rec(type(field),f * flip(field))
+               (t:VectorType) : flip-rec(type(t),f)
+               (t) : if f == REVERSE : f? = true
+            t
+         flip-rec(t,DEFAULT)
+      val has-flip? = flip?(t)
          
       ;println(e)
       ;println(gender)
@@ -670,7 +677,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          [MALE, FEMALE] : 
             add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
          [FEMALE, MALE] : 
-            if (kind* == PortKind() or kind* == InstanceKind()) and flip? == false : 
+            if (kind* == PortKind() or kind* == InstanceKind()) and has-flip? == false : 
                ; OK!
                false
             else : 
