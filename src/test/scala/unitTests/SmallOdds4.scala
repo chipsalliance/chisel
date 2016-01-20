@@ -9,7 +9,7 @@ import chiselTests.ChiselFlatSpec
 
 import scala.util.Random
 
-class SmallOdds2(filter_width: Int) extends Module {
+class SmallOdds4(filter_width: Int) extends Module {
 
   class FilterIO extends Bundle {
     val in = new DeqIO(UInt(width = filter_width))
@@ -22,7 +22,7 @@ class SmallOdds2(filter_width: Int) extends Module {
     //    when(isOk(io.in.bits)) {
     //      io.out.enq(io.in.deq())
     //    }
-    io.in.ready := Bool(true)
+    io.in.ready := io.out.ready
     io.out.bits := io.in.bits
 
     io.out.valid := io.out.ready && io.in.valid && isOk(io.in.bits)
@@ -32,28 +32,22 @@ class SmallOdds2(filter_width: Int) extends Module {
 
   def buildFilter(): Unit = {
     val smalls = Module(new Filter(_ < UInt(10)))
-    //  val q      = Module(new Queue(UInt(width = filter_width), entries = 1))
-    val odds = Module(new Filter((x: UInt) => (x & UInt(1)) === UInt(1)))
+    val q      = Module(new Queue(UInt(width = filter_width), entries = 1))
+    val odds   = Module(new Filter((x: UInt) => (x & UInt(1)) === UInt(1)))
 
-    smalls.io.in.valid := io.in.valid
-    smalls.io.in.bits := io.in.bits
-    smalls.io.out.ready := odds.io.in.ready
+    io.in.ready  := smalls.io.in.ready
 
-    odds.io.in.valid := smalls.io.out.valid
-    odds.io.in.bits := smalls.io.out.bits
-    odds.io.out.ready := io.out.ready
-
-    io.out.bits := odds.io.out.bits
-    io.out.valid := odds.io.out.valid
-
-    io.in.ready := Bool(true)
+    smalls.io.in <> io.in
+    q.io.enq     <> smalls.io.out
+    odds.io.in   <> q.io.deq
+    io.out       <> odds.io.out
   }
 
   buildFilter()
 }
 
-class SmallOdds2Tester(width: Int) extends DecoupledTester {
-  val device_under_test = Module(new SmallOdds2(filter_width = width))
+class SmallOdds4Tester(width: Int) extends DecoupledTester {
+  val device_under_test = Module(new SmallOdds4(filter_width = width))
 
   Random.setSeed(0L)
   for(i <- 0 to 30) {
@@ -67,10 +61,10 @@ class SmallOdds2Tester(width: Int) extends DecoupledTester {
   finish()
 }
 
-class SmallOdds2TesterSpec extends ChiselFlatSpec {
+class SmallOdds4TesterSpec extends ChiselFlatSpec {
   "a small odds filters" should "take a stream of UInt and only pass along the odd ones < 10" in {
     assert(execute {
-      new SmallOdds2Tester(32)
+      new SmallOdds4Tester(32)
     })
   }
 }
