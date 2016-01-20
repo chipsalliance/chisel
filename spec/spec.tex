@@ -167,8 +167,6 @@ UInt
 SInt
 \end{verbatim}  
 
-An unsigned integer type is equivalent ot
-
 \subsubsection{Clock Type}
 
 The clock type is used to describe wires and ports meant for carrying clock signals. The usage of components with clock types are restricted. Clock signals cannot be used in most primitive operations, and clock signals can only be connected to components that have been declared with the clock type. 
@@ -230,38 +228,127 @@ output myport: {a: UInt, flip b: {c: UInt, flip d:UInt}}
 \end{verbatim}
 In a connection to \verb|myport|, the \verb|a| subfield flows out of the module. The \verb|c| subfield contained in the \verb|b| subfield flows into the module, and the \verb|d| subfield contained in the \verb|b| subfield flows out of the module.
 
-Note that when determining whether two bundle types are equivalent, the order of declaration, the orientation, name, and type of each field must match exactly.
-\verb|{a:UInt, b:UInt}| is a different type than \verb|{b:UInt, a:UInt}|. \verb|{a: {flip b:UInt}}| is a different type than \verb|{flip a: {b: UInt}}|.
+Note that within a bundle, all field names must be unique.
 
-Additionally, note that within a bundle, all field names must be unique.
+\subsection{Passive Types}
+
+Intuitively, a passive type is defined as a type where all leaf elements have a non-flipped orientation. Thus all ground types are passive types. Vector types are passive if their element type is passive. And bundle types are passive if no fields are flipped and if all field types are passive.
+
+\subsection{Type Equivalence}
+
+The type equivalence relation is used to determine whether a connection between two elements is legal. See section \ref{XXX} for further details about connect statements.
+
+An unsigned integer type is always equivalent to another unsigned integer type regardless of bit width, and is not equivalent to any other type. Similarly, a signed integer type is always equivalent to another signed integer type regardless of bit width, and is not equivalent to any other type. 
+
+Clock types are only equivalent to clock types, and are not equivalent to any other type.
+
+Two vector types are equivalent if they have the same length, and if their element types are equivalent.
+
+Two bundle types are equivalent when they have the same number of fields, and the i'th field from each bundle have matching names and orientations, as well as equivalent types. Consequently, \verb|{a:UInt, b:UInt}| is a different type than \verb|{b:UInt, a:UInt}|. \verb|{a: {flip b:UInt}}| is a different type than \verb|{flip a: {b: UInt}}|.
+
+\subsection{Weak Type Equivalence}
+
+The weak type equivalence relation is used to determine whether a partial connection between two elements is legal. See section \ref{XXX} for further details about partial connect statements.
+
+Two types are weakly equivalent if their corresponding oriented types are equivalent.
+
+\subsubsection{Oriented Types}
+The weak type equivalence relation requires first a definition of {\em oriented types}. Intuitively, an oriented type is a type where all orientation information is collated and coupled with the leaf ground types instead of in bundle fields.
+
+An oriented ground type is an orientation coupled with a ground type. An oriented vector type is an ordered sequence of elements of a given oriented type. The length of an oriented vector type must be known and positive. An oriented bundle type is a collection of fields containing a name and an oriented type, but no orientation.
+
+Applying a flip orientation to an oriented type recursively reverses the orientation of every oriented ground type contained within. Applying a non-flip orientation to an oriented type does nothing.
+
+\subsubsection{Conversion to Oriented Types}
+To convert a ground type to an oriented ground type, attach a non-flip orientation to the ground type. 
+
+To convert a vector type to an oriented vector type, convert its element type to an oriented type, and retain its length. 
+
+To convert a bundle field to an oriented bundle field, first convert its type to an oriented type. Then apply the field orientation to the oriented type, returning a new oriented type. The new oriented type, and the original field's name combine to create the oriented bundle field. To convert a bundle type to an oriented bundle type, convert each bundle field to an oriented bundle field.
+
+\subsubsection{Oriented Type Equivalence}
+Two oriented ground types are equivalent if their orientations and types are equivalent.
+
+Two oriented vector types are equivalent if their element types are equivalent.
+
+Two oriented bundle types are not equivalent if there exists two fields, one from each oriented bundle type, that have identical names but whose oriented types are not equivalent. Otherwise, the oriented bundle types are equivalent.
+
+As stated earlier, two types are weakly equivalent if their corresponding oriented types are equivalent.
+
 
 \section{Statements} \label{statements}
 
 Statements are used to instantiate and connect circuit elements together.
 
 \subsection{The Connect Statement}
-The connect statement is used to specify a physically wired connection between two circuit elements. The following example demonstrates connecting a module's input port to its output port.
+The connect statement is used to specify a physically wired connection between two circuit elements.
+
+The following example demonstrates connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
 \begin{verbatim}
 module MyModule :
-   input a: UInt
-   output b: UInt
-   b <= a
+   input myinput: UInt
+   output myoutput: UInt
+   myoutput <= myinput
 \end{verbatim}
 
-For a connection to be legal, the types of the two expressions must be equivalent.
+In order for a connection to be legal the following conditions must hold:
+\begin{enumerate}
+\item The types of the left-hand and right-hand side expressions must be equivalent (see section \ref{XXX} for details).
+\item The bit widths of the two expressions must allow for data to always flow from a smaller to equal size or larger bit width.
+\item The gender of the left-hand side expression must be female or bi-gender (see section \ref{XXX} for an explanation of gender).
+\item Either the gender of the right-hand side expression is male or bi-gender, or the right-hand side expression has a passive type.
+\end{enumerate}
 
-===== BOOKMARK =====
+Connect statements from a narrower ground type element to a wider ground type element will have its value automatically sign-extended to the larger bit width. 
 
-However, the widths of the types do not need to be equivalent.
-If the {\em output} expression has a smaller width than the {\em input} expression, the {\em output} is padded according to its type.
-If the {\em output} expression has a larger width than the {\em input} expression, this triggers an error.
+\subsubsection{The Connection Algorithm}
+Connect statements between ground types cannot be expanded further. 
 
-If the {\em input} width is unknown, it is inferred to be the width of the largest {\em output} that it is connected to.
-If the {\em output} width is unknown, it cannot inferred from this connection.
+Connect statements between two vector typed elements recursively connects each subelement in the right-hand side expression to the corresponding subelement in the left-hand side expression. 
 
-The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be able to be used as an input.
+Connect statements between two bundle typed elements connects the i'th field of the right-hand side expression and the i'th field of the left-hand side expression. If the i'th field is not flipped, then the right-hand side field is connected to the left-hand side field. Conversely, if the i'th field is flipped, then the left-hand side field is connected to the right-hand side field.
 
 
+\subsection{The Partial Connect Statement}
+The partial connect statement is also used to specify a physically wired connection between two circuit elements. However, it enforces fewer restrictions on the types and widths of the circuit elements it connects. 
+
+In order for a partial connect to be legal the following conditions must hold:
+\begin{enumerate}
+\item The types of the left-hand and right-hand side expressions must be weakly equivalent (see section \ref{XXX} for details).
+\item The gender of the left-hand side expression must be female or bi-gender (see section \ref{XXX} for an explanation of gender).
+\item Either the gender of the right-hand side expression is male or bi-gender, or the right-hand side expression has a passive type.
+\end{enumerate}
+
+Partial connect statements from a narrower ground type element to a wider ground type element will have its value automatically sign-extended to the larger bit width. Partial connect statements from a wider ground type element to a narrower ground type element will have its value automatically truncated to fit the smaller bit width. 
+
+Intuitively, bundle fields with matching names will be connected appropriately, while bundle fields not present in both types will be ignored. Similarly, vectors with mismatched lengths will be connected up to the shorter length, and the remaining elements are ignored.
+
+The following example demonstrates partially connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
+\begin{verbatim}
+module MyModule :
+   input myinput: {flip a:UInt, b:UInt[2]}
+   output myoutput: {flip a:UInt, b:UInt[3], c:UInt}
+   myoutput <- myinput
+\end{verbatim}
+
+The above example is equivalent to the following:
+\begin{verbatim}
+module MyModule :
+   input myinput: {flip a:UInt, b:UInt[2]}
+   output myoutput: {flip a:UInt, b:UInt[3], c:UInt}
+   myinput.a <- myoutput.a
+   myoutput.b[0] <- myinput.b[0]
+   myoutput.b[1] <- myinput.b[1]
+\end{verbatim}
+For details on the syntax and semantics of the subfield and subindex expressions, see section \ref{XXX}.
+
+\subsubsection{The Partial Connection Algorithm}
+
+A partial connect statement between two ground type elements connects the right-hand side expression to the left-hand side expression. Conversely, a reverse partial connect statement between two ground type elements connects the left-hand side expression to the right-hand side expression. 
+
+A partial (or reverse partial) connect statement between two vector typed elements applies a partial (or reverse partial) connect from the first n subelements in the right-hand side expression to the first n corresponding subelements in the left-hand side expression, where n is the length of the smaller vector. 
+
+A partial (or reverse partial) connect statement between two bundle typed elements considers any pair of fields, one from the first bundle type and one from the second, with matching names. If the first field in the pair is not flipped, then we apply a partial (or reverse partial) connect from the right-hand side field to the left-hand side field. However, if the first field is flipped, then we apply a reverse partial (or partial) connect from the right-hand side field to the left-hand side field. 
 
 \subsection{Wire Declarations}
 A wire is a named combinational circuit element that can be connected to using the connect statement.
