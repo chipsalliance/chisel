@@ -19,7 +19,7 @@ class DecoupledIO[+T <: Data](gen: T, do_flip: Boolean = false) extends Bundle
   * The standard used is that the consumer uses the flipped interface.
   */
 object Decoupled {
-  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+  def apply[T <: Data](gen: T, do_flip: Boolean = false): DecoupledIO[T] = new DecoupledIO(gen, do_flip)
 }
 
 /** An I/O bundle for enqueuing data with valid/ready handshaking */
@@ -66,7 +66,7 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType).flip()
+  val enq   = Decoupled(gen.cloneType, do_flip = true)
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq   = Decoupled(gen.cloneType)
   /** The current amount of data in the queue */
