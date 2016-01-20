@@ -28,9 +28,15 @@ abstract class DecoupledTester extends BasicTester {
     //noinspection ScalaStyle
     if(verbose) println(msg)
   }
+  def logSimulator(fmt: String, args: Bits*): Unit = {
+    if(verbose) printf(fmt, args :_*)
+  }
 
+//  private val input_event_counter  = Reg(init = UInt(0, width = internal_counter_size))
+//  private val output_event_counter = Reg(init = UInt(0, width = internal_counter_size))
   private val input_event_counter  = Reg(init = UInt(0, width = internal_counter_size))
   private val output_event_counter = Reg(init = UInt(0, width = internal_counter_size))
+
   private val input_complete       = Reg(init = Bool(false))
   private val output_complete      = Reg(init = Bool(false))
 
@@ -264,10 +270,9 @@ abstract class DecoupledTester extends BasicTester {
         when(is_this_my_turn(input_event_counter)) {
           when(controlling_port.ready) {
             clearIdle()
-            printf(s"  setting input ${name(controlling_port)}")
             controlling_port.valid := Bool(true)
             counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-            when(output_event_counter < UInt(input_event_list.size - 1)) {
+            when( ! input_complete ) {
               input_event_counter := input_event_counter + UInt(1)
             }
           }.otherwise {
@@ -320,7 +325,8 @@ abstract class DecoupledTester extends BasicTester {
             }
             controlling_port.ready := Bool(true)
             counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-            when(output_event_counter < UInt(output_event_list.size - 1)) {
+
+            when( !output_complete ) {
               output_event_counter := output_event_counter + UInt(1)
             }
           }.otherwise {
@@ -364,7 +370,7 @@ abstract class DecoupledTester extends BasicTester {
             }
           }
           counter_for_this_valid := counter_for_this_valid + UInt(1)
-          when(output_event_counter < UInt(output_event_list.size - 1)) {
+          when( ! output_complete ) {
             output_event_counter := output_event_counter + UInt(1)
           }
         }.otherwise {
@@ -384,8 +390,18 @@ abstract class DecoupledTester extends BasicTester {
     processInputEvents()
     processOutputEvents()
 
-    input_complete  := input_event_counter  >= UInt(input_event_list.size - 1)
-    output_complete := output_event_counter >= UInt(output_event_list.size - 1)
+    input_complete  := (if( input_event_list.nonEmpty ) {
+      input_event_counter  >= UInt(input_event_list.size - 1)
+    } else {
+      Bool(true)
+    })
+    output_complete := output_event_counter >= (if( output_event_list.nonEmpty ) {
+      UInt(output_event_list.size - 1)
+    }
+    else {
+      Bool(true)
+    })
+
     when(input_complete && output_complete) {
       printf("All input and output events completed")
       stop()
@@ -403,7 +419,7 @@ abstract class DecoupledTester extends BasicTester {
     buildDecoupledOutputEventHandlers()
     buildValidIoPortEventHandlers()
 
-    printf(s"in_event_counter %d, out_event_counter %d", input_event_counter, output_event_counter)
+    logSimulator(s"in_event_counter %d, out_event_counter %d", input_event_counter, output_event_counter)
     io_info.show_ports("".r)
   }
 }
