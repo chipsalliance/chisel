@@ -110,67 +110,67 @@ class Router extends Module {
 //  }
 }
 
-class RouterUnitTester(number_of_packets_to_send: Int) extends DecoupledTester {
+class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledTester {
   val device_under_test = Module(new Router)
   val c = device_under_test
   verbose = true
 
-  Random.setSeed(0)
+  testBlock { () =>
+    Random.setSeed(0)
 
-  def readRoutingTable(addr: Int, data: Int): Unit = {
-    inputEvent(List(c.io.read_routing_table_request.bits.addr -> addr))
-    outputEvent(List(c.io.read_routing_table_response.bits -> data))
+    def readRoutingTable(addr: Int, data: Int): Unit = {
+      inputEvent(c.io.read_routing_table_request.bits.addr -> addr)
+      outputEvent(c.io.read_routing_table_response.bits -> data)
+    }
+
+    def writeRoutingTable(addr: Int, data: Int): Unit = {
+      inputEvent(
+        c.io.load_routing_table_request.bits.addr -> addr,
+        c.io.load_routing_table_request.bits.data -> data
+      )
+    }
+
+    def writeRoutingTableWithConfirm(addr: Int, data: Int): Unit = {
+      writeRoutingTable(addr, data)
+      readRoutingTable(addr, data)
+    }
+
+    def routePacket(header: Int, body: Int, routed_to: Int): Unit = {
+      inputEvent(c.io.in.bits.header -> header, c.io.in.bits.body -> body)
+      outputEvent(c.io.outs(routed_to).bits.body -> body)
+      logScala(s"rout_packet $header $body should go to out($routed_to)")
+    }
+
+    readRoutingTable(0, 0) // confirm we initialized the routing table
+
+    for (i <- 0 until Router.numberOfOutputs) {
+      writeRoutingTableWithConfirm(i, (i + 1) % Router.numberOfOutputs) // load routing table, confirm each write as built
+    }
+    for (i <- Router.numberOfOutputs - 1 to 0 by -1) {
+      readRoutingTable(i, (i + 1) % Router.numberOfOutputs) // check them in reverse order just for fun
+    }
+
+    // send some regular packets
+    for (i <- 0 until Router.numberOfOutputs) {
+      routePacket(i, i * 3, (i + 1) % 4)
+    }
+
+    // generate a new routing table
+    val new_routing_table = Array.tabulate(Router.routeTableSize) { _ =>
+      scala.util.Random.nextInt(Router.numberOfOutputs)
+    }
+
+    // load a new routing table
+    for ((destination, index) <- new_routing_table.zipWithIndex) {
+      writeRoutingTable(index, destination)
+    }
+
+    // send a bunch of packets, with random values
+    for (i <- 0 to number_of_packets_to_send) {
+      val data = Random.nextInt(Int.MaxValue - 1)
+      routePacket(i % Router.routeTableSize, data, new_routing_table(i % Router.routeTableSize))
+    }
   }
-
-  def writeRoutingTable(addr: Int, data: Int): Unit = {
-    inputEvent(List(
-      c.io.load_routing_table_request.bits.addr -> addr,
-      c.io.load_routing_table_request.bits.data -> data
-    ))
-  }
-
-  def writeRoutingTableWithConfirm(addr: Int, data: Int): Unit = {
-    writeRoutingTable(addr, data)
-    readRoutingTable(addr, data)
-  }
-
-  def routePacket(header: Int, body: Int, routed_to: Int): Unit = {
-    inputEvent(List(c.io.in.bits.header -> header, c.io.in.bits.body -> body))
-    outputEvent(List(c.io.outs(routed_to).bits.body -> body))
-    logScala(s"rout_packet $header $body should go to out($routed_to)")
-  }
-
-  readRoutingTable(0, 0)              // confirm we initialized the routing table
-
-  for(i <- 0 until Router.numberOfOutputs) {
-    writeRoutingTableWithConfirm(i, (i + 1) % Router.numberOfOutputs) // load routing table, confirm each write as built
-  }
-  for(i <- Router.numberOfOutputs - 1 to 0 by -1) {
-    readRoutingTable(i, (i + 1) % Router.numberOfOutputs) // check them in reverse order just for fun
-  }
-
-  // send some regular packets
-  for(i <- 0 until Router.numberOfOutputs) {
-    routePacket(i, i * 3, (i + 1) % 4)
-  }
-
-  // generate a new routing table
-  val new_routing_table = Array.tabulate(Router.routeTableSize) { _ =>
-    scala.util.Random.nextInt(Router.numberOfOutputs)
-  }
-
-  // load a new routing table
-  for((destination, index) <- new_routing_table.zipWithIndex) {
-    writeRoutingTable(index, destination)
-  }
-
-  // send a bunch of packets, with random values
-  for(i <- 0 to number_of_packets_to_send) {
-    val data = Random.nextInt(Int.MaxValue-1)
-    routePacket(i % Router.routeTableSize, data, new_routing_table(i % Router.routeTableSize))
-  }
-
-  finish(show_io_table = true)
 }
 
 class RouterUnitTesterSpec extends ChiselFlatSpec {

@@ -15,10 +15,28 @@ import scala.collection.mutable.ArrayBuffer
   * Input will flow into their devices asynchronously but in order they were generated
   * be compared in the order they are generated
   *
+  *
+  * @example
+  * {{{
+  * class XTimesXTester extends [[OrderedDecoupledTester]] {
+  *   val device_under_test = new XTimesX
+  *   test_block { () =>
+  *     for(i <- 0 to 10) {
+  *       input_event(List(device_under_test.io.in.x -> i))
+  *       output_event(List(device_under_test.io.out.y -> i*i))
+  *     }
+  *   }
+  * }
+  * }}}
   */
-abstract class DecoupledTester extends BasicTester {
+abstract class OrderedDecoupledTester extends BasicTester {
   val device_under_test     : Module
   var io_info               : IOAccessor = null
+
+  def testBlock(block: () => Unit): Unit = {
+    block()
+    finish()
+  }
 
   val internal_counter_size = 32
 
@@ -65,6 +83,7 @@ abstract class DecoupledTester extends BasicTester {
       this(key)
     }
   }
+
   /**
    * Validate that all pokes ports are members of the same DecoupledIO
    * makes a list of all decoupled parents based on the ports referenced in pokes
@@ -138,10 +157,10 @@ abstract class DecoupledTester extends BasicTester {
     Right(io_info.name_to_valid_port(valid_parent_names.head))
   }
 
-  def inputEvent(pokes: Seq[(Data, Int)]): Unit = {
+  def inputEvent(pokes: (Data, Int)*): Unit = {
     input_event_list += pokes
   }
-  def outputEvent(expects: Seq[(Data, Int)]): Unit = {
+  def outputEvent(expects: (Data, Int)*): Unit = {
     output_event_list += expects
   }
 
@@ -228,7 +247,8 @@ abstract class DecoupledTester extends BasicTester {
         step.pokes.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
       }
       val is_this_my_turn = Vec(
-        input_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) }
+        input_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
+          List(Bool(false))
       )
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0)) })
@@ -241,16 +261,11 @@ abstract class DecoupledTester extends BasicTester {
       ports_referenced_for_this_controlling_port.foreach { port =>
         port := port_vector_values(port)(counter_for_this_decoupled)
       }
-      when(!input_complete) {
-        when(is_this_my_turn(input_event_counter)) {
-          when(controlling_port.ready) {
-            controlling_port.valid := Bool(true)
-            counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-            when( ! input_complete ) {
-              input_event_counter := input_event_counter + UInt(1)
-            }
-          }
-        }
+      controlling_port.valid := is_this_my_turn(input_event_counter)
+
+      when(controlling_port.valid && controlling_port.ready) {
+        counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
+        input_event_counter        := input_event_counter + UInt(1)
       }
     }
   }
@@ -267,7 +282,8 @@ abstract class DecoupledTester extends BasicTester {
         step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
       }
       val is_this_my_turn = Vec(
-        output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) }
+        output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
+        List(Bool(false))
       )
       logScala(s"Output decoupled controller ${name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => name(port) }.mkString(",")}")
@@ -279,29 +295,22 @@ abstract class DecoupledTester extends BasicTester {
         port -> Vec(values_vector.map { value => UInt(value) })
       }.toMap
 
-      when(!output_complete) {
-        when(is_this_my_turn(output_event_counter)) {
-          controlling_port.ready := Bool(true)
-          when(controlling_port.valid) {
-            ports_referenced_for_this_controlling_port.foreach { port =>
-              printf(s"output test event %d testing ${name(port)} = %d, should be %d",
-                output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_decoupled)
-              )
-              when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_decoupled)) {
-                printf(s"Error: event %d ${name(port)} was %d should be %d",
-                  output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_decoupled))
-                assert(Bool(false))
-                stop()
-              }
-            }
-            controlling_port.ready := Bool(true)
-            counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
+      controlling_port.ready := is_this_my_turn(output_event_counter)
 
-            when( !output_complete ) {
-              output_event_counter := output_event_counter + UInt(1)
-            }
+      when(controlling_port.ready && controlling_port.valid) {
+        ports_referenced_for_this_controlling_port.foreach { port =>
+          printf(s"output test event %d testing ${name(port)} = %d, should be %d",
+            output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_decoupled)
+          )
+          when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_decoupled)) {
+            printf(s"Error: event %d ${name(port)} was %d should be %d",
+              output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_decoupled))
+            assert(Bool(false))
+            stop()
           }
         }
+        counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
+        output_event_counter := output_event_counter + UInt(1)
       }
     }
   }
@@ -396,10 +405,4 @@ abstract class DecoupledTester extends BasicTester {
   }
 }
 
-object DecoupledTester {
-  val defaultMaxTickCount = 1000
-  val defaultMaxIdleCount =   30
 
-  var max_tick_count = defaultMaxTickCount
-  var max_idle_count = defaultMaxIdleCount
-}

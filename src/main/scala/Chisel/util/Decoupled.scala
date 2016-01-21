@@ -6,20 +6,20 @@
 package Chisel
 
 /** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
-class DecoupledIO[+T <: Data](gen: T, do_flip: Boolean = false) extends Bundle
+class DecoupledIO[+T <: Data](gen: T, as_input: Boolean = false) extends Bundle
 {
-  val ready = if(do_flip) Bool(OUTPUT) else Bool(INPUT)
-  val valid = if(do_flip) Bool(INPUT) else Bool(OUTPUT)
-  val bits  = if(do_flip) gen.cloneType.asInput else gen.cloneType.asOutput
+  val ready = if(as_input) Bool(OUTPUT) else Bool(INPUT)
+  val valid = if(as_input) Bool(INPUT) else Bool(OUTPUT)
+  val bits  = if(as_input) gen.cloneType.asInput else gen.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = ready && valid
-  override def cloneType: this.type = new DecoupledIO(gen, do_flip).asInstanceOf[this.type]
+  override def cloneType: this.type = new DecoupledIO(gen, as_input).asInstanceOf[this.type]
 }
 
 /** Adds a ready-valid handshaking protocol to any interface.
   * The standard used is that the consumer uses the flipped interface.
   */
 object Decoupled {
-  def apply[T <: Data](gen: T, do_flip: Boolean = false): DecoupledIO[T] = new DecoupledIO(gen, do_flip)
+  def apply[T <: Data](gen: T, as_input: Boolean = false): DecoupledIO[T] = new DecoupledIO(gen, as_input)
 }
 
 /** An I/O bundle for enqueuing data with valid/ready handshaking */
@@ -42,7 +42,7 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 }
 
 /** An I/O bundle for dequeuing data with valid/ready handshaking */
-class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, do_flip = true)
+class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, as_input = true)
 {
 //  flip(), in chisel2 this worked in place, causes infinte recursion in chisel3
   def init(): Unit = {
@@ -61,12 +61,13 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 }
 
 /** An I/O Bundle for Queues
+ *
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue */
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType, do_flip = true)
+  val enq   = Decoupled(gen.cloneType, as_input = true)
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq   = Decoupled(gen.cloneType)
   /** The current amount of data in the queue */
@@ -74,6 +75,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 }
 
 /** A hardware module implementing a Queue
+ *
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue
   * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are
@@ -135,11 +137,11 @@ class Queue[T <: Data](gen: T, val entries: Int,
 }
 
 /** Generic hardware queue. Required parameter entries controls
-  the depth of the queues. The width of the queue is determined
-  from the inputs.
+  *the depth of the queues. The width of the queue is determined
+  *from the inputs.
 
-  Example usage:
-     {{{ val q = Queue(Decoupled(UInt()), 16)
+  *Example usage:
+     *{{{ val q = Queue(Decoupled(UInt()), 16)
      q.io.enq <> producer.io.out
      consumer.io.in <> q.io.deq }}}
   */

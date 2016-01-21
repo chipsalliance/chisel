@@ -19,9 +19,6 @@ class SmallOdds4(filter_width: Int) extends Module {
   class Filter(isOk: UInt => Bool) extends Module {
     val io = new FilterIO
 
-    //    when(isOk(io.in.bits)) {
-    //      io.out.enq(io.in.deq())
-    //    }
     io.in.ready := io.out.ready
     io.out.bits := io.in.bits
 
@@ -62,9 +59,10 @@ class SmallOdds4Tester(width: Int) extends DecoupledTester {
 }
 
 class SmallOdds4TesterSpec extends ChiselFlatSpec {
+  val testWidth = 32
   "a small odds filters" should "take a stream of UInt and only pass along the odd ones < 10" in {
     assert(execute {
-      new SmallOdds4Tester(32)
+      new SmallOdds4Tester(testWidth)
     })
   }
 }
