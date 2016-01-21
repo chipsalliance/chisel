@@ -280,7 +280,7 @@ As stated earlier, two types are weakly equivalent if their corresponding orient
 
 Statements are used to instantiate and connect circuit elements together.
 
-\subsection{The Connect Statement}
+\subsection{Connect Statements}
 The connect statement is used to specify a physically wired connection between two circuit elements.
 
 The following example demonstrates connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
@@ -308,8 +308,7 @@ Connect statements between two vector typed elements recursively connects each s
 
 Connect statements between two bundle typed elements connects the i'th field of the right-hand side expression and the i'th field of the left-hand side expression. If the i'th field is not flipped, then the right-hand side field is connected to the left-hand side field. Conversely, if the i'th field is flipped, then the left-hand side field is connected to the right-hand side field.
 
-
-\subsection{The Partial Connect Statement}
+\subsection{Partial Connect Statements}
 The partial connect statement is also used to specify a physically wired connection between two circuit elements. However, it enforces fewer restrictions on the types and widths of the circuit elements it connects. 
 
 In order for a partial connect to be legal the following conditions must hold:
@@ -350,383 +349,660 @@ A partial (or reverse partial) connect statement between two vector typed elemen
 
 A partial (or reverse partial) connect statement between two bundle typed elements considers any pair of fields, one from the first bundle type and one from the second, with matching names. If the first field in the pair is not flipped, then we apply a partial (or reverse partial) connect from the right-hand side field to the left-hand side field. However, if the first field is flipped, then we apply a reverse partial (or partial) connect from the right-hand side field to the left-hand side field. 
 
-\subsection{Wire Declarations}
-A wire is a named combinational circuit element that can be connected to using the connect statement.
-A wire with a given name and type can be instantiated with the following statement.
-\[
-\kw{wire} \text{name } \kw{:} \pd{type} \\
-\]
+\subsection{Statement Groups}
 
-Declared wires are {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement).
+An ordered sequence of one or more statements can be grouped into a single statement, called a statement group. The following example demonstrates a statement group composed of three connect statements.
+
+\begin{verbatim}
+module MyModule :
+   input a : UInt
+   input b : UInt
+   output myport1 : UInt
+   output myport2 : UInt
+   myport1 <= a
+   myport1 <= b
+   myport2 <= a
+\end{verbatim}
+
+\subsubsection{Last Connect Semantics}
+Ordering of statements is significant in a statement group. Intuitively, statements execute in order, and the effects of later statements take precedence over earlier ones. In the previous example, in the resultant circuit, port \verb|b| will be connected to \verb|myport1|, and port \verb|a| will be connected to \verb|myport2|. 
+
+Note that connect and partial connect statements have equal priority, and later connect or partial connect statements always take priority over earlier connect or partial connect statements. For details on the behavior of conditional statements under last connect semantics, see section \ref{XXX}.
+
+In the case where a connect to a circuit element with an aggregate type is followed by a connect to a subcomponent of that element, only the connection to the subcomponent is overwritten. Connections to the other subcomponents remain unaffected. In the following example, in the resultant circuit, the \verb|c| subcomponent of port \verb|portx| will be connected to the \verb|c| subcomponent of \verb|myport|, and port \verb|porty| will be connected to the \verb|b| subcomponent of \verb|myport|.
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport <= portx
+   myport.b <= porty
+\end{verbatim}
+The above circuit can be rewritten as follows.
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport.b <= porty
+   myport.c <= portx.c
+\end{verbatim}
+
+In the case where a connection to a subcomponent of an aggregate circuit element is followed by a connection to the entire circuit element, the later connection overwrites the earlier connections completely.
+
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport.b <= porty
+   myport <= portx
+\end{verbatim}
+The above circuit can be rewritten as follows.
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport <= portx
+\end{verbatim}
+
+See section \ref{XXX} for more details about subcomponent expressions.
+
+\subsection{The Empty Statement}
+The empty statement does nothing and is used simply as a placeholder where a statement is expected. It is specified using the \verb|skip| keyword.
+
+The following example:
+\begin{verbatim}
+a <= b
+skip
+c <= d
+\end{verbatim}
+can be equivalently expressed as:
+\begin{verbatim}
+a <= b
+c <= d
+\end{verbatim}
+
+The empty statement is most often used as the alternate branch in a conditional statement, or as a convenient placeholder for removed components during transformational passes. See section \ref{XXX} for details on the conditional statement.
+
+\subsection{Wires}
+A wire is a named combinational circuit element that can be connected to and from using connect and partial connect statements.
+
+The following example demonstrates instantiating a wire with the given name \verb|mywire| and type \verb|UInt|.
+
+\begin{verbatim}
+wire mywire : UInt
+\end{verbatim}
 
 \subsection{Registers}
 A register is a named stateful circuit element.
-A register with a given name, type, clock reference, and reset reference, can be instantiated with the following statement.
-\[
-\kw{reg} \text{name } \kw{:} \pds{type},\pds{clk,} \pds{reset} \\
-\]
 
-Like wires, registers are also {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement). 
+The following example demonstrates instantiating a register with the given name \verb|myreg|, type \verb|SInt|, and is driven by the clock signal \verb|myclock|. 
 
-The onreset statement is used to specify the initialization value for a register, which is assigned to the register when the declared \pds{reset} signal is asserted.
+\begin{verbatim}
+wire myclock: Clock
+reg myreg: SInt, myclock
+\end{verbatim}
 
-smem
-read from same address as write
+Optionally, for the purposes of circuit initialization, a register can be declared with a reset signal and value. In the following example, \verb|myreg| is assigned the value \verb|myinit| when the signal \verb|myreset| is high.
 
+\begin{verbatim}
+wire myclock: Clock
+wire myreset: UInt<1>
+wire myinit: SInt
+reg myreg: SInt, myclock, myreset, myinit
+\end{verbatim}
 
-\subsection{Memories}
-A memory is a stateful circuit element containing multiple elements.
-The type for a memory must be completely specified; it cannot contain any unknown widths or bundle types with reverse fields.
-Unlike registers, memories can {\em only} be read from or written to through {\em accessors}, and cannot be initialized using a special FIRRTL construct 
-Instead, the circuit itself must contain the proper logic to initialize the memory.
+Note that the clock signal for a register must be of type \verb|clock|, the reset signal must be a single bit \verb|UInt|, and the type of initialization value must match the declared type of the register.
 
-Additionally, if a memory is written via two or more accessors to the same memory address, the resulting stored value is undefined.
+\subsection{Invalidate Statements}
+An invalidate statement is used to indicate that a circuit component contains indeterminate values. It is specified as follows:
 
-Memories always have a synchronous write, but can either be declared to be read combinatorially or synchronously.
-A combinatorially read memory with a given name, type, and size integer can be instantiated with the following statement.
-\[
-\begin{aligned}
-\kw{cmem} \text{name } \kw{:} \pds{type} , size\\
-\end{aligned}
-\]
+\begin{verbatim}
+wire w:UInt
+w is invalid
+\end{verbatim}
 
-A synchronously read memory with a given name, type, and size integer can be instantiated with the following statement.
-\[
-\begin{aligned}
-\kw{smem} \text{name } \kw{:} \pds{type} , size \\
-\end{aligned}
-\]
+Invalidate statements can be applied to any circuit element of any type. However, if the circuit element cannot be connected to, then the statement has no effect on the element. The following example demonstrates the effect of invalidating a variety of circuit elements with aggregate types. See section \ref{XXX} for details on the algorithm for determining what is invalidated.
 
-A synchronously read memory has the additional restriction that a read to an address on the same cycle its written returns an undefined value.
+\begin{verbatim}
+module MyModule :
+   input in:{flip a:UInt, b:UInt}
+   output out:{flip a:UInt, b:UInt}
+   wire w:{flip a:UInt, b:UInt}
+   in is invalid
+   out is invalid
+   w is invalid
+\end{verbatim}
+is equivalent to the following:
+\begin{verbatim}
+module MyModule :
+   input in:{flip a:UInt, b:UInt}
+   output out:{flip a:UInt, b:UInt}
+   wire w:{flip a:UInt, b:UInt}
+   in.a is invalid
+   out.b is invalid
+   w.a is invalid
+   w.b is invalid
+\end{verbatim}
 
-\subsection{Poisons}
-A poison component is a named combinational circuit element that holds a random/garbage value.
-It cannot be connected to using the connect statement, and its type cannot contain a bundle with a flipped value.
+For the purposes of simulation, invalidated elements are initialized to random values, and operations involving indeterminate values produce undefined behaviour. This is useful for early detection of errors in simulation.
 
-A poison component with a given name and type can be instantiated with the following statement.
-\[
-\kw{poison} \text{name } \kw{:} \pd{type} \\
-\]
+\subsubsection{The Invalidate Algorithm}
+Invalidating an element with a ground type indicates that the element's value is indetermined if the element is female or bi-gender. Otherwise, the element is unaffected.
 
-Declared poisons are {\em unidirectional}, which means that they can only be used as a source (being on the right-hand side of a connect statement).
+Invalidating an element with a vector type recursively invalidates each subelement in the vector.
+
+Invalidating an element with a bundle type recursively invalidates each subelement in the bundle.
 
 \subsection{Nodes}
-A node is simply a named intermediate value in a circuit, and is akin to a pointer in the C programming language.
-A node with a given name and value can be instantiated with the following statement.
-\[
-\kw{node} \text{name } = \pd{exp} \\
-\]
-Unlike wires, nodes can only be used in {\em output} directions.
-They can be connected from, but not connected to.
-Consequentially, their expression cannot be a bundle type with any reversed fields.
+A node is simply a named intermediate value in a circuit. The node must be initialized to a value with a passive type and cannot be connected to. 
 
-\subsection{Accessors}
-Accessors are used for either connecting to or from a vector-typed expression, from some {\em variable} index.
-\[
-\begin{aligned}
-&\pd{dir} \kw{accessor} \text{name} = \pds{exp}[\text{index}] \pds{,clk} \\
-&\pd{dir}        =     \kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr} \\
-\end{aligned}
-\]
-Given an accessor direction, a name, an expression to access, the index at which to access, and the clock domain it is in, the above statement creates an accessor that may be used for connecting to or from the expression.
-The expression must have a vector type, and the index must be a variable of UInt type.
+The following example demonstrates instantiating a node with the given name \verb|mynode| initialized with the output of a multiplexor. 
 
-A read, write, and inferred accessor is conceptually one-way; it must be consistently used to connect to, or to connect from, but not both.
-
-A read-write accessor (\kws{rdwr}) is conceptually two-way; it can be used to connect to, to connect from, or both, {\em but not on the same cycle}.
-If it is written to and read from on the same cycle, its behavior is undefined.
-
-The following example demonstrates using accessors to read and write to a memory.
-The accessor, \pds{reader}, acts as a memory read port that reads from the index specified by the wire \pds{i}.
-The accessor, \pds{writer}, acts as a memory write port that writes 42 to the index specified by wire \pds{j}.
-\[
-\begin{aligned}
-&\kw{wire} i : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
-&\kw{wire} j : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
-&\kw{cmem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$},10 \\
-&\kw{read} \kw{accessor} reader = m[i] , clk \\
-&\kw{write} \kw{accessor} writer = m[j] , clk \\
-&writer <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
-&\kw{node} temp = reader \\
-\end{aligned}
-\]
-
-As mentioned previously, the only way to read from or write to a memory is through an accessor.
-However, accessors are not restricted to accessing memories.
-They can be used to access {\em any} cmem, smem, or wire/reg with vector-valued type.
-
-An accessor passed a poisoned value as an index writes or reads a poisoned value.
-
-\subsection{Instances}
-An instance refers to a particular instantiation of a FIRRTL module.
-An instance is constructed with a given name and a given module name.
-\[
-\begin{aligned}
-\kw{inst} \text{name } \kw{:} \text{module}
-\end{aligned}
-\]
-
-The resulting instance has a bundle type, where the given module's ports are fields and can be accessed using the subfield expression.
-The orientation of the {\em output} ports are {\em default}, and the orientation of the {\em input} ports are {\em reverse}.
-An instance may be directly connected to another element, but it must be on the right-hand side of the connect statement.
-
-The following example illustrates directly connecting an instance to a wire:
-
-{ \fontsize{11pt}{1.15em}\selectfont
-\[
-\begin{aligned}
-&\kw{extmodule} Queue \ \kws{:} \\
-&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} in   \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
-&\quad \kw{output} out \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
-&\kw{module} Top \ \kws{:} \\
-&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
-&\quad \kw{inst} queue \ \kw{:} Queue \\
-&\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} in \ \kw{:} \ \kws{UInt$<$}16\kws{$>$},\kw{reverse} clk \ \kw{:} \ \kws{Clock}} \\
-&\quad connect \ \kw{$<$=} queue \\
-\end{aligned}
-\]
-}
-
-The output ports of an instance may only be connected from, e.g., the right-hand side of a connect statement.
-Conversely, the input ports of an instance may only be connected to, e.g., the left-hand side of a connect statement.
-
-The following example illustrates a proper use of creating instances with different clock domains:
-
-{ \fontsize{11pt}{1.15em}\selectfont
-\[
-\begin{aligned}
-&\kw{extmodule} AsyncQueue \ \kws{:} \\
-&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} in  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\quad \kw{output} out  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{extmodule} Source \ \kws{:} \\
-&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
-&\quad \kw{output} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{extmodule} Sink \ \kws{:} \\
-&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{module} TwoClock \ \kws{:} \\
-&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
-&\quad \kw{inst} src \ \kw{:} Source \\
-&\quad src.clk \ \kw{$<$=} clk1 \\
-&\quad \kw{inst} snk \ \kw{:} Sink \\
-&\quad snk.clk \ \kw{$<$=} clk2 \\
-&\quad \kw{inst} queue \ \kw{:} AsyncQueue \\
-&\quad queue.clk1 \ \kw{$<$=} clk1 \\
-&\quad queue.clk2 \ \kw{$<$=} clk2 \\
-&\quad queue.in \ \kw{$<$=} src.packet \\
-&\quad snk.packet \ \kw{$<$=} queue.out \\
-\end{aligned}
-\]
-}
-
-There are restrictions upon which modules the user is allowed to instantiate, so as not to create infinitely recursive hardware.
-We define a module with no instances as a {\em level 0} module.
-A module containing only instances of {\em level 0} modules is a {\em level 1} module, and a module containing only instances of {\em level 1} or below modules is a {\em level 2} module.
-In general, a {\em level n} module is only allowed to contain instances of modules of level $n-1$ or below. 
-
-\subsection{The OnReset Connect Statement}
-The onreset connect statement is used to specify the default value for a \kws{reg} element.
-\[
-\kw{onreset} \text{r } \kw{$<$=} \text{output} 
-\]
-
-For a connection to be legal, the types of the two expressions must match exactly, including all field orientations if the elements contain bundle types.
-The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be a \kws{reg} element.
-The widths of the types may mismatch, and the semantics are the same as the connect statements.
-Memories cannot be initialized with this construct.
-
-By default, a \kws{reg} will not have an initialization value and will maintain its current value under the reset signal specified in their declaration.
-The following example demonstrates declaring a \kws{reg}, and changing its initialization value to forty-two.
-
-\[
-\begin{aligned}
-& \kw{reg} r : \kws{UInt}\kws{$<$} 10 \kws{$>$} \kws{(} clk, \ reset \kws{)}\\
-& \kw{onreset} r <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42)
-\end{aligned}
-\]
-
-\subsection{The Partial Connect Statement}
-The partial connect statement is a connect statement that does not require both expressions to be the same type. 
-During the lowering pass, the partial connect will expand to some number of connect statements, possibly zero statements.
-The following statement is used to connect the output of some component, to the input of another component. 
-\[
-\text{input } \kw{$<$--} \text{output} 
-\]
-
-For a partial connect between two components of a bundle-type, fields that are of the same type, orientation, and name will be connected.
-Fields that do not match will not be connected.
-For a partial connect between two components of a vector-type, the number of connected elements will be equal to the length of the shorter vector.
-A partial connect between two components of the same ground type is equivalent to a normal connect statement.
-All other combinations of types will not error, but will not generate any connect statements.
+\begin{verbatim}
+wire pred: UInt<1>
+wire a: SInt
+wire b: SInt
+node mynode = mux(pred, a, b)
+\end{verbatim}
 
 \subsection{The Conditional Statement}
-The conditional statement is used to specify a condition that must be asserted under which a list of statements hold.
-The condition must be a 1-bit unsigned integer.
-The following statement states that the {\em conseq} statements hold only when {\em condition} is assert high, otherwise the {\em alt} statements hold instead.
-\[
-\begin{aligned}
-\kw{when} \text{condition } \kw{:} \text{conseq } \kw{else :} \text{alt}
-\end{aligned}
-\]
+The conditional statement is used to specify a condition under which connections to previously declared components hold. The condition must have a 1-bit unsigned integer type.
 
-Notationally, for convenience, we omit the \kws{else} branch if it is an empty statement. 
+In the following example, the wire \verb|x| is connected to the wire \verb|a| only when the \verb|en| signal is high. Otherwise, the wire \verb|x| is connected to the wire \verb|b|. 
+
+\begin{verbatim}
+module mymodule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   wire x: UInt
+   when en :
+      x <= a
+   else :
+      x <= b  
+\end{verbatim}
+
+\subsubsection{Syntactic Shorthands}
+The \verb|else| branch of a conditional statement may be omitted, in which case a default \verb|else| branch is supplied consisting of the empty statement.
+
+Thus the following example:
+
+\begin{verbatim}
+module mymodule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   wire x: UInt
+   when en :
+      x <= a
+\end{verbatim}
+
+can be equivalently expressed as:
+
+\begin{verbatim}
+module mymodule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   wire x: UInt
+   when en :
+      x <= a
+   else : 
+      skip   
+\end{verbatim}
+
+To aid readability of long chains of conditional statements, the colon following the \verb|else| keyword may be omitted if the \verb|else| branch consists of a single conditional statement.
+
+Thus the following example:
+
+\begin{verbatim}
+module mymodule :
+   input a: UInt
+   input b: UInt
+   input c: UInt
+   input d: UInt
+   input c1: UInt<1>
+   input c2: UInt<1>
+   input c3: UInt<1>
+
+   wire x: UInt
+   when c1 :
+      x <= a
+   else :
+      when c2 :
+         x <= b
+      else :
+         when c3 :
+            x <= c  
+         else :
+            x <= d       
+\end{verbatim}
+
+can be equivalently expressed as:
+
+\begin{verbatim}
+module mymodule :
+   input a: UInt
+   input b: UInt
+   input c: UInt
+   input d: UInt
+   input c1: UInt<1>
+   input c2: UInt<1>
+   input c3: UInt<1>
+
+   wire x: UInt
+   when c1 :
+      x <= a
+   else when c2 :
+      x <= b
+   else when c3 :
+      x <= c  
+   else :
+      x <= d       
+\end{verbatim}
+
+\subsubsection{Nested Declarations}
+If a component is declared within a conditional statement, connections to the component are unaffected by the condition. In the following example, register \verb|myreg1| is always connected to \verb|a|, and register \verb|myreg2| is always connected to \verb|b|.
+
+\begin{verbatim}
+module mymodule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   input clk : Clock
+   when en :
+      reg myreg1 : UInt, clk
+      myreg1 <= a
+   else :
+      reg myreg2 : UInt, clk
+      myreg2 <= b
+\end{verbatim}
+
+Intuitively, a line can be drawn between a connection (or partial connection) to an element and that element's declaration. All conditional statements that are crossed by the line apply to that connection (or partial connection).
 
 \subsubsection{Initialization Coverage}
-Because of the conditional statement, it is possible for wires to be only partially connected to an expression.
-In the following example, the wire {\em w} is connected to 42 when enable is asserted high, but it is not specified what {\em w} is connected to when enable is low.
-This is an illegal FIRRTL circuit, and will throw a \kws{wire not initialized} error during compilation.
-\[
-\begin{aligned}
-&\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&\kw{when} enable : \\
-&\quad w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
-\end{aligned}
-\]
+Because of the conditional statement, it is possible to syntactically express circuits containing wires that are only partially connected to an expression. In the following example, the wire {\em w} is connected to \verb|a| when \verb|en| is asserted high, but it is not specified what {\em w} is connected to when \verb|en| is low.
+
+\begin{verbatim}
+wire en: UInt<1>
+wire w: UInt
+wire a: UInt
+when en :
+   w <= a
+\end{verbatim}
+
+This is an illegal FIRRTL circuit and an error will be thrown during compilation. All wires, memory ports, instance ports, and module ports that can be connected to must be connected to under all conditions.
 
 \subsubsection{Scoping}
-The conditional statement creates a new {\em scope} within its consequent and alternative branches.
-It is an error to refer to any component declared within a branch after the branch has ended.
+The conditional statement creates a new {\em scope} each within its \verb|when| and \verb|else| branches. It is an error to refer to any component declared within a branch after the branch has ended.
 
-Note that there is still only a single identifier namespace in a module.
-Thus, there cannot be two components with identical names in the same module, {\em even if} they are in separate scopes.
-This is to facilitate writing transformational passes, by ensuring that the component name and module name is sufficient to uniquely identify a component.
+\subsubsection{Conditional Last Connect Semantics}
+In the case where a connect to a circuit element is followed by a conditional statement containing a connect to the same element, the connection is overwritten only when the condition holds. Intuitively, a multiplexor is generated such that when the condition is low, the multiplexor returns the old value, and otherwise returns the new value. For details about the multiplexor, see section \ref{XXX}.
 
-\subsubsection{Conditional Connect Semantics}
-Inside a when, a connection to a component is conditional only if the component is declared outside the when statement.
-If the component is both declared and connected to inside a when, the connection is {\em not} conditional on that when.
+The following example:
+\begin{verbatim}
+wire a: UInt
+wire b: UInt
+wire c: UInt<1>
+wire w: UInt
+w <= a
+when c :
+   w <= b
+\end{verbatim}
+can be rewritten equivalently using a multiplexor as follows:
+\begin{verbatim}
+wire a: UInt
+wire b: UInt
+wire c: UInt<1>
+wire w: UInt
+w <= mux(c, b, a)
+\end{verbatim}
 
-Conceptually, a when creates a mux between the stuff outside and the stuff inside - it acts as type of "conditional barrier".
-Thus, if you draw a line between a component's declaration and a connection to it, that connection is dependent on all intersected when predicates being true.
+In the case where an invalid statement is followed by a conditional statement containing a connect to the invalidated element, the resulting connection to the element can be expressed using a conditionally valid expression. See section \ref{XXX} for more details about the conditionally valid expression.
+\begin{verbatim}
+wire a: UInt
+wire c: UInt<1>
+wire w: UInt
+w is invalid
+when c :
+   w <= a
+\end{verbatim}
+can be rewritten equivalently as follows:
+\begin{verbatim}
+wire a: UInt
+wire c: UInt<1>
+wire w: UInt
+w <= validif(c, a)
+\end{verbatim}
 
-The following example shows a {\em conditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 only if \pds{enable} is true.
-\[
-\begin{aligned}
-&\kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
-&\kw{when} enable : \\
-&\quad r <= \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
-\end{aligned}
-\]
+The behaviour of conditional connections to circuit elements with aggregate types can be modeled by first expanding each connect into individual connect statements on its ground elements (see section \ref{XXX} and \ref{XXX} for the connection and partial connection algorithms) and then applying the conditional last connect semantics.
 
-The following shows an {\em unconditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 {\em every cycle}.
-\[
-\begin{aligned}
-&\kw{when} enable : \\
-&\quad \kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
-&\quad r <= \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
-\end{aligned}
-\]
+The following example:
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: {a:UInt, b:UInt}
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w <= x
+when c :
+   w <= y
+\end{verbatim}
+can be rewritten equivalently as follows:
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: {a:UInt, b:UInt}
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w.a <= mux(c, y.a, x.a)
+w.b <= mux(c, y.b, x.b)
+\end{verbatim}
 
-\subsection{Statement Groups}
-Several statements can be grouped into one using the following construct.
-\[
-\begin{aligned}
-(\pd{stmt*})
-\end{aligned}
-\]
-Ordering is important in a statement group.
-Later connect statements take precedence over earlier connect statements, and circuit components cannot be referred to before they are instantiated.
+Similar to the behavior of aggregate types under last connect semantics (see section \ref{XXX}), the conditional connects to a subcomponent of an aggregate element only generates a multiplexors for the subcomponents that are overwritten.
 
-\subsubsection{Last Connect Semantics}
-Because of the connect statement, FIRRTL statements are {\em ordering} dependent.
-Later connections take precedence over earlier connections.
-In the following example, the wire w is connected to 42, not 20. 
-\[
-\begin{aligned}
-&\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&w <= \kws{UInt}\kws{$<$} ? \kws{$>$}(20) \\
-&w <= \kws{UInt}\kws{$<$} ? \kws{$>$}(42) \\
-\end{aligned}
-\]
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: UInt
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w <= x
+when c :
+   w.a <= y
+\end{verbatim}
 
-By coupling the conditional statement with last connect semantics, many circuits can be expressed in a natural style.
-In the following example, the wire w is connected to 20 unless the enable expression is asserted high, in which case w is connected to 42. 
-\[
-\begin{aligned}
-&\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(20) \\
-&\kw{when} enable : \\
-&\quad w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
-\end{aligned}
-\]
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: UInt
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w.a <= mux(c, y, x.a)
+w.b <= x.b
+\end{verbatim}
 
-\subsection{The Stop Statement}
-The stop statement is used to halt simulations of the circuit.
-\[
-\begin{aligned}
-\kw{stop}
-\end{aligned}
-\]
-If a backend does not support stop, it will omit emitting this node.
+\subsection{Memories}
+A memory is an abstract representation of a hardware memory. It is characterized by the following parameters.
+\begin{enumerate}
+\item A passive type representing the type of each element in the memory.
+\item A positive integer representing the number of elements in the memory.
+\item A variable number of named ports, each being a read port, a write port, or readwrite port.
+\item A non-negative integer indicating the read latency, which is the number of cycles after setting the port's read address before the corresponding element's value can be read from the port's data field.
+\item A non-negative integer indicating the write latency, which is the number of cycles after setting the port's write address/data before the corresponding element within the memory holds the new value.
+\item A read-under-write flag indicating the behaviour of the memory when a memory location is written to while a read to that location is in progress.
+\end{enumerate}
 
-\subsection{The Printf Statement}
-The printf statement is used to print a formatted string during simulations of the circuit.
-\[
-\begin{aligned}
-\kw{printf}(\strings,\pds{exp*})
-\end{aligned}
-\] 
-If a backend does not support printf, it will omit emitting this node.
+The following example demonstrates instantiating a memory containing 256 complex numbers, each with 16-bit signed integer fields for its real and imaginary components. It has two read ports, \verb|r1| and \verb|r2|, and one write port, \verb|w|. It is combinationally read (read latency is zero cycles) and has a write latency of one cycle. Finally, its read-under-write behavior is undefined.
+\begin{verbatim}
+mem mymem :
+  data-type => {real:SInt<16>, imag:SInt<16>}
+  depth => 256
+  reader => r1
+  reader => r2
+  writer => w
+  read-latency => 0
+  write-latency => 1
+  read-under-write => undefined
+\end{verbatim}
 
-\subsection{The Empty Statement}
-The empty statement is specified using the following.
-\[
-\begin{aligned}
-\kw{skip}
-\end{aligned}
-\]
-The empty statement does nothing and is used simply as a placeholder where a statement is expected.
-It is typically used as the alternative branch in a conditional statement. 
-In addition, it is useful for transformation pass writers.
+In the example above, the type of \verb|mymem| is:
+\begin{verbatim}
+{flip r1: {flip data:{real:SInt<16>, imag:SInt<16>}, 
+           addr:UInt<8>, 
+           en:UInt<1>, 
+           clk:Clock}
+ flip r2: {flip data:{real:SInt<16>, imag:SInt<16>}, 
+           addr:UInt<8>, 
+           en:UInt<1>, 
+           clk:Clock}
+ flip w: {data:{real:SInt<16>, imag:SInt<16>}, 
+          mask:{real:UInt<1>, imag:UInt<1>}, 
+          addr:UInt<8>, 
+          en:UInt<1>, 
+          clk:Clock}}
+\end{verbatim}
+
+The following sections describe how a memory's field types are calculated and the behavior of each type of memory port.
+
+\subsubsection{Read Ports}
+If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then the corresponding type of its read ports is:
+\begin{verbatim}
+{flip data:T, addr:UInt<N>, en:UInt<1>, clk:Clock}
+\end{verbatim}
+
+If the \verb|en| field is high, then the element associated with the address in the \verb|addr| field can be retrieved by reading from the \verb|data| field after the appropriate read latency. If the \verb|en| field is low, then the value in the \verb|data| field, after the appropriate read latency, is undefined. The port is driven by the clock signal in the \verb|clk| field.
+
+\subsubsection{Write Ports}
+If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then the corresponding type of its write ports is:
+\begin{verbatim}
+{data:T, mask:M, addr:UInt<N>, en:UInt<1>, clk:Clock}
+\end{verbatim}
+where \verb|M| is the mask type calculated from the element type \verb|T|. Intuitively, the mask type mirrors the aggregate structure of the element type except with all ground types replaced with a single bit unsigned integer type. The {\em non-masked portion} of the data value is defined as the set of data value subcomponents where the corresponding mask subelement is high.
+
+If the \verb|en| field is high, then the non-masked portion of the \verb|data| field value is written, after the appropriate write latency, to the location indicated by the \verb|addr| field. If the \verb|en| field is low, then no value is written after the appropriate write latency. The port is driven by the clock signal in the \verb|clk| field.
+
+\subsubsection{Readwrite Ports}
+Finally, the corresponding type of its readwrite ports is:
+\begin{verbatim}
+{rmode:UInt<1>, flip rdata:T, data:T, mask:M, 
+ addr:UInt<N>, en:UInt<1>, clk:Clock}
+\end{verbatim}
+A readwrite port is a single port that, on a given cycle, can be used either as a write or a read port. If the readwrite port is in read mode (the \verb|rmode| field is high), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is not in read mode (the \verb|rmode| field is low), then the \verb|data|, \verb|mask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly. 
+
+\subsubsection{Read Under Write Behaviour}
+The read-under-write flag indicates the resultant value held on the \verb|data| field of a read port if the memory location is written to while a read to that location is in progress. The flag may take on three settings: \verb|old|, \verb|new|, and \verb|undefined|.
+
+If the read-under-write flag is set to \verb|old|, then a read port always returns the value existing in the memory on the same cycle that the read was requested. Intuitively, this is modeled as a combinational read from the memory that is then delayed by the appropriate read latency.
+
+If the read-under-write flag is set to \verb|new|, then a read port always returns the value existing in the memory on the same cycle that the read was made available. Intuitively, this is modeled as a combinational read from the memory after delaying the read address by the appropriate read latency.
+
+If the read-under-write flag is set to \verb|undefined|, then the value held by the read port after the appropriate read latency is undefined.
+
+In all cases, if a memory location is written to by more than one port on the same cycle, the stored value is undefined.
+
+\subsection{Instances}
+FIRRTL modules are instantiated with the instance statement. The following example demonstrates creating an instance named \verb|myinstance| of the \verb|MyModule| module within the top level module \verb|Top|. 
+
+\begin{verbatim}
+circuit Top :
+   module MyModule :
+      input a: UInt
+      output b: UInt
+      b <= a
+   module Top :
+      inst myinstance of MyModule   
+\end{verbatim}
+
+The resulting instance has a bundle type, where each field represents a port, and shares its name, in the instantiated module. The fields corresponding to input ports are flipped to indicate their data flows in the opposite direction as the output ports. The \verb|myinstance| instance in the example above has type \verb|{flip a:UInt, b:UInt}|.
+
+Modules have the property that instances can always be {\em inlined} into the parent module without affecting the semantics of the circuit.
+
+To disallow infinitely recursive hardware, modules cannot contain instances of itself, either directly, or indirectly through instances of other modules it instantiates. 
+
+\subsection{Stops}
+The stop statement is used to halt simulations of the circuit. Backends are free to generate hardware to stop a running circuit for the purpose of debugging, but this is not required by the FIRRTL specification.
+
+A stop statement requires a clock signal, a halt condition signal that has a single bit unsigned integer type, and an integer exit code.
+
+\begin{verbatim}
+wire clk:Clock
+wire halt:UInt<1>
+stop(clk,halt,42)
+\end{verbatim}
+
+\subsection{Formatted Prints}
+The formatted print statement is used to print a formatted string during simulations of the circuit. Backends are free to generate hardware that relays this information to a hardware test harness, but this is not required by the FIRRTL specification.
+
+A printf statement requires a clock signal, a print condition signal, a format string, and a variable list of argument signals. The conditional signal must be a single bit unsigned integer type, and the argument signals must each have a ground type.
+
+\begin{verbatim}
+wire clk:Clock
+wire condition:UInt<1>
+wire a:UInt
+wire b:UInt
+printf(clk, condition, "a in hex: %x, b in decimal:%d.\n", a, b)
+\end{verbatim}
+
+On each positive clock edge, when the conditional signal is high, the printf statement prints out the format string where argument placeholders are substituted with the value of the appropriate argument.
+
+\subsubsection{Format Strings}
+
+Format strings support the following argument placeholders:
+\begin{itemize}
+\item \verb|%b| : Prints the argument in binary
+\item \verb|%d| : Prints the argument in decimal
+\item \verb|%x| : Prints the argument in hexadecimal
+\item \verb|%%| : Prints a single \verb|%| character
+\end{itemize}
+
+Format strings support the following escape characters:
+\begin{itemize}
+\item \verb|\n| : New line
+\item \verb|\t| : Tab
+\item \verb|\\| : Back slash
+\item \verb|\"| : Double quote
+\item \verb|\'| : Single quote
+\end{itemize}
 
 \section{Expressions}
 
-FIRRTL expressions are used for creating values corresponding to the ground types, for referring to a declared circuit component, for accessing a nested element within a component, and for performing primitive operations. 
+FIRRTL expressions are used for creating literal unsigned and signed integers, for referring to a declared circuit component, for statically and dynamically accessing a nested element within a component, and for performing primitive operations. 
 
 \subsection{Unsigned Integers}
 
-A value of type \kws{UInt} can be directly created using the following expression.
-\[
-\kws{UInt}\kws{$<$} \pds{width} \kws{$>$}(\text{value})
-\]
-The given value must be non-negative, and the given width, if known, must be large enough to hold the value.
-If the width is specified as unknown, then FIRRTL infers the minimum possible width necessary to hold the value.
+A literal unsigned integer can be created given a non-negative integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number 42. 
+\begin{verbatim}
+UInt<10>(42)
+\end{verbatim}
+
+Note that it is an error to supply a bit width that is not large enough to fit the given value. If the bit width is omitted, then FIRRTL's width inferencer to infer the minimum number of bits necessary to fit the given value.
+\begin{verbatim}
+UInt(42)
+\end{verbatim}
 
 \subsection{Signed Integers}
 
-A value of type \kws{SInt} can be directly created using the following expression.
-\[
-\kws{SInt}\kws{$<$} \pds{width} \kws{$>$}(\text{value})
-\]
-The given width, if known, must be large enough to hold the given value in two's complement format.
-If the width is specified as unknown, then FIRRTL infers the minimum possible width necessary to hold the value.
+Similar to unsigned integers, a literal signed integer can be created given an integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number -42. 
+\begin{verbatim}
+SInt<10>(-42)
+\end{verbatim}
 
-\subsection{References}
-\[
-\text{name}
-\]
-A reference is simply a name that refers to some declared circuit component.
-A reference may refer to a port, a node, a wire, a register, an instance, a memory, a node, or a structural register.
+Note that it is an error to supply a bit width that is not large enough to fit the given value using two's complement representation. If the bit width is omitted, then FIRRTL's width inferencer to infer the minimum number of bits necessary to fit the given value.
+\begin{verbatim}
+SInt(-42)
+\end{verbatim}
 
-\subsection{Subfields}
-\[
-\pds{exp}.\text{name}
-\]
-The subfield expression may be used for one of two purposes:
+\subsection{Unsigned Bits}
+
+A literal unsigned integer can alternatively be created given a string representing its bit representation and an optional bit width. 
+
+The following radices are supported:
 \begin{enumerate}
-\item To refer to a specific port of an instance, using instance-name.port-name. 
-\item To refer to a specific field within a bundle-typed expression.
+\item \verb|0b| : For representing binary numbers.
+\item \verb|0o| : For representing octal numbers.
+\item \verb|0x| : For representing hexadecimal numbers.
 \end{enumerate}
 
-\subsection{Subindex}
-\[
-\pds{exp}[\text{index}]
-\]
-The subindex expression is used for referring to a specific element within a vector-valued expression.
-It is legal to use the subindex expression on any vector-valued expression, except for memories. 
+If a bit width is not given, the number of bits in the bit representation is directly represented by the string. The following examples create a 8-bit integer representing the number 13.
+\begin{verbatim}
+UBits("0b00001101")
+UBits("0x0D")
+\end{verbatim}
+
+If a bit width is given, then the bit representation is truncated to the given bit width. It is an error to supply a bit width that is larger than the number of bits in the bit representation. The following examples create a 7-bit integer representing the number 13.
+\begin{verbatim}
+UBits<7>("0b00001101")
+UBits<7>("0o015")
+UBits<7>("0x0D")
+\end{verbatim}
+
+\subsection{Signed Bits}
+
+Similar to unsigned integers, a literal signed integer can alternatively be created given a string representing its bit representation and an optional bit width. 
+
+If a bit width is not given, the number of bits in the bit representation is directly represented by the string. The following examples create a 8-bit integer representing the number -13.
+\begin{verbatim}
+SBits("0b11110011")
+SBits("0xF3")
+\end{verbatim}
+
+If a bit width is given, then the bit representation is truncated to the given bit width. It is an error to supply a bit width that is larger than the number of bits in the bit representation. The following examples create a 7-bit integer representing the number -13.
+\begin{verbatim}
+SBits<7>("0b11110011")
+SBits<7>("0o763")
+SBits<7>("0xF3")
+\end{verbatim}
+
+\subsection{References}
+A reference is simply a name that refers to a previously declared circuit component. It may refer to a module port, node, wire, register, instance, or memory.
+
+The following example connects a reference expression \verb|in|, referring to the previously declared port \verb|in|, to the reference expression \verb|out|, referring to the previously declared port \verb|out|.
+
+\begin{verbatim}
+module MyModule :
+   input in : UInt
+   output out : UInt
+   out <= in
+\end{verbatim}
+
+In the rest of the document, for brevity, the names of components will be used to refer to a reference expression to that component. Thus, the above example will be rewritten as ``the port \verb|in| is connected to the port \verb|out|''.
+
+\subsection{Subfields}
+The subfield expression refers to a subelement of an expression with a bundle type.
+
+The following example connects the \verb|in| port to the \verb|a| subelement of the \verb|out| port. 
+\begin{verbatim}
+module MyModule :
+   input in : UInt
+   output out : {a:UInt, b:UInt}
+   out.a <= in
+\end{verbatim}
+
+\subsection{Subindices}
+The subindex expression statically refers to a subelement of an expression with a vector type by index. The index must be a non-negative integer and cannot be equal to or exceed the length of the vector it indexes.
+
+The following example connects the \verb|in| port to the fifth subelement of the \verb|out| port. 
+\begin{verbatim}
+module MyModule :
+   input in : UInt
+   output out : UInt[10]
+   out[4] <= in
+\end{verbatim}
+
+\subsection{Subaccesses}
+The subaccess expression dynamically refers to a subelement of an expression with a vector type by a calculated index. The index must be an expression with an unsigned integer type.
+
+The following example connects the n'th subelement of the \verb|in| port to the \verb|out| port.
+\begin{verbatim}
+module MyModule :
+   input in: UInt[3]
+   input n: UInt<2>
+   output out: UInt
+   out <= in[n]
+\end{verbatim}
+
+\begin{verbatim}
+module MyModule :
+   input in: UInt[3]
+   input n: UInt<2>
+   output out: UInt
+   when eq(n, UInt(0)) :
+      out <= in[0]
+   else when eq(n, UInt(1)) :
+      out <= in[1]
+   else when eq(n, UInt(2)) :
+      out <= in[2]            
+   else :
+      out is invalid
+\end{verbatim}
+
+=============== BOOKMARK =================
+
+TODO connect to a subaccess
+
+\subsection{Multiplexors}
+
+\subsection{Conditionally Valids}
 
 \subsection{Primitive Operation}
 \[
@@ -1118,6 +1394,95 @@ An index of zero indicates the least significant bit in the operand, and an inde
 The bit range extraction operation accepts either an unsigned integer, plus two integer literals that specify the high (inclusive) and low (inclusive) index of the bit range to extract.
 The index must be non-negative and less than the width of the operand.
 Regardless of the type of the operand, the resultant value is a $n$-bit unsigned integer, where $n = \text{high} - \text{low} + 1$. 
+
+\section{Gender}
+
+
+Declared wires are {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement).
+
+Like wires, registers are also {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement). 
+
+\section{Namespaces}
+
+%Note that there is still only a single identifier namespace per module. Thus, there cannot be two components with identical names in the same module, {\em even if} they are in separate scopes.
+
+%This is to facilitate writing transformational passes, by ensuring that the component name and module name is sufficient to uniquely identify a component.
+
+
+\section{User Guide - Misc}
+
+
+
+The resulting instance has a bundle type, where the given module's ports are fields and can be accessed using the subfield expression.
+The orientation of the {\em output} ports are {\em default}, and the orientation of the {\em input} ports are {\em reverse}.
+An instance may be directly connected to another element, but it must be on the right-hand side of the connect statement.
+
+The following example illustrates directly connecting an instance to a wire:
+
+{ \fontsize{11pt}{1.15em}\selectfont
+\[
+\begin{aligned}
+&\kw{extmodule} Queue \ \kws{:} \\
+&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
+&\quad \kw{input} in   \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
+&\quad \kw{output} out \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
+&\kw{module} Top \ \kws{:} \\
+&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
+&\quad \kw{inst} queue \ \kw{:} Queue \\
+&\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} in \ \kw{:} \ \kws{UInt$<$}16\kws{$>$},\kw{reverse} clk \ \kw{:} \ \kws{Clock}} \\
+&\quad connect \ \kw{$<$=} queue \\
+\end{aligned}
+\]
+}
+
+The output ports of an instance may only be connected from, e.g., the right-hand side of a connect statement.
+Conversely, the input ports of an instance may only be connected to, e.g., the left-hand side of a connect statement.
+
+The following example illustrates a proper use of creating instances with different clock domains:
+
+{ \fontsize{11pt}{1.15em}\selectfont
+\[
+\begin{aligned}
+&\kw{extmodule} AsyncQueue \ \kws{:} \\
+&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
+&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
+&\quad \kw{input} in  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\quad \kw{output} out  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\kw{extmodule} Source \ \kws{:} \\
+&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
+&\quad \kw{output} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\kw{extmodule} Sink \ \kws{:} \\
+&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
+&\quad \kw{input} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+&\kw{module} TwoClock \ \kws{:} \\
+&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
+&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
+&\quad \kw{inst} src \ \kw{:} Source \\
+&\quad src.clk \ \kw{$<$=} clk1 \\
+&\quad \kw{inst} snk \ \kw{:} Sink \\
+&\quad snk.clk \ \kw{$<$=} clk2 \\
+&\quad \kw{inst} queue \ \kw{:} AsyncQueue \\
+&\quad queue.clk1 \ \kw{$<$=} clk1 \\
+&\quad queue.clk2 \ \kw{$<$=} clk2 \\
+&\quad queue.in \ \kw{$<$=} src.packet \\
+&\quad snk.packet \ \kw{$<$=} queue.out \\
+\end{aligned}
+\]
+}
+
+\section{TODO}
+
+- Make the syntax for the coding examples consistent.
+   - Are module names capitalized?
+   - Is there a space between declared components and the colon before their types.
+   - etc..
+
+- FIRRTL implementation
+   - Make register reset/init optional
+   - Rework readwrite port types
+   - Add memory read-under-write flag
+   - Add partial connect algorithm
+   - Add oriented types to type checker
 
 \section{FIRRTL Forms}
 
