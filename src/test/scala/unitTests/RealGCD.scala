@@ -21,7 +21,7 @@ class RealGCDInput extends Bundle {
 class RealGCD extends Module {
   val io  = new Bundle {
     val in  = Decoupled(new RealGCDInput()).flip()
-    val out = Decoupled(UInt(width = 16))
+    val out = Valid(UInt(width = 16))
   }
 
   val x = Reg(UInt())
@@ -45,7 +45,8 @@ class RealGCD extends Module {
   }
 
   printf("ti %d  x %d y %d  in_ready %d  in_valid %d  out %d  out_ready %d  out_valid %d==============",
-      ti, x, y, io.in.ready, io.in.valid, io.out.bits, io.out.ready, io.out.valid)
+      ti, x, y, io.in.ready, io.in.valid, io.out.bits, UInt(0), io.out.valid)
+//      ti, x, y, io.in.ready, io.in.valid, io.out.bits, io.out.ready, io.out.valid)
 
   io.out.bits  := x
   io.out.valid := y === Bits(0) && p
@@ -111,12 +112,12 @@ class DecoupledRealGCDTestHandCodedExample extends DecoupledTester {
   }
 
   val c_values = Vec(Array(UInt(12, width = 16), UInt(3, width = 16)))
-  c.io.out.ready := Bool(true)
+//  c.io.out.ready := Bool(true)
 
   when(!out_done && c.io.out.valid) {
     printf("oc %d   got %d   expected %d", oc, c.io.out.bits, c_values(oc))
     assert(c.io.out.bits === c_values(oc))
-    c.io.out.ready := Bool(true)
+//    c.io.out.ready := Bool(true)
     oc := oc + UInt(1)
     when(oc >= UInt(c_values.length)) {
       out_done := Bool(true)
