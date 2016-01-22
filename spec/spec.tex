@@ -80,7 +80,7 @@ Because the host language is now used solely for its meta-programming facilities
 \section{Acknowledgements}
 The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, and the University of California, Berkeley.
 
-This project originated from discussions with the authors' advisor, Jonathan Bachrach, who indicated the need for a structural redesign of the Chisel system around a well-defined intermediate representation. Patrick Li designed and implemented the first prototype of the FIRRTL language, wrote the initial specification for the language, and presented it to the Chisel group consisting of Adam Izraelevitz, Scott Beamer, David Biancolin, Christopher Celio, Henry Cook, Palmer Dabbelt, Donggyu Kim, Jack Koenig, Martin Maas, Albert Magyar, Colin Schmidt, Andrew Waterman, Yunsup Lee, Richard Lin, Eric Love, Albert Ou, Stephen Twigg, Jim Lawson, Brian Richards, Krste Asanovic, and John Wawrzynek.
+This project originated from discussions with the authors' advisor, Jonathan Bachrach, who indicated the need for a structural redesign of the Chisel system around a well-defined intermediate representation. Patrick Li designed and implemented the first prototype of the FIRRTL language, wrote the initial specification for the language, and presented it to the Chisel group consisting of Adam Izraelevitz, Scott Beamer, David Biancolin, Christopher Celio, Henry Cook, Palmer Dabbelt, Donggyu Kim, Jack Koenig, Martin Maas, Albert Magyar, Colin Schmidt, Andrew Waterman, Yunsup Lee, Richard Lin, Eric Love, Albert Ou, Stephen Twigg, John Bachan, David Donofrio, Farzad Fatollahi-Fard, Jim Lawson, Brian Richards, Krste Asanovi\'c, and John Wawrzynek.
 
 Adam Izraelevitz then reworked the design and reimplemented FIRRTL, and after many discussions with Patrick Li and the Chisel group, refined the design to its present version.
 
@@ -90,13 +90,14 @@ The authors would like to thank the following individuals for their contribution
 \item Richard Lin: for improving the Chisel 3.0 code base for release quality
 \item Jack Koenig: for implementing the FIRRTL parser in Scala
 \item Henry Cook: for porting and cleaning up many aspects of Chisel 3.0, including the testing infrastructure and the parameterization library
+\item Chick Markley: for creating the new testing harness and porting the Chisel tutorial
 \item Stephen Twigg: for his expertise in hardware intermediate representations and for providing many corner cases to consider
 \item Palmer Dabbelt, Eric Love, Martin Maas, Christopher Celio, and Scott Beamer: for their feedback on previous drafts of the FIRRTL specification
 \end{itemize}
 
 And finally this project would not have been possible without the continuous feedback and encouragement of Jonathan Bachrach, and his leadership on and implementation of Chisel.
 
-Research is partially funded by DARPA Award Number XXXX, the Center for Future Architectures Research, a member of STARnet, a Semiconductor Research Corporation program sponsored by MARCO and DARPA, and ASPIRE Lab industrial sponsors and affiliates Intel, Google, Nokia, NVIDIA, Oracle, and Samsung. Any opinions, findings, conclusions, or recommendations in this paper are solely those of the authors and do not necessarily reflect the position or the policy of the sponsors.
+This research was partially funded by DARPA Award Number HR0011-12-2-0016, the Center for Future Architecture Research, a member of STARnet, a Semiconductor Research Corporation program sponsored by MARCO and DARPA, and ASPIRE Lab industrial sponsors and affiliates Intel, Google, Huawei, Nokia, NVIDIA, Oracle, and Samsung. Any opinions, findings, conclusions, or recommendations in this paper are solely those of the authors and does not necessarily reflect the position or the policy of the sponsors.
 
 \section{Circuits and Modules}
 
