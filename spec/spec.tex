@@ -1,5 +1,6 @@
 %Useful Macros
 \newcommand{\id}{\text{id }}
+\newcommand{\idst}{\text{id*}}
 \newcommand{\ids}{\text{id}}
 \newcommand{\ints}{\text{int}}
 \newcommand{\intsp}{\text{int }}
@@ -7,11 +8,11 @@
 \newcommand{\stringsp}{\text{string }}
 \newcommand{\kw}[1]{\text{\bf #1\ }}
 \newcommand{\kws}[1]{\text{\bf #1}}
-\newcommand{\pd}[1]{\text{\em #1\ }}
-\newcommand{\pds}[1]{\text{\em #1}}
+\newcommand{\pds}[1]{\text{\em #1\ }}
+\newcommand{\pd}[1]{\text{\em #1}}
 \newcommand{\bundleT}[1]{\{#1\}}
 \newcommand{\info}{[\pds{info}]\ }
-\newcommand{\version}{0.1.3}
+\newcommand{\version}{0.2.0}
 
 \title{Specification for the FIRRTL Language:\\ Version \version \\ PRE-RELEASE VERSION - DO NOT DISTRIBUTE}
 \author{Patrick S. Li \\ \href{mailto:psli@eecs.berkeley.edu}{psli@eecs.berkeley.edu}
@@ -32,6 +33,10 @@
 }
 \usepackage[pdftex]{graphicx}
 \usepackage{fancyhdr}
+\usepackage{fixltx2e}
+\usepackage{float}
+\usepackage{stmaryrd}
+
 \pagestyle{fancy}
 \lhead{Specification for the FIRRTL Language}
 \rhead{Version \version}
@@ -49,1358 +54,1756 @@
 \section{Introduction}
 
 \subsection{Background}
-The ideas for FIRRTL originated from a different UC Berkeley project, Chisel, which embedded a hardware description language in Scala and was used to write highly-parameterized circuit design generators.
-Users could manipulate circuit components using Scala functions, encode their interfaces into custom Scala types, and use Scala's object-orientation to write their own circuit libraries.
-All of these features enabled expressive, reliable and type-safe generators that improved RTL design productivity and robustness.
+The ideas for FIRRTL originated from work on Chisel, a hardware description language (HDL) embedded in Scala used for writing highly-parameterized circuit design generators. Chisel designers manipulate circuit components using Scala functions, encode their interfaces in Scala types, and use Scala's object-orientation features to write their own circuit libraries. This form of meta-programming enables expressive, reliable and type-safe generators that improve RTL design productivity and robustness.
 
-At UC Berkeley, Chisel was a critical part of the infrastructure supporting computer architecture research.
-Many of these research projects, including vector machines, out-of-order processors, silicon photonics and cache coherency, drove ten different silicon tape-outs over a three year period with under 12 graduate student researchers.
-The research productivity gains proved to the graduate students and faculty of the validity of this design methodology.
+The computer architecture research group at U.C. Berkeley relies critically on Chisel to allow small teams of graduate students to design sophisticated RTL circuits. Over a three year period with under twelve graduate students, the architecture group has taped-out over ten different designs. 
 
-However, Chisel's external rate of adoption was slow for the following reasons:
+Internally, the investment in developing and learning Chisel was rewarded with huge gains in productivity. However, Chisel's external rate of adoption was slow for the following reasons.
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Learning a functional language (Scala) was a large barrier to entry
-\item Conceptually separating the Chisel HDL from the host language was difficult for new users
-\item Verilog generation was unreadable and slow
-\item Writing transformational passes required insider knowledge of the Chisel compiler
-\item Compiler design was unstructured, making error checking difficult and error messages often incomprehensible
-\item Chisel IR semantics were ill-defined and thus impossible to target from other languages
+\item Writing custom circuit transformers requires intimate knowledge about the internals of the Chisel compiler.
+\item Chisel semantics are underspecified and thus impossible to target from other languages.
+\item Error checking is unprincipled due to underspecified semantics resulting in incomprehensible error messages.
+\item Learning a functional programming language (Scala) is difficult for RTL designers with limited programming language experience.
+\item Confounding the previous point, conceptually separating the embedded Chisel HDL from the host language is difficult for new users.
+\item The output of Chisel (Verilog) is unreadable and slow to simulate.
 \end{enumerate}
 
-As a consequence, Chisel needed to be redesigned from its ground up to standardize its IR and semantics, modularize its compilation process for robustness, and cleanly separate its front-end (Chisel + Scala), internal representation (FIRRTL), and backends.
+As a consequence, Chisel needed to be redesigned from the ground up to standardize its semantics, modularize its compilation process, and cleanly separate its front-end, intermediate representation, and backends. A well defined intermediate representation (IR) allows the system to be targeted by other HDLs embedded in other host programming languages, making it possible for RTL designers to work within a language they are already comfortable with. A clearly defined IR with a concrete syntax also allows for inspection of the output of circuit generators and transformers thus making clear the distinction between the host language and the constructed circuit. A clearly defined semantics allows users without knowledge of the compiler implementation to write circuit transformers; examples include optimization of circuits for simulation speed, and automatic insertion of signal activity counters. An additional benefit of a well defined IR is the structural invariants that can be enforced before and after each compilation stage, resulting in a more robust compiler and structured mechanism for error checking. 
 
 \subsection{Design Philosophy}
-FIRRTL represents the formalized elaborated graph that the Chisel DSL produces, prior to any simplification.
-By including complicated constructs like vector types, bundle types, and when statements in FIRRTL, the Chisel/Scala front-end can be very light-weight.
-In addition, other front-ends written in languages other than Scala could be simple to write and increase external adoption.
+FIRRTL (Flexible Intermediate Representation for RTL) represents the standardized elaborated circuit that the Chisel HDL produces. FIRRTL represents the circuit immediately after Chisel's elaboration but before any circuit simplification. It is designed to resemble the Chisel HDL after all meta-programming has executed. Thus, a user program that makes little use of meta-programming facilities should look almost identical to the generated FIRRTL.
 
-Lowered FIRRTL (LoFIRRTL) represents a simplified FIRRTL circuit with structural invariants, making it essentially a netlist.
-This form enables straightforward translation into another language (e.g., Verilog) by a light-weight backend.
+For this reason, FIRRTL has first-class support for high-level constructs such as vector types, bundle types, conditional statements, partial connects, and modules. These high-level constructs are then gradually removed by a sequence of {\em lowering} transformations. During each lowering transformation, the circuit is rewritten into an equivalent circuit using simpler, lower-level constructs. Eventually the circuit is simplified to its most restricted form, resembling a structured netlist, which allows for easy translation to an output language (e.g. Verilog). This form is given the name {\em lowered FIRRTL} (LoFIRRTL) and is a strict subset of the full FIRRTL language.
 
-By defining LoFIRRTL as a structured subset of FIRRTL, an external user can write a transformational pass whose input is restricted, but whose output is full-featured.
-After a custom pass, the resulting circuit should undergo lowering prior to passing it to a backend or another custom pass.
+Because the host language is now used solely for its meta-programming facilities, the frontend can be very light-weight, and additional HDLs written in other languages can target FIRRTL and reuse the majority of the compiler toolchain.
 
-\section{Acknowledgements - IN PROGRESS}
-The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, including but not limited to XXXX.
-We'd also like to thank our sponsors XXXX, and the University of California, Berkeley.
+\section{Acknowledgements}
+The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, and the University of California, Berkeley.
 
-%\section{FIRRTL Language Definition}
+This project originated from discussions with the authors' advisor, Jonathan Bachrach, who indicated the need for a structural redesign of the Chisel system around a well-defined intermediate representation. Patrick Li designed and implemented the first prototype of the FIRRTL language, wrote the initial specification for the language, and presented it to the Chisel group consisting of Adam Izraelevitz, Scott Beamer, David Biancolin, Christopher Celio, Henry Cook, Palmer Dabbelt, Donggyu Kim, Jack Koenig, Martin Maas, Albert Magyar, Colin Schmidt, Andrew Waterman, Yunsup Lee, Richard Lin, Eric Love, Albert Ou, Stephen Twigg, John Bachan, David Donofrio, Farzad Fatollahi-Fard, Jim Lawson, Brian Richards, Krste Asanovi\'c, and John Wawrzynek.
 
-%\subsection{Abstract Syntax Tree}
-{ \fontsize{10pt}{1.10em}\selectfont
-\[
-\begin{array}{rrll}
-\pd{circuit}    &=     &\kw{circuit} \id \kw{:} (\pd{module*})                                        &\text{Circuit}\\
-\pd{module}     &=     &\info \kw{module}  \id \kw{:} (\pd{port*} \pd{stmt})                          &\text{Module}\\
-                &\vert &\info \kw{extmodule}  \id \kw{:} (\pd{port*})                                 &\text{External Module}\\
-\pd{port}       &=     &\info \pd{kind} \id \kw{:} \pd{type}                                          &\text{Port}\\
-\pd{kind}       &=     &\kws{input} \vert \kws{output}                                                &\text{Port Kind}\\
-\pd{type}       &=     &\kws{UInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Unsigned Integer}\\
-                &\vert &\kws{SInt} \kws{$<$} \pds{width} \kws{$>$}                                    &\text{Signed Integer}\\
-                &\vert &\kws{Clock}                                                                   &\text{Clock}\\
-                &\vert &\bundleT{\pd{field*}}                                                         &\text{Bundle}\\
-                &\vert &\pds{type}[\ints]                                                             &\text{Vector}\\
-\pd{field}      &=     &\pd{orientation} \id \kw{:} \pd{type}                                         &\text{Bundle Field}\\
-\pd{orientation}&=     &\kws{default} \vert \kws{reverse}                                             &\text{Orientation}\\
-\pd{width}      &=     &\ints \vert \kw{?}                                                            &\text{Known/Unknown Integer Width}\\
-\pd{stmt}       &=     &\info \kw{wire} \id \kw{:} \pd{type}                                          &\text{Wire Declaration}\\
-                &\vert &\info \kw{reg} \id \kw{:}  \pds{type} , \pds{exp} , \pds{exp} , \pds{exp}     &\text{Register Declaration}\\
-                &\vert &\info \kw{mem} \id \kw{:} \pds{type} , \pds{mstat*}                           &\text{Memory Declaration}\\
-                &\vert &\info \kw{inst} \id \kw{:} \id                                                &\text{Instance Declaration}\\
-                &\vert &\info \kw{poison} \id \kw{:} \pds{type}                                              &\text{Poison Declaration}\\
-                &\vert &\info \kw{node} \id  = \pd{exp}                                               &\text{Node Declaration}\\
-                &\vert &\info \pd{exp} \kw{$<$=} \pd{exp}                                             &\text{Connect}\\
-                &\vert &\info \pd{exp} \kw{$<$--} \pd{exp}                                            &\text{Partial Connect}\\
-                &\vert &\info \kw{when} \pd{exp} \kw{:} \pd{stmt} \kw{else :} \pd{stmt}               &\text{Conditional}\\
-                &\vert &\info \kw{stop}(\pds{exp},\pds{exp},\ints)                                    &\text{Stop Statement}\\
-                &\vert &\info \kw{printf}(\pds{exp},\pds{exp},\strings,\pds{exp*})                    &\text{Printf Statement}\\
-                &\vert &\info \kw{skip}                                                               &\text{Empty Statement}\\
-                &\vert &\info (\pd{stmt*})                                                            &\text{Statement Group}\\
-\pd{exp}        &=     &\info \kws{UInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Unsigned Integer}\\
-                &\vert &\info \kws{SInt} \kws{$<$} \pds{width} \kws{$>$}(\ints)                       &\text{Literal Signed Integer}\\
-                &\vert &\info \id                                                                     &\text{Reference}\\
-                &\vert &\info \pds{exp}.\id                                                           &\text{Subfield}\\
-                &\vert &\info \pds{exp}[\ints]                                                        &\text{Subindex}\\
-                &\vert &\info \pds{exp}[\pds{exp}]                                                    &\text{Subaccess}\\
-                &\vert &\info \pds{primop}(\pds{exp*}, \ints\text{*})                                 &\text{Primitive Operation}\\
-\pd{info}       &=     &\text{filename } \kw{:} \text{line} . \text{col}                              &\text{File Location}\\
-                &\vert &\kw{noinfo}                                                                   &\text{No File Location}\\
-                \pd{mstat}      &=     &\kw{writer =$>$} \id                                                          &\text{Write Port Name}\\
-                &\vert &\kw{reader =$>$} \id                                                          &\text{Read Port Name}\\
-                &\vert &\kw{read-writer =$>$} \id                                                     &\text{ReadWrite Port Name}\\
-                &\vert &\kw{read-latency =$>$} \ints                                                  &\text{Read Latency}\\
-                &\vert &\kw{write-latency =$>$} \ints                                                 &\text{Write Latency}\\
-                &\vert &\kw{data-type =$>$} \pds{type}                                                &\text{Memory Data Type}\\
-                &\vert &\kw{depth =$>$} \ints                                                         &\text{Memory Depth}\\
-\end{array}
-\]
-}
-\[
-{ \fontsize{10pt}{1.07em}\selectfont
-\begin{array}{rrll}
-\pd{mstat}      &=     &\kw{writer =$>$} \id                                                          &\text{Write Port Name}\\
-                &\vert &\kw{reader =$>$} \id                                                          &\text{Read Port Name}\\
-                &\vert &\kw{read-writer =$>$} \id                                                     &\text{ReadWrite Port Name}\\
-                &\vert &\kw{read-latency =$>$} \ints                                                  &\text{Read Latency}\\
-                &\vert &\kw{write-latency =$>$} \ints                                                 &\text{Write Latency}\\
-                &\vert &\kw{data-type =$>$} \pds{type}                                                &\text{Memory Data Type}\\
-                &\vert &\kw{depth =$>$} \ints                                                         &\text{Memory Depth}\\
-\pd{primop}   &=               &\kws{add}            &\text{Unsigned/Signed Add}\\
-              &\vert           &\kws{sub}            &\text{Unsigned/Signed Subtract}\\
-              &\vert           &\kws{addw}           &\text{Unsigned/Signed Add Wrap}\\
-              &\vert           &\kws{subw}           &\text{Unsigned/Signed Subtract Wrap}\\
-              &\vert           &\kws{mul}            &\text{Unsigned/Signed Multiply}\\
-              &\vert           &\kws{div}            &\text{Unsigned/Signed Divide}\\
-              &\vert           &\kws{mod}            &\text{Unsigned/Signed Modulo}\\
-              &\vert           &\kws{quo}            &\text{Unsigned/Signed Quotient}\\
-              &\vert           &\kws{rem}            &\text{Unsigned/Signed Remainder}\\
-              &\vert           &\kws{lt}             &\text{Unsigned/Signed Less Than}\\
-              &\vert           &\kws{leq}            &\text{Unsigned/Signed Less or Equal}\\
-              &\vert           &\kws{gt}             &\text{Unsigned/Signed Greater Than}\\
-              &\vert           &\kws{geq}            &\text{Unsigned/Signed Greater or Equal}\\
-              &\vert           &\kws{eq}             &\text{Unsigned/Signed Equal}\\
-              &\vert           &\kws{neq}            &\text{Unsigned/Signed Not-Equal}\\
-              &\vert           &\kws{eqv}            &\text{Unsigned/Signed Equivalence}\\
-              &\vert           &\kws{neqv}           &\text{Unsigned/Signed Not-Equivalence}\\
-              &\vert           &\kws{mux}            &\text{Unsigned/Signed Multiplex}\\
-              &\vert           &\kws{pad}            &\text{Unsigned/Signed Pad to Length}\\
-              &\vert           &\kws{asUInt}         &\text{Unsigned/Signed Reinterpret Bits as UInt}\\
-              &\vert           &\kws{asSInt}         &\text{Unsigned/Signed Reinterpret Bits as SInt}\\
-              &\vert           &\kws{shl}            &\text{Unsigned/Signed Shift Left}\\
-              &\vert           &\kws{shr}            &\text{Unsigned/Signed Shift Right}\\
-              &\vert           &\kws{dshl}           &\text{Unsigned/Signed Dynamic Shift Left}\\
-              &\vert           &\kws{dshr}           &\text{Unsigned/Signed Dynamic Shift Right}\\
-              &\vert           &\kws{cvt}            &\text{Unsigned/Signed to Signed Logical Conversion}\\
-              &\vert           &\kws{neg}            &\text{Unsigned/Signed Negate}\\
-              &\vert           &\kws{not}            &\text{Unsigned Not}\\
-              &\vert           &\kws{and}            &\text{Unsigned And}\\
-              &\vert           &\kws{or}             &\text{Unsigned Or}\\
-              &\vert           &\kws{xor}            &\text{Unsigned Xor}\\
-              &\vert           &\kws{andr}           &\text{Unsigned And Reduce}\\
-              &\vert           &\kws{orr}            &\text{Unsigned Or Reduce}\\
-              &\vert           &\kws{xorr}           &\text{Unsigned Xor Reduce}\\
-              &\vert           &\kws{cat}            &\text{Unsigned Concatenation}\\
-              &\vert           &\kws{bit}            &\text{Single Bit Extraction}\\
-              &\vert           &\kws{bits}           &\text{Multiple Bit Extraction}\\
-\end{array}
-}
-\]
+Adam Izraelevitz then reworked the design and reimplemented FIRRTL, and after many discussions with Patrick Li and the Chisel group, refined the design to its present version.
 
-\subsection{Notation}
-The above definition specifies the structure of the abstract syntax tree corresponding to a FIRRTL circuit.
-Nodes in the abstract syntax tree are {\em italicized}.
-Keywords are shown in {\bf bold}.
-The special productions id, int, and string, indicates an identifier, an integer literal, and a string respectively.
-Tokens followed by an asterisk, {\em e.g.} \pds{field}*, indicates a list formed from repeated occurrences of the token.
+The authors would like to thank the following individuals in particular for their contributions to the FIRRTL project:
+\begin{itemize}
+\item Andrew Waterman: for his many contributions to the design of FIRRTL's constructs, for his work on Chisel 3.0, and for porting architecture research infrastructure
+\item Richard Lin: for improving the Chisel 3.0 code base for release quality
+\item Jack Koenig: for implementing the FIRRTL parser in Scala
+\item Henry Cook: for porting and cleaning up many aspects of Chisel 3.0, including the testing infrastructure and the parameterization library
+\item Chick Markley: for creating the new testing harness and porting the Chisel tutorial
+\item Stephen Twigg: for his expertise in hardware intermediate representations and for providing many corner cases to consider
+\item Palmer Dabbelt, Eric Love, Martin Maas, Christopher Celio, and Scott Beamer: for their feedback on previous drafts of the FIRRTL specification
+\end{itemize}
 
-Keep in the mind that the above definition is only the {\em abstract} syntax tree, and is a representation of the in-memory FIRRTL data structure.
-Readers and writers are provided for converting a FIRRTL data structure into a purely textual representation, which is defined in Section \ref{concrete}.
+And finally this project would not have been possible without the continuous feedback and encouragement of Jonathan Bachrach, and his leadership on and implementation of Chisel.
 
+This research was partially funded by DARPA Award Number HR0011-12-2-0016, the Center for Future Architecture Research, a member of STARnet, a Semiconductor Research Corporation program sponsored by MARCO and DARPA, and ASPIRE Lab industrial sponsors and affiliates Intel, Google, Huawei, Nokia, NVIDIA, Oracle, and Samsung. Any opinions, findings, conclusions, or recommendations in this paper are solely those of the authors and does not necessarily reflect the position or the policy of the sponsors.
 
 \section{Circuits and Modules}
-\[
-\begin{array}{rrl}
-\pd{circuit}    &=     &\kw{circuit} \text{toplevel-module } \kw{:} (\text{modules*}) \\
-\pd{module}     &=     &\kw{module}  \text{name } \kw{:} (\text{ports* } \text{body}) \\
-                &\vert &\kw{extmodule}  \text{name } \kw{:} (\text{ports* })           \\ 
-\pd{port}       &=     &\pd{kind} \id \kw{:} \pd{type}                                 \\
-\pd{kind}       &=     &\kws{input} \vert \kws{output}                                \\
-\end{array}
-\]
 
-All FIRRTL circuits consist of a flat list of modules, each representing one hardware block.
-Each module has a given name, a list of ports, and a statement representing the circuit connections within the module.
-Externally defined modules consist of a given name, and a list of ports, whose types must match the types defined in the associated Verilog.
-Module names exist in their own namespace, and all modules must have a unique name. The name of the top-level module must be specified for a circuit.
+\subsection{Circuits}
+All FIRRTL circuits consist of a list of modules, each representing a hardware block that can be instantiated. The circuit must specify the name of the top-level module.
 
-A module port is specified by its \pd{kind}, which may be input or output, a name, and the data type for the port.
-The port names exist in the identifier namespace for the module, and must be unique.
-In addition, all references within a module must be unique.
+\begin{verbatim}
+circuit MyTop :
+   module MyTop :
+      ...
+   module MyModule :
+      ...   
+\end{verbatim}   
 
-The following example is the port declaration of a module that spans two clock domains.
+\subsection{Modules}
+Each module has a given name, a list of ports, and a statement representing the circuit connections within the module. A module port is specified by its \pd{direction}, which may be input or output, a name, and the data type of the port. 
 
-\[
-\begin{aligned}
-&\kw{module} TwoClock : \\
-&\quad \kw{input} clk1 : \kw{Clock}\\
-&\quad \kw{input} clk2 : \kw{Clock}\\
-&\quad ... \\
-\end{aligned}
-\]
+The following example declares a module with one input port, one output port, and one statement connecting the input port to the output port. See section \ref{connects} for details on the connect statement.
+
+\begin{verbatim}
+module MyModule :
+   input foo: UInt
+   output bar: UInt
+   bar <= foo
+\end{verbatim}  
+
+Note that a module definition does {\em not} indicate that the module will be physically present in the final circuit. Refer to the description of the instance statement for details on how to instantiate a module (section \ref{instances}).
+
+\subsection{Externally Defined Modules}
+Externally defined modules consist of a given name, and a list of ports, whose types and names must match its external definition.
+
+\begin{verbatim}
+module MyExternalModule :
+   input foo: UInt
+   output bar: UInt
+   output baz: SInt
+\end{verbatim}  
+
+
+% The following example is the port declaration of a module that spans two clock domains.
+
+% \[
+% \begin{aligned}
+% &\kw{module} TwoClock : \\
+% &\quad \kw{input} clk1 : \kw{Clock}\\
+% &\quad \kw{input} clk2 : \kw{Clock}\\
+% &\quad ... \\
+% \end{aligned}
+% \]
 
 \section{Types}
 
+Types are used to specify the structure of the data held by each circuit component. All types in FIRRTL are either one of the fundamental ground types or are built up from aggregating other types. 
+
 \subsection{Ground Types}
-\[
-\begin{array}{rrl}
-\pd{type}       &=     &\kws{UInt}\kws{$<$} \pds{width} \kws{$>$}      \\
-                &\vert &\kws{SInt}\kws{$<$} \pds{width} \kws{$>$}      \\
-                &\vert &\kws{Clock} \\
-\pd{width}      &=     &\ints                       \\
-                &\vert &\kw{?}                      \\
-\end{array}
-\]
 
-There are only three ground types in FIRRTL, an unsigned, signed integer type, and clock type.
+There are three ground types in FIRRTL: an unsigned integer type, a signed integer type, and a clock type.
 
-Both unsigned and signed integer types require a given bit width, which may be some known integer width, which must be non-negative and greater than zero, or an unknown width.
-Unknown widths are a declaration for the width to be computed by the FIRRTL width inferencer, instead of manually given by the programmer.
-Zero-valued widths are currently not supported, but future versions will likely support them.
+\subsubsection{Integer Types}
 
-Clock types have a restricted usage, where they can only be connected to other clock types or be referenced to in the \kws{reg}, \kws{accessor}, and \kws{inst} declarations, as explained in Section \ref{statements}.
-They cannot be used in primitive operations.
+Both unsigned and signed integer types may optionally be given a known positive integer bit width.
+
+\begin{verbatim}
+UInt<10>
+SInt<32>
+\end{verbatim}  
+
+Alternatively, if the bit width is omitted, it will be automatically inferred by FIRRTL's width inferencer, as detailed in section \ref{width_inference}.
+
+\begin{verbatim}
+UInt
+SInt
+\end{verbatim}  
+
+\subsubsection{Clock Type}
+
+The clock type is used to describe wires and ports meant for carrying clock signals. The usage of components with clock types are restricted. Clock signals cannot be used in most primitive operations, and clock signals can only be connected to components that have been declared with the clock type. 
+
+The clock type is specified as follows:
+\begin{verbatim}
+Clock
+\end{verbatim}  
 
 \subsection{Vector Types}
-\[
-\begin{array}{rrl}
-\pd{type}       &=     &\pds{type}[\ints]           \\
-\end{array}
-\]
 
-Vector types in FIRRTL indicate a structure consisting of multiple elements of some given type.
-This is akin to array types in the C programming language.
-Note that the number of elements must be known, and non-negative.
+A vector type is used to express an ordered sequence of elements of a given type. The length of the sequence must be non-negative and known. 
 
-As an example, the type $\kws{UInt}\kws{$<$} 16 \kws{$>$}[10]$ indicates a ten element vector of 16-bit unsigned integers.
-The type $\kws{UInt}\kws{$<$} \kws{?} \kws{$>$}[10]$ indicates a ten element vector of unsigned integers, with unknown but the same bit widths.
+The following example specifies a ten element vector of 16-bit unsigned integers.
+\begin{verbatim}
+UInt<16>[10]
+\end{verbatim}  
 
-Vector types may be nested ad infinitum.
-The type $\kws{UInt}\kws{$<$} 16 \kws{$>$}[10][5]$ indicates a five element vector {\em of} ten element vectors of 16-bit unsigned integers.
+The next example specifies a ten element vector of unsigned integers of omitted but identical bit widths.
+\begin{verbatim}
+UInt[10]
+\end{verbatim}
+
+Note that any type, including other aggregate types, may be used as the element type of the vector. The following example specifies a twenty element vector, each of which is a ten element vector of 16-bit unsigned integers.
+\begin{verbatim}
+UInt<16>[10][20]
+\end{verbatim} 
 
 \subsection{Bundle Types}
-\[
-\begin{array}{rrl}
-\pd{type}       &=     &\bundleT{\pd{field*}}                         \\
-\pd{field}      &=     &\pd{orientation} \text{name } \kw{:} \pd{type}        \\
-\pd{orientation}&=     &\kws{default} \vert \kws{reverse}    \\ 
-\end{array}
-\]
 
-Bundle types in FIRRTL are composite types formed from an ordered sequence of named, nested types.
-All fields in a bundle must have a given orientation, name, and type.
+A bundle type is used to express a collection of nested and named types. All fields in a bundle type must have a given name, and type. 
 
-The following is an example of a possible type for representing a complex number.
-\[
-\bundleT{\kw{default} \text{real } \kw{:} \kws{SInt}\kws{$<$} 10 \kws{$>$},
-         \kw{default} \text{imag } \kw{:} \kws{SInt}\kws{$<$} 10 \kws{$>$}}
-\]
-It has two fields, real, and imag, both 10-bit signed integers.
-By convention, we specify the directions within a bundle type with their relative orientation.
-For this reason, the real and imag fields for the complex number bundle type are both specified to be {\em default}.
+The following is an example of a possible type for representing a complex number. It has two fields, \verb|real|, and \verb|imag|, both 10-bit signed integers.
+\begin{verbatim}
+{real:SInt<10>, imag:SInt<10>}
+\end{verbatim}
 
-The following bundle type has a data field that is specified to be a 10-bit unsigned integer type, a valid signal that must be a 1-bit unsigned integer type, and a reversed ready signal that must be a 1-bit unsigned integer type.
-\[
-\begin{aligned}
-\{ \kw{default} &\text{data } \kw{:} \kws{UInt}\kws{$<$} 10 \kws{$>$}, \\
-   \kw{default} &\text{valid } \kw{:} \kws{UInt}\kws{$<$} 1 \kws{$>$}, \\
-   \kw{reverse} &\text{ready } \kw{:} \kws{UInt}\kws{$<$} 1 \kws{$>$}\} \\
-\end{aligned}
-\]
-If an output port had this bundle type, the {\em ready} field would be an input to the module.
+Additionally, a field may optionally be declared with a {\em flipped} orientation.
+\begin{verbatim}
+{word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
+\end{verbatim}
+In a connection between circuit components with bundle types, the data carried by the flipped fields flow in the opposite direction as the data carried by the non-flipped fields.
 
-Note that all field names within a bundle type must be unique.
+As an example, consider a module output port declared with the following type:
+\begin{verbatim}
+output a: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
+\end{verbatim}
+In a connection to the \verb|a| port, the data carried by the \verb|word| and \verb|valid| subfields will flow out of the module, while data carried by the \verb|ready| subfield will flow into the module. More details about how the bundle field orientation affects connections are explained in section \ref{connects}.
 
-As in the case of vector types, bundle types may also be nested ad infinitum (i.e., the types of the fields themselves may also be bundle types, which will in turn contain more fields, etc.)
+As in the case of vector types, a bundle field may be declared with any type, including other aggregate types. 
+\begin{verbatim}
+{real: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
+ imag: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}}
+\end{verbatim}
+
+When calculating the final direction of data flow, the orientation of a field is applied recursively to all nested types in the field. As an example, consider the following module port declared with a bundle type containing a nested bundle type.
+\begin{verbatim}
+output myport: {a: UInt, flip b: {c: UInt, flip d:UInt}}
+\end{verbatim}
+In a connection to \verb|myport|, the \verb|a| subfield flows out of the module. The \verb|c| subfield contained in the \verb|b| subfield flows into the module, and the \verb|d| subfield contained in the \verb|b| subfield flows out of the module.
+
+\subsection{Passive Types} \label{passive_types}
+
+It is inappropriate for some circuit components to be declared with a type that allows for data to flow in both directions. These components are restricted to only have a passive type.
+
+Intuitively, a passive type is a type where all data flows in the same direction, and is defined to be a type that recursively contains no fields with flipped orientations. Thus all ground types are passive types. Vector types are passive if their element type is passive. And bundle types are passive if no fields are flipped and if all field types are passive.
+
+\subsection{Type Equivalence} \label{type_equivalence}
+
+The type equivalence relation is used to determine whether a connection between two components is legal. See section \ref{connects} for further details about connect statements.
+
+An unsigned integer type is always equivalent to another unsigned integer type regardless of bit width, and is not equivalent to any other type. Similarly, a signed integer type is always equivalent to another signed integer type regardless of bit width, and is not equivalent to any other type. 
+
+Clock types are equivalent to clock types, and are not equivalent to any other type.
+
+Two vector types are equivalent if they have the same length, and if their element types are equivalent.
+
+Two bundle types are equivalent if they have the same number of fields, and both the bundles' i'th fields have matching names and orientations, as well as equivalent types. Consequently, \verb|{a:UInt, b:UInt}| is not equivalent to \verb|{b:UInt, a:UInt}|, and \verb|{a: {flip b:UInt}}| is not equivalent to \verb|{flip a: {b: UInt}}|.
+
+\subsection{Weak Type Equivalence} \label{weak_type_equivalence}
+
+The weak type equivalence relation is used to determine whether a partial connection between two components is legal. See section \ref{partial_connects} for further details about partial connect statements.
+
+Two types are weakly equivalent if their corresponding oriented types are equivalent.
+
+\subsubsection{Oriented Types}
+The weak type equivalence relation requires first a definition of {\em oriented types}. Intuitively, an oriented type is a type where all orientation information is collated and coupled with the leaf ground types instead of in bundle fields.
+
+An oriented ground type is an orientation coupled with a ground type. An oriented vector type is an ordered sequence of positive length of elements of a given oriented type. An oriented bundle type is a collection of oriented fields, each containing a name and an oriented type, but no orientation.
+
+Applying a flip orientation to an oriented type recursively reverses the orientation of every oriented ground type contained within. Applying a non-flip orientation to an oriented type does nothing.
+
+\subsubsection{Conversion to Oriented Types}
+To convert a ground type to an oriented ground type, attach a non-flip orientation to the ground type. 
+
+To convert a vector type to an oriented vector type, convert its element type to an oriented type, and retain its length. 
+
+To convert a bundle field to an oriented field, convert its type to an oriented type, apply the field orientation, and combine this with the original field's name to create the oriented field. To convert a bundle type to an oriented bundle type, convert each field to an oriented field.
+
+\subsubsection{Oriented Type Equivalence}
+Two oriented ground types are equivalent if their orientations match and their types are equivalent.
+
+Two oriented vector types are equivalent if their element types are equivalent.
+
+Two oriented bundle types are not equivalent if there exists two fields, one from each oriented bundle type, that have identical names but whose oriented types are not equivalent. Otherwise, the oriented bundle types are equivalent.
+
+As stated earlier, two types are weakly equivalent if their corresponding oriented types are equivalent.
+
 
 \section{Statements} \label{statements}
 
-FIRRTL circuit components are instantiated and connected together using {\em statements}.
+Statements are used to describe the components within a module and how they interact.
+
+\subsection{Connects}\label{connects}
+The connect statement is used to specify a physically wired connection between two circuit components.
+
+The following example demonstrates connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
+\begin{verbatim}
+module MyModule :
+   input myinput: UInt
+   output myoutput: UInt
+   myoutput <= myinput
+\end{verbatim}
+
+In order for a connection to be legal the following conditions must hold:
+\begin{enumerate}
+\item The types of the left-hand and right-hand side expressions must be equivalent (see section \ref{type_equivalence} for details).
+\item The bit widths of the two expressions must allow for data to always flow from a smaller bit width to an equal size or larger bit width.
+\item The gender of the left-hand side expression must be female or bi-gender (see section \ref{genders} for an explanation of gender).
+\item Either the gender of the right-hand side expression is male or bi-gender, or the right-hand side expression has a passive type.
+\end{enumerate}
+
+Connect statements from a narrower ground type component to a wider ground type component will have its value automatically sign-extended to the larger bit width. The behaviour of connect statements between two circuit components with aggregate types is defined by the connection algorithm in section \ref{connection_algorithm}.
+
+\subsubsection{The Connection Algorithm} \label{connection_algorithm}
+Connect statements between ground types cannot be expanded further. 
+
+Connect statements between two vector typed components recursively connects each subelement in the right-hand side expression to the corresponding subelement in the left-hand side expression. 
+
+Connect statements between two bundle typed components connects the i'th field of the right-hand side expression and the i'th field of the left-hand side expression. If the i'th field is not flipped, then the right-hand side field is connected to the left-hand side field. Conversely, if the i'th field is flipped, then the left-hand side field is connected to the right-hand side field.
+
+\subsection{Partial Connects}\label{partial_connects}
+Like the connect statement, the partial connect statement is also used to specify a physically wired connection between two circuit components. However, it enforces fewer restrictions on the types and widths of the circuit components it connects. 
+
+In order for a partial connect to be legal the following conditions must hold:
+\begin{enumerate}
+\item The types of the left-hand and right-hand side expressions must be weakly equivalent (see section \ref{weak_type_equivalence} for details).
+\item The gender of the left-hand side expression must be female or bi-gender (see section \ref{genders} for an explanation of gender).
+\item Either the gender of the right-hand side expression is male or bi-gender, or the right-hand side expression has a passive type.
+\end{enumerate}
+
+Partial connect statements from a narrower ground type component to a wider ground type component will have its value automatically sign-extended to the larger bit width. Partial connect statements from a wider ground type component to a narrower ground type component will have its value automatically truncated to fit the smaller bit width. 
+
+Intuitively, bundle fields with matching names will be connected appropriately, while bundle fields not present in both types will be ignored. Similarly, vectors with mismatched lengths will be connected up to the shorter length, and the remaining subelements are ignored. The full algorithm is detailed in section \ref{partial_connection_algorithm}.
+
+The following example demonstrates partially connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
+\begin{verbatim}
+module MyModule :
+   input myinput: {flip a:UInt, b:UInt[2]}
+   output myoutput: {flip a:UInt, b:UInt[3], c:UInt}
+   myoutput <- myinput
+\end{verbatim}
+
+The above example is equivalent to the following:
+\begin{verbatim}
+module MyModule :
+   input myinput: {flip a:UInt, b:UInt[2]}
+   output myoutput: {flip a:UInt, b:UInt[3], c:UInt}
+   myinput.a <- myoutput.a
+   myoutput.b[0] <- myinput.b[0]
+   myoutput.b[1] <- myinput.b[1]
+\end{verbatim}
+For details on the syntax and semantics of the subfield expression, subindex expression, and statement groups, see sections \ref{subfields}, \ref{subindices}, and \ref{statement_groups}.
+
+\subsubsection{The Partial Connection Algorithm} \label{partial_connection_algorithm}
+
+A partial connect statement between two ground type components connects the right-hand side expression to the left-hand side expression. Conversely, a {\em reverse} partial connect statement between two ground type components connects the left-hand side expression to the right-hand side expression. 
+
+A partial (or reverse partial) connect statement between two vector typed components applies a partial (or reverse partial) connect from the first n subelements in the right-hand side expression to the first n corresponding subelements in the left-hand side expression, where n is the length of the shorter vector. 
+
+A partial (or reverse partial) connect statement between two bundle typed components considers any pair of fields, one from the first bundle type and one from the second, with matching names. If the first field in the pair is not flipped, then we apply a partial (or reverse partial) connect from the right-hand side field to the left-hand side field. However, if the first field is flipped, then we apply a reverse partial (or partial) connect from the right-hand side field to the left-hand side field. 
+
+\subsection{Statement Groups} \label{statement_groups}
+
+An ordered sequence of one or more statements can be grouped into a single statement, called a statement group. The following example demonstrates a statement group composed of three connect statements.
+
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   output myport1: UInt
+   output myport2: UInt
+   myport1 <= a
+   myport1 <= b
+   myport2 <= a
+\end{verbatim}
+
+\subsubsection{Last Connect Semantics}\label{last_connect}
+Ordering of statements is significant in a statement group. Intuitively, statements execute in order, and the effects of later statements take precedence over earlier ones. In the previous example, in the resultant circuit, port \verb|b| will be connected to \verb|myport1|, and port \verb|a| will be connected to \verb|myport2|. 
+
+Note that connect and partial connect statements have equal priority, and later connect or partial connect statements always take priority over earlier connect or partial connect statements. Conditional statements are also affected by last connect semantics, and for details see section \ref{conditional_last_connect}.
+
+In the case where a connection to a circuit component with an aggregate type is followed by a connection to a subelement of that component, only the connection to the subelement is overwritten. Connections to the other subelements remain unaffected. In the following example, in the resultant circuit, the \verb|c| subelement of port \verb|portx| will be connected to the \verb|c| subelement of \verb|myport|, and port \verb|porty| will be connected to the \verb|b| subelement of \verb|myport|.
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport <= portx
+   myport.b <= porty
+\end{verbatim}
+The above circuit can be rewritten equivalently as follows.
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport.b <= porty
+   myport.c <= portx.c
+\end{verbatim}
+
+In the case where a connection to a subelement of an aggregate circuit component is followed by a connection to the entire circuit component, the later connection overwrites the earlier connections completely.
+
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport.b <= porty
+   myport <= portx
+\end{verbatim}
+The above circuit can be rewritten equivalently as follows.
+\begin{verbatim}
+module MyModule :
+   input portx: {b:UInt, c:UInt}
+   input porty: UInt
+   output myport: {b:UInt, c:UInt}
+   myport <= portx
+\end{verbatim}
+
+See section \ref{subfields} for more details about subfield expressions.
+
+\subsection{Empty}
+The empty statement does nothing and is used simply as a placeholder where a statement is expected. It is specified using the \verb|skip| keyword.
+
+The following example:
+\begin{verbatim}
+a <= b
+skip
+c <= d
+\end{verbatim}
+can be equivalently expressed as:
+\begin{verbatim}
+a <= b
+c <= d
+\end{verbatim}
+
+The empty statement is most often used as the \verb|else| branch in a conditional statement, or as a convenient placeholder for removed components during transformational passes. See section \ref{conditionals} for details on the conditional statement.
 
 \subsection{Wires}
-A wire is a named combinational circuit element that can be connected to using the connect statement.
-A wire with a given name and type can be instantiated with the following statement.
-\[
-\kw{wire} \text{name } \kw{:} \pd{type} \\
-\]
+A wire is a named combinational circuit component that can be connected to and from using connect and partial connect statements.
 
-Declared wires are {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement).
+The following example demonstrates instantiating a wire with the given name \verb|mywire| and type \verb|UInt|.
+
+\begin{verbatim}
+wire mywire : UInt
+\end{verbatim}
 
 \subsection{Registers}
-A register is a named stateful circuit element.
-A register with a given name, type, clock reference, and reset reference, can be instantiated with the following statement.
-\[
-\kw{reg} \text{name } \kw{:} \pds{type},\pds{clk,} \pds{reset} \\
-\]
+A register is a named stateful circuit component.
 
-Like wires, registers are also {\em bidirectional}, which means that they can be used as both an input (by being on the left-hand side of a connect statement), or as an output (by being on the right-hand side of a connect statement). 
+The following example demonstrates instantiating a register with the given name \verb|myreg|, type \verb|SInt|, and is driven by the clock signal \verb|myclock|. 
 
-The onreset statement is used to specify the initialization value for a register, which is assigned to the register when the declared \pds{reset} signal is asserted.
+\begin{verbatim}
+wire myclock: Clock
+reg myreg: SInt, myclock
+...
+\end{verbatim}
 
-smem
-read from same address as write
+Optionally, for the purposes of circuit initialization, a register can be declared with a reset signal and value. In the following example, \verb|myreg| is assigned the value \verb|myinit| when the signal \verb|myreset| is high.
 
+\begin{verbatim}
+wire myclock: Clock
+wire myreset: UInt<1>
+wire myinit: SInt
+reg myreg: SInt, myclock, myreset, myinit
+...
+\end{verbatim}
 
-\subsection{Memories}
-A memory is a stateful circuit element containing multiple elements.
-The type for a memory must be completely specified; it cannot contain any unknown widths or bundle types with reverse fields.
-Unlike registers, memories can {\em only} be read from or written to through {\em accessors}, and cannot be initialized using a special FIRRTL construct 
-Instead, the circuit itself must contain the proper logic to initialize the memory.
+Note that the clock signal for a register must be of type \verb|clock|, the reset signal must be a single bit \verb|UInt|, and the type of initialization value must match the declared type of the register.
 
-Additionally, if a memory is written via two or more accessors to the same memory address, the resulting stored value is undefined.
+\subsection{Invalidates}
+An invalidate statement is used to indicate that a circuit component contains indeterminate values. It is specified as follows:
 
-Memories always have a synchronous write, but can either be declared to be read combinatorially or synchronously.
-A combinatorially read memory with a given name, type, and size integer can be instantiated with the following statement.
-\[
-\begin{aligned}
-\kw{cmem} \text{name } \kw{:} \pds{type} , size\\
-\end{aligned}
-\]
+\begin{verbatim}
+wire w:UInt
+w is invalid
+\end{verbatim}
 
-A synchronously read memory with a given name, type, and size integer can be instantiated with the following statement.
-\[
-\begin{aligned}
-\kw{smem} \text{name } \kw{:} \pds{type} , size \\
-\end{aligned}
-\]
+Invalidate statements can be applied to any circuit component of any type. However, if the circuit component cannot be connected to, then the statement has no effect on the component. The following example demonstrates the effect of invalidating a variety of circuit components with aggregate types. See section \ref{invalidate_algorithm} for details on the algorithm for determining what is invalidated.
 
-A synchronously read memory has the additional restriction that a read to an address on the same cycle its written returns an undefined value.
+\begin{verbatim}
+module MyModule :
+   input in: {flip a:UInt, b:UInt}
+   output out: {flip a:UInt, b:UInt}
+   wire w: {flip a:UInt, b:UInt}
+   in is invalid
+   out is invalid
+   w is invalid
+\end{verbatim}
+is equivalent to the following:
+\begin{verbatim}
+module MyModule :
+   input in: {flip a:UInt, b:UInt}
+   output out: {flip a:UInt, b:UInt}
+   wire w: {flip a:UInt, b:UInt}
+   in.a is invalid
+   out.b is invalid
+   w.a is invalid
+   w.b is invalid
+\end{verbatim}
 
-\subsection{Poisons}
-A poison component is a named combinational circuit element that holds a random/garbage value.
-It cannot be connected to using the connect statement, and its type cannot contain a bundle with a flipped value.
+For the purposes of simulation, invalidated components are initialized to random values, and operations involving indeterminate values produce undefined behaviour. This is useful for early detection of errors in simulation.
 
-A poison component with a given name and type can be instantiated with the following statement.
-\[
-\kw{poison} \text{name } \kw{:} \pd{type} \\
-\]
+\subsubsection{The Invalidate Algorithm}\label{invalidate_algorithm}
+Invalidating a component with a ground type indicates that the component's value is indetermined if the component is female or bi-gender (see section \ref{genders}). Otherwise, the component is unaffected.
 
-Declared poisons are {\em unidirectional}, which means that they can only be used as a source (being on the right-hand side of a connect statement).
+Invalidating a component with a vector type recursively invalidates each subelement in the vector.
+
+Invalidating a component with a bundle type recursively invalidates each subelement in the bundle.
 
 \subsection{Nodes}
-A node is simply a named intermediate value in a circuit, and is akin to a pointer in the C programming language.
-A node with a given name and value can be instantiated with the following statement.
-\[
-\kw{node} \text{name } = \pd{exp} \\
-\]
-Unlike wires, nodes can only be used in {\em output} directions.
-They can be connected from, but not connected to.
-Consequentially, their expression cannot be a bundle type with any reversed fields.
+A node is simply a named intermediate value in a circuit. The node must be initialized to a value with a passive type and cannot be connected to. 
 
-\subsection{Accessors}
-Accessors are used for either connecting to or from a vector-typed expression, from some {\em variable} index.
-\[
-\begin{aligned}
-&\pd{dir} \kw{accessor} \text{name} = \pds{exp}[\text{index}] \pds{,clk} \\
-&\pd{dir}        =     \kws{infer} \vert \kws{read} \vert \kws{write} \vert \kw{rdwr} \\
-\end{aligned}
-\]
-Given an accessor direction, a name, an expression to access, the index at which to access, and the clock domain it is in, the above statement creates an accessor that may be used for connecting to or from the expression.
-The expression must have a vector type, and the index must be a variable of UInt type.
+The following example demonstrates instantiating a node with the given name \verb|mynode| initialized with the output of a multiplexor (see section \ref{multiplexors}).
 
-A read, write, and inferred accessor is conceptually one-way; it must be consistently used to connect to, or to connect from, but not both.
+\begin{verbatim}
+wire pred: UInt<1>
+wire a: SInt
+wire b: SInt
+node mynode = mux(pred, a, b)
+...
+\end{verbatim}
 
-A read-write accessor (\kws{rdwr}) is conceptually two-way; it can be used to connect to, to connect from, or both, {\em but not on the same cycle}.
-If it is written to and read from on the same cycle, its behavior is undefined.
+\subsection{Conditionals}\label{conditionals}
+Connections within a conditional statement that connect to previously declared components hold only when the given condition is high. The condition must have a 1-bit unsigned integer type.
 
-The following example demonstrates using accessors to read and write to a memory.
-The accessor, \pds{reader}, acts as a memory read port that reads from the index specified by the wire \pds{i}.
-The accessor, \pds{writer}, acts as a memory write port that writes 42 to the index specified by wire \pds{j}.
-\[
-\begin{aligned}
-&\kw{wire} i : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
-&\kw{wire} j : \kws{UInt}\kws{$<$} 5 \kws{$>$} \\
-&\kw{cmem} m : \kws{UInt}\kws{$<$} 10 \kws{$>$},10 \\
-&\kw{read} \kw{accessor} reader = m[i] , clk \\
-&\kw{write} \kw{accessor} writer = m[j] , clk \\
-&writer <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
-&\kw{node} temp = reader \\
-\end{aligned}
-\]
+In the following example, the wire \verb|x| is connected to the input \verb|a| only when the \verb|en| signal is high. Otherwise, the wire \verb|x| is connected to the input \verb|b|. 
 
-As mentioned previously, the only way to read from or write to a memory is through an accessor.
-However, accessors are not restricted to accessing memories.
-They can be used to access {\em any} cmem, smem, or wire/reg with vector-valued type.
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   wire x: UInt
+   when en :
+      x <= a
+   else :
+      x <= b  
+\end{verbatim}
 
-An accessor passed a poisoned value as an index writes or reads a poisoned value.
+\subsubsection{Syntactic Shorthands}
+The \verb|else| branch of a conditional statement may be omitted, in which case a default \verb|else| branch is supplied consisting of the empty statement.
 
-\subsection{Instances}
-An instance refers to a particular instantiation of a FIRRTL module.
-An instance is constructed with a given name and a given module name.
-\[
-\begin{aligned}
-\kw{inst} \text{name } \kw{:} \text{module}
-\end{aligned}
-\]
+Thus the following example:
 
-The resulting instance has a bundle type, where the given module's ports are fields and can be accessed using the subfield expression.
-The orientation of the {\em output} ports are {\em default}, and the orientation of the {\em input} ports are {\em reverse}.
-An instance may be directly connected to another element, but it must be on the right-hand side of the connect statement.
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   wire x: UInt
+   when en :
+      x <= a
+\end{verbatim}
 
-The following example illustrates directly connecting an instance to a wire:
+can be equivalently expressed as:
 
-{ \fontsize{11pt}{1.15em}\selectfont
-\[
-\begin{aligned}
-&\kw{extmodule} Queue \ \kws{:} \\
-&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} in   \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
-&\quad \kw{output} out \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
-&\kw{module} Top \ \kws{:} \\
-&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
-&\quad \kw{inst} queue \ \kw{:} Queue \\
-&\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} in \ \kw{:} \ \kws{UInt$<$}16\kws{$>$},\kw{reverse} clk \ \kw{:} \ \kws{Clock}} \\
-&\quad connect \ \kw{$<$=} queue \\
-\end{aligned}
-\]
-}
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   wire x: UInt
+   when en :
+      x <= a
+   else : 
+      skip   
+\end{verbatim}
 
-The output ports of an instance may only be connected from, e.g., the right-hand side of a connect statement.
-Conversely, the input ports of an instance may only be connected to, e.g., the left-hand side of a connect statement.
+To aid readability of long chains of conditional statements, the colon following the \verb|else| keyword may be omitted if the \verb|else| branch consists of a single conditional statement.
 
-The following example illustrates a proper use of creating instances with different clock domains:
+Thus the following example:
 
-{ \fontsize{11pt}{1.15em}\selectfont
-\[
-\begin{aligned}
-&\kw{extmodule} AsyncQueue \ \kws{:} \\
-&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} in  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\quad \kw{output} out  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{extmodule} Source \ \kws{:} \\
-&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
-&\quad \kw{output} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{extmodule} Sink \ \kws{:} \\
-&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
-&\kw{module} TwoClock \ \kws{:} \\
-&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
-&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
-&\quad \kw{inst} src \ \kw{:} Source \\
-&\quad src.clk \ \kw{$<$=} clk1 \\
-&\quad \kw{inst} snk \ \kw{:} Sink \\
-&\quad snk.clk \ \kw{$<$=} clk2 \\
-&\quad \kw{inst} queue \ \kw{:} AsyncQueue \\
-&\quad queue.clk1 \ \kw{$<$=} clk1 \\
-&\quad queue.clk2 \ \kw{$<$=} clk2 \\
-&\quad queue.in \ \kw{$<$=} src.packet \\
-&\quad snk.packet \ \kw{$<$=} queue.out \\
-\end{aligned}
-\]
-}
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   input c: UInt
+   input d: UInt
+   input c1: UInt<1>
+   input c2: UInt<1>
+   input c3: UInt<1>
+   wire x: UInt
+   when c1 :
+      x <= a
+   else :
+      when c2 :
+         x <= b
+      else :
+         when c3 :
+            x <= c  
+         else :
+            x <= d       
+\end{verbatim}
 
-There are restrictions upon which modules the user is allowed to instantiate, so as not to create infinitely recursive hardware.
-We define a module with no instances as a {\em level 0} module.
-A module containing only instances of {\em level 0} modules is a {\em level 1} module, and a module containing only instances of {\em level 1} or below modules is a {\em level 2} module.
-In general, a {\em level n} module is only allowed to contain instances of modules of level $n-1$ or below. 
+can be equivalently written as:
 
-\subsection{The Connect Statement}
-The connect statement is used to specify a physical wired connection between one hardware component to another, and is the most important statement in FIRRTL.
-The following statement is used to connect the output of some component, to the input of another component. 
-\[
-\text{input } \kw{$<$=} \text{output} 
-\]
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   input c: UInt
+   input d: UInt
+   input c1: UInt<1>
+   input c2: UInt<1>
+   input c3: UInt<1>
+   wire x: UInt
+   when c1 :
+      x <= a
+   else when c2 :
+      x <= b
+   else when c3 :
+      x <= c  
+   else :
+      x <= d       
+\end{verbatim}
 
-For a connection to be legal, the types of the two expressions must match exactly, including all field orientations if the elements contain bundle types.
+\subsubsection{Nested Declarations}
+If a component is declared within a conditional statement, connections to the component are unaffected by the condition. In the following example, register \verb|myreg1| is always connected to \verb|a|, and register \verb|myreg2| is always connected to \verb|b|.
 
-However, the widths of the types do not need to be equivalent.
-If the {\em output} expression has a smaller width than the {\em input} expression, the {\em output} is padded according to its type.
-If the {\em output} expression has a larger width than the {\em input} expression, this triggers an error.
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   input en: UInt<1>
+   input clk : Clock
+   when en :
+      reg myreg1 : UInt, clk
+      myreg1 <= a
+   else :
+      reg myreg2 : UInt, clk
+      myreg2 <= b
+\end{verbatim}
 
-If the {\em input} width is unknown, it is inferred to be the width of the largest {\em output} that it is connected to.
-If the {\em output} width is unknown, it cannot inferred from this connection.
-
-The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be able to be used as an input.
-
-\subsection{The OnReset Connect Statement}
-The onreset connect statement is used to specify the default value for a \kws{reg} element.
-\[
-\kw{onreset} \text{r } \kw{$<$=} \text{output} 
-\]
-
-For a connection to be legal, the types of the two expressions must match exactly, including all field orientations if the elements contain bundle types.
-The component on the right-hand side must be able to be used as an output, and the component on the left-hand side must be a \kws{reg} element.
-The widths of the types may mismatch, and the semantics are the same as the connect statements.
-Memories cannot be initialized with this construct.
-
-By default, a \kws{reg} will not have an initialization value and will maintain its current value under the reset signal specified in their declaration.
-The following example demonstrates declaring a \kws{reg}, and changing its initialization value to forty-two.
-
-\[
-\begin{aligned}
-& \kw{reg} r : \kws{UInt}\kws{$<$} 10 \kws{$>$} \kws{(} clk, \ reset \kws{)}\\
-& \kw{onreset} r <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42)
-\end{aligned}
-\]
-
-\subsection{The Partial Connect Statement}
-The partial connect statement is a connect statement that does not require both expressions to be the same type. 
-During the lowering pass, the partial connect will expand to some number of connect statements, possibly zero statements.
-The following statement is used to connect the output of some component, to the input of another component. 
-\[
-\text{input } \kw{$<$--} \text{output} 
-\]
-
-For a partial connect between two components of a bundle-type, fields that are of the same type, orientation, and name will be connected.
-Fields that do not match will not be connected.
-For a partial connect between two components of a vector-type, the number of connected elements will be equal to the length of the shorter vector.
-A partial connect between two components of the same ground type is equivalent to a normal connect statement.
-All other combinations of types will not error, but will not generate any connect statements.
-
-\subsection{The Conditional Statement}
-The conditional statement is used to specify a condition that must be asserted under which a list of statements hold.
-The condition must be a 1-bit unsigned integer.
-The following statement states that the {\em conseq} statements hold only when {\em condition} is assert high, otherwise the {\em alt} statements hold instead.
-\[
-\begin{aligned}
-\kw{when} \text{condition } \kw{:} \text{conseq } \kw{else :} \text{alt}
-\end{aligned}
-\]
-
-Notationally, for convenience, we omit the \kws{else} branch if it is an empty statement. 
+Intuitively, a line can be drawn between a connection (or partial connection) to a component and that component's declaration. All conditional statements that are crossed by the line apply to that connection (or partial connection).
 
 \subsubsection{Initialization Coverage}
-Because of the conditional statement, it is possible for wires to be only partially connected to an expression.
-In the following example, the wire {\em w} is connected to 42 when enable is asserted high, but it is not specified what {\em w} is connected to when enable is low.
-This is an illegal FIRRTL circuit, and will throw a \kws{wire not initialized} error during compilation.
-\[
-\begin{aligned}
-&\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&\kw{when} enable : \\
-&\quad w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
-\end{aligned}
-\]
+Because of the conditional statement, it is possible to syntactically express circuits containing wires that have not been connected to under all conditions.
+
+In the following example, the wire \verb|a| is connected to the wire \verb|w| when \verb|en| is high, but it is not specified what is connected to \verb|w| when \verb|en| is low.
+
+\begin{verbatim}
+module MyModule :
+   input en: UInt<1>   
+   input a: UInt
+   wire w: UInt
+   when en :
+      w <= a
+\end{verbatim}
+
+This is an illegal FIRRTL circuit and an error will be thrown during compilation. All wires, memory ports, instance ports, and module ports that can be connected to must be connected to under all conditions. Registers do not need to be connected to under all conditions, as it will keep its previous value if unconnected.
 
 \subsubsection{Scoping}
-The conditional statement creates a new {\em scope} within its consequent and alternative branches.
-It is an error to refer to any component declared within a branch after the branch has ended.
+The conditional statement creates a new {\em scope} within each of its \verb|when| and \verb|else| branches. It is an error to refer to any component declared within a branch after the branch has ended.
 
-Note that there is still only a single identifier namespace in a module.
-Thus, there cannot be two components with identical names in the same module, {\em even if} they are in separate scopes.
-This is to facilitate writing transformational passes, by ensuring that the component name and module name is sufficient to uniquely identify a component.
+\subsubsection{Conditional Last Connect Semantics}\label{conditional_last_connect}
+In the case where a connection to a circuit component is followed by a conditional statement containing a connection to the same component, the connection is overwritten only when the condition holds. Intuitively, a multiplexor is generated such that when the condition is low, the multiplexor returns the old value, and otherwise returns the new value. For details about the multiplexor, see section \ref{multiplexors}.
 
-\subsubsection{Conditional Connect Semantics}
-Inside a when, a connection to a component is conditional only if the component is declared outside the when statement.
-If the component is both declared and connected to inside a when, the connection is {\em not} conditional on that when.
+The following example:
+\begin{verbatim}
+wire a: UInt
+wire b: UInt
+wire c: UInt<1>
+wire w: UInt
+w <= a
+when c :
+   w <= b
+...   
+\end{verbatim}
+can be rewritten equivalently using a multiplexor as follows:
+\begin{verbatim}
+wire a: UInt
+wire b: UInt
+wire c: UInt<1>
+wire w: UInt
+w <= mux(c, b, a)
+...
+\end{verbatim}
 
-Conceptually, a when creates a mux between the stuff outside and the stuff inside - it acts as type of "conditional barrier".
-Thus, if you draw a line between a component's declaration and a connection to it, that connection is dependent on all intersected when predicates being true.
+In the case where an invalid statement is followed by a conditional statement containing a connect to the invalidated component, the resulting connection to the component can be expressed using a conditionally valid expression. See section \ref{conditionally_valids} for more details about the conditionally valid expression.
+\begin{verbatim}
+wire a: UInt
+wire c: UInt<1>
+wire w: UInt
+w is invalid
+when c :
+   w <= a
+...   
+\end{verbatim}
+can be rewritten equivalently as follows:
+\begin{verbatim}
+wire a: UInt
+wire c: UInt<1>
+wire w: UInt
+w <= validif(c, a)
+...
+\end{verbatim}
 
-The following example shows a {\em conditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 only if \pds{enable} is true.
-\[
-\begin{aligned}
-&\kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
-&\kw{when} enable : \\
-&\quad r <= \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
-\end{aligned}
-\]
+The behaviour of conditional connections to circuit components with aggregate types can be modeled by first expanding each connect into individual connect statements on its ground elements (see section \ref{connection_algorithm} and \ref{partial_connection_algorithm} for the connection and partial connection algorithms) and then applying the conditional last connect semantics.
 
-The following shows an {\em unconditional} connection inside a when statement, where the register \pd{r} is assigned the value of 42 {\em every cycle}.
-\[
-\begin{aligned}
-&\kw{when} enable : \\
-&\quad \kw{reg} r : \kws{UInt}\kws{$<$} \kws{6} \kws{$>$} \\
-&\quad r <= \kws{UInt}\kws{$<$} \kws{6} \kws{$>$}(42) \\
-\end{aligned}
-\]
+For example, the following snippet:
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: {a:UInt, b:UInt}
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w <= x
+when c :
+   w <= y
+...   
+\end{verbatim}
+can be rewritten equivalently as follows:
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: {a:UInt, b:UInt}
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w.a <= mux(c, y.a, x.a)
+w.b <= mux(c, y.b, x.b)
+...
+\end{verbatim}
 
-\subsection{Statement Groups}
-Several statements can be grouped into one using the following construct.
-\[
-\begin{aligned}
-(\pd{stmt*})
-\end{aligned}
-\]
-Ordering is important in a statement group.
-Later connect statements take precedence over earlier connect statements, and circuit components cannot be referred to before they are instantiated.
+Similar to the behavior of aggregate types under last connect semantics (see section \ref{last_connect}), the conditional connects to a subelement of an aggregate component only generates a multiplexor for the subelement that is overwritten.
 
-\subsubsection{Last Connect Semantics}
-Because of the connect statement, FIRRTL statements are {\em ordering} dependent.
-Later connections take precedence over earlier connections.
-In the following example, the wire w is connected to 42, not 20. 
-\[
-\begin{aligned}
-&\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&w <= \kws{UInt}\kws{$<$} ? \kws{$>$}(20) \\
-&w <= \kws{UInt}\kws{$<$} ? \kws{$>$}(42) \\
-\end{aligned}
-\]
+For example, the following snippet:
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: UInt
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w <= x
+when c :
+   w.a <= y
+...   
+\end{verbatim}
+can be rewritten equivalently as follows:
+\begin{verbatim}
+wire x: {a:UInt, b:UInt}
+wire y: UInt
+wire c: UInt<1>
+wire w: {a:UInt, b:UInt}
+w.a <= mux(c, y, x.a)
+w.b <= x.b
+...
+\end{verbatim}
 
-By coupling the conditional statement with last connect semantics, many circuits can be expressed in a natural style.
-In the following example, the wire w is connected to 20 unless the enable expression is asserted high, in which case w is connected to 42. 
-\[
-\begin{aligned}
-&\kw{wire} w : \kws{UInt}\kws{$<$} \kws{?} \kws{$>$} \\
-&w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(20) \\
-&\kw{when} enable : \\
-&\quad w <= \kws{UInt}\kws{$<$} \kws{?} \kws{$>$}(42) \\
-\end{aligned}
-\]
+\subsection{Memories}
+A memory is an abstract representation of a hardware memory. It is characterized by the following parameters.
+\begin{enumerate}
+\item A passive type representing the type of each element in the memory.
+\item A positive integer representing the number of elements in the memory.
+\item A variable number of named ports, each being a read port, a write port, or readwrite port.
+\item A non-negative integer indicating the read latency, which is the number of cycles after setting the port's read address before the corresponding element's value can be read from the port's data field.
+\item A non-negative integer indicating the write latency, which is the number of cycles after setting the port's write address and data before the corresponding element within the memory holds the new value.
+\item A read-under-write flag indicating the behaviour when a memory location is written to while a read to that location is in progress.
+\end{enumerate}
 
-\subsection{The Stop Statement}
-The stop statement is used to halt simulations of the circuit.
-\[
-\begin{aligned}
-\kw{stop}
-\end{aligned}
-\]
-If a backend does not support stop, it will omit emitting this node.
+The following example demonstrates instantiating a memory containing 256 complex numbers, each with 16-bit signed integer fields for its real and imaginary components. It has two read ports, \verb|r1| and \verb|r2|, and one write port, \verb|w|. It is combinationally read (read latency is zero cycles) and has a write latency of one cycle. Finally, its read-under-write behavior is undefined.
+\begin{verbatim}
+mem mymem :
+  data-type => {real:SInt<16>, imag:SInt<16>}
+  depth => 256
+  reader => r1
+  reader => r2
+  writer => w
+  read-latency => 0
+  write-latency => 1
+  read-under-write => undefined
+\end{verbatim}
 
-\subsection{The Printf Statement}
-The printf statement is used to print a formatted string during simulations of the circuit.
-\[
-\begin{aligned}
-\kw{printf}(\strings,\pds{exp*})
-\end{aligned}
-\] 
-If a backend does not support printf, it will omit emitting this node.
+In the example above, the type of \verb|mymem| is:
+\begin{verbatim}
+{flip r1: {flip data: {real:SInt<16>, imag:SInt<16>}, 
+           addr: UInt<8>, 
+           en: UInt<1>, 
+           clk: Clock}
+ flip r2: {flip data: {real:SInt<16>, imag:SInt<16>}, 
+           addr: UInt<8>, 
+           en: UInt<1>, 
+           clk: Clock}
+ flip w: {data: {real:SInt<16>, imag:SInt<16>}, 
+          mask: {real:UInt<1>, imag:UInt<1>}, 
+          addr: UInt<8>, 
+          en: UInt<1>, 
+          clk: Clock}}
+\end{verbatim}
 
-\subsection{The Empty Statement}
-The empty statement is specified using the following.
-\[
-\begin{aligned}
-\kw{skip}
-\end{aligned}
-\]
-The empty statement does nothing and is used simply as a placeholder where a statement is expected.
-It is typically used as the alternative branch in a conditional statement. 
-In addition, it is useful for transformation pass writers.
+The following sections describe how a memory's field types are calculated and the behavior of each type of memory port.
+
+\subsubsection{Read Ports}
+If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then its read ports have type:
+\begin{verbatim}
+{flip data:T, addr:UInt<N>, en:UInt<1>, clk:Clock}
+\end{verbatim}
+
+If the \verb|en| field is high, then the element value associated with the address in the \verb|addr| field can be retrieved by reading from the \verb|data| field after the appropriate read latency. If the \verb|en| field is low, then the value in the \verb|data| field, after the appropriate read latency, is undefined. The port is driven by the clock signal in the \verb|clk| field.
+
+\subsubsection{Write Ports}
+If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then its write ports have type:
+\begin{verbatim}
+{data:T, mask:M, addr:UInt<N>, en:UInt<1>, clk:Clock}
+\end{verbatim}
+where \verb|M| is the mask type calculated from the element type \verb|T|. Intuitively, the mask type mirrors the aggregate structure of the element type except with all ground types replaced with a single bit unsigned integer type. The {\em non-masked portion} of the data value is defined as the set of data value leaf subelements where the corresponding mask leaf subelement is high.
+
+If the \verb|en| field is high, then the non-masked portion of the \verb|data| field value is written, after the appropriate write latency, to the location indicated by the \verb|addr| field. If the \verb|en| field is low, then no value is written after the appropriate write latency. The port is driven by the clock signal in the \verb|clk| field.
+
+\subsubsection{Readwrite Ports}
+Finally, the readwrite ports have type:
+\begin{verbatim}
+{rmode:UInt<1>, flip rdata:T, data:T, mask:M, 
+ addr:UInt<N>, en:UInt<1>, clk:Clock}
+\end{verbatim}
+A readwrite port is a single port that, on a given cycle, can be used either as a read or a write port. If the readwrite port is in read mode (the \verb|rmode| field is high), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is not in read mode (the \verb|rmode| field is low), then the \verb|data|, \verb|mask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly. 
+
+\subsubsection{Read Under Write Behaviour}
+
+The read-under-write flag indicates the value held on a read port's \verb|data| field if its memory location is written to while it is reading. The flag may take on three settings: \verb|old|, \verb|new|, and \verb|undefined|.
+
+If the read-under-write flag is set to \verb|old|, then a read port always returns the value existing in the memory on the same cycle that the read was requested. Intuitively, this is modeled as a combinational read from the memory that is then delayed by the appropriate read latency.
+
+If the read-under-write flag is set to \verb|new|, then a read port always returns the value existing in the memory on the same cycle that the read was made available. Intuitively, this is modeled as a combinational read from the memory after delaying the read address by the appropriate read latency.
+
+If the read-under-write flag is set to \verb|undefined|, then the value held by the read port after the appropriate read latency is undefined.
+
+In all cases, if a memory location is written to by more than one port on the same cycle, the stored value is undefined.
+
+\subsection{Instances}\label{instances}
+FIRRTL modules are instantiated with the instance statement. The following example demonstrates creating an instance named \verb|myinstance| of the \verb|MyModule| module within the top level module \verb|Top|. 
+
+\begin{verbatim}
+circuit Top :
+   module MyModule :
+      input a: UInt
+      output b: UInt
+      b <= a
+   module Top :
+      inst myinstance of MyModule   
+\end{verbatim}
+
+The resulting instance has a bundle type. Each port of the instantiated module is represented by a field in the bundle with the same name and type as the port. The fields corresponding to input ports are flipped to indicate their data flows in the opposite direction as the output ports. The \verb|myinstance| instance in the example above has type \verb|{flip a:UInt, b:UInt}|.
+
+Modules have the property that instances can always be {\em inlined} into the parent module without affecting the semantics of the circuit.
+
+To disallow infinitely recursive hardware, modules cannot contain instances of itself, either directly, or indirectly through instances of other modules it instantiates. 
+
+\subsection{Stops}
+The stop statement is used to halt simulations of the circuit. Backends are free to generate hardware to stop a running circuit for the purpose of debugging, but this is not required by the FIRRTL specification.
+
+A stop statement requires a clock signal, a halt condition signal that has a single bit unsigned integer type, and an integer exit code.
+
+\begin{verbatim}
+wire clk:Clock
+wire halt:UInt<1>
+stop(clk,halt,42)
+...
+\end{verbatim}
+
+\subsection{Formatted Prints}
+The formatted print statement is used to print a formatted string during simulations of the circuit. Backends are free to generate hardware that relays this information to a hardware test harness, but this is not required by the FIRRTL specification.
+
+A printf statement requires a clock signal, a print condition signal, a format string, and a variable list of argument signals. The condition signal must be a single bit unsigned integer type, and the argument signals must each have a ground type.
+
+\begin{verbatim}
+wire clk:Clock
+wire condition:UInt<1>
+wire a:UInt
+wire b:UInt
+printf(clk, condition, "a in hex: %x, b in decimal:%d.\n", a, b)
+...
+\end{verbatim}
+
+On each positive clock edge, when the condition signal is high, the printf statement prints out the format string where its argument placeholders are substituted with the value of the corresponding argument.
+
+\subsubsection{Format Strings}
+
+Format strings support the following argument placeholders:
+\begin{itemize}
+\item \verb|%b| : Prints the argument in binary
+\item \verb|%d| : Prints the argument in decimal
+\item \verb|%x| : Prints the argument in hexadecimal
+\item \verb|%%| : Prints a single \verb|%| character
+\end{itemize}
+
+Format strings support the following escape characters:
+\begin{itemize}
+\item \verb|\n| : New line
+\item \verb|\t| : Tab
+\item \verb|\\| : Back slash
+\item \verb|\"| : Double quote
+\item \verb|\'| : Single quote
+\end{itemize}
 
 \section{Expressions}
 
-FIRRTL expressions are used for creating values corresponding to the ground types, for referring to a declared circuit component, for accessing a nested element within a component, and for performing primitive operations. 
+FIRRTL expressions are used for creating literal unsigned and signed integers, for referring to a declared circuit component, for statically and dynamically accessing a nested element within a component, for creating multiplexors and conditionally valid signals, and for performing primitive operations. 
 
 \subsection{Unsigned Integers}
 
-A value of type \kws{UInt} can be directly created using the following expression.
-\[
-\kws{UInt}\kws{$<$} \pds{width} \kws{$>$}(\text{value})
-\]
-The given value must be non-negative, and the given width, if known, must be large enough to hold the value.
-If the width is specified as unknown, then FIRRTL infers the minimum possible width necessary to hold the value.
+A literal unsigned integer can be created given a non-negative integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number 42. 
+\begin{verbatim}
+UInt<10>(42)
+\end{verbatim}
+
+Note that it is an error to supply a bit width that is not large enough to fit the given value. If the bit width is omitted, then the minimum number of bits necessary to fit the given value will be inferred.
+\begin{verbatim}
+UInt(42)
+\end{verbatim}
 
 \subsection{Signed Integers}
 
-A value of type \kws{SInt} can be directly created using the following expression.
-\[
-\kws{SInt}\kws{$<$} \pds{width} \kws{$>$}(\text{value})
-\]
-The given width, if known, must be large enough to hold the given value in two's complement format.
-If the width is specified as unknown, then FIRRTL infers the minimum possible width necessary to hold the value.
+Similar to unsigned integers, a literal signed integer can be created given an integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number -42. 
+\begin{verbatim}
+SInt<10>(-42)
+\end{verbatim}
 
-\subsection{References}
-\[
-\text{name}
-\]
-A reference is simply a name that refers to some declared circuit component.
-A reference may refer to a port, a node, a wire, a register, an instance, a memory, a node, or a structural register.
+Note that it is an error to supply a bit width that is not large enough to fit the given value using two's complement representation. If the bit width is omitted, then the minimum number of bits necessary to fit the given value will be inferred.
+\begin{verbatim}
+SInt(-42)
+\end{verbatim}
 
-\subsection{Subfields}
-\[
-\pds{exp}.\text{name}
-\]
-The subfield expression may be used for one of two purposes:
+\subsection{Unsigned Bits}
+
+A literal unsigned integer can alternatively be created given a string representing its bit representation and an optional bit width. 
+
+The following radices are supported:
 \begin{enumerate}
-\item To refer to a specific port of an instance, using instance-name.port-name. 
-\item To refer to a specific field within a bundle-typed expression.
+\item \verb|0b| : For representing binary numbers.
+\item \verb|0o| : For representing octal numbers.
+\item \verb|0x| : For representing hexadecimal numbers.
 \end{enumerate}
 
-\subsection{Subindex}
-\[
-\pds{exp}[\text{index}]
-\]
-The subindex expression is used for referring to a specific element within a vector-valued expression.
-It is legal to use the subindex expression on any vector-valued expression, except for memories. 
+If a bit width is not given, the number of bits in the bit representation is directly represented by the string. The following examples create a 8-bit integer representing the number 13.
+\begin{verbatim}
+UBits("0b00001101")
+UBits("0x0D")
+\end{verbatim}
 
-\subsection{Primitive Operation}
-\[
-\pds{primop}(\pds{exp*}, \ints\text{*})
-\]
-There are a number of different primitive operations supported by FIRRTL. 
-Each operation takes some number of expressions, along with some number of integer literals.
-Section \ref{primitives} will describe the format and semantics of each operation.
+If a bit width is given, then the bit representation is truncated to the given bit width. It is an error to supply a bit width that is larger than the number of bits in the bit representation. The following examples create a 7-bit integer representing the number 13.
+\begin{verbatim}
+UBits<7>("0b00001101")
+UBits<7>("0o015")
+UBits<7>("0x0D")
+\end{verbatim}
 
+\subsection{Signed Bits}
+
+Similar to unsigned integers, a literal signed integer can alternatively be created given a string representing its bit representation and an optional bit width. 
+
+If a bit width is not given, the number of bits in the bit representation is directly represented by the string. The following examples create a 8-bit integer representing the number -13.
+\begin{verbatim}
+SBits("0b11110011")
+SBits("0xF3")
+\end{verbatim}
+
+If a bit width is given, then the bit representation is truncated to the given bit width. It is an error to supply a bit width that is larger than the number of bits in the bit representation. The following examples create a 7-bit integer representing the number -13.
+\begin{verbatim}
+SBits<7>("0b11110011")
+SBits<7>("0o763")
+SBits<7>("0xF3")
+\end{verbatim}
+
+\subsection{References}
+A reference is simply a name that refers to a previously declared circuit component. It may refer to a module port, node, wire, register, instance, or memory.
+
+The following example connects a reference expression \verb|in|, referring to the previously declared port \verb|in|, to the reference expression \verb|out|, referring to the previously declared port \verb|out|.
+
+\begin{verbatim}
+module MyModule :
+   input in: UInt
+   output out: UInt
+   out <= in
+\end{verbatim}
+
+In the rest of the document, for brevity, the names of components will be used to refer to a reference expression to that component. Thus, the above example will be rewritten as ``the port \verb|in| is connected to the port \verb|out|''.
+
+\subsection{Subfields}\label{subfields}
+The subfield expression refers to a subelement of an expression with a bundle type.
+
+The following example connects the \verb|in| port to the \verb|a| subelement of the \verb|out| port. 
+\begin{verbatim}
+module MyModule :
+   input in: UInt
+   output out: {a:UInt, b:UInt}
+   out.a <= in
+\end{verbatim}
+
+\subsection{Subindices}\label{subindices}
+The subindex expression statically refers, by index, to a subelement of an expression with a vector type. The index must be a non-negative integer and cannot be equal to or exceed the length of the vector it indexes.
+
+The following example connects the \verb|in| port to the fifth subelement of the \verb|out| port. 
+\begin{verbatim}
+module MyModule :
+   input in: UInt
+   output out: UInt[10]
+   out[4] <= in
+\end{verbatim}
+
+\subsection{Subaccesses}
+The subaccess expression dynamically refers to a subelement of a vector-typed expression using a calculated index. The index must be an expression with an unsigned integer type.
+
+The following example connects the n'th subelement of the \verb|in| port to the \verb|out| port.
+\begin{verbatim}
+module MyModule :
+   input in: UInt[3]
+   input n: UInt<2>
+   output out: UInt
+   out <= in[n]
+\end{verbatim}
+
+A connection from a subaccess expression can be modeled by conditionally connecting from every subelement in the vector, where the condition holds when the dynamic index is equal to the subelement's static index.
+\begin{verbatim}
+module MyModule :
+   input in: UInt[3]
+   input n: UInt<2>
+   output out: UInt
+   when eq(n, UInt(0)) :
+      out <= in[0]
+   else when eq(n, UInt(1)) :
+      out <= in[1]
+   else when eq(n, UInt(2)) :
+      out <= in[2]            
+   else :
+      out is invalid
+\end{verbatim}
+
+The following example connects the \verb|in| port to the n'th subelement of the \verb|out| port. All other subelements of the \verb|out| port are connected from the corresponding subelements of the \verb|default| port.
+\begin{verbatim}
+module MyModule :
+   input in: UInt
+   input default: UInt[3]
+   input n: UInt<2>
+   output out: UInt[3]
+   out <= default
+   out[n] <= in
+\end{verbatim}
+
+A connection to a subaccess expression can be modeled by conditionally connecting to every subelement in the vector, where the condition holds when the dynamic index is equal to the subelement's static index.
+\begin{verbatim}
+module MyModule :
+   input in: UInt
+   input default: UInt[3]
+   input n: UInt<2>
+   output out: UInt[3]   
+   out <= default
+   when eq(n, UInt(0)) :
+      out[0] <= in
+   else when eq(n, UInt(1)) :
+      out[1] <= in
+   else when eq(n, UInt(2)) :
+      out[2] <= in
+\end{verbatim}
+
+The following example connects the \verb|in| port to the m'th \verb|UInt| subelement of the n'th vector-typed subelement of the \verb|out| port. All other subelements of the \verb|out| port are connected from the corresponding subelements of the \verb|default| port.
+\begin{verbatim}
+module MyModule :
+   input in: UInt
+   input default: UInt[2][2]
+   input n: UInt<1>
+   input m: UInt<1>
+   output out: UInt[2][2]
+   out <= default
+   out[n][m] <= in
+\end{verbatim}
+
+A connection to an expression containing multiple nested subaccess expressions can also be modeled by conditionally connecting to every subelement in the expression. However the condition holds only when all dynamic indices are equal to all of the subelement's static indices.
+\begin{verbatim}
+module MyModule :
+   input in: UInt
+   input default: UInt[2][2]
+   input n: UInt<1>
+   input m: UInt<1>
+   output out: UInt[2][2]
+   out <= default
+   when and(eq(n, UInt(0)), eq(m, UInt(0))) :
+      out[0][0] <= in
+   else when and(eq(n, UInt(0)), eq(m, UInt(1))) :
+      out[0][1] <= in
+   else when and(eq(n, UInt(1)), eq(m, UInt(0))) :
+      out[1][0] <= in
+   else when and(eq(n, UInt(1)), eq(m, UInt(1))) :
+      out[1][1] <= in                  
+\end{verbatim}
+
+\subsection{Multiplexors}\label{multiplexors}
+
+A multiplexor outputs one of two input expressions depending on the value of an unsigned single bit selection signal. 
+
+The following example connects to the \verb|c| port the result of selecting between the \verb|a| and \verb|b| ports. The \verb|a| port is selected when the \verb|sel| signal is high, otherwise the \verb|b| port is selected.
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input b: UInt
+   input sel: UInt<1>   
+   output c: UInt
+   c <= mux(sel, a, b)
+\end{verbatim}
+
+A multiplexor expression is legal only if the following holds.
+\begin{enumerate}
+\item The type of the selection signal is a single bit unsigned integer.
+\item The types of the two input expressions are equivalent.
+\item The types of the two input expressions are passive (see section \ref{passive_types}).
+\end{enumerate}
+
+\subsection{Conditionally Valids} \label{conditionally_valids}
+
+A conditionally valid expression is expressed as an input expression guarded with an unsigned single bit valid signal. It outputs the input expression when the valid signal is high, otherwise the result is undefined.
+
+The following example connects the \verb|a| port to the \verb|c| port when the \verb|valid| signal is high. Otherwise, the value of the \verb|c| port is undefined.
+\begin{verbatim}
+module MyModule :
+   input a: UInt
+   input valid: UInt<1>   
+   output c: UInt
+   c <= validif(valid, a)
+\end{verbatim}
+
+A conditionally valid expression is legal only if the following holds.
+\begin{enumerate}
+\item The type of the valid signal is a single bit unsigned integer.
+\item The type of the input expression is passive (see section \ref{passive_types}).
+\end{enumerate}
+
+Conditional statements can be equivalently expressed as multiplexors and conditionally valid expressions. See section \ref{conditionals} for details.
+
+\subsection{Primitive Operations}
+
+All fundamental operations on ground types are expressed as a FIRRTL primitive operation. In general, each operation takes some number of argument expressions, along with some number of static integer literal parameters. 
+
+The general form of a primitive operation is expressed as follows:
+\begin{verbatim}
+op(arg0, arg1, ..., argn, int0, int1, ..., intm)
+\end{verbatim}
+
+The following examples of primitive operations demonstrate adding two expressions, \verb|a| and \verb|b|, shifting expression \verb|a| left by 3 bits, selecting the fourth bit through and including the seventh bit in the \verb|a| expression, and interpreting the expression \verb|x| as a Clock typed signal.
+\begin{verbatim}
+add(a, b)
+shl(a, 3)
+bits(a, 7, 4)
+asClock(x)
+\end{verbatim}
+
+Section \ref{primitives} will describe the format and semantics of each primitive operation.
 
 \section{Primitive Operations} \label{primitives}
 
-All primitive operations expression operands must be ground types.
-In addition, some operations allow all permutations of operand ground types, while others on allow subsets.
-When well defined, input arguments are allowed to be differing widths, with the semantics of sign-extending the input arguments prior to executing the operation.
+%====Macros======
+\newcommand{\vv}[1]{{\ttfamily #1}}
+\newcommand{\ts}[1]{\textsubscript{#1}}
+\newcommand{\nf}[1]{\normalfont{\textbf{#1}}}
+\newcommand{\opheader}{
+ \hline
+    \multicolumn{1}{|c|}{\nf{Name}} 
+  & \multicolumn{1}{c|}{\nf{Arguments}}
+  & \multicolumn{1}{c|}{\nf{Parameters}}
+  & \multicolumn{1}{c|}{\nf{Arg Types}}
+  & \multicolumn{1}{c|}{\nf{Result Type}}
+  & \multicolumn{1}{c|}{\nf{Result Width}}\\
+\hline  
+}
+
+The arguments of all primitive operations must have ground types. Each specific operation can place additional restrictions on the number and types of their arguments.
+
+Notationally, the width of an argument \vv{e} is represented as \vv{w}\ts{e}.
 
 \subsection{Add Operation}
-\[
-\begin{array}{rll}
-\kws{Input Types} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{add}(\pds{op1}:UInt, \pds{op2}:UInt) & UInt & max(width(op1),width(op2)) + 1 \\
-\kws{add}(\pds{op1}:UInt, \pds{op2}:SInt) & SInt & max(width(op1),width(op2)) + 1 \\
-\kws{add}(\pds{op1}:SInt, \pds{op2}:UInt) & SInt & max(width(op1),width(op2)) + 1 \\
-\kws{add}(\pds{op1}:SInt, \pds{op2}:SInt) & SInt & max(width(op1),width(op2)) + 1 \\
-\end{array}
-\]
-The resultant's value is 1-bit larger than the wider of the two operands and has a signed type if either operand is signed (otherwise is unsigned).
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+add & (e1,e2) & () & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})+1\\
+                 &&& (UInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+                 &&& (SInt,UInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+                 &&& (SInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+The add operation result is the sum of \vv{e1} and \vv{e2} without loss of precision.
 
 \subsection{Subtract Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{sub}(\pds{op1}:UInt, \pds{op2}:UInt) &  SInt & max(width(op1),width(op2)) + 1  \\
-\kws{sub}(\pds{op1}:UInt, \pds{op2}:SInt) &  SInt & max(width(op1),width(op2)) + 1  \\
-\kws{sub}(\pds{op1}:SInt, \pds{op2}:UInt) &  SInt & max(width(op1),width(op2)) + 1  \\
-\kws{sub}(\pds{op1}:SInt, \pds{op2}:SInt) &  SInt & max(width(op1),width(op2)) + 1  \\
-\end{array}
-\]
-The subtraction operation works similarly to the add operation, but always returns a signed integer with a width that is 1-bit wider than the max of the widths of the two operands.
 
-\subsection{Add Wrap Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{addw}(\pds{op1}:UInt, \pds{op2}:UInt) & UInt & max(width(op1),width(op2)) \\
-\kws{addw}(\pds{op1}:UInt, \pds{op2}:SInt) & SInt & max(width(op1),width(op2)) \\
-\kws{addw}(\pds{op1}:SInt, \pds{op2}:UInt) & SInt & max(width(op1),width(op2)) \\
-\kws{addw}(\pds{op1}:SInt, \pds{op2}:SInt) & SInt & max(width(op1),width(op2)) \\
-\end{array}
-\]
-The add wrap operation works identically to the normal add operation except that the resultant width is the maximum of the width of the two operands, instead of 1 bit greater than the maximum.
-In the case of overflow, the result silently rolls over.
-
-\subsection{Subtract Wrap Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{subw}(\pds{op1}:UInt, \pds{op2}:UInt) & UInt & max(width(op1),width(op2)) \\
-\kws{subw}(\pds{op1}:UInt, \pds{op2}:SInt) & SInt & max(width(op1),width(op2)) \\
-\kws{subw}(\pds{op1}:SInt, \pds{op2}:UInt) & SInt & max(width(op1),width(op2)) \\
-\kws{subw}(\pds{op1}:SInt, \pds{op2}:SInt) & SInt & max(width(op1),width(op2)) \\
-\end{array}
-\]
-Similarly to the add wrap operation, the subtract wrap operation works identically to the normal subtract operation except that the resultant width is the maximum of the width of the two operands.
-In the case of overflow, the result silently rolls over.
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+sub & (e1,e2) & () & (UInt,UInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+                 &&& (UInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+                 &&& (SInt,UInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+                 &&& (SInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+The subtract operation result is \vv{e2} subtracted from \vv{e1}, without loss of precision.
 
 \subsection{Multiply Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{mul}(\pds{op1}:UInt, \pds{op2}:UInt) &   UInt & width(op1) + width(op2)  \\
-\kws{mul}(\pds{op1}:UInt, \pds{op2}:SInt) &   SInt & width(op1) + width(op2)  \\
-\kws{mul}(\pds{op1}:SInt, \pds{op2}:UInt) &   SInt & width(op1) + width(op2)  \\
-\kws{mul}(\pds{op1}:SInt, \pds{op2}:SInt) &   SInt & width(op1) + width(op2)  \\
-\end{array}
-\]
-The resultant value has width equal to the sum of the widths of its two operands.
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+mul & (e1,e2) & () & (UInt,UInt) & UInt & w\ts{e1}+w\ts{e2}\\
+                 &&& (UInt,SInt) & SInt & w\ts{e1}+w\ts{e2}\\
+                 &&& (SInt,UInt) & SInt & w\ts{e1}+w\ts{e2}\\
+                 &&& (SInt,SInt) & SInt & w\ts{e1}+w\ts{e2}\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+The multiply operation result is the product of \vv{e1} and \vv{e2}, without loss of precision.
 
 \subsection{Divide Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{div}(\pds{op1}:UInt, \pds{op2}:UInt) &   UInt & width(op1)     \\
-\kws{div}(\pds{op1}:UInt, \pds{op2}:SInt) &   SInt & width(op1) + 1  \\
-\kws{div}(\pds{op1}:SInt, \pds{op2}:UInt) &   SInt & width(op1)     \\
-\kws{div}(\pds{op1}:SInt, \pds{op2}:SInt) &   SInt & width(op1) + 1  \\
-\end{array}
-\]
-The first argument is the dividend, the second argument is the divisor.
-The resultant width of a divide operation is equal to the width of the dividend, plus one if the divisor is an SInt.
-The resultant value follows the following formula : div(a,b) = round-towards-zero(a/b) + mod(a,b)
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+div & (num,den) & () & (UInt,UInt) & UInt & w\ts{num}\\
+                   &&& (UInt,SInt) & SInt & w\ts{num}+1\\
+                   &&& (SInt,UInt) & SInt & w\ts{num}\\
+                   &&& (SInt,SInt) & SInt & w\ts{num}+1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+The divide operation divides \vv{num} by \vv{den}, truncating the fractional portion of the result. This is equivalent to rounding the result towards zero.
 
 \subsection{Modulus Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{mod}(\pds{op1}:UInt, \pds{op2}:UInt) &   UInt & width(op2)     \\
-\kws{mod}(\pds{op1}:UInt, \pds{op2}:SInt) &   UInt & width(op2)     \\
-\kws{mod}(\pds{op1}:SInt, \pds{op2}:UInt) &   SInt & width(op2) + 1 \\
-\kws{mod}(\pds{op1}:SInt, \pds{op2}:SInt) &   SInt & width(op2)     \\
-\end{array}
-\]
 
-The first argument is the dividend, the second argument is the divisor.
-The resultant width of a modulus operation is equal to the width of the divisor, except when the modulus is positive and the result can be negative.
-The resultant value follows the following formula : div(a,b) = round-towards-zero(a/b) + mod(a,b)
-
-\subsection{Quotient Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{quo}(\pds{op1}:UInt, \pds{op2}:UInt) &   UInt & width(op1) + 1 \\
-\kws{quo}(\pds{op1}:UInt, \pds{op2}:SInt) &   SInt & width(op1)     \\
-\kws{quo}(\pds{op1}:SInt, \pds{op2}:UInt) &   SInt & width(op1) + 1 \\
-\kws{quo}(\pds{op1}:SInt, \pds{op2}:SInt) &   SInt & width(op1)     \\
-\end{array}
-\]
-
-The first argument is the dividend, the second argument is the divisor.
-The resultant width of a quotient operation is equal to the width of the dividend, plus one if the divisor is an SInt.
-The resultant value follows the following formula : quo(a,b) = floor(a/b) + rem(a,b)
-
-\subsection{Remainder Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{rem}(\pds{op1}:UInt, \pds{op2}:UInt) &   UInt & width(op2)     \\
-\kws{rem}(\pds{op1}:UInt, \pds{op2}:SInt) &   SInt & width(op2)     \\
-\kws{rem}(\pds{op1}:SInt, \pds{op2}:UInt) &   UInt & width(op2) + 1 \\
-\kws{rem}(\pds{op1}:SInt, \pds{op2}:SInt) &   SInt & width(op2)     \\
-\end{array}
-\]
-
-The first argument is the dividend, the second argument is the divisor.
-The resultant width of a modulus operation is equal to the width of the divisor, except when the divisor is positive and the result can be negative.
-The resultant value follows the following formula : quo(a,b) = floor(a/b) + rem(a,b)
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+mod & (num,den) & () & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
+                   &&& (UInt,SInt) & UInt & min(w\ts{num},w\ts{den})\\
+                   &&& (SInt,UInt) & SInt & min(w\ts{num},w\ts{den}+1)\\
+                   &&& (SInt,SInt) & SInt & min(w\ts{num},w\ts{den})\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+The modulus operation yields the remainder from dividing \vv{num} by \vv{den}, keeping the sign of the numerator. Together with the divide operator, the modulus operator satisfies the relationship below:
+\begin{verbatim}
+num = add(mul(den,div(num,den)),mod(num,den))}
+\end{verbatim}
 
 \subsection{Comparison Operations}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{lt}      (\pds{op1}:UInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{lt}      (\pds{op1}:UInt, \pds{op2}:SInt) & UInt & 1    \\
-\kws{lt}      (\pds{op1}:SInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{lt}      (\pds{op1}:SInt, \pds{op2}:SInt) & UInt & 1    \\
-\kws{leq}     (\pds{op1}:UInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{leq}     (\pds{op1}:UInt, \pds{op2}:SInt) & UInt & 1    \\
-\kws{leq}     (\pds{op1}:SInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{leq}     (\pds{op1}:SInt, \pds{op2}:SInt) & UInt & 1    \\
-\kws{gt}      (\pds{op1}:UInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{gt}      (\pds{op1}:UInt, \pds{op2}:SInt) & UInt & 1    \\
-\kws{gt}      (\pds{op1}:SInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{gt}      (\pds{op1}:SInt, \pds{op2}:SInt) & UInt & 1    \\
-\kws{geq}     (\pds{op1}:UInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{geq}     (\pds{op1}:UInt, \pds{op2}:SInt) & UInt & 1    \\
-\kws{geq}     (\pds{op1}:SInt, \pds{op2}:UInt) & UInt & 1    \\
-\kws{geq}     (\pds{op1}:SInt, \pds{op2}:SInt) & UInt & 1    \\
-\end{array}
-\]
-Each operation accepts any combination of SInt or UInt input arguments, and always returns a single-bit unsigned integer.
 
-\subsection{Equality Comparison}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{eq}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
-\kws{eq}(\pds{op1}:UInt, \pds{op2}:SInt)     & UInt & 1 \\
-\kws{eq}(\pds{op1}:SInt, \pds{op2}:UInt)     & UInt & 1 \\
-\kws{eq}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
-\end{array}
-\]
-The equality comparison operator accepts either two unsigned or signed integers and checks whether they are arithmetically equal.
-The resulting value is a 1-bit unsigned integer. 
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+lt,leq,gt, & (e1,e2) & () & (UInt,UInt) & UInt & 1\\
+geq,eq,neq              &&& (UInt,SInt) & UInt & 1\\
+                        &&& (SInt,UInt) & UInt & 1\\
+                        &&& (SInt,SInt) & UInt & 1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+The comparison operations return an unsigned 1 bit signal with value one if \vv{e1} is less than (\vv{lt}), less than or equal to (\vv{leq}), greater than (\vv{gt}), greater than or equal to (\vv{geq}), equal to (\vv{eq}), or not equal to (\vv{neq}) \vv{e2}. The operation returns a value of zero otherwise.
 
-\subsection{Not-Equality Comparison}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{neq}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
-\kws{neq}(\pds{op1}:UInt, \pds{op2}:SInt)     & UInt & 1 \\
-\kws{neq}(\pds{op1}:SInt, \pds{op2}:UInt)     & UInt & 1 \\
-\kws{neq}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
-\end{array}
-\]
-The not-equality comparison operator accepts either two unsigned or signed integers and checks whether they are arithmetically not equal.
-The resulting value is a 1-bit unsigned integer. 
+\subsection{Padding Operations}
 
-\subsection{Equivalence Comparison}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{eqv}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
-\kws{eqv}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
-\end{array}
-\]
-The equivalence comparison operator accepts either two unsigned or two signed integers and checks whether they are bitwise equivalent.
-The resulting value is a 1-bit unsigned integer. 
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+pad & (e) & (n) & (UInt) & UInt & max(w\ts{e},n)\\
+              &&& (SInt) & SInt & max(w\ts{e},n)\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-For an arithmetic equals between a signed and unsigned integer, use the equality operator.
+If \vv{e}'s bit width is smaller than \vv{n}, then the pad operation sign-extends or zero-extends \vv{e} up to the given width \vv{n}. Otherwise, the result is simply \vv{e}. \vv{n} must be non-negative.
 
-\subsection{Not-Equivalence Comparison}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{neqv}(\pds{op1}:UInt, \pds{op2}:UInt)     & UInt & 1 \\
-\kws{neqv}(\pds{op1}:SInt, \pds{op2}:SInt)     & UInt & 1 \\
-\end{array}
-\]
-The not-equivalent comparison operator accepts either two unsigned or two signed integers and checks whether they are not bitwise equivalent.
-The resulting value is a 1-bit unsigned integer. 
+\subsection{Interpret As UInt}
 
-If an arithmetic not-equals between a signed and unsigned integer is desired, use the not-equals operator.
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+asUInt & (e) & () & (UInt) & UInt & w\ts{e}\\
+                &&& (SInt) & UInt & w\ts{e}\\
+                &&& (Clock) & UInt & 1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-\subsection{Multiplex}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{mux}  (\pds{condition}:UInt, \pds{op1}:UInt, \pds{op2}:UInt) & UInt & max(width(op1),width(op2)) \\
-\kws{mux}  (\pds{condition}:UInt, \pds{op1}:SInt, \pds{op2}:SInt) & SInt & max(width(op1),width(op2)) \\
-\end{array}
-\]
-The multiplex operation accepts three signals, a 1-bit unsigned integer for the condition expression, followed by either two unsigned integers, or two signed integers.
-If the condition is high, then the result is equal to the first of the two following operands.
-If the condition is low, then the result is the second of the two following operands. 
+The interpret as UInt operation reinterprets \vv{e}'s bits as an unsigned integer.
 
-The output is of the same width as the max width of the inputs.
+\subsection{Interpret As SInt}
 
-\subsection{Padding Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{pad}(\pds{op}:UInt, \text{num})     & UInt & num \\
-\kws{pad}(\pds{op}:SInt, \text{num})     & SInt & num \\
-\end{array}
-\]
-A pad operation is provided which either zero-extends or sign-extends an expression to a specified width.
-The given width, num, must be equal to or greater than the existing width of the expression. 
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+asSInt & (e) & () & (UInt) & SInt & w\ts{e}\\
+                &&& (SInt) & SInt & w\ts{e}\\
+                &&& (Clock) & SInt & 1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-\subsection{Reinterpret Bits as UInt}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{asUInt}(\pds{op1}:UInt)       & UInt & width(op1) \\
-\kws{asUInt}(\pds{op1}:SInt)       & UInt & width(op1) \\
-\end{array}
-\]
-Regardless of input type, primop returns a UInt with the same width as the operand.
+The interpret as SInt operation reinterprets \vv{e}'s bits as a signed integer according to two's complement representation.
 
-\subsection{Reinterpret Bits as SInt}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{asSInt}(\pds{op1}:UInt)     & SInt & width(op1) \\
-\kws{asSInt}(\pds{op1}:SInt)     & SInt & width(op1) \\
-\end{array}
-\]
-Regardless of input type, primop returns a SInt with the same width as the operand.
+\subsection{Interpret as Clock}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+asClock & (e) & () & (UInt) & Clock & n/a\\
+                 &&& (SInt) & Clock & n/a\\
+                 &&& (Clock) & Clock & n/a\\                 
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The result of the interpret as clock operation is the Clock typed signal obtained from interpreting a single bit integer as a clock signal. 
 
 \subsection{Shift Left Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{shl}(\pds{op}:UInt, \text{num})      & UInt & width(op) + num \\
-\kws{shl}(\pds{op}:SInt, \text{num})      & SInt & width(op) + num \\
-\end{array}
-\]
-The shift left operation accepts either an unsigned or a signed integer, plus a non-negative integer literal specifying the number of bits to shift.
-The resultant value has the same type as the operand.
-The output of a shift left operation is equal to the original signal concatenated with $n$ zeros at the end, where $n$ is the shift amount.
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+shl & (e) & (n) & (UInt) & UInt & w\ts{e}+n\\
+              &&& (SInt) & SInt & w\ts{e}+n\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The shift left operation concatenates \vv{n} zero bits to the least significant end of \vv{e}. \vv{n} must be non-negative.
 
 \subsection{Shift Right Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{shr}(\pds{op}:UInt, \text{num})      & UInt & width(op) - num \\
-\kws{shr}(\pds{op}:SInt, \text{num})      & SInt & width(op) - num \\
-\end{array}
-\]
-The shift right operation accepts either an unsigned or a signed integer, plus a non-negative integer literal specifying the number of bits to shift.
-The resultant value has the same type as the operand.
-The shift amount must be less than or equal to the width of the operand.
-The output of a shift right operation is equal to the original signal with the least significant $num$ bits truncated, where $num$ is the shift amount.
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+shr & (e) & (n) & (UInt) & UInt & w\ts{e}-n\\
+              &&& (SInt) & SInt & w\ts{e}-n\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The shift right operation truncates the least significant \vv{n} bits from \vv{e}. \vv{n} must be non-negative and strictly less than the bit width of \vv{e}.
 
 \subsection{Dynamic Shift Left Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{dshl}(\pds{op1}:UInt, \pds{op2}:UInt)  & UInt & width(op1) + pow(2,width(op2)) \\
-\kws{dshl}(\pds{op1}:SInt, \pds{op2}:UInt)  & SInt & width(op1) + pow(2,width(op2)) \\
-\end{array}
-\]
-The dynamic shift left operation accepts either an unsigned or a signed integer, plus an unsigned integer dynamically specifying the number of bits to shift.
-The resultant value has the same type as the operand.
-The output of a dynamic shift left operation is equal to the original signal concatenated with $n$ zeros at the end, where $n$ is the dynamic shift amount.
-The output width of a dynamic shift left operation is the width of the original signal plus 2 raised to the width of the dynamic shift amount.
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+dshl & (e, n) & () & (UInt, UInt) & UInt & w\ts{e}\\
+                 &&& (SInt, UInt) & SInt & w\ts{e}\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The dynamic shift left operation shifts the bits in \vv{e} \vv{n} places towards the most significant bit. \vv{n} zeroes are shifted in to the least significant bits, and the \vv{n} most significant bits are truncated.
 
 \subsection{Dynamic Shift Right Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{dshr}(\pds{op1}:UInt, \pds{op2}:UInt)  & UInt & width(op1) \\
-\kws{dshr}(\pds{op1}:SInt, \pds{op2}:UInt)  & SInt & width(op1) \\
-\end{array}
-\]
-The shift right operation accepts either an unsigned or a signed integer, plus a non-negative integer literal specifying the number of bits to shift.
-The resultant value has the same type as the operand.
-The shift amount must be less than or equal to the width of the operand.
-The output of a shift right operation is equal to the original signal with the least significant $n$ bits truncated, where $n$ is the dynamic shift amount.
-The output width of a dynamic shift right operation is the width of the original signal.
 
-\subsection{Logical Convert to Signed}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{cvt}(\pds{op}:UInt)      & SInt & width(op) + 1 \\
-\kws{cvt}(\pds{op}:SInt)      & SInt & width(op) \\
-\end{array}
-\]
-The convert operation accepts either an unsigned or a signed integer.
-The resultant value is always a signed integer.
-The output of a convert operation will be the same arithmetic value as the input value.
-The output width is the same as the input width if the input is signed, and increased by one if the input is unsigned.
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+dshr & (e, n) & () & (UInt, UInt) & UInt & w\ts{e}\\
+                 &&& (SInt, UInt) & SInt & w\ts{e}\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-\subsection{Negate}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{neg}(\pds{op1}:UInt)       & SInt & width(op1) + 1 \\
-\kws{neg}(\pds{op1}:SInt)       & SInt & width(op1) \\
-\end{array}
-\]
-If the input type is UInt, primop returns the negative value as an SInt with the width of the operand plus one.
-If the input type is SInt, primop returns -1 * input value, as an SInt with the same width of the operand.
+The dynamic shift right operation shifts the bits in \vv{e} \vv{n} places towards the least significant bit. \vv{n} signed or zeroed bits are shifted in to the most significant bits, and the \vv{n} least significant bits are truncated.
 
-\subsection{Bitwise Operations}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{not}     (\pds{op1:UInt}) & UInt & width(op1)    \\
-\kws{and}     (\pds{op1:UInt}, \pds{op2:UInt}) & UInt & max(width(op1),width(op2))    \\
-\kws{or}      (\pds{op1:UInt}, \pds{op2:UInt}) & UInt & max(width(op1),width(op2))    \\
-\kws{xor}     (\pds{op1:UInt}, \pds{op2:UInt}) & UInt & max(width(op1),width(op2))    \\
-\end{array}
-\]
-The above operations correspond to bitwise not, and, or, and exclusive or respectively.
-The operands must be unsigned integers, and the resultant width is equal to the width of the wider of the two operands. 
+\subsection{Arithmetic Convert to Signed Operation}
 
-\subsection{Reduce Bitwise Operations}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{andr}     (\pds{op:UInt}) & UInt & 1    \\
-\kws{orr}      (\pds{op:UInt}) & UInt & 1    \\
-\kws{xorr}     (\pds{op:UInt}) & UInt & 1    \\
-\end{array}
-\]
-The above operations correspond to bitwise not, and, or, and exclusive or respectively, reduced over every bit of a single unsigned integer.
-The resultant width is always one.
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+cvt & (e) & () & (UInt) & SInt & w\ts{e}+1\\
+             &&& (SInt) & SInt & w\ts{e}\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-\subsection{Concatenation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{cat}(\pds{op1}:UInt, \pds{op2}:UInt)  & UInt & width(op1) + width(op2)    \\
-\end{array}
-\]
-The concatenation operator accepts two unsigned integers and returns the bitwise concatenation of the two values as an unsigned integer.
-The resultant width is the sum of the widths of the two operands.
+The result of the arithmetic convert to signed operation is a signed integer representing the same numerical value as \vv{e}.
+
+\subsection{Negate Operation}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+neg & (e) & () & (UInt) & SInt & w\ts{e}+1\\
+             &&& (SInt) & SInt & w\ts{e}+1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The result of the negate operation is a signed integer representing the negated numerical value of \vv{e}.
+
+\subsection{Bitwise Complement Operation}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+not & (e)       & () & (UInt) & UInt & w\ts{e}\\
+                   &&& (SInt) & UInt & w\ts{e}\\                                       
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The bitwise complement operation performs a logical not on each bit in \vv{e}. 
+
+\subsection{Binary Bitwise Operations}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+and,or,xor & (e1, e2)  & () & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})\\
+                            &&& (UInt,SInt) & UInt & max(w\ts{e1},w\ts{e2})\\
+                            &&& (SInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})\\
+                            &&& (SInt,SInt) & UInt & max(w\ts{e1},w\ts{e2})\\                                      
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The above bitwise operations perform a bitwise and, or, or exclusive or on \vv{e1} and \vv{e2}. The result has the same width as its widest argument, and any narrower arguments are automatically zero-extended or sign-extended to match the width of the result before performing the operation.
+
+\subsection{Bitwise Reduction Operations}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+andr,orr,xorr & (e)  & () & (UInt) & UInt & 1\\
+                        &&& (SInt) & UInt & 1\\                                      
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The bitwise reduction operations correspond to a bitwise and, or, and exclusive or operation, reduced over every bit in \vv{e}.
+
+\subsection{Concatenate Operation}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+cat & (e1,e2) & () & (UInt, UInt) & UInt & w\ts{e1}+w\ts{e2}\\
+                 &&& (UInt, SInt) & UInt & w\ts{e1}+w\ts{e2}\\
+                 &&& (SInt, UInt) & UInt & w\ts{e1}+w\ts{e2}\\
+                 &&& (SInt, SInt) & UInt & w\ts{e1}+w\ts{e2}\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The result of the concatenate operation is the bits of \vv{e1} concatenated to the most significant end of the bits of \vv{e2}. 
 
 \subsection{Bit Extraction Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{bit}(\pds{op}:UInt, \text{index})  & UInt & 1    \\
-\end{array}
-\]
-The bit extraction operation accepts an unsigned integer, plus an integer literal specifying the index of the bit to extract.
-The resultant value is a 1-bit unsigned integer.
-The index must be non-negative and less than the width of the operand.
-An index of zero indicates the least significant bit in the operand, and an index of one less than the width the operand indicates the most significant bit in the operand.
 
-\subsection{Bit Range Extraction Operation}
-\[
-\begin{array}{rll}
-\kws{primop} & \kws{Resultant Type} & \kws{Resultant Width} \\
-\kws{bits}(\pds{op}:UInt, \text{high}, \text{low})  & UInt & high - low + 1    \\
-\end{array}
-\]
-The bit range extraction operation accepts either an unsigned integer, plus two integer literals that specify the high (inclusive) and low (inclusive) index of the bit range to extract.
-The index must be non-negative and less than the width of the operand.
-Regardless of the type of the operand, the resultant value is a $n$-bit unsigned integer, where $n = \text{high} - \text{low} + 1$. 
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+bits & (e) & (hi,lo) & (UInt) & UInt & hi-lo+1\\
+                   &&& (SInt) & UInt & hi-lo+1\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-\section{FIRRTL Forms}
+The result of the bit extraction operation are the bits of \vv{e} between \vv{lo} (inclusive) and \vv{hi} (inclusive). \vv{hi} must be greater than or equal to \vv{lo}. Both \vv{hi} and \vv{lo} must be non-negative and strictly less than the bit width of \vv{e}.
 
-To simplify the writing of transformation passes, any FIRRTL implementation will provide a {\em resolving} pass, which resolves all types, widths, and checks the legality of the circuit, and a {\em lowering} pass, which rewrites any FIRRTL circuit into an equivalent {\em lowered form}, or LoFIRRTL.
+\subsection{Head}
 
-\subsection{Resolved Form}
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+head & (e) & (n) & (UInt) & UInt & n\\
+               &&& (SInt) & UInt & n\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-The resolved form is guaranteed to be well-formed, meaning all restrictions to a FIRRTL circuit have been checked. In addition, all unknown widths and inferred accessor directions have been resolved.
+The result of the head operation are the \vv{n} most significant bits of \vv{e}. \vv{n} must be positive and less than or equal to the bit width of \vv{e}.
 
-\subsection{Lowered Form}
+\subsection{Tail}
 
-The lowered form, LoFIRRTL, is a structured subset of FIRRTL, making it a minimal representation that is convenient for low-level transforms. 
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }   
+  \opheader 
+tail & (e) & (n) & (UInt) & UInt & w\ts{e}-n\\
+               &&& (SInt) & UInt & w\ts{e}-n\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
 
-The body of a lowered module consists of a list of declarations, connect statements, and {\em predicated single connect statements}.
-A predicated single connect statement is a conditional statement containing a single connect statement and no else branch.
+The tail operation truncates the \vv{n} most significant bits from \vv{e}. \vv{n} must be non-negative and strictly less than the bit width of \vv{e}.
 
-The following circuit is lowered:
-\[
-\begin{aligned}
-&\kw{module} \text{MyCounter} :                              \\
-&\quad \kw{clock} \text{clk : UInt$<$1$>$}                        \\
-&\quad \kw{input} \text{reset : UInt$<$1$>$}                        \\
-&\quad \kw{input} \text{inc : UInt$<$1$>$}                           \\
-&\quad \kw{output} \text{out : UInt$<$3$>$}                         \\
-&\quad \kw{reg} \text{counter : UInt$<$3$>$, clk, reset} \\
-&\quad \kw{when} \text{inc : counter $<$= addw(counter, UInt$<$1$>$(1))}   \\
-&\quad \text{out $<$= counter}  \\
-\end{aligned}
-\]
+\section{Genders}\label{genders}
 
-The following restrictions also hold for modules in LoFIRRTL.
+An expression's gender partially determines the legality of connecting to and from the expression. Every expression is classified as either {\em male}, {\em female}, or {\em bi-gender}. For details on connection rules refer back to sections \ref{connects} and \ref{partial_connects}.
 
+The gender of a reference to a declared circuit component depends on the kind of circuit component. A reference to an input port, an instance, a memory, and a node, is male. A reference to an output port is female. A reference to a wire or register is bi-gender.
+
+The gender of a subindex or subaccess expression is the gender of the vector-typed expression it indexes or accesses.
+
+The gender of a subfield expression depends upon the orientation of the field. If the field is not flipped, its gender is the same gender as the bundle-typed expression it selects its field from. If the field is flipped, then its gender is the reverse of the gender of the bundle-typed expression it selects its field from. The reverse of male is female, and vice-versa. The reverse of bi-gender remains bi-gender.
+
+The gender of all other expressions are male.
+
+\section{Width Inference}\label{width_inference}
+
+For all circuit components declared with unspecified widths, the FIRRTL compiler will infer the minimum possible width that maintains the legality of all its incoming connections. If a component has no incoming connections, and the width is unspecified, then an error is thrown to indicate that the width could not be inferred. 
+
+For module input ports with unspecified widths, the inferred width is the minimum possible width that maintains the legality of all incoming connections to all instantiations of the module.
+
+The width of a ground-typed multiplexor expression is the maximum of its two corresponding input widths. For multiplexing aggregate-typed expressions, the resulting widths of each leaf subelement is the maximum of its corresponding two input leaf subelement widths.
+
+The width of a conditionally valid expression is the width of its input expression.
+
+The width of each primitive operation is detailed in section \ref{primitives}.
+
+The width of the integer literal expressions is detailed in their respective sections.
+
+\section{Namespaces}
+
+All modules in a circuit exist in the same module namespace, and thus must all have a unique name.
+
+Each module has an identifier namespace containing the names of all port and circuit component declarations. Thus, all declarations within a module must have unique names. Furthermore, the set of component declarations within a module must be {\em prefix unique}. Please see section \ref{prefix_unique} for the definition of prefix uniqueness.
+
+Within a bundle type declaration, all field names must be unique.
+
+Within a memory declaration, all port names must be unique.
+
+During the lowering transformation, all circuit component declarations with aggregate types are rewritten as a group of component declarations, each with a ground type. The name expansion algorithm in section \ref{expansion_algorithm} calculates the names of all replacement components derived from the original aggregate-typed component.
+
+After the lowering transformation, the names of the lowered circuit components are guaranteed by the name expansion algorithm and thus can be reliably referenced by users to pair meta-data or other annotations with named circuit components.
+
+\subsection{Name Expansion Algorithm} \label{expansion_algorithm}
+
+Given a component with a ground type, the name of the component is returned.
+
+Given a component with a vector type, the suffix \verb|$|{\em i} is appended to the expanded names of each subelement, where {\em i} is the index of each subelement.
+
+Given a component with a bundle type, the suffix \verb|$|{\em f} is appended to the expanded names of each subelement, where {\em f} is the field name of each subelement.
+
+\subsection{Prefix Uniqueness} \label{prefix_unique}
+
+The {\em symbol sequence} of a name is the ordered list of strings that results from splitting the name at each occurence of the `\$' character.
+
+A symbol sequence $a$ is a {\em prefix} of another symbol sequence $b$ if the strings in $a$ occur in the beginning of $b$.
+
+A set of names are defined to be {\em prefix unique} if there exists no two names such that the symbol sequence of one is a prefix of the symbol sequence of the other.
+
+As an example \verb|firetruck$y$z| shares a prefix with \verb|firetruck$y| and \verb|firetruck|, but does not share a prefix with \verb|fire|.
+
+\section{The Lowered FIRRTL Form}
+
+The lowered FIRRTL form, LoFIRRTL, is a restricted subset of the FIRRTL language that omits many of the higher level constructs. All conformant FIRRTL compilers must provide a {\em lowering transformation} that transforms arbitrary FIRRTL circuits into equivalent LoFIRRTL circuits.
+
+A FIRRTL circuit is defined to be a valid LoFIRRTL circuit if it obeys the following restrictions:
 \begin{itemize}
-\item \kws{No Nested Expressions} : 
-In the declaration of the structural elements, the only nested expressions allowed are references, and unsigned and signed literals.
-All other nested expressions must be lifted to a named node, and referred to through a reference. 
-\item \kws{No Composite Types} :
-No module port or wire may be declared with a bundle or vector type.
-The lowering pass will recursively expand ports into its constituent elements until all ports are declared with ground types.
-\item \kws{Single Connect} :
-Every declared component can only be connected to once within a module.
-This connect could be a predicated single connect.
-\item \kws{No Nested Whens} :
-Other than predicated single connect statements, no other conditional statements are allowed.
-\item \kws{Inlined Lowered Form} :
-A further (and optional) pass provided by FIRRTL is the inlining pass, which recursively inlines all instances in the top-level module until the top-level module is the only remaining module in the circuit.
-Inlined LoFIRRTL is essentially a flat netlist which specifies every component used in a circuit and their input connections. 
+\item All components must be declared with a ground type and explicit widths.
+\item The partial connect statement is not used.
+\item The conditional statement is not used.
+\item All components are connected to exactly once.
 \end{itemize}
 
-\section{Annotations - IN PROGRESS}
-Supporting annotations is a critical piece of FIRRTL, yet is a very difficult problem to solve properly.
-We are in the experimental phase of supporting annotations, and our philosophy is outlined below.
-It remains to be seen whether our philosophy is correct - if not, we will certainly devise a new strategy.
+The additional restrictions give LoFIRRTL a direct correspondence to a circuit netlist.
 
-\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Writing a correct circuit is difficult - avoid silent failures at all costs.
-\item If annotations are held in the graph, every pass must properly propagate all possible annotations.
-\item A pass incorrectly propagating an annotation cannot be easily detected (silent failure).
-\item If annotations are held in an exteral data structure mapping names to annotations, the structure must updated after every pass.
-\item Incorrectly updating the structure will cause a mismatching of names between circuit components and annotation entries, which is easily detected.
-\item Thus, we feel the ability to detect failure outweighs the additional burden on annotation writers.
-\end{enumerate}
+Low level circuit transformations can be conveniently written by first lowering a circuit to its LoFIRRTL form, then operating on the restricted (and thus simpler) subset of constructs. Note that circuit transformations are still free to generate high level constructs as they can simply be lowered again.
 
-To implement this philosophy, we encourage passes to either preserve names in the graph, use simple algorithms to transform names, or provide a rename table after a pass.
-The annotation writer then updates their data structure accordingly.
-
-\section{Concrete Syntax}\label{concrete}
-This section describes the text format for FIRRTL that is supported by the provided readers and writers.
-
-\subsection*{General Principles}
-FIRRTL's text format is human-readable and uses indentation to indicate block structuring.
-The following characters are allowed in identifiers: upper and lower case letters, digits, as well as the punctuation characters \verb|~!@#$%^*-_+=?/|.
-Identifiers cannot begin with a digit. 
-
-Comments begin with a semicolon and extend until the end of the line.
-Commas are treated as whitespace, and may be used by the user for clarity if desired. 
-
-Statements are grouped into statement groups using parenthesis, however a colon at the end of a line will automatically assume the next indented region is a statement group.
-This mechanism is used for indicating block structuring. 
-
-The following circuit, module, port and statement examples all exclude the info token \verb|@[filename:line.col]|, which can be optionally included at the beginning of the first line of each elements' concrete syntax.
-
-\subsection*{Circuits and Modules}
-A circuit is specified the following way.
+The following module:
 \begin{verbatim}
-circuit name : (modules ...)
+module MyModule :
+   input in: {a:UInt<1>, b:UInt<2>[3]}
+   input clk: Clock
+   output out: UInt
+   wire c: UInt
+   c <= in.a
+   reg r: UInt[3], clk
+   r <= in.b
+   when c :
+      r[1] <= in.a
+   out <= r[0]   
 \end{verbatim}
-Or by taking advantage of indentation structuring:
+is rewritten as the following equivalent LoFIRRTL circuit by the lowering transform.
 \begin{verbatim}
-circuit name :
-   modules ...
+module MyModule :
+   input in$a: UInt<1>
+   input in$b$0: UInt<2>
+   input in$b$1: UInt<2>
+   input in$b$2: UInt<2>
+   input clk: Clock
+   output out: UInt<2>
+   wire c: UInt<1>
+   c <= in$a
+   reg r$0: UInt<2>, clk
+   reg r$1: UInt<2>, clk
+   reg r$2: UInt<2>, clk 
+   r$0 <= in$b$0
+   r$1 <= mux(c, in$a, in$b$1)
+   r$2 <= in$b$2
+   out <= r$0
 \end{verbatim}
 
-A module is specified the following way.
-\begin{verbatim}
-module name : (ports ... stmts ...)
-\end{verbatim}
-The module body consists of a sequence of ports followed immediately by a sequence of statements.
-If there is more than one statement they are grouped into a statement group by the parser. 
-By using indentation structuring:
-\begin{verbatim}
-module name :
-   ports ...
-   stmts ...
-\end{verbatim}
+\section{Details about Syntax}
 
-The following shows an example of a simple module.
-\begin{verbatim}
-module mymodule :
-   input a: UInt<1>
-   output b: UInt<1>
-   clock clk: UInt<1>
-   b <= a
-\end{verbatim}
+FIRRTL's syntax is designed to be human-readable but easily algorithmically parsed.
 
-\subsection*{Types}
-The unsigned and signed integer types are specified the following way.
-The following examples demonstrate an unsigned integer with known bit width, signed integer with known bit width, an unsigned integer with unknown bit width, and signed integer with unknown bit width.
-\begin{verbatim}
-UInt<42>
-SInt<42>
-UInt<?>
-SInt<?>
-\end{verbatim}
+The following characters are allowed in identifiers: upper and lower case letters, digits, as well as the punctuation characters \verb|~!@#$%^*-_+=?/|. Identifiers cannot begin with a digit. 
 
-The bundle type consists of a number of fields surrounded with braces.
-The following shows an example of a decoupled bundle type.
-Note that the commas are for clarity only and are not necessary.
-\begin{verbatim}
-{default data: UInt<10>,
- default valid: UInt<1>,
- reverse ready: UInt<1>} 
-\end{verbatim}
+An integer literal in FIRRTL begins with either a hyphen or a digit, and is followed by only digits. 
 
-The vector type is specified by immediately postfixing a type with a bracketed integer literal.
-The following example demonstrates a ten-element vector of 16-bit unsigned integers.
-\begin{verbatim}
-UInt<16>[10]
-\end{verbatim}
+Comments begin with a semicolon and extend until the end of the line. Commas are treated as whitespace, and may be used by the user for clarity if desired.
 
-\subsection*{Statements}
-The following examples demonstrate declaring wires, registers, memories, nodes, instances, poisons, and accessors.
-\begin{verbatim}
-wire mywire : UInt<10> 
-reg myreg : UInt<10>, clk, reset 
-cmem mycombmem : UInt<10>,16
-smem myseqmem : UInt<10>,16
-inst myinst : MyModule 
-poison mypoison : UInt<10> 
-infer accessor myaccessor = e[i],clk
-\end{verbatim}
+Block structuring is indicated using indentation. Statements are combined into statement groups by surrounding them with parenthesis. A colon at the {\em end of a line} will automatically surround the next indented region with parenthesis and thus create a statement group.
 
-The connect statement is specified using the \verb|<=| operator.
+The following statement:
 \begin{verbatim}
-x <= y
-\end{verbatim}
-
-The onreset connect statement is specified using the onreset keyword and the \verb|<=| operator.
-\begin{verbatim}
-onreset x <= y 
-\end{verbatim}
-
-The partial connect statement is specified using the \verb|<-| operator.
-\begin{verbatim}
-x <- y 
-\end{verbatim}
-
-The assert statement is specified using the assert keyword.
-\begin{verbatim}
-assert x
-\end{verbatim}
-
-The conditional statement is specified with the \verb|when| keyword.
-\begin{verbatim}
-when x : x <= y else : x <= z
-\end{verbatim}
-Or by using indentation structuring:
-\begin{verbatim}
-when x :
-   x <= y
+when c :
+   a <= b
 else :
-   x <= z
+   c <= d
+   e <= f
 \end{verbatim}
-
-If there is no alternative branch specified, the parser will automatically insert an empty statement.
+can be equivalently expressed on a single line as follows.
 \begin{verbatim}
-when x :
-   x <= y
+when c : (a <= b) else : (c <= d, e <= f)
 \end{verbatim}
 
-For convenience when expressing nested conditional statements, the colon following the \verb|else| keyword may be elided if the next statement is another conditional statement.
+All circuits, modules, ports and statements can optionally be preceded with the info token \verb|@["filename", line, col]| to annotate them with the source file information from where they were generated.
+
+The following example shows the info tokens included:
+
 \begin{verbatim}
-when x :
-   x <= y
-else when y :
-   x <= z
-else :
-   x <= w
+@["myfile.txt" 14, 8] circuit Top :
+   @["myfile.txt" 15, 2] module Top :
+      @["myfile.txt" 16, 3] output out:UInt
+      @["myfile.txt" 17, 3] input b:UInt<32>
+      @["myfile.txt" 18, 3] input c:UInt<1>
+      @["myfile.txt" 19, 3] input d:UInt<16>
+      @["myfile.txt" 21, 8] wire a:UInt
+      @["myfile.txt" 24, 8] when c :
+         @["myfile.txt" 27, 16] a <= b
+      else :
+         @["myfile.txt" 29, 17] a <= d
+      @["myfile.txt" 34, 4] out <= add(a,a)   
 \end{verbatim}
 
-\subsection*{Expressions}
+\section{FIRRTL Language Definition}
+\newcommand{\pipe}{\textbar}
+\newcommand{\opt}[1]{$\llbracket$#1$\rrbracket_?$}
+\newcommand{\rpt}[1]{$\llbracket$#1$\rrbracket_{...}$}
+\subsection{Notation}
+The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productions in the syntax tree are {\em italicized} and keywords are written in \verb|monospaced| font. The special productions \pd{id}, \pd{int}, and \pd{string}, indicates an identifier, an integer literal, and a string respectively. The notation \rpt{\pd{e}} is used to indicate that \pd{e} is repeated zero or more times, and the notation \opt{\pd{e}} is used to indicate that including \pd{e} is optional.
 
-The UInt and SInt constructors create literal integers from a given value and bit width.
-The following examples demonstrate creating literal integers of both known and unknown bit width.
-\begin{verbatim}
-UInt<4>(42)
-SInt<4>(-42)
-UInt<?>(42)
-SInt<?>(-42)
-\end{verbatim}
+\subsection{Concrete Syntax Tree} \label{syntax_tree}
 
-References are specified with an identifier.
-\begin{verbatim}
-x
-\end{verbatim}
+\begin{tabular}{rrll}
+\pd{circuit}    &=     &\opt{\pd{info}} \vv{circuit} \pd{id} \vv{:} \vv{(}\rpt{\pd{module}}\vv{)}              &\text{Circuit}\\
+\pd{module}     &=     &\opt{\pd{info}} \vv{module} \pd{id} \vv{:} \vv{(}\rpt{\pd{port}} \pd{stmt}\vv{)}       &\text{Module}\\
+                &\pipe &\opt{\pd{info}} \vv{extmodule} \pd{id} \vv{:} \vv{(}\rpt{\pd{port}}\vv{)}              &\text{External Module}\\
+\pd{port}       &=     &\opt{\pd{info}} \pd{dir} \pd{id} \vv{:} \pd{type}                                      &\text{Port}\\
+\pd{dir}        &=     &\vv{input} \pipe \vv{ output}                                                          &\text{Port Direction}\\
+\pd{type}       &=     &\vv{UInt}\opt{\vv{<}\pd{int}\vv{>}}                                                    &\text{Unsigned Integer}\\
+                &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}                                                    &\text{Signed Integer}\\
+                &\pipe &\vv{Clock}                                                                             &\text{Clock}\\
+                &\pipe &\verb|{|\rpt{\pd{field}}\verb|}|                                                       &\text{Bundle}\\
+                &\pipe &\pd{type}\vv{[}\pd{int}\vv{]}                                                          &\text{Vector}\\
+\pd{field}      &=     &\opt{\vv{flip}} \pd{id} \vv{:} \pd{type}                                               &\text{Bundle Field}\\
+\pd{stmt}       &=     &\opt{\pd{info}} \vv{wire} \pd{id} \vv{:} \pd{type}                                     &\text{Wire}\\
+                &\pipe &\opt{\pd{info}} \vv{reg} \pd{id} \vv{:} \pd{type}, \pd{exp} \opt{\pd{exp}, \pd{exp}}   &\text{Register}\\
+                &\pipe &\opt{\pd{info}} \vv{mem} \pd{id} \vv{:} \vv{(}                                         &\text{Memory}\\
+                && \verb|       |\vv{data-type =>} \pd{type}\\
+                && \verb|       |\vv{depth =>} \pd{int}\\                
+                && \verb|       |\vv{read-latency =>} \pd{int}\\                
+                && \verb|       |\vv{write-latency =>} \pd{int}\\                
+                && \verb|       |\vv{read-under-write =>} \pd{ruw}\\                
+                && \verb|       |\rpt{\vv{reader =>} \pd{id}}\\             
+                && \verb|       |\rpt{\vv{writer =>} \pd{id}}\\    
+                && \verb|       |\rpt{\vv{readwriter =>} \pd{id}}\vv{)}                                \\
+                &\pipe &\opt{\pd{info}} \vv{inst} \pd{id} \vv{of} \pd{id}                                      &\text{Instance}\\
+                &\pipe &\opt{\pd{info}} \vv{node} \pd{id} \vv{=} \pd{exp}                                      &\text{Node}\\
+                &\pipe &\opt{\pd{info}} \pd{exp} \vv{<=} \pd{exp}                                              &\text{Connect}\\
+                &\pipe &\opt{\pd{info}} \pd{exp} \vv{<-} \pd{exp}                                              &\text{Partial Connect}\\
+                &\pipe &\opt{\pd{info}} \pd{exp} \vv{is invalid}                                               &\text{Invalidate}\\
+                &\pipe &\opt{\pd{info}} \vv{when} \pd{exp} \vv{:} \pd{stmt} \opt{\vv{else} \vv{:} \pd{stmt}}   &\text{Conditional}\\
+                &\pipe &\opt{\pd{info}} \vv{stop(}\pd{exp}, \pd{exp}, \pd{int})                                &\text{Stop}\\
+                &\pipe &\opt{\pd{info}} \vv{printf(}\pd{exp}, \pd{exp}, \pd{string}, \rpt{\pd{exp}}\vv{)}      &\text{Printf}\\
+                &\pipe &\opt{\pd{info}} \vv{skip}                                                              &\text{Empty}\\
+                &\pipe &\opt{\pd{info}} \vv{(}\rpt{\pd{stmt}}\vv{)}                                            &\text{Statement Group}\\
+\pd{ruw}        &=     &\vv{old} \pipe \vv{ new} \pipe \vv{ undefined}                                         &\text{Read Under Write Flag}\\
+\pd{info}       &=     &\vv{@[}\pd{string}, \pd{int}, \pd{int}\vv{]}                                           &\text{File Information Token}\\
+\end{tabular}
 
-Subfields are expressed using the dot operator.
-\begin{verbatim}
-x.data
-\end{verbatim}
+\begin{tabular}{rrll}
+\pd{exp}        &=     &\vv{UInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{int}\vv{)}                                &\text{Literal Unsigned Integer}\\
+                &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{int}\vv{)}                                &\text{Literal Signed Integer}\\
+                &\pipe &\vv{UBits}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{string}\vv{)}                            &\text{Literal Unsigned Bits}\\
+                &\pipe &\vv{SBits}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{string}\vv{)}                            &\text{Literal Signed Bits}\\
+                &\pipe &\pd{id}                                                                                &\text{Reference}\\
+                &\pipe &\pd{exp}\vv{.}\pd{id}                                                                  &\text{Subfield}\\
+                &\pipe &\pd{exp}\vv{[}\pd{int}\vv{]}                                                           &\text{Subindex}\\
+                &\pipe &\pd{exp}\vv{[}\pd{exp}\vv{]}                                                           &\text{Subaccess}\\
+                &\pipe &\vv{mux}\vv{(}\pd{exp}, \pd{exp}, \pd{exp}\vv{)}                                       &\text{Multiplexor}\\
+                &\pipe &\vv{validif}\vv{(}\pd{exp}, \pd{exp}\vv{)}                                             &\text{Conditionally Valid}\\
+                &\pipe &\pd{primop}\vv{(}\rpt{\pd{exp}}, \rpt{\pd{int}}\vv{)}                                  &\text{Primitive Operation}\\
+\end{tabular}
 
-Subindices are expressed using the \verb|[]| operator.
-\begin{verbatim}
-x[10]
-\end{verbatim}
+\begin{tabular}{rrll}
+\pd{primop}   &=               &\vv{add}            &\text{Add}\\
+              &\pipe           &\vv{sub}            &\text{Subtract}\\
+              &\pipe           &\vv{mul}            &\text{Multiply}\\
+              &\pipe           &\vv{div}            &\text{Divide}\\
+              &\pipe           &\vv{mod}            &\text{Modulo}\\
+              &\pipe           &\vv{lt}             &\text{Less Than}\\
+              &\pipe           &\vv{leq}            &\text{Less or Equal}\\
+              &\pipe           &\vv{gt}             &\text{Greater Than}\\
+              &\pipe           &\vv{geq}            &\text{Greater or Equal}\\
+              &\pipe           &\vv{eq}             &\text{Equal}\\
+              &\pipe           &\vv{neq}            &\text{Not-Equal}\\
+              &\pipe           &\vv{pad}            &\text{Pad}\\
+              &\pipe           &\vv{asUInt}         &\text{Interpret Bits as UInt}\\
+              &\pipe           &\vv{asSInt}         &\text{Interpret Bits as SInt}\\
+              &\pipe           &\vv{asClock}        &\text{Interpret as Clock}\\
+              &\pipe           &\vv{shl}            &\text{Shift Left}\\
+              &\pipe           &\vv{shr}            &\text{Shift Right}\\
+              &\pipe           &\vv{dshl}           &\text{Dynamic Shift Left}\\
+              &\pipe           &\vv{dshr}           &\text{Dynamic Shift Right}\\
+              &\pipe           &\vv{cvt}            &\text{Arithmetic Convert to Signed}\\
+              &\pipe           &\vv{neg}            &\text{Negate}\\
+              &\pipe           &\vv{not}            &\text{Not}\\
+              &\pipe           &\vv{and}            &\text{And}\\
+              &\pipe           &\vv{or}             &\text{Or}\\
+              &\pipe           &\vv{xor}            &\text{Xor}\\
+              &\pipe           &\vv{andr}           &\text{And Reduce}\\
+              &\pipe           &\vv{orr}            &\text{Or Reduce}\\
+              &\pipe           &\vv{xorr}           &\text{Xor Reduce}\\
+              &\pipe           &\vv{cat}            &\text{Concatenation}\\
+              &\pipe           &\vv{bits}           &\text{Bit Extraction}\\
+              &\pipe           &\vv{head}           &\text{Head}\\
+              &\pipe           &\vv{tail}           &\text{Tail}\\
+\end{tabular}
 
-Primitive operations are expressed by following the name of the primitive with a list containing the operands. 
-\begin{verbatim}
-add(x, y)
-add(x, add(x, y))
-shl(x, 42)
-\end{verbatim}
-
-\section{Future Plans}
-Some choices were made during the design of this specification which were intentionally conservative, so that future versions could lift the restrictions if suitable semantics and implementations are determined.
-By restricting this version and potentially lifting these restrictions in future versions, all existing FIRRTL circuits will remain valid.
-
-The following design decisions could potentially be changed in future spec revisions:
-\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Disallowing zero-width types
-\item Always expanding memories into smaller memories (if its type is a non-ground-type)
-\item Not including a \kws{ROM} node
-\item Custom annotations are not held in FIRRTL nodes
-\item Not requiring that all names are unique
-\end{enumerate}
-
-\section{Questions and Answers}
-\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
-\item Why are there three connect operators?
-Each is needed for a particular use case - the better question is why did we chose to create multiple connect statements instead of other constructs.
-Statements, as opposed to expressions, are very restricted in how they nest.
-Thus, the desired supported behavior (partial connects, full connects, and resets) will never be used in an arbitrary nested expression where the semantics would be unintuitive.
-In addition, both the implementation and the user only needs to look at the single statement to implement it.
-
-\item Aren't there a lot of idiosyncrasies in FIRRTL?
-The FIRRTL specification is an ongoing process, and as we push more code through it, it is likely to change.
-In our opinion, the idiosyncrasies are necessary for a cohesive design (and all languages have idiosyncrasies).
-It remains an unknown whether there are too many idiosyncrasies for frontend writers.
-Because the spec is not frozen, we can certainly adapt it if necessary.
-However, at this point, we just need to push more code through.
-
-\item Why have a separate construct for initializing a register?
-The problem is initializing a register with a vector/bundle type, where a subset of the fields are initialized.
-If the initial value is kept with the declaration, we would need a new construct to specify a subset of values of ALL (potentially) nested vector/bundle types.
-It makes much more sense to separate initialization from the declaration, and use something like a <= to initialize the fields/vector sub-components of the register.
-The next question is why not just have users specify the initial value using their own "when reset :" statement.
-This doesn't work because of last connect semantics - the user could easily clobber their initialization when statement without knowing.
-Creating an onreset statement does two things: (1) specifies to the USER exactly what the reset value will be for any sub-component of a register, (2) encapsulates the reset value in a way that is easy for the implementation to special case it (so it doesn't get clobbered).
-
-\item Why do operations allow inputs of differing widths? 
-We tried restricting widths, but it actually complicated width inference and made supporting front-ends with more lax width restrictions very difficult.
-Because there is perfectly well defined semantics, we opted to allow differing widths.
-In line with the Linux "funnel" philosophy of being accepting with your inputs and restrictive with your outputs.
-
-\item Why require all names unique?
-Passes usually need unique names, so there needs to be a renaming pass somewhere.
-Standardizing how names gets mangled requires a lot of thought, and we didn't feel comfortable putting this into the spec at the moment and potentially regretting it later.
-For now, names have to be unique, and it is the front-end's responsibility to do this.
-
-\item Why allow declaring components in when statements? 
-We want the important property that a module is just a box of components inside - for any jumble of components, you can always lace them in the box, and it will preserve the semantics.
-You need to declare wires inside whens - because generators could run within a when in a front-end.
-You should always be able to pull them into a module if we want.
-Now its inconsistent if you can't declare registers in the scope.
-
-\item Why not just have LoFIRRTL?
-LoFIRRTL leaves out general when usage, vector and bundle types, and requires a single connect.
-For performance backends, we will need to emit arrays and structs.
-If there is only a lowered circuit, we lose that ability.
-We cannot simply add vector/bundle types to LoFIRRTL as front-ends cannot easily remove whens without removing the complex types as well.
-Instead, one will need the expressiveness in FIRRTL to write a performant backend which does not need to operate on LoFIRRTL.
-
-\item Why the stop statement have no arguements?
-Like the enable for write-accessors, the lowering step will preserve the sequence of when statements under which a simulation will stop.
-
-\item Why disallow zero-width wires? 
-Very tricky to get the semantics correct.
-On the todo list.
-
-\item Why not require default value for wires? Isn't this a SAT problem?
-We do the same thing that is done in Java, and is standard programming language practice.
-
-\item Why did/didn't you include XXX primop?
-Up for debate.
-
-\item How do you support subword assignment?
-We decided to not support subword assignment directly, and instead require the user to separate the subword assignment into a vector type. Then, the user uses the subindex expression to assign to an element in the vector.
-
-\end{enumerate}
+%\section{TODO}
+%
+%- Check sponsor paragraph
+%
+%- FIRRTL implementation
+%   - Make register reset/init optional
+%   - Rework readwrite port types
+%   - Add memory read-under-write flag
+%   - Add partial connect algorithm
+%   - Add oriented types to type checker
+%   - Add is invalid
+%   - Add validif
+%   - Add UBits
+%   - Add SBits
+%   - Add Mux expression
 
 \end{document}
 
