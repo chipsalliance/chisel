@@ -114,6 +114,7 @@ class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledT
   val device_under_test = Module(new Router)
   val c = device_under_test
   verbose = true
+  DecoupledTester.max_tick_count = 120
 
   testBlock { () =>
     Random.setSeed(0)

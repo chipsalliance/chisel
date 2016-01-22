@@ -15,15 +15,17 @@ import scala.collection.mutable.ArrayBuffer
   * Input will flow into their devices asynchronously but in order they were generated
   * be compared in the order they are generated
   *
-  *
   * @example
   * {{{
   * class XTimesXTester extends [[OrderedDecoupledTester]] {
-  *   val device_under_test = new XTimesX
+  *   val device_under_test = new XTimesY
   *   test_block { () =>
-  *     for(i <- 0 to 10) {
-  *       input_event(List(device_under_test.io.in.x -> i))
-  *       output_event(List(device_under_test.io.out.y -> i*i))
+  *     for {
+  *       i <- 0 to 10
+  *       j <- 0 to 10
+  *     } {
+  *       input_event(device_under_test.io.in.x -> i, device_under_test.in.y -> j)
+  *       output_event(device_under_test.io.out.z -> i*j)
   *     }
   *   }
   * }
@@ -38,8 +40,6 @@ abstract class OrderedDecoupledTester extends BasicTester {
     finish()
   }
 
-  val internal_counter_size = 32
-
   var verbose           = false
   def logScala(msg: => String): Unit = {
     //noinspection ScalaStyle
@@ -49,12 +49,6 @@ abstract class OrderedDecoupledTester extends BasicTester {
     if(verbose) printf(fmt, args :_*)
   }
 
-  private val input_event_counter  = Reg(init = UInt(0, width = internal_counter_size))
-  private val output_event_counter = Reg(init = UInt(0, width = internal_counter_size))
-
-  private val input_complete       = Reg(init = Bool(false))
-  private val output_complete      = Reg(init = Bool(false))
-
   val input_event_list  = new ArrayBuffer[Seq[(Data, Int)]]()
   val output_event_list = new ArrayBuffer[Seq[(Data, Int)]]()
 
@@ -62,12 +56,12 @@ abstract class OrderedDecoupledTester extends BasicTester {
   val port_to_valid     = new mutable.HashMap[Data, ValidIO[Data]]
 
   //
-  case class InputStep[+T<:Data](pokes: Map[Data,Int], event_number: Int)
+  case class InputStep(pokes: Map[Data,Int], event_number: Int)
   case class OutputStep(expects: Map[Data,Int], event_number: Int)
 
-  val control_port_to_input_steps  = new mutable.HashMap[DecoupledIO[Data], ArrayBuffer[InputStep[Data]]] {
+  val control_port_to_input_steps  = new mutable.HashMap[DecoupledIO[Data], ArrayBuffer[InputStep]] {
     override def default(key: DecoupledIO[Data]) = {
-      this(key) = new ArrayBuffer[InputStep[Data]]()
+      this(key) = new ArrayBuffer[InputStep]()
       this(key)
     }
   }
@@ -235,11 +229,10 @@ abstract class OrderedDecoupledTester extends BasicTester {
     * each controller has a private counter indicating which event specific to that controller
     * is on deck.  those values are wired to the inputs of the decoupled input and the valid is asserted
     */
-  // TODO: use Counter instead of Reg in here
   // TODO: look into using mapIndex instead of all the different vec's here
-  private def buildInputEventHandlers() {
+  private def buildInputEventHandlers(event_counter: GlobalEventCounter) {
     control_port_to_input_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_decoupled = Reg(t = null, init = UInt(0, width = log2Up(steps.length)))
+      val counter_for_this_decoupled = Counter(steps.length)
 
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
       val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
@@ -248,10 +241,10 @@ abstract class OrderedDecoupledTester extends BasicTester {
       }
       val is_this_my_turn = Vec(
         input_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
-          List(Bool(false))
+          List(Bool(false))  // We append a false at the end so no-one tries to go when counter done
       )
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
-        port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0)) })
+        port -> Vec(steps.map { step => UInt(step.pokes.getOrElse(port, 0)) } ++ List(UInt(0))) //0 added to end
       }.toMap
 
       logScala(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
@@ -259,13 +252,13 @@ abstract class OrderedDecoupledTester extends BasicTester {
       logScala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
       ports_referenced_for_this_controlling_port.foreach { port =>
-        port := port_vector_values(port)(counter_for_this_decoupled)
+        port := port_vector_values(port)(counter_for_this_decoupled.value)
       }
-      controlling_port.valid := is_this_my_turn(input_event_counter)
+      controlling_port.valid := is_this_my_turn(event_counter.value)
 
       when(controlling_port.valid && controlling_port.ready) {
-        counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-        input_event_counter        := input_event_counter + UInt(1)
+        counter_for_this_decoupled.inc()
+        event_counter.inc()
       }
     }
   }
@@ -273,9 +266,9 @@ abstract class OrderedDecoupledTester extends BasicTester {
   /**
     * Test values on ports moderated with a decoupled interface
     */
-  private def buildDecoupledOutputEventHandlers() {
+  private def buildDecoupledOutputEventHandlers(event_counter: GlobalEventCounter) {
     decoupled_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_decoupled = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
+      val counter_for_this_decoupled = Counter(output_event_list.length)
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
       val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
       steps.foreach { step =>
@@ -283,7 +276,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
       }
       val is_this_my_turn = Vec(
         output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
-        List(Bool(false))
+        List(Bool(false)) // We append a false at the end so no-one tries to go when counter done
       )
       logScala(s"Output decoupled controller ${name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => name(port) }.mkString(",")}")
@@ -292,25 +285,25 @@ abstract class OrderedDecoupledTester extends BasicTester {
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         val values_vector = steps.map { step => step.expects.getOrElse(port, 0) }
         logScala(s"  output vector generation for ${name(port)} : ${values_vector.mkString(",")}")
-        port -> Vec(values_vector.map { value => UInt(value) })
+        port -> Vec(values_vector.map { value => UInt(value) } ++ List(UInt(0))) // 0 added to end of list
       }.toMap
 
-      controlling_port.ready := is_this_my_turn(output_event_counter)
+      controlling_port.ready := is_this_my_turn(event_counter.value)
 
       when(controlling_port.ready && controlling_port.valid) {
         ports_referenced_for_this_controlling_port.foreach { port =>
           printf(s"output test event %d testing ${name(port)} = %d, should be %d",
-            output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_decoupled)
+            event_counter.value, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_decoupled.value)
           )
-          when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_decoupled)) {
+          when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_decoupled.value)) {
             printf(s"Error: event %d ${name(port)} was %d should be %d",
-              output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_decoupled))
+              event_counter.value, port.toBits(), port_vector_values(port)(counter_for_this_decoupled.value))
             assert(Bool(false))
             stop()
           }
         }
-        counter_for_this_decoupled := counter_for_this_decoupled + UInt(1)
-        output_event_counter := output_event_counter + UInt(1)
+        counter_for_this_decoupled.inc()
+        event_counter.inc()
       }
     }
   }
@@ -318,9 +311,9 @@ abstract class OrderedDecoupledTester extends BasicTester {
   /**
     * Test values on output ports moderated with a valid interface
     */
-  private def buildValidIoPortEventHandlers() {
+  private def buildValidIoPortEventHandlers(event_counter: GlobalEventCounter) {
     valid_control_port_to_output_steps.foreach { case (controlling_port, steps) =>
-      val counter_for_this_valid = Reg(init = UInt(0, width = log2Up(output_event_list.size) + 1))
+      val counter_for_this_valid = Counter(event_counter.max_count)
       val associated_event_numbers = steps.map { step => step.event_number }.toSet
 
       val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
@@ -328,30 +321,45 @@ abstract class OrderedDecoupledTester extends BasicTester {
         step.expects.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
       }
       val is_this_my_turn = Vec(
-        output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) }
+        output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
+        List(Bool(false))  // We append a false at the end so no-one tries to go when counter done
       )
       val port_vector_values = ports_referenced_for_this_controlling_port.map { port =>
         port -> Vec(steps.map { step => UInt(step.expects.getOrElse(port, 0)) })
       }.toMap
 
       // finish
-      when(!output_complete && is_this_my_turn(output_event_counter)) {
+      when(is_this_my_turn(event_counter.value)) {
         when(controlling_port.valid) {
           ports_referenced_for_this_controlling_port.foreach { port =>
             printf(s"output test event %d testing ${name(port)} = %d, should be %d",
-              output_event_counter, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_valid)
+              event_counter.value, port.asInstanceOf[UInt], port_vector_values(port)(counter_for_this_valid.value)
             )
-            when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_valid)) {
+            when(port.asInstanceOf[UInt] != port_vector_values(port)(counter_for_this_valid.value)) {
               printf(s"Error: event %d ${name(port)} was %x should be %x",
-                output_event_counter, port.toBits(), port_vector_values(port)(counter_for_this_valid))
+                event_counter.value, port.toBits(), port_vector_values(port)(counter_for_this_valid.value))
               assert(Bool(false))
             }
           }
-          counter_for_this_valid := counter_for_this_valid + UInt(1)
-          when( ! output_complete ) {
-            output_event_counter := output_event_counter + UInt(1)
-          }
+          counter_for_this_valid.inc()
+          event_counter.inc()
         }
+      }
+    }
+  }
+
+  class GlobalEventCounter(val max_count: Int) {
+    val counter     = Reg(init = UInt(0, width = log2Up(max_count) + 2))
+    val reached_end = Reg(init = Bool(false))
+
+    def value: UInt = counter
+
+    def inc(): Unit = {
+      when(! reached_end ) {
+        when(counter === UInt(max_count-1)) {
+          reached_end := Bool(true)
+        }
+        counter := counter + UInt(1)
       }
     }
   }
@@ -366,19 +374,10 @@ abstract class OrderedDecoupledTester extends BasicTester {
     processInputEvents()
     processOutputEvents()
 
-    input_complete  := (if( input_event_list.nonEmpty ) {
-      input_event_counter  >= UInt(input_event_list.size - 1)
-    } else {
-      Bool(true)
-    })
-    output_complete := output_event_counter >= (if( output_event_list.nonEmpty ) {
-      UInt(output_event_list.size - 1)
-    }
-    else {
-      Bool(true)
-    })
+    val input_event_counter  = new GlobalEventCounter(input_event_list.length)
+    val output_event_counter = new GlobalEventCounter(output_event_list.length)
 
-    when(input_complete && output_complete) {
+    when(input_event_counter.reached_end && output_event_counter.reached_end) {
       printf("All input and output events completed")
       stop()
     }
@@ -396,11 +395,11 @@ abstract class OrderedDecoupledTester extends BasicTester {
       stop()
     }
 
-    buildInputEventHandlers()
-    buildDecoupledOutputEventHandlers()
-    buildValidIoPortEventHandlers()
+    buildInputEventHandlers(input_event_counter)
+    buildDecoupledOutputEventHandlers(output_event_counter)
+    buildValidIoPortEventHandlers(output_event_counter)
 
-    logSimulator(s"in_event_counter %d, out_event_counter %d", input_event_counter, output_event_counter)
+    logSimulator(s"in_event_counter %d, out_event_counter %d", input_event_counter.value, output_event_counter.value)
     io_info.show_ports("".r)
   }
 }
