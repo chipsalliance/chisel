@@ -7,9 +7,13 @@ import Chisel.testers.{OrderedDecoupledTester, DecoupledTester, UnitTester}
 import chiselTests.ChiselFlatSpec
 
 object GCDCalculator {
-  def compute_gcd_results_and_cycles(a: Int, b: Int, depth: Int = 1): Tuple2[Int, Int] = {
-    if(b == 0) (a, depth)
-    else compute_gcd_results_and_cycles(b, a%b, depth+1 )
+  def computeGcdResultsAndCycles(a: Int, b: Int, depth: Int = 1): (Int, Int) = {
+    if(b == 0) {
+      (a, depth)
+    }
+    else {
+      computeGcdResultsAndCycles(b, a%b, depth+1 )
+    }
   }
 }
 
@@ -62,7 +66,7 @@ class RealGCDTests extends UnitTester {
   val outputs = List( 16, 1, 10)
 
   for( (input_1, input_2) <- inputs) {
-    val (output, cycles) = GCDCalculator.compute_gcd_results_and_cycles(input_1, input_2)
+    val (output, cycles) = GCDCalculator.computeGcdResultsAndCycles(input_1, input_2)
 
     poke(c.io.in.bits.a, input_1)
     poke(c.io.in.bits.b, input_2)
@@ -136,7 +140,7 @@ class DecoupledRealGCDTests4 extends OrderedDecoupledTester {
       i <- 1 to 10
       j <- 1 to 10
     } {
-      val (gcd_value, cycles) = GCDCalculator.compute_gcd_results_and_cycles(i, j)
+      val (gcd_value, cycles) = GCDCalculator.computeGcdResultsAndCycles(i, j)
 
       inputEvent(c.io.in.bits.a -> i, c.io.in.bits.b -> j)
       outputEvent(c.io.out.bits -> gcd_value)
@@ -145,7 +149,7 @@ class DecoupledRealGCDTests4 extends OrderedDecoupledTester {
 }
 
 class DecoupledRealGCDTester extends ChiselFlatSpec {
-  "a" should "b" in {
+  "RealGCD using decoupledIO input interface and validIO output interface" should "return good values" in {
     assert( execute { new DecoupledRealGCDTests4 } )
   }
 }

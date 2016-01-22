@@ -87,34 +87,12 @@ class Router extends Module {
 //    TODO: uncomment following line for correctness and to reveal firrtl indexing error
 //    }
   }
-
-//  FOLLOWING CODE COMPILES AND PASSES TESTS BUT HAS DUBIOUS WHEN STRUCTURE AND VALID SIGNAL TESTING
-//  when(io.read_routing_table_request.valid && io.read_routing_table_response.ready) {
-//    io.read_routing_table_response.enq(tbl(
-//      io.read_routing_table_request.deq().addr
-//    ))
-//  }
-//
-//  when(io.load_routing_table_request.fire()) {
-//    val cmd = io.load_routing_table_request.deq()
-//    tbl(cmd.addr) := cmd.data
-//    printf("setting tbl(%d) to %d", cmd.addr, cmd.data)
-//  }
-//
-//  when(io.in.fire()) {
-//    val pkt = io.in.deq()
-//    val idx = tbl(pkt.header(log2Up(Router.routeTableSize), 0))
-////    val idx = tbl(pkt.header(3, 0))
-//    io.outs(idx).enq(pkt)
-//    printf("got packet to route header %d, data %d, being routed to out(%d) ", pkt.header, pkt.body, tbl(pkt.header))
-//  }
 }
 
 class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledTester {
   val device_under_test = Module(new Router)
   val c = device_under_test
   verbose = true
-  DecoupledTester.max_tick_count = 120
 
   testBlock { () =>
     Random.setSeed(0)
@@ -144,11 +122,13 @@ class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledT
 
     readRoutingTable(0, 0) // confirm we initialized the routing table
 
+    // load routing table, confirm each write as built
     for (i <- 0 until Router.numberOfOutputs) {
-      writeRoutingTableWithConfirm(i, (i + 1) % Router.numberOfOutputs) // load routing table, confirm each write as built
+      writeRoutingTableWithConfirm(i, (i + 1) % Router.numberOfOutputs)
     }
+    // check them in reverse order just for fun
     for (i <- Router.numberOfOutputs - 1 to 0 by -1) {
-      readRoutingTable(i, (i + 1) % Router.numberOfOutputs) // check them in reverse order just for fun
+      readRoutingTable(i, (i + 1) % Router.numberOfOutputs)
     }
 
     // send some regular packets

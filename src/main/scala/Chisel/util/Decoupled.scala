@@ -44,7 +44,6 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 /** An I/O bundle for dequeuing data with valid/ready handshaking */
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, as_input = true)
 {
-//  flip(), in chisel2 this worked in place, causes infinte recursion in chisel3
   def init(): Unit = {
     ready := Bool(true)
   }
