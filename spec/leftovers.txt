@@ -1,0 +1,309 @@
+
+%\section{User Guide - Misc}
+%
+%The resulting instance has a bundle type, where the given module's ports are fields %and can be accessed using the subfield expression.
+%The orientation of the {\em output} ports are {\em default}, and the orientation of %the {\em input} ports are {\em reverse}.
+%An instance may be directly connected to another element, but it must be on the right-%hand side of the connect statement.
+%
+%The following example illustrates directly connecting an instance to a wire:
+%
+%{ \fontsize{11pt}{1.15em}\selectfont
+%\[
+%\begin{aligned}
+%&\kw{extmodule} Queue \ \kws{:} \\
+%&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
+%&\quad \kw{input} in   \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
+%&\quad \kw{output} out \ \kw{:} \kws{UInt$<$}16\kws{$>$} \\
+%&\kw{module} Top \ \kws{:} \\
+%&\quad \kw{input} clk  \ \kw{:} \kws{Clock} \\
+%&\quad \kw{inst} queue \ \kw{:} Queue \\
+%&\quad \kw{wire} connect \ \kw{:} \bundleT{\kw{default} out \ \kw{:} \kws{UInt$<$}16\%kws{$>$},\kw{reverse} in \ \kw{:} \ \kws{UInt$<$}16\kws{$>$},\kw{reverse} clk \ \kw{:} %\ \kws{Clock}} \\
+%&\quad connect \ \kw{$<$=} queue \\
+%\end{aligned}
+%\]
+%}
+%
+%The output ports of an instance may only be connected from, e.g., the right-hand side %of a connect statement.
+%Conversely, the input ports of an instance may only be connected to, e.g., the left-%hand side of a connect statement.
+%
+%The following example illustrates a proper use of creating instances with different %clock domains:
+%
+%{ \fontsize{11pt}{1.15em}\selectfont
+%\[
+%\begin{aligned}
+%&\kw{extmodule} AsyncQueue \ \kws{:} \\
+%&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
+%&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
+%&\quad \kw{input} in  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\kws{%$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+%&\quad \kw{output} out  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\%kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+%&\kw{extmodule} Source \ \kws{:} \\
+%&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
+%&\quad \kw{output} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16%\kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+%&\kw{extmodule} Sink \ \kws{:} \\
+%&\quad \kw{input} clk \ \kw{:} \kws{Clock} \\
+%&\quad \kw{input} packet  \ \kw{:} \bundleT{\kw{default} data \ \kw{:} \kws{UInt$<$}16\%kws{$>$},\kw{reverse} ready \ \kw{:} \kws{UInt$<$}1\kws{$>$}} \\
+%&\kw{module} TwoClock \ \kws{:} \\
+%&\quad \kw{input} clk1 \ \kw{:} \kws{Clock} \\
+%&\quad \kw{input} clk2 \ \kw{:} \kws{Clock} \\
+%&\quad \kw{inst} src \ \kw{:} Source \\
+%&\quad src.clk \ \kw{$<$=} clk1 \\
+%&\quad \kw{inst} snk \ \kw{:} Sink \\
+%&\quad snk.clk \ \kw{$<$=} clk2 \\
+%&\quad \kw{inst} queue \ \kw{:} AsyncQueue \\
+%&\quad queue.clk1 \ \kw{$<$=} clk1 \\
+%&\quad queue.clk2 \ \kw{$<$=} clk2 \\
+%&\quad queue.in \ \kw{$<$=} src.packet \\
+%&\quad snk.packet \ \kw{$<$=} queue.out \\
+%\end{aligned}
+%\]
+%}
+%
+
+%\section{Annotations - IN PROGRESS}
+%Supporting annotations is a critical piece of FIRRTL, yet is a very difficult problem %to solve properly.
+%We are in the experimental phase of supporting annotations, and our philosophy is %outlined below.
+%It remains to be seen whether our philosophy is correct - if not, we will certainly %devise a new strategy.
+%
+%\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
+%\item Writing a correct circuit is difficult - avoid silent failures at all costs.
+%\item If annotations are held in the graph, every pass must properly propagate all %possible annotations.
+%\item A pass incorrectly propagating an annotation cannot be easily detected (silent %failure).
+%\item If annotations are held in an exteral data structure mapping names to %annotations, the structure must updated after every pass.
+%\item Incorrectly updating the structure will cause a mismatching of names between %circuit components and annotation entries, which is easily detected.
+%\item Thus, we feel the ability to detect failure outweighs the additional burden on %annotation writers.
+%\end{enumerate}
+
+%To implement this philosophy, we encourage passes to either preserve names in the %graph, use simple algorithms to transform names, or provide a rename table after a pass%.
+%The annotation writer then updates their data structure accordingly.
+
+%\section{Concrete Syntax}\label{concrete}
+%This section describes the text format for FIRRTL that is supported by the provided %readers and writers.
+%
+%\subsection*{Circuits and Modules}
+%A circuit is specified the following way.
+%\begin{verbatim}
+%circuit name : (modules ...)
+%\end{verbatim}
+%Or by taking advantage of indentation structuring:
+%\begin{verbatim}
+%circuit name :
+%   modules ...
+%\end{verbatim}
+%
+%A module is specified the following way.
+%\begin{verbatim}
+%module name : (ports ... stmts ...)
+%\end{verbatim}
+%The module body consists of a sequence of ports followed immediately by a sequence of %statements.
+%If there is more than one statement they are grouped into a statement group by the %parser. 
+%By using indentation structuring:
+%\begin{verbatim}
+%module name :
+%   ports ...
+%   stmts ...
+%\end{verbatim}
+%
+%The following shows an example of a simple module.
+%\begin{verbatim}
+%module mymodule :
+%   input a: UInt<1>
+%   output b: UInt<1>
+%   clock clk: UInt<1>
+%   b <= a
+%\end{verbatim}
+%
+%\subsection*{Types}
+%The unsigned and signed integer types are specified the following way.
+%The following examples demonstrate an unsigned integer with known bit width, signed %integer with known bit width, an unsigned integer with unknown bit width, and signed %integer with unknown bit width.
+%\begin{verbatim}
+%UInt<42>
+%SInt<42>
+%UInt<?>
+%SInt<?>
+%\end{verbatim}
+%
+%The bundle type consists of a number of fields surrounded with braces.
+%The following shows an example of a decoupled bundle type.
+%Note that the commas are for clarity only and are not necessary.
+%\begin{verbatim}
+%{default data: UInt<10>,
+% default valid: UInt<1>,
+% reverse ready: UInt<1>} 
+%\end{verbatim}
+%
+%The vector type is specified by immediately postfixing a type with a bracketed integer %literal.
+%The following example demonstrates a ten-element vector of 16-bit unsigned integers.
+%\begin{verbatim}
+%UInt<16>[10]
+%\end{verbatim}
+%
+%\subsection*{Statements}
+%The following examples demonstrate declaring wires, registers, memories, nodes, %instances, poisons, and accessors.
+%\begin{verbatim}
+%wire mywire : UInt<10> 
+%reg myreg : UInt<10>, clk, reset 
+%cmem mycombmem : UInt<10>,16
+%smem myseqmem : UInt<10>,16
+%inst myinst : MyModule 
+%poison mypoison : UInt<10> 
+%infer accessor myaccessor = e[i],clk
+%\end{verbatim}
+%
+%The connect statement is specified using the \verb|<=| operator.
+%\begin{verbatim}
+%x <= y
+%\end{verbatim}
+%
+%The onreset connect statement is specified using the onreset keyword and the \verb|<=| %operator.
+%\begin{verbatim}
+%onreset x <= y 
+%\end{verbatim}
+%
+%The partial connect statement is specified using the \verb|<-| operator.
+%\begin{verbatim}
+%x <- y 
+%\end{verbatim}
+%
+%The assert statement is specified using the assert keyword.
+%\begin{verbatim}
+%assert x
+%\end{verbatim}
+%
+%The conditional statement is specified with the \verb|when| keyword.
+%\begin{verbatim}
+%when x : x <= y else : x <= z
+%\end{verbatim}
+%Or by using indentation structuring:
+%\begin{verbatim}
+%when x :
+%   x <= y
+%else :
+%   x <= z
+%\end{verbatim}
+%
+%If there is no alternative branch specified, the parser will automatically insert an %empty statement.
+%\begin{verbatim}
+%when x :
+%   x <= y
+%\end{verbatim}
+%
+%For convenience when expressing nested conditional statements, the colon following the %\verb|else| keyword may be elided if the next statement is another conditional %statement.
+%\begin{verbatim}
+%when x :
+%   x <= y
+%else when y :
+%   x <= z
+%else :
+%   x <= w
+%\end{verbatim}
+%
+%\subsection*{Expressions}
+%
+%The UInt and SInt constructors create literal integers from a given value and bit width%.
+%The following examples demonstrate creating literal integers of both known and unknown %bit width.
+%\begin{verbatim}
+%UInt<4>(42)
+%SInt<4>(-42)
+%UInt<?>(42)
+%SInt<?>(-42)
+%\end{verbatim}
+%
+%References are specified with an identifier.
+%\begin{verbatim}
+%x
+%\end{verbatim}
+%
+%Subfields are expressed using the dot operator.
+%\begin{verbatim}
+%x.data
+%\end{verbatim}
+%
+%Subindices are expressed using the \verb|[]| operator.
+%\begin{verbatim}
+%x[10]
+%\end{verbatim}
+%
+%Primitive operations are expressed by following the name of the primitive with a list %containing the operands. 
+%\begin{verbatim}
+%add(x, y)
+%add(x, add(x, y))
+%shl(x, 42)
+%\end{verbatim}
+
+
+%\section{Future Plans}
+%Some choices were made during the design of this specification which were %intentionally conservative, so that future versions could lift the restrictions if %suitable semantics and implementations are determined.
+%By restricting this version and potentially lifting these restrictions in future %versions, all existing FIRRTL circuits will remain valid.
+%
+%The following design decisions could potentially be changed in future spec revisions:
+%\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
+%\item Disallowing zero-width types
+%\item Always expanding memories into smaller memories (if its type is a non-ground-type%)
+%\item Not including a \kws{ROM} node
+%\item Custom annotations are not held in FIRRTL nodes
+%\item Not requiring that all names are unique
+%\end{enumerate}
+%
+%\section{Questions and Answers}
+%\begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
+%\item Why are there three connect operators?
+%Each is needed for a particular use case - the better question is why did we chose to %create multiple connect statements instead of other constructs.
+%Statements, as opposed to expressions, are very restricted in how they nest.
+%Thus, the desired supported behavior (partial connects, full connects, and resets) %will never be used in an arbitrary nested expression where the semantics would be %unintuitive.
+%In addition, both the implementation and the user only needs to look at the single %statement to implement it.
+%
+%\item Aren't there a lot of idiosyncrasies in FIRRTL?
+%The FIRRTL specification is an ongoing process, and as we push more code through it, %it is likely to change.
+%In our opinion, the idiosyncrasies are necessary for a cohesive design (and all %languages have idiosyncrasies).
+%It remains an unknown whether there are too many idiosyncrasies for frontend writers.
+%Because the spec is not frozen, we can certainly adapt it if necessary.
+%However, at this point, we just need to push more code through.
+%
+%\item Why have a separate construct for initializing a register?
+%The problem is initializing a register with a vector/bundle type, where a subset of %the fields are initialized.
+%If the initial value is kept with the declaration, we would need a new construct to %specify a subset of values of ALL (potentially) nested vector/bundle types.
+%It makes much more sense to separate initialization from the declaration, and use %something like a <= to initialize the fields/vector sub-components of the register.
+%The next question is why not just have users specify the initial value using their own %"when reset :" statement.
+%This doesn't work because of last connect semantics - the user could easily clobber %their initialization when statement without knowing.
+%Creating an onreset statement does two things: (1) specifies to the USER exactly what %the reset value will be for any sub-component of a register, (2) encapsulates the %reset value in a way that is easy for the implementation to special case it (so it %doesn't get clobbered).
+%
+%\item Why do operations allow inputs of differing widths? 
+%We tried restricting widths, but it actually complicated width inference and made %supporting front-ends with more lax width restrictions very difficult.
+%Because there is perfectly well defined semantics, we opted to allow differing widths.
+%In line with the Linux "funnel" philosophy of being accepting with your inputs and %restrictive with your outputs.
+%
+%\item Why require all names unique?
+%Passes usually need unique names, so there needs to be a renaming pass somewhere.
+%Standardizing how names gets mangled requires a lot of thought, and we didn't feel %comfortable putting this into the spec at the moment and potentially regretting it %later.
+%For now, names have to be unique, and it is the front-end's responsibility to do this.
+%
+%\item Why allow declaring components in when statements? 
+%We want the important property that a module is just a box of components inside - for %any jumble of components, you can always lace them in the box, and it will preserve %the semantics.
+%You need to declare wires inside whens - because generators could run within a when in %a front-end.
+%You should always be able to pull them into a module if we want.
+%Now its inconsistent if you can't declare registers in the scope.
+%
+%\item Why not just have LoFIRRTL?
+%LoFIRRTL leaves out general when usage, vector and bundle types, and requires a single %connect.
+%For performance backends, we will need to emit arrays and structs.
+%If there is only a lowered circuit, we lose that ability.
+%We cannot simply add vector/bundle types to LoFIRRTL as front-ends cannot easily %remove whens without removing the complex types as well.
+%Instead, one will need the expressiveness in FIRRTL to write a performant backend %which does not need to operate on LoFIRRTL.
+%
+%\item Why the stop statement have no arguements?
+%Like the enable for write-accessors, the lowering step will preserve the sequence of %when statements under which a simulation will stop.
+%
+%\item Why disallow zero-width wires? 
+%Very tricky to get the semantics correct.
+%On the todo list.
+%
+%\item Why not require default value for wires? Isn't this a SAT problem?
+%We do the same thing that is done in Java, and is standard programming language %practice.
+%
+%\item Why did/didn't you include XXX primop?
+%Up for debate.
+%
+%\item How do you support subword assignment?
+%We decided to not support subword assignment directly, and instead require the user to %separate the subword assignment into a vector type. Then, the user uses the subindex %expression to assign to an element in the vector.
+%
+%\end{enumerate}
