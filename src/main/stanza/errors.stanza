@@ -138,76 +138,44 @@ defn contains?<?T> (c:?T,cs:Streamable<?T>) -> True|False :
          if x == c : myret(true)
       false
 
-;defstruct Trie :
-;   char : Char
-;   children : HashTable<Char,Trie>
-;
-;defn char-hash (c:Char) -> Int : symbol-hash(to-symbol(c))
-;defn new-trie (c:Char) -> Trie : Trie(c,HashTable<Char,Trie>(char-hash))
-;defn tail (s:String) -> String : substring(s,1,length(s))
-;
-;defn insert-top (trie:Trie,symbol:Symbol) -> True|False : true
-;   insert(trie,string-join([" " symbol]))
-;
-;defn insert (trie:Trie,string:String) -> True|False :
-;   if length(string) == 0 : char(trie)
-;
-;   val child = get?(children(trie),string[0],false)
-;   if length(string) == 1 :
-;      match(child) :
-;         (c:Trie) : false
-;         (c:False) : 
-;            children(trie)[string[0]] = new-trie(string[0])
-;            true
-;   else :
-;      match(child) :
-;         (c:Trie) : insert(c,tail(string))
-;         (c:False) : 
-;            val t = new-trie(string[0])
-;            insert(t,tail(string))
-;            children(trie)[string[0]] = t
-;
-;defn has? (trie:Trie, string:String) -> True|False :
-;   if length(string) == 0 : true
-;   if length(string) >= 1 :
-;      if key?(children(trie),string[0]) :
-;         has?(tail(string), children(trie)[string[0]])
-;      else : false
-;
-;defn any-prefixes? (trie:Trie,delim:String) -> String|False :
-;   if has?(trie,delim) :
-;      val c = get-children-after(trie:Trie,delim:String)
-;      if length(keys(c)) > 1 :
-;         
-;   
-;   if length(partial-delim) == 0 : to-string(char(trie))
-;   if length(partial-delim) == 1 :
-;      if key?(children(trie),partial-delim[0]) : any-prefixes?(...WAS HERE
-;      if char(trie) == partial-delim[0] :
-;         if length(keys(children(trie))) >= 2 : to-string(char(trie))
-;         else : false
-;      else :
-;         label<String|False> myret :
-;            for x in children(trie) do :
-;               match(any-prefixes?(value(x),full-delim,full-delim)) :
-;                  (s:False) : false
-;                  (s:String) : myret(string-join([char(trie) s]))
-;            false
-;   else :
-;      label<String|False> myret :
-;         for x in children(trie) do :
-;            if char(trie) == partial-delim[0] :
-;               match(any-prefixes?(value(x),tail(partial-delim),full-delim)) :
-;                  (s:False) : false
-;                  (s:String) : myret(string-join([char(trie) s]))
-;            match(any-prefixes?(value(x),partial-delim,full-delim)) :
-;               (s:False) : false
-;               (s:String) : myret(string-join([char(trie) s]))
-;            match(any-prefixes?(value(x),full-delim,full-delim)) :
-;               (s:False) : false
-;               (s:String) : myret(string-join([char(trie) s]))
-;         false
-      
+;--------------- Prefix Checker --------------------
+
+defstruct Trie :
+   children : HashTable<Symbol,Trie>
+   end? : True|False with: (setter => set-end)
+
+defmethod print (o:OutputStream,t:Trie) :
+   print-all(o,["[end?:" end?(t) ",children:" children(t) "]"])
+
+defn split (s:Symbol) -> List<Symbol> :
+   map(to-symbol,split(to-string(s),'$'))
+
+defn contains? (t:Trie,s:Symbol) -> True|False :
+   key?(children(t),s)
+
+defn empty? (t:Trie) -> True|False :
+   length(children(t)) == 0
+
+defn add (t:Trie,ls:List<Symbol>) -> True|False :
+   var t*:Trie = t
+   var saw-end? = false
+   for x in ls do :
+      if end?(t*) : saw-end? = true
+      if contains?(t*,x) : t* = children(t*)[x]
+      else :
+         val temp = Trie(HashTable<Symbol,Trie>(symbol-hash),false)
+         children(t*)[x] = temp
+         t* = temp
+   set-end(t*,true)
+   saw-end? or not empty?(t*)
+
+defn contains? (t:Trie,ls:List<Symbol>) -> True|False :
+   var t*:Trie = t
+   label<True|False> myret :
+      for x in ls do :
+         if contains?(t*,x) : t* = children(t*)[x]
+         else : myret(false)
+      myret(end?(t*))
 
 ;--------------- Check High Form Pass -------------------
 public defn check-high-form (c:Circuit) -> Circuit : 
@@ -290,6 +258,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
    defn check-high-form-m (m:Module) -> Module :
       val names = HashTable<Symbol,True>(symbol-hash)
       val mnames = HashTable<Symbol,True>(symbol-hash)
+      val tries = Trie(HashTable<Symbol,Trie>(symbol-hash),false)
       defn check-high-form-e (e:Expression) -> Expression :
          defn valid-subexp (e:Expression) -> Expression :
             match(e) :
@@ -313,7 +282,9 @@ public defn check-high-form (c:Circuit) -> Circuit :
          defn check-name (name:Symbol) -> Symbol :
             if key?(names,name) : add(errors,NotUnique(name))
             else : names[name] = true
-            name
+            val ls = split(name)
+            if add(tries,ls) : add(errors,IsPrefix(name))
+            name 
          sinfo! = info(s)
          map(check-name,s)
          map(check-high-form-t,s)
