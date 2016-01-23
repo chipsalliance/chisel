@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object Reg {
   private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {

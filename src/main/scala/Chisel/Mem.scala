@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")

@@ -5,7 +5,7 @@ import Chisel._
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 class BasicTester extends Module {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.

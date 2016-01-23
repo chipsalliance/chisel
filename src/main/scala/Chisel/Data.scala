@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name

@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object when {  // scalastyle:ignore object.name
   /** Create a `when` condition block, where whether a block of logic is
