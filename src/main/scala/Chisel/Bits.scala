@@ -4,8 +4,8 @@ package Chisel
 
 import internal._
 import internal.Builder.pushOp
-import firrtl._
-import firrtl.PrimOp._
+import ir.firrtl._
+import ir.firrtl.PrimOp._
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
