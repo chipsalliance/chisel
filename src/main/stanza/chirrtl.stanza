@@ -7,12 +7,14 @@ defpackage firrtl/chirrtl :
 
 ; CHIRRTL Additional IR Nodes
 public definterface MPortDir
+public val MInfer = new MPortDir
 public val MRead = new MPortDir
 public val MWrite = new MPortDir
 public val MReadWrite = new MPortDir
 
 defmethod print (o:OutputStream, m:MPortDir) :
    switch { m == _ } :
+      MInfer : print(o,"infer")
       MRead : print(o,"read")
       MWrite : print(o,"write")
       MReadWrite : print(o,"rdwr")
@@ -52,8 +54,8 @@ defmethod map (f: Symbol -> Symbol, c:CDefMPort) -> CDefMPort :
 ;======================= Infer Chirrtl Types ======================
 public defstruct CInferTypes <: Pass
 public defmethod pass (b:CInferTypes) -> (Circuit -> Circuit) : infer-types
-public defmethod name (b:CInferTypes) -> String : "Infer CTypes"
-public defmethod short-name (b:CInferTypes) -> String : "infer-ctypes"
+public defmethod name (b:CInferTypes) -> String : "CInfer Types"
+public defmethod short-name (b:CInferTypes) -> String : "c-infer-types"
 
 ;--------------- Utils -----------------
 
@@ -139,6 +141,63 @@ defn infer-types (c:Circuit) -> Circuit :
 
 ;==========================================
 
+public defstruct CInferMDir <: Pass
+public defmethod pass (b:CInferMDir) -> (Circuit -> Circuit) : infer-mdir
+public defmethod name (b:CInferMDir) -> String : "CInfer MDir"
+public defmethod short-name (b:CInferMDir) -> String : "cinfer-mdir"
+
+defn infer-mdir (c:Circuit) -> Circuit :
+   defn infer-mdir (m:Module) -> Module :
+      val mports = HashTable<Symbol,MPortDir>(symbol-hash)
+      defn infer-mdir-e (e:Expression,dir:MPortDir) -> Expression :
+         match(map(infer-mdir-e{_,dir},e)) :
+            (e:Ref) : 
+               println(mports)
+               println(e)
+               if key?(mports,name(e)) :
+                  println("HERE")
+                  val new_mport_dir = 
+                     switch fn ([x,y]) : mports[name(e)] == x and dir == y :
+                        [MInfer,MInfer] : error("Shouldn't be here")
+                        [MInfer,MWrite] : MWrite
+                        [MInfer,MRead] : MRead
+                        [MWrite,MInfer] : error("Shouldn't be here")
+                        [MWrite,MWrite] : MWrite
+                        [MWrite,MRead] : MReadWrite
+                        [MRead,MInfer] : error("Shouldn't be here")
+                        [MRead,MWrite] : MReadWrite
+                        [MRead,MRead] : MRead
+                  mports[name(e)] = new_mport_dir
+               e
+            (e) : e
+      defn infer-mdir-s (s:Stmt) -> Stmt :
+         match(s) :
+            (s:CDefMPort) :
+               mports[name(s)] = direction(s)
+               map(infer-mdir-e{_,MRead},s)
+            (s:Connect|BulkConnect) : 
+               infer-mdir-e(exp(s),MRead)
+               infer-mdir-e(loc(s),MWrite)
+               s
+            (s) : map{infer-mdir-e{_,MRead},_} $ map(infer-mdir-s,s)
+      defn set-mdir-s (s:Stmt) -> Stmt :
+         match(s) :
+            (s:CDefMPort) : 
+               CDefMPort(info(s),name(s),type(s),mem(s),exps(s),mports[name(s)])
+            (s) : map(set-mdir-s,s)
+      match(m) :
+         (m:InModule) :
+            infer-mdir-s(body(m))
+            println(mports)
+            InModule(info(m),name(m),ports(m),set-mdir-s(body(m)))
+         (m:ExModule) : m
+
+   ; MAIN
+   Circuit{info(c), _, main(c) } $ 
+      for m in modules(c) map :
+         infer-mdir(m)
+
+;==========================================
 public defstruct RemoveCHIRRTL <: Pass
 public defmethod pass (b:RemoveCHIRRTL) -> (Circuit -> Circuit) : remove-chirrtl
 public defmethod name (b:RemoveCHIRRTL) -> String : "Remove CHIRRTL"
@@ -241,8 +300,9 @@ defn remove-chirrtl (c:Circuit) :
                val masks = Vector<Symbol>()
                switch { _ == direction(s) } :
                   MReadWrite : 
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`wdata,`rdata,`wmask)
-                     add(addrs,`addr)
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`rdata,`wdata,`wmask)
+                     add(addrs,`waddr)
+                     add(addrs,`raddr)
                      add(ens,`wen)
                      add(ens,`ren)
                      add(masks,`wmask)

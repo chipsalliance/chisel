@@ -51,6 +51,7 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;TempElimination()                 ; Needs to check number of uses
       ;===============
       CInferTypes()
+      CInferMDir()
       RemoveCHIRRTL()            
       ;===============
       CheckHighForm()          

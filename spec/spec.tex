@@ -1791,19 +1791,18 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 
 %\section{TODO}
 %
-%- Check sponsor paragraph
-%
 %- FIRRTL implementation
-%   - Make register reset/init optional
-%   - Rework readwrite port types
-%   - Add memory read-under-write flag
-%   - Add partial connect algorithm
+%   - Make register reset/init optional ; good
+%   - Rework readwrite port types       ; limits optimizations but probably ok
+%   - Add memory read-under-write flag  ; probably overengineering, but could be a wash
+%   - Add partial connect algorithm     ; 
 %   - Add oriented types to type checker
-%   - Add is invalid
-%   - Add validif
-%   - Add UBits
+%   - Add is invalid                    ; good
+%   - Add validif                       ; good
+%   - Add UBits                         ; andrew doesn't care, favors overloading UInt
 %   - Add SBits
-%   - Add Mux expression
+%   - Add Mux expression                ; that's lovely, need glitch-free mux for clock types
+%   - removed addw, added head and tail ; great!
 
 \end{document}
 

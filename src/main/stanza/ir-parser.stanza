@@ -270,6 +270,8 @@ defsyntax firrtl :
          CDefMPort(first-info(form),name,UnknownType(),mem,list(index,clk),MWrite)
       stmt = (rdwr mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
          CDefMPort(first-info(form),name,UnknownType(),mem,list(index,clk),MReadWrite)
+      stmt = (infer mport ?name:#id! #=! ?mem:#id! (@get ?index:#exp!) ?clk:#exp!) :
+         CDefMPort(first-info(form),name,UnknownType(),mem,list(index,clk),MInfer)
 
       stmt = (mem ?name:#id! #:! (?ms:#mstat ...)) :
          defn grab (f:MStat -> True|False) :
