@@ -665,8 +665,9 @@ public defn check-genders (c:Circuit) -> Circuit :
                (t) : if f == REVERSE : f? = true
             t
          flip-rec(t,DEFAULT)
-      val has-flip? = flip?(t)
+         f?
          
+      val has-flip? = flip?(type(e))
       ;println(e)
       ;println(gender)
       ;println(desired)

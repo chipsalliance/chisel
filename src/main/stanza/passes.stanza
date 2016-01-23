@@ -444,10 +444,6 @@ defn swap (g:Gender) -> Gender :
       MALE : FEMALE
       FEMALE : MALE
       BI-GENDER : BI-GENDER
-defn swap (f:Flip) -> Flip :
-   switch {_ == f} :
-      DEFAULT : REVERSE
-      REVERSE : DEFAULT
 defn swap (d:Direction) -> Direction :
    switch {_ == d} :
       OUTPUT : INPUT
@@ -464,11 +460,6 @@ public defn times (flip:Flip,g:Gender) -> Gender :
    switch {_ == flip} :
       DEFAULT : g
       REVERSE : swap(g)
-public defn times (f1:Flip,f2:Flip) -> Flip :
-   switch {_ == f2} :
-      DEFAULT : f1
-      REVERSE : swap(f1)
-     
 defn to-field (p:Port) -> Field :
    if direction(p) == OUTPUT : Field(name(p),DEFAULT,type(p))
    else if direction(p) == INPUT : Field(name(p),REVERSE,type(p))
@@ -713,10 +704,6 @@ defn infer-types (c:Circuit) -> Circuit :
       val types = HashTable<Symbol,Type>(symbol-hash)
       defn infer-types-e (e:Expression) -> Expression :
          match(map(infer-types-e,e)) :
-            (e:Ref) : Ref(name(e), types[name(e)])
-            (e:SubField) : SubField(exp(e),name(e),field-type(type(exp(e)),name(e)))
-            (e:SubIndex) : SubIndex(exp(e),value(e),sub-type(type(exp(e))))
-            (e:SubAccess) : SubAccess(exp(e),index(e),sub-type(type(exp(e))))
             (e:WRef) : WRef(name(e), types[name(e)],kind(e),gender(e))
             (e:WSubField) : WSubField(exp(e),name(e),field-type(type(exp(e)),name(e)),gender(e))
             (e:WSubIndex) : WSubIndex(exp(e),value(e),sub-type(type(exp(e))),gender(e))
@@ -853,17 +840,6 @@ public defmethod short-name (b:ExpandConnects) -> String : "expand-connects"
 ;---------------- UTILS ------------------
 
 defn get-size (e:Expression) -> Int : get-size(type(e))
-defn get-size (t:Type) -> Int :
-   val x = match(t) :
-      (t:BundleType) : 
-         var sum = 0
-         for f in fields(t) do : 
-            sum = sum + get-size(type(f))
-         sum
-      (t:VectorType) : size(t) * get-size(type(t))
-      (t) : 1
-   x
-
 val hashed-get-flip = HashTable<List,Flip>(list-hash)
 defn get-flip (t:Type, i:Int, f:Flip) -> Flip :
    if key?(hashed-get-flip,list(t,i,f)) : hashed-get-flip[list(t,i,f)]
@@ -904,49 +880,6 @@ defn get-point (e:Expression) -> Int :
          value(e) * get-size(e)
       (e:WSubAccess) :
          get-point(exp(e))
-defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]> :
-   ;println-all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
-   match(t1,t2) :
-      (t1:UIntType,t2:UIntType) : 
-         if flip1 == flip2 : list([0, 0])
-         else: list()
-      (t1:SIntType,t2:SIntType) :
-         if flip1 == flip2 : list([0, 0])
-         else: list()
-      (t1:BundleType,t2:BundleType) :
-         val points = Vector<[Int,Int]>()
-         var ilen = 0
-         var jlen = 0
-         for i in 0 to length(fields(t1)) do :
-            for j in 0 to length(fields(t2)) do :
-               ;println(i)
-               ;println(j)
-               ;println(ilen)
-               ;println(jlen)
-               val f1 = fields(t1)[i]
-               val f2 = fields(t2)[j]
-               if name(f1) == name(f2) :
-                  val ls = get-valid-points(type(f1),type(f2),flip1 * flip(f1),
-                     flip2 * flip(f2)) 
-                  for x in ls do :
-                     add(points,[x[0] + ilen, x[1] + jlen])
-               println(points)
-               jlen = jlen + get-size(type(fields(t2)[j]))
-            ilen = ilen + get-size(type(fields(t1)[i]))
-            jlen = 0
-         to-list(points)
-      (t1:VectorType,t2:VectorType) :
-         val points = Vector<[Int,Int]>()
-         var ilen = 0
-         var jlen = 0
-         for i in 0 to min(size(t1),size(t2)) do :
-            val ls = get-valid-points(type(t1),type(t2),flip1,flip2)
-            for x in ls do :
-               add(points,[x[0] + ilen, x[1] + jlen])
-            ilen = ilen + get-size(type(t1))
-            jlen = jlen + get-size(type(t2))
-         to-list(points)
-
 
 val hashed-create-exps = HashTable<Expression,List<Expression>>(exp-hash)
 defn create-exps (n:Symbol, t:Type) -> List<Expression> :

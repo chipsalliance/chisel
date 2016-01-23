@@ -148,6 +148,69 @@ public defn list-hash (l:List) -> Int :
    turn-on-debug(false)
    i
 
+;===== Type Expansion Algorithms =========
+public defn times (f1:Flip,f2:Flip) -> Flip :
+   switch {_ == f2} :
+      DEFAULT : f1
+      REVERSE : swap(f1)
+public defn swap (f:Flip) -> Flip :
+   switch {_ == f} :
+      DEFAULT : REVERSE
+      REVERSE : DEFAULT
+     
+public defn get-size (t:Type) -> Int :
+   val x = match(t) :
+      (t:BundleType) : 
+         var sum = 0
+         for f in fields(t) do : 
+            sum = sum + get-size(type(f))
+         sum
+      (t:VectorType) : size(t) * get-size(type(t))
+      (t) : 1
+   x
+public defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[Int,Int]> :
+   ;println-all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
+   match(t1,t2) :
+      (t1:UIntType,t2:UIntType) : 
+         if flip1 == flip2 : list([0, 0])
+         else: list()
+      (t1:SIntType,t2:SIntType) :
+         if flip1 == flip2 : list([0, 0])
+         else: list()
+      (t1:BundleType,t2:BundleType) :
+         val points = Vector<[Int,Int]>()
+         var ilen = 0
+         var jlen = 0
+         for i in 0 to length(fields(t1)) do :
+            for j in 0 to length(fields(t2)) do :
+               ;println(i)
+               ;println(j)
+               ;println(ilen)
+               ;println(jlen)
+               val f1 = fields(t1)[i]
+               val f2 = fields(t2)[j]
+               if name(f1) == name(f2) :
+                  val ls = get-valid-points(type(f1),type(f2),flip1 * flip(f1),
+                     flip2 * flip(f2)) 
+                  for x in ls do :
+                     add(points,[x[0] + ilen, x[1] + jlen])
+               println(points)
+               jlen = jlen + get-size(type(fields(t2)[j]))
+            ilen = ilen + get-size(type(fields(t1)[i]))
+            jlen = 0
+         to-list(points)
+      (t1:VectorType,t2:VectorType) :
+         val points = Vector<[Int,Int]>()
+         var ilen = 0
+         var jlen = 0
+         for i in 0 to min(size(t1),size(t2)) do :
+            val ls = get-valid-points(type(t1),type(t2),flip1,flip2)
+            for x in ls do :
+               add(points,[x[0] + ilen, x[1] + jlen])
+            ilen = ilen + get-size(type(t1))
+            jlen = jlen + get-size(type(t2))
+         to-list(points)
+
 ;============= Useful functions ==============
 public defn create-mask (n:Symbol,dt:Type) -> Field :
    Field{n,DEFAULT,_} $ match(dt) :
@@ -350,21 +413,8 @@ defmethod print (o:OutputStream, c:Stmt) :
          print-all(o, ["printf(" clk(c) ", " en(c) ", "]) ;"
          print-all(o, join(List(escape(string(c)),args(c)), ", "))
          print(o, ")")
-      (c:CDefMemory) : 
-         if seq?(c) :
-            print-all(o, ["smem " name(c) " : " type(c) "[" size(c) "]"])
-         else :
-            print-all(o, ["cmem " name(c) " : " type(c) "[" size(c) "]"])
-      (c:CDefMPort) :
-         print-all(o, [direction(c) " mport " name(c) " = " mem(c) "[" exps(c)[0] "], " exps(c)[1]])
 
    if not c typeof Conditionally|Begin|Empty: print-debug(o,c)
-
-defmethod print (o:OutputStream, m:MPortDir) :
-   switch { m == _ } :
-      MRead : print(o,"read")
-      MWrite : print(o,"write")
-      MReadWrite : print(o,"rdwr")
 
 defmethod print (o:OutputStream, t:Type) :
    match(t) :
@@ -466,7 +516,6 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
       (c:Stop) : Stop(info(c),ret(c),f(clk(c)),f(en(c)))
       (c:Print) : Print(info(c),string(c),map(f,args(c)),f(clk(c)),f(en(c)))
-      (c:CDefMPort) : CDefMPort(info(c),name(c), mem(c), f(clock(c)), f(reset(c)), f(init(c)))
       (c) : c
 
 public defmulti map<?T> (f: Stmt -> Stmt, c:?T&Stmt) -> T

@@ -161,25 +161,6 @@ public defstruct Print <: Stmt : ;LOW
 public defstruct Empty <: Stmt ;LOW
 
 
-; CHIRRTL Features
-public definterface MPortDir
-public val MRead = new MPortDir
-public val MWrite = new MPortDir
-public val MReadWrite = new MPortDir
-
-public defstruct CDefMemory <: Stmt : ;LOW
-   info: FileInfo with: (as-method => true)
-   name: Symbol
-   type: Type
-   size: Int
-   seq?: True|False
-public defstruct CDefMPort <: Stmt :
-   info: FileInfo with: (as-method => true)
-   name: Symbol
-   mem: Symbol
-   exps: List<Expression>
-   direction: MPortDir
-
 public definterface Type
 public defstruct UIntType <: Type :
    width: Width

@@ -50,8 +50,8 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;RemoveSpecialChars()     
       ;TempElimination()                 ; Needs to check number of uses
       ;===============
-      InferTypes()
-      ToIR()            
+      CInferTypes()
+      RemoveCHIRRTL()            
       ;===============
       CheckHighForm()          
       ;===============
@@ -122,7 +122,7 @@ public defmethod backend (c:StandardLoFIRRTL) -> List<Pass> :
 public defmethod passes (c:StandardLoFIRRTL) -> List<Pass> :
    to-list $ [
       ;===============
-      ToIR()            
+      RemoveCHIRRTL()            
       ;===============
       CheckHighForm()          
       ;===============
