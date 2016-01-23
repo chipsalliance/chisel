@@ -152,10 +152,7 @@ defn infer-mdir (c:Circuit) -> Circuit :
       defn infer-mdir-e (e:Expression,dir:MPortDir) -> Expression :
          match(map(infer-mdir-e{_,dir},e)) :
             (e:Ref) : 
-               println(mports)
-               println(e)
                if key?(mports,name(e)) :
-                  println("HERE")
                   val new_mport_dir = 
                      switch fn ([x,y]) : mports[name(e)] == x and dir == y :
                         [MInfer,MInfer] : error("Shouldn't be here")
@@ -188,7 +185,6 @@ defn infer-mdir (c:Circuit) -> Circuit :
       match(m) :
          (m:InModule) :
             infer-mdir-s(body(m))
-            println(mports)
             InModule(info(m),name(m),ports(m),set-mdir-s(body(m)))
          (m:ExModule) : m
 
