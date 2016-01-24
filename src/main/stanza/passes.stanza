@@ -2383,6 +2383,7 @@ defn emit-verilog (m:InModule) -> Module :
 
    val portdefs = Vector<Streamable>()
    val declares = Vector<Streamable>()
+   val instdeclares = Vector<Streamable>()
    val assigns = Vector<Streamable>()
    val at-clock = HashTable<Expression,Vector<Streamable>>(exp-hash)
    val initials = Vector<Streamable>()
@@ -2432,12 +2433,12 @@ defn emit-verilog (m:InModule) -> Module :
       val index = WRef(`initvar,UnknownType(),ExpKind(),UNKNOWN-GENDER)
       add(initials,[tab WSubAccess(wref(n,t),index,UnknownType(),FEMALE), " = " rand-string(t) ";"])
    defn instantiate (n:Symbol,m:Symbol,es:List<Expression>) :
-      add(declares,[m " " n " ("])
+      add(instdeclares,[m " " n " ("])
       for (e in es,i in 0 to false) do :
          val s = [tab "." remove-root(e) "(" lowered-name(e) ")"]
-         if i != length(es) - 1 : add(declares,[s ","])
-         else : add(declares,s)
-      add(declares,[");"])
+         if i != length(es) - 1 : add(instdeclares,[s ","])
+         else : add(instdeclares,s)
+      add(instdeclares,[");"])
       for e in es do :
          declare(`wire,lowered-name(e),type(e))
          val e* = WRef(lowered-name(e),type(e),kind(e),gender(e))
@@ -2614,6 +2615,9 @@ defn emit-verilog (m:InModule) -> Module :
 
       if !empty?(declares) :
          for x in declares do : emit([tab x])
+
+      if !empty?(instdeclares) :
+         for x in instdeclares do : emit([tab x])
       
       if !empty?(assigns) :
          for x in assigns do : emit([tab x])
