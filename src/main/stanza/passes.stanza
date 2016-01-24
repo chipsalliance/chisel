@@ -2608,7 +2608,7 @@ defn emit-verilog (m:InModule) -> Module :
       emit(["module " name(m) "("])
       if !empty?(portdefs) :
          for (x in portdefs, i in 0 to false) do : 
-            if i != length(portdefs) : emit([tab x ","])
+            if i != length(portdefs) - 1 : emit([tab x ","])
             else : emit([tab x])
       emit([");"])
 
