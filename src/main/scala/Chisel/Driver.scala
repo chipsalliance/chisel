@@ -6,7 +6,7 @@ import scala.sys.process._
 import java.io._
 
 import internal._
-import firrtl._
+import internal.firrtl._
 
 trait BackendCompilationUtilities {
   /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.

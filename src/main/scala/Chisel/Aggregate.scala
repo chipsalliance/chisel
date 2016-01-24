@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.

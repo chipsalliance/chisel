@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, HashSet}
 import internal._
 import internal.Builder.pushCommand
 import internal.Builder.dynamicContext
-import firrtl._
+import internal.firrtl._
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in

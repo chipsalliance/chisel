@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package Chisel.firrtl
+package Chisel.internal.firrtl
 import Chisel._
 import Chisel.internal._
 
