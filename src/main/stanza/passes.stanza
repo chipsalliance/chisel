@@ -2238,7 +2238,7 @@ defn long! (t:Type) -> Long :
    
 defn rand-string (t:Type) -> Streamable : 
    val w* = ((long!(t) + to-long(31)) / to-long(32))
-   ["{" w* "{" ran "}};"]
+   ["{" w* "{" ran "}}"]
 defn emit (x:?) : emit(x,0)
 defn emit (x:?, top:Int) :
    match(x) :
@@ -2420,17 +2420,17 @@ defn emit-verilog (m:InModule) -> Module :
       if not key?(at-clock,clk) :
          at-clock[clk] = Vector<Streamable>()
       if en == one :
-         add(at-clock[clk],[e " <= " value])
+         add(at-clock[clk],[e " <= " value ";"])
       else :
          add(at-clock[clk],["if(" en ") begin"])
-         add(at-clock[clk],[tab e " <= " value])
+         add(at-clock[clk],[tab e " <= " value ";"])
          add(at-clock[clk],["end"])
    defn initialize (e:Expression) :
-      add(initials,[e " = " rand-string(type(e))])
+      add(initials,[e " = " rand-string(type(e)) ";"])
    defn initialize-mem (n:Symbol,i:Int,t:Type) :
       add(initials,["for (initvar = 0; initvar < " i "; initvar = initvar+1)"])
       val index = WRef(`initvar,UnknownType(),ExpKind(),UNKNOWN-GENDER)
-      add(initials,[tab WSubAccess(wref(n,t),index,UnknownType(),FEMALE), " = " rand-string(t)])
+      add(initials,[tab WSubAccess(wref(n,t),index,UnknownType(),FEMALE), " = " rand-string(t) ";"])
    defn instantiate (n:Symbol,m:Symbol,es:List<Expression>) :
       add(declares,[m " " n " ("])
       for (e in es,i in 1 to false) do :
