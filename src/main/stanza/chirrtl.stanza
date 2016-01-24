@@ -338,10 +338,7 @@ defn remove-chirrtl (c:Circuit) :
                (e:Ref) :
                   if key?(repl,name(e)) : 
                      val vt = repl[name(e)]
-                     println(exp(vt))
-                     println(type(exp(vt)))
                      val t = create-mask(type(e))
-                     println(t)
                      SubField(exp(vt),mask(vt),t)
                   else : e
                (e) : e
