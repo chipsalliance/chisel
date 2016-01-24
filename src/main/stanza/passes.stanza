@@ -2392,7 +2392,7 @@ defn emit-verilog (m:InModule) -> Module :
          (t:VectorType) : add(declares,[b " " type(t) " " n " [0:" size(t) - 1 "];"])
          (t) : add(declares,[b " " t " " n ";"])
    defn assign (e:Expression,value:Expression) : 
-      add(assigns,["assign " e " = " value])
+      add(assigns,["assign " e " = " value ";"])
    defn update-and-reset (r:Expression,clk:Expression,reset?:Expression,init:Expression) :
       if not key?(at-clock,clk) : at-clock[clk] = Vector<Streamable>()
 
