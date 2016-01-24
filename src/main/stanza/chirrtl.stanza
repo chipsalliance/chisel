@@ -114,6 +114,9 @@ defn infer-types (c:Circuit) -> Circuit :
                val t = type(value(s*))
                types[name(s*)] = t
                s*
+            (s:DefMemory) :
+               types[name(s)] = get-type(s)
+               s
             (s:CDefMPort) :
                val t = types[mem(s)]
                types[name(s)] = t

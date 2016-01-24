@@ -116,41 +116,7 @@ defmethod info (stmt:Empty) -> FileInfo : FileInfo()
 defmethod type (exp:UIntValue) -> Type : UIntType(width(exp))
 defmethod type (exp:SIntValue) -> Type : SIntType(width(exp))
 
-defn get-type (s:Stmt) -> Type :
-   match(s) :
-      (s:DefWire|DefPoison|DefRegister|WDefInstance) : type(s)
-      (s:DefNode) : type(value(s))
-      (s:DefMemory) : 
-         val depth = depth(s)
-         ; Fields
-         val addr = Field(`addr,DEFAULT,UIntType(IntWidth(ceil-log2(depth))))
-         val en = Field(`en,DEFAULT,BoolType())
-         val clk = Field(`clk,DEFAULT,ClockType())
-         val def-data = Field(`data,DEFAULT,data-type(s))
-         val rev-data = Field(`data,REVERSE,data-type(s))
-         val rdata = Field(`rdata,REVERSE,data-type(s))
-         val wdata = Field(`wdata,DEFAULT,data-type(s))
-         val mask = Field(`mask,DEFAULT,create-mask(data-type(s)))
-         val wmask = Field(`wmask,DEFAULT,create-mask(data-type(s)))
-         val ren = Field(`ren,DEFAULT,UIntType(IntWidth(1)))
-         val wen = Field(`wen,DEFAULT,UIntType(IntWidth(1)))
-         val raddr = Field(`raddr,DEFAULT,UIntType(IntWidth(ceil-log2(depth))))
-         val waddr = Field(`waddr,DEFAULT,UIntType(IntWidth(ceil-log2(depth))))
-
-         val read-type = BundleType(to-list([rev-data,addr,en,clk]))
-         val write-type = BundleType(to-list([def-data,mask,addr,en,clk]))
-         val readwrite-type = BundleType(to-list([wdata,wmask,waddr,wen,rdata,raddr,ren,clk]))
-
-         val mem-fields = Vector<Field>()
-         for x in readers(s) do :
-            add(mem-fields,Field(x,DEFAULT,read-type))
-         for x in writers(s) do :
-            add(mem-fields,Field(x,DEFAULT,write-type))
-         for x in readwriters(s) do :
-            add(mem-fields,Field(x,DEFAULT,readwrite-type))
-         BundleType(to-list(mem-fields))
-      (s:DefInstance) : UnknownType()
-      (s:Begin|Connect|BulkConnect|Stop|Print|Empty) : UnknownType()
+defmethod get-type (s:WDefInstance) -> Type : type(s)
 
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
