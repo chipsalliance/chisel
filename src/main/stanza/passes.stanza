@@ -1537,9 +1537,9 @@ defn infer-widths (c:Circuit) -> Circuit :
          (s:BulkConnect) :
             val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
             for x in ls do :
-               println(x)
-               println(create-exps(loc(s)))
-               println(create-exps(exp(s)))
+               ;println(x)
+               ;println(create-exps(loc(s)))
+               ;println(create-exps(exp(s)))
                val loc* = create-exps(loc(s))[x[0]]
                val exp* = create-exps(exp(s))[x[1]]
                switch { _ == get-flip(type(loc(s)),x[0],DEFAULT) } :
