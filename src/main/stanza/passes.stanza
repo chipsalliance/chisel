@@ -2452,10 +2452,10 @@ defn emit-verilog (m:InModule) -> Module :
       add(at-clock[clk],[tab "end"])
       add(at-clock[clk],["`endif"])
    defn stop (ret:Int) -> Streamable :
-      ["$fdisplay(32/'h80000002," ret ");$finish;"]
+      ["$fdisplay(32'h80000002,\"" ret "\");$finish;"]
    defn printf (str:String,args:List<Expression>) -> Streamable :
       val str* = join(List(escape(str),args),",")
-      ["$fwrite(32/'h80000002," str* ");"]
+      ["$fwrite(32'h80000002," str* ");"]
    defn delay (e:Expression, n:Int, clk:Expression) -> Expression :
       var e* = e
       for i in 0 to n do :
