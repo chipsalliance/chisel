@@ -194,7 +194,7 @@ public defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[In
                      flip2 * flip(f2)) 
                   for x in ls do :
                      add(points,[x[0] + ilen, x[1] + jlen])
-               println(points)
+               ;println(points)
                jlen = jlen + get-size(type(fields(t2)[j]))
             ilen = ilen + get-size(type(fields(t1)[i]))
             jlen = 0
@@ -212,12 +212,12 @@ public defn get-valid-points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) -> List<[In
          to-list(points)
 
 ;============= Useful functions ==============
-public defn create-mask (n:Symbol,dt:Type) -> Field :
-   Field{n,DEFAULT,_} $ match(dt) :
-      (t:VectorType) : VectorType(BoolType(),size(t))
+public defn create-mask (dt:Type) -> Type :
+   match(dt) :
+      (t:VectorType) : VectorType(create-mask(type(t)),size(t))
       (t:BundleType) : 
          val fields* = for f in fields(t) map :
-            Field(name(f),flip(f),BoolType())
+            Field(name(f),flip(f),create-mask(type(f)))
          BundleType(fields*)
       (t:UIntType|SIntType) : BoolType()
 

@@ -265,7 +265,7 @@ defn remove-chirrtl (c:Circuit) :
                   for r in vec do :
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),en,taddr),zero))
                defn set-write (vec:List<MPort>,data:Symbol,mask:Symbol) -> False :
-                  val tmask = type(create-mask(`blah,type(s)))
+                  val tmask = create-mask(type(s))
                   for r in vec do :
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),data,tdata),Ref(ndata,tdata)))
                      for x in create-exps(SubField(SubField(Ref(name(s),ut),name(r),ut),mask,tmask)) do :
@@ -338,8 +338,11 @@ defn remove-chirrtl (c:Circuit) :
                (e:Ref) :
                   if key?(repl,name(e)) : 
                      val vt = repl[name(e)]
-                     val f = create-mask(`blah,mport-types[name(e)])
-                     SubField(exp(vt),mask(vt),type(f))
+                     println(exp(vt))
+                     println(type(exp(vt)))
+                     val t = create-mask(type(e))
+                     println(t)
+                     SubField(exp(vt),mask(vt),t)
                   else : e
                (e) : e
          match(s) :
