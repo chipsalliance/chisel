@@ -2433,9 +2433,9 @@ defn emit-verilog (m:InModule) -> Module :
       add(initials,[tab WSubAccess(wref(n,t),index,UnknownType(),FEMALE), " = " rand-string(t) ";"])
    defn instantiate (n:Symbol,m:Symbol,es:List<Expression>) :
       add(declares,[m " " n " ("])
-      for (e in es,i in 1 to false) do :
+      for (e in es,i in 0 to false) do :
          val s = [tab "." remove-root(e) "(" lowered-name(e) ")"]
-         if i == length(es) : add(declares,[s ","])
+         if i != length(es) - 1 : add(declares,[s ","])
          else : add(declares,s)
       add(declares,[");"])
       for e in es do :
