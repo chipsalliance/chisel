@@ -156,7 +156,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
 
   override def cloneType: this.type =
-    Vec(gen, length).asInstanceOf[this.type]
+    Vec(length, gen).asInstanceOf[this.type]
 
   private val t = gen
   private[Chisel] def toType: String = s"${t.toType}[$length]"
