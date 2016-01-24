@@ -1898,16 +1898,16 @@ defn const-prop-e (e:Expression) -> Expression :
    match(map(const-prop-e,e)) :
       (e:DoPrim) : 
          switch {op(e) == _} :
-            DYN-SHIFT-RIGHT-OP :
-               match(args(e)[1]) :
-                  (x:UIntValue|SIntValue) :
-                     DoPrim(SHIFT-RIGHT-OP,list(args(e)[0]),list(to-int(value(x))),UnknownType())
-                  (x) : e
-            DYN-SHIFT-LEFT-OP :
-               match(args(e)[1]) :
-                  (x:UIntValue|SIntValue) :
-                     DoPrim(SHIFT-LEFT-OP,list(args(e)[0]),list(to-int(value(x))),UnknownType())
-                  (x) : e
+            ;DYN-SHIFT-RIGHT-OP :
+            ;   match(args(e)[1]) :
+            ;      (x:UIntValue|SIntValue) :
+            ;         DoPrim(SHIFT-RIGHT-OP,list(args(e)[0]),list(to-int(value(x))),UnknownType())
+            ;      (x) : e
+            ;DYN-SHIFT-LEFT-OP :
+            ;   match(args(e)[1]) :
+            ;      (x:UIntValue|SIntValue) :
+            ;         DoPrim(SHIFT-LEFT-OP,list(args(e)[0]),list(to-int(value(x))),UnknownType())
+            ;      (x) : e
             SHIFT-RIGHT-OP :
                match(args(e)[0]) :
                   (x:UIntValue) : 
