@@ -2530,7 +2530,7 @@ defn emit-verilog (m:InModule) -> Module :
                val addr* = delay(addr,read-latency(s),clk)
                val en* = delay(en,read-latency(s),clk)
                val mem-port = WSubAccess(mem,addr*,UnknownType(),UNKNOWN-GENDER)
-               update(data,mem-port,clk,en*) ; m.r.data <= m[addr*]
+               assign(data,mem-port)
 
             for w in writers(s) do :
                val data = mem-exp(w,`data)
@@ -2587,7 +2587,7 @@ defn emit-verilog (m:InModule) -> Module :
                val raddr* = delay(raddr,read-latency(s),clk)
                val ren* = delay(ren,read-latency(s),clk)
                val rmem-port = WSubAccess(mem,raddr*,UnknownType(),UNKNOWN-GENDER)
-               update(rdata,rmem-port,clk,ren*)
+               assign(rdata,rmem-port)
 
                ; Write 
                assign(wdata,netlist[wdata])
