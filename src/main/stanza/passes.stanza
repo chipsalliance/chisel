@@ -2315,6 +2315,36 @@ defn lower-types (c:Circuit) -> Circuit :
    Circuit{info(c),_,main(c)} $
       for m in modules(c) map : lower-types(m)
 
+
+
+;============ RENAME VERILOG KEYWORDS =============
+
+public defstruct VerilogRename <: Pass
+public defmethod pass (b:VerilogRename) -> (Circuit -> Circuit) : verilog-rename
+public defmethod name (b:VerilogRename) -> String : "Verilog Rename"
+public defmethod short-name (b:VerilogRename) -> String : "Verilog Rename"
+
+defn verilog-rename (c:Circuit) -> Circuit :
+   defn verilog-rename-n (n:Symbol) -> Symbol :
+      if key?(v-keywords,n) : symbol-join([n `$])
+      else : n
+   defn verilog-rename-e (e:Expression) -> Expression :
+      match(e) :
+        (e:WRef) : WRef(verilog-rename-n(name(e)),type(e),kind(e),gender(e))
+        (e) : map(verilog-rename-e,e)
+   defn verilog-rename-s (s:Stmt) -> Stmt :
+      map{verilog-rename-n,_} $
+         map{verilog-rename-e,_} $
+            map(verilog-rename-s,s)
+      
+   Circuit{info(c),_,main(c)} $
+      for m in modules(c) map : 
+         val ports* = for p in ports(m) map :
+            Port(info(p),verilog-rename-n(name(p)),direction(p),type(p))
+         match(m) :
+            (m:InModule) : InModule(info(m),name(m),ports*,verilog-rename-s(body(m)))
+            (m:ExModule) : m
+
 ;============ VERILOG ==============
 
 public defstruct Verilog <: Pass :

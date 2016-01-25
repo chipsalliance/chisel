@@ -98,6 +98,7 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       InferWidths()
       CheckWidths()
       ;===============
+      VerilogRename() 
       Verilog(with-output(c)) 
       ;===============
       ;ToRealIR()             
