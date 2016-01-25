@@ -39,7 +39,7 @@ public defn firrtl-gensym (s:Symbol,sym-hash:HashTable<Symbol,Int>) -> Symbol :
          symbol-join([s delin num])
       else :
          sym-hash[s] = 0
-         s
+         symbol-join([s delin 0])
    val s* = to-string(s)
    val i* = generated?(s*)
    val nex = match(i*) :
