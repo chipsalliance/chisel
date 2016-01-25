@@ -1234,8 +1234,6 @@ defn expand-whens (c:Circuit) -> Circuit :
             (m:InModule) : 
                val [netlist simlist] = expand-whens(m)
                create-module(netlist,simlist,m)
-   for m in modules* do :
-      if name(m) == `RRArbiter_38 : print(m)
    Circuit(info(c),modules*,main(c))
 
 ;;================ Module Duplication ==================
