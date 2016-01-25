@@ -29,9 +29,9 @@ circuit top :
 ; CHECK:          write-latency: 1
 ; CHECK:          read-latency: 0
 ; CHECK:          writer: a
-; CHECK:       poison GEN : UInt<4>
+; CHECK:       poison GEN_0 : UInt<4>
 ; CHECK:       poison GEN_1 : { a : UInt<4>,  b : UInt<4>}
-; CHECK:       m.a.addr <= GEN
+; CHECK:       m.a.addr <= GEN_0
 ; CHECK:       m.a.clk <= clk
 ; CHECK:       m.a.en <= UInt("h0")
 ; CHECK:       m.a.data <= GEN_1
