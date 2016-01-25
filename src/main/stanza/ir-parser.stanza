@@ -76,7 +76,7 @@ OPERATORS[`eq] = EQUAL-OP
 OPERATORS[`neq] = NEQUAL-OP
 OPERATORS[`eqv] = EQUIV-OP
 OPERATORS[`neqv] = NEQUIV-OP
-OPERATORS[`mux] = MUX-OP
+;OPERATORS[`mux] = MUX-OP
 OPERATORS[`pad] = PAD-OP
 OPERATORS[`neg] = NEG-OP
 OPERATORS[`asUInt] = AS-UINT-OP
@@ -365,6 +365,8 @@ defsyntax firrtl :
                      val num-bits = req-num-bits(v as Int)
                      SIntValue(BigIntLit(v as Int,num-bits), IntWidth(num-bits))
 
+      expterm = (mux(?cond:#exp ?tval:#exp ?fval:#exp)) :
+         Mux(cond,tval,fval,UnknownType())
       expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Illegal operands to primitive operator.")

@@ -204,7 +204,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
          NEQUAL-OP          : correct-num(2,0)
          EQUIV-OP           : correct-num(2,0)
          NEQUIV-OP          : correct-num(2,0)
-         MUX-OP             : correct-num(3,0)
+         ;MUX-OP             : correct-num(3,0)
          PAD-OP             : correct-num(1,1)
          AS-UINT-OP         : correct-num(1,0)
          AS-SINT-OP         : correct-num(1,0)
@@ -262,7 +262,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
       defn check-high-form-e (e:Expression) -> Expression :
          defn valid-subexp (e:Expression) -> Expression :
             match(e) :
-               (e:Ref|SubField|SubIndex|SubAccess) : false
+               (e:Ref|SubField|SubIndex|SubAccess|Mux) : false
                (e) : add(errors,InvalidAccess())
             e
          match(map(check-high-form-e,e)) :
@@ -270,6 +270,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
                if not key?(names,name(e)) : 
                   add(errors,UndeclaredReference(name(e)))
             (e:DoPrim) : check-high-form-primop(e)
+            (e:Mux) : e
             (e:UIntValue) : false
             (e:SubAccess) : 
                valid-subexp(exp(e))
@@ -410,9 +411,21 @@ defn OpNotAllSameType (info:FileInfo, op:Symbol) :
    PassException $ string-join $
    [info ": [module " mname "]  Primop " op " requires all operands to have the same type."]
 
-defn NodeGroundType (info:FileInfo) :
+defn NodePassiveType (info:FileInfo) :
    PassException $ string-join $
-   [info ": [module " mname "]  Node must be a ground type."]
+   [info ": [module " mname "]  Node must be a passive type."]
+
+defn MuxSameType (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Must mux between equivalent types."]
+
+defn MuxPassiveTypes (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Must mux between passive types."]
+
+defn MuxCondUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  A mux condition must be of type UInt."]
 
 ;---------------- Helper Functions --------------
 defmethod equal? (t1:Type,t2:Type) -> True|False :
@@ -480,9 +493,9 @@ defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -
       NEQUAL-OP          : false
       EQUIV-OP           : all-same-type(args(e))
       NEQUIV-OP          : all-same-type(args(e))
-      MUX-OP             : 
-         all-same-type(tail(args(e)))
-         is-uint(head(args(e)))
+      ;MUX-OP             : 
+      ;   all-same-type(tail(args(e)))
+      ;   is-uint(head(args(e)))
       PAD-OP             : false
       AS-UINT-OP         : false
       AS-SINT-OP         : false
@@ -506,6 +519,17 @@ defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -
 ;----------------- Check Types Pass ---------------------
 public defn check-types (c:Circuit) -> Circuit : 
    val errors = Vector<PassException>()
+   defn passive? (t:Type) -> True|False :
+      match(t) :
+         (t:UIntType|SIntType) : true
+         (t:VectorType) : passive?(type(t))
+         (t:BundleType) : 
+            var p? = true
+            for x in fields(t) do :
+               if (flip(x) == REVERSE) : p? = false
+               if not passive?(type(x)) : p? = false
+            p?
+         (t) : true
    defn check-types-e (info:FileInfo,e:Expression) -> Expression :
       match(map(check-types-e{info,_},e)) :
          (e:WRef) : e
@@ -528,6 +552,11 @@ public defn check-types (c:Circuit) -> Circuit :
                (t:UIntType) : false
                (t) : add(errors,AccessIndexNotUInt(info))
          (e:DoPrim) : check-types-primop(e,errors,info)
+         (e:Mux) :
+            if type(tval(e)) != type(fval(e)) : add(errors,MuxSameType(info))
+            if not passive?(type(e)) : add(errors,MuxPassiveTypes(info))
+            if not passive?(type(e)) : add(errors,MuxPassiveTypes(info))
+            if not (type(cond(e)) typeof UIntType) : add(errors,MuxCondUInt(info))
          (e:UIntValue|SIntValue) : false
       e
 
@@ -568,8 +597,8 @@ public defn check-types (c:Circuit) -> Circuit :
             (s:Conditionally) :
                if type(pred(s)) != ut() : add(errors,PredNotUInt(info(s)))
             (s:DefNode) :
-               if not type(value(s)) typeof UIntType|SIntType :
-                  add(errors,NodeGroundType(info(s)))
+               if not passive?(type(value(s))) :
+                  add(errors,NodePassiveType(info(s)))
             (s) : false
          s }()
    
@@ -668,6 +697,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (e:DoPrim) : MALE
          (e:UIntValue) : MALE
          (e:SIntValue) : MALE
+         (e:Mux) : MALE
 
    defn check-genders-e (info:FileInfo,e:Expression,genders:HashTable<Symbol,Gender>) -> False :
       do(check-genders-e{info,_,genders},e)
@@ -679,6 +709,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (e:DoPrim) : 
             for e in args(e) do :
                check-gender(info,genders,e,MALE)
+         (e:Mux) : do(check-gender{info,genders,_,MALE},e)
          (e:UIntValue) : false
          (e:SIntValue) : false
      
@@ -712,7 +743,6 @@ public defn check-genders (c:Circuit) -> Circuit :
             check-gender(info(s),genders,en(s),MALE)
             check-gender(info(s),genders,clk(s),MALE)
          (s:Begin) : false
-
 
    for m in modules(c) do :
       mname = name(m)

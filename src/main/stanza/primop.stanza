@@ -95,11 +95,11 @@ public defn set-primop-type (e:DoPrim) -> DoPrim :
       NEQUAL-OP : DoPrim(o,a,c,BoolType())
       EQUIV-OP : DoPrim(o,a,c,BoolType())
       NEQUIV-OP : DoPrim(o,a,c,BoolType())
-      MUX-OP : DoPrim{o,a,c,_} $
-         match(t2(),t3()) :
-            (t2:UIntType, t3:UIntType) : UIntType(MAX(w2(),w3()))
-            (t2:SIntType, t3:SIntType) : SIntType(MAX(w2(),w3()))
-            (t2, t3) : UnknownType()
+      ;MUX-OP : DoPrim{o,a,c,_} $
+      ;   match(t2(),t3()) :
+      ;      (t2:UIntType, t3:UIntType) : UIntType(MAX(w2(),w3()))
+      ;      (t2:SIntType, t3:SIntType) : SIntType(MAX(w2(),w3()))
+      ;      (t2, t3) : UnknownType()
       PAD-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType) : UIntType(c1())

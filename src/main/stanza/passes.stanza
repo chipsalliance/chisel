@@ -115,6 +115,7 @@ defmethod info (stmt:Empty) -> FileInfo : FileInfo()
 
 defmethod type (exp:UIntValue) -> Type : UIntType(width(exp))
 defmethod type (exp:SIntValue) -> Type : SIntType(width(exp))
+defmethod type (exp:WVoid) -> Type : UnknownType()
 
 defmethod get-type (s:WDefInstance) -> Type : type(s)
 
@@ -148,6 +149,10 @@ defmethod equal? (e1:Expression,e2:Expression) -> True|False :
             if not x == y : 
                are-equal? = false
          are-equal?
+      (e1:Mux,e2:Mux) : 
+         (cond(e1) == cond(e2)) and 
+         (tval(e1) == tval(e2)) and 
+         (fval(e1) == fval(e2))
       (e1,e2) : false
 
 ; ================= PRINTERS ===================
@@ -439,6 +444,23 @@ defn to-gender (d:Direction) -> Gender :
       INPUT: MALE
       OUTPUT: FEMALE
 
+public defn mux-type-and-widths (e1:Expression,e2:Expression) -> Type :
+   mux-type-and-widths(type(e1),type(e2))
+public defn mux-type-and-widths (t1:Type,t2:Type) -> Type :
+   defn wmax (w1:Width,w2:Width) -> Width :
+      match(w1,w2) :
+         (w1:IntWidth,w2:IntWidth) : IntWidth(max(width(w1),width(w2)))
+         (w1,w2) : MaxWidth(list(w1,w2))
+   if t1 == t2 :
+      match(t1,t2) :
+         (t1:UIntType,t2:UIntType) : UIntType(wmax(width(t1),width(t2)))
+         (t1:SIntType,t2:SIntType) : SIntType(wmax(width(t1),width(t2)))
+         (t1:VectorType,t2:VectorType) : VectorType(mux-type-and-widths(type(t1),type(t2)),size(t1))
+         (t1:BundleType,t2:BundleType) : 
+            BundleType $ for (f1 in fields(t1),f2 in fields(t2)) map :
+               Field(name(f1),flip(f1),mux-type-and-widths(type(f1),type(f2)))
+   else : UnknownType()
+
 ;================= Remove Special Characters ========================
 ; Returns a new Circuit where all names have all special characters 
 ;    removed, except _.
@@ -675,6 +697,7 @@ defn infer-types (c:Circuit) -> Circuit :
             (e:WSubIndex) : WSubIndex(exp(e),value(e),sub-type(type(exp(e))),gender(e))
             (e:WSubAccess) : WSubAccess(exp(e),index(e),sub-type(type(exp(e))),gender(e))
             (e:DoPrim) : set-primop-type(e)
+            (e:Mux) : Mux(cond(e),tval(e),fval(e),mux-type-and-widths(tval(e),tval(e)))
             (e:UIntValue|SIntValue) : e
       defn infer-types-s (s:Stmt) -> Stmt :
          match(s) :
@@ -846,14 +869,19 @@ defn get-point (e:Expression) -> Int :
 defn create-exps (n:Symbol, t:Type) -> List<Expression> :
    create-exps(WRef(n,t,ExpKind(),UNKNOWN-GENDER))
 defn create-exps (e:Expression) -> List<Expression> :
-   match(type(e)) : 
-      (t:UIntType|SIntType|ClockType) : list(e)
-      (t:BundleType) : 
-         for f in fields(t) map-append :
-            create-exps(WSubField(e,name(f),type(f),gender(e) * flip(f)))
-      (t:VectorType) :
-         for i in 0 to size(t) map-append :
-            create-exps(WSubIndex(e,i,type(t),gender(e)))
+   match(e) :
+      (e:Mux) :
+         for (e1 in create-exps(tval(e)), e2 in create-exps(fval(e))) map :
+            Mux(cond(e),e1,e2,mux-type-and-widths(e1,e2))
+      (e) :
+         match(type(e)) : 
+            (t:UIntType|SIntType|ClockType) : list(e)
+            (t:BundleType) : 
+               for f in fields(t) map-append :
+                  create-exps(WSubField(e,name(f),type(f),gender(e) * flip(f)))
+            (t:VectorType) :
+               for i in 0 to size(t) map-append :
+                  create-exps(WSubIndex(e,i,type(t),gender(e)))
 
 defn gexp-hash (e:Expression) -> Int :
    turn-off-debug(false)
@@ -870,18 +898,25 @@ defn fast-create-exps (e:Expression) -> List<Expression> :
    if key?(hashed-create-exps,e) : 
       hashed-create-exps[e]
    else :
-      val es = Vector<List<Expression>>()
-      match(type(e)) : 
-         (t:UIntType|SIntType|ClockType) : add(es,list(e))
-         (t:BundleType) : 
-            for f in fields(t) do :
-               add(es,fast-create-exps(WSubField(e,name(f),type(f),gender(e) * flip(f))))
-         (t:VectorType) :
-            for i in 0 to size(t) do :
-               add(es,fast-create-exps(WSubIndex(e,i,type(t),gender(e))))
-      val x = append-all(es)
-      hashed-create-exps[e] = x
-      x
+      match(e) :
+         (e:Mux) :
+            val x = for (e1 in create-exps(tval(e)), e2 in create-exps(fval(e))) map :
+               Mux(cond(e),e1,e2,mux-type-and-widths(e1,e2))
+            hashed-create-exps[e] = x
+            x
+         (e) : 
+            val es = Vector<List<Expression>>()
+            match(type(e)) : 
+               (t:UIntType|SIntType|ClockType) : add(es,list(e))
+               (t:BundleType) : 
+                  for f in fields(t) do :
+                     add(es,fast-create-exps(WSubField(e,name(f),type(f),gender(e) * flip(f))))
+               (t:VectorType) :
+                  for i in 0 to size(t) do :
+                     add(es,fast-create-exps(WSubIndex(e,i,type(t),gender(e))))
+            val x = append-all(es)
+            hashed-create-exps[e] = x
+            x
 
 ;---------------- Pass ---------------------
 
@@ -995,6 +1030,7 @@ defn remove-access (c:Circuit) :
          defn remove-e (e:Expression) -> Expression : ;NOT RECURSIVE (except primops) INTENTIONALLY!
             match(e) :
                (e:DoPrim) : map(remove-e,e)
+               (e:Mux) : map(remove-e,e)
                (e:UIntValue|SIntValue) : e
                (e) :
                   if has-access?(e) :
@@ -1115,7 +1151,9 @@ defn expand-whens (c:Circuit) -> Circuit :
                   val value = get?(netlist,lvalue,false)
                   match(value) :
                      (value:Expression) :
-                        netlist[lvalue] = MUX(pred(s),c-netlist[lvalue],value)
+                        val tv = c-netlist[lvalue]
+                        val fv = value
+                        netlist[lvalue] = Mux(pred(s),tv,fv,mux-type-and-widths(tv,fv))
                      (value:False) :
                         netlist[lvalue] = c-netlist[lvalue]
             (s:Print) : 
@@ -1479,10 +1517,9 @@ defn infer-widths (c:Circuit) -> Circuit :
             get-constraints(type(t1),type(t2),f)
    defn get-constraints-e (e:Expression) -> Expression :
       match(map(get-constraints-e,e)) :
-         (e:DoPrim) : 
-            if op(e) == MUX-OP : 
-               constrain(width!(args(e)[0]),ONE)
-               constrain(ONE,width!(args(e)[0]))
+         (e:Mux) : 
+            constrain(width!(cond(e)),ONE)
+            constrain(ONE,width!(cond(e)))
             e
          (e) : e
    defn get-constraints (s:Stmt) -> Stmt :
@@ -1638,7 +1675,7 @@ defn split-exp (m:InModule) -> InModule :
       defn split-exp-e (e:Expression,i:Int) -> Expression :
          match(map(split-exp-e{_,i + 1},e)) :
             (e:DoPrim) :
-               if i > 0 and op(e) != MUX-OP : split(e)
+               if i > 0 : split(e)
                else : e
             (e) : e
       match(map(split-exp-e{_,0},s)) :
@@ -2115,6 +2152,7 @@ defn lower-types (m:Module) -> Module :
                      else : e
                   (k) : WRef(lowered-name(e),type(e),kind(e),gender(e))
             (e:DoPrim) : map(lower-types-e,e)
+            (e:Mux) : map(lower-types-e,e)
       match(map(lower-types-e,s)) :
          (s:DefWire|DefPoison) :
             if is-ground?(type(s)) : s
@@ -2216,11 +2254,17 @@ defn rand-string (t:Type) -> Streamable :
    ["{" w* "{" ran "}}"]
 defn emit (x:?) : emit(x,0)
 defn emit (x:?, top:Int) :
+   defn cast (e:Expression) -> ? :
+      match(type(e)) :
+         (t:UIntType) : e
+         (t:SIntType) : ["$signed(" e ")"]
    match(x) :
       (e:Expression) :
          turn-off-debug(false)
          match(e) :
             (e:DoPrim) : emit(op-stream(e), top + 1)
+            (e:Mux) : 
+               emit([cond(e) " ? " cast(tval(e)) " : " cast(fval(e))],top + 1)
             (e:WRef) : print(e)
             (e:WSubField) : print(lowered-name(e))
             (e:WSubAccess) : print-all([lowered-name(exp(e)) "[" lowered-name(index(e)) "]"])
@@ -2296,7 +2340,7 @@ defn op-stream (doprim:DoPrim) -> Streamable :
       EQUIV-OP : [cast-if(a0()) " == " cast-if(a1())]
       NEQUAL-OP : [cast-if(a0()) " != " cast-if(a1())]
       EQUAL-OP : [cast-if(a0()) " == " cast-if(a1())]
-      MUX-OP : [a0() " ? " cast(a1()) " : " cast(a2())]
+      ;MUX-OP : [a0() " ? " cast(a1()) " : " cast(a2())]
       PAD-OP : 
          val w = long!(type(a0()))
          val diff = (to-long(c0()) - w)
@@ -2371,27 +2415,20 @@ defn emit-verilog (m:InModule) -> Module :
       add(assigns,["assign " e " = " value ";"])
    defn update-and-reset (r:Expression,clk:Expression,reset?:Expression,init:Expression) :
       if not key?(at-clock,clk) : at-clock[clk] = Vector<Streamable>()
-
-      defn mux? (e:Expression) -> True|False :
-         match(e) :
-            (e:DoPrim) : 
-               if (op(e) == MUX-OP) : true
-               else : false
-            (e) : false
-
       defn add-update (e:Expression,tabs:String) :
-         if mux?(e) :
-            val e* = e as DoPrim
-            add(at-clock[clk],[tabs "if(" args(e*)[0] ") begin"])
-            add-update(args(e*)[1],string-join([tabs tab]))
-            add(at-clock[clk],[tabs "end else begin"])
-            add-update(args(e*)[2],string-join([tabs tab]))
-            add(at-clock[clk],[tabs "end"])
-         else :
-            if e == r : add(at-clock[clk],[tabs ";"])
-            else : add(at-clock[clk],[tabs r " <= " e ";"])
-
-      add-update(MUX(reset?,init,netlist[r]),"");"
+         match(e) :
+            (e:Mux) :
+               add(at-clock[clk],[tabs "if(" cond(e) ") begin"])
+               add-update(tval(e),string-join([tabs tab]))
+               add(at-clock[clk],[tabs "end else begin"])
+               add-update(fval(e),string-join([tabs tab]))
+               add(at-clock[clk],[tabs "end"])
+            (e) :
+               if e == r : add(at-clock[clk],[tabs ";"])
+               else : add(at-clock[clk],[tabs r " <= " e ";"])
+      val tv = init
+      val fv = netlist[r]
+      add-update(Mux(reset?,tv,fv,mux-type-and-widths(tv,fv)),"");"
    defn update (e:Expression,value:Expression,clk:Expression,en:Expression) :
       if not key?(at-clock,clk) :
          at-clock[clk] = Vector<Streamable>()

@@ -99,6 +99,7 @@ defn infer-types (c:Circuit) -> Circuit :
             (e:SubIndex) : SubIndex(exp(e),value(e),sub-type(type(exp(e))))
             (e:SubAccess) : SubAccess(exp(e),index(e),sub-type(type(exp(e))))
             (e:DoPrim) : set-primop-type(e)
+            (e:Mux) : Mux(cond(e),tval(e),fval(e),mux-type(tval(e),tval(e)))
             (e:UIntValue|SIntValue) : e
       defn infer-types-s (s:Stmt) -> Stmt :
          match(s) :
@@ -220,14 +221,20 @@ public val MALE = new Gender
 public val FEMALE = new Gender
 
 defn create-exps (e:Expression) -> List<Expression> :
-   match(type(e)) : 
-      (t:UIntType|SIntType|ClockType) : list(e)
-      (t:BundleType) : 
-         for f in fields(t) map-append :
-            create-exps(SubField(e,name(f),type(f)))
-      (t:VectorType) :
-         for i in 0 to size(t) map-append :
-            create-exps(SubIndex(e,i,type(t)))
+   match(e) :
+      (e:Mux) :
+         for (e1 in create-exps(tval(e)), e2 in create-exps(fval(e))) map :
+            Mux(cond(e),e1,e2,mux-type(e1,e2))
+      (e) :
+      match(type(e)) : 
+         (t:UIntType|SIntType|ClockType) : list(e)
+         (t:BundleType) : 
+            for f in fields(t) map-append :
+               create-exps(SubField(e,name(f),type(f)))
+         (t:VectorType) :
+            for i in 0 to size(t) map-append :
+               create-exps(SubIndex(e,i,type(t)))
+         (t:UnknownType) : list(e)
 
 defn remove-chirrtl (c:Circuit) :
    defn remove-chirrtl-m (m:InModule) -> InModule :

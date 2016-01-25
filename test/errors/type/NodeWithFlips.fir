@@ -1,5 +1,5 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
-; CHECK: Node must be a ground type.
+; CHECK: Node must be a passive type.
 
 circuit Top : 
   module Top : 

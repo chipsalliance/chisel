@@ -45,7 +45,7 @@ public val NEQUAL-OP = new PrimOp
 public val EQUAL-OP = new PrimOp
 public val NEQUIV-OP = new PrimOp
 public val EQUIV-OP = new PrimOp
-public val MUX-OP = new PrimOp
+;public val MUX-OP = new PrimOp
 public val PAD-OP = new PrimOp
 public val AS-UINT-OP = new PrimOp
 public val AS-SINT-OP = new PrimOp
@@ -83,6 +83,11 @@ public defstruct SubIndex <: Expression :
 public defstruct SubAccess <: Expression :
    exp: Expression
    index: Expression
+   type: Type with: (as-method => true)
+public defstruct Mux <: Expression :
+   cond: Expression
+   tval: Expression
+   fval: Expression
    type: Type with: (as-method => true)
 public defstruct UIntValue <: Expression :
    value: BigInt

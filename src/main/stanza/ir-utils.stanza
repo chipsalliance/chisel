@@ -113,7 +113,20 @@ public defn EQV (e1:Expression,e2:Expression) -> Expression :
    DoPrim(EQUIV-OP,list(e1,e2),list(),type(e1))
 
 public defn MUX (p:Expression,e1:Expression,e2:Expression) -> Expression :
-   DoPrim(MUX-OP,list(p,e1,e2),list(),type(e1))
+   Mux(p,e1,e2,mux-type(type(e1),type(e2)))
+
+public defn mux-type (e1:Expression,e2:Expression) -> Type :
+   mux-type(type(e1),type(e2))
+public defn mux-type (t1:Type,t2:Type) -> Type :
+   if t1 == t2 :
+      match(t1,t2) :
+         (t1:UIntType,t2:UIntType) : UIntType(UnknownWidth())
+         (t1:SIntType,t2:SIntType) : SIntType(UnknownWidth())
+         (t1:VectorType,t2:VectorType) : VectorType(mux-type(type(t1),type(t2)),size(t1))
+         (t1:BundleType,t2:BundleType) : 
+            BundleType $ for (f1 in fields(t1),f2 in fields(t2)) map :
+               Field(name(f1),flip(f1),mux-type(type(f1),type(f2)))
+   else : UnknownType()
 
 public defn CAT (e1:Expression,e2:Expression) -> Expression :
    DoPrim(CONCAT-OP,list(e1,e2),list(),type(e1))
@@ -365,7 +378,7 @@ defmethod print (o:OutputStream, op:PrimOp) :
       NEQUIV-OP : "neqv"
       EQUAL-OP : "eq"
       NEQUAL-OP : "neq"
-      MUX-OP : "mux"
+      ;MUX-OP : "mux"
       PAD-OP : "pad"
       AS-UINT-OP : "asUInt"
       AS-SINT-OP : "asSInt"
@@ -398,6 +411,8 @@ defmethod print (o:OutputStream, e:Expression) :
          print-all(o, [op(e) "("])
          print-all(o, join(concat(args(e), consts(e)), ", "))
          print(o, ")")
+      (e:Mux) :
+         print-all(o, ["mux(" cond(e) ", " tval(e) ", " fval(e) ")"])
    print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :
@@ -529,6 +544,7 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:SubIndex) : SubIndex(f(exp(e)), value(e), type(e))
       (e:SubAccess) : SubAccess(f(exp(e)), f(index(e)), type(e)) 
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
+      (e:Mux) : Mux(f(cond(e)),f(tval(e)),f(fval(e)),type(e))
       (e) : e
 
 public defmulti map<?T> (f: Symbol -> Symbol, c:?T&Stmt) -> T
@@ -584,6 +600,7 @@ defmethod map (f: Type -> Type, c:Expression) -> Expression :
       (c:SubIndex) : SubIndex(exp(c),value(c),f(type(c)))
       (c:SubAccess) : SubAccess(exp(c),index(c),f(type(c)))
       (c:DoPrim) : DoPrim(op(c),args(c),consts(c),f(type(c)))
+      (c:Mux) : Mux(cond(c),tval(c),fval(c),f(type(c)))
       (c) : c
 
 public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T
