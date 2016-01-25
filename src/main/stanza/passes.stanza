@@ -697,7 +697,7 @@ defn infer-types (c:Circuit) -> Circuit :
             (e:WSubIndex) : WSubIndex(exp(e),value(e),sub-type(type(exp(e))),gender(e))
             (e:WSubAccess) : WSubAccess(exp(e),index(e),sub-type(type(exp(e))),gender(e))
             (e:DoPrim) : set-primop-type(e)
-            (e:Mux) : Mux(cond(e),tval(e),fval(e),mux-type-and-widths(tval(e),tval(e)))
+            (e:Mux) : Mux(cond(e),tval(e),fval(e),mux-type-and-widths(tval(e),fval(e)))
             (e:UIntValue|SIntValue) : e
       defn infer-types-s (s:Stmt) -> Stmt :
          match(s) :
