@@ -52,7 +52,7 @@ circuit top :
       wire T_114 : UInt<128>
       T_114 <= UInt<1>("h00")
       T_114 <= T_113
-      write mport T_116 = T_84[waddr],clock,UInt(1)
+      write mport T_116 = T_84[waddr],clock
       T_116 <= T_114
       skip
     node T_118 = neq(T_66, UInt<1>("h00"))
@@ -90,7 +90,7 @@ circuit top :
       wire T_154 : UInt<128>
       T_154 <= UInt<1>("h00")
       T_154 <= T_153
-      write mport T_156 = T_124[waddr],clock,UInt(1)
+      write mport T_156 = T_124[waddr],clock
       T_156 <= T_154
       skip
     node T_158 = neq(T_66, UInt<1>("h00"))
@@ -159,7 +159,7 @@ circuit top :
       wire T_241 : UInt<128>
       T_241 <= UInt<1>("h00")
       T_241 <= T_240
-      write mport T_243 = T_211[waddr],clock,UInt(1)
+      write mport T_243 = T_211[waddr],clock
       T_243 <= T_241
       skip
     node T_245 = neq(T_193, UInt<1>("h00"))
@@ -197,7 +197,7 @@ circuit top :
       wire T_281 : UInt<128>
       T_281 <= UInt<1>("h00")
       T_281 <= T_280
-      write mport T_283 = T_251[waddr],clock,UInt(1)
+      write mport T_283 = T_251[waddr],clock
       T_283 <= T_281
       skip
     node T_285 = neq(T_193, UInt<1>("h00"))

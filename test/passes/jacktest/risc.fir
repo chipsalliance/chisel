@@ -30,7 +30,7 @@ circuit Risc :
     out <= UInt<1>(0)
     rc <= UInt<1>(0)
     when isWr : 
-      write mport T_55 = code[wrAddr],clk,UInt(1)
+      write mport T_55 = code[wrAddr],clk
       T_55 <= wrData
     else : when boot : pc <= UInt<1>(0)
       else : 
@@ -47,7 +47,7 @@ circuit Risc :
         node T_61 = eq(rci, UInt<8>(255))
         when T_61 : valid <= UInt<1>(1)
         else : 
-          write mport T_62 = file[rci],clk,UInt(1)
+          write mport T_62 = file[rci],clk
           T_62 <= rc
         node T_63 = addw(pc, UInt<1>(1))
         pc <= T_63

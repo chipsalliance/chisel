@@ -11,7 +11,7 @@ circuit Tbl :
     cmem m : UInt<10>[256]
     o <= UInt<1>(0)
     when we : 
-      write mport T_13 = m[i],clk,UInt(1)
+      write mport T_13 = m[i],clk
       node T_14 = bits(d, 9, 0)
       T_13 <= T_14
     else : 

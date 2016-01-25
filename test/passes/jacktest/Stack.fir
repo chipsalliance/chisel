@@ -17,7 +17,7 @@ circuit Stack :
       node T_30 = lt(sp, UInt<5>(16))
       node T_31 = and(push, T_30)
       when T_31 : 
-        write mport T_32 = stack_mem[sp],clk,UInt(1)
+        write mport T_32 = stack_mem[sp],clk
         T_32 <= dataIn
         node T_33 = addw(sp, UInt<1>(1))
         sp <= T_33
