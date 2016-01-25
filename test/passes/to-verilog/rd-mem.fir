@@ -29,13 +29,13 @@ circuit top :
 ;CHECK:    wire [1:0] m_c_addr;
 ;CHECK:    wire  m_c_en;
 ;CHECK:    wire  m_c_clk;
-;CHECK:    reg [1:0] GEN;
+;CHECK:    reg [1:0] GEN_0;
 ;CHECK:    reg  GEN_1;
 ;CHECK:    assign rdata = m_c_data;
 ;CHECK:    assign m_c_addr = index;
 ;CHECK:    assign m_c_en = ren;
 ;CHECK:    assign m_c_clk = clk;
-;CHECK:    assign m_c_data = m[GEN];
+;CHECK:    assign m_c_data = m[GEN_0];
 ;CHECK: `ifndef SYNTHESIS
 ;CHECK:   integer initvar;
 ;CHECK:   initial begin
@@ -45,7 +45,7 @@ circuit top :
 ;CHECK:   end
 ;CHECK: `endif
 ;CHECK:    always @(posedge m_c_clk) begin
-;CHECK:       GEN <= m_c_addr;
+;CHECK:       GEN_0 <= m_c_addr;
 ;CHECK:       GEN_1 <= m_c_en;
 ;CHECK:    end
 ;CHECK: endmodule

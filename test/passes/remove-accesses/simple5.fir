@@ -14,8 +14,8 @@ circuit top :
          o <= m[i] 
 
 ;CHECK: when i :
-;CHECK: GEN <= m[0]
-;CHECK: when eqv(UInt("h1"), i) : GEN <= m[1]
-;CHECK: o <= GEN
+;CHECK: GEN_0 <= m[0]
+;CHECK: when eqv(UInt("h1"), i) : GEN_0 <= m[1]
+;CHECK: o <= GEN_0
 ;CHECK: Finished Remove Accesses
 ;CHECK: Done!

@@ -19,11 +19,11 @@ circuit top :
       j <= a[i]
       a[i] <= j
 
-;CHECK: wire GEN : UInt<32>
+;CHECK: wire GEN_0 : UInt<32>
 ;CHECK: wire GEN_1 : UInt<32>
 ;CHECK: wire GEN_2 : UInt<32>
 ;CHECK: wire GEN_3 : UInt<32>
-;CHECK: j_x <= GEN
+;CHECK: j_x <= GEN_0
 ;CHECK: j_y <= GEN_3
 ;CHECK: node GEN_4 = eqv(UInt("h0"), i)
 ;CHECK: a_0_x <= mux(GEN_4, GEN_2, UInt("h0"))
@@ -34,7 +34,7 @@ circuit top :
 ;CHECK: node GEN_7 = eqv(UInt("h1"), i)
 ;CHECK: a_1_y <= mux(GEN_7, GEN_1, UInt("h0"))
 ;CHECK: node GEN_8 = eqv(UInt("h1"), i)
-;CHECK: GEN <= mux(GEN_8, a_1_x, a_0_x)
+;CHECK: GEN_0 <= mux(GEN_8, a_1_x, a_0_x)
 ;CHECK: GEN_1 <= j_y
 ;CHECK: GEN_2 <= j_x
 ;CHECK: node GEN_9 = eqv(UInt("h1"), i)

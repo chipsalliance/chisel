@@ -12,10 +12,10 @@ circuit top :
       m[i] <= a
       a <= in
 
-;CHECK: wire GEN : UInt<32>
-;CHECK: when eqv(UInt("h0"), i) : m[0] <= GEN
-;CHECK: when eqv(UInt("h1"), i) : m[1] <= GEN
-;CHECK: GEN <= a
+;CHECK: wire GEN_0 : UInt<32>
+;CHECK: when eqv(UInt("h0"), i) : m[0] <= GEN_0
+;CHECK: when eqv(UInt("h1"), i) : m[1] <= GEN_0
+;CHECK: GEN_0 <= a
 
 ;CHECK: Finished Remove Accesses
 

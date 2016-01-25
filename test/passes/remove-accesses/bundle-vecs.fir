@@ -29,10 +29,10 @@ circuit top :
 ; CHECK: a[1].x <= UInt("h1")
 ; CHECK: a[1].y <= UInt("h1")
 ; CHECK: wire b : { x : UInt<32>, flip y : UInt<32>}
-; CHECK: wire GEN : UInt<32>
-; CHECK: GEN <= a[0].x
-; CHECK: when eqv(UInt("h1"), i) : GEN <= a[1].x
-; CHECK: b.x <= GEN
+; CHECK: wire GEN_0 : UInt<32>
+; CHECK: GEN_0 <= a[0].x
+; CHECK: when eqv(UInt("h1"), i) : GEN_0 <= a[1].x
+; CHECK: b.x <= GEN_0
 ; CHECK: wire GEN_1 : UInt<32>
 ; CHECK: when eqv(UInt("h0"), i) : a[0].y <= GEN_1
 ; CHECK: when eqv(UInt("h1"), i) : a[1].y <= GEN_1
