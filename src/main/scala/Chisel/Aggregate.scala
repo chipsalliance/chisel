@@ -103,21 +103,16 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   private val self = IndexedSeq.fill(length)(gen)
 
-  override def <> (that: Data): Unit = that match {
-    case _: Vec[_] => this bulkConnect that
-    case _ => this badConnect that
-  }
+  override def <> (that: Data): Unit = this := that
 
-  /** Weak bulk connect, assigning elements in this Vec from elements in a Seq.
+  /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
-    * @note length mismatches silently ignored
+    * @note the length of this Vec must match the length of the input Seq
     */
-  def <> (that: Seq[T]): Unit =
-    for ((a, b) <- this zip that)
-      a <> b
+  def <> (that: Seq[T]): Unit = this := that
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T]): Unit = this bulkConnect that
+  def <> (that: Vec[T]): Unit = this := that.asInstanceOf[Data]
 
   override def := (that: Data): Unit = that match {
     case _: Vec[_] => this connect that
