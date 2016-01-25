@@ -199,14 +199,14 @@ public defmethod get-type (s:Stmt) -> Type :
 
          val mem-fields = Vector<Field>()
          for x in readers(s) do :
-            add(mem-fields,Field(x,DEFAULT,read-type))
+            add(mem-fields,Field(x,REVERSE,read-type))
          for x in writers(s) do :
-            add(mem-fields,Field(x,DEFAULT,write-type))
+            add(mem-fields,Field(x,REVERSE,write-type))
          for x in readwriters(s) do :
-            add(mem-fields,Field(x,DEFAULT,readwrite-type))
+            add(mem-fields,Field(x,REVERSE,readwrite-type))
          BundleType(to-list(mem-fields))
       (s:DefInstance) : UnknownType()
-      (s:Begin|Connect|BulkConnect|Stop|Print|Empty) : UnknownType()
+      (s:Begin|Connect|BulkConnect|Stop|Print|Empty|IsInvalid) : UnknownType()
      
 public defn get-size (t:Type) -> Int :
    val x = match(t) :
@@ -413,6 +413,8 @@ defmethod print (o:OutputStream, e:Expression) :
          print(o, ")")
       (e:Mux) :
          print-all(o, ["mux(" cond(e) ", " tval(e) ", " fval(e) ")"])
+      (e:ValidIf) :
+         print-all(o, ["validif(" cond(e) ", " value(e) ")"])
    print-debug(o,e)
 
 defmethod print (o:OutputStream, c:Stmt) :
@@ -455,6 +457,8 @@ defmethod print (o:OutputStream, c:Stmt) :
          do(print{o,_}, join(body(c), "\n"))
       (c:Connect) :
          print-all(o, [loc(c) " <= " exp(c)])
+      (c:IsInvalid) :
+         print-all(o, [exp(c) " is invalid"])
       (c:BulkConnect) :
          print-all(o, [loc(c) " <- " exp(c)])
       (c:Empty) :
@@ -545,6 +549,7 @@ defmethod map (f: Expression -> Expression, e:Expression) -> Expression :
       (e:SubAccess) : SubAccess(f(exp(e)), f(index(e)), type(e)) 
       (e:DoPrim) : DoPrim(op(e), map(f, args(e)), consts(e), type(e))
       (e:Mux) : Mux(f(cond(e)),f(tval(e)),f(fval(e)),type(e))
+      (e:ValidIf) : ValidIf(f(cond(e)),f(value(e)),type(e))
       (e) : e
 
 public defmulti map<?T> (f: Symbol -> Symbol, c:?T&Stmt) -> T
@@ -567,6 +572,7 @@ defmethod map (f: Expression -> Expression, c:Stmt) -> Stmt :
       (c:Conditionally) : Conditionally(info(c),f(pred(c)), conseq(c), alt(c))
       (c:Connect) : Connect(info(c),f(loc(c)), f(exp(c)))
       (c:BulkConnect) : BulkConnect(info(c),f(loc(c)), f(exp(c)))
+      (c:IsInvalid) : IsInvalid(info(c),f(exp(c)))
       (c:Stop) : Stop(info(c),ret(c),f(clk(c)),f(en(c)))
       (c:Print) : Print(info(c),string(c),map(f,args(c)),f(clk(c)),f(en(c)))
       (c) : c
@@ -601,6 +607,7 @@ defmethod map (f: Type -> Type, c:Expression) -> Expression :
       (c:SubAccess) : SubAccess(exp(c),index(c),f(type(c)))
       (c:DoPrim) : DoPrim(op(c),args(c),consts(c),f(type(c)))
       (c:Mux) : Mux(cond(c),tval(c),fval(c),f(type(c)))
+      (c:ValidIf) : ValidIf(cond(c),value(c),f(type(c)))
       (c) : c
 
 public defmulti map<?T> (f: Type -> Type, c:?T&Stmt) -> T

@@ -76,6 +76,7 @@ defstruct WIndexer <: Expression :
    type: Type with: (as-method => true)
    gender : Gender with: (as-method => true)
 public defstruct WVoid <: Expression
+public defstruct WInvalid <: Expression
 public defstruct WDefInstance <: Stmt :
    info: FileInfo with: (as-method => true)
    name: Symbol
@@ -90,8 +91,8 @@ defn get-gender (s:Stmt|Port) -> Gender :
    match(s) :
       (s:DefWire|DefRegister) : BI-GENDER
       (s:WDefInstance|DefNode|DefInstance|DefPoison) : MALE
-      (s:Begin|Connect|BulkConnect|Stop|Print|Empty) : UNKNOWN-GENDER
-      (s:DefMemory) : FEMALE
+      (s:Begin|Connect|BulkConnect|Stop|Print|Empty|IsInvalid) : UNKNOWN-GENDER
+      (s:DefMemory) : MALE
       (p:Port) :
          switch { _ == direction(p) } :
             INPUT : MALE
@@ -116,6 +117,7 @@ defmethod info (stmt:Empty) -> FileInfo : FileInfo()
 defmethod type (exp:UIntValue) -> Type : UIntType(width(exp))
 defmethod type (exp:SIntValue) -> Type : SIntType(width(exp))
 defmethod type (exp:WVoid) -> Type : UnknownType()
+defmethod type (exp:WInvalid) -> Type : UnknownType()
 
 defmethod get-type (s:WDefInstance) -> Type : type(s)
 
@@ -135,6 +137,7 @@ defmethod equal? (e1:Expression,e2:Expression) -> True|False :
       (e1:WSubAccess,e2:WSubAccess) : 
          (index(e1) == index(e2)) and (exp(e1) == exp(e2))
       (e1:WVoid,e2:WVoid) : true
+      (e1:WInvalid,e2:WInvalid) : true
       (e1:WIndexer,e2:WIndexer) : 
          var bool = (length(exps(e1)) == length(exps(e2)))
          for (e1* in exps(e1),e2* in exps(e2)) do :
@@ -153,6 +156,9 @@ defmethod equal? (e1:Expression,e2:Expression) -> True|False :
          (cond(e1) == cond(e2)) and 
          (tval(e1) == tval(e2)) and 
          (fval(e1) == fval(e2))
+      (e1:ValidIf,e2:ValidIf) : 
+         (cond(e1) == cond(e2)) and 
+         (value(e1) == value(e2))
       (e1,e2) : false
 
 ; ================= PRINTERS ===================
@@ -286,6 +292,9 @@ defmethod print (o:OutputStream, e:WSubAccess) :
    print-debug(o,e as ?)
 defmethod print (o:OutputStream, e:WVoid) :
    print(o,"VOID")
+   print-debug(o,e as ?)
+defmethod print (o:OutputStream, e:WInvalid) :
+   print(o,"INVALID")
    print-debug(o,e as ?)
 defmethod print (o:OutputStream, c:WIndexer) :
    print-all(o, [exps(c) "[" index(c) "]"])
@@ -692,6 +701,7 @@ defn infer-types (c:Circuit) -> Circuit :
       val types = HashTable<Symbol,Type>(symbol-hash)
       defn infer-types-e (e:Expression) -> Expression :
          match(map(infer-types-e,e)) :
+            (e:ValidIf) : ValidIf(cond(e),value(e),type(value(e)))
             (e:WRef) : WRef(name(e), types[name(e)],kind(e),gender(e))
             (e:WSubField) : WSubField(exp(e),name(e),field-type(type(exp(e)),name(e)),gender(e))
             (e:WSubIndex) : WSubIndex(exp(e),value(e),sub-type(type(exp(e))),gender(e))
@@ -781,6 +791,9 @@ defn resolve-genders (c:Circuit) :
          
    defn resolve-s (s:Stmt) -> Stmt :
       match(s) :
+         (s:IsInvalid) : 
+            val exp* = resolve-e(exp(s),FEMALE)
+            IsInvalid(info(s),exp*)
          (s:Connect) : 
             val loc* = resolve-e(loc(s),FEMALE)
             val exp* = resolve-e(exp(s),MALE)
@@ -814,16 +827,20 @@ defn pull-muxes (c:Circuit) -> Circuit :
          (e:WSubField) :
             match(exp(e)) :
                (e*:Mux) : Mux(cond(e*),WSubField(tval(e*),name(e),type(e),gender(e)),WSubField(fval(e*),name(e),type(e),gender(e)),type(e))
+               (e*:ValidIf) : ValidIf(cond(e*),WSubField(value(e*),name(e),type(e),gender(e)),type(e))
                (e*) : e
          (e:WSubIndex) :
             match(exp(e)) :
                (e*:Mux) : Mux(cond(e*),WSubIndex(tval(e*),value(e),type(e),gender(e)),WSubIndex(fval(e*),value(e),type(e),gender(e)),type(e))
+               (e*:ValidIf) : ValidIf(cond(e*),WSubIndex(value(e*),value(e),type(e),gender(e)),type(e))
                (e*) : e
          (e:WSubAccess) :
             match(exp(e)) :
                (e*:Mux) : Mux(cond(e*),WSubAccess(tval(e*),index(e),type(e),gender(e)),WSubAccess(fval(e*),index(e),type(e),gender(e)),type(e))
+               (e*:ValidIf) : ValidIf(cond(e*),WSubAccess(value(e*),index(e),type(e),gender(e)),type(e))
                (e*) : e
          (e:Mux) : e
+         (e:ValidIf) : e
          (e) : e
                
    defn pull-muxes (s:Stmt) -> Stmt :
@@ -888,6 +905,9 @@ defn create-exps (e:Expression) -> List<Expression> :
       (e:Mux) :
          for (e1 in create-exps(tval(e)), e2 in create-exps(fval(e))) map :
             Mux(cond(e),e1,e2,mux-type-and-widths(e1,e2))
+      (e:ValidIf) :
+         for e1 in create-exps(value(e)) map :
+            ValidIf(cond(e),e1,type(e1))
       (e) :
          match(type(e)) : 
             (t:UIntType|SIntType|ClockType) : list(e)
@@ -919,6 +939,11 @@ defn fast-create-exps (e:Expression) -> List<Expression> :
                Mux(cond(e),e1,e2,mux-type-and-widths(e1,e2))
             hashed-create-exps[e] = x
             x
+         (e:ValidIf) :
+            val x = for e1 in create-exps(value(e)) map :
+               ValidIf(cond(e),e1,type(e1))
+            hashed-create-exps[e] = x
+            x
          (e) : 
             val es = Vector<List<Expression>>()
             match(type(e)) : 
@@ -938,8 +963,41 @@ defn fast-create-exps (e:Expression) -> List<Expression> :
 defn expand-connects (c:Circuit) -> Circuit :
    defn expand-connects (m:InModule) -> InModule :
       mname = name(m)
+      val genders = HashTable<Symbol,Gender>(symbol-hash)
       defn expand-s (s:Stmt) -> Stmt :
+         defn set-gender (e:Expression) -> Expression :
+            match(map(set-gender,e)) :
+               (e:WRef) : WRef(name(e),type(e),kind(e),genders[name(e)])
+               (e:WSubField) : 
+                  val f = {_ as Field} $ 
+                     for f in fields(type(exp(e)) as BundleType) find :
+                        name(f) == name(e)
+                  val gender* = gender(exp(e)) * flip(f) 
+                  WSubField(exp(e),name(e),type(e),gender*)
+               (e:WSubIndex) : WSubIndex(exp(e),value(e),type(e),gender(exp(e)))
+               (e:WSubAccess) : WSubAccess(exp(e),index(e),type(e),gender(exp(e)))
+               (e) : e
          match(s) :
+            (s:DefWire|DefRegister) : 
+               genders[name(s)] = BI-GENDER
+               s
+            (s:WDefInstance|DefMemory|DefPoison|DefNode) : 
+               genders[name(s)] = MALE
+               s
+            (s:IsInvalid) :
+               val n = get-size(exp(s))
+               val invalids = Vector<Stmt>()
+               val exps = create-exps(exp(s))
+               for i in 0 to n do :
+                  val exp* = exps[i]
+                  val gexp* = set-gender(exp*)
+                  switch { _ == gender(gexp*) } :
+                     BI-GENDER : add(invalids,IsInvalid(info(s),exp*))
+                     FEMALE : add(invalids,IsInvalid(info(s),exp*))
+                     else : false
+               if length(invalids) == 0 : Empty()
+               else if length(invalids) == 1 : invalids[0]
+               else : Begin(to-list(invalids))
             (s:Connect) :
                val n = get-size(loc(s))
                val connects = Vector<Stmt>()
@@ -968,6 +1026,8 @@ defn expand-connects (c:Circuit) -> Circuit :
                Begin(to-list(connects))
             (s) : map(expand-s,s)
 
+      for p in ports(m) do :
+         genders[name(p)] = to-gender(direction(p))
       InModule(info(m),name(m),ports(m),expand-s(body(m)))
 
    Circuit(info(c),modules*, main(c)) where :
@@ -1046,6 +1106,7 @@ defn remove-access (c:Circuit) :
             match(e) :
                (e:DoPrim) : map(remove-e,e)
                (e:Mux) : map(remove-e,e)
+               (e:ValidIf) : map(remove-e,e)
                (e:UIntValue|SIntValue) : e
                (e) :
                   if has-access?(e) :
@@ -1153,6 +1214,7 @@ defn expand-whens (c:Circuit) -> Circuit :
       defn expand-whens (s:Stmt,netlist:HashTable<Expression,Expression>,p:Expression) -> Stmt :
          match(s) : 
             (s:Connect) : netlist[loc(s)] = exp(s)
+            (s:IsInvalid) : netlist[exp(s)] = WInvalid()
             (s:Conditionally) :
                val exps = Vector<Expression>()
                defn prefetch (s:Stmt) -> Stmt: 
@@ -1171,7 +1233,12 @@ defn expand-whens (c:Circuit) -> Circuit :
                      (value:Expression) :
                         val tv = c-netlist[lvalue]
                         val fv = value
-                        netlist[lvalue] = Mux(pred(s),tv,fv,mux-type-and-widths(tv,fv))
+                        val res = match(tv,fv) :
+                           (tv:WInvalid,fv:WInvalid) : WInvalid()
+                           (tv:WInvalid,fv) : ValidIf(NOT(pred(s)),fv,type(fv))
+                           (tv,fv:WInvalid) : ValidIf(pred(s),tv,type(tv))
+                           (tv,fv) : Mux(pred(s),tv,fv,mux-type-and-widths(tv,fv))
+                        netlist[lvalue] = res
                      (value:False) :
                         netlist[lvalue] = c-netlist[lvalue]
             (s:Print) : 
@@ -1207,7 +1274,10 @@ defn expand-whens (c:Circuit) -> Circuit :
                   val rvalue = 
                      if s typeof DefRegister : replace-void(e,netlist[e])
                      else : netlist[e]
-                  add(connections,Connect(info(s),e,rvalue))
+                  val con = match(rvalue) :
+                     (rvalue:WInvalid) : IsInvalid(info(s),e)
+                     (rvalue) : Connect(info(s),e,rvalue)
+                  add(connections,con)
             (s:DefPoison|DefNode) : 
                add(stmts,s)
             (s) : map(create,s)
@@ -1215,7 +1285,11 @@ defn expand-whens (c:Circuit) -> Circuit :
       create(body(m))
       for p in ports(m) do :
          for e in get-female-refs(name(p),type(p),get-gender(p)) do :
-            add(connections,Connect(info(p),e,netlist[e]))
+            val rvalue = netlist[e]
+            val con = match(rvalue) :
+               (rvalue:WInvalid) : IsInvalid(info(p),e)
+               (rvalue) : Connect(info(p),e,rvalue)
+            add(connections,con)
       for x in simlist do :
          add(stmts,x)
       InModule(info(m),name(m),ports(m),Begin(list(Begin(to-list(stmts)),Begin(to-list(connections)))))
@@ -2170,6 +2244,7 @@ defn lower-types (m:Module) -> Module :
                   (k) : WRef(lowered-name(e),type(e),kind(e),gender(e))
             (e:DoPrim) : map(lower-types-e,e)
             (e:Mux) : map(lower-types-e,e)
+            (e:ValidIf) : map(lower-types-e,e)
       match(s) :
          (s:DefWire|DefPoison) :
             if is-ground?(type(s)) : s
@@ -2201,6 +2276,13 @@ defn lower-types (m:Module) -> Module :
                val es = create-exps(name(s),data-type(s))
                Begin $ for e in es map :
                   DefMemory(info(s),lowered-name(e),type(e),depth(s),write-latency(s),read-latency(s),readers(s),writers(s),readwriters(s))
+         (s:IsInvalid) : 
+            val s* = map(lower-types-e,s)
+            if kind(exp(s*)) typeof MemKind :
+               val es = lower-mem(exp(s*))
+               Begin $ for e in es map :
+                  IsInvalid(info(s*),e)
+            else : s*
          (s:Connect) :
             val s* = map(lower-types-e,s)
             if kind(loc(s*)) typeof MemKind :
@@ -2277,6 +2359,7 @@ defn long! (t:Type) -> Long :
             w = w + long!(type(f))
          w
       (t:VectorType) : to-long(size(t)) * long!(type(t))
+      (t:ClockType) : to-long(1)
    
 defn rand-string (t:Type) -> Streamable : 
    val w* = ((long!(t) + to-long(31)) / to-long(32))
@@ -2292,8 +2375,8 @@ defn emit (x:?, top:Int) :
          turn-off-debug(false)
          match(e) :
             (e:DoPrim) : emit(op-stream(e), top + 1)
-            (e:Mux) : 
-               emit([cond(e) " ? " cast(tval(e)) " : " cast(fval(e))],top + 1)
+            (e:Mux) : emit([cond(e) " ? " cast(tval(e)) " : " cast(fval(e))],top + 1)
+            (e:ValidIf) : emit([cast(value(e))],top + 1)
             (e:WRef) : print(e)
             (e:WSubField) : print(lowered-name(e))
             (e:WSubAccess) : print-all([lowered-name(exp(e)) "[" lowered-name(index(e)) "]"])
@@ -2422,6 +2505,10 @@ defn emit-verilog (m:InModule) -> Module :
    defn build-netlist (s:Stmt) -> Stmt :
       match(s) :
          (s:Connect) : netlist[loc(s)] = exp(s)
+         (s:IsInvalid) : 
+            val n = firrtl-gensym(`GEN,namehash)
+            val e = wref(n,type(exp(s)))
+            netlist[exp(s)] = e
          (s:Conditionally) : add(simlist,s)
          (s:DefNode) : 
             val e = WRef(name(s),get-type(s),NodeKind(),MALE)
@@ -2531,9 +2618,14 @@ defn emit-verilog (m:InModule) -> Module :
             val e = wref(name(s),type(s))
             update-and-reset(e,clock(s),reset(s),init(s))
             initialize(e)
+         (s:IsInvalid) :
+            val wref = netlist[exp(s)] as WRef
+            declare(`reg,name(wref),type(exp(s)))
+            initialize(wref)
          (s:DefPoison) :
-            declare(`reg,name(s),type(s))
-            val e = wref(name(s),type(s))
+            val n = firrtl-gensym(`GEN,namehash)
+            val e = wref(n,type(s))
+            declare(`reg,n,type(e))
             initialize(e)
          (s:DefNode) :
             declare(`wire,name(s),type(value(s)))

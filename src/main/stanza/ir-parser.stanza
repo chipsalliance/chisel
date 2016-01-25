@@ -297,6 +297,7 @@ defsyntax firrtl :
 
       stmt = (?x:#exp <= ?y:#exp!) : Connect(first-info(form),x, y) ;>
       stmt = (?x:#exp <- ?y:#exp!) : BulkConnect(first-info(form),x, y);>
+      stmt = (?x:#exp is invalid) : IsInvalid(first-info(form),x)
 
       ;stmt = ((?s:#stmt ?rest ...)) :
       ;   Begin(List(s, parse-stmts(rest)))
@@ -367,6 +368,8 @@ defsyntax firrtl :
 
       expterm = (mux(?cond:#exp ?tval:#exp ?fval:#exp)) :
          Mux(cond,tval,fval,UnknownType())
+      expterm = (validif(?cond:#exp ?value:#exp)) :
+         ValidIf(cond,value,UnknownType())
       expterm = (?op:#sym(?es:#exp ... ?ints:#int ... ?rest ...)) :
          if not empty?(rest) :
             FPE(rest, "Illegal operands to primitive operator.")

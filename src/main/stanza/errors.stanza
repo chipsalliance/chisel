@@ -262,7 +262,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
       defn check-high-form-e (e:Expression) -> Expression :
          defn valid-subexp (e:Expression) -> Expression :
             match(e) :
-               (e:Ref|SubField|SubIndex|SubAccess|Mux) : false
+               (e:Ref|SubField|SubIndex|SubAccess|Mux|ValidIf) : false
                (e) : add(errors,InvalidAccess())
             e
          match(map(check-high-form-e,e)) :
@@ -270,7 +270,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
                if not key?(names,name(e)) : 
                   add(errors,UndeclaredReference(name(e)))
             (e:DoPrim) : check-high-form-primop(e)
-            (e:Mux) : e
+            (e:Mux|ValidIf) : e
             (e:UIntValue) : false
             (e:SubAccess) : 
                valid-subexp(exp(e))
@@ -427,6 +427,14 @@ defn MuxCondUInt (info:FileInfo) :
    PassException $ string-join $
    [info ": [module " mname "]  A mux condition must be of type UInt."]
 
+defn ValidIfPassiveTypes (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  Must validif a passive type."]
+
+defn ValidIfCondUInt (info:FileInfo) :
+   PassException $ string-join $
+   [info ": [module " mname "]  A validif condition must be of type UInt."]
+
 ;---------------- Helper Functions --------------
 defmethod equal? (t1:Type,t2:Type) -> True|False :
    match(t1,t2) : 
@@ -557,6 +565,9 @@ public defn check-types (c:Circuit) -> Circuit :
             if not passive?(type(e)) : add(errors,MuxPassiveTypes(info))
             if not passive?(type(e)) : add(errors,MuxPassiveTypes(info))
             if not (type(cond(e)) typeof UIntType) : add(errors,MuxCondUInt(info))
+         (e:ValidIf) :
+            if not passive?(type(e)) : add(errors,ValidIfPassiveTypes(info))
+            if not (type(cond(e)) typeof UIntType) : add(errors,ValidIfCondUInt(info))
          (e:UIntValue|SIntValue) : false
       e
 
@@ -698,6 +709,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (e:UIntValue) : MALE
          (e:SIntValue) : MALE
          (e:Mux) : MALE
+         (e:ValidIf) : MALE
 
    defn check-genders-e (info:FileInfo,e:Expression,genders:HashTable<Symbol,Gender>) -> False :
       do(check-genders-e{info,_,genders},e)
@@ -710,6 +722,7 @@ public defn check-genders (c:Circuit) -> Circuit :
             for e in args(e) do :
                check-gender(info,genders,e,MALE)
          (e:Mux) : do(check-gender{info,genders,_,MALE},e)
+         (e:ValidIf) : do(check-gender{info,genders,_,MALE},e)
          (e:UIntValue) : false
          (e:SIntValue) : false
      
@@ -723,7 +736,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (s:DefNode) : 
             check-gender(info(s),genders,value(s),MALE)
             genders[name(s)] = MALE
-         (s:DefMemory) : genders[name(s)] = FEMALE
+         (s:DefMemory) : genders[name(s)] = MALE
          (s:WDefInstance) : genders[name(s)] = MALE
          (s:Connect) : 
             check-gender(info(s),genders,loc(s),FEMALE)
@@ -742,7 +755,7 @@ public defn check-genders (c:Circuit) -> Circuit :
          (s:Stop) : 
             check-gender(info(s),genders,en(s),MALE)
             check-gender(info(s),genders,clk(s),MALE)
-         (s:Begin) : false
+         (s:Begin|IsInvalid) : false
 
    for m in modules(c) do :
       mname = name(m)

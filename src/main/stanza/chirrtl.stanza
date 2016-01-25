@@ -100,6 +100,7 @@ defn infer-types (c:Circuit) -> Circuit :
             (e:SubAccess) : SubAccess(exp(e),index(e),sub-type(type(exp(e))))
             (e:DoPrim) : set-primop-type(e)
             (e:Mux) : Mux(cond(e),tval(e),fval(e),mux-type(tval(e),tval(e)))
+            (e:ValidIf) : ValidIf(cond(e),value(e),type(value(e)))
             (e:UIntValue|SIntValue) : e
       defn infer-types-s (s:Stmt) -> Stmt :
          match(s) :
@@ -225,6 +226,9 @@ defn create-exps (e:Expression) -> List<Expression> :
       (e:Mux) :
          for (e1 in create-exps(tval(e)), e2 in create-exps(fval(e))) map :
             Mux(cond(e),e1,e2,mux-type(e1,e2))
+      (e:ValidIf) :
+         for e1 in create-exps(value(e)) map :
+            ValidIf(cond(e),e1,type(e1))
       (e) :
       match(type(e)) : 
          (t:UIntType|SIntType|ClockType) : list(e)

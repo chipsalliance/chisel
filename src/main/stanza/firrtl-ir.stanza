@@ -89,6 +89,10 @@ public defstruct Mux <: Expression :
    tval: Expression
    fval: Expression
    type: Type with: (as-method => true)
+public defstruct ValidIf <: Expression :
+   cond: Expression
+   value: Expression
+   type: Type with: (as-method => true)
 public defstruct UIntValue <: Expression :
    value: BigInt
    width: Width
@@ -151,6 +155,9 @@ public defstruct BulkConnect <: Stmt :
 public defstruct Connect <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
    loc: Expression
+   exp: Expression
+public defstruct IsInvalid <: Stmt : ;LOW
+   info: FileInfo with: (as-method => true)
    exp: Expression
 public defstruct Stop <: Stmt : ;LOW
    info: FileInfo with: (as-method => true)
