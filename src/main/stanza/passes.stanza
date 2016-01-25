@@ -2211,7 +2211,6 @@ defn lower-types (m:Module) -> Module :
                   Connect(info(s*),e,exp(s*))
             else : s*
          (s:DefNode) :
-            println(name(s))
             val locs = create-exps(name(s),type(value(s)))
             val n = length(locs)
             val nodes = Vector<Stmt>()
