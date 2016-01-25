@@ -94,7 +94,7 @@ defn infer-types (c:Circuit) -> Circuit :
       val types = HashTable<Symbol,Type>(symbol-hash)
       defn infer-types-e (e:Expression) -> Expression :
          match(map(infer-types-e,e)) :
-            (e:Ref) : Ref(name(e), types[name(e)])
+            (e:Ref) : Ref(name(e), get?(types,name(e),UnknownType()))
             (e:SubField) : SubField(exp(e),name(e),field-type(type(exp(e)),name(e)))
             (e:SubIndex) : SubIndex(exp(e),value(e),sub-type(type(exp(e))))
             (e:SubAccess) : SubAccess(exp(e),index(e),sub-type(type(exp(e))))
@@ -119,14 +119,14 @@ defn infer-types (c:Circuit) -> Circuit :
                types[name(s)] = get-type(s)
                s
             (s:CDefMPort) :
-               val t = types[mem(s)]
+               val t = get?(types,mem(s),UnknownType())
                types[name(s)] = t
                CDefMPort(info(s),name(s),t,mem(s),exps(s),direction(s))
             (s:CDefMemory) :
                types[name(s)] = type(s)
                s
             (s:DefInstance) :
-               types[name(s)] = module-types[module(s)]
+               types[name(s)] = get?(module-types,module(s),UnknownType())
                s
             (s) : map{infer-types-e,_} $ map(infer-types-s,s)
       for p in ports(m) do :
