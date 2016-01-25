@@ -800,25 +800,40 @@ defn resolve-genders (c:Circuit) :
                   InModule(info(m),name(m),ports(m),body*)
                (m:ExModule) : m
 
-;;============== EXPAND ACCESSORS ================================
-; This pass expands non-memory accessors into DecFromIndexer or
-;   ConnectFromIndexed. All elements of the vector are 
-;   explicitly written out, then indexed. Depending on the gender
-;   of the accessor, it is transformed into DecFromIndexer (male) or
-;   DecToIndexer (female)
+;============= Pull Muxes ===============
 
-;public defstruct ExpandAccesses <: Pass
-;public defmethod pass (b:ExpandAccesses) -> (Circuit -> Circuit) : expand-accesses
-;public defmethod name (b:ExpandAccesses) -> String : "Expand Accesses"
-;public defmethod short-name (b:ExpandAccesses) -> String : "expand-accesses"
-;
+public defstruct PullMuxes <: Pass
+public defmethod pass (b:PullMuxes) -> (Circuit -> Circuit) : pull-muxes
+public defmethod name (b:PullMuxes) -> String : "Pull Muxes"
+public defmethod short-name (b:PullMuxes) -> String : "pull-muxes"
 
-defn expand-vector (e:Expression,g:Gender) -> List<Expression> :
-   val t = type(e) as VectorType
-   for i in 0 to size(t) map-append :
-      list(WSubIndex(e,i,type(t),g)) ;always be WRef|WSubField|WSubIndex
-
-
+defn pull-muxes (c:Circuit) -> Circuit :
+   defn pull-muxes-e (e:Expression) -> Expression :
+      map{pull-muxes-e,_} $ match(map(pull-muxes-e,e)) :
+         (e:WRef) : e
+         (e:WSubField) :
+            match(exp(e)) :
+               (e*:Mux) : Mux(cond(e*),WSubField(tval(e*),name(e),type(e),gender(e)),WSubField(fval(e*),name(e),type(e),gender(e)),type(e))
+               (e*) : e
+         (e:WSubIndex) :
+            match(exp(e)) :
+               (e*:Mux) : Mux(cond(e*),WSubIndex(tval(e*),value(e),type(e),gender(e)),WSubIndex(fval(e*),value(e),type(e),gender(e)),type(e))
+               (e*) : e
+         (e:WSubAccess) :
+            match(exp(e)) :
+               (e*:Mux) : Mux(cond(e*),WSubAccess(tval(e*),index(e),type(e),gender(e)),WSubAccess(fval(e*),index(e),type(e),gender(e)),type(e))
+               (e*) : e
+         (e:Mux) : e
+         (e) : e
+               
+   defn pull-muxes (s:Stmt) -> Stmt :
+      map(pull-muxes-e,map(pull-muxes,s))
+      
+   Circuit{info(c),_,main(c)} $
+      for m in modules(c) map : 
+         match(m) :
+            (m:InModule) : InModule(info(m),name(m),ports(m),pull-muxes(body(m)))
+            (m:ExModule) : m
 
 ;================ EXPAND CONNECTS ==================
 public defstruct ExpandConnects <: Pass
@@ -1040,11 +1055,14 @@ defn remove-access (c:Circuit) :
                      if foo == false : error("Shouldn't be here")
                      else :
                         val temp = create-temp(e)
+                        val temps = create-exps(temp)
+                        defn get-temp (i:Int) : 
+                           temps[i % length(temps)]
                         for (x in rs, i in 0 to false) do :
-                           if i == 0 :
-                              add(stmts,Connect(info(s),temp,base(x)))
+                           if i < length(temps) :
+                              add(stmts,Connect(info(s),get-temp(i),base(x)))
                            else :
-                              add(stmts,Conditionally(info(s),guard(x),Connect(info(s),temp,base(x)),Empty()))
+                              add(stmts,Conditionally(info(s),guard(x),Connect(info(s),get-temp(i),base(x)),Empty()))
                         temp
                   else : e
          val s* = match(s) :
@@ -2037,6 +2055,7 @@ public defn const-prop (c:Circuit) -> Circuit :
 ;            (m:ExModule) : m
 ;            (m:InModule) : condense-mems(m)
 
+
 ;============= Lower Types ================
 ;
 public defstruct LowerTypes <: Pass
@@ -2153,7 +2172,7 @@ defn lower-types (m:Module) -> Module :
                   (k) : WRef(lowered-name(e),type(e),kind(e),gender(e))
             (e:DoPrim) : map(lower-types-e,e)
             (e:Mux) : map(lower-types-e,e)
-      match(map(lower-types-e,s)) :
+      match(s) :
          (s:DefWire|DefPoison) :
             if is-ground?(type(s)) : s
             else :
@@ -2185,12 +2204,25 @@ defn lower-types (m:Module) -> Module :
                Begin $ for e in es map :
                   DefMemory(info(s),lowered-name(e),type(e),depth(s),write-latency(s),read-latency(s),readers(s),writers(s),readwriters(s))
          (s:Connect) :
-            if kind(loc(s)) typeof MemKind :
-               val es = lower-mem(loc(s))
+            val s* = map(lower-types-e,s)
+            if kind(loc(s*)) typeof MemKind :
+               val es = lower-mem(loc(s*))
                Begin $ for e in es map :
-                  Connect(info(s),e,exp(s))
-            else : s
-         (s) : map(lower-types,s)
+                  Connect(info(s*),e,exp(s*))
+            else : s*
+         (s:DefNode) :
+            println(name(s))
+            val locs = create-exps(name(s),type(value(s)))
+            val n = length(locs)
+            val nodes = Vector<Stmt>()
+            val exps = create-exps(value(s))
+            for i in 0 to n do :
+               val loc* = locs[i]
+               val exp* = exps[i]
+               add(nodes,DefNode(info(s),lowered-name(loc*),lower-types-e(exp*)))
+            if n == 1 : nodes[0]
+            else : Begin(to-list(nodes))
+         (s) : map(lower-types-e,map(lower-types,s))
 
    val ports* = for p in ports(m) map-append :
       val es = create-exps(WRef(name(p),type(p),PortKind(),to-gender(direction(p))))
