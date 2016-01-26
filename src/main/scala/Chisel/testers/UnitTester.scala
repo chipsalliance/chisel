@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
   * class AdderTester extends UnitTester {
   *   val device_under_test = Module( new Adder(32) )
   *
-  *   testBlock { () =>
+  *   testBlock {
   *     poke(c.io.in0, 5)
   *     poke(c.io.in1, 7)
   *     expect(c.io.out, 12)

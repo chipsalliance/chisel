@@ -19,7 +19,7 @@ import scala.collection.mutable.ArrayBuffer
   * {{{
   * class XTimesXTester extends [[OrderedDecoupledTester]] {
   *   val device_under_test = new XTimesY
-  *   test_block { () =>
+  *   test_block {
   *     for {
   *       i <- 0 to 10
   *       j <- 0 to 10
