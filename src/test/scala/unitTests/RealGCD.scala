@@ -60,28 +60,29 @@ class RealGCD extends Module {
 }
 
 class RealGCDTests extends UnitTester {
-  val c = Module( new RealGCD )
+  val device_under_test = Module( new RealGCD )
+  val c = device_under_test
 
   val inputs = List( (48, 32), (7, 3), (100, 10) )
   val outputs = List( 16, 1, 10)
 
-  for( (input_1, input_2) <- inputs) {
-    val (output, cycles) = GCDCalculator.computeGcdResultsAndCycles(input_1, input_2)
+  testBlock {
+    for ((input_1, input_2) <- inputs) {
+      val (output, cycles) = GCDCalculator.computeGcdResultsAndCycles(input_1, input_2)
 
-    poke(c.io.in.bits.a, input_1)
-    poke(c.io.in.bits.b, input_2)
-    poke(c.io.in.valid,  1)
+      poke(c.io.in.bits.a, input_1)
+      poke(c.io.in.bits.b, input_2)
+      poke(c.io.in.valid, 1)
 
-    step(1)
-    expect(c.io.in.ready, 1)
-    poke(c.io.in.valid, 0)
-    step(1)
+      step(1)
+      expect(c.io.in.ready, 1)
+      poke(c.io.in.valid, 0)
+      step(1)
 
-    step(cycles-2)
-    expect(c.io.out.bits, output)
+      step(cycles - 2)
+      expect(c.io.out.bits, output)
+    }
   }
-
-  install(c)
 }
 
 class DecoupledRealGCDTestHandCodedExample extends DecoupledTester {
@@ -135,7 +136,7 @@ class DecoupledRealGCDTests4 extends OrderedDecoupledTester {
   val device_under_test = Module(new RealGCD())
   val c = device_under_test
 
-  testBlock { () =>
+  testBlock {
     for {
       i <- 1 to 10
       j <- 1 to 10

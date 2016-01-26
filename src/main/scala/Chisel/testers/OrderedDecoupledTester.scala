@@ -6,6 +6,7 @@ import Chisel._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 /**
   * Base class supports implementation of test circuits of modules
@@ -42,8 +43,10 @@ abstract class OrderedDecoupledTester extends BasicTester {
   val device_under_test     : Module
   var io_info               : IOAccessor = null
 
-  def testBlock(block: () => Unit): Unit = {
-    block()
+  def rnd: Random = Random  // convenience method for writing tests
+
+  def testBlock(block: => Unit): Unit = {
+    block
     finish()
   }
 
@@ -228,7 +231,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
     )
   }
 
-  def name(port: Data): String = io_info.port_to_name(port)
+  private def name(port: Data): String = io_info.port_to_name(port)
 
   /**
     * creates a Vec of Booleans that indicate if the io interface in question
@@ -250,6 +253,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
   /**
     * build a set of all ports referenced by all events associated with a particular
     * io interface
+ *
     * @param events  a set of events
     * @return
     */

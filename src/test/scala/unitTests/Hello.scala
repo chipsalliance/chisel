@@ -13,12 +13,12 @@ class Hello extends Module {
 }
 
 class HelloTester extends UnitTester {
-  val c = Module( new Hello )
+  val device_under_test = Module( new Hello )
 
-  step(1)
-  expect(c.io.out, 42)
-
-  install(c)
+  testBlock {
+    step(1)
+    expect(device_under_test.io.out, 42)
+  }
 }
 
 object Hello extends UnitTestRunners {

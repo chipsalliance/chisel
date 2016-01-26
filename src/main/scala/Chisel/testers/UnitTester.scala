@@ -14,34 +14,49 @@ trait UnitTestRunners {
 }
 
 /**
- * Use a UnitTester to constuct a test harness for a chisel module
- * this module will be canonically referred to as the device_under_test, often simply as c in
- * a unit test, and also dut
- * The UnitTester is used to put series of values (as chisel.Vec's) into the ports of the dut io which are INPUTs
- * At specified times it check the dut's io OUTPUT ports to see that they match a specific value
- * The vec's are assembled through the following API
- * poke, expect and step, pokes
- *
- * Example:
- *
- * class Adder(width:Int) extends Module {
- *   val io = new Bundle {
- *     val in0 : UInt(INPUT, width=width)
- *     val in1 : UInt(INPUT, width=width)
- *     val out : UInt(OUTPUT, width=width)
- *   }
- * class AdderTester extends UnitTester {
- *   val device_under_test = Module( new Adder(32) )
- *   val c = device_under_test
- *   poke(c.io.in0, 5); poke(c.io.in1, ); poke(
- *
- */
-class UnitTester extends BasicTester {
+  * Use a UnitTester to constuct a test harness for a chisel module
+  * this module will be canonically referred to as the device_under_test, often simply as c in
+  * a unit test, and also dut
+  * The UnitTester is used to put series of values (as chisel.Vec's) into the ports of the dut io which are INPUTs
+  * At specified times it check the dut's io OUTPUT ports to see that they match a specific value
+  * The vec's are assembled through the following API
+  * poke, expect and step, pokes
+  *
+  * @example
+  * {{{
+  *
+  * class Adder(width:Int) extends Module {
+  *   val io = new Bundle {
+  *     val in0 : UInt(INPUT, width=width)
+  *     val in1 : UInt(INPUT, width=width)
+  *     val out : UInt(OUTPUT, width=width)
+  *   }
+  * }
+  * class AdderTester extends UnitTester {
+  *   val device_under_test = Module( new Adder(32) )
+  *
+  *   testBlock { () =>
+  *     poke(c.io.in0, 5)
+  *     poke(c.io.in1, 7)
+  *     expect(c.io.out, 12)
+  *   }
+  * }
+  * }}}
+  */
+abstract class UnitTester extends BasicTester {
+  val device_under_test     : Module
+
+  private var io_info: IOAccessor = null
+  var verbose = false
+
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
-  def rnd: Random = Random  // convenience method for writing tests
+  def testBlock(block: => Unit): Unit = {
+    block
+    finish
+  }
 
-  val ports_referenced = new mutable.HashSet[Data]
+  def rnd: Random = Random  // convenience method for writing tests
 
   // Scala stuff
   val test_actions = new ArrayBuffer[Step]()
@@ -52,7 +67,6 @@ class UnitTester extends BasicTester {
     require(!test_actions.last.input_map.contains(io_port),
       s"second poke to $io_port without step\nkeys ${test_actions.last.input_map.keys.mkString(",")}")
 
-    ports_referenced += io_port
     test_actions.last.input_map(io_port) = value
   }
 //  def poke(io_port: Data, bool_value: Boolean) = poke(io_port, if(bool_value) 1 else 0)
@@ -61,78 +75,22 @@ class UnitTester extends BasicTester {
     require(io_port.dir == OUTPUT, s"expect error: $io_port not an output")
     require(!test_actions.last.output_map.contains(io_port), s"second expect to $io_port without step")
 
-    ports_referenced += io_port
     test_actions.last.output_map(io_port) = value
   }
   def expect(io_port: Data, bool_value: Boolean): Unit = expect(io_port, if(bool_value) 1 else 0)
 
   def step(number_of_cycles: Int): Unit = {
     test_actions ++= Array.fill(number_of_cycles) {
-      new Step(
-        new mutable.HashMap[Data, Int](),
-        new mutable.HashMap[Data, Int]()
-      )
+      new Step(new mutable.HashMap[Data, Int](), new mutable.HashMap[Data, Int]())
     }
   }
 
-  def install[T <: Module](dut: T): Unit = {
-    /**
-     * connect to the device under test by connecting each of it's io ports to an appropriate register
-     */
-    val dut_inputs  = dut.io.flatten.filter( port => port.dir == INPUT  && ports_referenced.contains(port) )
-    val dut_outputs = dut.io.flatten.filter( port => port.dir == OUTPUT && ports_referenced.contains(port))
+  private def name(port: Data): String = io_info.port_to_name(port)
 
-    val port_to_name = {
-      val port_to_name_accumulator = new mutable.HashMap[Data, String]()
-
-      println("="*80)
-      println("Device under test: io bundle")
-      println("%10s %10s %s".format("direction", "referenced", "name"))
-      println("-"*80)
-      def parse_bundle(b: Bundle, name: String = ""): Unit = {
-        for ((n, e) <- b.elements) {
-          val new_name = name + (if(name.length > 0 ) "." else "" ) + n
-          port_to_name_accumulator(e) = new_name
-          println("%10s %5s      %s".format(e.dir, if( ports_referenced.contains(e)) "Y" else " ", new_name))
-
-          e match {
-            case bb: Bundle  => parse_bundle(bb, new_name)
-            case vv: Vec[_]  => parse_vecs(vv, new_name)
-            case ee: Element => {}
-            case _           => {
-              throw new Exception(s"bad bundle member ${new_name} $e")
-            }
-          }
-        }
-      }
-      def parse_vecs[T<:Data](b: Vec[T], name: String = ""): Unit = {
-        for ((e, i) <- b.zipWithIndex) {
-          val new_name = name + s"($i)"
-          port_to_name_accumulator(e) = new_name
-          println("%10s %5s      %s".format(e.dir, if( ports_referenced.contains(e)) "Y" else " ", new_name))
-
-          e match {
-            case bb: Bundle  => parse_bundle(bb, new_name)
-            case vv: Vec[_]  => parse_vecs(vv, new_name)
-            case ee: Element => {}
-            case _           => {
-              throw new Exception(s"bad bundle member ${new_name} $e")
-            }
-          }
-        }
-      }
-
-      parse_bundle(dut.io)
-      println("="*80)
-
-      port_to_name_accumulator
-    }
-    /**
-     *  Print a title for the testing state table
-     */
-    if(ports_referenced.nonEmpty) {
-      val max_col_width = ports_referenced.map { port =>
-        Array(port_to_name(port).length, port.getWidth / 4).max // width/4 is how wide value might be in hex
+  private def printStateTable(): Unit = {
+    if(io_info.ports_referenced.nonEmpty) {
+      val max_col_width = io_info.ports_referenced.map { port =>
+        Array(name(port).length, port.getWidth / 4).max // width/4 is how wide value might be in hex
       }.max + 2
       val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}x")
 
@@ -140,8 +98,8 @@ class UnitTester extends BasicTester {
       println("UnitTester state table")
       println(
         "%6s".format("step") +
-          dut_inputs.map { dut_input => string_col_template.format(port_to_name(dut_input)) }.mkString +
-          dut_outputs.map { dut_output => string_col_template.format(port_to_name(dut_output)) }.mkString
+          io_info.dut_inputs.map { dut_input => string_col_template.format(name(dut_input)) }.mkString +
+          io_info.dut_outputs.map { dut_output => string_col_template.format(name(dut_output)) }.mkString
       )
       println("-" * 80)
       /**
@@ -152,89 +110,84 @@ class UnitTester extends BasicTester {
       }
       test_actions.zipWithIndex.foreach { case (step, step_number) =>
         print("%6d".format(step_number))
-        for (port <- dut_inputs) {
+        for (port <- io_info.dut_inputs) {
           print(string_col_template.format(val_str(step.input_map, port)))
         }
-        for (port <- dut_outputs) {
+        for (port <- io_info.dut_outputs) {
           print(string_col_template.format(val_str(step.output_map, port)))
         }
         println()
       }
       println("=" * 80)
     }
+  }
 
-    val pc             = Reg(init=UInt(0, log2Up(test_actions.length)+2))
-
-    def log_referenced_ports: Unit = {
-      val format_statement = new StringBuilder()
-      val port_to_display  = new ArrayBuffer[Data]()
-      format_statement.append("pc: %x")
-      port_to_display.append(pc)
-
-      for( dut_input <- dut_inputs ) {
-        format_statement.append(",  " + port_to_name(dut_input)+": %x")
-        port_to_display.append(dut_input)
+  def createVectorsForInput(input_port: Data, counter: Counter): Unit = {
+    var default_value = 0
+    val input_values = Vec(
+      test_actions.map { step =>
+        default_value = step.input_map.getOrElse(input_port, default_value)
+        UInt(default_value, input_port.width)
       }
-      for( dut_output <- dut_outputs ) {
-        format_statement.append(",   " + port_to_name(dut_output)+": %x")
-        port_to_display.append(dut_output)
+    )
+    input_port := input_values(counter.value)
+  }
+
+  def createVectorsAndTestsForOutput(output_port: Data, counter: Counter): Unit = {
+    val output_values = Vec(
+      test_actions.map { step =>
+        output_port.fromBits(UInt(step.output_map.getOrElse(output_port, 0)))
       }
-      printf(format_statement.toString(), port_to_display.map{_.toBits()}.toSeq :_* )
-    }
+    )
+    val ok_to_test_output_values = Vec(
+      test_actions.map { step =>
+        Bool(step.output_map.contains(output_port))
+      }
+    )
 
-    log_referenced_ports
-
-
-    def create_vectors_for_input(input_port: Data): Unit = {
-      var default_value = 0
-      val input_values = Vec(
-        test_actions.map { step =>
-          default_value = step.input_map.getOrElse(input_port, default_value)
-          UInt(default_value, input_port.width)
-        }
-      )
-      input_port := input_values(pc)
-    }
-
-    dut_inputs.foreach { port => create_vectors_for_input(port) }
-
-    def create_vectors_and_tests_for_output(output_port: Data): Unit = {
-      val output_values = Vec(
-        test_actions.map { step =>
-          output_port.fromBits(UInt(step.output_map.getOrElse(output_port, 0)))
-        }
-      )
-      val ok_to_test_output_values = Vec(
-        test_actions.map { step =>
-          Bool(step.output_map.contains(output_port))
-        }
-      )
-
-      when(ok_to_test_output_values(pc)) {
-        when(output_port.toBits() === output_values(pc).toBits()) {
-//          printf("    passed -- " + port_to_name(output_port) + ":  %x",
-//            output_port.toBits()
-//          )
-        }.otherwise {
-          printf("    failed -- port " + port_to_name(output_port) + ":  %x expected %x",
-            output_port.toBits(),
-            output_values(pc).toBits()
-          )
-          assert(Bool(false), "Failed test")
-          // TODO: Figure out if we want to stop here
-//          stop()
-        }
+    when(ok_to_test_output_values(counter.value)) {
+      when(output_port.toBits() === output_values(counter.value).toBits()) {
+                  printf("    passed step %d -- " + name(output_port) + ":  %d",
+                    counter.value,
+                    output_port.toBits()
+                  )
+      }.otherwise {
+        printf("    failed on step %d -- port " + name(output_port) + ":  %d expected %d",
+          counter.value,
+          output_port.toBits(),
+          output_values(counter.value).toBits()
+        )
+        assert(Bool(false), "Failed test")
+        stop()
       }
     }
+  }
 
-    dut_outputs.foreach { port => create_vectors_and_tests_for_output(port) }
+  private def processEvents: Unit = {
+    test_actions.foreach { case step =>
+      io_info.ports_referenced ++= step.input_map.keys
+      io_info.ports_referenced ++= step.output_map.keys
+    }
+  }
 
-    pc := pc + UInt(1)
+  private def finish: Unit = {
+    io_info = new IOAccessor(device_under_test.io)
 
-    when(pc >= UInt(test_actions.length - 1)) {
+    processEvents
+
+    val pc             = Counter(test_actions.length)
+
+    io_info.dut_inputs.foreach { port => createVectorsForInput(port, pc) }
+
+
+    io_info.dut_outputs.foreach { port => createVectorsAndTestsForOutput(port, pc) }
+
+    when(pc.inc()) {
       printf(s"Stopping, end of tests, ${test_actions.length} steps\n")
       stop()
     }
 
+    io_info.show_ports("".r)
+    printStateTable()
   }
 }

@@ -16,6 +16,14 @@ object Router {
   val numberOfOutputs =  4
 }
 
+object ReadCmd {
+  def apply(value: Int): ReadCmd = {
+    new ReadCmd {
+      override val addr = UInt(value)
+    }
+  }
+}
+
 class ReadCmd extends Bundle {
   val addr = UInt(width = Router.addressWidth)
 }
