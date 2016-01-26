@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.DecoupledTester
+import Chisel.testers.OrderedDecoupledHWIOTester
 import chiselTests.ChiselFlatSpec
 
 /**
@@ -58,24 +58,20 @@ class SlowDecoupledAdder extends Module {
   }
 }
 
-class DecoupledAdderTests extends DecoupledTester {
+class DecoupledAdderTests extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new SlowDecoupledAdder())
 
-//  verbose = true
+  testBlock {
 
-  for {
-    x <- 0 to 4
-    y <- 0 to 6 by 2
-    z = x + y
-  } {
-    inputEvent(
-      Array(device_under_test.io.in.bits.a -> x, device_under_test.io.in.bits.b -> y)
-    )
-    outputEvent(
-      Array(device_under_test.io.out.bits.c -> z)
-    )
+    for {
+      x <- 0 to 4
+      y <- 0 to 6 by 2
+      z = x + y
+    } {
+      inputEvent(device_under_test.io.in.bits.a -> x, device_under_test.io.in.bits.b -> y)
+      outputEvent(device_under_test.io.out.bits.c -> z)
+    }
   }
-  finish(show_io_table = true)
 }
 
 

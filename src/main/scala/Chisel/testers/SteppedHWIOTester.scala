@@ -37,7 +37,7 @@ import scala.collection.mutable.ArrayBuffer
   * }
   * }}}
   */
-abstract class UnitTester extends BasicTester with EventBased {
+abstract class SteppedHWIOTester extends BasicTester with HWIOTester {
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
   // Scala stuff

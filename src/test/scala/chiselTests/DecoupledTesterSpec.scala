@@ -4,7 +4,7 @@ package chiselTests
 
 import Chisel._
 
-import Chisel.testers.OrderedDecoupledTester
+import Chisel.testers.OrderedDecoupledHWIOTester
 
 class DecoupledExampleInput extends Bundle {
   val a = UInt(INPUT, width=16)
@@ -25,7 +25,7 @@ class DecoupledExample extends Module {
 
 class DecoupledTesterSpec extends ChiselFlatSpec {
   execute {
-    new OrderedDecoupledTester {
+    new OrderedDecoupledHWIOTester {
       val device_under_test = new DecoupledExample()
 
       testBlock {

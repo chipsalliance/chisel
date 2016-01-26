@@ -89,7 +89,7 @@ class Router extends Module {
   }
 }
 
-class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledTester {
+class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new Router)
   val c = device_under_test
   enable_all_debug = true

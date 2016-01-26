@@ -17,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
   *
   * @example
   * {{{
-  * class XTimesXTester extends [[OrderedDecoupledTester]] {
+  * class XTimesXTester extends [[OrderedDecoupledHWIOTester]] {
   *   val device_under_test = new XTimesY
   *   test_block {
   *     for {
@@ -38,7 +38,7 @@ import scala.collection.mutable.ArrayBuffer
   * likewise,
   * all outputs regardless of which interface are tested in the same order that they were created
   */
-abstract class OrderedDecoupledTester extends BasicTester with EventBased {
+abstract class OrderedDecoupledHWIOTester extends BasicTester with HWIOTester {
   val input_event_list  = new ArrayBuffer[Seq[(Data, Int)]]()
   val output_event_list = new ArrayBuffer[Seq[(Data, Int)]]()
 
@@ -407,14 +407,14 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
     }
 
 
-    val ti = Reg(init= UInt(0, width = log2Up(DecoupledTester.max_tick_count)))
+    val ti = Reg(init= UInt(0, width = log2Up(OrderedDecoupledHWIOTester.max_tick_count)))
     ti := ti + UInt(1)
-    when(ti > UInt(DecoupledTester.max_tick_count)) {
+    when(ti > UInt(OrderedDecoupledHWIOTester.max_tick_count)) {
       printf(
-        "Exceeded maximum allowed %d ticks in DecoupledTester, If you think code is correct use:\n" +
+        "Exceeded maximum allowed %d ticks in OrderedDecoupledHWIOTester, If you think code is correct use:\n" +
         "DecoupleTester.max_tick_count = <some-higher-value>\n" +
-        "in the DecoupledTester subclass",
-        UInt(DecoupledTester.max_tick_count)
+        "in the OrderedDecoupledHWIOTester subclass",
+        UInt(OrderedDecoupledHWIOTester.max_tick_count)
       )
       stop()
     }
@@ -428,6 +428,11 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
       io_info.showPorts("".r)
     }
   }
+}
+
+object OrderedDecoupledHWIOTester {
+  val default_max_tick_count = 1000
+  var max_tick_count         = default_max_tick_count
 }
 
 

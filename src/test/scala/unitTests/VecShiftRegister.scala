@@ -1,7 +1,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.UnitTester
+import Chisel.testers.SteppedHWIOTester
 
 class VecShiftRegister extends Module {
   val io = new Bundle {
@@ -25,7 +25,7 @@ class VecShiftRegister extends Module {
   io.out := delays(3)
 }
 
-class VecShiftRegisterTests extends UnitTester {
+class VecShiftRegisterTests extends SteppedHWIOTester {
   val device_under_test = Module( new VecShiftRegister )
   val c = device_under_test
 

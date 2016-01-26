@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.DecoupledTester
+import Chisel.testers.OrderedDecoupledHWIOTester
 
 import chiselTests.ChiselFlatSpec
 
@@ -52,19 +52,20 @@ class SmallOdds2(filter_width: Int) extends Module {
   buildFilter()
 }
 
-class SmallOdds2Tester(width: Int) extends DecoupledTester {
+class SmallOdds2Tester(width: Int) extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new SmallOdds2(filter_width = width))
 
-  Random.setSeed(0L)
-  for(i <- 0 to 30) {
-    val num = Random.nextInt(20)
-    println(s"random value $i $num")
-    inputEvent(List(device_under_test.io.in.bits -> num))
-    if(num % 2 == 1 && num < 10) {
-      outputEvent(List(device_under_test.io.out.bits -> num))
+  testBlock {
+    rnd.setSeed(0L)
+    for (i <- 0 to 30) {
+      val num = rnd.nextInt(20)
+      println(s"random value $i $num")
+      inputEvent(device_under_test.io.in.bits -> num)
+      if (num % 2 == 1 && num < 10) {
+        outputEvent(device_under_test.io.out.bits -> num)
+      }
     }
   }
-  finish()
 }
 
 class SmallOdds2TesterSpec extends ChiselFlatSpec {

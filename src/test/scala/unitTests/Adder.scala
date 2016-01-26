@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{Exerciser, UnitTester}
+import Chisel.testers.{Exerciser, SteppedHWIOTester}
 import chiselTests.ChiselFlatSpec
 import scala.util.Random
 
@@ -16,7 +16,7 @@ class Adder(val w: Int) extends Module {
   io.out := io.in0 + io.in1
 }
 
-class AdderTests extends UnitTester {
+class AdderTests extends SteppedHWIOTester {
   val device_under_test = Module( new Adder(10) )
   val c = device_under_test
   enable_all_debug = true

@@ -2,7 +2,7 @@ package unitTests
 
 
 import Chisel._
-import Chisel.testers.{TesterDriver, UnitTester}
+import Chisel.testers.{TesterDriver, SteppedHWIOTester}
 import chiselTests.ChiselFlatSpec
 
 class Hello extends Module {
@@ -12,7 +12,7 @@ class Hello extends Module {
   io.out := UInt(42)
 }
 
-class HelloTester extends UnitTester {
+class HelloTester extends SteppedHWIOTester {
   val device_under_test = Module( new Hello )
 
   testBlock {

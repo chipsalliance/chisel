@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{OrderedDecoupledTester, DecoupledTester, UnitTester}
+import Chisel.testers.{OrderedDecoupledHWIOTester, SteppedHWIOTester}
 import chiselTests.ChiselFlatSpec
 
 object GCDCalculator {
@@ -59,7 +59,7 @@ class RealGCD extends Module {
   }
 }
 
-class RealGCDTests extends UnitTester {
+class RealGCDTests extends SteppedHWIOTester {
   val device_under_test = Module( new RealGCD )
   val c = device_under_test
 
@@ -85,7 +85,7 @@ class RealGCDTests extends UnitTester {
   }
 }
 
-class DecoupledRealGCDTestHandCodedExample extends DecoupledTester {
+class DecoupledRealGCDTestHandCodedExample extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new RealGCD())
   val c = device_under_test
 
@@ -132,7 +132,7 @@ class DecoupledRealGCDTestHandCodedExample extends DecoupledTester {
   //  io_info.show_ports("".r)
 }
 
-class DecoupledRealGCDTests4 extends OrderedDecoupledTester {
+class DecoupledRealGCDTests4 extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new RealGCD())
   val c = device_under_test
 

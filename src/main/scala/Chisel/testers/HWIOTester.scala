@@ -9,7 +9,7 @@ import scala.util.Random
 /**
   * provide common facilities for step based testing and decoupled interface testing
   */
-trait EventBased {
+trait HWIOTester {
   val device_under_test:     Module
   var io_info:               IOAccessor = null
   def finish():              Unit

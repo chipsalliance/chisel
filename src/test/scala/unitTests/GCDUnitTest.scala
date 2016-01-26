@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{BasicTester, UnitTester}
+import Chisel.testers.{BasicTester, SteppedHWIOTester}
 import chiselTests.ChiselFlatSpec
 
 class GCD extends Module {
@@ -23,7 +23,7 @@ class GCD extends Module {
   io.v := y === UInt(0)
 }
 
-class GCDUnitTester extends UnitTester {
+class GCDUnitTester extends SteppedHWIOTester {
   def compute_gcd(a: Int, b: Int): Tuple2[Int, Int] = {
     var x = a
     var y = b
