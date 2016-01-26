@@ -27,12 +27,11 @@ circuit Poison :
     m.w.data <= q
 
     m.rw.clk <= clk
-    m.rw.raddr <= index
-    m.rw.ren <= UInt(1)
-    m.rw.waddr <= index
-    m.rw.wen <= UInt(1)
-    m.rw.wmask <= wmask
-    m.rw.wdata <= q
+    m.rw.addr <= index
+    m.rw.en <= UInt(1)
+    m.rw.rmode <= UInt(1)
+    m.rw.mask <= wmask
+    m.rw.data <= q
     when p : 
       out <= m.r.data
     else :

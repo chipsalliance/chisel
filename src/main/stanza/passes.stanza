@@ -2146,7 +2146,6 @@ defn data? (ex:Expression) -> True|False :
          (ex:WRef|WSubIndex) : false
          (ex:WSubField) :
             var yes? = switch { _ == name(ex) } :
-                  `wdata : true
                   `rdata : true
                   `data : true
                   `mask : true
@@ -2222,7 +2221,7 @@ defn lower-types (m:Module) -> Module :
    defn lower-types (s:Stmt) -> Stmt :
       defn lower-mem (e:Expression) -> List<Expression> :
          val names = expand-name(e)
-         if contains?([`data `mask `rdata `wdata `wmask],names[2]) :
+         if contains?([`data `mask `rdata],names[2]) :
             list(lower-data-mem(e))
          else :
             lower-other-mem(e,mdt[name(root-ref(e))])
@@ -2724,47 +2723,45 @@ defn emit-verilog (m:InModule) -> Module :
                update(mem-port,data*,clk,AND(en*,mask*))
 
             for rw in readwriters(s) do :
+               val rmode = mem-exp(rw,`rmode)
                val rdata = mem-exp(rw,`rdata)
-               val raddr = mem-exp(rw,`raddr)
-               val ren = mem-exp(rw,`ren)
-               val wdata = mem-exp(rw,`wdata)
-               val waddr = mem-exp(rw,`waddr)
-               val wmask = mem-exp(rw,`wmask)
-               val wen = mem-exp(rw,`wen)
+               val data = mem-exp(rw,`data)
+               val mask = mem-exp(rw,`mask)
+               val addr = mem-exp(rw,`addr)
+               val en = mem-exp(rw,`en)
                val clk = mem-exp(rw,`clk)
                
+               declare(`wire,lowered-name(rmode),type(rmode))
                declare(`wire,lowered-name(rdata),type(rdata))
-               declare(`wire,lowered-name(raddr),type(raddr))
-               declare(`wire,lowered-name(ren),type(ren))
-               declare(`wire,lowered-name(wdata),type(wdata))
-               declare(`wire,lowered-name(waddr),type(waddr))
-               declare(`wire,lowered-name(wmask),type(wmask))
-               declare(`wire,lowered-name(wen),type(wen))
+               declare(`wire,lowered-name(data),type(data))
+               declare(`wire,lowered-name(mask),type(mask))
+               declare(`wire,lowered-name(addr),type(addr))
+               declare(`wire,lowered-name(en),type(en))
                declare(`wire,lowered-name(clk),type(clk))
 
-               ; Both 
+               ; Assigned to lowered wires of each
                assign(clk,netlist[clk])
+               assign(addr,netlist[addr])
+               assign(data,netlist[data])
+               assign(addr,netlist[addr])
+               assign(mask,netlist[mask])
+               assign(en,netlist[en])
+               assign(rmode,netlist[rmode])
 
-               ; Read
-               assign(raddr,netlist[raddr])
-               assign(ren,netlist[ren])
-               val raddr* = delay(raddr,read-latency(s),clk)
-               val ren* = delay(ren,read-latency(s),clk)
-               val rmem-port = WSubAccess(mem,raddr*,UnknownType(),UNKNOWN-GENDER)
-               assign(rdata,rmem-port)
+               ; Delay new signals by latency
+               val raddr* = delay(addr,read-latency(s),clk)
+               val waddr* = delay(addr,write-latency(s) - 1,clk)
+               val en* = delay(en,write-latency(s) - 1,clk)
+               val rmod* = delay(rmode,write-latency(s) - 1,clk)
+               val data* = delay(data,write-latency(s) - 1,clk)
+               val mask* = delay(mask,write-latency(s) - 1,clk)
 
                ; Write 
-               assign(wdata,netlist[wdata])
-               assign(waddr,netlist[waddr])
-               assign(wmask,netlist[wmask])
-               assign(wen,netlist[wen])
 
-               val wdata* = delay(wdata,write-latency(s) - 1,clk)
-               val waddr* = delay(waddr,write-latency(s) - 1,clk)
-               val wmask* = delay(wmask,write-latency(s) - 1,clk)
-               val wen* = delay(wen,write-latency(s) - 1,clk)
+               val rmem-port = WSubAccess(mem,raddr*,UnknownType(),UNKNOWN-GENDER)
+               assign(rdata,rmem-port)
                val wmem-port = WSubAccess(mem,waddr*,UnknownType(),UNKNOWN-GENDER)
-               update(wmem-port,wdata*,clk,AND(wen*,wmask*))
+               update(wmem-port,data*,clk,AND(AND(en*,mask*),NOT(rmode)))
          (s:Begin) : map(build-streams,s)
       s
 

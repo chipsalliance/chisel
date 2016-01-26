@@ -285,6 +285,9 @@ defn remove-chirrtl (c:Circuit) :
                defn set-enable (vec:List<MPort>,en:Symbol) -> False:
                   for r in vec do :
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),en,taddr),zero))
+               defn set-rmode (vec:List<MPort>,rmode:Symbol) -> False:
+                  for r in vec do :
+                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),rmode,taddr),one))
                defn set-write (vec:List<MPort>,data:Symbol,mask:Symbol) -> False :
                   val tmask = create-mask(type(s))
                   for r in vec do :
@@ -300,11 +303,10 @@ defn remove-chirrtl (c:Circuit) :
                set-enable(wrs,`en)
                set-write(wrs,`data,`mask)
                val rws = to-list $ readwriters $ get?(hash,name(s),EMPs())
-               set-poison(rws,`waddr)
-               set-poison(rws,`raddr)
-               set-enable(rws,`wen)
-               set-enable(rws,`ren)
-               set-write(rws,`wdata,`wmask)
+               set-poison(rws,`addr)
+               set-rmode(rws,`rmode)
+               set-enable(rws,`en)
+               set-write(rws,`data,`mask)
                val read-l = 
                   if seq?(s) : 1
                   else : 0
@@ -315,14 +317,14 @@ defn remove-chirrtl (c:Circuit) :
                val addrs = Vector<Symbol>()
                val ens = Vector<Symbol>()
                val masks = Vector<Symbol>()
+               val rmodes = Vector<Symbol>()
                switch { _ == direction(s) } :
                   MReadWrite : 
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`rdata,`wdata,`wmask)
-                     add(addrs,`waddr)
-                     add(addrs,`raddr)
-                     add(ens,`wen)
-                     add(ens,`ren)
-                     add(masks,`wmask)
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`rdata,`data,`mask)
+                     add(addrs,`addr)
+                     add(ens,`en)
+                     add(rmodes,`rmode)
+                     add(masks,`mask)
                   MWrite :
                      repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data,`mask)
                      add(addrs,`addr)
@@ -338,7 +340,9 @@ defn remove-chirrtl (c:Circuit) :
                   add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),exps(s)[0]))
                for x in ens do :
                   add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),one))
-               Begin $ to-list $ stmts   
+               for x in rmodes do :
+                  add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),zero))
+               Begin $ to-list $ stmts
             (s) : map(collect-refs,s)
       defn remove-chirrtl-s (s:Stmt) -> Stmt :
          var has-write-mport? = false
