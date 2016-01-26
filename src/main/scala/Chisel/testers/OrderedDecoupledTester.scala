@@ -424,7 +424,9 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
     buildValidIoPortEventHandlers(output_event_counter)
 
     logPrintfDebug(s"in_event_counter %d, out_event_counter %d", input_event_counter.value, output_event_counter.value)
-    io_info.showPorts("".r)
+    if(enable_scala_debug || enable_all_debug) {
+      io_info.showPorts("".r)
+    }
   }
 }
 

@@ -10,17 +10,17 @@ import Chisel._
   */
 abstract class Exerciser extends BasicTester {
   val device_under_test: Module
-  val width = 32
+  val internal_counter_width = 32
   val max_ticker = 100
 
   case class StopCondition(condition: Bool, max_ticks: Option[Int] = None)
 
-  val ticker              = Reg(init=UInt(0, width = width))
-  val max_ticks_for_state = Reg(init=UInt(0, width = width))
-  val state_number        = Reg(init=UInt(0, width = width))
+  val ticker              = Reg(init=UInt(0, width = internal_counter_width))
+  val max_ticks_for_state = Reg(init=UInt(0, width = internal_counter_width))
+  val state_number        = Reg(init=UInt(0, width = internal_counter_width))
   val state_locked        = Reg(init=Bool(true))
 
-  var current_states = width + 1
+  var current_states = internal_counter_width + 1
 
   ticker := ticker + UInt(1)
   when(!state_locked) {

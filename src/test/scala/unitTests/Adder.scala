@@ -37,7 +37,7 @@ class AdderTests extends UnitTester {
 class AdderExerciser extends Exerciser {
   val width = 32
   val (x_range_start, y_range_start) = (3, 7)
-  val device_under_test = Module( new Adder(width) )
+  val device_under_test = Module( new Adder(internal_counter_width) )
   val c = device_under_test
 
   printf(s"state_number %d, ticker %d, state_locked %x max_ticks %d",
@@ -51,7 +51,7 @@ class AdderExerciser extends Exerciser {
   val in1_vec = Vec(range(y_range_start).map(UInt(_)))
 
   val expected_out_vec = Vec(in0_vec.zip(in1_vec).map { case (i,j) => i + j })
-  val test_number      = Reg(init=UInt(0, width = width))
+  val test_number      = Reg(init=UInt(0, width = internal_counter_width))
 
   buildState("check adder")(StopCondition(test_number > UInt(range(0).size))) { () =>
     printf(

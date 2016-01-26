@@ -4,7 +4,7 @@ package chiselTests
 
 import Chisel._
 
-import Chisel.testers.DecoupledTester
+import Chisel.testers.OrderedDecoupledTester
 
 class DecoupledExampleInput extends Bundle {
   val a = UInt(INPUT, width=16)
@@ -25,20 +25,21 @@ class DecoupledExample extends Module {
 
 class DecoupledTesterSpec extends ChiselFlatSpec {
   execute {
-    new DecoupledTester {
+    new OrderedDecoupledTester {
       val device_under_test = new DecoupledExample()
 
-      inputEvent(
-        Array(device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7)
-      )
-      outputEvent(
-        Array(device_under_test.io.out.bits.c -> 3)
-      )
-      finish()
+      testBlock {
+        inputEvent(
+          device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7
+        )
+        outputEvent(
+          device_under_test.io.out.bits.c -> 3
+        )
+      }
 
       io_info.showPorts(".*".r)
 
-      "A DecoupledTester" should "parse identify all the io ports of a Module" in {
+      "A DecoupledTester" should "parse and identify all the io ports of a Module" in {
 //        assert(io_info.dut_inputs.size == 2)
 //        assert(io_info.dut_outputs.size == 1)
 
