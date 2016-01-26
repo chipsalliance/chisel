@@ -10,6 +10,7 @@ import Chisel._
 /**
   * This tester is a work in progress towards a generic FSM that can test arbitrary circuits
   */
+//noinspection ScalaStyle
 class FullFsmUnitTester extends Module {
   override val io = new Bundle {
     val running       = Bool(INPUT)

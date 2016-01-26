@@ -36,7 +36,7 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
       )
       finish()
 
-      io_info.show_ports(".*".r)
+      io_info.showPorts(".*".r)
 
       "A DecoupledTester" should "parse identify all the io ports of a Module" in {
 //        assert(io_info.dut_inputs.size == 2)
@@ -47,13 +47,13 @@ class DecoupledTesterSpec extends ChiselFlatSpec {
           assert(io_info.port_to_name.contains(port))
         }
 
-        io_info.show_ports(".*".r)
+        io_info.showPorts(".*".r)
       }
       it should "identify the decoupled interfaces" in {
-        assert(io_info.find_parent_decoupled_port_name("in.bits").contains("in"))
-        assert(io_info.find_parent_decoupled_port_name("in.bits.a").contains("in"))
-        assert(io_info.find_parent_decoupled_port_name("in.bits.b").contains("in"))
-        assert(io_info.find_parent_decoupled_port_name("out.bits").contains("out"))
+        assert(io_info.findParentDecoupledPortName("in.bits").contains("in"))
+        assert(io_info.findParentDecoupledPortName("in.bits.a").contains("in"))
+        assert(io_info.findParentDecoupledPortName("in.bits.b").contains("in"))
+        assert(io_info.findParentDecoupledPortName("out.bits").contains("out"))
       }
       it should "know which ports are referenced in events" in {
         assert(io_info.referenced_inputs.contains(device_under_test.io.in.bits.a))

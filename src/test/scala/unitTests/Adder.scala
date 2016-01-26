@@ -53,7 +53,7 @@ class AdderExerciser extends Exerciser {
   val expected_out_vec = Vec(in0_vec.zip(in1_vec).map { case (i,j) => i + j })
   val test_number      = Reg(init=UInt(0, width = width))
 
-  build_state("check adder")(StopCondition(test_number > UInt(range(0).size))) { () =>
+  buildState("check adder")(StopCondition(test_number > UInt(range(0).size))) { () =>
     printf(
       "%d ticker %d test# %d : %d + %d => %d expected %d",
       state_number, ticker, test_number,

@@ -1,21 +1,26 @@
+// See LICENSE for license details.
+
 package Chisel.testers
 
 import Chisel._
 
 /**
- * Created by chick on 12/16/15.
- */
+  * experimental version of a Tester that allows arbitrary testing circuitry to be run
+  * in some order
+  */
 abstract class Exerciser extends BasicTester {
-  def device_under_test: Module
+  val device_under_test: Module
+  val width = 32
+  val max_ticker = 100
 
   case class StopCondition(condition: Bool, max_ticks: Option[Int] = None)
 
-  val ticker              = Reg(init=UInt(0, width=32))
-  val max_ticks_for_state = Reg(init=UInt(0, width=32))
-  val state_number        = Reg(init=UInt(0, width=32))
+  val ticker              = Reg(init=UInt(0, width = width))
+  val max_ticks_for_state = Reg(init=UInt(0, width = width))
+  val state_number        = Reg(init=UInt(0, width = width))
   val state_locked        = Reg(init=Bool(true))
 
-  var current_states = 33
+  var current_states = width + 1
 
   ticker := ticker + UInt(1)
   when(!state_locked) {
@@ -28,7 +33,7 @@ abstract class Exerciser extends BasicTester {
     state_locked := Bool(false)
     state_number := state_number + UInt(1)
   }
-  when(ticker > UInt(100)) {
+  when(ticker > UInt(max_ticker)) {
     printf("Too many cycles ticker %d current_state %d state_locked %x",
           ticker, state_number, state_locked)
     stop()
@@ -40,14 +45,15 @@ abstract class Exerciser extends BasicTester {
       stop()
     }
   }
-  def build_state(name: String = s"$current_states")(stop_condition : StopCondition)(generator: () => Unit): Unit = {
+  def buildState(name: String = s"$current_states")(stop_condition : StopCondition)(generator: () => Unit): Unit = {
+    //noinspection ScalaStyle
     println(s"building state $current_states $name")
     when(state_number === UInt(current_states)) {
       when(! state_locked) {
         printf(s"Entering state $name state_number %d ticker %d", state_number, ticker)
         state_locked        := Bool(true)
         ticker              := UInt(0)
-        max_ticks_for_state := UInt(stop_condition.max_ticks.getOrElse(120))
+        max_ticks_for_state := UInt(stop_condition.max_ticks.getOrElse(max_ticker))
         state_number := UInt(current_states)
       }
       generator()

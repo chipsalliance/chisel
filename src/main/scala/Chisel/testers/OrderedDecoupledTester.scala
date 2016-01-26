@@ -85,7 +85,7 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
         s"Error: port ${io_info.port_to_name(port)}, input_event and output_event cannot directly reference ready"
       )
 
-      io_info.find_parent_decoupled_port_name(io_info.port_to_name(port)) match {
+      io_info.findParentDecoupledPortName(io_info.port_to_name(port)) match {
         case None =>
           if (must_be_decoupled) {
             throw new Exception(
@@ -120,7 +120,7 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
                                 event_number: Int
                               ): Either[DecoupledIO[Data], ValidIO[Data]] = {
     val valid_parent_names = expects.flatMap { case (port, value) =>
-      io_info.find_parent_valid_port_name(io_info.port_to_name(port)) match {
+      io_info.findParentValidPortName(io_info.port_to_name(port)) match {
         case None =>
           throw new Exception(s"Error: event $event_number " +
             s"port ${io_info.port_to_name(port)} not member of ValidIO")
@@ -411,7 +411,7 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
     ti := ti + UInt(1)
     when(ti > UInt(DecoupledTester.max_tick_count)) {
       printf(
-        "Exceeded maxiumum allowed %d ticks in DecoupledTester, If you think code is correct use:\n" +
+        "Exceeded maximum allowed %d ticks in DecoupledTester, If you think code is correct use:\n" +
         "DecoupleTester.max_tick_count = <some-higher-value>\n" +
         "in the DecoupledTester subclass",
         UInt(DecoupledTester.max_tick_count)
@@ -424,7 +424,7 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
     buildValidIoPortEventHandlers(output_event_counter)
 
     logPrintfDebug(s"in_event_counter %d, out_event_counter %d", input_event_counter.value, output_event_counter.value)
-    io_info.show_ports("".r)
+    io_info.showPorts("".r)
   }
 }
 

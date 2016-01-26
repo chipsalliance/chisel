@@ -8,11 +8,11 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Use a UnitTester to constuct a test harness for a chisel module
+  * Use a UnitTester to construct a test harness for a chisel module
   * this module will be canonically referred to as the device_under_test, often simply as c in
   * a unit test, and also dut
-  * The UnitTester is used to put series of values (as chisel.Vec's) into the ports of the dut io which are INPUTs
-  * At specified times it check the dut's io OUTPUT ports to see that they match a specific value
+  * The UnitTester is used to put series of values (as chisel.Vec's) into the ports of the dut io which are INPUT
+  * At specified times it check the dut io OUTPUT ports to see that they match a specific value
   * The vec's are assembled through the following API
   * poke, expect and step, pokes
   *
@@ -174,7 +174,7 @@ abstract class UnitTester extends BasicTester with EventBased {
         stop()
       }
     }
-    io_info.show_ports("".r)
+    io_info.showPorts("".r)
     printStateTable()
   }
 }
