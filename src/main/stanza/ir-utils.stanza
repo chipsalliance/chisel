@@ -420,7 +420,8 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefWire) :
          print-all(o,["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
-         print-all(o,["reg " name(c) " : " type(c) ", " clock(c) ", " reset(c) ", " init(c)])
+         print-all(o,["reg " name(c) " : " type(c) ", " clock(c) " with :"])
+         print-all(io,["\nreset => (" reset(c) ", " init(c) ")"])
       (c:DefMemory) :
          print-all(o,["mem " name(c) " : "])
          print-debug(o,c)
