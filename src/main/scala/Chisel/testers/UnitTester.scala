@@ -43,20 +43,8 @@ trait UnitTestRunners {
   * }
   * }}}
   */
-abstract class UnitTester extends BasicTester {
-  val device_under_test     : Module
-
-  private var io_info: IOAccessor = null
-  var verbose = false
-
+abstract class UnitTester extends BasicTester with EventBased {
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
-
-  def testBlock(block: => Unit): Unit = {
-    block
-    finish()
-  }
-
-  def rnd: Random = Random  // convenience method for writing tests
 
   // Scala stuff
   val test_actions = new ArrayBuffer[Step]()
@@ -147,7 +135,7 @@ abstract class UnitTester extends BasicTester {
 
     when(ok_to_test_output_values(counter.value)) {
       when(output_port.toBits() === output_values(counter.value).toBits()) {
-                  printf("    passed step %d -- " + name(output_port) + ":  %d",
+                  logPrintfDebug("    passed step %d -- " + name(output_port) + ":  %d",
                     counter.value,
                     output_port.toBits()
                   )
@@ -170,7 +158,7 @@ abstract class UnitTester extends BasicTester {
     }
   }
 
-  private def finish(): Unit = {
+  def finish(): Unit = {
     io_info = new IOAccessor(device_under_test.io)
 
     processEvents()

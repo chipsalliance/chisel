@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package unitTests
 
 import Chisel._
@@ -17,7 +19,7 @@ class Adder(val w: Int) extends Module {
 class AdderTests extends UnitTester {
   val device_under_test = Module( new Adder(10) )
   val c = device_under_test
-  verbose = true
+  enable_all_debug = true
 
   testBlock {
     Random.setSeed(0L)
@@ -33,13 +35,14 @@ class AdderTests extends UnitTester {
 }
 
 class AdderExerciser extends Exerciser {
-  val device_under_test = Module( new Adder(32) )
+  val width = 32
+  val device_under_test = Module( new Adder(width) )
   val c = device_under_test
 
   printf(s"state_number %d, ticker %d, state_locked %x max_ticks %d",
     state_number, ticker, state_locked, max_ticks_for_state)
 
-  def range(start:Int) = {
+  def range(start:Int): Range = {
     val count = 20 // this forces ranges to all be the same size
     Range(start, start+count)
   }
@@ -47,7 +50,7 @@ class AdderExerciser extends Exerciser {
   val in1_vec = Vec(range(7).map(UInt(_)))
 
   val expected_out_vec = Vec(in0_vec.zip(in1_vec).map { case (i,j) => i + j })
-  val test_number      = Reg(init=UInt(0, width=32))
+  val test_number      = Reg(init=UInt(0, width = width))
 
   build_state("check adder")(StopCondition(test_number > UInt(range(0).size))) { () =>
     printf(
@@ -60,22 +63,6 @@ class AdderExerciser extends Exerciser {
     assert(expected_out_vec(test_number) === in0_vec(test_number) + in1_vec(test_number))
     test_number := test_number + UInt(1)
   }
-//  for {
-//    i <- 0 to 3
-//    j <- 1 to 3
-//  } {
-//    build_state(s"add: $i + $j -> ${i+j}")(StopCondition(c.io.out === c.io.in0 + c.io.in1)) { () =>
-//      c.io.in0 := UInt(i)
-//      c.io.in1 := UInt(j)
-//      assert(c.io.out === c.io.in0 + c.io.in1)
-////      printf(
-////        "c.io.in0 %d + c.io.in.1 %d => c.io.out %d",
-////        device_under_test.io.in0, device_under_test.io.in1, device_under_test.io.out
-////      )
-//
-//    }
-//  }
-
   finish()
 }
 
