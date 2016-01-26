@@ -39,26 +39,7 @@ import scala.util.Random
   * likewise,
   * all outputs regardless of which interface are tested in the same order that they were created
   */
-abstract class OrderedDecoupledTester extends BasicTester {
-  val device_under_test     : Module
-  var io_info               : IOAccessor = null
-
-  def rnd: Random = Random  // convenience method for writing tests
-
-  def testBlock(block: => Unit): Unit = {
-    block
-    finish()
-  }
-
-  var verbose           = false
-  def logScala(msg: => String): Unit = {
-    //noinspection ScalaStyle
-    if(verbose) println(msg)
-  }
-  def logSimulator(fmt: String, args: Bits*): Unit = {
-    if(verbose) printf(fmt, args :_*)
-  }
-
+abstract class OrderedDecoupledTester extends BasicTester with EventBased {
   val input_event_list  = new ArrayBuffer[Seq[(Data, Int)]]()
   val output_event_list = new ArrayBuffer[Seq[(Data, Int)]]()
 
@@ -181,7 +162,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
       io_info.referenced_inputs ++= pokes.map(_._1)
       io_info.ports_referenced ++= pokes.map(_._1)
     }
-    logScala(
+    logScalaDebug(
       s"Processing input events done, referenced controlling ports " +
         control_port_to_input_values.keys.map { p => io_info.port_to_name(p) }.mkString(",")
     )
@@ -206,7 +187,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
 
       }
     }
-    logScala(
+    logScalaDebug(
       s"Processing output events done, referenced controlling ports" +
         (
           if (decoupled_control_port_to_output_values.nonEmpty) {
@@ -242,7 +223,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
     */
   private def createIsMyTurnTable(events: ArrayBuffer[TestingEvent]): Vec[Bool] = {
     val associated_event_numbers = events.map { event => event.event_number }.toSet
-    logScala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+    logScalaDebug(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
     Vec(
       input_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
@@ -274,7 +255,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
       port -> Vec(events.map { event => UInt(event.port_values.getOrElse(port, 0)) } ++ List(UInt(0))) //0 added to end
     }.toMap
 
-    logScala(s"Input controller ${io_info.port_to_name(io_interface)} : ports " +
+    logScalaDebug(s"Input controller ${io_info.port_to_name(io_interface)} : ports " +
       s" ${referenced_ports.map { port => name(port) }.mkString(",")}")
     port_vector_events
   }
@@ -296,7 +277,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
         port -> Vec(events.map { event => UInt(event.port_values.getOrElse(port, 0)) } ++ List(UInt(0))) //0 added to end
       }.toMap
 
-      logScala(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
+      logScalaDebug(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => name(port) }.mkString(",")}")
 
       ports_referenced_for_this_controlling_port.foreach { port =>
@@ -326,9 +307,9 @@ abstract class OrderedDecoupledTester extends BasicTester {
         output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
         List(Bool(false)) // We append a false at the end so no-one tries to go when counter done
       )
-      logScala(s"Output decoupled controller ${name(controlling_port)} : ports " +
+      logScalaDebug(s"Output decoupled controller ${name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => name(port) }.mkString(",")}")
-      logScala(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
+      logScalaDebug(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
       val port_vector_events = buildValuesVectorForEachPort(
         controlling_port,
@@ -416,7 +397,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
    * this builds a circuit to load inputs and circuits to test outputs that are controlled
    * by either a decoupled or valid
    */
-  def finish(show_io_table: Boolean = false): Unit = {
+  def finish(): Unit = {
     io_info = new IOAccessor(device_under_test.io)
 
     processInputEvents()
@@ -447,7 +428,7 @@ abstract class OrderedDecoupledTester extends BasicTester {
     buildDecoupledOutputEventHandlers(output_event_counter)
     buildValidIoPortEventHandlers(output_event_counter)
 
-    logSimulator(s"in_event_counter %d, out_event_counter %d", input_event_counter.value, output_event_counter.value)
+    logPrintfDebug(s"in_event_counter %d, out_event_counter %d", input_event_counter.value, output_event_counter.value)
     io_info.show_ports("".r)
   }
 }

@@ -16,14 +16,6 @@ object Router {
   val numberOfOutputs =  4
 }
 
-object ReadCmd {
-  def apply(value: Int): ReadCmd = {
-    new ReadCmd {
-      override val addr = UInt(value)
-    }
-  }
-}
-
 class ReadCmd extends Bundle {
   val addr = UInt(width = Router.addressWidth)
 }
@@ -100,9 +92,9 @@ class Router extends Module {
 class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledTester {
   val device_under_test = Module(new Router)
   val c = device_under_test
-  verbose = true
+  enable_all_debug = true
 
-  testBlock { () =>
+  testBlock {
     Random.setSeed(0)
 
     def readRoutingTable(addr: Int, data: Int): Unit = {
@@ -125,7 +117,7 @@ class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledT
     def routePacket(header: Int, body: Int, routed_to: Int): Unit = {
       inputEvent(c.io.in.bits.header -> header, c.io.in.bits.body -> body)
       outputEvent(c.io.outs(routed_to).bits.body -> body)
-      logScala(s"rout_packet $header $body should go to out($routed_to)")
+      logScalaDebug(s"rout_packet $header $body should go to out($routed_to)")
     }
 
     readRoutingTable(0, 0) // confirm we initialized the routing table

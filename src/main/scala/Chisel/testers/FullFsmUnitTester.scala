@@ -1,10 +1,15 @@
+// See LICENSE for license details.
+
 package Chisel.testers
 
 import Chisel._
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+//import scala.collection.mutable
+//import scala.collection.mutable.ArrayBuffer
 
+/**
+  * This tester is a work in progress towards a generic FSM that can test arbitrary circuits
+  */
 class FullFsmUnitTester extends Module {
   override val io = new Bundle {
     val running       = Bool(INPUT)

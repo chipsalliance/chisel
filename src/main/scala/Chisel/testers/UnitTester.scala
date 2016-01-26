@@ -53,7 +53,7 @@ abstract class UnitTester extends BasicTester {
 
   def testBlock(block: => Unit): Unit = {
     block
-    finish
+    finish()
   }
 
   def rnd: Random = Random  // convenience method for writing tests
@@ -163,17 +163,17 @@ abstract class UnitTester extends BasicTester {
     }
   }
 
-  private def processEvents: Unit = {
+  private def processEvents(): Unit = {
     test_actions.foreach { case step =>
       io_info.ports_referenced ++= step.input_map.keys
       io_info.ports_referenced ++= step.output_map.keys
     }
   }
 
-  private def finish: Unit = {
+  private def finish(): Unit = {
     io_info = new IOAccessor(device_under_test.io)
 
-    processEvents
+    processEvents()
 
     val pc             = Counter(test_actions.length)
 
