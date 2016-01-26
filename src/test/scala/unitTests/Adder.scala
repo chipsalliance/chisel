@@ -36,6 +36,7 @@ class AdderTests extends UnitTester {
 
 class AdderExerciser extends Exerciser {
   val width = 32
+  val (x_range_start, y_range_start) = (3, 7)
   val device_under_test = Module( new Adder(width) )
   val c = device_under_test
 
@@ -44,10 +45,10 @@ class AdderExerciser extends Exerciser {
 
   def range(start:Int): Range = {
     val count = 20 // this forces ranges to all be the same size
-    Range(start, start+count)
+    Range(start, start + count)
   }
-  val in0_vec = Vec(range(3).map(UInt(_)))
-  val in1_vec = Vec(range(7).map(UInt(_)))
+  val in0_vec = Vec(range(x_range_start).map(UInt(_)))
+  val in1_vec = Vec(range(y_range_start).map(UInt(_)))
 
   val expected_out_vec = Vec(in0_vec.zip(in1_vec).map { case (i,j) => i + j })
   val test_number      = Reg(init=UInt(0, width = width))

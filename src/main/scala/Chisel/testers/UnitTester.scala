@@ -6,7 +6,6 @@ import Chisel._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 
 trait UnitTestRunners {
   def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
@@ -75,26 +74,30 @@ abstract class UnitTester extends BasicTester with EventBased {
 
   private def name(port: Data): String = io_info.port_to_name(port)
 
+  //noinspection ScalaStyle
   private def printStateTable(): Unit = {
+    val default_table_width = 80
+
     if(io_info.ports_referenced.nonEmpty) {
       val max_col_width = io_info.ports_referenced.map { port =>
         Array(name(port).length, port.getWidth / 4).max // width/4 is how wide value might be in hex
       }.max + 2
-      val (string_col_template, number_col_template) = (s"%${max_col_width}s", s"%${max_col_width}x")
+      val string_col_template = s"%${max_col_width}s"
+//      val number_col_template = s"%${max_col_width}x"
 
-      println("=" * 80)
+      println("=" * default_table_width)
       println("UnitTester state table")
       println(
         "%6s".format("step") +
           io_info.dut_inputs.map { dut_input => string_col_template.format(name(dut_input)) }.mkString +
           io_info.dut_outputs.map { dut_output => string_col_template.format(name(dut_output)) }.mkString
       )
-      println("-" * 80)
+      println("-" * default_table_width)
       /**
         * prints out a table form of input and expected outputs
         */
       def val_str(hash: mutable.HashMap[Data, Int], key: Data): String = {
-        if (hash.contains(key)) "%x".format(hash(key)) else "-"
+        if (hash.contains(key)) "%d".format(hash(key)) else "-"
       }
       test_actions.zipWithIndex.foreach { case (step, step_number) =>
         print("%6d".format(step_number))
@@ -106,7 +109,7 @@ abstract class UnitTester extends BasicTester with EventBased {
         }
         println()
       }
-      println("=" * 80)
+      println("=" * default_table_width)
     }
   }
 
@@ -164,17 +167,18 @@ abstract class UnitTester extends BasicTester with EventBased {
     processEvents()
 
     val pc             = Counter(test_actions.length)
+    val done           = Reg(init = Bool(false))
 
-    io_info.dut_inputs.foreach { port => createVectorsForInput(port, pc) }
+    when(!done) {
+      io_info.dut_inputs.foreach { port => createVectorsForInput(port, pc) }
+      io_info.dut_outputs.foreach { port => createVectorsAndTestsForOutput(port, pc) }
 
-
-    io_info.dut_outputs.foreach { port => createVectorsAndTestsForOutput(port, pc) }
-
-    when(pc.inc()) {
-      printf(s"Stopping, end of tests, ${test_actions.length} steps\n")
-      stop()
+      when(pc.inc()) {
+        printf(s"Stopping, end of tests, ${test_actions.length} steps\n")
+        done := Bool(true)
+        stop()
+      }
     }
-
     io_info.show_ports("".r)
     printStateTable()
   }
