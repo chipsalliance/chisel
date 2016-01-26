@@ -100,17 +100,17 @@ public defn AND (e1:Expression,e2:Expression) -> Expression :
    else if e1 == zero or e2 == zero : zero
    else if e1 == one : e2
    else if e2 == one : e1
-   else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   else : DoPrim(AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
 
 public defn OR (e1:Expression,e2:Expression) -> Expression :
    if e1 == e2 : e1
    else if e1 == one or e2 == one : one
    else if e1 == zero : e2
    else if e2 == zero : e1
-   else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   else : DoPrim(OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
 
 public defn EQV (e1:Expression,e2:Expression) -> Expression :
-   DoPrim(EQUIV-OP,list(e1,e2),list(),type(e1))
+   DoPrim(EQUAL-OP,list(e1,e2),list(),type(e1))
 
 public defn MUX (p:Expression,e1:Expression,e2:Expression) -> Expression :
    Mux(p,e1,e2,mux-type(type(e1),type(e2)))
@@ -134,7 +134,7 @@ public defn CAT (e1:Expression,e2:Expression) -> Expression :
 public defn NOT (e1:Expression) -> Expression :
    if e1 == one : zero
    else if e1 == zero : one
-   else : DoPrim(EQUIV-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+   else : DoPrim(EQUAL-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
 
 public defn children (e:Expression) -> List<Expression> :
    val es = Vector<Expression>()
@@ -361,38 +361,33 @@ defmethod print (o:OutputStream, op:PrimOp) :
       MUL-OP : "mul"
       DIV-OP : "div"
       MOD-OP : "mod"
-      QUO-OP : "quo"
-      REM-OP : "rem"
-      ADD-WRAP-OP : "addw"
-      SUB-WRAP-OP : "subw"
       LESS-OP : "lt"
       LESS-EQ-OP : "leq"
       GREATER-OP : "gt"
       GREATER-EQ-OP : "geq"
-      EQUIV-OP : "eqv"
-      NEQUIV-OP : "neqv"
       EQUAL-OP : "eq"
       NEQUAL-OP : "neq"
-      ;MUX-OP : "mux"
       PAD-OP : "pad"
       AS-UINT-OP : "asUInt"
       AS-SINT-OP : "asSInt"
-      DYN-SHIFT-LEFT-OP : "dshl"
-      DYN-SHIFT-RIGHT-OP : "dshr"
+      AS-CLOCK-OP : "asClock"
       SHIFT-LEFT-OP : "shl"
       SHIFT-RIGHT-OP : "shr"
+      DYN-SHIFT-LEFT-OP : "dshl"
+      DYN-SHIFT-RIGHT-OP : "dshr"
       CONVERT-OP : "cvt"
       NEG-OP : "neg"
-      BIT-NOT-OP : "not"
-      BIT-AND-OP : "and"
-      BIT-OR-OP : "or"
-      BIT-XOR-OP : "xor"
-      BIT-AND-REDUCE-OP : "andr"
-      BIT-OR-REDUCE-OP : "orr"
-      BIT-XOR-REDUCE-OP : "xorr"
+      NOT-OP : "not"
+      AND-OP : "and"
+      OR-OP : "or"
+      XOR-OP : "xor"
+      AND-REDUCE-OP : "andr"
+      OR-REDUCE-OP : "orr"
+      XOR-REDUCE-OP : "xorr"
       CONCAT-OP : "cat"
-      BIT-SELECT-OP : "bit"
       BITS-SELECT-OP : "bits"
+      HEAD-OP : "head"
+      TAIL-OP : "tail"
    
 defmethod print (o:OutputStream, e:Expression) :
    match(e) :
