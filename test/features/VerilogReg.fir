@@ -7,7 +7,8 @@ circuit Poison :
     input p1 : UInt<1>
     input p2 : UInt<1>
     input p3 : UInt<1>
-    reg r : UInt<32>,clk,reset,r
+    reg r : UInt<32>,clk with :
+       reset => (reset,r)
     when p1 :
        r <= UInt(1)
     when p2 :

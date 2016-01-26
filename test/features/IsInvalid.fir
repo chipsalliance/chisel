@@ -12,9 +12,10 @@ circuit Top :
        write-latency => 1
        reader => r
        writer => w
-       read-writer => rw
+       readwriter => rw
     wire x : { w : UInt<42>, x : UInt<20>}
-    reg c : { w : UInt<42>, x : UInt<20>},clk,reset,x
+    reg c : { w : UInt<42>, x : UInt<20>},clk with :
+       reset => (reset,x)
     inst other of Other
    
     clk is invalid

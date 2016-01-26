@@ -17,5 +17,5 @@ circuit Top :
 ;CHECK: printf(clk, en, "Hello World!\n")
 ;CHECK: printf(clk, en, "Hello World! %x\n", x.y)
 ;CHECK: printf(clk, and(p, en), "In consequence\n")
-;CHECK: printf(clk, and(eqv(p, UInt("h0")), en), "In alternate\n")   
+;CHECK: printf(clk, and(eq(p, UInt("h0")), en), "In alternate\n")   
 ;CHECK: Done!

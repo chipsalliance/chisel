@@ -6,7 +6,7 @@ circuit Top :
     wire x_1 : UInt<1>
     x_1 <= UInt(1)
     wire x : UInt<1>
-    x <= addw(addw(UInt(1),UInt(1)),UInt(1))
+    x <= add(add(UInt(1),UInt(1)),UInt(1))
 
 
 

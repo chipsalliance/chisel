@@ -13,7 +13,8 @@ circuit Risc :
     
     cmem file : UInt<32>[256]
     cmem code : UInt<32>[256]
-    reg pc : UInt<8>,clk,reset,UInt<8>(0)
+    reg pc : UInt<8>,clk with :
+       reset => (reset,UInt<8>(0))
     read mport inst = code[pc],clk
     node op = bits(inst, 31, 24)
     node rci = bits(inst, 23, 16)
@@ -36,7 +37,7 @@ circuit Risc :
       else : 
         node T_56 = eq(UInt<1>(0), op)
         when T_56 : 
-          node T_57 = addw(ra, rb)
+          node T_57 = tail(add(ra, rb),1)
           rc <= T_57
         node T_58 = eq(UInt<1>(1), op)
         when T_58 : 
@@ -49,5 +50,5 @@ circuit Risc :
         else : 
           write mport T_62 = file[rci],clk
           T_62 <= rc
-        node T_63 = addw(pc, UInt<1>(1))
+        node T_63 = tail(add(pc, UInt<1>(1)),1)
         pc <= T_63

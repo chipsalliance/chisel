@@ -6,7 +6,7 @@ circuit top :
       input x : UInt
       input y : UInt
       output q : UInt
-      q <= subw(x, y)
+      q <= tail(sub(x, y),1)
    module gcd :
       input clk : Clock
       input reset : UInt<1>
@@ -14,8 +14,10 @@ circuit top :
       input b : UInt<16>
       input e : UInt<1>
       output z : UInt<16>
-      reg x : UInt,clk,reset,UInt(0)
-      reg y : UInt,clk,reset,UInt(42)
+      reg x : UInt,clk with :
+         reset => (reset,UInt(0))
+      reg y : UInt,clk with :
+         reset => (reset,UInt(42))
       when gt(x, y) :
          inst s of subtracter
          s.x <= x

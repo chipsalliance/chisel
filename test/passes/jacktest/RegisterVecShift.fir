@@ -9,7 +9,8 @@ circuit RegisterVecShift :
     input shift : UInt<1>
     input ins : UInt<4>[4]
     
-    reg delays : UInt<4>[4],clk,reset,delays
+    reg delays : UInt<4>[4],clk with :
+       reset => (reset,delays)
     when reset : 
       wire T_33 : UInt<4>[4]
       T_33[0] <= UInt<4>(0)

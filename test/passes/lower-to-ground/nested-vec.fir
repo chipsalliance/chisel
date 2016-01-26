@@ -41,17 +41,17 @@ circuit top :
       m.c.data <= k
 
 ;CHECK: mem m_x :          
-;CHECK:    data-type: UInt<32>
-;CHECK:    depth: 2
-;CHECK:    write-latency: 1
-;CHECK:    read-latency: 0
-;CHECK:    writer: c
+;CHECK:    data-type => UInt<32>
+;CHECK:    depth => 2
+;CHECK:    write-latency => 1
+;CHECK:    read-latency => 0
+;CHECK:    writer => c
 ;CHECK: mem m_y :          
-;CHECK:    data-type: UInt<32>
-;CHECK:    depth: 2
-;CHECK:    write-latency: 1
-;CHECK:    read-latency: 0
-;CHECK:    writer: c
+;CHECK:    data-type => UInt<32>
+;CHECK:    depth => 2
+;CHECK:    write-latency => 1
+;CHECK:    read-latency => 0
+;CHECK:    writer => c
 ;CHECK: m_x.c.data <= k_x
 ;CHECK: m_y.c.data <= k_y
 ;CHECK: m_x.c.mask <= UInt("h1")

@@ -3,6 +3,7 @@
 ;CHECK: Infer Types
 circuit top :
    module top :
+      input clk : Clock
       wire a : UInt<16>
       wire b : UInt<8>
       wire c : SInt<16>
@@ -45,30 +46,6 @@ circuit top :
       node ymod = mod(c, b) ;CHECK: node ymod = mod(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
       node zmod = mod(c, d) ;CHECK: node zmod = mod(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
    
-      node vquo = quo(a, c)    ;CHECK: node vquo = quo(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
-      node wquo = quo(a, b) ;CHECK: node wquo = quo(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node xquo = quo(a, d) ;CHECK: node xquo = quo(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
-      node yquo = quo(c, b) ;CHECK: node yquo = quo(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
-      node zquo = quo(c, d) ;CHECK: node zquo = quo(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
-   
-      node vrem = rem(a, c)    ;CHECK: node vrem = rem(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
-      node wrem = rem(a, b) ;CHECK: node wrem = rem(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node xrem = rem(a, d) ;CHECK: node xrem = rem(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
-      node yrem = rem(c, b) ;CHECK: node yrem = rem(c@<t:SInt>, b@<t:UInt>)@<t:UInt>
-      node zrem = rem(c, d) ;CHECK: node zrem = rem(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
-   
-      node vaddw = addw(a, c)    ;CHECK: node vaddw = addw(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
-      node waddw = addw(a, b) ;CHECK: node waddw = addw(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node xaddw = addw(a, d) ;CHECK: node xaddw = addw(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
-      node yaddw = addw(c, b) ;CHECK: node yaddw = addw(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
-      node zaddw = addw(c, d) ;CHECK: node zaddw = addw(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
-   
-      node vsubw = subw(a, c)    ;CHECK: node vsubw = subw(a@<t:UInt>, c@<t:SInt>)@<t:SInt>
-      node wsubw = subw(a, b) ;CHECK: node wsubw = subw(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node xsubw = subw(a, d) ;CHECK: node xsubw = subw(a@<t:UInt>, d@<t:SInt>)@<t:SInt>
-      node ysubw = subw(c, b) ;CHECK: node ysubw = subw(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
-      node zsubw = subw(c, d) ;CHECK: node zsubw = subw(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
-   
       node vlt = lt(a, c)    ;CHECK: node vlt = lt(a@<t:UInt>, c@<t:SInt>)@<t:UInt>
       node wlt = lt(a, b) ;CHECK: node wlt = lt(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
       node xlt = lt(a, d) ;CHECK: node xlt = lt(a@<t:UInt>, d@<t:SInt>)@<t:UInt>
@@ -105,29 +82,21 @@ circuit top :
       node yneq = neq(c, b) ;CHECK: node yneq = neq(c@<t:SInt>, b@<t:UInt>)@<t:UInt>
       node zneq = neq(c, d) ;CHECK: node zneq = neq(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
    
-      node vneqv = neqv(a, b)    ;CHECK: node vneqv = neqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node wneqv = neqv(a, b) ;CHECK: node wneqv = neqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node zneqv = neqv(c, d) ;CHECK: node zneqv = neqv(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
-   
-      node veqv = eqv(a, b)    ;CHECK: node veqv = eqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node weqv = eqv(a, b) ;CHECK: node weqv = eqv(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node zeqv = eqv(c, d) ;CHECK: node zeqv = eqv(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
-   
-      node vmux = mux(e, a, b)    ;CHECK: node vmux = mux(e@<t:UInt>, a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node wmux = mux(e, a, b) ;CHECK: node wmux = mux(e@<t:UInt>, a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node zmux = mux(e, c, d) ;CHECK: node zmux = mux(e@<t:UInt>, c@<t:SInt>, d@<t:SInt>)@<t:SInt>
-   
       node vpad = pad(a, 10)   ;CHECK: node vpad = pad(a@<t:UInt>, 10)@<t:UInt>
       node wpad = pad(a, 10) ;CHECK: node wpad = pad(a@<t:UInt>, 10)@<t:UInt>
       node zpad = pad(c, 10) ;CHECK: node zpad = pad(c@<t:SInt>, 10)@<t:SInt>
    
-      node vasUInt = asUInt(d)   ;CHECK: node vasUInt = asUInt(d@<t:SInt>)@<t:UInt>
+      node vasUInt = asUInt(d) ;CHECK: node vasUInt = asUInt(d@<t:SInt>)@<t:UInt>
       node wasUInt = asUInt(a) ;CHECK: node wasUInt = asUInt(a@<t:UInt>)@<t:UInt>
-      node zasUInt = asUInt(c) ;CHECK: node zasUInt = asUInt(c@<t:SInt>)@<t:UInt>
+      node zasUInt = asUInt(clk) ;CHECK: node zasUInt = asUInt(clk@<t:Clock>)@<t:UInt>
    
-      node vasSInt = asSInt(a)   ;CHECK: node vasSInt = asSInt(a@<t:UInt>)@<t:SInt>
-      node wasSInt = asSInt(a) ;CHECK: node wasSInt = asSInt(a@<t:UInt>)@<t:SInt>
-      node zasSInt = asSInt(c) ;CHECK: node zasSInt = asSInt(c@<t:SInt>)@<t:SInt>
+      node vasSInt = asSInt(a) ;CHECK: node vasSInt = asSInt(a@<t:UInt>)@<t:SInt>
+      node wasSInt = asSInt(c) ;CHECK: node wasSInt = asSInt(c@<t:SInt>)@<t:SInt>
+      node zasSInt = asSInt(clk) ;CHECK: node zasSInt = asSInt(clk@<t:Clock>)@<t:SInt>
+   
+      node vasClock = asClock(a) ;CHECK: node vasClock = asClock(a@<t:UInt>)@<t:Clock>
+      node wasClock = asClock(c) ;CHECK: node wasClock = asClock(c@<t:SInt>)@<t:Clock>
+      node zasClock = asClock(clk) ;CHECK: node zasClock = asClock(clk@<t:Clock>)@<t:Clock>
    
       node vshl = shl(a, 10)   ;CHECK: node vshl = shl(a@<t:UInt>, 10)@<t:UInt>
       node wshl = shl(a, 10) ;CHECK: node wshl = shl(a@<t:UInt>, 10)@<t:UInt>
@@ -145,7 +114,6 @@ circuit top :
       node wshr = shr(a, 10) ;CHECK: node wshr = shr(a@<t:UInt>, 10)@<t:UInt>
       node zshr = shr(c, 10) ;CHECK: node zshr = shr(c@<t:SInt>, 10)@<t:SInt>
    
-
       node vcvt = cvt(a)   ;CHECK: node vcvt = cvt(a@<t:UInt>)@<t:SInt>
       node wcvt = cvt(a) ;CHECK: node wcvt = cvt(a@<t:UInt>)@<t:SInt>
       node zcvt = cvt(c) ;CHECK: node zcvt = cvt(c@<t:SInt>)@<t:SInt>
@@ -155,19 +123,16 @@ circuit top :
       node zneg = neg(c) ;CHECK: node zneg = neg(c@<t:SInt>)@<t:SInt>
    
       node wnot = not(a) ;CHECK: node wnot = not(a@<t:UInt>)@<t:UInt>
-      node unot = not(c) ;CHECK: node unot = not(c@<t:SInt>)@<t:SInt>
+      node unot = not(c) ;CHECK: node unot = not(c@<t:SInt>)@<t:UInt>
 
       node WAND = and(a, b) ;CHECK: node WAND = and(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node uand = and(c, d) ;CHECK: node uand = and(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+      node uand = and(c, d) ;CHECK: node uand = and(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
 
       node WOR = or(a, b)  ;CHECK: node WOR = or(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node uor = or(c, d)  ;CHECK: node uor = or(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+      node uor = or(c, d)  ;CHECK: node uor = or(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
 
       node wxor = xor(a, b) ;CHECK: node wxor = xor(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node uxor = xor(c, d) ;CHECK: node uxor = xor(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
-
-      node wbit = bit(a, 0) ;CHECK: node wbit = bit(a@<t:UInt>, 0)@<t:UInt>
-      node ubit = bit(c, 0) ;CHECK: node ubit = bit(c@<t:SInt>, 0)@<t:UInt>
+      node uxor = xor(c, d) ;CHECK: node uxor = xor(c@<t:SInt>, d@<t:SInt>)@<t:UInt>
 
       node wbits = bits(a, 2, 0) ;CHECK: node wbits = bits(a@<t:UInt>, 2, 0)@<t:UInt>
       node ubits = bits(c, 2, 0) ;CHECK: node ubits = bits(c@<t:SInt>, 2, 0)@<t:UInt>
@@ -177,5 +142,11 @@ circuit top :
       node uandr = andr(a, b, a) ;CHECK: node uandr = andr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
       node uorr = orr(a, b, a) ;CHECK: node uorr = orr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
       node uxorr = xorr(a, b, a) ;CHECK: node uxorr = xorr(a@<t:UInt>, b@<t:UInt>, a@<t:UInt>)@<t:UInt>
+
+      node whead = head(a, 2) ;CHECK: node whead = head(a@<t:UInt>, 2)@<t:UInt>
+      node uhead = head(c, 2) ;CHECK: node uhead = head(c@<t:SInt>, 2)@<t:UInt>
+
+      node wtail = tail(a, 2) ;CHECK: node wtail = tail(a@<t:UInt>, 2)@<t:UInt>
+      node utail = tail(c, 2) ;CHECK: node utail = tail(c@<t:SInt>, 2)@<t:UInt>
 
 ;CHECK: Finished Infer Types

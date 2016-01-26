@@ -5,7 +5,8 @@ circuit top :
       input reset : UInt<1>
       wire p : UInt
       p <= UInt(1)
-      reg r : UInt,clk,reset,r
+      reg r : UInt,clk with :
+         reset => (reset,r)
       when p :
          r <= UInt(2)
 

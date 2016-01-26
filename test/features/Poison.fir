@@ -16,7 +16,7 @@ circuit Poison :
        write-latency => 2
        reader => r
        writer => w
-       read-writer => rw
+       readwriter => rw
     m.r.addr <= index
     m.r.en <= UInt(1)
     m.r.clk <= clk

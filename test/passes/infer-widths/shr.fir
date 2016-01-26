@@ -20,11 +20,16 @@ circuit MemSerdes :
     
     node T_218961 = cat(wide.req_cmd.bits.tag, wide.req_cmd.bits.rw)
     node T_218962 = cat(wide.req_cmd.bits.addr, T_218961)
-    reg out_buf : UInt, clock, reset, out_buf
-    reg in_buf : UInt, clock, reset, in_buf
-    reg state : UInt<3>, clock, reset,UInt<3>("h00")
-    reg send_cnt : UInt<3>, clock, reset, UInt<3>("h00")
-    reg data_send_cnt : UInt<2>, clock, reset, UInt<2>("h00")
+    reg out_buf : UInt, clock with :
+       reset => ( reset, out_buf)
+    reg in_buf : UInt, clock with :
+       reset => ( reset, in_buf)
+    reg state : UInt<3>, clock with :
+       reset => ( reset,UInt<3>("h00"))
+    reg send_cnt : UInt<3>, clock with :
+       reset => ( reset, UInt<3>("h00"))
+    reg data_send_cnt : UInt<2>, clock with :
+       reset => ( reset, UInt<2>("h00"))
     node T_218984 = eq(send_cnt, UInt<2>("h02"))
     node adone = and(narrow.req.ready, T_218984)
     node T_218987 = eq(send_cnt, UInt<3>("h07"))
@@ -32,7 +37,7 @@ circuit MemSerdes :
     
     node T_218989 = and(narrow.req.valid, narrow.req.ready)
     when T_218989 : 
-      node T_218991 = addw(send_cnt, UInt<1>("h01"))
+      node T_218991 = tail(add(send_cnt, UInt<1>("h01")),1)
       send_cnt <= T_218991
       node T_218992 = shr(out_buf, 16)
       out_buf <= T_218992
@@ -87,24 +92,27 @@ circuit MemSerdes :
     node T_219015 = eq(state, UInt<3>("h04"))
     node T_219016 = and(T_219015, ddone)
     when T_219016 : 
-      node T_219018 = addw(data_send_cnt, UInt<1>("h01"))
+      node T_219018 = tail(add(data_send_cnt, UInt<1>("h01")),1)
       data_send_cnt <= T_219018
       node T_219020 = eq(data_send_cnt, UInt<2>("h03"))
       node T_219021 = mux(T_219020, UInt<3>("h00"), UInt<3>("h03"))
       state <= T_219021
       send_cnt <= UInt<1>("h00")
-    reg recv_cnt : UInt<4>, clock, reset, UInt<4>("h00")
-    reg data_recv_cnt : UInt<2>, clock, reset, UInt<2>("h00")
-    reg resp_val : UInt<1>, clock, reset, UInt<1>("h00")
+    reg recv_cnt : UInt<4>, clock with :
+       reset => ( reset, UInt<4>("h00"))
+    reg data_recv_cnt : UInt<2>, clock with :
+       reset => ( reset, UInt<2>("h00"))
+    reg resp_val : UInt<1>, clock with :
+       reset => ( reset, UInt<1>("h00"))
     resp_val <= UInt<1>("h00")
     when narrow.resp.valid : 
-      node T_219031 = addw(recv_cnt, UInt<1>("h01"))
+      node T_219031 = tail(add(recv_cnt, UInt<1>("h01")),1)
       recv_cnt <= T_219031
       
       node T_219033 = eq(recv_cnt, UInt<4>("h08"))
       when T_219033 : 
         recv_cnt <= UInt<1>("h00")
-        node T_219036 = addw(data_recv_cnt, UInt<1>("h01"))
+        node T_219036 = tail(add(data_recv_cnt, UInt<1>("h01")),1)
         data_recv_cnt <= T_219036
         resp_val <= UInt<1>("h01")
       node T_219038 = bits(in_buf, 143, 16)

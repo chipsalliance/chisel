@@ -17,7 +17,8 @@ circuit top :
       init[7] <= x
       init[8] <= x
       init[9] <= x
-      reg r : UInt<1>[10],clk,reset,init
+      reg r : UInt<1>[10],clk with :
+         reset => (reset,init)
       r[0] <= UInt(1)
       r[1] <= UInt(1)
       r[2] <= UInt(1)

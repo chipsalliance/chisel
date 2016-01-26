@@ -11,10 +11,14 @@ circuit DecoupledAdderTests :
     io.out.bits.c <= UInt<1>("h00")
     io.out.valid <= UInt<1>("h00")
     io.in.ready <= UInt<1>("h00")
-    reg ready : UInt<1>, clock, reset, ready
-    reg busy : UInt<1>, clock, reset, busy
-    reg a_reg : UInt<16>, clock, reset, a_reg
-    reg b_reg : UInt<16>, clock, reset, b_reg
+    reg ready : UInt<1>, clock with :
+       reset => ( reset, ready)
+    reg busy : UInt<1>, clock with :
+       reset => ( reset, busy)
+    reg a_reg : UInt<16>, clock with :
+       reset => ( reset, a_reg)
+    reg b_reg : UInt<16>, clock with :
+       reset => ( reset, b_reg)
     io.in.ready <= ready
     when io.in.valid :
       a_reg <= io.in.bits.a
@@ -25,7 +29,7 @@ circuit DecoupledAdderTests :
       skip
     node T_45 = and(busy, io.out.ready)
     when T_45 :
-      node T_46 = addw(a_reg, b_reg)
+      node T_46 = tail(add(a_reg, b_reg),1)
       io.out.bits.c <= T_46
       io.out.valid <= UInt<1>("h01")
       io.in.ready <= UInt<1>("h01")
@@ -44,8 +48,9 @@ circuit DecoupledAdderTests :
     device_under_test.io.in.valid <= UInt<1>("h00")
     device_under_test.clock <= clock
     device_under_test.reset <= reset
-    reg T_10 : UInt<33>, clock, reset, UInt<33>("h00")
-    node T_12 = addw(T_10, UInt<1>("h01"))
+    reg T_10 : UInt<33>, clock with :
+       reset => ( reset, UInt<33>("h00"))
+    node T_12 = tail(add(T_10, UInt<1>("h01")),1)
     T_10 <= T_12
     node T_14 = eq(reset, UInt<1>("h00"))
     when T_14 :
@@ -66,8 +71,10 @@ circuit DecoupledAdderTests :
     when T_22 :
       printf(clock,UInt(1), "device in ready %d, valid %d", device_under_test.io.in.ready, device_under_test.io.in.valid)
       skip
-    reg T_24 : UInt<1>, clock, reset, UInt<1>("h00")
-    reg T_26 : UInt<1>, clock, reset, UInt<1>("h00")
+    reg T_24 : UInt<1>, clock with :
+       reset => ( reset, UInt<1>("h00"))
+    reg T_26 : UInt<1>, clock with :
+       reset => ( reset, UInt<1>("h00"))
     node T_27 = and(T_24, T_26)
     when T_27 :
       node T_29 = eq(reset, UInt<1>("h00"))
@@ -75,8 +82,10 @@ circuit DecoupledAdderTests :
         stop(clock,UInt(1), 0)
         skip
       skip
-    reg T_31 : UInt<1>, clock, reset, UInt<1>("h00")
-    reg T_33 : UInt<1>, clock, reset, UInt<1>("h00")
+    reg T_31 : UInt<1>, clock with :
+       reset => ( reset, UInt<1>("h00"))
+    reg T_33 : UInt<1>, clock with :
+       reset => ( reset, UInt<1>("h00"))
     wire T_43 : {flip ready : UInt<1>, valid : UInt<1>, bits : {a : UInt<16>, b : UInt<16>}}[1]
     T_43[0].bits.b <= UInt(0)
     T_43[0].bits.a <= UInt(1)
@@ -108,14 +117,14 @@ circuit DecoupledAdderTests :
     node T_113 = and(T_103, T_43[T_31].ready)
     when T_113 :
       T_43[T_31].valid <= UInt<1>("h01")
-      node T_125 = addw(T_31, UInt<1>("h01"))
+      node T_125 = tail(add(T_31, UInt<1>("h01")),1)
       T_31 <= T_125
       node T_127 = geq(T_31, UInt<1>("h00"))
       T_24 <= T_127
       skip
     node T_129 = eq(T_26, UInt<1>("h00"))
     when T_129 :
-      node T_131 = addw(T_33, UInt<1>("h01"))
+      node T_131 = tail(add(T_33, UInt<1>("h01")),1)
       T_33 <= T_131
       node T_133 = geq(T_33, UInt<1>("h00"))
       T_26 <= T_133

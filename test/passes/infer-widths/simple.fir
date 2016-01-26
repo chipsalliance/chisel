@@ -7,7 +7,8 @@ circuit top :
       input reset : UInt<1>
       wire e : UInt<30>
       e <= UInt(1)
-      reg y : UInt,clk,reset,y
+      reg y : UInt,clk with :
+         reset => (reset,y)
       y <= e
 
       wire a : UInt<20>
