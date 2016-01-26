@@ -425,13 +425,13 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefMemory) :
          print-all(o,["mem " name(c) " : "])
          print-debug(o,c)
-         print-all(io,["\ndata-type: " data-type(c)])
-         print-all(io,["\ndepth: " depth(c)])
-         print-all(io,["\nwrite-latency: " write-latency(c)])
-         print-all(io,["\nread-latency: " read-latency(c)])
-         for r in readers(c) do : print-all(io,["\nreader: " r])
-         for w in writers(c) do : print-all(io,["\nwriter: " w])
-         for rw in readwriters(c) do : print-all(io,["\nread-writer: " rw])
+         print-all(io,["\ndata-type => " data-type(c)])
+         print-all(io,["\ndepth => " depth(c)])
+         print-all(io,["\nwrite-latency => " write-latency(c)])
+         print-all(io,["\nread-latency => " read-latency(c)])
+         for r in readers(c) do : print-all(io,["\nreader => " r])
+         for w in writers(c) do : print-all(io,["\nwriter => " w])
+         for rw in readwriters(c) do : print-all(io,["\nreadwriter => " rw])
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :

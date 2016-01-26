@@ -250,7 +250,7 @@ defsyntax firrtl :
    defrule mstat :
       mstat = (reader #=>! ?name:#id!) : Reader(name)
       mstat = (writer #=>! ?name:#id!) : Writer(name)
-      mstat = (read-writer #=>! ?name:#id!) : ReadWriter(name)
+      mstat = (readwriter #=>! ?name:#id!) : ReadWriter(name)
       mstat = (read-latency #=>! ?i:#int!) : ReadLatency(i)
       mstat = (write-latency #=>! ?i:#int!) : WriteLatency(i)
       mstat = (data-type #=>! ?t:#type!) : DataType(t)
