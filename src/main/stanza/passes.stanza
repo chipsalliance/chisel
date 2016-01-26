@@ -2653,7 +2653,7 @@ defn emit-verilog (m:InModule) -> Module :
             declare(`reg,name(wref),type(exp(s)))
             initialize(wref)
          (s:DefPoison) :
-            val n = firrtl-gensym(`GEN,namehash)
+            val n = name(s)
             val e = wref(n,type(s))
             declare(`reg,n,type(e))
             initialize(e)
