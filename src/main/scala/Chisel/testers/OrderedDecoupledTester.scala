@@ -6,7 +6,6 @@ import Chisel._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 
 /**
   * Base class supports implementation of test circuits of modules
@@ -259,10 +258,12 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
       s" ${referenced_ports.map { port => name(port) }.mkString(",")}")
     port_vector_events
   }
-/**
+  /**
     * for each input event only one controller is active (determined by it's private is_my_turn vector)
     * each controller has a private counter indicating which event specific to that controller
     * is on deck.  those values are wired to the inputs of the decoupled input and the valid is asserted
+    * IMPORTANT NOTE: the lists generated here has an extra 0 element added to the end because the counter
+    * used will stop at a value one higher than the number of test elements
     */
   private def buildInputEventHandlers(event_counter: GlobalEventCounter) {
     control_port_to_input_values.foreach { case (controlling_port, events) =>
@@ -271,11 +272,11 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
 
       val counter_for_this_decoupled = Counter(events.length)
 
-      val associated_event_numbers = events.map { event => event.event_number }.toSet
-
-      val port_vector_events = ports_referenced_for_this_controlling_port.map { port =>
-        port -> Vec(events.map { event => UInt(event.port_values.getOrElse(port, 0)) } ++ List(UInt(0))) //0 added to end
-      }.toMap
+      val port_vector_events = buildValuesVectorForEachPort(
+        controlling_port,
+        ports_referenced_for_this_controlling_port,
+        events
+      )
 
       logScalaDebug(s"Input controller ${io_info.port_to_name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => name(port) }.mkString(",")}")
@@ -294,22 +295,17 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
 
   /**
     * Test values on ports moderated with a decoupled interface
+    * IMPORTANT NOTE: the lists generated here has an extra 0 element added to the end because the counter
+    * used will stop at a value one higher than the number of test elements
     */
   private def buildDecoupledOutputEventHandlers(event_counter: GlobalEventCounter) {
     decoupled_control_port_to_output_values.foreach { case (controlling_port, events) =>
+      val ports_referenced_for_this_controlling_port = portsReferencedByEvents(events)
+      val is_this_my_turn = createIsMyTurnTable(events)
+
       val counter_for_this_decoupled = Counter(output_event_list.length)
-      val associated_event_numbers = events.map { event => event.event_number }.toSet
-      val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
-      events.foreach { event =>
-        event.port_values.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
-      }
-      val is_this_my_turn = Vec(
-        output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
-        List(Bool(false)) // We append a false at the end so no-one tries to go when counter done
-      )
       logScalaDebug(s"Output decoupled controller ${name(controlling_port)} : ports " +
         s" ${ports_referenced_for_this_controlling_port.map { port => name(port) }.mkString(",")}")
-      logScalaDebug(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
       val port_vector_events = buildValuesVectorForEachPort(
         controlling_port,
@@ -339,25 +335,24 @@ abstract class OrderedDecoupledTester extends BasicTester with EventBased {
 
   /**
     * Test events on output ports moderated with a valid interface
+    * IMPORTANT NOTE: the lists generated here has an extra 0 element added to the end because the counter
+    * used will stop at a value one higher than the number of test elements
     */
   private def buildValidIoPortEventHandlers(event_counter: GlobalEventCounter) {
     valid_control_port_to_output_values.foreach { case (controlling_port, events) =>
-      val counter_for_this_valid = Counter(event_counter.max_count)
-      val associated_event_numbers = events.map { event => event.event_number }.toSet
+      val ports_referenced_for_this_controlling_port = portsReferencedByEvents(events)
+      val is_this_my_turn = createIsMyTurnTable(events)
 
-      val ports_referenced_for_this_controlling_port = new mutable.HashSet[Data]()
-      events.foreach { event =>
-        event.port_values.foreach { case (port, value) => ports_referenced_for_this_controlling_port += port }
-      }
-      val is_this_my_turn = Vec(
-        output_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
-        List(Bool(false))  // We append a false at the end so no-one tries to go when counter done
+      val counter_for_this_valid = Counter(output_event_list.length)
+      logScalaDebug(s"Output decoupled controller ${name(controlling_port)} : ports " +
+        s" ${ports_referenced_for_this_controlling_port.map { port => name(port) }.mkString(",")}")
+
+      val port_vector_events = buildValuesVectorForEachPort(
+        controlling_port,
+        ports_referenced_for_this_controlling_port,
+        events
       )
-      val port_vector_events = ports_referenced_for_this_controlling_port.map { port =>
-        port -> Vec(events.map { event => UInt(event.port_values.getOrElse(port, 0)) })
-      }.toMap
 
-      // finish
       when(is_this_my_turn(event_counter.value)) {
         when(controlling_port.valid) {
           ports_referenced_for_this_controlling_port.foreach { port =>
