@@ -2,7 +2,7 @@ package unitTests
 
 
 import Chisel._
-import Chisel.testers.{UnitTestRunners, UnitTester}
+import Chisel.testers.{TesterDriver, UnitTester}
 import chiselTests.ChiselFlatSpec
 
 class Hello extends Module {
@@ -21,9 +21,9 @@ class HelloTester extends UnitTester {
   }
 }
 
-object Hello extends UnitTestRunners {
+object Hello {
   def main(args: Array[String]): Unit = {
-    execute { new HelloTester }
+    TesterDriver.execute { () => new HelloTester }
   }
 }
 

@@ -1,14 +1,13 @@
+// See LICENSE for license details.
+
 package unitTests
 
-import Chisel.testers.{UnitTestRunners, UnitTester}
+import Chisel.testers.{TesterDriver}
 
-/**
- * Created by chick on 12/13/15.
- */
-object Solutions extends UnitTestRunners {
+object Solutions {
   def main(args: Array[String]) {
-//    execute( { new DecoupledRealGCDTester })
-    execute( { new RealGCDTests })
-//    execute( { new AdderTests })
+//    TesterDriver.execute( { () => new DecoupledRealGCDTester })
+    TesterDriver.execute( { () => new RealGCDTests })
+//    TesterDriver.execute( { () => new AdderTests })
   }
 }

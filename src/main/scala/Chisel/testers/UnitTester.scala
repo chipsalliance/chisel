@@ -7,11 +7,6 @@ import Chisel._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-trait UnitTestRunners {
-  def execute(t: => BasicTester): Boolean = TesterDriver.execute(() => t)
-  def elaborate(t: => Module):   Unit    = Driver.elaborate(() => t)
-}
-
 /**
   * Use a UnitTester to constuct a test harness for a chisel module
   * this module will be canonically referred to as the device_under_test, often simply as c in

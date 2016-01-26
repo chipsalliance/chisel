@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{BasicTester, UnitTestRunners, UnitTester}
+import Chisel.testers.{BasicTester, UnitTester}
 import chiselTests.ChiselFlatSpec
 
 class GCD extends Module {
