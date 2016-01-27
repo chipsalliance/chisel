@@ -272,15 +272,15 @@ defn remove-chirrtl (c:Circuit) :
             (s:CDefMemory) :
                mport-types[name(s)] = type(s)
                val stmts = Vector<Stmt>()
-               val naddr = firrtl-gensym(`GEN,sh)
+               ;val naddr = firrtl-gensym(`GEN,sh)
                val taddr = UIntType(IntWidth(max(1,ceil-log2(size(s)))))
-               add(stmts,DefPoison(info(s),naddr,taddr))
-               val ndata = firrtl-gensym(`GEN,sh)
+               ;add(stmts,DefPoison(info(s),naddr,taddr))
+               ;val ndata = firrtl-gensym(`GEN,sh)
                val tdata = type(s)
-               add(stmts,DefPoison(info(s),ndata,tdata))
+               ;add(stmts,DefPoison(info(s),ndata,tdata))
                defn set-poison (vec:List<MPort>,addr:Symbol) -> False :
                   for r in vec do :
-                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),addr,taddr),Ref(naddr,taddr)))
+                     add(stmts,IsInvalid(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),addr,taddr)))
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),`clk,taddr),clk(r)))
                defn set-enable (vec:List<MPort>,en:Symbol) -> False:
                   for r in vec do :
@@ -291,7 +291,7 @@ defn remove-chirrtl (c:Circuit) :
                defn set-write (vec:List<MPort>,data:Symbol,mask:Symbol) -> False :
                   val tmask = create-mask(type(s))
                   for r in vec do :
-                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),data,tdata),Ref(ndata,tdata)))
+                     add(stmts,IsInvalid(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),data,tdata)))
                      for x in create-exps(SubField(SubField(Ref(name(s),ut),name(r),ut),mask,tmask)) do :
                         add(stmts,Connect(info(s),x,zero))
                         
