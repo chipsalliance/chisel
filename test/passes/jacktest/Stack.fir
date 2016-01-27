@@ -1,4 +1,4 @@
-; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
+; RUN: firrtl -i %s -o %s.v -X verilog -p cT 2>&1 | tee %s.out | FileCheck %s
 ;CHECK: Done!
 circuit Stack : 
   module Stack : 

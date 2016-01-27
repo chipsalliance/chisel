@@ -2804,7 +2804,7 @@ defn emit-verilog (m:InModule) -> Module :
                update(mem-port,data*,clk,AND(en*,mask*))
 
             for rw in readwriters(s) do :
-               val rmode = mem-exp(rw,`rmode)
+               val wmode = mem-exp(rw,`wmode)
                val rdata = mem-exp(rw,`rdata)
                val data = mem-exp(rw,`data)
                val mask = mem-exp(rw,`mask)
@@ -2812,7 +2812,7 @@ defn emit-verilog (m:InModule) -> Module :
                val en = mem-exp(rw,`en)
                val clk = mem-exp(rw,`clk)
                
-               declare(`wire,lowered-name(rmode),type(rmode))
+               declare(`wire,lowered-name(wmode),type(wmode))
                declare(`wire,lowered-name(rdata),type(rdata))
                declare(`wire,lowered-name(data),type(data))
                declare(`wire,lowered-name(mask),type(mask))
@@ -2827,13 +2827,13 @@ defn emit-verilog (m:InModule) -> Module :
                assign(addr,netlist[addr])
                assign(mask,netlist[mask])
                assign(en,netlist[en])
-               assign(rmode,netlist[rmode])
+               assign(wmode,netlist[wmode])
 
                ; Delay new signals by latency
                val raddr* = delay(addr,read-latency(s),clk)
                val waddr* = delay(addr,write-latency(s) - 1,clk)
                val en* = delay(en,write-latency(s) - 1,clk)
-               val rmod* = delay(rmode,write-latency(s) - 1,clk)
+               val rmod* = delay(wmode,write-latency(s) - 1,clk)
                val data* = delay(data,write-latency(s) - 1,clk)
                val mask* = delay(mask,write-latency(s) - 1,clk)
 
@@ -2842,7 +2842,7 @@ defn emit-verilog (m:InModule) -> Module :
                val rmem-port = WSubAccess(mem,raddr*,UnknownType(),UNKNOWN-GENDER)
                assign(rdata,rmem-port)
                val wmem-port = WSubAccess(mem,waddr*,UnknownType(),UNKNOWN-GENDER)
-               update(wmem-port,data*,clk,AND(AND(en*,mask*),NOT(rmode)))
+               update(wmem-port,data*,clk,AND(AND(en*,mask*),wmode))
          (s:Begin) : map(build-streams,s)
       s
 

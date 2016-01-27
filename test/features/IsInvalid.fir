@@ -53,7 +53,7 @@ circuit Top :
 ;CHECK: m.w.addr is invalid
 ;CHECK: m.w.en is invalid
 ;CHECK: m.w.clk is invalid
-;CHECK: m.rw.rmode is invalid
+;CHECK: m.rw.wmode is invalid
 ;CHECK: m.rw.data[0] is invalid
 ;CHECK: m.rw.data[1] is invalid
 ;CHECK: m.rw.data[2] is invalid

@@ -223,6 +223,7 @@ defstruct DataRef :
    male : Symbol
    female : Symbol
    mask : Symbol
+   rdwrite? : True|False
 
 public definterface Gender
 public val MALE = new Gender
@@ -285,9 +286,9 @@ defn remove-chirrtl (c:Circuit) :
                defn set-enable (vec:List<MPort>,en:Symbol) -> False:
                   for r in vec do :
                      add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),en,taddr),zero))
-               defn set-rmode (vec:List<MPort>,rmode:Symbol) -> False:
+               defn set-wmode (vec:List<MPort>,wmode:Symbol) -> False:
                   for r in vec do :
-                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),rmode,taddr),one))
+                     add(stmts,Connect(info(s),SubField(SubField(Ref(name(s),ut),name(r),ut),wmode,taddr),zero))
                defn set-write (vec:List<MPort>,data:Symbol,mask:Symbol) -> False :
                   val tmask = create-mask(type(s))
                   for r in vec do :
@@ -304,7 +305,7 @@ defn remove-chirrtl (c:Circuit) :
                set-write(wrs,`data,`mask)
                val rws = to-list $ readwriters $ get?(hash,name(s),EMPs())
                set-poison(rws,`addr)
-               set-rmode(rws,`rmode)
+               set-wmode(rws,`wmode)
                set-enable(rws,`en)
                set-write(rws,`data,`mask)
                val read-l = 
@@ -317,21 +318,19 @@ defn remove-chirrtl (c:Circuit) :
                val addrs = Vector<Symbol>()
                val ens = Vector<Symbol>()
                val masks = Vector<Symbol>()
-               val rmodes = Vector<Symbol>()
                switch { _ == direction(s) } :
                   MReadWrite : 
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`rdata,`data,`mask)
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`rdata,`data,`mask,true)
                      add(addrs,`addr)
                      add(ens,`en)
-                     add(rmodes,`rmode)
                      add(masks,`mask)
                   MWrite :
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data,`mask)
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data,`mask,false)
                      add(addrs,`addr)
                      add(ens,`en)
                      add(masks,`mask)
                   else :
-                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data,`blah)
+                     repl[name(s)] = DataRef(SubField(Ref(mem(s),ut),name(s),ut),`data,`data,`blah,false)
                      add(addrs,`addr)
                      add(ens,`en)
 
@@ -340,12 +339,11 @@ defn remove-chirrtl (c:Circuit) :
                   add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),exps(s)[0]))
                for x in ens do :
                   add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),one))
-               for x in rmodes do :
-                  add(stmts,Connect(info(s),SubField(SubField(Ref(mem(s),ut),name(s),ut),x,ut),zero))
                Begin $ to-list $ stmts
             (s) : map(collect-refs,s)
       defn remove-chirrtl-s (s:Stmt) -> Stmt :
          var has-write-mport? = false
+         var has-readwrite-mport? = false
          defn remove-chirrtl-e (e:Expression,g:Gender) -> Expression :
             match(map(remove-chirrtl-e{_,g},e)) :
                (e:Ref) : 
@@ -355,6 +353,8 @@ defn remove-chirrtl (c:Circuit) :
                         MALE : SubField(exp(vt),male(vt),type(e))
                         FEMALE : 
                            has-write-mport? = true
+                           if rdwrite?(vt) == true :
+                              has-readwrite-mport? = SubField(exp(vt),`wmode,UIntType(IntWidth(1)))
                            SubField(exp(vt),female(vt),type(e))
                   else : e
                (e) : e
@@ -377,6 +377,9 @@ defn remove-chirrtl (c:Circuit) :
                   val e = get-mask(loc(s))
                   for x in create-exps(e) do :
                      add(stmts,Connect(info(s),x,one))
+                  if has-readwrite-mport? != false :
+                     val wmode = has-readwrite-mport? as Expression
+                     add(stmts,Connect(info(s),wmode,one))
                if length(stmts) > 1 : Begin(to-list(stmts))
                else : stmts[0]
             (s:BulkConnect) : 
@@ -384,12 +387,15 @@ defn remove-chirrtl (c:Circuit) :
                val loc* = remove-chirrtl-e(loc(s),FEMALE)
                val roc* = remove-chirrtl-e(exp(s),MALE)
                add(stmts,BulkConnect(info(s),loc*,roc*))
-               if has-write-mport? :
+               if has-write-mport? != false :
                   val ls = get-valid-points(type(loc(s)),type(exp(s)),DEFAULT,DEFAULT)
                   val locs = create-exps(get-mask(loc(s)))
                   for x in ls do :
                      val loc* = locs[x[0]]
                      add(stmts,Connect(info(s),loc*,one))
+                  if has-readwrite-mport? != false :
+                     val wmode = has-readwrite-mport? as Expression
+                     add(stmts,Connect(info(s),wmode,one))
                if length(stmts) > 1 : Begin(to-list(stmts))
                else : stmts[0]
             (s) : map(remove-chirrtl-e{_,MALE}, map(remove-chirrtl-s,s))

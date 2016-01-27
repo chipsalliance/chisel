@@ -185,12 +185,12 @@ public defmethod get-type (s:Stmt) -> Type :
          val def-data = Field(`data,DEFAULT,data-type(s))
          val rev-data = Field(`data,REVERSE,data-type(s))
          val mask = Field(`mask,DEFAULT,create-mask(data-type(s)))
-         val rmode = Field(`rmode,DEFAULT,UIntType(IntWidth(1)))
+         val wmode = Field(`wmode,DEFAULT,UIntType(IntWidth(1)))
          val rdata = Field(`rdata,REVERSE,data-type(s))
 
          val read-type = BundleType(to-list([rev-data,addr,en,clk]))
          val write-type = BundleType(to-list([def-data,mask,addr,en,clk]))
-         val readwrite-type = BundleType(to-list([rmode,rdata,def-data,mask,addr,en,clk]))
+         val readwrite-type = BundleType(to-list([wmode,rdata,def-data,mask,addr,en,clk]))
 
          val mem-fields = Vector<Field>()
          for x in readers(s) do :
