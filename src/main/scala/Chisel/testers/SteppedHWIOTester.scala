@@ -133,7 +133,7 @@ abstract class SteppedHWIOTester extends BasicTester with HWIOTester {
 
     when(ok_to_test_output_values(counter.value)) {
       when(output_port.toBits() === output_values(counter.value).toBits()) {
-                  logPrintfDebug("    passed step %d -- " + name(output_port) + ":  %d",
+                  logPrintfDebug("    passed step %d -- " + name(output_port) + ":  %d\n",
                     counter.value,
                     output_port.toBits()
                   )

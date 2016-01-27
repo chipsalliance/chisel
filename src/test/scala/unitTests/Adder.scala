@@ -55,7 +55,7 @@ class AdderExerciser extends Exerciser {
 
   buildState("check adder")(StopCondition(test_number > UInt(range(0).size))) { () =>
     printf(
-      "%d ticker %d test# %d : %d + %d => %d expected %d",
+      "%d ticker %d test# %d : %d + %d => %d expected %d\n",
       state_number, ticker, test_number,
       in0_vec(test_number), in1_vec(test_number),
       in0_vec(test_number) + in1_vec(test_number),

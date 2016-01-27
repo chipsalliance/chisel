@@ -317,11 +317,11 @@ abstract class OrderedDecoupledHWIOTester extends BasicTester with HWIOTester {
 
       when(controlling_port.ready && controlling_port.valid) {
         ports_referenced_for_this_controlling_port.foreach { port =>
-          printf(s"output test event %d testing ${name(port)} = %d, should be %d",
+          printf(s"output test event %d testing ${name(port)} = %d, should be %d\n",
             event_counter.value, port.asInstanceOf[UInt], port_vector_events(port)(counter_for_this_decoupled.value)
           )
           when(port.asInstanceOf[UInt] != port_vector_events(port)(counter_for_this_decoupled.value)) {
-            printf(s"Error: event %d ${name(port)} was %d should be %d",
+            printf(s"Error: event %d ${name(port)} was %d should be %d\n",
               event_counter.value, port.toBits(), port_vector_events(port)(counter_for_this_decoupled.value))
             assert(Bool(false))
             stop()
@@ -402,7 +402,7 @@ abstract class OrderedDecoupledHWIOTester extends BasicTester with HWIOTester {
     val output_event_counter = new GlobalEventCounter(output_event_list.length)
 
     when(input_event_counter.reached_end && output_event_counter.reached_end) {
-      printf("All input and output events completed")
+      printf("All input and output events completed\n")
       stop()
     }
 
@@ -413,7 +413,7 @@ abstract class OrderedDecoupledHWIOTester extends BasicTester with HWIOTester {
       printf(
         "Exceeded maximum allowed %d ticks in OrderedDecoupledHWIOTester, If you think code is correct use:\n" +
         "DecoupleTester.max_tick_count = <some-higher-value>\n" +
-        "in the OrderedDecoupledHWIOTester subclass",
+        "in the OrderedDecoupledHWIOTester subclass\n",
         UInt(OrderedDecoupledHWIOTester.max_tick_count)
       )
       stop()
@@ -423,7 +423,7 @@ abstract class OrderedDecoupledHWIOTester extends BasicTester with HWIOTester {
     buildDecoupledOutputEventHandlers(output_event_counter)
     buildValidIoPortEventHandlers(output_event_counter)
 
-    logPrintfDebug(s"in_event_counter %d, out_event_counter %d", input_event_counter.value, output_event_counter.value)
+    logPrintfDebug(s"in_event_counter %d, out_event_counter %d\n", input_event_counter.value, output_event_counter.value)
     if(enable_scala_debug || enable_all_debug) {
       io_info.showPorts("".r)
     }

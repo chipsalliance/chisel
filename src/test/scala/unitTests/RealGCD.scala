@@ -48,7 +48,7 @@ class RealGCD extends Module {
       .otherwise    { y := y - x }
   }
 
-  printf("ti %d  x %d y %d  in_ready %d  in_valid %d  out %d  out_ready %d  out_valid %d==============",
+  printf("ti %d  x %d y %d  in_ready %d  in_valid %d  out %d  out_ready %d  out_valid %d==============\n",
       ti, x, y, io.in.ready, io.in.valid, io.out.bits, UInt(0), io.out.valid)
 //      ti, x, y, io.in.ready, io.in.valid, io.out.bits, io.out.ready, io.out.valid)
 
@@ -120,7 +120,7 @@ class DecoupledRealGCDTestHandCodedExample extends OrderedDecoupledHWIOTester {
 //  c.io.out.ready := Bool(true)
 
   when(!out_done && c.io.out.valid) {
-    printf("oc %d   got %d   expected %d", oc, c.io.out.bits, c_values(oc))
+    logPrintfDebug("oc %d   got %d   expected %d\n", oc, c.io.out.bits, c_values(oc))
     assert(c.io.out.bits === c_values(oc))
 //    c.io.out.ready := Bool(true)
     oc := oc + UInt(1)

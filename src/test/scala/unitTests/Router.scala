@@ -38,7 +38,7 @@ class Packet extends Bundle {
 class RouterIO(n: Int) extends Bundle {
 //  override def cloneType           = new RouterIO(n).asInstanceOf[this.type]
   val read_routing_table_request   = new DeqIO(new ReadCmd())
-  val read_routing_table_response  = new EnqIO(UInt(width = Router.headerWidth))
+  val read_routing_table_response  = new EnqIO(UInt(width = Router.addressWidth))
   val load_routing_table_request   = new DeqIO(new WriteCmd())
   val in                           = new DeqIO(new Packet())
   val outs                         = Vec(n, new EnqIO(new Packet()))
@@ -74,18 +74,16 @@ class Router extends Module {
   .elsewhen(io.load_routing_table_request.valid) {
     val cmd = io.load_routing_table_request.deq()
     tbl(cmd.addr) := cmd.data
-    printf("setting tbl(%d) to %d", cmd.addr, cmd.data)
+    printf("setting tbl(%d) to %d\n", cmd.addr, cmd.data)
   }
   .elsewhen(io.in.valid) {
     val pkt = io.in.bits
     val idx = tbl(pkt.header(log2Up(Router.routeTableSize), 0))
-//    TODO: uncomment next line for correctness and to reveal firrtl indexing error
-//    when(io.outs(idx).ready) {
+    when(io.outs(idx).ready) {
       io.in.deq()
       io.outs(idx).enq(pkt)
-      printf("got packet to route header %d, data %d, being routed to out(%d) ", pkt.header, pkt.body, tbl(pkt.header))
-//    TODO: uncomment following line for correctness and to reveal firrtl indexing error
-//    }
+      printf("got packet to route header %d, data %d, being routed to out(%d)\n", pkt.header, pkt.body, tbl(pkt.header))
+    }
   }
 }
 
