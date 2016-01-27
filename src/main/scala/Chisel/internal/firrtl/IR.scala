@@ -25,7 +25,6 @@ object PrimOp {
   val BitXorOp = PrimOp("xor")
   val BitNotOp = PrimOp("not")
   val ConcatOp = PrimOp("cat")
-  val BitSelectOp = PrimOp("bit")
   val BitsExtractOp = PrimOp("bits")
   val LessOp = PrimOp("lt")
   val LessEqOp = PrimOp("leq")

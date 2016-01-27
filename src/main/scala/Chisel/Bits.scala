@@ -39,7 +39,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     if (isLit()) {
       Bool(((litValue() >> x.toInt) & 1) == 1)
     } else {
-      pushOp(DefPrim(Bool(), BitSelectOp, this.ref, ILit(x)))
+      pushOp(DefPrim(Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
     }
   }
 
