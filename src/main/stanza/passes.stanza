@@ -322,6 +322,8 @@ defmethod map (f: Type -> Type, e: WSubAccess) :
 
 defmethod map (f: Type -> Type, s: WDefInstance) :
    WDefInstance(info(s),name(s),module(s),f(type(s)))
+defmethod map (f: Symbol -> Symbol, s: WDefInstance) :
+   WDefInstance(info(s),f(name(s)),module(s),type(s))
 
 ;================ WIDTH LIBRARY ====================
 
