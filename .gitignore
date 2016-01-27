@@ -26,12 +26,16 @@ utils/bin/firrtl
 utils/bin/stanza
 utils/bin/firrtl-scala
 utils/bin/firrtl-stanza
+utils/bin/firrtl.jar
+utils/bin/FileCheck
 spec/spec.aux
 spec/spec.log
 spec/spec.toc
 spec/spec.out
 spec/spec.synctex.gz
 notes/*.docx
+
+.project
 
 # sbt specific
 .cache

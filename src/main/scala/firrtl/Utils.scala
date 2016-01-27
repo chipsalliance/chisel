@@ -5,6 +5,10 @@
  *  - Find way to have generic map function instead of mapE and mapS under Stmt implicits
  */
 
+/* TODO Richard
+ *  - add new IR nodes to all Util functions
+ */
+
 package firrtl
 
 import scala.collection.mutable.StringBuilder

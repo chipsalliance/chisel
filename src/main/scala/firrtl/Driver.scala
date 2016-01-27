@@ -1,15 +1,62 @@
 package firrtl
 
 import java.io._
-import scala.sys.process._
 import java.nio.file.{Paths, Files}
+
 import scala.io.Source
+import scala.sys.process._
+
+import com.typesafe.scalalogging.LazyLogging
+
 import Utils._
 import DebugUtils._
 import Passes._
 
-object Driver
-{
+trait DriverPass {
+  def run(input: String, output: String) : Unit
+}
+case class StanzaPass(val passes : Seq[String]) extends DriverPass with LazyLogging {
+  def run(input : String, output : String): Unit = {
+    val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl") ++ passes.flatMap(x=>Seq("-x", x))
+    logger.info(cmd.mkString(" "))
+    val ret = cmd.!!
+    logger.info(ret)
+  }
+}
+case class ScalaPass(val func : Circuit => Circuit) extends DriverPass with LazyLogging {
+  def run(input : String, output : String): Unit = {
+    var ast = Parser.parse(input, Source.fromFile(input).getLines)
+    val newast = func(ast)
+    logger.info("Writing to " + output)
+    val writer = new PrintWriter(new File(output))
+    writer.write(newast.serialize())
+    writer.close()
+  }
+}
+object StanzaPass {
+  def apply(pass: String): StanzaPass = StanzaPass(Seq(pass))
+}
+
+object DriverPasses {
+  private def aggregateStanzaPasses(passes: Seq[DriverPass]): Seq[DriverPass] = {
+    if (passes.isEmpty) return Seq()
+    val span = passes.span(x => x match {
+      case p : StanzaPass => true
+      case _ => false
+    })
+    if (span._1.isEmpty) {
+      Seq(span._2.head) ++ aggregateStanzaPasses(span._2.tail)
+    } else {
+      Seq(StanzaPass(span._1.flatMap(x=>x.asInstanceOf[StanzaPass].passes))) ++ aggregateStanzaPasses(span._2)
+    }
+  }
+
+  def optimize(passes: Seq[DriverPass]): Seq[DriverPass] = {
+    aggregateStanzaPasses(passes)
+  }
+}
+
+object Driver extends LazyLogging {
   private val usage = """
     Usage: java -cp utils/bin/firrtl.jar firrtl.Driver [options] -i <input> -o <output>
   """
@@ -28,122 +75,78 @@ object Driver
     path + name + count + ext
   }
 
+  val defaultPasses = DriverPasses.optimize(Seq(
+    StanzaPass("to-firrtl"),
+
+    StanzaPass("high-form-check"),
+
+//  ScalaPass(renameall(Map(
+//    "c"->"ccc",
+//    "z"->"zzz",
+//    "top"->"its_a_top_module"
+//  ))),
+    // StanzaPass("temp-elim"), // performance pass
+    StanzaPass("to-working-ir"),
+
+    StanzaPass("resolve-kinds"),
+    StanzaPass("infer-types"),
+    StanzaPass("check-types"),
+    StanzaPass("resolve-genders"),
+    StanzaPass("check-genders"),
+    StanzaPass("infer-widths"),
+    StanzaPass("width-check"),
+
+    StanzaPass("check-kinds"),
+
+    StanzaPass("expand-accessors"),
+    StanzaPass("lower-to-ground"),
+    StanzaPass("inline-indexers"),
+    StanzaPass("infer-types"),
+    //ScalaPass(inferTypes),
+    StanzaPass("check-genders"),
+    StanzaPass("expand-whens"),
+
+    StanzaPass("real-ir"),
+
+    StanzaPass("pad-widths"),
+    StanzaPass("const-prop"),
+    StanzaPass("split-expressions"),
+    StanzaPass("width-check"),
+    StanzaPass("high-form-check"),
+    StanzaPass("low-form-check"),
+    StanzaPass("check-init")//,
+    //ScalaPass(renamec)
+  ))
+
   // Parse input file and print to output
-  private def firrtl(input: String, output: String)(implicit logger: Logger)
+  private def firrtl(input: String, output: String)
   {
     val ast = Parser.parse(input, Source.fromFile(input).getLines)
     val writer = new PrintWriter(new File(output))
     writer.write(ast.serialize())
     writer.close()
-    logger.printlnDebug(ast)
+    logger.debug(ast.toString)
   }
 
-  // Should we just remove logger?
-  private def executePassesWithLogger(ast: Circuit, passes: Seq[Circuit => Circuit])(implicit logger: Logger): Circuit = {
+  def executePasses(ast: Circuit, passes: Seq[Circuit => Circuit]): Circuit = {
     if (passes.isEmpty) ast
     else executePasses(passes.head(ast), passes.tail)
   }
 
-  def executePasses(ast: Circuit, passes: Seq[Circuit => Circuit]): Circuit = {
-    implicit val logger = Logger() // No logging
-    executePassesWithLogger(ast, passes)
-  }
-
-  trait Pass
-  case class StanzaPass(val name : String) extends Pass
-  case class AggregatedStanzaPass(val passes : Seq[StanzaPass]) extends Pass
-  case class ScalaPass(val func : Circuit => Circuit) extends Pass
-
-  def aggregateStanzaPasses(l : Seq[Pass]) : Seq[Pass] = {
-    if (l.isEmpty) return Seq()
-    val span = l.span(x => x match {
-      case p : StanzaPass => true
-      case _ => false
-    })
-    if (span._1.isEmpty) {
-      val tail = if(span._2.length > 1)
-        aggregateStanzaPasses(span._2.tail)
-      else
-        Seq()
-      Seq(span._2.head) ++ tail
-    } else {
-      Seq(AggregatedStanzaPass(span._1.asInstanceOf[Seq[StanzaPass]])) ++ aggregateStanzaPasses(span._2)
-    }
-  }
-
-  def run(pass : Pass, input : String, output : String)(implicit logger : Logger) : Unit = pass match {
-    case p : StanzaPass =>
-      val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl", "-x", p.name)
-      println(cmd.mkString(" "))
-      val ret = cmd.!!
-      println(ret)
-    case p : AggregatedStanzaPass =>
-      val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl") ++ p.passes.flatMap(x=>Seq("-x", x.name))
-      println(cmd.mkString(" "))
-      val ret = cmd.!!
-      println(ret)
-    case p : ScalaPass =>
-      var ast = Parser.parse(input, Source.fromFile(input).getLines)
-      val newast = p.func(ast)
-      println("Writing to " + output)
-      val writer = new PrintWriter(new File(output))
-      writer.write(newast.serialize())
-      writer.close()
-    case _ => logger.warn("Pass " + pass + " cannot be run")
-  }
-
-  private def verilog(input: String, output: String)(implicit logger: Logger)
-  {
-
-    val passes = aggregateStanzaPasses(Seq(
-      StanzaPass("rem-spec-chars"),
-      StanzaPass("high-form-check"),
-      ScalaPass(renameall(Map(
-        "c"->"ccc",
-        "z"->"zzz",
-        "top"->"its_a_top_module"
-      ))),
-      StanzaPass("temp-elim"),
-      StanzaPass("to-working-ir"),
-      StanzaPass("resolve-kinds"),
-      StanzaPass("infer-types"),
-      StanzaPass("resolve-genders"),
-      StanzaPass("check-genders"),
-      StanzaPass("check-kinds"),
-      StanzaPass("check-types"),
-      StanzaPass("expand-accessors"),
-      StanzaPass("lower-to-ground"),
-      StanzaPass("inline-indexers"),
-      StanzaPass("infer-types"),
-      //ScalaPass(inferTypes),
-      StanzaPass("check-genders"),
-      StanzaPass("expand-whens"),
-      StanzaPass("infer-widths"),
-      StanzaPass("real-ir"),
-      StanzaPass("width-check"),
-      StanzaPass("pad-widths"),
-      StanzaPass("const-prop"),
-      StanzaPass("split-expressions"),
-      StanzaPass("width-check"),
-      StanzaPass("high-form-check"),
-      StanzaPass("low-form-check"),
-      StanzaPass("check-init")//,
-      //ScalaPass(renamec)
-    ))
-
-    val outfile = passes.foldLeft( input ) ( (infile, pass) => {
+  private def verilog(input: String, output: String) {
+    val outfile = defaultPasses.foldLeft( input ) ( (infile, pass) => {
       val outfile = genTempFilename(output)
-      run(pass, infile, outfile)
+      pass.run(infile, outfile)
       outfile
     })
 
-    println(outfile)
+    logger.info(outfile)
 
     // finally, convert to verilog at the end
     val cmd = Seq("firrtl-stanza", "-i", outfile, "-o", output, "-X", "verilog")
-    println(cmd.mkString(" "))
+    logger.info(cmd.mkString(" "))
     val ret = cmd.!!
-    println(ret)
+    logger.info(ret)
   }
 
   def main(args: Array[String])
@@ -167,7 +170,7 @@ object Driver
         case 'T' :: tail => nextPrintVar(syms ++ List('twidths), tail)
         case 'g' :: tail => nextPrintVar(syms ++ List('genders), tail)
         case 'c' :: tail => nextPrintVar(syms ++ List('circuit), tail)
-        case 'd' :: tail => nextPrintVar(syms ++ List('debug), tail) // Currently ignored
+        case 'd' :: tail => nextPrintVar(syms ++ List('debug), tail)
         case 'i' :: tail => nextPrintVar(syms ++ List('info), tail)
         case char :: tail => throw new Exception("Unknown print option " + char)
       }
@@ -177,10 +180,6 @@ object Driver
         case Nil => map
         case "-X" :: value :: tail =>
                   nextOption(map ++ Map('compiler -> value), tail)
-        case "-d" :: value :: tail =>
-                  nextOption(map ++ Map('debugMode -> value), tail)
-        case "-l" :: value :: tail =>
-                  nextOption(map ++ Map('log -> value), tail)
         case "-p" :: value :: tail =>
                   nextOption(map ++ Map('printVars -> value), tail)
         case "-i" :: value :: tail =>
@@ -208,19 +207,17 @@ object Driver
       case s: String => s
       case false => throw new Exception("No output file provided!" + usage)
     }
-    val debugMode = decodeDebugMode(options('debugMode))
     val printVars = options('printVars) match {
       case s: String => nextPrintVar(List(), s.toList)
       case false => List()
     }
-    implicit val logger = options('log) match {
-      case s: String => Logger(new PrintWriter(new FileOutputStream(s)), debugMode, printVars)
-      case false => Logger(new PrintWriter(System.err, true), debugMode, printVars)
-    }
 
-    // -p "printVars" options only print for debugMode > 'debug, warn if -p enabled and debugMode < 'debug
-    if( !logger.debugEnable && !printVars.isEmpty )
-      logger.warn("-p options will not print unless debugMode (-d) is debug or trace")
+    if (!printVars.isEmpty) {
+      logger.warn("-p options currently ignored")
+      if (!logger.underlying.isDebugEnabled) {
+        logger.warn("-p options will only print at DEBUG log level, logging configuration can be edited in src/main/resources/logback.xml")
+      }
+    }
 
     options('compiler) match {
       case "verilog" => verilog(input, output)
@@ -229,7 +226,7 @@ object Driver
     }
   }
 
-  def time[R](str: String)(block: => R)(implicit logger: Logger): R = {
+  def time[R](str: String)(block: => R): R = {
     val t0 = System.currentTimeMillis()
     val result = block    // call-by-name
     val t1 = System.currentTimeMillis()

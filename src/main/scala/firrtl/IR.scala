@@ -68,9 +68,10 @@ case class UIntValue(value: BigInt, width: Width) extends Exp
 case class SIntValue(value: BigInt, width: Width) extends Exp
 case class Ref(name: String, tpe: Type) extends Exp
 case class Subfield(exp: Exp, name: String, tpe: Type) extends Exp
-case class Index(exp: Exp, value: BigInt, tpe: Type) extends Exp
+case class Index(exp: Exp, value: BigInt, tpe: Type) extends Exp  //SubIndex, add SubAccess
 case class DoPrimop(op: Primop, args: Seq[Exp], consts: Seq[BigInt], tpe: Type) extends Exp 
 
+// THIS GOES BYE BYE
 trait AccessorDir extends AST
 case object Infer extends AccessorDir
 case object Read extends AccessorDir
@@ -79,19 +80,19 @@ case object RdWr extends AccessorDir
 
 trait Stmt extends AST
 case class DefWire(info: Info, name: String, tpe: Type) extends Stmt
-case class DefReg(info: Info, name: String, tpe: Type, clock: Exp, reset: Exp) extends Stmt
-case class DefMemory(info: Info, name: String, seq: Boolean, tpe: Type, clock: Exp) extends Stmt
+case class DefReg(info: Info, name: String, tpe: Type, clock: Exp, reset: Exp) extends Stmt //Added init value
+case class DefMemory(info: Info, name: String, seq: Boolean, tpe: Type, clock: Exp) extends Stmt //very different
 case class DefInst(info: Info, name: String, module: Exp) extends Stmt 
 case class DefNode(info: Info, name: String, value: Exp) extends Stmt
 case class DefPoison(info: Info, name: String, tpe: Type) extends Stmt
-case class DefAccessor(info: Info, name: String, dir: AccessorDir, source: Exp, index: Exp) extends Stmt
-case class OnReset(info: Info, lhs: Exp, rhs: Exp) extends Stmt
+case class DefAccessor(info: Info, name: String, dir: AccessorDir, source: Exp, index: Exp) extends Stmt //BYE BYE
+case class OnReset(info: Info, lhs: Exp, rhs: Exp) extends Stmt //BYE BYE
 case class Connect(info: Info, lhs: Exp, rhs: Exp) extends Stmt
 case class BulkConnect(info: Info, lhs: Exp, rhs: Exp) extends Stmt
 case class When(info: Info, pred: Exp, conseq: Stmt, alt: Stmt) extends Stmt
-case class Assert(info: Info, pred: Exp) extends Stmt
+case class Assert(info: Info, pred: Exp) extends Stmt //Now Stop, with clk and enable and int, add Print
 case class Block(stmts: Seq[Stmt]) extends Stmt
-case object EmptyStmt extends Stmt
+case object EmptyStmt extends Stmt //Now Empty
 
 trait Width extends AST 
 case class IntWidth(width: BigInt) extends Width 
