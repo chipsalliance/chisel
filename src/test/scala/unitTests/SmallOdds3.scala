@@ -57,7 +57,7 @@ class SmallOdds3Tester(width: Int) extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new SmallOdds3(filter_width = width))
 
   testBlock {
-    Random.setSeed(0L)
+    rnd.setSeed(0L)
     for (i <- 0 to 100) {
       val num = rnd.nextInt(20)
       println(s"random value $i $num")
