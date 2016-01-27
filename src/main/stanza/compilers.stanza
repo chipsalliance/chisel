@@ -78,8 +78,6 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;===============
       ConstProp()
       ;===============
-      SplitExp()
-      ;===============
       ResolveKinds()
       InferTypes()
       CheckTypes()
@@ -98,6 +96,8 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       InferWidths()
       CheckWidths()
       ;===============
+      VerilogWrap()
+      SplitExp()
       VerilogRename() 
       Verilog(with-output(c)) 
       ;===============
@@ -152,8 +152,6 @@ public defmethod passes (c:StandardLoFIRRTL) -> List<Pass> :
       ;===============
       ConstProp()
       ;===============
-      SplitExp()
-      ;===============
       ResolveKinds()
       InferTypes()
       CheckTypes()
@@ -171,6 +169,8 @@ public defmethod passes (c:StandardLoFIRRTL) -> List<Pass> :
       CheckGenders()
       InferWidths()
       CheckWidths()
+      ;===============
+      SplitExp()
       ;===============
       FIRRTL(with-output(c))  
    ]

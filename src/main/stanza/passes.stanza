@@ -1767,7 +1767,53 @@ defn resolve (c:Circuit) -> Circuit :
 ;   val top = (for m in modules(c) find : name(m) == main(c)) as InModule
 ;   Circuit(info(c),list(InModule(info(top),name(top),ports(top),inline-inst(body(top)))),main(c))
 
+;;================= Verilog Wrap ========================
+
+; --------- Utils --------------
+               
+;---------- Pass ---------------
+;; Intended to only work on low firrtl
+public defstruct VerilogWrap <: Pass
+public defmethod pass (b:VerilogWrap) -> (Circuit -> Circuit) : v-wrap
+public defmethod name (b:VerilogWrap) -> String : "Verilog Wrap"
+public defmethod short-name (b:VerilogWrap) -> String : "v-wrap"
+
+public definterface WPrimOp <: PrimOp
+val ADDW-OP = new WPrimOp
+val SUBW-OP = new WPrimOp
+
+defmethod print (o:OutputStream,op:WPrimOp) :
+   print{o, _} $ switch {op == _} :
+      ADDW-OP : "addw"
+      SUBW-OP : "subw"
+
+defn v-wrap-e (e:Expression) -> Expression :
+   match(map(v-wrap-e,e)) :
+      (e:DoPrim) :
+         if op(e) == TAIL-OP :
+            match(args(e)[0]) :
+               (e0:DoPrim) : 
+                  if op(e0) == ADD-OP :
+                     DoPrim(ADDW-OP,args(e0),list(),type(e))
+                  else if op(e0) == SUB-OP :
+                     DoPrim(SUBW-OP,args(e0),list(),type(e))
+                  else : e
+               (e0) : e
+         else : e
+      (e) : e
+defn v-wrap-s (s:Stmt) -> Stmt :
+   map{v-wrap-e,_} $ map(v-wrap-s,s)
+defn v-wrap (c:Circuit) -> Circuit :
+   val modules* = for m in modules(c) map :
+      match(m) :
+         (m:InModule) : 
+            mname = name(m)
+            InModule(info(m),name(m),ports(m),v-wrap-s(body(m)))
+         (m:ExModule) : m
+   Circuit(info(c),modules*,main(c))
+
 ;;================= Split Expressions ========================
+
 ;; Intended to only work on low firrtl
 public defstruct SplitExp <: Pass
 public defmethod pass (b:SplitExp) -> (Circuit -> Circuit) : split-exp
@@ -1789,7 +1835,7 @@ defn split-exp (m:InModule) -> InModule :
          add(v,DefNode(info(s),n,e))
          WRef(n,type(e),kind(e),gender(e))
       defn split-exp-e (e:Expression,i:Int) -> Expression :
-         match(map(split-exp-e{_,i + 1},e)) :
+         match(map(split-exp-e{_,i + 1},e)) : 
             (e:DoPrim) :
                if i > 0 : split(e)
                else : e
@@ -2485,7 +2531,9 @@ defn op-stream (doprim:DoPrim) -> Streamable :
 
    switch {_ == op(doprim)} :
       ADD-OP : [cast-if(a0()) " + " cast-if(a1())]
+      ADDW-OP : [cast-if(a0()) " + " cast-if(a1())]
       SUB-OP : [cast-if(a0()) " - " cast-if(a1())]
+      SUBW-OP : [cast-if(a0()) " - " cast-if(a1())]
       MUL-OP : [cast-if(a0()) " * " cast-if(a1()) ]
       DIV-OP : [cast-if(a0()) " / " cast-if(a1()) ]
       REM-OP : [cast-if(a0()) " % " cast-if(a1()) ]

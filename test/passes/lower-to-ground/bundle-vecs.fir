@@ -19,26 +19,20 @@ circuit top :
       j <= a[i]
       a[i] <= j
 
-;CHECK: wire GEN_0 : UInt<32>
-;CHECK: wire GEN_1 : UInt<32>
-;CHECK: wire GEN_2 : UInt<32>
-;CHECK: wire GEN_3 : UInt<32>
-;CHECK: j_x <= GEN_0
-;CHECK: j_y <= GEN_3
-;CHECK: node GEN_4 = eq(UInt("h0"), i)
-;CHECK: a_0_x <= mux(GEN_4, GEN_2, UInt("h0"))
-;CHECK: node GEN_5 = eq(UInt("h0"), i)
-;CHECK: a_0_y <= mux(GEN_5, GEN_1, UInt("h0"))
-;CHECK: node GEN_6 = eq(UInt("h1"), i)
-;CHECK: a_1_x <= mux(GEN_6, GEN_2, UInt("h0"))
-;CHECK: node GEN_7 = eq(UInt("h1"), i)
-;CHECK: a_1_y <= mux(GEN_7, GEN_1, UInt("h0"))
-;CHECK: node GEN_8 = eq(UInt("h1"), i)
-;CHECK: GEN_0 <= mux(GEN_8, a_1_x, a_0_x)
-;CHECK: GEN_1 <= j_y
-;CHECK: GEN_2 <= j_x
-;CHECK: node GEN_9 = eq(UInt("h1"), i)
-;CHECK: GEN_3 <= mux(GEN_9, a_1_y, a_0_y)   
+; CHECK: wire GEN_0 : UInt<32>
+; CHECK: wire GEN_1 : UInt<32>
+; CHECK: wire GEN_2 : UInt<32>
+; CHECK: wire GEN_3 : UInt<32>
+; CHECK: j_x <= GEN_0
+; CHECK: j_y <= GEN_3
+; CHECK: a_0_x <= mux(eq(UInt("h0"), i), GEN_2, UInt("h0"))
+; CHECK: a_0_y <= mux(eq(UInt("h0"), i), GEN_1, UInt("h0"))
+; CHECK: a_1_x <= mux(eq(UInt("h1"), i), GEN_2, UInt("h0"))
+; CHECK: a_1_y <= mux(eq(UInt("h1"), i), GEN_1, UInt("h0"))
+; CHECK: GEN_0 <= mux(eq(UInt("h1"), i), a_1_x, a_0_x)
+; CHECK: GEN_1 <= j_y
+; CHECK: GEN_2 <= j_x
+; CHECK: GEN_3 <= mux(eq(UInt("h1"), i), a_1_y, a_0_y)   
 
 ; CHECK: Finished Lower Types
 
