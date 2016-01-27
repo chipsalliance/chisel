@@ -40,11 +40,11 @@ circuit top :
       node ydiv = div(c, b) ;CHECK: node ydiv = div(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
       node zdiv = div(c, d) ;CHECK: node zdiv = div(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
    
-      node vmod = mod(a, c)    ;CHECK: node vmod = mod(a@<t:UInt>, c@<t:SInt>)@<t:UInt>
-      node wmod = mod(a, b) ;CHECK: node wmod = mod(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
-      node xmod = mod(a, d) ;CHECK: node xmod = mod(a@<t:UInt>, d@<t:SInt>)@<t:UInt>
-      node ymod = mod(c, b) ;CHECK: node ymod = mod(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
-      node zmod = mod(c, d) ;CHECK: node zmod = mod(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
+      node vrem = rem(a, c)    ;CHECK: node vrem = rem(a@<t:UInt>, c@<t:SInt>)@<t:UInt>
+      node wrem = rem(a, b) ;CHECK: node wrem = rem(a@<t:UInt>, b@<t:UInt>)@<t:UInt>
+      node xrem = rem(a, d) ;CHECK: node xrem = rem(a@<t:UInt>, d@<t:SInt>)@<t:UInt>
+      node yrem = rem(c, b) ;CHECK: node yrem = rem(c@<t:SInt>, b@<t:UInt>)@<t:SInt>
+      node zrem = rem(c, d) ;CHECK: node zrem = rem(c@<t:SInt>, d@<t:SInt>)@<t:SInt>
    
       node vlt = lt(a, c)    ;CHECK: node vlt = lt(a@<t:UInt>, c@<t:SInt>)@<t:UInt>
       node wlt = lt(a, b) ;CHECK: node wlt = lt(a@<t:UInt>, b@<t:UInt>)@<t:UInt>

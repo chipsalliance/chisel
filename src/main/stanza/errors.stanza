@@ -486,7 +486,7 @@ defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -
       SUB-OP             : all-ground(args(e))
       MUL-OP             : all-ground(args(e))
       DIV-OP             : all-ground(args(e))
-      MOD-OP             : all-ground(args(e))
+      REM-OP             : all-ground(args(e))
       LESS-OP            : all-ground(args(e))
       LESS-EQ-OP         : all-ground(args(e))
       GREATER-OP         : all-ground(args(e))
