@@ -10,9 +10,9 @@ case class PrimOp(val name: String) {
 
 object PrimOp {
   val AddOp = PrimOp("add")
-  val AddModOp = PrimOp("addw")
   val SubOp = PrimOp("sub")
-  val SubModOp = PrimOp("subw")
+  val TailOp = PrimOp("tail")
+  val HeadOp = PrimOp("head")
   val TimesOp = PrimOp("mul")
   val DivideOp = PrimOp("div")
   val RemOp = PrimOp("rem")

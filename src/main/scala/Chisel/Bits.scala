@@ -29,6 +29,24 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   override def <> (that: Data): Unit = this := that
 
+  def tail(n: Int): UInt = {
+    val w = width match {
+      case KnownWidth(x) =>
+        require(x >= n, s"Can't tail($n) for width $x < $n")
+        Width(x - n)
+      case UnknownWidth() => Width()
+    }
+    binop(UInt(width = w), TailOp, n)
+  }
+
+  def head(n: Int): UInt = {
+    width match {
+      case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
+      case UnknownWidth() =>
+    }
+    binop(UInt(width = n), HeadOp, n)
+  }
+
   /** Returns the specified bit on this wire as a [[Bool]], statically
     * addressed.
     */
@@ -276,10 +294,10 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def unary_-% : UInt = UInt(0) -% this
   def +& (other: UInt): UInt = binop(UInt((this.width max other.width) + 1), AddOp, other)
   def + (other: UInt): UInt = this +% other
-  def +% (other: UInt): UInt = binop(UInt(this.width max other.width), AddModOp, other)
+  def +% (other: UInt): UInt = (this +& other) tail 1
   def -& (other: UInt): UInt = binop(UInt((this.width max other.width) + 1), SubOp, other)
   def - (other: UInt): UInt = this -% other
-  def -% (other: UInt): UInt = binop(UInt(this.width max other.width), SubModOp, other)
+  def -% (other: UInt): UInt = (this -& other) tail 1
   def * (other: UInt): UInt = binop(UInt(this.width + other.width), TimesOp, other)
   def * (other: SInt): SInt = other * this
   def / (other: UInt): UInt = binop(UInt(this.width), DivideOp, other)
@@ -410,13 +428,13 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   /** add (default - no growth) operator */
   def + (other: SInt): SInt = this +% other
   /** add (no growth) operator */
-  def +% (other: SInt): SInt = binop(SInt(this.width max other.width), AddModOp, other)
+  def +% (other: SInt): SInt = (this +& other).tail(1).asSInt
   /** subtract (width +1) operator */
   def -& (other: SInt): SInt = binop(SInt((this.width max other.width) + 1), SubOp, other)
   /** subtract (default - no growth) operator */
   def - (other: SInt): SInt = this -% other
   /** subtract (no growth) operator */
-  def -% (other: SInt): SInt = binop(SInt(this.width max other.width), SubModOp, other)
+  def -% (other: SInt): SInt = (this -& other).tail(1).asSInt
   def * (other: SInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
   def * (other: UInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
   def / (other: SInt): SInt = binop(SInt(this.width), DivideOp, other)
