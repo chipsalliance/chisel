@@ -15,7 +15,7 @@ object PrimOp {
   val SubModOp = PrimOp("subw")
   val TimesOp = PrimOp("mul")
   val DivideOp = PrimOp("div")
-  val ModOp = PrimOp("mod")
+  val RemOp = PrimOp("rem")
   val ShiftLeftOp = PrimOp("shl")
   val ShiftRightOp = PrimOp("shr")
   val DynamicShiftLeftOp = PrimOp("dshl")

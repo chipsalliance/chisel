@@ -283,7 +283,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def * (other: UInt): UInt = binop(UInt(this.width + other.width), TimesOp, other)
   def * (other: SInt): SInt = other * this
   def / (other: UInt): UInt = binop(UInt(this.width), DivideOp, other)
-  def % (other: UInt): UInt = binop(UInt(this.width), ModOp, other)
+  def % (other: UInt): UInt = binop(UInt(this.width), RemOp, other)
 
   def & (other: UInt): UInt = binop(UInt(this.width max other.width), BitAndOp, other)
   def | (other: UInt): UInt = binop(UInt(this.width max other.width), BitOrOp, other)
@@ -420,7 +420,7 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   def * (other: SInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
   def * (other: UInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
   def / (other: SInt): SInt = binop(SInt(this.width), DivideOp, other)
-  def % (other: SInt): SInt = binop(SInt(this.width), ModOp, other)
+  def % (other: SInt): SInt = binop(SInt(this.width), RemOp, other)
 
   def & (other: SInt): SInt = binop(UInt(this.width max other.width), BitAndOp, other).asSInt
   def | (other: SInt): SInt = binop(UInt(this.width max other.width), BitOrOp, other).asSInt
