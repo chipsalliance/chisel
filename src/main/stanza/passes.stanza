@@ -1790,8 +1790,9 @@ defmethod print (o:OutputStream,op:WPrimOp) :
 defn v-wrap-e (e:Expression) -> Expression :
    match(map(v-wrap-e,e)) :
       (e:DoPrim) :
+         defn a0 () : args(e)[0]
          if op(e) == TAIL-OP :
-            match(args(e)[0]) :
+            match(a0()) :
                (e0:DoPrim) : 
                   if op(e0) == ADD-OP :
                      DoPrim(ADDW-OP,args(e0),list(),type(e))
@@ -2087,7 +2088,11 @@ defn const-prop-e (e:Expression) -> Expression :
                   (x:UIntValue) : 
                      val b = bits(value(x),consts(e)[0] + 1,consts(e)[1])
                      UIntValue(b,width(type(e) as UIntType))
-                  (x) : e
+                  (x) : 
+                     if long!(type(e)) == long!(type(x)) :
+                        if type(x) typeof UIntType : x
+                        else : DoPrim(AS-UINT-OP,list(x),list(),type(e))
+                     else : e
             else : e
       (e) : e
 
