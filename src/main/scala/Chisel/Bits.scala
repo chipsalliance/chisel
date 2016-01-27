@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushOp
-import firrtl._
+import internal.firrtl._
 import firrtl.PrimOp._
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
@@ -432,7 +432,7 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   def >= (other: SInt): Bool = compop(GreaterEqOp, other)
   def != (other: SInt): Bool = compop(NotEqualOp, other)
   def === (other: SInt): Bool = compop(EqualOp, other)
-  def abs(): UInt = Mux(this < SInt(0), (-this).toUInt, this.toUInt)
+  def abs(): UInt = Mux(this < SInt(0), (-this).asUInt, this.asUInt)
 
   def << (other: Int): SInt = binop(SInt(this.width + other), ShiftLeftOp, other)
   def << (other: BigInt): SInt = this << other.toInt
@@ -527,24 +527,20 @@ object Mux {
     case (c: UInt, a: Bool) => doMux(cond, c, a << 0).asInstanceOf[T]
     case (c: Bool, a: UInt) => doMux(cond, c << 0, a).asInstanceOf[T]
     case (c: Bits, a: Bits) => doMux(cond, c, a).asInstanceOf[T]
-    // FIRRTL doesn't support Mux for aggregates, so use a when instead
-    case _ => doWhen(cond, con, alt)
+    case _ => doAggregateMux(cond, con, alt)
   }
 
-  private def doMux[T <: Bits](cond: Bool, con: T, alt: T): T = {
+  private def doMux[T <: Data](cond: Bool, con: T, alt: T): T = {
     require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
     val d = alt.cloneTypeWidth(con.width max alt.width)
     pushOp(DefPrim(d, MultiplexOp, cond.ref, con.ref, alt.ref))
   }
-  // This returns an lvalue, which it most definitely should not
-  private def doWhen[T <: Data](cond: Bool, con: T, alt: T): T = {
+
+  private def doAggregateMux[T <: Data](cond: Bool, con: T, alt: T): T = {
     require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
     for ((c, a) <- con.flatten zip alt.flatten)
       require(c.width == a.width, "can't Mux between aggregates of different width")
-
-    val res = Wire(t = alt.cloneTypeWidth(con.width max alt.width), init = alt)
-    when (cond) { res := con }
-    res
+    doMux(cond, con, alt)
   }
 }
 

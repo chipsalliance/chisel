@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object assert {
   /** Checks for a condition to be valid in the circuit at all times. If the

@@ -74,7 +74,6 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 }
 
 /** A hardware module implementing a Queue
- *
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue
   * @param pipe True if a single entry queue can run at full throughput (like a pipeline). The ''ready'' signals are
@@ -94,7 +93,6 @@ class Queue[T <: Data](gen: T, val entries: Int,
 {
   val io = new QueueIO(gen, entries)
 
-//  val ram = Mem(gen, entries)
   val ram = Mem(entries, gen)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)

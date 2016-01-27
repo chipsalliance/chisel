@@ -7,7 +7,7 @@ package Chisel
 
 /** An I/O bundle for the Arbiter */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
-  val in  = Vec(Decoupled(gen), n).flip
+  val in  = Vec(n, Decoupled(gen)).flip
   val out = Decoupled(gen)
   val chosen = UInt(OUTPUT, log2Up(n))
 }

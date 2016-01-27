@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, HashSet}
 import internal._
 import internal.Builder.pushCommand
 import internal.Builder.dynamicContext
-import firrtl._
+import internal.firrtl._
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -60,7 +60,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   private[Chisel] def ref = Builder.globalRefMap(this)
   private[Chisel] def lref = ref
 
-  private def ports = (clock, "clock") :: (reset, "reset") :: (io, "io") :: Nil
+  private def ports = (clock, "clk") :: (reset, "reset") :: (io, "io") :: Nil
 
   private[Chisel] def computePorts = ports map { case (port, name) =>
     val bundleDir = if (port.isFlip) INPUT else OUTPUT
