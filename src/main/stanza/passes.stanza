@@ -2523,6 +2523,10 @@ defn op-stream (doprim:DoPrim) -> Streamable :
       match(type(doprim)) :
          (t:UIntType) : e
          (t:SIntType) : ["$signed(" e ")"]
+   defn cast-as (e:Expression) -> ? :
+      match(type(e)) :
+         (t:UIntType) : e
+         (t:SIntType) : ["$signed(" e ")"]
    defn a0 () -> Expression : args(doprim)[0]
    defn a1 () -> Expression : args(doprim)[1]
    defn a2 () -> Expression : args(doprim)[2]
@@ -2565,10 +2569,10 @@ defn op-stream (doprim:DoPrim) -> Streamable :
          match(type(a0())) :
             (t:UIntType) : ["{1'b0," cast(a0()) "}"]
             (t:SIntType) : [cast(a0())]
-      NOT-OP : ["~ " cast(a0())]
-      AND-OP : [cast(a0()) " & " cast(a1())]
-      OR-OP : [cast(a0()) " | " cast(a1())]
-      XOR-OP : [cast(a0()) " ^ " cast(a1())]
+      NOT-OP : ["~ " a0()]
+      AND-OP : [cast-as(a0()) " & " cast-as(a1())]
+      OR-OP : [cast-as(a0()) " | " cast-as(a1())]
+      XOR-OP : [cast-as(a0()) " ^ " cast-as(a1())]
       AND-REDUCE-OP : 
          val v = Vector<Streamable>()
          for b in 0 to to-int(long!(type(doprim))) do :
