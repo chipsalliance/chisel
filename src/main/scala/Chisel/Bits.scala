@@ -92,9 +92,6 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   private[Chisel] def redop(op: PrimOp): Bool =
     pushOp(DefPrim(Bool(), op, this.ref))
 
-  /** Returns this wire bitwise-inverted. */
-  def unary_~ : this.type = unop(cloneTypeWidth(width), BitNotOp)
-
   /** Returns this wire zero padded up to the specified width.
     *
     * @note for SInts only, this does sign extension
@@ -292,6 +289,9 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def | (other: UInt): UInt = binop(UInt(this.width max other.width), BitOrOp, other)
   def ^ (other: UInt): UInt = binop(UInt(this.width max other.width), BitXorOp, other)
 
+  /** Returns this wire bitwise-inverted. */
+  def unary_~ : UInt = unop(UInt(width = width), BitNotOp)
+
   // REVIEW TODO: Can this be defined on Bits?
   def orR: Bool = this != UInt(0)
   def andR: Bool = ~this === UInt(0)
@@ -422,9 +422,12 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   def / (other: SInt): SInt = binop(SInt(this.width), DivideOp, other)
   def % (other: SInt): SInt = binop(SInt(this.width), ModOp, other)
 
-  def & (other: SInt): SInt = binop(SInt(this.width max other.width), BitAndOp, other)
-  def | (other: SInt): SInt = binop(SInt(this.width max other.width), BitOrOp, other)
-  def ^ (other: SInt): SInt = binop(SInt(this.width max other.width), BitXorOp, other)
+  def & (other: SInt): SInt = binop(UInt(this.width max other.width), BitAndOp, other).asSInt
+  def | (other: SInt): SInt = binop(UInt(this.width max other.width), BitOrOp, other).asSInt
+  def ^ (other: SInt): SInt = binop(UInt(this.width max other.width), BitXorOp, other).asSInt
+
+  /** Returns this wire bitwise-inverted. */
+  def unary_~ : SInt = unop(UInt(width = width), BitNotOp).asSInt
 
   def < (other: SInt): Bool = compop(LessOp, other)
   def > (other: SInt): Bool = compop(GreaterOp, other)
@@ -489,6 +492,9 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
   def & (other: Bool): Bool = binop(Bool(), BitAndOp, other)
   def | (other: Bool): Bool = binop(Bool(), BitOrOp, other)
   def ^ (other: Bool): Bool = binop(Bool(), BitXorOp, other)
+
+  /** Returns this wire bitwise-inverted. */
+  override def unary_~ : Bool = unop(Bool(), BitNotOp)
 
   /** Outputs the logical OR of two Bools.
    */
