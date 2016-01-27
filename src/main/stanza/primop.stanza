@@ -53,7 +53,7 @@ public defn set-primop-type (e:DoPrim) -> DoPrim :
             (t1:SIntType, t2:UIntType) : SIntType(w1())
             (t1:SIntType, t2:SIntType) : SIntType(PLUS(w1(),ONE))
             (t1, t2) : UnknownType()
-      MOD-OP : DoPrim{o,a,c,_} $
+      REM-OP : DoPrim{o,a,c,_} $
          match(t1(),t2()) :
             (t1:UIntType, t2:UIntType) : UIntType(MIN(w1(),w2()))
             (t1:UIntType, t2:SIntType) : UIntType(MIN(w1(),w2()))
@@ -202,7 +202,7 @@ public defn set-primop-type (e:DoPrim) -> DoPrim :
 ;            (t0:UIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),IntWidth(1))
 ;            (t0:SIntType,t1:SIntType) : PlusWidth(width!(args(e)[0]),IntWidth(1))
 ;            (t0,t1) : width!(args(e)[0])
-;      MOD-OP : 
+;      REM-OP : 
 ;         match(type(args(e)[0]),type(args(e)[1])) :
 ;            (t0:SIntType,t1:UIntType) : PlusWidth(width!(args(e)[1]),IntWidth(1))
 ;            (t0,t1) : width!(args(e)[1])

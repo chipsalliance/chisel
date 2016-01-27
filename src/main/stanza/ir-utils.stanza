@@ -360,7 +360,7 @@ defmethod print (o:OutputStream, op:PrimOp) :
       SUB-OP : "sub"
       MUL-OP : "mul"
       DIV-OP : "div"
-      MOD-OP : "mod"
+      REM-OP : "rem"
       LESS-OP : "lt"
       LESS-EQ-OP : "leq"
       GREATER-OP : "gt"

@@ -191,7 +191,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
          SUB-OP             : correct-num(2,0)
          MUL-OP             : correct-num(2,0)
          DIV-OP             : correct-num(2,0)
-         MOD-OP             : correct-num(2,0)
+         REM-OP             : correct-num(2,0)
          LESS-OP            : correct-num(2,0)
          LESS-EQ-OP         : correct-num(2,0)
          GREATER-OP         : correct-num(2,0)

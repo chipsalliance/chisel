@@ -2486,7 +2486,7 @@ defn op-stream (doprim:DoPrim) -> Streamable :
       SUB-OP : [cast-if(a0()) " - " cast-if(a1())]
       MUL-OP : [cast-if(a0()) " * " cast-if(a1()) ]
       DIV-OP : [cast-if(a0()) " / " cast-if(a1()) ]
-      MOD-OP : [cast-if(a0()) " % " cast-if(a1()) ]
+      REM-OP : [cast-if(a0()) " % " cast-if(a1()) ]
       LESS-OP : [cast-if(a0()) " < " cast-if(a1())]
       LESS-EQ-OP : [cast-if(a0()) " <= " cast-if(a1())]
       GREATER-OP : [cast-if(a0()) " > " cast-if(a1())]
