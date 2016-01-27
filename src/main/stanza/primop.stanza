@@ -142,20 +142,17 @@ public defn set-primop-type (e:DoPrim) -> DoPrim :
             (t1:UIntType|SIntType) : UIntType(w1())
             (t1) : UnknownType()
       AND-OP : DoPrim{o,a,c,_} $
-         match(t1()) :
-            (t1:UIntType) : UIntType(MAX(w1(),w2()))
-            (t1:SIntType) : UIntType(MAX(w1(),w2()))
-            (t1) : UnknownType()
+         match(t1(),t2()) :
+            (t1:UIntType|SIntType, t2:UIntType|SIntType) : UIntType(MAX(w1(),w2()))
+            (t1,t2) : UnknownType()
       OR-OP : DoPrim{o,a,c,_} $
-         match(t1()) :
-            (t1:UIntType) : UIntType(MAX(w1(),w2()))
-            (t1:SIntType) : UIntType(MAX(w1(),w2()))
-            (t1) : UnknownType()
+         match(t1(),t2()) :
+            (t1:UIntType|SIntType, t2:UIntType|SIntType) : UIntType(MAX(w1(),w2()))
+            (t1,t2) : UnknownType()
       XOR-OP : DoPrim{o,a,c,_} $
-         match(t1()) :
-            (t1:UIntType) : UIntType(MAX(w1(),w2()))
-            (t1:SIntType) : UIntType(MAX(w1(),w2()))
-            (t1) : UnknownType()
+         match(t1(),t2()) :
+            (t1:UIntType|SIntType, t2:UIntType|SIntType) : UIntType(MAX(w1(),w2()))
+            (t1,t2) : UnknownType()
       AND-REDUCE-OP : DoPrim{o,a,c,_} $
          match(t1()) :
             (t1:UIntType|SIntType) : BoolType()
