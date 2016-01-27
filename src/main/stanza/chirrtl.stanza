@@ -163,12 +163,19 @@ defn infer-mdir (c:Circuit) -> Circuit :
                         [MInfer,MInfer] : error("Shouldn't be here")
                         [MInfer,MWrite] : MWrite
                         [MInfer,MRead] : MRead
+                        [MInfer,MReadWrite] : MReadWrite
                         [MWrite,MInfer] : error("Shouldn't be here")
                         [MWrite,MWrite] : MWrite
                         [MWrite,MRead] : MReadWrite
+                        [MWrite,MReadWrite] : MReadWrite
                         [MRead,MInfer] : error("Shouldn't be here")
                         [MRead,MWrite] : MReadWrite
                         [MRead,MRead] : MRead
+                        [MRead,MReadWrite] : MReadWrite
+                        [MReadWrite,MInfer] : error("Shouldn't be here")
+                        [MReadWrite,MWrite] : MReadWrite
+                        [MReadWrite,MRead] : MReadWrite
+                        [MReadWrite,MReadWrite] : MReadWrite
                   mports[name(e)] = new_mport_dir
                e
             (e) : e
