@@ -29,7 +29,7 @@ class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
   for (t <- 0 until 16) {
     val in    = rnd.nextInt(16)
     val shift = rnd.nextInt(2)
-    println("SHIFT " + shift + " IN " + in)
+    println("SHIFT " + shift + " IN " + in)   // scalastyle:ignore regex
     poke(c.io.in,    in)
     poke(c.io.shift, shift)
     step(1)
@@ -44,7 +44,7 @@ class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
 */
 
 class EnableShiftRegisterSpec extends ChiselPropSpec {
-  
+
   property("EnableShiftRegister should elaborate") {
     elaborate { new EnableShiftRegister }
   }

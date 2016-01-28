@@ -14,7 +14,7 @@ class ChiselStack(val depth: Int) extends Module {
   }
 
   val stack_mem = Mem(UInt(width = 32), depth)
-  val sp        = Reg(init = UInt(0, width = log2Up(depth+1)))
+  val sp        = Reg(init = UInt(0, width = log2Up(depth + 1)))
   val out       = Reg(init = UInt(0, width = 32))
 
   when (io.en) {
@@ -66,7 +66,7 @@ class StackTester(c: Stack) extends Tester(c) {
 */
 
 class StackSpec extends ChiselPropSpec {
-  
+
   property("Stack should elaborate") {
     elaborate { new ChiselStack(2) }
   }

@@ -32,7 +32,7 @@ class UIntOps extends Module {
   io.timesout := (a * b)(15, 0)
   io.divout := a / Mux(b === UInt(0), UInt(1), b)
   // io.modout := a % b
-  // TODO: 
+  // TODO:
   io.modout := UInt(0)
   io.lshiftout := (a << b(3, 0))(15, 0)
   io.rshiftout := a >> b
@@ -99,7 +99,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
   property("Bools cannot be created from >1 bit UInts") {
     a [Exception] should be thrownBy { elaborate(new BadBoolConversion) }
   }
-  
+
   property("UIntOps should elaborate") {
     elaborate { new UIntOps }
   }
