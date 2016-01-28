@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package Chisel.firrtl
+package Chisel.internal.firrtl
 import Chisel._
 import Chisel.internal._
 
@@ -10,12 +10,12 @@ case class PrimOp(val name: String) {
 
 object PrimOp {
   val AddOp = PrimOp("add")
-  val AddModOp = PrimOp("addw")
   val SubOp = PrimOp("sub")
-  val SubModOp = PrimOp("subw")
+  val TailOp = PrimOp("tail")
+  val HeadOp = PrimOp("head")
   val TimesOp = PrimOp("mul")
   val DivideOp = PrimOp("div")
-  val ModOp = PrimOp("mod")
+  val RemOp = PrimOp("rem")
   val ShiftLeftOp = PrimOp("shl")
   val ShiftRightOp = PrimOp("shr")
   val DynamicShiftLeftOp = PrimOp("dshl")
@@ -25,7 +25,6 @@ object PrimOp {
   val BitXorOp = PrimOp("xor")
   val BitNotOp = PrimOp("not")
   val ConcatOp = PrimOp("cat")
-  val BitSelectOp = PrimOp("bit")
   val BitsExtractOp = PrimOp("bits")
   val LessOp = PrimOp("lt")
   val LessEqOp = PrimOp("leq")
@@ -90,9 +89,9 @@ case class Slot(imm: Node, name: String) extends Arg {
   override def fullName(ctx: Component): String =
     if (imm.fullName(ctx).isEmpty) name else s"${imm.fullName(ctx)}.${name}"
 }
-case class Index(imm: Arg, value: Int) extends Arg {
+case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
-  override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[$value]"
+  override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[${value.fullName(ctx)}]"
 }
 
 object Width {
@@ -132,21 +131,31 @@ sealed case class KnownWidth(value: Int) extends Width {
   override def toString: String = value.toString
 }
 
+sealed abstract class MemPortDirection(name: String) {
+  override def toString: String = name
+}
+object MemPortDirection {
+  object READ extends MemPortDirection("read")
+  object WRITE extends MemPortDirection("write")
+  object RDWR extends MemPortDirection("rdwr")
+  object INFER extends MemPortDirection("infer")
+}
+
 abstract class Command
 abstract class Definition extends Command {
   def id: HasId
   def name: String = id.getRef.name
 }
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
+case class DefInvalid(arg: Arg) extends Command
 case class DefWire(id: Data) extends Definition
-case class DefRegister(id: Data, clock: Arg, reset: Arg) extends Definition
-case class DefMemory(id: HasId, t: Data, size: Int, clock: Arg) extends Definition
-case class DefSeqMemory(id: HasId, t: Data, size: Int, clock: Arg) extends Definition
-case class DefAccessor[T <: Data](id: T, source: Node, direction: Direction, index: Arg) extends Definition
+case class DefReg(id: Data, clock: Arg) extends Definition
+case class DefRegInit(id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
+case class DefMemory(id: HasId, t: Data, size: Int) extends Definition
+case class DefSeqMemory(id: HasId, t: Data, size: Int) extends Definition
+case class DefMemPort[T <: Data](id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
 case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
-case class DefPoison[T <: Data](id: T) extends Definition
 case class WhenBegin(pred: Arg) extends Command
-case class WhenElse() extends Command
 case class WhenEnd() extends Command
 case class Connect(loc: Node, exp: Arg) extends Command
 case class BulkConnect(loc1: Node, loc2: Node) extends Command

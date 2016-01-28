@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package Chisel.firrtl
+package Chisel.internal.firrtl
 import Chisel._
 
 private class Emitter(circuit: Circuit) {
@@ -11,16 +11,16 @@ private class Emitter(circuit: Circuit) {
   private def emit(e: Command, ctx: Component): String = e match {
     case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_ + ", " + _)})"
     case e: DefWire => s"wire ${e.name} : ${e.id.toType}"
-    case e: DefPoison[_] => s"poison ${e.name} : ${e.id.toType}"
-    case e: DefRegister => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}, ${e.reset.fullName(ctx)}"
-    case e: DefMemory => s"cmem ${e.name} : ${e.t.toType}[${e.size}], ${e.clock.fullName(ctx)}"
-    case e: DefSeqMemory => s"smem ${e.name} : ${e.t.toType}[${e.size}], ${e.clock.fullName(ctx)}"
-    case e: DefAccessor[_] => s"infer accessor ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}]"
-    case e: Connect => s"${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
-    case e: BulkConnect => s"${e.loc1.fullName(ctx)} <> ${e.loc2.fullName(ctx)}"
-    case e: ConnectInit => s"onreset ${e.loc.fullName(ctx)} := ${e.exp.fullName(ctx)}"
-    case e: Stop => s"stop(${e.clk.fullName(ctx)}, ${e.ret})"
-    case e: Printf => s"""printf(${e.clk.fullName(ctx)}, "${e.format}"${e.ids.map(_.fullName(ctx)).fold(""){_ + ", " + _}})"""
+    case e: DefReg => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}"
+    case e: DefRegInit => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))"
+    case e: DefMemory => s"cmem ${e.name} : ${e.t.toType}[${e.size}]"
+    case e: DefSeqMemory => s"smem ${e.name} : ${e.t.toType}[${e.size}]"
+    case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}"
+    case e: Connect => s"${e.loc.fullName(ctx)} <= ${e.exp.fullName(ctx)}"
+    case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"
+    case e: Stop => s"stop(${e.clk.fullName(ctx)}, UInt<1>(1), ${e.ret})"
+    case e: Printf => s"""printf(${e.clk.fullName(ctx)}, UInt<1>(1), "${e.format}"${e.ids.map(_.fullName(ctx)).fold(""){_ + ", " + _}})"""
+    case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
     case e: DefInstance => {
       val modName = moduleMap.getOrElse(e.id.name, e.id.name)
       s"inst ${e.name} of $modName"
@@ -29,9 +29,6 @@ private class Emitter(circuit: Circuit) {
     case w: WhenBegin =>
       indent()
       s"when ${w.pred.fullName(ctx)} :"
-    case _: WhenElse =>
-      indent()
-      "else :"
     case _: WhenEnd =>
       unindent()
       "skip"

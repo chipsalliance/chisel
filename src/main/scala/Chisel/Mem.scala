@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
@@ -18,7 +18,7 @@ object Mem {
   def apply[T <: Data](size: Int, t: T): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mem, mt, size, Node(mt._parent.get.clock))) // TODO multi-clock
+    pushCommand(DefMemory(mem, mt, size)) // TODO multi-clock
     mem
   }
 }
@@ -31,20 +31,24 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     */
   def apply(idx: Int): T = apply(UInt(idx))
 
+  /** Creates a read/write accessor into the memory with dynamic addressing.
+    * See the class documentation of the memory for more detailed information.
+    */
+  def apply(idx: UInt): T = makePort(idx, MemPortDirection.INFER)
+
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(idx: UInt): T =
-    pushCommand(DefAccessor(t.cloneType, Node(this), NO_DIR, idx.ref)).id
-
-  def read(idx: UInt): T = apply(idx)
+  def read(idx: UInt): T = makePort(idx, MemPortDirection.READ)
 
   /** Creates a write accessor into the memory.
     *
     * @param idx memory element index to write into
     * @param data new data to write
     */
-  def write(idx: UInt, data: T): Unit = apply(idx) := data
+  def write(idx: UInt, data: T): Unit = {
+    makePort(idx, MemPortDirection.WRITE) := data
+  }
 
   /** Creates a masked write accessor into the memory.
     *
@@ -56,12 +60,18 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(idx: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
-    // REVIEW TODO: error checking to detect zip length mismatch?
-
-    val accessor = apply(idx).asInstanceOf[Vec[Data]]
-    for (((cond, port), datum) <- mask zip accessor zip data.asInstanceOf[Vec[Data]])
+    val accessor = makePort(idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
+    val dataVec = data.asInstanceOf[Vec[Data]]
+    if (accessor.length != dataVec.length)
+      Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
+    if (accessor.length != mask.length)
+      Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
+    for (((cond, port), datum) <- mask zip accessor zip dataVec)
       when (cond) { port := datum }
   }
+
+  private def makePort(idx: UInt, dir: MemPortDirection): T =
+    pushCommand(DefMemPort(t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))).id
 }
 
 /** A combinational-read, sequential-write memory.
@@ -87,7 +97,7 @@ object SeqMem {
   def apply[T <: Data](size: Int, t: T): SeqMem[T] = {
     val mt  = t.cloneType
     val mem = new SeqMem(mt, size)
-    pushCommand(DefSeqMemory(mem, mt, size, Node(mt._parent.get.clock))) // TODO multi-clock
+    pushCommand(DefSeqMemory(mem, mt, size)) // TODO multi-clock
     mem
   }
 }
@@ -103,6 +113,9 @@ object SeqMem {
   * result is undefined (unlike Vec, where the last assignment wins)
   */
 sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
-  def read(addr: UInt, enable: Bool): T =
-    read(Mux(enable, addr, Poison(addr)))
+  def read(addr: UInt, enable: Bool): T = {
+    val a = Wire(UInt())
+    when (enable) { a := addr }
+    read(a)
+  }
 }

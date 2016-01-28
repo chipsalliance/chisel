@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 import Chisel._
-import Chisel.firrtl._
+import Chisel.internal.firrtl._
 
 private[Chisel] class Namespace(parent: Option[Namespace], keywords: Set[String]) {
   private var i = 0L
@@ -50,7 +50,8 @@ private[Chisel] trait HasId {
   private[Chisel] def setRef(imm: Arg) = _refMap.setRef(this, imm)
   private[Chisel] def setRef(name: String) = _refMap.setRef(this, name)
   private[Chisel] def setRef(parent: HasId, name: String) = _refMap.setField(parent, this, name)
-  private[Chisel] def setRef(parent: HasId, index: Int) = _refMap.setIndex(parent, this, index)
+  private[Chisel] def setRef(parent: HasId, index: Int) = _refMap.setIndex(parent, this, ILit(index))
+  private[Chisel] def setRef(parent: HasId, index: UInt) = _refMap.setIndex(parent, this, index.ref)
   private[Chisel] def getRef = _refMap(this)
 }
 
@@ -66,7 +67,7 @@ class RefMap {
   private[Chisel] def setField(parentid: HasId, id: HasId, name: String): Unit =
     _refmap(id._id) = Slot(Node(parentid), name)
 
-  private[Chisel] def setIndex(parentid: HasId, id: HasId, index: Int): Unit =
+  private[Chisel] def setIndex(parentid: HasId, id: HasId, index: Arg): Unit =
     _refmap(id._id) = Index(Node(parentid), index)
 
   def apply(id: HasId): Arg = _refmap(id._id)

@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object when {  // scalastyle:ignore object.name
   /** Create a `when` condition block, where whether a block of logic is
@@ -24,32 +24,33 @@ object when {  // scalastyle:ignore object.name
     * }
     * }}}
     */
-  def apply(cond: => Bool)(block: => Unit): WhenContext = {
-    new WhenContext(cond)(block)
+  def apply(cond: Bool)(block: => Unit): WhenContext = {
+    new WhenContext(cond, !cond)(block)
   }
 }
 
-class WhenContext(cond: => Bool)(block: => Unit) {
+/** Internal mechanism for generating a when. Because of the way FIRRTL
+  * commands are emitted, generating a FIRRTL elsewhen or nested whens inside
+  * elses would be difficult. Instead, this keeps track of the negative of the
+  * previous conditions, so when an elsewhen or otherwise is used, it checks
+  * that both the condition is true and all the previous conditions have been
+  * false.
+  */
+class WhenContext(cond: Bool, prevCond: => Bool)(block: => Unit) {
   /** This block of logic gets executed if above conditions have been false
     * and this condition is true.
     */
-  def elsewhen (cond: => Bool)(block: => Unit): WhenContext =
-    doOtherwise(when(cond)(block))
+  def elsewhen (elseCond: Bool)(block: => Unit): WhenContext = {
+    new WhenContext(prevCond && elseCond, prevCond && !elseCond)(block)
+  }
 
   /** This block of logic gets executed only if the above conditions were all
     * false. No additional logic blocks may be appended past the `otherwise`.
     */
   def otherwise(block: => Unit): Unit =
-    doOtherwise(block)
+    new WhenContext(prevCond, null)(block)
 
   pushCommand(WhenBegin(cond.ref))
   block
   pushCommand(WhenEnd())
-
-  private def doOtherwise[T](block: => T): T = {
-    pushCommand(WhenElse())
-    val res = block
-    pushCommand(WhenEnd())
-    res
-  }
 }

@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, HashSet}
 import internal._
 import internal.Builder.pushCommand
 import internal.Builder.dynamicContext
-import firrtl._
+import internal.firrtl._
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -20,16 +20,12 @@ object Module {
   def apply[T <: Module](bc: => T): T = {
     val parent = dynamicContext.currentModule
     val m = bc.setRefs()
-    // init module outputs
-    m._commands prependAll (for (p <- m.io.flatten; if p.dir == OUTPUT)
-      yield Connect(p.lref, p.fromInt(0).ref))
+    m._commands.prepend(DefInvalid(m.io.ref)) // init module outputs
     dynamicContext.currentModule = parent
     val ports = m.computePorts
     Builder.components += Component(m, m.name, ports, m._commands)
     pushCommand(DefInstance(m, ports))
-    // init instance inputs
-    for (p <- m.io.flatten; if p.dir == INPUT)
-      p := p.fromInt(0)
+    pushCommand(DefInvalid(m.io.ref)) // init instance inputs
     m.connectImplicitIOs()
   }
 }
@@ -60,7 +56,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   private[Chisel] def ref = Builder.globalRefMap(this)
   private[Chisel] def lref = ref
 
-  private def ports = (clock, "clock") :: (reset, "reset") :: (io, "io") :: Nil
+  private def ports = (clock, "clk") :: (reset, "reset") :: (io, "io") :: Nil
 
   private[Chisel] def computePorts = ports map { case (port, name) =>
     val bundleDir = if (port.isFlip) INPUT else OUTPUT

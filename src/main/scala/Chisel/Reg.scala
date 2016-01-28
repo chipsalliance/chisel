@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object Reg {
   private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
@@ -45,9 +45,11 @@ object Reg {
     // to resolve all use cases. If the type inferencer / implicit resolution
     // system improves, this may be changed.
     val x = makeType(t, next, init)
-    pushCommand(DefRegister(x, Node(x._parent.get.clock), Node(x._parent.get.reset))) // TODO multi-clock
-    if (init != null) {
-      pushCommand(ConnectInit(x.lref, init.ref))
+    val clock = Node(x._parent.get.clock) // TODO multi-clock
+    if (init == null) {
+      pushCommand(DefReg(x, clock))
+    } else {
+      pushCommand(DefRegInit(x, clock, Node(x._parent.get.reset), init.ref))
     }
     if (next != null) {
       x := next

@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -104,13 +104,22 @@ abstract class Data(dirArg: Direction) extends HasId {
 }
 
 object Wire {
-  def apply[T <: Data](t: T = null, init: T = null): T = {
+  def apply[T <: Data](t: T): T =
+    makeWire(t, null.asInstanceOf[T])
+
+  def apply[T <: Data](dummy: Int = 0, init: T): T =
+    makeWire(null.asInstanceOf[T], init)
+
+  def apply[T <: Data](t: T, init: T): T =
+    makeWire(t, init)
+
+  private def makeWire[T <: Data](t: T, init: T): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x))
     if (init != null) {
       x := init
     } else {
-      x.flatten.foreach(e => e := e.fromInt(0))
+      pushCommand(DefInvalid(x.ref))
     }
     x
   }
@@ -123,7 +132,7 @@ object Clock {
 // TODO: Document this.
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
-  private[Chisel] override def flatten: IndexedSeq[UInt] = IndexedSeq()
+  private[Chisel] override def flatten: IndexedSeq[Bits] = IndexedSeq()
   private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
   private[Chisel] def toType = "Clock"
 
@@ -131,12 +140,4 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
     case _: Clock => this connect that
     case _ => this badConnect that
   }
-}
-
-// TODO: check with FIRRTL specs, how much official implementation flexibility
-// is there?
-/** A source of garbage data, used to initialize Wires to a don't-care value. */
-private object Poison extends Command {
-  def apply[T <: Data](t: T): T =
-    pushCommand(DefPoison(t.cloneType)).id
 }

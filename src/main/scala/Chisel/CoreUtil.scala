@@ -4,7 +4,7 @@ package Chisel
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 object assert {
   /** Checks for a condition to be valid in the circuit at all times. If the
@@ -43,13 +43,13 @@ object assert {
   /** An elaboration-time assertion, otherwise the same as the above run-time
     * assertion. */
   def apply(cond: Boolean, message: String) {
-    apply(Bool(cond), message)
+    Predef.assert(cond, message)
   }
 
   /** A workaround for default-value overloading problems in Scala, just
     * 'assert(cond, "")' */
   def apply(cond: Boolean) {
-    apply(cond, "")
+    Predef.assert(cond, "")
   }
 }
 

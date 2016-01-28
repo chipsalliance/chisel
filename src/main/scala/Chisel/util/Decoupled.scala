@@ -82,7 +82,7 @@ class Queue[T <: Data](gen: T, val entries: Int,
 {
   val io = new QueueIO(gen, entries)
 
-  val ram = Mem(gen, entries)
+  val ram = Mem(entries, gen)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
   val maybe_full = Reg(init=Bool(false))

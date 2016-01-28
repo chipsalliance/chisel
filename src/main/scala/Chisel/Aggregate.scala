@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 
 import internal._
 import internal.Builder.pushCommand
-import firrtl._
+import internal.firrtl._
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -103,21 +103,16 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   private val self = IndexedSeq.fill(length)(gen)
 
-  override def <> (that: Data): Unit = that match {
-    case _: Vec[_] => this bulkConnect that
-    case _ => this badConnect that
-  }
+  override def <> (that: Data): Unit = this := that
 
-  /** Weak bulk connect, assigning elements in this Vec from elements in a Seq.
+  /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
-    * @note length mismatches silently ignored
+    * @note the length of this Vec must match the length of the input Seq
     */
-  def <> (that: Seq[T]): Unit =
-    for ((a, b) <- this zip that)
-      a <> b
+  def <> (that: Seq[T]): Unit = this := that
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T]): Unit = this bulkConnect that
+  def <> (that: Vec[T]): Unit = this := that.asInstanceOf[Data]
 
   override def := (that: Data): Unit = that match {
     case _: Vec[_] => this connect that
@@ -141,7 +136,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     */
   def apply(idx: UInt): T = {
     val x = gen
-    pushCommand(DefAccessor(x, Node(this), NO_DIR, idx.ref))
+    x.setRef(this, idx)
     x
   }
 
@@ -156,7 +151,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def write(idx: UInt, data: T): Unit = apply(idx) := data
 
   override def cloneType: this.type =
-    Vec(gen, length).asInstanceOf[this.type]
+    Vec(length, gen).asInstanceOf[this.type]
 
   private val t = gen
   private[Chisel] def toType: String = s"${t.toType}[$length]"
@@ -331,7 +326,7 @@ class Bundle extends Aggregate(NO_DIR) {
         try {
           constructor.newInstance(_parent.get).asInstanceOf[this.type]
         } catch {
-          case _: java.lang.reflect.InvocationTargetException =>
+          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
             Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
               "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
             this

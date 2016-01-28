@@ -75,5 +75,6 @@ object BitPat {
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
   def === (other: UInt): Bool = UInt(value) === (other & UInt(mask))
-  def != (other: UInt): Bool = !(this === other)
+  def =/= (other: UInt): Bool = !(this === other)
+  def != (other: UInt): Bool = this =/= other
 }
