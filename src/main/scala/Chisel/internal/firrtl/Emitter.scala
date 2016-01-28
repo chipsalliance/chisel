@@ -22,7 +22,7 @@ private class Emitter(circuit: Circuit) {
     case e: Printf => s"""printf(${e.clk.fullName(ctx)}, UInt<1>(1), "${e.format}"${e.ids.map(_.fullName(ctx)).fold(""){_ + ", " + _}})"""
     case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
     case e: DefInstance => {
-      val modName = moduleMap.getOrElse(e.id.name, e.id.name)
+      val modName = moduleMap.get(e.id.name).get
       s"inst ${e.name} of $modName"
     }
 
@@ -33,31 +33,59 @@ private class Emitter(circuit: Circuit) {
       unindent()
       "skip"
   }
-  private def emitBody(m: Component) = {
-    val me = new StringBuilder
-    withIndent {
-      for (p <- m.ports)
-        me ++= newline + emitPort(p)
-      me ++= newline
-      for (cmd <- m.commands)
-        me ++= newline + emit(cmd, m)
-      me ++= newline
-    }
-    me
-  }
 
-  private val bodyMap = collection.mutable.HashMap[StringBuilder, String]()
+  // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
+  private val defnMap = collection.mutable.HashMap[String, String]()
+  // Map of Component name to FIRRTL id.
   private val moduleMap = collection.mutable.HashMap[String, String]()
 
+  /** Generates the FIRRTL module definition with a specified name.
+    */
+  private def moduleDefn(m: Component, name: String): String = {
+    val body = new StringBuilder
+    m.id match {
+      case _: BlackBox => body ++= newline + s"extmodule $name : "
+      case _: Module => body ++= newline + s"module $name : "
+    }
+    withIndent {
+      for (p <- m.ports)
+        body ++= newline + emitPort(p)
+      body ++= newline
+
+      m.id match {
+        case _: BlackBox =>
+          // TODO: BlackBoxes should be empty, but funkiness in Module() means
+          // it's not for now. Eventually, this should assert out.
+        case _: Module => for (cmd <- m.commands) {
+          body ++= newline + emit(cmd, m)
+        }
+      }
+      body ++= newline
+    }
+    body.toString()
+  }
+
+  /** Returns the FIRRTL declaration and body of a module, or nothing if it's a
+    * duplicate of something already emitted (on the basis of simple string
+    * matching).
+    */
   private def emit(m: Component): String = {
-    val body = emitBody(m)
-    bodyMap get body match {
-      case Some(name) =>
-        moduleMap(m.name) = name
+    // Generate the body.
+    val moduleName = m.id.getClass.getName.split('.').last
+    val defn = moduleDefn(m, moduleName)
+
+    defnMap get defn match {
+      case Some(deduplicatedName) =>
+        moduleMap(m.name) = deduplicatedName
         ""
       case None =>
-        bodyMap(body) = m.name
-        newline + s"module ${m.name} : " + body
+        require(!(moduleMap contains m.name),
+            "emitting module with same name but different contents")
+
+        moduleMap(m.name) = m.name
+        defnMap(defn) = m.name
+
+        moduleDefn(m, m.name)
     }
   }
 
