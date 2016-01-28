@@ -24,18 +24,16 @@ class DecoupledExample extends Module {
 }
 
 class DecoupledTesterSpec extends ChiselFlatSpec {
-  execute {
+  hwTest {
     new OrderedDecoupledHWIOTester {
       val device_under_test = new DecoupledExample()
 
-      testBlock {
-        inputEvent(
-          device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7
-        )
-        outputEvent(
-          device_under_test.io.out.bits.c -> 3
-        )
-      }
+      inputEvent(
+        device_under_test.io.in.bits.a -> 4, device_under_test.io.in.bits.b -> 7
+      )
+      outputEvent(
+        device_under_test.io.out.bits.c -> 3
+      )
 
       io_info.showPorts(".*".r)
 

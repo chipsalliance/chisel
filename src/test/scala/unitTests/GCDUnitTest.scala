@@ -44,24 +44,22 @@ class GCDUnitTester extends SteppedHWIOTester {
   val device_under_test = Module(new GCD)
   val gcd = device_under_test
 
-  testBlock {
-    poke(gcd.io.a, a)
-    poke(gcd.io.b, b)
-    poke(gcd.io.e, 1)
-    step(1)
-    poke(gcd.io.e, 0)
+  poke(gcd.io.a, a)
+  poke(gcd.io.b, b)
+  poke(gcd.io.e, 1)
+  step(1)
+  poke(gcd.io.e, 0)
 
-    val (expected_gcd, steps) = compute_gcd(a, b)
+  val (expected_gcd, steps) = compute_gcd(a, b)
 
-    step(steps - 1) // -1 is because we step(1) already to toggle the enable
-    expect(gcd.io.z, expected_gcd)
-    expect(gcd.io.v, 1)
-  }
+  step(steps - 1) // -1 is because we step(1) already to toggle the enable
+  expect(gcd.io.z, expected_gcd)
+  expect(gcd.io.v, 1)
 }
 
 class GCDTester extends ChiselFlatSpec {
   "a" should "b" in {
-    assert( execute { new GCDUnitTester } )
+    assert( hwTest { new GCDUnitTester } )
   }
 }
 

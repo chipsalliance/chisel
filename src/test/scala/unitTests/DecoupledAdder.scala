@@ -61,16 +61,13 @@ class SlowDecoupledAdder extends Module {
 class DecoupledAdderTests extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new SlowDecoupledAdder())
 
-  testBlock {
-
-    for {
-      x <- 0 to 4
-      y <- 0 to 6 by 2
-      z = x + y
-    } {
-      inputEvent(device_under_test.io.in.bits.a -> x, device_under_test.io.in.bits.b -> y)
-      outputEvent(device_under_test.io.out.bits.c -> z)
-    }
+  for {
+    x <- 0 to 4
+    y <- 0 to 6 by 2
+    z = x + y
+  } {
+    inputEvent(device_under_test.io.in.bits.a -> x, device_under_test.io.in.bits.b -> y)
+    outputEvent(device_under_test.io.out.bits.c -> z)
   }
 }
 

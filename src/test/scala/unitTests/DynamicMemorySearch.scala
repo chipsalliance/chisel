@@ -42,38 +42,36 @@ class DynamicMemorySearchTests(val n: Int, val w: Int) extends SteppedHWIOTester
 
   enable_all_debug = true
 
-  testBlock {
-    val list = Array.fill(c.n)(0)
-    rnd.setSeed(0L)
+  val list = Array.fill(c.n)(0)
+  rnd.setSeed(0L)
 
-    for (k <- 0 until 16) {
-      // WRITE A WORD
-      poke(c.io.en, 0)
-      poke(c.io.isWr, 1)
-      val wrAddr = rnd.nextInt(c.n - 1)
-      val data = rnd.nextInt((1 << c.w) - 1) + 1 // can't be 0
-      poke(c.io.wrAddr, wrAddr)
-      poke(c.io.data, data)
-      step(1)
-      list(wrAddr) = data
-      // SETUP SEARCH
-      val target = if (k > 12) rnd.nextInt(1 << c.w) else data
-      poke(c.io.isWr, 0)
-      poke(c.io.data, target)
-      poke(c.io.en, 1)
-      step(1)
-      poke(c.io.en, 0)
-      step(1)
-      val expectedIndex = if (list.contains(target)) {
-        list.indexOf(target)
-      } else {
-        list.length - 1
-      }
-      step(expectedIndex)
-      expect(c.io.done, 1)
-      expect(c.io.target, expectedIndex)
-      step(1)
+  for (k <- 0 until 16) {
+    // WRITE A WORD
+    poke(c.io.en, 0)
+    poke(c.io.isWr, 1)
+    val wrAddr = rnd.nextInt(c.n - 1)
+    val data = rnd.nextInt((1 << c.w) - 1) + 1 // can't be 0
+    poke(c.io.wrAddr, wrAddr)
+    poke(c.io.data, data)
+    step(1)
+    list(wrAddr) = data
+    // SETUP SEARCH
+    val target = if (k > 12) rnd.nextInt(1 << c.w) else data
+    poke(c.io.isWr, 0)
+    poke(c.io.data, target)
+    poke(c.io.en, 1)
+    step(1)
+    poke(c.io.en, 0)
+    step(1)
+    val expectedIndex = if (list.contains(target)) {
+      list.indexOf(target)
+    } else {
+      list.length - 1
     }
+    step(expectedIndex)
+    expect(c.io.done, 1)
+    expect(c.io.target, expectedIndex)
+    step(1)
   }
 }
 

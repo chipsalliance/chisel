@@ -66,22 +66,20 @@ class RealGCDTests extends SteppedHWIOTester {
   val inputs = List( (48, 32), (7, 3), (100, 10) )
   val outputs = List( 16, 1, 10)
 
-  testBlock {
-    for ((input_1, input_2) <- inputs) {
-      val (output, cycles) = GCDCalculator.computeGcdResultsAndCycles(input_1, input_2)
+  for ((input_1, input_2) <- inputs) {
+    val (output, cycles) = GCDCalculator.computeGcdResultsAndCycles(input_1, input_2)
 
-      poke(c.io.in.bits.a, input_1)
-      poke(c.io.in.bits.b, input_2)
-      poke(c.io.in.valid, 1)
+    poke(c.io.in.bits.a, input_1)
+    poke(c.io.in.bits.b, input_2)
+    poke(c.io.in.valid, 1)
 
-      step(1)
-      expect(c.io.in.ready, 1)
-      poke(c.io.in.valid, 0)
-      step(1)
+    step(1)
+    expect(c.io.in.ready, 1)
+    poke(c.io.in.valid, 0)
+    step(1)
 
-      step(cycles - 2)
-      expect(c.io.out.bits, output)
-    }
+    step(cycles - 2)
+    expect(c.io.out.bits, output)
   }
 }
 
@@ -136,22 +134,20 @@ class DecoupledRealGCDTests4 extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new RealGCD())
   val c = device_under_test
 
-  testBlock {
-    for {
-      i <- 1 to 10
-      j <- 1 to 10
-    } {
-      val (gcd_value, cycles) = GCDCalculator.computeGcdResultsAndCycles(i, j)
+  for {
+    i <- 1 to 10
+    j <- 1 to 10
+  } {
+    val (gcd_value, cycles) = GCDCalculator.computeGcdResultsAndCycles(i, j)
 
-      inputEvent(c.io.in.bits.a -> i, c.io.in.bits.b -> j)
-      outputEvent(c.io.out.bits -> gcd_value)
-    }
+    inputEvent(c.io.in.bits.a -> i, c.io.in.bits.b -> j)
+    outputEvent(c.io.out.bits -> gcd_value)
   }
 }
 
 class DecoupledRealGCDTester extends ChiselFlatSpec {
   "RealGCD using decoupledIO input interface and validIO output interface" should "return good values" in {
-    assert( execute { new DecoupledRealGCDTests4 } )
+    assert( hwTest { new DecoupledRealGCDTests4 } )
   }
 }
 

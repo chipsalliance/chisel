@@ -55,22 +55,20 @@ class SmallOdds2(filter_width: Int) extends Module {
 class SmallOdds2Tester(width: Int) extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new SmallOdds2(filter_width = width))
 
-  testBlock {
-    rnd.setSeed(0L)
-    for (i <- 0 to 30) {
-      val num = rnd.nextInt(20)
-      println(s"random value $i $num")
-      inputEvent(device_under_test.io.in.bits -> num)
-      if (num % 2 == 1 && num < 10) {
-        outputEvent(device_under_test.io.out.bits -> num)
-      }
+  rnd.setSeed(0L)
+  for (i <- 0 to 30) {
+    val num = rnd.nextInt(20)
+    println(s"random value $i $num")
+    inputEvent(device_under_test.io.in.bits -> num)
+    if (num % 2 == 1 && num < 10) {
+      outputEvent(device_under_test.io.out.bits -> num)
     }
   }
 }
 
 class SmallOdds2TesterSpec extends ChiselFlatSpec {
   "a small odds filters" should "take a stream of UInt and only pass along the odd ones < 10" in {
-    assert(execute {
+    assert(hwTest {
       new SmallOdds2Tester(32)
     })
   }

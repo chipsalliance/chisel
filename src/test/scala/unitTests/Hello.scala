@@ -1,5 +1,6 @@
-package unitTests
+// See LICENSE for license details.
 
+package unitTests
 
 import Chisel._
 import Chisel.testers.{TesterDriver, SteppedHWIOTester}
@@ -15,20 +16,18 @@ class Hello extends Module {
 class HelloTester extends SteppedHWIOTester {
   val device_under_test = Module( new Hello )
 
-  testBlock {
-    step(1)
-    expect(device_under_test.io.out, 42)
-  }
+  step(1)
+  expect(device_under_test.io.out, 42)
 }
 
 object Hello {
   def main(args: Array[String]): Unit = {
-    TesterDriver.execute { () => new HelloTester }
+    TesterDriver.hwTest { () => new HelloTester }
   }
 }
 
 class HelloSpec extends ChiselFlatSpec {
   "a" should "b" in {
-    assert( execute { new HelloTester } )
+    assert( hwTest { new HelloTester } )
   }
 }

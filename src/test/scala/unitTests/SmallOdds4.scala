@@ -46,7 +46,6 @@ class SmallOdds4(filter_width: Int) extends Module {
 class SmallOdds4Tester(width: Int) extends OrderedDecoupledHWIOTester {
   val device_under_test = Module(new SmallOdds4(filter_width = width))
 
-  testBlock {
 //TODO: Uncomment this when bulk connect is working again
 //    for (i <- 0 to 30) {
 //      val num = rnd.nextInt(20)
@@ -56,13 +55,12 @@ class SmallOdds4Tester(width: Int) extends OrderedDecoupledHWIOTester {
 //        outputEvent(device_under_test.io.out.bits -> num)
 //      }
 //    }
-  }
 }
 
 class SmallOdds4TesterSpec extends ChiselFlatSpec {
   val testWidth = 32
   "a small odds filters" should "take a stream of UInt and only pass along the odd ones < 10" in {
-    assert(execute {
+    assert(hwTest {
       new SmallOdds4Tester(testWidth)
     })
   }
