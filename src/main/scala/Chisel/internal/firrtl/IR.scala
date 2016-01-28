@@ -147,6 +147,7 @@ abstract class Definition extends Command {
   def name: String = id.getRef.name
 }
 case class DefPrim[T <: Data](id: T, op: PrimOp, args: Arg*) extends Definition
+case class DefInvalid(arg: Arg) extends Command
 case class DefWire(id: Data) extends Definition
 case class DefReg(id: Data, clock: Arg) extends Definition
 case class DefRegInit(id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
@@ -154,7 +155,6 @@ case class DefMemory(id: HasId, t: Data, size: Int) extends Definition
 case class DefSeqMemory(id: HasId, t: Data, size: Int) extends Definition
 case class DefMemPort[T <: Data](id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
 case class DefInstance(id: Module, ports: Seq[Port]) extends Definition
-case class DefPoison[T <: Data](id: T) extends Definition
 case class WhenBegin(pred: Arg) extends Command
 case class WhenEnd() extends Command
 case class Connect(loc: Node, exp: Arg) extends Command
