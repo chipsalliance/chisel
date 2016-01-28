@@ -100,17 +100,17 @@ public defn AND (e1:Expression,e2:Expression) -> Expression :
    else if e1 == zero or e2 == zero : zero
    else if e1 == one : e2
    else if e2 == one : e1
-   else : DoPrim(BIT-AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   else : DoPrim(AND-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
 
 public defn OR (e1:Expression,e2:Expression) -> Expression :
    if e1 == e2 : e1
    else if e1 == one or e2 == one : one
    else if e1 == zero : e2
    else if e2 == zero : e1
-   else : DoPrim(BIT-OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
+   else : DoPrim(OR-OP,list(e1,e2),list(),UIntType(IntWidth(1)))
 
 public defn EQV (e1:Expression,e2:Expression) -> Expression :
-   DoPrim(EQUIV-OP,list(e1,e2),list(),type(e1))
+   DoPrim(EQUAL-OP,list(e1,e2),list(),type(e1))
 
 public defn MUX (p:Expression,e1:Expression,e2:Expression) -> Expression :
    Mux(p,e1,e2,mux-type(type(e1),type(e2)))
@@ -134,7 +134,7 @@ public defn CAT (e1:Expression,e2:Expression) -> Expression :
 public defn NOT (e1:Expression) -> Expression :
    if e1 == one : zero
    else if e1 == zero : one
-   else : DoPrim(EQUIV-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
+   else : DoPrim(EQUAL-OP,list(e1,zero),list(),UIntType(IntWidth(1)))
 
 public defn children (e:Expression) -> List<Expression> :
    val es = Vector<Expression>()
@@ -185,12 +185,12 @@ public defmethod get-type (s:Stmt) -> Type :
          val def-data = Field(`data,DEFAULT,data-type(s))
          val rev-data = Field(`data,REVERSE,data-type(s))
          val mask = Field(`mask,DEFAULT,create-mask(data-type(s)))
-         val rmode = Field(`rmode,DEFAULT,UIntType(IntWidth(1)))
+         val wmode = Field(`wmode,DEFAULT,UIntType(IntWidth(1)))
          val rdata = Field(`rdata,REVERSE,data-type(s))
 
          val read-type = BundleType(to-list([rev-data,addr,en,clk]))
          val write-type = BundleType(to-list([def-data,mask,addr,en,clk]))
-         val readwrite-type = BundleType(to-list([rmode,rdata,def-data,mask,addr,en,clk]))
+         val readwrite-type = BundleType(to-list([wmode,rdata,def-data,mask,addr,en,clk]))
 
          val mem-fields = Vector<Field>()
          for x in readers(s) do :
@@ -360,39 +360,34 @@ defmethod print (o:OutputStream, op:PrimOp) :
       SUB-OP : "sub"
       MUL-OP : "mul"
       DIV-OP : "div"
-      MOD-OP : "mod"
-      QUO-OP : "quo"
       REM-OP : "rem"
-      ADD-WRAP-OP : "addw"
-      SUB-WRAP-OP : "subw"
       LESS-OP : "lt"
       LESS-EQ-OP : "leq"
       GREATER-OP : "gt"
       GREATER-EQ-OP : "geq"
-      EQUIV-OP : "eqv"
-      NEQUIV-OP : "neqv"
       EQUAL-OP : "eq"
       NEQUAL-OP : "neq"
-      ;MUX-OP : "mux"
       PAD-OP : "pad"
       AS-UINT-OP : "asUInt"
       AS-SINT-OP : "asSInt"
-      DYN-SHIFT-LEFT-OP : "dshl"
-      DYN-SHIFT-RIGHT-OP : "dshr"
+      AS-CLOCK-OP : "asClock"
       SHIFT-LEFT-OP : "shl"
       SHIFT-RIGHT-OP : "shr"
+      DYN-SHIFT-LEFT-OP : "dshl"
+      DYN-SHIFT-RIGHT-OP : "dshr"
       CONVERT-OP : "cvt"
       NEG-OP : "neg"
-      BIT-NOT-OP : "not"
-      BIT-AND-OP : "and"
-      BIT-OR-OP : "or"
-      BIT-XOR-OP : "xor"
-      BIT-AND-REDUCE-OP : "andr"
-      BIT-OR-REDUCE-OP : "orr"
-      BIT-XOR-REDUCE-OP : "xorr"
+      NOT-OP : "not"
+      AND-OP : "and"
+      OR-OP : "or"
+      XOR-OP : "xor"
+      AND-REDUCE-OP : "andr"
+      OR-REDUCE-OP : "orr"
+      XOR-REDUCE-OP : "xorr"
       CONCAT-OP : "cat"
-      BIT-SELECT-OP : "bit"
       BITS-SELECT-OP : "bits"
+      HEAD-OP : "head"
+      TAIL-OP : "tail"
    
 defmethod print (o:OutputStream, e:Expression) :
    match(e) :
@@ -420,17 +415,18 @@ defmethod print (o:OutputStream, c:Stmt) :
       (c:DefWire) :
          print-all(o,["wire " name(c) " : " type(c)])
       (c:DefRegister) : 
-         print-all(o,["reg " name(c) " : " type(c) ", " clock(c) ", " reset(c) ", " init(c)])
+         print-all(o,["reg " name(c) " : " type(c) ", " clock(c) " with :"])
+         print-all(io,["\nreset => (" reset(c) ", " init(c) ")"])
       (c:DefMemory) :
          print-all(o,["mem " name(c) " : "])
          print-debug(o,c)
-         print-all(io,["\ndata-type: " data-type(c)])
-         print-all(io,["\ndepth: " depth(c)])
-         print-all(io,["\nwrite-latency: " write-latency(c)])
-         print-all(io,["\nread-latency: " read-latency(c)])
-         for r in readers(c) do : print-all(io,["\nreader: " r])
-         for w in writers(c) do : print-all(io,["\nwriter: " w])
-         for rw in readwriters(c) do : print-all(io,["\nread-writer: " rw])
+         print-all(io,["\ndata-type => " data-type(c)])
+         print-all(io,["\ndepth => " depth(c)])
+         print-all(io,["\nwrite-latency => " write-latency(c)])
+         print-all(io,["\nread-latency => " read-latency(c)])
+         for r in readers(c) do : print-all(io,["\nreader => " r])
+         for w in writers(c) do : print-all(io,["\nwriter => " w])
+         for rw in readwriters(c) do : print-all(io,["\nreadwriter => " rw])
       (c:DefInstance) :
          print-all(o,["inst " name(c) " of " module(c)])
       (c:DefNode) :

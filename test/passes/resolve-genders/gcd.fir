@@ -6,8 +6,8 @@ circuit top :
       input x : UInt
       input y : UInt
       output z : UInt
-      z <= subw(x, y)
-      ;CHECK: z@<g:f> <= subw(x@<g:m>, y@<g:m>)
+      z <= tail(sub(x, y),1)
+      ;CHECK: z@<g:f> <= tail(sub(x@<g:m>, y@<g:m>)@<g:m>, 1)@<g:m>   
    module gcd :
       input a : UInt<16>
       input b : UInt<16>
@@ -16,8 +16,10 @@ circuit top :
       input reset : UInt<1>
       output z : UInt<16>
       output v : UInt<1>
-      reg x : UInt,clk,reset,UInt(0)
-      reg y : UInt,clk,reset,UInt(42)
+      reg x : UInt,clk with :
+         reset => (reset,UInt(0))
+      reg y : UInt,clk with :
+         reset => (reset,UInt(42))
 ; CHECK: reg x : UInt
       when gt(x, y) :
       ;CHECK: when gt(x@<g:m>, y@<g:m>)@<g:m> :

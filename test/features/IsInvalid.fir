@@ -12,9 +12,10 @@ circuit Top :
        write-latency => 1
        reader => r
        writer => w
-       read-writer => rw
+       readwriter => rw
     wire x : { w : UInt<42>, x : UInt<20>}
-    reg c : { w : UInt<42>, x : UInt<20>},clk,reset,x
+    reg c : { w : UInt<42>, x : UInt<20>},clk with :
+       reset => (reset,x)
     inst other of Other
    
     clk is invalid
@@ -52,7 +53,7 @@ circuit Top :
 ;CHECK: m.w.addr is invalid
 ;CHECK: m.w.en is invalid
 ;CHECK: m.w.clk is invalid
-;CHECK: m.rw.rmode is invalid
+;CHECK: m.rw.wmode is invalid
 ;CHECK: m.rw.data[0] is invalid
 ;CHECK: m.rw.data[1] is invalid
 ;CHECK: m.rw.data[2] is invalid

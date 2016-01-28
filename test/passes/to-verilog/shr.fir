@@ -16,9 +16,12 @@ circuit HellaCache :
 
     inst dtlb of TLB_60
     poison init : {addr : UInt<40>}
-    reg s1_req : {addr : UInt<40>}, clock, reset, init
-    reg s2_req : {addr : UInt<40>}, clock, reset, init
-    reg s1_clk_en : UInt<1>, clock, reset, UInt(0)
+    reg s1_req : {addr : UInt<40>}, clock with :
+       reset => ( reset, init)
+    reg s2_req : {addr : UInt<40>}, clock with :
+       reset => ( reset, init)
+    reg s1_clk_en : UInt<1>, clock with :
+       reset => ( reset, UInt(0))
 
     node T_928 = bits(s1_req.addr, 11, 0)
     node s1_addr = cat(dtlb.resp.ppn, T_928)

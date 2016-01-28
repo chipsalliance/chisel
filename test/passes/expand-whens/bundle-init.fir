@@ -5,7 +5,8 @@ circuit top :
       input clk : Clock
       input reset : UInt<1>
       wire w : { x : UInt, y : UInt}
-      reg r : { x : UInt, y : UInt},clk,reset,w
+      reg r : { x : UInt, y : UInt},clk with :
+         reset => (reset,w)
       wire a : UInt
       wire b : UInt
       a <= UInt(1)

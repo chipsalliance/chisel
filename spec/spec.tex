@@ -1792,14 +1792,14 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 %\section{TODO}
 %
 %- FIRRTL implementation
-%   - Rework readwrite port types       ; limits optimizations but probably ok
-%   - Make register reset/init optional ; good
-%   - removed addw, added head and tail ; great!
 %   - Add UBits                         ; andrew doesn't care, favors overloading UInt
 %   - Add SBits
 %   - Add partial connect algorithm     ; 
 %   - Add oriented types to type checker
 %   - Add memory read-under-write flag  ; probably overengineering, but could be a wash
+%   - *FINISHED* Make register reset/init optional ; good
+%   - *FINISHED* removed addw, added head and tail ; great!
+%   - *FINISHED* Rework readwrite port types       ; limits optimizations but probably ok
 %   - *FINISHED* Add Mux expression                ; that's lovely, need glitch-free mux for clock types
 %   - *FINISHED* add rename pass for verilog
 %   - *FINISHED* Add is invalid                    ; good
@@ -1808,6 +1808,8 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 %- Proposed changes to spec
 %   - switch back to precise dynamic left shift
 %   - have a wmode instead of rmode for readwrite ports
+%   - rename mod to rem
+%   - changed rmode to wmode
 
 \end{document}
 

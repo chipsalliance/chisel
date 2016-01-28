@@ -6,8 +6,8 @@ circuit top :
       input x : UInt
       input y : UInt
       output z : UInt
-      z <= subw(x, y)
-      ;CHECK: z@<t:UInt> <= subw(x@<t:UInt>, y@<t:UInt>)@<t:UInt>
+      z <= tail(sub(x, y),1)
+      ;CHECK: z@<t:UInt> <= tail(sub(x@<t:UInt>, y@<t:UInt>)@<t:SInt>, 1)@<t:UInt>   
    module gcd :
       input a : UInt<16>
       input b : UInt<16>
@@ -15,9 +15,12 @@ circuit top :
       input clk : Clock
       input reset : UInt<1>
       output z : UInt<16>
-      reg x : UInt,clk,reset,UInt(0)
-      reg y : UInt,clk,reset,UInt(42)
-      ; CHECK: reg x : UInt, clk@<t:Clock>, reset@<t:UInt>, UInt("h0")@<t:UInt>@<t:UInt>
+      reg x : UInt,clk with :
+         reset => (reset,UInt(0))
+      reg y : UInt,clk with :
+         reset => (reset,UInt(42))
+      ; CHECK: reg x : UInt, clk@<t:Clock> with :
+         ;CHECK:reset => (reset@<t:UInt>, UInt("h0")@<t:UInt>)
       when gt(x, y) :
       ;CHECK: when gt(x@<t:UInt>, y@<t:UInt>)@<t:UInt> :
          inst s of subtracter

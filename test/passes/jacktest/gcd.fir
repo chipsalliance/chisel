@@ -10,14 +10,16 @@ circuit GCD :
     input a : UInt<16>
     input b : UInt<16>
     
-    reg x : UInt<16>,clk,reset,x
-    reg y : UInt<16>,clk,reset,y
+    reg x : UInt<16>,clk with :
+       reset => (reset,x)
+    reg y : UInt<16>,clk with :
+       reset => (reset,y)
     node T_17 = gt(x, y)
     when T_17 : 
-      node T_18 = subw(x, y)
+      node T_18 = tail(sub(x, y),1)
       x <= T_18
     else : 
-      node T_19 = subw(y, x)
+      node T_19 = tail(sub(y, x),1)
       y <= T_19
     when e : 
       x <= a

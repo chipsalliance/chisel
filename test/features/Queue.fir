@@ -7,6 +7,7 @@ circuit Queue :
     input clk : Clock
     input reset : UInt<1>
   
-    reg r : UInt<10>,clk,reset,in
+    reg r : UInt<10>,clk with :
+       reset => (reset,in)
     r <= in
     out <= r

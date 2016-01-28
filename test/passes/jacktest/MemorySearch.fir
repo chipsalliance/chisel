@@ -9,7 +9,8 @@ circuit MemorySearch :
     input reset : UInt<1>
     output done : UInt<1>
     
-    reg index : UInt<3>,clk,reset,UInt<3>(0)
+    reg index : UInt<3>,clk with :
+       reset => (reset,UInt<3>(0))
     wire elts : UInt<4>[7]
     elts[0] <= UInt<4>(0)
     elts[1] <= UInt<4>(4)
@@ -28,7 +29,7 @@ circuit MemorySearch :
     else : 
       node T_39 = not(end)
       when T_39 : 
-        node T_40 = addw(index, UInt<1>(1))
+        node T_40 = tail(add(index, UInt<1>(1)),1)
         index <= T_40
     done <= end
     address <= index

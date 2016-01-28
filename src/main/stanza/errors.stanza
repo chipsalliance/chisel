@@ -191,39 +191,34 @@ public defn check-high-form (c:Circuit) -> Circuit :
          SUB-OP             : correct-num(2,0)
          MUL-OP             : correct-num(2,0)
          DIV-OP             : correct-num(2,0)
-         MOD-OP             : correct-num(2,0)
-         QUO-OP             : correct-num(2,0)
          REM-OP             : correct-num(2,0)
-         ADD-WRAP-OP        : correct-num(2,0)
-         SUB-WRAP-OP        : correct-num(2,0)
          LESS-OP            : correct-num(2,0)
          LESS-EQ-OP         : correct-num(2,0)
          GREATER-OP         : correct-num(2,0)
          GREATER-EQ-OP      : correct-num(2,0)
          EQUAL-OP           : correct-num(2,0)
          NEQUAL-OP          : correct-num(2,0)
-         EQUIV-OP           : correct-num(2,0)
-         NEQUIV-OP          : correct-num(2,0)
-         ;MUX-OP             : correct-num(3,0)
          PAD-OP             : correct-num(1,1)
          AS-UINT-OP         : correct-num(1,0)
          AS-SINT-OP         : correct-num(1,0)
-         DYN-SHIFT-LEFT-OP  : correct-num(2,0)
-         DYN-SHIFT-RIGHT-OP : correct-num(2,0)
+         AS-CLOCK-OP        : correct-num(1,0)
          SHIFT-LEFT-OP      : correct-num(1,1)
          SHIFT-RIGHT-OP     : correct-num(1,1)
+         DYN-SHIFT-LEFT-OP  : correct-num(2,0)
+         DYN-SHIFT-RIGHT-OP : correct-num(2,0)
          CONVERT-OP         : correct-num(1,0)
          NEG-OP             : correct-num(1,0)
-         BIT-NOT-OP         : correct-num(1,0)
-         BIT-AND-OP         : correct-num(2,0)
-         BIT-OR-OP          : correct-num(2,0)
-         BIT-XOR-OP         : correct-num(2,0)
-         BIT-AND-REDUCE-OP  : correct-num(false,0)
-         BIT-OR-REDUCE-OP   : correct-num(false,0)
-         BIT-XOR-REDUCE-OP  : correct-num(false,0)
+         NOT-OP             : correct-num(1,0)
+         AND-OP             : correct-num(2,0)
+         OR-OP              : correct-num(2,0)
+         XOR-OP             : correct-num(2,0)
+         AND-REDUCE-OP      : correct-num(false,0)
+         OR-REDUCE-OP       : correct-num(false,0)
+         XOR-REDUCE-OP      : correct-num(false,0)
          CONCAT-OP          : correct-num(2,0)
-         BIT-SELECT-OP      : correct-num(1,1)
          BITS-SELECT-OP     : correct-num(1,2)
+         HEAD-OP            : correct-num(1,1)
+         TAIL-OP            : correct-num(1,1)
 
    defn check-fstring (s:String,i:Int) -> False :
       val valid-formats = "bedxs"
@@ -481,48 +476,39 @@ defn check-types-primop (e:DoPrim, errors:Vector<PassException>,info:FileInfo) -
             error? = true
       if error? : add(errors,OpNotUInt(info,to-symbol $ op(e),to-symbol(x))) 
    
-   all-ground(args(e))
-
    switch {op(e) == _} :
-      ADD-OP             : false
-      SUB-OP             : false
-      MUL-OP             : false
-      DIV-OP             : false
-      MOD-OP             : false
-      QUO-OP             : false
-      REM-OP             : false
-      ADD-WRAP-OP        : false
-      SUB-WRAP-OP        : false
-      LESS-OP            : false
-      LESS-EQ-OP         : false
-      GREATER-OP         : false
-      GREATER-EQ-OP      : false
-      EQUAL-OP           : false
-      NEQUAL-OP          : false
-      EQUIV-OP           : all-same-type(args(e))
-      NEQUIV-OP          : all-same-type(args(e))
-      ;MUX-OP             : 
-      ;   all-same-type(tail(args(e)))
-      ;   is-uint(head(args(e)))
-      PAD-OP             : false
       AS-UINT-OP         : false
       AS-SINT-OP         : false
-      DYN-SHIFT-LEFT-OP  : is-uint(args(e)[1])
-      DYN-SHIFT-RIGHT-OP : is-uint(args(e)[1])
-      SHIFT-LEFT-OP      : false
-      SHIFT-RIGHT-OP     : false
-      CONVERT-OP         : false
-      NEG-OP             : false
-      BIT-NOT-OP         : all-same-type(args(e)) ;can be either uint or sint
-      BIT-AND-OP         : all-same-type(args(e)) ;can be either uint or sint
-      BIT-OR-OP          : all-same-type(args(e)) ;can be either uint or sint
-      BIT-XOR-OP         : all-same-type(args(e)) ;can be either uint or sint
-      BIT-SELECT-OP      : false ;can be either uint or sint
-      BITS-SELECT-OP     : false ;can be either uint or sint
-      BIT-AND-REDUCE-OP  : false ;can be either uint or sint
-      BIT-OR-REDUCE-OP   : false ;can be either uint or sint
-      BIT-XOR-REDUCE-OP  : false ;can be either uint or sint
-      CONCAT-OP          : false ;can be either uint or sint
+      AS-CLOCK-OP        : false
+      DYN-SHIFT-LEFT-OP  : (is-uint(args(e)[1]) all-ground(args(e)))
+      DYN-SHIFT-RIGHT-OP : (is-uint(args(e)[1]) all-ground(args(e)))
+      ADD-OP             : all-ground(args(e))
+      SUB-OP             : all-ground(args(e))
+      MUL-OP             : all-ground(args(e))
+      DIV-OP             : all-ground(args(e))
+      REM-OP             : all-ground(args(e))
+      LESS-OP            : all-ground(args(e))
+      LESS-EQ-OP         : all-ground(args(e))
+      GREATER-OP         : all-ground(args(e))
+      GREATER-EQ-OP      : all-ground(args(e))
+      EQUAL-OP           : all-ground(args(e))
+      NEQUAL-OP          : all-ground(args(e))
+      PAD-OP             : all-ground(args(e))
+      SHIFT-LEFT-OP      : all-ground(args(e))
+      SHIFT-RIGHT-OP     : all-ground(args(e))
+      CONVERT-OP         : all-ground(args(e))
+      NEG-OP             : all-ground(args(e))
+      NOT-OP             : all-ground(args(e))
+      AND-OP             : all-ground(args(e))
+      OR-OP              : all-ground(args(e))
+      XOR-OP             : all-ground(args(e))
+      AND-REDUCE-OP      : all-ground(args(e))
+      OR-REDUCE-OP       : all-ground(args(e))
+      XOR-REDUCE-OP      : all-ground(args(e))
+      CONCAT-OP          : all-ground(args(e))
+      BITS-SELECT-OP     : all-ground(args(e))
+      HEAD-OP            : all-ground(args(e))
+      TAIL-OP            : all-ground(args(e))
    
 ;----------------- Check Types Pass ---------------------
 public defn check-types (c:Circuit) -> Circuit : 

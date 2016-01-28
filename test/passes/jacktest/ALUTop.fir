@@ -9,8 +9,8 @@ circuit ALUTop :
     input alu_op : UInt<4>
     
     node shamt = bits(B, 4, 0)
-    node T_157 = addw(A, B)
-    node T_158 = subw(A, B)
+    node T_157 = tail(add(A, B),1)
+    node T_158 = tail(sub(A, B),1)
     node T_159 = cvt(A)
     node T_160 = dshr(T_159, shamt)
     node T_161 = asUInt(T_160)
@@ -50,10 +50,10 @@ circuit ALUTop :
     node oot = mux(T_194, T_157, T_193)
     node T_195 = bits(oot, 31, 0)
     out <= T_195
-    node T_196 = bit(alu_op, 0)
-    node T_197 = subw(UInt<1>(0), B)
+    node T_196 = bits(alu_op, 0, 0)
+    node T_197 = tail(sub(UInt<1>(0), B),1)
     node T_198 = mux(T_196, T_197, B)
-    node T_199 = addw(A, T_198)
+    node T_199 = tail(add(A, T_198),1)
     sum <= T_199
   module ALUdec : 
     input opcode : UInt<7>

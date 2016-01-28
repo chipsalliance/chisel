@@ -322,6 +322,8 @@ defmethod map (f: Type -> Type, e: WSubAccess) :
 
 defmethod map (f: Type -> Type, s: WDefInstance) :
    WDefInstance(info(s),name(s),module(s),f(type(s)))
+defmethod map (f: Symbol -> Symbol, s: WDefInstance) :
+   WDefInstance(info(s),f(name(s)),module(s),type(s))
 
 ;================ WIDTH LIBRARY ====================
 
@@ -336,6 +338,8 @@ public defstruct MinusWidth <: Width :
    arg2 : Width
 public defstruct MaxWidth <: Width :
    args : List<Width>
+public defstruct MinWidth <: Width :
+   args : List<Width>
 public defstruct ExpWidth <: Width :
    arg1 : Width
 val width-name-hash = HashTable<Symbol,Int>(symbol-hash)
@@ -344,6 +348,7 @@ public defmulti map<?T> (f: Width -> Width, w:?T&Width) -> T
 defmethod map (f: Width -> Width, w:Width) -> Width :
    match(w) :
       (w:MaxWidth) : MaxWidth(map(f,args(w)))
+      (w:MinWidth) : MinWidth(map(f,args(w)))
       (w:PlusWidth) : PlusWidth(f(arg1(w)),f(arg2(w)))
       (w:MinusWidth) : MinusWidth(f(arg1(w)),f(arg2(w)))
       (w:ExpWidth) : ExpWidth(f(arg1(w)))
@@ -353,6 +358,8 @@ public defmethod print (o:OutputStream, w:VarWidth) :
    print(o,name(w))
 public defmethod print (o:OutputStream, w:MaxWidth) :
    print-all(o,["max" args(w)])
+public defmethod print (o:OutputStream, w:MinWidth) :
+   print-all(o,["min" args(w)])
 public defmethod print (o:OutputStream, w:PlusWidth) :
    print-all(o,[ "(" arg1(w) " + " arg2(w) ")"])
 public defmethod print (o:OutputStream, w:MinusWidth) :
@@ -370,6 +377,13 @@ defmethod equal? (w1:Width,w2:Width) -> True|False :
    match(w1,w2) :
       (w1:VarWidth,w2:VarWidth) : name(w1) == name(w2)
       (w1:MaxWidth,w2:MaxWidth) : 
+         label<True|False> ret :
+            if not length(args(w1)) == length(args(w2)) : ret(false)
+            else :
+               for w in args(w1) do :
+                  if not contains?(args(w2),w) : ret(false)
+               ret(true)
+      (w1:MinWidth,w2:MinWidth) : 
          label<True|False> ret :
             if not length(args(w1)) == length(args(w2)) : ret(false)
             else :
@@ -1408,6 +1422,14 @@ defn solve-constraints (l:List<WGeq>) -> HashTable<Symbol,Width> :
       h
    defn simplify (w:Width) -> Width :
       match(map(simplify,w)) :
+         (w:MinWidth) : 
+            val v = Vector<Width>()
+            for w* in args(w) do :
+               match(w*) :
+                  (w*:MinWidth) : 
+                     for x in args(w*) do : add(v,x)
+                  (w*) : add(v,w*)
+            MinWidth(unique(v))
          (w:MaxWidth) : 
             val v = Vector<Width>()
             for w* in args(w) do :
@@ -1549,6 +1571,9 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
       defn max (a:Long,b:Long) -> Long :
          if a >= b : a
          else : b
+      defn min (a:Long,b:Long) -> Long :
+         if a >= b : b
+         else : a
       defn solve (w:Width) -> False|Long :
          match(w) :
             (w:VarWidth) : 
@@ -1558,6 +1583,7 @@ defn reduce-var-widths (c:Circuit,h:HashTable<Symbol,Width>) -> Circuit :
                   (w:False) : false
                   (w) : solve(w as Width)
             (w:MaxWidth) : apply-l(map(solve,args(w)),max)
+            (w:MinWidth) : apply-l(map(solve,args(w)),min)
             (w:PlusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{plus(_,_)})
             (w:MinusWidth) : apply(solve(arg1(w)),solve(arg2(w)),{minus(_,_)})
             (w:ExpWidth) : apply(to-long(2),solve(arg1(w)),{minus(pow(_,_),to-long(1))})
@@ -1741,7 +1767,54 @@ defn resolve (c:Circuit) -> Circuit :
 ;   val top = (for m in modules(c) find : name(m) == main(c)) as InModule
 ;   Circuit(info(c),list(InModule(info(top),name(top),ports(top),inline-inst(body(top)))),main(c))
 
+;;================= Verilog Wrap ========================
+
+; --------- Utils --------------
+               
+;---------- Pass ---------------
+;; Intended to only work on low firrtl
+public defstruct VerilogWrap <: Pass
+public defmethod pass (b:VerilogWrap) -> (Circuit -> Circuit) : v-wrap
+public defmethod name (b:VerilogWrap) -> String : "Verilog Wrap"
+public defmethod short-name (b:VerilogWrap) -> String : "v-wrap"
+
+public definterface WPrimOp <: PrimOp
+val ADDW-OP = new WPrimOp
+val SUBW-OP = new WPrimOp
+
+defmethod print (o:OutputStream,op:WPrimOp) :
+   print{o, _} $ switch {op == _} :
+      ADDW-OP : "addw"
+      SUBW-OP : "subw"
+
+defn v-wrap-e (e:Expression) -> Expression :
+   match(map(v-wrap-e,e)) :
+      (e:DoPrim) :
+         defn a0 () : args(e)[0]
+         if op(e) == TAIL-OP :
+            match(a0()) :
+               (e0:DoPrim) : 
+                  if op(e0) == ADD-OP :
+                     DoPrim(ADDW-OP,args(e0),list(),type(e))
+                  else if op(e0) == SUB-OP :
+                     DoPrim(SUBW-OP,args(e0),list(),type(e))
+                  else : e
+               (e0) : e
+         else : e
+      (e) : e
+defn v-wrap-s (s:Stmt) -> Stmt :
+   map{v-wrap-e,_} $ map(v-wrap-s,s)
+defn v-wrap (c:Circuit) -> Circuit :
+   val modules* = for m in modules(c) map :
+      match(m) :
+         (m:InModule) : 
+            mname = name(m)
+            InModule(info(m),name(m),ports(m),v-wrap-s(body(m)))
+         (m:ExModule) : m
+   Circuit(info(c),modules*,main(c))
+
 ;;================= Split Expressions ========================
+
 ;; Intended to only work on low firrtl
 public defstruct SplitExp <: Pass
 public defmethod pass (b:SplitExp) -> (Circuit -> Circuit) : split-exp
@@ -1763,7 +1836,7 @@ defn split-exp (m:InModule) -> InModule :
          add(v,DefNode(info(s),n,e))
          WRef(n,type(e),kind(e),gender(e))
       defn split-exp-e (e:Expression,i:Int) -> Expression :
-         match(map(split-exp-e{_,i + 1},e)) :
+         match(map(split-exp-e{_,i + 1},e)) : 
             (e:DoPrim) :
                if i > 0 : split(e)
                else : e
@@ -2015,13 +2088,11 @@ defn const-prop-e (e:Expression) -> Expression :
                   (x:UIntValue) : 
                      val b = bits(value(x),consts(e)[0] + 1,consts(e)[1])
                      UIntValue(b,width(type(e) as UIntType))
-                  (x) : e
-            BIT-SELECT-OP : 
-               match(args(e)[0]) :
-                  (x:UIntValue) : 
-                     val i = bit(value(x),consts(e)[0])
-                     UIntValue(i,width(type(e) as UIntType))
-                  (x) : e
+                  (x) : 
+                     if long!(type(e)) == long!(type(x)) :
+                        if type(x) typeof UIntType : x
+                        else : DoPrim(AS-UINT-OP,list(x),list(),type(e))
+                     else : e
             else : e
       (e) : e
 
@@ -2457,6 +2528,10 @@ defn op-stream (doprim:DoPrim) -> Streamable :
       match(type(doprim)) :
          (t:UIntType) : e
          (t:SIntType) : ["$signed(" e ")"]
+   defn cast-as (e:Expression) -> ? :
+      match(type(e)) :
+         (t:UIntType) : e
+         (t:SIntType) : ["$signed(" e ")"]
    defn a0 () -> Expression : args(doprim)[0]
    defn a1 () -> Expression : args(doprim)[1]
    defn a2 () -> Expression : args(doprim)[2]
@@ -2465,23 +2540,18 @@ defn op-stream (doprim:DoPrim) -> Streamable :
 
    switch {_ == op(doprim)} :
       ADD-OP : [cast-if(a0()) " + " cast-if(a1())]
+      ADDW-OP : [cast-if(a0()) " + " cast-if(a1())]
       SUB-OP : [cast-if(a0()) " - " cast-if(a1())]
+      SUBW-OP : [cast-if(a0()) " - " cast-if(a1())]
       MUL-OP : [cast-if(a0()) " * " cast-if(a1()) ]
       DIV-OP : [cast-if(a0()) " / " cast-if(a1()) ]
-      MOD-OP : [cast-if(a0()) " % " cast-if(a1()) ]
-      QUO-OP : [cast-if(a0()) " / " cast-if(a1()) ]
       REM-OP : [cast-if(a0()) " % " cast-if(a1()) ]
-      ADD-WRAP-OP : [cast-if(a0()), " + " cast-if(a1())]
-      SUB-WRAP-OP : [cast-if(a0()), " - " cast-if(a1())]
       LESS-OP : [cast-if(a0()) " < " cast-if(a1())]
       LESS-EQ-OP : [cast-if(a0()) " <= " cast-if(a1())]
       GREATER-OP : [cast-if(a0()) " > " cast-if(a1())]
       GREATER-EQ-OP : [cast-if(a0()) " >= " cast-if(a1())]
-      NEQUIV-OP : [cast-if(a0()) " != " cast-if(a1())]
-      EQUIV-OP : [cast-if(a0()) " == " cast-if(a1())]
-      NEQUAL-OP : [cast-if(a0()) " != " cast-if(a1())]
       EQUAL-OP : [cast-if(a0()) " == " cast-if(a1())]
-      ;MUX-OP : [a0() " ? " cast(a1()) " : " cast(a2())]
+      NEQUAL-OP : [cast-if(a0()) " != " cast-if(a1())]
       PAD-OP : 
          val w = long!(type(a0()))
          val diff = (to-long(c0()) - w)
@@ -2491,6 +2561,7 @@ defn op-stream (doprim:DoPrim) -> Streamable :
             (t) : ["{{" diff "'d0 }, " a0() " }"]
       AS-UINT-OP : ["$unsigned(" a0() ")"]
       AS-SINT-OP : ["$signed(" a0() ")"]
+      AS-CLOCK-OP : ["$unsigned(" a0() ")"]
       DYN-SHIFT-LEFT-OP : [cast(a0()) " << " a1()]
       DYN-SHIFT-RIGHT-OP : 
          match(type(doprim)) :
@@ -2503,28 +2574,38 @@ defn op-stream (doprim:DoPrim) -> Streamable :
          match(type(a0())) :
             (t:UIntType) : ["{1'b0," cast(a0()) "}"]
             (t:SIntType) : [cast(a0())]
-      BIT-NOT-OP : ["~ " cast(a0())]
-      BIT-AND-OP : [cast(a0()) " & " cast(a1())]
-      BIT-OR-OP : [cast(a0()) " | " cast(a1())]
-      BIT-XOR-OP : [cast(a0()) " ^ " cast(a1())]
-      CONCAT-OP : ["{" cast(a0()) "," cast(a1()) "}"]
-      BIT-SELECT-OP : [a0() "[" c0() "]"]
-      BITS-SELECT-OP : [a0() "[" c0() ":" c1() "]"]
-      BIT-AND-REDUCE-OP : 
+      NOT-OP : ["~ " a0()]
+      AND-OP : [cast-as(a0()) " & " cast-as(a1())]
+      OR-OP : [cast-as(a0()) " | " cast-as(a1())]
+      XOR-OP : [cast-as(a0()) " ^ " cast-as(a1())]
+      AND-REDUCE-OP : 
          val v = Vector<Streamable>()
          for b in 0 to to-int(long!(type(doprim))) do :
             add(v,[cast(a0()) "[" b "]"])
          join(v," & ")
-      BIT-OR-REDUCE-OP : 
+      OR-REDUCE-OP : 
          val v = Vector<Streamable>()
          for b in 0 to to-int(long!(type(doprim))) do :
             add(v,[cast(a0() ) "[" b "]"])
          join(v," | ")
-      BIT-XOR-REDUCE-OP : 
+      XOR-REDUCE-OP : 
          val v = Vector<Streamable>()
          for b in 0 to to-int(long!(type(doprim))) do :
             add(v,[cast(a0() ) "[" b "]"])
          join(v," ^ ")
+      CONCAT-OP : ["{" cast(a0()) "," cast(a1()) "}"]
+      BITS-SELECT-OP :
+         if c0() == c1() : [a0() "[" c0() "]"]
+         else : [a0() "[" c0() ":" c1() "]"]
+      HEAD-OP :
+         val w = long!(type(a0()))
+         val high = w - to-long(1)
+         val low = w - to-long(c0())
+         [a0() "[" high ":" low "]"]
+      TAIL-OP :
+         val w = long!(type(a0()))
+         val low = w - to-long(c0()) - to-long(1)
+         [a0() "[" low ":" 0 "]"]
 
 defn emit-verilog (m:InModule) -> Module :
    mname = name(m)
@@ -2723,7 +2804,7 @@ defn emit-verilog (m:InModule) -> Module :
                update(mem-port,data*,clk,AND(en*,mask*))
 
             for rw in readwriters(s) do :
-               val rmode = mem-exp(rw,`rmode)
+               val wmode = mem-exp(rw,`wmode)
                val rdata = mem-exp(rw,`rdata)
                val data = mem-exp(rw,`data)
                val mask = mem-exp(rw,`mask)
@@ -2731,7 +2812,7 @@ defn emit-verilog (m:InModule) -> Module :
                val en = mem-exp(rw,`en)
                val clk = mem-exp(rw,`clk)
                
-               declare(`wire,lowered-name(rmode),type(rmode))
+               declare(`wire,lowered-name(wmode),type(wmode))
                declare(`wire,lowered-name(rdata),type(rdata))
                declare(`wire,lowered-name(data),type(data))
                declare(`wire,lowered-name(mask),type(mask))
@@ -2746,13 +2827,13 @@ defn emit-verilog (m:InModule) -> Module :
                assign(addr,netlist[addr])
                assign(mask,netlist[mask])
                assign(en,netlist[en])
-               assign(rmode,netlist[rmode])
+               assign(wmode,netlist[wmode])
 
                ; Delay new signals by latency
                val raddr* = delay(addr,read-latency(s),clk)
                val waddr* = delay(addr,write-latency(s) - 1,clk)
                val en* = delay(en,write-latency(s) - 1,clk)
-               val rmod* = delay(rmode,write-latency(s) - 1,clk)
+               val rmod* = delay(wmode,write-latency(s) - 1,clk)
                val data* = delay(data,write-latency(s) - 1,clk)
                val mask* = delay(mask,write-latency(s) - 1,clk)
 
@@ -2761,7 +2842,7 @@ defn emit-verilog (m:InModule) -> Module :
                val rmem-port = WSubAccess(mem,raddr*,UnknownType(),UNKNOWN-GENDER)
                assign(rdata,rmem-port)
                val wmem-port = WSubAccess(mem,waddr*,UnknownType(),UNKNOWN-GENDER)
-               update(wmem-port,data*,clk,AND(AND(en*,mask*),NOT(rmode)))
+               update(wmem-port,data*,clk,AND(AND(en*,mask*),wmode))
          (s:Begin) : map(build-streams,s)
       s
 

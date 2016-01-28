@@ -9,13 +9,14 @@ circuit Top :
       input b : UInt<10>
       input c : UInt<10>
       
-      reg out : UInt<10>,clk,p,a
+      reg out : UInt<10>,clk with :
+         reset => (p,a)
 
-      when bit(subw(a,c),3) : out <= mux(eqv(bits(UInt(32),4,0),UInt(13)),addw(a,addw(b,c)),subw(c,b))
+      when bits(tail(sub(a,c),1),3,3) : out <= mux(eq(bits(UInt(32),4,0),UInt(13)),tail(add(a,tail(add(b,c),1)),1),tail(sub(c,b),1))
 
 ;CHECK: node GEN_0 = subw(a, c)
-;CHECK: node GEN_1 = bit(GEN_0, 3)
-;CHECK: node GEN_2 = eqv(UInt("h0"), UInt("hd"))
+;CHECK: node GEN_1 = bits(GEN_0, 3, 3)
+;CHECK: node GEN_2 = eq(UInt("h0"), UInt("hd"))
 ;CHECK: node GEN_3 = addw(b, c)
 ;CHECK: node GEN_4 = addw(a, GEN_3)
 ;CHECK: node GEN_5 = subw(c, b)

@@ -63,39 +63,35 @@ OPERATORS[`add] = ADD-OP
 OPERATORS[`sub] = SUB-OP
 OPERATORS[`mul] = MUL-OP
 OPERATORS[`div] = DIV-OP
-OPERATORS[`mod] = MOD-OP
-OPERATORS[`quo] = QUO-OP
 OPERATORS[`rem] = REM-OP
-OPERATORS[`addw] = ADD-WRAP-OP
-OPERATORS[`subw] = SUB-WRAP-OP
 OPERATORS[`lt] = LESS-OP
 OPERATORS[`leq] = LESS-EQ-OP
 OPERATORS[`gt] = GREATER-OP
 OPERATORS[`geq] = GREATER-EQ-OP
 OPERATORS[`eq] = EQUAL-OP
 OPERATORS[`neq] = NEQUAL-OP
-OPERATORS[`eqv] = EQUIV-OP
-OPERATORS[`neqv] = NEQUIV-OP
-;OPERATORS[`mux] = MUX-OP
 OPERATORS[`pad] = PAD-OP
 OPERATORS[`neg] = NEG-OP
 OPERATORS[`asUInt] = AS-UINT-OP
 OPERATORS[`asSInt] = AS-SINT-OP
-OPERATORS[`dshl] = DYN-SHIFT-LEFT-OP
-OPERATORS[`dshr] = DYN-SHIFT-RIGHT-OP
+OPERATORS[`asClock] = AS-CLOCK-OP
 OPERATORS[`shl] = SHIFT-LEFT-OP
 OPERATORS[`shr] = SHIFT-RIGHT-OP
+OPERATORS[`dshl] = DYN-SHIFT-LEFT-OP
+OPERATORS[`dshr] = DYN-SHIFT-RIGHT-OP
 OPERATORS[`cvt] = CONVERT-OP
-OPERATORS[`andr] = BIT-AND-REDUCE-OP
-OPERATORS[`orr] = BIT-OR-REDUCE-OP
-OPERATORS[`xorr] = BIT-XOR-REDUCE-OP
-OPERATORS[`not] = BIT-NOT-OP
-OPERATORS[`and] = BIT-AND-OP
-OPERATORS[`or] = BIT-OR-OP
-OPERATORS[`xor] = BIT-XOR-OP
+OPERATORS[`neg] = NEG-OP
+OPERATORS[`not] = NOT-OP
+OPERATORS[`and] = AND-OP
+OPERATORS[`or] = OR-OP
+OPERATORS[`xor] = XOR-OP
+OPERATORS[`andr] = AND-REDUCE-OP
+OPERATORS[`orr] = OR-REDUCE-OP
+OPERATORS[`xorr] = XOR-REDUCE-OP
 OPERATORS[`cat] = CONCAT-OP
-OPERATORS[`bit] = BIT-SELECT-OP
 OPERATORS[`bits] = BITS-SELECT-OP
+OPERATORS[`head] = HEAD-OP
+OPERATORS[`tail] = TAIL-OP
 
 ;======== Parser Rules ==================
 defsyntax firrtl :
@@ -250,7 +246,7 @@ defsyntax firrtl :
    defrule mstat :
       mstat = (reader #=>! ?name:#id!) : Reader(name)
       mstat = (writer #=>! ?name:#id!) : Writer(name)
-      mstat = (read-writer #=>! ?name:#id!) : ReadWriter(name)
+      mstat = (readwriter #=>! ?name:#id!) : ReadWriter(name)
       mstat = (read-latency #=>! ?i:#int!) : ReadLatency(i)
       mstat = (write-latency #=>! ?i:#int!) : WriteLatency(i)
       mstat = (data-type #=>! ?t:#type!) : DataType(t)
@@ -258,9 +254,8 @@ defsyntax firrtl :
    defrule statements :
       stmt = (skip) : Empty()
       stmt = (wire ?name:#id! #:! ?t:#type!) : DefWire(first-info(form),name, t)
-      stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! ?reset:#exp! ?init:#exp!) : DefRegister(first-info(form),name, t,clk,reset,init)
-      ;stmt = (mem ?name:#id! #:! ?data-type:#type! ?depth:#int ?writers:#id! ... ?wl:#int ?readers:#id! ... ?rl:#int ?readwriters:#id! ...) : 
-      ;   DefMemory(first-info(form),name,data-type,depth,wl,rl,readers,writers,readwriters)
+      stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp! with #:! ( reset => (?reset:#exp! ?init:#exp!))) : DefRegister(first-info(form),name,t,clk,reset,init)
+      stmt = (reg ?name:#id! #:! ?t:#type! ?clk:#exp!) : DefRegister(first-info(form),name,t,clk,zero,Ref(name,UnknownType()))
       stmt = (cmem ?name:#id! #:! ?t:#vectype! ) : CDefMemory(first-info(form),name,type(t),size(t),false)
       stmt = (smem ?name:#id! #:! ?t:#vectype! ) : CDefMemory(first-info(form),name,type(t),size(t),true)
 

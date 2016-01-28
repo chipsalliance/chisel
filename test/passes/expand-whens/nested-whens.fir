@@ -12,7 +12,8 @@ circuit top :
       wire y : UInt
       wire z : UInt
       wire w : UInt
-      reg r : UInt, clk, reset, w
+      reg r : UInt, clk with :
+         reset => (reset, w)
       p <= UInt(1)
       q <= UInt(1)
       a <= UInt(1)

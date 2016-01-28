@@ -96,7 +96,7 @@ defn emit (e:Expression) -> String :
             SUB-OP : [emit-signed-if-any(args(e)[0],args(e)) " - " emit-signed-if-any(args(e)[1],args(e))]
             MUL-OP : [emit-signed-if-any(args(e)[0],args(e)) " * " emit-signed-if-any(args(e)[1],args(e)) ]
             DIV-OP : [emit-signed-if-any(args(e)[0],args(e)) " / " emit-signed-if-any(args(e)[1],args(e)) ]
-            MOD-OP : [emit-signed-if-any(args(e)[0],args(e)) " % " emit-signed-if-any(args(e)[1],args(e)) ]
+            REM-OP : [emit-signed-if-any(args(e)[0],args(e)) " % " emit-signed-if-any(args(e)[1],args(e)) ]
             QUO-OP : [emit-signed-if-any(args(e)[0],args(e)) " / " emit-signed-if-any(args(e)[1],args(e)) ]
             REM-OP : [emit-signed-if-any(args(e)[0],args(e)) " % " emit-signed-if-any(args(e)[1],args(e)) ]
             ADD-WRAP-OP : [emit-signed-if-any(args(e)[0],args(e)), " + " emit-signed-if-any(args(e)[1],args(e))]

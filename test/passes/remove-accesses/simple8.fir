@@ -21,25 +21,26 @@ circuit top :
     wire T_75 : UInt<128>[2]
     T_75[0] <= UInt<1>("h00")
     T_75[1] <= UInt<1>("h00")
-    reg T_81 : UInt<12>, clock, reset, T_81
+    reg T_81 : UInt<12>, clock with :
+       reset => ( reset, T_81)
     when read.valid :
       T_81 <= read.bits.addr
       skip
     cmem T_84 : UInt<128>[256]
     node T_86 = neq(T_65, UInt<1>("h00"))
     node T_87 = and(T_86, write.valid)
-    node T_88 = bit(write.bits.wmask, 0)
+    node T_88 = bits(write.bits.wmask, 0, 0)
     node T_89 = and(T_87, T_88)
     when T_89 :
       node T_90 = bits(write.bits.data, 63, 0)
       node T_91 = cat(T_90, T_90)
-      node T_92 = bit(T_65, 0)
-      node T_93 = bit(T_65, 1)
+      node T_92 = bits(T_65, 0, 0)
+      node T_93 = bits(T_65, 1, 1)
       wire T_95 : UInt<1>[2]
       T_95[0] <= T_92
       T_95[1] <= T_93
-      node T_100 = subw(UInt<64>("h00"), T_95[0])
-      node T_102 = subw(UInt<64>("h00"), T_95[1])
+      node T_100 = tail(sub(UInt<64>("h00"), T_95[0]),1)
+      node T_102 = tail(sub(UInt<64>("h00"), T_95[1]),1)
       wire T_104 : UInt<64>[2]
       T_104[0] <= T_100
       T_104[1] <= T_102
@@ -57,7 +58,8 @@ circuit top :
       skip
     node T_118 = neq(T_66, UInt<1>("h00"))
     node T_119 = and(T_118, read.valid)
-    reg T_120 : UInt<8>, clock, reset, T_120
+    reg T_120 : UInt<8>, clock with :
+       reset => ( reset, T_120)
     when T_119 :
       T_120 <= raddr
       skip
@@ -66,18 +68,18 @@ circuit top :
     cmem T_124 : UInt<128>[256]
     node T_126 = neq(T_65, UInt<1>("h00"))
     node T_127 = and(T_126, write.valid)
-    node T_128 = bit(write.bits.wmask, 1)
+    node T_128 = bits(write.bits.wmask, 1, 1)
     node T_129 = and(T_127, T_128)
     when T_129 :
       node T_130 = bits(write.bits.data, 127, 64)
       node T_131 = cat(T_130, T_130)
-      node T_132 = bit(T_65, 0)
-      node T_133 = bit(T_65, 1)
+      node T_132 = bits(T_65, 0, 0)
+      node T_133 = bits(T_65, 1, 1)
       wire T_135 : UInt<1>[2]
       T_135[0] <= T_132
       T_135[1] <= T_133
-      node T_140 = subw(UInt<64>("h00"), T_135[0])
-      node T_142 = subw(UInt<64>("h00"), T_135[1])
+      node T_140 = tail(sub(UInt<64>("h00"), T_135[0]),1)
+      node T_142 = tail(sub(UInt<64>("h00"), T_135[1]),1)
       wire T_144 : UInt<64>[2]
       T_144[0] <= T_140
       T_144[1] <= T_142
@@ -95,7 +97,8 @@ circuit top :
       skip
     node T_158 = neq(T_66, UInt<1>("h00"))
     node T_159 = and(T_158, read.valid)
-    reg T_160 : UInt<8>, clock, reset, T_160
+    reg T_160 : UInt<8>, clock with :
+       reset => ( reset, T_160)
     when T_159 :
       T_160 <= raddr
       skip
@@ -128,25 +131,26 @@ circuit top :
     wire T_202 : UInt<128>[2]
     T_202[0] <= UInt<1>("h00")
     T_202[1] <= UInt<1>("h00")
-    reg T_208 : UInt<12>, clock, reset, T_208
+    reg T_208 : UInt<12>, clock with :
+       reset => ( reset, T_208)
     when read.valid :
       T_208 <= read.bits.addr
       skip
     cmem T_211 : UInt<128>[256]
     node T_213 = neq(T_192, UInt<1>("h00"))
     node T_214 = and(T_213, write.valid)
-    node T_215 = bit(write.bits.wmask, 0)
+    node T_215 = bits(write.bits.wmask, 0, 0)
     node T_216 = and(T_214, T_215)
     when T_216 :
       node T_217 = bits(write.bits.data, 63, 0)
       node T_218 = cat(T_217, T_217)
-      node T_219 = bit(T_192, 0)
-      node T_220 = bit(T_192, 1)
+      node T_219 = bits(T_192, 0, 0)
+      node T_220 = bits(T_192, 1, 1)
       wire T_222 : UInt<1>[2]
       T_222[0] <= T_219
       T_222[1] <= T_220
-      node T_227 = subw(UInt<64>("h00"), T_222[0])
-      node T_229 = subw(UInt<64>("h00"), T_222[1])
+      node T_227 = tail(sub(UInt<64>("h00"), T_222[0]),1)
+      node T_229 = tail(sub(UInt<64>("h00"), T_222[1]),1)
       wire T_231 : UInt<64>[2]
       T_231[0] <= T_227
       T_231[1] <= T_229
@@ -164,7 +168,8 @@ circuit top :
       skip
     node T_245 = neq(T_193, UInt<1>("h00"))
     node T_246 = and(T_245, read.valid)
-    reg T_247 : UInt<8>, clock, reset, T_247
+    reg T_247 : UInt<8>, clock with :
+       reset => ( reset, T_247)
     when T_246 :
       T_247 <= raddr
       skip
@@ -173,18 +178,18 @@ circuit top :
     cmem T_251 : UInt<128>[256]
     node T_253 = neq(T_192, UInt<1>("h00"))
     node T_254 = and(T_253, write.valid)
-    node T_255 = bit(write.bits.wmask, 1)
+    node T_255 = bits(write.bits.wmask, 1, 1)
     node T_256 = and(T_254, T_255)
     when T_256 :
       node T_257 = bits(write.bits.data, 127, 64)
       node T_258 = cat(T_257, T_257)
-      node T_259 = bit(T_192, 0)
-      node T_260 = bit(T_192, 1)
+      node T_259 = bits(T_192, 0, 0)
+      node T_260 = bits(T_192, 1, 1)
       wire T_262 : UInt<1>[2]
       T_262[0] <= T_259
       T_262[1] <= T_260
-      node T_267 = subw(UInt<64>("h00"), T_262[0])
-      node T_269 = subw(UInt<64>("h00"), T_262[1])
+      node T_267 = tail(sub(UInt<64>("h00"), T_262[0]),1)
+      node T_269 = tail(sub(UInt<64>("h00"), T_262[1]),1)
       wire T_271 : UInt<64>[2]
       T_271[0] <= T_267
       T_271[1] <= T_269
@@ -202,7 +207,8 @@ circuit top :
       skip
     node T_285 = neq(T_193, UInt<1>("h00"))
     node T_286 = and(T_285, read.valid)
-    reg T_287 : UInt<8>, clock, reset, T_287
+    reg T_287 : UInt<8>, clock with :
+       reset => ( reset, T_287)
     when T_286 :
       T_287 <= raddr
       skip

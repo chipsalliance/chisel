@@ -18,7 +18,7 @@ circuit BTB :
     in.y <- w.y
     in.y.z <- w.y.z
 
-    w.x <= addw(in.x,in.y.z)
+    w.x <= add(in.x,in.y.z)
 
     out <- in
     in.y <- out.y

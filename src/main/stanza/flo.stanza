@@ -31,7 +31,7 @@ defn flo-op-name (op:PrimOp, args:List<Expression>) -> String :
       SUB-WRAP-OP :        "sub"
       MUL-OP :             "mul" ;; todo: signed version
       DIV-OP :             "div" ;; todo: signed version
-      MOD-OP :             "mod" ;; todo: signed version
+      REM-OP :             "mod" ;; todo: signed version
       QUO-OP :             "div" ;; todo: signed version
       REM-OP :             "mod" ;; todo: signed version
       LESS-OP :            "lt"  ;; todo: signed version

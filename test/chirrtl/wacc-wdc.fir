@@ -24,17 +24,15 @@ circuit top :
 ; CHECK:       wire p : UInt
 ; CHECK:       wire q : UInt
 ; CHECK:       mem m :          
-; CHECK:          data-type: { a : UInt<4>,  b : UInt<4>}
-; CHECK:          depth: 10
-; CHECK:          write-latency: 1
-; CHECK:          read-latency: 0
-; CHECK:          writer: a
-; CHECK:       poison GEN_0 : UInt<4>
-; CHECK:       poison GEN_1 : { a : UInt<4>,  b : UInt<4>}
-; CHECK:       m.a.addr <= GEN_0
+; CHECK:          data-type => { a : UInt<4>,  b : UInt<4>}
+; CHECK:          depth => 10
+; CHECK:          write-latency => 1
+; CHECK:          read-latency => 0
+; CHECK:          writer => a
+; CHECK:       m.a.addr is invalid
 ; CHECK:       m.a.clk <= clk
 ; CHECK:       m.a.en <= UInt("h0")
-; CHECK:       m.a.data <= GEN_1
+; CHECK:       m.a.data is invalid
 ; CHECK:       m.a.mask.a <= UInt("h0")
 ; CHECK:       m.a.mask.b <= UInt("h0")
 ; CHECK:       p <= UInt("h1")
