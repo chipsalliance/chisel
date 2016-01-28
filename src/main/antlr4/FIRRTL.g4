@@ -139,24 +139,6 @@ primop
  * LEXER RULES
  *------------------------------------------------------------------*/
 
-StringLit
-  : '"' .*? '"'
-  ;
-
-
-Id
-  : IdNondigit
-    ( IdNondigit
-    | Digit
-    )*
-  ;
-
-fragment
-IdNondigit
-  : Nondigit
-  | [~!@#$%^*-+=?/]
-  ;
-
 IntLit
   : '0'
   | ( '+' | '-' )? [1-9] ( Digit )*
@@ -175,7 +157,25 @@ Digit
 
 fragment
 HexDigit
-  : [a-zA-Z0-9]
+  : [a-fA-F0-9]
+  ;
+
+StringLit
+  : '"' .*? '"'
+  ;
+
+
+Id
+  : IdNondigit
+    ( IdNondigit
+    | Digit
+    )*
+  ;
+
+fragment
+IdNondigit
+  : Nondigit
+  | [~!@#$%^*-+=?/]
   ;
 
 Comment
