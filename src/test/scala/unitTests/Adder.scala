@@ -73,13 +73,13 @@ class AdderGo extends ChiselFlatSpec {
 
 class AdderTester extends ChiselFlatSpec {
   "a" should "b" in {
-    assert( hwTest { new AdderTests } )
+    assert( execute { new AdderTests } )
   }
 }
 
 object Adder {
   def main(args: Array[String]) {
-    TesterDriver.hwTest(() => new AdderTests)
+    TesterDriver.execute { () => new AdderTests }
   }
 }
 

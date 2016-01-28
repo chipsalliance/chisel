@@ -74,7 +74,7 @@ class DecoupledAdderTests extends OrderedDecoupledHWIOTester {
 
 class DecoupledAdderTester extends ChiselFlatSpec {
   "decoupled adder" should "add a bunch numbers slowly but correctly" in {
-    assert( hwTest( new DecoupledAdderTests ) )
+    assert( execute( new DecoupledAdderTests ) )
   }
 }
 

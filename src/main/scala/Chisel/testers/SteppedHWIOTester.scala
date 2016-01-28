@@ -156,7 +156,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
     }
   }
 
-  def finish(): Unit = {
+  override def finish(): Unit = {
     io_info = new IOAccessor(device_under_test.io)
 
     processEvents()

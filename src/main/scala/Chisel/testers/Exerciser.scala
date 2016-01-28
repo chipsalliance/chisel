@@ -10,6 +10,7 @@ import Chisel._
   */
 abstract class Exerciser extends BasicTester {
   val device_under_test: Module
+
   val internal_counter_width = 32
   val max_ticker = 100
 
@@ -39,7 +40,7 @@ abstract class Exerciser extends BasicTester {
     stop()
   }
 
-  def finish() {
+  override def finish() {
     when(state_number > UInt(current_states)) {
       printf("All states processed")
       stop()

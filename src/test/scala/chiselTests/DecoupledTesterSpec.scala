@@ -24,7 +24,7 @@ class DecoupledExample extends Module {
 }
 
 class DecoupledTesterSpec extends ChiselFlatSpec {
-  hwTest {
+  execute {
     new OrderedDecoupledHWIOTester {
       val device_under_test = new DecoupledExample()
 

@@ -39,7 +39,6 @@ class DynamicMemorySearch(val n: Int, val w: Int) extends Module {
 class DynamicMemorySearchTests(val n: Int, val w: Int) extends SteppedHWIOTester {
   val device_under_test = Module(new DynamicMemorySearch(n, w))
   val c = device_under_test
-
   enable_all_debug = true
 
   val list = Array.fill(c.n)(0)
@@ -79,7 +78,7 @@ class DynamicMemorySearchTester extends ChiselFlatSpec {
   val num_elements =  8
   val width        =  4
   "a dynamic memory search" should "be able to find things that were put in memory" in {
-    assert(hwTest {
+    assert(execute {
       new DynamicMemorySearchTests(num_elements, width)
     })
   }

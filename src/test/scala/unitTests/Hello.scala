@@ -22,12 +22,12 @@ class HelloTester extends SteppedHWIOTester {
 
 object Hello {
   def main(args: Array[String]): Unit = {
-    TesterDriver.hwTest { () => new HelloTester }
+    TesterDriver.execute { () => new HelloTester }
   }
 }
 
 class HelloSpec extends ChiselFlatSpec {
   "a" should "b" in {
-    assert( hwTest { new HelloTester } )
+    assert( execute { new HelloTester } )
   }
 }

@@ -392,7 +392,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
    * this builds a circuit to load inputs and circuits to test outputs that are controlled
    * by either a decoupled or valid
    */
-  def finish(): Unit = {
+  override def finish(): Unit = {
     io_info = new IOAccessor(device_under_test.io)
 
     processInputEvents()

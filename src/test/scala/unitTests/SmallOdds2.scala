@@ -68,7 +68,7 @@ class SmallOdds2Tester(width: Int) extends OrderedDecoupledHWIOTester {
 
 class SmallOdds2TesterSpec extends ChiselFlatSpec {
   "a small odds filters" should "take a stream of UInt and only pass along the odd ones < 10" in {
-    assert(hwTest {
+    assert(execute {
       new SmallOdds2Tester(32)
     })
   }

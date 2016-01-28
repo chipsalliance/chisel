@@ -151,7 +151,7 @@ class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledH
 class RouterUnitTesterSpec extends ChiselFlatSpec {
   val number_of_packets = 20
   "a router" should "can have it's rout table loaded and changed and route a bunch of packets" in {
-    assert(hwTest {
+    assert(execute {
       new RouterUnitTester(number_of_packets)
     })
   }
