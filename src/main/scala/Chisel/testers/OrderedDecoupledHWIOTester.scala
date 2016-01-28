@@ -423,7 +423,8 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
     buildDecoupledOutputEventHandlers(output_event_counter)
     buildValidIoPortEventHandlers(output_event_counter)
 
-    logPrintfDebug(s"in_event_counter %d, out_event_counter %d\n", input_event_counter.value, output_event_counter.value)
+    logPrintfDebug(s"in_event_counter %d, out_event_counter %d\n",
+      input_event_counter.value, output_event_counter.value)
     if(enable_scala_debug || enable_all_debug) {
       io_info.showPorts("".r)
     }

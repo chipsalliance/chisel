@@ -7,8 +7,6 @@ import Chisel.testers.OrderedDecoupledHWIOTester
 
 import chiselTests.ChiselFlatSpec
 
-import scala.util.Random
-
 class SmallOdds4(filter_width: Int) extends Module {
 
   class FilterIO extends Bundle {
@@ -29,8 +27,8 @@ class SmallOdds4(filter_width: Int) extends Module {
 
   def buildFilter(): Unit = {
     val smalls = Module(new Filter(_ < UInt(10)))
-    val q      = Module(new Queue(UInt(width = filter_width), entries = 1))
-    val odds   = Module(new Filter((x: UInt) => (x & UInt(1)) === UInt(1)))
+//    val q      = Module(new Queue(UInt(width = filter_width), entries = 1))
+//    val odds   = Module(new Filter((x: UInt) => (x & UInt(1)) === UInt(1)))
 
     io.in.ready  := smalls.io.in.ready
 //TODO: Uncomment this when bulk connect is working again
@@ -49,7 +47,7 @@ class SmallOdds4Tester(width: Int) extends OrderedDecoupledHWIOTester {
 //TODO: Uncomment this when bulk connect is working again
 //    for (i <- 0 to 30) {
 //      val num = rnd.nextInt(20)
-//      println(s"random value $i $num")
+//      logScalaDebug(s"random value $i $num")
 //      inputEvent(device_under_test.io.in.bits -> num)
 //      if (num % 2 == 1 && num < 10) {
 //        outputEvent(device_under_test.io.out.bits -> num)

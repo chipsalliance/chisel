@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{BasicTester, SteppedHWIOTester}
+import Chisel.testers.SteppedHWIOTester
 import chiselTests.ChiselFlatSpec
 
 class GCD extends Module {
@@ -24,7 +24,7 @@ class GCD extends Module {
 }
 
 class GCDUnitTester extends SteppedHWIOTester {
-  def compute_gcd(a: Int, b: Int): Tuple2[Int, Int] = {
+  def computeGcd(a: Int, b: Int): (Int, Int) = {
     var x = a
     var y = b
     var depth = 1
@@ -37,7 +37,7 @@ class GCDUnitTester extends SteppedHWIOTester {
       }
       depth += 1
     }
-    return (x, depth)
+    (x, depth)
   }
 
   val (a, b, z) = (64, 48, 16)
@@ -50,7 +50,7 @@ class GCDUnitTester extends SteppedHWIOTester {
   step(1)
   poke(gcd.io.e, 0)
 
-  val (expected_gcd, steps) = compute_gcd(a, b)
+  val (expected_gcd, steps) = computeGcd(a, b)
 
   step(steps - 1) // -1 is because we step(1) already to toggle the enable
   expect(gcd.io.z, expected_gcd)
