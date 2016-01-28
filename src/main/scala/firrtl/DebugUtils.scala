@@ -8,6 +8,7 @@ private object DebugUtils {
 
   implicit class DebugASTUtils(ast: AST) {
     // Is this actually any use?
+    /*
     def preOrderTraversal(f: AST => Unit): Unit = {
       f(ast)
       ast match {
@@ -66,6 +67,6 @@ private object DebugUtils {
         //case _ => throw new Exception(s"Unsupported FIRRTL node ${ast.getClass.getSimpleName}!")
         case _ =>
       }
-    }
+    } */
   }
 }

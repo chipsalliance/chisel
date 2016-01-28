@@ -13,7 +13,7 @@ package firrtl
 
 import scala.collection.mutable.StringBuilder
 import java.io.PrintWriter
-import Primops._
+import PrimOps._
 //import scala.reflect.runtime.universe._
 
 object Utils {
@@ -44,7 +44,7 @@ object Utils {
   implicit class ASTUtils(ast: AST) {
     def getType(): Type = 
       ast match {
-        case e: Exp => e.getType
+        case e: Expression => e.getType
         case s: Stmt => s.getType
         //case f: Field => f.getType
         case t: Type => t.getType
@@ -53,30 +53,36 @@ object Utils {
       }
   }
 
-  implicit class PrimopUtils(op: Primop) {
+  implicit class PrimOpUtils(op: PrimOp) {
     def serialize(implicit flags: FlagMap = FlagMap): String = op.getString
   }
 
-  implicit class ExpUtils(exp: Exp) {
+  implicit class ExpUtils(exp: Expression) {
     def serialize(implicit flags: FlagMap = FlagMap): String = {
       val ret = exp match {
         case v: UIntValue => s"UInt${v.width.serialize}(${v.value.serialize})"
         case v: SIntValue => s"SInt${v.width.serialize}(${v.value.serialize})"
         case r: Ref => r.name
-        case s: Subfield => s"${s.exp.serialize}.${s.name}"
-        case s: Index => s"${s.exp.serialize}[${s.value}]"
-        case p: DoPrimop => 
+        case s: SubField => s"${s.exp.serialize}.${s.name}"
+        case s: SubIndex => s"${s.exp.serialize}[${s.value}]"
+        case s: SubAccess => s"${s.exp.serialize}[${s.index.serialize}]"
+        case m: Mux => s"mux(${m.cond.serialize}, ${m.tval.serialize}, ${m.fval.serialize})"
+        case v: ValidIf => s"validif(${v.cond.serialize}, ${v.value.serialize})"
+        case p: DoPrim => 
           s"${p.op.serialize}(" + (p.args.map(_.serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
       } 
       ret + debug(exp)
     }
 
-    def map(f: Exp => Exp): Exp = 
+    def map(f: Expression => Expression): Expression = 
       exp match {
-        case s: Subfield => Subfield(f(s.exp), s.name, s.tpe)
-        case i: Index => Index(f(i.exp), i.value, i.tpe)
-        case p: DoPrimop => DoPrimop(p.op, p.args.map(f), p.consts, p.tpe)
-        case e: Exp => e
+        case s: SubField => SubField(f(s.exp), s.name, s.tpe)
+        case s: SubIndex => SubIndex(f(s.exp), s.value, s.tpe)
+        case s: SubAccess => SubAccess(f(s.exp), f(s.index), s.tpe)
+        case m: Mux => Mux(f(m.cond), f(m.tval), f(m.fval), m.tpe)
+        case v: ValidIf => ValidIf(f(v.cond), f(v.value), v.tpe)
+        case p: DoPrim => DoPrim(p.op, p.args.map(f), p.consts, p.tpe)
+        case e: Expression => e
       }
 
     def getType(): Type = {
@@ -84,22 +90,14 @@ object Utils {
         case v: UIntValue => UIntType(UnknownWidth)
         case v: SIntValue => SIntType(UnknownWidth)
         case r: Ref => r.tpe
-        case s: Subfield => s.tpe
-        case i: Index => i.tpe
-        case p: DoPrimop => p.tpe
+        case s: SubField => s.tpe
+        case s: SubIndex => s.tpe
+        case s: SubAccess => s.tpe
+        case p: DoPrim => p.tpe
+        case m: Mux => m.tpe
+        case v: ValidIf => v.tpe
       }
     }
-  }
-  
-  // AccessorDir
-  implicit class AccessorDirUtils(dir: AccessorDir) {
-    def serialize(implicit flags: FlagMap = FlagMap): String = 
-      dir match {
-        case Infer => "infer"
-        case Read => "read"
-        case Write => "write"
-        case RdWr => "rdwr"
-      } 
   }
 
   // Some Scala implicit magic to solve type erasure on Stmt map function overloading
@@ -110,24 +108,22 @@ object Utils {
     implicit def forStmt(f: Stmt => Stmt) = new StmtMagnet {
       override def map(stmt: Stmt): Stmt =
         stmt match {
-          case w: When => When(w.info, w.pred, f(w.conseq), f(w.alt))
-          case b: Block => Block(b.stmts.map(f))
+          case w: Conditionally => Conditionally(w.info, w.pred, f(w.conseq), f(w.alt))
+          case b: Begin => Begin(b.stmts.map(f))
           case s: Stmt => s
         }
     }
-    implicit def forExp(f: Exp => Exp) = new StmtMagnet {
+    implicit def forExp(f: Expression => Expression) = new StmtMagnet {
       override def map(stmt: Stmt): Stmt =
-        stmt match {
-          case r: DefReg => DefReg(r.info, r.name, r.tpe, f(r.clock), f(r.reset))
-          case m: DefMemory => DefMemory(m.info, m.name, m.seq, m.tpe, f(m.clock))
-          case i: DefInst => DefInst(i.info, i.name, f(i.module))
+        stmt match { 
+          case r: DefRegister => DefRegister(r.info, r.name, r.tpe, f(r.clock), f(r.reset), f(r.init))
           case n: DefNode => DefNode(n.info, n.name, f(n.value))
-          case a: DefAccessor => DefAccessor(a.info, a.name, a.dir, f(a.source), f(a.index))
-          case o: OnReset => OnReset(o.info, f(o.lhs), f(o.rhs))
-          case c: Connect => Connect(c.info, f(c.lhs), f(c.rhs))
-          case b: BulkConnect => BulkConnect(b.info, f(b.lhs), f(b.rhs))
-          case w: When => When(w.info, f(w.pred), w.conseq, w.alt)
-          case a: Assert => Assert(a.info, f(a.pred))
+          case c: Connect => Connect(c.info, f(c.loc), f(c.exp))
+          case b: BulkConnect => BulkConnect(b.info, f(b.loc), f(b.exp))
+          case w: Conditionally => Conditionally(w.info, f(w.pred), w.conseq, w.alt)
+          case i: IsInvalid => IsInvalid(i.info, f(i.exp))
+          case s: Stop => Stop(s.info, s.ret, f(s.clk), f(s.en))
+          case p: Print => Print(p.info, p.string, p.args.map(f), f(p.clk), f(p.en))
           case s: Stmt => s 
         }
     }
@@ -138,33 +134,40 @@ object Utils {
     {
       var ret = stmt match {
         case w: DefWire => s"wire ${w.name} : ${w.tpe.serialize}"
-        case r: DefReg => s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize}, ${r.reset.serialize}"
-        case m: DefMemory => (if(m.seq) "smem" else "cmem") + 
-          s" ${m.name} : ${m.tpe.serialize}, ${m.clock.serialize}"
-        case i: DefInst => s"inst ${i.name} of ${i.module.serialize}"
+        case r: DefRegister => 
+          s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize}, ${r.reset.serialize}, ${r.init.serialize}"
+        case i: DefInstance => s"inst ${i.name} of ${i.module}"
+        case m: DefMemory => s"mem ${m.name} : " + newline + withIndent {
+            s"data-type => ${m.dataType}" + newline +
+            s"depth => ${m.depth}" + newline +
+            s"read-latency => ${m.readLatency}" + newline +
+            s"write-latency => ${m.writeLatency}" + newline +
+            m.readers.map(r => s"reader => ${r}" + newline) +
+            m.writers.map(w => s"writer => ${w}" + newline) +
+            m.readwriters.map(rw => s"readwriter => ${rw}" + newline) +
+            s"read-under-write => undefined" // TODO implement
+          }
         case n: DefNode => s"node ${n.name} = ${n.value.serialize}"
-        case p: DefPoison => s"poison ${p.name} : ${p.tpe.serialize}"
-        case a: DefAccessor => s"${a.dir.serialize} accessor ${a.name} = ${a.source.serialize}[${a.index.serialize}]"
-        case c: Connect => s"${c.lhs.serialize} := ${c.rhs.serialize}"
-        case o: OnReset => s"onreset ${o.lhs.serialize} := ${o.rhs.serialize}"
-        case b: BulkConnect => s"${b.lhs.serialize} <> ${b.rhs.serialize}"
-        case w: When => {
+        case c: Connect => s"${c.loc.serialize} <= ${c.exp.serialize}"
+        case b: BulkConnect => s"${b.loc.serialize} <- ${b.exp.serialize}"
+        case w: Conditionally => {
           var str = new StringBuilder(s"when ${w.pred.serialize} : ")
           withIndent { str ++= w.conseq.serialize }
-          if( w.alt != EmptyStmt ) {
+          if( w.alt != Empty ) {
             str ++= newline + "else :"
             withIndent { str ++= w.alt.serialize }
           }
           str.result
         }
-        //case b: Block => b.stmts.map(newline ++ _.serialize).mkString
-        case b: Block => {
+        case b: Begin => {
           val s = new StringBuilder
           b.stmts.foreach { s ++= newline ++ _.serialize }
           s.result + debug(b)
         } 
-        case a: Assert => s"assert ${a.pred.serialize}"
-        case EmptyStmt => "skip"
+        case i: IsInvalid => s"${i.exp} is invalid"
+        case s: Stop => s"stop(${s.clk}, ${s.en}, ${s.ret})"
+        case p: Print => s"printf(${p.clk}, ${p.en}, ${p.string}" + p.args.map(_.serialize).mkString(", ")
+        case Empty => "skip"
       } 
       ret + debug(stmt)
     }
@@ -174,10 +177,9 @@ object Utils {
     
     def getType(): Type =
       stmt match {
-        case s: DefWire   => s.tpe
-        case s: DefReg    => s.tpe
-        case s: DefMemory => s.tpe
-        case s: DefPoison => s.tpe
+        case s: DefWire    => s.tpe
+        case s: DefRegister => s.tpe
+        case s: DefMemory  => s.dataType
         case _ => UnknownType
       }
   }
@@ -192,23 +194,23 @@ object Utils {
     }
   }
 
-  implicit class FieldDirUtils(dir: FieldDir) {
+  implicit class FlipUtils(f: Flip) {
     def serialize(implicit flags: FlagMap = FlagMap): String = {
-      val s = dir match {
+      val s = f match {
         case Reverse => "flip"
         case Default => ""
       } 
-      s + debug(dir)
+      s + debug(f)
     }
-    def flip(): FieldDir = {
-      dir match {
+    def flip(): Flip = {
+      f match {
         case Reverse => Default
         case Default => Reverse
       }
     }
         
-    def toPortDir(): PortDir = {
-      dir match {
+    def toDirection(): Direction = {
+      f match {
         case Default => Output
         case Reverse => Input
       }
@@ -217,11 +219,11 @@ object Utils {
 
   implicit class FieldUtils(field: Field) {
     def serialize(implicit flags: FlagMap = FlagMap): String = 
-      s"${field.dir.serialize} ${field.name} : ${field.tpe.serialize}" + debug(field)
-    def flip(): Field = Field(field.name, field.dir.flip, field.tpe)
+      s"${field.flip.serialize}${field.name} : ${field.tpe.serialize}" + debug(field)
+    def flip(): Field = Field(field.name, field.flip.flip, field.tpe)
 
     def getType(): Type = field.tpe
-    def toPort(): Port = Port(NoInfo, field.name, field.dir.toPortDir, field.tpe)
+    def toPort(): Port = Port(NoInfo, field.name, field.flip.toDirection, field.tpe)
   }
 
   implicit class TypeUtils(t: Type) {
@@ -253,16 +255,16 @@ object Utils {
       }
   }
 
-  implicit class PortDirUtils(p: PortDir) {
+  implicit class DirectionUtils(d: Direction) {
     def serialize(implicit flags: FlagMap = FlagMap): String = {
-      val s = p match {
+      val s = d match {
         case Input => "input"
         case Output => "output"
       } 
-      s + debug(p)
+      s + debug(d)
     }
-    def toFieldDir(): FieldDir = {
-      p match {
+    def toFlip(): Flip = {
+      d match {
         case Input => Reverse
         case Output => Default
       }
@@ -273,7 +275,7 @@ object Utils {
     def serialize(implicit flags: FlagMap = FlagMap): String = 
       s"${p.dir.serialize} ${p.name} : ${p.tpe.serialize}" + debug(p)
     def getType(): Type = p.tpe
-    def toField(): Field = Field(p.name, p.dir.toFieldDir, p.tpe)
+    def toField(): Field = Field(p.name, p.dir.toFlip, p.tpe)
   }
 
   implicit class ModuleUtils(m: Module) {

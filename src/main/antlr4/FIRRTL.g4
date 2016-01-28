@@ -6,11 +6,7 @@ grammar FIRRTL;
 
 /* TODO 
  *  - Add [info] support (all over the place)
- *  - Add support for indexers
  *  - Add support for extmodule
- *  - Fix connect
- *  - Add partial connect
- *  - Should FIRRTL keywords be legal IDs?
 */
 
 // Does there have to be at least one module?
@@ -19,80 +15,76 @@ circuit
   ;
 
 module
-  : 'module' id ':' '{' port* blockStmt '}'
+  : 'module' id ':' '{' port* block '}'
   ;
 
 port
-  : portKind id ':' type
+  : dir id ':' type
   ;
 
-portKind
+dir
   : 'input'
   | 'output'
   ;
 
 type 
-  : 'UInt' ('<' width '>')?
-  | 'SInt' ('<' width '>')?
+  : 'UInt' ('<' IntLit '>')?
+  | 'SInt' ('<' IntLit '>')?
   | 'Clock'
   | '{' field* '}'        // Bundle
   | type '[' IntLit ']'   // Vector
   ;
 
 field
-  : orientation id ':' type
+  : 'flip'? id ':' type
   ;
 
-orientation
-  :  'flip'
-  |  // Nothing
-  ;
-
-width
-  : IntLit
-  | '?'
-  ;
-
-// Much faster than replacing blockStmt with stmt+
-blockStmt
+// Much faster than replacing block with stmt+
+block
   : (stmt)*
   ; 
 
 stmt
   : 'wire' id ':' type
-  | 'reg' id ':' type exp exp
-  | 'smem' id ':' type exp
-  | 'cmem' id ':' type exp
-  | 'inst' id (':' | 'of') id // FIXME which should it be? ':' or 'of'
+  | 'reg' id ':' type exp (exp exp)?
+  | 'mem' id ':' '{' 'data-type' '=>' type 
+                     'depth' '=>' IntLit
+                     'read-latency' '=>' IntLit
+                     'write-latency' '=>' IntLit
+                     'read-under-write' '=>' ruw
+                     ('reader' '=>' id)*
+                     ('writer' '=>' id)*
+                     ('readwriter' '=>' id)*
+                 '}'
+  | 'inst' id 'of' id 
   | 'node' id '=' exp
-  | 'poison' id ':' type        // Poison, FIXME
-  | dir 'accessor' id '=' exp '[' exp ']' exp? // FIXME what is this extra exp?
-  | exp ':=' exp                // Connect
-  | 'onreset' exp ':=' exp      
-  | exp '<>' exp                // Bulk Connect
-  | exp '[' IntLit 'through' IntLit ']' ':=' exp   // SubWordConnect
-  | 'when' exp ':' '{' blockStmt '}' ( 'else' ':' '{' blockStmt '}' )? 
-  | 'assert' exp
+  | exp '<=' exp 
+  | exp '<-' exp
+  | exp 'is' 'invalid'
+  | 'when' exp ':' '{' block '}' ( 'else' ':' '{' block '}' )? 
+  | 'stop(' exp exp IntLit ')'
+  | 'printf(' exp exp StringLit (exp)* ')'
   | 'skip'
   ;
 
-// Accessor Direction
-dir
-  : 'infer'
-  | 'read'
-  | 'write'
-  | 'rdwr'
+ruw
+  : 'old'
+  | 'new'
+  | 'undefined'
   ;
 
-// TODO implement
-// What is exp?
 exp
-  : 'UInt' ('<' width '>')? '(' (IntLit) ')' // FIXME what does "ints" mean?
-  | 'SInt' ('<' width '>')? '(' (IntLit) ')' // FIXME same
+  : 'UInt' ('<' IntLit '>')? '(' IntLit ')' 
+  | 'SInt' ('<' IntLit '>')? '(' IntLit ')' 
+  | 'UBits' ('<' IntLit '>')? '(' StringLit ')'
+  | 'SBits' ('<' IntLit '>')? '(' StringLit ')'
   | id    // Ref
-  | exp '.' id // FIXME Does this work for no space?
+  | exp '.' id 
   | exp '[' IntLit ']'
-  | primop '(' exp* IntLit*  ')' // FIXME Need a big check here
+  | exp '[' exp ']'
+  | 'mux(' exp exp exp ')'
+  | 'validif(' exp exp ')'
+  | primop exp* IntLit*  ')' 
   ;
 
 id
@@ -100,56 +92,57 @@ id
   | keyword
   ;
 
-// FIXME need to make sure this is exhaustive including all FIRRTL keywords that are legal IDs
+// TODO add all keywords
 keyword
-  : primop
-  | dir
+  : dir
   | 'inst'  
   ;
 
+// Parentheses are added as part of name because semantics require no space between primop and open parentheses
+// (And ANTLR either ignores whitespace or considers it everywhere)
 primop
-  : 'add'
-  | 'sub'
-  | 'addw'
-  | 'subw'
-  | 'mul'
-  | 'div'
-  | 'mod'
-  | 'quo'
-  | 'rem'
-  | 'lt'
-  | 'leq'
-  | 'gt'
-  | 'geq'
-  | 'eq'
-  | 'neq'
-  | 'eqv'
-  | 'neqv'
-  | 'mux'
-  | 'pad'
-  | 'asUInt'
-  | 'asSInt'
-  | 'shl'
-  | 'shr'
-  | 'dshl'
-  | 'dshr'
-  | 'cvt'
-  | 'neg'
-  | 'not'
-  | 'and'
-  | 'or'
-  | 'xor'
-  | 'andr'
-  | 'orr'
-  | 'xorr'
-  | 'cat'
-  | 'bit'
-  | 'bits'
+  : 'add('
+  | 'sub('
+  | 'mul('
+  | 'div('
+  | 'rem('
+  | 'lt('
+  | 'leq('
+  | 'gt('
+  | 'geq('
+  | 'eq('
+  | 'neq('
+  | 'pad('
+  | 'asUInt('
+  | 'asSInt('
+  | 'asClock('
+  | 'shl('
+  | 'shr('
+  | 'dshl('
+  | 'dshr('
+  | 'cvt('
+  | 'neg('
+  | 'not('
+  | 'and('
+  | 'or('
+  | 'xor('
+  | 'andr('
+  | 'orr('
+  | 'xorr('
+  | 'cat('
+  | 'bits('
+  | 'head('
+  | 'tail('
   ;
 
 /*------------------------------------------------------------------
  * LEXER RULES
  *------------------------------------------------------------------*/
+
+StringLit
+  : '"' .*? '"'
+  ;
+
 
 Id
   : IdNondigit
@@ -199,3 +192,5 @@ Newline
   : ( '\r'? '\n' )+
       -> skip
   ;
+
+

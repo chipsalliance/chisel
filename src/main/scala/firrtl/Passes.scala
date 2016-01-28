@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import Utils._
 import DebugUtils._
-import Primops._
+import PrimOps._
 
 object Passes extends LazyLogging {
 
@@ -56,22 +56,23 @@ object Passes extends LazyLogging {
   }
   private def getVectorSubtype(t: Type): Type = t.getType // Added for clarity
   // TODO Add genders
-  private def inferExpTypes(typeMap: TypeMap)(exp: Exp): Exp = {
+  private def inferExpTypes(typeMap: TypeMap)(exp: Expression): Expression = {
     logger.debug(s"inferTypes called on ${exp.getClass.getSimpleName}")
     exp.map(inferExpTypes(typeMap)) match {
       case e: UIntValue => e
       case e: SIntValue => e
       case e: Ref => Ref(e.name, typeMap(e.name))
-      case e: Subfield => Subfield(e.exp, e.name, getBundleSubtype(e.exp.getType, e.name))
-      case e: Index => Index(e.exp, e.value, getVectorSubtype(e.exp.getType))
-      case e: DoPrimop => lowerAndTypePrimop(e)
-      case e: Exp => e
+      case e: SubField => SubField(e.exp, e.name, getBundleSubtype(e.exp.getType, e.name))
+      case e: SubIndex => SubIndex(e.exp, e.value, getVectorSubtype(e.exp.getType))
+      case e: SubAccess => SubAccess(e.exp, e.index, getVectorSubtype(e.exp.getType))
+      case e: DoPrim => lowerAndTypePrimOp(e)
+      case e: Expression => e
     }
   }
   private def inferTypes(typeMap: TypeMap, stmt: Stmt): (Stmt, TypeMap) = {
     logger.debug(s"inferTypes called on ${stmt.getClass.getSimpleName} ")
     stmt.map(inferExpTypes(typeMap)) match {
-      case b: Block => {
+      case b: Begin => {
         var tMap = typeMap
         // TODO FIXME is map correctly called in sequential order
         val body = b.stmts.map { s =>
@@ -79,19 +80,17 @@ object Passes extends LazyLogging {
           tMap = ret._2
           ret._1
         }
-        (Block(body), tMap)
+        (Begin(body), tMap)
       }
       case s: DefWire => (s, typeMap ++ Map(s.name -> s.tpe))
-      case s: DefReg => (s, typeMap ++ Map(s.name -> s.tpe))
-      case s: DefMemory => (s, typeMap ++ Map(s.name -> s.tpe))
-      case s: DefInst => (s, typeMap ++ Map(s.name -> s.module.getType))
+      case s: DefRegister => (s, typeMap ++ Map(s.name -> s.tpe))
+      case s: DefMemory => (s, typeMap ++ Map(s.name -> s.dataType))
+      case s: DefInstance => (s, typeMap ++ Map(s.name -> typeMap(s.module)))
       case s: DefNode => (s, typeMap ++ Map(s.name -> s.value.getType))
-      case s: DefPoison => (s, typeMap ++ Map(s.name -> s.tpe))
-      case s: DefAccessor => (s, typeMap ++ Map(s.name -> getVectorSubtype(s.source.getType)))
-      case s: When => { // TODO Check: Assuming else block won't see when scope
+      case s: Conditionally => { // TODO Check: Assuming else block won't see when scope
         val (conseq, cMap) = inferTypes(typeMap, s.conseq)
         val (alt, aMap) = inferTypes(typeMap, s.alt)
-        (When(s.info, s.pred, conseq, alt), cMap ++ aMap)
+        (Conditionally(s.info, s.pred, conseq, alt), cMap ++ aMap)
       }
       case s: Stmt => (s, typeMap)
     }
@@ -116,19 +115,25 @@ object Passes extends LazyLogging {
   def renameall(s : String)(implicit map : Map[String,String]) : String =
     map getOrElse (s, s)
 
-  def renameall(e : Exp)(implicit map : Map[String,String]) : Exp = {
+  def renameall(e : Expression)(implicit map : Map[String,String]) : Expression = {
     logger.debug(s"renameall called on expression ${e.toString}")
     e match {
       case p : Ref =>
         Ref(renameall(p.name), p.tpe)
-      case p : Subfield =>
-        Subfield(renameall(p.exp), renameall(p.name), p.tpe)
-      case p : Index =>
-        Index(renameall(p.exp), p.value, p.tpe)
-      case p : DoPrimop =>
+      case p : SubField =>
+        SubField(renameall(p.exp), renameall(p.name), p.tpe)
+      case p : SubIndex =>
+        SubIndex(renameall(p.exp), p.value, p.tpe)
+      case p : SubAccess =>
+        SubAccess(renameall(p.exp), renameall(p.index), p.tpe)
+      case p : Mux =>
+        Mux(renameall(p.cond), renameall(p.tval), renameall(p.fval), p.tpe)
+      case p : ValidIf =>
+        ValidIf(renameall(p.cond), renameall(p.value), p.tpe)
+      case p : DoPrim =>
         println( p.args.map(x => renameall(x)) )
-        DoPrimop(p.op, p.args.map(x => renameall(x)), p.consts, p.tpe)
-      case p : Exp => p
+        DoPrim(p.op, p.args.map(renameall), p.consts, p.tpe)
+      case p : Expression => p
     }
   }
 
@@ -138,30 +143,29 @@ object Passes extends LazyLogging {
     s match {
       case p : DefWire =>
         DefWire(p.info, renameall(p.name), p.tpe)
-      case p: DefReg =>
-        DefReg(p.info, renameall(p.name), p.tpe, p.clock, p.reset)
+      case p: DefRegister =>
+        DefRegister(p.info, renameall(p.name), p.tpe, p.clock, p.reset, p.init)
       case p : DefMemory =>
-        DefMemory(p.info, renameall(p.name), p.seq, p.tpe, p.clock)
-      case p : DefInst =>
-        DefInst(p.info, renameall(p.name), renameall(p.module))
+        DefMemory(p.info, renameall(p.name), p.dataType, p.depth, p.writeLatency, p.readLatency, 
+                  p.readers, p.writers, p.readwriters)
+      case p : DefInstance =>
+        DefInstance(p.info, renameall(p.name), renameall(p.module))
       case p : DefNode =>
         DefNode(p.info, renameall(p.name), renameall(p.value))
-      case p : DefPoison =>
-        DefPoison(p.info, renameall(p.name), p.tpe)
-      case p : DefAccessor =>
-        DefAccessor(p.info, renameall(p.name), p.dir, renameall(p.source), renameall(p.index))
-      case p : OnReset =>
-        OnReset(p.info, renameall(p.lhs), renameall(p.rhs))
       case p : Connect =>
-        Connect(p.info, renameall(p.lhs), renameall(p.rhs))
+        Connect(p.info, renameall(p.loc), renameall(p.exp))
       case p : BulkConnect =>
-        BulkConnect(p.info, renameall(p.lhs), renameall(p.rhs))
-      case p : When =>
-        When(p.info, renameall(p.pred), renameall(p.conseq), renameall(p.alt))
-      case p : Assert =>
-        Assert(p.info, renameall(p.pred))
-      case p : Block =>
-        Block(p.stmts.map(renameall))
+        BulkConnect(p.info, renameall(p.loc), renameall(p.exp))
+      case p : IsInvalid =>
+        IsInvalid(p.info, renameall(p.exp))
+      case p : Stop =>
+        Stop(p.info, p.ret, renameall(p.clk), renameall(p.en))
+      case p : Print =>
+        Print(p.info, p.string, p.args.map(renameall), renameall(p.clk), renameall(p.en))
+      case p : Conditionally =>
+        Conditionally(p.info, renameall(p.pred), renameall(p.conseq), renameall(p.alt))
+      case p : Begin =>
+        Begin(p.stmts.map(renameall))
       case p : Stmt => p
     }
   }
