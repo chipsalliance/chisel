@@ -41,14 +41,14 @@ class MemorySearchTester(c: MemorySearch) extends Tester(c) {
       step(1)
     } while (peek(c.io.done) == 0 && t < maxT)
     val addr = peek(c.io.address).toInt
-    expect(addr == list.length || list(addr) == target, 
+    expect(addr == list.length || list(addr) == target,
            "LOOKING FOR " + target + " FOUND " + addr)
   }
 }
 */
 
 class MemorySearchSpec extends ChiselPropSpec {
-  
+
   property("MemorySearch should elaborate") {
     elaborate { new EnableShiftRegister }
   }
