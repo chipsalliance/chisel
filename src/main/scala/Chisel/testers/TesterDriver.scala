@@ -55,4 +55,17 @@ object TesterDriver extends BackendCompilationUtilities {
       false
     }
   }
+  def finishWrapper(test: () => HWIOTester): () => BasicTester = {
+    () => {
+      val tester = test()
+      tester.finish()
+      tester
+    }
+  }
+  def hwTest(t: () => HWIOTester, additionalVResources: Seq[String] = Seq()): Boolean = {
+    TesterDriver.execute(
+      finishWrapper(t),
+      additionalVResources
+    )
+  }
 }

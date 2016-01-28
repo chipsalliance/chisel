@@ -37,7 +37,7 @@ import scala.collection.mutable.ArrayBuffer
   * }
   * }}}
   */
-abstract class SteppedHWIOTester extends BasicTester with HWIOTester {
+abstract class SteppedHWIOTester extends HWIOTester {
   case class Step(input_map: mutable.HashMap[Data,Int], output_map: mutable.HashMap[Data,Int])
 
   // Scala stuff
@@ -138,7 +138,7 @@ abstract class SteppedHWIOTester extends BasicTester with HWIOTester {
                     output_port.toBits()
                   )
       }.otherwise {
-        printf("    failed on step %d -- port " + name(output_port) + ":  %d expected %d",
+        printf("    failed on step %d -- port " + name(output_port) + ":  %d expected %d\n",
           counter.value,
           output_port.toBits(),
           output_values(counter.value).toBits()

@@ -3,7 +3,7 @@
 package unitTests
 
 import Chisel._
-import Chisel.testers.{Exerciser, SteppedHWIOTester}
+import Chisel.testers._
 import chiselTests.ChiselFlatSpec
 import scala.util.Random
 
@@ -21,16 +21,14 @@ class AdderTests extends SteppedHWIOTester {
   val c = device_under_test
   enable_all_debug = true
 
-  testBlock {
-    Random.setSeed(0L)
-    for (i <- 0 until 10) {
-      val in0 = Random.nextInt(1 << c.w)
-      val in1 = Random.nextInt(1 << c.w)
-      poke(c.io.in0, in0)
-      poke(c.io.in1, in1)
-      expect(c.io.out, (in0 + in1) & ((1 << c.w) - 1))
-      step(1)
-    }
+  rnd.setSeed(0L)
+  for (i <- 0 until 10) {
+    val in0 = rnd.nextInt(1 << c.w)
+    val in1 = rnd.nextInt(1 << c.w)
+    poke(c.io.in0, in0)
+    poke(c.io.in1, in1)
+    expect(c.io.out, (in0 + in1) & ((1 << c.w) - 1))
+    step(1)
   }
 }
 
@@ -75,7 +73,13 @@ class AdderGo extends ChiselFlatSpec {
 
 class AdderTester extends ChiselFlatSpec {
   "a" should "b" in {
-    assert( execute { new AdderTests } )
+    assert( hwTest { new AdderTests } )
+  }
+}
+
+object Adder {
+  def main(args: Array[String]) {
+    TesterDriver.hwTest(() => new AdderTests)
   }
 }
 

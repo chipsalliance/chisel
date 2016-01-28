@@ -38,7 +38,7 @@ import scala.collection.mutable.ArrayBuffer
   * likewise,
   * all outputs regardless of which interface are tested in the same order that they were created
   */
-abstract class OrderedDecoupledHWIOTester extends BasicTester with HWIOTester {
+abstract class OrderedDecoupledHWIOTester extends HWIOTester {
   val input_event_list  = new ArrayBuffer[Seq[(Data, Int)]]()
   val output_event_list = new ArrayBuffer[Seq[(Data, Int)]]()
 

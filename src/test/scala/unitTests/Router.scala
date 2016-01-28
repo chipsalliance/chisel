@@ -6,8 +6,6 @@ import Chisel._
 import Chisel.testers._
 import chiselTests.ChiselFlatSpec
 
-import scala.util.Random
-
 object Router {
   val addressWidth    = 32
   val dataWidth       = 64
@@ -93,7 +91,7 @@ class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledH
   enable_all_debug = true
 
   testBlock {
-    Random.setSeed(0)
+    rnd.setSeed(0)
 
     def readRoutingTable(addr: Int, data: Int): Unit = {
       inputEvent(c.io.read_routing_table_request.bits.addr -> addr)
@@ -146,7 +144,7 @@ class RouterUnitTester(number_of_packets_to_send: Int) extends OrderedDecoupledH
 
     // send a bunch of packets, with random values
     for (i <- 0 to number_of_packets_to_send) {
-      val data = Random.nextInt(Int.MaxValue - 1)
+      val data = rnd.nextInt(Int.MaxValue - 1)
       routePacket(i % Router.routeTableSize, data, new_routing_table(i % Router.routeTableSize))
     }
   }
