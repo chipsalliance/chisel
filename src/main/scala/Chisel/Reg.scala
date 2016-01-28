@@ -45,10 +45,12 @@ object Reg {
     // to resolve all use cases. If the type inferencer / implicit resolution
     // system improves, this may be changed.
     val x = makeType(t, next, init)
-    val (resetEn, resetVal) =
-      if (init != null) (Node(x._parent.get.reset), init)
-      else (ULit(0, Width(1)), x)
-    pushCommand(DefRegister(x, Node(x._parent.get.clock), resetEn, resetVal.ref)) // TODO multi-clock
+    val clock = Node(x._parent.get.clock) // TODO multi-clock
+    if (init == null) {
+      pushCommand(DefReg(x, clock))
+    } else {
+      pushCommand(DefRegInit(x, clock, Node(x._parent.get.reset), init.ref))
+    }
     if (next != null) {
       x := next
     }

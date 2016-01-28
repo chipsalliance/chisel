@@ -32,7 +32,7 @@ class PadsTester(c: Pads) extends Tester(c) {
 */
 
 class PadderSpec extends ChiselPropSpec {
-  
+
   property("Padder should elaborate") {
     elaborate { new Padder }
   }

@@ -32,7 +32,7 @@ class SomeOptionBundleTester(expected: Boolean) extends BasicTester {
 }
 
 class NoneOptionBundleTester() extends BasicTester {
-  val mod = Module(new OptionBundleModule(true))
+  val mod = Module(new OptionBundleModule(false))
   assert(mod.io.out === Bool(false))
   stop()
 }

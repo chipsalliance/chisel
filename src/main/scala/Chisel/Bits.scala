@@ -29,6 +29,24 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   override def <> (that: Data): Unit = this := that
 
+  def tail(n: Int): UInt = {
+    val w = width match {
+      case KnownWidth(x) =>
+        require(x >= n, s"Can't tail($n) for width $x < $n")
+        Width(x - n)
+      case UnknownWidth() => Width()
+    }
+    binop(UInt(width = w), TailOp, n)
+  }
+
+  def head(n: Int): UInt = {
+    width match {
+      case KnownWidth(x) => require(x >= n, s"Can't head($n) for width $x < $n")
+      case UnknownWidth() =>
+    }
+    binop(UInt(width = n), HeadOp, n)
+  }
+
   /** Returns the specified bit on this wire as a [[Bool]], statically
     * addressed.
     */
@@ -39,7 +57,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     if (isLit()) {
       Bool(((litValue() >> x.toInt) & 1) == 1)
     } else {
-      pushOp(DefPrim(Bool(), BitSelectOp, this.ref, ILit(x)))
+      pushOp(DefPrim(Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
     }
   }
 
@@ -91,9 +109,6 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     pushOp(DefPrim(Bool(), op, this.ref, other.ref))
   private[Chisel] def redop(op: PrimOp): Bool =
     pushOp(DefPrim(Bool(), op, this.ref))
-
-  /** Returns this wire bitwise-inverted. */
-  def unary_~ : this.type = unop(cloneTypeWidth(width), BitNotOp)
 
   /** Returns this wire zero padded up to the specified width.
     *
@@ -279,18 +294,21 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   def unary_-% : UInt = UInt(0) -% this
   def +& (other: UInt): UInt = binop(UInt((this.width max other.width) + 1), AddOp, other)
   def + (other: UInt): UInt = this +% other
-  def +% (other: UInt): UInt = binop(UInt(this.width max other.width), AddModOp, other)
+  def +% (other: UInt): UInt = (this +& other) tail 1
   def -& (other: UInt): UInt = binop(UInt((this.width max other.width) + 1), SubOp, other)
   def - (other: UInt): UInt = this -% other
-  def -% (other: UInt): UInt = binop(UInt(this.width max other.width), SubModOp, other)
+  def -% (other: UInt): UInt = (this -& other) tail 1
   def * (other: UInt): UInt = binop(UInt(this.width + other.width), TimesOp, other)
   def * (other: SInt): SInt = other * this
   def / (other: UInt): UInt = binop(UInt(this.width), DivideOp, other)
-  def % (other: UInt): UInt = binop(UInt(this.width), ModOp, other)
+  def % (other: UInt): UInt = binop(UInt(this.width), RemOp, other)
 
   def & (other: UInt): UInt = binop(UInt(this.width max other.width), BitAndOp, other)
   def | (other: UInt): UInt = binop(UInt(this.width max other.width), BitOrOp, other)
   def ^ (other: UInt): UInt = binop(UInt(this.width max other.width), BitXorOp, other)
+
+  /** Returns this wire bitwise-inverted. */
+  def unary_~ : UInt = unop(UInt(width = width), BitNotOp)
 
   // REVIEW TODO: Can this be defined on Bits?
   def orR: Bool = this != UInt(0)
@@ -410,21 +428,24 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   /** add (default - no growth) operator */
   def + (other: SInt): SInt = this +% other
   /** add (no growth) operator */
-  def +% (other: SInt): SInt = binop(SInt(this.width max other.width), AddModOp, other)
+  def +% (other: SInt): SInt = (this +& other).tail(1).asSInt
   /** subtract (width +1) operator */
   def -& (other: SInt): SInt = binop(SInt((this.width max other.width) + 1), SubOp, other)
   /** subtract (default - no growth) operator */
   def - (other: SInt): SInt = this -% other
   /** subtract (no growth) operator */
-  def -% (other: SInt): SInt = binop(SInt(this.width max other.width), SubModOp, other)
+  def -% (other: SInt): SInt = (this -& other).tail(1).asSInt
   def * (other: SInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
   def * (other: UInt): SInt = binop(SInt(this.width + other.width), TimesOp, other)
   def / (other: SInt): SInt = binop(SInt(this.width), DivideOp, other)
-  def % (other: SInt): SInt = binop(SInt(this.width), ModOp, other)
+  def % (other: SInt): SInt = binop(SInt(this.width), RemOp, other)
 
-  def & (other: SInt): SInt = binop(SInt(this.width max other.width), BitAndOp, other)
-  def | (other: SInt): SInt = binop(SInt(this.width max other.width), BitOrOp, other)
-  def ^ (other: SInt): SInt = binop(SInt(this.width max other.width), BitXorOp, other)
+  def & (other: SInt): SInt = binop(UInt(this.width max other.width), BitAndOp, other).asSInt
+  def | (other: SInt): SInt = binop(UInt(this.width max other.width), BitOrOp, other).asSInt
+  def ^ (other: SInt): SInt = binop(UInt(this.width max other.width), BitXorOp, other).asSInt
+
+  /** Returns this wire bitwise-inverted. */
+  def unary_~ : SInt = unop(UInt(width = width), BitNotOp).asSInt
 
   def < (other: SInt): Bool = compop(LessOp, other)
   def > (other: SInt): Bool = compop(GreaterOp, other)
@@ -489,6 +510,9 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
   def & (other: Bool): Bool = binop(Bool(), BitAndOp, other)
   def | (other: Bool): Bool = binop(Bool(), BitOrOp, other)
   def ^ (other: Bool): Bool = binop(Bool(), BitXorOp, other)
+
+  /** Returns this wire bitwise-inverted. */
+  override def unary_~ : Bool = unop(Bool(), BitNotOp)
 
   /** Outputs the logical OR of two Bools.
    */

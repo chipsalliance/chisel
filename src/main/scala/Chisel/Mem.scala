@@ -113,6 +113,9 @@ object SeqMem {
   * result is undefined (unlike Vec, where the last assignment wins)
   */
 sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
-  def read(addr: UInt, enable: Bool): T =
-    read(Mux(enable, addr, Poison(addr)))
+  def read(addr: UInt, enable: Bool): T = {
+    val a = Wire(UInt())
+    when (enable) { a := addr }
+    read(a)
+  }
 }

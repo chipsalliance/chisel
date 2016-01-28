@@ -119,7 +119,7 @@ object Wire {
     if (init != null) {
       x := init
     } else {
-      x.flatten.foreach(e => e := e.fromInt(0))
+      pushCommand(DefInvalid(x.ref))
     }
     x
   }
@@ -140,12 +140,4 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
     case _: Clock => this connect that
     case _ => this badConnect that
   }
-}
-
-// TODO: check with FIRRTL specs, how much official implementation flexibility
-// is there?
-/** A source of garbage data, used to initialize Wires to a don't-care value. */
-private object Poison extends Command {
-  def apply[T <: Data](t: T): T =
-    pushCommand(DefPoison(t.cloneType)).id
 }
