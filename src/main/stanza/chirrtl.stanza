@@ -345,7 +345,7 @@ defn remove-chirrtl (c:Circuit) :
          var has-write-mport? = false
          var has-readwrite-mport? = false
          defn remove-chirrtl-e (e:Expression,g:Gender) -> Expression :
-            match(map(remove-chirrtl-e{_,g},e)) :
+            match(e) :
                (e:Ref) : 
                   if key?(repl,name(e)) : 
                      val vt = repl[name(e)]
@@ -357,7 +357,8 @@ defn remove-chirrtl (c:Circuit) :
                               has-readwrite-mport? = SubField(exp(vt),`wmode,UIntType(IntWidth(1)))
                            SubField(exp(vt),female(vt),type(e))
                   else : e
-               (e) : e
+               (e:SubAccess) : SubAccess(remove-chirrtl-e(exp(e),g),remove-chirrtl-e(index(e),MALE),type(e))
+               (e) : map(remove-chirrtl-e{_,g},e)
          defn get-mask (e:Expression) -> Expression :
             match(map(get-mask,e)) :
                (e:Ref) :
