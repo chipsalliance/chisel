@@ -135,8 +135,11 @@ object Utils {
       var ret = stmt match {
         case w: DefWire => s"wire ${w.name} : ${w.tpe.serialize}"
         case r: DefRegister => 
-          s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize} with : " + 
-          s"(reset => (${r.reset.serialize}, ${r.init.serialize}))"
+          val str = new StringBuilder(s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize} with : ")
+          withIndent {
+            str ++= newline + s"reset => (${r.reset.serialize}, ${r.init.serialize})"
+          }
+          str
         case i: DefInstance => s"inst ${i.name} of ${i.module}"
         case m: DefMemory => {
           val str = new StringBuilder(s"mem ${m.name} : " + newline)
@@ -206,7 +209,7 @@ object Utils {
   implicit class FlipUtils(f: Flip) {
     def serialize(implicit flags: FlagMap = FlagMap): String = {
       val s = f match {
-        case Reverse => "flip"
+        case Reverse => "flip "
         case Default => ""
       } 
       s + debug(f)
@@ -244,7 +247,7 @@ object Utils {
           case UnknownType => "?"
           case t: UIntType => s"UInt${t.width.serialize}"
           case t: SIntType => s"SInt${t.width.serialize}"
-          case t: BundleType => s"{${t.fields.map(_.serialize).mkString(commas)}}"
+          case t: BundleType => s"{ ${t.fields.map(_.serialize).mkString(commas)}}"
           case t: VectorType => s"${t.tpe.serialize}[${t.size}]"
         } 
         s + debug(t)
@@ -292,7 +295,7 @@ object Utils {
       var s = new StringBuilder(s"module ${m.name} : ")
       withIndent {
         s ++= m.ports.map(newline ++ _.serialize).mkString
-        s ++= newline ++ m.stmt.serialize
+        s ++= m.stmt.serialize
       }
       s ++= debug(m)
       s.toString
