@@ -5,6 +5,16 @@ defpackage firrtl/chirrtl :
    import firrtl/ir-utils
    import firrtl/primops
 
+
+; ===============================
+public val chirrtl-passes = to-list $ [
+   CInferTypes()
+   CInferMDir()
+   RemoveCHIRRTL()
+]
+; ===============================
+
+
 ; CHIRRTL Additional IR Nodes
 public definterface MPortDir
 public val MInfer = new MPortDir
@@ -55,7 +65,7 @@ defmethod map (f: Symbol -> Symbol, c:CDefMPort) -> CDefMPort :
 public defstruct CInferTypes <: Pass
 public defmethod pass (b:CInferTypes) -> (Circuit -> Circuit) : infer-types
 public defmethod name (b:CInferTypes) -> String : "CInfer Types"
-public defmethod short-name (b:CInferTypes) -> String : "c-infer-types"
+public defmethod short-name (b:CInferTypes) -> String : "cinfertypes"
 
 ;--------------- Utils -----------------
 
@@ -149,7 +159,7 @@ defn infer-types (c:Circuit) -> Circuit :
 public defstruct CInferMDir <: Pass
 public defmethod pass (b:CInferMDir) -> (Circuit -> Circuit) : infer-mdir
 public defmethod name (b:CInferMDir) -> String : "CInfer MDir"
-public defmethod short-name (b:CInferMDir) -> String : "cinfer-mdir"
+public defmethod short-name (b:CInferMDir) -> String : "cinfermdir"
 
 defn infer-mdir (c:Circuit) -> Circuit :
    defn infer-mdir (m:Module) -> Module :
@@ -209,7 +219,7 @@ defn infer-mdir (c:Circuit) -> Circuit :
 public defstruct RemoveCHIRRTL <: Pass
 public defmethod pass (b:RemoveCHIRRTL) -> (Circuit -> Circuit) : remove-chirrtl
 public defmethod name (b:RemoveCHIRRTL) -> String : "Remove CHIRRTL"
-public defmethod short-name (b:RemoveCHIRRTL) -> String : "remove-chirrtl"
+public defmethod short-name (b:RemoveCHIRRTL) -> String : "removechirrtl"
 
 defstruct MPort :
    name : Symbol

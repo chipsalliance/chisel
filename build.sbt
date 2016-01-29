@@ -16,7 +16,7 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.2"
 
 // Assembly
 
-//assemblyJarName in assembly := "firrtl.jar"
+assemblyJarName in assembly := "firrtl.jar"
 
 test in assembly := {} // Should there be tests?
 

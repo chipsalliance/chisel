@@ -11,27 +11,25 @@ defpackage firrtl/passes :
 ;============== Pass List ================
 public val standard-passes = to-list $ [
    CheckHighForm()
-   ;TempElimination()
    ToWorkingIR()
    Resolve()
    ResolveKinds()
-   ;CheckKinds()
    InferTypes()
-   ;CheckTypes()
+   CheckTypes()
    ResolveGenders()
-   ;CheckGenders()
-   ;ExpandAccessors()
-   ;LowerToGround()
-   ;ExpandIndexedConnects()
-   ;InlineIndexed()
-   ExpandWhens()
+   CheckGenders()
    InferWidths()
-   ;Inline()
+   CheckWidths()
+   PullMuxes()
+   ExpandConnects()
+   RemoveAccesses()
+   ExpandWhens()
+   CheckInitialization()
+   ConstProp()
+   VerilogWrap()
    SplitExp()
-   ;CheckLowForm()
-   ;ToRealIR() 
-   ;Pad() 
-   ]
+   VerilogRename()
+]
 ;=============== WORKING IR ================================
 public definterface Kind
 public defstruct WireKind <: Kind 
@@ -1776,7 +1774,7 @@ defn resolve (c:Circuit) -> Circuit :
 public defstruct VerilogWrap <: Pass
 public defmethod pass (b:VerilogWrap) -> (Circuit -> Circuit) : v-wrap
 public defmethod name (b:VerilogWrap) -> String : "Verilog Wrap"
-public defmethod short-name (b:VerilogWrap) -> String : "v-wrap"
+public defmethod short-name (b:VerilogWrap) -> String : "verilog-wrap"
 
 public definterface WPrimOp <: PrimOp
 val ADDW-OP = new WPrimOp
@@ -2392,7 +2390,7 @@ defn lower-types (c:Circuit) -> Circuit :
 public defstruct VerilogRename <: Pass
 public defmethod pass (b:VerilogRename) -> (Circuit -> Circuit) : verilog-rename
 public defmethod name (b:VerilogRename) -> String : "Verilog Rename"
-public defmethod short-name (b:VerilogRename) -> String : "Verilog Rename"
+public defmethod short-name (b:VerilogRename) -> String : "verilog-rename"
 
 defn verilog-rename (c:Circuit) -> Circuit :
    defn verilog-rename-n (n:Symbol) -> Symbol :
@@ -2421,7 +2419,7 @@ public defstruct Verilog <: Pass :
    with-output: (() -> False) -> False  
 public defmethod pass (b:Verilog) -> (Circuit -> Circuit) : emit-verilog{with-output(b),_}
 public defmethod name (b:Verilog) -> String : "To Verilog"
-public defmethod short-name (b:Verilog) -> String : "To Verilog"
+public defmethod short-name (b:Verilog) -> String : "to-verilog"
 
 ;============ Utilz =============
 defstruct VIndent
@@ -2895,5 +2893,32 @@ defn emit-verilog (with-output:(() -> False) -> False, c:Circuit) :
             (m:InModule) : emit-verilog(m)
             (m:ExModule) : false
    c
+
+
+;============ LoFIRRTLToVERILOG ==============
+
+public defstruct LoToVerilog <: Pass :
+   with-output: (() -> False) -> False  
+public defmethod pass (b:LoToVerilog) -> (Circuit -> Circuit) : lo-to-verilog{with-output(b),_}
+public defmethod name (b:LoToVerilog) -> String : "To LoToVerilog"
+public defmethod short-name (b:LoToVerilog) -> String : "lo-to-verilog"
+
+defn lo-to-verilog (with-output:(() -> False) -> False, c:Circuit) :
+   val c1 = to-working-ir(c)
+   ;println(c1)
+   val c2 = resolve(c1)
+   ;println(c2)
+   val c3 = v-wrap(c2)
+   ;println(c3)
+   val c4 = split-exp(c3)
+   ;println(c4)
+   val c5 = verilog-rename(c4)
+   ;println(c5)
+   emit-verilog(with-output,c5)
+
+
+
+
+
 
 

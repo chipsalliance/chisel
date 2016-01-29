@@ -32,6 +32,8 @@ defpackage firrtl-main :
    import stz/parser
    import firrtl/ir-utils
    import firrtl/compiler
+   import firrtl/chirrtl
+   import firrtl/firrtl
    ;Custom Packages
    ;import firrtl/custom-passes
    ;import firrtl/custom-compiler
@@ -48,7 +50,7 @@ defn set-printvars! (p:List<Char>) :
 
 defn get-passes (pass-names:List<String>) -> List<Pass> :
    for n in pass-names map :
-      val p = for p in standard-passes find :
+      val p = for p in append(standard-passes,chirrtl-passes) find :
          n == short-name(p)
       if p == false :
          error(to-string $ ["Unrecognized pass flag: " n])
@@ -134,8 +136,8 @@ defn main () :
    if compiler == false :
       var c*:Circuit = run-passes(circuit*,get-passes(to-list(pass-names)))
       switch {_ == backend} :
-        "verilog" : run-backend(c*,StandardVerilog(with-output))
-        "firrtl" : run-backend(c*,StandardFIRRTL(with-output))
+        "verilog" : run-backend(c*,LoToVerilog(with-output))
+        "firrtl" : run-backend(c*,FIRRTL(with-output))
         else : error("Invalid backend flag!")
    else :
       switch {_ == compiler} :

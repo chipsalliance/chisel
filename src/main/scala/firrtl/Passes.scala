@@ -7,6 +7,9 @@ import Utils._
 import DebugUtils._
 import PrimOps._
 
+
+
+
 object Passes extends LazyLogging {
 
   // TODO Perhaps we should get rid of Logger since this map would be nice
@@ -42,8 +45,6 @@ object Passes extends LazyLogging {
    *    postponed for a later/earlier pass.
    */
   // input -> flip
-  private type TypeMap = Map[String, Type]
-  private val TypeMap = Map[String, Type]().withDefaultValue(UnknownType)
   private def getBundleSubtype(t: Type, name: String): Type = {
     t match {
       case b: BundleType => {
@@ -55,62 +56,52 @@ object Passes extends LazyLogging {
     }
   }
   private def getVectorSubtype(t: Type): Type = t.getType // Added for clarity
-  // TODO Add genders
-  private def inferExpTypes(typeMap: TypeMap)(exp: Expression): Expression = {
-    logger.debug(s"inferTypes called on ${exp.getClass.getSimpleName}")
-    exp.map(inferExpTypes(typeMap)) match {
-      case e: UIntValue => e
-      case e: SIntValue => e
-      case e: Ref => Ref(e.name, typeMap(e.name))
-      case e: SubField => SubField(e.exp, e.name, getBundleSubtype(e.exp.getType, e.name))
-      case e: SubIndex => SubIndex(e.exp, e.value, getVectorSubtype(e.exp.getType))
-      case e: SubAccess => SubAccess(e.exp, e.index, getVectorSubtype(e.exp.getType))
-      case e: DoPrim => lowerAndTypePrimOp(e)
-      case e: Expression => e
-    }
-  }
-  private def inferTypes(typeMap: TypeMap, stmt: Stmt): (Stmt, TypeMap) = {
-    logger.debug(s"inferTypes called on ${stmt.getClass.getSimpleName} ")
-    stmt.map(inferExpTypes(typeMap)) match {
-      case b: Begin => {
-        var tMap = typeMap
-        // TODO FIXME is map correctly called in sequential order
-        val body = b.stmts.map { s =>
-          val ret = inferTypes(tMap, s)
-          tMap = ret._2
-          ret._1
+  private type TypeMap = Map[String, Type]
+  /*def inferTypes(c: Circuit): Circuit = {
+    val moduleTypeMap = Map[String, Type]().withDefaultValue(UnknownType)
+    def inferTypes(m: Module): Module = {
+      val typeMap = Map[String, Type]().withDefaultValue(UnknownType)
+      def inferExpTypes(exp: Expression): Expression = {
+        //logger.debug(s"inferTypes called on ${exp.getClass.getSimpleName}")
+        exp.map(inferExpTypes) match {
+          case e: UIntValue => e
+          case e: SIntValue => e
+          case e: Ref => Ref(e.name, typeMap(e.name))
+          case e: SubField => SubField(e.exp, e.name, getBundleSubtype(e.exp.getType, e.name))
+          case e: SubIndex => SubIndex(e.exp, e.value, getVectorSubtype(e.exp.getType))
+          case e: SubAccess => SubAccess(e.exp, e.index, getVectorSubtype(e.exp.getType))
+          case e: DoPrim => lowerAndTypePrimOp(e)
+          case e: Expression => e
         }
-        (Begin(body), tMap)
       }
-      case s: DefWire => (s, typeMap ++ Map(s.name -> s.tpe))
-      case s: DefRegister => (s, typeMap ++ Map(s.name -> s.tpe))
-      case s: DefMemory => (s, typeMap ++ Map(s.name -> s.dataType))
-      case s: DefInstance => (s, typeMap ++ Map(s.name -> typeMap(s.module)))
-      case s: DefNode => (s, typeMap ++ Map(s.name -> s.value.getType))
-      case s: Conditionally => { // TODO Check: Assuming else block won't see when scope
-        val (conseq, cMap) = inferTypes(typeMap, s.conseq)
-        val (alt, aMap) = inferTypes(typeMap, s.alt)
-        (Conditionally(s.info, s.pred, conseq, alt), cMap ++ aMap)
+      def inferStmtTypes(stmt: Stmt): (Stmt) = {
+        //logger.debug(s"inferStmtTypes called on ${stmt.getClass.getSimpleName} ")
+        stmt match {
+          case s: DefWire => 
+             typeMap(s.name) = s.tpe
+             s
+          case s: DefRegister => 
+             typeMap(s.name) = get_tpe(s)
+             s
+          case s: DefMemory => 
+             typeMap(s.name) = get_tpe(s)
+             s
+          case s: DefInstance => (s, typeMap ++ Map(s.name -> typeMap(s.module)))
+          case s: DefNode => (s, typeMap ++ Map(s.name -> s.value.getType))
+          case s: s.map(inferStmtTypes)
+        }.map(inferExpTypes)
       }
-      case s: Stmt => (s, typeMap)
+      //logger.debug(s"inferTypes called on module ${m.name}")
+
+      m.ports.for( p => typeMap(p.name) = p.tpe)
+      Module(m.info, m.name, m.ports, inferStmtTypes(m.stmt))
     }
-  }
-  private def inferTypes(typeMap: TypeMap, m: Module): Module = {
-    logger.debug(s"inferTypes called on module ${m.name}")
-
-    val pTypeMap = m.ports.map( p => p.name -> p.tpe ).toMap
-
-    Module(m.info, m.name, m.ports, inferTypes(typeMap ++ pTypeMap, m.stmt)._1)
-  }
-  def inferTypes(c: Circuit): Circuit = {
-    logger.debug(s"inferTypes called on circuit ${c.name}")
+    //logger.debug(s"inferTypes called on circuit ${c.name}")
 
     // initialize typeMap with each module of circuit mapped to their bundled IO (ports converted to fields)
     val typeMap = c.modules.map(m => m.name -> BundleType(m.ports.map(toField(_)))).toMap
-
-    //val typeMap = c.modules.flatMap(buildTypeMap).toMap
     Circuit(c.info, c.name, c.modules.map(inferTypes(typeMap, _)))
-  }
+  }*/
 
   def renameall(s : String)(implicit map : Map[String,String]) : String =
     map getOrElse (s, s)

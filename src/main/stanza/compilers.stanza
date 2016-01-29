@@ -176,8 +176,8 @@ public defmethod passes (c:StandardLoFIRRTL) -> List<Pass> :
    ]
 
 ;============= DRIVER ======================================
-public defn run-backend (c:Circuit,comp:Compiler) :
-   run-passes(c,backend(comp))
+public defn run-backend (c:Circuit,pass:Pass) :
+   run-passes(c,list(pass))
 public defn run-passes (c:Circuit,comp:Compiler) -> Circuit: 
    run-passes(c,passes(comp))
 public defn run-passes (c:Circuit,ls:List<Pass>) -> Circuit:

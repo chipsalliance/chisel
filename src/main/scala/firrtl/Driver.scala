@@ -76,46 +76,52 @@ object Driver extends LazyLogging {
   }
 
   val defaultPasses = DriverPasses.optimize(Seq(
-    StanzaPass("to-firrtl"),
-
+    StanzaPass("cinfertypes"),
+// =====================================
+    StanzaPass("cinfermdir"),
+// =====================================
+    StanzaPass("removechirrtl"),
+// =====================================
     StanzaPass("high-form-check"),
-
-//  ScalaPass(renameall(Map(
-//    "c"->"ccc",
-//    "z"->"zzz",
-//    "top"->"its_a_top_module"
-//  ))),
-    // StanzaPass("temp-elim"), // performance pass
+// =====================================
     StanzaPass("to-working-ir"),
-
+// =====================================
+    StanzaPass("resolve-kinds"),
+//    StanzaPass("infer-types"),
+    ScalaPass(inferTypes),
+    StanzaPass("check-types"),
+    StanzaPass("resolve-genders"),
+    StanzaPass("check-genders"),
+    StanzaPass("infer-widths"),
+    StanzaPass("width-check"),
+// =====================================
+    StanzaPass("pull-muxes"),
+// =====================================
+    StanzaPass("expand-connects"),
+// =====================================
+    StanzaPass("remove-access"),
+// =====================================
+    StanzaPass("expand-whens"),
+// =====================================
+    StanzaPass("check-init"),
+// =====================================
+    StanzaPass("const-prop"),
+// =====================================
     StanzaPass("resolve-kinds"),
     StanzaPass("infer-types"),
     StanzaPass("check-types"),
     StanzaPass("resolve-genders"),
     StanzaPass("check-genders"),
     StanzaPass("infer-widths"),
-    StanzaPass("width-check"),
-
-    StanzaPass("check-kinds"),
-
-    StanzaPass("expand-accessors"),
-    StanzaPass("lower-to-ground"),
-    StanzaPass("inline-indexers"),
-    StanzaPass("infer-types"),
-    //ScalaPass(inferTypes),
-    StanzaPass("check-genders"),
-    StanzaPass("expand-whens"),
-
-    StanzaPass("real-ir"),
-
-    StanzaPass("pad-widths"),
-    StanzaPass("const-prop"),
-    StanzaPass("split-expressions"),
-    StanzaPass("width-check"),
-    StanzaPass("high-form-check"),
-    StanzaPass("low-form-check"),
-    StanzaPass("check-init")//,
+    StanzaPass("width-check")
+// =====================================
     //ScalaPass(renamec)
+//  ScalaPass(renameall(Map(
+//    "c"->"ccc",
+//    "z"->"zzz",
+//    "top"->"its_a_top_module"
+//  ))),
+    // StanzaPass("temp-elim"), // performance pass
   ))
 
   // Parse input file and print to output
@@ -143,7 +149,7 @@ object Driver extends LazyLogging {
     logger.info(outfile)
 
     // finally, convert to verilog at the end
-    val cmd = Seq("firrtl-stanza", "-i", outfile, "-o", output, "-X", "verilog")
+    val cmd = Seq("firrtl-stanza", "-i", outfile, "-o", output, "-b", "verilog")
     logger.info(cmd.mkString(" "))
     val ret = cmd.!!
     logger.info(ret)
