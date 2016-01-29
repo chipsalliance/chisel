@@ -1,13 +1,14 @@
 /*
  * TODO
  *  - Implement UBits and SBits
- *  - Support all integer types (not just "h...")
+ *  - Get correct line number for memory field errors
 */
 
 package firrtl
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.TerminalNode
 import scala.collection.JavaConversions._
@@ -79,21 +80,53 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
 	private def visitBlock[AST](ctx: FIRRTLParser.BlockContext): Stmt = 
     Begin(ctx.stmt.map(visitStmt)) 
 
+  // Memories are fairly complicated to translate thus have a dedicated method
+  private def visitMem[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
+    def parseChildren(children: Seq[ParseTree], map: Map[String, Seq[ParseTree]]): Map[String, Seq[ParseTree]] = {
+      val field = children(0).getText
+      if (field == "}") map
+      else {
+        val newMap = 
+          if (field == "reader" || field == "writer" || field == "readwriter") {
+            val seq = map getOrElse (field, Seq())
+            map + (field -> (seq :+ children(2)))
+          } else { // data-type, depth, read-latency, write-latency, read-under-write
+            if (map.contains(field)) throw new Exception(s"Redefinition of mem field ${field}")
+            else map + (field -> Seq(children(2)))
+          }
+        parseChildren(children.drop(3), newMap) // We consume tokens in groups of three (eg. 'depth' '=>' 5)
+      }
+    }
+
+    val info = getInfo(ctx)
+    // Build map of different Memory fields to their values
+    val map = try {
+      parseChildren(ctx.children.drop(4), Map[String, Seq[ParseTree]]()) // First 4 tokens are 'mem' id ':' '{', skip to fields
+    } catch {
+      case e: Exception => throw new Exception(s"[${info}] ${e.getMessage}") // attach line number
+    }
+    // Each memory field value has been left as ParseTree type, need to convert
+    // TODO Improve? Remove dynamic typecast of data-type
+    DefMemory(info, ctx.id(0).getText, visitType(map("data-type").head.asInstanceOf[FIRRTLParser.TypeContext]), 
+              string2Int(map("depth").head.getText), string2Int(map("write-latency").head.getText), 
+              string2Int(map("read-latency").head.getText), map.getOrElse("reader", Seq()).map(_.getText),
+              map.getOrElse("writer", Seq()).map(_.getText), map.getOrElse("readwriter", Seq()).map(_.getText))
+  }
+
+  // visitStmt
 	private def visitStmt[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
     val info = getInfo(ctx)
 
     ctx.getChild(0).getText match {
-      case "wire" => DefWire(info, ctx.id(0).getText, visitType(ctx.`type`))
+      case "wire" => DefWire(info, ctx.id(0).getText, visitType(ctx.`type`(0)))
       case "reg"  => {
         val name = ctx.id(0).getText
-        val tpe = visitType(ctx.`type`)
+        val tpe = visitType(ctx.`type`(0))
         val (reset, init) = if (ctx.getChildCount > 5) (visitExp(ctx.exp(1)), visitExp(ctx.exp(2))) 
                             else (UIntValue(0, IntWidth(1)), Ref(name, tpe))
         DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
       }
-      case "mem" => DefMemory(info, ctx.id(0).getText, visitType(ctx.`type`), string2Int(ctx.IntLit(0).getText),
-                              string2Int(ctx.IntLit(2).getText), string2Int(ctx.IntLit(1).getText),
-                              Seq(), Seq(), Seq()) // TODO implement readers and writers
+      case "mem" => visitMem(ctx)
       case "inst"  => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
       case "node" =>  DefNode(info, ctx.id(0).getText, visitExp(ctx.exp(0)))
       case "when" => { 

@@ -47,14 +47,15 @@ block
 stmt
   : 'wire' id ':' type
   | 'reg' id ':' type exp (exp exp)?
-  | 'mem' id ':' '{' 'data-type' '=>' type 
-                     'depth' '=>' IntLit
-                     'read-latency' '=>' IntLit
-                     'write-latency' '=>' IntLit
-                     'read-under-write' '=>' ruw
-                     ('reader' '=>' id)*
-                     ('writer' '=>' id)*
-                     ('readwriter' '=>' id)*
+  | 'mem' id ':' '{' ( 'data-type' '=>' type 
+                     | 'depth' '=>' IntLit
+                     | 'read-latency' '=>' IntLit
+                     | 'write-latency' '=>' IntLit
+                     | 'read-under-write' '=>' ruw
+                     | 'reader' '=>' id
+                     | 'writer' '=>' id
+                     | 'readwriter' '=>' id 
+                     )*
                  '}'
   | 'inst' id 'of' id 
   | 'node' id '=' exp

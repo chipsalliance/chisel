@@ -137,16 +137,23 @@ object Utils {
         case r: DefRegister => 
           s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize}, ${r.reset.serialize}, ${r.init.serialize}"
         case i: DefInstance => s"inst ${i.name} of ${i.module}"
-        case m: DefMemory => s"mem ${m.name} : " + newline + withIndent {
-            s"data-type => ${m.dataType}" + newline +
-            s"depth => ${m.depth}" + newline +
-            s"read-latency => ${m.readLatency}" + newline +
-            s"write-latency => ${m.writeLatency}" + newline +
-            m.readers.map(r => s"reader => ${r}" + newline) +
-            m.writers.map(w => s"writer => ${w}" + newline) +
-            m.readwriters.map(rw => s"readwriter => ${rw}" + newline) +
-            s"read-under-write => undefined" // TODO implement
+        case m: DefMemory => {
+          val str = new StringBuilder(s"mem ${m.name} : " + newline)
+          withIndent {
+            str ++= s"data-type => ${m.dataType.serialize}" + newline +
+              s"depth => ${m.depth}" + newline +
+              s"read-latency => ${m.readLatency}" + newline +
+              s"write-latency => ${m.writeLatency}" + newline +
+              (if (m.readers.nonEmpty) m.readers.map(r => s"reader => ${r}").mkString(newline) + newline
+               else "") +
+              (if (m.writers.nonEmpty) m.writers.map(w => s"writer => ${w}").mkString(newline) + newline
+               else "") + 
+              (if (m.readwriters.nonEmpty) m.readwriters.map(rw => s"readwriter => ${rw}").mkString(newline) + newline
+               else "") +
+              s"read-under-write => undefined"
           }
+          str.result
+        }
         case n: DefNode => s"node ${n.name} = ${n.value.serialize}"
         case c: Connect => s"${c.loc.serialize} <= ${c.exp.serialize}"
         case b: BulkConnect => s"${b.loc.serialize} <- ${b.exp.serialize}"

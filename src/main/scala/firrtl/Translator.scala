@@ -23,7 +23,7 @@ object Translator
     def countSpaces(s: String): Int = s.prefixLength(_ == ' ')
     def stripComments(s: String): String = s takeWhile (!";".contains(_))
 
-    val Scopers = """\s*(circuit|module|when|else)(.*)""".r
+    val Scopers = """\s*(circuit|module|when|else|mem)(.*)""".r
 
     // Function start
     val it = inputIt.zipWithIndex 
