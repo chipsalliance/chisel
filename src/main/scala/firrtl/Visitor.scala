@@ -179,7 +179,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
         case _ => 
           ctx.getChild(1).getText match {
             case "." => new SubField(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)
-            case "[" => if (ctx.IntLit != null) 
+            case "[" => if (ctx.exp(1) == null)  
                           new SubIndex(visitExp(ctx.exp(0)), string2BigInt(ctx.IntLit(0).getText), UnknownType)
                         else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
             // Assume primop
