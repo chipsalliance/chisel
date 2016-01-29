@@ -46,7 +46,7 @@ block
 
 stmt
   : 'wire' id ':' type
-  | 'reg' id ':' type exp (exp exp)?
+  | 'reg' id ':' type exp ('with' ':' '{' 'reset' '=>' '(' exp exp ')' '}')?
   | 'mem' id ':' '{' ( 'data-type' '=>' type 
                      | 'depth' '=>' IntLit
                      | 'read-latency' '=>' IntLit
@@ -97,6 +97,8 @@ id
 keyword
   : dir
   | 'inst'  
+  | 'mem'
+  | 'reset'
   ;
 
 // Parentheses are added as part of name because semantics require no space between primop and open parentheses

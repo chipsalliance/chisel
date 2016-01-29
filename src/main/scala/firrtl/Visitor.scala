@@ -122,8 +122,8 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
       case "reg"  => {
         val name = ctx.id(0).getText
         val tpe = visitType(ctx.`type`(0))
-        val (reset, init) = if (ctx.getChildCount > 5) (visitExp(ctx.exp(1)), visitExp(ctx.exp(2))) 
-                            else (UIntValue(0, IntWidth(1)), Ref(name, tpe))
+        val reset = if (ctx.exp(1) != null) visitExp(ctx.exp(1)) else UIntValue(0, IntWidth(1))
+        val init  = if (ctx.exp(2) != null) visitExp(ctx.exp(2)) else Ref(name, tpe)
         DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
       }
       case "mem" => visitMem(ctx)

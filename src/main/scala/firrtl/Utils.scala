@@ -135,7 +135,8 @@ object Utils {
       var ret = stmt match {
         case w: DefWire => s"wire ${w.name} : ${w.tpe.serialize}"
         case r: DefRegister => 
-          s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize}, ${r.reset.serialize}, ${r.init.serialize}"
+          s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize} with : " + 
+          s"(reset => (${r.reset.serialize}, ${r.init.serialize}))"
         case i: DefInstance => s"inst ${i.name} of ${i.module}"
         case m: DefMemory => {
           val str = new StringBuilder(s"mem ${m.name} : " + newline)
