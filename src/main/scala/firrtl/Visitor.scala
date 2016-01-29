@@ -133,8 +133,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
         val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else Empty
         Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
       }
-      // TODO implement stop
-      // TODO implement printf
+      case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
       case "printf(" => Print(info, ctx.StringLit.getText, ctx.exp.drop(2).map(visitExp), 
                               visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
       case "skip" => Empty
