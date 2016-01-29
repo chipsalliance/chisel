@@ -135,6 +135,8 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
       }
       // TODO implement stop
       // TODO implement printf
+      case "printf(" => Print(info, ctx.StringLit.getText, ctx.exp.drop(2).map(visitExp), 
+                              visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
       case "skip" => Empty
       // If we don't match on the first child, try the next one
       case _ => {

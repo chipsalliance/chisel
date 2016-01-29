@@ -173,7 +173,8 @@ object Utils {
         } 
         case i: IsInvalid => s"${i.exp} is invalid"
         case s: Stop => s"stop(${s.clk}, ${s.en}, ${s.ret})"
-        case p: Print => s"printf(${p.clk}, ${p.en}, ${p.string}" + p.args.map(_.serialize).mkString(", ")
+        case p: Print => s"printf(${p.clk.serialize}, ${p.en.serialize}, ${p.string}" + 
+                         (if (p.args.nonEmpty) p.args.map(_.serialize).mkString(", ", ", ", "") else "") + ")"
         case Empty => "skip"
       } 
       ret + debug(stmt)
