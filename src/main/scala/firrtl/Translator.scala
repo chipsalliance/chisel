@@ -23,7 +23,9 @@ object Translator
     def countSpaces(s: String): Int = s.prefixLength(_ == ' ')
     def stripComments(s: String): String = s takeWhile (!";".contains(_))
 
-    val Scopers = """\s*(circuit|module|when|else|mem)(.*)""".r
+    val scopers = """(circuit|module|when|else|mem|with)"""
+    val MultiLineScope = ("""(.*""" + scopers + """)(.*:\s*)""").r
+    val OneLineScope   = ("""(.*""" + scopers + """\s*:\s*)\((.*)\)\s*""").r
 
     // Function start
     val it = inputIt.zipWithIndex 
@@ -73,10 +75,14 @@ object Translator
           
           // Now match on legal scope increasers
           text match {
-            case Scopers(keyword, _* ) => {
+            case OneLineScope(head, keyword, body) => {
+              newScope = false
+              head + "{" + body + "}"
+            }
+            case MultiLineScope(head, keyword, tail) => {
               newScope = true
-              //text + " { "
-              text.replaceFirst(":", ": {")
+              //text.replaceFirst(":", ": {")
+              text + " { "
             }
             case _ => { 
               newScope = false
