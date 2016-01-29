@@ -175,7 +175,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
           SIntValue(value, width)
         }
         case "validif(" => ValidIf(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
-        // TODO implement mux
+        case "mux(" => Mux(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), visitExp(ctx.exp(2)), UnknownType)
         case _ => 
           ctx.getChild(1).getText match {
             case "." => new SubField(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)
