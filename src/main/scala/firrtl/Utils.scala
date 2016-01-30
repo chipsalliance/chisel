@@ -485,9 +485,9 @@ object Utils {
          case p: DoPrim => 
            s"${p.op.serialize}(" + (p.args.map(_.serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
          case r: WRef => r.name
-         case s: WSubField => s"w${s.exp.serialize}.${s.name}"
-         case s: WSubIndex => s"w${s.exp.serialize}[${s.value}]"
-         case s: WSubAccess => s"w${s.exp.serialize}[${s.index.serialize}]"
+         case s: WSubField => s"${s.exp.serialize}.${s.name}"
+         case s: WSubIndex => s"${s.exp.serialize}[${s.value}]"
+         case s: WSubAccess => s"${s.exp.serialize}[${s.index.serialize}]"
        } 
        ret + debug(exp)
      }
@@ -682,7 +682,7 @@ object Utils {
           case m:InModule => {
              var s = new StringBuilder(s"module ${m.name} : ")
              withIndent {
-               s ++= m.ports.map(newline ++ _.serialize).mkString
+               s ++= newline + m.ports.map(newline ++ _.serialize).mkString
                s ++= m.body.serialize
              }
              s ++= debug(m)
