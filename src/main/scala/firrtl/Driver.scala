@@ -84,8 +84,6 @@ object Driver extends LazyLogging {
 // =====================================
     StanzaPass("high-form-check"),
 // =====================================
-    ScalaPass(resolve),
-// =====================================
     StanzaPass("to-working-ir"),
 // =====================================
     StanzaPass("resolve-kinds"),
@@ -95,6 +93,8 @@ object Driver extends LazyLogging {
     StanzaPass("check-genders"),
     StanzaPass("infer-widths"),
     StanzaPass("width-check"),
+// =====================================
+    ScalaPass(resolve),
 // =====================================
     StanzaPass("pull-muxes"),
 // =====================================

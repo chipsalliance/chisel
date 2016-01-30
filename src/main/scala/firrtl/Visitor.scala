@@ -71,7 +71,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
   }
       
 	private def visitField[AST](ctx: FIRRTLParser.FieldContext): Field = {
-    val flip = if(ctx.getChild(0).getText == "flip") Reverse else Default
+    val flip = if(ctx.getChild(0).getText == "flip") REVERSE else DEFAULT
     Field((ctx.id.getText), flip, visitType(ctx.`type`))
   }
      

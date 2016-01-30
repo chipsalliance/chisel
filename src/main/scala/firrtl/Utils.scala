@@ -143,8 +143,30 @@ object Utils {
      def serialize(implicit flags: FlagMap = FlagMap): String = op.getString
    }
 
+// =========== GENDER UTILS ============
+   def swap (g:Gender) : Gender = {
+      g match {
+         case UNKNOWNGENDER => UNKNOWNGENDER
+         case MALE => FEMALE
+         case FEMALE => MALE
+         case BIGENDER => BIGENDER
+      }
+   }
+// =========== FLIP UTILS ===============
+   def field_flip (v:Type,s:String) : Flip = {
+      v match {
+         case v:BundleType => {
+            val ft = v.fields.find {p => p.name == s}
+            ft match {
+               case ft:Some[Field] => ft.get.flip
+               case ft => DEFAULT
+            }
+         }
+         case v => DEFAULT
+      }
+   }
 
-//  ACCESSORS =========
+// =========== ACCESSORS =========
    def gender (e:Expression) : Gender = {
      e match {
         case e:WRef => gender(e)
@@ -206,22 +228,22 @@ object Utils {
        case s:DefNode => tpe(s.value)
        case s:DefMemory => {
           val depth = s.depth
-          val addr = Field("addr",Default,UIntType(IntWidth(ceil_log2(depth))))
-          val en = Field("en",Default,BoolType())
-          val clk = Field("clk",Default,ClockType())
-          val def_data = Field("data",Default,s.data_type)
-          val rev_data = Field("data",Reverse,s.data_type)
-          val mask = Field("mask",Default,create_mask(s.data_type))
-          val wmode = Field("wmode",Default,UIntType(IntWidth(1)))
-          val rdata = Field("rdata",Reverse,s.data_type)
+          val addr = Field("addr",DEFAULT,UIntType(IntWidth(ceil_log2(depth))))
+          val en = Field("en",DEFAULT,BoolType())
+          val clk = Field("clk",DEFAULT,ClockType())
+          val def_data = Field("data",DEFAULT,s.data_type)
+          val rev_data = Field("data",REVERSE,s.data_type)
+          val mask = Field("mask",DEFAULT,create_mask(s.data_type))
+          val wmode = Field("wmode",DEFAULT,UIntType(IntWidth(1)))
+          val rdata = Field("rdata",REVERSE,s.data_type)
           val read_type = BundleType(Seq(rev_data,addr,en,clk))
           val write_type = BundleType(Seq(def_data,mask,addr,en,clk))
           val readwrite_type = BundleType(Seq(wmode,rdata,def_data,mask,addr,en,clk))
 
           val mem_fields = Vector()
-          s.readers.foreach {x => mem_fields :+ Field(x,Reverse,read_type)}
-          s.writers.foreach {x => mem_fields :+ Field(x,Reverse,write_type)}
-          s.readwriters.foreach {x => mem_fields :+ Field(x,Reverse,readwrite_type)}
+          s.readers.foreach {x => mem_fields :+ Field(x,REVERSE,read_type)}
+          s.writers.foreach {x => mem_fields :+ Field(x,REVERSE,write_type)}
+          s.readwriters.foreach {x => mem_fields :+ Field(x,REVERSE,readwrite_type)}
           BundleType(mem_fields)
        }
        case s:DefInstance => UnknownType()
@@ -461,22 +483,22 @@ object Utils {
    implicit class FlipUtils(f: Flip) {
      def serialize(implicit flags: FlagMap = FlagMap): String = {
        val s = f match {
-         case Reverse => "flip "
-         case Default => ""
+         case REVERSE => "flip "
+         case DEFAULT => ""
        } 
        s + debug(f)
      }
      def flip(): Flip = {
        f match {
-         case Reverse => Default
-         case Default => Reverse
+         case REVERSE => DEFAULT
+         case DEFAULT => REVERSE
        }
      }
          
      def toDirection(): Direction = {
        f match {
-         case Default => Output
-         case Reverse => Input
+         case DEFAULT => Output
+         case REVERSE => Input
        }
      }
    }
@@ -529,8 +551,8 @@ object Utils {
      }
      def toFlip(): Flip = {
        d match {
-         case Input => Reverse
-         case Output => Default
+         case Input => REVERSE
+         case Output => DEFAULT
        }
      }
    }

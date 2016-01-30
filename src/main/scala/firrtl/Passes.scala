@@ -28,8 +28,8 @@ object Passes extends LazyLogging {
    private def toField(p: Port): Field = {
      logger.debug(s"toField called on port ${p.serialize}")
      p.direction match {
-       case Input  => Field(p.name, Reverse, p.tpe)
-       case Output => Field(p.name, Default, p.tpe)
+       case Input  => Field(p.name, REVERSE, p.tpe)
+       case Output => Field(p.name, DEFAULT, p.tpe)
      }
    }
    // ============== RESOLVE ALL ===================
@@ -37,11 +37,13 @@ object Passes extends LazyLogging {
       val passes = Seq(
          toWorkingIr _,
          resolveKinds _,
-         inferTypes _)
+         inferTypes _,
+         resolveGenders _)
       val names = Seq(
          "To Working IR",
          "Resolve Kinds",
-         "Infer Types")
+         "Infer Types",
+         "Resolve Genders")
       var c_BANG = c
       (names, passes).zipped.foreach { 
          (n,p) => {
@@ -256,6 +258,64 @@ object Passes extends LazyLogging {
       println("After Infer Types")
       println(x.serialize())
       x
+   }
+
+   def resolveGenders (c:Circuit) = {
+      def resolve_e (g:Gender)(e:Expression) : Expression = {
+         e match {
+            case e:WRef => WRef(e.name,e.tpe,e.kind,g)
+            case e:WSubField => {
+               val expx = 
+                  field_flip(tpe(e.exp),e.name) match {
+                     case DEFAULT => resolve_e(g)(e.exp)
+                     case REVERSE => resolve_e(swap(g))(e.exp)
+                  }
+               WSubField(expx,e.name,e.tpe,g)
+            }
+            case e:WSubIndex => {
+               val expx = resolve_e(g)(e.exp)
+               WSubIndex(expx,e.value,e.tpe,g)
+            }
+            case e:WSubAccess => {
+               val expx = resolve_e(g)(e.exp)
+               val indexx = resolve_e(MALE)(e.index)
+               WSubAccess(expx,indexx,e.tpe,g)
+            }
+            case e => eMap(resolve_e(g) _,e)
+         }
+      }
+            
+      def resolve_s (s:Stmt) : Stmt = {
+         s match {
+            case s:IsInvalid => {
+               val expx = resolve_e(FEMALE)(s.exp)
+               IsInvalid(s.info,expx)
+            }
+            case s:Connect => {
+               val locx = resolve_e(FEMALE)(s.loc)
+               val expx = resolve_e(MALE)(s.exp)
+               Connect(s.info,locx,expx)
+            }
+            case s:BulkConnect => {
+               val locx = resolve_e(FEMALE)(s.loc)
+               val expx = resolve_e(MALE)(s.exp)
+               BulkConnect(s.info,locx,expx)
+            }
+            case s => sMap(resolve_s,eMap(resolve_e(MALE) _,s))
+         }
+      }
+      val modulesx = c.modules.map { 
+         m => {
+            m match {
+               case m:InModule => {
+                  val bodyx = resolve_s(m.body)
+                  InModule(m.info,m.name,m.ports,bodyx)
+               }
+               case m:ExModule => m
+            }
+         }
+      }
+      Circuit(c.info,modulesx,c.main)
    }
 
   /** INFER TYPES

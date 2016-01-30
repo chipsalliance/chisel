@@ -85,8 +85,8 @@ case class IntWidth(width: BigInt) extends Width
 case class UnknownWidth() extends Width
 
 trait Flip extends AST
-case object Default extends Flip
-case object Reverse extends Flip
+case object DEFAULT extends Flip
+case object REVERSE extends Flip
 
 case class Field(name: String, flip: Flip, tpe: Type) extends AST
 
