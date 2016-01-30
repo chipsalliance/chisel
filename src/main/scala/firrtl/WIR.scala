@@ -31,6 +31,12 @@ case class WInvalid() extends Expression
 
 case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt 
 
+case class VarWidth(name:String) extends Width
+case class PlusWidth(arg1:Width,arg2:Width) extends Width
+case class MinusWidth(arg1:Width,arg2:Width) extends Width
+case class MaxWidth(args:Seq[Width]) extends Width
+case class MinWidth(args:Seq[Width]) extends Width
+case class ExpWidth(arg1:Width) extends Width
 //case class IntWidth(width: BigInt) extends Width 
 //case object UnknownWidth extends Width
 

@@ -19,38 +19,38 @@ case class FIRRTLException(str:String) extends Exception
 trait AST 
 
 trait PrimOp extends AST
-case object AddOp extends PrimOp 
-case object SubOp extends PrimOp
-case object MulOp extends PrimOp
-case object DivOp extends PrimOp
-case object RemOp extends PrimOp
-case object LessOp extends PrimOp
-case object LessEqOp extends PrimOp
-case object GreaterOp extends PrimOp
-case object GreaterEqOp extends PrimOp
-case object EqualOp extends PrimOp
-case object NEqualOp extends PrimOp
-case object PadOp extends PrimOp
-case object AsUIntOp extends PrimOp
-case object AsSIntOp extends PrimOp
-case object AsClockOp extends PrimOp
-case object ShiftLeftOp extends PrimOp
-case object ShiftRightOp extends PrimOp
-case object DynShiftLeftOp extends PrimOp
-case object DynShiftRightOp extends PrimOp
-case object ConvertOp extends PrimOp
-case object NegOp extends PrimOp
-case object BitNotOp extends PrimOp
-case object BitAndOp extends PrimOp
-case object BitOrOp extends PrimOp
-case object BitXorOp extends PrimOp
-case object BitAndReduceOp extends PrimOp
-case object BitOrReduceOp extends PrimOp
-case object BitXorReduceOp extends PrimOp
-case object ConcatOp extends PrimOp
-case object BitsSelectOp extends PrimOp
-case object HeadOp extends PrimOp
-case object TailOp extends PrimOp
+case object ADD_OP extends PrimOp 
+case object SUB_OP extends PrimOp
+case object MUL_OP extends PrimOp
+case object DIV_OP extends PrimOp
+case object REM_OP extends PrimOp
+case object LESS_OP extends PrimOp
+case object LESS_EQ_OP extends PrimOp
+case object GREATER_OP extends PrimOp
+case object GREATER_EQ_OP extends PrimOp
+case object EQUAL_OP extends PrimOp
+case object NEQUAL_OP extends PrimOp
+case object PAD_OP extends PrimOp
+case object AS_UINT_OP extends PrimOp
+case object AS_SINT_OP extends PrimOp
+case object AS_CLOCK_OP extends PrimOp
+case object SHIFT_LEFT_OP extends PrimOp
+case object SHIFT_RIGHT_OP extends PrimOp
+case object DYN_SHIFT_LEFT_OP extends PrimOp
+case object DYN_SHIFT_RIGHT_OP extends PrimOp
+case object CONVERT_OP extends PrimOp
+case object NEG_OP extends PrimOp
+case object NOT_OP extends PrimOp
+case object AND_OP extends PrimOp
+case object OR_OP extends PrimOp
+case object XOR_OP extends PrimOp
+case object AND_REDUCE_OP extends PrimOp
+case object OR_REDUCE_OP extends PrimOp
+case object XOR_REDUCE_OP extends PrimOp
+case object CONCAT_OP extends PrimOp
+case object BITS_SELECT_OP extends PrimOp
+case object HEAD_OP extends PrimOp
+case object TAIL_OP extends PrimOp
 
 trait Expression extends AST
 case class Ref(name: String, tpe: Type) extends Expression
@@ -68,8 +68,8 @@ case class DefWire(info: Info, name: String, tpe: Type) extends Stmt
 case class DefPoison(info: Info, name: String, tpe: Type) extends Stmt
 case class DefRegister(info: Info, name: String, tpe: Type, clock: Expression, reset: Expression, init: Expression) extends Stmt 
 case class DefInstance(info: Info, name: String, module: String) extends Stmt 
-case class DefMemory(info: Info, name: String, dataType: Type, depth: Int, writeLatency: Int, 
-               readLatency: Int, readers: Seq[String], writers: Seq[String], readwriters: Seq[String]) extends Stmt
+case class DefMemory(info: Info, name: String, data_type: Type, depth: Int, write_latency: Int, 
+               read_latency: Int, readers: Seq[String], writers: Seq[String], readwriters: Seq[String]) extends Stmt
 case class DefNode(info: Info, name: String, value: Expression) extends Stmt
 case class Conditionally(info: Info, pred: Expression, conseq: Stmt, alt: Stmt) extends Stmt
 case class Begin(stmts: Seq[Stmt]) extends Stmt
@@ -82,7 +82,7 @@ case class Empty() extends Stmt
 
 trait Width extends AST 
 case class IntWidth(width: BigInt) extends Width 
-case object UnknownWidth extends Width
+case class UnknownWidth() extends Width
 
 trait Flip extends AST
 case object Default extends Flip
@@ -102,7 +102,7 @@ trait Direction extends AST
 case object Input extends Direction
 case object Output extends Direction
 
-case class Port(info: Info, name: String, dir: Direction, tpe: Type) extends AST
+case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends AST
 
 trait Module extends AST {
   val info : Info

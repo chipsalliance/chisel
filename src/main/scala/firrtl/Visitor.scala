@@ -61,9 +61,9 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
 	private def visitType[AST](ctx: FIRRTLParser.TypeContext): Type = {
     ctx.getChild(0).getText match {
       case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
-                     else UIntType( UnknownWidth )
+                     else UIntType( UnknownWidth() )
       case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
-                     else SIntType( UnknownWidth )
+                     else SIntType( UnknownWidth() )
       case "Clock" => ClockType()
       case "{" => BundleType(ctx.field.map(visitField))
       case _ => new VectorType( visitType(ctx.`type`), string2BigInt(ctx.IntLit.getText) )
@@ -164,14 +164,14 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
           val (width, value) = 
             if (ctx.getChildCount > 4) 
               (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
-            else (UnknownWidth, string2BigInt(ctx.IntLit(0).getText))
+            else (UnknownWidth(), string2BigInt(ctx.IntLit(0).getText))
           UIntValue(value, width)
         }
         case "SInt" => {
           val (width, value) = 
             if (ctx.getChildCount > 4) 
               (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
-            else (UnknownWidth, string2BigInt(ctx.IntLit(0).getText))
+            else (UnknownWidth(), string2BigInt(ctx.IntLit(0).getText))
           SIntValue(value, width)
         }
         case "validif(" => ValidIf(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType())

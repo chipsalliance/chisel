@@ -52,7 +52,7 @@ object DriverPasses {
   }
 
   def optimize(passes: Seq[DriverPass]): Seq[DriverPass] = {
-    aggregateStanzaPasses(passes)
+    aggregateStanzaPasses(aggregateStanzaPasses(passes))
   }
 }
 
@@ -84,10 +84,11 @@ object Driver extends LazyLogging {
 // =====================================
     StanzaPass("high-form-check"),
 // =====================================
-    ScalaPass(toWorkingIr),
+    ScalaPass(resolve),
 // =====================================
     StanzaPass("to-working-ir"),
 // =====================================
+    StanzaPass("resolve-kinds"),
     StanzaPass("infer-types"),
     StanzaPass("check-types"),
     StanzaPass("resolve-genders"),
