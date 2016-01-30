@@ -21,10 +21,9 @@ case object FEMALE extends Gender
 case object BIGENDER extends Gender
 case object UNKNOWNGENDER extends Gender
 
-case class BoolType() extends Type { UIntType(IntWidth(1)) } 
 case class WRef(name:String,tpe:Type,kind:Kind,gender:Gender) extends Expression
 case class WSubField(exp:Expression,name:String,tpe:Type,gender:Gender) extends Expression
-case class WSubIndex(exp:Expression,value:BigInt,tpe:Type,gender:Gender) extends Expression
+case class WSubIndex(exp:Expression,value:Int,tpe:Type,gender:Gender) extends Expression
 case class WSubAccess(exp:Expression,index:Expression,tpe:Type,gender:Gender) extends Expression
 case class WVoid() extends Expression
 case class WInvalid() extends Expression

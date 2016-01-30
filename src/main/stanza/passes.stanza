@@ -29,6 +29,7 @@ public val standard-passes = to-list $ [
    VerilogWrap()
    SplitExp()
    VerilogRename()
+   Resolve()
 ]
 ;=============== WORKING IR ================================
 public definterface Kind
@@ -1680,7 +1681,8 @@ defn resolve (c:Circuit) -> Circuit :
    resolve-genders $
    check-types $
    infer-types $
-   resolve-kinds $ c
+   resolve-kinds $ 
+   to-working-ir $ c
 
 ;;================= Inline Instances ========================
 ;; Inlines instances. Assumes module with same name as the
@@ -2892,10 +2894,3 @@ defn lo-to-verilog (with-output:(() -> False) -> False, c:Circuit) :
    val c5 = verilog-rename(c4)
    ;println(c5)
    emit-verilog(with-output,c5)
-
-
-
-
-
-
-

@@ -96,9 +96,11 @@ object Driver extends LazyLogging {
 // =====================================
     ScalaPass(resolve),
 // =====================================
-    StanzaPass("pull-muxes"),
+    StanzaPass("resolve"),
 // =====================================
-    StanzaPass("expand-connects"),
+    //StanzaPass("pull-muxes"),
+// =====================================
+    //StanzaPass("expand-connects"),
 // =====================================
     StanzaPass("remove-access"),
 // =====================================

@@ -55,7 +55,7 @@ case object TAIL_OP extends PrimOp
 trait Expression extends AST
 case class Ref(name: String, tpe: Type) extends Expression
 case class SubField(exp: Expression, name: String, tpe: Type) extends Expression
-case class SubIndex(exp: Expression, value: BigInt, tpe: Type) extends Expression
+case class SubIndex(exp: Expression, value: Int, tpe: Type) extends Expression
 case class SubAccess(exp: Expression, index: Expression, tpe: Type) extends Expression
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type) extends Expression
 case class ValidIf(cond: Expression, value: Expression, tpe: Type) extends Expression
@@ -94,13 +94,13 @@ trait Type extends AST
 case class UIntType(width: Width) extends Type
 case class SIntType(width: Width) extends Type
 case class BundleType(fields: Seq[Field]) extends Type
-case class VectorType(tpe: Type, size: BigInt) extends Type
+case class VectorType(tpe: Type, size: Int) extends Type
 case class ClockType() extends Type
 case class UnknownType() extends Type
 
 trait Direction extends AST
-case object Input extends Direction
-case object Output extends Direction
+case object INPUT extends Direction
+case object OUTPUT extends Direction
 
 case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends AST
 

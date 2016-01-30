@@ -3,6 +3,7 @@ package firrtl
 
 import com.typesafe.scalalogging.LazyLogging
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.ArrayBuffer
 
 import Utils._
 import DebugUtils._
@@ -15,6 +16,7 @@ object Passes extends LazyLogging {
    //private def mapNameToPass = Map[String, Circuit => Circuit] (
    //  "infer-types" -> inferTypes
    //)
+   var mname = ""
    def nameToPass(name: String): Circuit => Circuit = {
      //mapNameToPass.getOrElse(name, throw new Exception("No Standard FIRRTL Pass of name " + name))
      name match {
@@ -28,8 +30,8 @@ object Passes extends LazyLogging {
    private def toField(p: Port): Field = {
      logger.debug(s"toField called on port ${p.serialize}")
      p.direction match {
-       case Input  => Field(p.name, REVERSE, p.tpe)
-       case Output => Field(p.name, DEFAULT, p.tpe)
+       case INPUT  => Field(p.name, REVERSE, p.tpe)
+       case OUTPUT => Field(p.name, DEFAULT, p.tpe)
      }
    }
    // ============== RESOLVE ALL ===================
@@ -38,23 +40,27 @@ object Passes extends LazyLogging {
          toWorkingIr _,
          resolveKinds _,
          inferTypes _,
-         resolveGenders _)
+         resolveGenders _,
+         pullMuxes _,
+         expandConnects _)
       val names = Seq(
          "To Working IR",
          "Resolve Kinds",
          "Infer Types",
-         "Resolve Genders")
+         "Resolve Genders",
+         "Pull Muxes",
+         "Expand Connects")
       var c_BANG = c
       (names, passes).zipped.foreach { 
          (n,p) => {
             println("Starting " + n)
             c_BANG = p(c_BANG)
+            println(c_BANG.serialize())
             println("Finished " + n)
          }
       }
       c_BANG
    }
-      
  
   // ============== TO WORKING IR ==================
   def toWorkingIr (c:Circuit) = {
@@ -74,19 +80,14 @@ object Passes extends LazyLogging {
         }
      }
      val modulesx = c.modules.map { m => 
+        mname = m.name
         m match {
            case m:InModule => InModule(m.info,m.name, m.ports, toStmt(m.body))
            case m:ExModule => m
         }
       }
-      println("Before To Working IR")
-      println(c.serialize())
-     val x = Circuit(c.info,modulesx,c.main)
-      println("After To Working IR")
-     println(x.serialize())
-     x
+     Circuit(c.info,modulesx,c.main)
    }
-   
   // ===============================================
 
   // ============== RESOLVE KINDS ==================
@@ -118,13 +119,13 @@ object Passes extends LazyLogging {
                sMap(find_stmt,s)
             }
             m.ports.foreach { p => kinds += (p.name -> PortKind()) }
-            println(kinds)
             m match {
                case m:InModule => find_stmt(m.body)
                case m:ExModule => false
             }
          }
        
+         mname = m.name
          find(m)   
          m match {
             case m:InModule => {
@@ -135,12 +136,7 @@ object Passes extends LazyLogging {
          }
       }
       val modulesx = c.modules.map(m => resolve_kinds(m,c))
-      println("Before Resolve Kinds")
-      println(c.serialize())
-      val x = Circuit(c.info,modulesx,c.main)
-      println("After Resolve Kinds")
-      println(x.serialize())
-      x
+      Circuit(c.info,modulesx,c.main)
    }
   // ===============================================
 
@@ -232,6 +228,7 @@ object Passes extends LazyLogging {
             }
          }
  
+         mname = m.name
          m.ports.foreach(p => types += (p.name -> p.tpe))
          m match {
             case m:InModule => InModule(m.info,m.name,m.ports,infer_types_s(m.body))
@@ -239,10 +236,9 @@ object Passes extends LazyLogging {
          }
        }
  
-   
-      // MAIN
       val modulesx = c.modules.map { 
          m => {
+            mname = m.name
             val portsx = m.ports.map(p => Port(p.info,p.name,p.direction,remove_unknowns(p.tpe)))
             m match {
                case m:InModule => InModule(m.info,m.name,portsx,m.body)
@@ -250,16 +246,11 @@ object Passes extends LazyLogging {
             }
          }
       }
-   
       modulesx.foreach(m => module_types += (m.name -> module_type(m)))
-      println("Before Infer Types")
-      println(c.serialize())
-      val x = Circuit(c.info,modulesx.map(m => infer_types(m)) , c.main )
-      println("After Infer Types")
-      println(x.serialize())
-      x
+      Circuit(c.info,modulesx.map({m => mname = m.name; infer_types(m)}) , c.main )
    }
 
+// =================== RESOLVE GENDERS =======================
    def resolveGenders (c:Circuit) = {
       def resolve_e (g:Gender)(e:Expression) : Expression = {
          e match {
@@ -306,12 +297,251 @@ object Passes extends LazyLogging {
       }
       val modulesx = c.modules.map { 
          m => {
+            mname = m.name
             m match {
                case m:InModule => {
                   val bodyx = resolve_s(m.body)
                   InModule(m.info,m.name,m.ports,bodyx)
                }
                case m:ExModule => m
+            }
+         }
+      }
+      Circuit(c.info,modulesx,c.main)
+   }
+  // ===============================================
+
+  // =============== PULL MUXES ====================
+   def pullMuxes (c:Circuit) : Circuit = {
+      def pull_muxes_e (e:Expression) : Expression = {
+         val ex = eMap(pull_muxes_e _,e) match {
+            case (e:WRef) => e
+            case (e:WSubField) => {
+               e.exp match {
+                  case (ex:Mux) => Mux(ex.cond,WSubField(ex.tval,e.name,e.tpe,e.gender),WSubField(ex.fval,e.name,e.tpe,e.gender),e.tpe)
+                  case (ex:ValidIf) => ValidIf(ex.cond,WSubField(ex.value,e.name,e.tpe,e.gender),e.tpe)
+                  case (ex) => e
+               }
+            }
+            case (e:WSubIndex) => {
+               e.exp match {
+                  case (ex:Mux) => Mux(ex.cond,WSubIndex(ex.tval,e.value,e.tpe,e.gender),WSubIndex(ex.fval,e.value,e.tpe,e.gender),e.tpe)
+                  case (ex:ValidIf) => ValidIf(ex.cond,WSubIndex(ex.value,e.value,e.tpe,e.gender),e.tpe)
+                  case (ex) => e
+               }
+            }
+            case (e:WSubAccess) => {
+               e.exp match {
+                  case (ex:Mux) => Mux(ex.cond,WSubAccess(ex.tval,e.index,e.tpe,e.gender),WSubAccess(ex.fval,e.index,e.tpe,e.gender),e.tpe)
+                  case (ex:ValidIf) => ValidIf(ex.cond,WSubAccess(ex.value,e.index,e.tpe,e.gender),e.tpe)
+                  case (ex) => e
+               }
+            }
+            case (e:Mux) => e
+            case (e:ValidIf) => e
+            case (e) => e
+         }
+         eMap(pull_muxes_e _,ex)
+      }
+
+      def pull_muxes (s:Stmt) : Stmt = eMap(pull_muxes_e _,sMap(pull_muxes _,s))
+
+      val modulesx = c.modules.map {
+         m => {
+            mname = m.name
+            m match {
+               case (m:InModule) => InModule(m.info,m.name,m.ports,pull_muxes(m.body))
+               case (m:ExModule) => m
+            }
+         }
+      }
+      Circuit(c.info,modulesx,c.main)
+   }
+  // ===============================================
+
+
+
+   // ============ EXPAND CONNECTS ==================
+   // ---------------- UTILS ------------------
+   def get_flip (t:Type, i:Int, f:Flip) : Flip = { 
+      if (i >= get_size(t)) error("Shouldn't be here")
+      val x = t match {
+         case (t:UIntType) => f
+         case (t:SIntType) => f
+         case (t:ClockType) => f
+         case (t:BundleType) => {
+            var n = i
+            var ret:Option[Flip] = None
+            t.fields.foreach { x => {
+               if (n < get_size(x.tpe)) {
+                  ret match {
+                     case None => ret = Some(get_flip(x.tpe,n,times(x.flip,f)))
+                     case ret => {}
+                  }
+               } else { n = n - get_size(x.tpe) }
+            }}
+            ret.asInstanceOf[Some[Flip]].get
+         }
+         case (t:VectorType) => {
+            var n = i
+            var ret:Option[Flip] = None
+            for (j <- 0 until t.size) {
+               if (n < get_size(t.tpe)) {
+                  ret = Some(get_flip(t.tpe,n,f))
+               } else {
+                  n = n - get_size(t.tpe)
+               }
+            }
+            ret.asInstanceOf[Some[Flip]].get
+         }
+      }
+      x
+   }
+   
+   def get_point (e:Expression) : Int = { 
+      e match {
+         case (e:WRef) => 0
+         case (e:WSubField) => {
+            var i = 0
+            tpe(e.exp).asInstanceOf[BundleType].fields.find { f => {
+               val b = f.name == e.name
+               if (!b) { i = i + get_size(f.tpe)}
+               b
+            }}
+            i
+         }
+         case (e:WSubIndex) => e.value * get_size(e.tpe)
+         case (e:WSubAccess) => get_point(e.exp)
+      }
+   }
+   
+   def create_exps (n:String, t:Type) : Seq[Expression] =
+      create_exps(WRef(n,t,ExpKind(),UNKNOWNGENDER))
+   def create_exps (e:Expression) : Seq[Expression] = {
+      e match {
+         case (e:Mux) => {
+            val e1s = create_exps(e.tval)
+            val e2s = create_exps(e.fval)
+            (e1s, e2s).zipped.map { 
+               (e1,e2) => Mux(e.cond,e1,e2,mux_type_and_widths(e1,e2))
+            }
+         }
+         case (e:ValidIf) => {
+            create_exps(e.value).map {
+               e1 => ValidIf(e.cond,e1,tpe(e1))
+            }
+         }
+         case (e) => {
+            tpe(e) match {
+               case (t:UIntType) => Seq(e)
+               case (t:SIntType) => Seq(e)
+               case (t:ClockType) => Seq(e)
+               case (t:BundleType) => {
+                  t.fields.flatMap {
+                     f => create_exps(WSubField(e,f.name,f.tpe,times(gender(e), f.flip)))
+                  }
+               }
+               case (t:VectorType) => {
+                  (0 until t.size).flatMap {
+                     i => create_exps(WSubIndex(e,i,t.tpe,gender(e)))
+                  }
+               }
+            }
+         }
+      }
+   }
+   
+   //---------------- Pass ---------------------
+   
+   def expandConnects (c:Circuit) : Circuit = { 
+      def expand_connects (m:InModule) : InModule = { 
+         mname = m.name
+         val genders = HashMap[String,Gender]()
+         def expand_s (s:Stmt) : Stmt = {
+            def set_gender (e:Expression) : Expression = {
+               eMap(set_gender _,e) match {
+                  case (e:WRef) => WRef(e.name,e.tpe,e.kind,genders(e.name))
+                  case (e:WSubField) => {
+                     val f = get_field(tpe(e.exp),e.name)
+                     val genderx = times(gender(e.exp),f.flip)
+                     WSubField(e.exp,e.name,e.tpe,genderx)
+                  }
+                  case (e:WSubIndex) => WSubIndex(e.exp,e.value,e.tpe,gender(e.exp))
+                  case (e:WSubAccess) => WSubAccess(e.exp,e.index,e.tpe,gender(e.exp))
+                  case (e) => e
+               }
+            }
+            s match {
+               case (s:DefWire) => { genders += (s.name -> BIGENDER); s }
+               case (s:DefRegister) => { genders += (s.name -> BIGENDER); s }
+               case (s:WDefInstance) => { genders += (s.name -> MALE); s }
+               case (s:DefMemory) => { genders += (s.name -> MALE); s }
+               case (s:DefPoison) => { genders += (s.name -> MALE); s }
+               case (s:DefNode) => { genders += (s.name -> MALE); s }
+               case (s:IsInvalid) => {
+                  val n = get_size(tpe(s.exp))
+                  val invalids = ArrayBuffer[Stmt]()
+                  val exps = create_exps(s.exp)
+                  for (i <- 0 until n) {
+                     val expx = exps(i)
+                     val gexpx = set_gender(expx)
+                     gender(gexpx) match {
+                        case BIGENDER => invalids += IsInvalid(s.info,expx)
+                        case FEMALE => invalids += IsInvalid(s.info,expx)
+                        case _ => {}
+                     }
+                  }
+                  if (invalids.length == 0) {
+                     Empty()
+                  } else if (invalids.length == 1) {
+                     invalids(0)
+                  } else Begin(invalids)
+               }
+               case (s:Connect) => {
+                  val n = get_size(tpe(s.loc))
+                  val connects = ArrayBuffer[Stmt]()
+                  val locs = create_exps(s.loc)
+                  val exps = create_exps(s.exp)
+                  for (i <- 0 until n) {
+                     val locx = locs(i)
+                     val expx = exps(i)
+                     val sx = get_flip(tpe(s.loc),i,DEFAULT) match {
+                        case DEFAULT => Connect(s.info,locx,expx)
+                        case REVERSE => Connect(s.info,expx,locx)
+                     }
+                     connects += sx
+                  }
+                  Begin(connects)
+               }
+               case (s:BulkConnect) => {
+                  val ls = get_valid_points(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT)
+                  val connects = ArrayBuffer[Stmt]()
+                  val locs = create_exps(s.loc)
+                  val exps = create_exps(s.exp)
+                  ls.foreach { x => {
+                     val locx = locs(x._1)
+                     val expx = exps(x._2)
+                     val sx = get_flip(tpe(s.loc),x._1,DEFAULT) match {
+                        case DEFAULT => Connect(s.info,locx,expx)
+                        case REVERSE => Connect(s.info,expx,locx)
+                     }
+                     connects += sx
+                  }}
+                  Begin(connects)
+               }
+               case (s) => sMap(expand_s _,s)
+            }
+         }
+   
+         m.ports.foreach { p => genders += (p.name -> to_gender(p.direction)) }
+         InModule(m.info,m.name,m.ports,expand_s(m.body))
+      }
+   
+      val modulesx = c.modules.map { 
+         m => {
+            m match {
+               case (m:ExModule) => m
+               case (m:InModule) => expand_connects(m)
             }
          }
       }

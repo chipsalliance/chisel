@@ -14,6 +14,7 @@ package firrtl
 import scala.collection.mutable.StringBuilder
 import java.io.PrintWriter
 import PrimOps._
+import scala.collection.mutable.ArrayBuffer
 //import scala.reflect.runtime.universe._
 
 object Utils {
@@ -26,6 +27,7 @@ object Utils {
    def ceil_log2(x: BigInt): BigInt = (x-1).bitLength
    val gen_names = Map[String,Int]()
    val delin = "_"
+   def BoolType () = { UIntType(IntWidth(1)) } 
    def firrtl_gensym (s:String):String = {
       firrtl_gensym(s,Map[String,Int]())
    }
@@ -143,7 +145,64 @@ object Utils {
      def serialize(implicit flags: FlagMap = FlagMap): String = op.getString
    }
 
-// =========== GENDER UTILS ============
+// =============== EXPANSION FUNCTIONS ================
+   def get_size (t:Type) : Int = {
+      t match {
+         case (t:BundleType) => {
+            var sum = 0
+            for (f <- t.fields) {
+               sum = sum + get_size(f.tpe)
+            }
+            sum
+         }
+         case (t:VectorType) => t.size * get_size(t.tpe)
+         case (t) => 1
+      }
+   }
+   def get_valid_points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) : Seq[(Int,Int)] = {
+      //;println_all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
+      (t1,t2) match {
+         case (t1:UIntType,t2:UIntType) => if (flip1 == flip2) Seq((0, 0)) else Seq()
+         case (t1:SIntType,t2:SIntType) => if (flip1 == flip2) Seq((0, 0)) else Seq()
+         case (t1:BundleType,t2:BundleType) => {
+            val points = ArrayBuffer[(Int,Int)]()
+            var ilen = 0
+            var jlen = 0
+            for (i <- 0 until t1.fields.size) {
+               for (j <- 0 until t2.fields.size) {
+                  val f1 = t1.fields(i)
+                  val f2 = t2.fields(j)
+                  if (f1.name == f2.name) {
+                     val ls = get_valid_points(f1.tpe,f2.tpe,times(flip1, f1.flip),times(flip2, f2.flip))
+                     for (x <- ls) {
+                        points += ((x._1 + ilen, x._2 + jlen))
+                     }
+                  }
+                  jlen = jlen + get_size(t2.fields(j).tpe)
+               }
+               ilen = ilen + get_size(t1.fields(i).tpe)
+               jlen = 0
+            }
+            points
+         }
+         case (t1:VectorType,t2:VectorType) => {
+            val points = ArrayBuffer[(Int,Int)]()
+            var ilen = 0
+            var jlen = 0
+            for (i <- 0 until scala.math.min(t1.size,t2.size)) {
+               val ls = get_valid_points(t1.tpe,t2.tpe,flip1,flip2)
+               for (x <- ls) {
+                  val y = ((x._1 + ilen), (x._2 + jlen))
+                  points += y
+               }
+               ilen = ilen + get_size(t1.tpe)
+               jlen = jlen + get_size(t2.tpe)
+            }
+            points
+         }
+      }
+   }
+// =========== GENDER/FLIP UTILS ============
    def swap (g:Gender) : Gender = {
       g match {
          case UNKNOWNGENDER => UNKNOWNGENDER
@@ -152,7 +211,24 @@ object Utils {
          case BIGENDER => BIGENDER
       }
    }
-// =========== FLIP UTILS ===============
+   def swap (d:Direction) : Direction = {
+      d match {
+         case OUTPUT => INPUT
+         case INPUT => OUTPUT
+      }
+   }
+   def swap (f:Flip) : Flip = {
+      f match {
+         case DEFAULT => REVERSE
+         case REVERSE => DEFAULT
+      }
+   }
+   def to_gender (d:Direction) : Gender = {
+      d match {
+         case INPUT => MALE
+         case OUTPUT => FEMALE
+      }
+   }
    def field_flip (v:Type,s:String) : Flip = {
       v match {
          case v:BundleType => {
@@ -165,6 +241,39 @@ object Utils {
          case v => DEFAULT
       }
    }
+   def get_field (v:Type,s:String) : Field = {
+      v match {
+         case v:BundleType => {
+            val ft = v.fields.find {p => p.name == s}
+            ft match {
+               case ft:Some[Field] => ft.get
+               case ft => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType())
+            }
+         }
+         case v => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType())
+      }
+   }
+   def times (flip:Flip,d:Direction) : Direction = times(flip, d)
+   def times (d:Direction,flip:Flip) : Direction = {
+      flip match {
+         case DEFAULT => d
+         case REVERSE => swap(d)
+      }
+   }
+   def times (g:Gender,flip:Flip) : Gender = times(flip, g)
+   def times (flip:Flip,g:Gender) : Gender = {
+      flip match {
+         case DEFAULT => g
+         case REVERSE => swap(g)
+      }
+   }
+   def times (f1:Flip,f2:Flip) : Flip = {
+      f2 match {
+         case DEFAULT => f1
+         case REVERSE => swap(f1)
+      }
+   }
+
 
 // =========== ACCESSORS =========
    def gender (e:Expression) : Gender = {
@@ -198,7 +307,7 @@ object Utils {
        case s:IsInvalid => UNKNOWNGENDER
      }
    def get_gender (p:Port) : Gender =
-     if (p.direction == Input) MALE else FEMALE
+     if (p.direction == INPUT) MALE else FEMALE
    def kind (e:Expression) : Kind =
       e match {
          case e:WRef => e.kind
@@ -240,10 +349,10 @@ object Utils {
           val write_type = BundleType(Seq(def_data,mask,addr,en,clk))
           val readwrite_type = BundleType(Seq(wmode,rdata,def_data,mask,addr,en,clk))
 
-          val mem_fields = Vector()
-          s.readers.foreach {x => mem_fields :+ Field(x,REVERSE,read_type)}
-          s.writers.foreach {x => mem_fields :+ Field(x,REVERSE,write_type)}
-          s.readwriters.foreach {x => mem_fields :+ Field(x,REVERSE,readwrite_type)}
+          val mem_fields = ArrayBuffer[Field]()
+          s.readers.foreach {x => mem_fields += Field(x,REVERSE,read_type)}
+          s.writers.foreach {x => mem_fields += Field(x,REVERSE,write_type)}
+          s.readwriters.foreach {x => mem_fields += Field(x,REVERSE,readwrite_type)}
           BundleType(mem_fields)
        }
        case s:DefInstance => UnknownType()
@@ -434,20 +543,23 @@ object Utils {
          case b: BulkConnect => s"${b.loc.serialize} <- ${b.exp.serialize}"
          case w: Conditionally => {
            var str = new StringBuilder(s"when ${w.pred.serialize} : ")
-           withIndent { str ++= w.conseq.serialize }
+           withIndent { str ++= newline + w.conseq.serialize }
            w.alt match {
               case s:Empty => str.result
               case s => {
                 str ++= newline + "else :"
-                withIndent { str ++= w.alt.serialize }
+                withIndent { str ++= newline + w.alt.serialize }
                 str.result
                 }
            }
          }
          case b: Begin => {
-           val s = new StringBuilder
-           b.stmts.foreach { s ++= newline ++ _.serialize }
-           s.result + debug(b)
+            val s = new StringBuilder
+            for (i <- 0 until b.stmts.size) {
+               if (i != 0) s ++= newline ++ b.stmts(i).serialize
+               else s ++= b.stmts(i).serialize
+            }
+            s.result + debug(b)
          } 
          case i: IsInvalid => s"${i.exp.serialize} is invalid"
          case s: Stop => s"stop(${s.clk.serialize}, ${s.en.serialize}, ${s.ret})"
@@ -497,8 +609,8 @@ object Utils {
          
      def toDirection(): Direction = {
        f match {
-         case DEFAULT => Output
-         case REVERSE => Input
+         case DEFAULT => OUTPUT
+         case REVERSE => INPUT
        }
      }
    }
@@ -544,15 +656,15 @@ object Utils {
    implicit class DirectionUtils(d: Direction) {
      def serialize(implicit flags: FlagMap = FlagMap): String = {
        val s = d match {
-         case Input => "input"
-         case Output => "output"
+         case INPUT => "input"
+         case OUTPUT => "output"
        } 
        s + debug(d)
      }
      def toFlip(): Flip = {
        d match {
-         case Input => REVERSE
-         case Output => DEFAULT
+         case INPUT => REVERSE
+         case OUTPUT => DEFAULT
        }
      }
    }

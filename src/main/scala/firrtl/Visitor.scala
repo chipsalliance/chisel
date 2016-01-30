@@ -53,8 +53,8 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
 
 	private def visitDir[AST](ctx: FIRRTLParser.DirContext): Direction =
     ctx.getText match {
-      case "input" => Input
-      case "output" => Output
+      case "input" => INPUT
+      case "output" => OUTPUT
     }
 
   // Match on a type instead of on strings?
@@ -66,7 +66,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
                      else SIntType( UnknownWidth() )
       case "Clock" => ClockType()
       case "{" => BundleType(ctx.field.map(visitField))
-      case _ => new VectorType( visitType(ctx.`type`), string2BigInt(ctx.IntLit.getText) )
+      case _ => new VectorType( visitType(ctx.`type`), string2Int(ctx.IntLit.getText) )
     }
   }
       
@@ -180,7 +180,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
           ctx.getChild(1).getText match {
             case "." => new SubField(visitExp(ctx.exp(0)), (ctx.id.getText), UnknownType())
             case "[" => if (ctx.exp(1) == null)  
-                          new SubIndex(visitExp(ctx.exp(0)), string2BigInt(ctx.IntLit(0).getText), UnknownType())
+                          new SubIndex(visitExp(ctx.exp(0)), string2Int(ctx.IntLit(0).getText), UnknownType())
                         else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType())
             // Assume primop
             case _ => DoPrim(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
