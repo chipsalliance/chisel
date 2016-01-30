@@ -14,6 +14,8 @@ case class FileInfo(file: String, line: Int, column: Int) extends Info {
   override def toString(): String = s"$file@$line.$column"
 }
 
+case class FIRRTLException(str:String) extends Exception
+
 trait AST 
 
 trait PrimOp extends AST
@@ -63,6 +65,7 @@ case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: T
 
 trait Stmt extends AST
 case class DefWire(info: Info, name: String, tpe: Type) extends Stmt
+case class DefPoison(info: Info, name: String, tpe: Type) extends Stmt
 case class DefRegister(info: Info, name: String, tpe: Type, clock: Expression, reset: Expression, init: Expression) extends Stmt 
 case class DefInstance(info: Info, name: String, module: String) extends Stmt 
 case class DefMemory(info: Info, name: String, dataType: Type, depth: Int, writeLatency: Int, 
@@ -75,7 +78,7 @@ case class Connect(info: Info, loc: Expression, exp: Expression) extends Stmt
 case class IsInvalid(info: Info, exp: Expression) extends Stmt
 case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Stmt
 case class Print(info: Info, string: String, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt
-case object Empty extends Stmt
+case class Empty() extends Stmt
 
 trait Width extends AST 
 case class IntWidth(width: BigInt) extends Width 
@@ -92,8 +95,8 @@ case class UIntType(width: Width) extends Type
 case class SIntType(width: Width) extends Type
 case class BundleType(fields: Seq[Field]) extends Type
 case class VectorType(tpe: Type, size: BigInt) extends Type
-case object ClockType extends Type
-case object UnknownType extends Type
+case class ClockType() extends Type
+case class UnknownType() extends Type
 
 trait Direction extends AST
 case object Input extends Direction
@@ -101,8 +104,14 @@ case object Output extends Direction
 
 case class Port(info: Info, name: String, dir: Direction, tpe: Type) extends AST
 
-case class Module(info: Info, name: String, ports: Seq[Port], stmt: Stmt) extends AST
+trait Module extends AST {
+  val info : Info
+  val name : String
+  val ports : Seq[Port]
+}
+case class InModule(info: Info, name: String, ports: Seq[Port], body: Stmt) extends Module
+case class ExModule(info: Info, name: String, ports: Seq[Port]) extends Module
 
-case class Circuit(info: Info, name: String, modules: Seq[Module]) extends AST
+case class Circuit(info: Info, modules: Seq[Module], main: String) extends AST
 
 

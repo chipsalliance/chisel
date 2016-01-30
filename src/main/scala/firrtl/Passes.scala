@@ -7,9 +7,6 @@ import Utils._
 import DebugUtils._
 import PrimOps._
 
-
-
-
 object Passes extends LazyLogging {
 
   // TODO Perhaps we should get rid of Logger since this map would be nice
@@ -20,9 +17,10 @@ object Passes extends LazyLogging {
   def nameToPass(name: String): Circuit => Circuit = {
     //mapNameToPass.getOrElse(name, throw new Exception("No Standard FIRRTL Pass of name " + name))
     name match {
-      case "infer-types" => inferTypes
+      case "to-working-ir" => toWorkingIr
+      //case "infer-types" => inferTypes
         // errrrrrrrrrr...
-      case "renameall" => renameall(Map())
+      //case "renameall" => renameall(Map())
     }
   }
 
@@ -33,6 +31,34 @@ object Passes extends LazyLogging {
       case Output => Field(p.name, Default, p.tpe)
     }
   }
+
+  // ============== TO WORKING IR ==================
+  def toWorkingIr (c:Circuit) = {
+     def toExp (e:Expression) : Expression = {
+        eMap(toExp _,e) match {
+           case e:Ref => WRef(e.name, e.tpe, NodeKind(), UNKNOWNGENDER)
+           case e:SubField => WSubField(e.exp, e.name, e.tpe, UNKNOWNGENDER)
+           case e:SubIndex => WSubIndex(e.exp, e.value, e.tpe, UNKNOWNGENDER)
+           case e:SubAccess => WSubAccess(e.exp, e.index, e.tpe, UNKNOWNGENDER)
+           case e => e
+        }
+     }
+     def toStmt (s:Stmt) : Stmt = {
+        eMap(toExp _,s) match {
+           case s:DefInstance => WDefInstance(s.info,s.name,s.module,UnknownType())
+           case s => sMap(toStmt _,s)
+        }
+     }
+     val modulesx = c.modules.map { m => 
+        m match {
+           case m:InModule => InModule(m.info,m.name, m.ports, toStmt(m.body))
+           case m:ExModule => m
+        }
+      }
+     Circuit(c.info,modulesx,c.main)
+   }
+  // ===============================================
+
 
   /** INFER TYPES
    *
@@ -45,137 +71,149 @@ object Passes extends LazyLogging {
    *    postponed for a later/earlier pass.
    */
   // input -> flip
-  private def getBundleSubtype(t: Type, name: String): Type = {
-    t match {
-      case b: BundleType => {
-        val tpe = b.fields.find( _.name == name )
-        if (tpe.isEmpty) UnknownType
-        else tpe.get.tpe
-      }
-      case _ => UnknownType
-    }
-  }
-  private def getVectorSubtype(t: Type): Type = t.getType // Added for clarity
-  private type TypeMap = Map[String, Type]
-  /*def inferTypes(c: Circuit): Circuit = {
-    val moduleTypeMap = Map[String, Type]().withDefaultValue(UnknownType)
-    def inferTypes(m: Module): Module = {
-      val typeMap = Map[String, Type]().withDefaultValue(UnknownType)
-      def inferExpTypes(exp: Expression): Expression = {
-        //logger.debug(s"inferTypes called on ${exp.getClass.getSimpleName}")
-        exp.map(inferExpTypes) match {
-          case e: UIntValue => e
-          case e: SIntValue => e
-          case e: Ref => Ref(e.name, typeMap(e.name))
-          case e: SubField => SubField(e.exp, e.name, getBundleSubtype(e.exp.getType, e.name))
-          case e: SubIndex => SubIndex(e.exp, e.value, getVectorSubtype(e.exp.getType))
-          case e: SubAccess => SubAccess(e.exp, e.index, getVectorSubtype(e.exp.getType))
-          case e: DoPrim => lowerAndTypePrimOp(e)
-          case e: Expression => e
-        }
-      }
-      def inferStmtTypes(stmt: Stmt): (Stmt) = {
-        //logger.debug(s"inferStmtTypes called on ${stmt.getClass.getSimpleName} ")
-        stmt match {
-          case s: DefWire => 
-             typeMap(s.name) = s.tpe
-             s
-          case s: DefRegister => 
-             typeMap(s.name) = get_tpe(s)
-             s
-          case s: DefMemory => 
-             typeMap(s.name) = get_tpe(s)
-             s
-          case s: DefInstance => (s, typeMap ++ Map(s.name -> typeMap(s.module)))
-          case s: DefNode => (s, typeMap ++ Map(s.name -> s.value.getType))
-          case s: s.map(inferStmtTypes)
-        }.map(inferExpTypes)
-      }
-      //logger.debug(s"inferTypes called on module ${m.name}")
+  //private type TypeMap = Map[String, Type]
+  //private val TypeMap = Map[String, Type]().withDefaultValue(UnknownType)
+  //private def getBundleSubtype(t: Type, name: String): Type = {
+  //  t match {
+  //    case b: BundleType => {
+  //      val tpe = b.fields.find( _.name == name )
+  //      if (tpe.isEmpty) UnknownType
+  //      else tpe.get.tpe
+  //    }
+  //    case _ => UnknownType
+  //  }
+  //}
+  //private def getVectorSubtype(t: Type): Type = t.getType // Added for clarity
+  //// TODO Add genders
+  //private def inferExpTypes(typeMap: TypeMap)(exp: Expression): Expression = {
+  //  logger.debug(s"inferTypes called on ${exp.getClass.getSimpleName}")
+  //  exp.map(inferExpTypes(typeMap)) match {
+  //    case e: UIntValue => e
+  //    case e: SIntValue => e
+  //    case e: Ref => Ref(e.name, typeMap(e.name))
+  //    case e: SubField => SubField(e.exp, e.name, getBundleSubtype(e.exp.getType, e.name))
+  //    case e: SubIndex => SubIndex(e.exp, e.value, getVectorSubtype(e.exp.getType))
+  //    case e: SubAccess => SubAccess(e.exp, e.index, getVectorSubtype(e.exp.getType))
+  //    case e: DoPrim => lowerAndTypePrimOp(e)
+  //    case e: Expression => e
+  //  }
+  //}
+  //private def inferTypes(typeMap: TypeMap, stmt: Stmt): (Stmt, TypeMap) = {
+  //  logger.debug(s"inferTypes called on ${stmt.getClass.getSimpleName} ")
+  //  stmt.map(inferExpTypes(typeMap)) match {
+  //    case b: Begin => {
+  //      var tMap = typeMap
+  //      // TODO FIXME is map correctly called in sequential order
+  //      val body = b.stmts.map { s =>
+  //        val ret = inferTypes(tMap, s)
+  //        tMap = ret._2
+  //        ret._1
+  //      }
+  //      (Begin(body), tMap)
+  //    }
+  //    case s: DefWire => (s, typeMap ++ Map(s.name -> s.tpe))
+  //    case s: DefRegister => (s, typeMap ++ Map(s.name -> s.tpe))
+  //    case s: DefMemory => (s, typeMap ++ Map(s.name -> s.dataType))
+  //    case s: DefInstance => (s, typeMap ++ Map(s.name -> typeMap(s.module)))
+  //    case s: DefNode => (s, typeMap ++ Map(s.name -> s.value.getType))
+  //    case s: Conditionally => { // TODO Check: Assuming else block won't see when scope
+  //      val (conseq, cMap) = inferTypes(typeMap, s.conseq)
+  //      val (alt, aMap) = inferTypes(typeMap, s.alt)
+  //      (Conditionally(s.info, s.pred, conseq, alt), cMap ++ aMap)
+  //    }
+  //    case s: Stmt => (s, typeMap)
+  //  }
+  //}
+  //private def inferTypes(typeMap: TypeMap, m: Module): Module = {
+  //  logger.debug(s"inferTypes called on module ${m.name}")
 
-      m.ports.for( p => typeMap(p.name) = p.tpe)
-      Module(m.info, m.name, m.ports, inferStmtTypes(m.stmt))
-    }
-    //logger.debug(s"inferTypes called on circuit ${c.name}")
+  //  val pTypeMap = m.ports.map( p => p.name -> p.tpe ).toMap
 
-    // initialize typeMap with each module of circuit mapped to their bundled IO (ports converted to fields)
-    val typeMap = c.modules.map(m => m.name -> BundleType(m.ports.map(toField(_)))).toMap
-    Circuit(c.info, c.name, c.modules.map(inferTypes(typeMap, _)))
-  }*/
+  //  Module(m.info, m.name, m.ports, inferTypes(typeMap ++ pTypeMap, m.stmt)._1)
+  //}
+  //def inferTypes(c: Circuit): Circuit = {
+  //  logger.debug(s"inferTypes called on circuit ${c.name}")
 
-  def renameall(s : String)(implicit map : Map[String,String]) : String =
-    map getOrElse (s, s)
+  //  // initialize typeMap with each module of circuit mapped to their bundled IO (ports converted to fields)
+  //  val typeMap = c.modules.map(m => m.name -> BundleType(m.ports.map(toField(_)))).toMap
 
-  def renameall(e : Expression)(implicit map : Map[String,String]) : Expression = {
-    logger.debug(s"renameall called on expression ${e.toString}")
-    e match {
-      case p : Ref =>
-        Ref(renameall(p.name), p.tpe)
-      case p : SubField =>
-        SubField(renameall(p.exp), renameall(p.name), p.tpe)
-      case p : SubIndex =>
-        SubIndex(renameall(p.exp), p.value, p.tpe)
-      case p : SubAccess =>
-        SubAccess(renameall(p.exp), renameall(p.index), p.tpe)
-      case p : Mux =>
-        Mux(renameall(p.cond), renameall(p.tval), renameall(p.fval), p.tpe)
-      case p : ValidIf =>
-        ValidIf(renameall(p.cond), renameall(p.value), p.tpe)
-      case p : DoPrim =>
-        println( p.args.map(x => renameall(x)) )
-        DoPrim(p.op, p.args.map(renameall), p.consts, p.tpe)
-      case p : Expression => p
-    }
-  }
+  //  //val typeMap = c.modules.flatMap(buildTypeMap).toMap
+  //  Circuit(c.info, c.name, c.modules.map(inferTypes(typeMap, _)))
+  //}
 
-  def renameall(s : Stmt)(implicit map : Map[String,String]) : Stmt = {
-    logger.debug(s"renameall called on statement ${s.toString}")
+  //def renameall(s : String)(implicit map : Map[String,String]) : String =
+  //  map getOrElse (s, s)
 
-    s match {
-      case p : DefWire =>
-        DefWire(p.info, renameall(p.name), p.tpe)
-      case p: DefRegister =>
-        DefRegister(p.info, renameall(p.name), p.tpe, p.clock, p.reset, p.init)
-      case p : DefMemory =>
-        DefMemory(p.info, renameall(p.name), p.dataType, p.depth, p.writeLatency, p.readLatency, 
-                  p.readers, p.writers, p.readwriters)
-      case p : DefInstance =>
-        DefInstance(p.info, renameall(p.name), renameall(p.module))
-      case p : DefNode =>
-        DefNode(p.info, renameall(p.name), renameall(p.value))
-      case p : Connect =>
-        Connect(p.info, renameall(p.loc), renameall(p.exp))
-      case p : BulkConnect =>
-        BulkConnect(p.info, renameall(p.loc), renameall(p.exp))
-      case p : IsInvalid =>
-        IsInvalid(p.info, renameall(p.exp))
-      case p : Stop =>
-        Stop(p.info, p.ret, renameall(p.clk), renameall(p.en))
-      case p : Print =>
-        Print(p.info, p.string, p.args.map(renameall), renameall(p.clk), renameall(p.en))
-      case p : Conditionally =>
-        Conditionally(p.info, renameall(p.pred), renameall(p.conseq), renameall(p.alt))
-      case p : Begin =>
-        Begin(p.stmts.map(renameall))
-      case p : Stmt => p
-    }
-  }
+  //def renameall(e : Expression)(implicit map : Map[String,String]) : Expression = {
+  //  logger.debug(s"renameall called on expression ${e.toString}")
+  //  e match {
+  //    case p : Ref =>
+  //      Ref(renameall(p.name), p.tpe)
+  //    case p : SubField =>
+  //      SubField(renameall(p.exp), renameall(p.name), p.tpe)
+  //    case p : SubIndex =>
+  //      SubIndex(renameall(p.exp), p.value, p.tpe)
+  //    case p : SubAccess =>
+  //      SubAccess(renameall(p.exp), renameall(p.index), p.tpe)
+  //    case p : Mux =>
+  //      Mux(renameall(p.cond), renameall(p.tval), renameall(p.fval), p.tpe)
+  //    case p : ValidIf =>
+  //      ValidIf(renameall(p.cond), renameall(p.value), p.tpe)
+  //    case p : DoPrim =>
+  //      println( p.args.map(x => renameall(x)) )
+  //      DoPrim(p.op, p.args.map(renameall), p.consts, p.tpe)
+  //    case p : Expression => p
+  //  }
+  //}
 
-  def renameall(p : Port)(implicit map : Map[String,String]) : Port = {
-    logger.debug(s"renameall called on port ${p.name}")
-    Port(p.info, renameall(p.name), p.dir, p.tpe)
-  }
+  //def renameall(s : Stmt)(implicit map : Map[String,String]) : Stmt = {
+  //  logger.debug(s"renameall called on statement ${s.toString}")
 
-  def renameall(m : Module)(implicit map : Map[String,String]) : Module = {
-    logger.debug(s"renameall called on module ${m.name}")
-    Module(m.info, renameall(m.name), m.ports.map(renameall(_)), renameall(m.stmt))
-  }
+  //  s match {
+  //    case p : DefWire =>
+  //      DefWire(p.info, renameall(p.name), p.tpe)
+  //    case p: DefRegister =>
+  //      DefRegister(p.info, renameall(p.name), p.tpe, p.clock, p.reset, p.init)
+  //    case p : DefMemory =>
+  //      DefMemory(p.info, renameall(p.name), p.dataType, p.depth, p.writeLatency, p.readLatency, 
+  //                p.readers, p.writers, p.readwriters)
+  //    case p : DefInstance =>
+  //      DefInstance(p.info, renameall(p.name), renameall(p.module))
+  //    case p : DefNode =>
+  //      DefNode(p.info, renameall(p.name), renameall(p.value))
+  //    case p : Connect =>
+  //      Connect(p.info, renameall(p.loc), renameall(p.exp))
+  //    case p : BulkConnect =>
+  //      BulkConnect(p.info, renameall(p.loc), renameall(p.exp))
+  //    case p : IsInvalid =>
+  //      IsInvalid(p.info, renameall(p.exp))
+  //    case p : Stop =>
+  //      Stop(p.info, p.ret, renameall(p.clk), renameall(p.en))
+  //    case p : Print =>
+  //      Print(p.info, p.string, p.args.map(renameall), renameall(p.clk), renameall(p.en))
+  //    case p : Conditionally =>
+  //      Conditionally(p.info, renameall(p.pred), renameall(p.conseq), renameall(p.alt))
+  //    case p : Begin =>
+  //      Begin(p.stmts.map(renameall))
+  //    case p : Stmt => p
+  //  }
+  //}
 
-  def renameall(map : Map[String,String]) : Circuit => Circuit = {
-    c => {
-      implicit val imap = map
-      logger.debug(s"renameall called on circuit ${c.name} with %{renameto}")
-      Circuit(c.info, renameall(c.name), c.modules.map(renameall(_)))
-    }
-  }
+  //def renameall(p : Port)(implicit map : Map[String,String]) : Port = {
+  //  logger.debug(s"renameall called on port ${p.name}")
+  //  Port(p.info, renameall(p.name), p.dir, p.tpe)
+  //}
+
+  //def renameall(m : Module)(implicit map : Map[String,String]) : Module = {
+  //  logger.debug(s"renameall called on module ${m.name}")
+  //  Module(m.info, renameall(m.name), m.ports.map(renameall(_)), renameall(m.stmt))
+  //}
+
+  //def renameall(map : Map[String,String]) : Circuit => Circuit = {
+  //  c => {
+  //    implicit val imap = map
+  //    logger.debug(s"renameall called on circuit ${c.name} with %{renameto}")
+  //    Circuit(c.info, renameall(c.name), c.modules.map(renameall(_)))
+  //  }
+  //}
 }

@@ -43,13 +43,13 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     FileInfo(filename, ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine())
 
 	private def visitCircuit[AST](ctx: FIRRTLParser.CircuitContext): Circuit = 
-    Circuit(getInfo(ctx), ctx.id.getText, ctx.module.map(visitModule)) 
+    Circuit(getInfo(ctx), ctx.module.map(visitModule), (ctx.id.getText)) 
     
   private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): Module = 
-    Module(getInfo(ctx), ctx.id.getText, ctx.port.map(visitPort), visitBlock(ctx.block))
+    InModule(getInfo(ctx), (ctx.id.getText), ctx.port.map(visitPort), visitBlock(ctx.block))
 
 	private def visitPort[AST](ctx: FIRRTLParser.PortContext): Port = 
-    Port(getInfo(ctx), ctx.id.getText, visitDir(ctx.dir), visitType(ctx.`type`))
+    Port(getInfo(ctx), (ctx.id.getText), visitDir(ctx.dir), visitType(ctx.`type`))
 
 	private def visitDir[AST](ctx: FIRRTLParser.DirContext): Direction =
     ctx.getText match {
@@ -64,7 +64,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
                      else UIntType( UnknownWidth )
       case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
                      else SIntType( UnknownWidth )
-      case "Clock" => ClockType
+      case "Clock" => ClockType()
       case "{" => BundleType(ctx.field.map(visitField))
       case _ => new VectorType( visitType(ctx.`type`), string2BigInt(ctx.IntLit.getText) )
     }
@@ -72,7 +72,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
       
 	private def visitField[AST](ctx: FIRRTLParser.FieldContext): Field = {
     val flip = if(ctx.getChild(0).getText == "flip") Reverse else Default
-    Field(ctx.id.getText, flip, visitType(ctx.`type`))
+    Field((ctx.id.getText), flip, visitType(ctx.`type`))
   }
      
 
@@ -107,10 +107,10 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     }
     // Each memory field value has been left as ParseTree type, need to convert
     // TODO Improve? Remove dynamic typecast of data-type
-    DefMemory(info, ctx.id(0).getText, visitType(map("data-type").head.asInstanceOf[FIRRTLParser.TypeContext]), 
+    DefMemory(info, (ctx.id(0).getText), visitType(map("data-type").head.asInstanceOf[FIRRTLParser.TypeContext]), 
               string2Int(map("depth").head.getText), string2Int(map("write-latency").head.getText), 
-              string2Int(map("read-latency").head.getText), map.getOrElse("reader", Seq()).map(_.getText),
-              map.getOrElse("writer", Seq()).map(_.getText), map.getOrElse("readwriter", Seq()).map(_.getText))
+              string2Int(map("read-latency").head.getText), map.getOrElse("reader", Seq()).map(x => (x.getText)),
+              map.getOrElse("writer", Seq()).map(x => (x.getText)), map.getOrElse("readwriter", Seq()).map(x => (x.getText)))
   }
 
   // visitStmt
@@ -118,25 +118,25 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     val info = getInfo(ctx)
 
     ctx.getChild(0).getText match {
-      case "wire" => DefWire(info, ctx.id(0).getText, visitType(ctx.`type`(0)))
+      case "wire" => DefWire(info, (ctx.id(0).getText), visitType(ctx.`type`(0)))
       case "reg"  => {
-        val name = ctx.id(0).getText
+        val name = (ctx.id(0).getText)
         val tpe = visitType(ctx.`type`(0))
         val reset = if (ctx.exp(1) != null) visitExp(ctx.exp(1)) else UIntValue(0, IntWidth(1))
         val init  = if (ctx.exp(2) != null) visitExp(ctx.exp(2)) else Ref(name, tpe)
         DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
       }
       case "mem" => visitMem(ctx)
-      case "inst"  => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
-      case "node" =>  DefNode(info, ctx.id(0).getText, visitExp(ctx.exp(0)))
+      case "inst"  => DefInstance(info, (ctx.id(0).getText), (ctx.id(1).getText))
+      case "node" =>  DefNode(info, (ctx.id(0).getText), visitExp(ctx.exp(0)))
       case "when" => { 
-        val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else Empty
+        val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else Empty()
         Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
       }
       case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
       case "printf(" => Print(info, ctx.StringLit.getText, ctx.exp.drop(2).map(visitExp), 
                               visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-      case "skip" => Empty
+      case "skip" => Empty()
       // If we don't match on the first child, try the next one
       case _ => {
         ctx.getChild(1).getText match {
@@ -157,7 +157,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
   // - Add validif
 	private def visitExp[AST](ctx: FIRRTLParser.ExpContext): Expression = 
     if( ctx.getChildCount == 1 ) 
-      Ref(ctx.getText, UnknownType)
+      Ref((ctx.getText), UnknownType())
     else
       ctx.getChild(0).getText match {
         case "UInt" => { // This could be better
@@ -174,17 +174,17 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
             else (UnknownWidth, string2BigInt(ctx.IntLit(0).getText))
           SIntValue(value, width)
         }
-        case "validif(" => ValidIf(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
-        case "mux(" => Mux(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), visitExp(ctx.exp(2)), UnknownType)
+        case "validif(" => ValidIf(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType())
+        case "mux(" => Mux(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), visitExp(ctx.exp(2)), UnknownType())
         case _ => 
           ctx.getChild(1).getText match {
-            case "." => new SubField(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)
+            case "." => new SubField(visitExp(ctx.exp(0)), (ctx.id.getText), UnknownType())
             case "[" => if (ctx.exp(1) == null)  
-                          new SubIndex(visitExp(ctx.exp(0)), string2BigInt(ctx.IntLit(0).getText), UnknownType)
-                        else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
+                          new SubIndex(visitExp(ctx.exp(0)), string2BigInt(ctx.IntLit(0).getText), UnknownType())
+                        else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType())
             // Assume primop
             case _ => DoPrim(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
-                             ctx.IntLit.map(x => string2BigInt(x.getText)), UnknownType)
+                             ctx.IntLit.map(x => string2BigInt(x.getText)), UnknownType())
           }
       }
   

@@ -68,11 +68,6 @@ public defstruct WSubAccess <: Expression :
    index: Expression
    type: Type with: (as-method => true)
    gender: Gender with: (as-method => true)
-defstruct WIndexer <: Expression :
-   exps: List<Expression>
-   index: Expression
-   type: Type with: (as-method => true)
-   gender : Gender with: (as-method => true)
 public defstruct WVoid <: Expression
 public defstruct WInvalid <: Expression
 public defstruct WDefInstance <: Stmt :
@@ -102,11 +97,6 @@ defmethod kind (e:Expression) :
       (e:WRef) : kind(e)
       (e:WSubField) : kind(exp(e))
       (e:WSubIndex) : kind(exp(e))
-      (e:WIndexer) :
-         val k = kind(exps(e)[0])
-         for x in exps(e) do :
-            if k != kind(x) : error("All kinds of exps of WIndexer must be the same")
-         k
       (e) : ExpKind()
 
 defmethod info (stmt:Begin) -> FileInfo : FileInfo()
@@ -136,11 +126,6 @@ defmethod equal? (e1:Expression,e2:Expression) -> True|False :
          (index(e1) == index(e2)) and (exp(e1) == exp(e2))
       (e1:WVoid,e2:WVoid) : true
       (e1:WInvalid,e2:WInvalid) : true
-      (e1:WIndexer,e2:WIndexer) : 
-         var bool = (length(exps(e1)) == length(exps(e2)))
-         for (e1* in exps(e1),e2* in exps(e2)) do :
-            bool = bool and (e1* == e2*)
-         bool and (index(e1) == index(e2))
       (e1:DoPrim,e2:DoPrim) : 
          var are-equal? = op(e1) == op(e2)
          for (x in args(e1),y in args(e2)) do :
@@ -294,9 +279,6 @@ defmethod print (o:OutputStream, e:WVoid) :
 defmethod print (o:OutputStream, e:WInvalid) :
    print(o,"INVALID")
    print-debug(o,e as ?)
-defmethod print (o:OutputStream, c:WIndexer) :
-   print-all(o, [exps(c) "[" index(c) "]"])
-   print-debug(o,c as ?)
 defmethod print (o:OutputStream, c:WDefInstance) :
    print-all(o, ["inst " name(c) " of " module(c) " : " type(c)])
    print-debug(o,c as ?)
@@ -795,10 +777,6 @@ defn resolve-genders (c:Circuit) :
             val exp* = resolve-e(exp(e),g)
             val index* = resolve-e(index(e),MALE)
             WSubAccess(exp*,index*,type(e),g)
-         (e:WIndexer) :
-            val exps* = map(resolve-e{_,g},exps(e))
-            val index* = resolve-e(index(e),MALE)
-            WIndexer(exps*,index*,type(e),g)
          (e) : map(resolve-e{_,g},e)
          
    defn resolve-s (s:Stmt) -> Stmt :
@@ -2280,7 +2258,6 @@ defn root-ref (e:Expression) -> WRef :
    match(e) :
       (e:WRef) : e
       (e:WSubField|WSubIndex|WSubAccess) : root-ref(exp(e))
-      (e:WIndexer) : root-ref(exps(e)[0])
 
 ;------------- Pass ------------------
 

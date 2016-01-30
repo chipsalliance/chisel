@@ -3,6 +3,10 @@
 */*/*.DS_STORE
 */*/*/*.DS_STORE
 */*/*/*/*.DS_STORE
+*.tmp
+*/*.temp
+*/*/*.temp
+*/*/*/*.temp
 *.swp
 */*.swp
 */*/*.swp

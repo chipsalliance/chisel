@@ -56,14 +56,14 @@ object PrimOps extends LazyLogging {
         case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
         case (t1: SIntType, t2) => SIntType(UnknownWidth)
         case (t1, t2: SIntType) => SIntType(UnknownWidth)
-        case _ => UnknownType
+        case _ => UnknownType()
       }
     }
     def ofType(op: Expression): Type = {
       op.getType match {
         case t: UIntType => UIntType(UnknownWidth)
         case t: SIntType => SIntType(UnknownWidth)
-        case _ => UnknownType
+        case _ => UnknownType()
       }
     }
 
