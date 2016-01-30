@@ -9,6 +9,7 @@ import Utils._
 import DebugUtils._
 import PrimOps._
 
+@deprecated("This object will be replaced with package firrtl.passes")
 object Passes extends LazyLogging {
 
    // TODO Perhaps we should get rid of Logger since this map would be nice

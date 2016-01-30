@@ -12,150 +12,17 @@ import Utils._
 import DebugUtils._
 import Passes._
 
-trait DriverPass {
-  def run(input: String, output: String) : Unit
-}
-case class StanzaPass(val passes : Seq[String]) extends DriverPass with LazyLogging {
-  def run(input : String, output : String): Unit = {
-    val cmd = Seq("firrtl-stanza", "-i", input, "-o", output, "-b", "firrtl") ++ passes.flatMap(x=>Seq("-x", x))
-    logger.info(cmd.mkString(" "))
-    val ret = cmd.!!
-    logger.info(ret)
-  }
-}
-case class ScalaPass(val func : Circuit => Circuit) extends DriverPass with LazyLogging {
-  def run(input : String, output : String): Unit = {
-    var ast = Parser.parse(input, Source.fromFile(input).getLines)
-    val newast = func(ast)
-    logger.info("Writing to " + output)
-    val writer = new PrintWriter(new File(output))
-    writer.write(newast.serialize())
-    writer.close()
-  }
-}
-object StanzaPass {
-  def apply(pass: String): StanzaPass = StanzaPass(Seq(pass))
-}
-
-object DriverPasses {
-  private def aggregateStanzaPasses(passes: Seq[DriverPass]): Seq[DriverPass] = {
-    if (passes.isEmpty) return Seq()
-    val span = passes.span(x => x match {
-      case p : StanzaPass => true
-      case _ => false
-    })
-    if (span._1.isEmpty) {
-      Seq(span._2.head) ++ aggregateStanzaPasses(span._2.tail)
-    } else {
-      Seq(StanzaPass(span._1.flatMap(x=>x.asInstanceOf[StanzaPass].passes))) ++ aggregateStanzaPasses(span._2)
-    }
-  }
-
-  def optimize(passes: Seq[DriverPass]): Seq[DriverPass] = {
-    aggregateStanzaPasses(aggregateStanzaPasses(passes))
-  }
-}
-
 object Driver extends LazyLogging {
   private val usage = """
     Usage: java -cp utils/bin/firrtl.jar firrtl.Driver [options] -i <input> -o <output>
   """
   private val defaultOptions = Map[Symbol, Any]().withDefaultValue(false)
 
-  // Appends 0 to the filename and appends .tmp to the extension
-  private def genTempFilename(filename: String): String = {
-    val pat = """(.*/)([^/]*)([.][^/.]*)""".r
-    val (path, name, ext) = filename match {
-      case pat(path, name, ext) => (path, name, ext + ".tmp")
-      case _ => ("./", "temp", ".tmp")
-    }
-    var count = 0
-    while( Files.exists(Paths.get(path + name + count + ext )) )
-      count += 1
-    path + name + count + ext
-  }
-
-  val defaultPasses = DriverPasses.optimize(Seq(
-    StanzaPass("cinfertypes"),
-// =====================================
-    StanzaPass("cinfermdir"),
-// =====================================
-    StanzaPass("removechirrtl"),
-// =====================================
-    StanzaPass("high-form-check"),
-// =====================================
-    StanzaPass("to-working-ir"),
-// =====================================
-    StanzaPass("resolve-kinds"),
-    StanzaPass("infer-types"),
-    StanzaPass("check-types"),
-    StanzaPass("resolve-genders"),
-    StanzaPass("check-genders"),
-    StanzaPass("infer-widths"),
-    StanzaPass("width-check"),
-// =====================================
-    ScalaPass(resolve),
-// =====================================
-    StanzaPass("resolve"),
-// =====================================
-    //StanzaPass("pull-muxes"),
-// =====================================
-    //StanzaPass("expand-connects"),
-// =====================================
-    StanzaPass("remove-access"),
-// =====================================
-    StanzaPass("expand-whens"),
-// =====================================
-    StanzaPass("check-init"),
-// =====================================
-    StanzaPass("const-prop"),
-// =====================================
-    StanzaPass("resolve-kinds"),
-    StanzaPass("infer-types"),
-    StanzaPass("check-types"),
-    StanzaPass("resolve-genders"),
-    StanzaPass("check-genders"),
-    StanzaPass("infer-widths"),
-    StanzaPass("width-check")
-// =====================================
-    //ScalaPass(renamec)
-//  ScalaPass(renameall(Map(
-//    "c"->"ccc",
-//    "z"->"zzz",
-//    "top"->"its_a_top_module"
-//  ))),
-    // StanzaPass("temp-elim"), // performance pass
-  ))
-
-  // Parse input file and print to output
-  private def firrtl(input: String, output: String)
+  private def compile(input: String, output: String, compiler: Compiler)
   {
-    val ast = Parser.parse(input, Source.fromFile(input).getLines)
-    val writer = new PrintWriter(new File(output))
-    writer.write(ast.serialize())
-    writer.close()
-    logger.debug(ast.toString)
-  }
-
-  def executePasses(ast: Circuit, passes: Seq[Circuit => Circuit]): Circuit = {
-    if (passes.isEmpty) ast
-    else executePasses(passes.head(ast), passes.tail)
-  }
-
-  private def verilog(input: String, output: String) {
-    val outfile = defaultPasses.foldLeft( input ) ( (infile, pass) => {
-      val outfile = genTempFilename(output)
-      pass.run(infile, outfile)
-      outfile
-    })
-
-    logger.info(outfile)
-
-    // finally, convert to verilog at the end
-    val cmd = Seq("firrtl-stanza", "-i", outfile, "-o", output, "-b", "verilog")
-    logger.info(cmd.mkString(" "))
-    val ret = cmd.!!
-    logger.info(ret)
+    val parsedInput = Parser.parse(input, Source.fromFile(input).getLines)
+    val writerOutput = new PrintWriter(new File(output))
+    compiler.run(parsedInput, writerOutput)
   }
 
   def main(args: Array[String])
@@ -229,8 +96,8 @@ object Driver extends LazyLogging {
     }
 
     options('compiler) match {
-      case "verilog" => verilog(input, output)
-      case "firrtl" => firrtl(input, output)
+      case "verilog" => compile(input, output, VerilogCompiler)
+      case "firrtl" => compile(input, output, FIRRTLCompiler)
       case other => throw new Exception("Invalid compiler! " + other)
     }
   }
