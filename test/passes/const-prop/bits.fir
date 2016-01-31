@@ -1,7 +1,7 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p cT 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Constant Propagation
-;CHECK: node x = UInt("h7")
+;CHECK: node x = UInt<3>("h7")
 ;CHECK: Finished Constant Propagation
 
 circuit top :

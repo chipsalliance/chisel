@@ -31,22 +31,22 @@ circuit top :
 ; CHECK:          writer => a
 ; CHECK:       m.a.addr is invalid
 ; CHECK:       m.a.clk <= clk
-; CHECK:       m.a.en <= UInt("h0")
+; CHECK:       m.a.en <= UInt<1>("h0")
 ; CHECK:       m.a.data is invalid
-; CHECK:       m.a.mask.a <= UInt("h0")
-; CHECK:       m.a.mask.b <= UInt("h0")
-; CHECK:       p <= UInt("h1")
-; CHECK:       q <= UInt("h1")
+; CHECK:       m.a.mask.a <= UInt<1>("h0")
+; CHECK:       m.a.mask.b <= UInt<1>("h0")
+; CHECK:       p <= UInt<1>("h1")
+; CHECK:       q <= UInt<1>("h1")
 ; CHECK:       wire x : { a : UInt<4>,  b : UInt<4>}
-; CHECK:       x.a <= UInt("h1")
-; CHECK:       x.b <= UInt("h1")
+; CHECK:       x.a <= UInt<1>("h1")
+; CHECK:       x.b <= UInt<1>("h1")
 ; CHECK:       when p :
-; CHECK:          m.a.addr <= UInt("h3")
-; CHECK:          m.a.en <= UInt("h1")
+; CHECK:          m.a.addr <= UInt<2>("h3")
+; CHECK:          m.a.en <= UInt<1>("h1")
 ; CHECK:          when q :
 ; CHECK:             m.a.data <= x
-; CHECK:             m.a.mask.a <= UInt("h1")
-; CHECK:             m.a.mask.b <= UInt("h1")   
+; CHECK:             m.a.mask.a <= UInt<1>("h1")
+; CHECK:             m.a.mask.b <= UInt<1>("h1")   
 
 ; CHECK: Finished Remove CHIRRTL
 ; CHECK: Done!

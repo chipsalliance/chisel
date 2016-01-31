@@ -1,8 +1,8 @@
 ; RUN: firrtl -i %s -o %s.v -X verilog -p c 2>&1 | tee %s.out | FileCheck %s
 
 ;CHECK: Constant Propagation
-;CHECK: x <= UInt("h1f")
-;CHECK: y <= SInt("h20")
+;CHECK: x <= UInt<5>("h1f")
+;CHECK: y <= SInt<6>("h20")
 ;CHECK: Finished Constant Propagation
 
 circuit top :

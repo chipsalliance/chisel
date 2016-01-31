@@ -54,12 +54,12 @@ circuit top :
 ;CHECK:    writer => c
 ;CHECK: m_x.c.data <= k_x
 ;CHECK: m_y.c.data <= k_y
-;CHECK: m_x.c.mask <= UInt("h1")
-;CHECK: m_y.c.mask <= UInt("h1")
+;CHECK: m_x.c.mask <= UInt<1>("h1")
+;CHECK: m_y.c.mask <= UInt<1>("h1")
 ;CHECK: m_x.c.addr <= i
 ;CHECK: m_y.c.addr <= i
-;CHECK: m_x.c.en <= UInt("h1")
-;CHECK: m_y.c.en <= UInt("h1")
+;CHECK: m_x.c.en <= UInt<1>("h1")
+;CHECK: m_y.c.en <= UInt<1>("h1")
 ;CHECK: m_x.c.clk <= clk
 ;CHECK: m_y.c.clk <= clk   
 

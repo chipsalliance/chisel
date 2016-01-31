@@ -16,8 +16,8 @@ circuit top :
 ; CHECK:   module top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt
-; CHECK:     p <= UInt("h1")
-; CHECK:     r <= mux(p, UInt("h2"), r)
+; CHECK:     p <= UInt<1>("h1")
+; CHECK:     r <= mux(p, UInt<2>("h2"), r)
 
 ; CHECK: Finished Expand Whens
 

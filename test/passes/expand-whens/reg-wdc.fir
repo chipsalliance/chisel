@@ -17,9 +17,9 @@ circuit top :
 ; CHECK:     wire p : UInt
 ; CHECK:     reg r : UInt<2>, clk with :
 ; CHECK:       reset => (reset, r)
-; CHECK:     p <= UInt("h1")
-; CHECK-NOT: r <= mux(p, UInt("h2"), r)
-; CHECK:     r <= UInt("h2")
+; CHECK:     p <= UInt<1>("h1")
+; CHECK-NOT: r <= mux(p, UInt<2>("h2"), r)
+; CHECK:     r <= UInt<2>("h2")
 
 ; CHECK: Finished Expand Whens
 

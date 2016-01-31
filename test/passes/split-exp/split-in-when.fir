@@ -16,7 +16,7 @@ circuit Top :
 
 ;CHECK: node GEN_0 = subw(a, c)
 ;CHECK: node GEN_1 = bits(GEN_0, 3, 3)
-;CHECK: node GEN_2 = eq(UInt("h0"), UInt("hd"))
+;CHECK: node GEN_2 = eq(UInt<5>("h0"), UInt<4>("hd"))
 ;CHECK: node GEN_3 = addw(b, c)
 ;CHECK: node GEN_4 = addw(a, GEN_3)
 ;CHECK: node GEN_5 = subw(c, b)

@@ -58,6 +58,9 @@ check:
 regress: 
 	cd $(regress_dir) && firrtl -i rocket.fir -o rocket.v -X verilog
 
+parser: 
+	cd $(test_dir)/parser && lit -v . --path=$(root_dir)/utils/bin/
+
 perf: 
 	cd $(test_dir)/performance && lit -v . --path=$(root_dir)/utils/bin/
 

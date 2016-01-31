@@ -20,7 +20,7 @@ circuit top :
       reg y : UInt,clk with :
          reset => (reset,UInt(42))
       ; CHECK: reg x : UInt, clk@<t:Clock> with :
-         ;CHECK:reset => (reset@<t:UInt>, UInt("h0")@<t:UInt>)
+         ;CHECK:reset => (reset@<t:UInt>, UInt<1>("h0")@<t:UInt>)
       when gt(x, y) :
       ;CHECK: when gt(x@<t:UInt>, y@<t:UInt>)@<t:UInt> :
          inst s of subtracter

@@ -21,7 +21,7 @@ circuit top :
 ; CHECK: w.y <= a
 ; CHECK: r.x <= a
 ; CHECK: r.y <= b
-; CHECK: a <= UInt("h1")
-; CHECK: b <= UInt("h2")
+; CHECK: a <= UInt<1>("h1")
+; CHECK: b <= UInt<2>("h2")
       
 ; CHECK: Finished Expand Whens

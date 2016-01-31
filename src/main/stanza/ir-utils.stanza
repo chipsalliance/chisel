@@ -395,8 +395,9 @@ defmethod print (o:OutputStream, e:Expression) :
       (e:SubField) : print-all(o, [exp(e) "." name(e)])
       (e:SubIndex) : print-all(o, [exp(e) "[" value(e) "]"])
       (e:SubAccess) : print-all(o, [exp(e) "[" index(e) "]"])
-      (e:UIntValue) : print-all(o, ["UInt(" value(e) ")"])
-      (e:SIntValue) : print-all(o, ["SInt(" value(e) ")"])
+      (e:UIntValue) : 
+         print-all(o, ["UInt<" width(e) ">(" value(e) ")"])
+      (e:SIntValue) : print-all(o, ["SInt<" width(e) ">(" value(e) ")"])
       (e:DoPrim) :
          print-all(o, [op(e) "("])
          print-all(o, join(concat(args(e), consts(e)), ", "))

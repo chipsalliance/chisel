@@ -5,6 +5,6 @@ circuit Top :
     node y = UInt("h100000")
     node z = UInt("h00")
 
-;CHECK: node x = UInt("h2")
-;CHECK: node z = UInt("h0")
+;CHECK: node x = UInt<2>("h2")
+;CHECK: node z = UInt<1>("h0")
 ;CHECK: Done!

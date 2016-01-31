@@ -24,21 +24,21 @@ circuit top :
 ; CHECK: circuit top :
 ; CHECK:    module top :
 ; CHECK:       wire z : { x : UInt, flip y : SInt}
-; CHECK:       z.x <= UInt("h1")
-; CHECK:       z.y <= SInt("h1")
+; CHECK:       z.x <= UInt<1>("h1")
+; CHECK:       z.y <= SInt<2>("h1")
 ; CHECK:       node x = z.x            
 ; CHECK:       node y = z.y            
 ; CHECK:       wire a : UInt<3>[10]    
-; CHECK:       a[0] <= UInt("h1")
-; CHECK:       a[1] <= UInt("h1")
-; CHECK:       a[2] <= UInt("h1")
-; CHECK:       a[3] <= UInt("h1")
-; CHECK:       a[4] <= UInt("h1")
-; CHECK:       a[5] <= UInt("h1")
-; CHECK:       a[6] <= UInt("h1")
-; CHECK:       a[7] <= UInt("h1")
-; CHECK:       a[8] <= UInt("h1")
-; CHECK:       a[9] <= UInt("h1")
+; CHECK:       a[0] <= UInt<1>("h1")
+; CHECK:       a[1] <= UInt<1>("h1")
+; CHECK:       a[2] <= UInt<1>("h1")
+; CHECK:       a[3] <= UInt<1>("h1")
+; CHECK:       a[4] <= UInt<1>("h1")
+; CHECK:       a[5] <= UInt<1>("h1")
+; CHECK:       a[6] <= UInt<1>("h1")
+; CHECK:       a[7] <= UInt<1>("h1")
+; CHECK:       a[8] <= UInt<1>("h1")
+; CHECK:       a[9] <= UInt<1>("h1")
 ; CHECK:       node b = a[2]           
-; CHECK:       node c = a[UInt("h3")] 
+; CHECK:       node c = a[UInt<2>("h3")] 
 

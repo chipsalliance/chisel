@@ -13,8 +13,8 @@ circuit Top :
        stop(clk,UInt(1),1)
     stop(clk,UInt(1),3)
 
-;CHECK: stop(clk, and(p, UInt("h1")), 0)
-;CHECK: stop(clk, and(q, UInt("h1")), 1)
-;CHECK: stop(clk, UInt("h1"), 3)   
+;CHECK: stop(clk, and(p, UInt<1>("h1")), 0)
+;CHECK: stop(clk, and(q, UInt<1>("h1")), 1)
+;CHECK: stop(clk, UInt<1>("h1"), 3)   
 ;CHECK: Done!
 

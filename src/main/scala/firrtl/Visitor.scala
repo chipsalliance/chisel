@@ -164,14 +164,20 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
           val (width, value) = 
             if (ctx.getChildCount > 4) 
               (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
-            else (UnknownWidth(), string2BigInt(ctx.IntLit(0).getText))
+            else {
+               val bigint = string2BigInt(ctx.IntLit(0).getText)
+               (IntWidth(BigInt(bigint.bitLength)),bigint)
+            }
           UIntValue(value, width)
         }
         case "SInt" => {
           val (width, value) = 
             if (ctx.getChildCount > 4) 
               (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
-            else (UnknownWidth(), string2BigInt(ctx.IntLit(0).getText))
+            else {
+               val bigint = string2BigInt(ctx.IntLit(0).getText)
+               (IntWidth(BigInt(bigint.bitLength + 1)),bigint)
+            }
           SIntValue(value, width)
         }
         case "validif(" => ValidIf(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType())

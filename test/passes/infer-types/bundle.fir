@@ -26,7 +26,7 @@ circuit top :
 ;CHECK: node y = z@<t:{ x : UInt, flip y : SInt}>.y@<t:SInt>
 ;CHECK: wire a : UInt<3>[10]@<t:UInt>@<t:UInt[10]@<t:UInt>>
 ;CHECK: node b = a@<t:UInt[10]@<t:UInt>>[2]@<t:UInt>
-;CHECK: node c = a@<t:UInt[10]@<t:UInt>>[UInt("h3")@<t:UInt>]
+;CHECK: node c = a@<t:UInt[10]@<t:UInt>>[UInt<2>("h3")@<t:UInt>]
 ;CHECK: Finished Infer Types
 
 
