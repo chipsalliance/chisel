@@ -1682,7 +1682,7 @@ defn resolve (c:Circuit) -> Circuit :
    check-types $
    infer-types $
    resolve-kinds $ 
-   to-working-ir $ c
+   to-working-ir(c)
 
 ;;================= Inline Instances ========================
 ;; Inlines instances. Assumes module with same name as the

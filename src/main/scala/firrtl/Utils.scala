@@ -15,6 +15,7 @@ import scala.collection.mutable.StringBuilder
 import java.io.PrintWriter
 import PrimOps._
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
 //import scala.reflect.runtime.universe._
 
 object Utils {
@@ -23,27 +24,58 @@ object Utils {
    private type FlagMap = Map[String, Boolean]
    private val FlagMap = Map[String, Boolean]().withDefaultValue(false)
 
-   val lnOf2 = scala.math.log(2) // natural log of 2
    def ceil_log2(x: BigInt): BigInt = (x-1).bitLength
+   def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
    val gen_names = Map[String,Int]()
    val delin = "_"
+   val sym_hash = HashMap[String,Int]()
    def BoolType () = { UIntType(IntWidth(1)) } 
-   def firrtl_gensym (s:String):String = {
-      firrtl_gensym(s,Map[String,Int]())
+   val one  = UIntValue(BigInt(1),IntWidth(1))
+   val zero = UIntValue(BigInt(0),IntWidth(1))
+   def uint (i:Int) : UIntValue = {
+      val num_bits = req_num_bits(i)
+      val w = IntWidth(scala.math.max(1,num_bits - 1))
+      UIntValue(BigInt(i),w)
    }
-   def firrtl_gensym (sym_hash:Map[String,Int]):String = {
-      firrtl_gensym("gen",sym_hash)
+   def req_num_bits (i: Int) : Int = {
+      val ix = if (i < 0) ((-1 * i) - 1) else i
+      ceil_log2(ix + 1) + 1
    }
-   def firrtl_gensym (s:String,sym_hash:Map[String,Int]):String = {
+   def firrtl_gensym (s:String):String = { firrtl_gensym(s,HashMap[String,Int]()) }
+   def firrtl_gensym (sym_hash:HashMap[String,Int]):String = { firrtl_gensym("gen",sym_hash) }
+   def firrtl_gensym (s:String,sym_hash:HashMap[String,Int]):String = {
       if (sym_hash contains s) {
          val num = sym_hash(s) + 1
-         sym_hash + (s -> num)
+         sym_hash += (s -> num)
          (s + delin + num)
       } else {
-         sym_hash + (s -> 0)
+         sym_hash += (s -> 0)
          (s + delin + 0)
       }
    }
+   def AND (e1:Expression,e2:Expression) : Expression = {
+      if (e1 == e2) e1
+      else if ((e1 == zero) | (e2 == zero)) zero
+      else if (e1 == one) e2
+      else if (e2 == one) e1
+      else DoPrim(AND_OP,Seq(e1,e2),Seq(),UIntType(IntWidth(1)))
+   }
+   
+   def OR (e1:Expression,e2:Expression) : Expression = {
+      if (e1 == e2) e1
+      else if ((e1 == one) | (e2 == one)) one
+      else if (e1 == zero) e2
+      else if (e2 == zero) e1
+      else DoPrim(OR_OP,Seq(e1,e2),Seq(),UIntType(IntWidth(1)))
+   }
+   
+   def EQV (e1:Expression,e2:Expression) : Expression = {
+      DoPrim(EQUAL_OP,Seq(e1,e2),Seq(),tpe(e1))
+   }
+   
+   //def MUX (p:Expression,e1:Expression,e2:Expression) : Expression = {
+   //   Mux(p,e1,e2,mux_type(tpe(e1),tpe(e2)))
+   //}
 
    def create_mask (dt:Type) : Type = {
       dt match {
@@ -276,6 +308,25 @@ object Utils {
 
 
 // =========== ACCESSORS =========
+   def info (s:Stmt) : Info = {
+      s match {
+         case s:DefWire => s.info
+         case s:DefPoison => s.info
+         case s:DefRegister => s.info
+         case s:DefInstance => s.info
+         case s:WDefInstance => s.info
+         case s:DefMemory => s.info
+         case s:DefNode => s.info
+         case s:Conditionally => s.info
+         case s:BulkConnect => s.info
+         case s:Connect => s.info
+         case s:IsInvalid => s.info
+         case s:Stop => s.info
+         case s:Print => s.info
+         case s:Begin => NoInfo
+         case s:Empty => NoInfo
+      }
+   }
    def gender (e:Expression) : Gender = {
      e match {
         case e:WRef => gender(e)
@@ -444,6 +495,56 @@ object Utils {
       }
    }
    val ONE = IntWidth(1)
+   //def digits (s:String) : Boolean {
+   //   val digits = "0123456789"
+   //   var yes:Boolean = true
+   //   for (c <- s) {
+   //      if !digits.contains(c) : yes = false
+   //   }
+   //   yes
+   //}
+   //def generated (s:String) : Option[Int] = {
+   //   (1 until s.length() - 1).find{
+   //      i => {
+   //         val sub = s.substring(i + 1)
+   //         s.substring(i,i).equals("_") & digits(sub) & !s.substring(i - 1,i-1).equals("_")
+   //      }
+   //   }
+   //}
+   //def get-sym-hash (m:InModule) : HashMap[String,Int] = { get-sym-hash(m,Seq()) }
+   //def get-sym-hash (m:InModule,keywords:Seq[String]) : HashMap[String,Int] = {
+   //   val sym-hash = HashMap[String,Int]()
+   //   for (k <- keywords) { sym-hash += (k -> 0) }
+   //   def add-name (s:String) : String = {
+   //      val sx = to-string(s)
+   //      val ix = generated(sx)
+   //      ix match {
+   //         case (i:False) => {
+   //            if (sym_hash.contains(s)) {
+   //               val num = sym-hash(s)
+   //               sym-hash += (s -> max(num,0))
+   //            } else {
+   //               sym-hash += (s -> 0)
+   //            }
+   //         }
+   //         case (i:Int) => {
+   //            val name = sx.substring(0,i)
+   //            val digit = to-int(substring(sx,i + 1))
+   //            if key?(sym-hash,name) :
+   //               val num = sym-hash[name]
+   //               sym-hash[name] = max(num,digit)
+   //            else :
+   //               sym-hash[name] = digit
+   //         }
+   //      s
+   //         
+   //   defn to-port (p:Port) : add-name(name(p))
+   //   defn to-stmt (s:Stmt) -> Stmt :
+   //     map{to-stmt,_} $ map(add-name,s)
+   //
+   //   to-stmt(body(m))
+   //   map(to-port,ports(m))
+   //   sym-hash
    //private trait StmtMagnet {
    //  def map(stmt: Stmt): Stmt
    //}
@@ -708,4 +809,233 @@ object Utils {
    private def unindent() { require(indentLevel > 0); indentLevel -= 1 }
    private def withIndent(f: => Unit) { indent(); f; unindent() }
 
+   val v_keywords = Map[String,Boolean]() +
+      ("alias" -> true) +
+      ("always" -> true) +
+      ("always_comb" -> true) +
+      ("always_ff" -> true) +
+      ("always_latch" -> true) +
+      ("and" -> true) +
+      ("assert" -> true) +
+      ("assign" -> true) +
+      ("assume" -> true) +
+      ("attribute" -> true) +
+      ("automatic" -> true) +
+      ("before" -> true) +
+      ("begin" -> true) +
+      ("bind" -> true) +
+      ("bins" -> true) +
+      ("binsof" -> true) +
+      ("bit" -> true) +
+      ("break" -> true) +
+      ("buf" -> true) +
+      ("bufif0" -> true) +
+      ("bufif1" -> true) +
+      ("byte" -> true) +
+      ("case" -> true) +
+      ("casex" -> true) +
+      ("casez" -> true) +
+      ("cell" -> true) +
+      ("chandle" -> true) +
+      ("class" -> true) +
+      ("clocking" -> true) +
+      ("cmos" -> true) +
+      ("config" -> true) +
+      ("const" -> true) +
+      ("constraint" -> true) +
+      ("context" -> true) +
+      ("continue" -> true) +
+      ("cover" -> true) +
+      ("covergroup" -> true) +
+      ("coverpoint" -> true) +
+      ("cross" -> true) +
+      ("deassign" -> true) +
+      ("default" -> true) +
+      ("defparam" -> true) +
+      ("design" -> true) +
+      ("disable" -> true) +
+      ("dist" -> true) +
+      ("do" -> true) +
+      ("edge" -> true) +
+      ("else" -> true) +
+      ("end" -> true) +
+      ("endattribute" -> true) +
+      ("endcase" -> true) +
+      ("endclass" -> true) +
+      ("endclocking" -> true) +
+      ("endconfig" -> true) +
+      ("endfunction" -> true) +
+      ("endgenerate" -> true) +
+      ("endgroup" -> true) +
+      ("endinterface" -> true) +
+      ("endmodule" -> true) +
+      ("endpackage" -> true) +
+      ("endprimitive" -> true) +
+      ("endprogram" -> true) +
+      ("endproperty" -> true) +
+      ("endspecify" -> true) +
+      ("endsequence" -> true) +
+      ("endtable" -> true) +
+      ("endtask" -> true) +
+      ("enum" -> true) +
+      ("event" -> true) +
+      ("expect" -> true) +
+      ("export" -> true) +
+      ("extends" -> true) +
+      ("extern" -> true) +
+      ("final" -> true) +
+      ("first_match" -> true) +
+      ("for" -> true) +
+      ("force" -> true) +
+      ("foreach" -> true) +
+      ("forever" -> true) +
+      ("fork" -> true) +
+      ("forkjoin" -> true) +
+      ("function" -> true) +
+      ("generate" -> true) +
+      ("genvar" -> true) +
+      ("highz0" -> true) +
+      ("highz1" -> true) +
+      ("if" -> true) +
+      ("iff" -> true) +
+      ("ifnone" -> true) +
+      ("ignore_bins" -> true) +
+      ("illegal_bins" -> true) +
+      ("import" -> true) +
+      ("incdir" -> true) +
+      ("include" -> true) +
+      ("initial" -> true) +
+      ("initvar" -> true) +
+      ("inout" -> true) +
+      ("input" -> true) +
+      ("inside" -> true) +
+      ("instance" -> true) +
+      ("int" -> true) +
+      ("integer" -> true) +
+      ("interconnect" -> true) +
+      ("interface" -> true) +
+      ("intersect" -> true) +
+      ("join" -> true) +
+      ("join_any" -> true) +
+      ("join_none" -> true) +
+      ("large" -> true) +
+      ("liblist" -> true) +
+      ("library" -> true) +
+      ("local" -> true) +
+      ("localparam" -> true) +
+      ("logic" -> true) +
+      ("longint" -> true) +
+      ("macromodule" -> true) +
+      ("matches" -> true) +
+      ("medium" -> true) +
+      ("modport" -> true) +
+      ("module" -> true) +
+      ("nand" -> true) +
+      ("negedge" -> true) +
+      ("new" -> true) +
+      ("nmos" -> true) +
+      ("nor" -> true) +
+      ("noshowcancelled" -> true) +
+      ("not" -> true) +
+      ("notif0" -> true) +
+      ("notif1" -> true) +
+      ("null" -> true) +
+      ("or" -> true) +
+      ("output" -> true) +
+      ("package" -> true) +
+      ("packed" -> true) +
+      ("parameter" -> true) +
+      ("pmos" -> true) +
+      ("posedge" -> true) +
+      ("primitive" -> true) +
+      ("priority" -> true) +
+      ("program" -> true) +
+      ("property" -> true) +
+      ("protected" -> true) +
+      ("pull0" -> true) +
+      ("pull1" -> true) +
+      ("pulldown" -> true) +
+      ("pullup" -> true) +
+      ("pulsestyle_onevent" -> true) +
+      ("pulsestyle_ondetect" -> true) +
+      ("pure" -> true) +
+      ("rand" -> true) +
+      ("randc" -> true) +
+      ("randcase" -> true) +
+      ("randsequence" -> true) +
+      ("rcmos" -> true) +
+      ("real" -> true) +
+      ("realtime" -> true) +
+      ("ref" -> true) +
+      ("reg" -> true) +
+      ("release" -> true) +
+      ("repeat" -> true) +
+      ("return" -> true) +
+      ("rnmos" -> true) +
+      ("rpmos" -> true) +
+      ("rtran" -> true) +
+      ("rtranif0" -> true) +
+      ("rtranif1" -> true) +
+      ("scalared" -> true) +
+      ("sequence" -> true) +
+      ("shortint" -> true) +
+      ("shortreal" -> true) +
+      ("showcancelled" -> true) +
+      ("signed" -> true) +
+      ("small" -> true) +
+      ("solve" -> true) +
+      ("specify" -> true) +
+      ("specparam" -> true) +
+      ("static" -> true) +
+      ("strength" -> true) +
+      ("string" -> true) +
+      ("strong0" -> true) +
+      ("strong1" -> true) +
+      ("struct" -> true) +
+      ("super" -> true) +
+      ("supply0" -> true) +
+      ("supply1" -> true) +
+      ("table" -> true) +
+      ("tagged" -> true) +
+      ("task" -> true) +
+      ("this" -> true) +
+      ("throughout" -> true) +
+      ("time" -> true) +
+      ("timeprecision" -> true) +
+      ("timeunit" -> true) +
+      ("tran" -> true) +
+      ("tranif0" -> true) +
+      ("tranif1" -> true) +
+      ("tri" -> true) +
+      ("tri0" -> true) +
+      ("tri1" -> true) +
+      ("triand" -> true) +
+      ("trior" -> true) +
+      ("trireg" -> true) +
+      ("type" -> true) +
+      ("typedef" -> true) +
+      ("union" -> true) +
+      ("unique" -> true) +
+      ("unsigned" -> true) +
+      ("use" -> true) +
+      ("var" -> true) +
+      ("vectored" -> true) +
+      ("virtual" -> true) +
+      ("void" -> true) +
+      ("wait" -> true) +
+      ("wait_order" -> true) +
+      ("wand" -> true) +
+      ("weak0" -> true) +
+      ("weak1" -> true) +
+      ("while" -> true) +
+      ("wildcard" -> true) +
+      ("wire" -> true) +
+      ("with" -> true) +
+      ("within" -> true) +
+      ("wor" -> true) +
+      ("xnor" -> true) +
+      ("xor" -> true) +
+      ("SYNTHESIS" -> true) +
+      ("PRINTF_COND" -> true) +
+      ("VCS" -> true)
 }
