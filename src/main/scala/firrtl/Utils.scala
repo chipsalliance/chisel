@@ -234,7 +234,8 @@ object Utils {
 
    implicit class BigIntUtils(bi: BigInt){
      def serialize(implicit flags: FlagMap = FlagMap): String = 
-       "\"h" + bi.toString(16) + "\""
+        if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
+        else "\"h" + bi.toString(16) + "\""
    }
 
    implicit class ASTUtils(ast: AST) {

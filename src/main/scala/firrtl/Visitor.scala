@@ -38,6 +38,28 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
       case  _  => throw new Exception("Invalid String for conversion to BigInt " + s)
     }
   }
+  private def string2SignedBigInt(s: String): BigInt = {
+    // private define legal patterns
+    val HexPattern = """\"*h([a-zA-Z0-9]+)\"*""".r
+    val DecPattern = """(\+|-)?([1-9]\d*)""".r
+    val ZeroPattern = "0".r
+    val NegPattern = "(89AaBbCcDdEeFf)".r
+    s match {
+      case ZeroPattern(_*) => BigInt(0)
+      case HexPattern(hexdigits) => 
+         hexdigits(1) match {
+            case NegPattern(_) =>{
+               BigInt("-" + hexdigits,16)
+            }
+            case _ => BigInt(hexdigits, 16)
+         }
+      case DecPattern(sign, num) => {
+         if (sign != null) BigInt(sign + num,10)
+         else BigInt(num,10)
+      }
+      case  _  => throw new Exception("Invalid String for conversion to BigInt " + s)
+    }
+  }
   private def string2Int(s: String): Int = string2BigInt(s).toInt
   private def getInfo(ctx: ParserRuleContext): Info = 
     FileInfo(filename, ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine())
@@ -173,9 +195,9 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
         case "SInt" => {
           val (width, value) = 
             if (ctx.getChildCount > 4) 
-              (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
+              (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2SignedBigInt(ctx.IntLit(1).getText))
             else {
-               val bigint = string2BigInt(ctx.IntLit(0).getText)
+               val bigint = string2SignedBigInt(ctx.IntLit(0).getText)
                (IntWidth(BigInt(bigint.bitLength + 1)),bigint)
             }
           SIntValue(value, width)
