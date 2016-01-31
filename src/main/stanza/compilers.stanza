@@ -54,9 +54,9 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       CInferMDir()
       RemoveCHIRRTL()            
       ;===============
-      CheckHighForm()          
-      ;===============
       ToWorkingIR()            
+      ;===============
+      CheckHighForm()          
       ;===============
       ResolveKinds()
       InferTypes()
@@ -115,7 +115,6 @@ public defmethod backend (c:StandardFIRRTL) -> List<Pass> :
   to-list $ [ FIRRTL(with-output(c)) ]
 public defmethod passes (c:StandardFIRRTL) -> List<Pass> :
    to-list $ [
-      CheckHighForm()
       FIRRTL(with-output(c))
     ]
 

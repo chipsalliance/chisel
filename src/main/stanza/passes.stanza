@@ -24,6 +24,7 @@ public val standard-passes = to-list $ [
    ExpandConnects()
    RemoveAccesses()
    ExpandWhens()
+   LowerTypes()
    CheckInitialization()
    ConstProp()
    VerilogWrap()
@@ -2879,7 +2880,7 @@ defn emit-verilog (with-output:(() -> False) -> False, c:Circuit) :
 public defstruct LoToVerilog <: Pass :
    with-output: (() -> False) -> False  
 public defmethod pass (b:LoToVerilog) -> (Circuit -> Circuit) : lo-to-verilog{with-output(b),_}
-public defmethod name (b:LoToVerilog) -> String : "To LoToVerilog"
+public defmethod name (b:LoToVerilog) -> String : "Lo To Verilog"
 public defmethod short-name (b:LoToVerilog) -> String : "lo-to-verilog"
 
 defn lo-to-verilog (with-output:(() -> False) -> False, c:Circuit) :

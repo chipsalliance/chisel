@@ -257,17 +257,17 @@ public defn check-high-form (c:Circuit) -> Circuit :
       defn check-high-form-e (e:Expression) -> Expression :
          defn valid-subexp (e:Expression) -> Expression :
             match(e) :
-               (e:Ref|SubField|SubIndex|SubAccess|Mux|ValidIf) : false
+               (e:WRef|WSubField|WSubIndex|WSubAccess|Mux|ValidIf) : false
                (e) : add(errors,InvalidAccess())
             e
          match(map(check-high-form-e,e)) :
-            (e:Ref) : 
+            (e:WRef) : 
                if not key?(names,name(e)) : 
                   add(errors,UndeclaredReference(name(e)))
             (e:DoPrim) : check-high-form-primop(e)
             (e:Mux|ValidIf) : e
             (e:UIntValue) : false
-            (e:SubAccess) : 
+            (e:WSubAccess) : 
                valid-subexp(exp(e))
                e
             (e) : map(valid-subexp,e)
@@ -293,7 +293,7 @@ public defn check-high-form (c:Circuit) -> Circuit :
             (s:DefMemory) : 
                if has-flip?(data-type(s)) : add(errors, MemWithFlip(name(s)))
                if depth(s) <= 0 : add(errors,NegMemSize())
-            (s:DefInstance) : 
+            (s:WDefInstance) : 
                if not contains?(module(s),map(name,modules(c))) : 
                   add(errors, ModuleNotDefined(module(s)))
             (s:Connect) : check-valid-loc(loc(s))
