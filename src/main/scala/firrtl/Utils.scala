@@ -859,8 +859,8 @@ object Utils {
           case m:InModule => {
              var s = new StringBuilder(s"module ${m.name} : ")
              withIndent {
-               s ++= newline + m.ports.map(newline ++ _.serialize).mkString
-               s ++= m.body.serialize
+               s ++= m.ports.map(newline ++ _.serialize).mkString
+               s ++= newline ++ m.body.serialize
              }
              s ++= debug(m)
              s.toString
