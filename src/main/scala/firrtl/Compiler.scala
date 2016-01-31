@@ -22,38 +22,19 @@ object VerilogCompiler extends Compiler {
   // Copied from Stanza implementation
   val passes = Seq(
     CheckHighForm,          
+    Resolve,
     ToWorkingIR,            
     ResolveKinds,
     InferTypes,
-    CheckTypes,
     ResolveGenders,
-    CheckGenders,
-    InferWidths,
-    CheckWidths,
     PullMuxes,
     ExpandConnects,
     RemoveAccesses,
     ExpandWhens,
     CheckInitialization,   
     ConstProp,
-    ResolveKinds,
-    InferTypes,
-    CheckTypes,
-    ResolveGenders,
-    CheckGenders,
-    InferWidths,
-    CheckWidths,
-    LowerTypes,
-    ResolveKinds,
-    InferTypes,
-    CheckTypes,
-    ResolveGenders,
-    CheckGenders,
-    InferWidths,
-    CheckWidths,
-    VerilogWrap,
-    SplitExp,
-    VerilogRename
+    Resolve,
+    LowerTypes
   )
   def run(c: Circuit, w: Writer)
   {

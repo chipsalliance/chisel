@@ -88,6 +88,82 @@ object Utils {
          case t:SIntType => BoolType()
       }
    }
+   def create_exps (n:String, t:Type) : Seq[Expression] =
+      create_exps(WRef(n,t,ExpKind(),UNKNOWNGENDER))
+   def create_exps (e:Expression) : Seq[Expression] = {
+      e match {
+         case (e:Mux) => {
+            val e1s = create_exps(e.tval)
+            val e2s = create_exps(e.fval)
+            (e1s, e2s).zipped.map { (e1,e2) => Mux(e.cond,e1,e2,mux_type_and_widths(e1,e2)) }
+         }
+         case (e:ValidIf) => create_exps(e.value).map { e1 => ValidIf(e.cond,e1,tpe(e1)) }
+         case (e) => {
+            tpe(e) match {
+               case (t:UIntType) => Seq(e)
+               case (t:SIntType) => Seq(e)
+               case (t:ClockType) => Seq(e)
+               case (t:BundleType) => {
+                  t.fields.flatMap { f => create_exps(WSubField(e,f.name,f.tpe,times(gender(e), f.flip))) }
+               }
+               case (t:VectorType) => {
+                  (0 until t.size).flatMap { i => create_exps(WSubIndex(e,i,t.tpe,gender(e))) }
+               }
+            }
+         }
+      }
+   }
+   def get_flip (t:Type, i:Int, f:Flip) : Flip = { 
+      if (i >= get_size(t)) error("Shouldn't be here")
+      val x = t match {
+         case (t:UIntType) => f
+         case (t:SIntType) => f
+         case (t:ClockType) => f
+         case (t:BundleType) => {
+            var n = i
+            var ret:Option[Flip] = None
+            t.fields.foreach { x => {
+               if (n < get_size(x.tpe)) {
+                  ret match {
+                     case None => ret = Some(get_flip(x.tpe,n,times(x.flip,f)))
+                     case ret => {}
+                  }
+               } else { n = n - get_size(x.tpe) }
+            }}
+            ret.asInstanceOf[Some[Flip]].get
+         }
+         case (t:VectorType) => {
+            var n = i
+            var ret:Option[Flip] = None
+            for (j <- 0 until t.size) {
+               if (n < get_size(t.tpe)) {
+                  ret = Some(get_flip(t.tpe,n,f))
+               } else {
+                  n = n - get_size(t.tpe)
+               }
+            }
+            ret.asInstanceOf[Some[Flip]].get
+         }
+      }
+      x
+   }
+   
+   def get_point (e:Expression) : Int = { 
+      e match {
+         case (e:WRef) => 0
+         case (e:WSubField) => {
+            var i = 0
+            tpe(e.exp).asInstanceOf[BundleType].fields.find { f => {
+               val b = f.name == e.name
+               if (!b) { i = i + get_size(f.tpe)}
+               b
+            }}
+            i
+         }
+         case (e:WSubIndex) => e.value * get_size(e.tpe)
+         case (e:WSubAccess) => get_point(e.exp)
+      }
+   }
 
 //============== TYPES ================
    def mux_type_and_widths (e1:Expression,e2:Expression) : Type = mux_type_and_widths(tpe(e1),tpe(e2))
