@@ -700,9 +700,10 @@ object Utils {
          case i: DefInstance => s"inst ${i.name} of ${i.module}"
          case i: WDefInstance => s"inst ${i.name} of ${i.module}"
          case m: DefMemory => {
-           val str = new StringBuilder(s"mem ${m.name} : " + newline)
+           val str = new StringBuilder(s"mem ${m.name} : ")
            withIndent {
-             str ++= s"data-type => ${m.data_type}" + newline +
+             str ++= newline + 
+               s"data-type => ${m.data_type.serialize}" + newline +
                s"depth => ${m.depth}" + newline +
                s"read-latency => ${m.read_latency}" + newline +
                s"write-latency => ${m.write_latency}" + newline +
