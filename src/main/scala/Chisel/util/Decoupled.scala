@@ -60,7 +60,6 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 }
 
 /** An I/O Bundle for Queues
- *
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue */
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
@@ -134,11 +133,11 @@ class Queue[T <: Data](gen: T, val entries: Int,
 }
 
 /** Generic hardware queue. Required parameter entries controls
-  *the depth of the queues. The width of the queue is determined
-  *from the inputs.
+  the depth of the queues. The width of the queue is determined
+  from the inputs.
 
-  *Example usage:
-     *{{{ val q = Queue(Decoupled(UInt()), 16)
+  Example usage:
+     {{{ val q = Queue(Decoupled(UInt()), 16)
      q.io.enq <> producer.io.out
      consumer.io.in <> q.io.deq }}}
   */
