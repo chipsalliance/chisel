@@ -47,7 +47,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     s match {
       case ZeroPattern(_*) => BigInt(0)
       case HexPattern(hexdigits) => 
-         hexdigits(1) match {
+         hexdigits(0) match {
             case NegPattern(_) =>{
                BigInt("-" + hexdigits,16)
             }
