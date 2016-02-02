@@ -6,37 +6,47 @@
 package Chisel
 
 /** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
-class DecoupledIO[+T <: Data](gen: T, do_flip: Boolean = false) extends Bundle
+class DecoupledIO[+T <: Data](gen: T, as_input: Boolean = false) extends Bundle
 {
-  val ready = if(do_flip) Bool(OUTPUT) else Bool(INPUT)
-  val valid = if(do_flip) Bool(INPUT) else Bool(OUTPUT)
-  val bits  = if(do_flip) gen.cloneType.asInput else gen.cloneType.asOutput
+  val ready = if(as_input) Bool(OUTPUT) else Bool(INPUT)
+  val valid = if(as_input) Bool(INPUT) else Bool(OUTPUT)
+  val bits  = if(as_input) gen.cloneType.asInput else gen.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = ready && valid
-  override def cloneType: this.type = new DecoupledIO(gen, do_flip).asInstanceOf[this.type]
+  override def cloneType: this.type = new DecoupledIO(gen, as_input).asInstanceOf[this.type]
 }
 
 /** Adds a ready-valid handshaking protocol to any interface.
   * The standard used is that the consumer uses the flipped interface.
   */
 object Decoupled {
-  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+  def apply[T <: Data](gen: T, as_input: Boolean = false): DecoupledIO[T] = new DecoupledIO(gen, as_input)
 }
 
 /** An I/O bundle for enqueuing data with valid/ready handshaking */
 class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
-  def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
-  valid := Bool(false)
-  for (io <- bits.flatten)
-    io := UInt(0)
+  /**
+    * @param dat data to be loaded when device is ready
+    */
+  def enq(dat: T): T = {
+    valid := Bool(true)
+    bits  := dat
+    dat
+  }
+  def init(): Unit = {
+    valid := Bool(false)
+    for (io <- bits.flatten)
+      io := UInt(0)
+  }
   override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
 }
 
 /** An I/O bundle for dequeuing data with valid/ready handshaking */
-class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, do_flip = true)
+class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, as_input = true)
 {
-//  flip(), in chisel2 this worked in place, causes infinite recursion in chisel3
-  ready := Bool(false)
+  def init(): Unit = {
+    ready := Bool(true)
+  }
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
 }
@@ -55,7 +65,7 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType).flip
+  val enq   = Decoupled(gen.cloneType, as_input = true)
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq   = Decoupled(gen.cloneType)
   /** The current amount of data in the queue */
