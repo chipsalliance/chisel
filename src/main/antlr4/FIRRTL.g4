@@ -93,12 +93,42 @@ id
   | keyword
   ;
 
-// TODO add all keywords
 keyword
-  : dir
-  | 'inst'  
+  : 'circuit'
+  | 'module'
+  | 'input'
+  | 'output'
+  | 'UInt'
+  | 'SInt'
+  | 'UBits'
+  | 'SBits'
+  | 'Clock'
+  | 'wire'
+  | 'reg'
   | 'mem'
   | 'reset'
+  | 'data-type'
+  | 'depth'
+  | 'read-latency'
+  | 'write-latency'
+  | 'read-under-write'
+  | 'reader'
+  | 'writer'
+  | 'readwriter'
+  | 'inst'
+  | 'node'
+  | 'is'
+  | 'invalid'
+  | 'when'
+  | 'else'
+  | 'stop'
+  | 'printf'
+  | 'skip'
+  | 'old'
+  | 'new'
+  | 'undefined'
+  | 'mux'
+  | 'validif'
   ;
 
 // Parentheses are added as part of name because semantics require no space between primop and open parentheses

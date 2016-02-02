@@ -113,7 +113,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
             val seq = map getOrElse (field, Seq())
             map + (field -> (seq :+ children(2)))
           } else { // data-type, depth, read-latency, write-latency, read-under-write
-            if (map.contains(field)) throw new Exception(s"Redefinition of mem field ${field}")
+            if (map.contains(field)) throw new ParameterRedefinedException(s"Redefinition of ${field}")
             else map + (field -> Seq(children(2)))
           }
         parseChildren(children.drop(3), newMap) // We consume tokens in groups of three (eg. 'depth' '=>' 5)
@@ -124,8 +124,12 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     // Build map of different Memory fields to their values
     val map = try {
       parseChildren(ctx.children.drop(4), Map[String, Seq[ParseTree]]()) // First 4 tokens are 'mem' id ':' '{', skip to fields
-    } catch {
-      case e: Exception => throw new Exception(s"[${info}] ${e.getMessage}") // attach line number
+    } catch { // attach line number
+      case e: ParameterRedefinedException => throw new ParameterRedefinedException(s"[${info}] ${e.message}") 
+    }
+    // Check for required fields
+    Seq("data-type", "depth", "read-latency", "write-latency") foreach { field =>
+      map.getOrElse(field, throw new ParameterNotSpecifiedException(s"[${info}] Required mem field ${field} not found"))
     }
     // Each memory field value has been left as ParseTree type, need to convert
     // TODO Improve? Remove dynamic typecast of data-type

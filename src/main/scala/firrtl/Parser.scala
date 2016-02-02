@@ -3,13 +3,18 @@ package firrtl
 import org.antlr.v4.runtime._;
 import org.antlr.v4.runtime.atn._;
 import org.antlr.v4.runtime.tree._;
+import com.typesafe.scalalogging.LazyLogging
 import java.io.FileInputStream
 import scala.collection.JavaConverters._
 import scala.io.Source
 import Utils._
 import antlr._
 
-object Parser
+class ParserException(message: String) extends Exception(message)
+case class ParameterNotSpecifiedException(message: String) extends ParserException(message)
+case class ParameterRedefinedException(message: String) extends ParserException(message)
+
+object Parser extends LazyLogging
 {
   /** Takes Iterator over lines of FIRRTL, returns AST (root node is Circuit)
     *
@@ -17,6 +22,7 @@ object Parser
     */
   def parse(filename: String, lines: Iterator[String]): Circuit = {
     val fixedInput = Translator.addBrackets(lines)
+    //logger.debug("Preprocessed Input:\n" + fixedInput.result) 
     val antlrStream = new ANTLRInputStream(fixedInput.result)
     val lexer = new FIRRTLLexer(antlrStream)
     val tokens = new CommonTokenStream(lexer)
@@ -27,6 +33,9 @@ object Parser
 
     // Concrete Syntax Tree
     val cst = parser.circuit
+
+    val numSyntaxErrors = parser.getNumberOfSyntaxErrors
+    if (numSyntaxErrors > 0) throw new ParserException(s"${numSyntaxErrors} syntax error(s) detected")
 
     val visitor = new Visitor(filename) 
     //val ast = visitor.visitCircuit(cst) match {

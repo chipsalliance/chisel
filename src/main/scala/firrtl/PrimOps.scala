@@ -42,6 +42,7 @@ object PrimOps extends LazyLogging {
     HEAD_OP -> "head",
     TAIL_OP -> "tail"
   )
+  lazy val listing: Seq[String] = PrimOps.mapPrimOp2String.map { case (k,v) => v } toSeq
   private val mapString2PrimOp = mapPrimOp2String.map(_.swap)
   def fromString(op: String): PrimOp = mapString2PrimOp(op)
 
