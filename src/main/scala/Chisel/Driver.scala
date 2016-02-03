@@ -113,4 +113,7 @@ object Driver extends BackendCompilationUtilities {
     w.close()
     f
   }
+
+  // FIXME: This is hard coded and should come in from a command-line argument
+  def targetDir(): String = { "vsim/generated-src" }
 }
