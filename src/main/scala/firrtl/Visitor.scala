@@ -14,6 +14,7 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import scala.collection.JavaConversions._
 import antlr._
 import PrimOps._
+import FIRRTLParser._
 
 class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST] 
 {
@@ -81,14 +82,17 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
 
   // Match on a type instead of on strings?
 	private def visitType[AST](ctx: FIRRTLParser.TypeContext): Type = {
-    ctx.getChild(0).getText match {
-      case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
-                     else UIntType( UnknownWidth() )
-      case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
-                     else SIntType( UnknownWidth() )
-      case "Clock" => ClockType()
-      case "{" => BundleType(ctx.field.map(visitField))
-      case _ => new VectorType( visitType(ctx.`type`), string2Int(ctx.IntLit.getText) )
+    ctx.getChild(0) match {
+      case term: TerminalNode => 
+        term.getText match {
+          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
+                         else UIntType( UnknownWidth() )
+          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
+                         else SIntType( UnknownWidth() )
+          case "Clock" => ClockType()
+          case "{" => BundleType(ctx.field.map(visitField))
+        }
+      case tpe: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.IntLit.getText))
     }
   }
       
