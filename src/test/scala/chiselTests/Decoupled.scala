@@ -14,17 +14,33 @@ class ReadCmd extends Bundle {
 class ReaderExample extends Module {
   val io = new Bundle {
     val in = DeqIO(new ReadCmd)
+    val out = EnqIO(new ReadCmd)
   }
 }
 
 
-class ReaderExampleTester extends BasicTester {
-  val c = new ReaderExample
-  stop()
-}
+class DecoupledSpec extends ChiselFlatSpec {
+  "ready" should "an input and valid should be an input for deqIO ports" in {
+    class ReaderExampleTester extends BasicTester {
+      val c = new ReaderExample
 
-class DecoupledSpec extends ChiselPropSpec {
-  property("Creating module that uses DeqIO should not cause infinite recursion") {
-    assert(execute{ new ReaderExampleTester })
+      c.io.in.ready.dir should be (OUTPUT)
+      c.io.in.valid.dir should be (INPUT)
+      c.io.in.bits.addr.dir should be (INPUT)
+
+      c.io.out.ready.dir should be (INPUT)
+      c.io.out.valid.dir should be (OUTPUT)
+      c.io.out.bits.addr.dir should be (OUTPUT)
+
+      val cloned = c.io.in.cloneType
+
+      cloned.ready.dir should be (OUTPUT)
+      cloned.valid.dir should be (INPUT)
+      cloned.bits.addr.dir should be (INPUT)
+
+      stop()
+    }
+
+    execute{ new ReaderExampleTester }
   }
 }
