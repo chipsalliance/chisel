@@ -42,7 +42,7 @@ class DecoderSpec extends ChiselPropSpec {
 
   property("BitPat wildcards should be usable in decoding") {
     forAll(nPairs(4)){ (pairs: List[(String, String)]) =>
-      assert(execute{ new DecoderTester(pairs) })
+      assertTesterPasses{ new DecoderTester(pairs) }
     }
   }
 }

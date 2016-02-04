@@ -36,6 +36,6 @@ class ParameterizedModuleTester() extends BasicTester {
 
 class ParameterizedModuleSpec extends ChiselFlatSpec {
   "Different parameterized modules" should "have different behavior" in {
-    assert(execute{ new ParameterizedModuleTester() })
+    assertTesterPasses(new ParameterizedModuleTester())
   }
 }

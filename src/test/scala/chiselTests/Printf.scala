@@ -21,9 +21,9 @@ class MultiPrintfTester() extends BasicTester {
 
 class PrintfSpec extends ChiselFlatSpec {
   "A printf with a single argument" should "run" in {
-    assert(execute{ new SinglePrintfTester })
+    assertTesterPasses { new SinglePrintfTester }
   }
   "A printf with multiple arguments" should "run" in {
-    assert(execute{ new MultiPrintfTester })
+    assertTesterPasses { new MultiPrintfTester }
   }
 }

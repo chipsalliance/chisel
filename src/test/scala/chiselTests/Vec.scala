@@ -44,15 +44,15 @@ class ShiftRegisterTester(n: Int) extends BasicTester {
 class VecSpec extends ChiselPropSpec {
   property("Vecs should be assignable") {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
-      assert(execute{ new ValueTester(w, v) })
+      assertTesterPasses{ new ValueTester(w, v) }
     }
   }
 
   property("Vecs should tabulate correctly") {
-    forAll(smallPosInts) { (n: Int) => assert(execute{ new TabulateTester(n) }) }
+    forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new TabulateTester(n) } }
   }
 
   property("Regs of vecs should be usable as shift registers") {
-    forAll(smallPosInts) { (n: Int) => assert(execute{ new ShiftRegisterTester(n) }) }
+    forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new ShiftRegisterTester(n) } }
   }
 }

@@ -38,7 +38,7 @@ class BundleWireSpec extends ChiselPropSpec {
 
   property("All vec elems should match the inputs") {
     forAll(vecSizes, safeUInts, safeUInts) { (n: Int, x: Int, y: Int) =>
-      assert(execute{ new BundleWireTester(n, x, y) })
+      assertTesterPasses{ new BundleWireTester(n, x, y) }
     }
   }
 }
