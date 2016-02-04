@@ -61,7 +61,7 @@ case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type) 
 case class ValidIf(cond: Expression, value: Expression, tpe: Type) extends Expression
 case class UIntValue(value: BigInt, width: Width) extends Expression
 case class SIntValue(value: BigInt, width: Width) extends Expression
-case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression 
+case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression
 
 trait Stmt extends AST
 case class DefWire(info: Info, name: String, tpe: Type) extends Stmt
@@ -113,5 +113,4 @@ case class InModule(info: Info, name: String, ports: Seq[Port], body: Stmt) exte
 case class ExModule(info: Info, name: String, ports: Seq[Port]) extends Module
 
 case class Circuit(info: Info, modules: Seq[Module], main: String) extends AST
-
 

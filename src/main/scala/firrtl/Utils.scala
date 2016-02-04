@@ -23,7 +23,12 @@ object Utils {
    // Is there a more elegant way to do this?
    private type FlagMap = Map[String, Boolean]
    private val FlagMap = Map[String, Boolean]().withDefaultValue(false)
-
+   implicit class WithAs[T](x: T) {
+     import scala.reflect._
+     def as[O: ClassTag]: Option[O] = x match {
+       case o: O => Some(o)
+       case _ => None } }
+   implicit def toWrappedExpression (x:Expression) = new WrappedExpression(x)
    def ceil_log2(x: BigInt): BigInt = (x-1).bitLength
    def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
    val gen_names = Map[String,Int]()
@@ -68,10 +73,13 @@ object Utils {
       else if (e2 == zero) e1
       else DoPrim(OR_OP,Seq(e1,e2),Seq(),UIntType(IntWidth(1)))
    }
-   
-   def EQV (e1:Expression,e2:Expression) : Expression = {
-      DoPrim(EQUAL_OP,Seq(e1,e2),Seq(),tpe(e1))
+   def EQV (e1:Expression,e2:Expression) : Expression = { DoPrim(EQUAL_OP,Seq(e1,e2),Seq(),tpe(e1)) }
+   def NOT (e1:Expression) : Expression = {
+      if (e1 == one) zero
+      else if (e1 == zero) one
+      else DoPrim(EQUAL_OP,Seq(e1,zero),Seq(),UIntType(IntWidth(1)))
    }
+
    
    //def MUX (p:Expression,e1:Expression,e2:Expression) : Expression = {
    //   Mux(p,e1,e2,mux_type(tpe(e1),tpe(e2)))
@@ -486,6 +494,35 @@ object Utils {
        case s:DefInstance => UnknownType()
        case _ => UnknownType()
     }}
+   def get_name (s:Stmt) : String = {
+      s match {
+       case s:DefWire => s.name
+       case s:DefPoison => s.name
+       case s:DefRegister => s.name
+       case s:DefNode => s.name
+       case s:DefMemory => s.name
+       case s:DefInstance => s.name
+       case s:WDefInstance => s.name
+       case _ => error("Shouldn't be here"); "blah"
+    }}
+   def get_info (s:Stmt) : Info = {
+      s match {
+       case s:DefWire => s.info
+       case s:DefPoison => s.info
+       case s:DefRegister => s.info
+       case s:DefInstance => s.info
+       case s:WDefInstance => s.info
+       case s:DefMemory => s.info
+       case s:DefNode => s.info
+       case s:Conditionally => s.info
+       case s:BulkConnect => s.info
+       case s:Connect => s.info
+       case s:IsInvalid => s.info
+       case s:Stop => s.info
+       case s:Print => s.info
+       case _ => error("Shouldn't be here"); NoInfo
+    }}
+
 
 // =============== MAPPERS ===================
    def sMap(f:Stmt => Stmt, stmt: Stmt): Stmt =
