@@ -6,24 +6,38 @@
 package Chisel
 
 /** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
-class DecoupledIO[+T <: Data](gen: T, as_input: Boolean = false) extends Bundle
+class DecoupledIO[+T <: Data](gen: T) extends Bundle
 {
-  val ready = if(as_input) Bool(OUTPUT) else Bool(INPUT)
-  val valid = if(as_input) Bool(INPUT) else Bool(OUTPUT)
-  val bits  = if(as_input) gen.cloneType.asInput else gen.cloneType.asOutput
+  val ready = Bool(INPUT)
+  val valid = Bool(OUTPUT)
+  val bits  = gen.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = ready && valid
-  override def cloneType: this.type = new DecoupledIO(gen, as_input).asInstanceOf[this.type]
+  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
 }
 
 /** Adds a ready-valid handshaking protocol to any interface.
   * The standard used is that the consumer uses the flipped interface.
   */
 object Decoupled {
-  def apply[T <: Data](gen: T, as_input: Boolean = false): DecoupledIO[T] = new DecoupledIO(gen, as_input)
+  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+}
+
+/**
+  * This factory is necessary because DeqIO cannot flip itself in place
+  */
+object DeqIO {
+  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen).flip()
+}
+
+/**
+  * This factory is necessary because DeqIO cannot flip itself in place
+  */
+object EnqIO {
+  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 }
 
 /** An I/O bundle for enqueuing data with valid/ready handshaking */
-class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
+class EnqIO[T <: Data] private (gen: T) extends DecoupledIO(gen)
 {
   /**
     * @param dat data to be loaded when device is ready
@@ -42,7 +56,7 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 }
 
 /** An I/O bundle for dequeuing data with valid/ready handshaking */
-class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen, as_input = true)
+class DeqIO[T <: Data] private (gen: T) extends DecoupledIO(gen)
 {
   def init(): Unit = {
     ready := Bool(true)
@@ -65,7 +79,7 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType, as_input = true)
+  val enq   = Decoupled(gen.cloneType).flip()
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq   = Decoupled(gen.cloneType)
   /** The current amount of data in the queue */

@@ -13,9 +13,10 @@ class ReadCmd extends Bundle {
 
 class ReaderExample extends Module {
   val io = new Bundle {
-    val in = new DeqIO(new ReadCmd)
+    val in = DeqIO(new ReadCmd)
   }
 }
+
 
 class ReaderExampleTester extends BasicTester {
   val c = new ReaderExample
