@@ -27,7 +27,11 @@ object Utils {
      import scala.reflect._
      def as[O: ClassTag]: Option[O] = x match {
        case o: O => Some(o)
-       case _ => None } }
+       case _ => None }
+     def typeof[O: ClassTag]: Boolean = x match {
+       case o: O => true
+       case _ => false }
+   }
    implicit def toWrappedExpression (x:Expression) = new WrappedExpression(x)
    def ceil_log2(x: BigInt): BigInt = (x-1).bitLength
    def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
@@ -182,7 +186,9 @@ object Utils {
             case (w1,w2) => MaxWidth(Seq(w1,w2))
          }
       }
-      if (equals(t1,t2)) {
+      val wt1 = new WrappedType(t1)
+      val wt2 = new WrappedType(t2)
+      if (wt1 == wt2) {
          (t1,t2) match {
             case (t1:UIntType,t2:UIntType) => UIntType(wmax(t1.width,t2.width))
             case (t1:SIntType,t2:SIntType) => SIntType(wmax(t1.width,t2.width))
@@ -340,6 +346,12 @@ object Utils {
          case REVERSE => DEFAULT
       }
    }
+   def to_dir (g:Gender) : Direction = {
+      g match {
+         case MALE => INPUT
+         case FEMALE => OUTPUT
+      }
+   }
    def to_gender (d:Direction) : Gender = {
       d match {
          case INPUT => MALE
@@ -414,10 +426,10 @@ object Utils {
    }
    def gender (e:Expression) : Gender = {
      e match {
-        case e:WRef => gender(e)
-        case e:WSubField => gender(e)
-        case e:WSubIndex => gender(e)
-        case e:WSubAccess => gender(e)
+        case e:WRef => e.gender
+        case e:WSubField => e.gender
+        case e:WSubIndex => e.gender
+        case e:WSubAccess => e.gender
         case e:PrimOp => MALE
         case e:UIntValue => MALE
         case e:SIntValue => MALE
@@ -607,6 +619,29 @@ object Utils {
          case w:ExpWidth => ExpWidth(f(w.arg1))
          case w => w
       }
+   }
+   def stMap (f: String => String, c:Stmt) : Stmt = {
+      c match {
+         case (c:DefWire) => DefWire(c.info,f(c.name),c.tpe)
+         case (c:DefPoison) => DefPoison(c.info,f(c.name),c.tpe)
+         case (c:DefRegister) => DefRegister(c.info,f(c.name), c.tpe, c.clock, c.reset, c.init)
+         case (c:DefMemory) => DefMemory(c.info,f(c.name), c.data_type, c.depth, c.write_latency, c.read_latency, c.readers, c.writers, c.readwriters)
+         case (c:DefNode) => DefNode(c.info,f(c.name),c.value)
+         case (c:DefInstance) => DefInstance(c.info,f(c.name), c.module)
+         case (c) => c
+      }
+   }
+   def mapr (f: Width => Width, t:Type) : Type = {
+      def apply_t (t:Type) : Type = wMap(f,tMap(apply_t _,t))
+      apply_t(t)
+   }
+   def mapr (f: Width => Width, s:Stmt) : Stmt = {
+      def apply_t (t:Type) : Type = mapr(f,t)
+      def apply_e (e:Expression) : Expression =
+         wMap(f,tMap(apply_t _,eMap(apply_e _,e)))
+      def apply_s (s:Stmt) : Stmt =
+         tMap(apply_t _,eMap(apply_e _,sMap(apply_s _,s)))
+      apply_s(s)
    }
    val ONE = IntWidth(1)
    //def digits (s:String) : Boolean {
@@ -803,6 +838,7 @@ object Utils {
        val s = w match {
          case w:UnknownWidth => "" //"?"
          case w: IntWidth => s"<${w.width.toString}>"
+         case w: VarWidth => s"<${w.name}>"
        } 
        s + debug(w)
      }

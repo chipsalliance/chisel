@@ -4,7 +4,7 @@ circuit GCD :
     input e : UInt<1>
     input clk : Clock
     input reset : UInt<1>
-    output z : UInt<16>
+    output z : UInt
     output v : UInt<1>
     input a : UInt<16>
     input b : UInt<16>

@@ -21,19 +21,23 @@ object FIRRTLCompiler extends Compiler {
 object VerilogCompiler extends Compiler {
   // Copied from Stanza implementation
   val passes = Seq(
-    CheckHighForm,          
-    Resolve,
+    //CheckHighForm,          
     ToWorkingIR,            
     ResolveKinds,
     InferTypes,
     ResolveGenders,
+    InferWidths,
     PullMuxes,
     ExpandConnects,
     RemoveAccesses,
     ExpandWhens,
     CheckInitialization,   
     ConstProp,
-    Resolve,
+    ToWorkingIR,            
+    ResolveKinds,
+    InferTypes,
+    ResolveGenders,
+    InferWidths,
     LowerTypes
   )
   def run(c: Circuit, w: Writer)
