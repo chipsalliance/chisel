@@ -906,7 +906,7 @@ object RemoveAccesses extends Pass {
    }
 }
 
-object ExpandWhens extends Pass with StanzaPass {
+object ExpandWhens extends Pass {
    def name = "Expand Whens"
    var mname = ""
 // ; ========== Expand When Utilz ==========
@@ -1111,7 +1111,62 @@ object CheckInitialization extends Pass with StanzaPass {
 
 object ConstProp extends Pass with StanzaPass {
    def name = "Constant Propogation"
+   var mname = ""
    def run (c:Circuit): Circuit = stanzaPass(c, "const-prop")
+   def const_prop_e (e:Expression) : Expression = {
+      eMap(const_prop_e _,e) match {
+         case (e:DoPrim) => {
+            e.op match {
+               case SHIFT_RIGHT_OP => {
+                  (e.args(0)) match {
+                     case (x:UIntValue) => {
+                        val b = x.value >> e.consts(0).toInt
+                        UIntValue(b,tpe(e).as[UIntType].get.width)
+                     }
+                     case (x:SIntValue) => {
+                        val b = x.value >> e.consts(0).toInt
+                        SIntValue(b,tpe(e).as[SIntType].get.width)
+                     }
+                     case (x) => e
+                  }
+               }
+               case BITS_SELECT_OP => {
+                  e.args(0) match {
+                     case (x:UIntValue) => {
+                        val hi = e.consts(0).toInt
+                        val lo = e.consts(1).toInt
+                        require(hi >= lo)
+                        val b = (x.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1)
+                        UIntValue(b,tpe(e).as[UIntType].get.width)
+                     }
+                     case (x) => {
+                        if (long_BANG(tpe(e)) == long_BANG(tpe(x))) {
+                           if (tpe(x).typeof[UIntType] != None) x
+                           else DoPrim(AS_UINT_OP,Seq(x),Seq(),tpe(e))
+                        }
+                        else e
+                     }
+                  }
+               }
+               case (_) => e
+            }
+         }
+         case (e) => e
+      }
+   }
+   def const_prop_s (s:Stmt) : Stmt = eMap(const_prop_e _, sMap(const_prop_s _,s))
+   def const_prop (c:Circuit) : Circuit = {
+      val modulesx = c.modules.map{ m => {
+         m match {
+            case (m:ExModule) => m
+            case (m:InModule) => {
+               mname = m.name
+               InModule(m.info,m.name,m.ports,const_prop_s(m.body))
+            }
+         }
+      }}
+      Circuit(c.info,modulesx,c.main)
+   }
 }
 
 object LoToVerilog extends Pass with StanzaPass {
@@ -1119,19 +1174,113 @@ object LoToVerilog extends Pass with StanzaPass {
    def run (c:Circuit): Circuit = stanzaPass(c, "lo-to-verilog")
 }
 
-object VerilogWrap extends Pass with StanzaPass {
+object FromCHIRRTL extends Pass with StanzaPass {
+   def name = "From CHIRRTL"
+   def run (c:Circuit): Circuit = stanzaPass(c, "from-chirrtl")
+}
+
+object VerilogWrap extends Pass {
    def name = "Verilog Wrap"
-   def run (c:Circuit): Circuit = stanzaPass(c, "verilog-wrap")
+   var mname = ""
+   def v_wrap_e (e:Expression) : Expression = {
+      eMap(v_wrap_e _,e) match {
+         case (e:DoPrim) => {
+            def a0 () = e.args(0)
+            if (e.op == TAIL_OP) {
+               (a0()) match {
+                  case (e0:DoPrim) => {
+                     if (e0.op == ADD_OP) DoPrim(ADDW_OP,e0.args,Seq(),tpe(e))
+                     else if (e0.op == SUB_OP) DoPrim(SUBW_OP,e0.args,Seq(),tpe(e))
+                     else e
+                  }
+                  case (e0) => e
+               }
+            }
+            else e
+         }
+         case (e) => e
+      }
+   }
+   def v_wrap_s (s:Stmt) : Stmt = eMap(v_wrap_e _,sMap(v_wrap_s _,s))
+   def run (c:Circuit): Circuit = {
+      val modulesx = c.modules.map{ m => {
+         (m) match {
+            case (m:InModule) => {
+               mname = m.name
+               InModule(m.info,m.name,m.ports,v_wrap_s(m.body))
+            }
+            case (m:ExModule) => m
+         }
+      }}
+      Circuit(c.info,modulesx,c.main)
+   }
 }
 
-object SplitExp extends Pass with StanzaPass {
+object SplitExp extends Pass {
    def name = "Split Expressions"
-   def run (c:Circuit): Circuit = stanzaPass(c, "split-expressions")
+   var mname = ""
+   def split_exp (m:InModule) : InModule = {
+      mname = m.name
+      val v = ArrayBuffer[Stmt]()
+      val sh = sym_hash
+      def split_exp_s (s:Stmt) : Stmt = {
+         def split (e:Expression) : Expression = {
+            val n = firrtl_gensym("GEN",sh)
+            v += DefNode(info(s),n,e)
+            WRef(n,tpe(e),kind(e),gender(e))
+         }
+         def split_exp_e (i:Int)(e:Expression) : Expression = {
+            eMap(split_exp_e(i + 1) _,e) match {
+               case (e:DoPrim) => if (i > 0) split(e) else e
+               case (e) => e
+            }
+         }
+         eMap(split_exp_e(0) _,s) match {
+            case (s:Begin) => sMap(split_exp_s _,s)
+            case (s) => v += s; s
+         }
+      }
+      split_exp_s(m.body)
+      InModule(m.info,m.name,m.ports,Begin(v))
+   }
+   
+   def run (c:Circuit): Circuit = {
+      val modulesx = c.modules.map{ m => {
+         (m) match {
+            case (m:InModule) => split_exp(m)
+            case (m:ExModule) => m
+         }
+      }}
+      Circuit(c.info,modulesx,c.main)
+   }
 }
 
-object VerilogRename extends Pass with StanzaPass {
+object VerilogRename extends Pass {
    def name = "Verilog Rename"
-   def run (c:Circuit): Circuit = stanzaPass(c, "verilog-rename")
+   def run (c:Circuit): Circuit = {
+      def verilog_rename_n (n:String) : String = {
+         if (v_keywords.contains(n)) (n + "$") else n
+      }
+      def verilog_rename_e (e:Expression) : Expression = {
+         (e) match {
+           case (e:WRef) => WRef(verilog_rename_n(e.name),e.tpe,kind(e),gender(e))
+           case (e) => eMap(verilog_rename_e,e)
+         }
+      }
+      def verilog_rename_s (s:Stmt) : Stmt = {
+         stMap(verilog_rename_n _,eMap(verilog_rename_e _,sMap(verilog_rename_s _,s)))
+      }
+      val modulesx = c.modules.map{ m => {
+         val portsx = m.ports.map{ p => {
+            Port(p.info,verilog_rename_n(p.name),p.direction,p.tpe)
+         }}
+         m match {
+            case (m:InModule) => InModule(m.info,m.name,portsx,verilog_rename_s(m.body))
+            case (m:ExModule) => m
+         }
+      }}
+      Circuit(c.info,modulesx,c.main)
+   }
 }
 
 object LowerTypes extends Pass {
@@ -1204,13 +1353,6 @@ object LowerTypes extends Pass {
       }
    }
    def merge (a:String,b:String,x:String) : String = a + x + b
-   def lowered_name (e:Expression) : String = {
-      (e) match {
-         case (e:WRef) => e.name
-         case (e:WSubField) => lowered_name(e.exp) + "_" + e.name
-         case (e:WSubIndex) => lowered_name(e.exp) + "_" + e.value
-      }
-   }
    def root_ref (e:Expression) : WRef = {
       (e) match {
          case (e:WRef) => e

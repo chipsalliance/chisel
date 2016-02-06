@@ -2895,3 +2895,5 @@ defn lo-to-verilog (with-output:(() -> False) -> False, c:Circuit) :
    val c5 = verilog-rename(c4)
    ;println(c5)
    emit-verilog(with-output,c5)
+
+

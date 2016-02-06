@@ -4,7 +4,6 @@ package firrtl
 import scala.collection.Seq
 import Utils._
 
-
 trait Kind
 case class WireKind() extends Kind
 case class PoisonKind() extends Kind 
@@ -29,6 +28,14 @@ case class WVoid() extends Expression
 case class WInvalid() extends Expression
 case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt 
 
+case object ADDW_OP extends PrimOp 
+case object SUBW_OP extends PrimOp
+
+object WrappedExpression {
+   def apply (e:Expression) = new WrappedExpression(e)
+   def we (e:Expression) = new WrappedExpression(e)
+   def weq (e1:Expression,e2:Expression) = we(e1) == we(e2)
+}
 class WrappedExpression (val e1:Expression) {
    override def equals (we:Any) = {
       we match {

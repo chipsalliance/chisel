@@ -40,7 +40,11 @@ object PrimOps extends LazyLogging {
     CONCAT_OP -> "cat",
     BITS_SELECT_OP -> "bits",
     HEAD_OP -> "head",
-    TAIL_OP -> "tail"
+    TAIL_OP -> "tail",
+
+    //This are custom, we need to refactor to enable easily extending FIRRTL with custom primops
+    ADDW_OP -> "addw",
+    SUBW_OP -> "subw"
   )
   lazy val listing: Seq[String] = PrimOps.mapPrimOp2String.map { case (k,v) => v } toSeq
   private val mapString2PrimOp = mapPrimOp2String.map(_.swap)

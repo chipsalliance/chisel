@@ -125,6 +125,13 @@ object Utils {
          }
       }
    }
+   def lowered_name (e:Expression) : String = {
+      (e) match {
+         case (e:WRef) => e.name
+         case (e:WSubField) => lowered_name(e.exp) + "_" + e.name
+         case (e:WSubIndex) => lowered_name(e.exp) + "_" + e.value
+      }
+   }
    def get_flip (t:Type, i:Int, f:Flip) : Flip = { 
       if (i >= get_size(t)) error("Shouldn't be here")
       val x = t match {
@@ -226,6 +233,19 @@ object Utils {
          case t:SIntType => t.width
          case t:ClockType => IntWidth(1)
          case t => error("No width!")
+      }
+   }
+   def long_BANG (t:Type) : Long = {
+      (t) match {
+         case (t:UIntType) => t.width.as[IntWidth].get.width.toLong
+         case (t:SIntType) => t.width.as[IntWidth].get.width.toLong
+         case (t:BundleType) => {
+            var w = 0
+            for (f <- t.fields) { w = w + long_BANG(f.tpe).toInt }
+            w
+         }
+         case (t:VectorType) => t.size * long_BANG(t.tpe)
+         case (t:ClockType) => 1
       }
    }
 // =================================

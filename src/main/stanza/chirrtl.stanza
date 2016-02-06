@@ -11,6 +11,7 @@ public val chirrtl-passes = to-list $ [
    CInferTypes()
    CInferMDir()
    RemoveCHIRRTL()
+   FromCHIRRTL()
 ]
 ; ===============================
 
@@ -421,3 +422,18 @@ defn remove-chirrtl (c:Circuit) :
                (m:ExModule) : m
 
 
+;============ FromCHIRRTL ==============
+
+public defstruct FromCHIRRTL <: Pass
+public defmethod pass (b:FromCHIRRTL) -> (Circuit -> Circuit) : from-chirrtl
+public defmethod name (b:FromCHIRRTL) -> String : "From CHIRRTL"
+public defmethod short-name (b:FromCHIRRTL) -> String : "from-chirrtl"
+
+defn from-chirrtl (c:Circuit) -> Circuit :
+   val c1 = c-infer-types(c)
+   ;println(c1)
+   val c2 = infer-mdir(c1)
+   ;println(c2)
+   val c3 = remove-chirrtl(c2)
+   ;println(c3)
+   c3
