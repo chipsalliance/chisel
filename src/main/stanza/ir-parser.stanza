@@ -328,6 +328,7 @@ defsyntax firrtl :
                   (w:IntWidth) :
                      if to-long(req-num-bits(b)) > width(w) :
                         FPE(form, "Width too small for UIntValue.")
+                     if width(w) == to-long(0) : println("is zero at")
                      UIntValue(b, w)
                   (w) :
                      ;UIntValue(b, w)

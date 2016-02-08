@@ -430,7 +430,7 @@ public defmethod name (b:FromCHIRRTL) -> String : "From CHIRRTL"
 public defmethod short-name (b:FromCHIRRTL) -> String : "from-chirrtl"
 
 defn from-chirrtl (c:Circuit) -> Circuit :
-   val c1 = c-infer-types(c)
+   val c1 = infer-types(c)
    ;println(c1)
    val c2 = infer-mdir(c1)
    ;println(c2)

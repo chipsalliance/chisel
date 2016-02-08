@@ -54,8 +54,8 @@ object VerilogEmitter extends Emitter {
    }
    def not_empty (s:ArrayBuffer[_]) : Boolean = if (s.size == 0) false else true
    def rand_string (t:Type) : Seq[Any] = {
-      val wx = ((long_BANG(t) + 31) / 32)
-      Seq("{",wx,"{",ran,"}}")
+      val wx = ((long_BANG(t) + 31) / 32).toInt
+      Seq("{",wx.toString,"{",ran,"}}")
    }
    def emit (x:Any) = emit2(x,0)
    def emit2 (x:Any, top:Int) : Unit = {
@@ -97,12 +97,12 @@ object VerilogEmitter extends Emitter {
             }
          }
          case (s:String) => w.get.write(s)
-         case (i:Int) => w.get.write(i)
-         case (i:Long) => w.get.write(i.toInt)
+         case (i:Int) => w.get.write(i.toString)
+         case (i:Long) => w.get.write(i.toString)
          case (t:VIndent) => w.get.write("   ")
          case (r:VRandom) => w.get.write("$random")
          case (s:Seq[Any]) => {
-            s.foreach((x:Any) => emit2(x.as[Any], top + 1))
+            s.foreach((x:Any) => emit2(x.as[Any].get, top + 1))
             if (top == 0) w.get.write("\n")
          }
       }
@@ -112,14 +112,12 @@ object VerilogEmitter extends Emitter {
    def v_print (e:Expression) = {
       e match {
          case (e:UIntValue) => {
-            val str = e.value.toString
-            val out = str.substring(1,str.length() - 1)
-            w.get.write(long_BANG(tpe(e)).toString + "'" + out)
+            val str = e.value.toString(16)
+            w.get.write(long_BANG(tpe(e)).toString + "'h" + str)
          }
          case (e:SIntValue) => {
-            val str = e.value.toString
-            val out = str.substring(1,str.length() - 1)
-            w.get.write(long_BANG(tpe(e)).toString + "'s" + out)
+            val str = e.value.toString(16)
+            w.get.write(long_BANG(tpe(e)).toString + "'sh" + str)
          }
       }
    }
@@ -153,8 +151,8 @@ object VerilogEmitter extends Emitter {
       doprim.op match {
          case ADD_OP => Seq(cast_if(a0())," + ", cast_if(a1()))
          case ADDW_OP => Seq(cast_if(a0())," + ", cast_if(a1()))
-         case SUB_OP => Seq(cast_if(a0())," _ ", cast_if(a1()))
-         case SUBW_OP => Seq(cast_if(a0())," _ ", cast_if(a1()))
+         case SUB_OP => Seq(cast_if(a0())," - ", cast_if(a1()))
+         case SUBW_OP => Seq(cast_if(a0())," - ", cast_if(a1()))
          case MUL_OP => Seq(cast_if(a0())," * ", cast_if(a1()) )
          case DIV_OP => Seq(cast_if(a0())," / ", cast_if(a1()) )
          case REM_OP => Seq(cast_if(a0())," % ", cast_if(a1()) )
@@ -286,7 +284,7 @@ object VerilogEmitter extends Emitter {
                   at_clock(clk) += Seq(tabs,"end")
                }
                case (e) => {
-                  if (e == r) at_clock(clk) += Seq(tabs,";")
+                  if (weq(e,r)) at_clock(clk) += Seq(tabs,";")
                   else at_clock(clk) += Seq(tabs,r," <= ",e,";")
                }
             }
@@ -296,7 +294,7 @@ object VerilogEmitter extends Emitter {
          add_update(Mux(reset,tv,fv,mux_type_and_widths(tv,fv)),"")
       }
       def update (e:Expression,value:Expression,clk:Expression,en:Expression) = {
-         if (at_clock.contains(clk)) at_clock(clk) = ArrayBuffer[Seq[Any]]()
+         if (!at_clock.contains(clk)) at_clock(clk) = ArrayBuffer[Seq[Any]]()
          if (weq(en,one)) at_clock(clk) += Seq(e," <= ",value,";")
          else {
             at_clock(clk) += Seq("if(",en,") begin")
@@ -321,7 +319,14 @@ object VerilogEmitter extends Emitter {
          for (e <- es) {
             declare("wire",lowered_name(e),tpe(e))
             val ex = WRef(lowered_name(e),tpe(e),kind(e),gender(e))
-            if (gender(e) == FEMALE) assign(ex,netlist(e))
+            if (gender(e) == FEMALE) {
+               if (lowered_name(e) == "interconnect_clk") {
+                  for (x <- netlist) {
+                     print("(" + x._1.e1.serialize() + " -> " + x._2.e1.serialize() + ")")
+                  }
+               }
+               assign(ex,netlist(e))
+            }
          }
       }
       def simulate (clk:Expression,en:Expression,s:Seq[Any]) = {

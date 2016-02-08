@@ -54,7 +54,7 @@ object PassUtils extends LazyLogging {
        val name = p.name
        logger.debug(s"Starting ${name}")
        val x = p.run(c)
-       logger.debug(x.serialize())
+       //logger.debug(x.serialize())
        logger.debug(s"Finished ${name}")
        executePasses(x, passes.tail)
     }
@@ -122,17 +122,17 @@ object ResolveKinds extends Pass {
          def find (m:Module) = {
             def find_stmt (s:Stmt):Stmt = {
                s match {
-                  case s:DefWire => kinds += (s.name -> WireKind())
-                  case s:DefPoison => kinds += (s.name -> PoisonKind())
-                  case s:DefNode => kinds += (s.name -> NodeKind())
-                  case s:DefRegister => kinds += (s.name -> RegKind())
-                  case s:WDefInstance => kinds += (s.name -> InstanceKind())
-                  case s:DefMemory => kinds += (s.name -> MemKind(s.readers ++ s.writers ++ s.readwriters))
+                  case s:DefWire => kinds(s.name) = WireKind()
+                  case s:DefPoison => kinds(s.name) = PoisonKind()
+                  case s:DefNode => kinds(s.name) = NodeKind()
+                  case s:DefRegister => kinds(s.name) = RegKind()
+                  case s:WDefInstance => kinds(s.name) = InstanceKind()
+                  case s:DefMemory => kinds(s.name) = MemKind(s.readers ++ s.writers ++ s.readwriters)
                   case s => false
                }
                sMap(find_stmt,s)
             }
-            m.ports.foreach { p => kinds += (p.name -> PortKind()) }
+            m.ports.foreach { p => kinds(p.name) = PortKind() }
             m match {
                case m:InModule => find_stmt(m.body)
                case m:ExModule => false
@@ -195,35 +195,35 @@ object InferTypes extends Pass {
             s match {
                case s:DefRegister => {
                   val t = remove_unknowns(get_type(s))
-                  types += (s.name -> t)
+                  types(s.name) = t
                   eMap(infer_types_e _,set_type(s,t))
                }
                case s:DefWire => {
                   val sx = eMap(infer_types_e _,s)
                   val t = remove_unknowns(get_type(sx))
-                  types += (s.name -> t)
+                  types(s.name) = t
                   set_type(sx,t)
                }
                case s:DefPoison => {
                   val sx = eMap(infer_types_e _,s)
                   val t = remove_unknowns(get_type(sx))
-                  types += (s.name -> t)
+                  types(s.name) = t
                   set_type(sx,t)
                }
                case s:DefNode => {
                   val sx = eMap(infer_types_e _,s)
                   val t = remove_unknowns(get_type(sx))
-                  types += (s.name -> t)
+                  types(s.name) = t
                   set_type(sx,t)
                }
                case s:DefMemory => {
                   val t = remove_unknowns(get_type(s))
-                  types += (s.name -> t)
+                  types(s.name) = t
                   val dt = remove_unknowns(s.data_type)
                   set_type(s,dt)
                }
                case s:WDefInstance => {
-                  types += (s.name -> module_types(s.module))
+                  types(s.name) = module_types(s.module)
                   WDefInstance(s.info,s.name,s.module,module_types(s.module))
                }
                case s => eMap(infer_types_e _,sMap(infer_types_s,s))
@@ -231,7 +231,7 @@ object InferTypes extends Pass {
          }
  
          mname = m.name
-         m.ports.foreach(p => types += (p.name -> p.tpe))
+         m.ports.foreach(p => types(p.name) = p.tpe)
          m match {
             case m:InModule => InModule(m.info,m.name,m.ports,infer_types_s(m.body))
             case m:ExModule => m
@@ -248,7 +248,7 @@ object InferTypes extends Pass {
             }
          }
       }
-      modulesx.foreach(m => module_types += (m.name -> module_type(m)))
+      modulesx.foreach(m => module_types(m.name) = module_type(m))
       Circuit(c.info,modulesx.map({m => mname = m.name; infer_types(m)}) , c.main )
    }
 }
@@ -405,8 +405,8 @@ object InferWidths extends Pass {
          val wx = (wMap(remove_cycle(n) _,w)) match {
             case (w:MaxWidth) => MaxWidth(w.args.filter{ w => {
                w match {
-                  case (w:VarWidth) => n equals w.name
-                  case (w) => false
+                  case (w:VarWidth) => !(n equals w.name)
+                  case (w) => true
                }}})
             case (w:MinusWidth) => {
                w.arg1 match {
@@ -433,52 +433,72 @@ object InferWidths extends Pass {
       //;  2) Remove Cycles
       //;  3) Move to solved if not self-recursive
       val u = make_unique(l)
-      //println-debug("======== UNIQUE CONSTRAINTS ========")
-      //for (x <- u) { println-debug(x) }
-      //println-debug("====================================")
+      /*
+      println("======== UNIQUE CONSTRAINTS ========")
+      for (x <- u) { println(x) }
+      println("====================================")
+      */
    
       val f = HashMap[String,Width]()
       val o = ArrayBuffer[String]()
       for (x <- u) {
-         //println-debug("==== SOLUTIONS TABLE ====")
-         //for x in f do : println-debug(x)
-         //println-debug("=========================")
+         /*
+         println("==== SOLUTIONS TABLE ====")
+         for (x <- f) println(x)
+         println("=========================")
+         */
    
          val (n, e) = (x._1, x._2)
-   
          val e_sub = substitute(f)(e)
-         //println-debug(["Solving " n " => " e])
-         //println-debug(["After Substitute: " n " => " e-sub])
-         //println-debug("==== SOLUTIONS TABLE (Post Substitute) ====")
-         //for x in f do : println-debug(x)
-         //println-debug("=========================")
+
+         /*
+         println("Solving " + n + " => " + e)
+         println("After Substitute: " + n + " => " + e_sub)
+         println("==== SOLUTIONS TABLE (Post Substitute) ====")
+         for (x <- f) println(x)
+         println("=========================")
+         */
+
          val ex = remove_cycle(n)(e_sub)
-         //;println-debug(["After Remove Cycle: " n " => " ex])
+
+         /*
+         println("After Remove Cycle: " + n + " => " + ex)
+         */
          if (!self_rec(n,ex)) {
-            //;println-all-debug(["Not rec!: " n " => " ex])
-            //;println-all-debug(["Adding [" n "=>" ex "] to Solutions Table"])
+            /*
+            println("Not rec!: " + n + " => " + ex)
+            println("Adding [" + n + "=>" + ex + "] to Solutions Table")
+            */
             o += n
             f(n) = ex
          }
       }
    
-      //println-debug("Forward Solved Constraints")
-      //for x in f do : println-debug(x)
+      /*
+      println("Forward Solved Constraints")
+      for (x <- f) println(x)
+      */
    
       //; Backwards Solve
       val b = HashMap[String,Width]()
       for (i <- 0 until o.size) {
          val n = o(o.size - 1 - i)
-         //println-all-debug(["SOLVE BACK: [" n " => " f[n] "]"])
-         //println-debug("==== SOLUTIONS TABLE ====")
-         //for x in b do : println-debug(x)
-         //println-debug("=========================")
+         /*
+         println("SOLVE BACK: [" + n + " => " + f(n) + "]")
+         println("==== SOLUTIONS TABLE ====")
+         for (x <- b) println(x)
+         println("=========================")
+         */
          val ex = simplify(b_sub(b)(f(n)))
-         //println-all-debug(["BACK RETURN: [" n " => " ex "]"])
+         /*
+         println("BACK RETURN: [" + n + " => " + ex + "]")
+         */
          b(n) = ex
-         //println-debug("==== SOLUTIONS TABLE (Post backsolve) ====")
-         //for x in b do : println-debug(x)
-         //println-debug("=========================")
+         /*
+         println("==== SOLUTIONS TABLE (Post backsolve) ====")
+         for (x <- b) println(x)
+         println("=========================")
+         */
       }
       b
    }
@@ -687,12 +707,12 @@ object ExpandConnects extends Pass {
                }
             }
             s match {
-               case (s:DefWire) => { genders += (s.name -> BIGENDER); s }
-               case (s:DefRegister) => { genders += (s.name -> BIGENDER); s }
-               case (s:WDefInstance) => { genders += (s.name -> MALE); s }
-               case (s:DefMemory) => { genders += (s.name -> MALE); s }
-               case (s:DefPoison) => { genders += (s.name -> MALE); s }
-               case (s:DefNode) => { genders += (s.name -> MALE); s }
+               case (s:DefWire) => { genders(s.name) = BIGENDER; s }
+               case (s:DefRegister) => { genders(s.name) = BIGENDER; s }
+               case (s:WDefInstance) => { genders(s.name) = MALE; s }
+               case (s:DefMemory) => { genders(s.name) = MALE; s }
+               case (s:DefPoison) => { genders(s.name) = MALE; s }
+               case (s:DefNode) => { genders(s.name) = MALE; s }
                case (s:IsInvalid) => {
                   val n = get_size(tpe(s.exp))
                   val invalids = ArrayBuffer[Stmt]()
@@ -748,7 +768,7 @@ object ExpandConnects extends Pass {
             }
          }
    
-         m.ports.foreach { p => genders += (p.name -> to_gender(p.direction)) }
+         m.ports.foreach { p => genders(p.name) = to_gender(p.direction) }
          InModule(m.info,m.name,m.ports,expand_s(m.body))
       }
    
@@ -965,8 +985,7 @@ object ExpandWhens extends Pass {
             }
          }
          val bodyx = void_all_s(m.body)
-         voids += bodyx
-         InModule(m.info,m.name,m.ports,Begin(voids))
+         InModule(m.info,m.name,m.ports,Begin(Seq(Begin(voids),bodyx)))
       }
       def expand_whens (m:InModule) : Tuple2[HashMap[WrappedExpression,Expression],ArrayBuffer[Stmt]] = {
          val simlist = ArrayBuffer[Stmt]()
@@ -1109,10 +1128,9 @@ object CheckInitialization extends Pass with StanzaPass {
    def run (c:Circuit): Circuit = stanzaPass(c, "check-init")
 }
 
-object ConstProp extends Pass with StanzaPass {
+object ConstProp extends Pass {
    def name = "Constant Propogation"
    var mname = ""
-   def run (c:Circuit): Circuit = stanzaPass(c, "const-prop")
    def const_prop_e (e:Expression) : Expression = {
       eMap(const_prop_e _,e) match {
          case (e:DoPrim) => {
@@ -1141,8 +1159,10 @@ object ConstProp extends Pass with StanzaPass {
                      }
                      case (x) => {
                         if (long_BANG(tpe(e)) == long_BANG(tpe(x))) {
-                           if (tpe(x).typeof[UIntType] != None) x
-                           else DoPrim(AS_UINT_OP,Seq(x),Seq(),tpe(e))
+                           tpe(x) match {
+                              case (t:UIntType) => x
+                              case _ => DoPrim(AS_UINT_OP,Seq(x),Seq(),tpe(e)) 
+                           }
                         }
                         else e
                      }
@@ -1155,7 +1175,7 @@ object ConstProp extends Pass with StanzaPass {
       }
    }
    def const_prop_s (s:Stmt) : Stmt = eMap(const_prop_e _, sMap(const_prop_s _,s))
-   def const_prop (c:Circuit) : Circuit = {
+   def run (c:Circuit): Circuit = {
       val modulesx = c.modules.map{ m => {
          m match {
             case (m:ExModule) => m

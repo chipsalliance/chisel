@@ -22,7 +22,7 @@ object VerilogCompiler extends Compiler {
   // Copied from Stanza implementation
   val passes = Seq(
     //CheckHighForm,          
-    FromCHIRRTL,
+    //FromCHIRRTL,
     ToWorkingIR,            
     ResolveKinds,
     InferTypes,

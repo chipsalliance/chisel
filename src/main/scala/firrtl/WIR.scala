@@ -3,6 +3,7 @@ package firrtl
 
 import scala.collection.Seq
 import Utils._
+import WrappedExpression._
 
 trait Kind
 case class WireKind() extends Kind
@@ -46,19 +47,19 @@ class WrappedExpression (val e1:Expression) {
                case (e1:SIntValue,e2:SIntValue) => if (e1.value == e2.value) true else false
                   // TODO is this necessary? width(e1) == width(e2) 
                case (e1:WRef,e2:WRef) => e1.name equals e2.name
-               case (e1:WSubField,e2:WSubField) => (e1.name equals e2.name) && (e1.exp == e2.exp)
-               case (e1:WSubIndex,e2:WSubIndex) => (e1.value == e2.value) && (e1.exp == e2.exp)
-               case (e1:WSubAccess,e2:WSubAccess) => (e1.index == e2.index) && (e1.exp == e2.exp)
+               case (e1:WSubField,e2:WSubField) => (e1.name equals e2.name) && weq(e1.exp,e2.exp)
+               case (e1:WSubIndex,e2:WSubIndex) => (e1.value == e2.value) && weq(e1.exp,e2.exp)
+               case (e1:WSubAccess,e2:WSubAccess) => weq(e1.index,e2.index) && weq(e1.exp,e2.exp)
                case (e1:WVoid,e2:WVoid) => true
                case (e1:WInvalid,e2:WInvalid) => true
                case (e1:DoPrim,e2:DoPrim) => {
                   var are_equal = e1.op == e2.op
-                  (e1.args,e2.args).zipped.foreach{ (x,y) => { if (x != y) are_equal = false }}
+                  (e1.args,e2.args).zipped.foreach{ (x,y) => { if (!weq(x,y)) are_equal = false }}
                   (e1.consts,e2.consts).zipped.foreach{ (x,y) => { if (x != y) are_equal = false }}
                   are_equal
                }
-               case (e1:Mux,e2:Mux) => (e1.cond == e2.cond) && (e1.tval == e2.tval) && (e1.fval == e2.fval)
-               case (e1:ValidIf,e2:ValidIf) => (e1.cond == e2.cond) && (e1.value == e2.value)
+               case (e1:Mux,e2:Mux) => weq(e1.cond,e2.cond) && weq(e1.tval,e2.tval) && weq(e1.fval,e2.fval)
+               case (e1:ValidIf,e2:ValidIf) => weq(e1.cond,e2.cond) && weq(e1.value,e2.value)
                case (e1,e2) => false
             }
          }
@@ -119,6 +120,7 @@ class WrappedWidth (val w:Width) {
    def eq (w1:Width,w2:Width) : Boolean = {
       (new WrappedWidth(w1)) == (new WrappedWidth(w2))
    }
+   def ww (w:Width) : WrappedWidth = new WrappedWidth(w)
    override def equals (o:Any) : Boolean = {
       o match {
          case (w2:WrappedWidth) => {
@@ -150,10 +152,10 @@ class WrappedWidth (val w:Width) {
                }
                case (w1:IntWidth,w2:IntWidth) => w1.width == w2.width
                case (w1:PlusWidth,w2:PlusWidth) => 
-                  (w1.arg1 == w2.arg1 && w1.arg2 == w2.arg2) || (w1.arg1 == w2.arg2 && w1.arg2 == w2.arg1)
+                  (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) || (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
                case (w1:MinusWidth,w2:MinusWidth) => 
-                  (w1.arg1 == w2.arg1 && w1.arg2 == w2.arg2) || (w1.arg1 == w2.arg2 && w1.arg2 == w2.arg1)
-               case (w1:ExpWidth,w2:ExpWidth) => w1.arg1 == w2.arg1
+                  (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) || (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
+               case (w1:ExpWidth,w2:ExpWidth) => ww(w1.arg1) == ww(w2.arg1)
                case (w1:UnknownWidth,w2:UnknownWidth) => true
                case (w1,w2) => false
             }

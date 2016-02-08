@@ -450,12 +450,13 @@ object Utils {
         case e:WSubField => e.gender
         case e:WSubIndex => e.gender
         case e:WSubAccess => e.gender
-        case e:PrimOp => MALE
+        case e:DoPrim => MALE
         case e:UIntValue => MALE
         case e:SIntValue => MALE
         case e:Mux => MALE
         case e:ValidIf => MALE
-        case _ => error("Shouldn't be here")
+        case e:WInvalid => MALE
+        case e => println(e); error("Shouldn't be here")
     }}
    def get_gender (s:Stmt) : Gender =
      s match {
@@ -524,6 +525,7 @@ object Utils {
           BundleType(mem_fields)
        }
        case s:DefInstance => UnknownType()
+       case s:WDefInstance => s.tpe
        case _ => UnknownType()
     }}
    def get_name (s:Stmt) : String = {
@@ -560,7 +562,13 @@ object Utils {
    def sMap(f:Stmt => Stmt, stmt: Stmt): Stmt =
       stmt match {
         case w: Conditionally => Conditionally(w.info, w.pred, f(w.conseq), f(w.alt))
-        case b: Begin => Begin(b.stmts.map(f))
+        case b: Begin => {
+           val stmtsx = ArrayBuffer[Stmt]()
+           for (i <- 0 until b.stmts.size) {
+              stmtsx += f(b.stmts(i))
+           }
+           Begin(stmtsx)
+        }
         case s: Stmt => s
       }
    def eMap(f:Expression => Expression, stmt:Stmt) : Stmt =
@@ -648,6 +656,7 @@ object Utils {
          case (c:DefMemory) => DefMemory(c.info,f(c.name), c.data_type, c.depth, c.write_latency, c.read_latency, c.readers, c.writers, c.readwriters)
          case (c:DefNode) => DefNode(c.info,f(c.name),c.value)
          case (c:DefInstance) => DefInstance(c.info,f(c.name), c.module)
+         case (c:WDefInstance) => WDefInstance(c.info,f(c.name), c.module,c.tpe)
          case (c) => c
       }
    }
@@ -758,6 +767,7 @@ object Utils {
          case s: WSubField => s"${s.exp.serialize}.${s.name}"
          case s: WSubIndex => s"${s.exp.serialize}[${s.value}]"
          case s: WSubAccess => s"${s.exp.serialize}[${s.index.serialize}]"
+         case r: WVoid => "VOID"
        } 
        ret + debug(exp)
      }

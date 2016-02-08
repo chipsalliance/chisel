@@ -240,7 +240,8 @@ public defn check-high-form (c:Circuit) -> Circuit :
    defn check-high-form-w (w:Width) -> Width :
       match(w) :
          (w:IntWidth) : 
-            if width(w) <= to-long(0) : add(errors,NegWidth())
+            if width(w) <= to-long(0) : 
+               add(errors,NegWidth())
             w
          (w) : w
    defn check-high-form-t (t:Type) -> Type :

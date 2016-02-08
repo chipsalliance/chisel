@@ -277,75 +277,70 @@ object PrimOps extends LazyLogging {
          }
          case AND_OP => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:SIntType) => UIntType(MAX(w1(),w2()))
+               case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
                case (t1,t2) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case OR_OP => {
             val t = (t1(),t2()) match {
-               case (t1:SIntType, t2:SIntType) => UIntType(MAX(w1(),w2()))
+               case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
                case (t1,t2) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case XOR_OP => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1:SIntType, t2:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1:UIntType, t2:SIntType) => UIntType(MAX(w1(),w2()))
-               case (t1:SIntType, t2:SIntType) => UIntType(MAX(w1(),w2()))
+               case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
                case (t1,t2) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case AND_REDUCE_OP => {
             val t = (t1()) match {
-               case (t1:UIntType) => BoolType()
-               case (t1:SIntType) => BoolType()
+               case (_:UIntType|_:SIntType) => BoolType()
                case (t1) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case OR_REDUCE_OP => {
             val t = (t1()) match {
-               case (t1:UIntType) => BoolType()
+               case (_:UIntType|_:SIntType) => BoolType()
                case (t1) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case XOR_REDUCE_OP => {
             val t = (t1()) match {
-               case (t1:SIntType) => BoolType()
+               case (_:UIntType|_:SIntType) => BoolType()
                case (t1) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case CONCAT_OP => {
             val t = (t1(),t2()) match {
-               case (t1:SIntType, t2:SIntType) => UIntType(PLUS(w1(),w2()))
+               case (_:UIntType|_:SIntType,_:UIntType|_:SIntType) => UIntType(PLUS(w1(),w2()))
                case (t1, t2) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case BITS_SELECT_OP => {
             val t = (t1()) match {
-               case (t1:UIntType) => UIntType(PLUS(MINUS(c1(),c2()),ONE))
-               case (t1:SIntType) => UIntType(PLUS(MINUS(c1(),c2()),ONE))
+               case (_:UIntType|_:SIntType) => UIntType(PLUS(MINUS(c1(),c2()),ONE))
                case (t1) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case HEAD_OP => {
             val t = (t1()) match {
-               case (t1:UIntType) => UIntType(c1())
+               case (_:UIntType|_:SIntType) => UIntType(c1())
                case (t1) => UnknownType()
             }
             DoPrim(o,a,c,t)
          }
          case TAIL_OP => {
             val t = (t1()) match {
-               case (t1:SIntType) => UIntType(MINUS(w1(),c1()))
+               case (_:UIntType|_:SIntType) => UIntType(MINUS(w1(),c1()))
                case (t1) => UnknownType()
             }
             DoPrim(o,a,c,t)
