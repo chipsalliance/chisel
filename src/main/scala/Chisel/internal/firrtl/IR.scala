@@ -161,9 +161,19 @@ case class Connect(loc: Node, exp: Arg) extends Command
 case class BulkConnect(loc1: Node, loc2: Node) extends Command
 case class ConnectInit(loc: Node, exp: Arg) extends Command
 case class Stop(clk: Arg, ret: Int) extends Command
-case class Printf(clk: Arg, format: String, ids: Seq[Arg]) extends Command
 case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
+case class Printf(clk: Arg, formatIn: String, ids: Seq[Arg]) extends Command {
+  require(formatIn.forall(c => c.toInt > 0 && c.toInt < 128), "format strings must comprise non-null ASCII values")
+  def format = {
+    def escaped(x: Char) =
+      if (x == '"' || x == '\\' || x == '?') "\\" + x
+      else if (x == '\n') "\\n"
+      else if (x.toInt < 32) s"\\x${BigInt(x.toInt).toString(16)}"
+      else x
+    formatIn.map(escaped _).mkString
+  }
+}
 
 case class Circuit(name: String, components: Seq[Component], refMap: RefMap) {
   def emit: String = new Emitter(this).toString
