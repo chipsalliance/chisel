@@ -33,9 +33,8 @@ class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 }
 
 /** An I/O bundle for dequeuing data with valid/ready handshaking */
-class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen)
+class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen) with Flipped
 {
-  flip()
   ready := Bool(false)
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
