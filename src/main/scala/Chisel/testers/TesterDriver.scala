@@ -23,7 +23,7 @@ object TesterDriver extends BackendCompilationUtilities {
     * frontend, and which can be turned into executables with assertions. */
   def execute(t: () => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
-    val circuit = Driver.elaborate(t)
+    val circuit = Driver.elaborate(finishWrapper(t))
 
     // Set up a bunch of file handlers based on a random temp filename,
     // plus the quirks of Verilator's naming conventions
@@ -53,6 +53,19 @@ object TesterDriver extends BackendCompilationUtilities {
       executeExpectingSuccess(prefix, path)
     } else {
       false
+    }
+  }
+  /*
+   * provides a hook for testers to implement necessary control logic for tests after the
+   * implementation of the users test definition has been completed.
+   * typically the finish method will inspect the users circuit and connect the tester
+   * to the device under test
+   */
+  def finishWrapper(test: () => BasicTester): () => BasicTester = {
+    () => {
+      val tester = test()
+      tester.finish()
+      tester
     }
   }
 }

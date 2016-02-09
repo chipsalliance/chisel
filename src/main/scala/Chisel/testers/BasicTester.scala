@@ -24,4 +24,6 @@ class BasicTester extends Module {
       pushCommand(Stop(Node(clock), 0))
     }
   }
+
+  def finish(): Unit = {}
 }
