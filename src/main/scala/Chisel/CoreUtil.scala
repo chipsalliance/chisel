@@ -51,8 +51,8 @@ object assert {
     when (!Builder.dynamicContext.currentModule.get.reset) {
       when(!cond) {
         message match {
-          case Some(str) => printf(s"Assertion failed: $line: $str\n")
-          case None => printf(s"Assertion failed: $line\n")
+          case Some(str) => printf(s"Assertion failed: $str\n    at $line\n")
+          case None => printf(s"Assertion failed\n    at $line\n")
         }
         pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
       }
