@@ -8,28 +8,52 @@ import Chisel.testers.BasicTester
 /**
   * Created by chick on 2/8/16.
   */
-class FinishTester extends BasicTester {
-  var finish_was_run = false
+class UsesDeqIOInfo extends Bundle {
+  val test_width = 32
 
-  override def finish(): Unit = {
-    finish_was_run = true
+  val info_data = UInt(width = test_width)
+}
+
+class UsesDeqIO extends Module {
+  val io = new Bundle {
+    val in = new DeqIO(new UsesDeqIOInfo)
+    val out = new EnqIO(new UsesDeqIOInfo)
   }
 }
 
-class FinishTesterSpec extends ChiselFlatSpec {
-  class DummyCircuit extends Module {
-    val io = new Bundle {
-      val in = Bool(INPUT)
-      val out = Bool(OUTPUT)
-    }
-  }
-
+class DeqIOSpec extends ChiselFlatSpec {
   runTester {
-    new FinishTester {
-      val dut = new DummyCircuit
+    new BasicTester {
+      val dut = new UsesDeqIO
 
-      "Extending BasicTester" should "allow developer to have finish method run automatically" in {
-        assert(finish_was_run)
+      "DeqIO" should "set the direction of it's parameter to INPUT" in {
+        assert(dut.io.in.bits.info_data.dir === INPUT)
+      }
+      "DeqIO" should "create a valid input and ready output" in {
+        assert(dut.io.in.valid.dir === INPUT)
+        assert(dut.io.in.ready.dir === OUTPUT)
+      }
+      "EnqIO" should "set the  direction of it's parameter OUTPUT" in {
+        assert(dut.io.out.bits.info_data.dir === OUTPUT)
+      }
+      "EnqIO" should "create a valid input and ready output" in {
+        assert(dut.io.out.valid.dir === OUTPUT)
+        assert(dut.io.out.ready.dir === INPUT)
+      }
+
+      val in_clone = dut.io.in.cloneType
+      val out_clone = dut.io.out.cloneType
+
+      "A deqIO device" should "clone itself with it's directions intact" in {
+        assert(dut.io.in.bits.info_data.dir == in_clone.bits.info_data.dir)
+        assert(dut.io.in.ready.dir == in_clone.ready.dir)
+        assert(dut.io.in.valid.dir == in_clone.valid.dir)
+      }
+
+      "A enqIO device" should "clone itself with it's directions intact" in {
+        assert(dut.io.out.bits.info_data.dir == out_clone.bits.info_data.dir)
+        assert(dut.io.out.ready.dir == out_clone.ready.dir)
+        assert(dut.io.out.valid.dir == out_clone.valid.dir)
       }
     }
   }
