@@ -114,10 +114,10 @@ defmethod get-type (s:WDefInstance) -> Type : type(s)
 defmethod equal? (e1:Expression,e2:Expression) -> True|False :
    match(e1,e2) :
       (e1:UIntValue,e2:UIntValue) : 
-         if value(e1) == value(e2) : width(e1) == width(e2)
+         if to-int(value(e1)) == to-int(value(e2)) : width(e1) == width(e2)
          else : false
       (e1:SIntValue,e2:SIntValue) : 
-         if value(e1) == value(e2) : width(e1) == width(e2)
+         if to-int(value(e1)) == to-int(value(e2)) : width(e1) == width(e2)
          else : false
       (e1:WRef,e2:WRef) : name(e1) == name(e2)
       (e1:WSubField,e2:WSubField) : 

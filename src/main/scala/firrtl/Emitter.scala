@@ -13,7 +13,7 @@ import Utils._
 import firrtl.passes._
 import WrappedExpression._
 // Datastructures
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.LinkedHashMap
 import scala.collection.mutable.ArrayBuffer
 
 trait Emitter extends LazyLogging {
@@ -34,7 +34,7 @@ object VerilogEmitter extends Emitter {
    def wref (n:String,t:Type) = WRef(n,t,ExpKind(),UNKNOWNGENDER)
    def escape (s:String) : String = {
       val sx = ArrayBuffer[String]()
-      sx += "\""
+      //sx += '"'.toString
       var percent:Boolean = false
       for (c <- s) {
          if (c == '\n') sx += "\\n"
@@ -43,7 +43,7 @@ object VerilogEmitter extends Emitter {
          }
          percent = (c == '%')
       }
-      sx += "\""
+      //sx += '"'.toString 
       sx.reduce(_ + _)
    }
    def remove_root (ex:Expression) : Expression = {
@@ -190,7 +190,7 @@ object VerilogEmitter extends Emitter {
                case (t:SIntType) => Seq(cast(a0()))
             }
          }
-         case NOT_OP => Seq("~",a0())
+         case NOT_OP => Seq("~ ",a0())
          case AND_OP => Seq(cast_as(a0())," & ", cast_as(a1()))
          case OR_OP => Seq(cast_as(a0())," | ", cast_as(a1()))
          case XOR_OP => Seq(cast_as(a0())," ^ ", cast_as(a1()))
@@ -236,14 +236,13 @@ object VerilogEmitter extends Emitter {
    
    def emit_verilog (m:InModule) : Module = {
       mname = m.name
-      val netlist = HashMap[WrappedExpression,Expression]()
+      val netlist = LinkedHashMap[WrappedExpression,Expression]()
       val simlist = ArrayBuffer[Stmt]()
-      val namehash = sym_hash
       def build_netlist (s:Stmt) : Stmt = {
          s match {
             case (s:Connect) => netlist(s.loc) = s.exp
             case (s:IsInvalid) => {
-               val n = firrtl_gensym("GEN",namehash)
+               val n = firrtl_gensym_module(mname)
                val e = wref(n,tpe(s.exp))
                netlist(s.exp) = e
             }
@@ -261,7 +260,7 @@ object VerilogEmitter extends Emitter {
       val declares = ArrayBuffer[Seq[Any]]()
       val instdeclares = ArrayBuffer[Seq[Any]]()
       val assigns = ArrayBuffer[Seq[Any]]()
-      val at_clock = HashMap[Expression,ArrayBuffer[Seq[Any]]]()
+      val at_clock = LinkedHashMap[Expression,ArrayBuffer[Seq[Any]]]()
       val initials = ArrayBuffer[Seq[Any]]()
       val simulates = ArrayBuffer[Seq[Any]]()
       def declare (b:String,n:String,t:Type) = {
@@ -320,11 +319,6 @@ object VerilogEmitter extends Emitter {
             declare("wire",lowered_name(e),tpe(e))
             val ex = WRef(lowered_name(e),tpe(e),kind(e),gender(e))
             if (gender(e) == FEMALE) {
-               if (lowered_name(e) == "interconnect_clk") {
-                  for (x <- netlist) {
-                     print("(" + x._1.e1.serialize() + " -> " + x._2.e1.serialize() + ")")
-                  }
-               }
                assign(ex,netlist(e))
             }
          }
@@ -341,13 +335,13 @@ object VerilogEmitter extends Emitter {
          Seq("$fdisplay(32'h80000002,\"",ret,"\");$finish;")
       }
       def printf (str:String,args:Seq[Expression]) : Seq[Any] = {
-         val strx = (Seq(escape(str)) ++ args).reduce(_ + "," + _)
+         val strx = (Seq(escape(str)) ++ args).reduce(Seq(_, ",", _))
          Seq("$fwrite(32'h80000002,",strx,");")
       }
       def delay (e:Expression, n:Int, clk:Expression) : Expression = {
          var ex = e
          for (i <- 0 until n) {
-            val name = firrtl_gensym("GEN",namehash)
+            val name = firrtl_gensym_module(mname)
             declare("reg",name,tpe(e))
             val exx = WRef(name,tpe(e),ExpKind(),UNKNOWNGENDER)
             update(exx,ex,clk,one)

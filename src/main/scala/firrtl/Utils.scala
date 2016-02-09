@@ -14,13 +14,15 @@ package firrtl
 import scala.collection.mutable.StringBuilder
 import java.io.PrintWriter
 import PrimOps._
+import WrappedExpression._
+import firrtl.WrappedType._
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.LinkedHashMap
 //import scala.reflect.runtime.universe._
 
 object Utils {
-
-   // Is there a more elegant way to do this?
+//
+//   // Is there a more elegant way to do this?
    private type FlagMap = Map[String, Boolean]
    private val FlagMap = Map[String, Boolean]().withDefaultValue(false)
    implicit class WithAs[T](x: T) {
@@ -37,7 +39,7 @@ object Utils {
    def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
    val gen_names = Map[String,Int]()
    val delin = "_"
-   val sym_hash = HashMap[String,Int]()
+   val sym_hash = LinkedHashMap[String,LinkedHashMap[String,Int]]()
    def BoolType () = { UIntType(IntWidth(1)) } 
    val one  = UIntValue(BigInt(1),IntWidth(1))
    val zero = UIntValue(BigInt(0),IntWidth(1))
@@ -50,9 +52,15 @@ object Utils {
       val ix = if (i < 0) ((-1 * i) - 1) else i
       ceil_log2(ix + 1) + 1
    }
-   def firrtl_gensym (s:String):String = { firrtl_gensym(s,HashMap[String,Int]()) }
-   def firrtl_gensym (sym_hash:HashMap[String,Int]):String = { firrtl_gensym("gen",sym_hash) }
-   def firrtl_gensym (s:String,sym_hash:HashMap[String,Int]):String = {
+   def firrtl_gensym (s:String):String = { firrtl_gensym(s,LinkedHashMap[String,Int]()) }
+   def firrtl_gensym (sym_hash:LinkedHashMap[String,Int]):String = { firrtl_gensym("GEN",sym_hash) }
+   def firrtl_gensym_module (s:String):String = {
+      val sh = sym_hash.getOrElse(s,LinkedHashMap[String,Int]())
+      val name = firrtl_gensym("GEN",sh)
+      sym_hash(s) = sh
+      name
+   }
+   def firrtl_gensym (s:String,sym_hash:LinkedHashMap[String,Int]):String = {
       if (sym_hash contains s) {
          val num = sym_hash(s) + 1
          sym_hash += (s -> num)
@@ -62,26 +70,26 @@ object Utils {
          (s + delin + 0)
       }
    }
-   def AND (e1:Expression,e2:Expression) : Expression = {
-      if (e1 == e2) e1
-      else if ((e1 == zero) | (e2 == zero)) zero
-      else if (e1 == one) e2
-      else if (e2 == one) e1
-      else DoPrim(AND_OP,Seq(e1,e2),Seq(),UIntType(IntWidth(1)))
+   def AND (e1:WrappedExpression,e2:WrappedExpression) : Expression = {
+      if (e1 == e2) e1.e1
+      else if ((e1 == we(zero)) | (e2 == we(zero))) zero
+      else if (e1 == we(one)) e2.e1
+      else if (e2 == we(one)) e1.e1
+      else DoPrim(AND_OP,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
    }
    
-   def OR (e1:Expression,e2:Expression) : Expression = {
-      if (e1 == e2) e1
-      else if ((e1 == one) | (e2 == one)) one
-      else if (e1 == zero) e2
-      else if (e2 == zero) e1
-      else DoPrim(OR_OP,Seq(e1,e2),Seq(),UIntType(IntWidth(1)))
+   def OR (e1:WrappedExpression,e2:WrappedExpression) : Expression = {
+      if (e1 == e2) e1.e1
+      else if ((e1 == we(one)) | (e2 == we(one))) one
+      else if (e1 == we(zero)) e2.e1
+      else if (e2 == we(zero)) e1.e1
+      else DoPrim(OR_OP,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
    }
    def EQV (e1:Expression,e2:Expression) : Expression = { DoPrim(EQUAL_OP,Seq(e1,e2),Seq(),tpe(e1)) }
-   def NOT (e1:Expression) : Expression = {
-      if (e1 == one) zero
-      else if (e1 == zero) one
-      else DoPrim(EQUAL_OP,Seq(e1,zero),Seq(),UIntType(IntWidth(1)))
+   def NOT (e1:WrappedExpression) : Expression = {
+      if (e1 == we(one)) zero
+      else if (e1 == we(zero)) one
+      else DoPrim(EQUAL_OP,Seq(e1.e1,zero),Seq(),UIntType(IntWidth(1)))
    }
 
    
@@ -185,6 +193,20 @@ object Utils {
    }
 
 //============== TYPES ================
+   def mux_type (e1:Expression,e2:Expression) : Type = mux_type(tpe(e1),tpe(e2))
+   def mux_type (t1:Type,t2:Type) : Type = {
+      if (wt(t1) == wt(t2)) {
+         (t1,t2) match { 
+            case (t1:UIntType,t2:UIntType) => UIntType(UnknownWidth())
+            case (t1:SIntType,t2:SIntType) => SIntType(UnknownWidth())
+            case (t1:VectorType,t2:VectorType) => VectorType(mux_type(t1.tpe,t2.tpe),t1.size)
+            case (t1:BundleType,t2:BundleType) => 
+               BundleType((t1.fields,t2.fields).zipped.map((f1,f2) => {
+                  Field(f1.name,f1.flip,mux_type(f1.tpe,f2.tpe))
+               }))
+         }
+      } else UnknownType()
+   }
    def mux_type_and_widths (e1:Expression,e2:Expression) : Type = mux_type_and_widths(tpe(e1),tpe(e2))
    def mux_type_and_widths (t1:Type,t2:Type) : Type = {
       def wmax (w1:Width,w2:Width) : Width = {
@@ -226,7 +248,7 @@ object Utils {
       }
    }
    
-//=====================================
+////=====================================
    def widthBANG (t:Type) : Width = {
       t match {
          case t:UIntType => t.width
@@ -288,7 +310,7 @@ object Utils {
      def serialize(implicit flags: FlagMap = FlagMap): String = op.getString
    }
 
-// =============== EXPANSION FUNCTIONS ================
+//// =============== EXPANSION FUNCTIONS ================
    def get_size (t:Type) : Int = {
       t match {
          case (t:BundleType) => {
@@ -486,6 +508,10 @@ object Utils {
       }
    def tpe (e:Expression) : Type =
       e match {
+         case e:Ref => e.tpe
+         case e:SubField => e.tpe
+         case e:SubIndex => e.tpe
+         case e:SubAccess => e.tpe
          case e:WRef => e.tpe
          case e:WSubField => e.tpe
          case e:WSubIndex => e.tpe
@@ -581,6 +607,7 @@ object Utils {
         case i: IsInvalid => IsInvalid(i.info, f(i.exp))
         case s: Stop => Stop(s.info, s.ret, f(s.clk), f(s.en))
         case p: Print => Print(p.info, p.string, p.args.map(f), f(p.clk), f(p.en))
+        case c: CDefMPort => CDefMPort(c.info,c.name,c.tpe,c.mem,c.exps.map(f),c.direction)
         case s: Stmt => s 
       }
    def eMap(f: Expression => Expression, exp:Expression): Expression = 
@@ -621,6 +648,8 @@ object Utils {
          case c:DefWire => DefWire(c.info,c.name,f(c.tpe))
          case c:DefRegister => DefRegister(c.info,c.name,f(c.tpe),c.clock,c.reset,c.init)
          case c:DefMemory => DefMemory(c.info,c.name, f(c.data_type), c.depth, c.write_latency, c.read_latency, c.readers, c.writers, c.readwriters)
+         case c:CDefMemory => CDefMemory(c.info,c.name, f(c.tpe), c.size, c.seq)
+         case c:CDefMPort => CDefMPort(c.info,c.name, f(c.tpe), c.mem, c.exps,c.direction)
          case c => c
       }
    }
@@ -657,6 +686,8 @@ object Utils {
          case (c:DefNode) => DefNode(c.info,f(c.name),c.value)
          case (c:DefInstance) => DefInstance(c.info,f(c.name), c.module)
          case (c:WDefInstance) => WDefInstance(c.info,f(c.name), c.module,c.tpe)
+         case (c:CDefMemory) => CDefMemory(c.info,f(c.name),c.tpe,c.size,c.seq)
+         case (c:CDefMPort) => CDefMPort(c.info,f(c.name),c.tpe,c.mem,c.exps,c.direction)
          case (c) => c
       }
    }
@@ -689,9 +720,9 @@ object Utils {
    //      }
    //   }
    //}
-   //def get-sym-hash (m:InModule) : HashMap[String,Int] = { get-sym-hash(m,Seq()) }
-   //def get-sym-hash (m:InModule,keywords:Seq[String]) : HashMap[String,Int] = {
-   //   val sym-hash = HashMap[String,Int]()
+   //def get-sym-hash (m:InModule) : LinkedHashMap[String,Int] = { get-sym-hash(m,Seq()) }
+   //def get-sym-hash (m:InModule,keywords:Seq[String]) : LinkedHashMap[String,Int] = {
+   //   val sym-hash = LinkedHashMap[String,Int]()
    //   for (k <- keywords) { sym-hash += (k -> 0) }
    //   def add-name (s:String) : String = {
    //      val sx = to-string(s)
@@ -847,6 +878,19 @@ object Utils {
          case p: Print => s"printf(${p.clk.serialize}, ${p.en.serialize}, ${p.string}" + 
                           (if (p.args.nonEmpty) p.args.map(_.serialize).mkString(", ", ", ", "") else "") + ")"
          case s:Empty => "skip"
+         case s:CDefMemory => {
+            if (s.seq) s"smem ${s.name} : ${s.tpe} [${s.size}]"
+            else s"cmem ${s.name} : ${s.tpe} [${s.size}]"
+         }
+         case s:CDefMPort => {
+            val dir = s.direction match {
+               case MInfer => "infer"
+               case MRead => "read"
+               case MWrite => "write"
+               case MReadWrite => "rdwr"
+            }
+            s"${dir} mport ${s.name} = ${s.mem}[${s.exps(0)}], s.exps(1)"
+         }
        } 
        ret + debug(stmt)
      }

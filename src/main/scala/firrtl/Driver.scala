@@ -10,7 +10,6 @@ import com.typesafe.scalalogging.LazyLogging
 
 import Utils._
 import DebugUtils._
-import Passes._
 
 object Driver extends LazyLogging {
   private val usage = """

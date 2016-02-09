@@ -4,6 +4,7 @@ package firrtl
 import scala.collection.Seq
 import Utils._
 import WrappedExpression._
+import WrappedWidth._
 
 trait Kind
 case class WireKind() extends Kind
@@ -42,10 +43,8 @@ class WrappedExpression (val e1:Expression) {
       we match {
          case (we:WrappedExpression) => {
             (e1,we.e1) match {
-               case (e1:UIntValue,e2:UIntValue) => if (e1.value == e2.value) true else false
-                  // TODO is this necessary? width(e1) == width(e2) 
-               case (e1:SIntValue,e2:SIntValue) => if (e1.value == e2.value) true else false
-                  // TODO is this necessary? width(e1) == width(e2) 
+               case (e1:UIntValue,e2:UIntValue) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
+               case (e1:SIntValue,e2:SIntValue) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
                case (e1:WRef,e2:WRef) => e1.name equals e2.name
                case (e1:WSubField,e2:WSubField) => (e1.name equals e2.name) && weq(e1.exp,e2.exp)
                case (e1:WSubIndex,e2:WSubIndex) => (e1.value == e2.value) && weq(e1.exp,e2.exp)
@@ -78,6 +77,10 @@ case class MaxWidth(args:Seq[Width]) extends Width
 case class MinWidth(args:Seq[Width]) extends Width
 case class ExpWidth(arg1:Width) extends Width
 
+object WrappedType {
+   def apply (t:Type) = new WrappedType(t)
+   def wt (t:Type) = apply(t)
+}
 class WrappedType (val t:Type) {
    def wt (tx:Type) = new WrappedType(tx)
    override def equals (o:Any) : Boolean = {
@@ -104,6 +107,13 @@ class WrappedType (val t:Type) {
       }
    }
 }
+
+object WrappedWidth {
+   def eqw (w1:Width,w2:Width) : Boolean = {
+      (new WrappedWidth(w1)) == (new WrappedWidth(w2))
+   }
+}
+   
 class WrappedWidth (val w:Width) {
    override def toString = {
       w match {
@@ -117,9 +127,6 @@ class WrappedWidth (val w:Width) {
          case (w:UnknownWidth) => "?"
       }
    }
-   def eq (w1:Width,w2:Width) : Boolean = {
-      (new WrappedWidth(w1)) == (new WrappedWidth(w2))
-   }
    def ww (w:Width) : WrappedWidth = new WrappedWidth(w)
    override def equals (o:Any) : Boolean = {
       o match {
@@ -132,7 +139,7 @@ class WrappedWidth (val w:Width) {
                   else {
                      for (a1 <- w1.args) {
                         var found = false
-                        for (a2 <- w2.args) { if (eq(a1,a2)) found = true }
+                        for (a2 <- w2.args) { if (eqw(a1,a2)) found = true }
                         if (found == false) ret = false
                      }
                   }
@@ -144,7 +151,7 @@ class WrappedWidth (val w:Width) {
                   else {
                      for (a1 <- w1.args) {
                         var found = false
-                        for (a2 <- w2.args) { if (eq(a1,a2)) found = true }
+                        for (a2 <- w2.args) { if (eqw(a1,a2)) found = true }
                         if (found == false) ret = false
                      }
                   }
@@ -177,4 +184,12 @@ object WGeq {
    def apply (loc:Width,exp:Width) = new WGeq(loc,exp)
 }
 
+trait MPortDir
+case object MInfer extends MPortDir
+case object MRead extends MPortDir
+case object MWrite extends MPortDir
+case object MReadWrite extends MPortDir
+
+case class CDefMemory (val info: FileInfo, val name: String, val tpe: Type, val size: Int, val seq: Boolean) extends Stmt
+case class CDefMPort (val info: FileInfo, val name: String, val tpe: Type, val mem: String, val exps: Seq[Expression], val direction: MPortDir) extends Stmt
 

@@ -23,6 +23,9 @@ object VerilogCompiler extends Compiler {
   val passes = Seq(
     //CheckHighForm,          
     //FromCHIRRTL,
+    CInferTypes,
+    CInferMDir,
+    RemoveCHIRRTL,
     ToWorkingIR,            
     ResolveKinds,
     InferTypes,
