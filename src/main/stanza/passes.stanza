@@ -2436,6 +2436,8 @@ defn escape (s:String) -> String :
    for c in s do :
       if c == '\n' :
          add(s*,"\\n")
+      else if c == '"' :
+         add(s*, "\\\"")
       else :
          if c == 'x' and percent :
             add(s*,"h")
