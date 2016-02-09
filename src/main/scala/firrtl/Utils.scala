@@ -875,8 +875,11 @@ object Utils {
          } 
          case i: IsInvalid => s"${i.exp.serialize} is invalid"
          case s: Stop => s"stop(${s.clk.serialize}, ${s.en.serialize}, ${s.ret})"
-         case p: Print => s"printf(${p.clk.serialize}, ${p.en.serialize}, ${p.string}" + 
+         case p: Print => {
+            val q = '"'.toString
+            s"printf(${p.clk.serialize}, ${p.en.serialize}, ${q}${p.string}${q}" + 
                           (if (p.args.nonEmpty) p.args.map(_.serialize).mkString(", ", ", ", "") else "") + ")"
+         }
          case s:Empty => "skip"
          case s:CDefMemory => {
             if (s.seq) s"smem ${s.name} : ${s.tpe} [${s.size}]"

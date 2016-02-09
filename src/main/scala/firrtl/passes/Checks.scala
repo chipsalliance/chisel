@@ -10,6 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 import firrtl._
 import firrtl.Utils._
 import firrtl.PrimOps._
+import firrtl.WrappedType._
 
 object CheckHighForm extends Pass with LazyLogging {
   def name = "High Form Check"
@@ -266,3 +267,504 @@ object CheckHighForm extends Pass with LazyLogging {
   }
 }
 
+object CheckTypes extends Pass with LazyLogging {
+   def name = "Check Types"
+   var mname = ""
+
+  // Custom Exceptions
+   class SubfieldNotInBundle(info:Info, name:String) extends PassException(s"${info}: [module ${mname} ]  Subfield ${name} is not in bundle.")
+   class SubfieldOnNonBundle(info:Info, name:String) extends PassException(s"${info}: [module ${mname}]  Subfield ${name} is accessed on a non-bundle.")
+   class IndexTooLarge(info:Info, value:Int) extends PassException(s"${info}: [module ${mname}]  Index with value ${value} is too large.")
+   class IndexOnNonVector(info:Info) extends PassException(s"${info}: [module ${mname}]  Index illegal on non-vector type.")
+   class AccessIndexNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Access index must be a UInt type.")
+   class IndexNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Index is not of UIntType.")
+   class EnableNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Enable is not of UIntType.")
+   class InvalidConnect(info:Info) extends PassException(s"${info}: [module ${mname}]  Type mismatch.")
+   class PrintfArgNotGround(info:Info) extends PassException(s"${info}: [module ${mname}]  Printf arguments must be either UIntType or SIntType.")
+   class ReqClk(info:Info) extends PassException(s"${info}: [module ${mname}]  Requires a clock typed signal.")
+   class EnNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Enable must be a UIntType typed signal.")
+   class PredNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Predicate not a UIntType.")
+   class OpNotGround(info:Info, op:String) extends PassException(s"${info}: [module ${mname}]  Primop ${op} cannot operate on non-ground types.")
+   class OpNotUInt(info:Info, op:String,e:String) extends PassException(s"${info}: [module ${mname}]  Primop ${op} requires argument ${e} to be a UInt type.")
+   class OpNotAllUInt(info:Info, op:String) extends PassException(s"${info}: [module ${mname}]  Primop ${op} requires all arguments to be UInt type.")
+   class OpNotAllSameType(info:Info, op:String) extends PassException(s"${info}: [module ${mname}]  Primop ${op} requires all operands to have the same type.")
+   class NodePassiveType(info:Info) extends PassException(s"${info}: [module ${mname}]  Node must be a passive type.")
+   class MuxSameType(info:Info) extends PassException(s"${info}: [module ${mname}]  Must mux between equivalent types.")
+   class MuxPassiveTypes(info:Info) extends PassException(s"${info}: [module ${mname}]  Must mux between passive types.")
+   class MuxCondUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  A mux condition must be of type UInt.")
+   class ValidIfPassiveTypes(info:Info) extends PassException(s"${info}: [module ${mname}]  Must validif a passive type.")
+   class ValidIfCondUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  A validif condition must be of type UInt.")
+   //;---------------- Helper Functions --------------
+   def ut () : UIntType = UIntType(UnknownWidth())
+   def st () : SIntType = SIntType(UnknownWidth())
+   
+   def check_types_primop (e:DoPrim, errors:ArrayBuffer[PassException],info:Info) : Unit = {
+      def all_same_type (ls:Seq[Expression]) : Unit = {
+         var error = false
+         for (x <- ls) {
+            if (wt(tpe(ls.head)) != wt(tpe(x))) error = true
+         }
+         if (error) errors += new OpNotAllSameType(info,e.op.serialize()) 
+      }
+      def all_ground (ls:Seq[Expression]) : Unit = {
+         var error = false
+         for (x <- ls ) {
+            if (!(tpe(x).typeof[UIntType] || tpe(x).typeof[SIntType])) error = true
+         }
+         if (error) errors += new OpNotGround(info,e.op.serialize()) 
+      }
+      def all_uint (ls:Seq[Expression]) : Unit = {
+         var error = false
+         for (x <- ls ) {
+            if (!(tpe(x).typeof[UIntType])) error = true
+         }
+         if (error) errors += new OpNotAllUInt(info,e.op.serialize()) 
+      }
+      def is_uint (x:Expression) : Unit = {
+         var error = false
+         if (!(tpe(x).typeof[UIntType])) error = true
+         if (error) errors += new OpNotUInt(info,e.op.serialize(),x.serialize()) 
+      }
+      
+      e.op match {
+         case AS_UINT_OP =>  {}
+         case AS_SINT_OP =>  {}
+         case AS_CLOCK_OP =>  {}
+         case DYN_SHIFT_LEFT_OP =>  is_uint(e.args(1)); all_ground(e.args)
+         case DYN_SHIFT_RIGHT_OP => is_uint(e.args(1)); all_ground(e.args)
+         case ADD_OP =>  all_ground(e.args)
+         case SUB_OP =>  all_ground(e.args)
+         case MUL_OP =>  all_ground(e.args)
+         case DIV_OP =>  all_ground(e.args)
+         case REM_OP =>  all_ground(e.args)
+         case LESS_OP =>  all_ground(e.args)
+         case LESS_EQ_OP =>  all_ground(e.args)
+         case GREATER_OP =>  all_ground(e.args)
+         case GREATER_EQ_OP =>  all_ground(e.args)
+         case EQUAL_OP =>  all_ground(e.args)
+         case NEQUAL_OP =>  all_ground(e.args)
+         case PAD_OP =>  all_ground(e.args)
+         case SHIFT_LEFT_OP =>  all_ground(e.args)
+         case SHIFT_RIGHT_OP =>  all_ground(e.args)
+         case CONVERT_OP =>  all_ground(e.args)
+         case NEG_OP =>  all_ground(e.args)
+         case NOT_OP =>  all_ground(e.args)
+         case AND_OP =>  all_ground(e.args)
+         case OR_OP =>  all_ground(e.args)
+         case XOR_OP =>  all_ground(e.args)
+         case AND_REDUCE_OP =>  all_ground(e.args)
+         case OR_REDUCE_OP =>  all_ground(e.args)
+         case XOR_REDUCE_OP =>  all_ground(e.args)
+         case CONCAT_OP =>  all_ground(e.args)
+         case BITS_SELECT_OP =>  all_ground(e.args)
+         case HEAD_OP =>  all_ground(e.args)
+         case TAIL_OP =>  all_ground(e.args)
+      }
+   }
+      
+   def run (c:Circuit) : Circuit = {
+      val errors = ArrayBuffer[PassException]()
+      def passive (t:Type) : Boolean = {
+         (t) match { 
+            case (_:UIntType|_:SIntType) => true
+            case (t:VectorType) => passive(t.tpe)
+            case (t:BundleType) => {
+               var p = true
+               for (x <- t.fields ) {
+                  if (x.flip == REVERSE) p = false
+                  if (!passive(x.tpe)) p = false
+               }
+               p
+            }
+            case (t) => true
+         }
+      }
+      def check_types_e (info:Info)(e:Expression) : Expression = {
+         (eMap(check_types_e(info) _,e)) match { 
+            case (e:WRef) => e
+            case (e:WSubField) => {
+               (tpe(e.exp)) match  { 
+                  case (t:BundleType) => {
+                     val ft = t.fields.find(p => p.name == e.name)
+                     if (ft == None) errors += new SubfieldNotInBundle(info,e.name)
+                  }
+                  case (t) => errors += new SubfieldOnNonBundle(info,e.name)
+               }
+            }
+            case (e:WSubIndex) => {
+               (tpe(e.exp)) match { 
+                  case (t:VectorType) => {
+                     if (e.value >= t.size) errors += new IndexTooLarge(info,e.value)
+                  }
+                  case (t) => errors += new IndexOnNonVector(info)
+               }
+            }
+            case (e:WSubAccess) => {
+               (tpe(e.exp)) match { 
+                  case (t:VectorType) => false
+                  case (t) => errors += new IndexOnNonVector(info)
+               }
+               (tpe(e.index)) match { 
+                  case (t:UIntType) => false
+                  case (t) => errors += new AccessIndexNotUInt(info)
+               }
+            }
+            case (e:DoPrim) => check_types_primop(e,errors,info)
+            case (e:Mux) => {
+               if (wt(tpe(e.tval)) != wt(tpe(e.fval))) errors += new MuxSameType(info)
+               if (!passive(tpe(e))) errors += new MuxPassiveTypes(info)
+               if (!passive(tpe(e))) errors += new MuxPassiveTypes(info)
+               if (!(tpe(e.cond).typeof[UIntType])) errors += new MuxCondUInt(info)
+            }
+            case (e:ValidIf) => {
+               if (!passive(tpe(e))) errors += new ValidIfPassiveTypes(info)
+               if (!(tpe(e.cond).typeof[UIntType])) errors += new ValidIfCondUInt(info)
+            }
+            case (_:UIntValue|_:SIntValue) => false
+         }
+         e
+      }
+   
+      def bulk_equals (t1:Type,t2:Type) : Boolean = {
+         (t1,t2) match { 
+            case (t1:BundleType,t2:BundleType) => {
+               var same = true
+               (t1.fields, t2.fields).zipped.map{ (f1,f2) => {
+                  if (f1.name == f2.name) {
+                     if (f1.flip != f2.flip) same = false
+                     if (!bulk_equals(f1.tpe,f2.tpe)) same = false
+                  }
+               }}
+               same
+            }
+            case (t1:ClockType,t2:ClockType) => true
+            case (t1:UIntType,t2:UIntType) => true
+            case (t1:SIntType,t2:SIntType) => true
+            case (t1:VectorType,t2:VectorType) => {
+               if (bulk_equals(t1.tpe,t2.tpe)) true
+               else false
+            }
+            case (t1,t2) => false
+         }
+      }
+           
+      def check_types_s (s:Stmt) : Stmt = {
+         eMap(check_types_e(get_info(s)) _,s) match { 
+            case (s:Connect) => if (wt(tpe(s.loc)) != wt(tpe(s.exp))) errors += new InvalidConnect(s.info)
+            case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp)) ) errors += new InvalidConnect(s.info)
+            case (s:Stop) => {
+               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors += new ReqClk(s.info)
+               if (wt(tpe(s.en)) != wt(ut()) ) errors += new EnNotUInt(s.info)
+            }
+            case (s:Print)=> {
+               for (x <- s.args ) {
+                  if (wt(tpe(x)) != wt(ut()) && wt(tpe(x)) != wt(st()) ) errors += new PrintfArgNotGround(s.info)
+               }
+               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors += new ReqClk(s.info)
+               if (wt(tpe(s.en)) != wt(ut()) ) errors += new EnNotUInt(s.info)
+            }
+            case (s:Conditionally) => if (wt(tpe(s.pred)) != wt(ut()) ) errors += new PredNotUInt(s.info)
+            case (s:DefNode) => if (!passive(tpe(s.value)) ) errors += new NodePassiveType(s.info)
+            case (s) => false
+         }
+         sMap(check_types_s,s)
+      }
+      
+      for (m <- c.modules ) {
+         mname = m.name
+         (m) match { 
+            case (m:ExModule) => false
+            case (m:InModule) => check_types_s(m.body)
+         }
+      }
+      if (errors.nonEmpty) throw new PassExceptions(errors)
+      c
+   }
+}
+
+/*
+object CheckGenders extends Pass {
+   def name = "Check Genders"
+   class WrongGender (info:Info,expr:String,wrong:String,right:String) extends PassException(s"${info}: [module ${mname}  Expression ${expr} is used as a ${wrong} but can only be used as a ${right}.")
+   
+   def dir-to-gender (d:Direction) : Gender = {
+      d match {
+         case INPUT => MALE
+         case OUTPUT => FEMALE //BI-GENDER
+      }
+   }
+   
+   def as-srcsnk (g:Gender) : String = {
+      g match {
+         case MALE => "source"
+         case FEMALE => "sink"
+         case UNKNOWNGENDER => "unknown"
+         case BIGENDER => "sourceOrSink"
+      }
+   }
+   
+   def run (c:Circuit): Circuit = {
+      val errors = ArrayBuffer[PassException]()
+      def get-kind (e:Expression) : Kind = {
+         (e) match { 
+            case (e:WRef) => e.kind
+            case (e:WSubField) => get-kind(e.exp)
+            case (e:WSubIndex) => get-kind(e.exp)
+            case (e:WSubAccess) => get-kind(e.exp)
+            case (e) => NodeKind()
+         }
+      }
+   
+      def check-gender (info:Info,genders:HashMap[String,Gender],desired:Gender)(e:Expression) : Unit = {
+         val gender = get-gender(e,genders)
+         val kindx = get-kind(e)
+         def flipQ (t:Type) : Boolean = {
+            var fQ = false
+            def flip-rec (t:Type,f:Flip) : Type =
+               (t) match { 
+                  case (t:BundleType) => {
+                     for (field <- t.fields) {
+                        flip-rec(field.tpe,times(f, field.flip))
+                     }
+                  }
+                  case (t:VectorType) => flip-rec(t.tpe,f)
+                  case (t) => if (f == REVERSE) fQ = true
+               }
+               t
+            }
+            flip-rec(t,DEFAULT)
+            fQ
+         }
+            
+         val has-flipQ = flipQ(tpe(e))
+         //println(e)
+         //println(gender)
+         //println(desired)
+         //println(kindx)
+         //println(desired == gender)
+         //if gender != desired and gender != BI-GENDER:
+         (gender,desired) match {
+            case (MALE, FEMALE) => errors += WrongGender(info,e.serialize(),as-srcsnk(desired),as-srcsnk(gender))
+            case (FEMALE, MALE) =>
+               if ((kindx == PortKind() or kindx == InstanceKind()) && has-flipQ == false) {
+                  //; OK!
+                  false
+               } else {
+                  //; Not Ok!
+                  add(errors,WrongGender(info,to-symbol(e),as-srcsnk(desired),as-srcsnk(gender)))
+               }
+            case _ => false
+         }
+      }
+   
+      def get-gender (e:Expression,genders:HashMap[String,Gender]) : Gender = {
+         (e) match { 
+            case (e:WRef) => genders(e.name)
+            case (e:WSubField) => 
+               val f = tpe(e.exp).as[BundleType].get.fields.find(f => f.name == e.name)
+               times(get-gender(e.exp,genders),f.flip)
+            case (e:WSubIndex) => get-gender(e.exp,genders)
+            case (e:WSubAccess) => get-gender(e.exp,genders)
+            case (e:DoPrim) => MALE
+            case (e:UIntValue) => MALE
+            case (e:SIntValue) => MALE
+            case (e:Mux) => MALE
+            case (e:ValidIf) => MALE
+         }
+      }
+   
+      def check-genders-e (info:Info,genders:HashMap[String,Gender])(e:Expression) : Expression = {
+         eMap(check-genders-e(info,genders) _,e)
+         (e) match { 
+            case (e:WRef) => false
+            case (e:WSubField) => false
+            case (e:WSubIndex) => false
+            case (e:WSubAccess) => false
+            case (e:DoPrim) => 
+               for e in args(e) do :
+                  check-gender(info,genders,MALE)(e)
+            case (e:Mux) => eMap(check-gender(info,genders,MALE) _,e)
+            case (e:ValidIf) => eMap(check-gender(info,genders,MALE) _,e)
+            case (e:UIntValue) => false
+            case (e:SIntValue) => false
+         }
+         e
+      }
+        
+      def check-genders-s (genders:HashMap[String,Gender])(s:Stmt) : Stmt = {
+         eMap(check-genders-e(get_info(s),genders) _,s)
+         sMap(check-genders-s(genders) _,s)
+         (s) match { 
+            case (s:DefWire) => genders(s.name) = BIGENDER
+            case (s:DefPoison) => genders(s.name) = MALE
+            case (s:DefRegister) => genders(s.name) = BIGENDER
+            case (s:DefNode) => {
+               check-gender(s.info,genders,MALE)(s.value)
+               genders(s.name) = MALE
+            }
+            case (s:DefMemory) => genders(s.name) = MALE
+            case (s:WDefInstance) => genders(s.name) = MALE
+            case (s:Connect) => {
+               check-gender(s.info,genders,FEMALE)(s.loc)
+               check-gender(s.info,genders,MALE)(s.exp)
+            }
+            case (s:Print) => {
+               for (x <- s.args ) {
+                  check-gender(s.info,genders,MALE)(x)
+               }
+               check-gender(s.info,genders,MALE)(s.en)
+               check-gender(s.info,genders,MALE)(s.clk)
+            }
+            case (s:BulkConnect) => {
+               check-gender(s.info,genders,FEMALE)(s.loc)
+               check-gender(s.info,genders,MALE)(s.exp)
+            }
+            case (s:Conditionally) => {
+               check-gender(s.info,genders,MALE)(s.pred)
+            }
+            case (s:Empty) => false
+            case (s:Stop) => {
+               check-gender(s.info,genders,MALE)(s.en)
+               check-gender(s.info,genders,MALE)(s.clk)
+            }
+            case (_:Begin|_:IsInvalid) => false
+         }
+         s
+      }
+   
+      for (m <- c.modules ) {
+         mname = m.name
+         val genders = HashMap[String,Gender]()
+         for (p <- m.ports) {
+            genders(p.name) = dir-to-gender(p.direction)
+         }
+         (m) match { 
+            case (m:ExModule) => false
+            case (m:InModule) => check-genders-s(genders)(m.body)
+         }
+      }
+      if (errors.nonEmpty) throw new PassExceptions(errors)
+      c
+   }
+}
+
+object CheckWidths extends Pass with StanzaPass {
+   def name = "Width Check"
+   def run (c:Circuit): Circuit = stanzaPass(c, "width-check")
+   defn UninferredWidth (info:Info) :
+      PassException $ string-join $
+      [info ": [module " mname "]  Uninferred width."]
+   
+   defn WidthTooSmall (info:Info,v:String) :
+      PassException $ string-join $
+      [info ": [module " mname "]  Width too small for constant " v "."]
+   
+   ;---------------- Helper Functions --------------
+   
+   ;--------------- Check Width Pass -------------------
+   public def check-width (c:Circuit) : Circuit = 
+      val errors = ArrayBuffer[PassException]()
+   
+      def check-width-m (m:Module) : Unit =
+         def check-width-w (info:Info,w:Width) : Width =
+            (w) match { 
+               (w:IntWidth) :
+                  if width(w) <= to-long(0) : add(errors,NegWidth())
+               (w) : 
+                  add(errors,UninferredWidth(info))
+            w
+   
+         def check-width-e (info:Info,e:Expression) : Expression =
+            (map(check-width-e{info,_},e)) match { 
+               (e:UIntValue) : 
+                  (width(e)) match { 
+                     (w:IntWidth) : 
+                        if max(to-long(1),to-long(req-num-bits(value(e)) - 1)) > width(w) : 
+                           add(errors,WidthTooSmall(info,to-string(value(e))))
+                     (w) : add(errors,UninferredWidth(info))
+                  check-width-w(info,width(e))
+               (e:SIntValue) : 
+                  (width(e)) match { 
+                     (w:IntWidth) : 
+                        if to-long(req-num-bits(value(e))) > width(w) : 
+                           add(errors,WidthTooSmall(info,to-string(value(e))))
+                     (w) : add(errors,UninferredWidth(info))
+                  check-width-w(info,width(e))
+               (e:DoPrim) : false
+               (e) : false
+   
+            ;mapr(check-width-w{info,_},type(map(check-width-e{info,_},e)))
+            e
+            
+         def check-width-s (s:Stmt) : Stmt =
+            sinfo! = info(s)
+            map(check-width-e{info(s),_},map(check-width-s,s))
+            map(mapr{check-width-w{info(s),_},_:Type},s)
+      
+         for p in ports(m) do :
+            mapr(check-width-w{info(p),_},type(p))
+   
+         (m) match { 
+            (m:ExModule) : false
+            (m:InModule) : check-width-s(body(m))
+         false
+      
+      for m in modules(c) do :
+         mname = name(m)
+         check-width-m(m)
+      throw(PassExceptions(errors)) when not empty?(errors)
+      c
+   }
+}
+
+object CheckInitialization extends Pass with StanzaPass {
+   def name = "Check Initialization"
+   def run (c:Circuit): Circuit = {
+   defn RefNotInitialized (info:Info, name:String) :
+      PassException $ string-join $
+      [info ": [module " mname "]  Reference " name " is not fully initialized."]
+   
+   ;------------ Helper Functions -------------
+   
+   ;------------ Pass ------------------
+   
+   public def check-init (c:Circuit) : 
+      val errors = ArrayBuffer[PassException]()
+      
+      def check-init-m (m:InModule) : 
+         def get-name (e:Expression) : String =
+            (e) match { 
+               (e:WRef) : name(e)
+               (e:WSubField) : symbol-join([get-name(exp(e)) `. name(e)])
+               (e:WSubIndex) : symbol-join([get-name(exp(e)) to-symbol("[") value(e) to-symbol("]")])
+               (e) : error("Shouldn't be here")
+         def has-void? (e:Expression) : Boolean =
+            var void? = false
+            def has-void (e:Expression) : Expression =
+               (e) match { 
+                  (e:WVoid) : 
+                     void? = true
+                     e
+                  (e) : map(has-void,e)
+            has-void(e)
+            void?
+         def check-init-s (s:Stmt) : Stmt =
+            (s) match { 
+               (s:Connect) : 
+                  if has-void?(exp(s)) : add(errors,RefNotInitialized(info(s),get-name(loc(s))))
+                  s
+               (s) : map(check-init-s,s)
+   
+         check-init-s(body(m))
+         
+      for m in modules(c) do :
+         mname = name(m)
+         (m) match  { 
+            (m:InModule) : check-init-m(m)
+            (m) : false
+   
+      throw(PassExceptions(errors)) when not empty?(errors)
+      c
+   }
+}
+*/

@@ -11,11 +11,11 @@ circuit Top :
     node T_1212 = bits(rx_shifter, 63, 16)
     node rx_shifter_in = cat(io.host.in.bits, T_1212)
     node next_cmd = bits(rx_shifter_in, 3, 0)
-    reg cmd : UInt<?>, clk
-    reg size : UInt<?>, clk
-    reg pos : UInt<?>, clk
-    reg seqno : UInt<?>, clk
-    reg addr : UInt<?>, clk
+    reg cmd : UInt, clk
+    reg size : UInt, clk
+    reg pos : UInt, clk
+    reg seqno : UInt, clk
+    reg addr : UInt, clk
     node T_1225 = and(io.host.in.valid, io.host.in.ready)
     when T_1225 :
       rx_shifter <= rx_shifter_in
@@ -106,7 +106,7 @@ circuit Top :
     node T_1323 = and(T_1319, T_1322)
     node T_1324 = or(T_1317, T_1323)
     node tx_done = and(T_1316, T_1324)
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     node T_1336 = eq(state, UInt<3>("h04"))
     node T_1337 = and(T_1336, io.mem.acquire.ready)
     node T_1338 = eq(state, UInt<3>("h05"))
@@ -1309,7 +1309,7 @@ circuit Top :
     
     io is invalid
     reg T_3348 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_3350 : UInt<?>, clk with : (reset => (reset, UInt<2>("h02")))
+    reg T_3350 : UInt, clk with : (reset => (reset, UInt<2>("h02")))
     wire T_3352 : UInt<2>
     T_3352 is invalid
     io.out.valid <= io.in[T_3352].valid
@@ -1419,7 +1419,7 @@ circuit Top :
     
     io is invalid
     reg T_3322 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_3324 : UInt<?>, clk with : (reset => (reset, UInt<2>("h02")))
+    reg T_3324 : UInt, clk with : (reset => (reset, UInt<2>("h02")))
     wire T_3326 : UInt<2>
     T_3326 is invalid
     io.out.valid <= io.in[T_3326].valid
@@ -1741,7 +1741,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -1952,7 +1952,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -2809,7 +2809,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -3666,7 +3666,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -4523,7 +4523,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -5380,7 +5380,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -6237,7 +6237,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -7094,7 +7094,7 @@ circuit Top :
     output io : {inner : {flip acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>, client_id : UInt<2>}}, grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>, client_id : UInt<2>}}, flip finish : {flip ready : UInt<1>, valid : UInt<1>, bits : {manager_xact_id : UInt<4>}}, probe : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_id : UInt<2>}}, flip release : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<4>, client_id : UInt<2>}}}, flip incoherent : UInt<1>[1], outer : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<4>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<4>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<4>, manager_xact_id : UInt<1>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<4>}}}, has_acquire_conflict : UInt<1>, has_acquire_match : UInt<1>, has_release_match : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg xact : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data_buffer : UInt<4>[4], wmask_buffer : UInt<16>[4], client_id : UInt<2>}, clk
     wire coh : {sharers : UInt<1>}
     coh is invalid
@@ -7952,7 +7952,7 @@ circuit Top :
     
     io is invalid
     reg T_1502 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_1504 : UInt<?>, clk with : (reset => (reset, UInt<3>("h07")))
+    reg T_1504 : UInt, clk with : (reset => (reset, UInt<3>("h07")))
     wire T_1506 : UInt<3>
     T_1506 is invalid
     io.out.valid <= io.in[T_1506].valid
@@ -8264,7 +8264,7 @@ circuit Top :
     
     io is invalid
     reg T_1318 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_1320 : UInt<?>, clk with : (reset => (reset, UInt<3>("h07")))
+    reg T_1320 : UInt, clk with : (reset => (reset, UInt<3>("h07")))
     wire T_1322 : UInt<3>
     T_1322 is invalid
     io.out.valid <= io.in[T_1322].valid
@@ -8563,7 +8563,7 @@ circuit Top :
     
     io is invalid
     reg T_444 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_446 : UInt<?>, clk with : (reset => (reset, UInt<3>("h07")))
+    reg T_446 : UInt, clk with : (reset => (reset, UInt<3>("h07")))
     wire T_448 : UInt<3>
     T_448 is invalid
     io.out.valid <= io.in[T_448].valid
@@ -9728,16 +9728,14 @@ circuit Top :
     when T_322 :
       node T_324 = eq(reset, UInt<1>("h00"))
       when T_324 :
-        printf(clk, UInt<1>(1), "Invalid read address %x
-", io.ar.bits.addr)
+        printf(clk, UInt<1>(1), "Invalid read address %x\n", io.ar.bits.addr)
         skip
       skip
     node T_325 = and(io.aw.ready, io.aw.valid)
     when T_325 :
       node T_327 = eq(reset, UInt<1>("h00"))
       when T_327 :
-        printf(clk, UInt<1>(1), "Invalid write address %x
-", io.aw.bits.addr)
+        printf(clk, UInt<1>(1), "Invalid write address %x\n", io.aw.bits.addr)
         skip
       skip
     inst r_queue of Queue_36
@@ -10290,16 +10288,14 @@ circuit Top :
     when T_322 :
       node T_324 = eq(reset, UInt<1>("h00"))
       when T_324 :
-        printf(clk, UInt<1>(1), "Invalid read address %x
-", io.ar.bits.addr)
+        printf(clk, UInt<1>(1), "Invalid read address %x\n", io.ar.bits.addr)
         skip
       skip
     node T_325 = and(io.aw.ready, io.aw.valid)
     when T_325 :
       node T_327 = eq(reset, UInt<1>("h00"))
       when T_327 :
-        printf(clk, UInt<1>(1), "Invalid write address %x
-", io.aw.bits.addr)
+        printf(clk, UInt<1>(1), "Invalid write address %x\n", io.aw.bits.addr)
         skip
       skip
     inst r_queue of Queue_36
@@ -11217,7 +11213,7 @@ circuit Top :
     
     io is invalid
     reg T_656 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_658 : UInt<?>, clk with : (reset => (reset, UInt<1>("h01")))
+    reg T_658 : UInt, clk with : (reset => (reset, UInt<1>("h01")))
     wire T_660 : UInt<1>
     T_660 is invalid
     io.out.valid <= io.in[T_660].valid
@@ -12725,7 +12721,7 @@ circuit Top :
     output io : {flip ar : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr : UInt<32>, len : UInt<8>, size : UInt<3>, burst : UInt<2>, lock : UInt<1>, cache : UInt<4>, prot : UInt<3>, qos : UInt<4>, region : UInt<4>, id : UInt<5>, user : UInt<1>}}, r : {flip ready : UInt<1>, valid : UInt<1>, bits : {resp : UInt<2>, data : UInt<64>, last : UInt<1>, id : UInt<5>, user : UInt<1>}}, smi : {req : {flip ready : UInt<1>, valid : UInt<1>, bits : {rw : UInt<1>, addr : UInt<12>, data : UInt<64>}}, flip resp : {flip ready : UInt<1>, valid : UInt<1>, bits : UInt<64>}}}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg nWords : UInt<1>, clk
     reg nBeats : UInt<8>, clk
     reg addr : UInt<12>, clk
@@ -12845,7 +12841,7 @@ circuit Top :
     reg strb : UInt<1>, clk
     reg data : UInt<64>, clk
     reg last : UInt<1>, clk
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     node T_173 = eq(state, UInt<1>("h00"))
     io.aw.ready <= T_173
     node T_174 = eq(state, UInt<1>("h01"))
@@ -13048,7 +13044,7 @@ circuit Top :
     output io : {flip ar : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr : UInt<32>, len : UInt<8>, size : UInt<3>, burst : UInt<2>, lock : UInt<1>, cache : UInt<4>, prot : UInt<3>, qos : UInt<4>, region : UInt<4>, id : UInt<5>, user : UInt<1>}}, r : {flip ready : UInt<1>, valid : UInt<1>, bits : {resp : UInt<2>, data : UInt<64>, last : UInt<1>, id : UInt<5>, user : UInt<1>}}, smi : {req : {flip ready : UInt<1>, valid : UInt<1>, bits : {rw : UInt<1>, addr : UInt<6>, data : UInt<64>}}, flip resp : {flip ready : UInt<1>, valid : UInt<1>, bits : UInt<64>}}}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg nWords : UInt<1>, clk
     reg nBeats : UInt<8>, clk
     reg addr : UInt<6>, clk
@@ -13168,7 +13164,7 @@ circuit Top :
     reg strb : UInt<1>, clk
     reg data : UInt<64>, clk
     reg last : UInt<1>, clk
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     node T_173 = eq(state, UInt<1>("h00"))
     io.aw.ready <= T_173
     node T_174 = eq(state, UInt<1>("h01"))
@@ -13516,9 +13512,9 @@ circuit Top :
     io is invalid
     node T_112 = cat(io.wide.req_cmd.bits.tag, io.wide.req_cmd.bits.rw)
     node T_113 = cat(io.wide.req_cmd.bits.addr, T_112)
-    reg out_buf : UInt<?>, clk
-    reg in_buf : UInt<?>, clk
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg out_buf : UInt, clk
+    reg in_buf : UInt, clk
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg send_cnt : UInt<2>, clk with : (reset => (reset, UInt<2>("h00")))
     reg data_send_cnt : UInt<3>, clk with : (reset => (reset, UInt<3>("h00")))
     node T_130 = eq(send_cnt, UInt<1>("h01"))
@@ -14161,10 +14157,10 @@ circuit Top :
     output io : {flip out_fast : {flip ready : UInt<1>, valid : UInt<1>, bits : UInt<17>}, out_slow : {flip ready : UInt<1>, valid : UInt<1>, bits : UInt<17>}, in_fast : {flip ready : UInt<1>, valid : UInt<1>, bits : UInt<17>}, flip in_slow : {flip ready : UInt<1>, valid : UInt<1>, bits : UInt<17>}, clk_slow : UInt<1>, flip set_divisor : {valid : UInt<1>, bits : UInt<32>}, divisor : UInt<32>}
     
     io is invalid
-    reg divisor : UInt<?>, clk with : (reset => (reset, UInt<9>("h01ff")))
-    reg d_shadow : UInt<?>, clk with : (reset => (reset, UInt<9>("h01ff")))
-    reg hold : UInt<?>, clk with : (reset => (reset, UInt<7>("h07f")))
-    reg h_shadow : UInt<?>, clk with : (reset => (reset, UInt<7>("h07f")))
+    reg divisor : UInt, clk with : (reset => (reset, UInt<9>("h01ff")))
+    reg d_shadow : UInt, clk with : (reset => (reset, UInt<9>("h01ff")))
+    reg hold : UInt, clk with : (reset => (reset, UInt<7>("h07f")))
+    reg h_shadow : UInt, clk with : (reset => (reset, UInt<7>("h07f")))
     when io.set_divisor.valid :
       node T_57 = bits(io.set_divisor.bits, 8, 0)
       d_shadow <= T_57
@@ -15917,7 +15913,7 @@ circuit Top :
     output io : {flip req : {flip ready : UInt<1>, valid : UInt<1>, bits : {fn : UInt<4>, dw : UInt<1>, in1 : UInt<64>, in2 : UInt<64>, tag : UInt<5>}}, flip kill : UInt<1>, resp : {flip ready : UInt<1>, valid : UInt<1>, bits : {data : UInt<64>, tag : UInt<5>}}}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg req : {fn : UInt<4>, dw : UInt<1>, in1 : UInt<64>, in2 : UInt<64>, tag : UInt<5>}, clk
     reg count : UInt<7>, clk
     reg neg_out : UInt<1>, clk
@@ -16429,9 +16425,9 @@ circuit Top :
     reg ex_reg_xcpt : UInt<1>, clk
     reg ex_reg_flush_pipe : UInt<1>, clk
     reg ex_reg_load_use : UInt<1>, clk
-    reg ex_reg_cause : UInt<?>, clk
-    reg ex_reg_pc : UInt<?>, clk
-    reg ex_reg_inst : UInt<?>, clk
+    reg ex_reg_cause : UInt, clk
+    reg ex_reg_pc : UInt, clk
+    reg ex_reg_inst : UInt, clk
     reg mem_reg_xcpt_interrupt : UInt<1>, clk
     reg mem_reg_valid : UInt<1>, clk
     reg mem_reg_btb_hit : UInt<1>, clk
@@ -16439,23 +16435,23 @@ circuit Top :
     reg mem_reg_xcpt : UInt<1>, clk
     reg mem_reg_replay : UInt<1>, clk
     reg mem_reg_flush_pipe : UInt<1>, clk
-    reg mem_reg_cause : UInt<?>, clk
+    reg mem_reg_cause : UInt, clk
     reg mem_reg_slow_bypass : UInt<1>, clk
-    reg mem_reg_pc : UInt<?>, clk
-    reg mem_reg_inst : UInt<?>, clk
-    reg mem_reg_wdata : UInt<?>, clk
-    reg mem_reg_rs2 : UInt<?>, clk
+    reg mem_reg_pc : UInt, clk
+    reg mem_reg_inst : UInt, clk
+    reg mem_reg_wdata : UInt, clk
+    reg mem_reg_rs2 : UInt, clk
     wire take_pc_mem : UInt<1>
     take_pc_mem is invalid
     reg wb_reg_valid : UInt<1>, clk
     reg wb_reg_xcpt : UInt<1>, clk
     reg wb_reg_replay : UInt<1>, clk
-    reg wb_reg_cause : UInt<?>, clk
+    reg wb_reg_cause : UInt, clk
     reg wb_reg_rocc_pending : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg wb_reg_pc : UInt<?>, clk
-    reg wb_reg_inst : UInt<?>, clk
-    reg wb_reg_wdata : UInt<?>, clk
-    reg wb_reg_rs2 : UInt<?>, clk
+    reg wb_reg_pc : UInt, clk
+    reg wb_reg_inst : UInt, clk
+    reg wb_reg_wdata : UInt, clk
+    reg wb_reg_rs2 : UInt, clk
     wire take_pc_wb : UInt<1>
     take_pc_wb is invalid
     node take_pc_mem_wb = or(take_pc_wb, take_pc_mem)
@@ -16895,7 +16891,7 @@ circuit Top :
     id_load_use is invalid
     reg id_reg_fence : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
     cmem T_6766 : UInt<64>[31]
-    wire T_6768 : UInt<?>
+    wire T_6768 : UInt
     T_6768 is invalid
     node T_6771 = eq(id_raddr1, UInt<1>("h00"))
     node T_6772 = and(UInt<1>("h00"), T_6771)
@@ -16904,7 +16900,7 @@ circuit Top :
     infer mport T_6776 = T_6766[T_6775], clk
     node T_6777 = mux(T_6772, UInt<1>("h00"), T_6776)
     T_6768 <= T_6777
-    wire T_6779 : UInt<?>
+    wire T_6779 : UInt
     T_6779 is invalid
     node T_6782 = eq(id_raddr2, UInt<1>("h00"))
     node T_6783 = and(UInt<1>("h00"), T_6782)
@@ -16999,14 +16995,14 @@ circuit Top :
     node T_6944 = and(T_6929, T_6943)
     node T_6945 = eq(mem_waddr, id_raddr2)
     node T_6946 = and(T_6930, T_6945)
-    wire bypass_mux : UInt<?>[4]
+    wire bypass_mux : UInt[4]
     bypass_mux[0] <= UInt<1>("h00")
     bypass_mux[1] <= mem_reg_wdata
     bypass_mux[2] <= wb_reg_wdata
     bypass_mux[3] <= io.dmem.resp.bits.data_word_bypass
     reg ex_reg_rs_bypass : UInt<1>[2], clk
-    reg ex_reg_rs_lsb : UInt<?>[2], clk
-    reg ex_reg_rs_msb : UInt<?>[2], clk
+    reg ex_reg_rs_lsb : UInt[2], clk
+    reg ex_reg_rs_msb : UInt[2], clk
     node T_6991 = cat(ex_reg_rs_msb[0], ex_reg_rs_lsb[0])
     node T_6992 = mux(ex_reg_rs_bypass[0], bypass_mux[ex_reg_rs_lsb[0]], T_6991)
     node T_6994 = cat(ex_reg_rs_msb[1], ex_reg_rs_lsb[1])
@@ -17506,9 +17502,9 @@ circuit Top :
     node T_7462 = and(wb_reg_valid, wb_ctrl.wxd)
     node T_7464 = eq(T_7462, UInt<1>("h00"))
     div.io.resp.ready <= T_7464
-    wire ll_wdata : UInt<?>
+    wire ll_wdata : UInt
     ll_wdata <= div.io.resp.bits.data
-    wire ll_waddr : UInt<?>
+    wire ll_waddr : UInt
     ll_waddr <= div.io.resp.bits.tag
     node T_7467 = and(div.io.resp.ready, div.io.resp.valid)
     wire ll_wen : UInt<1>
@@ -17893,19 +17889,18 @@ circuit Top :
     node T_7816 = bits(csr.io.time, 32, 0)
     node T_7818 = mux(rf_wen, rf_waddr, UInt<1>("h00"))
     node T_7819 = bits(wb_reg_inst, 19, 15)
-    reg T_7820 : UInt<?>, clk
+    reg T_7820 : UInt, clk
     T_7820 <= T_6992
-    reg T_7821 : UInt<?>, clk
+    reg T_7821 : UInt, clk
     T_7821 <= T_7820
     node T_7822 = bits(wb_reg_inst, 24, 20)
-    reg T_7823 : UInt<?>, clk
+    reg T_7823 : UInt, clk
     T_7823 <= T_6995
-    reg T_7824 : UInt<?>, clk
+    reg T_7824 : UInt, clk
     T_7824 <= T_7823
     node T_7826 = eq(reset, UInt<1>("h00"))
     when T_7826 :
-      printf(clk, UInt<1>(1), "C%d: %d [%d] pc=[%x] W[r%d=%x][%d] R[r%d=%x] R[r%d=%x] inst=[%x] DASM(%x)
-", io.host.id, T_7816, wb_valid, wb_reg_pc, T_7818, rf_wdata, rf_wen, T_7819, T_7821, T_7822, T_7824, wb_reg_inst, wb_reg_inst)
+      printf(clk, UInt<1>(1), "C%d: %d [%d] pc=[%x] W[r%d=%x][%d] R[r%d=%x] R[r%d=%x] inst=[%x] DASM(%x)\n ", io.host.id, T_7816, wb_valid, wb_reg_pc, T_7818, rf_wdata, rf_wen, T_7819, T_7821, T_7822, T_7824, wb_reg_inst, wb_reg_inst)
       skip
     
   module BTB : 
@@ -20635,7 +20630,7 @@ circuit Top :
     io.resp.bits.bht <- T_4537
     reg T_4567 : UInt<2>, clk with : (reset => (reset, UInt<2>("h00")))
     reg T_4569 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_4578 : UInt<?>[2], clk
+    reg T_4578 : UInt[2], clk
     node T_4582 = bits(hits, 0, 0)
     node T_4583 = bits(hits, 1, 1)
     node T_4584 = bits(hits, 2, 2)
@@ -20950,7 +20945,7 @@ circuit Top :
     output io : {flip req : {valid : UInt<1>, bits : {idx : UInt<12>, ppn : UInt<20>, kill : UInt<1>}}, resp : {flip ready : UInt<1>, valid : UInt<1>, bits : {data : UInt<32>, datablock : UInt<128>}}, flip invalidate : UInt<1>, mem : {acquire : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<128>}}, flip grant : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<128>}}}}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg invalidated : UInt<1>, clk
     node stall = eq(io.resp.ready, UInt<1>("h00"))
     wire rdy : UInt<1>
@@ -21035,7 +21030,7 @@ circuit Top :
     node T_599 = bits(s0_pgoff, 11, 6)
     node T_601 = eq(refill_done, UInt<1>("h00"))
     node T_602 = and(T_601, s0_valid)
-    wire T_604 : UInt<?>
+    wire T_604 : UInt
     T_604 is invalid
     when T_602 :
       T_604 <= T_599
@@ -21247,7 +21242,7 @@ circuit Top :
     node T_880 = bits(s0_pgoff, 11, 4)
     node T_882 = eq(T_877, UInt<1>("h00"))
     node T_883 = and(T_882, s0_valid)
-    wire T_885 : UInt<?>
+    wire T_885 : UInt
     T_885 is invalid
     when T_883 :
       T_885 <= T_880
@@ -21265,7 +21260,7 @@ circuit Top :
     node T_895 = bits(s0_pgoff, 11, 4)
     node T_897 = eq(T_892, UInt<1>("h00"))
     node T_898 = and(T_897, s0_valid)
-    wire T_900 : UInt<?>
+    wire T_900 : UInt
     T_900 is invalid
     when T_898 :
       T_900 <= T_895
@@ -21283,7 +21278,7 @@ circuit Top :
     node T_910 = bits(s0_pgoff, 11, 4)
     node T_912 = eq(T_907, UInt<1>("h00"))
     node T_913 = and(T_912, s0_valid)
-    wire T_915 : UInt<?>
+    wire T_915 : UInt
     T_915 is invalid
     when T_913 :
       T_915 <= T_910
@@ -21301,7 +21296,7 @@ circuit Top :
     node T_925 = bits(s0_pgoff, 11, 4)
     node T_927 = eq(T_922, UInt<1>("h00"))
     node T_928 = and(T_927, s0_valid)
-    wire T_930 : UInt<?>
+    wire T_930 : UInt
     T_930 is invalid
     when T_928 :
       T_930 <= T_925
@@ -21468,9 +21463,9 @@ circuit Top :
     output io : {flip req : {flip ready : UInt<1>, valid : UInt<1>, bits : {asid : UInt<7>, vpn : UInt<28>, passthrough : UInt<1>, instruction : UInt<1>, store : UInt<1>}}, resp : {miss : UInt<1>, ppn : UInt<20>, xcpt_ld : UInt<1>, xcpt_st : UInt<1>, xcpt_if : UInt<1>, hit_idx : UInt<8>}, ptw : {req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr : UInt<27>, prv : UInt<2>, store : UInt<1>, fetch : UInt<1>}}, flip resp : {valid : UInt<1>, bits : {error : UInt<1>, pte : {ppn : UInt<20>, reserved_for_software : UInt<3>, d : UInt<1>, r : UInt<1>, typ : UInt<4>, v : UInt<1>}}}, flip status : {sd : UInt<1>, zero2 : UInt<31>, sd_rv32 : UInt<1>, zero1 : UInt<9>, vm : UInt<5>, mprv : UInt<1>, xs : UInt<2>, fs : UInt<2>, prv3 : UInt<2>, ie3 : UInt<1>, prv2 : UInt<2>, ie2 : UInt<1>, prv1 : UInt<2>, ie1 : UInt<1>, prv : UInt<2>, ie : UInt<1>}, flip invalidate : UInt<1>}}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg r_refill_tag : UInt<?>, clk
-    reg r_refill_waddr : UInt<?>, clk
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
+    reg r_refill_tag : UInt, clk
+    reg r_refill_waddr : UInt, clk
     reg r_req : {asid : UInt<7>, vpn : UInt<28>, passthrough : UInt<1>, instruction : UInt<1>, store : UInt<1>}, clk
     inst tag_cam of RocketCAM
     tag_cam.io is invalid
@@ -21989,13 +21984,13 @@ circuit Top :
     tlb.io is invalid
     tlb.clk <= clk
     tlb.reset <= reset
-    reg s1_pc_ : UInt<?>, clk
+    reg s1_pc_ : UInt, clk
     node T_1280 = not(s1_pc_)
     node T_1282 = or(T_1280, UInt<2>("h03"))
     node s1_pc = not(T_1282)
     reg s1_same_block : UInt<1>, clk
     reg s2_valid : UInt<1>, clk with : (reset => (reset, UInt<1>("h01")))
-    reg s2_pc : UInt<?>, clk with : (reset => (reset, UInt<10>("h0200")))
+    reg s2_pc : UInt, clk with : (reset => (reset, UInt<10>("h0200")))
     reg s2_btb_resp_valid : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
     reg s2_btb_resp_bits : {taken : UInt<1>, mask : UInt<1>, bridx : UInt<1>, target : UInt<39>, entry : UInt<6>, bht : {history : UInt<7>, value : UInt<2>}}, clk
     reg s2_xcpt_if : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
@@ -22208,9 +22203,9 @@ circuit Top :
     output io : {flip req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, p_type : UInt<2>, client_xact_id : UInt<2>}}, rep : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<128>}}, meta_read : {flip ready : UInt<1>, valid : UInt<1>, bits : {idx : UInt<6>, tag : UInt<20>}}, meta_write : {flip ready : UInt<1>, valid : UInt<1>, bits : {idx : UInt<6>, way_en : UInt<4>, data : {tag : UInt<20>, coh : {state : UInt<2>}}}}, wb_req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<128>, way_en : UInt<4>}}, flip way_en : UInt<4>, flip mshr_rdy : UInt<1>, flip block_state : {state : UInt<2>}}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg old_coh : {state : UInt<2>}, clk
-    reg way_en : UInt<?>, clk
+    reg way_en : UInt, clk
     reg req : {addr_block : UInt<26>, p_type : UInt<2>, client_xact_id : UInt<2>}, clk
     node tag_matches = neq(way_en, UInt<1>("h00"))
     wire miss_coh : {state : UInt<2>}
@@ -22436,7 +22431,7 @@ circuit Top :
     
     io is invalid
     reg T_852 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_854 : UInt<?>, clk with : (reset => (reset, UInt<2>("h02")))
+    reg T_854 : UInt, clk with : (reset => (reset, UInt<2>("h02")))
     wire T_856 : UInt<2>
     T_856 is invalid
     io.out.valid <= io.in[T_856].valid
@@ -22643,7 +22638,7 @@ circuit Top :
     output io : {flip req_pri_val : UInt<1>, req_pri_rdy : UInt<1>, flip req_sec_val : UInt<1>, req_sec_rdy : UInt<1>, flip req_bits : {addr : UInt<40>, tag : UInt<9>, cmd : UInt<5>, typ : UInt<3>, kill : UInt<1>, phys : UInt<1>, sdq_id : UInt<5>, tag_match : UInt<1>, old_meta : {tag : UInt<20>, coh : {state : UInt<2>}}, way_en : UInt<4>}, idx_match : UInt<1>, tag : UInt<20>, mem_req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<128>}}, refill : {way_en : UInt<4>, addr : UInt<12>}, meta_read : {flip ready : UInt<1>, valid : UInt<1>, bits : {idx : UInt<6>, tag : UInt<20>}}, meta_write : {flip ready : UInt<1>, valid : UInt<1>, bits : {idx : UInt<6>, way_en : UInt<4>, data : {tag : UInt<20>, coh : {state : UInt<2>}}}}, replay : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr : UInt<40>, tag : UInt<9>, cmd : UInt<5>, typ : UInt<3>, kill : UInt<1>, phys : UInt<1>, sdq_id : UInt<5>}}, flip mem_grant : {valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<128>}}, wb_req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<128>, way_en : UInt<4>}}, probe_rdy : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     wire T_1277 : {state : UInt<2>}
     T_1277 is invalid
     T_1277.state <= UInt<1>("h00")
@@ -23016,7 +23011,7 @@ circuit Top :
     output io : {flip req_pri_val : UInt<1>, req_pri_rdy : UInt<1>, flip req_sec_val : UInt<1>, req_sec_rdy : UInt<1>, flip req_bits : {addr : UInt<40>, tag : UInt<9>, cmd : UInt<5>, typ : UInt<3>, kill : UInt<1>, phys : UInt<1>, sdq_id : UInt<5>, tag_match : UInt<1>, old_meta : {tag : UInt<20>, coh : {state : UInt<2>}}, way_en : UInt<4>}, idx_match : UInt<1>, tag : UInt<20>, mem_req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_block : UInt<26>, client_xact_id : UInt<2>, addr_beat : UInt<2>, is_builtin_type : UInt<1>, a_type : UInt<3>, union : UInt<17>, data : UInt<128>}}, refill : {way_en : UInt<4>, addr : UInt<12>}, meta_read : {flip ready : UInt<1>, valid : UInt<1>, bits : {idx : UInt<6>, tag : UInt<20>}}, meta_write : {flip ready : UInt<1>, valid : UInt<1>, bits : {idx : UInt<6>, way_en : UInt<4>, data : {tag : UInt<20>, coh : {state : UInt<2>}}}}, replay : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr : UInt<40>, tag : UInt<9>, cmd : UInt<5>, typ : UInt<3>, kill : UInt<1>, phys : UInt<1>, sdq_id : UInt<5>}}, flip mem_grant : {valid : UInt<1>, bits : {addr_beat : UInt<2>, client_xact_id : UInt<2>, manager_xact_id : UInt<4>, is_builtin_type : UInt<1>, g_type : UInt<4>, data : UInt<128>}}, wb_req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr_beat : UInt<2>, addr_block : UInt<26>, client_xact_id : UInt<2>, voluntary : UInt<1>, r_type : UInt<3>, data : UInt<128>, way_en : UInt<4>}}, probe_rdy : UInt<1>}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     wire T_1277 : {state : UInt<2>}
     T_1277 is invalid
     T_1277.state <= UInt<1>("h00")
@@ -23477,7 +23472,7 @@ circuit Top :
     node T_926 = mux(T_917, T_920, T_925)
     node T_927 = mux(T_911, T_915, T_926)
     node beat_data = cat(T_927, T_927)
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     node T_935 = eq(state, UInt<1>("h00"))
     io.req.ready <= T_935
     node addr_block = bits(req.addr, 31, 6)
@@ -23759,7 +23754,7 @@ circuit Top :
     T_1927 <= T_1926
     node T_1928 = shr(io.req.bits.addr, 12)
     node tag_match = eq(T_1927, T_1928)
-    wire wbTagList : UInt<?>[2]
+    wire wbTagList : UInt[2]
     wbTagList is invalid
     wire refillMux : {way_en : UInt<4>, addr : UInt<12>}[2]
     refillMux is invalid
@@ -24049,7 +24044,7 @@ circuit Top :
         T_1751[3] <= T_1743[3]
         skip
       skip
-    wire T_1758 : UInt<?>
+    wire T_1758 : UInt
     T_1758 is invalid
     when io.read.valid :
       T_1758 <= io.read.bits.idx
@@ -24179,7 +24174,7 @@ circuit Top :
       skip
     node T_626 = neq(T_573, UInt<1>("h00"))
     node T_627 = and(T_626, io.read.valid)
-    wire T_629 : UInt<?>
+    wire T_629 : UInt
     T_629 is invalid
     when T_627 :
       T_629 <= raddr
@@ -24213,7 +24208,7 @@ circuit Top :
       skip
     node T_676 = neq(T_573, UInt<1>("h00"))
     node T_677 = and(T_676, io.read.valid)
-    wire T_679 : UInt<?>
+    wire T_679 : UInt
     T_679 is invalid
     when T_677 :
       T_679 <= raddr
@@ -24277,7 +24272,7 @@ circuit Top :
       skip
     node T_771 = neq(T_718, UInt<1>("h00"))
     node T_772 = and(T_771, io.read.valid)
-    wire T_774 : UInt<?>
+    wire T_774 : UInt
     T_774 is invalid
     when T_772 :
       T_774 <= raddr
@@ -24311,7 +24306,7 @@ circuit Top :
       skip
     node T_821 = neq(T_718, UInt<1>("h00"))
     node T_822 = and(T_821, io.read.valid)
-    wire T_824 : UInt<?>
+    wire T_824 : UInt
     T_824 is invalid
     when T_822 :
       T_824 <= raddr
@@ -24591,7 +24586,7 @@ circuit Top :
     
     io is invalid
     reg T_700 : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-    reg T_702 : UInt<?>, clk with : (reset => (reset, UInt<1>("h01")))
+    reg T_702 : UInt, clk with : (reset => (reset, UInt<1>("h01")))
     wire T_704 : UInt<1>
     T_704 is invalid
     io.out.valid <= io.in[T_704].valid
@@ -24690,7 +24685,7 @@ circuit Top :
     s2_valid_masked is invalid
     reg s3_valid : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
     reg s3_req : {addr : UInt<40>, tag : UInt<9>, cmd : UInt<5>, typ : UInt<3>, kill : UInt<1>, phys : UInt<1>, data : UInt<64>}, clk
-    reg s3_way : UInt<?>, clk
+    reg s3_way : UInt, clk
     reg s1_recycled : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
     when s1_clk_en :
       s1_recycled <= s2_recycle
@@ -24991,9 +24986,9 @@ circuit Top :
     T_2621.state <= T_2595
     node T_2646 = eq(s2_hit_state.state, T_2621.state)
     node s2_hit = and(T_2587, T_2646)
-    reg lrsc_count : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg lrsc_count : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     node lrsc_valid = neq(lrsc_count, UInt<1>("h00"))
-    reg lrsc_addr : UInt<?>, clk
+    reg lrsc_addr : UInt, clk
     node s2_lr = eq(s2_req.cmd, UInt<5>("h06"))
     node s2_sc = eq(s2_req.cmd, UInt<5>("h07"))
     node T_2656 = shr(s2_req.addr, 6)
@@ -25662,10 +25657,10 @@ circuit Top :
     output io : {flip requestor : {req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr : UInt<27>, prv : UInt<2>, store : UInt<1>, fetch : UInt<1>}}, flip resp : {valid : UInt<1>, bits : {error : UInt<1>, pte : {ppn : UInt<20>, reserved_for_software : UInt<3>, d : UInt<1>, r : UInt<1>, typ : UInt<4>, v : UInt<1>}}}, flip status : {sd : UInt<1>, zero2 : UInt<31>, sd_rv32 : UInt<1>, zero1 : UInt<9>, vm : UInt<5>, mprv : UInt<1>, xs : UInt<2>, fs : UInt<2>, prv3 : UInt<2>, ie3 : UInt<1>, prv2 : UInt<2>, ie2 : UInt<1>, prv1 : UInt<2>, ie1 : UInt<1>, prv : UInt<2>, ie : UInt<1>}, flip invalidate : UInt<1>}[2], mem : {req : {flip ready : UInt<1>, valid : UInt<1>, bits : {addr : UInt<40>, tag : UInt<9>, cmd : UInt<5>, typ : UInt<3>, kill : UInt<1>, phys : UInt<1>, data : UInt<64>}}, flip resp : {valid : UInt<1>, bits : {addr : UInt<40>, tag : UInt<9>, cmd : UInt<5>, typ : UInt<3>, data : UInt<64>, nack : UInt<1>, replay : UInt<1>, has_data : UInt<1>, data_word_bypass : UInt<64>, store_data : UInt<64>}}, flip replay_next : {valid : UInt<1>, bits : UInt<9>}, flip xcpt : {ma : {ld : UInt<1>, st : UInt<1>}, pf : {ld : UInt<1>, st : UInt<1>}}, invalidate_lr : UInt<1>, flip ordered : UInt<1>}, dpath : {flip ptbr : UInt<32>, flip invalidate : UInt<1>, flip status : {sd : UInt<1>, zero2 : UInt<31>, sd_rv32 : UInt<1>, zero1 : UInt<9>, vm : UInt<5>, mprv : UInt<1>, xs : UInt<2>, fs : UInt<2>, prv3 : UInt<2>, ie3 : UInt<1>, prv2 : UInt<2>, ie2 : UInt<1>, prv1 : UInt<2>, ie1 : UInt<1>, prv : UInt<2>, ie : UInt<1>}}}
     
     io is invalid
-    reg state : UInt<?>, clk with : (reset => (reset, UInt<1>("h00")))
+    reg state : UInt, clk with : (reset => (reset, UInt<1>("h00")))
     reg count : UInt<2>, clk
     reg r_req : {addr : UInt<27>, prv : UInt<2>, store : UInt<1>, fetch : UInt<1>}, clk
-    reg r_req_dest : UInt<?>, clk
+    reg r_req_dest : UInt, clk
     reg r_pte : {ppn : UInt<20>, reserved_for_software : UInt<3>, d : UInt<1>, r : UInt<1>, typ : UInt<4>, v : UInt<1>}, clk
     node T_1590 = shr(r_req.addr, 18)
     node T_1591 = bits(T_1590, 8, 0)
@@ -30128,13 +30123,13 @@ circuit Top :
     cyc_E2 is invalid
     wire cyc_E1 : UInt<1>
     cyc_E1 is invalid
-    wire zSigma1_B4 : UInt<?>
+    wire zSigma1_B4 : UInt
     zSigma1_B4 is invalid
-    wire sigXNU_B3_CX : UInt<?>
+    wire sigXNU_B3_CX : UInt
     sigXNU_B3_CX is invalid
-    wire zComplSigT_C1_sqrt : UInt<?>
+    wire zComplSigT_C1_sqrt : UInt
     zComplSigT_C1_sqrt is invalid
-    wire zComplSigT_C1 : UInt<?>
+    wire zComplSigT_C1 : UInt
     zComplSigT_C1 is invalid
     node T_210 = not(cyc_B7_sqrt)
     node T_211 = and(ready_PA, T_210)
@@ -31800,9 +31795,9 @@ circuit Top :
       infer mport T_718 = regfile[load_wb_tag], clk
       T_718 <= load_wb_data_recoded
       skip
-    reg ex_ra1 : UInt<?>, clk
-    reg ex_ra2 : UInt<?>, clk
-    reg ex_ra3 : UInt<?>, clk
+    reg ex_ra1 : UInt, clk
+    reg ex_ra2 : UInt, clk
+    reg ex_ra3 : UInt, clk
     when io.valid :
       when fp_decoder.io.sigs.ren1 :
         node T_726 = eq(fp_decoder.io.sigs.swap12, UInt<1>("h00"))
@@ -31918,10 +31913,10 @@ circuit Top :
     divSqrt_wen <= UInt<1>("h00")
     wire divSqrt_inReady : UInt<1>
     divSqrt_inReady <= UInt<1>("h00")
-    reg divSqrt_waddr : UInt<?>, clk
-    wire divSqrt_wdata : UInt<?>
+    reg divSqrt_waddr : UInt, clk
+    wire divSqrt_wdata : UInt
     divSqrt_wdata is invalid
-    wire divSqrt_flags : UInt<?>
+    wire divSqrt_flags : UInt
     divSqrt_flags is invalid
     reg divSqrt_in_flight : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
     reg divSqrt_killed : UInt<1>, clk
@@ -31936,7 +31931,7 @@ circuit Top :
     node T_856 = or(T_855, T_848)
     node memLatencyMask = or(T_856, T_854)
     reg wen : UInt<2>, clk with : (reset => (reset, UInt<2>("h00")))
-    reg winfo : UInt<?>[2], clk
+    reg winfo : UInt[2], clk
     node T_872 = or(mem_ctrl.fma, mem_ctrl.fastpipe)
     node T_873 = or(T_872, mem_ctrl.fromint)
     node mem_wen = and(mem_reg_valid, T_873)
@@ -32098,9 +32093,9 @@ circuit Top :
     divSqrt_wdata <= UInt<1>("h00")
     divSqrt_flags <= UInt<1>("h00")
     reg T_1046 : UInt<1>, clk
-    reg T_1048 : UInt<?>, clk
-    reg T_1050 : UInt<?>, clk
-    reg T_1052 : UInt<?>, clk
+    reg T_1048 : UInt, clk
+    reg T_1050 : UInt, clk
+    reg T_1052 : UInt, clk
     inst T_1053 of DivSqrtRecF64
     T_1053.io is invalid
     T_1053.clk <= clk

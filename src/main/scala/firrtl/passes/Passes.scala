@@ -252,10 +252,6 @@ object InferTypes extends Pass {
       Circuit(c.info,modulesx.map({m => mname = m.name; infer_types(m)}) , c.main )
    }
 }
-object CheckTypes extends Pass with StanzaPass {
-  def name = "Check Types"
-  def run (c:Circuit): Circuit = stanzaPass(c, "check-types")
-}
 
 object ResolveGenders extends Pass {
    private var mname = ""
@@ -318,11 +314,6 @@ object ResolveGenders extends Pass {
       }
       Circuit(c.info,modulesx,c.main)
    }
-}
-
-object CheckGenders extends Pass with StanzaPass {
-   def name = "Check Genders"
-   def run (c:Circuit): Circuit = stanzaPass(c, "check-genders")
 }
 
 object InferWidths extends Pass {
@@ -621,11 +612,6 @@ object InferWidths extends Pass {
       //println-debug("====================================")
       reduce_var_widths(Circuit(c.info,c.modules,c.main),h)
    }
-}
-
-object CheckWidths extends Pass with StanzaPass {
-   def name = "Width Check"
-   def run (c:Circuit): Circuit = stanzaPass(c, "width-check")
 }
 
 object PullMuxes extends Pass {
@@ -1112,11 +1098,6 @@ object ExpandWhens extends Pass {
             }}}
       Circuit(c.info,modulesx,c.main)
    }
-}
-
-object CheckInitialization extends Pass with StanzaPass {
-   def name = "Check Initialization"
-   def run (c:Circuit): Circuit = stanzaPass(c, "check-init")
 }
 
 object ConstProp extends Pass {

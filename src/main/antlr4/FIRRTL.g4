@@ -57,6 +57,9 @@ stmt
                      | 'readwriter' '=>' id 
                      )*
                  '}'
+  | 'cmem' id ':' type
+  | 'smem' id ':' type
+  | mdir 'mport' id '=' id '[' exp ']' exp
   | 'inst' id 'of' id 
   | 'node' id '=' exp
   | exp '<=' exp 
@@ -66,6 +69,13 @@ stmt
   | 'stop(' exp exp IntLit ')'
   | 'printf(' exp exp StringLit (exp)* ')'
   | 'skip'
+  ;
+
+mdir
+  : 'infer'
+  | 'read'
+  | 'write'
+  | 'rdwr'
   ;
 
 ruw
@@ -129,6 +139,10 @@ keyword
   | 'undefined'
   | 'mux'
   | 'validif'
+  | 'write'
+  | 'read'
+  | 'rdwr'
+  | 'infer'
   ;
 
 // Parentheses are added as part of name because semantics require no space between primop and open parentheses

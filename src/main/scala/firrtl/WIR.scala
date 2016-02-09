@@ -190,6 +190,6 @@ case object MRead extends MPortDir
 case object MWrite extends MPortDir
 case object MReadWrite extends MPortDir
 
-case class CDefMemory (val info: FileInfo, val name: String, val tpe: Type, val size: Int, val seq: Boolean) extends Stmt
-case class CDefMPort (val info: FileInfo, val name: String, val tpe: Type, val mem: String, val exps: Seq[Expression], val direction: MPortDir) extends Stmt
+case class CDefMemory (val info: Info, val name: String, val tpe: Type, val size: Int, val seq: Boolean) extends Stmt
+case class CDefMPort (val info: Info, val name: String, val tpe: Type, val mem: String, val exps: Seq[Expression], val direction: MPortDir) extends Stmt
 

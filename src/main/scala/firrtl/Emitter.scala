@@ -38,6 +38,7 @@ object VerilogEmitter extends Emitter {
       var percent:Boolean = false
       for (c <- s) {
          if (c == '\n') sx += "\\n"
+         else if (c == '"') sx += '\\'.toString + '"'.toString
          else {
             if((c == 'x') && percent) sx += "h" else sx += c.toString
          }
@@ -335,7 +336,8 @@ object VerilogEmitter extends Emitter {
          Seq("$fdisplay(32'h80000002,\"",ret,"\");$finish;")
       }
       def printf (str:String,args:Seq[Expression]) : Seq[Any] = {
-         val strx = (Seq(escape(str)) ++ args).reduce(Seq(_, ",", _))
+         val q = '"'.toString
+         val strx = (Seq(q + escape(str) + q) ++ args.map(x => escape(x.serialize()))).reduce(_ + "," + _)
          Seq("$fwrite(32'h80000002,",strx,");")
       }
       def delay (e:Expression, n:Int, clk:Expression) : Expression = {

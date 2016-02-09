@@ -59,17 +59,23 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
   private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): Module = 
     InModule(getInfo(ctx), (ctx.id.getText), ctx.port.map(visitPort), visitBlock(ctx.block))
 
-	private def visitPort[AST](ctx: FIRRTLParser.PortContext): Port = 
+  private def visitPort[AST](ctx: FIRRTLParser.PortContext): Port = 
     Port(getInfo(ctx), (ctx.id.getText), visitDir(ctx.dir), visitType(ctx.`type`))
-
-	private def visitDir[AST](ctx: FIRRTLParser.DirContext): Direction =
+  private def visitDir[AST](ctx: FIRRTLParser.DirContext): Direction =
     ctx.getText match {
       case "input" => INPUT
       case "output" => OUTPUT
     }
+  private def visitMdir[AST](ctx: FIRRTLParser.MdirContext): MPortDir =
+    ctx.getText match {
+      case "infer" => MInfer
+      case "read" => MRead
+      case "write" => MWrite
+      case "rdwr" => MReadWrite
+    }
 
   // Match on a type instead of on strings?
-	private def visitType[AST](ctx: FIRRTLParser.TypeContext): Type = {
+  private def visitType[AST](ctx: FIRRTLParser.TypeContext): Type = {
     ctx.getChild(0) match {
       case term: TerminalNode => 
         term.getText match {
@@ -145,6 +151,20 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
         DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
       }
       case "mem" => visitMem(ctx)
+      case "cmem" => {
+         val t = visitType(ctx.`type`(0))
+         t match {
+            case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,false)
+            case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
+         }
+      }
+      case "smem" => {
+         val t = visitType(ctx.`type`(0))
+         t match {
+            case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,true)
+            case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
+         }
+      }
       case "inst"  => DefInstance(info, (ctx.id(0).getText), (ctx.id(1).getText))
       case "node" =>  DefNode(info, (ctx.id(0).getText), visitExp(ctx.exp(0)))
       case "when" => { 
@@ -162,6 +182,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
           case "<=" => Connect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)) )
           case "<-" => BulkConnect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)) )
           case "is" => IsInvalid(info, visitExp(ctx.exp(0)))
+          case "mport" => CDefMPort(info, ctx.id(0).getText, UnknownType(),ctx.id(1).getText,Seq(visitExp(ctx.exp(0)),visitExp(ctx.exp(1))),visitMdir(ctx.mdir))
         }
       }
     }
