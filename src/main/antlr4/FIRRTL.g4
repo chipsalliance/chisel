@@ -16,6 +16,7 @@ circuit
 
 module
   : 'module' id ':' '{' port* block '}'
+  | 'extmodule' id ':' '{' port* '}'
   ;
 
 port
@@ -106,6 +107,7 @@ id
 keyword
   : 'circuit'
   | 'module'
+  | 'extmodule'
   | 'input'
   | 'output'
   | 'UInt'
@@ -140,6 +142,7 @@ keyword
   | 'mux'
   | 'validif'
   | 'write'
+  | 'with'
   | 'read'
   | 'rdwr'
   | 'infer'

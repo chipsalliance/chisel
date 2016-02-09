@@ -580,7 +580,7 @@ object Utils {
        case s:IsInvalid => s.info
        case s:Stop => s.info
        case s:Print => s.info
-       case _ => error("Shouldn't be here"); NoInfo
+       case _ => NoInfo
     }}
 
 
@@ -1030,6 +1030,15 @@ object Utils {
              withIndent {
                s ++= m.ports.map(newline ++ _.serialize).mkString
                s ++= newline ++ m.body.serialize
+             }
+             s ++= debug(m)
+             s.toString
+          }
+          case m:ExModule => {
+             var s = new StringBuilder(s"extmodule ${m.name} : ")
+             withIndent {
+               s ++= m.ports.map(newline ++ _.serialize).mkString
+               s ++= newline
              }
              s ++= debug(m)
              s.toString

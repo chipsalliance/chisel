@@ -53,7 +53,7 @@ build-fast:
 	make set-stanza
 
 check: 
-	cd $(test_dir) && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir) && lit -j 2 -v . --path=$(root_dir)/utils/bin/
 
 regress: 
 	cd $(regress_dir) && firrtl -i rocket.fir -o rocket.v -X verilog
@@ -77,7 +77,7 @@ errors:
 	cd $(test_dir)/errors && lit -v . --path=$(root_dir)/utils/bin/
 
 features:
-	cd $(test_dir)/features && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/features && lit -j 2 -v . --path=$(root_dir)/utils/bin/
 
 chirrtl:
 	cd $(test_dir)/chirrtl && lit -v . --path=$(root_dir)/utils/bin/

@@ -57,7 +57,10 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     Circuit(getInfo(ctx), ctx.module.map(visitModule), (ctx.id.getText)) 
     
   private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): Module = 
-    InModule(getInfo(ctx), (ctx.id.getText), ctx.port.map(visitPort), visitBlock(ctx.block))
+     ctx.getChild(0).getText match {
+        case "module" => InModule(getInfo(ctx), (ctx.id.getText), ctx.port.map(visitPort), visitBlock(ctx.block))
+        case "extmodule" => ExModule(getInfo(ctx), (ctx.id.getText), ctx.port.map(visitPort))
+      }
 
   private def visitPort[AST](ctx: FIRRTLParser.PortContext): Port = 
     Port(getInfo(ctx), (ctx.id.getText), visitDir(ctx.dir), visitType(ctx.`type`))
@@ -206,7 +209,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
               (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
             else {
                val bigint = string2BigInt(ctx.IntLit(0).getText)
-               (IntWidth(BigInt(bigint.bitLength)),bigint)
+               (IntWidth(BigInt(scala.math.max(bigint.bitLength,1))),bigint)
             }
           UIntValue(value, width)
         }

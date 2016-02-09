@@ -24,7 +24,7 @@ trait Pass extends LazyLogging {
 
 // Error handling
 class PassException(message: String) extends Exception(message)
-class PassExceptions(exceptions: Seq[PassException]) extends Exception(exceptions.mkString("\n"))
+class PassExceptions(exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
 
 // Trait for migration, trap to Stanza implementation for passes not yet implemented in Scala
 trait StanzaPass extends LazyLogging {
@@ -53,13 +53,13 @@ object PassUtils extends LazyLogging {
   lazy val mapNameToPass: Map[String, Pass] = listOfPasses.map(p => p.name -> p).toMap
 
   def executePasses(c: Circuit, passes: Seq[Pass]): Circuit = { 
-    if (passes.isEmpty) c
+    if (passes.isEmpty) {logger.debug(s"Done!"); c}
     else {
        val p = passes.head
        val name = p.name
        logger.debug(s"Starting ${name}")
        val x = p.run(c)
-       //logger.debug(x.serialize())
+       logger.debug(x.serialize())
        logger.debug(s"Finished ${name}")
        executePasses(x, passes.tail)
     }
