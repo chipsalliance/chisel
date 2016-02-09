@@ -19,6 +19,11 @@ object debug {  // scalastyle:ignore object.name
   def apply (arg: Data): Data = arg
 }
 
+/** Mixing in this trait flips the direction of an Aggregate. */
+trait Flipped extends Data {
+  this.overrideDirection(_.flip, !_)
+}
+
 /** This forms the root of the type system for wire data types. The data value
   * must be representable as some number (need not be known at Chisel compile
   * time) of bits, and must have methods to pack / unpack structured data to /
@@ -32,17 +37,16 @@ abstract class Data(dirArg: Direction) extends HasId {
   private var dirVar = dirArg
   private[Chisel] def isFlip = isFlipVar
 
-  private def cloneWithDirection(newDir: Direction => Direction,
-                                 newFlip: Boolean => Boolean): this.type = {
-    val res = this.cloneType
-    res.isFlipVar = newFlip(res.isFlipVar)
-    for ((me, it) <- this.flatten zip res.flatten)
-      (it: Data).dirVar = newDir((me: Data).dirVar)
-    res
+  private[Chisel] def overrideDirection(newDir: Direction => Direction,
+                                        newFlip: Boolean => Boolean): this.type = {
+    this.isFlipVar = newFlip(this.isFlipVar)
+    for (field <- this.flatten)
+      (field: Data).dirVar = newDir((field: Data).dirVar)
+    this
   }
-  def asInput: this.type = cloneWithDirection(_ => INPUT, _ => true)
-  def asOutput: this.type = cloneWithDirection(_ => OUTPUT, _ => false)
-  def flip(): this.type = cloneWithDirection(_.flip, !_)
+  def asInput: this.type = cloneType.overrideDirection(_ => INPUT, _ => true)
+  def asOutput: this.type = cloneType.overrideDirection(_ => OUTPUT, _ => false)
+  def flip(): this.type = cloneType.overrideDirection(_.flip, !_)
 
   private[Chisel] def badConnect(that: Data): Unit =
     throwException(s"cannot connect ${this} and ${that}")
