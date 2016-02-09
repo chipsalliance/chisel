@@ -26,13 +26,15 @@ class RouterIO extends Bundle {
 
 class BundleWithInitTester extends BasicTester {
   class Router extends Module {
-    val io    = new RouterIO
+    val io       = new RouterIO
+
+    io.in_port.ready := Bool(true)
 
     when(io.in_port.valid && io.out_port.ready) {
-      val out_data = new ReadCmd
+      val out_data = Wire(new ReadCmd)
 
-      out_data.addr := io.in_port.deq().addr
-      io.out_port.enq(out_data)
+//      out_data.addr := io.in_port.deq().addr
+      io.out_port.enq(io.in_port.deq())
     }
   }
 
