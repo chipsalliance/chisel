@@ -32,18 +32,6 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
     val HexPattern = """\"*h([a-zA-Z0-9]+)\"*""".r
     val DecPattern = """(\+|-)?([1-9]\d*)""".r
     val ZeroPattern = "0".r
-    s match {
-      case ZeroPattern(_*) => BigInt(0)
-      case HexPattern(hexdigits) => BigInt(hexdigits, 16)
-      case DecPattern(sign, num) => BigInt(num)
-      case  _  => throw new Exception("Invalid String for conversion to BigInt " + s)
-    }
-  }
-  private def string2SignedBigInt(s: String): BigInt = {
-    // private define legal patterns
-    val HexPattern = """\"*h([a-zA-Z0-9]+)\"*""".r
-    val DecPattern = """(\+|-)?([1-9]\d*)""".r
-    val ZeroPattern = "0".r
     val NegPattern = "(89AaBbCcDdEeFf)".r
     s match {
       case ZeroPattern(_*) => BigInt(0)
@@ -164,7 +152,8 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
         Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
       }
       case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-      case "printf(" => Print(info, ctx.StringLit.getText, ctx.exp.drop(2).map(visitExp), 
+           // Stip first and last character of string since they are the surrounding double quotes
+      case "printf(" => Print(info, ctx.StringLit.getText.tail.init, ctx.exp.drop(2).map(visitExp), 
                               visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
       case "skip" => Empty()
       // If we don't match on the first child, try the next one
@@ -203,9 +192,9 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
         case "SInt" => {
           val (width, value) = 
             if (ctx.getChildCount > 4) 
-              (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2SignedBigInt(ctx.IntLit(1).getText))
+              (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
             else {
-               val bigint = string2SignedBigInt(ctx.IntLit(0).getText)
+               val bigint = string2BigInt(ctx.IntLit(0).getText)
                (IntWidth(BigInt(bigint.bitLength + 1)),bigint)
             }
           SIntValue(value, width)

@@ -208,7 +208,7 @@ Id
 fragment
 IdNondigit
   : Nondigit
-  | [~!@#$%^*-+=?/]
+  | [~!@#$%^*\-+=?/]
   ;
 
 Comment
