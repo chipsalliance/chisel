@@ -9,7 +9,9 @@ Structure containing source locator information.
 Member of most Stmt case classes.
 */
 trait Info
-case object NoInfo extends Info
+case object NoInfo extends Info {
+  override def toString(): String = "NoFileInfo"
+}
 case class FileInfo(file: String, line: Int, column: Int) extends Info {
   override def toString(): String = s"$file@$line.$column"
 }

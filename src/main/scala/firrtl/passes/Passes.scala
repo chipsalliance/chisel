@@ -22,6 +22,10 @@ trait Pass extends LazyLogging {
   def run(c: Circuit): Circuit
 }
 
+// Error handling
+class PassException(message: String) extends Exception(message)
+class PassExceptions(exceptions: Seq[PassException]) extends Exception(exceptions.mkString("\n"))
+
 // Trait for migration, trap to Stanza implementation for passes not yet implemented in Scala
 trait StanzaPass extends LazyLogging {
   def stanzaPass(c: Circuit, n: String): Circuit = {
@@ -63,11 +67,6 @@ object PassUtils extends LazyLogging {
 }
 
 // These should be distributed into separate files
-object CheckHighForm extends Pass with StanzaPass {
-  def name = "High Form Check"
-  def run (c:Circuit): Circuit = stanzaPass(c, "high-form-check")
-}
-
 object ToWorkingIR extends Pass {
    private var mname = ""
    def name = "Working IR"

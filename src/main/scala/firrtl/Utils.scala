@@ -905,6 +905,23 @@ object Utils {
          case s: DefMemory  => s.data_type
          case _ => UnknownType()
        }
+
+     def getInfo: Info =
+       stmt match {
+         case s: DefWire => s.info
+         case s: DefPoison => s.info
+         case s: DefRegister => s.info
+         case s: DefInstance => s.info
+         case s: DefMemory => s.info
+         case s: DefNode => s.info
+         case s: Conditionally => s.info
+         case s: BulkConnect => s.info
+         case s: Connect => s.info
+         case s: IsInvalid => s.info
+         case s: Stop => s.info
+         case s: Print => s.info
+         case _ => NoInfo
+       }
    }
 
    implicit class WidthUtils(w: Width) {
