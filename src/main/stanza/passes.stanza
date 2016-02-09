@@ -2436,6 +2436,8 @@ defn escape (s:String) -> String :
    for c in s do :
       if c == '\n' :
          add(s*,"\\n")
+      else if c == '"' :
+         add(s*, "\\\"")
       else :
          if c == 'x' and percent :
             add(s*,"h")
@@ -2692,7 +2694,7 @@ defn emit-verilog (m:InModule) -> Module :
    defn stop (ret:Int) -> Streamable :
       ["$fdisplay(32'h80000002,\"" ret "\");$finish;"]
    defn printf (str:String,args:List<Expression>) -> Streamable :
-      val str* = join(List(escape(str),args),",")
+      val str* = join(List(escape(str),map(escape,map(to-string,args))),",")
       ["$fwrite(32'h80000002," str* ");"]
    defn delay (e:Expression, n:Int, clk:Expression) -> Expression :
       var e* = e
