@@ -54,7 +54,7 @@
 \section{Introduction}
 
 \subsection{Background}
-The ideas for FIRRTL originated from work on Chisel, a hardware description language (HDL) embedded in Scala used for writing highly-parameterized circuit design generators. Chisel designers manipulate circuit components using Scala functions, encode their interfaces in Scala types, and use Scala's object-orientation features to write their own circuit libraries. This form of meta-programming enables expressive, reliable and type-safe generators that improve RTL design productivity and robustness.
+The ideas for FIRRTL (Flexible Intermediate Representation for RTL) originated from work on Chisel, a hardware description language (HDL) embedded in Scala used for writing highly-parameterized circuit design generators. Chisel designers manipulate circuit components using Scala functions, encode their interfaces in Scala types, and use Scala's object-orientation features to write their own circuit libraries. This form of meta-programming enables expressive, reliable and type-safe generators that improve RTL design productivity and robustness.
 
 The computer architecture research group at U.C. Berkeley relies critically on Chisel to allow small teams of graduate students to design sophisticated RTL circuits. Over a three year period with under twelve graduate students, the architecture group has taped-out over ten different designs. 
 
@@ -68,10 +68,10 @@ Internally, the investment in developing and learning Chisel was rewarded with h
 \item The output of Chisel (Verilog) is unreadable and slow to simulate.
 \end{enumerate}
 
-As a consequence, Chisel needed to be redesigned from the ground up to standardize its semantics, modularize its compilation process, and cleanly separate its front-end, intermediate representation, and backends. A well defined intermediate representation (IR) allows the system to be targeted by other HDLs embedded in other host programming languages, making it possible for RTL designers to work within a language they are already comfortable with. A clearly defined IR with a concrete syntax also allows for inspection of the output of circuit generators and transformers thus making clear the distinction between the host language and the constructed circuit. A clearly defined semantics allows users without knowledge of the compiler implementation to write circuit transformers; examples include optimization of circuits for simulation speed, and automatic insertion of signal activity counters. An additional benefit of a well defined IR is the structural invariants that can be enforced before and after each compilation stage, resulting in a more robust compiler and structured mechanism for error checking. 
+As a consequence, Chisel needed to be redesigned from the ground up to standardize its semantics, modularize its compilation process, and cleanly separate its front-end, intermediate representation, and backends. A well defined intermediate representation (IR) allows the system to be targeted by other HDLs embedded in other host programming languages, making it possible for RTL designers to work within a language they are already comfortable with. A clearly defined IR with a concrete syntax also allows for inspection of the output of circuit generators and transformers thus making clear the distinction between the host language and the constructed circuit. Clearly defined semantics allows users without knowledge of the compiler implementation to write circuit transformers; examples include optimization of circuits for simulation speed, and automatic insertion of signal activity counters. An additional benefit of a well defined IR is the structural invariants that can be enforced before and after each compilation stage, resulting in a more robust compiler and structured mechanism for error checking. 
 
 \subsection{Design Philosophy}
-FIRRTL (Flexible Intermediate Representation for RTL) represents the standardized elaborated circuit that the Chisel HDL produces. FIRRTL represents the circuit immediately after Chisel's elaboration but before any circuit simplification. It is designed to resemble the Chisel HDL after all meta-programming has executed. Thus, a user program that makes little use of meta-programming facilities should look almost identical to the generated FIRRTL.
+FIRRTL represents the standardized elaborated circuit that the Chisel HDL produces. FIRRTL represents the circuit immediately after Chisel's elaboration but before any circuit simplification. It is designed to resemble the Chisel HDL after all meta-programming has executed. Thus, a user program that makes little use of meta-programming facilities should look almost identical to the generated FIRRTL.
 
 For this reason, FIRRTL has first-class support for high-level constructs such as vector types, bundle types, conditional statements, partial connects, and modules. These high-level constructs are then gradually removed by a sequence of {\em lowering} transformations. During each lowering transformation, the circuit is rewritten into an equivalent circuit using simpler, lower-level constructs. Eventually the circuit is simplified to its most restricted form, resembling a structured netlist, which allows for easy translation to an output language (e.g. Verilog). This form is given the name {\em lowered FIRRTL} (LoFIRRTL) and is a strict subset of the full FIRRTL language.
 
@@ -235,7 +235,7 @@ In a connection to \verb|myport|, the \verb|a| subfield flows out of the module.
 
 \subsection{Passive Types} \label{passive_types}
 
-It is inappropriate for some circuit components to be declared with a type that allows for data to flow in both directions. These components are restricted to only have a passive type.
+It is inappropriate for some circuit components to be declared with a type that allows for data to flow in both directions. For example, all subelements in a memory should flow in the same direction. These components are restricted to only have a passive type.
 
 Intuitively, a passive type is a type where all data flows in the same direction, and is defined to be a type that recursively contains no fields with flipped orientations. Thus all ground types are passive types. Vector types are passive if their element type is passive. And bundle types are passive if no fields are flipped and if all field types are passive.
 
@@ -304,7 +304,7 @@ In order for a connection to be legal the following conditions must hold:
 \item Either the gender of the right-hand side expression is male or bi-gender, or the right-hand side expression has a passive type.
 \end{enumerate}
 
-Connect statements from a narrower ground type component to a wider ground type component will have its value automatically sign-extended to the larger bit width. The behaviour of connect statements between two circuit components with aggregate types is defined by the connection algorithm in section \ref{connection_algorithm}.
+Connect statements from a narrower ground type component to a wider ground type component will have its value automatically sign-extended or zero-extended to the larger bit width. The behaviour of connect statements between two circuit components with aggregate types is defined by the connection algorithm in section \ref{connection_algorithm}.
 
 \subsubsection{The Connection Algorithm} \label{connection_algorithm}
 Connect statements between ground types cannot be expanded further. 
@@ -370,7 +370,7 @@ module MyModule :
 \end{verbatim}
 
 \subsubsection{Last Connect Semantics}\label{last_connect}
-Ordering of statements is significant in a statement group. Intuitively, statements execute in order, and the effects of later statements take precedence over earlier ones. In the previous example, in the resultant circuit, port \verb|b| will be connected to \verb|myport1|, and port \verb|a| will be connected to \verb|myport2|. 
+Ordering of statements is significant in a statement group. Intuitively, during elaboration, statements execute in order, and the effects of later statements take precedence over earlier ones. In the previous example, in the resultant circuit, port \verb|b| will be connected to \verb|myport1|, and port \verb|a| will be connected to \verb|myport2|. 
 
 Note that connect and partial connect statements have equal priority, and later connect or partial connect statements always take priority over earlier connect or partial connect statements. Conditional statements are also affected by last connect semantics, and for details see section \ref{conditional_last_connect}.
 
@@ -471,7 +471,9 @@ wire w:UInt
 w is invalid
 \end{verbatim}
 
-Invalidate statements can be applied to any circuit component of any type. However, if the circuit component cannot be connected to, then the statement has no effect on the component. The following example demonstrates the effect of invalidating a variety of circuit components with aggregate types. See section \ref{invalidate_algorithm} for details on the algorithm for determining what is invalidated.
+Invalidate statements can be applied to any circuit component of any type. However, if the circuit component cannot be connected to, then the statement has no effect on the component. This allows the invalidate statement to be applied to any component, to explicitly ignore initialization coverage errors.
+
+The following example demonstrates the effect of invalidating a variety of circuit components with aggregate types. See section \ref{invalidate_algorithm} for details on the algorithm for determining what is invalidated.
 
 \begin{verbatim}
 module MyModule :
@@ -504,7 +506,7 @@ Invalidating a component with a vector type recursively invalidates each subelem
 Invalidating a component with a bundle type recursively invalidates each subelement in the bundle.
 
 \subsection{Nodes}
-A node is simply a named intermediate value in a circuit. The node must be initialized to a value with a passive type and cannot be connected to. 
+A node is simply a named intermediate value in a circuit. The node must be initialized to a value with a passive type and cannot be connected to. Nodes are often used to split a complicated compound expression into named subexpressions.
 
 The following example demonstrates instantiating a node with the given name \verb|mynode| initialized with the output of a multiplexor (see section \ref{multiplexors}).
 
@@ -802,16 +804,18 @@ If the \verb|en| field is high, then the non-masked portion of the \verb|data| f
 \subsubsection{Readwrite Ports}
 Finally, the readwrite ports have type:
 \begin{verbatim}
-{rmode:UInt<1>, flip rdata:T, data:T, mask:M, 
+{wmode:UInt<1>, flip rdata:T, data:T, mask:M, 
  addr:UInt<N>, en:UInt<1>, clk:Clock}
 \end{verbatim}
-A readwrite port is a single port that, on a given cycle, can be used either as a read or a write port. If the readwrite port is in read mode (the \verb|rmode| field is high), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is not in read mode (the \verb|rmode| field is low), then the \verb|data|, \verb|mask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly. 
+A readwrite port is a single port that, on a given cycle, can be used either as a read or a write port. If the readwrite port is not in write mode (the \verb|wmode| field is low), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is in write mode (the \verb|wmode| field is high), then the \verb|data|, \verb|mask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly. 
 
 \subsubsection{Read Under Write Behaviour}
 
 The read-under-write flag indicates the value held on a read port's \verb|data| field if its memory location is written to while it is reading. The flag may take on three settings: \verb|old|, \verb|new|, and \verb|undefined|.
 
-If the read-under-write flag is set to \verb|old|, then a read port always returns the value existing in the memory on the same cycle that the read was requested. Intuitively, this is modeled as a combinational read from the memory that is then delayed by the appropriate read latency.
+If the read-under-write flag is set to \verb|old|, then a read port always returns the value existing in the memory on the same cycle that the read was requested. 
+
+Assuming that a combinational read always returns the value stored in the memory (no write forwarding), then intuitively, this is modeled as a combinational read from the memory that is then delayed by the appropriate read latency.
 
 If the read-under-write flag is set to \verb|new|, then a read port always returns the value existing in the memory on the same cycle that the read was made available. Intuitively, this is modeled as a combinational read from the memory after delaying the read address by the appropriate read latency.
 
@@ -901,19 +905,7 @@ Note that it is an error to supply a bit width that is not large enough to fit t
 UInt(42)
 \end{verbatim}
 
-\subsection{Signed Integers}
-
-Similar to unsigned integers, a literal signed integer can be created given an integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number -42. 
-\begin{verbatim}
-SInt<10>(-42)
-\end{verbatim}
-
-Note that it is an error to supply a bit width that is not large enough to fit the given value using two's complement representation. If the bit width is omitted, then the minimum number of bits necessary to fit the given value will be inferred.
-\begin{verbatim}
-SInt(-42)
-\end{verbatim}
-
-\subsection{Unsigned Bits}
+\subsection{Unsigned Integers from Literal Bits}
 
 A literal unsigned integer can alternatively be created given a string representing its bit representation and an optional bit width. 
 
@@ -930,14 +922,28 @@ UBits("0b00001101")
 UBits("0x0D")
 \end{verbatim}
 
-If a bit width is given, then the bit representation is truncated to the given bit width. It is an error to supply a bit width that is larger than the number of bits in the bit representation. The following examples create a 7-bit integer representing the number 13.
+If the provided bit width is larger than the number of bits represented by the string, then the resulting value is equivalent to the string zero-extended up to the provided bit width. If the provided bit width is smaller than the number of bits represented by the string, then the resulting value is equivalent to the string truncated down to the provided bit width. All truncated bits must be zero.
+
+The following examples create a 7-bit integer representing the number 13.
 \begin{verbatim}
 UBits<7>("0b00001101")
 UBits<7>("0o015")
-UBits<7>("0x0D")
+UBits<7>("0xD")
 \end{verbatim}
 
-\subsection{Signed Bits}
+\subsection{Signed Integers}
+
+Similar to unsigned integers, a literal signed integer can be created given an integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number -42. 
+\begin{verbatim}
+SInt<10>(-42)
+\end{verbatim}
+
+Note that it is an error to supply a bit width that is not large enough to fit the given value using two's complement representation. If the bit width is omitted, then the minimum number of bits necessary to fit the given value will be inferred.
+\begin{verbatim}
+SInt(-42)
+\end{verbatim}
+
+\subsection{Signed Integers from Literal Bits}
 
 Similar to unsigned integers, a literal signed integer can alternatively be created given a string representing its bit representation and an optional bit width. 
 
@@ -947,9 +953,11 @@ SBits("0b11110011")
 SBits("0xF3")
 \end{verbatim}
 
-If a bit width is given, then the bit representation is truncated to the given bit width. It is an error to supply a bit width that is larger than the number of bits in the bit representation. The following examples create a 7-bit integer representing the number -13.
+If the provided bit width is larger than the number of bits represented by the string, then the resulting value is equivalent to the string sign-extended up to the provided bit width. If the provided bit width is smaller than the number of bits represented by the string, then the resulting value is equivalent to the string truncated down to the provided bit width. All truncated bits must match the sign bit of the final truncated number.
+
+The following examples create a 7-bit integer representing the number -13.
 \begin{verbatim}
-SBits<7>("0b11110011")
+SBits<7>("0b10011")
 SBits<7>("0o763")
 SBits<7>("0xF3")
 \end{verbatim}
@@ -1154,7 +1162,7 @@ Section \ref{primitives} will describe the format and semantics of each primitiv
 \hline  
 }
 
-The arguments of all primitive operations must have ground types. Each specific operation can place additional restrictions on the number and types of their arguments.
+The arguments of all primitive operations must be expressions with ground types, while their parameters are static integer literals. Each specific operation can place additional restrictions on the number and types of their arguments and parameters.
 
 Notationally, the width of an argument \vv{e} is represented as \vv{w}\ts{e}.
 
@@ -1277,7 +1285,7 @@ pad & (e) & (n) & (UInt) & UInt & max(w\ts{e},n)\\
 }}
 \end{figure}
 
-If \vv{e}'s bit width is smaller than \vv{n}, then the pad operation sign-extends or zero-extends \vv{e} up to the given width \vv{n}. Otherwise, the result is simply \vv{e}. \vv{n} must be non-negative.
+If \vv{e}'s bit width is smaller than \vv{n}, then the pad operation zero-extends or sign-extends \vv{e} up to the given width \vv{n}. Otherwise, the result is simply \vv{e}. \vv{n} must be non-negative.
 
 \subsection{Interpret As UInt}
 
@@ -1369,14 +1377,14 @@ The shift right operation truncates the least significant \vv{n} bits from \vv{e
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
-dshl & (e, n) & () & (UInt, UInt) & UInt & w\ts{e}\\
-                 &&& (SInt, UInt) & SInt & w\ts{e}\\
+dshl & (e, n) & () & (UInt, UInt) & UInt & w\ts{e} + 2\verb|^|w\ts{n}\\
+                 &&& (SInt, UInt) & SInt & w\ts{e} + 2\verb|^|w\ts{n}\\
  \hline
 \end{tabular}
 }}
 \end{figure}
 
-The dynamic shift left operation shifts the bits in \vv{e} \vv{n} places towards the most significant bit. \vv{n} zeroes are shifted in to the least significant bits, and the \vv{n} most significant bits are truncated.
+The dynamic shift left operation shifts the bits in \vv{e} \vv{n} places towards the most significant bit. \vv{n} zeroes are shifted in to the least significant bits.
 
 \subsection{Dynamic Shift Right Operation}
 
@@ -1656,7 +1664,14 @@ FIRRTL's syntax is designed to be human-readable but easily algorithmically pars
 
 The following characters are allowed in identifiers: upper and lower case letters, digits, as well as the punctuation characters \verb|~!@#$%^*-_+=?/|. Identifiers cannot begin with a digit. 
 
-An integer literal in FIRRTL begins with either a hyphen or a digit, and is followed by only digits. 
+An integer literal in FIRRTL begins with one of the following, where `\#' represents a digit between 0 and 9. 
+\begin{itemize}
+\item `0x' : For indicating a hexadecimal number. The rest of the literal must consist of either digits or a letter between `A' and `F', or the separator `\_'. 
+\item `0o' : For indicating an octal number. The rest of the literal must consist of digits between 0 and 7, or the separator `\_'. 
+\item `0b' : For indicating a binary number. The rest of the literal must consist of either 0 or 1, or the separator `\_'.
+\item `-\#' : For indicating a negative decimal number. The rest of the literal must consist of digits between 0 and 9.
+\item `\#' : For indicating a positive decimal number. The rest of the literal must consist of digits between 0 and 9.
+\end{itemize}
 
 Comments begin with a semicolon and extend until the end of the line. Commas are treated as whitespace, and may be used by the user for clarity if desired.
 
@@ -1742,9 +1757,9 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 
 \begin{tabular}{rrll}
 \pd{exp}        &=     &\vv{UInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{int}\vv{)}                                &\text{Literal Unsigned Integer}\\
+                &\pipe &\vv{UInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{string}\vv{)}                             &\text{Literal Unsigned Integer From Bits}\\
                 &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{int}\vv{)}                                &\text{Literal Signed Integer}\\
-                &\pipe &\vv{UBits}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{string}\vv{)}                            &\text{Literal Unsigned Bits}\\
-                &\pipe &\vv{SBits}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{string}\vv{)}                            &\text{Literal Signed Bits}\\
+                &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{string}\vv{)}                             &\text{Literal Signed Integer From Bits}\\
                 &\pipe &\pd{id}                                                                                &\text{Reference}\\
                 &\pipe &\pd{exp}\vv{.}\pd{id}                                                                  &\text{Subfield}\\
                 &\pipe &\pd{exp}\vv{[}\pd{int}\vv{]}                                                           &\text{Subindex}\\
@@ -1804,12 +1819,6 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 %   - *FINISHED* add rename pass for verilog
 %   - *FINISHED* Add is invalid                    ; good
 %   - *FINISHED* Add validif                       ; good
-
-%- Proposed changes to spec
-%   - switch back to precise dynamic left shift
-%   - have a wmode instead of rmode for readwrite ports
-%   - rename mod to rem
-%   - changed rmode to wmode
 
 \end{document}
 
