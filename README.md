@@ -1,5 +1,6 @@
 # Chisel3
-Chisel3 is a new FIRRTL based chisel
+Chisel3 is a new FIRRTL based chisel.
+It is currently in ALPHA VERSION, so many Chisel features may change in the coming months.
 
 *TODO: A better description, perhaps lifted off Chisel2's README*
 
