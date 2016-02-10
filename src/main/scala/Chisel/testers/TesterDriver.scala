@@ -55,12 +55,10 @@ object TesterDriver extends BackendCompilationUtilities {
       false
     }
   }
-  /*
-   * provides a hook for testers to implement necessary control logic for tests after the
-   * implementation of the users test definition has been completed.
-   * typically the finish method will inspect the users circuit and connect the tester
-   * to the device under test
-   */
+  /**
+    * Calls the finish method of an BasicTester or a class that extends it.
+    * The finish method is a hook for code that augments the circuit built in the constructor.
+    */
   def finishWrapper(test: () => BasicTester): () => BasicTester = {
     () => {
       val tester = test()

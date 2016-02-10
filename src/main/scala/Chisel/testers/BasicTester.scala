@@ -25,10 +25,10 @@ class BasicTester extends Module {
     }
   }
 
-  /** Called this class or a subclass's constructor has finished giving
-    * developers of chisel testers a post construction hook.
-    * For example, a decoupled tester subclassing BasicTester could override finish in order to
-    * add flow control logic around loading the device under test's input io from a Vec of values
+  /** The finish method provides a hook that subclasses of BasicTester can use to
+    * alter a circuit after their constructor has been called.
+    * For example, a specialized tester subclassing BasicTester could override finish in order to
+    * add flow control logic for a decoupled io port of a device under test
     */
   def finish(): Unit = {}
 }
