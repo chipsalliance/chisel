@@ -74,9 +74,9 @@ public defmethod passes (c:StandardVerilog) -> List<Pass> :
       ;RemoveSpecialChars()     
       ;TempElimination()                 ; Needs to check number of uses
       ;===============
-      ;CInferTypes()
-      ;CInferMDir()
-      ;RemoveCHIRRTL()            
+      CInferTypes()
+      CInferMDir()
+      RemoveCHIRRTL()            
       ;===============
       ToWorkingIR()            
       ;===============
