@@ -24,4 +24,11 @@ class BasicTester extends Module {
       pushCommand(Stop(Node(clock), 0))
     }
   }
+
+  /** The finish method provides a hook that subclasses of BasicTester can use to
+    * alter a circuit after their constructor has been called.
+    * For example, a specialized tester subclassing BasicTester could override finish in order to
+    * add flow control logic for a decoupled io port of a device under test
+    */
+  def finish(): Unit = {}
 }
