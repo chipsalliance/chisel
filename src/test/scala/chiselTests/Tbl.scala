@@ -51,8 +51,12 @@ class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends Basi
 class TblSpec extends ChiselPropSpec {
   property("All table reads should return the previous write") {
     forAll(safeUIntPairN(8)) { case(w: Int, pairs: List[(Int, Int)]) =>
-      val (idxs, values) = pairs.unzip
-      assertTesterPasses{ new TblTester(w, 1 << w, idxs, values) }
+      // Provide an appropriate whenever clause.
+      // ScalaTest will try and shrink the values on error to determine the smallest values that cause the error.
+      whenever(w > 0 && pairs.length > 0) {
+        val (idxs, values) = pairs.unzip
+        assertTesterPasses{ new TblTester(w, 1 << w, idxs, values) }
+      }
     }
   }
 }
