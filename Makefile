@@ -131,6 +131,6 @@ set-linux:
 	ln -f -s $(root_dir)/utils/bin/FileCheck_linux $(root_dir)/utils/bin/FileCheck
 
 set-osx:
-	ln -f -s $(root_dir)/utils/bin/FileCheck_osx $(root_dir)/utils/bin/FileCheck
+	ln -f -s $(root_dir)/utils/bin/FileCheck_mac $(root_dir)/utils/bin/FileCheck
 
 .PHONY: all install build-deploy build check clean fail succeed regress set-scala set-stanza build-scala test-scala

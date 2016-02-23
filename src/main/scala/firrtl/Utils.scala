@@ -558,7 +558,7 @@ object Utils {
        case s:DefNode => tpe(s.value)
        case s:DefMemory => {
           val depth = s.depth
-          val addr = Field("addr",DEFAULT,UIntType(IntWidth(ceil_log2(depth))))
+          val addr = Field("addr",DEFAULT,UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))
           val en = Field("en",DEFAULT,BoolType())
           val clk = Field("clk",DEFAULT,ClockType())
           val def_data = Field("data",DEFAULT,s.data_type)

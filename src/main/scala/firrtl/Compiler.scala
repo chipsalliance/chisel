@@ -38,9 +38,16 @@ trait Compiler extends LazyLogging {
 }
 
 object FIRRTLCompiler extends Compiler {
+  val passes = Seq(
+    CInferTypes,
+    CInferMDir,
+    RemoveCHIRRTL,
+    ToWorkingIR,
+    CheckHighForm
+  )
   def run(c: Circuit, w: Writer) = {
-    FIRRTLEmitter.run(c, w)
-    w.close
+    val highForm = PassUtils.executePasses(c, passes)
+    FIRRTLEmitter.run(highForm, w)
   }
 }
 
@@ -84,7 +91,6 @@ object VerilogCompiler extends Compiler {
   {
     val loweredIR = PassUtils.executePasses(c, passes)
     VerilogEmitter.run(loweredIR, w)
-    w.close
   }
 
 }
