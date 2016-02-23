@@ -40,7 +40,6 @@ trait Compiler extends LazyLogging {
 object FIRRTLCompiler extends Compiler {
   def run(c: Circuit, w: Writer) = {
     FIRRTLEmitter.run(c, w)
-    w.close
   }
 }
 
@@ -84,7 +83,6 @@ object VerilogCompiler extends Compiler {
   {
     val loweredIR = PassUtils.executePasses(c, passes)
     VerilogEmitter.run(loweredIR, w)
-    w.close
   }
 
 }

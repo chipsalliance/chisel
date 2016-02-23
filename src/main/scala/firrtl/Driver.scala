@@ -48,6 +48,7 @@ object Driver extends LazyLogging {
     val parsedInput = Parser.parse(input, Source.fromFile(input).getLines)
     val writerOutput = new PrintWriter(new File(output))
     compiler.run(parsedInput, writerOutput)
+    writerOutput.close
   }
 
   def main(args: Array[String])
