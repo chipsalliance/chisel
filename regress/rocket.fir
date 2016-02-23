@@ -17900,7 +17900,7 @@ circuit Top :
     T_7824 <= T_7823
     node T_7826 = eq(reset, UInt<1>("h00"))
     when T_7826 :
-      printf(clk, UInt<1>(1), "C%d: %d [%d] pc=[%x] W[r%d=%x][%d] R[r%d=%x] R[r%d=%x] inst=[%x] DASM(%x)\n ", io.host.id, T_7816, wb_valid, wb_reg_pc, T_7818, rf_wdata, rf_wen, T_7819, T_7821, T_7822, T_7824, wb_reg_inst, wb_reg_inst)
+      printf(clk, UInt<1>(1), "C%d: %d [%d] pc=[%x] W[r%d=%x][%d] R[r%d=%x] R[r%d=%x] inst=[%x] DASM(%x)\n", io.host.id, T_7816, wb_valid, wb_reg_pc, T_7818, rf_wdata, rf_wen, T_7819, T_7821, T_7822, T_7824, wb_reg_inst, wb_reg_inst)
       skip
     
   module BTB : 
