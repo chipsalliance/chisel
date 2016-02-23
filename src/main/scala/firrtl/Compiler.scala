@@ -38,8 +38,16 @@ trait Compiler extends LazyLogging {
 }
 
 object FIRRTLCompiler extends Compiler {
+  val passes = Seq(
+    CInferTypes,
+    CInferMDir,
+    RemoveCHIRRTL,
+    ToWorkingIR,
+    CheckHighForm
+  )
   def run(c: Circuit, w: Writer) = {
-    FIRRTLEmitter.run(c, w)
+    val highForm = PassUtils.executePasses(c, passes)
+    FIRRTLEmitter.run(highForm, w)
   }
 }
 
