@@ -9,7 +9,7 @@ ghpages.settings
 lazy val chiselBuildSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.0",
-  name := "Chisel",
+  name := "Chisel3",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
 
   scalaVersion := "2.11.7",
