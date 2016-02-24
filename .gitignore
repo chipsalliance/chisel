@@ -1,2 +1,5 @@
 generated/
 /bin/
+.idea
+target/
+*.iml
