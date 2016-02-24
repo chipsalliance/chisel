@@ -9,6 +9,7 @@ stanza_bin ?= $(install_dir)/firrtl-stanza
 scala_jar ?= $(install_dir)/firrtl.jar
 scala_src=$(shell ls src/main/scala/firrtl/*.scala)
 stanza_src=$(shell ls src/main/stanza/*.stanza)
+sbt ?= sbt
 
 all-noise: 
 	${MAKE} all || ${MAKE} fail
@@ -32,58 +33,58 @@ $(stanza_bin): $(stanza) $(stanza_src)
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $@
 
 build-deploy: $(stanza)
-	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl
+	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(install_dir)/firrtl
 
 build: $(stanza)
-	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl
 
 build-fast: $(stanza)
-	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl -flags OPTIMIZE
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl -flags OPTIMIZE
 
 build-deploy: 
-	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza
+	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(install_dir)/firrtl-stanza
 	make set-stanza
 
 build: 
-	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl-stanza
 	make set-stanza
 
 build-fast: 
-	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(root_dir)/utils/bin/firrtl-stanza -flags OPTIMIZE
+	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl-stanza -flags OPTIMIZE
 	make set-stanza
 
 check: 
-	cd $(test_dir) && lit -j 2 -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir) && lit -j 2 -v . --path=$(install_dir)/
 
 regress: 
-	cd $(regress_dir) && firrtl -i rocket.fir -o rocket.v -X verilog
+	cd $(regress_dir) && $(install_dir)/firrtl -i rocket.fir -o rocket.v -X verilog
 
 parser: 
-	cd $(test_dir)/parser && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/parser && lit -v . --path=$(install_dir)/
 
 perf: 
-	cd $(test_dir)/performance && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/performance && lit -v . --path=$(install_dir)/
 
 jack: 
-	cd $(test_dir)/passes/jacktest && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/passes/jacktest && lit -v . --path=$(install_dir)/
 
 passes: 
-	cd $(test_dir)/passes && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/passes && lit -v . --path=$(install_dir)/
 
 perf: 
-	cd $(test_dir)/performance && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/performance && lit -v . --path=$(install_dir)/
 
 errors:
-	cd $(test_dir)/errors && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/errors && lit -v . --path=$(install_dir)/
 
 features:
-	cd $(test_dir)/features && lit -j 2 -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/features && lit -j 2 -v . --path=$(install_dir)/
 
 chirrtl:
-	cd $(test_dir)/chirrtl && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/chirrtl && lit -v . --path=$(install_dir)/
 
 custom:
-	cd $(test_dir)/custom && lit -v . --path=$(root_dir)/utils/bin/ --max-time=10
+	cd $(test_dir)/custom && lit -v . --path=$(install_dir)/ --max-time=10
 
 clean:
 	rm -f $(test_dir)/*/*/*.out
@@ -93,9 +94,10 @@ clean:
 	rm -f $(install_dir)/firrtl.jar
 	rm -f $(install_dir)/firrtl
 	rm -f $(install_dir)/firrtl-stanza
+	"$(sbt)" "clean"
 
 riscv:
-	cd $(test_dir)/riscv-mini && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/riscv-mini && lit -v . --path=$(install_dir)/
 
 units = ALUTop Datapath Control Core Test
 v     = $(addsuffix .fir.v, $(units))
@@ -112,25 +114,25 @@ fail:
 
 # Scala Added Makefile commands
 
-build-scala: $(scala_jar) $(stanza_bin) $(firrtl_bin)
+build-scala: $(scala_jar)
 	make set-scala
 
 $(scala_jar): $(scala_src)
-	sbt "assembly"
+	"$(sbt)" "assembly"
 
 test-scala:
-	cd $(test_dir)/parser && lit -v . --path=$(root_dir)/utils/bin/
+	cd $(test_dir)/parser && lit -v . --path=$(install_dir)/
 
 set-scala:
-	ln -f -s $(root_dir)/utils/bin/firrtl-scala $(root_dir)/utils/bin/firrtl
+	ln -f -s $(install_dir)/firrtl-scala $(install_dir)/firrtl
 
 set-stanza:
-	ln -f -s $(root_dir)/utils/bin/firrtl-stanza $(root_dir)/utils/bin/firrtl
+	ln -f -s $(install_dir)/firrtl-stanza $(install_dir)/firrtl
 
 set-linux:
-	ln -f -s $(root_dir)/utils/bin/FileCheck_linux $(root_dir)/utils/bin/FileCheck
+	ln -f -s $(install_dir)/FileCheck_linux $(install_dir)/FileCheck
 
 set-osx:
-	ln -f -s $(root_dir)/utils/bin/FileCheck_mac $(root_dir)/utils/bin/FileCheck
+	ln -f -s $(install_dir)/FileCheck_mac $(install_dir)/FileCheck
 
 .PHONY: all install build-deploy build check clean fail succeed regress set-scala set-stanza build-scala test-scala

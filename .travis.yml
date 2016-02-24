@@ -1,0 +1,24 @@
+language: scala
+scala:
+  - 2.11
+sudo: false
+
+cache:
+  directories:
+    $HOME/.ivy2
+
+git:
+  depth: 3
+
+branches:
+  only:
+    - travis
+    - master
+
+env:
+  global:
+    SBT_OPTS=-Dsbt.log.noformat=true
+
+script:
+  - sbt $SBP_OPTS clean test
+  - make clean build-scala regress
