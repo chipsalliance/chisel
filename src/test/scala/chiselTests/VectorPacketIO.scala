@@ -11,8 +11,11 @@ import Chisel.testers.BasicTester
   * The symptom is creation of a firrtl file
   * with missing declarations, the problem is exposed by
   * the creation of the val outs in VectorPacketIO
+  *
   * NOTE: The problem does not exist now because the initialization
   * code has been removed from DeqIO and EnqIO
+  *
+  * IMPORTANT:  The canonical way to initialize a decoupled inteface is still being debated.
   */
 class Packet extends Bundle {
   val header = UInt(width = 1)
@@ -35,6 +38,9 @@ class VectorPacketIO(n: Int) extends Bundle {
 class BrokenVectorPacketModule extends Module {
   val n  = 4
   val io = new VectorPacketIO(n)
+
+  /* the following method of initializing the circuit may change in the future */
+  io.outs.foreach(_.init())
 }
 
 class VectorPacketIOUnitTester extends BasicTester {
