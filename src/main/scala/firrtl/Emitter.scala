@@ -36,6 +36,7 @@ import scala.sys.process._
 import scala.io.Source
 
 import Utils._
+import firrtl.Serialize._
 import firrtl.passes._
 import WrappedExpression._
 // Datastructures
