@@ -6,19 +6,30 @@ sudo: false
 cache:
   directories:
     $HOME/.ivy2
+    $INSTALL_DIR
 
 git:
   depth: 3
 
-branches:
-  only:
-    - travis
-    - master
+sbt_args: -Dsbt.log.noformat=true
 
 env:
   global:
-    SBT_OPTS=-Dsbt.log.noformat=true
+    INSTALL_DIR=$TRAVIS_BUILD_DIR/install
+    VERILATOR_ROOT=$INSTALL_DIR
+    PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
+
+install:
+  # Grab Chisel 3
+  - git clone https://github.com/ucb-bar/chisel3.git
+  # Install Verilator (if not found in cache)
+  - bash .install_verilator.sh
 
 script:
-  - sbt $SBP_OPTS clean test
+  # FIRRTL Tests
+  - cd $TRAVIS_BUILD_DIR
+  - sbt clean test
   - make clean build-scala regress
+  # Chisel 3 Tests
+  - cd chisel3
+  - sbt clean test
