@@ -91,8 +91,8 @@ class WrappedExpression (val e1:Expression) {
          case _ => false
       }
    }
-   override def hashCode = e1.serialize().hashCode
-   override def toString = e1.serialize()
+   override def hashCode = e1.serialize.hashCode
+   override def toString = e1.serialize
 }
       
 

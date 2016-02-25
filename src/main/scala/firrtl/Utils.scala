@@ -47,10 +47,6 @@ import scala.collection.mutable.LinkedHashMap
 //import scala.reflect.runtime.universe._
 
 object Utils {
-//
-//   // Is there a more elegant way to do this?
-   private type FlagMap = Map[String, Boolean]
-   private val FlagMap = Map[String, Boolean]().withDefaultValue(false)
    implicit class WithAs[T](x: T) {
      import scala.reflect._
      def as[O: ClassTag]: Option[O] = x match {
@@ -298,24 +294,9 @@ object Utils {
    }
 // =================================
    def error(str:String) = throw new FIRRTLException(str)
-   def debug(node: AST)(implicit flags: FlagMap): String = {
-     if (!flags.isEmpty) {
-       var str = ""
-       if (flags("types")) {
-         val tpe = node.getType
-         tpe match {
-            case t:UnknownType => str += s"@<t:${tpe.wipeWidth.serialize}>"
-         }
-       }
-       str
-     }
-     else {
-       ""
-     }
-   }
 
    implicit class BigIntUtils(bi: BigInt){
-     def serialize(implicit flags: FlagMap = FlagMap): String = 
+     def serialize: String =
         if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
         else "\"h" + bi.toString(16) + "\""
    }
@@ -333,7 +314,7 @@ object Utils {
    }
 
    implicit class PrimOpUtils(op: PrimOp) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = op.getString
+     def serialize: String = op.getString
    }
 
 //// =============== EXPANSION FUNCTIONS ================
@@ -808,8 +789,8 @@ object Utils {
    //  }
    //}
    implicit class ExpUtils(exp: Expression) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = {
-       val ret = exp match {
+     def serialize: String = {
+       exp match {
          case v: UIntValue => s"UInt${v.width.serialize}(${v.value.serialize})"
          case v: SIntValue => s"SInt${v.width.serialize}(${v.value.serialize})"
          case r: Ref => r.name
@@ -826,7 +807,6 @@ object Utils {
          case s: WSubAccess => s"${s.exp.serialize}[${s.index.serialize}]"
          case r: WVoid => "VOID"
        } 
-       ret + debug(exp)
      }
    }
 
@@ -846,16 +826,16 @@ object Utils {
    //}
 
    implicit class StmtUtils(stmt: Stmt) {
-     def serialize(implicit flags: FlagMap = FlagMap): String =
+     def serialize: String =
      {
-       var ret = stmt match {
+       stmt match {
          case w: DefWire => s"wire ${w.name} : ${w.tpe.serialize}"
          case r: DefRegister => 
            val str = new StringBuilder(s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize} with : ")
            withIndent {
              str ++= newline + s"reset => (${r.reset.serialize}, ${r.init.serialize})"
            }
-           str
+           str.toString
          case i: DefInstance => s"inst ${i.name} of ${i.module}"
          case i: WDefInstance => s"inst ${i.name} of ${i.module}"
          case m: DefMemory => {
@@ -897,7 +877,7 @@ object Utils {
                if (i != 0) s ++= newline ++ b.stmts(i).serialize
                else s ++= b.stmts(i).serialize
             }
-            s.result + debug(b)
+            s.result
          } 
          case i: IsInvalid => s"${i.exp.serialize} is invalid"
          case s: Stop => s"stop(${s.clk.serialize}, ${s.en.serialize}, ${s.ret})"
@@ -921,7 +901,6 @@ object Utils {
             s"${dir} mport ${s.name} = ${s.mem}[${s.exps(0)}], s.exps(1)"
          }
        } 
-       ret + debug(stmt)
      }
 
      // Using implicit types to allow overloading of function type to map, see StmtMagnet above
@@ -954,23 +933,21 @@ object Utils {
    }
 
    implicit class WidthUtils(w: Width) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = {
-       val s = w match {
+     def serialize: String = {
+       w match {
          case w:UnknownWidth => "" //"?"
          case w: IntWidth => s"<${w.width.toString}>"
          case w: VarWidth => s"<${w.name}>"
        } 
-       s + debug(w)
      }
    }
 
    implicit class FlipUtils(f: Flip) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = {
-       val s = f match {
+     def serialize: String = {
+       f match {
          case REVERSE => "flip "
          case DEFAULT => ""
        } 
-       s + debug(f)
      }
      def flip(): Flip = {
        f match {
@@ -988,8 +965,8 @@ object Utils {
    }
 
    implicit class FieldUtils(field: Field) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = 
-       s"${field.flip.serialize}${field.name} : ${field.tpe.serialize}" + debug(field)
+     def serialize: String =
+       s"${field.flip.serialize}${field.name} : ${field.tpe.serialize}"
      def flip(): Field = Field(field.name, field.flip.flip, field.tpe)
 
      def getType(): Type = field.tpe
@@ -997,9 +974,9 @@ object Utils {
    }
 
    implicit class TypeUtils(t: Type) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = {
+     def serialize: String = {
        val commas = ", " // for mkString in BundleType
-         val s = t match {
+         t match {
            case c:ClockType => "Clock"
            //case UnknownType => "UnknownType"
            case u:UnknownType => "?"
@@ -1008,7 +985,6 @@ object Utils {
            case t: BundleType => s"{ ${t.fields.map(_.serialize).mkString(commas)}}"
            case t: VectorType => s"${t.tpe.serialize}[${t.size}]"
          } 
-         s + debug(t)
      }
 
      def getType(): Type = 
@@ -1026,12 +1002,11 @@ object Utils {
    }
 
    implicit class DirectionUtils(d: Direction) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = {
-       val s = d match {
+     def serialize: String = {
+       d match {
          case INPUT => "input"
          case OUTPUT => "output"
        } 
-       s + debug(d)
      }
      def toFlip(): Flip = {
        d match {
@@ -1042,14 +1017,14 @@ object Utils {
    }
 
    implicit class PortUtils(p: Port) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = 
-       s"${p.direction.serialize} ${p.name} : ${p.tpe.serialize}" + debug(p)
+     def serialize: String =
+       s"${p.direction.serialize} ${p.name} : ${p.tpe.serialize}"
      def getType(): Type = p.tpe
      def toField(): Field = Field(p.name, p.direction.toFlip, p.tpe)
    }
 
    implicit class ModuleUtils(m: Module) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = {
+     def serialize: String = {
        m match {
           case m:InModule => {
              var s = new StringBuilder(s"module ${m.name} : ")
@@ -1057,7 +1032,6 @@ object Utils {
                s ++= m.ports.map(newline ++ _.serialize).mkString
                s ++= newline ++ m.body.serialize
              }
-             s ++= debug(m)
              s.toString
           }
           case m:ExModule => {
@@ -1066,7 +1040,6 @@ object Utils {
                s ++= m.ports.map(newline ++ _.serialize).mkString
                s ++= newline
              }
-             s ++= debug(m)
              s.toString
           }
        }
@@ -1074,11 +1047,10 @@ object Utils {
    }
 
    implicit class CircuitUtils(c: Circuit) {
-     def serialize(implicit flags: FlagMap = FlagMap): String = {
+     def serialize: String = {
        var s = new StringBuilder(s"circuit ${c.main} : ")
        withIndent { s ++= newline ++ c.modules.map(_.serialize).mkString(newline + newline) }
        s ++= newline ++ newline
-       s ++= debug(c)
        s.toString
      }
    }

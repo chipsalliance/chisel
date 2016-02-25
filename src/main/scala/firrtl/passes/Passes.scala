@@ -85,7 +85,7 @@ object PassUtils extends LazyLogging {
        val name = p.name
        logger.debug(s"Starting ${name}")
        val x = p.run(c)
-       logger.debug(x.serialize())
+       logger.debug(x.serialize)
        logger.debug(s"Finished ${name}")
        executePasses(x, passes.tail)
     }

@@ -98,10 +98,10 @@ object VerilogEmitter extends Emitter {
                case (e:DoPrim) => emit2(op_stream(e), top + 1)
                case (e:Mux) => emit2(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
                case (e:ValidIf) => emit2(Seq(cast(e.value)),top + 1)
-               case (e:WRef) => w.get.write(e.serialize())
+               case (e:WRef) => w.get.write(e.serialize)
                case (e:WSubField) => w.get.write(lowered_name(e))
                case (e:WSubAccess) => w.get.write(lowered_name(e.exp) + "[" + lowered_name(e.index) + "]")
-               case (e:WSubIndex) => w.get.write(e.serialize())
+               case (e:WSubIndex) => w.get.write(e.serialize)
                case (_:UIntValue|_:SIntValue) => v_print(e)
             }
          }
@@ -114,7 +114,7 @@ object VerilogEmitter extends Emitter {
                case (t:VectorType) => 
                   emit2(t.tpe, top + 1)
                   w.get.write("[" + (t.size - 1) + ":0]")
-               case (t) => error("Shouldn't be here"); w.get.write(t.serialize())
+               case (t) => error("Shouldn't be here"); w.get.write(t.serialize)
             }
          }
          case (p:Direction) => {

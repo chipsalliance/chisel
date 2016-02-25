@@ -331,26 +331,26 @@ object CheckTypes extends Pass with LazyLogging {
          for (x <- ls) {
             if (wt(tpe(ls.head)) != wt(tpe(x))) error = true
          }
-         if (error) errors += new OpNotAllSameType(info,e.op.serialize()) 
+         if (error) errors += new OpNotAllSameType(info,e.op.serialize)
       }
       def all_ground (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls ) {
             if (!(tpe(x).typeof[UIntType] || tpe(x).typeof[SIntType])) error = true
          }
-         if (error) errors += new OpNotGround(info,e.op.serialize()) 
+         if (error) errors += new OpNotGround(info,e.op.serialize)
       }
       def all_uint (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls ) {
             if (!(tpe(x).typeof[UIntType])) error = true
          }
-         if (error) errors += new OpNotAllUInt(info,e.op.serialize()) 
+         if (error) errors += new OpNotAllUInt(info,e.op.serialize)
       }
       def is_uint (x:Expression) : Unit = {
          var error = false
          if (!(tpe(x).typeof[UIntType])) error = true
-         if (error) errors += new OpNotUInt(info,e.op.serialize(),x.serialize()) 
+         if (error) errors += new OpNotUInt(info,e.op.serialize,x.serialize)
       }
       
       e.op match {
@@ -571,14 +571,14 @@ object CheckGenders extends Pass {
          //println(desired == gender)
          //if gender != desired and gender != BI-GENDER:
          (gender,desired) match {
-            case (MALE, FEMALE) => errors += new WrongGender(info,e.serialize(),as_srcsnk(desired),as_srcsnk(gender))
+            case (MALE, FEMALE) => errors += new WrongGender(info,e.serialize,as_srcsnk(desired),as_srcsnk(gender))
             case (FEMALE, MALE) =>
                if ((kindx == PortKind() || kindx == InstanceKind()) && has_flipQ == false) {
                   //; OK!
                   false
                } else {
                   //; Not Ok!
-                  errors += new WrongGender(info,e.serialize(),as_srcsnk(desired),as_srcsnk(gender))
+                  errors += new WrongGender(info,e.serialize,as_srcsnk(desired),as_srcsnk(gender))
                }
             case _ => false
          }
@@ -696,7 +696,7 @@ object CheckWidths extends Pass with StanzaPass {
                   (e.width) match { 
                      case (w:IntWidth) => 
                         if (scala.math.max(1,e.value.bitLength) > w.width) {
-                           errors += new WidthTooSmall(info,e.value.serialize())
+                           errors += new WidthTooSmall(info,e.value.serialize)
                         }
                      case (w) => errors += new UninferredWidth(info)
                   }
@@ -705,7 +705,7 @@ object CheckWidths extends Pass with StanzaPass {
                case (e:SIntValue) => {
                   (e.width) match { 
                      case (w:IntWidth) => 
-                        if (e.value.bitLength + 1 > w.width) errors += new WidthTooSmall(info,e.value.serialize())
+                        if (e.value.bitLength + 1 > w.width) errors += new WidthTooSmall(info,e.value.serialize)
                      case (w) => errors += new UninferredWidth(info)
                   }
                   check_width_w(info)(e.width)
