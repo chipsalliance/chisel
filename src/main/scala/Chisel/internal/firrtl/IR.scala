@@ -66,7 +66,7 @@ case class ILit(n: BigInt) extends Arg {
 }
 
 case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
-  def name: String = "UInt<" + width + ">(\"h0" + num.toString(16) + "\")"
+  def name: String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
   def minWidth: Int = 1 max n.bitLength
 
   require(n >= 0, s"UInt literal ${n} is negative")
@@ -117,7 +117,7 @@ sealed case class UnknownWidth() extends Width {
   def known: Boolean = false
   def get: Int = None.get
   def op(that: Width, f: (W, W) => W): Width = this
-  override def toString: String = "?"
+  override def toString: String = ""
 }
 
 sealed case class KnownWidth(value: Int) extends Width {
@@ -128,7 +128,7 @@ sealed case class KnownWidth(value: Int) extends Width {
     case KnownWidth(x) => KnownWidth(f(value, x))
     case _ => that
   }
-  override def toString: String = value.toString
+  override def toString: String = s"<${value.toString}>"
 }
 
 sealed abstract class MemPortDirection(name: String) {

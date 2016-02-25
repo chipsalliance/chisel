@@ -280,7 +280,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
     extends Bits(dir, width, lit) with Num[UInt] {
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
-  private[Chisel] def toType = s"UInt<$width>"
+  private[Chisel] def toType = s"UInt$width"
 
   override private[Chisel] def fromInt(value: BigInt): this.type = UInt(value).asInstanceOf[this.type]
 
@@ -412,7 +412,7 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
     extends Bits(dir, width, lit) with Num[SInt] {
   private[Chisel] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
-  private[Chisel] def toType = s"SInt<$width>"
+  private[Chisel] def toType = s"SInt$width"
 
   override def := (that: Data): Unit = that match {
     case _: SInt => this connect that
