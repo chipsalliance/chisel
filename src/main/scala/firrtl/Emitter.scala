@@ -362,21 +362,8 @@ object VerilogEmitter extends Emitter {
          Seq("$fdisplay(32'h80000002,\"",ret,"\");$finish;")
       }
       def printf (str:String,args:Seq[Expression]) : Seq[Any] = {
-         def emitArg(exp: Expression): String = {
-            exp match {
-               case v: UIntValue => s"${v.width match {
-                  case w: IntWidth => w.width.toString
-               }}'H${v.value.toString(16)}"
-               case v: SIntValue => s"${v.width match {
-                  case w: IntWidth => w.width.toString
-               }}'sH${v.value.toString(16)}"
-               case r: Ref => r.name
-               case r: WRef => r.name
-               case _ => error("Unexpected expression in printf: " + exp.serialize)
-            }
-         }
          val q = '"'.toString
-         val strx = (Seq(q + escape(str) + q) ++ args.map(x => emitArg(x))).reduce(_ + "," + _)
+	 val strx = (Seq(q + escape(str) + q) ++ args.flatMap(x => Seq(",",x)))
          Seq("$fwrite(32'h80000002,",strx,");")
       }
       def delay (e:Expression, n:Int, clk:Expression) : Expression = {
