@@ -18,6 +18,8 @@ class RocketRegressionSpec extends FlatSpec with Matchers {
 
     val goldenVerilog = Source.fromURL(getClass.getResource("/regress/rocket-golden.v"))
     
-    verilogSW.toString shouldEqual goldenVerilog.mkString 
+    verilogSW.toString.split("\n") zip goldenVerilog.getLines.toSeq foreach {
+      case (verilog, golden) => verilog shouldEqual golden
+    }
   }
 }
