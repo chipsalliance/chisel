@@ -6,14 +6,13 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 /**
-  * This test illustrates the creation of a firrtl file
+  * This test used to fail when assignment statements were
+  * contained in DeqIO and EnqIO constructors.
+  * The symptom is creation of a firrtl file
   * with missing declarations, the problem is exposed by
   * the creation of the val outs in VectorPacketIO
-  * NOTE: The problem does not exists if the initialization
-  * code is removed from DeqIO and EnqIO
-  * see: Decoupled.scala lines 29 and 38
-  * valid := Bool(false) and ready := Bool(false)
-  * statements inside a bundle
+  * NOTE: The problem does not exist now because the initialization
+  * code has been removed from DeqIO and EnqIO
   */
 class Packet extends Bundle {
   val header = UInt(width = 1)
@@ -40,6 +39,12 @@ class BrokenVectorPacketModule extends Module {
 
 class VectorPacketIOUnitTester extends BasicTester {
   val device_under_test = Module(new BrokenVectorPacketModule)
+
+  // This counter just makes the test end quicker
+  val c = Counter(1)
+  when(c.inc()) {
+    stop()
+  }
 }
 
 class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec {
