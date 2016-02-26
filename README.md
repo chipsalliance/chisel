@@ -172,7 +172,12 @@ This will walk you through installing Chisel and its dependencies:
       ```
       brew install caskroom/versions/java7
       ```
-  1. Add the FIRRTL executable to your PATH. *TODO: someone with a Mac needs to write this part*
+  1. Add the FIRRTL executable to your PATH. One way is to add this line to your
+    `.bashrc`:
+
+    ```
+    export PATH=$PATH:<path-to-your-firrtl-repository>/utils/bin
+    ```
 1. Install Verilator:
 
   ```
