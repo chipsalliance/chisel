@@ -28,7 +28,6 @@ MODIFICATIONS.
 
 /* TODO
  *  - Adopt style more similar to Chisel3 Emitter?
- *  - Find way to have generic map function instead of mapE and mapS under Stmt implicits
  */
 
 /* TODO Richard
@@ -42,6 +41,7 @@ import java.io.PrintWriter
 import PrimOps._
 import WrappedExpression._
 import firrtl.WrappedType._
+import firrtl.Mappers._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.LinkedHashMap
 //import scala.reflect.runtime.universe._
@@ -581,123 +581,15 @@ object Utils {
     }}
 
 
-// =============== MAPPERS ===================
-   def sMap(f:Stmt => Stmt, stmt: Stmt): Stmt =
-      stmt match {
-        case w: Conditionally => Conditionally(w.info, w.pred, f(w.conseq), f(w.alt))
-        case b: Begin => {
-           val stmtsx = ArrayBuffer[Stmt]()
-           for (i <- 0 until b.stmts.size) {
-              stmtsx += f(b.stmts(i))
-           }
-           Begin(stmtsx)
-        }
-        case s: Stmt => s
-      }
-   def eMap(f:Expression => Expression, stmt:Stmt) : Stmt =
-      stmt match { 
-        case r: DefRegister => DefRegister(r.info, r.name, r.tpe, f(r.clock), f(r.reset), f(r.init))
-        case n: DefNode => DefNode(n.info, n.name, f(n.value))
-        case c: Connect => Connect(c.info, f(c.loc), f(c.exp))
-        case b: BulkConnect => BulkConnect(b.info, f(b.loc), f(b.exp))
-        case w: Conditionally => Conditionally(w.info, f(w.pred), w.conseq, w.alt)
-        case i: IsInvalid => IsInvalid(i.info, f(i.exp))
-        case s: Stop => Stop(s.info, s.ret, f(s.clk), f(s.en))
-        case p: Print => Print(p.info, p.string, p.args.map(f), f(p.clk), f(p.en))
-        case c: CDefMPort => CDefMPort(c.info,c.name,c.tpe,c.mem,c.exps.map(f),c.direction)
-        case s: Stmt => s 
-      }
-   def eMap(f: Expression => Expression, exp:Expression): Expression = 
-      exp match {
-        case s: SubField => SubField(f(s.exp), s.name, s.tpe)
-        case s: SubIndex => SubIndex(f(s.exp), s.value, s.tpe)
-        case s: SubAccess => SubAccess(f(s.exp), f(s.index), s.tpe)
-        case m: Mux => Mux(f(m.cond), f(m.tval), f(m.fval), m.tpe)
-        case v: ValidIf => ValidIf(f(v.cond), f(v.value), v.tpe)
-        case p: DoPrim => DoPrim(p.op, p.args.map(f), p.consts, p.tpe)
-        case s: WSubField => WSubField(f(s.exp), s.name, s.tpe, s.gender)
-        case s: WSubIndex => WSubIndex(f(s.exp), s.value, s.tpe, s.gender)
-        case s: WSubAccess => WSubAccess(f(s.exp), f(s.index), s.tpe, s.gender)
-        case e: Expression => e
-      }
-   def tMap (f: Type => Type, t:Type):Type = {
-      t match {
-         case t:BundleType => BundleType(t.fields.map(p => Field(p.name, p.flip, f(p.tpe))))
-         case t:VectorType => VectorType(f(t.tpe), t.size)
-         case t => t
-      }
-   }
-   def tMap (f: Type => Type, c:Expression) : Expression = {
-      c match {
-         case c:DoPrim => DoPrim(c.op,c.args,c.consts,f(c.tpe))
-         case c:Mux => Mux(c.cond,c.tval,c.fval,f(c.tpe))
-         case c:ValidIf => ValidIf(c.cond,c.value,f(c.tpe))
-         case c:WRef => WRef(c.name,f(c.tpe),c.kind,c.gender)
-         case c:WSubField => WSubField(c.exp,c.name,f(c.tpe),c.gender)
-         case c:WSubIndex => WSubIndex(c.exp,c.value,f(c.tpe),c.gender)
-         case c:WSubAccess => WSubAccess(c.exp,c.index,f(c.tpe),c.gender)
-         case c => c
-      }
-   }
-   def tMap (f: Type => Type, c:Stmt) : Stmt = {
-      c match {
-         case c:DefPoison => DefPoison(c.info,c.name,f(c.tpe))
-         case c:DefWire => DefWire(c.info,c.name,f(c.tpe))
-         case c:DefRegister => DefRegister(c.info,c.name,f(c.tpe),c.clock,c.reset,c.init)
-         case c:DefMemory => DefMemory(c.info,c.name, f(c.data_type), c.depth, c.write_latency, c.read_latency, c.readers, c.writers, c.readwriters)
-         case c:CDefMemory => CDefMemory(c.info,c.name, f(c.tpe), c.size, c.seq)
-         case c:CDefMPort => CDefMPort(c.info,c.name, f(c.tpe), c.mem, c.exps,c.direction)
-         case c => c
-      }
-   }
-   def wMap (f: Width => Width, c:Expression) : Expression = {
-      c match {
-         case c:UIntValue => UIntValue(c.value,f(c.width))
-         case c:SIntValue => SIntValue(c.value,f(c.width))
-         case c => c
-      }
-   }
-   def wMap (f: Width => Width, c:Type) : Type = {
-      c match {
-         case c:UIntType => UIntType(f(c.width))
-         case c:SIntType => SIntType(f(c.width))
-         case c => c
-      }
-   }
-   def wMap (f: Width => Width, w:Width) : Width = {
-      w match {
-         case w:MaxWidth => MaxWidth(w.args.map(f))
-         case w:MinWidth => MinWidth(w.args.map(f))
-         case w:PlusWidth => PlusWidth(f(w.arg1),f(w.arg2))
-         case w:MinusWidth => MinusWidth(f(w.arg1),f(w.arg2))
-         case w:ExpWidth => ExpWidth(f(w.arg1))
-         case w => w
-      }
-   }
-   def stMap (f: String => String, c:Stmt) : Stmt = {
-      c match {
-         case (c:DefWire) => DefWire(c.info,f(c.name),c.tpe)
-         case (c:DefPoison) => DefPoison(c.info,f(c.name),c.tpe)
-         case (c:DefRegister) => DefRegister(c.info,f(c.name), c.tpe, c.clock, c.reset, c.init)
-         case (c:DefMemory) => DefMemory(c.info,f(c.name), c.data_type, c.depth, c.write_latency, c.read_latency, c.readers, c.writers, c.readwriters)
-         case (c:DefNode) => DefNode(c.info,f(c.name),c.value)
-         case (c:DefInstance) => DefInstance(c.info,f(c.name), c.module)
-         case (c:WDefInstance) => WDefInstance(c.info,f(c.name), c.module,c.tpe)
-         case (c:CDefMemory) => CDefMemory(c.info,f(c.name),c.tpe,c.size,c.seq)
-         case (c:CDefMPort) => CDefMPort(c.info,f(c.name),c.tpe,c.mem,c.exps,c.direction)
-         case (c) => c
-      }
-   }
+// =============== RECURISVE MAPPERS ===================
    def mapr (f: Width => Width, t:Type) : Type = {
-      def apply_t (t:Type) : Type = wMap(f,tMap(apply_t _,t))
+      def apply_t (t:Type) : Type = t map (apply_t) map (f)
       apply_t(t)
    }
    def mapr (f: Width => Width, s:Stmt) : Stmt = {
       def apply_t (t:Type) : Type = mapr(f,t)
-      def apply_e (e:Expression) : Expression =
-         wMap(f,tMap(apply_t _,eMap(apply_e _,e)))
-      def apply_s (s:Stmt) : Stmt =
-         tMap(apply_t _,eMap(apply_e _,sMap(apply_s _,s)))
+      def apply_e (e:Expression) : Expression = e map (apply_e) map (apply_t) map (f)
+      def apply_s (s:Stmt) : Stmt = s map (apply_s) map (apply_e) map (apply_t)
       apply_s(s)
    }
    val ONE = IntWidth(1)
@@ -751,54 +643,8 @@ object Utils {
    //   to-stmt(body(m))
    //   map(to-port,ports(m))
    //   sym-hash
-   //private trait StmtMagnet {
-   //  def map(stmt: Stmt): Stmt
-   //}
-   //private object StmtMagnet {
-   //  implicit def forStmt(f: Stmt => Stmt) = new StmtMagnet {
-   //    override def map(stmt: Stmt): Stmt =
-   //      stmt match {
-   //        case w: Conditionally => Conditionally(w.info, w.pred, f(w.conseq), f(w.alt))
-   //        case b: Begin => Begin(b.stmts.map(f))
-   //        case s: Stmt => s
-   //      }
-   //  }
-   //  implicit def forExp(f: Expression => Expression) = new StmtMagnet {
-   //    override def map(stmt: Stmt): Stmt =
-   //      stmt match { 
-   //        case r: DefRegister => DefRegister(r.info, r.name, r.tpe, f(r.clock), f(r.reset), f(r.init))
-   //        case n: DefNode => DefNode(n.info, n.name, f(n.value))
-   //        case c: Connect => Connect(c.info, f(c.loc), f(c.exp))
-   //        case b: BulkConnect => BulkConnect(b.info, f(b.loc), f(b.exp))
-   //        case w: Conditionally => Conditionally(w.info, f(w.pred), w.conseq, w.alt)
-   //        case i: IsInvalid => IsInvalid(i.info, f(i.exp))
-   //        case s: Stop => Stop(s.info, s.ret, f(s.clk), f(s.en))
-   //        case p: Print => Print(p.info, p.string, p.args.map(f), f(p.clk), f(p.en))
-   //        case s: Stmt => s 
-   //      }
-   //  }
-   //}
-
-   //  def map(f: Expression => Expression): Expression = 
-   //    exp match {
-   //      case s: SubField => SubField(f(s.exp), s.name, s.tpe)
-   //      case s: SubIndex => SubIndex(f(s.exp), s.value, s.tpe)
-   //      case s: SubAccess => SubAccess(f(s.exp), f(s.index), s.tpe)
-   //      case m: Mux => Mux(f(m.cond), f(m.tval), f(m.fval), m.tpe)
-   //      case v: ValidIf => ValidIf(f(v.cond), f(v.value), v.tpe)
-   //      case p: DoPrim => DoPrim(p.op, p.args.map(f), p.consts, p.tpe)
-   //      case s: WSubField => SubField(f(s.exp), s.name, s.tpe, s.gender)
-   //      case s: WSubIndex => SubIndex(f(s.exp), s.value, s.tpe, s.gender)
-   //      case s: WSubAccess => SubAccess(f(s.exp), f(s.index), s.tpe, s.gender)
-   //      case e: Expression => e
-   //    }
-   //}
-
    implicit class StmtUtils(stmt: Stmt) {
 
-     // Using implicit types to allow overloading of function type to map, see StmtMagnet above
-     //def map[T](f: T => T)(implicit magnet: (T => T) => StmtMagnet): Stmt = magnet(f).map(stmt)
-     
      def getType(): Type =
        stmt match {
          case s: DefWire    => s.tpe

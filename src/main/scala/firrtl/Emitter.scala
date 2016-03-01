@@ -37,6 +37,7 @@ import scala.io.Source
 
 import Utils._
 import firrtl.Serialize._
+import firrtl.Mappers._
 import firrtl.passes._
 import WrappedExpression._
 // Datastructures
@@ -279,7 +280,7 @@ object VerilogEmitter extends Emitter {
                val e = WRef(s.name,get_type(s),NodeKind(),MALE)
                netlist(e) = s.value
             }
-            case (s) => sMap(build_netlist,s)
+            case (s) => s map (build_netlist)
          }
          s
       }
@@ -529,7 +530,7 @@ object VerilogEmitter extends Emitter {
                   update(wmem_port,datax,clk,AND(AND(enx,maskx),wmode))
                }
             }
-            case (s:Begin) => sMap(build_streams _,s)
+            case (s:Begin) => s map (build_streams)
          }
          s
       }

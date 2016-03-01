@@ -35,6 +35,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import firrtl._
 import firrtl.Utils._
+import firrtl.Mappers._
 import firrtl.Serialize._
 import firrtl.PrimOps._
 import firrtl.WrappedType._
@@ -107,7 +108,7 @@ object CheckHighForm extends Pass with LazyLogging {
       }
     }
     findFlip(t)
-    tMap(findFlip _, t)
+    t map (findFlip)
     has
   }
 
@@ -192,12 +193,12 @@ object CheckHighForm extends Pass with LazyLogging {
       w
     }
     def checkHighFormT(t: Type): Type = {
-      tMap(checkHighFormT _, t) match {
+      t map (checkHighFormT) match {
         case t: VectorType => 
           if (t.size < 0) errors.append(new NegVecSizeException)
         case _ => // Do nothing
       }
-      wMap(checkHighFormW _, t)
+      t map (checkHighFormW)
     }
 
     def checkHighFormM(m: Module): Module = {
@@ -212,7 +213,7 @@ object CheckHighForm extends Pass with LazyLogging {
           }
           e
         }
-        eMap(checkHighFormE _, e) match {
+        e map (checkHighFormE) match {
           case e: WRef => 
             if (!names.contains(e.name)) errors.append(new UndeclaredReferenceException(e.name))
           case e: DoPrim => checkHighFormPrimop(e)
@@ -223,10 +224,10 @@ object CheckHighForm extends Pass with LazyLogging {
           }
           case e: UIntValue => 
             if (e.value < 0) errors.append(new NegUIntException)
-          case e => eMap(validSubexp _, e)
+          case e => e map (validSubexp)
         }
-        wMap(checkHighFormW _, e)
-        tMap(checkHighFormT _, e)
+        e map (checkHighFormW)
+        e map (checkHighFormT)
         e
       }
       def checkHighFormS(s: Stmt): Stmt = {
@@ -239,9 +240,9 @@ object CheckHighForm extends Pass with LazyLogging {
         }
         sinfo = s.getInfo
 
-        stMap(checkName _, s)
-        tMap(checkHighFormT _, s)
-        eMap(checkHighFormE _, s)
+        s map (checkName)
+        s map (checkHighFormT)
+        s map (checkHighFormE)
         s match {
           case s: DefPoison => {
              if (hasFlip(s.tpe)) errors.append(new PoisonWithFlipException(s.name))
@@ -261,7 +262,7 @@ object CheckHighForm extends Pass with LazyLogging {
           case _ => // Do Nothing
         }
 
-        sMap(checkHighFormS _, s)
+        s map (checkHighFormS)
       }
 
       mname = m.name
@@ -272,8 +273,8 @@ object CheckHighForm extends Pass with LazyLogging {
         // FIXME should we set sinfo here?
         names(p.name) = true
         val tpe = p.getType
-        tMap(checkHighFormT _, tpe)
-        wMap(checkHighFormW _, tpe)
+        tpe map (checkHighFormT)
+        tpe map (checkHighFormW)
       }
 
       m match {
@@ -408,7 +409,7 @@ object CheckTypes extends Pass with LazyLogging {
          }
       }
       def check_types_e (info:Info)(e:Expression) : Expression = {
-         (eMap(check_types_e(info) _,e)) match { 
+         (e map (check_types_e(info))) match { 
             case (e:WRef) => e
             case (e:WSubField) => {
                (tpe(e.exp)) match  { 
@@ -477,7 +478,7 @@ object CheckTypes extends Pass with LazyLogging {
       }
            
       def check_types_s (s:Stmt) : Stmt = {
-         eMap(check_types_e(get_info(s)) _,s) match { 
+         s map (check_types_e(get_info(s))) match { 
             case (s:Connect) => if (wt(tpe(s.loc)) != wt(tpe(s.exp))) errors += new InvalidConnect(s.info)
             case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp)) ) errors += new InvalidConnect(s.info)
             case (s:Stop) => {
@@ -495,7 +496,7 @@ object CheckTypes extends Pass with LazyLogging {
             case (s:DefNode) => if (!passive(tpe(s.value)) ) errors += new NodePassiveType(s.info)
             case (s) => false
          }
-         sMap(check_types_s,s)
+         s map (check_types_s)
       }
       
       for (m <- c.modules ) {
@@ -603,15 +604,15 @@ object CheckGenders extends Pass {
       }
    
       def check_genders_e (info:Info,genders:HashMap[String,Gender])(e:Expression) : Expression = {
-         eMap(check_genders_e(info,genders) _,e)
+         e map (check_genders_e(info,genders))
          (e) match { 
             case (e:WRef) => false
             case (e:WSubField) => false
             case (e:WSubIndex) => false
             case (e:WSubAccess) => false
             case (e:DoPrim) => for (e <- e.args ) { check_gender(info,genders,MALE)(e) }
-            case (e:Mux) => eMap(check_gender(info,genders,MALE) _,e)
-            case (e:ValidIf) => eMap(check_gender(info,genders,MALE) _,e)
+            case (e:Mux) => e map (check_gender(info,genders,MALE))
+            case (e:ValidIf) => e map (check_gender(info,genders,MALE))
             case (e:UIntValue) => false
             case (e:SIntValue) => false
          }
@@ -619,8 +620,8 @@ object CheckGenders extends Pass {
       }
         
       def check_genders_s (genders:HashMap[String,Gender])(s:Stmt) : Stmt = {
-         eMap(check_genders_e(get_info(s),genders) _,s)
-         sMap(check_genders_s(genders) _,s)
+         s map (check_genders_e(get_info(s),genders))
+         s map (check_genders_s(genders))
          (s) match { 
             case (s:DefWire) => genders(s.name) = BIGENDER
             case (s:DefPoison) => genders(s.name) = MALE
@@ -692,7 +693,7 @@ object CheckWidths extends Pass with StanzaPass {
             w
          }
          def check_width_e (info:Info)(e:Expression) : Expression = {
-            (eMap(check_width_e(info) _,e)) match { 
+            (e map (check_width_e(info))) match { 
                case (e:UIntValue) => {
                   (e.width) match { 
                      case (w:IntWidth) => 
@@ -717,9 +718,9 @@ object CheckWidths extends Pass with StanzaPass {
             e
          }
          def check_width_s (s:Stmt) : Stmt = {
-            eMap(check_width_e(get_info(s)) _,sMap(check_width_s _,s))
+            s map (check_width_s) map (check_width_e(get_info(s)))
             def tm (t:Type) : Type = mapr(check_width_w(info(s)) _,t)
-            tMap(tm _,s)
+            s map (tm)
          }
       
          for (p <- m.ports) {
@@ -761,7 +762,7 @@ object CheckInitialization extends Pass with StanzaPass {
             def has_void (e:Expression) : Expression = {
                (e) match { 
                   case (e:WVoid) => void = true; e
-                  case (e) => eMap(has_void,e)
+                  case (e) => e map (has_void)
                }
             }
             has_void(e)
@@ -773,7 +774,7 @@ object CheckInitialization extends Pass with StanzaPass {
                   if (has_voidQ(s.exp)) errors += new RefNotInitialized(s.info,get_name(s.loc))
                   s
                }
-               case (s) => sMap(check_init_s,s)
+               case (s) => s map (check_init_s)
             }
          }
          check_init_s(m.body)
