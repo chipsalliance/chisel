@@ -30,200 +30,193 @@ package firrtl
 import firrtl.PrimOps._
 import firrtl.Utils._
 
-object Serialize {
+private object Serialize {
 
-  implicit class BigIntSerialize(bi: BigInt){
-    def serialize: String =
-      if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
-      else "\"h" + bi.toString(16) + "\""
-  }
-   
-  implicit class PrimOpSerialize(op: PrimOp) {
-    def serialize: String = op.getString
-  }
-
-  implicit class ExpSerialize(exp: Expression) {
-    def serialize: String = {
-      exp match {
-        case v: UIntValue => s"UInt${v.width.serialize}(${v.value.serialize})"
-        case v: SIntValue => s"SInt${v.width.serialize}(${v.value.serialize})"
-        case r: Ref => r.name
-        case s: SubField => s"${s.exp.serialize}.${s.name}"
-        case s: SubIndex => s"${s.exp.serialize}[${s.value}]"
-        case s: SubAccess => s"${s.exp.serialize}[${s.index.serialize}]"
-        case m: Mux => s"mux(${m.cond.serialize}, ${m.tval.serialize}, ${m.fval.serialize})"
-        case v: ValidIf => s"validif(${v.cond.serialize}, ${v.value.serialize})"
-        case p: DoPrim => 
-          s"${p.op.serialize}(" + (p.args.map(_.serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
-        case r: WRef => r.name
-        case s: WSubField => s"${s.exp.serialize}.${s.name}"
-        case s: WSubIndex => s"${s.exp.serialize}[${s.value}]"
-        case s: WSubAccess => s"${s.exp.serialize}[${s.index.serialize}]"
-        case r: WVoid => "VOID"
-      } 
+  def serialize(root: AST): String = {
+    root match {
+      case r: PrimOp => serialize(r)
+      case r: Expression => serialize(r)
+      case r: Stmt => serialize(r)
+      case r: Width => serialize(r)
+      case r: Flip => serialize(r)
+      case r: Field => serialize(r)
+      case r: Type => serialize(r)
+      case r: Direction => serialize(r)
+      case r: Port => serialize(r)
+      case r: Module => serialize(r)
+      case r: Circuit => serialize(r)
+      case _ => throw new Exception("serialize called on unknown AST node!")
     }
   }
 
-  implicit class StmtSerialize(stmt: Stmt) {
-    def serialize: String = {
-      stmt match {
-        case w: DefWire => s"wire ${w.name} : ${w.tpe.serialize}"
-        case r: DefRegister => 
-          val str = new StringBuilder(s"reg ${r.name} : ${r.tpe.serialize}, ${r.clock.serialize} with : ")
-          withIndent {
-            str ++= newline + s"reset => (${r.reset.serialize}, ${r.init.serialize})"
-          }
-          str.toString
-        case i: DefInstance => s"inst ${i.name} of ${i.module}"
-        case i: WDefInstance => s"inst ${i.name} of ${i.module}"
-        case m: DefMemory => {
-          val str = new StringBuilder(s"mem ${m.name} : ")
-          withIndent {
-            str ++= newline + 
-              s"data-type => ${m.data_type.serialize}" + newline +
-              s"depth => ${m.depth}" + newline +
-              s"read-latency => ${m.read_latency}" + newline +
-              s"write-latency => ${m.write_latency}" + newline +
-              (if (m.readers.nonEmpty) m.readers.map(r => s"reader => ${r}").mkString(newline) + newline
-               else "") +
-              (if (m.writers.nonEmpty) m.writers.map(w => s"writer => ${w}").mkString(newline) + newline
-               else "") + 
-              (if (m.readwriters.nonEmpty) m.readwriters.map(rw => s"readwriter => ${rw}").mkString(newline) + newline
-               else "") +
-              s"read-under-write => undefined"
-          }
-          str.result
+  def serialize(bi: BigInt): String =
+    if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
+    else "\"h" + bi.toString(16) + "\""
+
+  def serialize(op: PrimOp): String = op.getString
+
+  def serialize(exp: Expression): String = {
+    exp match {
+      case v: UIntValue => s"UInt${serialize(v.width)}(${serialize(v.value)})"
+      case v: SIntValue => s"SInt${serialize(v.width)}(${serialize(v.value)})"
+      case r: Ref => r.name
+      case s: SubField => s"${serialize(s.exp)}.${s.name}"
+      case s: SubIndex => s"${serialize(s.exp)}[${s.value}]"
+      case s: SubAccess => s"${serialize(s.exp)}[${serialize(s.index)}]"
+      case m: Mux => s"mux(${serialize(m.cond)}, ${serialize(m.tval)}, ${serialize(m.fval)})"
+      case v: ValidIf => s"validif(${serialize(v.cond)}, ${serialize(v.value)})"
+      case p: DoPrim =>
+        s"${serialize(p.op)}(" + (p.args.map(serialize) ++ p.consts.map(_.toString)).mkString(", ") + ")"
+      case r: WRef => r.name
+      case s: WSubField => s"${serialize(s.exp)}.${s.name}"
+      case s: WSubIndex => s"${serialize(s.exp)}[${s.value}]"
+      case s: WSubAccess => s"${serialize(s.exp)}[${serialize(s.index)}]"
+      case r: WVoid => "VOID"
+    }
+  }
+
+  def serialize(stmt: Stmt): String = {
+    stmt match {
+      case w: DefWire => s"wire ${w.name} : ${serialize(w.tpe)}"
+      case r: DefRegister =>
+        val str = new StringBuilder(s"reg ${r.name} : ${serialize(r.tpe)}, ${serialize(r.clock)} with : ")
+        withIndent {
+          str ++= newline + s"reset => (${serialize(r.reset)}, ${serialize(r.init)})"
         }
-        case n: DefNode => s"node ${n.name} = ${n.value.serialize}"
-        case c: Connect => s"${c.loc.serialize} <= ${c.exp.serialize}"
-        case b: BulkConnect => s"${b.loc.serialize} <- ${b.exp.serialize}"
-        case w: Conditionally => {
-          var str = new StringBuilder(s"when ${w.pred.serialize} : ")
-          withIndent { str ++= newline + w.conseq.serialize }
-          w.alt match {
-             case s:Empty => str.result
-             case s => {
-               str ++= newline + "else :"
-               withIndent { str ++= newline + w.alt.serialize }
-               str.result
-               }
-          }
+        str.toString
+      case i: DefInstance => s"inst ${i.name} of ${i.module}"
+      case i: WDefInstance => s"inst ${i.name} of ${i.module}"
+      case m: DefMemory => {
+        val str = new StringBuilder(s"mem ${m.name} : ")
+        withIndent {
+          str ++= newline +
+            s"data-type => ${serialize(m.data_type)}" + newline +
+            s"depth => ${m.depth}" + newline +
+            s"read-latency => ${m.read_latency}" + newline +
+            s"write-latency => ${m.write_latency}" + newline +
+            (if (m.readers.nonEmpty) m.readers.map(r => s"reader => ${r}").mkString(newline) + newline
+             else "") +
+            (if (m.writers.nonEmpty) m.writers.map(w => s"writer => ${w}").mkString(newline) + newline
+             else "") +
+            (if (m.readwriters.nonEmpty) m.readwriters.map(rw => s"readwriter => ${rw}").mkString(newline) + newline
+             else "") +
+            s"read-under-write => undefined"
         }
-        case b: Begin => {
-          val s = new StringBuilder
-          for (i <- 0 until b.stmts.size) {
-            if (i != 0) s ++= newline ++ b.stmts(i).serialize
-            else s ++= b.stmts(i).serialize
-          }
-          s.result
-        } 
-        case i: IsInvalid => s"${i.exp.serialize} is invalid"
-        case s: Stop => s"stop(${s.clk.serialize}, ${s.en.serialize}, ${s.ret})"
-        case p: Print => {
-          val q = '"'.toString
-          s"printf(${p.clk.serialize}, ${p.en.serialize}, ${q}${p.string}${q}" + 
-                        (if (p.args.nonEmpty) p.args.map(_.serialize).mkString(", ", ", ", "") else "") + ")"
-        }
-        case s:Empty => "skip"
-        case s:CDefMemory => {
-          if (s.seq) s"smem ${s.name} : ${s.tpe} [${s.size}]"
-          else s"cmem ${s.name} : ${s.tpe} [${s.size}]"
-        }
-        case s:CDefMPort => {
-          val dir = s.direction match {
-             case MInfer => "infer"
-             case MRead => "read"
-             case MWrite => "write"
-             case MReadWrite => "rdwr"
-          }
-          s"${dir} mport ${s.name} = ${s.mem}[${s.exps(0)}], s.exps(1)"
-        }
-      } 
-    }
-  }
-
-  implicit class WidthSerialize(w: Width) {
-    def serialize: String = {
-      w match {
-        case w:UnknownWidth => "" 
-        case w: IntWidth => s"<${w.width.toString}>"
-        case w: VarWidth => s"<${w.name}>"
-      } 
-    }
-  }
-
-  implicit class FlipSerialize(f: Flip) {
-    def serialize: String = {
-      f match {
-        case REVERSE => "flip "
-        case DEFAULT => ""
-      } 
-    }
-  }
-
-  implicit class FieldSerialize(field: Field) {
-    def serialize: String =
-      s"${field.flip.serialize}${field.name} : ${field.tpe.serialize}"
-  }
-
-  implicit class TypeSerialize(t: Type) {
-    def serialize: String = {
-      val commas = ", " // for mkString in BundleType
-      t match {
-        case c:ClockType => "Clock"
-        case u:UnknownType => "?"
-        case t: UIntType => s"UInt${t.width.serialize}"
-        case t: SIntType => s"SInt${t.width.serialize}"
-        case t: BundleType => s"{ ${t.fields.map(_.serialize).mkString(commas)}}"
-        case t: VectorType => s"${t.tpe.serialize}[${t.size}]"
-      } 
-    }
-  }
-
-  implicit class DirectionSerialize(d: Direction) {
-    def serialize: String = {
-      d match {
-        case INPUT => "input"
-        case OUTPUT => "output"
-      } 
-    }
-  }
-
-  implicit class PortSerialize(p: Port) {
-    def serialize: String =
-      s"${p.direction.serialize} ${p.name} : ${p.tpe.serialize}"
-  }
-
-  implicit class ModuleSerialize(m: Module) {
-    def serialize: String = {
-      m match {
-         case m:InModule => {
-            var s = new StringBuilder(s"module ${m.name} : ")
-            withIndent {
-              s ++= m.ports.map(newline ++ _.serialize).mkString
-              s ++= newline ++ m.body.serialize
+        str.result
+      }
+      case n: DefNode => s"node ${n.name} = ${serialize(n.value)}"
+      case c: Connect => s"${serialize(c.loc)} <= ${serialize(c.exp)}"
+      case b: BulkConnect => s"${serialize(b.loc)} <- ${serialize(b.exp)}"
+      case w: Conditionally => {
+        var str = new StringBuilder(s"when ${serialize(w.pred)} : ")
+        withIndent { str ++= newline + serialize(w.conseq) }
+        w.alt match {
+          case s:Empty => str.result
+          case s => {
+            str ++= newline + "else :"
+            withIndent { str ++= newline + serialize(w.alt) }
+            str.result
             }
-            s.toString
-         }
-         case m:ExModule => {
-            var s = new StringBuilder(s"extmodule ${m.name} : ")
-            withIndent {
-              s ++= m.ports.map(newline ++ _.serialize).mkString
-              s ++= newline
-            }
-            s.toString
-         }
+        }
+      }
+      case b: Begin => {
+        val s = new StringBuilder
+        for (i <- 0 until b.stmts.size) {
+          if (i != 0) s ++= newline ++ serialize(b.stmts(i))
+          else s ++= serialize(b.stmts(i))
+        }
+        s.result
+      }
+      case i: IsInvalid => s"${serialize(i.exp)} is invalid"
+      case s: Stop => s"stop(${serialize(s.clk)}, ${serialize(s.en)}, ${s.ret})"
+      case p: Print => {
+        val q = '"'.toString
+        s"printf(${serialize(p.clk)}, ${serialize(p.en)}, ${q}${p.string}${q}" +
+                      (if (p.args.nonEmpty) p.args.map(serialize).mkString(", ", ", ", "") else "") + ")"
+      }
+      case s:Empty => "skip"
+      case s:CDefMemory => {
+        if (s.seq) s"smem ${s.name} : ${s.tpe} [${s.size}]"
+        else s"cmem ${s.name} : ${s.tpe} [${s.size}]"
+      }
+      case s:CDefMPort => {
+        val dir = s.direction match {
+          case MInfer => "infer"
+          case MRead => "read"
+          case MWrite => "write"
+          case MReadWrite => "rdwr"
+        }
+        s"${dir} mport ${s.name} = ${s.mem}[${s.exps(0)}], s.exps(1)"
       }
     }
   }
 
-  implicit class CircuitSerialize(c: Circuit) {
-    def serialize: String = {
-      var s = new StringBuilder(s"circuit ${c.main} : ")
-      withIndent { s ++= newline ++ c.modules.map(_.serialize).mkString(newline + newline) }
-      s ++= newline ++ newline
-      s.toString
+  def serialize(w: Width): String = {
+    w match {
+      case w:UnknownWidth => ""
+      case w: IntWidth => s"<${w.width.toString}>"
+      case w: VarWidth => s"<${w.name}>"
     }
+  }
+
+  def serialize(f: Flip): String = {
+    f match {
+      case REVERSE => "flip "
+      case DEFAULT => ""
+    }
+  }
+
+  def serialize(field: Field): String =
+    s"${serialize(field.flip)}${field.name} : ${serialize(field.tpe)}"
+
+  def serialize(t: Type): String = {
+    val commas = ", " // for mkString in BundleType
+    t match {
+      case c:ClockType => "Clock"
+      case u:UnknownType => "?"
+      case t: UIntType => s"UInt${serialize(t.width)}"
+      case t: SIntType => s"SInt${serialize(t.width)}"
+      case t: BundleType => s"{ ${t.fields.map(serialize).mkString(commas)}}"
+      case t: VectorType => s"${serialize(t.tpe)}[${t.size}]"
+    }
+  }
+
+  def serialize(d: Direction): String = {
+    d match {
+      case INPUT => "input"
+      case OUTPUT => "output"
+    }
+  }
+
+  def serialize(p: Port): String =
+    s"${serialize(p.direction)} ${p.name} : ${serialize(p.tpe)}"
+
+  def serialize(m: Module): String = {
+    m match {
+      case m: InModule => {
+        var s = new StringBuilder(s"module ${m.name} : ")
+        withIndent {
+          s ++= m.ports.map(newline ++ serialize(_)).mkString
+          s ++= newline ++ serialize(m.body)
+        }
+        s.toString
+      }
+      case m: ExModule => {
+        var s = new StringBuilder(s"extmodule ${m.name} : ")
+        withIndent {
+          s ++= m.ports.map(newline ++ serialize(_)).mkString
+          s ++= newline
+        }
+        s.toString
+      }
+    }
+  }
+
+  def serialize(c: Circuit): String = {
+    var s = new StringBuilder(s"circuit ${c.main} : ")
+    withIndent { s ++= newline ++ c.modules.map(serialize).mkString(newline + newline) }
+    s ++= newline ++ newline
+    s.toString
   }
 
   private var indentLevel = 0

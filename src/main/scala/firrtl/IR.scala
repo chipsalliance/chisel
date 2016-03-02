@@ -44,7 +44,9 @@ case class FileInfo(file: String, line: Int, column: Int) extends Info {
 
 case class FIRRTLException(str:String) extends Exception
 
-trait AST 
+trait AST {
+  def serialize: String = firrtl.Serialize.serialize(this)
+}
 
 trait PrimOp extends AST
 case object ADD_OP extends PrimOp 
