@@ -47,7 +47,7 @@ Options:
   """
   private val defaultOptions = Map[Symbol, Any]().withDefaultValue(false)
 
-  private def compile(input: String, output: String, compiler: Compiler)
+  def compile(input: String, output: String, compiler: Compiler)
   {
     val parsedInput = Parser.parse(input, Source.fromFile(input).getLines)
     val writerOutput = new PrintWriter(new File(output))
