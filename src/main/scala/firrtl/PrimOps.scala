@@ -30,7 +30,6 @@ package firrtl
 import com.typesafe.scalalogging.LazyLogging
 
 import Utils._
-import DebugUtils._
 
 object PrimOps extends LazyLogging {
 

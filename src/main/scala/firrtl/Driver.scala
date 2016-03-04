@@ -35,7 +35,6 @@ import scala.sys.process._
 import com.typesafe.scalalogging.LazyLogging
 
 import Utils._
-import DebugUtils._
 
 object Driver extends LazyLogging {
   private val usage = """
