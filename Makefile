@@ -26,8 +26,10 @@ $(root_dir)/src/lib/stanza/stamp: src/lib/stanza-$(stanza_zip_name).zip
 	cd src/lib && unzip stanza-$(stanza_zip_name).zip
 	touch $@
 
-$(stanza): $(root_dir)/src/lib/stanza/stamp
+utils/bin/stanza: $(stanza)
+$(stanza): $(root_dir)/src/lib/stanza/stamp $(root_dir)/utils/stanza-wrapper
 	cd src/lib/stanza && ./stanza -platform $(stanza_target_name) -install $(stanza)
+	cat $(root_dir)/utils/stanza-wrapper | sed 's!@@TOP@@!$(root_dir)!g' > $@
 
 $(stanza_bin): $(stanza) $(stanza_src)
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $@
