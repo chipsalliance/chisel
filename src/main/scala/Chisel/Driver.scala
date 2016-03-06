@@ -114,13 +114,6 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
-  private var target_dir: Option[String] = None
-  def parseArgs(args: Array[String]): Unit = {
-    for (i <- 0 until args.size) {
-      if (args(i) == "--targetDir")
-        target_dir = Some(args(i+1))
-    }
-  }
-
-  def targetDir(): String = { target_dir.get }
+  // FIXME: This is hard coded and should come in from a command-line argument
+  def targetDir(): String = { "vsim/generated-src" }
 }
