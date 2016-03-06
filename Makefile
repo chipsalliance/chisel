@@ -43,15 +43,15 @@ build-fast: $(stanza)
 
 build-deploy: 
 	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(install_dir)/firrtl-stanza
-	make set-stanza
+	$(MAKE) set-stanza
 
 build: 
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl-stanza
-	make set-stanza
+	$(MAKE) set-stanza
 
 build-fast: 
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl-stanza -flags OPTIMIZE
-	make set-stanza
+	$(MAKE) set-stanza
 
 check: 
 	cd $(test_dir) && lit -j 2 -v . --path=$(install_dir)/
@@ -115,7 +115,7 @@ fail:
 # Scala Added Makefile commands
 
 build-scala: $(scala_jar)
-	make set-scala
+	$(MAKE) set-scala
 
 $(scala_jar): $(scala_src)
 	"$(sbt)" "assembly"
