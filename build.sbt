@@ -68,8 +68,6 @@ lazy val chiselBuildSettings = Seq (
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
 
-  (scalastyleConfig in Test) := baseDirectory.value / "scalastyle-test-config.xml",
-
   javacOptions ++= Seq("-target", "1.7")
   //  Hopefully we get these options back in Chisel3
   //  scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject("chisel"), version) map { (bd, v) =>
