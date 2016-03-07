@@ -26,8 +26,10 @@ $(root_dir)/src/lib/stanza/stamp: src/lib/stanza-$(stanza_zip_name).zip
 	cd src/lib && unzip stanza-$(stanza_zip_name).zip
 	touch $@
 
-$(stanza): $(root_dir)/src/lib/stanza/stamp
+utils/bin/stanza: $(stanza)
+$(stanza): $(root_dir)/src/lib/stanza/stamp $(root_dir)/utils/stanza-wrapper
 	cd src/lib/stanza && ./stanza -platform $(stanza_target_name) -install $(stanza)
+	cat $(root_dir)/utils/stanza-wrapper | sed 's!@@TOP@@!$(root_dir)!g' > $@
 
 $(stanza_bin): $(stanza) $(stanza_src)
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $@
@@ -43,15 +45,15 @@ build-fast: $(stanza)
 
 build-deploy: 
 	cd $(firrtl_dir) && $(stanza) -i firrtl-main.stanza -o $(install_dir)/firrtl-stanza
-	make set-stanza
+	$(MAKE) set-stanza
 
 build: 
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl-stanza
-	make set-stanza
+	$(MAKE) set-stanza
 
 build-fast: 
 	cd $(firrtl_dir) && $(stanza) -i firrtl-test-main.stanza -o $(install_dir)/firrtl-stanza -flags OPTIMIZE
-	make set-stanza
+	$(MAKE) set-stanza
 
 check: 
 	cd $(test_dir) && lit -j 2 -v . --path=$(install_dir)/
@@ -115,7 +117,7 @@ fail:
 # Scala Added Makefile commands
 
 build-scala: $(scala_jar)
-	make set-scala
+	$(MAKE) set-scala
 
 $(scala_jar): $(scala_src)
 	"$(sbt)" "assembly"

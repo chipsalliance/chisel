@@ -1,0 +1,3 @@
+#!/bin/bash
+
+eval '@@TOP@@/src/lib/stanza/stanza' -platform linux "$@"
