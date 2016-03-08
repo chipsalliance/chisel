@@ -57,7 +57,7 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
 
   protected def minWidth: Int
   if (forcedWidth) {
-    require(widthArg.get >= minWidth)
+    require(widthArg.get >= minWidth, s"The literal value ${num} was elaborated with a specificed width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
   }
 }
 
