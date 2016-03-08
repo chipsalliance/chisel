@@ -59,19 +59,25 @@ trait BackendCompilationUtilities {
       dutFile: String,
       dir: File,
       vSources: Seq[File],
-      cppHarness: File): ProcessBuilder =
-
-    Seq("verilator",
-        "--cc", s"$dutFile.v") ++
-        vSources.map(file => Seq("-v", file.toString)).flatten ++
-        Seq("--assert",
-            "--Wno-fatal",
-            "--trace",
-            "-O2",
-            "+define+TOP_TYPE=V" + dutFile,
-            "-CFLAGS", s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
-            "-Mdir", dir.toString,
-            "--exe", cppHarness.toString)
+      cppHarness: File
+                  ): ProcessBuilder = {
+    val command = Seq("verilator",
+      "--cc", s"$dutFile.v") ++
+      vSources.map(file => Seq("-v", file.toString)).flatten ++
+      Seq("--assert",
+        "-Wno-fatal",
+        "-Wno-WIDTH",
+        "-Wno-STMTDLY",
+        "--trace",
+        "-O2",
+        "+define+TOP_TYPE=V" + dutFile,
+        "-CFLAGS",
+        s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
+        "-Mdir", dir.toString,
+        "--exe", cppHarness.toString)
+    System.out.println(s"${command.mkString(" ")}")
+    command
+  }
 
   def cppToExe(prefix: String, dir: File): ProcessBuilder =
     Seq("make", "-C", dir.toString, "-j", "-f", s"V${prefix}.mk", s"V${prefix}")
@@ -99,7 +105,6 @@ object Driver extends BackendCompilationUtilities {
   /** Elaborates the Module specified in the gen function into a Circuit
     *
     *  @param gen a function that creates a Module hierarchy
-    *
     *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
   def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
