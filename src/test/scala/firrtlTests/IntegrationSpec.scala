@@ -8,7 +8,9 @@ class IntegrationSpec extends FirrtlPropSpec {
 
   case class Test(name: String, dir: String)
 
-  val runTests = Seq(Test("GCDTester", "/integration"))
+  val runTests = Seq(Test("GCDTester", "/integration"),
+                     Test("RightShiftTester", "/integration"))
+      
 
   runTests foreach { test =>
     property(s"${test.name} should execute correctly") {

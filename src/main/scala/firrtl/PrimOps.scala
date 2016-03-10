@@ -254,8 +254,8 @@ object PrimOps extends LazyLogging {
          }
          case SHIFT_RIGHT_OP => {
             val t = (t1()) match {
-               case (t1:UIntType) => UIntType(MINUS(w1(),c1()))
-               case (t1:SIntType) => SIntType(MINUS(w1(),c1()))
+               case (t1:UIntType) => UIntType(MAX(MINUS(w1(),c1()),ONE))
+               case (t1:SIntType) => SIntType(MAX(MINUS(w1(),c1()),ONE))
                case (t1) => UnknownType()
             }
             DoPrim(o,a,c,t)

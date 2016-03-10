@@ -73,6 +73,7 @@ object VerilogCompiler extends Compiler {
     RemoveAccesses,
     ExpandWhens,
     CheckInitialization,   
+    Legalize,
     ConstProp,
     ResolveKinds,
     InferTypes,

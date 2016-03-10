@@ -42,7 +42,7 @@ case class FileInfo(file: String, line: Int, column: Int) extends Info {
   override def toString(): String = s"$file@$line.$column"
 }
 
-case class FIRRTLException(str:String) extends Exception
+case class FIRRTLException(str: String) extends Exception(str)
 
 trait AST {
   def serialize: String = firrtl.Serialize.serialize(this)
@@ -110,7 +110,24 @@ case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends S
 case class Print(info: Info, string: String, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt
 case class Empty() extends Stmt
 
-trait Width extends AST 
+trait Width extends AST {
+  def +(x: Width): Width = (this, x) match {
+    case (a: IntWidth, b: IntWidth) => IntWidth(a.width + b.width)
+    case _ => UnknownWidth()
+  }
+  def -(x: Width): Width = (this, x) match {
+    case (a: IntWidth, b: IntWidth) => IntWidth(a.width - b.width)
+    case _ => UnknownWidth()
+  }
+  def max(x: Width): Width = (this, x) match {
+    case (a: IntWidth, b: IntWidth) => IntWidth(a.width max b.width)
+    case _ => UnknownWidth()
+  }
+  def min(x: Width): Width = (this, x) match {
+    case (a: IntWidth, b: IntWidth) => IntWidth(a.width min b.width)
+    case _ => UnknownWidth()
+  }
+}
 case class IntWidth(width: BigInt) extends Width 
 case class UnknownWidth() extends Width
 

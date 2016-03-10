@@ -211,7 +211,11 @@ object VerilogEmitter extends Emitter {
             }
          }
          case SHIFT_LEFT_OP => Seq(cast(a0())," << ",c0())
-         case SHIFT_RIGHT_OP => Seq(a0(),"[", long_BANG(tpe(a0())) - 1,":",c0(),"]")
+         case SHIFT_RIGHT_OP => {
+           if (c0 >= long_BANG(tpe(a0)))
+             error("Verilog emitter does not support SHIFT_RIGHT >= arg width")
+           Seq(a0(),"[", long_BANG(tpe(a0())) - 1,":",c0(),"]")
+         }
          case NEG_OP => Seq("-{",cast(a0()),"}")
          case CONVERT_OP => {
             tpe(a0()) match {
