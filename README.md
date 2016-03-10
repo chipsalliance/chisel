@@ -34,7 +34,7 @@ modifications are:
    Notice the address register is now internal to the SeqMem(), but the data
    will still return on the subsequent cycle.
 
-   Please refer to [Chisel2 README](https://github.com/ucb-bar/chisel)
+   Please refer to the [Chisel3 compatibility section](https://github.com/ucb-bar/chisel#chisel3)
    for instructions on preparing your Chisel2 designs for Chisel3.
 
 ## Overview
