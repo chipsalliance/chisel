@@ -194,4 +194,38 @@ object Mappers {
     def map[T](f: T => T)(implicit magnet: (T => T) => WidthMagnet): Width = magnet(f).map(width)
   }
 
+  // ********** Module Mappers **********
+  private trait ModuleMagnet {
+    def map(module: Module): Module
+  }
+  private object ModuleMagnet {
+    implicit def forStmt(f: Stmt => Stmt) = new ModuleMagnet {
+      override def map(module: Module): Module = {
+        module match {
+          case m: InModule => InModule(m.info, m.name, m.ports, f(m.body))
+          case m: ExModule => m
+        }
+      }
+    }
+    implicit def forPorts(f: Port => Port) = new ModuleMagnet {
+      override def map(module: Module): Module = {
+        module match {
+          case m: InModule => InModule(m.info, m.name, m.ports.map(f), m.body)
+          case m: ExModule => ExModule(m.info, m.name, m.ports.map(f))
+        }
+      }
+    }
+    implicit def forString(f: String => String) = new ModuleMagnet {
+      override def map(module: Module): Module = {
+        module match {
+          case m: InModule => InModule(m.info, f(m.name), m.ports, m.body)
+          case m: ExModule => ExModule(m.info, f(m.name), m.ports)
+        }
+      }
+    }
+  }
+  implicit class ModuleMap(module: Module) {
+    def map[T](f: T => T)(implicit magnet: (T => T) => ModuleMagnet): Module = magnet(f).map(module)
+  }
+
 }
