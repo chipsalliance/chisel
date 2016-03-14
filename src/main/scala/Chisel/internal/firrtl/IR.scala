@@ -57,7 +57,8 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
 
   protected def minWidth: Int
   if (forcedWidth) {
-    require(widthArg.get >= minWidth, s"The literal value ${num} was elaborated with a specificed width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
+    require(widthArg.get >= minWidth,
+      s"The literal value ${num} was elaborated with a specificed width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
   }
 }
 
@@ -165,12 +166,17 @@ case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[C
 case class Port(id: Data, dir: Direction)
 case class Printf(clk: Arg, formatIn: String, ids: Seq[Arg]) extends Command {
   require(formatIn.forall(c => c.toInt > 0 && c.toInt < 128), "format strings must comprise non-null ASCII values")
-  def format = {
+  def format: String = {
     def escaped(x: Char) =
-      if (x == '"' || x == '\\' || x == '?') "\\" + x
-      else if (x == '\n') "\\n"
-      else if (x.toInt < 32) s"\\x${BigInt(x.toInt).toString(16)}"
-      else x
+      if (x == '"' || x == '\\' || x == '?') {
+        "\\" + x
+      } else if (x == '\n') {
+        "\\n"
+      } else if (x.toInt < 32) {
+        s"\\x${BigInt(x.toInt).toString(16)}"
+      } else {
+        x
+      }
     formatIn.map(escaped _).mkString
   }
 }
