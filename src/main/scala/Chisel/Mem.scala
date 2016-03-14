@@ -62,10 +62,12 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   def write(idx: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
     val accessor = makePort(idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
-    if (accessor.length != dataVec.length)
+    if (accessor.length != dataVec.length) {
       Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
-    if (accessor.length != mask.length)
+    }
+    if (accessor.length != mask.length) {
       Builder.error(s"Mem write mask must contain ${accessor.length} elements (found ${mask.length})")
+    }
     for (((cond, port), datum) <- mask zip accessor zip dataVec)
       when (cond) { port := datum }
   }

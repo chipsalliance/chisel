@@ -122,8 +122,9 @@ object Driver extends BackendCompilationUtilities {
   private var target_dir: Option[String] = None
   def parseArgs(args: Array[String]): Unit = {
     for (i <- 0 until args.size) {
-      if (args(i) == "--targetDir")
-        target_dir = Some(args(i+1))
+      if (args(i) == "--targetDir") {
+        target_dir = Some(args(i + 1))
+      }
     }
   }
 
