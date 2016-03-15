@@ -54,7 +54,7 @@ object FIRRTLEmitter extends Emitter {
 
 case class VIndent()
 case class VRandom()
-object VerilogEmitter extends Emitter {
+class VerilogEmitter extends Emitter {
    val tab = "   "
    val ran = VRandom()
    var w:Option[Writer] = None

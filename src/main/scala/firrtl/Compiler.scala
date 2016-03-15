@@ -91,7 +91,8 @@ object VerilogCompiler extends Compiler {
   def run(c: Circuit, w: Writer)
   {
     val loweredIR = PassUtils.executePasses(c, passes)
-    VerilogEmitter.run(loweredIR, w)
+    val verilogEmitter = new VerilogEmitter
+    verilogEmitter.run(loweredIR, w)
   }
 
 }
