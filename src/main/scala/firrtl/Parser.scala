@@ -39,6 +39,8 @@ import antlr._
 class ParserException(message: String) extends Exception(message)
 case class ParameterNotSpecifiedException(message: String) extends ParserException(message)
 case class ParameterRedefinedException(message: String) extends ParserException(message)
+case class InvalidStringLitException(message: String) extends ParserException(message)
+case class InvalidEscapeCharException(message: String) extends ParserException(message)
 
 object Parser extends LazyLogging
 {

@@ -90,7 +90,7 @@ trait BackendCompilationUtilities {
     val e = Process(s"./V${prefix}", dir) !
       ProcessLogger(line => {
         triggered = triggered || line.contains(assertionMsg)
-        System.out.println(line)
+        //System.out.println(line)
       })
     triggered
   }
@@ -101,7 +101,7 @@ trait BackendCompilationUtilities {
 }
 
 trait FirrtlRunners extends BackendCompilationUtilities {
-  lazy val cpp = new File(s"/integration/top.cpp")
+  lazy val cppHarness = new File(s"/top.cpp")
   def compileFirrtlTest(prefix: String, srcDir: String): File = {
     val testDir = createTempDirectory(prefix)
     copyResourceToFile(s"${srcDir}/${prefix}.fir", new File(testDir, s"${prefix}.fir"))
@@ -112,7 +112,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   def runFirrtlTest(prefix: String, srcDir: String) {
     val testDir = compileFirrtlTest(prefix, srcDir)
     val harness = new File(testDir, s"top.cpp")
-    copyResourceToFile(cpp.toString, harness)
+    copyResourceToFile(cppHarness.toString, harness)
 
     verilogToCpp(prefix, testDir, Seq(), harness).!
     cppToExe(prefix, testDir).!

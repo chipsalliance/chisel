@@ -59,7 +59,6 @@ object CheckHighForm extends Pass with LazyLogging {
   class NegWidthException extends PassException(s"${sinfo}: [module ${mname}] Width cannot be negative or zero.")
   class NegVecSizeException extends PassException(s"${sinfo}: [module ${mname}] Vector type size cannot be negative.")
   class NegMemSizeException extends PassException(s"${sinfo}: [module ${mname}] Memory size cannot be negative or zero.")
-  // Note the following awkward strings are due to an issue with Scala string interpolation and escaped double quotes
   class BadPrintfException(x: Char) extends PassException(s"${sinfo}: [module ${mname}] Bad printf format: " + "\"%" + x + "\"")
   class BadPrintfTrailingException extends PassException(s"${sinfo}: [module ${mname}] Bad printf format: trailing " + "\"%\"")
   class BadPrintfIncorrectNumException extends PassException(s"${sinfo}: [module ${mname}] Bad printf format: incorrect number of arguments")
@@ -164,16 +163,16 @@ object CheckHighForm extends Pass with LazyLogging {
       }
     }
 
-    def checkFstring(s: String, i: Int) = {
-      val validFormats = "bedxs"
+    def checkFstring(s: StringLit, i: Int) = {
+      val validFormats = "bdx"
       var percent = false
-      var ret = true
       var npercents = 0
-      for (x <- s) { 
-        if (!validFormats.contains(x) && percent)
-          errors.append(new BadPrintfException(x))
-        if (x == '%') npercents = npercents + 1
-        percent = (x == '%')
+      s.array.foreach { b =>
+        if (percent) {
+          if (validFormats.contains(b)) npercents += 1
+          else if (b != '%') errors.append(new BadPrintfException(b.toChar))
+        }
+        percent = if (b == '%') !percent else false // %% -> percent = false
       }
       if (percent) errors.append(new BadPrintfTrailingException)
       if (npercents != i) errors.append(new BadPrintfIncorrectNumException)

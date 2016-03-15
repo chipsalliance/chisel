@@ -60,21 +60,6 @@ object VerilogEmitter extends Emitter {
    var w:Option[Writer] = None
    var mname = ""
    def wref (n:String,t:Type) = WRef(n,t,ExpKind(),UNKNOWNGENDER)
-   def escape (s:String) : String = {
-      val sx = ArrayBuffer[String]()
-      //sx += '"'.toString
-      var percent:Boolean = false
-      for (c <- s) {
-         if (c == '\n') sx += "\\n"
-         else if (c == '"') sx += '\\'.toString + '"'.toString
-         else {
-            if((c == 'x') && percent) sx += "h" else sx += c.toString
-         }
-         percent = (c == '%')
-      }
-      //sx += '"'.toString 
-      sx.reduce(_ + _)
-   }
    def remove_root (ex:Expression) : Expression = {
       (ex.as[WSubField].get.exp) match {
          case (e:WSubField) => remove_root(e)
@@ -367,9 +352,10 @@ object VerilogEmitter extends Emitter {
       def stop (ret:Int) : Seq[Any] = {
          Seq("$fdisplay(32'h80000002,\"",ret,"\");$finish;")
       }
-      def printf (str:String,args:Seq[Expression]) : Seq[Any] = {
+      def printf (str:StringLit,args:Seq[Expression]) : Seq[Any] = {
          val q = '"'.toString
-	 val strx = (Seq(q + escape(str) + q) ++ args.flatMap(x => Seq(",",x)))
+	       val strx = Seq(q + VerilogStringLitHandler.escape(str) + q) ++
+                    args.flatMap(x => Seq(",",x))
          Seq("$fwrite(32'h80000002,",strx,");")
       }
       def delay (e:Expression, n:Int, clk:Expression) : Expression = {

@@ -45,6 +45,7 @@ private object Serialize {
       case r: Port => serialize(r)
       case r: Module => serialize(r)
       case r: Circuit => serialize(r)
+      case r: StringLit => serialize(r)
       case _ => throw new Exception("serialize called on unknown AST node!")
     }
   }
@@ -54,6 +55,8 @@ private object Serialize {
     else "\"h" + bi.toString(16) + "\""
 
   def serialize(op: PrimOp): String = op.getString
+
+  def serialize(lit: StringLit): String = FIRRTLStringLitHandler.escape(lit)
 
   def serialize(exp: Expression): String = {
     exp match {
@@ -131,7 +134,7 @@ private object Serialize {
       case s: Stop => s"stop(${serialize(s.clk)}, ${serialize(s.en)}, ${s.ret})"
       case p: Print => {
         val q = '"'.toString
-        s"printf(${serialize(p.clk)}, ${serialize(p.en)}, ${q}${p.string}${q}" +
+        s"printf(${serialize(p.clk)}, ${serialize(p.en)}, ${q}${serialize(p.string)}${q}" +
                       (if (p.args.nonEmpty) p.args.map(serialize).mkString(", ", ", ", "") else "") + ")"
       }
       case s:Empty => "skip"

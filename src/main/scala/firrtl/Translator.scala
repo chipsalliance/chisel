@@ -26,11 +26,9 @@ MODIFICATIONS.
 */
 
 /* TODO
- * - Add support for comments (that being said, current Scopers regex should ignore commented lines)
  * - Add better error messages for illformed FIRRTL 
  * - Add support for files that do not have a circuit (like a module by itself in a file)
  * - Improve performance? Replace regex?
- * - Add proper commnad-line arguments?
  * - Wrap in Reader subclass. This would have less memory footprint than creating a large string
  */
 
@@ -47,7 +45,27 @@ object Translator
 
   def addBrackets(inputIt: Iterator[String]): StringBuilder = {
     def countSpaces(s: String): Int = s.prefixLength(_ == ' ')
-    def stripComments(s: String): String = s takeWhile (!";".contains(_))
+    def stripComments(s: String): String = {
+      // Delete anything after first semicolon that's not in a comment
+      var done = false
+      var inComment = false
+      var escape = false
+      var i = 0
+      while (!done && i < s.length) {
+        val c = s(i)
+        if (c == ';') {
+          if (!inComment) {
+            done = true
+            i = i - 1 // remove semicolon as well as what follows
+          }
+        } else {
+          if (c == '"' && !escape) inComment = !inComment
+          escape = if (c == '\\' && !escape) true else false
+        }
+        i += 1
+      }
+      s.take(i)
+    }
 
     val scopers = """(circuit|module|when|else|mem|with)"""
     val MultiLineScope = ("""(.*""" + scopers + """)(.*:\s*)""").r

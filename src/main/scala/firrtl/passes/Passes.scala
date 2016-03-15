@@ -1260,7 +1260,13 @@ object VerilogWrap extends Pass {
          case (e) => e
       }
    }
-   def v_wrap_s (s:Stmt) : Stmt = s map (v_wrap_s) map (v_wrap_e)
+   def v_wrap_s (s:Stmt) : Stmt = {
+      s map (v_wrap_s) map (v_wrap_e) match {
+        case s: Print =>
+           Print(s.info, VerilogStringLitHandler.format(s.string), s.args, s.clk, s.en)
+        case s => s
+      }
+   }
    def run (c:Circuit): Circuit = {
       val modulesx = c.modules.map{ m => {
          (m) match {

@@ -41,6 +41,7 @@ import scala.collection.JavaConversions._
 import antlr._
 import PrimOps._
 import FIRRTLParser._
+import scala.annotation.tailrec
 
 class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST] 
 {
@@ -166,6 +167,12 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
               map.getOrElse("writer", Seq()).map(x => (x.getText)), map.getOrElse("readwriter", Seq()).map(x => (x.getText)))
   }
 
+  // visitStringLit
+  private def visitStringLit[AST](node: TerminalNode): StringLit = {
+    val raw = node.getText.tail.init // Remove surrounding double quotes
+    FIRRTLStringLitHandler.unescape(raw)
+  }
+
   // visitStmt
 	private def visitStmt[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
     val info = getInfo(ctx)
@@ -201,8 +208,7 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
         Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
       }
       case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-           // Stip first and last character of string since they are the surrounding double quotes
-      case "printf(" => Print(info, ctx.StringLit.getText.tail.init, ctx.exp.drop(2).map(visitExp), 
+      case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
                               visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
       case "skip" => Empty()
       // If we don't match on the first child, try the next one

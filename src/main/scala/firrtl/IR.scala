@@ -48,6 +48,8 @@ trait AST {
   def serialize: String = firrtl.Serialize.serialize(this)
 }
 
+case class StringLit(array: Array[Byte]) extends AST
+
 trait PrimOp extends AST
 case object ADD_OP extends PrimOp 
 case object SUB_OP extends PrimOp
@@ -107,7 +109,7 @@ case class BulkConnect(info: Info, loc: Expression, exp: Expression) extends Stm
 case class Connect(info: Info, loc: Expression, exp: Expression) extends Stmt
 case class IsInvalid(info: Info, exp: Expression) extends Stmt
 case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Stmt
-case class Print(info: Info, string: String, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt
+case class Print(info: Info, string: StringLit, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt
 case class Empty() extends Stmt
 
 trait Width extends AST {
