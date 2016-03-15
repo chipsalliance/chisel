@@ -452,6 +452,7 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
   def <= (other: SInt): Bool = compop(LessEqOp, other)
   def >= (other: SInt): Bool = compop(GreaterEqOp, other)
   def != (other: SInt): Bool = compop(NotEqualOp, other)
+  def =/= (other: SInt): Bool = compop(NotEqualOp, other)
   def === (other: SInt): Bool = compop(EqualOp, other)
   def abs(): UInt = Mux(this < SInt(0), (-this).asUInt, this.asUInt)
 
