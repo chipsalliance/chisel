@@ -51,12 +51,22 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   def io: Bundle
   val clock = Clock(INPUT)
   val reset = Bool(INPUT)
+  /** globalReset is a simulation-only signal for ensuring assertions don't
+    * fire before the circuit comes out of reset
+    * It is the top-level Module's reset propagated throughout the circuit
+    */
+  private[Chisel] val globalReset = _parent match {
+    case Some(p) => Bool(INPUT)
+    case None => reset
+  }
 
   private[Chisel] def addId(d: HasId) { _ids += d }
   private[Chisel] def ref = Builder.globalRefMap(this)
   private[Chisel] def lref = ref
 
-  private def ports = (clock, "clk") :: (reset, "reset") :: (io, "io") :: Nil
+  private def ports = (clock, "clk") :: (reset, "reset") :: (io, "io") ::
+    (if (_parent.nonEmpty && !this.isInstanceOf[BlackBox]) (globalReset, "globalReset") :: Nil
+    else Nil)
 
   private[Chisel] def computePorts = ports map { case (port, name) =>
     val bundleDir = if (port.isFlip) INPUT else OUTPUT
@@ -67,6 +77,7 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
     case Some(p) =>
       clock := (if (_clock eq null) p.clock else _clock)
       reset := (if (_reset eq null) p.reset else _reset)
+      if (!this.isInstanceOf[BlackBox]) globalReset := p.globalReset
       this
     case None => this
   }

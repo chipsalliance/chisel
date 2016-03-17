@@ -48,7 +48,8 @@ object assert {
   }
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String]) {
-    when (!Builder.dynamicContext.currentModule.get.reset) {
+    when (!Builder.dynamicContext.currentModule.get.reset &&
+          !Builder.dynamicContext.currentModule.get.globalReset ) {
       when(!cond) {
         message match {
           case Some(str) => printf(s"Assertion failed: $str\n    at $line\n")
