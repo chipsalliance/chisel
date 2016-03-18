@@ -71,6 +71,7 @@ trait BackendCompilationUtilities {
         "--trace",
         "-O2",
         "+define+TOP_TYPE=V" + dutFile,
+        s"+define+PRINTF_COND=!$dutFile.reset",
         "-CFLAGS",
         s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
         "-Mdir", dir.toString,
