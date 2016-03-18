@@ -8,12 +8,39 @@ import Chisel.testers.BasicTester
 
 class FailingAssertTester() extends BasicTester {
   assert(Bool(false))
-  stop()
+  // Wait to come out of reset
+  val (_, done) = Counter(!reset, 4)
+  when (done) {
+    stop()
+  }
 }
 
 class SucceedingAssertTester() extends BasicTester {
   assert(Bool(true))
-  stop()
+  // Wait to come out of reset
+  val (_, done) = Counter(!reset, 4)
+  when (done) {
+    stop()
+  }
+}
+
+class PipelinedResetModule extends Module {
+  val io = new Bundle { }
+  val a = Reg(init = UInt(0xbeef))
+  val b = Reg(init = UInt(0xbeef))
+  assert(a === b)
+}
+
+// This relies on reset being asserted for 3 or more cycles
+class PipelinedResetTester extends BasicTester {
+  val module = Module(new PipelinedResetModule)
+
+  module.reset := Reg(next = Reg(next = Reg(next = reset)))
+
+  val (_, done) = Counter(!reset, 4)
+  when (done) {
+    stop()
+  }
 }
 
 class AssertSpec extends ChiselFlatSpec {
@@ -22,5 +49,8 @@ class AssertSpec extends ChiselFlatSpec {
   }
   "A succeeding assertion" should "not fail the testbench" in {
     assertTesterPasses{ new SucceedingAssertTester }
+  }
+  "An assertion" should "not assert until we come out of reset" in {
+    assertTesterPasses{ new PipelinedResetTester }
   }
 }
