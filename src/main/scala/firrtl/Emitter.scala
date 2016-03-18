@@ -55,7 +55,7 @@ object FIRRTLEmitter extends Emitter {
 case class VIndent()
 case class VRandom()
 class VerilogEmitter extends Emitter {
-   val tab = "   "
+   val tab = "  "
    val ran = VRandom()
    var w:Option[Writer] = None
    var mname = ""
@@ -344,9 +344,15 @@ class VerilogEmitter extends Emitter {
       def simulate (clk:Expression,en:Expression,s:Seq[Any]) = {
          if (!at_clock.contains(clk)) at_clock(clk) = ArrayBuffer[Seq[Any]]()
          at_clock(clk) += Seq("`ifndef SYNTHESIS")
-         at_clock(clk) += Seq(tab,"if(",en,") begin")
-         at_clock(clk) += Seq(tab,tab,s)
+         at_clock(clk) += Seq("`ifdef PRINTF_COND")
+         at_clock(clk) += Seq(tab,"if (`PRINTF_COND) begin")
+         at_clock(clk) += Seq("`endif")
+         at_clock(clk) += Seq(tab,tab,"if (",en,") begin")
+         at_clock(clk) += Seq(tab,tab,tab,s)
+         at_clock(clk) += Seq(tab,tab,"end")
+         at_clock(clk) += Seq("`ifdef PRINTF_COND")
          at_clock(clk) += Seq(tab,"end")
+         at_clock(clk) += Seq("`endif")
          at_clock(clk) += Seq("`endif")
       }
       def stop (ret:Int) : Seq[Any] = {
