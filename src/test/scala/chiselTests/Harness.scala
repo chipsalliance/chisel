@@ -50,30 +50,29 @@ int main(int argc, char **argv, char **env) {
   def simpleHarnessBackend(make: File => File): (File, String) = {
     val target = "test"
     val path = createTempDirectory(target)
-    val fname = File.createTempFile(target, "", path)
-    val prefix = fname.toString.split("/").last
+    val fname = new File(path, target)
 
     val cppHarness = makeCppHarness(fname)
 
     make(fname)
-    verilogToCpp(prefix, path, Seq(), cppHarness).!
-    cppToExe(prefix, path).!
-    (path, prefix)
+    verilogToCpp(target, path, Seq(), cppHarness).!
+    cppToExe(target, path).!
+    (path, target)
   }
 
   property("Test making trivial verilog harness and executing") {
-    val (path, prefix) = simpleHarnessBackend(makeTrivialVerilog)
+    val (path, target) = simpleHarnessBackend(makeTrivialVerilog)
 
-    assert(executeExpectingSuccess(prefix, path))
+    assert(executeExpectingSuccess(target, path))
   }
 
   property("Test that assertion failues in Verilog are caught") {
-    val (path, prefix) = simpleHarnessBackend(makeFailingVerilog)
+    val (path, target) = simpleHarnessBackend(makeFailingVerilog)
 
-    assert(!executeExpectingSuccess(prefix, path))
-    assert(executeExpectingFailure(prefix, path))
-    assert(executeExpectingFailure(prefix, path, "My specific, expected error message!"))
-    assert(!executeExpectingFailure(prefix, path, "A string that doesn't match any test output"))
+    assert(!executeExpectingSuccess(target, path))
+    assert(executeExpectingFailure(target, path))
+    assert(executeExpectingFailure(target, path, "My specific, expected error message!"))
+    assert(!executeExpectingFailure(target, path, "A string that doesn't match any test output"))
   }
 }
 
