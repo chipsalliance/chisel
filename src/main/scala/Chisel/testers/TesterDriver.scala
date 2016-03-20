@@ -30,8 +30,7 @@ object TesterDriver extends BackendCompilationUtilities {
     val target = circuit.name
 
     val path = createTempDirectory(target)
-    val fname = File.createTempFile(target, "", path)
-    val prefix = fname.toString.split("/").last
+    val fname = new File(path, target)
 
     // For now, dump the IR out to a file
     Driver.dumpFirrtl(circuit, Some(new File(fname.toString + ".fir")))
@@ -47,10 +46,10 @@ object TesterDriver extends BackendCompilationUtilities {
     })
 
     // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
-    if ((firrtlToVerilog(prefix, path) #&&
-        verilogToCpp(prefix, path, additionalVFiles, cppHarness) #&&
-        cppToExe(prefix, path)).! == 0) {
-      executeExpectingSuccess(prefix, path)
+    if ((firrtlToVerilog(target, path) #&&
+        verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
+        cppToExe(target, path)).! == 0) {
+      executeExpectingSuccess(target, path)
     } else {
       false
     }
