@@ -137,19 +137,19 @@ private object Serialize {
         s"printf(${serialize(p.clk)}, ${serialize(p.en)}, ${q}${serialize(p.string)}${q}" +
                       (if (p.args.nonEmpty) p.args.map(serialize).mkString(", ", ", ", "") else "") + ")"
       }
-      case s:Empty => "skip"
-      case s:CDefMemory => {
-        if (s.seq) s"smem ${s.name} : ${s.tpe} [${s.size}]"
-        else s"cmem ${s.name} : ${s.tpe} [${s.size}]"
+      case s: Empty => "skip"
+      case s: CDefMemory => {
+        if (s.seq) s"smem ${s.name} : ${serialize(s.tpe)} [${s.size}]"
+        else s"cmem ${s.name} : ${serialize(s.tpe)} [${s.size}]"
       }
-      case s:CDefMPort => {
+      case s: CDefMPort => {
         val dir = s.direction match {
           case MInfer => "infer"
           case MRead => "read"
           case MWrite => "write"
           case MReadWrite => "rdwr"
         }
-        s"${dir} mport ${s.name} = ${s.mem}[${s.exps(0)}], s.exps(1)"
+        s"${dir} mport ${s.name} = ${s.mem}[${serialize(s.exps(0))}], ${serialize(s.exps(1))}"
       }
     }
   }
