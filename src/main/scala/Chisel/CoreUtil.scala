@@ -48,14 +48,12 @@ object assert {
   }
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String]) {
-    when (!Builder.dynamicContext.currentModule.get.reset) {
-      when(!cond) {
-        message match {
-          case Some(str) => printf(s"Assertion failed: $str\n    at $line\n")
-          case None => printf(s"Assertion failed\n    at $line\n")
-        }
-        pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
+    when (!(cond || Builder.dynamicContext.currentModule.get.reset)) {
+      message match {
+        case Some(str) => printf(s"Assertion failed: $str\n    at $line\n")
+        case None => printf(s"Assertion failed\n    at $line\n")
       }
+      pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
     }
   }
 
