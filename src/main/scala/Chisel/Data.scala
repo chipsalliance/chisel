@@ -93,8 +93,11 @@ abstract class Data(dirArg: Direction) extends HasId {
   def fromBits(n: Bits): this.type = {
     var i = 0
     val wire = Wire(this.cloneType)
+    val bits =
+      if (n.width.known && n.width.get >= wire.width.get) n
+      else Wire(n.cloneTypeWidth(wire.width), init = n)
     for (x <- wire.flatten) {
-      x := n(i + x.getWidth-1, i)
+      x := bits(i + x.getWidth-1, i)
       i += x.getWidth
     }
     wire.asInstanceOf[this.type]
