@@ -13,10 +13,12 @@ class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
 }
 
 /** Arbiter Control determining which producer has access */
-object ArbiterCtrl
+private object ArbiterCtrl
 {
-  def apply(request: Seq[Bool]): Seq[Bool] = {
-    Bool(true) +: (1 until request.length).map(i => !request.slice(0, i).foldLeft(Bool(false))(_ || _))
+  def apply(request: Seq[Bool]): Seq[Bool] = request.length match {
+    case 0 => Seq()
+    case 1 => Seq(Bool(true))
+    case _ => Bool(true) +: request.tail.init.scanLeft(request.head)(_ || _).map(!_)
   }
 }
 
