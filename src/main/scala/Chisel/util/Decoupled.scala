@@ -116,11 +116,9 @@ class Queue[T <: Data](gen: T, val entries: Int,
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
   val full = ptr_match && maybe_full
-  val maybe_flow = Bool(flow) && empty
-  val do_flow = maybe_flow && io.deq.ready
+  val do_enq = Wire(init=io.enq.fire())
+  val do_deq = Wire(init=io.deq.fire())
 
-  val do_enq = io.enq.ready && io.enq.valid && !do_flow
-  val do_deq = io.deq.ready && io.deq.valid && !do_flow
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
     enq_ptr.inc()
@@ -132,9 +130,22 @@ class Queue[T <: Data](gen: T, val entries: Int,
     maybe_full := do_enq
   }
 
-  io.deq.valid := !empty || Bool(flow) && io.enq.valid
-  io.enq.ready := !full || Bool(pipe) && io.deq.ready
-  io.deq.bits := Mux(maybe_flow, io.enq.bits, ram(deq_ptr.value))
+  io.deq.valid := !empty
+  io.enq.ready := !full
+  io.deq.bits := ram(deq_ptr.value)
+
+  if (flow) {
+    when (io.enq.valid) { io.deq.valid := Bool(true) }
+    when (empty) {
+      io.deq.bits := io.enq.bits
+      do_deq := Bool(false)
+      when (io.deq.ready) { do_enq := Bool(false) }
+    }
+  }
+
+  if (pipe) {
+    when (io.deq.ready) { io.enq.ready := Bool(true) }
+  }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
