@@ -139,6 +139,11 @@ This will walk you through installing Chisel and its dependencies:
     sudo make install
     ```
 
+### Arch Linux
+    ```
+    yaourt -S firrtl-git verilator sbt
+    ```
+
 ### Windows
 
 *TODO: write me. If you __really__ want to see this happen, let us know by filing a bug report!*
