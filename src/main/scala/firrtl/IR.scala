@@ -42,7 +42,7 @@ case class FileInfo(file: String, line: Int, column: Int) extends Info {
   override def toString(): String = s"$file@$line.$column"
 }
 
-case class FIRRTLException(str: String) extends Exception(str)
+class FIRRTLException(str: String) extends Exception(str)
 
 trait AST {
   def serialize: String = firrtl.Serialize.serialize(this)
