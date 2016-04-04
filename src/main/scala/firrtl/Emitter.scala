@@ -554,7 +554,9 @@ class VerilogEmitter extends Emitter {
             emit(Seq("`ifndef SYNTHESIS"))
             emit(Seq("  integer initvar;"))
             emit(Seq("  initial begin"))
-            emit(Seq("    #0.002;"))
+            emit(Seq("    `ifndef verilator"))
+            emit(Seq("      #0.002;"))
+            emit(Seq("    `endif"))
             for (x <- initials) {
                emit(Seq(tab,x))
             }
