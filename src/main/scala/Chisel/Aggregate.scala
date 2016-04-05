@@ -46,8 +46,7 @@ object Vec {
 
     require(!elts.isEmpty)
     val width = elts.map(_.width).reduce(_ max _)
-    val vec = new Vec(elts.head.cloneTypeWidth(width), elts.length)
-    pushCommand(DefWire(vec))
+    val vec = Wire(new Vec(elts.head.cloneTypeWidth(width), elts.length))
     for ((v, e) <- vec zip elts)
       v := e
     vec

@@ -123,11 +123,9 @@ object Wire {
   private def makeWire[T <: Data](t: T, init: T): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x))
-    if (init != null) {
+    pushCommand(DefInvalid(x.ref))
+    if (init != null)
       x := init
-    } else {
-      pushCommand(DefInvalid(x.ref))
-    }
     x
   }
 }
