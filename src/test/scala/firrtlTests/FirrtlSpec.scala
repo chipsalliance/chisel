@@ -90,7 +90,7 @@ trait BackendCompilationUtilities {
     val e = Process(s"./V${prefix}", dir) !
       ProcessLogger(line => {
         triggered = triggered || line.contains(assertionMsg)
-        //System.out.println(line)
+        System.out.println(line)
       })
     triggered
   }
@@ -116,7 +116,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
 
     verilogToCpp(prefix, testDir, Seq(), harness).!
     cppToExe(prefix, testDir).!
-    executeExpectingSuccess(prefix, testDir)
+    assert(executeExpectingSuccess(prefix, testDir))
   }
 }
 
