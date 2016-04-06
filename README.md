@@ -267,6 +267,13 @@ sbt test
 ```
 
 ### Running Projects Against Local Chisel
+Chisel3 is still undergoing rapid development and we haven't pusblished a stable version to the Nexus repository.
+You will need to build from source and `publish-local`.
+The repo version can be found in the build.sbt file.
+At last check it was:
+
+      version := "3.0",
+
 To publish your version of Chisel to the local Ivy (sbt's dependency manager)
 repository, run:
 ```
@@ -280,9 +287,21 @@ becomes `sbt ~publish-local`.
 [sbt's manual](http://www.scala-sbt.org/0.13/docs/Publishing.html#Publishing+Locally)
 recommends that you use a `SNAPSHOT` version suffix to ensure that the local
 repository is checked for updates.
+Change the version string in build.sbt to:
+```
+  version := "3.0-SNAPSHOT"
+```
+and re-execute `sbt publish-local` to accomplish this.
 
 The compiled version gets placed in `~/.ivy2/local/`. You can nuke the relevant
 subfolder to un-publish your local copy of Chisel.
+
+In order to have your projects use this version of Chisel, you should update the libraryDependencies setting in your project's build.sbt file to:
+```
+libraryDependencies += "edu.berkeley.cs" %% "chisel" % "3.0-SNAPSHOT"
+```
+
+The version specifier in libraryDependencies in the project's build.sbt should match the version string in your local copy of Chisel's build.sbt.
 
 ## Technical Documentation
 
