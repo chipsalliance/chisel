@@ -30,7 +30,7 @@ class QuoteProblemTests extends BasicTester {
   }
 }
 class QuoteProblemTester extends ChiselFlatSpec {
-  "QuoteProblem" should "compile and run without incident" in {
+  "QuoteProblem" should "fail with \"Assertion failed: This better be the answer\"" in {
     assertTesterFails { new QuoteProblemTests }
   }
 }
