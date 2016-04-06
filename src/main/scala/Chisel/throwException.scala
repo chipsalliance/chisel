@@ -1,4 +1,4 @@
-// See LICENSE for details
+// See LICENSE for license details.
 
 package Chisel
 

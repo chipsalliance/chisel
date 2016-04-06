@@ -48,14 +48,12 @@ object assert {
   }
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String]) {
-    when (!Builder.dynamicContext.currentModule.get.reset) {
-      when(!cond) {
-        message match {
-          case Some(str) => printf(s"Assertion failed: $str\n    at $line\n")
-          case None => printf(s"Assertion failed\n    at $line\n")
-        }
-        pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
+    when (!(cond || Builder.dynamicContext.currentModule.get.reset)) {
+      message match {
+        case Some(str) => printf.printfWithoutReset(s"Assertion failed: $str\n    at $line\n")
+        case None => printf.printfWithoutReset(s"Assertion failed\n    at $line\n")
       }
+      pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
     }
   }
 
@@ -88,8 +86,12 @@ object printf {
     */
   def apply(fmt: String, data: Bits*) {
     when (!Builder.dynamicContext.currentModule.get.reset) {
-      pushCommand(Printf(Node(Builder.dynamicContext.currentModule.get.clock),
-          fmt, data.map((d: Bits) => d.ref)))
+      printfWithoutReset(fmt, data:_*)
     }
+  }
+
+  private[Chisel] def printfWithoutReset(fmt: String, data: Bits*) {
+    val clock = Builder.dynamicContext.currentModule.get.clock
+    pushCommand(Printf(Node(clock), fmt, data.map((d: Bits) => d.ref)))
   }
 }

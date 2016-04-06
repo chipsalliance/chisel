@@ -93,8 +93,11 @@ abstract class Data(dirArg: Direction) extends HasId {
   def fromBits(n: Bits): this.type = {
     var i = 0
     val wire = Wire(this.cloneType)
+    val bits =
+      if (n.width.known && n.width.get >= wire.width.get) n
+      else Wire(n.cloneTypeWidth(wire.width), init = n)
     for (x <- wire.flatten) {
-      x := n(i + x.getWidth-1, i)
+      x := bits(i + x.getWidth-1, i)
       i += x.getWidth
     }
     wire.asInstanceOf[this.type]
@@ -120,11 +123,9 @@ object Wire {
   private def makeWire[T <: Data](t: T, init: T): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x))
-    if (init != null) {
+    pushCommand(DefInvalid(x.ref))
+    if (init != null)
       x := init
-    } else {
-      pushCommand(DefInvalid(x.ref))
-    }
     x
   }
 }

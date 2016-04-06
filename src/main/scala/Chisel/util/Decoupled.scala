@@ -22,21 +22,48 @@ object Decoupled {
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 }
 
-/** An I/O bundle for enqueuing data with valid/ready handshaking */
+/** An I/O bundle for enqueuing data with valid/ready handshaking
+  * Initialization must be handled, if necessary, by the parent circuit
+  */
 class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
 {
+  /** push dat onto the output bits of this interface to let the consumer know it has happened.
+    * @param dat the values to assign to bits.
+    * @return    dat.
+    */
   def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
-  valid := Bool(false)
-  for (io <- bits.flatten)
-    io := UInt(0)
+
+  /** Initialize this Bundle.  Valid is set to false, and all bits are set to zero.
+    * NOTE: This method of initialization is still being discussed and could change in the
+    * future.
+    */
+  def init(): Unit = {
+    valid := Bool(false)
+    for (io <- bits.flatten)
+      io := UInt(0)
+  }
   override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
 }
 
-/** An I/O bundle for dequeuing data with valid/ready handshaking */
+/** An I/O bundle for dequeuing data with valid/ready handshaking.
+  * Initialization must be handled, if necessary, by the parent circuit
+  */
 class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen) with Flipped
 {
-  ready := Bool(false)
+  /** Assert ready on this port and return the associated data bits.
+    * This is typically used when valid has been asserted by the producer side.
+    * @param b ignored
+    * @return the data for this device,
+    */
   def deq(b: Boolean = false): T = { ready := Bool(true); bits }
+
+  /** Initialize this Bundle.
+    * NOTE: This method of initialization is still being discussed and could change in the
+    * future.
+    */
+  def init(): Unit = {
+    ready := Bool(false)
+  }
   override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
 }
 
@@ -54,7 +81,7 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType).flip
+  val enq   = Decoupled(gen.cloneType).flip()
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq   = Decoupled(gen.cloneType)
   /** The current amount of data in the queue */
@@ -89,11 +116,9 @@ class Queue[T <: Data](gen: T, val entries: Int,
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
   val full = ptr_match && maybe_full
-  val maybe_flow = Bool(flow) && empty
-  val do_flow = maybe_flow && io.deq.ready
+  val do_enq = Wire(init=io.enq.fire())
+  val do_deq = Wire(init=io.deq.fire())
 
-  val do_enq = io.enq.ready && io.enq.valid && !do_flow
-  val do_deq = io.deq.ready && io.deq.valid && !do_flow
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
     enq_ptr.inc()
@@ -105,9 +130,22 @@ class Queue[T <: Data](gen: T, val entries: Int,
     maybe_full := do_enq
   }
 
-  io.deq.valid := !empty || Bool(flow) && io.enq.valid
-  io.enq.ready := !full || Bool(pipe) && io.deq.ready
-  io.deq.bits := Mux(maybe_flow, io.enq.bits, ram(deq_ptr.value))
+  io.deq.valid := !empty
+  io.enq.ready := !full
+  io.deq.bits := ram(deq_ptr.value)
+
+  if (flow) {
+    when (io.enq.valid) { io.deq.valid := Bool(true) }
+    when (empty) {
+      io.deq.bits := io.enq.bits
+      do_deq := Bool(false)
+      when (io.deq.ready) { do_enq := Bool(false) }
+    }
+  }
+
+  if (pipe) {
+    when (io.deq.ready) { io.enq.ready := Bool(true) }
+  }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {

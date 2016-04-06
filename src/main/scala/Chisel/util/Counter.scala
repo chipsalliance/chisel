@@ -17,7 +17,9 @@ class Counter(val n: Int) {
       Bool(true)
     } else {
       val wrap = value === UInt(n-1)
-      value := Mux(Bool(!isPow2(n)) && wrap, UInt(0), value + UInt(1))
+      value := value + UInt(1)
+      if (!isPow2(n))
+        when (wrap) { value := UInt(0) }
       wrap
     }
   }

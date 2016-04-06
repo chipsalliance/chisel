@@ -34,6 +34,9 @@ modifications are:
    Notice the address register is now internal to the SeqMem(), but the data
    will still return on the subsequent cycle.
 
+Please refer to the [Chisel3 compatibility section](https://github.com/ucb-bar/chisel#chisel3)
+for instructions on preparing your Chisel2 designs for Chisel3.
+
 ## Overview
 Chisel3 is much more modular than Chisel2, and the compilation pipeline looks
 like:
@@ -136,6 +139,11 @@ This will walk you through installing Chisel and its dependencies:
     sudo make install
     ```
 
+### Arch Linux
+    ```
+    yaourt -S firrtl-git verilator sbt
+    ```
+
 ### Windows
 
 *TODO: write me. If you __really__ want to see this happen, let us know by filing a bug report!*
@@ -172,7 +180,12 @@ This will walk you through installing Chisel and its dependencies:
       ```
       brew install caskroom/versions/java7
       ```
-  1. Add the FIRRTL executable to your PATH. *TODO: someone with a Mac needs to write this part*
+  1. Add the FIRRTL executable to your PATH. One way is to add this line to your
+    `.bashrc`:
+
+    ```
+    export PATH=$PATH:<path-to-your-firrtl-repository>/utils/bin
+    ```
 1. Install Verilator:
 
   ```
