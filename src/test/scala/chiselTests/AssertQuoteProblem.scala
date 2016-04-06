@@ -5,7 +5,7 @@ package chiselTests
 import Chisel._
 import Chisel.testers.BasicTester
 
-/** This llustrates a problem, where the string second
+/** This illustrates a problem, where the string second
   * argument to Chisel.assert causes a firrtl error
   */
 class QuoteProblemCircuit extends Module {
@@ -31,7 +31,7 @@ class QuoteProblemTests extends BasicTester {
 }
 class QuoteProblemTester extends ChiselFlatSpec {
   "QuoteProblem" should "compile and run without incident" in {
-    assertTesterPasses { new QuoteProblemTests }
+    assertTesterFails { new QuoteProblemTests }
   }
 }
 
