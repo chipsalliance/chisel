@@ -320,10 +320,10 @@ class VerilogEmitter extends Emitter {
          }
       }
       def initialize (e:Expression) = initials += Seq(e," = ",rand_string(tpe(e)),";")
-      def initialize_mem (n:String,i:Int,t:Type) = {
-         initials += Seq("for (initvar = 0; initvar < ",i,"; initvar = initvar+1)")
-         val index = WRef("initvar",UnknownType(),ExpKind(),UNKNOWNGENDER)
-         initials += Seq(tab,WSubAccess(wref(n,t),index,UnknownType(),FEMALE), " = ",rand_string(t),";")
+      def initialize_mem(s: DefMemory) = {
+        initials += Seq("for (initvar = 0; initvar < ", s.depth, "; initvar = initvar+1)")
+        val index = WRef("initvar", s.data_type, ExpKind(), UNKNOWNGENDER)
+        initials += Seq(tab, WSubAccess(wref(s.name, s.data_type), index, s.data_type, FEMALE), " = ", rand_string(s.data_type), ";")
       }
       def instantiate (n:String,m:String,es:Seq[Expression]) = {
          instdeclares += Seq(m," ",n," (")
@@ -434,7 +434,7 @@ class VerilogEmitter extends Emitter {
                }
       
                declare("reg",s.name,VectorType(s.data_type,s.depth))
-               initialize_mem(s.name,s.depth,s.data_type)
+               initialize_mem(s)
                for (r <- s.readers ) {
                   val data = mem_exp(r,"data")
                   val addr = mem_exp(r,"addr")
@@ -452,7 +452,7 @@ class VerilogEmitter extends Emitter {
                   assign(clk,netlist(clk))   //;Connects value to m.r.clk
                   val addrx = delay(addr,s.read_latency,clk)
                   val enx = delay(en,s.read_latency,clk)
-                  val mem_port = WSubAccess(mem,addrx,UnknownType(),UNKNOWNGENDER)
+                  val mem_port = WSubAccess(mem,addrx,s.data_type,UNKNOWNGENDER)
                   assign(data,mem_port)
                }
    
@@ -480,7 +480,7 @@ class VerilogEmitter extends Emitter {
                   val addrx = delay(addr,s.write_latency - 1,clk)
                   val maskx = delay(mask,s.write_latency - 1,clk)
                   val enx = delay(en,s.write_latency - 1,clk)
-                  val mem_port = WSubAccess(mem,addrx,UnknownType(),UNKNOWNGENDER)
+                  val mem_port = WSubAccess(mem,addrx,s.data_type,UNKNOWNGENDER)
                   update(mem_port,datax,clk,AND(enx,maskx))
                }
    
@@ -520,9 +520,9 @@ class VerilogEmitter extends Emitter {
    
                   //; Write 
    
-                  val rmem_port = WSubAccess(mem,raddrx,UnknownType(),UNKNOWNGENDER)
+                  val rmem_port = WSubAccess(mem,raddrx,s.data_type,UNKNOWNGENDER)
                   assign(rdata,rmem_port)
-                  val wmem_port = WSubAccess(mem,waddrx,UnknownType(),UNKNOWNGENDER)
+                  val wmem_port = WSubAccess(mem,waddrx,s.data_type,UNKNOWNGENDER)
                   update(wmem_port,datax,clk,AND(AND(enx,maskx),wmode))
                }
             }
