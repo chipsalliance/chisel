@@ -96,7 +96,7 @@ object CheckHighForm extends Pass with LazyLogging {
   def hasFlip(t: Type): Boolean = {
     var has = false
     def findFlip(t: Type): Type = {
-      t match {
+      t map (findFlip) match {
         case t: BundleType => {
           for (f <- t.fields) {
             if (f.flip == REVERSE) has = true
@@ -107,7 +107,6 @@ object CheckHighForm extends Pass with LazyLogging {
       }
     }
     findFlip(t)
-    t map (findFlip)
     has
   }
 
