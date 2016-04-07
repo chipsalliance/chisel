@@ -2,6 +2,7 @@
 
 package Chisel.internal
 
+import java.util.IdentityHashMap
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
@@ -32,21 +33,12 @@ private[Chisel] class Namespace(parent: Option[Namespace], keywords: Set[String]
   def child: Namespace = child(Set())
 }
 
-private[Chisel] class IdGen {
-  private var counter = -1L
-  def next: Long = {
-    counter += 1
-    counter
-  }
-}
-
 private[Chisel] trait HasId {
   private[Chisel] def _onModuleClose {}
   private[Chisel] val _parent = Builder.dynamicContext.currentModule
   _parent.foreach(_.addId(this))
 
   private[Chisel] val _refMap = Builder.globalRefMap
-  private[Chisel] val _id = Builder.idGen.next
   private[Chisel] def setRef(imm: Arg) = _refMap.setRef(this, imm)
   private[Chisel] def setRef(name: String) = _refMap.setRef(this, name)
   private[Chisel] def setRef(parent: HasId, name: String) = _refMap.setField(parent, this, name)
@@ -56,25 +48,28 @@ private[Chisel] trait HasId {
 }
 
 class RefMap {
-  private val _refmap = new HashMap[Long,Arg]()
+  private val _refmap = new IdentityHashMap[HasId,Arg]()
 
   private[Chisel] def setRef(id: HasId, ref: Arg): Unit =
-    _refmap(id._id) = ref
+    _refmap.put(id, ref)
 
   private[Chisel] def setRef(id: HasId, name: String): Unit =
-    if (!_refmap.contains(id._id)) setRef(id, Ref(name))
+    if (!_refmap.containsKey(id)) setRef(id, Ref(name))
 
   private[Chisel] def setField(parentid: HasId, id: HasId, name: String): Unit =
-    _refmap(id._id) = Slot(Node(parentid), name)
+    _refmap.put(id, Slot(Node(parentid), name))
 
   private[Chisel] def setIndex(parentid: HasId, id: HasId, index: Arg): Unit =
-    _refmap(id._id) = Index(Node(parentid), index)
+    _refmap.put(id, Index(Node(parentid), index))
 
-  def apply(id: HasId): Arg = _refmap(id._id)
+  def apply(id: HasId): Arg = {
+    val rtn = _refmap.get(id)
+    require(rtn != null)
+    return rtn
+  }
 }
 
 private[Chisel] class DynamicContext {
-  val idGen = new IdGen
   val globalNamespace = new Namespace(None, Set())
   val globalRefMap = new RefMap
   val components = ArrayBuffer[Component]()
@@ -87,7 +82,6 @@ private[Chisel] object Builder {
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
 
   def dynamicContext: DynamicContext = dynamicContextVar.value.get
-  def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def globalRefMap: RefMap = dynamicContext.globalRefMap
   def components: ArrayBuffer[Component] = dynamicContext.components

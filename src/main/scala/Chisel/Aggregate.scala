@@ -4,6 +4,8 @@ package Chisel
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
+import reflect.runtime._
+import universe._
 
 import internal._
 import internal.Builder.pushCommand
@@ -247,55 +249,58 @@ class Bundle extends Aggregate(NO_DIR) {
 
   lazy val elements: ListMap[String, Data] = ListMap(namedElts:_*)
 
-  /** Returns a best guess at whether a field in this Bundle is a user-defined
-    * Bundle element without looking at type signatures.
-    */
-  private def isBundleField(m: java.lang.reflect.Method) =
-    m.getParameterTypes.isEmpty &&
-    !java.lang.reflect.Modifier.isStatic(m.getModifiers) &&
-    !(Bundle.keywords contains m.getName) && !(m.getName contains '$')
-
   /** Returns a field's contained user-defined Bundle element if it appears to
     * be one, otherwise returns None.
     */
-  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = {
-    if (isBundleField(m) &&
-        (classOf[Data].isAssignableFrom(m.getReturnType) ||
-         classOf[Option[_]].isAssignableFrom(m.getReturnType))) {
-      m.invoke(this) match {
-        case d: Data =>
-          Some(d)
-        case o: Option[_] =>
-          o.getOrElse(None) match {
-            case d: Data =>
-              Some(d)
-            case _ => None
-          }
-        case _ => None
-      }
-    } else {
-      None
+  private def getBundleField(obj: Any): Option[Data] = {
+    obj match {
+      case d: Data =>
+        Some(d)
+      case o: Option[_] =>
+        o.getOrElse(None) match {
+          case d: Data =>
+            Some(d)
+          case _ => None
+        }
+      case _ => None
     }
   }
 
   /** Returns a list of elements in this Bundle.
     */
   private[Chisel] lazy val namedElts = {
-    val nameMap = LinkedHashMap[String, Data]()
-    val seen = HashSet[Data]()
-    for (m <- getClass.getMethods.sortWith(_.getName < _.getName)) {
-      getBundleField(m) match {
-        case Some(d) =>
-          if (nameMap contains m.getName) {
-            require(nameMap(m.getName) eq d)
-          } else if (!seen(d)) {
-            nameMap(m.getName) = d; seen += d
+    val nameMap = ArrayBuffer[(String, Data)]()
+    val im = currentMirror reflect this
+    val members = im.symbol.typeSignature.members
+
+    // Hacky workaround: the "right" way to get all val fields is to check isAccessor, but that
+    // doesn't seem to get set for members of anonymous classes. isVal seems to manifest a list of
+    // (inaccessible) vals, which can then be correlated with methods.
+    // This list also seems more reliable (sorting-wise) than the accessors for anonymous classes.
+    val valNames = members.sorted
+        .filter(s => s.isTerm && s.asTerm.isVal)
+        .map(_.asTerm.name.toString())
+        .map(_.stripSuffix(nme.LOCAL_SUFFIX_STRING))
+        .filter(n => !(Bundle.keywords contains n))
+
+    val nameToAccessor = members
+        .filter(s => s.isTerm && s.asTerm.isMethod && (valNames contains s.asTerm.name.toString))
+        .map(s => (s.name.toString, s.asMethod))
+        .toMap
+
+    for (valName <- valNames) {
+      nameToAccessor get valName match {
+        case Some(m) =>
+          getBundleField((im reflectMethod m).apply()) match {
+            case Some(d) => nameMap += ((valName, d))
+            case None =>
           }
         case None =>
       }
     }
-    ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
+    nameMap
   }
+
   private[Chisel] def toType = {
     def eltPort(elt: Data): String = {
       val flipStr = if (elt.isFlip) "flip " else ""
@@ -338,5 +343,5 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 private[Chisel] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits")
+  val keywords = List("_namespace", "elements", "namedElts", "flatten", "_parent", "_refMap")
 }
