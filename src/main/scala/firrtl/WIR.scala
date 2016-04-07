@@ -53,8 +53,8 @@ case class WRef(name:String,tpe:Type,kind:Kind,gender:Gender) extends Expression
 case class WSubField(exp:Expression,name:String,tpe:Type,gender:Gender) extends Expression
 case class WSubIndex(exp:Expression,value:Int,tpe:Type,gender:Gender) extends Expression
 case class WSubAccess(exp:Expression,index:Expression,tpe:Type,gender:Gender) extends Expression
-case class WVoid() extends Expression
-case class WInvalid() extends Expression
+case class WVoid() extends Expression { def tpe = UnknownType() }
+case class WInvalid() extends Expression { def tpe = UnknownType() }
 case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt 
 
 case object ADDW_OP extends PrimOp 

@@ -89,15 +89,21 @@ case object BITS_SELECT_OP extends PrimOp
 case object HEAD_OP extends PrimOp
 case object TAIL_OP extends PrimOp
 
-trait Expression extends AST
+trait Expression extends AST {
+  def tpe: Type
+}
 case class Ref(name: String, tpe: Type) extends Expression with HasName
 case class SubField(exp: Expression, name: String, tpe: Type) extends Expression with HasName
 case class SubIndex(exp: Expression, value: Int, tpe: Type) extends Expression
 case class SubAccess(exp: Expression, index: Expression, tpe: Type) extends Expression
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type) extends Expression
 case class ValidIf(cond: Expression, value: Expression, tpe: Type) extends Expression
-case class UIntValue(value: BigInt, width: Width) extends Expression
-case class SIntValue(value: BigInt, width: Width) extends Expression
+case class UIntValue(value: BigInt, width: Width) extends Expression {
+  def tpe = UIntType(width)
+}
+case class SIntValue(value: BigInt, width: Width) extends Expression {
+  def tpe = SIntType(width)
+}
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression
 
 trait Stmt extends AST
