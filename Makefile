@@ -113,7 +113,7 @@ $(scala_jar): $(scala_src)
 	"$(sbt)" "assembly"
 
 test-scala:
-	cd $(test_dir)/parser && lit -v . --path=$(install_dir)/
+	"$(sbt)" test
 
 set-scala:
 	ln -f -s $(install_dir)/firrtl-scala $(install_dir)/firrtl
