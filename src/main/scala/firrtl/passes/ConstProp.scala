@@ -154,18 +154,25 @@ object ConstProp extends Pass {
     case _ => e
   }
 
-  private def constPropMuxCond(m: Mux) = (m.cond, tpe(m.tval), tpe(m.fval), m.tpe) match {
-    case (c: UIntValue, ttpe: UIntType, ftpe: UIntType, mtpe: UIntType) =>
-      if (c.value == 1 && ttpe == mtpe) m.tval
-      else if (c.value == 0 && ftpe == mtpe) m.fval
-      else m
-    case _ => m
+  private def constPropMuxCond(m: Mux) = {
+    // Only propagate a value if its width matches the mux width
+    def propagate(e: Expression, muxWidth: BigInt) = e match {
+      case UIntValue(v, _) => UIntValue(v, IntWidth(muxWidth))
+      case _ => tpe(e) match {
+        case UIntType(IntWidth(w)) if muxWidth == w => e
+        case _ => m
+      }
+    }
+    (m.cond, m.tpe) match {
+      case (UIntValue(c, _), UIntType(IntWidth(w))) => propagate(if (c == 1) m.tval else m.fval, w)
+      case _ => m
+    }
   }
 
   private def constPropMux(m: Mux): Expression = (m.tval, m.fval) match {
+    case _ if m.tval == m.fval => m.tval
     case (t: UIntValue, f: UIntValue) =>
-      if (t == f) t
-      else if (t.value == 1 && f.value == 0 && long_BANG(m.tpe) == 1) m.cond
+      if (t.value == 1 && f.value == 0 && long_BANG(m.tpe) == 1) m.cond
       else constPropMuxCond(m)
     case _ => constPropMuxCond(m)
   }
