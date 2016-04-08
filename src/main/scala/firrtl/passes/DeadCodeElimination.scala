@@ -25,75 +25,56 @@ TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
 MODIFICATIONS.
 */
 
-package firrtl
+package firrtl.passes
 
-import com.typesafe.scalalogging.LazyLogging
-import java.io.Writer
+import firrtl._
+import firrtl.Utils._
+import firrtl.Mappers._
 
-import Utils._
-import firrtl.passes._
+import annotation.tailrec
 
-trait Compiler extends LazyLogging {
-  def run(c: Circuit, w: Writer)
-}
+object DeadCodeElimination extends Pass {
+  def name = "Dead Code Elimination"
 
-object FIRRTLCompiler extends Compiler {
-  val passes = Seq(
-    CInferTypes,
-    CInferMDir,
-    RemoveCHIRRTL,
-    ToWorkingIR,
-    CheckHighForm
-  )
-  def run(c: Circuit, w: Writer) = {
-    val highForm = PassUtils.executePasses(c, passes)
-    FIRRTLEmitter.run(highForm, w)
-  }
-}
+  @tailrec
+  private def dce(s: Stmt): Stmt = {
+    val referenced = collection.mutable.HashSet[String]()
+    var nEliminated = 0L
 
-object VerilogCompiler extends Compiler {
-  // Copied from Stanza implementation
-  val passes = Seq(
-    //CheckHighForm,          
-    //FromCHIRRTL,
-    CInferTypes,
-    CInferMDir,
-    RemoveCHIRRTL,
-    ToWorkingIR,            
-    CheckHighForm,
-    ResolveKinds,
-    InferTypes,
-    CheckTypes,
-    ResolveGenders,
-    CheckGenders,
-    InferWidths,
-    CheckWidths,
-    PullMuxes,
-    ExpandConnects,
-    RemoveAccesses,
-    ExpandWhens,
-    CheckInitialization,   
-    Legalize,
-    ResolveKinds,
-    InferTypes,
-    ResolveGenders,
-    InferWidths,
-    LowerTypes,
-    ResolveKinds,
-    InferTypes,
-    ResolveGenders,
-    InferWidths,
-    ConstProp,
-    DeadCodeElimination,
-    VerilogWrap,
-    SplitExp,
-    VerilogRename
-  )
-  def run(c: Circuit, w: Writer)
-  {
-    val loweredIR = PassUtils.executePasses(c, passes)
-    val verilogEmitter = new VerilogEmitter
-    verilogEmitter.run(loweredIR, w)
+    def checkExpressionUse(e: Expression): Expression = {
+      e match {
+        case WRef(name, _, _, _) => referenced += name
+        case _ => e map checkExpressionUse
+      }
+      e
+    }
+
+    def checkUse(s: Stmt): Stmt = s map checkUse map checkExpressionUse
+
+    def maybeEliminate(x: Stmt, name: String) =
+      if (referenced(name)) x
+      else {
+        nEliminated += 1
+        Empty()
+      }
+
+    def removeUnused(s: Stmt): Stmt = s match {
+      case x: DefRegister => maybeEliminate(x, x.name)
+      case x: DefWire => maybeEliminate(x, x.name)
+      case x: DefNode => maybeEliminate(x, x.name)
+      case x => s map removeUnused
+    }
+
+    checkUse(s)
+    val res = removeUnused(s)
+    if (nEliminated > 0) dce(res) else res
   }
 
+  def run(c: Circuit): Circuit = {
+    val modulesx = c.modules.map {
+      case m: ExModule => m
+      case m: InModule => InModule(m.info, m.name, m.ports, dce(m.body))
+    }
+    Circuit(c.info, modulesx, c.main)
+  }
 }

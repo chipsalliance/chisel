@@ -392,6 +392,7 @@ class VerilogEmitter extends Emitter {
       }
       def build_streams (s:Stmt) : Stmt = {
          s match {
+            case (s:Empty) => s
             case (s:Connect) => s
             case (s:DefWire) => 
                declare("wire",s.name,s.tpe)
