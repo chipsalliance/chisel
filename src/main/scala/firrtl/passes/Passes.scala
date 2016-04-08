@@ -870,7 +870,11 @@ object RemoveAccesses extends Pass {
                   case (e:ValidIf) => e map (remove_e)
                   case (e:SIntValue) => e
                   case (e:UIntValue) => e
-                  case e => {
+                  case x => {
+                     val e = x match {
+                        case (w:WSubAccess) => WSubAccess(w.exp,remove_e(w.index),w.tpe,w.gender)
+                        case _ => x
+                     }
                      if (has_access(e)) {
                         val rs = get_locations(e)
                         val foo = rs.find(x => {x.guard != one})
