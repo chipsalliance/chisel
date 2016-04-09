@@ -125,6 +125,7 @@ class WrappedType (val t:Type) {
                      if (f1.name != f2.name) ret = false
                      if (wt(f1.tpe) != wt(f2.tpe)) ret = false
                   }}
+                  if (t1.fields.size != t2.fields.size) ret = false
                   ret
                }
                case (t1,t2) => false
