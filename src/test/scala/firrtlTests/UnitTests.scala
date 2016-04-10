@@ -27,4 +27,26 @@ class UnitTests extends FlatSpec with Matchers {
       }
     }
   }
+
+  "Initializing a register with a different type" should "throw an exception" in {
+    val passes = Seq(
+      ToWorkingIR,
+      CheckHighForm,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes)
+    val input =
+     """circuit Unit :
+       |  module Unit :
+       |    input clk : Clock
+       |    input reset : UInt<1>
+       |    wire x : { valid : UInt<1> }
+       |    reg y : { valid : UInt<1>, bits : UInt<3> }, clk with :
+       |      reset => (reset, x)""".stripMargin
+    intercept[PassExceptions] {
+      passes.foldLeft(Parser.parse("",input.split("\n").toIterator)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+  }
 }

@@ -308,6 +308,7 @@ object CheckTypes extends Pass with LazyLogging {
    class IndexNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Index is not of UIntType.")
    class EnableNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Enable is not of UIntType.")
    class InvalidConnect(info:Info) extends PassException(s"${info}: [module ${mname}]  Type mismatch.")
+   class InvalidRegInit(info:Info) extends PassException(s"${info}: [module ${mname}]  Type of init must match type of DefRegister.")
    class PrintfArgNotGround(info:Info) extends PassException(s"${info}: [module ${mname}]  Printf arguments must be either UIntType or SIntType.")
    class ReqClk(info:Info) extends PassException(s"${info}: [module ${mname}]  Requires a clock typed signal.")
    class EnNotUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  Enable must be a UIntType typed signal.")
@@ -479,6 +480,7 @@ object CheckTypes extends Pass with LazyLogging {
       def check_types_s (s:Stmt) : Stmt = {
          s map (check_types_e(get_info(s))) match { 
             case (s:Connect) => if (wt(tpe(s.loc)) != wt(tpe(s.exp))) errors += new InvalidConnect(s.info)
+            case (s:DefRegister) => if (wt(s.tpe) != wt(tpe(s.init))) errors += new InvalidRegInit(s.info)
             case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp)) ) errors += new InvalidConnect(s.info)
             case (s:Stop) => {
                if (wt(tpe(s.clk)) != wt(ClockType()) ) errors += new ReqClk(s.info)
