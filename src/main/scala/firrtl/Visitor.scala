@@ -177,40 +177,42 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
 	private def visitStmt[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
     val info = getInfo(ctx)
 
-    ctx.getChild(0).getText match {
-      case "wire" => DefWire(info, (ctx.id(0).getText), visitType(ctx.`type`(0)))
-      case "reg"  => {
-        val name = (ctx.id(0).getText)
-        val tpe = visitType(ctx.`type`(0))
-        val reset = if (ctx.exp(1) != null) visitExp(ctx.exp(1)) else UIntValue(0, IntWidth(1))
-        val init  = if (ctx.exp(2) != null) visitExp(ctx.exp(2)) else Ref(name, tpe)
-        DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
+    ctx.getChild(0) match {
+      case term: TerminalNode => term.getText match {
+        case "wire" => DefWire(info, (ctx.id(0).getText), visitType(ctx.`type`(0)))
+        case "reg"  => {
+          val name = (ctx.id(0).getText)
+          val tpe = visitType(ctx.`type`(0))
+          val reset = if (ctx.exp(1) != null) visitExp(ctx.exp(1)) else UIntValue(0, IntWidth(1))
+          val init  = if (ctx.exp(2) != null) visitExp(ctx.exp(2)) else Ref(name, tpe)
+          DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
+        }
+        case "mem" => visitMem(ctx)
+        case "cmem" => {
+           val t = visitType(ctx.`type`(0))
+           t match {
+              case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,false)
+              case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
+           }
+        }
+        case "smem" => {
+           val t = visitType(ctx.`type`(0))
+           t match {
+              case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,true)
+              case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
+           }
+        }
+        case "inst"  => DefInstance(info, (ctx.id(0).getText), (ctx.id(1).getText))
+        case "node" =>  DefNode(info, (ctx.id(0).getText), visitExp(ctx.exp(0)))
+        case "when" => {
+          val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else Empty()
+          Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
+        }
+        case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+        case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
+                                visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+        case "skip" => Empty()
       }
-      case "mem" => visitMem(ctx)
-      case "cmem" => {
-         val t = visitType(ctx.`type`(0))
-         t match {
-            case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,false)
-            case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
-         }
-      }
-      case "smem" => {
-         val t = visitType(ctx.`type`(0))
-         t match {
-            case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,true)
-            case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
-         }
-      }
-      case "inst"  => DefInstance(info, (ctx.id(0).getText), (ctx.id(1).getText))
-      case "node" =>  DefNode(info, (ctx.id(0).getText), visitExp(ctx.exp(0)))
-      case "when" => { 
-        val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else Empty()
-        Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
-      }
-      case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-      case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
-                              visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-      case "skip" => Empty()
       // If we don't match on the first child, try the next one
       case _ => {
         ctx.getChild(1).getText match {
