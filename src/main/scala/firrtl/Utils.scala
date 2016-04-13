@@ -136,13 +136,6 @@ object Utils {
          }
       }
    }
-   def lowered_name (e:Expression) : String = {
-      (e) match {
-         case (e:WRef) => e.name
-         case (e:WSubField) => lowered_name(e.exp) + "_" + e.name
-         case (e:WSubIndex) => lowered_name(e.exp) + "_" + e.value
-      }
-   }
    def get_flip (t:Type, i:Int, f:Flip) : Flip = { 
       if (i >= get_size(t)) error("Shouldn't be here")
       val x = t match {
