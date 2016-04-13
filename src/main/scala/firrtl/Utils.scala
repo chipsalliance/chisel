@@ -672,7 +672,8 @@ object Utils {
      def flip(): Field = Field(field.name, field.flip.flip, field.tpe)
 
      def getType(): Type = field.tpe
-     def toPort(): Port = Port(NoInfo, field.name, field.flip.toDirection, field.tpe)
+     def toPort(info: Info = NoInfo): Port =
+       Port(info, field.name, field.flip.toDirection, field.tpe)
    }
 
    implicit class TypeUtils(t: Type) {
