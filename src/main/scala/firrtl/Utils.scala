@@ -677,6 +677,12 @@ object Utils {
    }
 
    implicit class TypeUtils(t: Type) {
+     def isGround: Boolean = t match {
+       case (_: UIntType | _: SIntType | _: ClockType) => true
+       case (_: BundleType | _: VectorType) => false
+     }
+     def isAggregate: Boolean = !t.isGround
+
      def getType(): Type = 
        t match {
          case v: VectorType => v.tpe
