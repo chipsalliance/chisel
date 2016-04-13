@@ -378,6 +378,15 @@ object Utils {
          case OUTPUT => FEMALE
       }
    }
+  def toGender(f: Flip): Gender = f match {
+    case DEFAULT => FEMALE
+    case REVERSE => MALE
+  }
+  def toFlip(g: Gender): Flip = g match {
+    case MALE => REVERSE
+    case FEMALE => DEFAULT
+  }
+
    def field_flip (v:Type,s:String) : Flip = {
       v match {
          case v:BundleType => {
@@ -409,6 +418,12 @@ object Utils {
          case REVERSE => swap(d)
       }
    }
+   def times (g: Gender, d: Direction): Direction = times(d, g)
+   def times (d: Direction, g: Gender): Direction = g match {
+     case FEMALE => d
+     case MALE => swap(d) // MALE == INPUT == REVERSE
+   }
+
    def times (g:Gender,flip:Flip) : Gender = times(flip, g)
    def times (flip:Flip,g:Gender) : Gender = {
       flip match {
