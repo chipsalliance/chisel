@@ -38,7 +38,7 @@ object CommonSubexpressionElimination extends Pass {
 
   private def cseOnce(s: Stmt): (Stmt, Long) = {
     var nEliminated = 0L
-    val expressions = collection.mutable.HashMap[Expression, String]()
+    val expressions = collection.mutable.HashMap[MemoizedHash[Expression], String]()
     val nodes = collection.mutable.HashMap[String, Expression]()
 
     def recordNodes(s: Stmt): Stmt = s match {
