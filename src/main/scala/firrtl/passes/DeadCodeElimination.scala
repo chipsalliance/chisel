@@ -36,8 +36,7 @@ import annotation.tailrec
 object DeadCodeElimination extends Pass {
   def name = "Dead Code Elimination"
 
-  @tailrec
-  private def dce(s: Stmt): Stmt = {
+  private def dceOnce(s: Stmt): (Stmt, Long) = {
     val referenced = collection.mutable.HashSet[String]()
     var nEliminated = 0L
 
@@ -66,8 +65,13 @@ object DeadCodeElimination extends Pass {
     }
 
     checkUse(s)
-    val res = removeUnused(s)
-    if (nEliminated > 0) dce(res) else res
+    (removeUnused(s), nEliminated)
+  }
+
+  @tailrec
+  private def dce(s: Stmt): Stmt = {
+    val (res, n) = dceOnce(s)
+    if (n > 0) dce(res) else res
   }
 
   def run(c: Circuit): Circuit = {
