@@ -84,6 +84,7 @@ object VerilogCompiler extends Compiler {
     ResolveGenders,
     InferWidths,
     ConstProp,
+    CommonSubexpressionElimination,
     DeadCodeElimination,
     VerilogWrap,
     SplitExp,
