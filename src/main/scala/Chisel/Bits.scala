@@ -393,7 +393,7 @@ private[Chisel] sealed trait UIntFactory {
       case "b" => 2
       case _ => Builder.error(s"Invalid base $base"); 2
     }
-    BigInt(num, radix)
+    BigInt(num.filterNot(_ == '_'), radix)
   }
 
   private def parsedWidth(n: String) =
