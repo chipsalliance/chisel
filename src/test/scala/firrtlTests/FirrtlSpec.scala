@@ -29,6 +29,7 @@ package firrtlTests
 
 import java.io._
 
+import com.typesafe.scalalogging.LazyLogging
 import scala.sys.process._
 import org.scalatest._
 import org.scalatest.prop._
@@ -146,7 +147,17 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   }
 }
 
-class FirrtlPropSpec extends PropSpec with PropertyChecks with FirrtlRunners
+trait FirrtlMatchers {
+  // Replace all whitespace with a single space and remove leading and
+  //   trailing whitespace
+  // Note this is intended for single-line strings, no newlines
+  def normalized(s: String): String = {
+    require(!s.contains("\n"))
+    s.replaceAll("\\s+", " ").trim
+  }
+}
 
-class FirrtlFlatSpec extends FlatSpec with Matchers with FirrtlRunners
+class FirrtlPropSpec extends PropSpec with PropertyChecks with FirrtlRunners with LazyLogging
+
+class FirrtlFlatSpec extends FlatSpec with Matchers with FirrtlRunners with FirrtlMatchers with LazyLogging
 
