@@ -46,6 +46,11 @@ private[Chisel] trait HasId {
   _parent.foreach(_.addId(this))
 
   private[Chisel] val _id = Builder.idGen.next
+  override def hashCode = _id.toInt
+  override def equals(that: Any) = that match {
+    case x: HasId => _id == x._id
+    case _ => false
+  }
 
   private var _ref: Option[Arg] = None
   private[Chisel] def setRef(imm: Arg): Unit = _ref = Some(imm)
