@@ -9,7 +9,7 @@ private class Emitter(circuit: Circuit) {
   private def emitPort(e: Port): String =
     s"${e.dir} ${e.id.getRef.name} : ${e.id.toType}"
   private def emit(e: Command, ctx: Component): String = e match {
-    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).reduce(_ + ", " + _)})"
+    case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).mkString(", ")})"
     case e: DefWire => s"wire ${e.name} : ${e.id.toType}"
     case e: DefReg => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}"
     case e: DefRegInit => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))"
