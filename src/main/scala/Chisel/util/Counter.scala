@@ -7,20 +7,21 @@ package Chisel
   * maximum output value of the counter), need not be a power of two
   */
 class Counter(val n: Int) {
-  val value = if (n == 1) UInt(0) else Reg(init=UInt(0, log2Up(n)))
+  require(n >= 0)
+  val value = if (n > 1) Reg(init=UInt(0, log2Up(n))) else UInt(0)
   /** Increment the counter, returning whether the counter currently is at the
     * maximum and will wrap. The incremented value is registered and will be
     * visible on the next cycle.
     */
   def inc(): Bool = {
-    if (n == 1) {
-      Bool(true)
-    } else {
+    if (n > 1) {
       val wrap = value === UInt(n-1)
       value := value + UInt(1)
       if (!isPow2(n))
         when (wrap) { value := UInt(0) }
       wrap
+    } else {
+      Bool(true)
     }
   }
 }
