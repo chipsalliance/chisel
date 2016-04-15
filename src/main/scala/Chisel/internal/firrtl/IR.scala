@@ -181,6 +181,6 @@ case class Printf(clk: Arg, formatIn: String, ids: Seq[Arg]) extends Command {
   }
 }
 
-case class Circuit(name: String, components: Seq[Component], refMap: RefMap) {
+case class Circuit(name: String, components: Seq[Component]) {
   def emit: String = new Emitter(this).toString
 }

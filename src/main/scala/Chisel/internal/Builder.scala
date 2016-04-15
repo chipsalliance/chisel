@@ -45,38 +45,20 @@ private[Chisel] trait HasId {
   private[Chisel] val _parent = Builder.dynamicContext.currentModule
   _parent.foreach(_.addId(this))
 
-  private[Chisel] val _refMap = Builder.globalRefMap
   private[Chisel] val _id = Builder.idGen.next
-  private[Chisel] def setRef(imm: Arg) = _refMap.setRef(this, imm)
-  private[Chisel] def setRef(name: String) = _refMap.setRef(this, name)
-  private[Chisel] def setRef(parent: HasId, name: String) = _refMap.setField(parent, this, name)
-  private[Chisel] def setRef(parent: HasId, index: Int) = _refMap.setIndex(parent, this, ILit(index))
-  private[Chisel] def setRef(parent: HasId, index: UInt) = _refMap.setIndex(parent, this, index.ref)
-  private[Chisel] def getRef = _refMap(this)
-}
 
-class RefMap {
-  private val _refmap = new HashMap[Long,Arg]()
-
-  private[Chisel] def setRef(id: HasId, ref: Arg): Unit =
-    _refmap(id._id) = ref
-
-  private[Chisel] def setRef(id: HasId, name: String): Unit =
-    if (!_refmap.contains(id._id)) setRef(id, Ref(name))
-
-  private[Chisel] def setField(parentid: HasId, id: HasId, name: String): Unit =
-    _refmap(id._id) = Slot(Node(parentid), name)
-
-  private[Chisel] def setIndex(parentid: HasId, id: HasId, index: Arg): Unit =
-    _refmap(id._id) = Index(Node(parentid), index)
-
-  def apply(id: HasId): Arg = _refmap(id._id)
+  private var _ref: Option[Arg] = None
+  private[Chisel] def setRef(imm: Arg): Unit = _ref = Some(imm)
+  private[Chisel] def setRef(name: => String): Unit = if (_ref.isEmpty) setRef(Ref(name))
+  private[Chisel] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
+  private[Chisel] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
+  private[Chisel] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
+  private[Chisel] def getRef: Arg = _ref.get
 }
 
 private[Chisel] class DynamicContext {
   val idGen = new IdGen
   val globalNamespace = new Namespace(None, Set())
-  val globalRefMap = new RefMap
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
   val errors = new ErrorLog
@@ -89,7 +71,6 @@ private[Chisel] object Builder {
   def dynamicContext: DynamicContext = dynamicContextVar.value.get
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
-  def globalRefMap: RefMap = dynamicContext.globalRefMap
   def components: ArrayBuffer[Component] = dynamicContext.components
 
   def pushCommand[T <: Command](c: T): T = {
@@ -109,7 +90,7 @@ private[Chisel] object Builder {
       errors.checkpoint()
       errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components, globalRefMap)
+      Circuit(components.last.name, components)
     }
   }
 }

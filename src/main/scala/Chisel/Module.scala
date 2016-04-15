@@ -53,8 +53,6 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
   val reset = Bool(INPUT)
 
   private[Chisel] def addId(d: HasId) { _ids += d }
-  private[Chisel] def ref = Builder.globalRefMap(this)
-  private[Chisel] def lref = ref
 
   private def ports = (clock, "clk") :: (reset, "reset") :: (io, "io") :: Nil
 
