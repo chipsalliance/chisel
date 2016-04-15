@@ -59,7 +59,7 @@ object assert {
 
   /** An elaboration-time assertion, otherwise the same as the above run-time
     * assertion. */
-  def apply(cond: Boolean, message: String) {
+  def apply(cond: Boolean, message: => String) {
     Predef.assert(cond, message)
   }
 
