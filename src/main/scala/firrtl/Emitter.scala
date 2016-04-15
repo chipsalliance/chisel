@@ -289,26 +289,31 @@ class VerilogEmitter extends Emitter {
       }
       def assign (e:Expression,value:Expression) =
          assigns += Seq("assign ",e," = ",value,";")
-      def update_and_reset (r:Expression,clk:Expression,reset:Expression,init:Expression) = {
-         if (!at_clock.contains(clk)) { at_clock(clk) = ArrayBuffer[Seq[Any]]() }
-         def add_update (e:Expression,tabs:String) : Unit = {
-            e match {
-               case (e:Mux) => {
-                  at_clock(clk) += Seq(tabs,"if(",e.cond,") begin")
-                  add_update(e.tval,tabs + tab)
-                  at_clock(clk) += Seq(tabs,"end else begin")
-                  add_update(e.fval,tabs + tab)
-                  at_clock(clk) += Seq(tabs,"end")
-               }
-               case (e) => {
-                  if (weq(e,r)) at_clock(clk) += Seq(tabs,";")
-                  else at_clock(clk) += Seq(tabs,r," <= ",e,";")
-               }
+      def update_and_reset(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
+        def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
+          e match {
+            case m: Mux => {
+              val ifStatement = Seq(tabs, "if(", m.cond, ") begin")
+              val trueCase = addUpdate(m.tval, tabs + tab)
+              val elseStatement = Seq(tabs, "end else begin")
+              val falseCase = addUpdate(m.fval, tabs + tab)
+              val endStatement = Seq(tabs, "end")
+
+              if (falseCase.isEmpty)
+                ifStatement +: trueCase :+ endStatement
+              else
+                ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
             }
-         }
-         val tv = init
-         val fv = netlist(r)
-         add_update(Mux(reset,tv,fv,mux_type_and_widths(tv,fv)),"")
+            case _ if (weq(e, r)) => Seq()
+            case _ => Seq(Seq(tabs, r, " <= ", e, ";"))
+          }
+        }
+
+        at_clock.getOrElseUpdate(clk, ArrayBuffer[Seq[Any]]()) ++= {
+          val tv = init
+          val fv = netlist(r)
+          addUpdate(Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), "")
+        }
       }
       def update (e:Expression,value:Expression,clk:Expression,en:Expression) = {
          if (!at_clock.contains(clk)) at_clock(clk) = ArrayBuffer[Seq[Any]]()
