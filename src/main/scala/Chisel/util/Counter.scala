@@ -7,6 +7,7 @@ package Chisel
   * maximum output value of the counter), need not be a power of two
   */
 class Counter(val n: Int) {
+  require(n > 0)
   val value = if (n == 1) UInt(0) else Reg(init=UInt(0, log2Up(n)))
   /** Increment the counter, returning whether the counter currently is at the
     * maximum and will wrap. The incremented value is registered and will be

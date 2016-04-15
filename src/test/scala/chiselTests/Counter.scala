@@ -41,7 +41,9 @@ class CounterSpec extends ChiselPropSpec {
   }
 
   property("Counter can be en/disabled") {
-    forAll(safeUInts) { (seed: Int) => assertTesterPasses{ new EnableTester(seed) } }
+    forAll(safeUInts) { (seed: Int) =>
+      whenever(seed > 0) { assertTesterPasses{ new EnableTester(seed) } }
+    }
   }
 
   property("Counter should wrap") {
