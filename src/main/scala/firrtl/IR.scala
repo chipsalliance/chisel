@@ -48,6 +48,11 @@ trait AST {
   def serialize: String = firrtl.Serialize.serialize(this)
 }
 
+trait HasName {
+  val name: String
+}
+trait IsDeclaration extends HasName
+
 case class StringLit(array: Array[Byte]) extends AST
 
 trait PrimOp extends AST
@@ -85,8 +90,8 @@ case object HEAD_OP extends PrimOp
 case object TAIL_OP extends PrimOp
 
 trait Expression extends AST
-case class Ref(name: String, tpe: Type) extends Expression
-case class SubField(exp: Expression, name: String, tpe: Type) extends Expression
+case class Ref(name: String, tpe: Type) extends Expression with HasName
+case class SubField(exp: Expression, name: String, tpe: Type) extends Expression with HasName
 case class SubIndex(exp: Expression, value: Int, tpe: Type) extends Expression
 case class SubAccess(exp: Expression, index: Expression, tpe: Type) extends Expression
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type) extends Expression
@@ -96,13 +101,13 @@ case class SIntValue(value: BigInt, width: Width) extends Expression
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression
 
 trait Stmt extends AST
-case class DefWire(info: Info, name: String, tpe: Type) extends Stmt
-case class DefPoison(info: Info, name: String, tpe: Type) extends Stmt
-case class DefRegister(info: Info, name: String, tpe: Type, clock: Expression, reset: Expression, init: Expression) extends Stmt 
-case class DefInstance(info: Info, name: String, module: String) extends Stmt 
+case class DefWire(info: Info, name: String, tpe: Type) extends Stmt with IsDeclaration
+case class DefPoison(info: Info, name: String, tpe: Type) extends Stmt with IsDeclaration
+case class DefRegister(info: Info, name: String, tpe: Type, clock: Expression, reset: Expression, init: Expression) extends Stmt with IsDeclaration
+case class DefInstance(info: Info, name: String, module: String) extends Stmt with IsDeclaration
 case class DefMemory(info: Info, name: String, data_type: Type, depth: Int, write_latency: Int, 
-               read_latency: Int, readers: Seq[String], writers: Seq[String], readwriters: Seq[String]) extends Stmt
-case class DefNode(info: Info, name: String, value: Expression) extends Stmt
+               read_latency: Int, readers: Seq[String], writers: Seq[String], readwriters: Seq[String]) extends Stmt with IsDeclaration
+case class DefNode(info: Info, name: String, value: Expression) extends Stmt with IsDeclaration
 case class Conditionally(info: Info, pred: Expression, conseq: Stmt, alt: Stmt) extends Stmt
 case class Begin(stmts: Seq[Stmt]) extends Stmt
 case class BulkConnect(info: Info, loc: Expression, exp: Expression) extends Stmt
@@ -137,7 +142,7 @@ trait Flip extends AST
 case object DEFAULT extends Flip
 case object REVERSE extends Flip
 
-case class Field(name: String, flip: Flip, tpe: Type) extends AST
+case class Field(name: String, flip: Flip, tpe: Type) extends AST with IsDeclaration // ?
 
 trait Type extends AST
 case class UIntType(width: Width) extends Type
@@ -151,9 +156,9 @@ trait Direction extends AST
 case object INPUT extends Direction
 case object OUTPUT extends Direction
 
-case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends AST
+case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends AST with IsDeclaration
 
-trait Module extends AST {
+trait Module extends AST with IsDeclaration {
   val info : Info
   val name : String
   val ports : Seq[Port]
