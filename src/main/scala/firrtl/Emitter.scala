@@ -256,11 +256,12 @@ class VerilogEmitter extends Emitter {
       mname = m.name
       val netlist = LinkedHashMap[WrappedExpression,Expression]()
       val simlist = ArrayBuffer[Stmt]()
+      val namespace = Namespace(m)
       def build_netlist (s:Stmt) : Stmt = {
          s match {
             case (s:Connect) => netlist(s.loc) = s.exp
             case (s:IsInvalid) => {
-               val n = firrtl_gensym_module(mname)
+               val n = namespace.newTemp
                val e = wref(n,tpe(s.exp))
                netlist(s.exp) = e
             }
@@ -372,7 +373,7 @@ class VerilogEmitter extends Emitter {
       def delay (e:Expression, n:Int, clk:Expression) : Expression = {
          var ex = e
          for (i <- 0 until n) {
-            val name = firrtl_gensym_module(mname)
+            val name = namespace.newTemp
             declare("reg",name,tpe(e))
             val exx = WRef(name,tpe(e),ExpKind(),UNKNOWNGENDER)
             update(exx,ex,clk,one)

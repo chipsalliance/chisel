@@ -61,7 +61,6 @@ object Utils {
    def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
    val gen_names = Map[String,Int]()
    val delin = "_"
-   val sym_hash = LinkedHashMap[String,LinkedHashMap[String,Int]]()
    def BoolType () = { UIntType(IntWidth(1)) } 
    val one  = UIntValue(BigInt(1),IntWidth(1))
    val zero = UIntValue(BigInt(0),IntWidth(1))
@@ -73,24 +72,6 @@ object Utils {
    def req_num_bits (i: Int) : Int = {
       val ix = if (i < 0) ((-1 * i) - 1) else i
       ceil_log2(ix + 1) + 1
-   }
-   def firrtl_gensym (s:String):String = { firrtl_gensym(s,LinkedHashMap[String,Int]()) }
-   def firrtl_gensym (sym_hash:LinkedHashMap[String,Int]):String = { firrtl_gensym("GEN",sym_hash) }
-   def firrtl_gensym_module (s:String):String = {
-      val sh = sym_hash.getOrElse(s,LinkedHashMap[String,Int]())
-      val name = firrtl_gensym("GEN",sh)
-      sym_hash(s) = sh
-      name
-   }
-   def firrtl_gensym (s:String,sym_hash:LinkedHashMap[String,Int]):String = {
-      if (sym_hash contains s) {
-         val num = sym_hash(s) + 1
-         sym_hash += (s -> num)
-         (s + delin + num)
-      } else {
-         sym_hash += (s -> 0)
-         (s + delin + 0)
-      }
    }
    def AND (e1:WrappedExpression,e2:WrappedExpression) : Expression = {
       if (e1 == e2) e1.e1

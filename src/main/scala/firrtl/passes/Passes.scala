@@ -36,6 +36,7 @@ import scala.io.Source
 
 // Datastructures
 import scala.collection.mutable.LinkedHashMap
+import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
 import firrtl._
@@ -185,7 +186,6 @@ object ResolveKinds extends Pass {
 object InferTypes extends Pass {
    private var mname = ""
    def name = "Infer Types"
-   val width_name_hash = LinkedHashMap[String,Int]()
    def set_type (s:Stmt,t:Type) : Stmt = {
       s match {
          case s:DefWire => DefWire(s.info,s.name,t)
@@ -195,17 +195,19 @@ object InferTypes extends Pass {
          case s:DefPoison => DefPoison(s.info,s.name,t)
       }
    }
-   def remove_unknowns_w (w:Width):Width = {
+   def remove_unknowns_w (w:Width)(implicit namespace: Namespace):Width = {
       w match {
-         case w:UnknownWidth => VarWidth(firrtl_gensym("w",width_name_hash))
+         case w:UnknownWidth => VarWidth(namespace.newName("w"))
          case w => w
       }
    }
-   def remove_unknowns (t:Type): Type = mapr(remove_unknowns_w _,t)
+   def remove_unknowns (t:Type)(implicit n: Namespace): Type = mapr(remove_unknowns_w _,t)
    def run (c:Circuit): Circuit = {
       val module_types = LinkedHashMap[String,Type]()
+      val module_wnamespaces = HashMap[String, Namespace]()
       def infer_types (m:Module) : Module = {
          val types = LinkedHashMap[String,Type]()
+         implicit val wnamespace = module_wnamespaces(m.name)
          def infer_types_e (e:Expression) : Expression = {
             e map (infer_types_e) match {
                case e:ValidIf => ValidIf(e.cond,e.value,tpe(e.value))
@@ -269,6 +271,8 @@ object InferTypes extends Pass {
       val modulesx = c.modules.map { 
          m => {
             mname = m.name
+            implicit val wnamespace = Namespace()
+            module_wnamespaces += (m.name -> wnamespace)
             val portsx = m.ports.map(p => Port(p.info,p.name,p.direction,remove_unknowns(p.tpe)))
             m match {
                case m:InModule => InModule(m.info,m.name,portsx,m.body)
@@ -854,12 +858,12 @@ object RemoveAccesses extends Pass {
    }
    def run (c:Circuit): Circuit = {
       def remove_m (m:InModule) : InModule = {
-         val sh = sym_hash
+         val namespace = Namespace(m)
          mname = m.name
          def remove_s (s:Stmt) : Stmt = {
             val stmts = ArrayBuffer[Stmt]()
             def create_temp (e:Expression) : Expression = {
-               val n = firrtl_gensym_module(mname)
+               val n = namespace.newTemp
                stmts += DefWire(info(s),n,tpe(e))
                WRef(n,tpe(e),kind(e),gender(e))
             }
@@ -1224,11 +1228,12 @@ object SplitExp extends Pass {
    def name = "Split Expressions"
    var mname = ""
    def split_exp (m:InModule) : InModule = {
+      val namespace = Namespace(m)
       mname = m.name
       val v = ArrayBuffer[Stmt]()
       def split_exp_s (s:Stmt) : Stmt = {
          def split (e:Expression) : Expression = {
-            val n = firrtl_gensym_module(mname)
+            val n = namespace.newTemp
             v += DefNode(info(s),n,e)
             WRef(n,tpe(e),kind(e),gender(e))
          }
