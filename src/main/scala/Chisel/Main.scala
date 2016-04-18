@@ -9,9 +9,9 @@ import java.io.File
     Predef.assert(false)
 
   def run[T <: Module] (args: Array[String], gen: () => T): Unit = {
-    def circuit = Driver.elaborate(gen)
-    def output_file = new File(Driver.targetDir + "/" + circuit.name + ".fir")
+    val circuit = Driver.elaborate(gen)
     Driver.parseArgs(args)
+    val output_file = new File(Driver.targetDir + "/" + circuit.name + ".fir")
     Driver.dumpFirrtl(circuit, Option(output_file))
   }
 }
