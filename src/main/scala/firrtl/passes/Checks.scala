@@ -453,34 +453,35 @@ object CheckTypes extends Pass with LazyLogging {
          e
       }
    
-      def bulk_equals (t1:Type,t2:Type) : Boolean = {
-         (t1,t2) match { 
+      def bulk_equals (t1: Type, t2: Type, flip1: Flip, flip2: Flip): Boolean = {
+         //;println_all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
+         (t1,t2) match {
+            case (t1:ClockType,t2:ClockType) => flip1 == flip2
+            case (t1:UIntType,t2:UIntType) => flip1 == flip2
+            case (t1:SIntType,t2:SIntType) => flip1 == flip2
             case (t1:BundleType,t2:BundleType) => {
-               var same = true
-               (t1.fields, t2.fields).zipped.map{ (f1,f2) => {
-                  if (f1.name == f2.name) {
-                     if (f1.flip != f2.flip) same = false
-                     if (!bulk_equals(f1.tpe,f2.tpe)) same = false
+               var isEqual = true
+               for (i <- 0 until t1.fields.size) {
+                  for (j <- 0 until t2.fields.size) {
+                     val f1 = t1.fields(i)
+                     val f2 = t2.fields(j)
+                     if (f1.name == f2.name) {
+                        val field_equal = bulk_equals(f1.tpe,f2.tpe,times(flip1, f1.flip),times(flip2, f2.flip))
+                        if (!field_equal) isEqual = false
+                     }
                   }
-               }}
-               same
+               }
+               isEqual
             }
-            case (t1:ClockType,t2:ClockType) => true
-            case (t1:UIntType,t2:UIntType) => true
-            case (t1:SIntType,t2:SIntType) => true
-            case (t1:VectorType,t2:VectorType) => {
-               if (bulk_equals(t1.tpe,t2.tpe)) true
-               else false
-            }
-            case (t1,t2) => false
+            case (t1:VectorType,t2:VectorType) => bulk_equals(t1.tpe,t2.tpe,flip1,flip2)
          }
       }
-           
+
       def check_types_s (s:Stmt) : Stmt = {
          s map (check_types_e(get_info(s))) match { 
             case (s:Connect) => if (wt(tpe(s.loc)) != wt(tpe(s.exp))) errors += new InvalidConnect(s.info)
             case (s:DefRegister) => if (wt(s.tpe) != wt(tpe(s.init))) errors += new InvalidRegInit(s.info)
-            case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp)) ) errors += new InvalidConnect(s.info)
+            case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT) ) errors += new InvalidConnect(s.info)
             case (s:Stop) => {
                if (wt(tpe(s.clk)) != wt(ClockType()) ) errors += new ReqClk(s.info)
                if (wt(tpe(s.en)) != wt(ut()) ) errors += new EnNotUInt(s.info)
