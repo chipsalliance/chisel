@@ -82,14 +82,18 @@ object PassUtils extends LazyLogging {
   lazy val mapNameToPass: Map[String, Pass] = listOfPasses.map(p => p.name -> p).toMap
 
   def executePasses(c: Circuit, passes: Seq[Pass]): Circuit = { 
-    if (passes.isEmpty) {logger.debug(s"Done!"); c}
+    if (passes.isEmpty) {logger.info(s"Done!"); c}
     else {
        val p = passes.head
        val name = p.name
-       logger.debug(s"Starting ${name}")
+       logger.info(s"Starting ${name}")
+       val start = System.nanoTime
        val x = p.run(c)
+       val end = System.nanoTime
        logger.debug(x.serialize)
-       logger.debug(s"Finished ${name}")
+       logger.info(s"Finished ${name}")
+       val timeMillis = (end - start) / 1000000.0
+       logger.info(f"$name took $timeMillis%.1f ms\n")
        executePasses(x, passes.tail)
     }
   }

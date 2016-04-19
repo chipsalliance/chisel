@@ -30,7 +30,7 @@ MODIFICATIONS.
             <pattern>[%-4level] %msg%n</pattern>
         </encoder>
     </appender>
-    <root level="warn">
+    <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
