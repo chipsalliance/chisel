@@ -60,11 +60,12 @@ class UnitTests extends FirrtlFlatSpec {
         |    input y: {a : UInt<1>}
         |    output x: {a : UInt<1>, b : UInt<1>}
         |    x <= y""".stripMargin
-    intercept[PassExceptions] {
+    val thrown = intercept[PassExceptions] {
       passes.foldLeft(parse(input)) {
         (c: Circuit, p: Pass) => p.run(c)
       }
     }
+    assert(thrown.getMessage contains "Type mismatch. Cannot connect")
   }
 
   "Initializing a register with a different type" should "throw an exception" in {
