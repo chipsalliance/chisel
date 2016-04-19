@@ -4,7 +4,7 @@ regress_dir ?= $(root_dir)/regress
 firrtl_dir ?= $(root_dir)/src/main/stanza
 install_dir ?= $(root_dir)/utils/bin
 
-sbt ?= sbt
+SBT ?= sbt
 stanza ?= $(install_dir)/stanza
 stanza_bin ?= $(install_dir)/firrtl-stanza
 scala_jar ?= $(install_dir)/firrtl.jar
@@ -84,7 +84,7 @@ clean:
 	rm -f $(install_dir)/firrtl.jar
 	rm -f $(install_dir)/firrtl
 	rm -f $(install_dir)/firrtl-stanza
-	"$(sbt)" "clean"
+	$(SBT) "clean"
 
 riscv:
 	cd $(test_dir)/riscv-mini && lit -v . --path=$(install_dir)/
@@ -110,10 +110,10 @@ build-scala: $(scala_jar)
 	$(MAKE) set-scala
 
 $(scala_jar): $(scala_src)
-	"$(sbt)" "assembly"
+	$(SBT) "assembly"
 
 test-scala:
-	"$(sbt)" test
+	$(SBT) test
 
 set-scala:
 	ln -f -s $(install_dir)/firrtl-scala $(install_dir)/firrtl
