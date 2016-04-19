@@ -48,7 +48,7 @@ object Parser extends LazyLogging
     *
     * Parser performs conversion to machine firrtl
     */
-  def parse(filename: String, lines: Iterator[String]): Circuit = {
+  def parse(filename: String, lines: Iterator[String], useInfo: Boolean = true): Circuit = {
     val fixedInput = Translator.addBrackets(lines)
     //logger.debug("Preprocessed Input:\n" + fixedInput.result) 
     val antlrStream = new ANTLRInputStream(fixedInput.result)
@@ -65,7 +65,7 @@ object Parser extends LazyLogging
     val numSyntaxErrors = parser.getNumberOfSyntaxErrors
     if (numSyntaxErrors > 0) throw new ParserException(s"${numSyntaxErrors} syntax error(s) detected")
 
-    val visitor = new Visitor(filename) 
+    val visitor = new Visitor(filename, useInfo) 
     //val ast = visitor.visitCircuit(cst) match {
     val ast = visitor.visit(cst) match {
       case c: Circuit => c

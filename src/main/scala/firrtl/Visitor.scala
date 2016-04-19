@@ -43,7 +43,7 @@ import PrimOps._
 import FIRRTLParser._
 import scala.annotation.tailrec
 
-class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST] 
+class Visitor(val fullFilename: String, val useInfo : Boolean) extends FIRRTLBaseVisitor[AST] 
 {
   // Strip file path
   private val filename = fullFilename.drop(fullFilename.lastIndexOf("/")+1)
@@ -78,7 +78,9 @@ class Visitor(val fullFilename: String) extends FIRRTLBaseVisitor[AST]
   }
   private def string2Int(s: String): Int = string2BigInt(s).toInt
   private def getInfo(ctx: ParserRuleContext): Info = 
-    FileInfo(filename, ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine())
+    if (useInfo) {
+      FileInfo(filename, ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine())
+    } else NoInfo
 
 	private def visitCircuit[AST](ctx: FIRRTLParser.CircuitContext): Circuit = 
     Circuit(getInfo(ctx), ctx.module.map(visitModule), (ctx.id.getText)) 
