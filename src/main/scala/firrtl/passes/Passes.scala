@@ -208,10 +208,9 @@ object InferTypes extends Pass {
    def remove_unknowns (t:Type)(implicit n: Namespace): Type = mapr(remove_unknowns_w _,t)
    def run (c:Circuit): Circuit = {
       val module_types = LinkedHashMap[String,Type]()
-      val module_wnamespaces = HashMap[String, Namespace]()
+      implicit val wnamespace = Namespace()
       def infer_types (m:Module) : Module = {
          val types = LinkedHashMap[String,Type]()
-         implicit val wnamespace = module_wnamespaces(m.name)
          def infer_types_e (e:Expression) : Expression = {
             e map (infer_types_e) match {
                case e:ValidIf => ValidIf(e.cond,e.value,tpe(e.value))
@@ -275,8 +274,6 @@ object InferTypes extends Pass {
       val modulesx = c.modules.map { 
          m => {
             mname = m.name
-            implicit val wnamespace = Namespace()
-            module_wnamespaces += (m.name -> wnamespace)
             val portsx = m.ports.map(p => Port(p.info,p.name,p.direction,remove_unknowns(p.tpe)))
             m match {
                case m:InModule => InModule(m.info,m.name,portsx,m.body)
