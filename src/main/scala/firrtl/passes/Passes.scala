@@ -1241,6 +1241,7 @@ object SplitExp extends Pass {
          def split_exp_e (i:Int)(e:Expression) : Expression = {
             e map (split_exp_e(i + 1)) match {
                case (e:DoPrim) => if (i > 0) split(e) else e
+               case (e:Mux) => if (i > 0) split(e) else e
                case (e) => e
             }
          }
