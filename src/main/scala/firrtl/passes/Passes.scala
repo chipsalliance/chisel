@@ -1250,6 +1250,10 @@ object SplitExp extends Pass {
                val sx = s map (split_exp_e(1))
                v += sx; sx
             }
+            case (s:Stop) => {
+               val sx = s map (split_exp_e(1))
+               v += sx; sx
+            }
             case (s) => {
                val sx = s map (split_exp_e(0))
                v += sx; sx
