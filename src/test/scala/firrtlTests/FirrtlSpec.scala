@@ -148,5 +148,5 @@ trait FirrtlRunners extends BackendCompilationUtilities {
 
 class FirrtlPropSpec extends PropSpec with PropertyChecks with FirrtlRunners
 
-class FirrtlFlatSpec extends FlatSpec with Matchers
+class FirrtlFlatSpec extends FlatSpec with Matchers with FirrtlRunners
 
