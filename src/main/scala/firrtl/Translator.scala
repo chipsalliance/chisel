@@ -79,7 +79,7 @@ object Translator
     
     // Find circuit before starting scope checks
     var line = it.next 
-    while ( it.hasNext && !line._1.contains("circuit") ) {  
+    while ( it.hasNext && !stripComments(line._1).contains("circuit") ) {
       ret ++= line._1 + "\n"
       line = it.next
     }
