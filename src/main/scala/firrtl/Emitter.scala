@@ -396,8 +396,6 @@ class VerilogEmitter extends Emitter {
       }
       def build_ports () = {
          (m.ports,0 until m.ports.size).zipped.foreach{(p,i) => {
-            var end = ",\n"
-            if (m.ports.size - 1 == i) end = "\n);\n"
             p.direction match {
                case INPUT => portdefs += Seq(p.direction,"  ",p.tpe," ",p.name)
                case OUTPUT => {
@@ -407,7 +405,6 @@ class VerilogEmitter extends Emitter {
                }
             }
          }}
-         if (m.ports.size == 0) w.get.write(");\n")
       }
       def build_streams (s:Stmt) : Stmt = {
          s match {
