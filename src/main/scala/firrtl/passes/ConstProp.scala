@@ -139,11 +139,11 @@ object ConstProp extends Pass {
       case _ => e
     }
     case BITS_SELECT_OP => e.args(0) match {
-      case UIntValue(v, w) => {
+      case UIntValue(v, _) => {
         val hi = e.consts(0).toInt
         val lo = e.consts(1).toInt
         require(hi >= lo)
-        UIntValue((v >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), w)
+        UIntValue((v >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), widthBANG(tpe(e)))
       }
       case x if long_BANG(tpe(e)) == long_BANG(tpe(x)) => tpe(x) match {
         case t: UIntType => x
