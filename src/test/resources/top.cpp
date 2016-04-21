@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
   cout << "Starting simulation!\n";
 
   while (!Verilated::gotFinish() && main_time < timeout) {
-    if (main_time > 10) {
+    if (main_time > 15) {
       top->reset = 0;   // Deassert reset
     }
     if ((main_time % 10) == 1) {
