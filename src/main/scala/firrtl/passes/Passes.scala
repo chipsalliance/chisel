@@ -1159,6 +1159,18 @@ object Legalize extends Pass {
     }
     case _ => e
   }
+  def legalizeConnect(c: Connect): Stmt = {
+    val t = tpe(c.loc)
+    val w = long_BANG(t)
+    if (w >= long_BANG(tpe(c.exp))) c
+    else {
+      val newType = t match {
+        case _: UIntType => UIntType(IntWidth(w))
+        case _: SIntType => SIntType(IntWidth(w))
+      }
+      Connect(c.info, c.loc, DoPrim(BITS_SELECT_OP, Seq(c.exp), Seq(w-1, 0), newType))
+    }
+  }
   def run (c: Circuit): Circuit = {
     def legalizeE (e: Expression): Expression = {
       e map (legalizeE) match {
@@ -1166,7 +1178,13 @@ object Legalize extends Pass {
         case e => e
       }
     }
-    def legalizeS (s: Stmt): Stmt = s map (legalizeS) map (legalizeE)
+    def legalizeS (s: Stmt): Stmt = {
+      val legalizedStmt = s match {
+        case c: Connect => legalizeConnect(c)
+        case _ => s
+      }
+      legalizedStmt map legalizeS map legalizeE
+    }
     def legalizeM (m: Module): Module = m map (legalizeS)
     Circuit(c.info, c.modules.map(legalizeM), c.main)
   }
