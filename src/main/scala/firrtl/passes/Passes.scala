@@ -1764,7 +1764,7 @@ object RemoveCHIRRTL extends Pass {
                   def set_poison (vec:Seq[MPort],addr:String) : Unit = {
                      for (r <- vec ) {
                         stmts += IsInvalid(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),addr,taddr))
-                        stmts += Connect(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),"clk",taddr),r.clk)
+                        stmts += IsInvalid(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),"clk",taddr))
                      }
                   }
                   def set_enable (vec:Seq[MPort],en:String) : Unit = {
@@ -1801,30 +1801,37 @@ object RemoveCHIRRTL extends Pass {
                case (s:CDefMPort) => {
                   mport_types(s.name) = mport_types(s.mem)
                   val addrs = ArrayBuffer[String]()
+                  val clks = ArrayBuffer[String]()
                   val ens = ArrayBuffer[String]()
                   val masks = ArrayBuffer[String]()
                   s.direction match {
                      case MReadWrite => {
                         repl(s.name) = DataRef(SubField(Ref(s.mem,ut),s.name,ut),"rdata","data","mask",true)
                         addrs += "addr"
+                        clks += "clk"
                         ens += "en"
                         masks += "mask"
                      }
                      case MWrite => {
                         repl(s.name) = DataRef(SubField(Ref(s.mem,ut),s.name,ut),"data","data","mask",false)
                         addrs += "addr"
+                        clks += "clk"
                         ens += "en"
                         masks += "mask"
                      }
                      case _ => {
                         repl(s.name) = DataRef(SubField(Ref(s.mem,ut),s.name,ut),"data","data","blah",false)
                         addrs += "addr"
+                        clks += "clk"
                         ens += "en"
                      }
                   }
                   val stmts = ArrayBuffer[Stmt]()
                   for (x <- addrs ) {
                      stmts += Connect(s.info,SubField(SubField(Ref(s.mem,ut),s.name,ut),x,ut),s.exps(0))
+                  }
+                  for (x <- clks ) {
+                     stmts += Connect(s.info,SubField(SubField(Ref(s.mem,ut),s.name,ut),x,ut),s.exps(1))
                   }
                   for (x <- ens ) {
                      stmts += Connect(s.info,SubField(SubField(Ref(s.mem,ut),s.name,ut),x,ut),one)

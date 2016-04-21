@@ -77,6 +77,7 @@ class VerilogEmitter extends Emitter {
          (tpe(e)) match {
             case (t:UIntType) => e
             case (t:SIntType) => Seq("$signed(",e,")")
+            case (t:ClockType) => e
          }
       }
       (x) match {
