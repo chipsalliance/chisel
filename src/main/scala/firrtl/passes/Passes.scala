@@ -1244,16 +1244,16 @@ object SplitExp extends Pass {
                case (e) => e
             }
          }
-	 s match {
+         s match {
             case (s:Begin) => s map (split_exp_s)
-	    case (s:Print) => {
-		val sx = s map (split_exp_e(1))
-                v += sx; sx
-	    }
+            case (s:Print) => {
+               val sx = s map (split_exp_e(1))
+               v += sx; sx
+            }
             case (s) => {
-		val sx = s map (split_exp_e(0))
-                v += sx; sx
-	    }
+               val sx = s map (split_exp_e(0))
+               v += sx; sx
+            }
          }
       }
       split_exp_s(m.body)
