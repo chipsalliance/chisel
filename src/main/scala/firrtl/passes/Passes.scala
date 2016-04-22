@@ -1260,6 +1260,7 @@ object SplitExp extends Pass {
             e map (split_exp_e(i + 1)) match {
                case (e:DoPrim) => if (i > 0) split(e) else e
                case (e:Mux) => if (i > 0) split(e) else e
+               case (e:ValidIf) => if (i > 0) split(e) else e
                case (e) => e
             }
          }
