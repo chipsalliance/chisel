@@ -44,6 +44,8 @@ import WrappedExpression._
 import scala.collection.mutable.LinkedHashMap
 import scala.collection.mutable.ArrayBuffer
 
+class EmitterException(message: String) extends PassException(message)
+
 trait Emitter extends LazyLogging {
   def run(c: Circuit, w: Writer)
 }
@@ -162,6 +164,16 @@ class VerilogEmitter extends Emitter {
       def a2 () : Expression = doprim.args(2)
       def c0 () : Int = doprim.consts(0).toInt
       def c1 () : Int = doprim.consts(1).toInt
+
+      def checkArgumentLegality(e: Expression) = e match {
+        case _: UIntValue =>
+        case _: SIntValue =>
+        case _: WRef =>
+        case _: WSubField =>
+        case _ => throw new EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
+      }
+
+      doprim.args foreach checkArgumentLegality
    
       doprim.op match {
          case ADD_OP => Seq(cast_if(a0())," + ", cast_if(a1()))
