@@ -616,6 +616,46 @@ object Utils extends LazyLogging {
     case EmptyExpression => root
   }
 
+  case class DeclarationNotFoundException(msg: String) extends FIRRTLException(msg)
+
+  /** Gets the root declaration of an expression
+    *
+    * @param m the [[firrtl.InModule]] to search
+    * @param expr the [[firrtl.Expression]] that refers to some declaration
+    * @return the [[firrtl.IsDeclaration]] of `expr`
+    * @throws DeclarationNotFoundException if no declaration of `expr` is found
+    */
+  def getDeclaration(m: InModule, expr: Expression): IsDeclaration = {
+    def getRootDecl(name: String)(s: Stmt): Option[IsDeclaration] = s match {
+      case decl: IsDeclaration => if (decl.name == name) Some(decl) else None
+      case c: Conditionally =>
+        val m = (getRootDecl(name)(c.conseq), getRootDecl(name)(c.alt))
+        m match {
+          case (Some(decl), None) => Some(decl)
+          case (None, Some(decl)) => Some(decl)
+          case (None, None) => None
+        }
+      case begin: Begin =>
+        val stmts = begin.stmts flatMap getRootDecl(name) // can we short circuit?
+        if (stmts.nonEmpty) Some(stmts.head) else None
+      case _ => None
+    }
+    expr match {
+      case (_: WRef | _: WSubIndex | _: WSubField) =>
+        val (root, tail) = splitRef(expr)
+        val rootDecl = m.ports find (_.name == root.name) match {
+          case Some(decl) => decl
+          case None =>
+            getRootDecl(root.name)(m.body) match {
+              case Some(decl) => decl
+              case None => throw new DeclarationNotFoundException(s"[module ${m.name}]  Reference ${expr.serialize} not declared!")
+            }
+        }
+        rootDecl
+      case e => throw new FIRRTLException(s"getDeclaration does not support Expressions of type ${e.getClass}")
+    }
+  }
+
 // =============== RECURISVE MAPPERS ===================
    def mapr (f: Width => Width, t:Type) : Type = {
       def apply_t (t:Type) : Type = t map (apply_t) map (f)
