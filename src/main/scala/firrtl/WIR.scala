@@ -55,7 +55,7 @@ case class WSubIndex(exp:Expression,value:Int,tpe:Type,gender:Gender) extends Ex
 case class WSubAccess(exp:Expression,index:Expression,tpe:Type,gender:Gender) extends Expression
 case class WVoid() extends Expression { def tpe = UnknownType() }
 case class WInvalid() extends Expression { def tpe = UnknownType() }
-case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt 
+case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt with IsDeclaration
 
 case object ADDW_OP extends PrimOp 
 case object SUBW_OP extends PrimOp

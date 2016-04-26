@@ -51,7 +51,10 @@ trait AST {
 trait HasName {
   val name: String
 }
-trait IsDeclaration extends HasName
+trait HasInfo {
+  val info: Info
+}
+trait IsDeclaration extends HasName with HasInfo
 
 case class StringLit(array: Array[Byte]) extends AST
 
@@ -114,13 +117,13 @@ case class DefInstance(info: Info, name: String, module: String) extends Stmt wi
 case class DefMemory(info: Info, name: String, data_type: Type, depth: Int, write_latency: Int, 
                read_latency: Int, readers: Seq[String], writers: Seq[String], readwriters: Seq[String]) extends Stmt with IsDeclaration
 case class DefNode(info: Info, name: String, value: Expression) extends Stmt with IsDeclaration
-case class Conditionally(info: Info, pred: Expression, conseq: Stmt, alt: Stmt) extends Stmt
+case class Conditionally(info: Info, pred: Expression, conseq: Stmt, alt: Stmt) extends Stmt with HasInfo
 case class Begin(stmts: Seq[Stmt]) extends Stmt
-case class BulkConnect(info: Info, loc: Expression, exp: Expression) extends Stmt
-case class Connect(info: Info, loc: Expression, exp: Expression) extends Stmt
-case class IsInvalid(info: Info, exp: Expression) extends Stmt
-case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Stmt
-case class Print(info: Info, string: StringLit, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt
+case class BulkConnect(info: Info, loc: Expression, exp: Expression) extends Stmt with HasInfo
+case class Connect(info: Info, loc: Expression, exp: Expression) extends Stmt with HasInfo
+case class IsInvalid(info: Info, exp: Expression) extends Stmt with HasInfo
+case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Stmt with HasInfo
+case class Print(info: Info, string: StringLit, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt with HasInfo
 case class Empty() extends Stmt
 
 trait Width extends AST {
@@ -148,7 +151,7 @@ trait Flip extends AST
 case object DEFAULT extends Flip
 case object REVERSE extends Flip
 
-case class Field(name: String, flip: Flip, tpe: Type) extends AST with IsDeclaration // ?
+case class Field(name: String, flip: Flip, tpe: Type) extends AST with HasName
 
 trait Type extends AST
 case class UIntType(width: Width) extends Type
@@ -172,5 +175,5 @@ trait Module extends AST with IsDeclaration {
 case class InModule(info: Info, name: String, ports: Seq[Port], body: Stmt) extends Module
 case class ExModule(info: Info, name: String, ports: Seq[Port]) extends Module
 
-case class Circuit(info: Info, modules: Seq[Module], main: String) extends AST
+case class Circuit(info: Info, modules: Seq[Module], main: String) extends AST with HasInfo
 
