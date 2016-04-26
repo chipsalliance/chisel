@@ -57,9 +57,8 @@ int main(int argc, char** argv) {
   }
 
   if (main_time >= timeout) {
-      cout << "Simulation terminated by timeout at time " << main_time <<
+      cout << "Assertion failed! Simulation terminated by timeout at time " << main_time <<
               " (cycle " << main_time / 10 << ")"<< endl;
-      return -1;
   } else {
       cout << "Simulation completed at time " << main_time <<
               " (cycle " << main_time / 10 << ")"<< endl;
