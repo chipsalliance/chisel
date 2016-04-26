@@ -14,9 +14,9 @@ class Coord extends Bundle {
 class BundleWire(n: Int) extends Module {
   val io = new Bundle {
     val in   = (new Coord).asInput
-    val outs = Vec(new Coord, n).asOutput
+    val outs = Vec(n, new Coord).asOutput
   }
-  val coords = Wire(Vec(new Coord, n))
+  val coords = Wire(Vec(n, new Coord))
   for (i <- 0 until n) {
     coords(i)  := io.in
     io.outs(i) := coords(i)

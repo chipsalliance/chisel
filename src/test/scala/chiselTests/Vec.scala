@@ -29,7 +29,7 @@ class TabulateTester(n: Int) extends BasicTester {
 
 class ShiftRegisterTester(n: Int) extends BasicTester {
   val (cnt, wrap) = Counter(Bool(true), n*2)
-  val shifter = Reg(Vec(UInt(width = log2Up(n)), n))
+  val shifter = Reg(Vec(n, UInt(width = log2Up(n))))
   (shifter, shifter drop 1).zipped.foreach(_ := _)
   shifter(n-1) := cnt
   when (cnt >= UInt(n)) {
