@@ -69,45 +69,6 @@ object LowerTypes extends Pass {
   private def error(msg: String)(implicit sinfo: Info, mname: String) =
     throw new LowerTypesException(s"$sinfo: [module $mname] $msg")
 
-  // Useful for splitting then remerging references
-  private case object EmptyExpression extends Expression { def tpe = UnknownType() }
-
-  /** Splits an Expression into root Ref and tail
-    *
-    * @example
-    *   Given:   SubField(SubIndex(SubField(Ref("a", UIntType(IntWidth(32))), "b"), 2), "c")
-    *   Returns: (Ref("a"), SubField(SubIndex(Ref("b"), 2), "c"))
-    *   a.b[2].c -> (a, b[2].c)
-    * @example
-    *   Given:   SubField(SubIndex(Ref("b"), 2), "c")
-    *   Returns: (Ref("b"), SubField(SubIndex(EmptyExpression, 2), "c"))
-    *   b[2].c -> (b, EMPTY[2].c)
-    * @note This function only supports WRef, WSubField, and WSubIndex
-    */
-  private def splitRef(e: Expression): (WRef, Expression) = e match {
-    case e: WRef => (e, EmptyExpression)
-    case e: WSubIndex =>
-      val (root, tail) = splitRef(e.exp)
-      (root, WSubIndex(tail, e.value, e.tpe, e.gender))
-    case e: WSubField =>
-      val (root, tail) = splitRef(e.exp)
-      tail match {
-        case EmptyExpression => (root, WRef(e.name, e.tpe, root.kind, e.gender))
-        case exp => (root, WSubField(tail, e.name, e.tpe, e.gender))
-      }
-  }
-
-  /** Adds a root reference to some SubField/SubIndex chain */
-  private def mergeRef(root: WRef, body: Expression): Expression = body match {
-    case e: WRef =>
-      WSubField(root, e.name, e.tpe, e.gender)
-    case e: WSubIndex =>
-      WSubIndex(mergeRef(root, e.exp), e.value, e.tpe, e.gender)
-    case e: WSubField =>
-      WSubField(mergeRef(root, e.exp), e.name, e.tpe, e.gender)
-    case EmptyExpression => root
-  }
-
   // TODO Improve? Probably not the best way to do this
   private def splitMemRef(e1: Expression): (WRef, WRef, WRef, Option[Expression]) = {
     val (mem, tail1) = splitRef(e1)
