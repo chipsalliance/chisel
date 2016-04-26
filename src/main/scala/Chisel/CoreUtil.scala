@@ -9,7 +9,7 @@ import internal.firrtl._
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
-object assert {
+object assert { // scalastyle:ignore object.name
   /** Checks for a condition to be valid in the circuit at all times. If the
     * condition evaluates to false, the circuit simulation stops with an error.
     *
@@ -70,7 +70,7 @@ object assert {
   }
 }
 
-object printf {
+object printf { // scalastyle:ignore object.name
   /** Prints a message in simulation.
     *
     * Does not fire when in reset (defined as the encapsulating Module's

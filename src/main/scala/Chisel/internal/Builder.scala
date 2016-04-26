@@ -41,13 +41,13 @@ private[Chisel] class IdGen {
 }
 
 private[Chisel] trait HasId {
-  private[Chisel] def _onModuleClose {}
+  private[Chisel] def _onModuleClose {} // scalastyle:ignore method.name
   private[Chisel] val _parent = Builder.dynamicContext.currentModule
   _parent.foreach(_.addId(this))
 
   private[Chisel] val _id = Builder.idGen.next
-  override def hashCode = _id.toInt
-  override def equals(that: Any) = that match {
+  override def hashCode: Int = _id.toInt
+  override def equals(that: Any): Boolean = that match {
     case x: HasId => _id == x._id
     case _ => false
   }
