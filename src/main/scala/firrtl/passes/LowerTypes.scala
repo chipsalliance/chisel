@@ -100,7 +100,7 @@ object LowerTypes extends Pass {
       def lowerTypesMemExp(e: Expression): Seq[Expression] = {
         val (mem, port, field, tail) = splitMemRef(e)
         // Fields that need to be replicated for each resulting mem
-        if (Seq("addr", "en", "clk", "rmode").contains(field.name)) {
+        if (Seq("addr", "en", "clk", "wmode").contains(field.name)) {
           require(tail.isEmpty) // there can't be a tail for these
           val memType = memDataTypeMap(mem.name)
 
