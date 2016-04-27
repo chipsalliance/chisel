@@ -25,8 +25,7 @@ object Module {
     val ports = m.computePorts
     Builder.components += Component(m, m.name, ports, m._commands)
     pushCommand(DefInstance(m, ports))
-    pushCommand(DefInvalid(m.io.ref)) // init instance inputs
-    m.connectImplicitIOs()
+    m.setupInParent()
   }
 }
 
@@ -36,8 +35,14 @@ object Module {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
-  private val _namespace = Builder.globalNamespace.child
+abstract class Module(
+  override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+extends HasId {
+  def this(clock: Clock) = this(Some(clock), None)
+  def this(reset: Bool)  = this(None, Some(reset))
+  def this(clock: Clock, reset: Bool) = this(Some(clock), Some(reset))
+
+  private[Chisel] val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _ids = ArrayBuffer[HasId]()
   dynamicContext.currentModule = Some(this)
@@ -54,27 +59,29 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
 
   private[Chisel] def addId(d: HasId) { _ids += d }
 
-  private def ports = (clock, "clk") :: (reset, "reset") :: (io, "io") :: Nil
+  private[Chisel] def ports: Seq[(String,Data)] = Vector(
+    ("clk", clock), ("reset", reset), ("io", io)
+  )
 
-  private[Chisel] def computePorts = ports map { case (port, name) =>
+  private[Chisel] def computePorts = for((name, port) <- ports) yield {
     val bundleDir = if (port.isFlip) INPUT else OUTPUT
     Port(port, if (port.dir == NO_DIR) bundleDir else port.dir)
   }
 
-  private def connectImplicitIOs(): this.type = _parent match {
-    case Some(p) =>
-      clock := (if (_clock eq null) p.clock else _clock)
-      reset := (if (_reset eq null) p.reset else _reset)
+  private[Chisel] def setupInParent(): this.type = _parent match {
+    case Some(p) => {
+      pushCommand(DefInvalid(io.ref)) // init instance inputs
+      clock := override_clock.getOrElse(p.clock)
+      reset := override_reset.getOrElse(p.reset)
       this
+    }
     case None => this
   }
 
-  private def makeImplicitIOs(): Unit = ports map { case (port, name) =>
-  }
-
-  private def setRefs(): this.type = {
-    for ((port, name) <- ports)
+  private[Chisel] def setRefs(): this.type = {
+    for ((name, port) <- ports) {
       port.setRef(ModuleIO(this, _namespace.name(name)))
+    }
 
     // Suggest names to nodes using runtime reflection
     val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
