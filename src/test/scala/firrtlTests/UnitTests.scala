@@ -33,8 +33,19 @@ import org.scalatest.prop._
 import firrtl._
 import firrtl.passes._
 
-class UnitTests extends FlatSpec with Matchers {
+class UnitTests extends FirrtlFlatSpec {
   def parse (input:String) = Parser.parse("",input.split("\n").toIterator,false)
+  private def executeTest(input: String, expected: Seq[String], passes: Seq[Pass]) = {
+    val c = passes.foldLeft(Parser.parse("", input.split("\n").toIterator)) {
+      (c: Circuit, p: Pass) => p.run(c)
+    }
+    val lines = c.serialize.split("\n") map normalized
+
+    expected foreach { e =>
+      lines should contain(e)
+    }
+  }
+
   "Connecting bundles of different types" should "throw an exception" in {
     val passes = Seq(
       ToWorkingIR,
@@ -130,10 +141,55 @@ class UnitTests extends FlatSpec with Matchers {
   "After splitting, emitting a nested expression" should "compile" in {
     val passes = Seq(
       ToWorkingIR,
-      SplitExp,
+      SplitExpressions,
       InferTypes)
     val c = Parser.parse("",splitExpTestCode.split("\n").toIterator)
     val c2 = passes.foldLeft(c)((c, p) => p run c)
     new VerilogEmitter().run(c2, new OutputStreamWriter(new ByteArrayOutputStream))
+  }
+
+  "Simple compound expressions" should "be split" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveGenders,
+      InferWidths,
+      SplitExpressions
+    )
+    val input =
+      """circuit Top :
+         |  module Top :
+         |    input a : UInt<32>
+         |    input b : UInt<32>
+         |    input d : UInt<32>
+         |    output c : UInt<1>
+         |    c <= geq(add(a, b),d)""".stripMargin
+    val check = Seq(
+      "node GEN_0 = add(a, b)",
+      "c <= geq(GEN_0, d)"
+    )
+    executeTest(input, check, passes)
+  }
+
+  "Smaller widths" should "be explicitly padded" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveGenders,
+      InferWidths,
+      PadWidths
+    )
+    val input =
+      """circuit Top :
+         |  module Top :
+         |    input a : UInt<32>
+         |    input b : UInt<20>
+         |    input pred : UInt<1>
+         |    output c : UInt<32>
+         |    c <= mux(pred,a,b)""".stripMargin
+     val check = Seq("c <= mux(pred, a, pad(b, 32))")
+     executeTest(input, check, passes)
   }
 }
