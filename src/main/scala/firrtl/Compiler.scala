@@ -86,11 +86,13 @@ object VerilogCompiler extends Compiler {
     InferTypes,
     ResolveGenders,
     InferWidths,
-    SplitExp,
+    RemoveValidIf,
     ConstProp,
+    PadWidths,
+    VerilogWrap,
+    SplitExpressions,
     CommonSubexpressionElimination,
     DeadCodeElimination,
-    VerilogWrap,
     VerilogRename
   )
   def run(c: Circuit, w: Writer)
