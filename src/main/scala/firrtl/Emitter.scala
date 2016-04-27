@@ -554,7 +554,13 @@ class VerilogEmitter extends Emitter {
                   val rmem_port = WSubAccess(mem,raddrx,s.data_type,UNKNOWNGENDER)
                   assign(rdata,rmem_port)
                   val wmem_port = WSubAccess(mem,waddrx,s.data_type,UNKNOWNGENDER)
-                  update(wmem_port,datax,clk,AND(AND(enx,maskx),wmode))
+
+                  val tempName = namespace.newTemp
+                  val tempExp = AND(enx,maskx)
+                  declare("wire", tempName, tpe(tempExp))
+                  val tempWRef = wref(tempName, tpe(tempExp))
+                  assign(tempWRef, tempExp)
+                  update(wmem_port,datax,clk,AND(tempWRef,wmode))
                }
             }
             case (s:Begin) => s map (build_streams)
