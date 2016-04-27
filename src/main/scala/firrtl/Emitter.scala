@@ -202,6 +202,7 @@ class VerilogEmitter extends Emitter {
          case AS_UINT_OP => Seq("$unsigned(",a0(),")")
          case AS_SINT_OP => Seq("$signed(",a0(),")")
          case AS_CLOCK_OP => Seq("$unsigned(",a0(),")")
+         case DSHLW_OP => Seq(cast(a0())," << ", a1())
          case DYN_SHIFT_LEFT_OP => Seq(cast(a0())," << ", a1())
          case DYN_SHIFT_RIGHT_OP => {
             (doprim.tpe) match {
@@ -209,6 +210,7 @@ class VerilogEmitter extends Emitter {
                case (t) => Seq(cast(a0())," >> ",a1())
             }
          }
+         case SHLW_OP => Seq(cast(a0())," << ", c0())
          case SHIFT_LEFT_OP => Seq(cast(a0())," << ",c0())
          case SHIFT_RIGHT_OP => {
            if (c0 >= long_BANG(tpe(a0)))
