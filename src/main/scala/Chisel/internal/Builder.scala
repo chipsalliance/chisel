@@ -52,9 +52,30 @@ private[Chisel] trait HasId {
     case _ => false
   }
 
+  // Facilities for 'suggesting' a name to this.
+  // Post-name hooks called to carry the suggestion to other candidates as needed
+  private var suggested_name: Option[String] = None
+  private val postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+  // Only takes the first suggestion!
+  def suggestName(name: =>String): this.type = {
+    if(suggested_name.isEmpty) suggested_name = Some(name)
+    for(hook <- postname_hooks) { hook(name) }
+    this
+  }
+  private[Chisel] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
+
+  // Uses a namespace to convert suggestion into a true name
+  // Will not do any naming if the reference already assigned.
+  // (e.g. tried to suggest a name to part of a Bundle)
+  private[Chisel] def forceName(default: =>String, namespace: Namespace): Unit =
+    if(_ref.isEmpty) {
+      val candidate_name = suggested_name.getOrElse(default)
+      val available_name = namespace.name(candidate_name)
+      setRef(Ref(available_name))
+    }
+
   private var _ref: Option[Arg] = None
   private[Chisel] def setRef(imm: Arg): Unit = _ref = Some(imm)
-  private[Chisel] def setRef(name: => String): Unit = if (_ref.isEmpty) setRef(Ref(name))
   private[Chisel] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
   private[Chisel] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[Chisel] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
@@ -91,7 +112,7 @@ private[Chisel] object Builder {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       errors.info("Elaborating design...")
       val mod = f
-      mod.setRef(globalNamespace.name(mod.name))
+      mod.forceName(mod.name, globalNamespace)
       errors.checkpoint()
       errors.info("Done elaborating.")
 

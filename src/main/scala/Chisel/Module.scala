@@ -76,16 +76,18 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
     for ((port, name) <- ports)
       port.setRef(ModuleIO(this, _namespace.name(name)))
 
+    // Suggest names to nodes using runtime reflection
     val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
     for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
-      case id: HasId => id.setRef(_namespace.name(m.getName))
+      case (id: HasId) => id.suggestName(m.getName)
       case _ =>
     }
 
-    _ids.foreach(_.setRef(_namespace.name("T")))
+    // All suggestions are in, force names to every node.
+    _ids.foreach(_.forceName(default="T", _namespace))
     _ids.foreach(_._onModuleClose)
     this
   }
