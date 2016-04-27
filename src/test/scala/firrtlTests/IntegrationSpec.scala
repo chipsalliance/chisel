@@ -35,7 +35,8 @@ class IntegrationSpec extends FirrtlPropSpec {
   case class Test(name: String, dir: String)
 
   val runTests = Seq(Test("GCDTester", "/integration"),
-                     Test("RightShiftTester", "/integration"))
+                     Test("RightShiftTester", "/integration"),
+                     Test("MemTester", "/integration"))
       
 
   runTests foreach { test =>
