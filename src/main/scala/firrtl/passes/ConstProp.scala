@@ -125,6 +125,78 @@ object ConstProp extends Pass {
     }
   }
 
+  private def foldComparison(e: DoPrim) = {
+    def foldIfZeroedArg(x: Expression): Expression = {
+      def isUInt(e: Expression): Boolean = tpe(e) match {
+        case UIntType(_) => true
+        case _ => false
+      }
+      def isZero(e: Expression) = e match {
+          case UIntValue(value,_) => value == BigInt(0)
+          case SIntValue(value,_) => value == BigInt(0)
+          case _ => false
+        }
+      x match {
+        case DoPrim(LESS_OP,      Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => zero
+        case DoPrim(LESS_EQ_OP,   Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => one
+        case DoPrim(GREATER_OP,   Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => zero
+        case DoPrim(GREATER_EQ_OP,Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => one
+        case e => e
+      }
+    }
+
+    def foldIfOutsideRange(x: Expression): Expression = {
+      //Note, only abides by a partial ordering
+      case class Range(min: BigInt, max: BigInt) {
+        def === (that: Range) =
+          Seq(this.min, this.max, that.min, that.max)
+            .sliding(2,1)
+            .map(x => x(0) == x(1))
+            .reduce(_ && _)
+        def > (that: Range) = this.min > that.max
+        def >= (that: Range) = this.min >= that.max
+        def < (that: Range) = this.max < that.min
+        def <= (that: Range) = this.max <= that.min
+      }
+      def range(e: Expression): Range = e match {
+        case UIntValue(value, _) => Range(value, value)
+        case SIntValue(value, _) => Range(value, value)
+        case _ => tpe(e) match {
+          case SIntType(IntWidth(width)) => Range(
+            min = BigInt(0) - BigInt(2).pow(width.toInt - 1),
+            max = BigInt(2).pow(width.toInt - 1) - BigInt(1)
+          )
+          case UIntType(IntWidth(width)) => Range(
+            min = BigInt(0),
+            max = BigInt(2).pow(width.toInt) - BigInt(1)
+          )
+        }
+      }
+      // Calculates an expression's range of values
+      x match {
+        case e: DoPrim => {
+          def r0 = range(e.args(0))
+          def r1 = range(e.args(1))
+          e.op match {
+            // Always true
+            case LESS_OP       if (r0 < r1) => one
+            case LESS_EQ_OP    if (r0 <= r1) => one
+            case GREATER_OP    if (r0 > r1) => one
+            case GREATER_EQ_OP if (r0 >= r1) => one
+            // Always false
+            case LESS_OP       if (r0 >= r1) => zero
+            case LESS_EQ_OP    if (r0 > r1) => zero
+            case GREATER_OP    if (r0 <= r1) => zero
+            case GREATER_EQ_OP if (r0 < r1) => zero
+            case _ => e
+          }
+        }
+        case e => e
+      }
+    }
+    foldIfZeroedArg(foldIfOutsideRange(e))
+  }
+
   private def constPropPrim(e: DoPrim): Expression = e.op match {
     case SHIFT_LEFT_OP => foldShiftLeft(e)
     case SHIFT_RIGHT_OP => foldShiftRight(e)
@@ -134,6 +206,7 @@ object ConstProp extends Pass {
     case XOR_OP => FoldXOR(e)
     case EQUAL_OP => FoldEqual(e)
     case NEQUAL_OP => FoldNotEqual(e)
+    case LESS_OP|LESS_EQ_OP|GREATER_OP|GREATER_EQ_OP => foldComparison(e)
     case NOT_OP => e.args(0) match {
       case UIntValue(v, IntWidth(w)) => UIntValue(v ^ ((BigInt(1) << w.toInt) - 1), IntWidth(w))
       case _ => e
