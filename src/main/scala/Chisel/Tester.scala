@@ -4,7 +4,7 @@ package Chisel
 
 import scala.util.Random
 
-class Tester[+T <: Module](c: T, isTrace: Boolean = true) {
+/*class Tester[+T <: Module](c: T, isTrace: Boolean = true) {
   def t: Int = 0
   var ok: Boolean = true  // TODO: get rid of this
 
@@ -36,4 +36,4 @@ object chiselMainOld {
 object chiselMainTest {
   def apply[T <: Module](args: Array[String], gen: () => T)(tester: T => Tester[T]): T =
     chiselMainOld(args, gen, tester)
-}
+}*/
