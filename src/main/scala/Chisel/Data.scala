@@ -92,12 +92,12 @@ abstract class Data(dirArg: Direction) extends HasId {
     */
   def fromBits(n: Bits): this.type = {
     var i = 0
-    val wire = Wire(this.cloneType)
+    val wire = Wire(this.cloneType)(SourceInfo(None))
     val bits =
       if (n.width.known && n.width.get >= wire.width.get) {
         n
       } else {
-        Wire(n.cloneTypeWidth(wire.width), init = n)
+        Wire(n.cloneTypeWidth(wire.width), init = n)(SourceInfo(None))
       }
     for (x <- wire.flatten) {
       x := bits(i + x.getWidth-1, i)
@@ -114,16 +114,17 @@ abstract class Data(dirArg: Direction) extends HasId {
 }
 
 object Wire {
-  def apply[T <: Data](t: T): T =
-    makeWire(t, null.asInstanceOf[T])
+  def apply[T <: Data](t: T)(implicit info: SourceInfo): T =
+    makeWire(t, null.asInstanceOf[T], info)
 
-  def apply[T <: Data](dummy: Int = 0, init: T): T =
-    makeWire(null.asInstanceOf[T], init)
+  def apply[T <: Data](dummy: Int = 0, init: T)(implicit info: SourceInfo): T =
+    makeWire(null.asInstanceOf[T], init, info)
 
-  def apply[T <: Data](t: T, init: T): T =
-    makeWire(t, init)
+  def apply[T <: Data](t: T, init: T)(implicit info: SourceInfo): T =
+    makeWire(t, init, info)
 
-  private def makeWire[T <: Data](t: T, init: T): T = {
+  private def makeWire[T <: Data](t: T, init: T, info: SourceInfo): T = {
+    // TODO: Add SourceInfo to DefWire
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
     pushCommand(DefWire(x))
     pushCommand(DefInvalid(x.ref))
