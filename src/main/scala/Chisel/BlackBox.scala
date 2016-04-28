@@ -30,7 +30,10 @@ abstract class BlackBox extends Module {
     for ((name, port) <- ports) {
       port.setRef(ModuleIO(this, _namespace.name(name)))
     }
-    io.setRef("") // don't io parts prepended with io_
+    // setRef is not called on the actual io.
+    // There is a risk of user improperly attempting to connect directly with io
+    // Long term solution will be to define BlackBox IO differently as part of
+    //   it not descending from the (current) Module
     this
   }
 
