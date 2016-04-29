@@ -38,7 +38,7 @@ package firrtl
 
 import scala.collection.mutable.StringBuilder
 import java.io.PrintWriter
-import PrimOps._
+import com.typesafe.scalalogging.LazyLogging
 import WrappedExpression._
 import firrtl.WrappedType._
 import firrtl.Mappers._
@@ -46,7 +46,18 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.LinkedHashMap
 //import scala.reflect.runtime.universe._
 
-object Utils {
+object Utils extends LazyLogging {
+  private[firrtl] def time[R](name: String)(block: => R): R = {
+    logger.info(s"Starting $name")
+    val t0 = System.nanoTime()
+    val result = block
+    val t1 = System.nanoTime()
+    logger.info(s"Finished $name")
+    val timeMillis = (t1 - t0) / 1000000.0
+    logger.info(f"$name took $timeMillis%.1f ms\n")
+    result
+  }
+
    implicit class WithAs[T](x: T) {
      import scala.reflect._
      def as[O: ClassTag]: Option[O] = x match {
