@@ -28,12 +28,8 @@ package firrtl
 
 import org.antlr.v4.runtime._;
 import org.antlr.v4.runtime.atn._;
-import org.antlr.v4.runtime.tree._;
 import com.typesafe.scalalogging.LazyLogging
-import java.io.FileInputStream
-import scala.collection.JavaConverters._
-import scala.io.Source
-import Utils._
+import Utils.{time}
 import antlr._
 
 class ParserException(message: String) extends Exception(message)
@@ -44,19 +40,14 @@ case class InvalidEscapeCharException(message: String) extends ParserException(m
 
 object Parser extends LazyLogging
 {
-  /** Takes Iterator over lines of FIRRTL, returns AST (root node is Circuit)
-    *
-    * Parser performs conversion to machine firrtl
-    */
+  /** Takes Iterator over lines of FIRRTL, returns AST (root node is Circuit) */
   def parse(filename: String, lines: Iterator[String], useInfo: Boolean = true): Circuit = {
     val fixedInput = time("Translator") { Translator.addBrackets(lines) }
-    //logger.debug("Preprocessed Input:\n" + fixedInput.result) 
     val antlrStream = new ANTLRInputStream(fixedInput.result)
     val lexer = new FIRRTLLexer(antlrStream)
     val tokens = new CommonTokenStream(lexer)
     val parser = new FIRRTLParser(tokens)
 
-    // FIXME Dangerous (TODO)
     time("ANTLR Parser") { parser.getInterpreter.setPredictionMode(PredictionMode.SLL) }
 
     // Concrete Syntax Tree
@@ -66,7 +57,6 @@ object Parser extends LazyLogging
     if (numSyntaxErrors > 0) throw new ParserException(s"${numSyntaxErrors} syntax error(s) detected")
 
     val visitor = new Visitor(filename, useInfo) 
-    //val ast = visitor.visitCircuit(cst) match {
     val ast = time("Visitor") { visitor.visit(cst) } match {
       case c: Circuit => c
       case x => throw new ClassCastException("Error! AST not rooted with Circuit node!")
