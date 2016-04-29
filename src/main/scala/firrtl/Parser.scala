@@ -49,7 +49,7 @@ object Parser extends LazyLogging
     * Parser performs conversion to machine firrtl
     */
   def parse(filename: String, lines: Iterator[String], useInfo: Boolean = true): Circuit = {
-    val fixedInput = Translator.addBrackets(lines)
+    val fixedInput = time("Translator") { Translator.addBrackets(lines) }
     //logger.debug("Preprocessed Input:\n" + fixedInput.result) 
     val antlrStream = new ANTLRInputStream(fixedInput.result)
     val lexer = new FIRRTLLexer(antlrStream)
@@ -57,7 +57,7 @@ object Parser extends LazyLogging
     val parser = new FIRRTLParser(tokens)
 
     // FIXME Dangerous (TODO)
-    parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+    time("ANTLR Parser") { parser.getInterpreter.setPredictionMode(PredictionMode.SLL) }
 
     // Concrete Syntax Tree
     val cst = parser.circuit
@@ -67,7 +67,7 @@ object Parser extends LazyLogging
 
     val visitor = new Visitor(filename, useInfo) 
     //val ast = visitor.visitCircuit(cst) match {
-    val ast = visitor.visit(cst) match {
+    val ast = time("Visitor") { visitor.visit(cst) } match {
       case c: Circuit => c
       case x => throw new ClassCastException("Error! AST not rooted with Circuit node!")
     }
