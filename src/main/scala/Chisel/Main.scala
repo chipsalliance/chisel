@@ -6,7 +6,7 @@ import java.io.File
 
 @deprecated("chiselMain doesn't exist in Chisel3", "3.0") object chiselMain {
   def apply[T <: Module](args: Array[String], gen: () => T): Unit =
-    Predef.assert(false)
+    Predef.assert(false, "No more chiselMain in Chisel3")
 
   def run[T <: Module] (args: Array[String], gen: () => T): Unit = {
     val circuit = Driver.elaborate(gen)
