@@ -1,5 +1,5 @@
-circuit Top : 
-  module Top : 
+circuit Printf : 
+  module Printf : 
     input clk : Clock
     input reset : UInt<1>
 

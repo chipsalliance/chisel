@@ -73,6 +73,6 @@ class ChirrtlSpec extends FirrtlFlatSpec {
   }
 
   it should "compile and run" in {
-    runFirrtlTest("CHIRRTLMems", "/features")
+    runFirrtlTest("ChirrtlMems", "/features")
   }
 }

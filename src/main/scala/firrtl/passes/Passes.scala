@@ -51,20 +51,6 @@ trait Pass extends LazyLogging {
 class PassException(message: String) extends Exception(message)
 class PassExceptions(exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
 
-object PassUtils extends LazyLogging {
-  val listOfPasses: Seq[Pass] = Seq(ToWorkingIR,ResolveKinds,InferTypes,ResolveGenders,InferWidths,PullMuxes,ExpandConnects,RemoveAccesses,ExpandWhens,LowerTypes)
-  lazy val mapNameToPass: Map[String, Pass] = listOfPasses.map(p => p.name -> p).toMap
-
-  def executePasses(c: Circuit, passes: Seq[Pass]): Circuit = { 
-    if (passes.isEmpty) {logger.info(s"Done!"); c}
-    else {
-       val p = passes.head
-       val x = time(p.name) { p.run(c) }
-       executePasses(x, passes.tail)
-    }
-  }
-}
-
 // These should be distributed into separate files
 object ToWorkingIR extends Pass {
    private var mname = ""
