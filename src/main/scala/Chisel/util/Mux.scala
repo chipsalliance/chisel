@@ -12,15 +12,7 @@ object Mux1H
 {
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
     apply(sel zip in)
-  def apply[T <: Data](in: Iterable[(Bool, T)]): T = {
-    if (in.tail.isEmpty) {
-      in.head._2
-    } else {
-      val masked = in map {case (s, i) => Mux(s, i.toBits, Bits(0))}
-      val width = in.map(_._2.width).reduce(_ max _)
-      in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
-    }
-  }
+  def apply[T <: Data](in: Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
   def apply[T <: Data](sel: UInt, in: Seq[T]): T =
     apply((0 until in.size).map(sel(_)), in)
   def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
@@ -33,13 +25,7 @@ object Mux1H
   */
 object PriorityMux
 {
-  def apply[T <: Bits](in: Seq[(Bool, T)]): T = {
-    if (in.size == 1) {
-      in.head._2
-    } else {
-      Mux(in.head._1, in.head._2, apply(in.tail))
-    }
-  }
+  def apply[T <: Bits](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
   def apply[T <: Bits](sel: Seq[Bool], in: Seq[T]): T = apply(sel zip in)
   def apply[T <: Bits](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
 }

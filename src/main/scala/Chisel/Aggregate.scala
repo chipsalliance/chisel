@@ -188,7 +188,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 
   /** Outputs the number of elements for which p is true.
     */
-  def count(p: T => Bool): UInt = PopCount((this map p).toSeq)
+  def count(p: T => Bool): UInt = SeqUtils.count(this map p)
 
   /** Helper function that appends an index (literal value) to each element,
     * useful for hardware generators which output an index.
@@ -197,11 +197,11 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool): UInt = PriorityMux(indexWhereHelper(p))
+  def indexWhere(p: T => Bool): UInt = SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool): UInt = PriorityMux(indexWhereHelper(p).reverse)
+  def lastIndexWhere(p: T => Bool): UInt = SeqUtils.priorityMux(indexWhereHelper(p).reverse)
 
   /** Outputs the index of the element for which p outputs true, assuming that
     * the there is exactly one such element.
@@ -213,7 +213,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
     * true is NOT checked (useful in cases where the condition doesn't always
     * hold, but the results are not used in those cases)
     */
-  def onlyIndexWhere(p: T => Bool): UInt = Mux1H(indexWhereHelper(p))
+  def onlyIndexWhere(p: T => Bool): UInt = SeqUtils.oneHotMux(indexWhereHelper(p))
 }
 
 /** Base class for data types defined as a bundle of other data types.
