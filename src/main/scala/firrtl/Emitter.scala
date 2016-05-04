@@ -55,10 +55,11 @@ object FIRRTLEmitter extends Emitter {
 }
 
 case class VIndent()
-case class VRandom()
+case object VRandom extends Expression {
+  def tpe = UIntType(UnknownWidth())
+}
 class VerilogEmitter extends Emitter {
    val tab = "  "
-   val ran = VRandom()
    var w:Option[Writer] = None
    var mname = ""
    def wref (n:String,t:Type) = WRef(n,t,ExpKind(),UNKNOWNGENDER)
@@ -72,7 +73,7 @@ class VerilogEmitter extends Emitter {
    def emit (x:Any) = emit2(x,0)
    def emit2 (x:Any, top:Int) : Unit = {
       def cast (e:Expression) : Any = {
-         (tpe(e)) match {
+         e.tpe match {
             case (t:UIntType) => e
             case (t:SIntType) => Seq("$signed(",e,")")
             case (t:ClockType) => e
@@ -89,6 +90,8 @@ class VerilogEmitter extends Emitter {
                case (e:WSubAccess) => w.get.write(LowerTypes.loweredName(e.exp) + "[" + LowerTypes.loweredName(e.index) + "]")
                case (e:WSubIndex) => w.get.write(e.serialize)
                case (_:UIntValue|_:SIntValue) => v_print(e)
+               case VRandom => w.get.write("$random")
+
             }
          }
          case (t:Type) => {
@@ -113,7 +116,6 @@ class VerilogEmitter extends Emitter {
          case (i:Int) => w.get.write(i.toString)
          case (i:Long) => w.get.write(i.toString)
          case (t:VIndent) => w.get.write("   ")
-         case (r:VRandom) => w.get.write("$random")
          case (s:Seq[Any]) => {
             s.foreach((x:Any) => emit2(x.as[Any].get, top + 1))
             if (top == 0) w.get.write("\n")
@@ -308,6 +310,14 @@ class VerilogEmitter extends Emitter {
       }
       def assign (e:Expression,value:Expression) =
          assigns += Seq("assign ",e," = ",value,";")
+      // Like assign but with different versions for synthesis and simulation
+      def synSimAssign(e: Expression, syn: Expression, sim: Expression) = {
+         assigns += Seq("`ifdef SYNTHESIS")
+         assigns += Seq("assign ", e, " = ", syn, ";")
+         assigns += Seq("`else")
+         assigns += Seq("assign ", e, " = ", sim, ";")
+         assigns += Seq("`endif")
+      }
       def update_and_reset(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
           e match {
@@ -349,7 +359,7 @@ class VerilogEmitter extends Emitter {
          val nx = namespace.newTemp
          val wx = ((long_BANG(t) + 31) / 32).toInt
          val tx = SIntType(IntWidth(wx * 32))
-         val rand = Seq("{",wx.toString,"{",ran,"}}")
+         val rand = Seq("{",wx.toString,"{",VRandom,"}}")
          declare("reg",nx,tx)
          initials += Seq(wref(nx,tx)," = ",rand,";")
          Seq(nx,"[",long_BANG(t) - 1,":0]")
@@ -486,7 +496,10 @@ class VerilogEmitter extends Emitter {
                   val addrx = delay(addr,s.read_latency,clk)
                   val enx = delay(en,s.read_latency,clk)
                   val mem_port = WSubAccess(mem,addrx,s.data_type,UNKNOWNGENDER)
-                  assign(data,mem_port)
+                  val depthValue = UIntValue(s.depth, IntWidth(BigInt(s.depth).bitLength))
+                  val garbageGuard = DoPrim(GREATER_EQ_OP, Seq(addrx, depthValue), Seq(), UnknownType())
+                  val garbageMux = Mux(garbageGuard, VRandom, mem_port, UnknownType())
+                  synSimAssign(data, mem_port, garbageMux)
                }
    
                for (w <- s.writers ) {
