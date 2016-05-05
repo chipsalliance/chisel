@@ -116,7 +116,7 @@ object SeqMem {
   */
 sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
-    val a = Wire(UInt())
+    val a = Wire(UInt())(SourceInfo(None))
     when (enable) { a := addr }
     read(a)
   }

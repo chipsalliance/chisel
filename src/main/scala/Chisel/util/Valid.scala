@@ -32,7 +32,10 @@ object Valid {
   */
 object Pipe
 {
-  def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): ValidIO[T] = {
+  def apply[T<:Data](
+    enqValid: Bool, enqBits: T, latency: Int)(implicit info: SourceInfo
+  ): ValidIO[T] =
+  {
     if (latency == 0) {
       val out = Wire(Valid(enqBits))
       out.valid <> enqValid
@@ -44,8 +47,10 @@ object Pipe
       apply(v, b, latency-1)
     }
   }
-  def apply[T <: Data](enqValid: Bool, enqBits: T): ValidIO[T] = apply(enqValid, enqBits, 1)
-  def apply[T <: Data](enq: ValidIO[T], latency: Int = 1): ValidIO[T] = apply(enq.valid, enq.bits, latency)
+  def apply[T<:Data](enqValid: Bool, enqBits: T)(implicit info: SourceInfo): ValidIO[T] =
+    apply(enqValid, enqBits, 1)
+  def apply[T<:Data](enq: ValidIO[T], latency: Int = 1)(implicit info: SourceInfo): ValidIO[T] =
+    apply(enq.valid, enq.bits, latency)
 }
 
 class Pipe[T <: Data](gen: T, latency: Int = 1) extends Module
@@ -55,5 +60,5 @@ class Pipe[T <: Data](gen: T, latency: Int = 1) extends Module
     val deq = Valid(gen)
   }
 
-  io.deq <> Pipe(io.enq, latency)
+  io.deq <> Pipe(io.enq, latency)(SourceInfo(None))
 }

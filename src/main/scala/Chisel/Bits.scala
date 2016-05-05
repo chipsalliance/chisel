@@ -198,7 +198,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   override def toBits: UInt = asUInt
 
   override def fromBits(n: Bits): this.type = {
-    val res = Wire(this).asInstanceOf[this.type]
+    val res = Wire(this)(SourceInfo(None)).asInstanceOf[this.type]
     res := n
     res
   }

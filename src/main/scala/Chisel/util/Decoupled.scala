@@ -111,6 +111,10 @@ extends Module(override_reset=override_reset) {
   
   val io = new QueueIO(gen, entries)
 
+  private implicit val info = SourceInfo(Some(SourceInfo.FromFile(
+    "Decoupled.scala", "Queue"
+  )))
+
   val ram = Mem(entries, gen)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
