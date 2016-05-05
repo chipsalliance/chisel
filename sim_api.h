@@ -39,7 +39,7 @@ template<class T> struct sim_data_t {
     for (int i = 0; i < nitems; i++) {
       result += vec[i]->get_num_words();
     }
-    return result * sizeof(val_t);
+    return result * sizeof(uint64_t);
 #endif
   }
 };

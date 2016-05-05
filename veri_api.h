@@ -2,7 +2,6 @@
 #define __VERILATOR_API__
 
 #include "verilated.h"
-#include "emulator.h"
 #include "sim_api.h"
 #include <vector>
 
