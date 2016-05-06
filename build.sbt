@@ -86,3 +86,10 @@ lazy val chisel = (project in file(".")).
   settings(chiselBuildSettings: _*).
   dependsOn(chiselFrontend)
 
+// This is ugly. There must be a better way.
+publish <<= (publish) dependsOn (publish in chiselFrontend)
+
+publishLocal <<= (publishLocal) dependsOn (publishLocal in chiselFrontend)
+
+publishSigned <<= (publishSigned) dependsOn (publishSigned in chiselFrontend)
+
