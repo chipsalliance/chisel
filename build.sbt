@@ -99,5 +99,3 @@ publish <<= (publish) dependsOn (publish in chiselFrontend)
 
 publishLocal <<= (publishLocal) dependsOn (publishLocal in chiselFrontend)
 
-publishSigned <<= (publishSigned) dependsOn (publishSigned in chiselFrontend)
-
