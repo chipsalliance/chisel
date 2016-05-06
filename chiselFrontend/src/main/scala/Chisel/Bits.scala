@@ -21,7 +21,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
-  private[Chisel] def fromInt(x: BigInt): this.type
+  private[Chisel] def fromInt(x: BigInt, w: Int): this.type
 
   private[Chisel] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
@@ -282,7 +282,8 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
     new UInt(dir, w).asInstanceOf[this.type]
   private[Chisel] def toType = s"UInt$width"
 
-  override private[Chisel] def fromInt(value: BigInt): this.type = UInt(value).asInstanceOf[this.type]
+  override private[Chisel] def fromInt(value: BigInt, width: Int): this.type =
+    UInt(value, width).asInstanceOf[this.type]
 
   override def := (that: Data): Unit = that match {
     case _: UInt => this connect that
@@ -419,7 +420,8 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
     case _ => this badConnect that
   }
 
-  override private[Chisel] def fromInt(value: BigInt): this.type = SInt(value).asInstanceOf[this.type]
+  override private[Chisel] def fromInt(value: BigInt, width: Int): this.type =
+    SInt(value, width).asInstanceOf[this.type]
 
   def unary_- : SInt = SInt(0) - this
   def unary_-% : SInt = SInt(0) -% this
@@ -501,8 +503,8 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
     new Bool(dir).asInstanceOf[this.type]
   }
 
-  override private[Chisel] def fromInt(value: BigInt): this.type = {
-    require(value == 0 || value == 1)
+  override private[Chisel] def fromInt(value: BigInt, width: Int): this.type = {
+    require((value == 0 || value == 1) && width == 1)
     Bool(value == 1).asInstanceOf[this.type]
   }
 
