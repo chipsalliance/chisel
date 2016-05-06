@@ -94,7 +94,8 @@ private[Chisel] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
 
-  def dynamicContext: DynamicContext = dynamicContextVar.value.get
+  def dynamicContext: DynamicContext =
+    dynamicContextVar.value getOrElse (new DynamicContext)
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
