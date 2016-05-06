@@ -191,7 +191,11 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     */
   def ## (other: Bits): UInt = {
     val w = this.width + other.width
-    pushOp(DefPrim(UInt(w), ConcatOp, this.ref, other.ref))
+    if (this.isLit() && other.isLit()) {
+      UInt(this.litValue() << other.getWidth | other.litValue(), w)
+    } else {
+      pushOp(DefPrim(UInt(w), ConcatOp, this.ref, other.ref))
+    }
   }
 
   @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
@@ -293,45 +297,105 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
   // TODO: refactor to share documentation with Num or add independent scaladoc
   def unary_- : UInt = UInt(0) - this
   def unary_-% : UInt = UInt(0) -% this
-  def +& (other: UInt): UInt = binop(UInt((this.width max other.width) + 1), AddOp, other)
+  def +& (other: UInt): UInt = {
+    val w = (this.width max other.width) + 1
+    if (this.isLit() && other.isLit()) UInt(this.litValue() + other.litValue(), w)
+    else binop(UInt(w), AddOp, other)
+  }
   def + (other: UInt): UInt = this +% other
-  def +% (other: UInt): UInt = (this +& other) tail 1
-  def -& (other: UInt): UInt = binop(UInt((this.width max other.width) + 1), SubOp, other)
+  def +% (other: UInt): UInt =
+    if (this.isLit() && other.isLit()) UInt(this.litValue() + other.litValue(), this.width max other.width)
+    else (this +& other) tail 1
+  def -& (other: UInt): UInt = {
+    val w = (this.width max other.width) + 1
+    if (this.isLit() && other.isLit()) UInt(this.litValue() - other.litValue(), w)
+    else binop(UInt(w), SubOp, other)
+  }
   def - (other: UInt): UInt = this -% other
-  def -% (other: UInt): UInt = (this -& other) tail 1
-  def * (other: UInt): UInt = binop(UInt(this.width + other.width), TimesOp, other)
+  def -% (other: UInt): UInt =
+    if (this.isLit() && other.isLit()) UInt(this.litValue() - other.litValue(), this.width max other.width)
+    else (this -& other) tail 1
+  def * (other: UInt): UInt = {
+    val w = this.width + other.width
+    if (this.isLit() && other.isLit()) UInt(this.litValue() * other.litValue(), w)
+    else binop(UInt(w), TimesOp, other)
+  }
   def * (other: SInt): SInt = other * this
-  def / (other: UInt): UInt = binop(UInt(this.width), DivideOp, other)
-  def % (other: UInt): UInt = binop(UInt(this.width), RemOp, other)
+  def / (other: UInt): UInt =
+    if (this.isLit() && other.isLit()) UInt(this.litValue() / other.litValue(), this.width)
+    else binop(UInt(this.width), DivideOp, other)
+  def % (other: UInt): UInt =
+    if (this.isLit() && other.isLit()) UInt(this.litValue() % other.litValue(), this.width)
+    else binop(UInt(this.width), RemOp, other)
 
-  def & (other: UInt): UInt = binop(UInt(this.width max other.width), BitAndOp, other)
-  def | (other: UInt): UInt = binop(UInt(this.width max other.width), BitOrOp, other)
-  def ^ (other: UInt): UInt = binop(UInt(this.width max other.width), BitXorOp, other)
+  def & (other: UInt): UInt = {
+    val w = this.width max other.width
+    if (this.isLit() && other.isLit()) UInt(this.litValue() & other.litValue(), w)
+    else binop(UInt(w), BitAndOp, other)
+  }
+  def | (other: UInt): UInt = {
+    val w = this.width max other.width
+    if (this.isLit() && other.isLit()) UInt(this.litValue() | other.litValue(), w)
+    else binop(UInt(w), BitOrOp, other)
+  }
+  def ^ (other: UInt): UInt = {
+    val w = this.width max other.width
+    if (this.isLit() && other.isLit()) UInt(this.litValue() ^ other.litValue(), w)
+    else binop(UInt(w), BitXorOp, other)
+  }
 
   /** Returns this wire bitwise-inverted. */
-  def unary_~ : UInt = unop(UInt(width = width), BitNotOp)
+  def unary_~ : UInt =
+    if (this.isLit()) UInt((-this.litValue()-1) & ((BigInt(1) << this.getWidth) - 1), width) 
+    else unop(UInt(width = width), BitNotOp)
 
   // REVIEW TODO: Can this be defined on Bits?
   def orR: Bool = this != UInt(0)
   def andR: Bool = ~this === UInt(0)
   def xorR: Bool = redop(XorReduceOp)
 
-  def < (other: UInt): Bool = compop(LessOp, other)
-  def > (other: UInt): Bool = compop(GreaterOp, other)
-  def <= (other: UInt): Bool = compop(LessEqOp, other)
-  def >= (other: UInt): Bool = compop(GreaterEqOp, other)
-  def != (other: UInt): Bool = compop(NotEqualOp, other)
-  def =/= (other: UInt): Bool = compop(NotEqualOp, other)
-  def === (other: UInt): Bool = compop(EqualOp, other)
+  def < (other: UInt): Bool =
+    if (this.isLit() && other.isLit()) Bool(this.litValue() < other.litValue())
+    else compop(LessOp, other)
+  def > (other: UInt): Bool =
+    if (this.isLit() && other.isLit()) Bool(this.litValue() > other.litValue())
+    else compop(GreaterOp, other)
+  def <= (other: UInt): Bool =
+    if (this.isLit() && other.isLit()) Bool(this.litValue() <= other.litValue())
+    else compop(LessEqOp, other)
+  def >= (other: UInt): Bool =
+    if (this.isLit() && other.isLit()) Bool(this.litValue() >= other.litValue())
+    else compop(GreaterEqOp, other)
+  def != (other: UInt): Bool =
+    if (this.isLit() && other.isLit()) Bool(this.litValue() != other.litValue())
+    else compop(NotEqualOp, other)
+  def =/= (other: UInt): Bool =
+    if (this.isLit() && other.isLit()) Bool(this.litValue() != other.litValue())
+    else compop(NotEqualOp, other)
+  def === (other: UInt): Bool =
+    if (this.isLit() && other.isLit()) Bool(this.litValue() == other.litValue())
+    else compop(EqualOp, other)
   def unary_! : Bool = this === Bits(0)
 
   // REVIEW TODO: Can these also not be defined on Bits?
-  def << (other: Int): UInt = binop(UInt(this.width + other), ShiftLeftOp, other)
+  def << (other: Int): UInt = {
+    val w = this.width + other
+    if (this.isLit()) UInt(this.litValue() << other, w)
+    else binop(UInt(w), ShiftLeftOp, other)
+  }
   def << (other: BigInt): UInt = this << other.toInt
-  def << (other: UInt): UInt = binop(UInt(this.width.dynamicShiftLeft(other.width)), DynamicShiftLeftOp, other)
-  def >> (other: Int): UInt = binop(UInt(this.width.shiftRight(other)), ShiftRightOp, other)
+  def << (other: UInt): UInt =
+    if (other.isLit()) this << other.litValue()
+    else binop(UInt(this.width.dynamicShiftLeft(other.width)), DynamicShiftLeftOp, other)
+  def >> (other: Int): UInt = {
+    val w = this.width.shiftRight(other)
+    if (this.isLit()) UInt(this.litValue() >> other, w)
+    else binop(UInt(w), ShiftRightOp, other)
+  }
   def >> (other: BigInt): UInt = this >> other.toInt
-  def >> (other: UInt): UInt = binop(UInt(this.width), DynamicShiftRightOp, other)
+  def >> (other: UInt): UInt =
+    if (other.isLit()) this >> other.litValue()
+    else binop(UInt(this.width), DynamicShiftRightOp, other)
 
   def bitSet(off: UInt, dat: Bool): UInt = {
     val bit = UInt(1, 1) << off
@@ -510,12 +574,19 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
 
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
-  def & (other: Bool): Bool = binop(Bool(), BitAndOp, other)
-  def | (other: Bool): Bool = binop(Bool(), BitOrOp, other)
-  def ^ (other: Bool): Bool = binop(Bool(), BitXorOp, other)
+  def & (other: Bool): Bool =
+    if (this.isLit() && other.isLit()) Bool((this.litValue() & other.litValue()) == 1)
+    else binop(Bool(), BitAndOp, other)
+  def | (other: Bool): Bool =
+    if (this.isLit() && other.isLit()) Bool((this.litValue() | other.litValue()) == 1)
+    else binop(Bool(), BitOrOp, other)
+  def ^ (other: Bool): Bool =
+    if (this.isLit() && other.isLit()) Bool((this.litValue() ^ other.litValue()) == 1)
+    else binop(Bool(), BitXorOp, other)
 
   /** Returns this wire bitwise-inverted. */
-  override def unary_~ : Bool = unop(Bool(), BitNotOp)
+  override def unary_~ : Bool =
+    if (this.isLit()) Bool(this.litValue() == 0) else unop(Bool(), BitNotOp)
 
   /** Outputs the logical OR of two Bools.
    */
