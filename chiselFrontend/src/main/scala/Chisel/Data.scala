@@ -110,7 +110,7 @@ abstract class Data(dirArg: Direction) extends HasId {
     *
     * This performs the inverse operation of fromBits(Bits).
     */
-  def toBits(): UInt = Cat(this.flatten.reverse)
+  def toBits(): UInt = SeqUtils.asUInt(this.flatten)
 }
 
 object Wire {

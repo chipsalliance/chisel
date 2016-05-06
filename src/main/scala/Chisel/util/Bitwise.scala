@@ -15,15 +15,7 @@ object FillInterleaved
   */
 object PopCount
 {
-  def apply(in: Iterable[Bool]): UInt = {
-    if (in.size == 0) {
-      UInt(0)
-    } else if (in.size == 1) {
-      in.head
-    } else {
-      apply(in.slice(0, in.size/2)) + Cat(UInt(0), apply(in.slice(in.size/2, in.size)))
-    }
-  }
+  def apply(in: Iterable[Bool]): UInt = SeqUtils.count(in.toSeq)
   def apply(in: Bits): UInt = apply((0 until in.getWidth).map(in(_)))
 }
 

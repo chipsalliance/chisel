@@ -104,8 +104,11 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 class Queue[T <: Data](gen: T, val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false,
-                       _reset: Bool = null) extends Module(_reset=_reset)
-{
+                       override_reset: Option[Bool] = None)
+extends Module(override_reset=override_reset) {
+  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) =
+    this(gen, entries, pipe, flow, Some(_reset))
+  
   val io = new QueueIO(gen, entries)
 
   val ram = Mem(entries, gen)
@@ -175,6 +178,6 @@ object Queue
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready
-    q.io.deq
+    TransitName(q.io.deq, q)
   }
 }
