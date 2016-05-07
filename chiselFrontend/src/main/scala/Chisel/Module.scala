@@ -25,8 +25,7 @@ object Module {
     val ports = m.computePorts
     Builder.components += Component(m, m.name, ports, m._commands)
     pushCommand(DefInstance(m, ports))
-    pushCommand(DefInvalid(m.io.ref)) // init instance inputs
-    m.connectImplicitIOs()
+    m.setupInParent()
   }
 }
 
@@ -36,8 +35,16 @@ object Module {
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
-  private val _namespace = Builder.globalNamespace.child
+abstract class Module(
+  override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+extends HasId {
+  // _clock and _reset can be clock and reset in these 2ary constructors
+  // once chisel2 compatibility issues are resolved
+  def this(_clock: Clock) = this(Some(_clock), None)
+  def this(_reset: Bool)  = this(None, Some(_reset))
+  def this(_clock: Clock, _reset: Bool) = this(Some(_clock), Some(_reset))
+
+  private[Chisel] val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _ids = ArrayBuffer[HasId]()
   dynamicContext.currentModule = Some(this)
@@ -54,38 +61,42 @@ abstract class Module(_clock: Clock = null, _reset: Bool = null) extends HasId {
 
   private[Chisel] def addId(d: HasId) { _ids += d }
 
-  private def ports = (clock, "clk") :: (reset, "reset") :: (io, "io") :: Nil
+  private[Chisel] def ports: Seq[(String,Data)] = Vector(
+    ("clk", clock), ("reset", reset), ("io", io)
+  )
 
-  private[Chisel] def computePorts = ports map { case (port, name) =>
+  private[Chisel] def computePorts = for((name, port) <- ports) yield {
     val bundleDir = if (port.isFlip) INPUT else OUTPUT
     Port(port, if (port.dir == NO_DIR) bundleDir else port.dir)
   }
 
-  private def connectImplicitIOs(): this.type = _parent match {
-    case Some(p) =>
-      clock := (if (_clock eq null) p.clock else _clock)
-      reset := (if (_reset eq null) p.reset else _reset)
+  private[Chisel] def setupInParent(): this.type = _parent match {
+    case Some(p) => {
+      pushCommand(DefInvalid(io.ref)) // init instance inputs
+      clock := override_clock.getOrElse(p.clock)
+      reset := override_reset.getOrElse(p.reset)
       this
+    }
     case None => this
   }
 
-  private def makeImplicitIOs(): Unit = ports map { case (port, name) =>
-  }
-
-  private def setRefs(): this.type = {
-    for ((port, name) <- ports)
+  private[Chisel] def setRefs(): this.type = {
+    for ((name, port) <- ports) {
       port.setRef(ModuleIO(this, _namespace.name(name)))
+    }
 
+    // Suggest names to nodes using runtime reflection
     val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
     for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
-      case id: HasId => id.setRef(_namespace.name(m.getName))
+      case (id: HasId) => id.suggestName(m.getName)
       case _ =>
     }
 
-    _ids.foreach(_.setRef(_namespace.name("T")))
+    // All suggestions are in, force names to every node.
+    _ids.foreach(_.forceName(default="T", _namespace))
     _ids.foreach(_._onModuleClose)
     this
   }

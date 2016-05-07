@@ -17,6 +17,9 @@ trait ChiselRunners extends Assertions {
   def assertTesterPasses(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
     assert(runTester(t, additionalVResources))
   }
+  def assertTesterFails(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
+    assert(!runTester(t, additionalVResources))
+  }
   def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
 
 }

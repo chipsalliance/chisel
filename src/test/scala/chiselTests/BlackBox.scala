@@ -21,6 +21,14 @@ class BlackBoxPassthrough extends BlackBox {
   }
 }
 
+class BlackBoxRegister extends BlackBox {
+  val io = new Bundle() {
+    val clock = Clock().asInput
+    val in = Bool(INPUT)
+    val out = Bool(OUTPUT)
+  }
+}
+
 class BlackBoxTester extends BasicTester {
   val blackBoxPos = Module(new BlackBoxInverter)
   val blackBoxNeg = Module(new BlackBoxInverter)
@@ -56,6 +64,45 @@ class MultiBlackBoxTester extends BasicTester {
   stop()
 }
 
+class BlackBoxWithClockTester extends BasicTester {
+  val blackBox = Module(new BlackBoxRegister)
+  val model = Reg(Bool())
+
+  val (cycles, end) = Counter(Bool(true), 15)
+
+  val impetus = cycles(0)
+  blackBox.io.clock := clock
+  blackBox.io.in := impetus
+  model := impetus
+
+  when(cycles > UInt(0)) {
+    assert(blackBox.io.out === model)
+  }
+  when(end) { stop() }
+}
+
+/*
+// Must determine how to handle parameterized Verilog
+class BlackBoxConstant(value: Int) extends BlackBox {
+  val io = new Bundle() {
+    val out = UInt(width=log2Up(value)).asOutput
+  }
+  override val name = s"#(WIDTH=${log2Up(value)},VALUE=$value) "
+}
+
+class BlackBoxWithParamsTester extends BasicTester {
+  val blackBoxOne  = Module(new BlackBoxConstant(1))
+  val blackBoxFour = Module(new BlackBoxConstant(4))
+
+  val (cycles, end) = Counter(Bool(true), 4)
+
+  assert(blackBoxOne.io.out  === UInt(1))
+  assert(blackBoxFour.io.out === UInt(4))
+
+  when(end) { stop() }
+}
+*/
+
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
     assertTesterPasses({ new BlackBoxTester },
@@ -63,6 +110,10 @@ class BlackBoxSpec extends ChiselFlatSpec {
   }
   "Multiple BlackBoxes" should "work" in {
     assertTesterPasses({ new MultiBlackBoxTester },
+        Seq("/BlackBoxTest.v"))
+  }
+  "A BlackBoxed register" should "work" in {
+    assertTesterPasses({ new BlackBoxWithClockTester },
         Seq("/BlackBoxTest.v"))
   }
 }

@@ -15,7 +15,7 @@ class Tbl(w: Int, n: Int) extends Module {
     val  d  = UInt(INPUT, w)
     val  o  = UInt(OUTPUT, w)
   }
-  val m = Mem(UInt(width = w), n)
+  val m = Mem(n, UInt(width = w))
   io.o := m(io.ri)
   when (io.we) {
     m(io.wi) := io.d

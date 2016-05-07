@@ -76,7 +76,7 @@ trait BackendCompilationUtilities {
         s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
         "-Mdir", dir.toString,
         "--exe", cppHarness.toString)
-    System.out.println(s"${command.mkString(" ")}")
+    System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
     command
   }
 
@@ -91,7 +91,7 @@ trait BackendCompilationUtilities {
     val e = Process(s"./V${prefix}", dir) !
       ProcessLogger(line => {
         triggered = triggered || line.contains(assertionMsg)
-        System.out.println(line)
+        System.out.println(line) // scalastyle:ignore regex
       })
     triggered
   }

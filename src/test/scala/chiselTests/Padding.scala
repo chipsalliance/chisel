@@ -9,8 +9,8 @@ class Padder extends Module {
     val asp = SInt(OUTPUT, 8)
     val aup = UInt(OUTPUT, 8)
   }
-  io.asp := io.a.toSInt
-  io.aup := io.a.toUInt
+  io.asp := io.a.asSInt
+  io.aup := io.a.asUInt
 }
 
 /*
