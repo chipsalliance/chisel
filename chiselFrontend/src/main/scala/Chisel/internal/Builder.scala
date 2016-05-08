@@ -124,7 +124,7 @@ private[Chisel] object Builder {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       errors.info("Elaborating design...")
       val mod = f
-      mod.setRef(globalNamespace.name(mod.name))
+      mod.forceName(mod.name, globalNamespace)
       mod
     }
   }
