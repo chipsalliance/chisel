@@ -80,7 +80,7 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(Seq(
     scalaVersion := "2.11.7",
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
-  ))
+  ): _*)
 
 lazy val chisel = (project in file(".")).
   settings(chiselBuildSettings: _*).
