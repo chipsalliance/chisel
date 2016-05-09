@@ -111,8 +111,8 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[AST]
   }
   private def visitDir[AST](ctx: FIRRTLParser.DirContext): Direction =
     ctx.getText match {
-      case "input" => INPUT
-      case "output" => OUTPUT
+      case "input" => Input
+      case "output" => Output
     }
   private def visitMdir[AST](ctx: FIRRTLParser.MdirContext): MPortDir =
     ctx.getText match {

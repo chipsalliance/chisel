@@ -1037,8 +1037,8 @@ object CInferTypes extends Pass {
    }
    
    def to_field (p:Port) : Field = {
-      if (p.direction == OUTPUT) Field(p.name,DEFAULT,p.tpe)
-      else if (p.direction == INPUT) Field(p.name,REVERSE,p.tpe)
+      if (p.direction == Output) Field(p.name,DEFAULT,p.tpe)
+      else if (p.direction == Input) Field(p.name,REVERSE,p.tpe)
       else error("Shouldn't be here"); Field(p.name,REVERSE,p.tpe)
    }
    def module_type (m:DefModule) : Type = BundleType(m.ports.map(p => to_field(p)))

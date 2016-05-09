@@ -108,8 +108,8 @@ class VerilogEmitter extends Emitter {
          }
          case (p:Direction) => {
             p match {
-               case INPUT => w.get.write("input")
-               case OUTPUT => w.get.write("output")
+               case Input => w.get.write("input")
+               case Output => w.get.write("output")
             }
          }
          case (s:String) => w.get.write(s)
@@ -438,8 +438,8 @@ class VerilogEmitter extends Emitter {
       def build_ports () = {
          (m.ports,0 until m.ports.size).zipped.foreach{(p,i) => {
             p.direction match {
-               case INPUT => portdefs += Seq(p.direction,"  ",p.tpe," ",p.name)
-               case OUTPUT => {
+               case Input => portdefs += Seq(p.direction,"  ",p.tpe," ",p.name)
+               case Output => {
                   portdefs += Seq(p.direction," ",p.tpe," ",p.name)
                   val ex = WRef(p.name,p.tpe,PortKind(),FEMALE)
                   assign(ex,netlist(ex))

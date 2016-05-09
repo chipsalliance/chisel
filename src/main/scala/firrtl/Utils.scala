@@ -360,8 +360,8 @@ object Utils extends LazyLogging {
    }
    def swap (d:Direction) : Direction = {
       d match {
-         case OUTPUT => INPUT
-         case INPUT => OUTPUT
+         case Output => Input
+         case Input => Output
       }
    }
    def swap (f:Flip) : Flip = {
@@ -372,14 +372,14 @@ object Utils extends LazyLogging {
    }
    def to_dir (g:Gender) : Direction = {
       g match {
-         case MALE => INPUT
-         case FEMALE => OUTPUT
+         case MALE => Input
+         case FEMALE => Output
       }
    }
    def to_gender (d:Direction) : Gender = {
       d match {
-         case INPUT => MALE
-         case OUTPUT => FEMALE
+         case Input => MALE
+         case Output => FEMALE
       }
    }
   def toGender(f: Flip): Gender = f match {
@@ -495,7 +495,7 @@ object Utils extends LazyLogging {
        case s:IsInvalid => UNKNOWNGENDER
      }
    def get_gender (p:Port) : Gender =
-     if (p.direction == INPUT) MALE else FEMALE
+     if (p.direction == Input) MALE else FEMALE
    def kind (e:Expression) : Kind =
       e match {
          case e:WRef => e.kind
@@ -756,8 +756,8 @@ object Utils extends LazyLogging {
          
      def toDirection(): Direction = {
        f match {
-         case DEFAULT => OUTPUT
-         case REVERSE => INPUT
+         case DEFAULT => Output
+         case REVERSE => Input
        }
      }
    }
@@ -794,8 +794,8 @@ object Utils extends LazyLogging {
    implicit class DirectionUtils(d: Direction) {
      def toFlip(): Flip = {
        d match {
-         case INPUT => REVERSE
-         case OUTPUT => DEFAULT
+         case Input => REVERSE
+         case Output => DEFAULT
        }
      }
    }

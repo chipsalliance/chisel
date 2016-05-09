@@ -161,10 +161,12 @@ case class VectorType(tpe: Type, size: Int) extends Type
 case class ClockType() extends Type
 case class UnknownType() extends Type
 
-trait Direction extends AST
-case object INPUT extends Direction
-case object OUTPUT extends Direction
+/** [[Port]] Direction */
+abstract class Direction extends AST
+case object Input extends Direction
+case object Output extends Direction
 
+/** [[DefModule]] Port */
 case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends AST with IsDeclaration
 
 /** Base class for modules */
