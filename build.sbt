@@ -9,7 +9,6 @@ ghpages.settings
 lazy val chiselBuildSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.0",
-  name := "Chisel3",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
 
   scalaVersion := "2.11.7",
@@ -77,12 +76,20 @@ lazy val chiselBuildSettings = Seq (
 )
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
+  settings(chiselBuildSettings: _*).
   settings(Seq(
-    scalaVersion := "2.11.7",
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   ): _*)
 
 lazy val chisel = (project in file(".")).
   settings(chiselBuildSettings: _*).
+  settings(Seq(
+    name := "Chisel3"
+  )).
   dependsOn(chiselFrontend)
+
+// This is ugly. There must be a better way.
+publish <<= (publish) dependsOn (publish in chiselFrontend)
+
+publishLocal <<= (publishLocal) dependsOn (publishLocal in chiselFrontend)
 
