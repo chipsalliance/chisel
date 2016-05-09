@@ -102,7 +102,7 @@ object ExpandWhens extends Pass {
 
   // ------------ Pass -------------------
   def run(c: Circuit): Circuit = {
-    def expandWhens(m: InModule): (LinkedHashMap[WrappedExpression, Expression], ArrayBuffer[Stmt], Stmt) = {
+    def expandWhens(m: Module): (LinkedHashMap[WrappedExpression, Expression], ArrayBuffer[Stmt], Stmt) = {
       val namespace = Namespace(m)
       val simlist = ArrayBuffer[Stmt]()
 
@@ -187,11 +187,11 @@ object ExpandWhens extends Pass {
     }
     val modulesx = c.modules map { m =>
       m match {
-        case m: ExModule => m
-        case m: InModule =>
+        case m: ExtModule => m
+        case m: Module =>
         val (netlist, simlist, bodyx) = expandWhens(m)
         val newBody = Begin(Seq(bodyx map squashEmpty) ++ expandNetlist(netlist) ++ simlist)
-        InModule(m.info, m.name, m.ports, newBody)
+        Module(m.info, m.name, m.ports, newBody)
       }
     }
     Circuit(c.info, modulesx, c.main)

@@ -258,7 +258,7 @@ object Uniquify extends Pass {
     val portNameMap = collection.mutable.HashMap[String, Map[String, NameMapNode]]()
     val portTypeMap = collection.mutable.HashMap[String, Type]()
 
-    def uniquifyModule(m: Module): Module = {
+    def uniquifyModule(m: DefModule): DefModule = {
       val namespace = collection.mutable.HashSet[String]()
       val nameMap = collection.mutable.HashMap[String, NameMapNode]()
 
@@ -336,8 +336,8 @@ object Uniquify extends Pass {
       sinfo = m.info
       mname = m.name
       m match {
-        case m: ExModule => m
-        case m: InModule =>
+        case m: ExtModule => m
+        case m: Module =>
           // Adds port names to namespace and namemap
           nameMap ++= portNameMap(m.name)
           namespace ++= create_exps("", portTypeMap(m.name)) map
@@ -346,7 +346,7 @@ object Uniquify extends Pass {
       }
     }
 
-    def uniquifyPorts(m: Module): Module = {
+    def uniquifyPorts(m: DefModule): DefModule = {
       def uniquifyPorts(ports: Seq[Port]): Seq[Port] = {
         val portsType = BundleType(ports map (_.toField))
         val uniquePortsType = uniquifyNames(portsType, collection.mutable.HashSet())
@@ -362,8 +362,8 @@ object Uniquify extends Pass {
       sinfo = m.info
       mname = m.name
       m match {
-        case m: ExModule => m.copy(ports = uniquifyPorts(m.ports))
-        case m: InModule => m.copy(ports = uniquifyPorts(m.ports))
+        case m: ExtModule => m.copy(ports = uniquifyPorts(m.ports))
+        case m: Module => m.copy(ports = uniquifyPorts(m.ports))
       }
     }
 

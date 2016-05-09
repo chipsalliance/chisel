@@ -43,7 +43,7 @@ private object Serialize {
       case r: Type => ser.serialize(r)
       case r: Direction => ser.serialize(r)
       case r: Port => ser.serialize(r)
-      case r: Module => ser.serialize(r)
+      case r: DefModule => ser.serialize(r)
       case r: Circuit => ser.serialize(r)
       case r: StringLit => ser.serialize(r)
       case _ => throw new Exception("serialize called on unknown AST node!")
@@ -201,9 +201,9 @@ class Serialize {
   def serialize(p: Port): String =
     s"${serialize(p.direction)} ${p.name} : ${serialize(p.tpe)}${p.info}"
 
-  def serialize(m: Module): String = {
+  def serialize(m: DefModule): String = {
     m match {
-      case m: InModule => {
+      case m: Module => {
         var s = new StringBuilder(s"module ${m.name} :${m.info}")
         withIndent {
           s ++= m.ports.map(newline ++ serialize(_)).mkString
@@ -211,7 +211,7 @@ class Serialize {
         }
         s.toString
       }
-      case m: ExModule => {
+      case m: ExtModule => {
         var s = new StringBuilder(s"extmodule ${m.name} :${m.info}")
         withIndent {
           s ++= m.ports.map(newline ++ serialize(_)).mkString

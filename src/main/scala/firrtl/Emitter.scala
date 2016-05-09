@@ -272,7 +272,7 @@ class VerilogEmitter extends Emitter {
       }
    }
    
-   def emit_verilog (m:InModule) : Module = {
+   def emit_verilog (m:Module) : DefModule = {
       mname = m.name
       val netlist = LinkedHashMap[WrappedExpression,Expression]()
       val simlist = ArrayBuffer[Stmt]()
@@ -655,8 +655,8 @@ class VerilogEmitter extends Emitter {
       this.w = Some(w)
       for (m <- c.modules) {
          m match {
-            case (m:InModule) => emit_verilog(m)
-            case (m:ExModule) => false
+            case (m:Module) => emit_verilog(m)
+            case (m:ExtModule) => false
          }
       }
    }

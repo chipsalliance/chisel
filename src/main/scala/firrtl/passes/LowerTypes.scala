@@ -88,7 +88,7 @@ object LowerTypes extends Pass {
     implicit var mname: String = ""
     implicit var sinfo: Info = NoInfo
 
-    def lowerTypes(m: Module): Module = {
+    def lowerTypes(m: DefModule): DefModule = {
       val memDataTypeMap = HashMap[String, Type]()
 
       // Lowers an expression of MemKind
@@ -251,8 +251,8 @@ object LowerTypes extends Pass {
         exps map ( e => Port(p.info, loweredName(e), to_dir(gender(e)), tpe(e)) )
       }
       m match {
-        case m: ExModule => m.copy(ports = portsx)
-        case m: InModule => InModule(m.info, m.name, portsx, lowerTypesStmt(m.body))
+        case m: ExtModule => m.copy(ports = portsx)
+        case m: Module => Module(m.info, m.name, portsx, lowerTypesStmt(m.body))
       }
     }
 

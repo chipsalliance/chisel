@@ -76,8 +76,8 @@ object CommonSubexpressionElimination extends Pass {
 
   def run(c: Circuit): Circuit = {
     val modulesx = c.modules.map {
-      case m: ExModule => m
-      case m: InModule => InModule(m.info, m.name, m.ports, cse(m.body))
+      case m: ExtModule => m
+      case m: Module => Module(m.info, m.name, m.ports, cse(m.body))
     }
     Circuit(c.info, modulesx, c.main)
   }

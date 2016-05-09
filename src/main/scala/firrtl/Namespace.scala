@@ -59,7 +59,7 @@ object Namespace {
   def apply(): Namespace = new Namespace
 
   // Initializes a namespace from a Module
-  def apply(m: Module): Namespace = {
+  def apply(m: DefModule): Namespace = {
     val namespace = new Namespace
 
     def buildNamespaceStmt(s: Stmt): Stmt =
@@ -77,7 +77,7 @@ object Namespace {
     }
     m.ports map buildNamespacePort
     m match {
-      case in: InModule => buildNamespaceStmt(in.body)
+      case in: Module => buildNamespaceStmt(in.body)
       case _ => // Do nothing
     }
 

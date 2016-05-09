@@ -167,13 +167,22 @@ case object OUTPUT extends Direction
 
 case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends AST with IsDeclaration
 
-trait Module extends AST with IsDeclaration {
+/** Base class for modules */
+abstract class DefModule extends AST with IsDeclaration {
   val info : Info
   val name : String
   val ports : Seq[Port]
 }
-case class InModule(info: Info, name: String, ports: Seq[Port], body: Stmt) extends Module
-case class ExModule(info: Info, name: String, ports: Seq[Port]) extends Module
+/** Internal Module
+  *
+  * An instantiable hardware block
+  */
+case class Module(info: Info, name: String, ports: Seq[Port], body: Stmt) extends DefModule
+/** External Module
+  *
+  * Generally used for Verilog black boxes
+  */
+case class ExtModule(info: Info, name: String, ports: Seq[Port]) extends DefModule
 
-case class Circuit(info: Info, modules: Seq[Module], main: String) extends AST with HasInfo
+case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends AST with HasInfo
 

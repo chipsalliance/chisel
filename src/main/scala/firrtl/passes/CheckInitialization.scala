@@ -62,7 +62,7 @@ object CheckInitialization extends Pass {
     val errors = collection.mutable.ArrayBuffer[PassException]()
 
 
-    def checkInitM(m: InModule): Unit = {
+    def checkInitM(m: Module): Unit = {
       val voidExprs = collection.mutable.HashMap[WrappedExpression, VoidExpr]()
 
       def hasVoidExpr(e: Expression): (Boolean, Seq[Expression]) = {
@@ -116,7 +116,7 @@ object CheckInitialization extends Pass {
 
     c.modules foreach { m =>
       m match {
-        case m: InModule => checkInitM(m)
+        case m: Module => checkInitM(m)
         case m => // Do nothing
       }
     }

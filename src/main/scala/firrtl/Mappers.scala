@@ -196,36 +196,36 @@ object Mappers {
 
   // ********** Module Mappers **********
   private trait ModuleMagnet {
-    def map(module: Module): Module
+    def map(module: DefModule): DefModule
   }
   private object ModuleMagnet {
     implicit def forStmt(f: Stmt => Stmt) = new ModuleMagnet {
-      override def map(module: Module): Module = {
+      override def map(module: DefModule): DefModule = {
         module match {
-          case m: InModule => InModule(m.info, m.name, m.ports, f(m.body))
-          case m: ExModule => m
+          case m: Module => Module(m.info, m.name, m.ports, f(m.body))
+          case m: ExtModule => m
         }
       }
     }
     implicit def forPorts(f: Port => Port) = new ModuleMagnet {
-      override def map(module: Module): Module = {
+      override def map(module: DefModule): DefModule = {
         module match {
-          case m: InModule => InModule(m.info, m.name, m.ports.map(f), m.body)
-          case m: ExModule => ExModule(m.info, m.name, m.ports.map(f))
+          case m: Module => Module(m.info, m.name, m.ports.map(f), m.body)
+          case m: ExtModule => ExtModule(m.info, m.name, m.ports.map(f))
         }
       }
     }
     implicit def forString(f: String => String) = new ModuleMagnet {
-      override def map(module: Module): Module = {
+      override def map(module: DefModule): DefModule = {
         module match {
-          case m: InModule => InModule(m.info, f(m.name), m.ports, m.body)
-          case m: ExModule => ExModule(m.info, f(m.name), m.ports)
+          case m: Module => Module(m.info, f(m.name), m.ports, m.body)
+          case m: ExtModule => ExtModule(m.info, f(m.name), m.ports)
         }
       }
     }
   }
-  implicit class ModuleMap(module: Module) {
-    def map[T](f: T => T)(implicit magnet: (T => T) => ModuleMagnet): Module = magnet(f).map(module)
+  implicit class ModuleMap(module: DefModule) {
+    def map[T](f: T => T)(implicit magnet: (T => T) => ModuleMagnet): DefModule = magnet(f).map(module)
   }
 
 }

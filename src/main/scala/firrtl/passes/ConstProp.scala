@@ -256,7 +256,7 @@ object ConstProp extends Pass {
   }
 
   @tailrec
-  private def constPropModule(m: InModule): InModule = {
+  private def constPropModule(m: Module): Module = {
     var nPropagated = 0L
     val nodeMap = collection.mutable.HashMap[String, Expression]()
 
@@ -281,14 +281,14 @@ object ConstProp extends Pass {
       s map constPropStmt map constPropExpression
     }
 
-    val res = InModule(m.info, m.name, m.ports, constPropStmt(m.body))
+    val res = Module(m.info, m.name, m.ports, constPropStmt(m.body))
     if (nPropagated > 0) constPropModule(res) else res
   }
 
   def run(c: Circuit): Circuit = {
     val modulesx = c.modules.map {
-      case m: ExModule => m
-      case m: InModule => constPropModule(m)
+      case m: ExtModule => m
+      case m: Module => constPropModule(m)
     }
     Circuit(c.info, modulesx, c.main)
   }

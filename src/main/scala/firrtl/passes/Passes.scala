@@ -85,8 +85,8 @@ object ToWorkingIR extends Pass {
       val modulesx = c.modules.map { m => 
          mname = m.name
          m match {
-            case m:InModule => InModule(m.info,m.name, m.ports, toStmt(m.body))
-            case m:ExModule => m
+            case m:Module => Module(m.info,m.name, m.ports, toStmt(m.body))
+            case m:ExtModule => m
          }
       }
       Circuit(c.info,modulesx,c.main)
@@ -97,7 +97,7 @@ object ResolveKinds extends Pass {
    private var mname = ""
    def name = "Resolve Kinds"
    def run (c:Circuit): Circuit = {
-      def resolve_kinds (m:Module, c:Circuit):Module = {
+      def resolve_kinds (m:DefModule, c:Circuit):DefModule = {
          val kinds = LinkedHashMap[String,Kind]()
          def resolve (body:Stmt) = {
             def resolve_expr (e:Expression):Expression = {
@@ -110,7 +110,7 @@ object ResolveKinds extends Pass {
             resolve_stmt(body)
          }
    
-         def find (m:Module) = {
+         def find (m:DefModule) = {
             def find_stmt (s:Stmt):Stmt = {
                s match {
                   case s:DefWire => kinds(s.name) = WireKind()
@@ -125,19 +125,19 @@ object ResolveKinds extends Pass {
             }
             m.ports.foreach { p => kinds(p.name) = PortKind() }
             m match {
-               case m:InModule => find_stmt(m.body)
-               case m:ExModule => false
+               case m:Module => find_stmt(m.body)
+               case m:ExtModule => false
             }
          }
        
          mname = m.name
          find(m)   
          m match {
-            case m:InModule => {
+            case m:Module => {
                val bodyx = resolve(m.body)
-               InModule(m.info,m.name,m.ports,bodyx)
+               Module(m.info,m.name,m.ports,bodyx)
             }
-            case m:ExModule => ExModule(m.info,m.name,m.ports)
+            case m:ExtModule => ExtModule(m.info,m.name,m.ports)
          }
       }
       val modulesx = c.modules.map(m => resolve_kinds(m,c))
@@ -167,7 +167,7 @@ object InferTypes extends Pass {
    def run (c:Circuit): Circuit = {
       val module_types = LinkedHashMap[String,Type]()
       implicit val wnamespace = Namespace()
-      def infer_types (m:Module) : Module = {
+      def infer_types (m:DefModule) : DefModule = {
          val types = LinkedHashMap[String,Type]()
          def infer_types_e (e:Expression) : Expression = {
             e map (infer_types_e) match {
@@ -224,8 +224,8 @@ object InferTypes extends Pass {
          mname = m.name
          m.ports.foreach(p => types(p.name) = p.tpe)
          m match {
-            case m:InModule => InModule(m.info,m.name,m.ports,infer_types_s(m.body))
-            case m:ExModule => m
+            case m:Module => Module(m.info,m.name,m.ports,infer_types_s(m.body))
+            case m:ExtModule => m
          }
        }
  
@@ -234,8 +234,8 @@ object InferTypes extends Pass {
             mname = m.name
             val portsx = m.ports.map(p => Port(p.info,p.name,p.direction,remove_unknowns(p.tpe)))
             m match {
-               case m:InModule => InModule(m.info,m.name,portsx,m.body)
-               case m:ExModule => ExModule(m.info,m.name,portsx)
+               case m:Module => Module(m.info,m.name,portsx,m.body)
+               case m:ExtModule => ExtModule(m.info,m.name,portsx)
             }
          }
       }
@@ -295,11 +295,11 @@ object ResolveGenders extends Pass {
          m => {
             mname = m.name
             m match {
-               case m:InModule => {
+               case m:Module => {
                   val bodyx = resolve_s(m.body)
-                  InModule(m.info,m.name,m.ports,bodyx)
+                  Module(m.info,m.name,m.ports,bodyx)
                }
-               case m:ExModule => m
+               case m:ExtModule => m
             }
          }
       }
@@ -534,8 +534,8 @@ object InferWidths extends Pass {
          val portsx = m.ports.map{ p => {
             Port(p.info,p.name,p.direction,mapr(reduce_var_widths_w _,p.tpe)) }}
          (m) match {
-            case (m:ExModule) => ExModule(m.info,m.name,portsx)
-            case (m:InModule) => mname = m.name; InModule(m.info,m.name,portsx,mapr(reduce_var_widths_w _,m.body)) }}}
+            case (m:ExtModule) => ExtModule(m.info,m.name,portsx)
+            case (m:Module) => mname = m.name; Module(m.info,m.name,portsx,mapr(reduce_var_widths_w _,m.body)) }}}
       Circuit(c.info,modulesx,c.main)
    }
    
@@ -592,7 +592,7 @@ object InferWidths extends Pass {
 
       for (m <- c.modules) {
          (m) match {
-            case (m:InModule) => mname = m.name; get_constraints(m.body)
+            case (m:Module) => mname = m.name; get_constraints(m.body)
             case (m) => false }}
       //println-debug("======== ALL CONSTRAINTS ========")
       //for x in v do : println-debug(x)
@@ -644,8 +644,8 @@ object PullMuxes extends Pass {
          m => {
             mname = m.name
             m match {
-               case (m:InModule) => InModule(m.info,m.name,m.ports,pull_muxes(m.body))
-               case (m:ExModule) => m
+               case (m:Module) => Module(m.info,m.name,m.ports,pull_muxes(m.body))
+               case (m:ExtModule) => m
             }
          }
       }
@@ -657,7 +657,7 @@ object ExpandConnects extends Pass {
    private var mname = ""
    def name = "Expand Connects"
    def run (c:Circuit): Circuit = {
-      def expand_connects (m:InModule) : InModule = { 
+      def expand_connects (m:Module) : Module = {
          mname = m.name
          val genders = LinkedHashMap[String,Gender]()
          def expand_s (s:Stmt) : Stmt = {
@@ -737,14 +737,14 @@ object ExpandConnects extends Pass {
          }
    
          m.ports.foreach { p => genders(p.name) = to_gender(p.direction) }
-         InModule(m.info,m.name,m.ports,expand_s(m.body))
+         Module(m.info,m.name,m.ports,expand_s(m.body))
       }
    
       val modulesx = c.modules.map { 
          m => {
             m match {
-               case (m:ExModule) => m
-               case (m:InModule) => expand_connects(m)
+               case (m:ExtModule) => m
+               case (m:Module) => expand_connects(m)
             }
          }
       }
@@ -816,7 +816,7 @@ object RemoveAccesses extends Pass {
       ret
    }
    def run (c:Circuit): Circuit = {
-      def remove_m (m:InModule) : InModule = {
+      def remove_m (m:Module) : Module = {
          val namespace = Namespace(m)
          mname = m.name
          def remove_s (s:Stmt) : Stmt = {
@@ -883,14 +883,14 @@ object RemoveAccesses extends Pass {
             stmts += sx
             if (stmts.size != 1) Begin(stmts) else stmts(0)
          }
-         InModule(m.info,m.name,m.ports,remove_s(m.body))
+         Module(m.info,m.name,m.ports,remove_s(m.body))
       }
    
       val modulesx = c.modules.map{
          m => {
             m match {
-               case (m:ExModule) => m
-               case (m:InModule) => remove_m(m)
+               case (m:ExtModule) => m
+               case (m:Module) => remove_m(m)
             }
          }
       }
@@ -946,7 +946,7 @@ object Legalize extends Pass {
       }
       legalizedStmt map legalizeS map legalizeE
     }
-    def legalizeM (m: Module): Module = m map (legalizeS)
+    def legalizeM (m: DefModule): DefModule = m map (legalizeS)
     Circuit(c.info, c.modules.map(legalizeM), c.main)
   }
 }
@@ -983,11 +983,11 @@ object VerilogWrap extends Pass {
    def run (c:Circuit): Circuit = {
       val modulesx = c.modules.map{ m => {
          (m) match {
-            case (m:InModule) => {
+            case (m:Module) => {
                mname = m.name
-               InModule(m.info,m.name,m.ports,v_wrap_s(m.body))
+               Module(m.info,m.name,m.ports,v_wrap_s(m.body))
             }
-            case (m:ExModule) => m
+            case (m:ExtModule) => m
          }
       }}
       Circuit(c.info,modulesx,c.main)
@@ -1014,8 +1014,8 @@ object VerilogRename extends Pass {
             Port(p.info,verilog_rename_n(p.name),p.direction,p.tpe)
          }}
          m match {
-            case (m:InModule) => InModule(m.info,m.name,portsx,verilog_rename_s(m.body))
-            case (m:ExModule) => m
+            case (m:Module) => Module(m.info,m.name,portsx,verilog_rename_s(m.body))
+            case (m:ExtModule) => m
          }
       }}
       Circuit(c.info,modulesx,c.main)
@@ -1041,7 +1041,7 @@ object CInferTypes extends Pass {
       else if (p.direction == INPUT) Field(p.name,REVERSE,p.tpe)
       else error("Shouldn't be here"); Field(p.name,REVERSE,p.tpe)
    }
-   def module_type (m:Module) : Type = BundleType(m.ports.map(p => to_field(p)))
+   def module_type (m:DefModule) : Type = BundleType(m.ports.map(p => to_field(p)))
    def field_type (v:Type,s:String) : Type = {
       (v) match { 
          case (v:BundleType) => {
@@ -1059,7 +1059,7 @@ object CInferTypes extends Pass {
       }
    def run (c:Circuit) : Circuit = {
       val module_types = LinkedHashMap[String,Type]()
-      def infer_types (m:Module) : Module = {
+      def infer_types (m:DefModule) : DefModule = {
          val types = LinkedHashMap[String,Type]()
          def infer_types_e (e:Expression) : Expression = {
             (e map (infer_types_e)) match { 
@@ -1118,8 +1118,8 @@ object CInferTypes extends Pass {
             types(p.name) = p.tpe
          }
          (m) match { 
-            case (m:InModule) => InModule(m.info,m.name,m.ports,infer_types_s(m.body))
-            case (m:ExModule) => m
+            case (m:Module) => Module(m.info,m.name,m.ports,infer_types_s(m.body))
+            case (m:ExtModule) => m
          }
       }
    
@@ -1136,7 +1136,7 @@ object CInferMDir extends Pass {
    def name = "CInfer MDir"
    var mname = ""
    def run (c:Circuit) : Circuit = {
-      def infer_mdir (m:Module) : Module = {
+      def infer_mdir (m:DefModule) : DefModule = {
          val mports = LinkedHashMap[String,MPortDir]()
          def infer_mdir_e (dir:MPortDir)(e:Expression) : Expression = {
             (e map (infer_mdir_e(dir))) match { 
@@ -1196,11 +1196,11 @@ object CInferMDir extends Pass {
             }
          }
          (m) match { 
-            case (m:InModule) => {
+            case (m:Module) => {
                infer_mdir_s(m.body)
-               InModule(m.info,m.name,m.ports,set_mdir_s(m.body))
+               Module(m.info,m.name,m.ports,set_mdir_s(m.body))
             }
-            case (m:ExModule) => m
+            case (m:ExtModule) => m
          }
       }
    
@@ -1237,7 +1237,7 @@ object RemoveCHIRRTL extends Pass {
       }
    }
    def run (c:Circuit) : Circuit = {
-      def remove_chirrtl_m (m:InModule) : InModule = {
+      def remove_chirrtl_m (m:Module) : Module = {
          val hash = LinkedHashMap[String,MPorts]()
          val repl = LinkedHashMap[String,DataRef]()
          val ut = UnknownType()
@@ -1424,12 +1424,12 @@ object RemoveCHIRRTL extends Pass {
          }
          collect_mports(m.body)
          val sx = collect_refs(m.body)
-         InModule(m.info,m.name, m.ports, remove_chirrtl_s(sx))
+         Module(m.info,m.name, m.ports, remove_chirrtl_s(sx))
       }
       val modulesx = c.modules.map{ m => {
             (m) match { 
-               case (m:InModule) => remove_chirrtl_m(m)
-               case (m:ExModule) => m
+               case (m:Module) => remove_chirrtl_m(m)
+               case (m:ExtModule) => m
             }}}
       Circuit(c.info,modulesx, c.main)
    }

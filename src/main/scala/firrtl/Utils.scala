@@ -233,7 +233,7 @@ object Utils extends LazyLogging {
          }
       } else UnknownType()
    }
-   def module_type (m:Module) : Type = {
+   def module_type (m:DefModule) : Type = {
       BundleType(m.ports.map(p => p.toField))
    }
    def sub_type (v:Type) : Type = {
@@ -620,12 +620,12 @@ object Utils extends LazyLogging {
 
   /** Gets the root declaration of an expression
     *
-    * @param m the [[firrtl.InModule]] to search
+    * @param m    the [[firrtl.Module]] to search
     * @param expr the [[firrtl.Expression]] that refers to some declaration
     * @return the [[firrtl.IsDeclaration]] of `expr`
     * @throws DeclarationNotFoundException if no declaration of `expr` is found
     */
-  def getDeclaration(m: InModule, expr: Expression): IsDeclaration = {
+  def getDeclaration(m: Module, expr: Expression): IsDeclaration = {
     def getRootDecl(name: String)(s: Stmt): Option[IsDeclaration] = s match {
       case decl: IsDeclaration => if (decl.name == name) Some(decl) else None
       case c: Conditionally =>

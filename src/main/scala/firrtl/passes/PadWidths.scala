@@ -70,10 +70,10 @@ object PadWidths extends Pass {
          case s => s map onStmt
       }
    }
-   private def onModule(m: Module): Module = {
+   private def onModule(m: DefModule): DefModule = {
       m match {
-         case m:InModule => InModule(m.info, m.name, m.ports, onStmt(m.body))
-         case m:ExModule => m
+         case m: Module => Module(m.info, m.name, m.ports, onStmt(m.body))
+         case m: ExtModule => m
       }
    }
    def run(c: Circuit): Circuit = Circuit(c.info, c.modules.map(onModule _), c.main)

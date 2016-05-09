@@ -98,11 +98,11 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[AST]
 	private def visitCircuit[AST](ctx: FIRRTLParser.CircuitContext): Circuit =
     Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.map(visitModule), (ctx.id.getText))
     
-  private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): Module = {
+  private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): DefModule = {
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0).getText match {
-      case "module" => InModule(info, ctx.id.getText, ctx.port.map(visitPort), visitBlock(ctx.block))
-      case "extmodule" => ExModule(info, ctx.id.getText, ctx.port.map(visitPort))
+      case "module" => Module(info, ctx.id.getText, ctx.port.map(visitPort), visitBlock(ctx.block))
+      case "extmodule" => ExtModule(info, ctx.id.getText, ctx.port.map(visitPort))
     }
   }
 

@@ -10,7 +10,7 @@ import scala.collection.mutable
 //  and named intermediate nodes
 object SplitExpressions extends Pass {
    def name = "Split Expressions"
-   private def onModule(m: InModule): InModule = {
+   private def onModule(m: Module): Module = {
       val namespace = Namespace(m)
       def onStmt(s: Stmt): Stmt = {
          val v = mutable.ArrayBuffer[Stmt]()
@@ -53,12 +53,12 @@ object SplitExpressions extends Pass {
             }
          }
       }
-      InModule(m.info, m.name, m.ports, onStmt(m.body))
+      Module(m.info, m.name, m.ports, onStmt(m.body))
    }
    def run(c: Circuit): Circuit = {
       val modulesx = c.modules.map( _ match {
-         case (m:InModule) => onModule(m)
-         case (m:ExModule) => m
+         case m: Module => onModule(m)
+         case m: ExtModule => m
       })
       Circuit(c.info, modulesx, c.main)
    }
