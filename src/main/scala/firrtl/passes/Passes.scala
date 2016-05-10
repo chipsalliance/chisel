@@ -1038,58 +1038,6 @@ object VerilogWrap extends Pass {
    }
 }
 
-object SplitExp extends Pass {
-   def name = "Split Expressions"
-   var mname = ""
-   def split_exp (m:InModule) : InModule = {
-      val namespace = Namespace(m)
-      mname = m.name
-      val v = ArrayBuffer[Stmt]()
-      def split_exp_s (s:Stmt) : Stmt = {
-         def split (e:Expression) : Expression = {
-            val n = namespace.newTemp
-            v += DefNode(info(s),n,e)
-            WRef(n,tpe(e),kind(e),gender(e))
-         }
-         def split_exp_e (i:Int)(e:Expression) : Expression = {
-            e map (split_exp_e(i + 1)) match {
-               case (e:DoPrim) => if (i > 0) split(e) else e
-               case (e:Mux) => if (i > 0) split(e) else e
-               case (e:ValidIf) => if (i > 0) split(e) else e
-               case (e) => e
-            }
-         }
-         s match {
-            case (s:Begin) => s map (split_exp_s)
-            case (s:Print) => {
-               val sx = s map (split_exp_e(1))
-               v += sx; sx
-            }
-            case (s:Stop) => {
-               val sx = s map (split_exp_e(1))
-               v += sx; sx
-            }
-            case (s) => {
-               val sx = s map (split_exp_e(0))
-               v += sx; sx
-            }
-         }
-      }
-      split_exp_s(m.body)
-      InModule(m.info,m.name,m.ports,Begin(v))
-   }
-   
-   def run (c:Circuit): Circuit = {
-      val modulesx = c.modules.map{ m => {
-         (m) match {
-            case (m:InModule) => split_exp(m)
-            case (m:ExModule) => m
-         }
-      }}
-      Circuit(c.info,modulesx,c.main)
-   }
-}
-
 object VerilogRename extends Pass {
    def name = "Verilog Rename"
    def run (c:Circuit): Circuit = {
