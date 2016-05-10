@@ -56,7 +56,7 @@ object FIRRTLEmitter extends Emitter {
 
 case class VIndent()
 case object VRandom extends Expression {
-  def tpe = UIntType(UnknownWidth())
+  def tpe = UIntType(UnknownWidth)
 }
 class VerilogEmitter extends Emitter {
    val tab = "  "

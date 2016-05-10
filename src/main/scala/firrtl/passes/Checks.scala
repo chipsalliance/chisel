@@ -290,8 +290,8 @@ object CheckTypes extends Pass with LazyLogging {
    class ValidIfPassiveTypes(info:Info) extends PassException(s"${info}: [module ${mname}]  Must validif a passive type.")
    class ValidIfCondUInt(info:Info) extends PassException(s"${info}: [module ${mname}]  A validif condition must be of type UInt.")
    //;---------------- Helper Functions --------------
-   def ut () : UIntType = UIntType(UnknownWidth())
-   def st () : SIntType = SIntType(UnknownWidth())
+   def ut () : UIntType = UIntType(UnknownWidth)
+   def st () : SIntType = SIntType(UnknownWidth)
    
    def check_types_primop (e:DoPrim, errors:Errors, info:Info) : Unit = {
       def all_same_type (ls:Seq[Expression]) : Unit = {

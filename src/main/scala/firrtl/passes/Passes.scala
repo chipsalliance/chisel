@@ -159,7 +159,7 @@ object InferTypes extends Pass {
    }
    def remove_unknowns_w (w:Width)(implicit namespace: Namespace):Width = {
       w match {
-         case w:UnknownWidth => VarWidth(namespace.newName("w"))
+         case UnknownWidth => VarWidth(namespace.newName("w"))
          case w => w
       }
    }

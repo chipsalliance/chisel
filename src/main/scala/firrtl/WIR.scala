@@ -161,7 +161,7 @@ class WrappedWidth (val w:Width) {
          case (w:MinusWidth) => "(" + w.arg1 + " - " + w.arg2 + ")"
          case (w:ExpWidth) => "exp(" + w.arg1 + ")"
          case (w:IntWidth) => w.width.toString
-         case (w:UnknownWidth) => "?"
+         case UnknownWidth => "?"
       }
    }
    def ww (w:Width) : WrappedWidth = new WrappedWidth(w)
@@ -200,7 +200,7 @@ class WrappedWidth (val w:Width) {
                case (w1:MinusWidth,w2:MinusWidth) => 
                   (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) || (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
                case (w1:ExpWidth,w2:ExpWidth) => ww(w1.arg1) == ww(w2.arg1)
-               case (w1:UnknownWidth,w2:UnknownWidth) => true
+               case (UnknownWidth, UnknownWidth) => true
                case (w1,w2) => false
             }
          }

@@ -126,26 +126,27 @@ case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends S
 case class Print(info: Info, string: StringLit, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt with HasInfo
 case class Empty() extends Stmt
 
-trait Width extends AST {
+abstract class Width extends AST {
   def +(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width + b.width)
-    case _ => UnknownWidth()
+    case _ => UnknownWidth
   }
   def -(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width - b.width)
-    case _ => UnknownWidth()
+    case _ => UnknownWidth
   }
   def max(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width max b.width)
-    case _ => UnknownWidth()
+    case _ => UnknownWidth
   }
   def min(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width min b.width)
-    case _ => UnknownWidth()
+    case _ => UnknownWidth
   }
 }
-case class IntWidth(width: BigInt) extends Width 
-case class UnknownWidth() extends Width
+/** Positive Integer Bit Width of a [[GroundType]] */
+case class IntWidth(width: BigInt) extends Width
+case object UnknownWidth extends Width
 
 /** Orientation of [[Field]] */
 abstract class Orientation extends AST

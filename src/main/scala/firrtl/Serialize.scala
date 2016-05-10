@@ -163,7 +163,7 @@ class Serialize {
 
   def serialize(w: Width): String = {
     w match {
-      case w:UnknownWidth => ""
+      case UnknownWidth => ""
       case w: IntWidth => s"<${w.width.toString}>"
       case w: VarWidth => s"<${w.name}>"
     }

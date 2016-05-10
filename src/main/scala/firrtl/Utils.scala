@@ -204,8 +204,8 @@ object Utils extends LazyLogging {
    def mux_type (t1:Type,t2:Type) : Type = {
       if (wt(t1) == wt(t2)) {
          (t1,t2) match { 
-            case (t1:UIntType,t2:UIntType) => UIntType(UnknownWidth())
-            case (t1:SIntType,t2:SIntType) => SIntType(UnknownWidth())
+            case (t1:UIntType,t2:UIntType) => UIntType(UnknownWidth)
+            case (t1:SIntType,t2:SIntType) => SIntType(UnknownWidth)
             case (t1:VectorType,t2:VectorType) => VectorType(mux_type(t1.tpe,t2.tpe),t1.size)
             case (t1:BundleType,t2:BundleType) => 
                BundleType((t1.fields,t2.fields).zipped.map((f1,f2) => {
@@ -781,8 +781,8 @@ object Utils extends LazyLogging {
 
      def wipeWidth(): Type = 
        t match {
-         case t: UIntType => UIntType(UnknownWidth())
-         case t: SIntType => SIntType(UnknownWidth())
+         case t: UIntType => UIntType(UnknownWidth)
+         case t: SIntType => SIntType(UnknownWidth)
          case _ => t
        }
    }
