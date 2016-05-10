@@ -110,12 +110,12 @@ object Driver extends BackendCompilationUtilities {
     */
   def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
 
-  def emit[T <: Module](gen: () => T): String = elaborate(gen).emit
+  def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
 
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
-    w.write(ir.emit)
+    w.write(Emitter.emit(ir))
     w.close()
     f
   }
