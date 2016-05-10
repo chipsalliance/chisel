@@ -155,7 +155,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   /** Returns the contents of this wire as a [[Vec]] of [[Bool]]s.
     */
-  def toBools: Vec[Bool] = Vec.tabulate(this.getWidth)(i => this(i))
+  def toBools: Seq[Bool] = Seq.tabulate(this.getWidth)(i => this(i))
 
   /** Reinterpret cast to a SInt.
     *
