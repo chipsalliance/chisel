@@ -6,13 +6,16 @@ site.includeScaladoc()
 
 ghpages.settings
 
-lazy val chiselBuildSettings = Seq (
+lazy val commonSettings = Seq (
+  scalaVersion := "2.11.7"
+)
+
+lazy val chiselSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.0",
   name := "Chisel3",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
 
-  scalaVersion := "2.11.7",
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
@@ -77,12 +80,16 @@ lazy val chiselBuildSettings = Seq (
 )
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
-  settings(Seq(
-    scalaVersion := "2.11.7",
+  settings(commonSettings: _*).
+  settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
-  ): _*)
+  )
 
 lazy val chisel = (project in file(".")).
-  settings(chiselBuildSettings: _*).
-  dependsOn(chiselFrontend)
-
+  settings(commonSettings: _*).
+  settings(chiselSettings: _*).
+  dependsOn(chiselFrontend).settings(
+    // Include macro classes, resources, and sources main jar.
+    mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
+    mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
+  )
