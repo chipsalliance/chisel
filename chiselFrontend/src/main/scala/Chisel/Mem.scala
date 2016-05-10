@@ -59,7 +59,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def write(idx: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
+  def write(idx: UInt, data: T, mask: Seq[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
     val accessor = makePort(idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
     if (accessor.length != dataVec.length) {
