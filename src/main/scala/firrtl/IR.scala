@@ -109,22 +109,44 @@ case class SIntValue(value: BigInt, width: Width) extends Expression {
 }
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression
 
-trait Stmt extends AST
-case class DefWire(info: Info, name: String, tpe: Type) extends Stmt with IsDeclaration
-case class DefPoison(info: Info, name: String, tpe: Type) extends Stmt with IsDeclaration
-case class DefRegister(info: Info, name: String, tpe: Type, clock: Expression, reset: Expression, init: Expression) extends Stmt with IsDeclaration
-case class DefInstance(info: Info, name: String, module: String) extends Stmt with IsDeclaration
-case class DefMemory(info: Info, name: String, data_type: Type, depth: Int, write_latency: Int, 
-               read_latency: Int, readers: Seq[String], writers: Seq[String], readwriters: Seq[String]) extends Stmt with IsDeclaration
-case class DefNode(info: Info, name: String, value: Expression) extends Stmt with IsDeclaration
-case class Conditionally(info: Info, pred: Expression, conseq: Stmt, alt: Stmt) extends Stmt with HasInfo
-case class Begin(stmts: Seq[Stmt]) extends Stmt
-case class BulkConnect(info: Info, loc: Expression, exp: Expression) extends Stmt with HasInfo
-case class Connect(info: Info, loc: Expression, exp: Expression) extends Stmt with HasInfo
-case class IsInvalid(info: Info, exp: Expression) extends Stmt with HasInfo
-case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Stmt with HasInfo
-case class Print(info: Info, string: StringLit, args: Seq[Expression], clk: Expression, en: Expression) extends Stmt with HasInfo
-case class Empty() extends Stmt
+abstract class Statement extends AST
+case class DefWire(info: Info, name: String, tpe: Type) extends Statement with IsDeclaration
+case class DefRegister(
+    info: Info,
+    name: String,
+    tpe: Type,
+    clock: Expression,
+    reset: Expression,
+    init: Expression) extends Statement with IsDeclaration
+case class DefInstance(info: Info, name: String, module: String) extends Statement with IsDeclaration
+case class DefMemory(
+    info: Info,
+    name: String,
+    dataType: Type,
+    depth: Int,
+    writeLatency: Int,
+    readLatency: Int,
+    readers: Seq[String],
+    writers: Seq[String],
+    readwriters: Seq[String]) extends Statement with IsDeclaration
+case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration
+case class Conditionally(
+    info: Info,
+    pred: Expression,
+    conseq: Statement,
+    alt: Statement) extends Statement with HasInfo
+case class Begin(stmts: Seq[Statement]) extends Statement
+case class PartialConnect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo
+case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo
+case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo
+case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Statement with HasInfo
+case class Print(
+    info: Info,
+    string: StringLit,
+    args: Seq[Expression],
+    clk: Expression,
+    en: Expression) extends Statement with HasInfo
+case object EmptyStmt extends Statement
 
 abstract class Width extends AST {
   def +(x: Width): Width = (this, x) match {
@@ -188,7 +210,7 @@ abstract class DefModule extends AST with IsDeclaration {
   *
   * An instantiable hardware block
   */
-case class Module(info: Info, name: String, ports: Seq[Port], body: Stmt) extends DefModule
+case class Module(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule
 /** External Module
   *
   * Generally used for Verilog black boxes

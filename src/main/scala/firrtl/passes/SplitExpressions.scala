@@ -12,8 +12,8 @@ object SplitExpressions extends Pass {
    def name = "Split Expressions"
    private def onModule(m: Module): Module = {
       val namespace = Namespace(m)
-      def onStmt(s: Stmt): Stmt = {
-         val v = mutable.ArrayBuffer[Stmt]()
+      def onStmt(s: Statement): Statement = {
+         val v = mutable.ArrayBuffer[Statement]()
          // Splits current expression if needed
          // Adds named temporaries to v
          def split(e: Expression): Expression = e match {
@@ -45,7 +45,7 @@ object SplitExpressions extends Pass {
          val x = s map onExp
          x match {
             case x: Begin => x map onStmt
-            case x: Empty => x
+            case EmptyStmt => x
             case x => {
                v += x
                if (v.size > 1) Begin(v.toVector)

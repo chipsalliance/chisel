@@ -220,24 +220,24 @@ object Uniquify extends Pass {
   }
 
   // Creates a Bundle Type from a Stmt
-  def stmtToType(s: Stmt)(implicit sinfo: Info, mname: String): BundleType = {
+  def stmtToType(s: Statement)(implicit sinfo: Info, mname: String): BundleType = {
     // Recursive helper
-    def recStmtToType(s: Stmt): Seq[Field] = s match {
+    def recStmtToType(s: Statement): Seq[Field] = s match {
       case s: DefWire => Seq(Field(s.name, Default, s.tpe))
       case s: DefRegister => Seq(Field(s.name, Default, s.tpe))
       case s: WDefInstance => Seq(Field(s.name, Default, s.tpe))
-      case s: DefMemory => s.data_type match {
+      case s: DefMemory => s.dataType match {
         case (_: UIntType | _: SIntType) =>
           Seq(Field(s.name, Default, get_type(s)))
         case tpe: BundleType =>
           val newFields = tpe.fields map ( f =>
-            DefMemory(s.info, f.name, f.tpe, s.depth, s.write_latency,
-              s.read_latency, s.readers, s.writers, s.readwriters)
+            DefMemory(s.info, f.name, f.tpe, s.depth, s.writeLatency,
+              s.readLatency, s.readers, s.writers, s.readwriters)
           ) flatMap (recStmtToType)
           Seq(Field(s.name, Default, BundleType(newFields)))
         case tpe: VectorType =>
           val newFields = (0 until tpe.size) map ( i =>
-            s.copy(name = i.toString, data_type = tpe.tpe)
+            s.copy(name = i.toString, dataType = tpe.tpe)
           ) flatMap (recStmtToType)
           Seq(Field(s.name, Default, BundleType(newFields)))
       }
@@ -271,7 +271,7 @@ object Uniquify extends Pass {
         case e: DoPrim => e map (uniquifyExp)
       }
 
-      def uniquifyStmt(s: Stmt): Stmt = {
+      def uniquifyStmt(s: Statement): Statement = {
         s map uniquifyStmt map uniquifyExp match {
           case s: DefWire =>
             sinfo = s.info
@@ -302,8 +302,8 @@ object Uniquify extends Pass {
             sinfo = s.info
             if (nameMap.contains(s.name)) {
               val node = nameMap(s.name)
-              val dataType = uniquifyNamesType(s.data_type, node.elts)
-              val mem = s.copy(name = node.name, data_type = dataType)
+              val dataType = uniquifyNamesType(s.dataType, node.elts)
+              val mem = s.copy(name = node.name, dataType = dataType)
               // Create new mapping to handle references to memory data fields
               val uniqueMemMap = createNameMapping(get_type(s), get_type(mem))
               nameMap(s.name) = NameMapNode(node.name, node.elts ++ uniqueMemMap)
@@ -323,7 +323,7 @@ object Uniquify extends Pass {
         }
       }
 
-      def uniquifyBody(s: Stmt): Stmt = {
+      def uniquifyBody(s: Statement): Statement = {
         val bodyType = stmtToType(s)
         val uniqueBodyType = uniquifyNames(bodyType, namespace)
         val localMap = createNameMapping(bodyType, uniqueBodyType)

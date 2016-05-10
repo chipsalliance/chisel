@@ -132,8 +132,8 @@ object ConstProp extends Pass {
         case _ => false
       }
       def isZero(e: Expression) = e match {
-          case UIntValue(value,_) => value == BigInt(0)
-          case SIntValue(value,_) => value == BigInt(0)
+          case UIntLiteral(value, _) => value == BigInt(0)
+          case SIntLiteral(value, _) => value == BigInt(0)
           case _ => false
         }
       x match {
@@ -159,8 +159,8 @@ object ConstProp extends Pass {
         def <= (that: Range) = this.max <= that.min
       }
       def range(e: Expression): Range = e match {
-        case UIntValue(value, _) => Range(value, value)
-        case SIntValue(value, _) => Range(value, value)
+        case UIntLiteral(value, _) => Range(value, value)
+        case SIntLiteral(value, _) => Range(value, value)
         case _ => tpe(e) match {
           case SIntType(IntWidth(width)) => Range(
             min = BigInt(0) - BigInt(2).pow(width.toInt - 1),
@@ -273,7 +273,7 @@ object ConstProp extends Pass {
       propagated
     }
 
-    def constPropStmt(s: Stmt): Stmt = {
+    def constPropStmt(s: Statement): Statement = {
       s match {
         case x: DefNode => nodeMap(x.name) = x.value
         case _ =>

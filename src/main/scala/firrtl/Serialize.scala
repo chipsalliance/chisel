@@ -36,7 +36,7 @@ private object Serialize {
     root match {
       case r: PrimOp => ser.serialize(r)
       case r: Expression => ser.serialize(r)
-      case r: Stmt => ser.serialize(r)
+      case r: Statement => ser.serialize(r)
       case r: Width => ser.serialize(r)
       case r: Orientation => ser.serialize(r)
       case r: Field => ser.serialize(r)
@@ -84,7 +84,7 @@ class Serialize {
     }
   }
 
-  def serialize(stmt: Stmt): String = {
+  def serialize(stmt: Statement): String = {
     stmt match {
       case w: DefWire => s"wire ${w.name} : ${serialize(w.tpe)}${w.info}"
       case r: DefRegister =>
@@ -99,10 +99,10 @@ class Serialize {
         val str = new StringBuilder(s"mem ${m.name} :${m.info}")
         withIndent {
           str ++= newline +
-            s"data-type => ${serialize(m.data_type)}" + newline +
+            s"data-type => ${serialize(m.dataType)}" + newline +
             s"depth => ${m.depth}" + newline +
-            s"read-latency => ${m.read_latency}" + newline +
-            s"write-latency => ${m.write_latency}" + newline +
+            s"read-latency => ${m.readLatency}" + newline +
+            s"write-latency => ${m.writeLatency}" + newline +
             (if (m.readers.nonEmpty) m.readers.map(r => s"reader => ${r}").mkString(newline) + newline
              else "") +
             (if (m.writers.nonEmpty) m.writers.map(w => s"writer => ${w}").mkString(newline) + newline
@@ -114,13 +114,13 @@ class Serialize {
         str.result
       }
       case n: DefNode => s"node ${n.name} = ${serialize(n.value)}${n.info}"
-      case c: Connect => s"${serialize(c.loc)} <= ${serialize(c.exp)}${c.info}"
-      case b: BulkConnect => s"${serialize(b.loc)} <- ${serialize(b.exp)}${b.info}"
+      case c: Connect => s"${serialize(c.loc)} <= ${serialize(c.expr)}${c.info}"
+      case p: PartialConnect => s"${serialize(p.loc)} <- ${serialize(p.expr)}${p.info}"
       case w: Conditionally => {
         var str = new StringBuilder(s"when ${serialize(w.pred)} :${w.info}")
         withIndent { str ++= newline + serialize(w.conseq) }
         w.alt match {
-          case s:Empty => str.result
+          case EmptyStmt => str.result
           case s => {
             str ++= newline + "else :"
             withIndent { str ++= newline + serialize(w.alt) }
@@ -136,7 +136,7 @@ class Serialize {
         }
         s.result
       }
-      case i: IsInvalid => s"${serialize(i.exp)} is invalid${i.info}"
+      case i: IsInvalid => s"${serialize(i.expr)} is invalid${i.info}"
       case s: Stop => s"stop(${serialize(s.clk)}, ${serialize(s.en)}, ${s.ret})${s.info}"
       case p: Print => {
         val q = '"'.toString
@@ -144,7 +144,7 @@ class Serialize {
                       (if (p.args.nonEmpty) p.args.map(serialize).mkString(", ", ", ", "") else "") +
                       s")${p.info}"
       }
-      case s: Empty => "skip"
+      case EmptyStmt => "skip"
       case s: CDefMemory => {
         if (s.seq) s"smem ${s.name} : ${serialize(s.tpe)} [${s.size}]${s.info}"
         else s"cmem ${s.name} : ${serialize(s.tpe)} [${s.size}]${s.info}"

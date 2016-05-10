@@ -153,7 +153,7 @@ object LowerTypes extends Pass {
         case e: DoPrim => e map (lowerTypesExp)
       }
 
-      def lowerTypesStmt(s: Stmt): Stmt = {
+      def lowerTypesStmt(s: Statement): Statement = {
         s map lowerTypesStmt match {
           case s: DefWire =>
             sinfo = s.info
@@ -195,14 +195,14 @@ object LowerTypes extends Pass {
             }
           case s: DefMemory =>
             sinfo = s.info
-            memDataTypeMap += (s.name -> s.data_type)
-            if (s.data_type.isGround) {
+            memDataTypeMap += (s.name -> s.dataType)
+            if (s.dataType.isGround) {
               s
             } else {
-              val exps = create_exps(s.name, s.data_type)
+              val exps = create_exps(s.name, s.dataType)
               val stmts = exps map { e =>
                 DefMemory(s.info, loweredName(e), tpe(e), s.depth,
-                  s.write_latency, s.read_latency, s.readers, s.writers,
+                  s.writeLatency, s.readLatency, s.readers, s.writers,
                   s.readwriters)
               }
               Begin(stmts)
@@ -224,9 +224,9 @@ object LowerTypes extends Pass {
             Begin(stmts)
           case s: IsInvalid =>
             sinfo = s.info
-            kind(s.exp) match {
+            kind(s.expr) match {
               case k: MemKind =>
-                val exps = lowerTypesMemExp(s.exp)
+                val exps = lowerTypesMemExp(s.expr)
                 Begin(exps map (exp => IsInvalid(s.info, exp)))
               case _ => s map (lowerTypesExp)
             }
@@ -234,7 +234,7 @@ object LowerTypes extends Pass {
             sinfo = s.info
             kind(s.loc) match {
               case k: MemKind =>
-                val exp = lowerTypesExp(s.exp)
+                val exp = lowerTypesExp(s.expr)
                 val locs = lowerTypesMemExp(s.loc)
                 Begin(locs map (loc => Connect(s.info, loc, exp)))
               case _ => s map (lowerTypesExp)

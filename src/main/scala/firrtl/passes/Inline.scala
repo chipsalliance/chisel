@@ -52,7 +52,7 @@ object InlineInstances extends Transform {
          }
       def checkInstance(cn: ComponentName): Unit = {
          var containsCN = false
-         def onStmt(name: String)(s: Stmt): Stmt = {
+         def onStmt(name: String)(s: Statement): Statement = {
             s match {
                case WDefInstance(_, inst_name, module_name, tpe) =>
                   if (name == inst_name) {
@@ -106,7 +106,7 @@ object InlineInstances extends Transform {
             case e => e map onExp
          }
          // Recursive. Inlines tagged instances
-         def onStmt(s: Stmt): Stmt = s match {
+         def onStmt(s: Statement): Statement = s match {
                case WDefInstance(info, instName, moduleName, instTpe) => {
                   def rename(name:String): String = {
                      val newName = instName + inlineDelim + name
@@ -114,7 +114,7 @@ object InlineInstances extends Transform {
                      newName
                   }
                   // Rewrites references in inlined statements from ref to inst$ref
-                  def renameStmt(s: Stmt): Stmt = {
+                  def renameStmt(s: Statement): Statement = {
                      def renameExp(e: Expression): Expression = {
                         e map renameExp match {
                            case WRef(name, tpe, kind, gen) => WRef(rename(name), tpe, kind, gen)
@@ -139,7 +139,7 @@ object InlineInstances extends Transform {
                         case m: ExtModule => throw new PassException("Cannot inline external module")
                         case m: Module => m
                      }
-                     val stmts = mutable.ArrayBuffer[Stmt]()
+                     val stmts = mutable.ArrayBuffer[Statement]()
                      for (p <- instInModule.ports) {
                         stmts += DefWire(p.info, rename(p.name), p.tpe)
                      }

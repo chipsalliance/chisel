@@ -57,10 +57,10 @@ object PadWidths extends Pass {
       }
    }
    // Recursive. Fixes assignments and register initialization widths
-   private def onStmt(s: Stmt): Stmt = {
+   private def onStmt(s: Statement): Statement = {
       s map onExp match {
          case s: Connect => {
-            val ex = fixup(width(s.loc))(s.exp)
+            val ex = fixup(width(s.loc))(s.expr)
             Connect(s.info, s.loc, ex)
          }
          case s: DefRegister => {

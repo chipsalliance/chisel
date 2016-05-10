@@ -145,11 +145,11 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[AST]
      
 
   // visitBlock
-	private def visitBlock[AST](ctx: FIRRTLParser.BlockContext): Stmt = 
+	private def visitBlock[AST](ctx: FIRRTLParser.BlockContext): Statement =
     Begin(ctx.stmt.map(visitStmt)) 
 
   // Memories are fairly complicated to translate thus have a dedicated method
-  private def visitMem[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
+  private def visitMem[AST](ctx: FIRRTLParser.StmtContext): Statement = {
     def parseChildren(children: Seq[ParseTree], map: Map[String, Seq[ParseTree]]): Map[String, Seq[ParseTree]] = {
       val field = children(0).getText
       if (field == "}") map
@@ -192,7 +192,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[AST]
   }
 
   // visitStmt
-	private def visitStmt[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
+  private def visitStmt[AST](ctx: FIRRTLParser.StmtContext): Statement = {
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0) match {
       case term: TerminalNode => term.getText match {
@@ -222,19 +222,19 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[AST]
         case "inst"  => DefInstance(info, (ctx.id(0).getText), (ctx.id(1).getText))
         case "node" =>  DefNode(info, (ctx.id(0).getText), visitExp(ctx.exp(0)))
         case "when" => {
-          val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else Empty()
+          val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else EmptyStmt
           Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
         }
         case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
         case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
                                 visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-        case "skip" => Empty()
+        case "skip" => EmptyStmt
       }
       // If we don't match on the first child, try the next one
       case _ => {
         ctx.getChild(1).getText match {
           case "<=" => Connect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)) )
-          case "<-" => BulkConnect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)) )
+          case "<-" => PartialConnect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)) )
           case "is" => IsInvalid(info, visitExp(ctx.exp(0)))
           case "mport" => CDefMPort(info, ctx.id(0).getText, UnknownType,ctx.id(1).getText,Seq(visitExp(ctx.exp(0)),visitExp(ctx.exp(1))),visitMdir(ctx.mdir))
         }

@@ -280,7 +280,7 @@ object Utils extends LazyLogging {
      def getType(): Type = 
        ast match {
          case e: Expression => e.getType
-         case s: Stmt => s.getType
+         case s: Statement => s.getType
          //case f: Field => f.getType
          case t: Type => t.getType
          case p: Port => p.getType
@@ -440,23 +440,22 @@ object Utils extends LazyLogging {
 
 
 // =========== ACCESSORS =========
-   def info (s:Stmt) : Info = {
+   def info (s:Statement) : Info = {
       s match {
          case s:DefWire => s.info
-         case s:DefPoison => s.info
          case s:DefRegister => s.info
          case s:DefInstance => s.info
          case s:WDefInstance => s.info
          case s:DefMemory => s.info
          case s:DefNode => s.info
          case s:Conditionally => s.info
-         case s:BulkConnect => s.info
+         case s:PartialConnect => s.info
          case s:Connect => s.info
          case s:IsInvalid => s.info
          case s:Stop => s.info
          case s:Print => s.info
          case s:Begin => NoInfo
-         case s:Empty => NoInfo
+         case EmptyStmt => NoInfo
       }
    }
    def gender (e:Expression) : Gender = {
@@ -473,21 +472,20 @@ object Utils extends LazyLogging {
         case e:WInvalid => MALE
         case e => println(e); error("Shouldn't be here")
     }}
-   def get_gender (s:Stmt) : Gender =
+   def get_gender (s:Statement) : Gender =
      s match {
        case s:DefWire => BIGENDER
        case s:DefRegister => BIGENDER
        case s:WDefInstance => MALE
        case s:DefNode => MALE
        case s:DefInstance => MALE
-       case s:DefPoison => UNKNOWNGENDER
        case s:DefMemory => MALE
        case s:Begin => UNKNOWNGENDER
        case s:Connect => UNKNOWNGENDER
-       case s:BulkConnect => UNKNOWNGENDER
+       case s:PartialConnect => UNKNOWNGENDER
        case s:Stop => UNKNOWNGENDER
        case s:Print => UNKNOWNGENDER
-       case s:Empty => UNKNOWNGENDER
+       case EmptyStmt => UNKNOWNGENDER
        case s:IsInvalid => UNKNOWNGENDER
      }
    def get_gender (p:Port) : Gender =
@@ -517,10 +515,9 @@ object Utils extends LazyLogging {
          case e:WVoid => UnknownType
          case e:WInvalid => UnknownType
       }
-   def get_type (s:Stmt) : Type = {
+   def get_type (s:Statement) : Type = {
       s match {
        case s:DefWire => s.tpe
-       case s:DefPoison => s.tpe
        case s:DefRegister => s.tpe
        case s:DefNode => tpe(s.value)
        case s:DefMemory => {
@@ -528,11 +525,11 @@ object Utils extends LazyLogging {
           val addr = Field("addr",Default,UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))
           val en = Field("en",Default,BoolType())
           val clk = Field("clk",Default,ClockType)
-          val def_data = Field("data",Default,s.data_type)
-          val rev_data = Field("data",Flip,s.data_type)
-          val mask = Field("mask",Default,create_mask(s.data_type))
+          val def_data = Field("data",Default,s.dataType)
+          val rev_data = Field("data",Flip,s.dataType)
+          val mask = Field("mask",Default,create_mask(s.dataType))
           val wmode = Field("wmode",Default,UIntType(IntWidth(1)))
-          val rdata = Field("rdata",Flip,s.data_type)
+          val rdata = Field("rdata",Flip,s.dataType)
           val read_type = BundleType(Seq(rev_data,addr,en,clk))
           val write_type = BundleType(Seq(def_data,mask,addr,en,clk))
           val readwrite_type = BundleType(Seq(wmode,rdata,def_data,mask,addr,en,clk))
@@ -547,10 +544,9 @@ object Utils extends LazyLogging {
        case s:WDefInstance => s.tpe
        case _ => UnknownType
     }}
-   def get_name (s:Stmt) : String = {
+   def get_name (s:Statement) : String = {
       s match {
        case s:DefWire => s.name
-       case s:DefPoison => s.name
        case s:DefRegister => s.name
        case s:DefNode => s.name
        case s:DefMemory => s.name
@@ -558,17 +554,16 @@ object Utils extends LazyLogging {
        case s:WDefInstance => s.name
        case _ => error("Shouldn't be here"); "blah"
     }}
-   def get_info (s:Stmt) : Info = {
+   def get_info (s:Statement) : Info = {
       s match {
        case s:DefWire => s.info
-       case s:DefPoison => s.info
        case s:DefRegister => s.info
        case s:DefInstance => s.info
        case s:WDefInstance => s.info
        case s:DefMemory => s.info
        case s:DefNode => s.info
        case s:Conditionally => s.info
-       case s:BulkConnect => s.info
+       case s:PartialConnect => s.info
        case s:Connect => s.info
        case s:IsInvalid => s.info
        case s:Stop => s.info
@@ -622,7 +617,7 @@ object Utils extends LazyLogging {
     * @throws DeclarationNotFoundException if no declaration of `expr` is found
     */
   def getDeclaration(m: Module, expr: Expression): IsDeclaration = {
-    def getRootDecl(name: String)(s: Stmt): Option[IsDeclaration] = s match {
+    def getRootDecl(name: String)(s: Statement): Option[IsDeclaration] = s match {
       case decl: IsDeclaration => if (decl.name == name) Some(decl) else None
       case c: Conditionally =>
         val m = (getRootDecl(name)(c.conseq), getRootDecl(name)(c.alt))
@@ -657,10 +652,10 @@ object Utils extends LazyLogging {
       def apply_t (t:Type) : Type = t map (apply_t) map (f)
       apply_t(t)
    }
-   def mapr (f: Width => Width, s:Stmt) : Stmt = {
+   def mapr (f: Width => Width, s:Statement) : Statement = {
       def apply_t (t:Type) : Type = mapr(f,t)
       def apply_e (e:Expression) : Expression = e map (apply_e) map (apply_t) map (f)
-      def apply_s (s:Stmt) : Stmt = s map (apply_s) map (apply_e) map (apply_t)
+      def apply_s (s:Statement) : Statement = s map (apply_s) map (apply_e) map (apply_t)
       apply_s(s)
    }
    val ONE = IntWidth(1)
@@ -714,26 +709,25 @@ object Utils extends LazyLogging {
    //   to-stmt(body(m))
    //   map(to-port,ports(m))
    //   sym-hash
-   implicit class StmtUtils(stmt: Stmt) {
+   implicit class StmtUtils(stmt: Statement) {
 
      def getType(): Type =
        stmt match {
          case s: DefWire    => s.tpe
          case s: DefRegister => s.tpe
-         case s: DefMemory  => s.data_type
+         case s: DefMemory  => s.dataType
          case _ => UnknownType
        }
 
      def getInfo: Info =
        stmt match {
          case s: DefWire => s.info
-         case s: DefPoison => s.info
          case s: DefRegister => s.info
          case s: DefInstance => s.info
          case s: DefMemory => s.info
          case s: DefNode => s.info
          case s: Conditionally => s.info
-         case s: BulkConnect => s.info
+         case s: PartialConnect => s.info
          case s: Connect => s.info
          case s: IsInvalid => s.info
          case s: Stop => s.info

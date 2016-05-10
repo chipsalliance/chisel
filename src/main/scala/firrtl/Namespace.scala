@@ -62,7 +62,7 @@ object Namespace {
   def apply(m: DefModule): Namespace = {
     val namespace = new Namespace
 
-    def buildNamespaceStmt(s: Stmt): Stmt =
+    def buildNamespaceStmt(s: Statement): Statement =
       s map buildNamespaceStmt match {
         case dec: IsDeclaration =>
           namespace.namespace += dec.name

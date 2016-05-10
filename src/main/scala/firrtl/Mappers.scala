@@ -32,41 +32,40 @@ object Mappers {
 
   // ********** Stmt Mappers **********
   private trait StmtMagnet {
-    def map(stmt: Stmt): Stmt
+    def map(stmt: Statement): Statement
   }
   private object StmtMagnet {
-    implicit def forStmt(f: Stmt => Stmt) = new StmtMagnet {
-      override def map(stmt: Stmt): Stmt = {
+    implicit def forStmt(f: Statement => Statement) = new StmtMagnet {
+      override def map(stmt: Statement): Statement = {
         stmt match {
           case s: Conditionally => Conditionally(s.info, s.pred, f(s.conseq), f(s.alt))
           case s: Begin => Begin(s.stmts.map(f))
-          case s: Stmt => s
+          case s: Statement => s
         }
       }
     }
     implicit def forExp(f: Expression => Expression) = new StmtMagnet {
-      override def map(stmt: Stmt): Stmt = {
+      override def map(stmt: Statement): Statement = {
         stmt match { 
           case s: DefRegister => DefRegister(s.info, s.name, s.tpe, f(s.clock), f(s.reset), f(s.init))
           case s: DefNode => DefNode(s.info, s.name, f(s.value))
-          case s: Connect => Connect(s.info, f(s.loc), f(s.exp))
-          case s: BulkConnect => BulkConnect(s.info, f(s.loc), f(s.exp))
+          case s: Connect => Connect(s.info, f(s.loc), f(s.expr))
+          case s: PartialConnect => PartialConnect(s.info, f(s.loc), f(s.expr))
           case s: Conditionally => Conditionally(s.info, f(s.pred), s.conseq, s.alt)
-          case s: IsInvalid => IsInvalid(s.info, f(s.exp))
+          case s: IsInvalid => IsInvalid(s.info, f(s.expr))
           case s: Stop => Stop(s.info, s.ret, f(s.clk), f(s.en))
           case s: Print => Print(s.info, s.string, s.args.map(f), f(s.clk), f(s.en))
           case s: CDefMPort => CDefMPort(s.info,s.name,s.tpe,s.mem,s.exps.map(f),s.direction)
-          case s: Stmt => s 
+          case s: Statement => s
         }
       }
     }
     implicit def forType(f: Type => Type) = new StmtMagnet {
-      override def map(stmt: Stmt) : Stmt = {
+      override def map(stmt: Statement) : Statement = {
         stmt match {
-          case s:DefPoison => DefPoison(s.info,s.name,f(s.tpe))
           case s:DefWire => DefWire(s.info,s.name,f(s.tpe))
           case s:DefRegister => DefRegister(s.info,s.name,f(s.tpe),s.clock,s.reset,s.init)
-          case s:DefMemory => DefMemory(s.info,s.name, f(s.data_type), s.depth, s.write_latency, s.read_latency, s.readers, s.writers, s.readwriters)
+          case s:DefMemory => DefMemory(s.info,s.name, f(s.dataType), s.depth, s.writeLatency, s.readLatency, s.readers, s.writers, s.readwriters)
           case s:CDefMemory => CDefMemory(s.info,s.name, f(s.tpe), s.size, s.seq)
           case s:CDefMPort => CDefMPort(s.info,s.name, f(s.tpe), s.mem, s.exps,s.direction)
           case s => s
@@ -74,12 +73,11 @@ object Mappers {
       }
     }
     implicit def forString(f: String => String) = new StmtMagnet {
-      override def map(stmt: Stmt): Stmt = {
+      override def map(stmt: Statement): Statement = {
         stmt match {
           case s: DefWire => DefWire(s.info,f(s.name),s.tpe)
-          case s: DefPoison => DefPoison(s.info,f(s.name),s.tpe)
           case s: DefRegister => DefRegister(s.info,f(s.name), s.tpe, s.clock, s.reset, s.init)
-          case s: DefMemory => DefMemory(s.info,f(s.name), s.data_type, s.depth, s.write_latency, s.read_latency, s.readers, s.writers, s.readwriters)
+          case s: DefMemory => DefMemory(s.info,f(s.name), s.dataType, s.depth, s.writeLatency, s.readLatency, s.readers, s.writers, s.readwriters)
           case s: DefNode => DefNode(s.info,f(s.name),s.value)
           case s: DefInstance => DefInstance(s.info,f(s.name), s.module)
           case s: WDefInstance => WDefInstance(s.info,f(s.name), s.module,s.tpe)
@@ -90,9 +88,9 @@ object Mappers {
       }
     }
   }
-  implicit class StmtMap(stmt: Stmt) {
+  implicit class StmtMap(stmt: Statement) {
     // Using implicit types to allow overloading of function type to map, see StmtMagnet above
-    def map[T](f: T => T)(implicit magnet: (T => T) => StmtMagnet): Stmt = magnet(f).map(stmt)
+    def map[T](f: T => T)(implicit magnet: (T => T) => StmtMagnet): Statement = magnet(f).map(stmt)
   }
 
   // ********** Expression Mappers **********
@@ -199,7 +197,7 @@ object Mappers {
     def map(module: DefModule): DefModule
   }
   private object ModuleMagnet {
-    implicit def forStmt(f: Stmt => Stmt) = new ModuleMagnet {
+    implicit def forStmt(f: Statement => Statement) = new ModuleMagnet {
       override def map(module: DefModule): DefModule = {
         module match {
           case m: Module => Module(m.info, m.name, m.ports, f(m.body))

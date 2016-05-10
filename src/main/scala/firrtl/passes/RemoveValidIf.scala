@@ -13,7 +13,7 @@ object RemoveValidIf extends Pass {
       }
    }
    // Recursive.
-   private def onStmt(s: Stmt): Stmt = s map onStmt map onExp
+   private def onStmt(s: Statement): Statement = s map onStmt map onExp
 
    private def onModule(m: DefModule): DefModule = {
       m match {

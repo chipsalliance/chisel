@@ -57,7 +57,7 @@ case class WVoid() extends Expression { def tpe = UnknownType }
 case class WInvalid() extends Expression { def tpe = UnknownType }
 // Useful for splitting then remerging references
 case object EmptyExpression extends Expression { def tpe = UnknownType }
-case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt with IsDeclaration
+case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Statement with IsDeclaration
 
 // Resultant width is the same as the maximum input width
 case object ADDW_OP extends PrimOp
@@ -227,6 +227,6 @@ case object MRead extends MPortDir
 case object MWrite extends MPortDir
 case object MReadWrite extends MPortDir
 
-case class CDefMemory (val info: Info, val name: String, val tpe: Type, val size: Int, val seq: Boolean) extends Stmt
-case class CDefMPort (val info: Info, val name: String, val tpe: Type, val mem: String, val exps: Seq[Expression], val direction: MPortDir) extends Stmt
+case class CDefMemory (val info: Info, val name: String, val tpe: Type, val size: Int, val seq: Boolean) extends Statement
+case class CDefMPort (val info: Info, val name: String, val tpe: Type, val mem: String, val exps: Seq[Expression], val direction: MPortDir) extends Statement
 
