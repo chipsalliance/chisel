@@ -60,7 +60,7 @@ class Serialize {
 
   def serialize(info: Info): String = " " + info.toString
 
-  def serialize(op: PrimOp): String = op.getString
+  def serialize(op: PrimOp): String = op.toString
 
   def serialize(lit: StringLit): String = FIRRTLStringLitHandler.escape(lit)
 

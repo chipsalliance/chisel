@@ -42,6 +42,7 @@ import com.typesafe.scalalogging.LazyLogging
 import WrappedExpression._
 import firrtl.WrappedType._
 import firrtl.Mappers._
+import firrtl.PrimOps._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.LinkedHashMap
 //import scala.reflect.runtime.universe._
@@ -89,7 +90,7 @@ object Utils extends LazyLogging {
       else if ((e1 == we(zero)) | (e2 == we(zero))) zero
       else if (e1 == we(one)) e2.e1
       else if (e2 == we(one)) e1.e1
-      else DoPrim(AND_OP,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
+      else DoPrim(And,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
    }
    
    def OR (e1:WrappedExpression,e2:WrappedExpression) : Expression = {
@@ -97,13 +98,13 @@ object Utils extends LazyLogging {
       else if ((e1 == we(one)) | (e2 == we(one))) one
       else if (e1 == we(zero)) e2.e1
       else if (e2 == we(zero)) e1.e1
-      else DoPrim(OR_OP,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
+      else DoPrim(Or,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
    }
-   def EQV (e1:Expression,e2:Expression) : Expression = { DoPrim(EQUAL_OP,Seq(e1,e2),Seq(),tpe(e1)) }
+   def EQV (e1:Expression,e2:Expression) : Expression = { DoPrim(Eq,Seq(e1,e2),Seq(),tpe(e1)) }
    def NOT (e1:WrappedExpression) : Expression = {
       if (e1 == we(one)) zero
       else if (e1 == we(zero)) one
-      else DoPrim(EQUAL_OP,Seq(e1.e1,zero),Seq(),UIntType(IntWidth(1)))
+      else DoPrim(Eq,Seq(e1.e1,zero),Seq(),UIntType(IntWidth(1)))
    }
 
    

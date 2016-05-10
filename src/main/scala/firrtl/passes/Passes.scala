@@ -894,7 +894,7 @@ object RemoveAccesses extends Pass {
 object Legalize extends Pass {
   def name = "Legalize"
   def legalizeShiftRight (e: DoPrim): Expression = e.op match {
-    case SHIFT_RIGHT_OP => {
+    case Shr => {
       val amount = e.consts(0).toInt
       val width = long_BANG(tpe(e.args(0)))
       lazy val msb = width - 1
@@ -902,7 +902,7 @@ object Legalize extends Pass {
         e.tpe match {
           case t: UIntType => UIntLiteral(0, IntWidth(1))
           case t: SIntType =>
-            DoPrim(BITS_SELECT_OP, e.args, Seq(msb, msb), SIntType(IntWidth(1)))
+            DoPrim(Bits, e.args, Seq(msb, msb), SIntType(IntWidth(1)))
           case t => error(s"Unsupported type ${t} for Primop Shift Right")
         }
       } else {
@@ -920,7 +920,7 @@ object Legalize extends Pass {
         case _: UIntType => UIntType(IntWidth(w))
         case _: SIntType => SIntType(IntWidth(w))
       }
-      Connect(c.info, c.loc, DoPrim(BITS_SELECT_OP, Seq(c.expr), Seq(w-1, 0), newType))
+      Connect(c.info, c.loc, DoPrim(Bits, Seq(c.expr), Seq(w-1, 0), newType))
     }
   }
   def run (c: Circuit): Circuit = {
@@ -949,11 +949,11 @@ object VerilogWrap extends Pass {
       e map (v_wrap_e) match {
          case (e:DoPrim) => {
             def a0 () = e.args(0)
-            if (e.op == TAIL_OP) {
+            if (e.op == Tail) {
                (a0()) match {
                   case (e0:DoPrim) => {
-                     if (e0.op == ADD_OP) DoPrim(ADDW_OP,e0.args,Seq(),tpe(e))
-                     else if (e0.op == SUB_OP) DoPrim(SUBW_OP,e0.args,Seq(),tpe(e))
+                     if (e0.op == Add) DoPrim(Addw,e0.args,Seq(),tpe(e))
+                     else if (e0.op == Sub) DoPrim(Subw,e0.args,Seq(),tpe(e))
                      else e
                   }
                   case (e0) => e

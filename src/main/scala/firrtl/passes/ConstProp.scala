@@ -30,6 +30,7 @@ package firrtl.passes
 import firrtl._
 import firrtl.Utils._
 import firrtl.Mappers._
+import firrtl.PrimOps._
 
 import annotation.tailrec
 
@@ -137,10 +138,10 @@ object ConstProp extends Pass {
           case _ => false
         }
       x match {
-        case DoPrim(LESS_OP,      Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => zero
-        case DoPrim(LESS_EQ_OP,   Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => one
-        case DoPrim(GREATER_OP,   Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => zero
-        case DoPrim(GREATER_EQ_OP,Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => one
+        case DoPrim(Lt,  Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => zero
+        case DoPrim(Leq, Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => one
+        case DoPrim(Gt,  Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => zero
+        case DoPrim(Geq, Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => one
         case e => e
       }
     }
@@ -179,15 +180,15 @@ object ConstProp extends Pass {
           def r1 = range(e.args(1))
           e.op match {
             // Always true
-            case LESS_OP       if (r0 < r1) => one
-            case LESS_EQ_OP    if (r0 <= r1) => one
-            case GREATER_OP    if (r0 > r1) => one
-            case GREATER_EQ_OP if (r0 >= r1) => one
+            case Lt  if (r0 < r1) => one
+            case Leq if (r0 <= r1) => one
+            case Gt  if (r0 > r1) => one
+            case Geq if (r0 >= r1) => one
             // Always false
-            case LESS_OP       if (r0 >= r1) => zero
-            case LESS_EQ_OP    if (r0 > r1) => zero
-            case GREATER_OP    if (r0 <= r1) => zero
-            case GREATER_EQ_OP if (r0 < r1) => zero
+            case Lt  if (r0 >= r1) => zero
+            case Leq if (r0 > r1) => zero
+            case Gt  if (r0 <= r1) => zero
+            case Geq if (r0 < r1) => zero
             case _ => e
           }
         }
@@ -198,20 +199,20 @@ object ConstProp extends Pass {
   }
 
   private def constPropPrim(e: DoPrim): Expression = e.op match {
-    case SHIFT_LEFT_OP => foldShiftLeft(e)
-    case SHIFT_RIGHT_OP => foldShiftRight(e)
-    case CONCAT_OP => foldConcat(e)
-    case AND_OP => FoldAND(e)
-    case OR_OP => FoldOR(e)
-    case XOR_OP => FoldXOR(e)
-    case EQUAL_OP => FoldEqual(e)
-    case NEQUAL_OP => FoldNotEqual(e)
-    case LESS_OP|LESS_EQ_OP|GREATER_OP|GREATER_EQ_OP => foldComparison(e)
-    case NOT_OP => e.args(0) match {
+    case Shl => foldShiftLeft(e)
+    case Shr => foldShiftRight(e)
+    case Cat => foldConcat(e)
+    case And => FoldAND(e)
+    case Or => FoldOR(e)
+    case Xor => FoldXOR(e)
+    case Eq => FoldEqual(e)
+    case Neq => FoldNotEqual(e)
+    case (Lt | Leq | Gt | Geq) => foldComparison(e)
+    case Not => e.args(0) match {
       case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v ^ ((BigInt(1) << w.toInt) - 1), IntWidth(w))
       case _ => e
     }
-    case BITS_SELECT_OP => e.args(0) match {
+    case Bits => e.args(0) match {
       case UIntLiteral(v, _) => {
         val hi = e.consts(0).toInt
         val lo = e.consts(1).toInt
@@ -220,7 +221,7 @@ object ConstProp extends Pass {
       }
       case x if long_BANG(tpe(e)) == long_BANG(tpe(x)) => tpe(x) match {
         case t: UIntType => x
-        case _ => DoPrim(AS_UINT_OP, Seq(x), Seq(), tpe(e))
+        case _ => DoPrim(AsUInt, Seq(x), Seq(), tpe(e))
       }
       case _ => e
     }

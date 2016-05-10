@@ -58,39 +58,11 @@ trait IsDeclaration extends HasName with HasInfo
 
 case class StringLit(array: Array[Byte]) extends AST
 
-trait PrimOp extends AST
-case object ADD_OP extends PrimOp 
-case object SUB_OP extends PrimOp
-case object MUL_OP extends PrimOp
-case object DIV_OP extends PrimOp
-case object REM_OP extends PrimOp
-case object LESS_OP extends PrimOp
-case object LESS_EQ_OP extends PrimOp
-case object GREATER_OP extends PrimOp
-case object GREATER_EQ_OP extends PrimOp
-case object EQUAL_OP extends PrimOp
-case object NEQUAL_OP extends PrimOp
-case object PAD_OP extends PrimOp
-case object AS_UINT_OP extends PrimOp
-case object AS_SINT_OP extends PrimOp
-case object AS_CLOCK_OP extends PrimOp
-case object SHIFT_LEFT_OP extends PrimOp
-case object SHIFT_RIGHT_OP extends PrimOp
-case object DYN_SHIFT_LEFT_OP extends PrimOp
-case object DYN_SHIFT_RIGHT_OP extends PrimOp
-case object CONVERT_OP extends PrimOp
-case object NEG_OP extends PrimOp
-case object NOT_OP extends PrimOp
-case object AND_OP extends PrimOp
-case object OR_OP extends PrimOp
-case object XOR_OP extends PrimOp
-case object AND_REDUCE_OP extends PrimOp
-case object OR_REDUCE_OP extends PrimOp
-case object XOR_REDUCE_OP extends PrimOp
-case object CONCAT_OP extends PrimOp
-case object BITS_SELECT_OP extends PrimOp
-case object HEAD_OP extends PrimOp
-case object TAIL_OP extends PrimOp
+/** Primitive Operation
+  *
+  * See [[PrimOps]]
+  */
+abstract class PrimOp extends AST
 
 abstract class Expression extends AST {
   def tpe: Type

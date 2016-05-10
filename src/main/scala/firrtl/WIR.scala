@@ -60,14 +60,13 @@ case object EmptyExpression extends Expression { def tpe = UnknownType }
 case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Statement with IsDeclaration
 
 // Resultant width is the same as the maximum input width
-case object ADDW_OP extends PrimOp
+case object Addw extends PrimOp { override def toString = "addw" }
 // Resultant width is the same as the maximum input width
-case object SUBW_OP extends PrimOp
+case object Subw extends PrimOp { override def toString = "subw" }
 // Resultant width is the same as input argument width
-case object DSHLW_OP extends PrimOp
+case object Dshlw extends PrimOp { override def toString = "dshlw" }
 // Resultant width is the same as input argument width
-case object SHLW_OP extends PrimOp
-
+case object Shlw extends PrimOp { override def toString = "shlw" }
 
 object WrappedExpression {
    def apply (e:Expression) = new WrappedExpression(e)

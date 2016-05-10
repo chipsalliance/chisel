@@ -39,6 +39,7 @@ import Utils._
 import firrtl.Serialize._
 import firrtl.Mappers._
 import firrtl.passes._
+import firrtl.PrimOps._
 import WrappedExpression._
 // Datastructures
 import scala.collection.mutable.LinkedHashMap
@@ -173,20 +174,20 @@ class VerilogEmitter extends Emitter {
       doprim.args foreach checkArgumentLegality
    
       doprim.op match {
-         case ADD_OP => Seq(cast_if(a0())," + ", cast_if(a1()))
-         case ADDW_OP => Seq(cast_if(a0())," + ", cast_if(a1()))
-         case SUB_OP => Seq(cast_if(a0())," - ", cast_if(a1()))
-         case SUBW_OP => Seq(cast_if(a0())," - ", cast_if(a1()))
-         case MUL_OP => Seq(cast_if(a0())," * ", cast_if(a1()) )
-         case DIV_OP => Seq(cast_if(a0())," / ", cast_if(a1()) )
-         case REM_OP => Seq(cast_if(a0())," % ", cast_if(a1()) )
-         case LESS_OP => Seq(cast_if(a0())," < ", cast_if(a1()))
-         case LESS_EQ_OP => Seq(cast_if(a0())," <= ", cast_if(a1()))
-         case GREATER_OP => Seq(cast_if(a0())," > ", cast_if(a1()))
-         case GREATER_EQ_OP => Seq(cast_if(a0())," >= ", cast_if(a1()))
-         case EQUAL_OP => Seq(cast_if(a0())," == ", cast_if(a1()))
-         case NEQUAL_OP => Seq(cast_if(a0())," != ", cast_if(a1()))
-         case PAD_OP => {
+         case Add => Seq(cast_if(a0())," + ", cast_if(a1()))
+         case Addw => Seq(cast_if(a0())," + ", cast_if(a1()))
+         case Sub => Seq(cast_if(a0())," - ", cast_if(a1()))
+         case Subw => Seq(cast_if(a0())," - ", cast_if(a1()))
+         case Mul => Seq(cast_if(a0())," * ", cast_if(a1()) )
+         case Div => Seq(cast_if(a0())," / ", cast_if(a1()) )
+         case Rem => Seq(cast_if(a0())," % ", cast_if(a1()) )
+         case Lt => Seq(cast_if(a0())," < ", cast_if(a1()))
+         case Leq => Seq(cast_if(a0())," <= ", cast_if(a1()))
+         case Gt => Seq(cast_if(a0())," > ", cast_if(a1()))
+         case Geq => Seq(cast_if(a0())," >= ", cast_if(a1()))
+         case Eq => Seq(cast_if(a0())," == ", cast_if(a1()))
+         case Neq => Seq(cast_if(a0())," != ", cast_if(a1()))
+         case Pad => {
             val w = long_BANG(tpe(a0()))
             val diff = (c0() - w)
             if (w == 0) Seq(a0())
@@ -200,70 +201,70 @@ class VerilogEmitter extends Emitter {
                case (t) => Seq("{{", diff, "'d0}, ", a0(), "}")
             }
          }
-         case AS_UINT_OP => Seq("$unsigned(",a0(),")")
-         case AS_SINT_OP => Seq("$signed(",a0(),")")
-         case AS_CLOCK_OP => Seq("$unsigned(",a0(),")")
-         case DSHLW_OP => Seq(cast(a0())," << ", a1())
-         case DYN_SHIFT_LEFT_OP => Seq(cast(a0())," << ", a1())
-         case DYN_SHIFT_RIGHT_OP => {
+         case AsUInt => Seq("$unsigned(",a0(),")")
+         case AsSInt => Seq("$signed(",a0(),")")
+         case AsClock => Seq("$unsigned(",a0(),")")
+         case Dshlw => Seq(cast(a0())," << ", a1())
+         case Dshl => Seq(cast(a0())," << ", a1())
+         case Dshr => {
             (doprim.tpe) match {
                case (t:SIntType) => Seq(cast(a0())," >>> ",a1())
                case (t) => Seq(cast(a0())," >> ",a1())
             }
          }
-         case SHLW_OP => Seq(cast(a0())," << ", c0())
-         case SHIFT_LEFT_OP => Seq(cast(a0())," << ",c0())
-         case SHIFT_RIGHT_OP => {
+         case Shlw => Seq(cast(a0())," << ", c0())
+         case Shl => Seq(cast(a0())," << ",c0())
+         case Shr => {
            if (c0 >= long_BANG(tpe(a0)))
              error("Verilog emitter does not support SHIFT_RIGHT >= arg width")
            Seq(a0(),"[", long_BANG(tpe(a0())) - 1,":",c0(),"]")
          }
-         case NEG_OP => Seq("-{",cast(a0()),"}")
-         case CONVERT_OP => {
+         case Neg => Seq("-{",cast(a0()),"}")
+         case Cvt => {
             tpe(a0()) match {
                case (t:UIntType) => Seq("{1'b0,",cast(a0()),"}")
                case (t:SIntType) => Seq(cast(a0()))
             }
          }
-         case NOT_OP => Seq("~ ",a0())
-         case AND_OP => Seq(cast_as(a0())," & ", cast_as(a1()))
-         case OR_OP => Seq(cast_as(a0())," | ", cast_as(a1()))
-         case XOR_OP => Seq(cast_as(a0())," ^ ", cast_as(a1()))
-         case AND_REDUCE_OP => {
+         case Not => Seq("~ ",a0())
+         case And => Seq(cast_as(a0())," & ", cast_as(a1()))
+         case Or => Seq(cast_as(a0())," | ", cast_as(a1()))
+         case Xor => Seq(cast_as(a0())," ^ ", cast_as(a1()))
+         case Andr => {
             val v = ArrayBuffer[Seq[Any]]()
             for (b <- 0 until long_BANG(doprim.tpe).toInt) {
                v += Seq(cast(a0()),"[",b,"]")
             }
             v.reduce(_ + " & " + _)
          }
-         case OR_REDUCE_OP => {
+         case Orr => {
             val v = ArrayBuffer[Seq[Any]]()
             for (b <- 0 until long_BANG(doprim.tpe).toInt) {
                v += Seq(cast(a0()),"[",b,"]")
             }
             v.reduce(_ + " | " + _)
          }
-         case XOR_REDUCE_OP => {
+         case Xorr => {
             val v = ArrayBuffer[Seq[Any]]()
             for (b <- 0 until long_BANG(doprim.tpe).toInt) {
                v += Seq(cast(a0()),"[",b,"]")
             }
             v.reduce(_ + " ^ " + _)
          }
-         case CONCAT_OP => Seq("{",cast(a0()),",",cast(a1()),"}")
-         case BITS_SELECT_OP => {
+         case Cat => Seq("{",cast(a0()),",",cast(a1()),"}")
+         case Bits => {
             // If selecting zeroth bit and single-bit wire, just emit the wire
             if (c0() == 0 && c1() == 0 && long_BANG(tpe(a0())) == 1) Seq(a0())
             else if (c0() == c1()) Seq(a0(),"[",c0(),"]")
             else Seq(a0(),"[",c0(),":",c1(),"]")
          }
-         case HEAD_OP => {
+         case Head => {
             val w = long_BANG(tpe(a0()))
             val high = w - 1
             val low = w - c0()
             Seq(a0(),"[",high,":",low,"]")
          }
-         case TAIL_OP => {
+         case Tail => {
             val w = long_BANG(tpe(a0()))
             val low = w - c0() - 1
             Seq(a0(),"[",low,":",0,"]")
@@ -504,7 +505,7 @@ class VerilogEmitter extends Emitter {
                   val enx = delay(en,s.readLatency,clk)
                   val mem_port = WSubAccess(mem,addrx,s.dataType,UNKNOWNGENDER)
                   val depthValue = UIntLiteral(s.depth, IntWidth(BigInt(s.depth).bitLength))
-                  val garbageGuard = DoPrim(GREATER_EQ_OP, Seq(addrx, depthValue), Seq(), UnknownType)
+                  val garbageGuard = DoPrim(Geq, Seq(addrx, depthValue), Seq(), UnknownType)
                   val garbageMux = Mux(garbageGuard, VRandom, mem_port, UnknownType)
                   synSimAssign(data, mem_port, garbageMux)
                }
