@@ -147,11 +147,13 @@ trait Width extends AST {
 case class IntWidth(width: BigInt) extends Width 
 case class UnknownWidth() extends Width
 
-trait Flip extends AST
-case object DEFAULT extends Flip
-case object REVERSE extends Flip
+/** Orientation of [[Field]] */
+abstract class Orientation extends AST
+case object Default extends Orientation
+case object Flip extends Orientation
 
-case class Field(name: String, flip: Flip, tpe: Type) extends AST with HasName
+/** Field of [[BundleType]] */
+case class Field(name: String, flip: Orientation, tpe: Type) extends AST with HasName
 
 abstract class Type extends AST
 abstract class GroundType extends Type {

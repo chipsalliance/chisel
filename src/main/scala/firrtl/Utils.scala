@@ -147,7 +147,7 @@ object Utils extends LazyLogging {
          }
       }
    }
-   def get_flip (t:Type, i:Int, f:Flip) : Flip = { 
+   def get_flip (t:Type, i:Int, f:Orientation) : Orientation = {
       if (i >= get_size(t)) error("Shouldn't be here")
       val x = t match {
          case (t:UIntType) => f
@@ -155,7 +155,7 @@ object Utils extends LazyLogging {
          case ClockType => f
          case (t:BundleType) => {
             var n = i
-            var ret:Option[Flip] = None
+            var ret:Option[Orientation] = None
             t.fields.foreach { x => {
                if (n < get_size(x.tpe)) {
                   ret match {
@@ -164,11 +164,11 @@ object Utils extends LazyLogging {
                   }
                } else { n = n - get_size(x.tpe) }
             }}
-            ret.asInstanceOf[Some[Flip]].get
+            ret.asInstanceOf[Some[Orientation]].get
          }
          case (t:VectorType) => {
             var n = i
-            var ret:Option[Flip] = None
+            var ret:Option[Orientation] = None
             for (j <- 0 until t.size) {
                if (n < get_size(t.tpe)) {
                   ret = Some(get_flip(t.tpe,n,f))
@@ -176,7 +176,7 @@ object Utils extends LazyLogging {
                   n = n - get_size(t.tpe)
                }
             }
-            ret.asInstanceOf[Some[Flip]].get
+            ret.asInstanceOf[Some[Orientation]].get
          }
       }
       x
@@ -302,7 +302,7 @@ object Utils extends LazyLogging {
          case (t) => 1
       }
    }
-   def get_valid_points (t1:Type,t2:Type,flip1:Flip,flip2:Flip) : Seq[(Int,Int)] = {
+   def get_valid_points (t1:Type, t2:Type, flip1:Orientation, flip2:Orientation) : Seq[(Int,Int)] = {
       //;println_all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
       (t1,t2) match {
          case (t1:UIntType,t2:UIntType) => if (flip1 == flip2) Seq((0, 0)) else Seq()
@@ -360,10 +360,10 @@ object Utils extends LazyLogging {
          case Input => Output
       }
    }
-   def swap (f:Flip) : Flip = {
+   def swap (f:Orientation) : Orientation = {
       f match {
-         case DEFAULT => REVERSE
-         case REVERSE => DEFAULT
+         case Default => Flip
+         case Flip => Default
       }
    }
    def to_dir (g:Gender) : Direction = {
@@ -378,25 +378,25 @@ object Utils extends LazyLogging {
          case Output => FEMALE
       }
    }
-  def toGender(f: Flip): Gender = f match {
-    case DEFAULT => FEMALE
-    case REVERSE => MALE
+  def toGender(f: Orientation): Gender = f match {
+    case Default => FEMALE
+    case Flip => MALE
   }
-  def toFlip(g: Gender): Flip = g match {
-    case MALE => REVERSE
-    case FEMALE => DEFAULT
+  def toFlip(g: Gender): Orientation = g match {
+    case MALE => Flip
+    case FEMALE => Default
   }
 
-   def field_flip (v:Type,s:String) : Flip = {
+   def field_flip (v:Type,s:String) : Orientation = {
       v match {
          case v:BundleType => {
             val ft = v.fields.find {p => p.name == s}
             ft match {
                case ft:Some[Field] => ft.get.flip
-               case ft => DEFAULT
+               case ft => Default
             }
          }
-         case v => DEFAULT
+         case v => Default
       }
    }
    def get_field (v:Type,s:String) : Field = {
@@ -405,17 +405,17 @@ object Utils extends LazyLogging {
             val ft = v.fields.find {p => p.name == s}
             ft match {
                case ft:Some[Field] => ft.get
-               case ft => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType)
+               case ft => error("Shouldn't be here"); Field("blah",Default,UnknownType)
             }
          }
-         case v => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType)
+         case v => error("Shouldn't be here"); Field("blah",Default,UnknownType)
       }
    }
-   def times (flip:Flip,d:Direction) : Direction = times(flip, d)
-   def times (d:Direction,flip:Flip) : Direction = {
+   def times (flip:Orientation, d:Direction) : Direction = times(flip, d)
+   def times (d:Direction,flip:Orientation) : Direction = {
       flip match {
-         case DEFAULT => d
-         case REVERSE => swap(d)
+         case Default => d
+         case Flip => swap(d)
       }
    }
    def times (g: Gender, d: Direction): Direction = times(d, g)
@@ -424,17 +424,17 @@ object Utils extends LazyLogging {
      case MALE => swap(d) // MALE == INPUT == REVERSE
    }
 
-   def times (g:Gender,flip:Flip) : Gender = times(flip, g)
-   def times (flip:Flip,g:Gender) : Gender = {
+   def times (g:Gender,flip:Orientation) : Gender = times(flip, g)
+   def times (flip:Orientation, g:Gender) : Gender = {
       flip match {
-         case DEFAULT => g
-         case REVERSE => swap(g)
+         case Default => g
+         case Flip => swap(g)
       }
    }
-   def times (f1:Flip,f2:Flip) : Flip = {
+   def times (f1:Orientation, f2:Orientation) : Orientation = {
       f2 match {
-         case DEFAULT => f1
-         case REVERSE => swap(f1)
+         case Default => f1
+         case Flip => swap(f1)
       }
    }
 
@@ -525,22 +525,22 @@ object Utils extends LazyLogging {
        case s:DefNode => tpe(s.value)
        case s:DefMemory => {
           val depth = s.depth
-          val addr = Field("addr",DEFAULT,UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))
-          val en = Field("en",DEFAULT,BoolType())
-          val clk = Field("clk",DEFAULT,ClockType)
-          val def_data = Field("data",DEFAULT,s.data_type)
-          val rev_data = Field("data",REVERSE,s.data_type)
-          val mask = Field("mask",DEFAULT,create_mask(s.data_type))
-          val wmode = Field("wmode",DEFAULT,UIntType(IntWidth(1)))
-          val rdata = Field("rdata",REVERSE,s.data_type)
+          val addr = Field("addr",Default,UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))
+          val en = Field("en",Default,BoolType())
+          val clk = Field("clk",Default,ClockType)
+          val def_data = Field("data",Default,s.data_type)
+          val rev_data = Field("data",Flip,s.data_type)
+          val mask = Field("mask",Default,create_mask(s.data_type))
+          val wmode = Field("wmode",Default,UIntType(IntWidth(1)))
+          val rdata = Field("rdata",Flip,s.data_type)
           val read_type = BundleType(Seq(rev_data,addr,en,clk))
           val write_type = BundleType(Seq(def_data,mask,addr,en,clk))
           val readwrite_type = BundleType(Seq(wmode,rdata,def_data,mask,addr,en,clk))
 
           val mem_fields = ArrayBuffer[Field]()
-          s.readers.foreach {x => mem_fields += Field(x,REVERSE,read_type)}
-          s.writers.foreach {x => mem_fields += Field(x,REVERSE,write_type)}
-          s.readwriters.foreach {x => mem_fields += Field(x,REVERSE,readwrite_type)}
+          s.readers.foreach {x => mem_fields += Field(x,Flip,read_type)}
+          s.writers.foreach {x => mem_fields += Field(x,Flip,write_type)}
+          s.readwriters.foreach {x => mem_fields += Field(x,Flip,readwrite_type)}
           BundleType(mem_fields)
        }
        case s:DefInstance => UnknownType
@@ -742,18 +742,18 @@ object Utils extends LazyLogging {
        }
    }
 
-   implicit class FlipUtils(f: Flip) {
-     def flip(): Flip = {
+   implicit class FlipUtils(f: Orientation) {
+     def flip(): Orientation = {
        f match {
-         case REVERSE => DEFAULT
-         case DEFAULT => REVERSE
+         case Flip => Default
+         case Default => Flip
        }
      }
          
      def toDirection(): Direction = {
        f match {
-         case DEFAULT => Output
-         case REVERSE => Input
+         case Default => Output
+         case Flip => Input
        }
      }
    }
@@ -788,10 +788,10 @@ object Utils extends LazyLogging {
    }
 
    implicit class DirectionUtils(d: Direction) {
-     def toFlip(): Flip = {
+     def toFlip(): Orientation = {
        d match {
-         case Input => REVERSE
-         case Output => DEFAULT
+         case Input => Flip
+         case Output => Default
        }
      }
    }

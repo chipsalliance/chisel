@@ -139,7 +139,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[AST]
   }
       
 	private def visitField[AST](ctx: FIRRTLParser.FieldContext): Field = {
-    val flip = if(ctx.getChild(0).getText == "flip") REVERSE else DEFAULT
+    val flip = if(ctx.getChild(0).getText == "flip") Flip else Default
     Field((ctx.id.getText), flip, visitType(ctx.`type`))
   }
      

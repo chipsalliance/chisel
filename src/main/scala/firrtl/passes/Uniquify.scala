@@ -223,25 +223,25 @@ object Uniquify extends Pass {
   def stmtToType(s: Stmt)(implicit sinfo: Info, mname: String): BundleType = {
     // Recursive helper
     def recStmtToType(s: Stmt): Seq[Field] = s match {
-      case s: DefWire => Seq(Field(s.name, DEFAULT, s.tpe))
-      case s: DefRegister => Seq(Field(s.name, DEFAULT, s.tpe))
-      case s: WDefInstance => Seq(Field(s.name, DEFAULT, s.tpe))
+      case s: DefWire => Seq(Field(s.name, Default, s.tpe))
+      case s: DefRegister => Seq(Field(s.name, Default, s.tpe))
+      case s: WDefInstance => Seq(Field(s.name, Default, s.tpe))
       case s: DefMemory => s.data_type match {
         case (_: UIntType | _: SIntType) =>
-          Seq(Field(s.name, DEFAULT, get_type(s)))
+          Seq(Field(s.name, Default, get_type(s)))
         case tpe: BundleType =>
           val newFields = tpe.fields map ( f =>
             DefMemory(s.info, f.name, f.tpe, s.depth, s.write_latency,
               s.read_latency, s.readers, s.writers, s.readwriters)
           ) flatMap (recStmtToType)
-          Seq(Field(s.name, DEFAULT, BundleType(newFields)))
+          Seq(Field(s.name, Default, BundleType(newFields)))
         case tpe: VectorType =>
           val newFields = (0 until tpe.size) map ( i =>
             s.copy(name = i.toString, data_type = tpe.tpe)
           ) flatMap (recStmtToType)
-          Seq(Field(s.name, DEFAULT, BundleType(newFields)))
+          Seq(Field(s.name, Default, BundleType(newFields)))
       }
-      case s: DefNode => Seq(Field(s.name, DEFAULT, get_type(s)))
+      case s: DefNode => Seq(Field(s.name, Default, get_type(s)))
       case s: Conditionally => recStmtToType(s.conseq) ++ recStmtToType(s.alt)
       case s: Begin => (s.stmts map (recStmtToType)).flatten
       case s => Seq()

@@ -59,7 +59,7 @@ object ExpandWhens extends Pass {
     hashx
   }
   private def getFemaleRefs(n: String, t: Type, g: Gender): Seq[Expression] = {
-    def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, DEFAULT))
+    def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, Default))
     val exps = create_exps(WRef(n, t, ExpKind(), g))
     val expsx = ArrayBuffer[Expression]()
     for (j <- 0 until exps.size) {

@@ -254,8 +254,8 @@ object ResolveGenders extends Pass {
             case e:WSubField => {
                val expx = 
                   field_flip(tpe(e.exp),e.name) match {
-                     case DEFAULT => resolve_e(g)(e.exp)
-                     case REVERSE => resolve_e(swap(g))(e.exp)
+                     case Default => resolve_e(g)(e.exp)
+                     case Flip => resolve_e(swap(g))(e.exp)
                   }
                WSubField(expx,e.name,e.tpe,g)
             }
@@ -542,7 +542,7 @@ object InferWidths extends Pass {
    def run (c:Circuit): Circuit = {
       val v = ArrayBuffer[WGeq]()
       def constrain (w1:Width,w2:Width) : Unit = v += WGeq(w1,w2)
-      def get_constraints_t (t1:Type,t2:Type,f:Flip) : Unit = {
+      def get_constraints_t (t1:Type,t2:Type,f:Orientation) : Unit = {
          (t1,t2) match {
             case (t1:UIntType,t2:UIntType) => constrain(t1.width,t2.width)
             case (t1:SIntType,t2:SIntType) => constrain(t1.width,t2.width)
@@ -566,23 +566,23 @@ object InferWidths extends Pass {
                for (i <- 0 until n) {
                   val locx = ce_loc(i)
                   val expx = ce_exp(i)
-                  get_flip(tpe(s.loc),i,DEFAULT) match {
-                     case DEFAULT => constrain(width_BANG(locx),width_BANG(expx))
-                     case REVERSE => constrain(width_BANG(expx),width_BANG(locx)) }}
+                  get_flip(tpe(s.loc),i,Default) match {
+                     case Default => constrain(width_BANG(locx),width_BANG(expx))
+                     case Flip => constrain(width_BANG(expx),width_BANG(locx)) }}
                s }
             case (s:BulkConnect) => {
-               val ls = get_valid_points(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT)
+               val ls = get_valid_points(tpe(s.loc),tpe(s.exp),Default,Default)
                for (x <- ls) {
                   val locx = create_exps(s.loc)(x._1)
                   val expx = create_exps(s.exp)(x._2)
-                  get_flip(tpe(s.loc),x._1,DEFAULT) match {
-                     case DEFAULT => constrain(width_BANG(locx),width_BANG(expx))
-                     case REVERSE => constrain(width_BANG(expx),width_BANG(locx)) }}
+                  get_flip(tpe(s.loc),x._1,Default) match {
+                     case Default => constrain(width_BANG(locx),width_BANG(expx))
+                     case Flip => constrain(width_BANG(expx),width_BANG(locx)) }}
                s }
             case (s:DefRegister) => {
                constrain(width_BANG(s.reset),ONE)
                constrain(ONE,width_BANG(s.reset))
-               get_constraints_t(s.tpe,tpe(s.init),DEFAULT)
+               get_constraints_t(s.tpe,tpe(s.init),Default)
                s }
             case (s:Conditionally) => {
                v += WGeq(width_BANG(s.pred),ONE)
@@ -708,25 +708,25 @@ object ExpandConnects extends Pass {
                   for (i <- 0 until n) {
                      val locx = locs(i)
                      val expx = exps(i)
-                     val sx = get_flip(tpe(s.loc),i,DEFAULT) match {
-                        case DEFAULT => Connect(s.info,locx,expx)
-                        case REVERSE => Connect(s.info,expx,locx)
+                     val sx = get_flip(tpe(s.loc),i,Default) match {
+                        case Default => Connect(s.info,locx,expx)
+                        case Flip => Connect(s.info,expx,locx)
                      }
                      connects += sx
                   }
                   Begin(connects)
                }
                case (s:BulkConnect) => {
-                  val ls = get_valid_points(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT)
+                  val ls = get_valid_points(tpe(s.loc),tpe(s.exp),Default,Default)
                   val connects = ArrayBuffer[Stmt]()
                   val locs = create_exps(s.loc)
                   val exps = create_exps(s.exp)
                   ls.foreach { x => {
                      val locx = locs(x._1)
                      val expx = exps(x._2)
-                     val sx = get_flip(tpe(s.loc),x._1,DEFAULT) match {
-                        case DEFAULT => Connect(s.info,locx,expx)
-                        case REVERSE => Connect(s.info,expx,locx)
+                     val sx = get_flip(tpe(s.loc),x._1,Default) match {
+                        case Default => Connect(s.info,locx,expx)
+                        case Flip => Connect(s.info,expx,locx)
                      }
                      connects += sx
                   }}
@@ -1037,9 +1037,9 @@ object CInferTypes extends Pass {
    }
    
    def to_field (p:Port) : Field = {
-      if (p.direction == Output) Field(p.name,DEFAULT,p.tpe)
-      else if (p.direction == Input) Field(p.name,REVERSE,p.tpe)
-      else error("Shouldn't be here"); Field(p.name,REVERSE,p.tpe)
+      if (p.direction == Output) Field(p.name,Default,p.tpe)
+      else if (p.direction == Input) Field(p.name,Flip,p.tpe)
+      else error("Shouldn't be here"); Field(p.name,Flip,p.tpe)
    }
    def module_type (m:DefModule) : Type = BundleType(m.ports.map(p => to_field(p)))
    def field_type (v:Type,s:String) : Type = {
@@ -1405,7 +1405,7 @@ object RemoveCHIRRTL extends Pass {
                   val rocx = remove_chirrtl_e(MALE)(s.exp)
                   stmts += BulkConnect(s.info,locx,rocx)
                   if (has_write_mport != false) {
-                     val ls = get_valid_points(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT)
+                     val ls = get_valid_points(tpe(s.loc),tpe(s.exp),Default,Default)
                      val locs = create_exps(get_mask(s.loc))
                      for (x <- ls ) {
                         val locx = locs(x._1)
