@@ -78,7 +78,7 @@ object ToWorkingIR extends Pass {
       }
       def toStmt (s:Stmt) : Stmt = {
          s map (toExp) match {
-            case s:DefInstance => WDefInstance(s.info,s.name,s.module,UnknownType())
+            case s:DefInstance => WDefInstance(s.info,s.name,s.module,UnknownType)
             case s => s map (toStmt)
          }
       }
@@ -479,7 +479,7 @@ object InferWidths extends Pass {
       (t) match {
          case (t:UIntType) => t.width
          case (t:SIntType) => t.width
-         case (t:ClockType) => IntWidth(1)
+         case ClockType => IntWidth(1)
          case (t) => error("No width!"); IntWidth(-1) } }
    def width_BANG (e:Expression) : Width = width_BANG(tpe(e))
 
@@ -1047,15 +1047,15 @@ object CInferTypes extends Pass {
          case (v:BundleType) => {
             val ft = v.fields.find(p => p.name == s)
             if (ft != None) ft.get.tpe
-            else  UnknownType()
+            else  UnknownType
          }
-         case (v) => UnknownType()
+         case (v) => UnknownType
       }
    }
    def sub_type (v:Type) : Type =
       (v) match { 
          case (v:VectorType) => v.tpe
-         case (v) => UnknownType()
+         case (v) => UnknownType
       }
    def run (c:Circuit) : Circuit = {
       val module_types = LinkedHashMap[String,Type]()
@@ -1063,7 +1063,7 @@ object CInferTypes extends Pass {
          val types = LinkedHashMap[String,Type]()
          def infer_types_e (e:Expression) : Expression = {
             (e map (infer_types_e)) match { 
-               case (e:Ref) => Ref(e.name, types.getOrElse(e.name,UnknownType()))
+               case (e:Ref) => Ref(e.name, types.getOrElse(e.name,UnknownType))
                case (e:SubField) => SubField(e.exp,e.name,field_type(tpe(e.exp),e.name))
                case (e:SubIndex) => SubIndex(e.exp,e.value,sub_type(tpe(e.exp)))
                case (e:SubAccess) => SubAccess(e.exp,e.index,sub_type(tpe(e.exp)))
@@ -1099,7 +1099,7 @@ object CInferTypes extends Pass {
                   s
                }
                case (s:CDefMPort) => {
-                  val t = types.getOrElse(s.mem,UnknownType())
+                  val t = types.getOrElse(s.mem,UnknownType)
                   types(s.name) = t
                   CDefMPort(s.info,s.name,t,s.mem,s.exps,s.direction)
                }
@@ -1108,7 +1108,7 @@ object CInferTypes extends Pass {
                   s
                }
                case (s:DefInstance) => {
-                  types(s.name) = module_types.getOrElse(s.module,UnknownType())
+                  types(s.name) = module_types.getOrElse(s.module,UnknownType)
                   s
                }
                case (s) => s map(infer_types_s) map (infer_types_e)
@@ -1227,12 +1227,12 @@ object RemoveCHIRRTL extends Pass {
                ValidIf(e.cond,e1,tpe(e1))
             })
          case (e) => (tpe(e)) match  { 
-            case (_:UIntType|_:SIntType|_:ClockType) => Seq(e)
+            case (_:UIntType|_:SIntType|ClockType) => Seq(e)
             case (t:BundleType) => 
                t.fields.flatMap(f => create_exps(SubField(e,f.name,f.tpe)))
             case (t:VectorType)=> 
                (0 until t.size).flatMap(i => create_exps(SubIndex(e,i,t.tpe)))
-            case (t:UnknownType) => Seq(e)
+            case UnknownType => Seq(e)
          }
       }
    }
@@ -1240,7 +1240,7 @@ object RemoveCHIRRTL extends Pass {
       def remove_chirrtl_m (m:Module) : Module = {
          val hash = LinkedHashMap[String,MPorts]()
          val repl = LinkedHashMap[String,DataRef]()
-         val ut = UnknownType()
+         val ut = UnknownType
          val mport_types = LinkedHashMap[String,Type]()
          def EMPs () : MPorts = MPorts(ArrayBuffer[MPort](),ArrayBuffer[MPort](),ArrayBuffer[MPort]())
          def collect_mports (s:Stmt) : Stmt = {

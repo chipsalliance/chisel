@@ -53,10 +53,10 @@ case class WRef(name:String,tpe:Type,kind:Kind,gender:Gender) extends Expression
 case class WSubField(exp:Expression,name:String,tpe:Type,gender:Gender) extends Expression
 case class WSubIndex(exp:Expression,value:Int,tpe:Type,gender:Gender) extends Expression
 case class WSubAccess(exp:Expression,index:Expression,tpe:Type,gender:Gender) extends Expression
-case class WVoid() extends Expression { def tpe = UnknownType() }
-case class WInvalid() extends Expression { def tpe = UnknownType() }
+case class WVoid() extends Expression { def tpe = UnknownType }
+case class WInvalid() extends Expression { def tpe = UnknownType }
 // Useful for splitting then remerging references
-case object EmptyExpression extends Expression { def tpe = UnknownType() }
+case object EmptyExpression extends Expression { def tpe = UnknownType }
 case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt with IsDeclaration
 
 // Resultant width is the same as the maximum input width
@@ -125,7 +125,7 @@ class WrappedType (val t:Type) {
             (t,t2.t) match {
                case (t1:UIntType,t2:UIntType) => true
                case (t1:SIntType,t2:SIntType) => true
-               case (t1:ClockType,t2:ClockType) => true
+               case (ClockType, ClockType) => true
                case (t1:VectorType,t2:VectorType) => (wt(t1.tpe) == wt(t2.tpe) && t1.size == t2.size)
                case (t1:BundleType,t2:BundleType) => {
                   var ret = true

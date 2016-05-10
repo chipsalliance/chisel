@@ -153,13 +153,19 @@ case object REVERSE extends Flip
 
 case class Field(name: String, flip: Flip, tpe: Type) extends AST with HasName
 
-trait Type extends AST
-case class UIntType(width: Width) extends Type
-case class SIntType(width: Width) extends Type
-case class BundleType(fields: Seq[Field]) extends Type
-case class VectorType(tpe: Type, size: Int) extends Type
-case class ClockType() extends Type
-case class UnknownType() extends Type
+abstract class Type extends AST
+abstract class GroundType extends Type {
+  val width: Width
+}
+abstract class AggregateType extends Type
+case class UIntType(width: Width) extends GroundType
+case class SIntType(width: Width) extends GroundType
+case class BundleType(fields: Seq[Field]) extends AggregateType
+case class VectorType(tpe: Type, size: Int) extends AggregateType
+case object ClockType extends GroundType {
+  val width = IntWidth(1)
+}
+case object UnknownType extends Type
 
 /** [[Port]] Direction */
 abstract class Direction extends AST

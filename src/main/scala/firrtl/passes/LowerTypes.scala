@@ -110,7 +110,7 @@ object LowerTypes extends Pass {
             val exps = create_exps(mem.name, memType)
             exps map { e =>
               val loMemName = loweredName(e)
-              val loMem = WRef(loMemName, UnknownType(), kind(mem), UNKNOWNGENDER)
+              val loMem = WRef(loMemName, UnknownType, kind(mem), UNKNOWNGENDER)
               mergeRef(loMem, mergeRef(port, field))
             }
           }
@@ -122,7 +122,7 @@ object LowerTypes extends Pass {
             case Some(e) =>
               val loMemExp = mergeRef(mem, e)
               val loMemName = loweredName(loMemExp)
-              WRef(loMemName, UnknownType(), kind(mem), UNKNOWNGENDER)
+              WRef(loMemName, UnknownType, kind(mem), UNKNOWNGENDER)
             case None => mem
           }
           Seq(mergeRef(loMem, mergeRef(port, field)))

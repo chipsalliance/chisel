@@ -136,7 +136,7 @@ object Utils extends LazyLogging {
             tpe(e) match {
                case (t:UIntType) => Seq(e)
                case (t:SIntType) => Seq(e)
-               case (t:ClockType) => Seq(e)
+               case ClockType => Seq(e)
                case (t:BundleType) => {
                   t.fields.flatMap { f => create_exps(WSubField(e,f.name,f.tpe,times(gender(e), f.flip))) }
                }
@@ -152,7 +152,7 @@ object Utils extends LazyLogging {
       val x = t match {
          case (t:UIntType) => f
          case (t:SIntType) => f
-         case (t:ClockType) => f
+         case ClockType => f
          case (t:BundleType) => {
             var n = i
             var ret:Option[Flip] = None
@@ -212,7 +212,7 @@ object Utils extends LazyLogging {
                   Field(f1.name,f1.flip,mux_type(f1.tpe,f2.tpe))
                }))
          }
-      } else UnknownType()
+      } else UnknownType
    }
    def mux_type_and_widths (e1:Expression,e2:Expression) : Type = mux_type_and_widths(tpe(e1),tpe(e2))
    def mux_type_and_widths (t1:Type,t2:Type) : Type = {
@@ -231,7 +231,7 @@ object Utils extends LazyLogging {
             case (t1:VectorType,t2:VectorType) => VectorType(mux_type_and_widths(t1.tpe,t2.tpe),t1.size)
             case (t1:BundleType,t2:BundleType) => BundleType((t1.fields zip t2.fields).map{case (f1, f2) => Field(f1.name,f1.flip,mux_type_and_widths(f1.tpe,f2.tpe))})
          }
-      } else UnknownType()
+      } else UnknownType
    }
    def module_type (m:DefModule) : Type = {
       BundleType(m.ports.map(p => p.toField))
@@ -239,7 +239,7 @@ object Utils extends LazyLogging {
    def sub_type (v:Type) : Type = {
       v match {
          case v:VectorType => v.tpe
-         case v => UnknownType()
+         case v => UnknownType
       }
    }
    def field_type (v:Type,s:String) : Type = {
@@ -248,33 +248,29 @@ object Utils extends LazyLogging {
             val ft = v.fields.find(p => p.name == s)
             ft match {
                case ft:Some[Field] => ft.get.tpe
-               case ft => UnknownType()
+               case ft => UnknownType
             }
          }
-         case v => UnknownType()
+         case v => UnknownType
       }
    }
    
 ////=====================================
    def widthBANG (t:Type) : Width = {
       t match {
-         case t:UIntType => t.width
-         case t:SIntType => t.width
-         case t:ClockType => IntWidth(1)
+         case g: GroundType => g.width
          case t => error("No width!")
       }
    }
    def long_BANG (t:Type) : Long = {
       (t) match {
-         case (t:UIntType) => t.width.as[IntWidth].get.width.toLong
-         case (t:SIntType) => t.width.as[IntWidth].get.width.toLong
+         case g: GroundType => g.width.as[IntWidth].get.width.toLong
          case (t:BundleType) => {
             var w = 0
             for (f <- t.fields) { w = w + long_BANG(f.tpe).toInt }
             w
          }
          case (t:VectorType) => t.size * long_BANG(t.tpe)
-         case (t:ClockType) => 1
       }
    }
 // =================================
@@ -288,7 +284,7 @@ object Utils extends LazyLogging {
          //case f: Field => f.getType
          case t: Type => t.getType
          case p: Port => p.getType
-         case _ => UnknownType()
+         case _ => UnknownType
        }
    }
 
@@ -409,10 +405,10 @@ object Utils extends LazyLogging {
             val ft = v.fields.find {p => p.name == s}
             ft match {
                case ft:Some[Field] => ft.get
-               case ft => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType())
+               case ft => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType)
             }
          }
-         case v => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType())
+         case v => error("Shouldn't be here"); Field("blah",DEFAULT,UnknownType)
       }
    }
    def times (flip:Flip,d:Direction) : Direction = times(flip, d)
@@ -518,8 +514,8 @@ object Utils extends LazyLogging {
          case e:ValidIf => e.tpe
          case e:UIntValue => UIntType(e.width)
          case e:SIntValue => SIntType(e.width)
-         case e:WVoid => UnknownType()
-         case e:WInvalid => UnknownType()
+         case e:WVoid => UnknownType
+         case e:WInvalid => UnknownType
       }
    def get_type (s:Stmt) : Type = {
       s match {
@@ -531,7 +527,7 @@ object Utils extends LazyLogging {
           val depth = s.depth
           val addr = Field("addr",DEFAULT,UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))
           val en = Field("en",DEFAULT,BoolType())
-          val clk = Field("clk",DEFAULT,ClockType())
+          val clk = Field("clk",DEFAULT,ClockType)
           val def_data = Field("data",DEFAULT,s.data_type)
           val rev_data = Field("data",REVERSE,s.data_type)
           val mask = Field("mask",DEFAULT,create_mask(s.data_type))
@@ -547,9 +543,9 @@ object Utils extends LazyLogging {
           s.readwriters.foreach {x => mem_fields += Field(x,REVERSE,readwrite_type)}
           BundleType(mem_fields)
        }
-       case s:DefInstance => UnknownType()
+       case s:DefInstance => UnknownType
        case s:WDefInstance => s.tpe
-       case _ => UnknownType()
+       case _ => UnknownType
     }}
    def get_name (s:Stmt) : String = {
       s match {
@@ -725,7 +721,7 @@ object Utils extends LazyLogging {
          case s: DefWire    => s.tpe
          case s: DefRegister => s.tpe
          case s: DefMemory  => s.data_type
-         case _ => UnknownType()
+         case _ => UnknownType
        }
 
      def getInfo: Info =
@@ -772,7 +768,7 @@ object Utils extends LazyLogging {
 
    implicit class TypeUtils(t: Type) {
      def isGround: Boolean = t match {
-       case (_: UIntType | _: SIntType | _: ClockType) => true
+       case (_: UIntType | _: SIntType | ClockType) => true
        case (_: BundleType | _: VectorType) => false
      }
      def isAggregate: Boolean = !t.isGround
@@ -780,7 +776,7 @@ object Utils extends LazyLogging {
      def getType(): Type = 
        t match {
          case v: VectorType => v.tpe
-         case tpe: Type => UnknownType()
+         case tpe: Type => UnknownType
        }
 
      def wipeWidth(): Type = 

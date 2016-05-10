@@ -76,7 +76,7 @@ class VerilogEmitter extends Emitter {
          e.tpe match {
             case (t:UIntType) => e
             case (t:SIntType) => Seq("$signed(",e,")")
-            case (t:ClockType) => e
+            case ClockType => e
          }
       }
       (x) match {
@@ -99,7 +99,7 @@ class VerilogEmitter extends Emitter {
                case (_:UIntType|_:SIntType) => 
                   val wx = long_BANG(t) - 1
                   if (wx > 0) w.get.write("[" + wx + ":0]") else w.get.write("")
-               case (t:ClockType) => w.get.write("")
+               case ClockType => w.get.write("")
                case (t:VectorType) => 
                   emit2(t.tpe, top + 1)
                   w.get.write("[" + (t.size - 1) + ":0]")
@@ -511,8 +511,8 @@ class VerilogEmitter extends Emitter {
                   val enx = delay(en,s.read_latency,clk)
                   val mem_port = WSubAccess(mem,addrx,s.data_type,UNKNOWNGENDER)
                   val depthValue = UIntValue(s.depth, IntWidth(BigInt(s.depth).bitLength))
-                  val garbageGuard = DoPrim(GREATER_EQ_OP, Seq(addrx, depthValue), Seq(), UnknownType())
-                  val garbageMux = Mux(garbageGuard, VRandom, mem_port, UnknownType())
+                  val garbageGuard = DoPrim(GREATER_EQ_OP, Seq(addrx, depthValue), Seq(), UnknownType)
+                  val garbageMux = Mux(garbageGuard, VRandom, mem_port, UnknownType)
                   synSimAssign(data, mem_port, garbageMux)
                }
    

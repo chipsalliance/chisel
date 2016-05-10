@@ -423,7 +423,7 @@ object CheckTypes extends Pass with LazyLogging {
       def bulk_equals (t1: Type, t2: Type, flip1: Flip, flip2: Flip): Boolean = {
          //;println_all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
          (t1,t2) match {
-            case (t1:ClockType,t2:ClockType) => flip1 == flip2
+            case (ClockType, ClockType) => flip1 == flip2
             case (t1:UIntType,t2:UIntType) => flip1 == flip2
             case (t1:SIntType,t2:SIntType) => flip1 == flip2
             case (t1:BundleType,t2:BundleType) => {
@@ -450,14 +450,14 @@ object CheckTypes extends Pass with LazyLogging {
             case (s:DefRegister) => if (wt(s.tpe) != wt(tpe(s.init))) errors.append(new InvalidRegInit(s.info))
             case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT) ) errors.append(new InvalidConnect(s.info, s.loc.serialize, s.exp.serialize))
             case (s:Stop) => {
-               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors.append(new ReqClk(s.info))
+               if (wt(tpe(s.clk)) != wt(ClockType) ) errors.append(new ReqClk(s.info))
                if (wt(tpe(s.en)) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
             }
             case (s:Print)=> {
                for (x <- s.args ) {
                   if (wt(tpe(x)) != wt(ut()) && wt(tpe(x)) != wt(st()) ) errors.append(new PrintfArgNotGround(s.info))
                }
-               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors.append(new ReqClk(s.info))
+               if (wt(tpe(s.clk)) != wt(ClockType) ) errors.append(new ReqClk(s.info))
                if (wt(tpe(s.en)) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
             }
             case (s:Conditionally) => if (wt(tpe(s.pred)) != wt(ut()) ) errors.append(new PredNotUInt(s.info))

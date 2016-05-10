@@ -105,7 +105,7 @@ object PrimOps extends LazyLogging {
                case (t1:UIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
                case (t1:SIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
                case (t1:SIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -115,7 +115,7 @@ object PrimOps extends LazyLogging {
                case (t1:UIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
                case (t1:SIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
                case (t1:SIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -125,7 +125,7 @@ object PrimOps extends LazyLogging {
                case (t1:UIntType, t2:SIntType) => SIntType(PLUS(w1(),w2()))
                case (t1:SIntType, t2:UIntType) => SIntType(PLUS(w1(),w2()))
                case (t1:SIntType, t2:SIntType) => SIntType(PLUS(w1(),w2()))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -135,7 +135,7 @@ object PrimOps extends LazyLogging {
                case (t1:UIntType, t2:SIntType) => SIntType(PLUS(w1(),ONE))
                case (t1:SIntType, t2:UIntType) => SIntType(w1())
                case (t1:SIntType, t2:SIntType) => SIntType(PLUS(w1(),ONE))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -145,7 +145,7 @@ object PrimOps extends LazyLogging {
                case (t1:UIntType, t2:SIntType) => UIntType(MIN(w1(),w2()))
                case (t1:SIntType, t2:UIntType) => SIntType(MIN(w1(),PLUS(w2(),ONE)))
                case (t1:SIntType, t2:SIntType) => SIntType(MIN(w1(),w2()))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -155,7 +155,7 @@ object PrimOps extends LazyLogging {
                case (t1:SIntType, t2:UIntType) => BoolType()
                case (t1:UIntType, t2:SIntType) => BoolType()
                case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -165,7 +165,7 @@ object PrimOps extends LazyLogging {
                case (t1:SIntType, t2:UIntType) => BoolType()
                case (t1:UIntType, t2:SIntType) => BoolType()
                case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -175,7 +175,7 @@ object PrimOps extends LazyLogging {
                case (t1:SIntType, t2:UIntType) => BoolType()
                case (t1:UIntType, t2:SIntType) => BoolType()
                case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -185,7 +185,7 @@ object PrimOps extends LazyLogging {
                case (t1:SIntType, t2:UIntType) => BoolType()
                case (t1:UIntType, t2:SIntType) => BoolType()
                case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -195,7 +195,7 @@ object PrimOps extends LazyLogging {
                case (t1:SIntType, t2:UIntType) => BoolType()
                case (t1:UIntType, t2:SIntType) => BoolType()
                case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -205,7 +205,7 @@ object PrimOps extends LazyLogging {
                case (t1:SIntType, t2:UIntType) => BoolType()
                case (t1:UIntType, t2:SIntType) => BoolType()
                case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -213,7 +213,7 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(MAX(w1(),c1()))
                case (t1:SIntType) => SIntType(MAX(w1(),c1()))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -221,8 +221,8 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(w1())
                case (t1:SIntType) => UIntType(w1())
-               case (t1:ClockType) => UIntType(ONE)
-               case (t1) => UnknownType()
+               case ClockType => UIntType(ONE)
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -230,17 +230,17 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => SIntType(w1())
                case (t1:SIntType) => SIntType(w1())
-               case (t1:ClockType) => SIntType(ONE)
-               case (t1) => UnknownType()
+               case ClockType => SIntType(ONE)
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case AS_CLOCK_OP => {
             val t = (t1()) match {
-               case (t1:UIntType) => ClockType()
-               case (t1:SIntType) => ClockType()
-               case (t1:ClockType) => ClockType()
-               case (t1) => UnknownType()
+               case (t1:UIntType) => ClockType
+               case (t1:SIntType) => ClockType
+               case ClockType => ClockType
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -248,7 +248,7 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(PLUS(w1(),c1()))
                case (t1:SIntType) => SIntType(PLUS(w1(),c1()))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -256,7 +256,7 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(MAX(MINUS(w1(),c1()),ONE))
                case (t1:SIntType) => SIntType(MAX(MINUS(w1(),c1()),ONE))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -264,7 +264,7 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(PLUS(w1(),POW(w2())))
                case (t1:SIntType) => SIntType(PLUS(w1(),POW(w2())))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -272,7 +272,7 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(w1())
                case (t1:SIntType) => SIntType(w1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -280,7 +280,7 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => SIntType(PLUS(w1(),ONE))
                case (t1:SIntType) => SIntType(w1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -288,7 +288,7 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => SIntType(PLUS(w1(),ONE))
                case (t1:SIntType) => SIntType(PLUS(w1(),ONE))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
@@ -296,77 +296,77 @@ object PrimOps extends LazyLogging {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(w1())
                case (t1:SIntType) => UIntType(w1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case AND_OP => {
             val t = (t1(),t2()) match {
                case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1,t2) => UnknownType()
+               case (t1,t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case OR_OP => {
             val t = (t1(),t2()) match {
                case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1,t2) => UnknownType()
+               case (t1,t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case XOR_OP => {
             val t = (t1(),t2()) match {
                case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1,t2) => UnknownType()
+               case (t1,t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case AND_REDUCE_OP => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => BoolType()
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case OR_REDUCE_OP => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => BoolType()
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case XOR_REDUCE_OP => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => BoolType()
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case CONCAT_OP => {
             val t = (t1(),t2()) match {
                case (_:UIntType|_:SIntType,_:UIntType|_:SIntType) => UIntType(PLUS(w1(),w2()))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case BITS_SELECT_OP => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => UIntType(PLUS(MINUS(c1(),c2()),ONE))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case HEAD_OP => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => UIntType(c1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case TAIL_OP => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => UIntType(MINUS(w1(),c1()))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
