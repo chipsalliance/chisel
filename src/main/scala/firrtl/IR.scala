@@ -92,19 +92,23 @@ case object BITS_SELECT_OP extends PrimOp
 case object HEAD_OP extends PrimOp
 case object TAIL_OP extends PrimOp
 
-trait Expression extends AST {
+abstract class Expression extends AST {
   def tpe: Type
 }
-case class Ref(name: String, tpe: Type) extends Expression with HasName
-case class SubField(exp: Expression, name: String, tpe: Type) extends Expression with HasName
-case class SubIndex(exp: Expression, value: Int, tpe: Type) extends Expression
-case class SubAccess(exp: Expression, index: Expression, tpe: Type) extends Expression
+case class Reference(name: String, tpe: Type) extends Expression with HasName
+case class SubField(expr: Expression, name: String, tpe: Type) extends Expression with HasName
+case class SubIndex(expr: Expression, value: Int, tpe: Type) extends Expression
+case class SubAccess(expr: Expression, index: Expression, tpe: Type) extends Expression
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type) extends Expression
 case class ValidIf(cond: Expression, value: Expression, tpe: Type) extends Expression
-case class UIntValue(value: BigInt, width: Width) extends Expression {
+abstract class Literal extends Expression {
+  val value: BigInt
+  val width: Width
+}
+case class UIntLiteral(value: BigInt, width: Width) extends Literal {
   def tpe = UIntType(width)
 }
-case class SIntValue(value: BigInt, width: Width) extends Expression {
+case class SIntLiteral(value: BigInt, width: Width) extends Literal {
   def tpe = SIntType(width)
 }
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression

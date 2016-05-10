@@ -66,12 +66,12 @@ class Serialize {
 
   def serialize(exp: Expression): String = {
     exp match {
-      case v: UIntValue => s"UInt${serialize(v.width)}(${serialize(v.value)})"
-      case v: SIntValue => s"SInt${serialize(v.width)}(${serialize(v.value)})"
-      case r: Ref => r.name
-      case s: SubField => s"${serialize(s.exp)}.${s.name}"
-      case s: SubIndex => s"${serialize(s.exp)}[${s.value}]"
-      case s: SubAccess => s"${serialize(s.exp)}[${serialize(s.index)}]"
+      case v: UIntLiteral => s"UInt${serialize(v.width)}(${serialize(v.value)})"
+      case v: SIntLiteral => s"SInt${serialize(v.width)}(${serialize(v.value)})"
+      case r: Reference => r.name
+      case s: SubField => s"${serialize(s.expr)}.${s.name}"
+      case s: SubIndex => s"${serialize(s.expr)}[${s.value}]"
+      case s: SubAccess => s"${serialize(s.expr)}[${serialize(s.index)}]"
       case m: Mux => s"mux(${serialize(m.cond)}, ${serialize(m.tval)}, ${serialize(m.fval)})"
       case v: ValidIf => s"validif(${serialize(v.cond)}, ${serialize(v.value)})"
       case p: DoPrim =>

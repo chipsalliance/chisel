@@ -101,9 +101,9 @@ object Mappers {
     implicit def forExp(f: Expression => Expression) = new ExpMagnet {
       override def map(exp: Expression): Expression = {
         exp match {
-          case e: SubField => SubField(f(e.exp), e.name, e.tpe)
-          case e: SubIndex => SubIndex(f(e.exp), e.value, e.tpe)
-          case e: SubAccess => SubAccess(f(e.exp), f(e.index), e.tpe)
+          case e: SubField => SubField(f(e.expr), e.name, e.tpe)
+          case e: SubIndex => SubIndex(f(e.expr), e.value, e.tpe)
+          case e: SubAccess => SubAccess(f(e.expr), f(e.index), e.tpe)
           case e: Mux => Mux(f(e.cond), f(e.tval), f(e.fval), e.tpe)
           case e: ValidIf => ValidIf(f(e.cond), f(e.value), e.tpe)
           case e: DoPrim => DoPrim(e.op, e.args.map(f), e.consts, e.tpe)
@@ -131,8 +131,8 @@ object Mappers {
     implicit def forWidth(f: Width => Width) = new ExpMagnet {
       override def map(exp: Expression): Expression = {
         exp match {
-          case e: UIntValue => UIntValue(e.value,f(e.width))
-          case e: SIntValue => SIntValue(e.value,f(e.width))
+          case e: UIntLiteral => UIntLiteral(e.value,f(e.width))
+          case e: SIntLiteral => SIntLiteral(e.value,f(e.width))
           case e => e
         }
       }

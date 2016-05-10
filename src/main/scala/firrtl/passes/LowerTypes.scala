@@ -149,7 +149,7 @@ object LowerTypes extends Pass {
         }
         case e: Mux => e map (lowerTypesExp)
         case e: ValidIf => e map (lowerTypesExp)
-        case (_: UIntValue | _: SIntValue) => e
+        case (_: UIntLiteral | _: SIntLiteral) => e
         case e: DoPrim => e map (lowerTypesExp)
       }
 

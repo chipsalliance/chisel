@@ -73,12 +73,12 @@ object Utils extends LazyLogging {
    val gen_names = Map[String,Int]()
    val delin = "_"
    def BoolType () = { UIntType(IntWidth(1)) } 
-   val one  = UIntValue(BigInt(1),IntWidth(1))
-   val zero = UIntValue(BigInt(0),IntWidth(1))
-   def uint (i:Int) : UIntValue = {
+   val one  = UIntLiteral(BigInt(1),IntWidth(1))
+   val zero = UIntLiteral(BigInt(0),IntWidth(1))
+   def uint (i:Int) : UIntLiteral = {
       val num_bits = req_num_bits(i)
       val w = IntWidth(scala.math.max(1,num_bits - 1))
-      UIntValue(BigInt(i),w)
+      UIntLiteral(BigInt(i),w)
    }
    def req_num_bits (i: Int) : Int = {
       val ix = if (i < 0) ((-1 * i) - 1) else i
@@ -465,8 +465,8 @@ object Utils extends LazyLogging {
         case e:WSubIndex => e.gender
         case e:WSubAccess => e.gender
         case e:DoPrim => MALE
-        case e:UIntValue => MALE
-        case e:SIntValue => MALE
+        case e:UIntLiteral => MALE
+        case e:SIntLiteral => MALE
         case e:Mux => MALE
         case e:ValidIf => MALE
         case e:WInvalid => MALE
@@ -499,7 +499,7 @@ object Utils extends LazyLogging {
       }
    def tpe (e:Expression) : Type =
       e match {
-         case e:Ref => e.tpe
+         case e:Reference => e.tpe
          case e:SubField => e.tpe
          case e:SubIndex => e.tpe
          case e:SubAccess => e.tpe
@@ -510,8 +510,8 @@ object Utils extends LazyLogging {
          case e:DoPrim => e.tpe
          case e:Mux => e.tpe
          case e:ValidIf => e.tpe
-         case e:UIntValue => UIntType(e.width)
-         case e:SIntValue => SIntType(e.width)
+         case e:UIntLiteral => UIntType(e.width)
+         case e:SIntLiteral => SIntType(e.width)
          case e:WVoid => UnknownType
          case e:WInvalid => UnknownType
       }

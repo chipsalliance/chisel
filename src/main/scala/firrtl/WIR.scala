@@ -79,8 +79,8 @@ class WrappedExpression (val e1:Expression) {
       we match {
          case (we:WrappedExpression) => {
             (e1,we.e1) match {
-               case (e1:UIntValue,e2:UIntValue) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
-               case (e1:SIntValue,e2:SIntValue) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
+               case (e1:UIntLiteral,e2:UIntLiteral) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
+               case (e1:SIntLiteral,e2:SIntLiteral) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
                case (e1:WRef,e2:WRef) => e1.name equals e2.name
                case (e1:WSubField,e2:WSubField) => (e1.name equals e2.name) && weq(e1.exp,e2.exp)
                case (e1:WSubIndex,e2:WSubIndex) => (e1.value == e2.value) && weq(e1.exp,e2.exp)

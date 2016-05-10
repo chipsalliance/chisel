@@ -69,10 +69,10 @@ object ToWorkingIR extends Pass {
    def run (c:Circuit): Circuit = {
       def toExp (e:Expression) : Expression = {
          e map (toExp) match {
-            case e:Ref => WRef(e.name, e.tpe, NodeKind(), UNKNOWNGENDER)
-            case e:SubField => WSubField(e.exp, e.name, e.tpe, UNKNOWNGENDER)
-            case e:SubIndex => WSubIndex(e.exp, e.value, e.tpe, UNKNOWNGENDER)
-            case e:SubAccess => WSubAccess(e.exp, e.index, e.tpe, UNKNOWNGENDER)
+            case e:Reference => WRef(e.name, e.tpe, NodeKind(), UNKNOWNGENDER)
+            case e:SubField => WSubField(e.expr, e.name, e.tpe, UNKNOWNGENDER)
+            case e:SubIndex => WSubIndex(e.expr, e.value, e.tpe, UNKNOWNGENDER)
+            case e:SubAccess => WSubAccess(e.expr, e.index, e.tpe, UNKNOWNGENDER)
             case e => e
          }
       }
@@ -176,8 +176,8 @@ object InferTypes extends Pass {
                case e:WSubAccess => WSubAccess(e.exp,e.index,sub_type(tpe(e.exp)),e.gender)
                case e:DoPrim => set_primop_type(e)
                case e:Mux => Mux(e.cond,e.tval,e.fval,mux_type_and_widths(e.tval,e.fval))
-               case e:UIntValue => e
-               case e:SIntValue => e
+               case e:UIntLiteral => e
+               case e:SIntLiteral => e
             }
          }
          def infer_types_s (s:Statement) : Statement = {
@@ -822,8 +822,8 @@ object RemoveAccesses extends Pass {
                   case (e:DoPrim) => e map (remove_e)
                   case (e:Mux) => e map (remove_e)
                   case (e:ValidIf) => e map (remove_e)
-                  case (e:SIntValue) => e
-                  case (e:UIntValue) => e
+                  case (e:SIntLiteral) => e
+                  case (e:UIntLiteral) => e
                   case x => {
                      val e = x match {
                         case (w:WSubAccess) => WSubAccess(w.exp,remove_e(w.index),w.tpe,w.gender)
@@ -900,7 +900,7 @@ object Legalize extends Pass {
       lazy val msb = width - 1
       if (amount >= width) {
         e.tpe match {
-          case t: UIntType => UIntValue(0, IntWidth(1))
+          case t: UIntType => UIntLiteral(0, IntWidth(1))
           case t: SIntType =>
             DoPrim(BITS_SELECT_OP, e.args, Seq(msb, msb), SIntType(IntWidth(1)))
           case t => error(s"Unsupported type ${t} for Primop Shift Right")
@@ -1053,14 +1053,14 @@ object CInferTypes extends Pass {
          val types = LinkedHashMap[String,Type]()
          def infer_types_e (e:Expression) : Expression = {
             (e map (infer_types_e)) match { 
-               case (e:Ref) => Ref(e.name, types.getOrElse(e.name,UnknownType))
-               case (e:SubField) => SubField(e.exp,e.name,field_type(tpe(e.exp),e.name))
-               case (e:SubIndex) => SubIndex(e.exp,e.value,sub_type(tpe(e.exp)))
-               case (e:SubAccess) => SubAccess(e.exp,e.index,sub_type(tpe(e.exp)))
+               case (e:Reference) => Reference(e.name, types.getOrElse(e.name,UnknownType))
+               case (e:SubField) => SubField(e.expr,e.name,field_type(tpe(e.expr),e.name))
+               case (e:SubIndex) => SubIndex(e.expr,e.value,sub_type(tpe(e.expr)))
+               case (e:SubAccess) => SubAccess(e.expr,e.index,sub_type(tpe(e.expr)))
                case (e:DoPrim) => set_primop_type(e)
                case (e:Mux) => Mux(e.cond,e.tval,e.fval,mux_type(e.tval,e.tval))
                case (e:ValidIf) => ValidIf(e.cond,e.value,tpe(e.value))
-               case (_:UIntValue|_:SIntValue) => e
+               case (_:UIntLiteral | _:SIntLiteral) => e
             }
          }
          def infer_types_s (s:Statement) : Statement = {
@@ -1126,7 +1126,7 @@ object CInferMDir extends Pass {
          val mports = LinkedHashMap[String,MPortDir]()
          def infer_mdir_e (dir:MPortDir)(e:Expression) : Expression = {
             (e map (infer_mdir_e(dir))) match { 
-               case (e:Ref) => {
+               case (e:Reference) => {
                   if (mports.contains(e.name)) {
                      val new_mport_dir = {
                         (mports(e.name),dir) match {
@@ -1253,23 +1253,23 @@ object RemoveCHIRRTL extends Pass {
                   val tdata = s.tpe
                   def set_poison (vec:Seq[MPort],addr:String) : Unit = {
                      for (r <- vec ) {
-                        stmts += IsInvalid(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),addr,taddr))
-                        stmts += IsInvalid(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),"clk",taddr))
+                        stmts += IsInvalid(s.info,SubField(SubField(Reference(s.name,ut),r.name,ut),addr,taddr))
+                        stmts += IsInvalid(s.info,SubField(SubField(Reference(s.name,ut),r.name,ut),"clk",taddr))
                      }
                   }
                   def set_enable (vec:Seq[MPort],en:String) : Unit = {
                      for (r <- vec ) {
-                        stmts += Connect(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),en,taddr),zero)
+                        stmts += Connect(s.info,SubField(SubField(Reference(s.name,ut),r.name,ut),en,taddr),zero)
                      }}
                   def set_wmode (vec:Seq[MPort],wmode:String) : Unit = {
                      for (r <- vec) {
-                        stmts += Connect(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),wmode,taddr),zero)
+                        stmts += Connect(s.info,SubField(SubField(Reference(s.name,ut),r.name,ut),wmode,taddr),zero)
                      }}
                   def set_write (vec:Seq[MPort],data:String,mask:String) : Unit = {
                      val tmask = create_mask(s.tpe)
                      for (r <- vec ) {
-                        stmts += IsInvalid(s.info,SubField(SubField(Ref(s.name,ut),r.name,ut),data,tdata))
-                        for (x <- create_exps(SubField(SubField(Ref(s.name,ut),r.name,ut),mask,tmask)) ) {
+                        stmts += IsInvalid(s.info,SubField(SubField(Reference(s.name,ut),r.name,ut),data,tdata))
+                        for (x <- create_exps(SubField(SubField(Reference(s.name,ut),r.name,ut),mask,tmask)) ) {
                            stmts += Connect(s.info,x,zero)
                         }}}
                   val rds = (hash.getOrElse(s.name,EMPs())).readers
@@ -1296,21 +1296,21 @@ object RemoveCHIRRTL extends Pass {
                   val masks = ArrayBuffer[String]()
                   s.direction match {
                      case MReadWrite => {
-                        repl(s.name) = DataRef(SubField(Ref(s.mem,ut),s.name,ut),"rdata","data","mask",true)
+                        repl(s.name) = DataRef(SubField(Reference(s.mem,ut),s.name,ut),"rdata","data","mask",true)
                         addrs += "addr"
                         clks += "clk"
                         ens += "en"
                         masks += "mask"
                      }
                      case MWrite => {
-                        repl(s.name) = DataRef(SubField(Ref(s.mem,ut),s.name,ut),"data","data","mask",false)
+                        repl(s.name) = DataRef(SubField(Reference(s.mem,ut),s.name,ut),"data","data","mask",false)
                         addrs += "addr"
                         clks += "clk"
                         ens += "en"
                         masks += "mask"
                      }
                      case _ => {
-                        repl(s.name) = DataRef(SubField(Ref(s.mem,ut),s.name,ut),"data","data","blah",false)
+                        repl(s.name) = DataRef(SubField(Reference(s.mem,ut),s.name,ut),"data","data","blah",false)
                         addrs += "addr"
                         clks += "clk"
                         ens += "en"
@@ -1318,13 +1318,13 @@ object RemoveCHIRRTL extends Pass {
                   }
                   val stmts = ArrayBuffer[Statement]()
                   for (x <- addrs ) {
-                     stmts += Connect(s.info,SubField(SubField(Ref(s.mem,ut),s.name,ut),x,ut),s.exps(0))
+                     stmts += Connect(s.info,SubField(SubField(Reference(s.mem,ut),s.name,ut),x,ut),s.exps(0))
                   }
                   for (x <- clks ) {
-                     stmts += Connect(s.info,SubField(SubField(Ref(s.mem,ut),s.name,ut),x,ut),s.exps(1))
+                     stmts += Connect(s.info,SubField(SubField(Reference(s.mem,ut),s.name,ut),x,ut),s.exps(1))
                   }
                   for (x <- ens ) {
-                     stmts += Connect(s.info,SubField(SubField(Ref(s.mem,ut),s.name,ut),x,ut),one)
+                     stmts += Connect(s.info,SubField(SubField(Reference(s.mem,ut),s.name,ut),x,ut),one)
                   }
                   Begin(stmts)
                }
@@ -1336,7 +1336,7 @@ object RemoveCHIRRTL extends Pass {
             var has_readwrite_mport:Option[Expression] = None
             def remove_chirrtl_e (g:Gender)(e:Expression) : Expression = {
                (e) match { 
-                  case (e:Ref) => {
+                  case (e:Reference) => {
                      if (repl.contains(e.name)) {
                         val vt = repl(e.name)
                         g match {
@@ -1350,13 +1350,13 @@ object RemoveCHIRRTL extends Pass {
                         }
                      } else e
                   }
-                  case (e:SubAccess) => SubAccess(remove_chirrtl_e(g)(e.exp),remove_chirrtl_e(MALE)(e.index),e.tpe)
+                  case (e:SubAccess) => SubAccess(remove_chirrtl_e(g)(e.expr),remove_chirrtl_e(MALE)(e.index),e.tpe)
                   case (e) => e map (remove_chirrtl_e(g))
                }
             }
             def get_mask (e:Expression) : Expression = {
                (e map (get_mask)) match { 
-                  case (e:Ref) => {
+                  case (e:Reference) => {
                      if (repl.contains(e.name)) {
                         val vt = repl(e.name)
                         val t = create_mask(e.tpe)
