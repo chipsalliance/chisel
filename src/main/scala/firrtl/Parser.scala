@@ -29,6 +29,7 @@ package firrtl
 import org.antlr.v4.runtime._;
 import org.antlr.v4.runtime.atn._;
 import com.typesafe.scalalogging.LazyLogging
+import firrtl.ir._
 import Utils.{time}
 import antlr._
 
@@ -40,7 +41,7 @@ case class InvalidEscapeCharException(message: String) extends ParserException(m
 
 object Parser extends LazyLogging
 {
-  /** Takes Iterator over lines of FIRRTL, returns AST (root node is Circuit) */
+  /** Takes Iterator over lines of FIRRTL, returns FirrtlNode (root node is Circuit) */
   def parse(lines: Iterator[String], infoMode: InfoMode = UseInfo): Circuit = {
     val fixedInput = time("Translator") { Translator.addBrackets(lines) }
     val antlrStream = new ANTLRInputStream(fixedInput.result)

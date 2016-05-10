@@ -1,6 +1,7 @@
 package firrtl
 package passes
 import firrtl.Mappers.{ExpMap, StmtMap}
+import firrtl.ir._
 
 // Removes ValidIf as an optimization
 object RemoveValidIf extends Pass {

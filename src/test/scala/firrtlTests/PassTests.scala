@@ -4,7 +4,8 @@ import com.typesafe.scalalogging.LazyLogging
 import java.io.{StringWriter,Writer}
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.junit.JUnitRunner
-import firrtl.{Parser,Circuit,FIRRTLEmitter}
+import firrtl.{Parser,FIRRTLEmitter}
+import firrtl.ir.Circuit
 import firrtl.Parser.IgnoreInfo
 import firrtl.passes.{Pass, PassExceptions}
 import firrtl.{

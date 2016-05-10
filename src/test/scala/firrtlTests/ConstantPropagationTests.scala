@@ -2,8 +2,9 @@ package firrtlTests
 
 import org.scalatest.Matchers
 import java.io.{StringWriter,Writer}
-import firrtl._
+import firrtl.ir.Circuit
 import firrtl.Parser.IgnoreInfo
+import firrtl.Parser
 import firrtl.passes._
 
 // Tests the following cases for constant propagation:

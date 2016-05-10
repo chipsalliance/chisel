@@ -30,6 +30,7 @@ package firrtl
 import com.typesafe.scalalogging.LazyLogging
 import java.io.Writer
 import firrtl.passes.Pass
+import firrtl.ir.Circuit
 
 // ===========================================
 //              Utility Traits
@@ -67,7 +68,7 @@ class Chisel3ToHighFirrtl () extends Transform with SimpleRun {
       run(circuit, passSeq)
 }
 
-// Converts from the bare intermediate representation (IR.scala)
+// Converts from the bare intermediate representation (ir.scala)
 //  to a working representation (WIR.scala)
 class IRToWorkingIR () extends Transform with SimpleRun {
    val passSeq = Seq(passes.ToWorkingIR)

@@ -27,11 +27,12 @@ MODIFICATIONS.
 
 package firrtl
 
+import firrtl.ir._
 import firrtl.PrimOps._
 import firrtl.Utils._
 
 private object Serialize {
-  def serialize(root: AST): String = {
+  def serialize(root: FirrtlNode): String = {
     lazy val ser = new Serialize
     root match {
       case r: PrimOp => ser.serialize(r)
@@ -46,7 +47,7 @@ private object Serialize {
       case r: DefModule => ser.serialize(r)
       case r: Circuit => ser.serialize(r)
       case r: StringLit => ser.serialize(r)
-      case _ => throw new Exception("serialize called on unknown AST node!")
+      case _ => throw new Exception("serialize called on unknown FirrtlNode!")
     }
   }
   /** Creates new instance of Serialize */

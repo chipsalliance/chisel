@@ -27,9 +27,11 @@ MODIFICATIONS.
 
 package firrtl
 
+import firrtl.ir._
+
 import com.typesafe.scalalogging.LazyLogging
 
-/** Definitions and Utility functions for [[PrimOp]]s */
+/** Definitions and Utility functions for [[ir.PrimOp]]s */
 object PrimOps extends LazyLogging {
   /** Addition */
   case object Add extends PrimOp { override def toString = "add" }
@@ -101,9 +103,9 @@ object PrimOps extends LazyLogging {
         Dshl, Dshr, Neg, Cvt, Not, And, Or, Xor, Andr, Orr, Xorr, Cat, Bits, Head, Tail)
   private lazy val strToPrimOp: Map[String, PrimOp] = builtinPrimOps map (op => op.toString -> op) toMap
 
-  /** Seq of String representations of [[PrimOp]]s */
+  /** Seq of String representations of [[ir.PrimOp]]s */
   lazy val listing: Seq[String] = builtinPrimOps map (_.toString)
-  /** Gets the corresponding [[PrimOp]] from its String representation */
+  /** Gets the corresponding [[ir.PrimOp]] from its String representation */
   def fromString(op: String): PrimOp = strToPrimOp(op)
 
   // Borrowed from Stanza implementation

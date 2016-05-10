@@ -30,6 +30,7 @@ package firrtl
 import scala.collection.Seq
 import Utils._
 import firrtl.Serialize._
+import firrtl.ir._
 import WrappedExpression._
 import WrappedWidth._
 

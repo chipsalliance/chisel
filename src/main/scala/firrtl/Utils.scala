@@ -43,9 +43,12 @@ import WrappedExpression._
 import firrtl.WrappedType._
 import firrtl.Mappers._
 import firrtl.PrimOps._
+import firrtl.ir._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.LinkedHashMap
 //import scala.reflect.runtime.universe._
+
+class FIRRTLException(str: String) extends Exception(str)
 
 object Utils extends LazyLogging {
   private[firrtl] def time[R](name: String)(block: => R): R = {
@@ -277,9 +280,9 @@ object Utils extends LazyLogging {
 // =================================
    def error(str:String) = throw new FIRRTLException(str)
 
-   implicit class ASTUtils(ast: AST) {
+   implicit class FirrtlNodeUtils(node: FirrtlNode) {
      def getType(): Type = 
-       ast match {
+       node match {
          case e: Expression => e.getType
          case s: Statement => s.getType
          //case f: Field => f.getType
@@ -612,9 +615,9 @@ object Utils extends LazyLogging {
 
   /** Gets the root declaration of an expression
     *
-    * @param m    the [[firrtl.Module]] to search
-    * @param expr the [[firrtl.Expression]] that refers to some declaration
-    * @return the [[firrtl.IsDeclaration]] of `expr`
+    * @param m    the [[firrtl.ir.Module]] to search
+    * @param expr the [[firrtl.ir.Expression]] that refers to some declaration
+    * @return the [[firrtl.ir.IsDeclaration]] of `expr`
     * @throws DeclarationNotFoundException if no declaration of `expr` is found
     */
   def getDeclaration(m: Module, expr: Expression): IsDeclaration = {

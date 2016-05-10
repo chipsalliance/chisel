@@ -27,6 +27,8 @@ MODIFICATIONS.
 
 package firrtl
 
+import firrtl.ir._
+
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.annotation.tailrec
 

@@ -6,6 +6,7 @@ import scala.collection.mutable
 
 import firrtl.Mappers.{ExpMap,StmtMap}
 import firrtl.Utils.WithAs
+import firrtl.ir._
 
 
 // Tags an annotation to be consumed by this pass

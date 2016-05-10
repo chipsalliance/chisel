@@ -6,9 +6,10 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 
-import firrtl.{Parser,Circuit}
+import firrtl.ir.Circuit
 import firrtl.passes.{PassExceptions,InlineCAKind}
 import firrtl.{
+   Parser,
    Named,
    ModuleName,
    ComponentName,

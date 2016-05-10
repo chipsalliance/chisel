@@ -26,14 +26,8 @@ MODIFICATIONS.
 */
 
 package firrtl
+package ir
 
-import scala.collection.Seq
-
-// Should this be defined elsewhere?
-/*
-Structure containing source locator information.
-Member of most Stmt case classes.
-*/
 trait Info
 case object NoInfo extends Info {
   override def toString(): String = ""
@@ -42,9 +36,8 @@ case class FileInfo(info: StringLit) extends Info {
   override def toString(): String = " @[" + info.serialize + "]"
 }
 
-class FIRRTLException(str: String) extends Exception(str)
-
-trait AST {
+/** Intermediate Representation */
+abstract class FirrtlNode {
   def serialize: String = firrtl.Serialize.serialize(this)
 }
 
@@ -56,15 +49,15 @@ trait HasInfo {
 }
 trait IsDeclaration extends HasName with HasInfo
 
-case class StringLit(array: Array[Byte]) extends AST
+case class StringLit(array: Array[Byte]) extends FirrtlNode
 
 /** Primitive Operation
   *
   * See [[PrimOps]]
   */
-abstract class PrimOp extends AST
+abstract class PrimOp extends FirrtlNode
 
-abstract class Expression extends AST {
+abstract class Expression extends FirrtlNode {
   def tpe: Type
 }
 case class Reference(name: String, tpe: Type) extends Expression with HasName
@@ -85,7 +78,7 @@ case class SIntLiteral(value: BigInt, width: Width) extends Literal {
 }
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression
 
-abstract class Statement extends AST
+abstract class Statement extends FirrtlNode
 case class DefWire(info: Info, name: String, tpe: Type) extends Statement with IsDeclaration
 case class DefRegister(
     info: Info,
@@ -124,7 +117,7 @@ case class Print(
     en: Expression) extends Statement with HasInfo
 case object EmptyStmt extends Statement
 
-abstract class Width extends AST {
+abstract class Width extends FirrtlNode {
   def +(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width + b.width)
     case _ => UnknownWidth
@@ -147,14 +140,14 @@ case class IntWidth(width: BigInt) extends Width
 case object UnknownWidth extends Width
 
 /** Orientation of [[Field]] */
-abstract class Orientation extends AST
+abstract class Orientation extends FirrtlNode
 case object Default extends Orientation
 case object Flip extends Orientation
 
 /** Field of [[BundleType]] */
-case class Field(name: String, flip: Orientation, tpe: Type) extends AST with HasName
+case class Field(name: String, flip: Orientation, tpe: Type) extends FirrtlNode with HasName
 
-abstract class Type extends AST
+abstract class Type extends FirrtlNode
 abstract class GroundType extends Type {
   val width: Width
 }
@@ -169,15 +162,15 @@ case object ClockType extends GroundType {
 case object UnknownType extends Type
 
 /** [[Port]] Direction */
-abstract class Direction extends AST
+abstract class Direction extends FirrtlNode
 case object Input extends Direction
 case object Output extends Direction
 
 /** [[DefModule]] Port */
-case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends AST with IsDeclaration
+case class Port(info: Info, name: String, direction: Direction, tpe: Type) extends FirrtlNode with IsDeclaration
 
 /** Base class for modules */
-abstract class DefModule extends AST with IsDeclaration {
+abstract class DefModule extends FirrtlNode with IsDeclaration {
   val info : Info
   val name : String
   val ports : Seq[Port]
@@ -193,5 +186,4 @@ case class Module(info: Info, name: String, ports: Seq[Port], body: Statement) e
   */
 case class ExtModule(info: Info, name: String, ports: Seq[Port]) extends DefModule
 
-case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends AST with HasInfo
-
+case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo

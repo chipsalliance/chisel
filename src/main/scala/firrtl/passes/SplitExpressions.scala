@@ -3,6 +3,7 @@ package passes
 
 import firrtl.Mappers.{ExpMap, StmtMap}
 import firrtl.Utils.{tpe, kind, gender, info}
+import firrtl.ir._
 import scala.collection.mutable
 
 

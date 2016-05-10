@@ -28,6 +28,7 @@ MODIFICATIONS.
 package firrtl.passes
 
 import firrtl._
+import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 

@@ -31,12 +31,13 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.annotation.tailrec
 
 import firrtl._
+import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 
 /** Resolve name collisions that would occur in [[LowerTypes]]
   *
-  *  @note Must be run after [[InferTypes]] because [[DefNode]]s need type
+  *  @note Must be run after [[InferTypes]] because [[ir.DefNode]]s need type
   *  @example
   *  {{{
   *      wire a = { b, c }[2]

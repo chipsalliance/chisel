@@ -40,6 +40,7 @@ import firrtl.Serialize._
 import firrtl.Mappers._
 import firrtl.passes._
 import firrtl.PrimOps._
+import firrtl.ir._
 import WrappedExpression._
 // Datastructures
 import scala.collection.mutable.LinkedHashMap
