@@ -120,4 +120,16 @@ private[Chisel] object Builder {
       Circuit(components.last.name, components)
     }
   }
+
+  def buildModule[T <: Module](f: => T): T = {
+    dynamicContextVar.withValue(Some(new DynamicContext)) {
+      errors.info("Elaborating design...")
+      val mod = f
+      mod.forceName(mod.name, globalNamespace)
+      errors.checkpoint()
+      errors.info("Done elaborating.")
+
+      mod
+    }
+  }
 }

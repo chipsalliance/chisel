@@ -110,6 +110,8 @@ object Driver extends BackendCompilationUtilities {
     */
   def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
 
+  def elaborateModule[T <: Module](gen: () => T): T = Builder.buildModule(Module(gen()))
+
   def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
 
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
