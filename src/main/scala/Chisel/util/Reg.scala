@@ -7,15 +7,15 @@ package Chisel
 
 object RegNext {
 
-  def apply[T <: Data](next: T): T = Reg[T](next, next, null.asInstanceOf[T])
+  def apply[T <: Data](next: T): T = Reg[T](null.asInstanceOf[T], next, null.asInstanceOf[T])
 
-  def apply[T <: Data](next: T, init: T): T = Reg[T](next, next, init)
+  def apply[T <: Data](next: T, init: T): T = Reg[T](null.asInstanceOf[T], next, init)
 
 }
 
 object RegInit {
 
-  def apply[T <: Data](init: T): T = Reg[T](init, null.asInstanceOf[T], init)
+  def apply[T <: Data](init: T): T = Reg[T](null.asInstanceOf[T], null.asInstanceOf[T], init)
 
 }
 
