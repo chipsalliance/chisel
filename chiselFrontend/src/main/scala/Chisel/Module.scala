@@ -40,9 +40,9 @@ abstract class Module(
 extends HasId {
   // _clock and _reset can be clock and reset in these 2ary constructors
   // once chisel2 compatibility issues are resolved
-  def this(_clock: Clock) = this(Some(_clock), None)
-  def this(_reset: Bool)  = this(None, Some(_reset))
-  def this(_clock: Clock, _reset: Bool) = this(Some(_clock), Some(_reset))
+  def this(_clock: Clock) = this(Option(_clock), None)
+  def this(_reset: Bool)  = this(None, Option(_reset))
+  def this(_clock: Clock, _reset: Bool) = this(Option(_clock), Option(_reset))
 
   private[Chisel] val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
