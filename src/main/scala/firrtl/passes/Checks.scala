@@ -677,7 +677,7 @@ object CheckGenders extends Pass {
    }
 }
 
-object CheckWidths extends Pass with StanzaPass {
+object CheckWidths extends Pass {
    def name = "Width Check"
    var mname = ""
    class UninferredWidth (info:Info) extends PassException(s"${info} : [module ${mname}]  Uninferred width.")

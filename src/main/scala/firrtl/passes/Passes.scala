@@ -30,10 +30,6 @@ package firrtl.passes
 import com.typesafe.scalalogging.LazyLogging
 import java.nio.file.{Paths, Files}
 
-// For calling Stanza 
-import scala.sys.process._
-import scala.io.Source
-
 // Datastructures
 import scala.collection.mutable.LinkedHashMap
 import scala.collection.mutable.HashMap
@@ -54,28 +50,6 @@ trait Pass extends LazyLogging {
 // Error handling
 class PassException(message: String) extends Exception(message)
 class PassExceptions(exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
-
-// Trait for migration, trap to Stanza implementation for passes not yet implemented in Scala
-trait StanzaPass extends LazyLogging {
-  def stanzaPass(c: Circuit, n: String): Circuit = {
-    // For migration from Stanza, handle unimplemented Passes
-    logger.debug(s"Pass ${n} is not yet implemented in Scala")
-    val stanzaPasses = Seq("resolve", n) 
-    val toStanza = Files.createTempFile(Paths.get(""), n, ".fir")
-    val fromStanza = Files.createTempFile(Paths.get(""), n, ".fir")
-    Files.write(toStanza, c.serialize.getBytes)
-
-    val cmd = Seq("firrtl-stanza", "-i", toStanza.toString, "-o", fromStanza.toString, "-b", "firrtl", "-p", "c") ++ 
-              stanzaPasses.flatMap(x=>Seq("-x", x))
-    logger.debug(cmd.mkString(" "))
-    val ret = cmd.!
-    //println(ret)
-    val newC = Parser.parse(fromStanza.toString, Source.fromFile(fromStanza.toString).getLines)
-    Files.delete(toStanza)
-    Files.delete(fromStanza)
-    newC
-  }
-}
 
 object PassUtils extends LazyLogging {
   val listOfPasses: Seq[Pass] = Seq(ToWorkingIR,ResolveKinds,InferTypes,ResolveGenders,InferWidths,PullMuxes,ExpandConnects,RemoveAccesses,ExpandWhens,LowerTypes)
@@ -120,11 +94,6 @@ object ToWorkingIR extends Pass {
       }
       Circuit(c.info,modulesx,c.main)
    }
-}
-
-object Resolve extends Pass with StanzaPass {
-  def name = "Resolve"
-  def run (c:Circuit): Circuit = stanzaPass(c, "resolve")
 }
 
 object ResolveKinds extends Pass {
@@ -983,16 +952,6 @@ object Legalize extends Pass {
     def legalizeM (m: Module): Module = m map (legalizeS)
     Circuit(c.info, c.modules.map(legalizeM), c.main)
   }
-}
-
-object LoToVerilog extends Pass with StanzaPass {
-   def name = "Lo To Verilog"
-   def run (c:Circuit): Circuit = stanzaPass(c, "lo-to-verilog")
-}
-
-object FromCHIRRTL extends Pass with StanzaPass {
-   def name = "From CHIRRTL"
-   def run (c:Circuit): Circuit = stanzaPass(c, "from-chirrtl")
 }
 
 object VerilogWrap extends Pass {
