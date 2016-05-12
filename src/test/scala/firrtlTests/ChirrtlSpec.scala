@@ -67,7 +67,7 @@ class ChirrtlSpec extends FirrtlFlatSpec {
        |      infer mport y = ram[UInt(4)], newClock
        |      y <= UInt(5)
        """.stripMargin
-    passes.foldLeft(Parser.parse("",input.split("\n").toIterator)) {
+    passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
   }

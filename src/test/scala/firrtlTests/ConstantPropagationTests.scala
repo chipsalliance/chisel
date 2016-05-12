@@ -3,6 +3,7 @@ package firrtlTests
 import org.scalatest.Matchers
 import java.io.{StringWriter,Writer}
 import firrtl._
+import firrtl.Parser.IgnoreInfo
 import firrtl.passes._
 
 // Tests the following cases for constant propagation:
@@ -20,7 +21,7 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
       ResolveGenders,
       InferWidths,
       ConstProp)
-  def parse(input: String): Circuit = Parser.parse("", input.split("\n").toIterator, false)
+  def parse(input: String): Circuit = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private def exec (input: String) = {
     passes.foldLeft(parse(input)) {
       (c: Circuit, p: Pass) => p.run(c)

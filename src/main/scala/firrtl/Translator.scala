@@ -66,10 +66,11 @@ object Translator
       }
       s.take(i)
     }
+    def extractFileInfo(str: String): (String, String) = str span (_ != '@')
 
     val scopers = """(circuit|module|when|else|mem|with)"""
     val MultiLineScope = ("""(.*""" + scopers + """)(.*:\s*)""").r
-    val OneLineScope   = ("""(.*""" + scopers + """\s*:\s*)\((.*)\)\s*""").r
+    val OneLineScope   = ("""(.*(with)\s*:\s*)\((.*)\)\s*""").r
 
     // Function start
     val it = inputIt.zipWithIndex 
@@ -95,6 +96,7 @@ object Translator
     while( it.hasNext ) {
       it.next match { case (lineText, lineNum) =>
         val text = stripComments(lineText)
+        val (code, fileInfo) = extractFileInfo(text)
         val spaces = countSpaces(text)
 
         val l = if (text.length > spaces ) { // Check that line has text in it
@@ -118,14 +120,13 @@ object Translator
             throw new Exception("Invalid increase in scope on line " + lineNum)
           
           // Now match on legal scope increasers
-          text match {
+          code match {
             case OneLineScope(head, keyword, body) => {
               newScope = false
-              head + "{" + body + "}"
+              head + "{" + body + "} " + fileInfo
             }
             case MultiLineScope(head, keyword, tail) => {
               newScope = true
-              //text.replaceFirst(":", ": {")
               text + " { "
             }
             case _ => { 

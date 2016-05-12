@@ -20,7 +20,7 @@ class CheckSpec extends FlatSpec with Matchers {
         |      read-latency => 0
         |      write-latency => 1""".stripMargin
     intercept[PassExceptions] {
-      passes.foldLeft(Parser.parse("",input.split("\n").toIterator)) {
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
         (c: Circuit, p: Pass) => p.run(c)
       }
     }

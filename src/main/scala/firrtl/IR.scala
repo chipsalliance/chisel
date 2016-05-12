@@ -36,10 +36,10 @@ Member of most Stmt case classes.
 */
 trait Info
 case object NoInfo extends Info {
-  override def toString(): String = "NoFileInfo"
+  override def toString(): String = ""
 }
-case class FileInfo(file: String, line: Int, column: Int) extends Info {
-  override def toString(): String = s"$file@$line.$column"
+case class FileInfo(info: StringLit) extends Info {
+  override def toString(): String = " @[" + info.serialize + "]"
 }
 
 class FIRRTLException(str: String) extends Exception(str)

@@ -37,16 +37,16 @@ grammar FIRRTL;
 
 // Does there have to be at least one module?
 circuit
-  : 'circuit' id ':' '{' module* '}'
+  : 'circuit' id ':' info? '{' module* '}'
   ;
 
 module
-  : 'module' id ':' '{' port* block '}'
-  | 'extmodule' id ':' '{' port* '}'
+  : 'module' id ':' info? '{' port* block '}'
+  | 'extmodule' id ':' info? '{' port* '}'
   ;
 
 port
-  : dir id ':' type
+  : dir id ':' type info?
   ;
 
 dir
@@ -72,30 +72,35 @@ block
   ; 
 
 stmt
-  : 'wire' id ':' type
-  | 'reg' id ':' type exp ('with' ':' '{' 'reset' '=>' '(' exp exp ')' '}')?
-  | 'mem' id ':' '{' ( 'data-type' '=>' type 
+  : 'wire' id ':' type info?
+  | 'reg' id ':' type exp ('with' ':' '{' 'reset' '=>' '(' exp exp ')' '}')? info?
+  | 'mem' id ':' info? '{'
+                     ( 'data-type' '=>' type
                      | 'depth' '=>' IntLit
                      | 'read-latency' '=>' IntLit
                      | 'write-latency' '=>' IntLit
                      | 'read-under-write' '=>' ruw
                      | 'reader' '=>' id
                      | 'writer' '=>' id
-                     | 'readwriter' '=>' id 
+                     | 'readwriter' '=>' id
                      )*
                  '}'
-  | 'cmem' id ':' type
-  | 'smem' id ':' type
-  | mdir 'mport' id '=' id '[' exp ']' exp
-  | 'inst' id 'of' id 
-  | 'node' id '=' exp
-  | exp '<=' exp 
-  | exp '<-' exp
-  | exp 'is' 'invalid'
-  | 'when' exp ':' '{' block '}' ( 'else' ':' '{' block '}' )? 
-  | 'stop(' exp exp IntLit ')'
-  | 'printf(' exp exp StringLit (exp)* ')'
-  | 'skip'
+  | 'cmem' id ':' type info?
+  | 'smem' id ':' type info?
+  | mdir 'mport' id '=' id '[' exp ']' exp info?
+  | 'inst' id 'of' id info?
+  | 'node' id '=' exp info?
+  | exp '<=' exp info?
+  | exp '<-' exp info?
+  | exp 'is' 'invalid' info?
+  | 'when' exp ':' info? '{' block '}' ( 'else' ':' '{' block '}' )?
+  | 'stop(' exp exp IntLit ')' info?
+  | 'printf(' exp exp StringLit (exp)* ')' info?
+  | 'skip' info?
+  ;
+
+info
+  : FileInfo
   ;
 
 mdir
@@ -245,6 +250,9 @@ StringLit
   : '"' ('\\"'|.)*? '"'
   ;
 
+FileInfo
+  : '@[' ('\\]'|.)*? ']'
+  ;
 
 Id
   : IdNondigit

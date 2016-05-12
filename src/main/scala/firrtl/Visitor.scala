@@ -41,16 +41,14 @@ import scala.collection.JavaConversions._
 import antlr._
 import PrimOps._
 import FIRRTLParser._
+import Parser.{InfoMode, IgnoreInfo, UseInfo, GenInfo, AppendInfo}
 import scala.annotation.tailrec
 
-class Visitor(val fullFilename: String, val useInfo : Boolean) extends FIRRTLBaseVisitor[AST] 
+class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[AST]
 {
   // Strip file path
-  private val filename = fullFilename.drop(fullFilename.lastIndexOf("/")+1)
+  private def stripPath(filename: String) = filename.drop(filename.lastIndexOf("/")+1)
 
-  // For some reason visitCircuit does not visit the right function 
-  // FIXME for some reason this cannot be private, probably because it extends
-  //   FIRRTLBaseVisitor which is in a subpackage?
   def visit[AST](ctx: FIRRTLParser.CircuitContext): Circuit = visitCircuit(ctx)
 
   //  These regex have to change if grammar changes
@@ -77,22 +75,40 @@ class Visitor(val fullFilename: String, val useInfo : Boolean) extends FIRRTLBas
     }
   }
   private def string2Int(s: String): Int = string2BigInt(s).toInt
-  private def getInfo(ctx: ParserRuleContext): Info = 
-    if (useInfo) {
-      FileInfo(filename, ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine())
-    } else NoInfo
 
-	private def visitCircuit[AST](ctx: FIRRTLParser.CircuitContext): Circuit = 
-    Circuit(getInfo(ctx), ctx.module.map(visitModule), (ctx.id.getText)) 
+  private def visitInfo(ctx: Option[FIRRTLParser.InfoContext], parentCtx: ParserRuleContext): Info = {
+    def genInfo(filename: String): String =
+      stripPath(filename) + "@" + parentCtx.getStart.getLine + "." +
+      parentCtx.getStart.getCharPositionInLine
+    lazy val useInfo: String = ctx match {
+      case Some(info) => info.getText.drop(2).init // remove surrounding @[ ... ]
+      case None => ""
+    }
+    infoMode match {
+      case UseInfo =>
+        if (useInfo.length == 0) NoInfo else FileInfo(FIRRTLStringLitHandler.unescape(useInfo))
+      case AppendInfo(filename) =>
+        val newInfo = useInfo + ":" + genInfo(filename)
+        FileInfo(FIRRTLStringLitHandler.unescape(newInfo))
+      case GenInfo(filename) => FileInfo(FIRRTLStringLitHandler.unescape(genInfo(filename)))
+      case IgnoreInfo => NoInfo
+    }
+  }
+
+	private def visitCircuit[AST](ctx: FIRRTLParser.CircuitContext): Circuit =
+    Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.map(visitModule), (ctx.id.getText))
     
-  private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): Module = 
-     ctx.getChild(0).getText match {
-        case "module" => InModule(getInfo(ctx), (ctx.id.getText), ctx.port.map(visitPort), visitBlock(ctx.block))
-        case "extmodule" => ExModule(getInfo(ctx), (ctx.id.getText), ctx.port.map(visitPort))
-      }
+  private def visitModule[AST](ctx: FIRRTLParser.ModuleContext): Module = {
+    val info = visitInfo(Option(ctx.info), ctx)
+    ctx.getChild(0).getText match {
+      case "module" => InModule(info, ctx.id.getText, ctx.port.map(visitPort), visitBlock(ctx.block))
+      case "extmodule" => ExModule(info, ctx.id.getText, ctx.port.map(visitPort))
+    }
+  }
 
-  private def visitPort[AST](ctx: FIRRTLParser.PortContext): Port = 
-    Port(getInfo(ctx), (ctx.id.getText), visitDir(ctx.dir), visitType(ctx.`type`))
+  private def visitPort[AST](ctx: FIRRTLParser.PortContext): Port = {
+    Port(visitInfo(Option(ctx.info), ctx), (ctx.id.getText), visitDir(ctx.dir), visitType(ctx.`type`))
+  }
   private def visitDir[AST](ctx: FIRRTLParser.DirContext): Direction =
     ctx.getText match {
       case "input" => INPUT
@@ -150,7 +166,7 @@ class Visitor(val fullFilename: String, val useInfo : Boolean) extends FIRRTLBas
       }
     }
 
-    val info = getInfo(ctx)
+    val info = visitInfo(Option(ctx.info), ctx)
     // Build map of different Memory fields to their values
     val map = try {
       parseChildren(ctx.children.drop(4), Map[String, Seq[ParseTree]]()) // First 4 tokens are 'mem' id ':' '{', skip to fields
@@ -177,8 +193,7 @@ class Visitor(val fullFilename: String, val useInfo : Boolean) extends FIRRTLBas
 
   // visitStmt
 	private def visitStmt[AST](ctx: FIRRTLParser.StmtContext): Stmt = {
-    val info = getInfo(ctx)
-
+    val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0) match {
       case term: TerminalNode => term.getText match {
         case "wire" => DefWire(info, (ctx.id(0).getText), visitType(ctx.`type`(0)))

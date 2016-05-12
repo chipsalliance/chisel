@@ -54,6 +54,8 @@ private object Serialize {
     if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
     else "\"h" + bi.toString(16) + "\""
 
+  def serialize(info: Info): String = " " + info.toString
+
   def serialize(op: PrimOp): String = op.getString
 
   def serialize(lit: StringLit): String = FIRRTLStringLitHandler.escape(lit)
@@ -80,17 +82,17 @@ private object Serialize {
 
   def serialize(stmt: Stmt): String = {
     stmt match {
-      case w: DefWire => s"wire ${w.name} : ${serialize(w.tpe)}"
+      case w: DefWire => s"wire ${w.name} : ${serialize(w.tpe)}${w.info}"
       case r: DefRegister =>
-        val str = new StringBuilder(s"reg ${r.name} : ${serialize(r.tpe)}, ${serialize(r.clock)} with : ")
+        val str = new StringBuilder(s"reg ${r.name} : ${serialize(r.tpe)}, ${serialize(r.clock)} with :")
         withIndent {
-          str ++= newline + s"reset => (${serialize(r.reset)}, ${serialize(r.init)})"
+          str ++= newline + s"reset => (${serialize(r.reset)}, ${serialize(r.init)})${r.info}"
         }
         str.toString
-      case i: DefInstance => s"inst ${i.name} of ${i.module}"
-      case i: WDefInstance => s"inst ${i.name} of ${i.module}"
+      case i: DefInstance => s"inst ${i.name} of ${i.module}${i.info}"
+      case i: WDefInstance => s"inst ${i.name} of ${i.module}${i.info}"
       case m: DefMemory => {
-        val str = new StringBuilder(s"mem ${m.name} : ")
+        val str = new StringBuilder(s"mem ${m.name} :${m.info}")
         withIndent {
           str ++= newline +
             s"data-type => ${serialize(m.data_type)}" + newline +
@@ -107,11 +109,11 @@ private object Serialize {
         }
         str.result
       }
-      case n: DefNode => s"node ${n.name} = ${serialize(n.value)}"
-      case c: Connect => s"${serialize(c.loc)} <= ${serialize(c.exp)}"
-      case b: BulkConnect => s"${serialize(b.loc)} <- ${serialize(b.exp)}"
+      case n: DefNode => s"node ${n.name} = ${serialize(n.value)}${n.info}"
+      case c: Connect => s"${serialize(c.loc)} <= ${serialize(c.exp)}${c.info}"
+      case b: BulkConnect => s"${serialize(b.loc)} <- ${serialize(b.exp)}${b.info}"
       case w: Conditionally => {
-        var str = new StringBuilder(s"when ${serialize(w.pred)} : ")
+        var str = new StringBuilder(s"when ${serialize(w.pred)} :${w.info}")
         withIndent { str ++= newline + serialize(w.conseq) }
         w.alt match {
           case s:Empty => str.result
@@ -130,17 +132,18 @@ private object Serialize {
         }
         s.result
       }
-      case i: IsInvalid => s"${serialize(i.exp)} is invalid"
-      case s: Stop => s"stop(${serialize(s.clk)}, ${serialize(s.en)}, ${s.ret})"
+      case i: IsInvalid => s"${serialize(i.exp)} is invalid${i.info}"
+      case s: Stop => s"stop(${serialize(s.clk)}, ${serialize(s.en)}, ${s.ret})${s.info}"
       case p: Print => {
         val q = '"'.toString
         s"printf(${serialize(p.clk)}, ${serialize(p.en)}, ${q}${serialize(p.string)}${q}" +
-                      (if (p.args.nonEmpty) p.args.map(serialize).mkString(", ", ", ", "") else "") + ")"
+                      (if (p.args.nonEmpty) p.args.map(serialize).mkString(", ", ", ", "") else "") +
+                      s")${p.info}"
       }
       case s: Empty => "skip"
       case s: CDefMemory => {
-        if (s.seq) s"smem ${s.name} : ${serialize(s.tpe)} [${s.size}]"
-        else s"cmem ${s.name} : ${serialize(s.tpe)} [${s.size}]"
+        if (s.seq) s"smem ${s.name} : ${serialize(s.tpe)} [${s.size}]${s.info}"
+        else s"cmem ${s.name} : ${serialize(s.tpe)} [${s.size}]${s.info}"
       }
       case s: CDefMPort => {
         val dir = s.direction match {
@@ -149,7 +152,7 @@ private object Serialize {
           case MWrite => "write"
           case MReadWrite => "rdwr"
         }
-        s"${dir} mport ${s.name} = ${s.mem}[${serialize(s.exps(0))}], ${serialize(s.exps(1))}"
+        s"${dir} mport ${s.name} = ${s.mem}[${serialize(s.exps(0))}], ${serialize(s.exps(1))}${s.info}"
       }
     }
   }
@@ -192,12 +195,12 @@ private object Serialize {
   }
 
   def serialize(p: Port): String =
-    s"${serialize(p.direction)} ${p.name} : ${serialize(p.tpe)}"
+    s"${serialize(p.direction)} ${p.name} : ${serialize(p.tpe)}${p.info}"
 
   def serialize(m: Module): String = {
     m match {
       case m: InModule => {
-        var s = new StringBuilder(s"module ${m.name} : ")
+        var s = new StringBuilder(s"module ${m.name} :${m.info}")
         withIndent {
           s ++= m.ports.map(newline ++ serialize(_)).mkString
           s ++= newline ++ serialize(m.body)
@@ -205,7 +208,7 @@ private object Serialize {
         s.toString
       }
       case m: ExModule => {
-        var s = new StringBuilder(s"extmodule ${m.name} : ")
+        var s = new StringBuilder(s"extmodule ${m.name} :${m.info}")
         withIndent {
           s ++= m.ports.map(newline ++ serialize(_)).mkString
           s ++= newline
@@ -216,7 +219,7 @@ private object Serialize {
   }
 
   def serialize(c: Circuit): String = {
-    var s = new StringBuilder(s"circuit ${c.main} : ")
+    var s = new StringBuilder(s"circuit ${c.main} :${c.info}")
     withIndent { s ++= newline ++ c.modules.map(serialize).mkString(newline + newline) }
     s ++= newline ++ newline
     s.toString

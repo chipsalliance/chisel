@@ -35,20 +35,23 @@ import scala.sys.process._
 import com.typesafe.scalalogging.LazyLogging
 
 import Utils._
+import Parser.{InfoMode, IgnoreInfo, UseInfo, GenInfo, AppendInfo}
 
 object Driver extends LazyLogging {
   private val usage = """
 Usage: sbt "run-main firrtl.Driver -i <input_file> -o <output_file> -X <compiler>"
-       firrtl -i <input_file> -o <output_file> -X <compiler>
+       firrtl -i <input_file> -o <output_file> -X <compiler> [options]
 Options:
-  -X <compiler>    Specify the target language
-                   Currently supported: verilog firrtl
+  -X <compiler>         Specify the target language
+                        Currently supported: verilog firrtl
+  --info-mode=<mode>    Specify Info Mode
+                        Supported modes: ignore, use, gen, append
   """
   private val defaultOptions = Map[Symbol, Any]().withDefaultValue(false)
 
-  def compile(input: String, output: String, compiler: Compiler)
+  def compile(input: String, output: String, compiler: Compiler, infoMode: InfoMode = IgnoreInfo)
   {
-    val parsedInput = Parser.parse(input, Source.fromFile(input).getLines)
+    val parsedInput = Parser.parse(Source.fromFile(input).getLines, infoMode)
     val writerOutput = new PrintWriter(new File(output))
     compiler.run(parsedInput, writerOutput)
     writerOutput.close
@@ -68,6 +71,8 @@ Options:
                   nextOption(map ++ Map('input -> value), tail)
         case "-o" :: value :: tail =>
                   nextOption(map ++ Map('output -> value), tail)
+        case "--info-mode" :: value :: tail =>
+                  nextOption(map ++ Map('infoMode -> value), tail)
         case ("-h" | "--help") :: tail =>
                   nextOption(map ++ Map('help -> true), tail)
         case option :: tail =>
@@ -89,10 +94,16 @@ Options:
       case s: String => s
       case false => throw new Exception("No output file provided!" + usage)
     }
+    val infoMode = options('infoMode) match {
+      case ("use" | false) => UseInfo
+      case "ignore" => IgnoreInfo
+      case "gen" => GenInfo(input)
+      case "append" => AppendInfo(input)
+    }
 
     options('compiler) match {
-      case "verilog" => compile(input, output, VerilogCompiler)
-      case "firrtl" => compile(input, output, FIRRTLCompiler)
+      case "verilog" => compile(input, output, VerilogCompiler, infoMode)
+      case "firrtl" => compile(input, output, FIRRTLCompiler, infoMode)
       case other => throw new Exception("Invalid compiler! " + other)
     }
   }

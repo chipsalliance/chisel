@@ -32,7 +32,7 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     LowerTypes)
 
   private def executeTest(input: String, expected: Seq[String]) = {
-    val c = passes.foldLeft(Parser.parse("", input.split("\n").toIterator)) {
+    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
     val lines = c.serialize.split("\n") map normalized

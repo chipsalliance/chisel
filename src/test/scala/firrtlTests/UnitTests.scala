@@ -32,11 +32,12 @@ import org.scalatest._
 import org.scalatest.prop._
 import firrtl._
 import firrtl.passes._
+import firrtl.Parser.IgnoreInfo
 
 class UnitTests extends FirrtlFlatSpec {
-  def parse (input:String) = Parser.parse("",input.split("\n").toIterator,false)
+  def parse (input:String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Pass]) = {
-    val c = passes.foldLeft(Parser.parse("", input.split("\n").toIterator)) {
+    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
     val lines = c.serialize.split("\n") map normalized
@@ -132,7 +133,7 @@ class UnitTests extends FirrtlFlatSpec {
       ToWorkingIR,
       InferTypes)
     intercept[PassException] {
-      val c = Parser.parse("",splitExpTestCode.split("\n").toIterator)
+      val c = Parser.parse(splitExpTestCode.split("\n").toIterator)
       val c2 = passes.foldLeft(c)((c, p) => p run c)
       new VerilogEmitter().run(c2, new OutputStreamWriter(new ByteArrayOutputStream))
     }
@@ -143,7 +144,7 @@ class UnitTests extends FirrtlFlatSpec {
       ToWorkingIR,
       SplitExpressions,
       InferTypes)
-    val c = Parser.parse("",splitExpTestCode.split("\n").toIterator)
+    val c = Parser.parse(splitExpTestCode.split("\n").toIterator)
     val c2 = passes.foldLeft(c)((c, p) => p run c)
     new VerilogEmitter().run(c2, new OutputStreamWriter(new ByteArrayOutputStream))
   }
