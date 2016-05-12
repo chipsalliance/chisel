@@ -107,20 +107,28 @@ object Driver extends BackendCompilationUtilities {
     *
     * This is the function typically used to generate FIRRTL IR
     *
-    * @param gen a function that creates a Module hierarchy
-    * @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
+    *  @todo Should be FIRRTL IR
+    *
+    *  @param gen a function that creates a Module hierarchy
+    *  @return the resulting Chisel IR in the form of a Circuit
     */
-  def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
+  def elaborate[T <: Module](gen: () => T): Circuit = {
+    val (circuit, _) = Builder.build(Module(gen()))
+    circuit
+  }
 
   /** Elaborates the Module specified in the gen function into a Chisel Module object
     *
-    * This function is necessary because it is not possible to directly instantiate an instance of a Module
+    * This function is necessary because it is not possible to directly instantiate an instance of a Module.
     * Currently, the software based Classic Tester uses this function to grab an instance of the DUT Module to inspect the IO bundle
     *
-    * @param gen a function that creates a Module hierarchy
-    * @return the resulting Chisel IR in the form of a Chisel Module
+    *  @param gen a function that creates a Module hierarchy
+    *  @return the resulting Chisel Module
     */
-  def elaborateModule[T <: Module](gen: () => T): T = Builder.buildModule(Module(gen()))
+  def elaborateModule[T <: Module](gen: () => T): T = {
+    val (_, mod) = Builder.build(Module(gen()))
+    mod
+  }
 
   def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
 

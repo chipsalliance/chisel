@@ -109,7 +109,8 @@ private[Chisel] object Builder {
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
 
-  def build[T <: Module](f: => T): Circuit = {
+  // Returns both the Circuit and the elaborated Module
+  def build[T <: Module](f: => T): (Circuit, T) = {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       errors.info("Elaborating design...")
       val mod = f
@@ -117,19 +118,7 @@ private[Chisel] object Builder {
       errors.checkpoint()
       errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components)
-    }
-  }
-
-  def buildModule[T <: Module](f: => T): T = {
-    dynamicContextVar.withValue(Some(new DynamicContext)) {
-      errors.info("Elaborating design...")
-      val mod = f
-      mod.forceName(mod.name, globalNamespace)
-      errors.checkpoint()
-      errors.info("Done elaborating.")
-
-      mod
+      (Circuit(components.last.name, components), mod)
     }
   }
 }
