@@ -92,7 +92,7 @@ private[Chisel] class DynamicContext {
 
 private[Chisel] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
-  private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
+  private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](Some(new DynamicContext))
 
   def dynamicContext: DynamicContext =
     dynamicContextVar.value getOrElse (new DynamicContext)
@@ -118,18 +118,6 @@ private[Chisel] object Builder {
       errors.info("Done elaborating.")
 
       Circuit(components.last.name, components)
-    }
-  }
-
-  def buildModule[T <: Module](f: => T): T = {
-    dynamicContextVar.withValue(Some(new DynamicContext)) {
-      errors.info("Elaborating design...")
-      val mod = f
-      mod.forceName(mod.name, globalNamespace)
-      errors.checkpoint()
-      errors.info("Done elaborating.")
-
-      mod
     }
   }
 }
