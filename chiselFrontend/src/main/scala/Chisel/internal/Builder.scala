@@ -92,7 +92,7 @@ private[Chisel] class DynamicContext {
 
 private[Chisel] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
-  private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
+  private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](Some(new DynamicContext))
 
   def dynamicContext: DynamicContext =
     dynamicContextVar.value getOrElse (new DynamicContext)

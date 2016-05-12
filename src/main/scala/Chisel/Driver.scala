@@ -105,8 +105,8 @@ object Driver extends BackendCompilationUtilities {
 
   /** Elaborates the Module specified in the gen function into a Circuit
     *
-    *  @param gen a function that creates a Module hierarchy
-    *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
+    * @param gen a function that creates a Module hierarchy
+    * @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
   def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
 
