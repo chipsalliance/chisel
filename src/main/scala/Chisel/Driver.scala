@@ -32,12 +32,13 @@ trait BackendCompilationUtilities {
   }
 
   def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = {
+    val fullPrefix = dir.getAbsolutePath + "/" + prefix
     Process(
-      Seq("firrtl",
-          "-i", s"$prefix.fir",
-          "-o", s"$prefix.v",
-          "-X", "verilog"),
-      dir)
+      Seq("sbt",
+          s"run-main firrtl.Driver -i $fullPrefix.fir -o $fullPrefix.v -X verilog"
+          ),
+          new File(".")
+    )
   }
 
   /** Generates a Verilator invocation to convert Verilog sources to C++
