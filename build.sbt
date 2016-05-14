@@ -13,6 +13,7 @@ lazy val commonSettings = Seq (
 lazy val chiselSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.0",
+  name := "Chisel3",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
 
   publishMavenStyle := true,
