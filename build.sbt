@@ -12,7 +12,7 @@ lazy val commonSettings = Seq (
 
 lazy val chiselSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0",
+  version := "3.0-BETA",
   name := "Chisel3",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
 
@@ -67,7 +67,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  libraryDependencies += "edu.berkeley.cs" %% "firrtl" % "0.1-SNAPSHOT",
+  libraryDependencies += "edu.berkeley.cs" %% "firrtl" % "0.1-BETA",
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
