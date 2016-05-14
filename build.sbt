@@ -8,7 +8,7 @@ ghpages.settings
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0-BETA",
+  version := "3.0-BETA-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   scalaVersion := "2.11.7"
 )
@@ -89,8 +89,14 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
 lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
-  dependsOn(chiselFrontend % "compile-internal").settings(
+  dependsOn(chiselFrontend).settings(
     // Include macro classes, resources, and sources main jar.
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
   )
+
+// This is ugly. There must be a better way.
+publish <<= (publish) dependsOn (publish in chiselFrontend)
+
+publishLocal <<= (publishLocal) dependsOn (publishLocal in chiselFrontend)
+
