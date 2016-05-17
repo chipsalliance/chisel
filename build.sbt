@@ -10,12 +10,7 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.0-BETA-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
-  scalaVersion := "2.11.7"
-)
-
-lazy val chiselSettings = Seq (
-  name := "Chisel3",
-
+  scalaVersion := "2.11.7",
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
@@ -52,7 +47,12 @@ lazy val chiselSettings = Seq (
   resolvers ++= Seq(
     "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
     "Sonatype Releases" at "http://oss.sonatype.org/content/repositories/releases"
-  ),
+  )
+)
+
+lazy val chiselSettings = Seq (
+  name := "Chisel3",
+
 
   /* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
    *  in subtly disturbing ways on Linux (but not on Mac):
@@ -99,4 +99,3 @@ lazy val chisel = (project in file(".")).
 publish <<= (publish) dependsOn (publish in chiselFrontend)
 
 publishLocal <<= (publishLocal) dependsOn (publishLocal in chiselFrontend)
-
