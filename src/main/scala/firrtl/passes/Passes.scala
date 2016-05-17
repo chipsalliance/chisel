@@ -228,16 +228,18 @@ object Legalize extends Pass {
       e
     }
   }
-  def legalizeConnect(c: Connect): Statement = {
+  private def legalizeConnect(c: Connect): Statement = {
     val t = c.loc.tpe
-    val w = long_BANG(t)
-    if (w >= long_BANG(c.expr.tpe)) c
-    else {
-      val newType = t match {
-        case _: UIntType => UIntType(IntWidth(w))
-        case _: SIntType => SIntType(IntWidth(w))
+    val w = bitWidth(t)
+    if (w >= bitWidth(c.expr.tpe)) {
+      c
+    } else {
+      val bits = DoPrim(Bits, Seq(c.expr), Seq(w - 1, 0), UIntType(IntWidth(w)))
+      val expr = t match {
+        case UIntType(_) => bits
+        case SIntType(_) => DoPrim(AsSInt, Seq(bits), Seq(), SIntType(IntWidth(w)))
       }
-      Connect(c.info, c.loc, DoPrim(Bits, Seq(c.expr), Seq(w-1, 0), newType))
+      Connect(c.info, c.loc, expr)
     }
   }
   def run (c: Circuit): Circuit = {
