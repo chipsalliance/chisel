@@ -228,6 +228,16 @@ object Legalize extends Pass {
       e
     }
   }
+  private def legalizeBits(expr: DoPrim): Expression = {
+    lazy val (hi, low) = (expr.consts(0), expr.consts(1))
+    lazy val mask = (BigInt(1) << (hi - low + 1).toInt) - 1
+    lazy val width = IntWidth(hi - low + 1)
+    expr.args.head match {
+      case UIntLiteral(value, _) => UIntLiteral((value >> low.toInt) & mask, width)
+      case SIntLiteral(value, _) => SIntLiteral((value >> low.toInt) & mask, width)
+      case _ => expr
+    }
+  }
   private def legalizeConnect(c: Connect): Statement = {
     val t = c.loc.tpe
     val w = bitWidth(t)
@@ -246,6 +256,7 @@ object Legalize extends Pass {
     def legalizeE(expr: Expression): Expression = expr map legalizeE match {
       case prim: DoPrim => prim.op match {
         case Shr => legalizeShiftRight(prim)
+        case Bits => legalizeBits(prim)
         case _ => prim
       }
       case e => e // respect pre-order traversal

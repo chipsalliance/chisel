@@ -124,7 +124,6 @@ class HighFirrtlToMiddleFirrtl () extends Transform with SimpleRun {
 // TODO(izraelevitz): Create RenameMap from RemoveCHIRRTL
 class MiddleFirrtlToLowFirrtl () extends Transform with SimpleRun {
    val passSeq = Seq(
-      passes.Legalize,
       passes.LowerTypes,
       passes.ResolveKinds,
       passes.InferTypes,
@@ -146,6 +145,7 @@ class EmitVerilogFromLowFirrtl (val writer: Writer) extends Transform with Simpl
       passes.ConstProp,
       passes.PadWidths,
       passes.ConstProp,
+      passes.Legalize,
       passes.VerilogWrap,
       passes.SplitExpressions,
       passes.CommonSubexpressionElimination,
