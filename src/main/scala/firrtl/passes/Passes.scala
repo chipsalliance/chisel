@@ -238,6 +238,13 @@ object Legalize extends Pass {
       case _ => expr
     }
   }
+  private def legalizePad(expr: DoPrim): Expression = expr.args.head match {
+    case UIntLiteral(value, IntWidth(width)) if (width < expr.consts.head) =>
+      UIntLiteral(value, IntWidth(expr.consts.head))
+    case SIntLiteral(value, IntWidth(width)) if (width < expr.consts.head) =>
+      SIntLiteral(value, IntWidth(expr.consts.head))
+    case _ => expr
+  }
   private def legalizeConnect(c: Connect): Statement = {
     val t = c.loc.tpe
     val w = bitWidth(t)
@@ -256,6 +263,7 @@ object Legalize extends Pass {
     def legalizeE(expr: Expression): Expression = expr map legalizeE match {
       case prim: DoPrim => prim.op match {
         case Shr => legalizeShiftRight(prim)
+        case Pad => legalizePad(prim)
         case Bits => legalizeBits(prim)
         case _ => prim
       }
