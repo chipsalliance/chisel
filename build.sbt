@@ -45,8 +45,8 @@ lazy val commonSettings = Seq (
   },
 
   resolvers ++= Seq(
-    "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
-    "Sonatype Releases" at "http://oss.sonatype.org/content/repositories/releases"
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
   )
 )
 
