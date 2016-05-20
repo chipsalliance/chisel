@@ -2,9 +2,12 @@
 
 package Chisel
 
+import scala.language.experimental.macros
+
 import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
+import internal.sourceinfo.{SourceInfo}
 
 object when {  // scalastyle:ignore object.name
   /** Create a `when` condition block, where whether a block of logic is
@@ -24,8 +27,8 @@ object when {  // scalastyle:ignore object.name
     * }
     * }}}
     */
-  def apply(cond: Bool)(block: => Unit): WhenContext = {
-    new WhenContext(cond, !cond)(block)
+  def apply(cond: Bool)(block: => Unit)(implicit sourceInfo: SourceInfo): WhenContext = {
+    new WhenContext(sourceInfo, cond, !cond, block)
   }
 }
 
@@ -36,21 +39,21 @@ object when {  // scalastyle:ignore object.name
   * that both the condition is true and all the previous conditions have been
   * false.
   */
-class WhenContext(cond: Bool, prevCond: => Bool)(block: => Unit) {
+final class WhenContext(sourceInfo: SourceInfo, cond: Bool, prevCond: => Bool, block: => Unit) {
   /** This block of logic gets executed if above conditions have been false
     * and this condition is true.
     */
-  def elsewhen (elseCond: Bool)(block: => Unit): WhenContext = {
-    new WhenContext(prevCond && elseCond, prevCond && !elseCond)(block)
+  def elsewhen (elseCond: Bool)(block: => Unit)(implicit sourceInfo: SourceInfo): WhenContext = {
+    new WhenContext(sourceInfo, prevCond && elseCond, prevCond && !elseCond, block)
   }
 
   /** This block of logic gets executed only if the above conditions were all
     * false. No additional logic blocks may be appended past the `otherwise`.
     */
-  def otherwise(block: => Unit): Unit =
-    new WhenContext(prevCond, null)(block)
+  def otherwise(block: => Unit)(implicit sourceInfo: SourceInfo): Unit =
+    new WhenContext(sourceInfo, prevCond, null, block)
 
-  pushCommand(WhenBegin(cond.ref))
+  pushCommand(WhenBegin(sourceInfo, cond.ref))
   block
-  pushCommand(WhenEnd())
+  pushCommand(WhenEnd(sourceInfo))
 }

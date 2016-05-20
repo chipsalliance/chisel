@@ -2,9 +2,15 @@
 
 package Chisel
 
+import scala.language.experimental.macros
+
+import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+
 private[Chisel] object SeqUtils {
   /** Equivalent to Cat(r(n-1), ..., r(0)) */
-  def asUInt[T <: Bits](in: Seq[T]): UInt = {
+  def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
+
+  def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo): UInt = {
     if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
@@ -15,7 +21,9 @@ private[Chisel] object SeqUtils {
   }
 
   /** Counts the number of true Bools in a Seq */
-  def count(in: Seq[Bool]): UInt = {
+  def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
+
+  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = {
     if (in.size == 0) {
       UInt(0)
     } else if (in.size == 1) {
@@ -26,7 +34,9 @@ private[Chisel] object SeqUtils {
   }
 
   /** Returns data value corresponding to first true predicate */
-  def priorityMux[T <: Bits](in: Seq[(Bool, T)]): T = {
+  def priorityMux[T <: Bits](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
+
+  def do_priorityMux[T <: Bits](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
     if (in.size == 1) {
       in.head._2
     } else {
@@ -35,7 +45,9 @@ private[Chisel] object SeqUtils {
   }
 
   /** Returns data value corresponding to lone true predicate */
-  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = {
+  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
+
+  def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
     if (in.tail.isEmpty) {
       in.head._2
     } else {

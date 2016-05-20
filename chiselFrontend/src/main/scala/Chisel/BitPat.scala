@@ -2,6 +2,10 @@
 
 package Chisel
 
+import scala.language.experimental.macros
+
+import Chisel.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+
 object BitPat {
   /** Parses a bit pattern string into (bits, mask, width).
     *
@@ -74,7 +78,11 @@ object BitPat {
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
-  def === (other: UInt): Bool = UInt(value) === (other & UInt(mask))
-  def =/= (other: UInt): Bool = !(this === other)
-  def != (other: UInt): Bool = this =/= other
+  def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
+
+  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = UInt(value) === (that & UInt(mask))
+  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)
+  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that
 }
