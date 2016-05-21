@@ -1,13 +1,14 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel.testers.BasicTester
+
+import chisel.testers.BasicTester
 import org.scalatest._
 import org.scalatest.prop._
 import java.io.File
 
 class HarnessSpec extends ChiselPropSpec
-  with Chisel.BackendCompilationUtilities {
+  with chisel.BackendCompilationUtilities {
 
   def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
 module ${prefix};

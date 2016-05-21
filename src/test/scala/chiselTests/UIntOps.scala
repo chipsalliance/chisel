@@ -1,9 +1,10 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+
+import chisel._
 import org.scalatest._
-import Chisel.testers.BasicTester
+import chisel.testers.BasicTester
 
 class UIntOps extends Module {
   val io = new Bundle {

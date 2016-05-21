@@ -1,11 +1,11 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+import chisel._
 import org.scalatest._
 import org.scalatest.prop._
 
-import Chisel.testers.BasicTester
+import chisel.testers.BasicTester
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle {
   override def cloneType: this.type =

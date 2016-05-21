@@ -2,8 +2,8 @@
 
 package chiselTests
 
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel._
+import chisel.testers.BasicTester
 
 /**
   * This test used to fail when assignment statements were
