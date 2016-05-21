@@ -1,10 +1,10 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel
 
 import scala.language.experimental.macros
 
-import Chisel.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 object BitPat {
   /** Parses a bit pattern string into (bits, mask, width).
