@@ -26,6 +26,7 @@ package object Chisel {
   val BitPat = chisel.BitPat
   type BitPat = chisel.BitPat
 
+  type Element = chisel.Element
   type Bits = chisel.Bits
   val Bits = chisel.Bits
   type Num[T <: Data] = chisel.Num[T]
@@ -62,6 +63,12 @@ package object Chisel {
   val ImplicitConversions = chisel.ImplicitConversions
   val chiselMain = chisel.chiselMain
   val throwException = chisel.throwException
+
+
+  object testers {
+    type BasicTester = chisel.testers.BasicTester
+    val TesterDriver = chisel.testers.TesterDriver
+  }
 
 
   val log2Up = chisel.log2Up
@@ -129,11 +136,15 @@ package object Chisel {
   val Valid = chisel.Valid
   val Pipe = chisel.Pipe
   type Pipe[T <: Data] = chisel.Pipe[T]
-}
 
-package Chisel {
-  package object testers {
-    type BasicTester = chisel.testers.BasicTester
-    val TesterDriver = chisel.testers.TesterDriver
-  }
+
+  import chisel.internal.firrtl.Width
+  implicit def fromBigIntToLiteral(x: BigInt): chisel.fromBigIntToLiteral = 
+    new chisel.fromBigIntToLiteral(x)
+  implicit def fromIntToLiteral(x: Int): chisel.fromIntToLiteral= 
+    new chisel.fromIntToLiteral(x)
+  implicit def fromStringToLiteral(x: String): chisel.fromStringToLiteral= 
+    new chisel.fromStringToLiteral(x)
+  implicit def fromBooleanToLiteral(x: Boolean): chisel.fromBooleanToLiteral= 
+    new chisel.fromBooleanToLiteral(x)
 }
