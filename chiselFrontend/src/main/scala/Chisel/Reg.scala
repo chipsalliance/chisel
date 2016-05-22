@@ -5,6 +5,7 @@ package Chisel
 import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
+import internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 object Reg {
   private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
@@ -36,7 +37,18 @@ object Reg {
     * is a valid value. In those cases, you can either use the outType only Reg
     * constructor or pass in `null.asInstanceOf[T]`.
     */
-  def apply[T <: Data](t: T = null, next: T = null, init: T = null): T = {
+  def apply[T <: Data](t: T = null, next: T = null, init: T = null): T =
+    // Scala macros can't (yet) handle named or default arguments.
+    do_apply(t, next, init)(UnlocatableSourceInfo)
+
+  /** Creates a register without initialization (reset is ignored). Value does
+    * not change unless assigned to (using the := operator).
+    *
+    * @param outType: data type for the register
+    */
+  def apply[T <: Data](outType: T): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])
+
+  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     // TODO: write this in a way that doesn't need nulls (bad Scala style),
     // null.asInstanceOf[T], and two constructors. Using Option types are an
     // option, but introduces cumbersome syntax (wrap everything in a Some()).
@@ -47,20 +59,13 @@ object Reg {
     val x = makeType(t, next, init)
     val clock = Node(x._parent.get.clock) // TODO multi-clock
     if (init == null) {
-      pushCommand(DefReg(x, clock))
+      pushCommand(DefReg(sourceInfo, x, clock))
     } else {
-      pushCommand(DefRegInit(x, clock, Node(x._parent.get.reset), init.ref))
+      pushCommand(DefRegInit(sourceInfo, x, clock, Node(x._parent.get.reset), init.ref))
     }
     if (next != null) {
       x := next
     }
     x
   }
-
-  /** Creates a register without initialization (reset is ignored). Value does
-    * not change unless assigned to (using the := operator).
-    *
-    * @param outType: data type for the register
-    */
-  def apply[T <: Data](outType: T): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])
 }

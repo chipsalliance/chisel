@@ -47,7 +47,7 @@ object TesterDriver extends BackendCompilationUtilities {
 
     // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
     if ((firrtlToVerilog(target, path) #&&
-        verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
+        verilogToCpp(target, target, path, additionalVFiles, cppHarness) #&&
         cppToExe(target, path)).! == 0) {
       executeExpectingSuccess(target, path)
     } else {

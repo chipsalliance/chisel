@@ -46,17 +46,15 @@ trait BackendCompilationUtilities {
     * The Verilator prefix will be V$dutFile, and running this will generate
     * C++ sources and headers as well as a makefile to compile them.
     *
-    * Verilator will automatically locate the top-level module as the one among
-    * all the files which are not included elsewhere. If multiple ones exist,
-    * the compilation will fail.
-    *
     * @param dutFile name of the DUT .v without the .v extension
+    * @param name of the top-level module in the design
     * @param dir output directory
     * @param vSources list of additional Verilog sources to compile
     * @param cppHarness C++ testharness to compile/link against
     */
   def verilogToCpp(
       dutFile: String,
+      topModule: String,
       dir: File,
       vSources: Seq[File],
       cppHarness: File
@@ -70,8 +68,9 @@ trait BackendCompilationUtilities {
         "-Wno-STMTDLY",
         "--trace",
         "-O2",
+        "--top-module", topModule,
         "+define+TOP_TYPE=V" + dutFile,
-        s"+define+PRINTF_COND=!$dutFile.reset",
+        s"+define+PRINTF_COND=!$topModule.reset",
         "-CFLAGS",
         s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
         "-Mdir", dir.toString,

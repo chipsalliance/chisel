@@ -4,6 +4,7 @@ package Chisel
 
 import internal.Builder.pushCommand
 import internal.firrtl.{ModuleIO, DefInvalid}
+import internal.sourceinfo.SourceInfo
 
 /** Defines a black box, which is a module that can be referenced from within
   * Chisel, but is not defined in the emitted Verilog. Useful for connecting
@@ -39,10 +40,10 @@ abstract class BlackBox extends Module {
 
   // Don't setup clock, reset
   // Cann't invalide io in one bunch, must invalidate each part separately
-  override private[Chisel] def setupInParent(): this.type = _parent match {
+  override private[Chisel] def setupInParent(implicit sourceInfo: SourceInfo): this.type = _parent match {
     case Some(p) => {
       // Just init instance inputs
-      for((_,port) <- ports) pushCommand(DefInvalid(port.ref))
+      for((_,port) <- ports) pushCommand(DefInvalid(sourceInfo, port.ref))
       this
     }
     case None => this
