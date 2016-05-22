@@ -55,7 +55,7 @@ int main(int argc, char **argv, char **env) {
     val cppHarness = makeCppHarness(fname)
 
     make(fname)
-    verilogToCpp(target, path, Seq(), cppHarness).!
+    verilogToCpp(target, target, path, Seq(), cppHarness).!
     cppToExe(target, path).!
     (path, target)
   }

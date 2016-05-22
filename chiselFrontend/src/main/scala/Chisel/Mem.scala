@@ -2,23 +2,28 @@
 
 package Chisel
 
+import scala.language.experimental.macros
+
 import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
+import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, MemTransform}
 
 object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: Int): Mem[T] = apply(size, t)
+  def apply[T <: Data](t: T, size: Int): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo)
 
   /** Creates a combinational-read, sequential-write [[Mem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](size: Int, t: T): Mem[T] = {
+  def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
+
+  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): Mem[T] = {
     val mt  = t.cloneType
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(mem, mt, size)) // TODO multi-clock
+    pushCommand(DefMemory(sourceInfo, mem, mt, size)) // TODO multi-clock
     mem
   }
 }
@@ -34,12 +39,12 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
     */
-  def apply(idx: UInt): T = makePort(idx, MemPortDirection.INFER)
+  def apply(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.INFER)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def read(idx: UInt): T = makePort(idx, MemPortDirection.READ)
+  def read(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.READ)
 
   /** Creates a write accessor into the memory.
     *
@@ -47,7 +52,8 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     * @param data new data to write
     */
   def write(idx: UInt, data: T): Unit = {
-    makePort(idx, MemPortDirection.WRITE) := data
+    implicit val sourceInfo = UnlocatableSourceInfo
+    makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE) := data
   }
 
   /** Creates a masked write accessor into the memory.
@@ -60,7 +66,8 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     * @note this is only allowed if the memory's element data type is a Vec
     */
   def write(idx: UInt, data: T, mask: Seq[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
-    val accessor = makePort(idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
+    implicit val sourceInfo = UnlocatableSourceInfo
+    val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
     if (accessor.length != dataVec.length) {
       Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
@@ -72,8 +79,9 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
       when (cond) { port := datum }
   }
 
-  private def makePort(idx: UInt, dir: MemPortDirection): T =
-    pushCommand(DefMemPort(t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))).id
+  private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection): T =
+    pushCommand(DefMemPort(sourceInfo,
+        t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))).id
 }
 
 /** A combinational-read, sequential-write memory.
@@ -89,17 +97,19 @@ sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
 
 object SeqMem {
   @deprecated("SeqMem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: Int): SeqMem[T] = apply(size, t)
+  def apply[T <: Data](t: T, size: Int): SeqMem[T] = do_apply(size, t)(DeprecatedSourceInfo)
 
   /** Creates a sequential-read, sequential-write [[SeqMem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](size: Int, t: T): SeqMem[T] = {
+  def apply[T <: Data](size: Int, t: T): SeqMem[T] = macro MemTransform.apply[T]
+
+  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): SeqMem[T] = {
     val mt  = t.cloneType
     val mem = new SeqMem(mt, size)
-    pushCommand(DefSeqMemory(mem, mt, size)) // TODO multi-clock
+    pushCommand(DefSeqMemory(sourceInfo, mem, mt, size)) // TODO multi-clock
     mem
   }
 }
@@ -116,6 +126,7 @@ object SeqMem {
   */
 sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
+    implicit val sourceInfo = UnlocatableSourceInfo
     val a = Wire(UInt())
     when (enable) { a := addr }
     read(a)

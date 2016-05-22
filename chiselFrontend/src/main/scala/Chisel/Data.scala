@@ -2,9 +2,12 @@
 
 package Chisel
 
+import scala.language.experimental.macros
+
 import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
+import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -48,19 +51,21 @@ abstract class Data(dirArg: Direction) extends HasId {
   def asOutput: this.type = cloneType.overrideDirection(_ => OUTPUT, _ => false)
   def flip(): this.type = cloneType.overrideDirection(_.flip, !_)
 
-  private[Chisel] def badConnect(that: Data): Unit =
+  private[Chisel] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
-  private[Chisel] def connect(that: Data): Unit =
-    pushCommand(Connect(this.lref, that.ref))
-  private[Chisel] def bulkConnect(that: Data): Unit =
-    pushCommand(BulkConnect(this.lref, that.lref))
+  private[Chisel] def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+    pushCommand(Connect(sourceInfo, this.lref, that.ref))
+  private[Chisel] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+    pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
   private[Chisel] def lref: Node = Node(this)
   private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
   private[Chisel] def cloneTypeWidth(width: Width): this.type
   private[Chisel] def toType: String
 
-  def := (that: Data): Unit = this badConnect that
-  def <> (that: Data): Unit = this badConnect that
+  def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = this badConnect that
+
+  def <> (that: Data)(implicit sourceInfo: SourceInfo): Unit = this badConnect that
+
   def cloneType: this.type
   def litArg(): Option[LitArg] = None
   def litValue(): BigInt = litArg.get.num
@@ -90,14 +95,16 @@ abstract class Data(dirArg: Direction) extends HasId {
     * @note does NOT check bit widths, may drop bits during assignment
     * @note what fromBits assigs to must have known widths
     */
-  def fromBits(n: Bits): this.type = {
+  def fromBits(that: Bits): this.type = macro SourceInfoTransform.thatArg
+
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
     var i = 0
     val wire = Wire(this.cloneType)
     val bits =
-      if (n.width.known && n.width.get >= wire.width.get) {
-        n
+      if (that.width.known && that.width.get >= wire.width.get) {
+        that
       } else {
-        Wire(n.cloneTypeWidth(wire.width), init = n)
+        Wire(that.cloneTypeWidth(wire.width), init = that)
       }
     for (x <- wire.flatten) {
       x := bits(i + x.getWidth-1, i)
@@ -110,23 +117,25 @@ abstract class Data(dirArg: Direction) extends HasId {
     *
     * This performs the inverse operation of fromBits(Bits).
     */
-  def toBits(): UInt = SeqUtils.asUInt(this.flatten)
+  @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
+  def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
 }
 
 object Wire {
-  def apply[T <: Data](t: T): T =
-    makeWire(t, null.asInstanceOf[T])
+  def apply[T <: Data](t: T): T = macro WireTransform.apply[T]
 
+  // No source info since Scala macros don't yet support named / default arguments.
   def apply[T <: Data](dummy: Int = 0, init: T): T =
-    makeWire(null.asInstanceOf[T], init)
+    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo)
 
+  // No source info since Scala macros don't yet support named / default arguments.
   def apply[T <: Data](t: T, init: T): T =
-    makeWire(t, init)
+    do_apply(t, init)(UnlocatableSourceInfo)
 
-  private def makeWire[T <: Data](t: T, init: T): T = {
+  def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
     val x = Reg.makeType(t, null.asInstanceOf[T], init)
-    pushCommand(DefWire(x))
-    pushCommand(DefInvalid(x.ref))
+    pushCommand(DefWire(sourceInfo, x))
+    pushCommand(DefInvalid(sourceInfo, x.ref))
     if (init != null) {
       x := init
     }
@@ -145,7 +154,7 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
   private[Chisel] def toType = "Clock"
 
-  override def := (that: Data): Unit = that match {
+  override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
     case _: Clock => this connect that
     case _ => this badConnect that
   }
