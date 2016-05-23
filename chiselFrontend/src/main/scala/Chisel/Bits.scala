@@ -464,14 +464,6 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
     Mux(dat, this | bit, ~(~this | bit))
   }
 
-  final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-  final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-  final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-
-  def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === this
-  def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != this
-  def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= this
-
   /** Returns this UInt as a [[SInt]] with an additional zero in the MSB.
     */
   // TODO: this eventually will be renamed as toSInt, once the existing toSInt
