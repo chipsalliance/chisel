@@ -1,5 +1,9 @@
 package object Chisel {
+  import scala.language.experimental.macros
+  
   import internal.firrtl.Width
+  import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+  
   implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
     def U: UInt = UInt(x, Width())
     def S: SInt = SInt(x, Width())
@@ -13,5 +17,15 @@ package object Chisel {
   }
   implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
     def B: Bool = Bool(x)
+  }
+  
+  implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
+    final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+  
+    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x
+    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x
+    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
   }
 }
