@@ -1400,8 +1400,8 @@ The shift right operation truncates the least significant \vv{n} bits from \vv{e
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
-dshl & (e, n) & () & (UInt, UInt) & UInt & w\ts{e} + 2\verb|^|w\ts{n}\\
-                 &&& (SInt, UInt) & SInt & w\ts{e} + 2\verb|^|w\ts{n}\\
+dshl & (e, n) & () & (UInt, UInt) & UInt & w\ts{e} + 2\verb|^|w\ts{n} - 1\\
+                 &&& (SInt, UInt) & SInt & w\ts{e} + 2\verb|^|w\ts{n} - 1\\
  \hline
 \end{tabular}
 }}
@@ -1685,7 +1685,7 @@ module MyModule :
 
 FIRRTL's syntax is designed to be human-readable but easily algorithmically parsed.
 
-The following characters are allowed in identifiers: upper and lower case letters, digits, as well as the punctuation characters \verb|~!@#$%^*-_+=?/|. Identifiers cannot begin with a digit. 
+The following characters are allowed in identifiers: upper and lower case letters, digits, and \verb|_|. Identifiers cannot begin with a digit. 
 
 An integer literal in FIRRTL begins with one of the following, where `\#' represents a digit between 0 and 9. 
 \begin{itemize}
@@ -1713,23 +1713,23 @@ can be equivalently expressed on a single line as follows.
 when c : (a <= b) else : (c <= d, e <= f)
 \end{verbatim}
 
-All circuits, modules, ports and statements can optionally be preceded with the info token \verb|@["filename", line, col]| to annotate them with the source file information from where they were generated.
+All circuits, modules, ports and statements can optionally be followed with the info token \verb|@[fileinfo]| where fileinfo is a string containing the source file information from where it was generated.
 
 The following example shows the info tokens included:
 
 \begin{verbatim}
-@["myfile.txt" 14, 8] circuit Top :
-   @["myfile.txt" 15, 2] module Top :
-      @["myfile.txt" 16, 3] output out:UInt
-      @["myfile.txt" 17, 3] input b:UInt<32>
-      @["myfile.txt" 18, 3] input c:UInt<1>
-      @["myfile.txt" 19, 3] input d:UInt<16>
-      @["myfile.txt" 21, 8] wire a:UInt
-      @["myfile.txt" 24, 8] when c :
-         @["myfile.txt" 27, 16] a <= b
-      else :
-         @["myfile.txt" 29, 17] a <= d
-      @["myfile.txt" 34, 4] out <= add(a,a)   
+circuit Top : @["myfile.txt: 14, 8"] 
+   module Top : @["myfile.txt: 15, 2"]
+     output out:UInt @["myfile.txt: 16, 3"]
+     input b:UInt<32> @["myfile.txt: 17, 3"]
+     input c:UInt<1> @["myfile.txt: 18, 3"]
+     input d:UInt<16> @["myfile.txt: 19, 3"]
+     wire a:UInt @["myfile.txt: 21, 8"]
+     when c : @["myfile.txt: 24, 8"]
+       a <= b @["myfile.txt: 27, 16"]
+     else :
+       a <= d @["myfile.txt: 29, 17"]
+     out <= add(a,a) @["myfile.txt: 34, 4"]
 \end{verbatim}
 
 \section{FIRRTL Language Definition}
@@ -1775,7 +1775,7 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
                 &\pipe &\opt{\pd{info}} \vv{skip}                                                              &\text{Empty}\\
                 &\pipe &\opt{\pd{info}} \vv{(}\rpt{\pd{stmt}}\vv{)}                                            &\text{Statement Group}\\
 \pd{ruw}        &=     &\vv{old} \pipe \vv{ new} \pipe \vv{ undefined}                                         &\text{Read Under Write Flag}\\
-\pd{info}       &=     &\vv{@[}\pd{string}, \pd{int}, \pd{int}\vv{]}                                           &\text{File Information Token}\\
+\pd{info}       &=     &\vv{@[}\pd{string}\vv{]}                                                               &\text{File Information Token}\\
 \end{tabular}
 
 \begin{tabular}{rrll}
