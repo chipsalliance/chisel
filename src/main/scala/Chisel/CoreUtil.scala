@@ -23,39 +23,39 @@ object assert { // scalastyle:ignore object.name
     *
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional message to print when the assertion fires
+    * @param data optional bits to print in the message formatting
     *
     * @note currently cannot be used in core Chisel / libraries because macro
     * defs need to be compiled first and the SBT project is not set up to do
     * that
     */
-  def apply(cond: Bool, message: String): Unit = macro apply_impl_msg
+  def apply(cond: Bool, message: String, data: Bits*): Unit = macro apply_impl_msg_data
   def apply(cond: Bool): Unit = macro apply_impl  // macros currently can't take default arguments
 
-  def apply_impl_msg(c: Context)(cond: c.Tree, message: c.Tree): c.Tree = {
+  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
-    val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
+    val line = s"${p.source.file.name}:${p.line}"
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("apply_impl_do"))
-    q"$apply_impl_do($cond, $condStr, _root_.scala.Some($message))"
-  }
+    q"$apply_impl_do($cond, $line, $message, ..$data)"
+ }
 
   def apply_impl(c: Context)(cond: c.Tree): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
-    val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
+    val line = s"${p.source.file.name}:${p.line}"
+    val message = s"${p.lineContent.trim}"
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("apply_impl_do"))
-    q"$apply_impl_do($cond, $condStr, _root_.scala.None)"
+    q"$apply_impl_do($cond, $line, $message)"
   }
 
-  def apply_impl_do(cond: Bool, line: String, message: Option[String]) {
+  def apply_impl_do(cond: Bool, line: String, message: String, data: Bits*): Unit = {
     when (!(cond || Builder.dynamicContext.currentModule.get.reset)) {
-      message match {
-        case Some(str) => printf.printfWithoutReset(s"Assertion failed: $str\n    at $line\n")
-        case None => printf.printfWithoutReset(s"Assertion failed\n    at $line\n")
-      }
+      printf.printfWithoutReset(s"Assertion failed at $line: $message\n", data:_*)
       pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
     }
   }
+
 
   /** An elaboration-time assertion, otherwise the same as the above run-time
     * assertion. */
