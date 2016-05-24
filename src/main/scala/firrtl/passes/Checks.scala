@@ -116,7 +116,7 @@ object CheckHighForm extends Pass with LazyLogging {
   private var mname: String = ""
   private var sinfo: Info = NoInfo
   def run (c:Circuit): Circuit = {
-    val errors = ArrayBuffer[PassException]()
+    val errors = new Errors()
     def checkHighFormPrimop(e: DoPrim) = {
       def correctNum(ne: Option[Int], nc: Int) = {
         ne match {
@@ -289,7 +289,7 @@ object CheckHighForm extends Pass with LazyLogging {
     }
     sinfo = c.info
     if (numTopM != 1) errors.append(new NoTopModuleException(c.main))
-    if (errors.nonEmpty) throw new PassExceptions(errors)
+    errors.trigger
     c
   }
 }
@@ -326,32 +326,32 @@ object CheckTypes extends Pass with LazyLogging {
    def ut () : UIntType = UIntType(UnknownWidth())
    def st () : SIntType = SIntType(UnknownWidth())
    
-   def check_types_primop (e:DoPrim, errors:ArrayBuffer[PassException],info:Info) : Unit = {
+   def check_types_primop (e:DoPrim, errors:Errors, info:Info) : Unit = {
       def all_same_type (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls) {
             if (wt(tpe(ls.head)) != wt(tpe(x))) error = true
          }
-         if (error) errors += new OpNotAllSameType(info,e.op.serialize)
+         if (error) errors.append(new OpNotAllSameType(info,e.op.serialize))
       }
       def all_ground (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls ) {
             if (!(tpe(x).typeof[UIntType] || tpe(x).typeof[SIntType])) error = true
          }
-         if (error) errors += new OpNotGround(info,e.op.serialize)
+         if (error) errors.append(new OpNotGround(info,e.op.serialize))
       }
       def all_uint (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls ) {
             if (!(tpe(x).typeof[UIntType])) error = true
          }
-         if (error) errors += new OpNotAllUInt(info,e.op.serialize)
+         if (error) errors.append(new OpNotAllUInt(info,e.op.serialize))
       }
       def is_uint (x:Expression) : Unit = {
          var error = false
          if (!(tpe(x).typeof[UIntType])) error = true
-         if (error) errors += new OpNotUInt(info,e.op.serialize,x.serialize)
+         if (error) errors.append(new OpNotUInt(info,e.op.serialize,x.serialize))
       }
       
       e.op match {
@@ -391,7 +391,7 @@ object CheckTypes extends Pass with LazyLogging {
    }
       
    def run (c:Circuit) : Circuit = {
-      val errors = ArrayBuffer[PassException]()
+      val errors = new Errors()
       def passive (t:Type) : Boolean = {
          (t) match { 
             case (_:UIntType|_:SIntType) => true
@@ -414,39 +414,39 @@ object CheckTypes extends Pass with LazyLogging {
                (tpe(e.exp)) match  { 
                   case (t:BundleType) => {
                      val ft = t.fields.find(p => p.name == e.name)
-                     if (ft == None) errors += new SubfieldNotInBundle(info,e.name)
+                     if (ft == None) errors.append(new SubfieldNotInBundle(info,e.name))
                   }
-                  case (t) => errors += new SubfieldOnNonBundle(info,e.name)
+                  case (t) => errors.append(new SubfieldOnNonBundle(info,e.name))
                }
             }
             case (e:WSubIndex) => {
                (tpe(e.exp)) match { 
                   case (t:VectorType) => {
-                     if (e.value >= t.size) errors += new IndexTooLarge(info,e.value)
+                     if (e.value >= t.size) errors.append(new IndexTooLarge(info,e.value))
                   }
-                  case (t) => errors += new IndexOnNonVector(info)
+                  case (t) => errors.append(new IndexOnNonVector(info))
                }
             }
             case (e:WSubAccess) => {
                (tpe(e.exp)) match { 
                   case (t:VectorType) => false
-                  case (t) => errors += new IndexOnNonVector(info)
+                  case (t) => errors.append(new IndexOnNonVector(info))
                }
                (tpe(e.index)) match { 
                   case (t:UIntType) => false
-                  case (t) => errors += new AccessIndexNotUInt(info)
+                  case (t) => errors.append(new AccessIndexNotUInt(info))
                }
             }
             case (e:DoPrim) => check_types_primop(e,errors,info)
             case (e:Mux) => {
-               if (wt(tpe(e.tval)) != wt(tpe(e.fval))) errors += new MuxSameType(info)
-               if (!passive(tpe(e))) errors += new MuxPassiveTypes(info)
-               if (!passive(tpe(e))) errors += new MuxPassiveTypes(info)
-               if (!(tpe(e.cond).typeof[UIntType])) errors += new MuxCondUInt(info)
+               if (wt(tpe(e.tval)) != wt(tpe(e.fval))) errors.append(new MuxSameType(info))
+               if (!passive(tpe(e))) errors.append(new MuxPassiveTypes(info))
+               if (!passive(tpe(e))) errors.append(new MuxPassiveTypes(info))
+               if (!(tpe(e.cond).typeof[UIntType])) errors.append(new MuxCondUInt(info))
             }
             case (e:ValidIf) => {
-               if (!passive(tpe(e))) errors += new ValidIfPassiveTypes(info)
-               if (!(tpe(e.cond).typeof[UIntType])) errors += new ValidIfCondUInt(info)
+               if (!passive(tpe(e))) errors.append(new ValidIfPassiveTypes(info))
+               if (!(tpe(e.cond).typeof[UIntType])) errors.append(new ValidIfCondUInt(info))
             }
             case (_:UIntValue|_:SIntValue) => false
          }
@@ -479,22 +479,22 @@ object CheckTypes extends Pass with LazyLogging {
 
       def check_types_s (s:Stmt) : Stmt = {
          s map (check_types_e(get_info(s))) match { 
-            case (s:Connect) => if (wt(tpe(s.loc)) != wt(tpe(s.exp))) errors += new InvalidConnect(s.info, s.loc.serialize, s.exp.serialize)
-            case (s:DefRegister) => if (wt(s.tpe) != wt(tpe(s.init))) errors += new InvalidRegInit(s.info)
-            case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT) ) errors += new InvalidConnect(s.info, s.loc.serialize, s.exp.serialize)
+            case (s:Connect) => if (wt(tpe(s.loc)) != wt(tpe(s.exp))) errors.append(new InvalidConnect(s.info, s.loc.serialize, s.exp.serialize))
+            case (s:DefRegister) => if (wt(s.tpe) != wt(tpe(s.init))) errors.append(new InvalidRegInit(s.info))
+            case (s:BulkConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.exp),DEFAULT,DEFAULT) ) errors.append(new InvalidConnect(s.info, s.loc.serialize, s.exp.serialize))
             case (s:Stop) => {
-               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors += new ReqClk(s.info)
-               if (wt(tpe(s.en)) != wt(ut()) ) errors += new EnNotUInt(s.info)
+               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors.append(new ReqClk(s.info))
+               if (wt(tpe(s.en)) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
             }
             case (s:Print)=> {
                for (x <- s.args ) {
-                  if (wt(tpe(x)) != wt(ut()) && wt(tpe(x)) != wt(st()) ) errors += new PrintfArgNotGround(s.info)
+                  if (wt(tpe(x)) != wt(ut()) && wt(tpe(x)) != wt(st()) ) errors.append(new PrintfArgNotGround(s.info))
                }
-               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors += new ReqClk(s.info)
-               if (wt(tpe(s.en)) != wt(ut()) ) errors += new EnNotUInt(s.info)
+               if (wt(tpe(s.clk)) != wt(ClockType()) ) errors.append(new ReqClk(s.info))
+               if (wt(tpe(s.en)) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
             }
-            case (s:Conditionally) => if (wt(tpe(s.pred)) != wt(ut()) ) errors += new PredNotUInt(s.info)
-            case (s:DefNode) => if (!passive(tpe(s.value)) ) errors += new NodePassiveType(s.info)
+            case (s:Conditionally) => if (wt(tpe(s.pred)) != wt(ut()) ) errors.append(new PredNotUInt(s.info))
+            case (s:DefNode) => if (!passive(tpe(s.value)) ) errors.append(new NodePassiveType(s.info))
             case (s) => false
          }
          s map (check_types_s)
@@ -507,7 +507,7 @@ object CheckTypes extends Pass with LazyLogging {
             case (m:InModule) => check_types_s(m.body)
          }
       }
-      if (errors.nonEmpty) throw new PassExceptions(errors)
+      errors.trigger
       c
    }
 }
@@ -534,7 +534,7 @@ object CheckGenders extends Pass {
    }
    
    def run (c:Circuit): Circuit = {
-      val errors = ArrayBuffer[PassException]()
+      val errors = new Errors()
       def get_kind (e:Expression) : Kind = {
          (e) match { 
             case (e:WRef) => e.kind
@@ -574,14 +574,14 @@ object CheckGenders extends Pass {
          //println(desired == gender)
          //if gender != desired and gender != BI-GENDER:
          (gender,desired) match {
-            case (MALE, FEMALE) => errors += new WrongGender(info,e.serialize,as_srcsnk(desired),as_srcsnk(gender))
+            case (MALE, FEMALE) => errors.append(new WrongGender(info,e.serialize,as_srcsnk(desired),as_srcsnk(gender)))
             case (FEMALE, MALE) =>
                if ((kindx == PortKind() || kindx == InstanceKind()) && has_flipQ == false) {
                   //; OK!
                   false
                } else {
                   //; Not Ok!
-                  errors += new WrongGender(info,e.serialize,as_srcsnk(desired),as_srcsnk(gender))
+                  errors.append(new WrongGender(info,e.serialize,as_srcsnk(desired),as_srcsnk(gender)))
                }
             case _ => false
          }
@@ -672,7 +672,7 @@ object CheckGenders extends Pass {
             case (m:InModule) => check_genders_s(genders)(m.body)
          }
       }
-      if (errors.nonEmpty) throw new PassExceptions(errors)
+      errors.trigger
       c
    }
 }
@@ -684,12 +684,12 @@ object CheckWidths extends Pass {
    class WidthTooSmall (info:Info,v:String) extends PassException(s"${info} : [module ${mname}  Width too small for constant ${v}.")
    class NegWidthException(info:Info) extends PassException(s"${info}: [module ${mname}] Width cannot be negative or zero.")
    def run (c:Circuit): Circuit = {
-      val errors = ArrayBuffer[PassException]()
+      val errors = new Errors()
       def check_width_m (m:Module) : Unit = {
          def check_width_w (info:Info)(w:Width) : Width = {
             (w) match { 
-               case (w:IntWidth)=> if (w.width <= 0) errors += new NegWidthException(info)
-               case (w) => errors += new UninferredWidth(info)
+               case (w:IntWidth)=> if (w.width <= 0) errors.append(new NegWidthException(info))
+               case (w) => errors.append(new UninferredWidth(info))
             }
             w
          }
@@ -699,17 +699,17 @@ object CheckWidths extends Pass {
                   (e.width) match { 
                      case (w:IntWidth) => 
                         if (scala.math.max(1,e.value.bitLength) > w.width) {
-                           errors += new WidthTooSmall(info, serialize(e.value))
+                           errors.append(new WidthTooSmall(info, serialize(e.value)))
                         }
-                     case (w) => errors += new UninferredWidth(info)
+                     case (w) => errors.append(new UninferredWidth(info))
                   }
                   check_width_w(info)(e.width)
                }
                case (e:SIntValue) => {
                   (e.width) match { 
                      case (w:IntWidth) => 
-                        if (e.value.bitLength + 1 > w.width) errors += new WidthTooSmall(info, serialize(e.value))
-                     case (w) => errors += new UninferredWidth(info)
+                        if (e.value.bitLength + 1 > w.width) errors.append(new WidthTooSmall(info, serialize(e.value)))
+                     case (w) => errors.append(new UninferredWidth(info))
                   }
                   check_width_w(info)(e.width)
                }
@@ -738,7 +738,7 @@ object CheckWidths extends Pass {
          mname = m.name
          check_width_m(m)
       }
-      if (errors.nonEmpty) throw new PassExceptions(errors)
+      errors.trigger
       c
    }
 }

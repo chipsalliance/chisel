@@ -50,6 +50,17 @@ trait Pass extends LazyLogging {
 // Error handling
 class PassException(message: String) extends Exception(message)
 class PassExceptions(exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
+class Errors {
+  val errors = ArrayBuffer[PassException]()
+  def append(pe: PassException) = errors.append(pe)
+  def trigger = errors.size match {
+    case 0 =>
+    case 1 => throw errors.head
+    case _ =>
+      append(new PassException(s"${errors.length} errors detected!"))
+      throw new PassExceptions(errors)
+  }
+}
 
 // These should be distributed into separate files
 object ToWorkingIR extends Pass {
