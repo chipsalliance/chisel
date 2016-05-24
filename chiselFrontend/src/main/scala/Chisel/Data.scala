@@ -54,9 +54,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   private[Chisel] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[Chisel] def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(Connect(sourceInfo, this.lref, that.ref))
-  private[Chisel] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+    pushCommand(PartialConnect(sourceInfo, this.lref, that.lref))
   private[Chisel] def lref: Node = Node(this)
   private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
   private[Chisel] def cloneTypeWidth(width: Width): this.type

@@ -269,7 +269,7 @@ class Bundle extends Aggregate(NO_DIR) {
     * }}}
     */
   override def <> (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
-    case _: Bundle => this bulkConnect that
+    case _: Bundle => this connect that
     case _ => this badConnect that
   }
 
