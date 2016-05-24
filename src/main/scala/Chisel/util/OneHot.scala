@@ -29,7 +29,7 @@ object OHToUInt {
   * @example {{{ data_out := PriorityEncoder(data_in) }}}
   */
 object PriorityEncoder {
-  def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(UInt(_)))
+  def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(_.asUInt))
   def apply(in: Bits): UInt = apply(in.toBools)
 }
 
@@ -39,9 +39,9 @@ object UIntToOH
 {
   def apply(in: UInt, width: Int = -1): UInt =
     if (width == -1) {
-      UInt(1) << in
+      1.asUInt << in
     } else {
-      (UInt(1) << in(log2Up(width)-1,0))(width-1,0)
+      (1.asUInt << in(log2Up(width)-1,0))(width-1,0)
     }
 }
 
@@ -51,8 +51,8 @@ object UIntToOH
 object PriorityEncoderOH
 {
   private def encode(in: Seq[Bool]): UInt = {
-    val outs = Seq.tabulate(in.size)(i => UInt(BigInt(1) << i, in.size))
-    PriorityMux(in :+ Bool(true), outs :+ UInt(0, in.size))
+    val outs = Seq.tabulate(in.size)(i => (BigInt(1) << i).asUInt(in.size))
+    PriorityMux(in :+ true.asBool, outs :+ 0.asUInt(in.size))
   }
   def apply(in: Seq[Bool]): Seq[Bool] = {
     val enc = encode(in)

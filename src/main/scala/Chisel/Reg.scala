@@ -7,21 +7,19 @@ import internal.Builder.pushCommand
 import internal.firrtl._
 
 object Reg {
-  private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
+  private[Chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T =
     if (t ne null) {
-      t.cloneType
-    } else if (next ne null) {
-      next.cloneTypeWidth(Width())
-    } else if (init ne null) {
+      Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using newType?")
+      t.newType
+    } else if (next ne null) next.cloneTypeWidth(Width())
+    else if (init ne null) {
       init.litArg match {
-        // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-        case Some(lit) if lit.forcedWidth => init.cloneType
+        // For e.g. Reg(init=0.asUInt(k)), fix the Reg's width to k
+        case Some(lit) if lit.forcedWidth => init.newType
         case _ => init.cloneTypeWidth(Width())
       }
-    } else {
-      throwException("cannot infer type")
     }
-  }
+    else throw new Exception("cannot infer type")
 
   /** Creates a register with optional next and initialization values.
     *
@@ -46,14 +44,21 @@ object Reg {
     // system improves, this may be changed.
     val x = makeType(t, next, init)
     val clock = Node(x._parent.get.clock) // TODO multi-clock
+
+    // Bind each element of x to being a Reg
+    Binding.bind(x, RegBinder(Builder.forcedModule), "Error: t")
+
     if (init == null) {
       pushCommand(DefReg(x, clock))
     } else {
+      Binding.checkSynthesizable(init, s"'init' ($init)")
       pushCommand(DefRegInit(x, clock, Node(x._parent.get.reset), init.ref))
     }
     if (next != null) {
+      Binding.checkSynthesizable(next, s"'next' ($next)")
       x := next
     }
+
     x
   }
 

@@ -12,10 +12,10 @@ class Coord extends Bundle {
 }
 
 class BundleWire(n: Int) extends Module {
-  val io = new Bundle {
-    val in   = (new Coord).asInput
-    val outs = Vec(n, new Coord).asOutput
-  }
+  val io = IO(new Bundle {
+    val in   = Input(new Coord)
+    val outs = Output(Vec(n, new Coord))
+  })
   val coords = Wire(Vec(n, new Coord))
   for (i <- 0 until n) {
     coords(i)  := io.in
@@ -25,11 +25,11 @@ class BundleWire(n: Int) extends Module {
 
 class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new BundleWire(n))
-  dut.io.in.x := UInt(x)
-  dut.io.in.y := UInt(y)
+  dut.io.in.x := x.asUInt
+  dut.io.in.y := y.asUInt
   for (elt <- dut.io.outs) {
-    assert(elt.x === UInt(x))
-    assert(elt.y === UInt(y))
+    assert(elt.x === x.asUInt)
+    assert(elt.y === y.asUInt)
   }
   stop()
 }

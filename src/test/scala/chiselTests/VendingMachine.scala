@@ -4,11 +4,12 @@ package chiselTests
 import Chisel._
 
 class VendingMachine extends Module {
-  val io = new Bundle {
-    val nickel = Bool(dir = INPUT)
-    val dime   = Bool(dir = INPUT)
-    val valid  = Bool(dir = OUTPUT) }
-  val c = UInt(5, width = 3)
+  val io = IO(new Bundle {
+    val nickel = Input(Bool())
+    val dime   = Input(Bool())
+    val valid  = Output(Bool())
+  })
+  val c = 5.asUInt(3)
   val sIdle :: s5 :: s10 :: s15 :: sOk :: Nil = Enum(UInt(), 5)
   val state = Reg(init = sIdle)
   when (state === sIdle) {

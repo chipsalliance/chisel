@@ -52,7 +52,7 @@ object BitPat {
     */
   implicit def bitPatToUInt(x: BitPat): UInt = {
     require(x.mask == (BigInt(1) << x.getWidth) - 1)
-    UInt(x.value, x.getWidth)
+    x.value.asUInt(x.getWidth)
   }
 
   /** Allows UInts to be used where a BitPat is expected, useful for when an
@@ -70,11 +70,11 @@ object BitPat {
 // TODO: Break out of Core? (this doesn't involve FIRRTL generation)
 /** Bit patterns are literals with masks, used to represent values with don't
   * cares. Equality comparisons will ignore don't care bits (for example,
-  * BitPat(0b10?1) === UInt(0b1001) and UInt(0b1011)).
+  * BitPat(0b10?1) === 0b1001.asUInt and 0b1011.asUInt.
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
-  def === (other: UInt): Bool = UInt(value) === (other & UInt(mask))
+  def === (other: UInt): Bool = value.asUInt === (other & mask.asUInt)
   def =/= (other: UInt): Bool = !(this === other)
   def != (other: UInt): Bool = this =/= other
 }

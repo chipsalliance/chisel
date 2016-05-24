@@ -12,9 +12,9 @@ import internal.firrtl._
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
   */
-sealed abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
+sealed abstract class Aggregate extends Data {
   private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
-  def width: Width = flatten.map(_.width).reduce(_ + _)
+  private[Chisel] def width: Width = flatten.map(_.width).reduce(_ + _)
 }
 
 object Vec {
@@ -22,10 +22,10 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.cloneType, n)
+  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
+  def apply[T <: Data](gen: T, n: Int): Vec[T] = Vec(n, gen)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -94,29 +94,41 @@ object Vec {
   * @note Vecs, unlike classes in Scala's collection library, are propagated
   * intact to FIRRTL as a vector type, which may make debugging easier
   */
-sealed class Vec[T <: Data] private (gen: => T, val length: Int)
-    extends Aggregate(gen.dir) with VecLike[T] {
+sealed class Vec[T <: Data] private (gen: T, val length: Int)
+    extends Aggregate with VecLike[T] {
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
+  private val self: Seq[T] = Vector.fill(length)(gen.newType)
 
-  private val self = IndexedSeq.fill(length)(gen)
+  /**
+  * sample_element 'tracks' all changes to the elements of self.
+  * For consistency, sample_element is always used for creating dynamically
+  * indexed ports and outputing the FIRRTL type.
+  *
+  * Needed specifically for the case when the Vec is length 0.
+  */
+  private[Chisel] val sample_element: T = gen.newType
 
-  override def <> (that: Data): Unit = this := that
+  // allElements current includes sample_element
+  // This is somewhat weird although I think the best course of action here is
+  // to deprecate allElements in favor of dispatched functions to Data or
+  // a pattern matched recursive descent
+  private[Chisel] final def allElements: Seq[Element] =
+    (sample_element +: self).flatMap(_.allElements)
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
     * @note the length of this Vec must match the length of the input Seq
     */
-  def <> (that: Seq[T]): Unit = this := that
+  def <> (that: Seq[T]): Unit = {
+    require(this.length == that.length)
+    for ((a, b) <- this zip that)
+      a <> b
+  }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T]): Unit = this := that.asInstanceOf[Data]
-
-  override def := (that: Data): Unit = that match {
-    case _: Vec[_] => this connect that
-    case _ => this badConnect that
-  }
+  def <> (that: Vec[T]): Unit = this bulkConnect that.asInstanceOf[Data]
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
@@ -134,9 +146,17 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   /** Creates a dynamically indexed read or write accessor into the array.
     */
   def apply(idx: UInt): T = {
-    val x = gen
-    x.setRef(this, idx)
-    x
+    Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
+    val port = sample_element.newType
+    port.setRef(this, idx) //TODO(twigg): This is a bit too magical
+
+    // Bind each element of port to being whatever the base type is
+    // Using the head element as the sample_element
+    for((port_elem, model_elem) <- port.allElements zip sample_element.allElements) {
+      port_elem.binding = model_elem.binding
+    }
+
+    port
   }
 
   /** Creates a statically indexed read or write accessor into the array.
@@ -152,8 +172,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   override def cloneType: this.type =
     Vec(length, gen).asInstanceOf[this.type]
 
-  private val t = gen
-  private[Chisel] def toType: String = s"${t.toType}[$length]"
+  private[Chisel] def toType: String = s"${sample_element.toType}[$length]"
   private[Chisel] lazy val flatten: IndexedSeq[Bits] =
     (0 until length).flatMap(i => this.apply(i).flatten)
 
@@ -175,11 +194,11 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
 
   /** Outputs true if p outputs true for every element.
     */
-  def forall(p: T => Bool): Bool = (this map p).fold(Bool(true))(_ && _)
+  def forall(p: T => Bool): Bool = (this map p).fold(true.asBool)(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
     */
-  def exists(p: T => Bool): Bool = (this map p).fold(Bool(false))(_ || _)
+  def exists(p: T => Bool): Bool = (this map p).fold(false.asBool)(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
     * the === operator).
@@ -193,7 +212,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
   /** Helper function that appends an index (literal value) to each element,
     * useful for hardware generators which output an index.
     */
-  private def indexWhereHelper(p: T => Bool) = this map p zip (0 until length).map(i => UInt(i))
+  private def indexWhereHelper(p: T => Bool) = (this map p) zip ((0 until length).map(_.asUInt))
 
   /** Outputs the index of the first element for which p outputs true.
     */
@@ -221,7 +240,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
   * Usage: extend this class (either as an anonymous or named class) and define
   * members variables of [[Data]] subtypes to be elements in the Bundle.
   */
-class Bundle extends Aggregate(NO_DIR) {
+class Bundle extends Aggregate {
   private val _namespace = Builder.globalNamespace.child
 
   // TODO: replace with better defined FIRRTL weak-connect operator
@@ -237,13 +256,6 @@ class Bundle extends Aggregate(NO_DIR) {
     * mySubModule.io <> io
     * }}}
     */
-  override def <> (that: Data): Unit = that match {
-    case _: Bundle => this bulkConnect that
-    case _ => this badConnect that
-  }
-
-  // TODO: replace with better defined FIRRTL strong-connect operator
-  override def := (that: Data): Unit = this <> that
 
   lazy val elements: ListMap[String, Data] = ListMap(namedElts:_*)
 
@@ -298,7 +310,7 @@ class Bundle extends Aggregate(NO_DIR) {
   }
   private[Chisel] def toType = {
     def eltPort(elt: Data): String = {
-      val flipStr = if (elt.isFlip) "flip " else ""
+      val flipStr: String = if(Data.isFlipped(elt)) "flip " else ""
       s"${flipStr}${elt.getRef.name} : ${elt.toType}"
     }
     s"{${namedElts.reverse.map(e => eltPort(e._2)).mkString(", ")}}"
@@ -308,8 +320,10 @@ class Bundle extends Aggregate(NO_DIR) {
     namedElts += name -> elt
   private[Chisel] override def _onModuleClose: Unit = // scalastyle:ignore method.name
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
+    
+  private[Chisel] final def allElements: Seq[Element] = namedElts.flatMap(_._2.allElements)
 
-  override def cloneType : this.type = {
+  override protected def cloneType : this.type = {
     // If the user did not provide a cloneType method, try invoking one of
     // the following constructors, not all of which necessarily exist:
     // - A zero-parameter constructor
@@ -338,5 +352,5 @@ class Bundle extends Aggregate(NO_DIR) {
 }
 
 private[Chisel] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits")
+  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits", "newType")
 }

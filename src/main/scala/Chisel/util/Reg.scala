@@ -7,15 +7,15 @@ package Chisel
 
 object RegNext {
 
-  def apply[T <: Data](next: T): T = Reg[T](next, next, null.asInstanceOf[T])
+  def apply[T <: Data](next: T): T = Reg[T](null.asInstanceOf[T], next, null.asInstanceOf[T])
 
-  def apply[T <: Data](next: T, init: T): T = Reg[T](next, next, init)
+  def apply[T <: Data](next: T, init: T): T = Reg[T](null.asInstanceOf[T], next, init)
 
 }
 
 object RegInit {
 
-  def apply[T <: Data](init: T): T = Reg[T](init, null.asInstanceOf[T], init)
+  def apply[T <: Data](init: T): T = Reg[T](null.asInstanceOf[T], null.asInstanceOf[T], init)
 
 }
 
@@ -23,12 +23,12 @@ object RegInit {
 object RegEnable
 {
   def apply[T <: Data](updateData: T, enable: Bool): T = {
-    val r = Reg(updateData)
+    val r = Reg(updateData.newType)
     when (enable) { r := updateData }
     r
   }
   def apply[T <: Data](updateData: T, resetData: T, enable: Bool): T = {
-    val r = RegInit(resetData)
+    val r = RegInit(resetData.newType)
     when (enable) { r := updateData }
     r
   }
@@ -41,7 +41,7 @@ object ShiftRegister
   /** @param in input to delay
     * @param n number of cycles to delay
     * @param en enable the shift */
-  def apply[T <: Data](in: T, n: Int, en: Bool = Bool(true)): T =
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.asBool): T =
   {
     // The order of tests reflects the expected use cases.
     if (n == 1) {

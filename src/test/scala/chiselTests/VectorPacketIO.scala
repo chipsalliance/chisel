@@ -27,8 +27,8 @@ class Packet extends Bundle {
   * The problem does not occur if the Vec is taken out
   */
 class VectorPacketIO(n: Int) extends Bundle {
-  val ins  = Vec(n, new DeqIO(new Packet()))
-  val outs = Vec(n, new EnqIO(new Packet()))
+  val ins  = Vec(n, DeqIO(new Packet()))
+  val outs = Vec(n, EnqIO(new Packet()))
 }
 
 /**
@@ -37,10 +37,11 @@ class VectorPacketIO(n: Int) extends Bundle {
   */
 class BrokenVectorPacketModule extends Module {
   val n  = 4
-  val io = new VectorPacketIO(n)
+  val io = IO(new VectorPacketIO(n))
 
   /* the following method of initializing the circuit may change in the future */
-  io.outs.foreach(_.init())
+  io.ins.foreach(_.noenq())
+  io.outs.foreach(_.nodeq())
 }
 
 class VectorPacketIOUnitTester extends BasicTester {

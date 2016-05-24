@@ -49,10 +49,10 @@ object assert { // scalastyle:ignore object.name
     q"$apply_impl_do($cond, $line, $message)"
   }
 
-  def apply_impl_do(cond: Bool, line: String, message: String, data: Bits*): Unit = {
-    when (!(cond || Builder.dynamicContext.currentModule.get.reset)) {
-      printf.printfWithoutReset(s"Assertion failed at $line: $message\n", data:_*)
-      pushCommand(Stop(Node(Builder.dynamicContext.currentModule.get.clock), 1))
+ def apply_impl_do(cond: Bool, line: String, message: String, data: Bits*) {
+    when (!(cond || Builder.forcedModule.reset)) {
+        printf.printfWithoutReset(s"Assertion failed at $line: $message\n", data:_*)
+        pushCommand(Stop(Node(Builder.forcedModule.clock), 1))
     }
   }
 
@@ -85,13 +85,13 @@ object printf { // scalastyle:ignore object.name
     * @param data format string varargs containing data to print
     */
   def apply(fmt: String, data: Bits*) {
-    when (!Builder.dynamicContext.currentModule.get.reset) {
+    when (!Builder.forcedModule.reset) {
       printfWithoutReset(fmt, data:_*)
     }
   }
 
   private[Chisel] def printfWithoutReset(fmt: String, data: Bits*) {
-    val clock = Builder.dynamicContext.currentModule.get.clock
+    val clock = Builder.forcedModule.clock
     pushCommand(Printf(Node(clock), fmt, data.map((d: Bits) => d.ref)))
   }
 }

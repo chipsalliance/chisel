@@ -8,21 +8,21 @@ package Chisel
   */
 class Counter(val n: Int) {
   require(n >= 0)
-  val value = if (n > 1) Reg(init=UInt(0, log2Up(n))) else UInt(0)
+  val value = if (n > 1) Reg(init=0.asUInt(log2Up(n))) else 0.asUInt
   /** Increment the counter, returning whether the counter currently is at the
     * maximum and will wrap. The incremented value is registered and will be
     * visible on the next cycle.
     */
   def inc(): Bool = {
     if (n > 1) {
-      val wrap = value === UInt(n-1)
-      value := value + UInt(1)
+      val wrap = value === (n-1).asUInt
+      value := value + 1.asUInt
       if (!isPow2(n)) {
-        when (wrap) { value := UInt(0) }
+        when (wrap) { value := 0.asUInt }
       }
       wrap
     } else {
-      Bool(true)
+      true.asBool
     }
   }
 }
@@ -31,7 +31,7 @@ class Counter(val n: Int) {
   * Example Usage:
   * {{{ val countOn = Bool(true) // increment counter every clock cycle
   * val myCounter = Counter(countOn, n)
-  * when ( myCounter.value === UInt(3) ) { ... } }}}*/
+  * when ( myCounter.value === 3.asUInt ) { ... } }}}*/
 object Counter
 {
   def apply(n: Int): Counter = new Counter(n)

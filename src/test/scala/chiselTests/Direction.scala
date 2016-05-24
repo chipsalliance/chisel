@@ -8,18 +8,18 @@ import org.scalatest.prop._
 import Chisel.testers.BasicTester
 
 class DirectionHaver extends Module {
-  val io = new Bundle {
-    val in = UInt(INPUT, 32)
-    val out = UInt(OUTPUT, 32)
-  }
+  val io = IO(new Bundle {
+    val in = Input(UInt(32))
+    val out = Output(UInt(32))
+  })
 }
 
 class GoodDirection extends DirectionHaver {
-  io.out := UInt(0)
+  io.out := 0.asUInt
 }
 
 class BadDirection extends DirectionHaver {
-  io.in := UInt(0)
+  io.in := 0.asUInt
 }
 
 class DirectionSpec extends ChiselPropSpec {
@@ -31,7 +31,14 @@ class DirectionSpec extends ChiselPropSpec {
   }
 
   property("Inputs should not be assignable") {
-    elaborate(new BadDirection)
+    var excepts: Boolean = false
+    try elaborate(new BadDirection)
+    catch {
+      case e: Exception => {excepts = true}
+      // Should except so this is okay
+      // Ideally, would throw and catch more precise exception
+    }
+    assert(excepts, "Bad connection should have thrown exception!")
   }
 
 }

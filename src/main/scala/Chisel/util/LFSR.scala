@@ -10,10 +10,10 @@ package Chisel
   */
 object LFSR16
 {
-  def apply(increment: Bool = Bool(true)): UInt =
+  def apply(increment: Bool = true.asBool): UInt =
   {
     val width = 16
-    val lfsr = Reg(init=UInt(1, width))
+    val lfsr = Reg(init=1.asUInt(width))
     when (increment) { lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1,1)) }
     lfsr
   }

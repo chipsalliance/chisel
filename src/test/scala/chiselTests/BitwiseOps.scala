@@ -9,12 +9,12 @@ import Chisel.testers.BasicTester
 
 class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   val mask = (1 << w) - 1
-  val a = UInt(_a, w)
-  val b = UInt(_b, w)
-  assert(~a === UInt(mask & ~_a))
-  assert((a & b) === UInt(_a & _b))
-  assert((a | b) === UInt(_a | _b))
-  assert((a ^ b) === UInt(_a ^ _b))
+  val a = _a.asUInt(w)
+  val b = _b.asUInt(w)
+  assert(~a === (mask & ~_a).asUInt)
+  assert((a & b) === (_a & _b).asUInt)
+  assert((a | b) === (_a | _b).asUInt)
+  assert((a ^ b) === (_a ^ _b).asUInt)
   stop()
 }
 

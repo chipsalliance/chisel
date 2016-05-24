@@ -8,39 +8,39 @@ import Chisel.testers.BasicTester
 
 class OptionBundle(hasIn: Boolean) extends Bundle {
   val in = if (hasIn) {
-    Some(Bool(INPUT))
+    Some(Input(Bool()))
   } else {
     None
   }
-  val out = Bool(OUTPUT)
+  val out = Output(Bool())
 }
 
 class OptionBundleModule(hasIn: Boolean) extends Module {
-  val io = new OptionBundle(hasIn)
+  val io = IO(new OptionBundle(hasIn))
   if (hasIn) {
     io.out := io.in.get
   } else {
-    io.out := Bool(false)
+    io.out := false.asBool
   }
 }
 
 class SomeOptionBundleTester(expected: Boolean) extends BasicTester {
   val mod = Module(new OptionBundleModule(true))
-  mod.io.in.get := Bool(expected)
-  assert(mod.io.out === Bool(expected))
+  mod.io.in.get := expected.asBool
+  assert(mod.io.out === expected.asBool)
   stop()
 }
 
 class NoneOptionBundleTester() extends BasicTester {
   val mod = Module(new OptionBundleModule(false))
-  assert(mod.io.out === Bool(false))
+  assert(mod.io.out === false.asBool)
   stop()
 }
 
 class InvalidOptionBundleTester() extends BasicTester {
   val mod = Module(new OptionBundleModule(false))
-  mod.io.in.get := Bool(true)
-  assert(Bool(false))
+  mod.io.in.get := true.asBool
+  assert(false.asBool)
   stop()
 }
 

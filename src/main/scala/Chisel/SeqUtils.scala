@@ -17,11 +17,11 @@ private[Chisel] object SeqUtils {
   /** Counts the number of true Bools in a Seq */
   def count(in: Seq[Bool]): UInt = {
     if (in.size == 0) {
-      UInt(0)
+      0.asUInt
     } else if (in.size == 1) {
       in.head
     } else {
-      count(in.slice(0, in.size/2)) + (UInt(0) ## count(in.slice(in.size/2, in.size)))
+      count(in.slice(0, in.size/2)) + (0.asUInt ## count(in.slice(in.size/2, in.size)))
     }
   }
 
@@ -39,7 +39,7 @@ private[Chisel] object SeqUtils {
     if (in.tail.isEmpty) {
       in.head._2
     } else {
-      val masked = for ((s, i) <- in) yield Mux(s, i.toBits, Bits(0))
+      val masked = for ((s, i) <- in) yield Mux(s, i.toBits, 0.asUInt)
       val width = in.map(_._2.width).reduce(_ max _)
       in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
     }

@@ -7,7 +7,7 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class FailingAssertTester() extends BasicTester {
-  assert(Bool(false))
+  assert(false.asBool)
   // Wait to come out of reset
   val (_, done) = Counter(!reset, 4)
   when (done) {
@@ -16,7 +16,7 @@ class FailingAssertTester() extends BasicTester {
 }
 
 class SucceedingAssertTester() extends BasicTester {
-  assert(Bool(true))
+  assert(true.asBool)
   // Wait to come out of reset
   val (_, done) = Counter(!reset, 4)
   when (done) {
@@ -25,9 +25,9 @@ class SucceedingAssertTester() extends BasicTester {
 }
 
 class PipelinedResetModule extends Module {
-  val io = new Bundle { }
-  val a = Reg(init = UInt(0xbeef))
-  val b = Reg(init = UInt(0xbeef))
+  val io = IO(new Bundle { })
+  val a = Reg(init = 0xbeef.asUInt)
+  val b = Reg(init = 0xbeef.asUInt)
   assert(a === b)
 }
 

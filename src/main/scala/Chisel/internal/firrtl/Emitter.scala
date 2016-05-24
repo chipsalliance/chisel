@@ -3,6 +3,10 @@
 package Chisel.internal.firrtl
 import Chisel._
 
+private[Chisel] object Emitter {
+  def emit(circuit: Circuit): String = new Emitter(circuit).toString
+}
+
 private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString
 

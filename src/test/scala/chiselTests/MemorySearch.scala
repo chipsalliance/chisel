@@ -5,22 +5,22 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class MemorySearch extends Module {
-  val io = new Bundle {
-    val target  = UInt(INPUT,  4)
-    val en      = Bool(INPUT)
-    val done    = Bool(OUTPUT)
-    val address = UInt(OUTPUT, 3)
-  }
+  val io = IO(new Bundle {
+    val target  = Input(UInt(4))
+    val en      = Input(Bool())
+    val done    = Output(Bool())
+    val address = Output(UInt(3))
+  })
   val vals  = Array(0, 4, 15, 14, 2, 5, 13)
-  val index = Reg(init = UInt(0, width = 3))
-  val elts  = Vec(vals.map(UInt(_,4)))
+  val index = Reg(init = 0.asUInt(3))
+  val elts  = Vec(vals.map(_.asUInt(4)))
   // val elts  = Mem(UInt(width = 32), 8) TODO ????
   val elt  = elts(index)
-  val end  = !io.en && ((elt === io.target) || (index === UInt(7)))
+  val end  = !io.en && ((elt === io.target) || (index === 7.asUInt))
   when (io.en) {
-    index := UInt(0)
+    index := 0.asUInt
   } .elsewhen (!end) {
-    index := index +% UInt(1)
+    index := index +% 1.asUInt
   }
   io.done    := end
   io.address := index

@@ -6,23 +6,23 @@ import org.scalatest._
 import Chisel.testers.BasicTester
 
 class UIntOps extends Module {
-  val io = new Bundle {
-    val a = UInt(INPUT, 16)
-    val b = UInt(INPUT, 16)
-    val addout = UInt(OUTPUT, 16)
-    val subout = UInt(OUTPUT, 16)
-    val timesout = UInt(OUTPUT, 16)
-    val divout = UInt(OUTPUT, 16)
-    val modout = UInt(OUTPUT, 16)
-    val lshiftout = UInt(OUTPUT, 16)
-    val rshiftout = UInt(OUTPUT, 16)
-    val lessout = Bool(OUTPUT)
-    val greatout = Bool(OUTPUT)
-    val eqout = Bool(OUTPUT)
-    val noteqout = Bool(OUTPUT)
-    val lesseqout = Bool(OUTPUT)
-    val greateqout = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle {
+    val a = Input(UInt(16))
+    val b = Input(UInt(16))
+    val addout = Output(UInt(16))
+    val subout = Output(UInt(16))
+    val timesout = Output(UInt(16))
+    val divout = Output(UInt(16))
+    val modout = Output(UInt(16))
+    val lshiftout = Output(UInt(16))
+    val rshiftout = Output(UInt(16))
+    val lessout = Output(Bool())
+    val greatout = Output(Bool())
+    val eqout = Output(Bool())
+    val noteqout = Output(Bool())
+    val lesseqout = Output(Bool())
+    val greateqout = Output(Bool())
+  })
 
   val a = io.a
   val b = io.b
@@ -30,10 +30,10 @@ class UIntOps extends Module {
   io.addout := a +% b
   io.subout := a -% b
   io.timesout := (a * b)(15, 0)
-  io.divout := a / Mux(b === UInt(0), UInt(1), b)
+  io.divout := a / Mux(b === 0.asUInt, 1.asUInt, b)
   // io.modout := a % b
   // TODO:
-  io.modout := UInt(0)
+  io.modout := 0.asUInt
   io.lshiftout := (a << b(3, 0))(15, 0)
   io.rshiftout := a >> b
   io.lessout := a < b
@@ -76,18 +76,18 @@ class UIntOpsTester(c: UIntOps) extends Tester(c) {
 */
 
 class GoodBoolConversion extends Module {
-  val io = new Bundle {
-    val u = UInt(1, width = 1).asInput
-    val b = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle {
+    val u = Input(UInt(1))
+    val b = Output(Bool())
+  })
   io.b := io.u.toBool
 }
 
 class BadBoolConversion extends Module {
-  val io = new Bundle {
-    val u = UInt(1, width = 5).asInput
-    val b = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle {
+    val u = Input(UInt(width = 5))
+    val b = Output(Bool())
+  })
   io.b := io.u.toBool
 }
 

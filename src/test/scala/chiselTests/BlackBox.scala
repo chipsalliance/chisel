@@ -8,36 +8,36 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class BlackBoxInverter extends BlackBox {
-  val io = new Bundle() {
-    val in = Bool(INPUT)
-    val out = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle() {
+    val in = Input(Bool())
+    val out = Output(Bool())
+  })
 }
 
 class BlackBoxPassthrough extends BlackBox {
-  val io = new Bundle() {
-    val in = Bool(INPUT)
-    val out = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle() {
+    val in = Input(Bool())
+    val out = Output(Bool())
+  })
 }
 
 class BlackBoxRegister extends BlackBox {
-  val io = new Bundle() {
-    val clock = Clock().asInput
-    val in = Bool(INPUT)
-    val out = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle() {
+    val clock = Input(Clock())
+    val in = Input(Bool())
+    val out = Output(Bool())
+  })
 }
 
 class BlackBoxTester extends BasicTester {
   val blackBoxPos = Module(new BlackBoxInverter)
   val blackBoxNeg = Module(new BlackBoxInverter)
 
-  blackBoxPos.io.in := UInt(1)
-  blackBoxNeg.io.in := UInt(0)
+  blackBoxPos.io.in := 1.asUInt
+  blackBoxNeg.io.in := 0.asUInt
 
-  assert(blackBoxNeg.io.out === UInt(1))
-  assert(blackBoxPos.io.out === UInt(0))
+  assert(blackBoxNeg.io.out === 1.asUInt)
+  assert(blackBoxPos.io.out === 0.asUInt)
   stop()
 }
 
@@ -52,15 +52,15 @@ class MultiBlackBoxTester extends BasicTester {
   val blackBoxPassPos = Module(new BlackBoxPassthrough)
   val blackBoxPassNeg = Module(new BlackBoxPassthrough)
 
-  blackBoxInvPos.io.in := UInt(1)
-  blackBoxInvNeg.io.in := UInt(0)
-  blackBoxPassPos.io.in := UInt(1)
-  blackBoxPassNeg.io.in := UInt(0)
+  blackBoxInvPos.io.in := 1.asUInt
+  blackBoxInvNeg.io.in := 0.asUInt
+  blackBoxPassPos.io.in := 1.asUInt
+  blackBoxPassNeg.io.in := 0.asUInt
 
-  assert(blackBoxInvNeg.io.out === UInt(1))
-  assert(blackBoxInvPos.io.out === UInt(0))
-  assert(blackBoxPassNeg.io.out === UInt(0))
-  assert(blackBoxPassPos.io.out === UInt(1))
+  assert(blackBoxInvNeg.io.out === 1.asUInt)
+  assert(blackBoxInvPos.io.out === 0.asUInt)
+  assert(blackBoxPassNeg.io.out === 0.asUInt)
+  assert(blackBoxPassPos.io.out === 1.asUInt)
   stop()
 }
 
@@ -68,14 +68,14 @@ class BlackBoxWithClockTester extends BasicTester {
   val blackBox = Module(new BlackBoxRegister)
   val model = Reg(Bool())
 
-  val (cycles, end) = Counter(Bool(true), 15)
+  val (cycles, end) = Counter(true.asBool, 15)
 
   val impetus = cycles(0)
   blackBox.io.clock := clock
   blackBox.io.in := impetus
   model := impetus
 
-  when(cycles > UInt(0)) {
+  when(cycles > 0.asUInt) {
     assert(blackBox.io.out === model)
   }
   when(end) { stop() }
@@ -84,9 +84,9 @@ class BlackBoxWithClockTester extends BasicTester {
 /*
 // Must determine how to handle parameterized Verilog
 class BlackBoxConstant(value: Int) extends BlackBox {
-  val io = new Bundle() {
-    val out = UInt(width=log2Up(value)).asOutput
-  }
+  val io = IO(new Bundle() {
+    val out = Output(UInt(width=log2Up(value)))
+  })
   override val name = s"#(WIDTH=${log2Up(value)},VALUE=$value) "
 }
 
@@ -94,10 +94,10 @@ class BlackBoxWithParamsTester extends BasicTester {
   val blackBoxOne  = Module(new BlackBoxConstant(1))
   val blackBoxFour = Module(new BlackBoxConstant(4))
 
-  val (cycles, end) = Counter(Bool(true), 4)
+  val (cycles, end) = Counter(true.asBool, 4)
 
-  assert(blackBoxOne.io.out  === UInt(1))
-  assert(blackBoxFour.io.out === UInt(4))
+  assert(blackBoxOne.io.out  === 1.asUInt)
+  assert(blackBoxFour.io.out === 4.asUInt)
 
   when(end) { stop() }
 }

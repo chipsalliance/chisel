@@ -38,7 +38,7 @@ object Fill {
   /** Fan out x n times */
   def apply(n: Int, x: Bool): UInt =
     if (n > 1) {
-      UInt(0,n) - x
+      0.asUInt(n) - x
     } else {
       apply(n, x: UInt)
     }
@@ -55,7 +55,7 @@ object Reverse
       // This esoterica improves simulation performance
       var res = in
       var shift = length >> 1
-      var mask = UInt((BigInt(1) << length) - 1, length)
+      var mask = ((BigInt(1) << length) - 1).asUInt(length)
       do {
         mask = mask ^ (mask(length-shift-1,0) << shift)
         res = ((res >> shift) & mask) | ((res(length-shift-1,0) << shift) & ~mask)

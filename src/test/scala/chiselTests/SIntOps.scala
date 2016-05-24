@@ -5,24 +5,24 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class SIntOps extends Module {
-  val io = new Bundle {
-    val a = SInt(INPUT, 16)
-    val b = SInt(INPUT, 16)
-    val addout = SInt(OUTPUT, 16)
-    val subout = SInt(OUTPUT, 16)
-    val timesout = SInt(OUTPUT, 16)
-    val divout = SInt(OUTPUT, 16)
-    val modout = SInt(OUTPUT, 16)
-    val lshiftout = SInt(OUTPUT, 16)
-    val rshiftout = SInt(OUTPUT, 16)
-    val lessout = Bool(OUTPUT)
-    val greatout = Bool(OUTPUT)
-    val eqout = Bool(OUTPUT)
-    val noteqout = Bool(OUTPUT)
-    val lesseqout = Bool(OUTPUT)
-    val greateqout = Bool(OUTPUT)
-    val negout = SInt(OUTPUT, 16)
-  }
+  val io = IO(new Bundle {
+    val a = Input(SInt(16))
+    val b = Input(SInt(16))
+    val addout = Output(SInt(16))
+    val subout = Output(SInt(16))
+    val timesout = Output(SInt(16))
+    val divout = Output(SInt(16))
+    val modout = Output(SInt(16))
+    val lshiftout = Output(SInt(16))
+    val rshiftout = Output(SInt(16))
+    val lessout = Output(Bool())
+    val greatout = Output(Bool())
+    val eqout = Output(Bool())
+    val noteqout = Output(Bool())
+    val lesseqout = Output(Bool())
+    val greateqout = Output(Bool())
+    val negout = Output(SInt(16))
+  })
 
   val a = io.a
   val b = io.b
@@ -31,9 +31,9 @@ class SIntOps extends Module {
   io.subout := a -% b
   // TODO:
   //io.timesout := (a * b)(15, 0)
-  //io.divout := a / Mux(b === SInt(0), SInt(1), b)
+  //io.divout := a / Mux(b === 0.asSInt, 1.asSInt, b)
   //io.divout := (a / b)(15, 0)
-  //io.modout := SInt(0)
+  //io.modout := 0.asSInt
   //io.lshiftout := (a << 12)(15, 0) //  (a << ub(3, 0))(15, 0).toSInt
   io.rshiftout := (a >> 8) // (a >> ub).toSInt
   io.lessout := a < b
@@ -43,7 +43,7 @@ class SIntOps extends Module {
   io.lesseqout := a <= b
   io.greateqout := a >= b
   // io.negout := -a(15, 0).toSInt
-  io.negout := (SInt(0) -% a)
+  io.negout := (0.asSInt -% a)
 }
 
 /*

@@ -16,7 +16,10 @@ object Mem {
     * @param t data type of memory element
     */
   def apply[T <: Data](size: Int, t: T): Mem[T] = {
-    val mt  = t.cloneType
+    val mt  = t.newType
+    Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
+    // TODO(twigg): Remove need for this Binding
+
     val mem = new Mem(mt, size)
     pushCommand(DefMemory(mem, mt, size)) // TODO multi-clock
     mem
@@ -54,12 +57,12 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     *
     * @param idx memory element index to write into
     * @param data new data to write
-    * @param mask write mask as a Vec of Bool: a write to the Vec element in
+    * @param mask write mask as a Seq of Bool: a write to the Vec element in
     * memory is only performed if the corresponding mask index is true.
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def write(idx: UInt, data: T, mask: Vec[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
+  def write(idx: UInt, data: T, mask: Seq[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
     val accessor = makePort(idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
     if (accessor.length != dataVec.length) {
@@ -72,8 +75,16 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
       when (cond) { port := datum }
   }
 
-  private def makePort(idx: UInt, dir: MemPortDirection): T =
-    pushCommand(DefMemPort(t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))).id
+  private def makePort(idx: UInt, dir: MemPortDirection): T = {
+    Binding.checkSynthesizable(idx, s"'idx' ($idx)")
+
+    val port = pushCommand(
+      DefMemPort(t.newType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))
+    ).id
+    // Bind each element of port to being a MemoryPort
+    Binding.bind(port, MemoryPortBinder(Builder.forcedModule), "Error: Fresh t")
+    port
+  }
 }
 
 /** A combinational-read, sequential-write memory.
@@ -85,7 +96,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
+final class Mem[T <: Data] private (t: T, length: Int) extends MemBase(t, length)
 
 object SeqMem {
   @deprecated("SeqMem argument order should be size, t; this will be removed by the official release", "chisel3")
@@ -97,7 +108,10 @@ object SeqMem {
     * @param t data type of memory element
     */
   def apply[T <: Data](size: Int, t: T): SeqMem[T] = {
-    val mt  = t.cloneType
+    val mt  = t.newType
+    Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
+    // TODO(twigg): Remove need for this Binding
+
     val mem = new SeqMem(mt, size)
     pushCommand(DefSeqMemory(mem, mt, size)) // TODO multi-clock
     mem
@@ -114,7 +128,7 @@ object SeqMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
+final class SeqMem[T <: Data] private (t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
     val a = Wire(UInt())
     when (enable) { a := addr }
