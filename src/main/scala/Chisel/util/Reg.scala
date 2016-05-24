@@ -53,3 +53,24 @@ object ShiftRegister
     }
   }
 }
+
+/** Retain the previous value unless enable is true */
+object HoldUnless
+{
+  /** @param in input to potentially repeat
+    * @param enable accept a new input value
+    */
+  def apply[T <: Data](in: T, enable: Bool): T =
+  {
+    Mux(!enable, RegEnable(in, enable), in)
+  }
+  
+  /** @param in input to potentially repeat
+    * @param resetData initial value until first enable
+    * @param enable accept a new input value
+    */
+  def apply[T <: Data](in: T, resetData: T, enable: Bool): T =
+  {
+    Mux(!enable, RegEnable(in, resetData, enable), in)
+  }
+}
