@@ -34,9 +34,9 @@ private[Chisel] object SeqUtils {
   }
 
   /** Returns data value corresponding to first true predicate */
-  def priorityMux[T <: Bits](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
+  def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
-  def do_priorityMux[T <: Bits](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
+  def do_priorityMux[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
     if (in.size == 1) {
       in.head._2
     } else {
