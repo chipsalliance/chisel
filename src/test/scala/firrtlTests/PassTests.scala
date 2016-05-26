@@ -10,7 +10,6 @@ import firrtl.Parser.IgnoreInfo
 import firrtl.passes.{Pass, PassExceptions}
 import firrtl.{
    Transform,
-   CircuitAnnotation,
    TransformResult,
    SimpleRun,
    Chisel3ToHighFirrtl,
@@ -21,6 +20,7 @@ import firrtl.{
    EmitFirrtl,
    Compiler
 }
+import firrtl.Annotations.AnnotationMap
 
 
 // An example methodology for testing Firrtl Passes
@@ -30,14 +30,14 @@ abstract class SimpleTransformSpec extends FlatSpec with Matchers with Compiler 
    def parse(s: String): Circuit = Parser.parse(s.split("\n").toIterator, infoMode = IgnoreInfo)
 
    // Executes the test. Call in tests.
-   def execute(writer: Writer, annotations: Seq[CircuitAnnotation], input: String, check: String) = {
+   def execute(writer: Writer, annotations: AnnotationMap, input: String, check: String) = {
       compile(parse(input), annotations, writer)
       logger.debug(writer.toString)
       logger.debug(check)
       (parse(writer.toString)) should be (parse(check))
    }
    // Executes the test, should throw an error
-   def failingexecute(writer: Writer, annotations: Seq[CircuitAnnotation], input: String) = {
+   def failingexecute(writer: Writer, annotations: AnnotationMap, input: String): Exception = {
       intercept[PassExceptions] {
          compile(parse(input), annotations, writer)
       }

@@ -30,6 +30,7 @@ package firrtl
 import java.io.{PrintWriter, Writer, File}
 import scala.io.Source
 import scala.collection.mutable
+import Annotations._
 
 import Utils._
 import Parser.{InfoMode, IgnoreInfo, UseInfo, GenInfo, AppendInfo}
@@ -53,57 +54,98 @@ Options:
       output: String, 
       compiler: Compiler, 
       infoMode: InfoMode = IgnoreInfo,
-      annotations: Seq[CircuitAnnotation] = Seq.empty) = {
+      annotations: AnnotationMap = new AnnotationMap(Seq.empty)) = {
     val parsedInput = Parser.parse(Source.fromFile(input).getLines, infoMode)
     val writerOutput = new PrintWriter(new File(output))
     compiler.compile(parsedInput, annotations, writerOutput)
     writerOutput.close
   }
 
-  // Arguments specify the compiler, input file, and output file
+  /**
+   * Implements the default Firrtl compilers and an inlining pass.
+   *
+   * Arguments specify the compiler, input file, output file, and
+   * optionally the module/instances to inline.
+   */
   def main(args: Array[String]) = {
-    val arglist = args.toList
+    val usage = """
+    Usage: sbt "run-main firrtl.google.Driver -i <input_file> -o <output_file> -X <compiler> [--inline [<module_name>|<module_name>.<instance_name>]]"
+           firrtl -i <input_file> -o <output_file> -X <compiler> [--inline [<module_name>|<module_name>.<instance_name>]]
+    Options:
+          -X <compiler>    Specify the target compiler
+                           Currently supported: high low verilog
+    """
 
+    def handleInlineOption(value: String): Annotation =
+      value.split('.') match {
+        case Array(circuit) =>
+          passes.InlineAnnotation(CircuitName(circuit), TransID(0))
+        case Array(circuit, module) =>
+          passes.InlineAnnotation(ModuleName(module, CircuitName(circuit)), TransID(0))
+        case Array(circuit, module, inst) =>
+          passes.InlineAnnotation((ComponentName(inst,ModuleName(module,CircuitName(circuit)))), TransID(0))
+        case _ => throw new Exception(s"Bad inline instance/module name: $value")
+      }
+
+    run(args: Array[String],
+      Map( "high" -> new HighFirrtlCompiler(),
+        "low" -> new LowFirrtlCompiler(),
+        "verilog" -> new VerilogCompiler()),
+      Map("--inline" -> handleInlineOption _),
+      usage
+    )
+  }
+
+  /**
+   * Runs a Firrtl compiler.
+   *
+   * @param args list of commandline arguments
+   * @param compilers mapping a compiler name to a compiler
+   * @param customOptions mapping a custom option name to a function that returns an annotation
+   * @param usage describes the commandline API
+   */
+  def run(args: Array[String], compilers: Map[String,Compiler], customOptions: Map[String, String=>Annotation], usage: String) = {
+    /**
+     * Keys commandline values specified by user in OptionMap
+     */
     sealed trait CompilerOption
     case object InputFileName extends CompilerOption
     case object OutputFileName extends CompilerOption
     case object CompilerName extends CompilerOption
+    case object AnnotationOption extends CompilerOption
     case object InfoModeOption extends CompilerOption
-    val defaultOptions = Map[CompilerOption, String]()
-
-    // Inline Annotation datastructure/function
-    val inlineAnnotations = mutable.HashMap[Named,Annotation]()
-    def handleInlineOption(value: String): Unit =
-       value.split('.') match {
-         case Array(module) =>
-           inlineAnnotations(ModuleName(module)) = TagAnnotation
-         case Array(module, inst) =>
-           inlineAnnotations(ComponentName(inst,ModuleName(module))) = TagAnnotation
-         case _ => throw new Exception(s"Bad inline instance/module name: $value")
-       }
-
+    /**
+     * Maps compiler option to user-specified value
+     */
     type OptionMap = Map[CompilerOption, String]
+
+    /**
+     * Populated by custom annotations returned from corresponding function
+     * held in customOptions
+     */
+    val annotations = mutable.ArrayBuffer[Annotation]()
     def nextOption(map: OptionMap, list: List[String]): OptionMap = {
       list match {
         case Nil => map
-        case "--inline" :: value :: tail =>
-          handleInlineOption(value)
-          nextOption(map, tail)
-        case "-X" :: value :: tail =>
-                  nextOption(map + (CompilerName -> value), tail)
         case "-i" :: value :: tail =>
-                  nextOption(map + (InputFileName -> value), tail)
+          nextOption(map + (InputFileName -> value), tail)
         case "-o" :: value :: tail =>
-                  nextOption(map + (OutputFileName -> value), tail)
+          nextOption(map + (OutputFileName -> value), tail)
+        case "-X" :: value :: tail =>
+          nextOption(map + (CompilerName -> value), tail)
         case "--info-mode" :: value :: tail =>
-                  nextOption(map + (InfoModeOption -> value), tail)
+          nextOption(map + (InfoModeOption -> value), tail)
+        case flag :: value :: tail if(customOptions.contains(flag)) =>
+          annotations += customOptions(flag)(value)
+          nextOption(map, tail)
         case ("-h" | "--help") :: tail => { println(usage); sys.exit(0) }
         case option :: tail =>
-                  throw new Exception("Unknown option " + option)
+          throw new Exception("Unknown option " + option)
       }
     }
 
-    val options = nextOption(defaultOptions, arglist)
+    val arglist = args.toList
+    val options = nextOption(Map[CompilerOption, String](), arglist)
 
     // Get input circuit/output filenames
     val input = options.getOrElse(InputFileName, throw new Exception("No input file provided!" + usage))
@@ -117,18 +159,13 @@ Options:
       case Some(other) => throw new Exception("Unknown info mode option: " + other)
     }
 
-    // Construct all Circuit Annotations
-    val inlineCA =
-       if (inlineAnnotations.isEmpty) Seq.empty
-       else Seq(StickyCircuitAnnotation(passes.InlineCAKind, inlineAnnotations.toMap))
-    val allAnnotations = inlineCA // other annotations will be added here
-
     // Execute selected compiler - error if not recognized compiler
     options.get(CompilerName) match {
-      case Some("high") => compile(input, output, new HighFirrtlCompiler(), infoMode, allAnnotations)
-      case Some("low") => compile(input, output, new LowFirrtlCompiler(), infoMode, allAnnotations)
-      case Some("verilog") => compile(input, output, new VerilogCompiler(), infoMode, allAnnotations)
-      case Some(other) => throw new Exception("Unknown compiler option: " + other)
+      case Some(name) =>
+        compilers.get(name) match {
+          case Some(compiler) => compile(input, output, compiler, infoMode, new AnnotationMap(annotations.toSeq))
+          case None => throw new Exception("Unknown compiler option: " + name)
+        }
       case None => throw new Exception("No specified compiler option.")
     }
   }

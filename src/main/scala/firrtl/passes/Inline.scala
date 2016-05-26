@@ -7,43 +7,49 @@ import scala.collection.mutable
 import firrtl.Mappers.{ExpMap,StmtMap}
 import firrtl.Utils.WithAs
 import firrtl.ir._
+import firrtl.passes.{PassException,PassExceptions}
+import Annotations.{Loose, Unstable, Annotation, TransID, Named, ModuleName, ComponentName, CircuitName, AnnotationMap}
 
 
 // Tags an annotation to be consumed by this pass
-case object InlineCAKind extends CircuitAnnotationKind
+case class InlineAnnotation(target: Named, tID: TransID) extends Annotation with Loose with Unstable {
+  def duplicate(n: Named) = this.copy(target=n)
+}
 
 // Only use on legal Firrtl. Specifically, the restriction of
 //  instance loops must have been checked, or else this pass can
 //  infinitely recurse
-object InlineInstances extends Transform {
+class InlineInstances (transID: TransID) extends Transform {
    val inlineDelim = "$"
    def name = "Inline Instances"
-   def execute(circuit: Circuit, annotations: Seq[CircuitAnnotation]): TransformResult = {
-      annotations.count(_.kind == InlineCAKind) match {
-         case 0 => TransformResult(circuit, None, None)
-         case 1 => {
-            // This could potentially be cleaned up, but the best solution is unclear at the moment.
-            val myAnnotation = annotations.find(_.kind == InlineCAKind).get match {
-               case x: StickyCircuitAnnotation => x
-               case _ => throw new PassException("Circuit annotation must be StickyCircuitAnnotation")
-            }
-            check(circuit, myAnnotation)
-            run(circuit, myAnnotation.getModuleNames, myAnnotation.getComponentNames)
-         }
-         // Default behavior is to error if more than one annotation for inlining
-         //  This could potentially change
-         case _ => throw new PassException("Found more than one circuit annotation of InlineCAKind!")
-      }
+   def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult = {
+     annotationMap.get(transID) match {
+       case None => TransformResult(circuit, None, None)
+       case Some(map) => {
+         val moduleNames = mutable.HashSet[ModuleName]()
+         val instanceNames = mutable.HashSet[ComponentName]()
+         map.values.foreach {x: Annotation => x match {
+           case InlineAnnotation(ModuleName(mod, cir), _)  => moduleNames += ModuleName(mod, cir)
+           case InlineAnnotation(ComponentName(com, mod), _)  => instanceNames += ComponentName(com, mod)
+           case _ => throw new PassException("Annotation must be InlineAnnotation")
+         }}
+         check(circuit, moduleNames.toSet, instanceNames.toSet)
+         run(circuit, moduleNames.toSet, instanceNames.toSet)
+       }
+
+       // Default behavior is to error if more than one annotation for inlining
+       //  This could potentially change
+       case _ => throw new PassException("Found more than one circuit annotation of InlineCAKind!")
+     }
    }
 
    // Checks the following properties:
    // 1) All annotated modules exist
    // 2) All annotated modules are InModules (can be inlined)
    // 3) All annotated instances exist, and their modules can be inline
-   def check(c: Circuit, ca: StickyCircuitAnnotation): Unit = {
+   def check(c: Circuit, moduleNames: Set[ModuleName], instanceNames: Set[ComponentName]): Unit = {
       val errors = mutable.ArrayBuffer[PassException]()
       val moduleMap = (for(m <- c.modules) yield m.name -> m).toMap
-      val annModuleNames = ca.getModuleNames.map(_.name) ++ ca.getComponentNames.map(_.module.name)
       def checkExists(name: String): Unit =
          if (!moduleMap.contains(name))
             errors += new PassException(s"Annotated module does not exist: ${name}")
@@ -67,15 +73,16 @@ object InlineInstances extends Transform {
          onStmt(cn.name)(moduleMap(cn.module.name).asInstanceOf[Module].body)
          if (!containsCN) errors += new PassException(s"Annotated instance does not exist: ${cn.module.name}.${cn.name}")
       }
-      annModuleNames.foreach{n => checkExists(n)}
+
+      moduleNames.foreach{mn => checkExists(mn.name)}
       if (!errors.isEmpty) throw new PassExceptions(errors)
-      annModuleNames.foreach{n => checkExternal(n)}
+      moduleNames.foreach{mn => checkExternal(mn.name)}
       if (!errors.isEmpty) throw new PassExceptions(errors)
-      ca.getComponentNames.foreach{cn => checkInstance(cn)}
+      instanceNames.foreach{cn => checkInstance(cn)}
       if (!errors.isEmpty) throw new PassExceptions(errors)
    }
 
-   def run(c: Circuit, modsToInline: Seq[ModuleName], instsToInline: Seq[ComponentName]): TransformResult = {
+   def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName]): TransformResult = {
       // ---- Rename functions/data ----
       val renameMap = mutable.HashMap[Named,Seq[Named]]()
       // Updates renameMap with new names
@@ -83,12 +90,14 @@ object InlineInstances extends Transform {
          val existing = renameMap.getOrElse(name, Seq[Named]())
          if (!existing.contains(rename)) renameMap(name) = existing.:+(rename)
       }
+      def set(name: Named, renames: Seq[Named]) = renameMap(name) = renames
 
       // ---- Pass functions/data ----
       // Contains all unaltered modules
       val originalModules = mutable.HashMap[String,DefModule]()
       // Contains modules whose direct/indirect children modules have been inlined, and whose tagged instances have been inlined.
       val inlinedModules = mutable.HashMap[String,DefModule]()
+      val cname = CircuitName(c.main)
 
       // Recursive.
       def onModule(m: DefModule): DefModule = {
@@ -99,7 +108,7 @@ object InlineInstances extends Transform {
                // Relies on instance declaration before any instance references
                if (inlinedInstances.contains(ref)) {
                   val newName = ref + inlineDelim + field
-                  update(ComponentName(ref, ModuleName(m.name)), ComponentName(newName, ModuleName(m.name)))
+                  set(ComponentName(ref, ModuleName(m.name, cname)), Seq.empty)
                   WRef(newName, tpe, WireKind(), gen)
                }
                else e
@@ -111,7 +120,7 @@ object InlineInstances extends Transform {
                case WDefInstance(info, instName, moduleName, instTpe) => {
                   def rename(name:String): String = {
                      val newName = instName + inlineDelim + name
-                     update(ComponentName(name, ModuleName(moduleName)), ComponentName(newName, ModuleName(m.name)))
+                     update(ComponentName(name, ModuleName(moduleName, cname)), ComponentName(newName, ModuleName(m.name, cname)))
                      newName
                   }
                   // Rewrites references in inlined statements from ref to inst$ref
@@ -125,8 +134,8 @@ object InlineInstances extends Transform {
                      s map rename map renameStmt map renameExp
                   }
                   val shouldInline =
-                     modsToInline.contains(ModuleName(moduleName)) ||
-                        instsToInline.contains(ComponentName(instName, ModuleName(m.name)))
+                     modsToInline.contains(ModuleName(moduleName, cname)) ||
+                        instsToInline.contains(ComponentName(instName, ModuleName(m.name, cname)))
                   // Used memoized instance if available
                   val instModule =
                      if (inlinedModules.contains(name)) inlinedModules(name)
@@ -167,6 +176,6 @@ object InlineInstances extends Transform {
       val top = c.modules.find(m => m.name == c.main).get
       onModule(top)
       val modulesx = c.modules.map(m => inlinedModules(m.name))
-      TransformResult(Circuit(c.info, modulesx, c.main), Some(BasicRenameMap(renameMap.toMap)), None)
+      TransformResult(Circuit(c.info, modulesx, c.main), Some(RenameMap(renameMap.toMap)), None)
    }
 }
