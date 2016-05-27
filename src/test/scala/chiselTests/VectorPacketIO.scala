@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel._
 import chisel.testers.BasicTester
+import chisel.util._
 
 /**
   * This test used to fail when assignment statements were

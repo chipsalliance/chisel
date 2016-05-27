@@ -3,7 +3,9 @@
 /** Mux circuit generators.
   */
 
-package chisel
+package chisel.util
+
+import chisel._
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
   select signal. Returns the output of the Mux tree.

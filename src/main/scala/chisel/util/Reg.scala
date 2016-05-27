@@ -3,7 +3,9 @@
 /** Variations and helpers for registers.
   */
 
-package chisel
+package chisel.util
+
+import chisel._
 
 object RegNext {
 

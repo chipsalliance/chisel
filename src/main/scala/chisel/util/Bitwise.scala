@@ -3,7 +3,9 @@
 /** Miscellaneous circuit generators operating on bits.
   */
 
-package chisel
+package chisel.util
+
+import chisel._
 
 object FillInterleaved
 {

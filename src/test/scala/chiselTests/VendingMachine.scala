@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel._
+import chisel.util._
 
 class VendingMachine extends Module {
   val io = new Bundle {

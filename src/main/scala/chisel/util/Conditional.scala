@@ -3,12 +3,14 @@
 /** Conditional blocks.
   */
 
-package chisel
+package chisel.util
 
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 import scala.reflect.runtime.universe._
 import scala.reflect.macros.blackbox._
+
+import chisel._
 
 /** This is identical to [[Chisel.when when]] with the condition inverted */
 object unless {  // scalastyle:ignore object.name
@@ -61,7 +63,7 @@ object switch {  // scalastyle:ignore object.name
     def extractIsStatement(tree: Tree): List[c.universe.Tree] = tree match {
       // TODO: remove when Chisel compatibility package is removed
       case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => List(q"$sc.is( ..$params )( ..$body )")
-      case q"chisel.is.apply( ..$params )( ..$body )" => List(q"$sc.is( ..$params )( ..$body )")
+      case q"chisel.util.is.apply( ..$params )( ..$body )" => List(q"$sc.is( ..$params )( ..$body )")
       case b => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
     }
     val q"..$body" = x

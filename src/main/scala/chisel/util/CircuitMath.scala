@@ -3,7 +3,9 @@
 /** Circuit-land math operations.
   */
 
-package chisel
+package chisel.util
+
+import chisel._
 
 /** Compute Log2 with truncation of a UInt in hardware using a Mux Tree
   * An alternative interpretation is it computes the minimum number of bits needed to represent x

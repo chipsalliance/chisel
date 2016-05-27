@@ -71,80 +71,80 @@ package object Chisel {
   }
 
 
-  val log2Up = chisel.log2Up
-  val log2Ceil = chisel.log2Ceil
-  val log2Down = chisel.log2Down
-  val log2Floor = chisel.log2Floor
-  val isPow2 = chisel.isPow2
+  val log2Up = chisel.util.log2Up
+  val log2Ceil = chisel.util.log2Ceil
+  val log2Down = chisel.util.log2Down
+  val log2Floor = chisel.util.log2Floor
+  val isPow2 = chisel.util.isPow2
 
-  type ArbiterIO[T <: Data] = chisel.ArbiterIO[T]
-  type LockingArbiterLike[T <: Data] = chisel.LockingArbiterLike[T]
-  type LockingRRArbiter[T <: Data] = chisel.LockingRRArbiter[T]
-  type LockingArbiter[T <: Data] = chisel.LockingArbiter[T]
-  type RRArbiter[T <: Data] = chisel.RRArbiter[T]
-  type Arbiter[T <: Data] = chisel.Arbiter[T]
+  type ArbiterIO[T <: Data] = chisel.util.ArbiterIO[T]
+  type LockingArbiterLike[T <: Data] = chisel.util.LockingArbiterLike[T]
+  type LockingRRArbiter[T <: Data] = chisel.util.LockingRRArbiter[T]
+  type LockingArbiter[T <: Data] = chisel.util.LockingArbiter[T]
+  type RRArbiter[T <: Data] = chisel.util.RRArbiter[T]
+  type Arbiter[T <: Data] = chisel.util.Arbiter[T]
 
-  val FillInterleaved = chisel.FillInterleaved
-  val PopCount = chisel.PopCount
-  val Fill = chisel.Fill
-  val Reverse = chisel.Reverse
+  val FillInterleaved = chisel.util.FillInterleaved
+  val PopCount = chisel.util.PopCount
+  val Fill = chisel.util.Fill
+  val Reverse = chisel.util.Reverse
 
-  val Cat = chisel.Cat
+  val Cat = chisel.util.Cat
 
-  val Log2 = chisel.Log2
+  val Log2 = chisel.util.Log2
 
-  val unless = chisel.unless
-  type SwitchContext[T <: Bits] = chisel.SwitchContext[T]
-  val is = chisel.is
-  val switch = chisel.switch
+  val unless = chisel.util.unless
+  type SwitchContext[T <: Bits] = chisel.util.SwitchContext[T]
+  val is = chisel.util.is
+  val switch = chisel.util.switch
 
-  type Counter = chisel.Counter
-  val Counter = chisel.Counter
+  type Counter = chisel.util.Counter
+  val Counter = chisel.util.Counter
 
-  type DecoupledIO[+T <: Data] = chisel.DecoupledIO[T]
-  val Decoupled = chisel.Decoupled
-  type EnqIO[T <: Data] = chisel.EnqIO[T]
-  type DeqIO[T <: Data] = chisel.DeqIO[T]
-  type DecoupledIOC[+T <: Data] = chisel.DecoupledIOC[T]
-  type QueueIO[T <: Data] = chisel.QueueIO[T]
-  type Queue[T <: Data] = chisel.Queue[T]
-  val Queue = chisel.Queue
+  type DecoupledIO[+T <: Data] = chisel.util.DecoupledIO[T]
+  val Decoupled = chisel.util.Decoupled
+  type EnqIO[T <: Data] = chisel.util.EnqIO[T]
+  type DeqIO[T <: Data] = chisel.util.DeqIO[T]
+  type DecoupledIOC[+T <: Data] = chisel.util.DecoupledIOC[T]
+  type QueueIO[T <: Data] = chisel.util.QueueIO[T]
+  type Queue[T <: Data] = chisel.util.Queue[T]
+  val Queue = chisel.util.Queue
 
-  val Enum = chisel.Enum
+  val Enum = chisel.util.Enum
 
-  val LFSR16 = chisel.LFSR16
+  val LFSR16 = chisel.util.LFSR16
 
-  val ListLookup = chisel.ListLookup
-  val Lookup = chisel.Lookup
+  val ListLookup = chisel.util.ListLookup
+  val Lookup = chisel.util.Lookup
 
-  val Mux1H = chisel.Mux1H
-  val PriorityMux = chisel.PriorityMux
-  val MuxLookup = chisel.MuxLookup
-  val MuxCase = chisel.MuxCase
+  val Mux1H = chisel.util.Mux1H
+  val PriorityMux = chisel.util.PriorityMux
+  val MuxLookup = chisel.util.MuxLookup
+  val MuxCase = chisel.util.MuxCase
 
-  val OHToUInt = chisel.OHToUInt
-  val PriorityEncoder = chisel.PriorityEncoder
-  val UIntToOH = chisel.UIntToOH
-  val PriorityEncoderOH = chisel.PriorityEncoderOH
+  val OHToUInt = chisel.util.OHToUInt
+  val PriorityEncoder = chisel.util.PriorityEncoder
+  val UIntToOH = chisel.util.UIntToOH
+  val PriorityEncoderOH = chisel.util.PriorityEncoderOH
 
-  val RegNext = chisel.RegNext
-  val RegInit = chisel.RegInit
-  val RegEnable = chisel.RegEnable
-  val ShiftRegister = chisel.ShiftRegister
+  val RegNext = chisel.util.RegNext
+  val RegInit = chisel.util.RegInit
+  val RegEnable = chisel.util.RegEnable
+  val ShiftRegister = chisel.util.ShiftRegister
 
-  type ValidIO[+T <: Data] = chisel.ValidIO[T]
-  val Valid = chisel.Valid
-  val Pipe = chisel.Pipe
-  type Pipe[T <: Data] = chisel.Pipe[T]
+  type ValidIO[+T <: Data] = chisel.util.ValidIO[T]
+  val Valid = chisel.util.Valid
+  val Pipe = chisel.util.Pipe
+  type Pipe[T <: Data] = chisel.util.Pipe[T]
 
 
   import chisel.internal.firrtl.Width
-  implicit def fromBigIntToLiteral(x: BigInt): chisel.fromBigIntToLiteral = 
+  implicit def fromBigIntToLiteral(x: BigInt): chisel.fromBigIntToLiteral =
     new chisel.fromBigIntToLiteral(x)
-  implicit def fromIntToLiteral(x: Int): chisel.fromIntToLiteral= 
+  implicit def fromIntToLiteral(x: Int): chisel.fromIntToLiteral=
     new chisel.fromIntToLiteral(x)
-  implicit def fromStringToLiteral(x: String): chisel.fromStringToLiteral= 
+  implicit def fromStringToLiteral(x: String): chisel.fromStringToLiteral=
     new chisel.fromStringToLiteral(x)
-  implicit def fromBooleanToLiteral(x: Boolean): chisel.fromBooleanToLiteral= 
+  implicit def fromBooleanToLiteral(x: Boolean): chisel.fromBooleanToLiteral=
     new chisel.fromBooleanToLiteral(x)
 }

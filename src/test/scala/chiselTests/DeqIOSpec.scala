@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel._
 import chisel.testers.BasicTester
+import chisel.util._
 
 /**
   * Created by chick on 2/8/16.

@@ -3,7 +3,9 @@
 /** LFSRs in all shapes and sizes.
   */
 
-package chisel
+package chisel.util
+
+import chisel._
 
 // scalastyle:off magic.number
 /** linear feedback shift register

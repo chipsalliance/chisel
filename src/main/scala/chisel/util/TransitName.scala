@@ -1,5 +1,6 @@
-package chisel
+package chisel.util
 
+import chisel._
 import internal.HasId
 
 object TransitName {

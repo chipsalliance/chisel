@@ -3,7 +3,9 @@
 /** Wrappers for ready-valid (Decoupled) interfaces and associated circuit generators using them.
   */
 
-package chisel
+package chisel.util
+
+import chisel._
 
 /** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
 class DecoupledIO[+T <: Data](gen: T) extends Bundle

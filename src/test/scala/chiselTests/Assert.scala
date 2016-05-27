@@ -5,6 +5,7 @@ package chiselTests
 import org.scalatest._
 import chisel._
 import chisel.testers.BasicTester
+import chisel.util._
 
 class FailingAssertTester() extends BasicTester {
   assert(Bool(false))

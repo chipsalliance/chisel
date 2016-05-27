@@ -3,7 +3,9 @@
 /** Wrappers for valid interfaces and associated circuit generators using them.
   */
 
-package chisel
+package chisel.util
+
+import chisel._
 
 /** An I/O Bundle containing data and a signal determining if it is valid */
 class ValidIO[+T <: Data](gen2: T) extends Bundle

@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel._
 import chisel.testers.BasicTester
+import chisel.util._
 
 /** Extend BasicTester with a simple circuit and finish method.  TesterDriver will call the
   * finish method after the FinishTester's constructor has completed, which will alter the
