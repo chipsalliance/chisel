@@ -54,7 +54,7 @@ object BitPat {
     *
     * @note the BitPat must not have don't care bits (will error out otherwise)
     */
-  implicit def bitPatToUInt(x: BitPat): UInt = {
+  def bitPatToUInt(x: BitPat): UInt = {
     require(x.mask == (BigInt(1) << x.getWidth) - 1)
     UInt(x.value, x.getWidth)
   }
@@ -65,7 +65,7 @@ object BitPat {
     *
     * @note the UInt must be a literal
     */
-  implicit def apply(x: UInt): BitPat = {
+  def apply(x: UInt): BitPat = {
     require(x.isLit)
     BitPat("b" + x.litValue.toString(2))
   }
