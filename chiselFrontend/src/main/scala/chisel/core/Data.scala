@@ -17,11 +17,6 @@ object INPUT  extends Direction("input") { override def flip: Direction = OUTPUT
 object OUTPUT extends Direction("output") { override def flip: Direction = INPUT }
 object NO_DIR extends Direction("?") { override def flip: Direction = NO_DIR }
 
-@deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
-object debug {  // scalastyle:ignore object.name
-  def apply (arg: Data): Data = arg
-}
-
 /** Mixing in this trait flips the direction of an Aggregate. */
 trait Flipped extends Data {
   this.overrideDirection(_.flip, !_)

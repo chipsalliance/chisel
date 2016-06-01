@@ -8,7 +8,7 @@ package object Chisel {
   val INPUT = chisel.core.INPUT
   val OUTPUT = chisel.core.OUTPUT
   val NO_DIR = chisel.core.NO_DIR
-  val debug = chisel.core.debug
+
   type Flipped = chisel.core.Flipped
   type Data = chisel.core.Data
   val Wire = chisel.core.Wire
@@ -60,7 +60,7 @@ package object Chisel {
   val ImplicitConversions = chisel.util.ImplicitConversions
   val chiselMain = chisel.compatibility.chiselMain
   val throwException = chisel.compatibility.throwException
-
+  val debug = chisel.compatibility.debug
 
   object testers {
     type BasicTester = chisel.testers.BasicTester
