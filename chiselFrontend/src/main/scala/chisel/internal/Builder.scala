@@ -6,6 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 import chisel._
+import core._
 import firrtl._
 
 private[chisel] class Namespace(parent: Option[Namespace], keywords: Set[String]) {

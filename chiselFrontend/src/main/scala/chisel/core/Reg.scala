@@ -1,14 +1,14 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel.core
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel.internal._
+import chisel.internal.Builder.pushCommand
+import chisel.internal.firrtl._
+import chisel.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 object Reg {
-  private[chisel] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
+  private[core] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     if (t ne null) {
       t.cloneType
     } else if (next ne null) {

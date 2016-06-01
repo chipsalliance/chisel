@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel.core
 
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel.internal._
+import chisel.internal.Builder.pushCommand
+import chisel.internal.firrtl._
+import chisel.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -38,9 +38,9 @@ abstract class Data(dirArg: Direction) extends HasId {
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
   private var isFlipVar = dirArg == INPUT
   private var dirVar = dirArg
-  private[chisel] def isFlip = isFlipVar
+  private[core] def isFlip = isFlipVar
 
-  private[chisel] def overrideDirection(newDir: Direction => Direction,
+  private[core] def overrideDirection(newDir: Direction => Direction,
                                         newFlip: Boolean => Boolean): this.type = {
     this.isFlipVar = newFlip(this.isFlipVar)
     for (field <- this.flatten)
@@ -51,15 +51,15 @@ abstract class Data(dirArg: Direction) extends HasId {
   def asOutput: this.type = cloneType.overrideDirection(_ => OUTPUT, _ => false)
   def flip(): this.type = cloneType.overrideDirection(_.flip, !_)
 
-  private[chisel] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
-  private[chisel] def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[core] def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(Connect(sourceInfo, this.lref, that.ref))
-  private[chisel] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[core] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
-  private[chisel] def lref: Node = Node(this)
+  private[core] def lref: Node = Node(this)
   private[chisel] def ref: Arg = if (isLit) litArg.get else lref
-  private[chisel] def cloneTypeWidth(width: Width): this.type
+  private[core] def cloneTypeWidth(width: Width): this.type
   private[chisel] def toType: String
 
   def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = this badConnect that
@@ -151,7 +151,7 @@ object Clock {
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
   private[chisel] override def flatten: IndexedSeq[Bits] = IndexedSeq()
-  private[chisel] def cloneTypeWidth(width: Width): this.type = cloneType
+  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   private[chisel] def toType = "Clock"
 
   override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {

@@ -1,21 +1,21 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel.core
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
+import chisel.internal._
+import chisel.internal.Builder.pushCommand
+import chisel.internal.firrtl._
+import chisel.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
   */
 sealed abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
-  private[chisel] def cloneTypeWidth(width: Width): this.type = cloneType
+  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   def width: Width = flatten.map(_.width).reduce(_ + _)
 }
 
@@ -315,7 +315,7 @@ class Bundle extends Aggregate(NO_DIR) {
 
   /** Returns a list of elements in this Bundle.
     */
-  private[chisel] lazy val namedElts = {
+  private[core] lazy val namedElts = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getClass.getMethods.sortWith(_.getName < _.getName)) {
@@ -339,7 +339,7 @@ class Bundle extends Aggregate(NO_DIR) {
     s"{${namedElts.reverse.map(e => eltPort(e._2)).mkString(", ")}}"
   }
   private[chisel] lazy val flatten = namedElts.flatMap(_._2.flatten)
-  private[chisel] def addElt(name: String, elt: Data): Unit =
+  private[core] def addElt(name: String, elt: Data): Unit =
     namedElts += name -> elt
   private[chisel] override def _onModuleClose: Unit = // scalastyle:ignore method.name
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
@@ -372,6 +372,6 @@ class Bundle extends Aggregate(NO_DIR) {
   }
 }
 
-private[chisel] object Bundle {
+private[core] object Bundle {
   val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits")
 }

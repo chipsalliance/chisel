@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel.core
 
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo}
+import chisel.internal._
+import chisel.internal.Builder.pushCommand
+import chisel.internal.firrtl._
+import chisel.internal.sourceinfo.{SourceInfo}
 
 object when {  // scalastyle:ignore object.name
   /** Create a `when` condition block, where whether a block of logic is

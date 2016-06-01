@@ -1,15 +1,15 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel.core
 
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushOp
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
+import chisel.internal._
+import chisel.internal.Builder.pushOp
+import chisel.internal.firrtl._
+import chisel.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
   UIntTransform, MuxTransform}
-import firrtl.PrimOp._
+import chisel.internal.firrtl.PrimOp._
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
@@ -118,16 +118,16 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   final def do_apply(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     apply(x.toInt, y.toInt)
 
-  private[chisel] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T =
+  private[core] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T =
     pushOp(DefPrim(sourceInfo, dest, op, this.ref))
-  private[chisel] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T =
+  private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T =
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, ILit(other)))
-  private[chisel] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T =
+  private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T =
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, other.ref))
 
-  private[chisel] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool =
+  private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool =
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
-  private[chisel] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool =
+  private[core] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool =
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
 
   /** Returns this wire zero padded up to the specified width.
@@ -356,9 +356,9 @@ abstract trait Num[T <: Data] {
 /** A data type for unsigned integers, represented as a binary bitvector.
   * Defines arithmetic operations between other integer types.
   */
-sealed class UInt private[chisel] (dir: Direction, width: Width, lit: Option[ULit] = None)
+sealed class UInt private[core] (dir: Direction, width: Width, lit: Option[ULit] = None)
     extends Bits(dir, width, lit) with Num[UInt] {
-  private[chisel] override def cloneTypeWidth(w: Width): this.type =
+  private[core] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
   private[chisel] def toType = s"UInt$width"
 
@@ -482,7 +482,7 @@ sealed class UInt private[chisel] (dir: Direction, width: Width, lit: Option[ULi
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
-private[chisel] sealed trait UIntFactory {
+private[core] sealed trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(NO_DIR, Width())
   /** Create a UInt type or port with fixed width. */
@@ -535,7 +535,7 @@ object UInt extends UIntFactory
 
 sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = None)
     extends Bits(dir, width, lit) with Num[SInt] {
-  private[chisel] override def cloneTypeWidth(w: Width): this.type =
+  private[core] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
   private[chisel] def toType = s"SInt$width"
 
@@ -666,7 +666,7 @@ object SInt {
 /** A data type for booleans, defined as a single bit indicating true or false.
   */
 sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Width(1), lit) {
-  private[chisel] override def cloneTypeWidth(w: Width): this.type = {
+  private[core] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool(dir).asInstanceOf[this.type]
   }

@@ -3,6 +3,7 @@
 package chisel.util
 
 import chisel._
+import chisel.core.SeqUtils
 
 object Cat {
   /** Combine data elements together

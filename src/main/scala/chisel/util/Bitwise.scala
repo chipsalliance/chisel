@@ -6,6 +6,7 @@
 package chisel.util
 
 import chisel._
+import chisel.core.SeqUtils
 
 object FillInterleaved
 {

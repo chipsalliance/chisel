@@ -4,54 +4,54 @@
 // moving to the more standard package naming convention chisel (lowercase c).
 
 package object Chisel {
-  type Direction = chisel.Direction
-  val INPUT = chisel.INPUT
-  val OUTPUT = chisel.OUTPUT
-  val NO_DIR = chisel.NO_DIR
-  val debug = chisel.debug
-  type Flipped = chisel.Flipped
-  type Data = chisel.Data
-  val Wire = chisel.Wire
-  val Clock = chisel.Clock
-  type Clock = chisel.Clock
+  type Direction = chisel.core.Direction
+  val INPUT = chisel.core.INPUT
+  val OUTPUT = chisel.core.OUTPUT
+  val NO_DIR = chisel.core.NO_DIR
+  val debug = chisel.core.debug
+  type Flipped = chisel.core.Flipped
+  type Data = chisel.core.Data
+  val Wire = chisel.core.Wire
+  val Clock = chisel.core.Clock
+  type Clock = chisel.core.Clock
 
-  type Aggregate = chisel.Aggregate
-  val Vec = chisel.Vec
-  type Vec[T <: Data] = chisel.Vec[T]
-  type VecLike[T <: Data] = chisel.VecLike[T]
-  type Bundle = chisel.Bundle
+  type Aggregate = chisel.core.Aggregate
+  val Vec = chisel.core.Vec
+  type Vec[T <: Data] = chisel.core.Vec[T]
+  type VecLike[T <: Data] = chisel.core.VecLike[T]
+  type Bundle = chisel.core.Bundle
 
-  val assert = chisel.assert
+  val assert = chisel.core.assert
 
-  type Element = chisel.Element
-  type Bits = chisel.Bits
-  val Bits = chisel.Bits
-  type Num[T <: Data] = chisel.Num[T]
-  type UInt = chisel.UInt
-  val UInt = chisel.UInt
-  type SInt = chisel.SInt
-  val SInt = chisel.SInt
-  type Bool = chisel.Bool
-  val Bool = chisel.Bool
-  val Mux = chisel.Mux
+  type Element = chisel.core.Element
+  type Bits = chisel.core.Bits
+  val Bits = chisel.core.Bits
+  type Num[T <: Data] = chisel.core.Num[T]
+  type UInt = chisel.core.UInt
+  val UInt = chisel.core.UInt
+  type SInt = chisel.core.SInt
+  val SInt = chisel.core.SInt
+  type Bool = chisel.core.Bool
+  val Bool = chisel.core.Bool
+  val Mux = chisel.core.Mux
 
-  type BlackBox = chisel.BlackBox
+  type BlackBox = chisel.core.BlackBox
 
-  val Mem = chisel.Mem
-  type MemBase[T <: Data] = chisel.MemBase[T]
-  type Mem[T <: Data] = chisel.Mem[T]
-  val SeqMem = chisel.SeqMem
-  type SeqMem[T <: Data] = chisel.SeqMem[T]
+  val Mem = chisel.core.Mem
+  type MemBase[T <: Data] = chisel.core.MemBase[T]
+  type Mem[T <: Data] = chisel.core.Mem[T]
+  val SeqMem = chisel.core.SeqMem
+  type SeqMem[T <: Data] = chisel.core.SeqMem[T]
 
-  val Module = chisel.Module
-  type Module = chisel.Module
+  val Module = chisel.core.Module
+  type Module = chisel.core.Module
 
-  val printf = chisel.printf
+  val printf = chisel.core.printf
 
-  val Reg = chisel.Reg
+  val Reg = chisel.core.Reg
 
-  val when = chisel.when
-  type WhenContext = chisel.WhenContext
+  val when = chisel.core.when
+  type WhenContext = chisel.core.WhenContext
 
 
   type BackendCompilationUtilities = chisel.BackendCompilationUtilities

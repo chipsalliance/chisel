@@ -3,6 +3,7 @@
 package chisel.internal.firrtl
 
 import chisel._
+import core._
 import chisel.internal._
 import chisel.internal.sourceinfo.{SourceInfo, NoSourceInfo}
 

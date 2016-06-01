@@ -4,7 +4,7 @@ package chisel.internal
 
 import scala.collection.mutable.ArrayBuffer
 
-import chisel._
+import chisel.core._
 
 class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
 
