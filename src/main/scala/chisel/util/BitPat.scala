@@ -1,9 +1,10 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel.util
 
 import scala.language.experimental.macros
 
+import chisel._
 import chisel.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 object BitPat {

@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel.compatibility
+
+import chisel._
 
 @deprecated("throwException doesn't exist in Chisel3", "3.0.0")
 @throws(classOf[Exception])

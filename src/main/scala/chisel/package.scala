@@ -3,6 +3,7 @@ package object chisel {
 
   import internal.firrtl.Width
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+  import util.BitPat
 
   implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
     def U: UInt = UInt(x, Width())

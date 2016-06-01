@@ -23,9 +23,6 @@ package object Chisel {
 
   val assert = chisel.assert
 
-  val BitPat = chisel.BitPat
-  type BitPat = chisel.BitPat
-
   type Element = chisel.Element
   type Bits = chisel.Bits
   val Bits = chisel.Bits
@@ -59,10 +56,10 @@ package object Chisel {
 
   type BackendCompilationUtilities = chisel.BackendCompilationUtilities
   val Driver = chisel.Driver
-  type FileSystemUtilities = chisel.FileSystemUtilities
-  val ImplicitConversions = chisel.ImplicitConversions
-  val chiselMain = chisel.chiselMain
-  val throwException = chisel.throwException
+  type FileSystemUtilities = chisel.compatibility.FileSystemUtilities
+  val ImplicitConversions = chisel.util.ImplicitConversions
+  val chiselMain = chisel.compatibility.chiselMain
+  val throwException = chisel.compatibility.throwException
 
 
   object testers {
@@ -76,6 +73,9 @@ package object Chisel {
   val log2Down = chisel.util.log2Down
   val log2Floor = chisel.util.log2Floor
   val isPow2 = chisel.util.isPow2
+
+  val BitPat = chisel.util.BitPat
+  type BitPat = chisel.util.BitPat
 
   type ArbiterIO[T <: Data] = chisel.util.ArbiterIO[T]
   type LockingArbiterLike[T <: Data] = chisel.util.LockingArbiterLike[T]
