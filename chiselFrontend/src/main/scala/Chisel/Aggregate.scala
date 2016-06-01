@@ -174,9 +174,13 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 /** A trait for [[Vec]]s containing common hardware generators for collection
   * operations.
   */
-trait VecLike[T <: Data] extends collection.IndexedSeq[T] {
+trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   def apply(idx: UInt): T
 
+  // IndexedSeq has its own hashCode/equals that we must not use
+  override def hashCode: Int = super[HasId].hashCode
+  override def equals(that: Any): Boolean = super[HasId].equals(that)
+  
   @deprecated("Use Vec.apply instead", "chisel3")
   def read(idx: UInt): T
 
