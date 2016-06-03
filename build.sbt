@@ -104,3 +104,8 @@ lazy val chisel = (project in file(".")).
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
   )
+
+// This is ugly. There must be a better way.
+publish <<= (publish) dependsOn (publish in coreMacros, publish in chiselFrontend)
+
+publishLocal <<= (publishLocal) dependsOn (publishLocal in coreMacros, publishLocal in chiselFrontend)
