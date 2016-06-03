@@ -106,7 +106,6 @@ lazy val chisel = (project in file(".")).
   )
 
 // This is ugly. There must be a better way.
-publish <<= (publish) dependsOn (publish in chiselFrontend)
+publish <<= (publish) dependsOn (publish in coreMacros, publish in chiselFrontend)
 
-publishLocal <<= (publishLocal) dependsOn (publishLocal in chiselFrontend)
-
+publishLocal <<= (publishLocal) dependsOn (publishLocal in coreMacros, publishLocal in chiselFrontend)
