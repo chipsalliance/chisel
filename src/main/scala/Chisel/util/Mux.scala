@@ -25,9 +25,9 @@ object Mux1H
   */
 object PriorityMux
 {
-  def apply[T <: Bits](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
-  def apply[T <: Bits](sel: Seq[Bool], in: Seq[T]): T = apply(sel zip in)
-  def apply[T <: Bits](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
+  def apply[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = apply(sel zip in)
+  def apply[T <: Data](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
 }
 
 /** MuxLookup creates a cascade of n Muxs to search for a key value */

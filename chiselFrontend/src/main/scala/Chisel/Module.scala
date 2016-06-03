@@ -3,11 +3,13 @@
 package Chisel
 
 import scala.collection.mutable.{ArrayBuffer, HashSet}
+import scala.language.experimental.macros
 
 import internal._
 import internal.Builder.pushCommand
 import internal.Builder.dynamicContext
 import internal.firrtl._
+import internal.sourceinfo.{SourceInfo, InstTransform, UnlocatableSourceInfo}
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -17,15 +19,21 @@ object Module {
     *
     * @return the input module `m` with Chisel metadata properly set
     */
-  def apply[T <: Module](bc: => T): T = {
+  def apply[T <: Module](bc: => T): T = macro InstTransform.apply[T]
+
+  def do_apply[T <: Module](bc: => T)(implicit sourceInfo: SourceInfo): T = {
+    // Don't generate source info referencing parents inside a module, sincce this interferes with
+    // module de-duplication in FIRRTL emission.
+    val childSourceInfo = UnlocatableSourceInfo
+
     val parent = dynamicContext.currentModule
     val m = bc.setRefs()
-    m._commands.prepend(DefInvalid(m.io.ref)) // init module outputs
+    m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
     dynamicContext.currentModule = parent
     val ports = m.computePorts
     Builder.components += Component(m, m.name, ports, m._commands)
-    pushCommand(DefInstance(m, ports))
-    m.setupInParent()
+    pushCommand(DefInstance(sourceInfo, m, ports))
+    m.setupInParent(childSourceInfo)
   }
 }
 
@@ -70,14 +78,16 @@ extends HasId {
     Port(port, if (port.dir == NO_DIR) bundleDir else port.dir)
   }
 
-  private[Chisel] def setupInParent(): this.type = _parent match {
-    case Some(p) => {
-      pushCommand(DefInvalid(io.ref)) // init instance inputs
-      clock := override_clock.getOrElse(p.clock)
-      reset := override_reset.getOrElse(p.reset)
-      this
+  private[Chisel] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
+    _parent match {
+      case Some(p) => {
+        pushCommand(DefInvalid(sourceInfo, io.ref)) // init instance inputs
+        clock := override_clock.getOrElse(p.clock)
+        reset := override_reset.getOrElse(p.reset)
+        this
+      }
+      case None => this
     }
-    case None => this
   }
 
   private[Chisel] def setRefs(): this.type = {

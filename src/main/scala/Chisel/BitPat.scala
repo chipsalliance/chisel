@@ -2,6 +2,10 @@
 
 package Chisel
 
+import scala.language.experimental.macros
+
+import Chisel.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+
 object BitPat {
   /** Parses a bit pattern string into (bits, mask, width).
     *
@@ -50,7 +54,7 @@ object BitPat {
     *
     * @note the BitPat must not have don't care bits (will error out otherwise)
     */
-  implicit def bitPatToUInt(x: BitPat): UInt = {
+  def bitPatToUInt(x: BitPat): UInt = {
     require(x.mask == (BigInt(1) << x.getWidth) - 1)
     UInt(x.value, x.getWidth)
   }
@@ -61,7 +65,7 @@ object BitPat {
     *
     * @note the UInt must be a literal
     */
-  implicit def apply(x: UInt): BitPat = {
+  def apply(x: UInt): BitPat = {
     require(x.isLit)
     BitPat("b" + x.litValue.toString(2))
   }
@@ -74,7 +78,11 @@ object BitPat {
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
-  def === (other: UInt): Bool = UInt(value) === (other & UInt(mask))
-  def =/= (other: UInt): Bool = !(this === other)
-  def != (other: UInt): Bool = this =/= other
+  def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
+
+  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = UInt(value) === (that & UInt(mask))
+  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)
+  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that
 }
