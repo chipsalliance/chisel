@@ -17,9 +17,9 @@
 #include <sys/mman.h>
 #include <time.h>
 
-enum SIM_CMD { RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, SETCLK, FIN };
+enum SIM_CMD { RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN };
 const int SIM_CMD_MAX_BYTES = 1024;
-const int channel_data_offset_64bw = 4;		// Offset from start of channel buffer to actual user data in 64bit words.
+const int channel_data_offset_64bw = 4;	// Offset from start of channel buffer to actual user data in 64bit words.
 static size_t gSystemPageSize;
 
 template<class T> struct sim_data_t {
@@ -28,7 +28,6 @@ template<class T> struct sim_data_t {
   std::vector<T> outputs;
   std::vector<T> signals;
   std::map<std::string, size_t> signal_map;
-  std::map<std::string, T> clk_map;
   // Calculate the size (in bytes) of data stored in a vector.
   size_t storage_size(const std::vector<T> vec) {
     int nitems = vec.size();
@@ -188,7 +187,6 @@ public:
         case FORCE: poke(true); break;
         case GETID: getid(); break;
         case GETCHK: getchk(); break;
-        case SETCLK: setclk(); break;
         case FIN:  finish(); exit = true; break;
         default: break;
       }
@@ -264,16 +262,6 @@ private:
     }
     size_t chunk = get_chunk(obj);
     while(!send_resp(chunk));
-  }
-
-  void setclk() {
-    std::string path;
-    while(!recv_cmd(path));
-    typename std::map<std::string, T>::iterator it = sim_data.clk_map.find(path);
-    if (it == sim_data.clk_map.end()) {
-      std::cerr << "Cannot find " << path << std::endl;
-    }
-    while(!recv_value(it->second));
   }
 
   bool recv_cmd(size_t& cmd) {
