@@ -167,6 +167,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   private[Chisel] lazy val flatten: IndexedSeq[Bits] =
     (0 until length).flatMap(i => this.apply(i).flatten)
 
+  /** Reinterpret cast to UInt. */
+  def asUInt(): UInt = macro SourceInfoTransform.noArg
+
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt = SeqUtils.do_asUInt(this.flatten).asUInt()
+
   for ((elt, i) <- self zipWithIndex)
     elt.setRef(this, i)
 }
@@ -341,6 +346,12 @@ class Bundle extends Aggregate(NO_DIR) {
   private[Chisel] lazy val flatten = namedElts.flatMap(_._2.flatten)
   private[Chisel] def addElt(name: String, elt: Data): Unit =
     namedElts += name -> elt
+
+  /** Reinterpret cast to UInt. */
+  def asUInt(): UInt = macro SourceInfoTransform.noArg
+
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt = SeqUtils.do_asUInt(this.flatten).asUInt()
+
   private[Chisel] override def _onModuleClose: Unit = // scalastyle:ignore method.name
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
 

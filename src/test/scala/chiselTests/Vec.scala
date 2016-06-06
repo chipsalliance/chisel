@@ -20,9 +20,9 @@ class TabulateTester(n: Int) extends BasicTester {
   val x = Vec(Array.tabulate(n){ i => UInt(i * 2) })
   val u = Vec.tabulate(n)(i => UInt(i*2))
 
-  assert(v.toBits === x.toBits)
-  assert(v.toBits === u.toBits)
-  assert(x.toBits === u.toBits)
+  assert(v.asUInt() === x.asUInt())
+  assert(v.asUInt() === u.asUInt())
+  assert(x.asUInt() === u.asUInt())
 
   stop()
 }

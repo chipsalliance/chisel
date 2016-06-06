@@ -23,6 +23,27 @@ class BundleWire(n: Int) extends Module {
   }
 }
 
+class BundleToUnitTester extends BasicTester {
+  val bundle1 = Wire(new Bundle {
+    val a = UInt(width = 4)
+    val b = UInt(width = 4)
+  })
+  val bundle2 = Wire(new Bundle {
+    val a = UInt(width = 2)
+    val b = UInt(width = 6)
+  })
+
+  // 0b00011011 split as 0001 1011 and as 00 011011
+  bundle1.a := 1.U
+  bundle1.b := 11.U
+  bundle2.a := 0.U
+  bundle2.b := 27.U
+
+  assert(bundle1.asUInt() === bundle2.asUInt())
+
+  stop()
+}
+
 class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new BundleWire(n))
   dut.io.in.x := UInt(x)
@@ -42,3 +63,10 @@ class BundleWireSpec extends ChiselPropSpec {
     }
   }
 }
+
+class BundleToUIntSpec extends ChiselPropSpec {
+  property("Bundles with same data but different, underlying elements should compare as UInt") {
+    assertTesterPasses( new BundleToUnitTester )
+  }
+}
+

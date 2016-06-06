@@ -117,8 +117,10 @@ abstract class Data(dirArg: Direction) extends HasId {
     *
     * This performs the inverse operation of fromBits(Bits).
     */
-  @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
+  @deprecated("Best alternative, .toUInt() or if Bits really needed, .toUInt().toBits()", "chisel3")
   def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
+
+//  def asBits(): Bits
 }
 
 object Wire {
