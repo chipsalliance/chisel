@@ -235,7 +235,7 @@ private:
     while(!send_value(obj));
   }
 
-  void getid() {//This doesn't actually do anything as search() isn't implemented remove?
+  void getid() {
     std::string path;
     while(!recv_cmd(path));
     std::map<std::string, size_t>::iterator it = sim_data.signal_map.find(path);
