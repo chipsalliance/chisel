@@ -7,14 +7,14 @@ site.includeScaladoc()
 ghpages.settings
 
 lazy val commonSettings = Seq (
+  organization := "edu.berkeley.cs",
+  version := "3.0",
+  git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   scalaVersion := "2.11.7"
 )
 
 lazy val chiselSettings = Seq (
-  organization := "edu.berkeley.cs",
-  version := "3.0",
   name := "Chisel3",
-  git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
 
   publishMavenStyle := true,
   publishArtifact in Test := false,
