@@ -120,7 +120,15 @@ abstract class Data(dirArg: Direction) extends HasId {
   @deprecated("Best alternative, .toUInt() or if Bits really needed, .toUInt().toBits()", "chisel3")
   def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
 
-//  def asBits(): Bits
+  /** Reinterpret cast to a UInt.
+    *
+    * @note value not guaranteed to be preserved: for example, a SInt of width
+    * 3 and value -1 (0b111) would become an UInt with value 7
+    */
+  final def asUInt(): UInt = macro SourceInfoTransform.noArg
+
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
+
 }
 
 object Wire {
@@ -160,4 +168,9 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
     case _: Clock => this connect that
     case _ => this badConnect that
   }
+
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
+    throwException("clock cannot be interpreted as UInt")
+  }
+
 }
