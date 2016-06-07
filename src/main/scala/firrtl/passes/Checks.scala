@@ -681,7 +681,9 @@ object CheckWidths extends Pass {
    def name = "Width Check"
    var mname = ""
    class UninferredWidth (info:Info) extends PassException(s"${info} : [module ${mname}]  Uninferred width.")
-   class WidthTooSmall (info:Info,v:String) extends PassException(s"${info} : [module ${mname}  Width too small for constant ${v}.")
+   class WidthTooSmall(info: Info, b: BigInt) extends PassException(
+         s"$info : [module $mname]  Width too small for constant " +
+         Serialize().serialize(b) + ".")
    class NegWidthException(info:Info) extends PassException(s"${info}: [module ${mname}] Width cannot be negative or zero.")
    def run (c:Circuit): Circuit = {
       val errors = new Errors()
@@ -699,7 +701,7 @@ object CheckWidths extends Pass {
                   (e.width) match { 
                      case (w:IntWidth) => 
                         if (scala.math.max(1,e.value.bitLength) > w.width) {
-                           errors.append(new WidthTooSmall(info, serialize(e.value)))
+                           errors.append(new WidthTooSmall(info, e.value))
                         }
                      case (w) => errors.append(new UninferredWidth(info))
                   }
@@ -708,7 +710,7 @@ object CheckWidths extends Pass {
                case (e:SIntValue) => {
                   (e.width) match { 
                      case (w:IntWidth) => 
-                        if (e.value.bitLength + 1 > w.width) errors.append(new WidthTooSmall(info, serialize(e.value)))
+                        if (e.value.bitLength + 1 > w.width) errors.append(new WidthTooSmall(info, e.value))
                      case (w) => errors.append(new UninferredWidth(info))
                   }
                   check_width_w(info)(e.width)

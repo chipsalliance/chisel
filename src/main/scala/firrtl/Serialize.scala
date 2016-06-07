@@ -31,25 +31,29 @@ import firrtl.PrimOps._
 import firrtl.Utils._
 
 private object Serialize {
-
   def serialize(root: AST): String = {
+    lazy val ser = new Serialize
     root match {
-      case r: PrimOp => serialize(r)
-      case r: Expression => serialize(r)
-      case r: Stmt => serialize(r)
-      case r: Width => serialize(r)
-      case r: Flip => serialize(r)
-      case r: Field => serialize(r)
-      case r: Type => serialize(r)
-      case r: Direction => serialize(r)
-      case r: Port => serialize(r)
-      case r: Module => serialize(r)
-      case r: Circuit => serialize(r)
-      case r: StringLit => serialize(r)
+      case r: PrimOp => ser.serialize(r)
+      case r: Expression => ser.serialize(r)
+      case r: Stmt => ser.serialize(r)
+      case r: Width => ser.serialize(r)
+      case r: Flip => ser.serialize(r)
+      case r: Field => ser.serialize(r)
+      case r: Type => ser.serialize(r)
+      case r: Direction => ser.serialize(r)
+      case r: Port => ser.serialize(r)
+      case r: Module => ser.serialize(r)
+      case r: Circuit => ser.serialize(r)
+      case r: StringLit => ser.serialize(r)
       case _ => throw new Exception("serialize called on unknown AST node!")
     }
   }
+  /** Creates new instance of Serialize */
+  def apply() = new Serialize
+}
 
+class Serialize {
   def serialize(bi: BigInt): String =
     if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
     else "\"h" + bi.toString(16) + "\""
