@@ -493,8 +493,8 @@ object InferWidths extends Pass {
          // This function shouldn't be necessary
          // Added as protection in case a constraint accidentally uses MinWidth/MaxWidth
          // without any actual Widths. This should be elevated to an earlier error
-         def forceNonEmpty(in: Seq[Option[BigInt]]): Seq[Option[BigInt]] =
-            if(in.isEmpty) Seq(None)
+         def forceNonEmpty(in: Seq[Option[BigInt]], default: Option[BigInt]): Seq[Option[BigInt]] =
+            if(in.isEmpty) Seq(default)
             else in
 
          def max(a: BigInt, b: BigInt): BigInt = if (a >= b) a else b
@@ -507,8 +507,8 @@ object InferWidths extends Pass {
                   v <- h.get(w.name) if !v.isInstanceOf[VarWidth]
                   result <- solve(v)
                } yield result
-            case (w: MaxWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _)), max)
-            case (w: MinWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _)), min)
+            case (w: MaxWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _), Some(BigInt(0))), max)
+            case (w: MinWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _), None), min)
             case (w: PlusWidth) => map2(solve(w.arg1), solve(w.arg2), {_ + _})
             case (w: MinusWidth) => map2(solve(w.arg1), solve(w.arg2), {_ - _})
             case (w: ExpWidth) => map2(Some(BigInt(2)), solve(w.arg1), pow_minus_one)
