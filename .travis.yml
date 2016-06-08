@@ -9,7 +9,7 @@ cache:
     $INSTALL_DIR
 
 git:
-  depth: 3
+  depth: 10
 
 sbt_args: -Dsbt.log.noformat=true
 
