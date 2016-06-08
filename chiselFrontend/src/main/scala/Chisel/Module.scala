@@ -105,6 +105,12 @@ extends HasId {
       case _ =>
     }
 
+    // For Module instances we haven't named, suggest the name of the Module
+    _ids foreach {
+      case m: Module => m.suggestName(m.name)
+      case _ =>
+    }
+
     // All suggestions are in, force names to every node.
     _ids.foreach(_.forceName(default="T", _namespace))
     _ids.foreach(_._onModuleClose)
