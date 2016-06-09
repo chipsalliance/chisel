@@ -1,8 +1,10 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
-import Chisel.testers.BasicTester
+
+import chisel._
+import chisel.testers.BasicTester
+import chisel.util._
 
 class LFSR16 extends Module {
   val io = new Bundle {

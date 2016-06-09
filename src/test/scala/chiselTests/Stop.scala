@@ -3,8 +3,8 @@
 package chiselTests
 
 import org.scalatest._
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel._
+import chisel.testers.BasicTester
 
 class StopTester() extends BasicTester {
   stop()

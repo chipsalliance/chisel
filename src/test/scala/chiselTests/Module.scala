@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+
+import chisel._
 
 class SimpleIO extends Bundle {
   val in  = UInt(INPUT,  32)

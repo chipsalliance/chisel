@@ -3,8 +3,10 @@
 package chiselTests
 
 import org.scalatest._
-import Chisel._
-import Chisel.testers.BasicTester
+
+import chisel._
+import chisel.testers.BasicTester
+import chisel.util._
 
 class WhenTester() extends BasicTester {
   val cnt = Counter(4)

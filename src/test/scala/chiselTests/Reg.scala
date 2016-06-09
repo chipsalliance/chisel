@@ -3,8 +3,8 @@
 package chiselTests
 
 import org.scalatest._
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel._
+import chisel.testers.BasicTester
 
 class RegSpec extends ChiselFlatSpec {
   "A Reg" should "throw an exception if not given any parameters" in {

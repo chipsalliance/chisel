@@ -2,10 +2,12 @@
 
 package chiselTests
 
-import Chisel._
 import org.scalatest._
 import org.scalatest.prop._
-import Chisel.testers.BasicTester
+
+import chisel._
+import chisel.testers.BasicTester
+import chisel.util._
 
 class Tbl(w: Int, n: Int) extends Module {
   val io = new Bundle {

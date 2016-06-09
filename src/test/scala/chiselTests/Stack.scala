@@ -1,8 +1,11 @@
 // See LICENSE for license details.
 
 package chiselTests
+
 import scala.collection.mutable.Stack
-import Chisel._
+
+import chisel._
+import chisel.util._
 
 class ChiselStack(val depth: Int) extends Module {
   val io = new Bundle {
