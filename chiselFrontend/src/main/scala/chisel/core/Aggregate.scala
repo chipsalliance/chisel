@@ -315,7 +315,7 @@ class Bundle extends Aggregate(NO_DIR) {
 
   /** Returns a list of elements in this Bundle.
     */
-  private[core] lazy val namedElts = {
+  private[chisel] lazy val namedElts = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getClass.getMethods.sortWith(_.getName < _.getName)) {
