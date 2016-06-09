@@ -45,7 +45,6 @@ object CheckHighForm extends Pass with LazyLogging {
 
   // Custom Exceptions
   class NotUniqueException(name: String) extends PassException(s"${sinfo}: [module ${mname}] Reference ${name} does not have a unique name.")
-  class IsPrefixException(prefix: String) extends PassException(s"${sinfo}: [module ${mname}] Symbol ${prefix} is a prefix.")
   class InvalidLOCException extends PassException(s"${sinfo}: [module ${mname}] Invalid connect to an expression that is not a reference or a WritePort.")
   class NegUIntException extends PassException(s"${sinfo}: [module ${mname}] UIntValue cannot be negative.")
   class UndeclaredReferenceException(name: String) extends PassException(s"${sinfo}: [module ${mname}] Reference ${name} is not declared.")
@@ -62,35 +61,6 @@ object CheckHighForm extends Pass with LazyLogging {
   class BadPrintfException(x: Char) extends PassException(s"${sinfo}: [module ${mname}] Bad printf format: " + "\"%" + x + "\"")
   class BadPrintfTrailingException extends PassException(s"${sinfo}: [module ${mname}] Bad printf format: trailing " + "\"%\"")
   class BadPrintfIncorrectNumException extends PassException(s"${sinfo}: [module ${mname}] Bad printf format: incorrect number of arguments")
-
-  // Trie Datastructure for prefix checking
-  case class Trie(var children: HashMap[String, Trie], var end: Boolean) {
-    def empty: Boolean = children.isEmpty
-    def add(ls: Seq[String]): Boolean = {
-      var t: Trie = this
-      var sawEnd = false
-      for (x <- ls) {
-        if (t.end) sawEnd = true
-        if (t.contains(x)) t = t.children(x)
-        else {
-          val temp = new Trie(HashMap[String,Trie](),false)
-          t.children(x) = temp
-          t = temp
-        }
-      }
-      t.end = true
-      sawEnd | !t.empty
-    }
-    def contains(s: String): Boolean = children.contains(s)
-    def contains(ls: Seq[String]): Boolean = {
-      var t: Trie = this
-      for (x <- ls) {
-        if (t.contains(x)) t = t.children(x)
-        else return false
-      }
-      t.end
-    }
-  }
 
   // Utility functions
   def hasFlip(t: Type): Boolean = {
@@ -202,7 +172,6 @@ object CheckHighForm extends Pass with LazyLogging {
     def checkHighFormM(m: Module): Module = {
       val names = HashMap[String, Boolean]()
       val mnames = HashMap[String, Boolean]()
-      val tries = Trie(HashMap[String, Trie](),false)
       def checkHighFormE(e: Expression): Expression = {
         def validSubexp(e: Expression): Expression = {
           e match {
@@ -232,8 +201,6 @@ object CheckHighForm extends Pass with LazyLogging {
         def checkName(name: String): String = {
           if (names.contains(name)) errors.append(new NotUniqueException(name))
           else names(name) = true
-          val ls: Seq[String] = name.split('$')
-          if (tries.add(ls)) errors.append(new IsPrefixException(name))
           name 
         }
         sinfo = s.getInfo
@@ -681,7 +648,9 @@ object CheckWidths extends Pass {
    def name = "Width Check"
    var mname = ""
    class UninferredWidth (info:Info) extends PassException(s"${info} : [module ${mname}]  Uninferred width.")
-   class WidthTooSmall (info:Info,v:String) extends PassException(s"${info} : [module ${mname}  Width too small for constant ${v}.")
+   class WidthTooSmall(info: Info, b: BigInt) extends PassException(
+         s"$info : [module $mname]  Width too small for constant " +
+         Serialize().serialize(b) + ".")
    class NegWidthException(info:Info) extends PassException(s"${info}: [module ${mname}] Width cannot be negative or zero.")
    def run (c:Circuit): Circuit = {
       val errors = new Errors()
@@ -699,7 +668,7 @@ object CheckWidths extends Pass {
                   (e.width) match { 
                      case (w:IntWidth) => 
                         if (scala.math.max(1,e.value.bitLength) > w.width) {
-                           errors.append(new WidthTooSmall(info, serialize(e.value)))
+                           errors.append(new WidthTooSmall(info, e.value))
                         }
                      case (w) => errors.append(new UninferredWidth(info))
                   }
@@ -708,7 +677,7 @@ object CheckWidths extends Pass {
                case (e:SIntValue) => {
                   (e.width) match { 
                      case (w:IntWidth) => 
-                        if (e.value.bitLength + 1 > w.width) errors.append(new WidthTooSmall(info, serialize(e.value)))
+                        if (e.value.bitLength + 1 > w.width) errors.append(new WidthTooSmall(info, e.value))
                      case (w) => errors.append(new UninferredWidth(info))
                   }
                   check_width_w(info)(e.width)
