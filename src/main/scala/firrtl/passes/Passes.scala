@@ -50,6 +50,17 @@ trait Pass extends LazyLogging {
 // Error handling
 class PassException(message: String) extends Exception(message)
 class PassExceptions(exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
+class Errors {
+  val errors = ArrayBuffer[PassException]()
+  def append(pe: PassException) = errors.append(pe)
+  def trigger = errors.size match {
+    case 0 =>
+    case 1 => throw errors.head
+    case _ =>
+      append(new PassException(s"${errors.length} errors detected!"))
+      throw new PassExceptions(errors)
+  }
+}
 
 // These should be distributed into separate files
 object ToWorkingIR extends Pass {
@@ -471,47 +482,47 @@ object InferWidths extends Pass {
          case (t:ClockType) => IntWidth(1)
          case (t) => error("No width!"); IntWidth(-1) } }
    def width_BANG (e:Expression) : Width = width_BANG(tpe(e))
-   def reduce_var_widths (c:Circuit,h:LinkedHashMap[String,Width]) : Circuit = {
-      def evaluate (w:Width) : Width = {
-         def apply_2 (a:Option[BigInt],b:Option[BigInt], f: (BigInt,BigInt) => BigInt) : Option[BigInt] = {
-            (a,b) match {
-               case (a:Some[BigInt],b:Some[BigInt]) => Some(f(a.get,b.get))
-               case (a,b) => None } }
-         def apply_1 (a:Option[BigInt], f: (BigInt) => BigInt) : Option[BigInt] = {
-            (a) match {
-               case (a:Some[BigInt]) => Some(f(a.get))
-               case (a) => None } }
-         def apply_l (l:Seq[Option[BigInt]],f:(BigInt,BigInt) => BigInt) : Option[BigInt] = {
-            if (l.size == 0) Some(BigInt(0)) else apply_2(l.head,apply_l(l.tail,f),f) 
+
+   def reduce_var_widths(c: Circuit, h: LinkedHashMap[String,Width]): Circuit = {
+      def evaluate(w: Width): Width = {
+         def map2(a: Option[BigInt], b: Option[BigInt], f: (BigInt,BigInt) => BigInt): Option[BigInt] =
+            for (a_num <- a; b_num <- b) yield f(a_num, b_num)
+         def reduceOptions(l: Seq[Option[BigInt]], f: (BigInt,BigInt) => BigInt): Option[BigInt] =
+            l.reduce(map2(_, _, f))
+
+         // This function shouldn't be necessary
+         // Added as protection in case a constraint accidentally uses MinWidth/MaxWidth
+         // without any actual Widths. This should be elevated to an earlier error
+         def forceNonEmpty(in: Seq[Option[BigInt]], default: Option[BigInt]): Seq[Option[BigInt]] =
+            if(in.isEmpty) Seq(default)
+            else in
+
+         def max(a: BigInt, b: BigInt): BigInt = if (a >= b) a else b
+         def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
+         def pow_minus_one(a: BigInt, b: BigInt): BigInt = a.pow(b.toInt) - 1
+
+         def solve(w: Width): Option[BigInt] = w match {
+            case (w: VarWidth) =>
+               for{
+                  v <- h.get(w.name) if !v.isInstanceOf[VarWidth]
+                  result <- solve(v)
+               } yield result
+            case (w: MaxWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _), Some(BigInt(0))), max)
+            case (w: MinWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _), None), min)
+            case (w: PlusWidth) => map2(solve(w.arg1), solve(w.arg2), {_ + _})
+            case (w: MinusWidth) => map2(solve(w.arg1), solve(w.arg2), {_ - _})
+            case (w: ExpWidth) => map2(Some(BigInt(2)), solve(w.arg1), pow_minus_one)
+            case (w: IntWidth) => Some(w.width)
+            case (w) => println(w); error("Shouldn't be here"); None;
          }
-         def max (a:BigInt,b:BigInt) : BigInt = if (a >= b) a else b
-         def min (a:BigInt,b:BigInt) : BigInt = if (a >= b) b else a
-         def pow (a:BigInt,b:BigInt) : BigInt = BigInt((scala.math.pow(a.toDouble,b.toDouble) - 1).toLong)
-         def solve (w:Width) : Option[BigInt] = {
-            (w) match {
-               case (w:VarWidth) => {
-                  val wx = h.get(w.name)
-                  (wx) match {
-                     case (wx:Some[Width]) => {
-                        wx.get match {
-                           case (v:VarWidth) => None
-                           case (v) => solve(v) }}
-                     case (None) => None }}
-               case (w:MaxWidth) => apply_l(w.args.map(solve _),max)
-               case (w:MinWidth) => apply_l(w.args.map(solve _),min)
-               case (w:PlusWidth) => apply_2(solve(w.arg1),solve(w.arg2),{_ + _})
-               case (w:MinusWidth) => apply_2(solve(w.arg1),solve(w.arg2),{_ - _})
-               case (w:ExpWidth) => apply_2(Some(BigInt(2)),solve(w.arg1),pow)
-               case (w:IntWidth) => Some(w.width)
-               case (w) => println(w); error("Shouldn't be here"); None;
-            }
-         }
+
          val s = solve(w)
          (s) match {
-            case (s:Some[BigInt]) => IntWidth(s.get)
-            case (s) => w }
+            case Some(s) => IntWidth(s)
+            case (s) => w
+         }
       }
-   
+
       def reduce_var_widths_w (w:Width) : Width = {
          //println-all-debug(["REPLACE: " w])
          val wx = evaluate(w)

@@ -19,7 +19,7 @@ class CheckSpec extends FlatSpec with Matchers {
         |      depth => 32
         |      read-latency => 0
         |      write-latency => 1""".stripMargin
-    intercept[PassExceptions] {
+    intercept[CheckHighForm.MemWithFlipException] {
       passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
         (c: Circuit, p: Pass) => p.run(c)
       }

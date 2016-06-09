@@ -630,7 +630,7 @@ object Utils extends LazyLogging {
       case decl: IsDeclaration => if (decl.name == name) Some(decl) else None
       case c: Conditionally =>
         val m = (getRootDecl(name)(c.conseq), getRootDecl(name)(c.alt))
-        m match {
+        (m: @unchecked) match {
           case (Some(decl), None) => Some(decl)
           case (None, Some(decl)) => Some(decl)
           case (None, None) => None
