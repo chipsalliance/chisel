@@ -416,6 +416,7 @@ class VerilogEmitter extends Emitter {
             val name = namespace.newTemp
             declare("reg",name,tpe(e))
             val exx = WRef(name,tpe(e),ExpKind(),UNKNOWNGENDER)
+            initialize(exx)
             update(exx,ex,clk,one)
             ex = exx
          }
