@@ -320,7 +320,7 @@ class VerilogEmitter extends Emitter {
       }
       def update_and_reset(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
-          e match {
+          netlist.getOrElse(e, e) match {
             case m: Mux => {
               val ifStatement = Seq(tabs, "if(", m.cond, ") begin")
               val trueCase = addUpdate(m.tval, tabs + tab)
