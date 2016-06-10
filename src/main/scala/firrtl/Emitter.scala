@@ -319,9 +319,22 @@ class VerilogEmitter extends Emitter {
          assigns += Seq("`endif")
       }
       def update_and_reset(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
+        // We want to flatten Mux trees for reg updates into if-trees for
+        // improved QoR for conditional updates.  However, unbounded recursion
+        // would take exponential time, so don't redundantly flatten the same
+        // Mux more than a bounded number of times, preserving linear runtime.
+        // The threshold is empirical but ample.
+        val flattenThreshold = 4
+        val numTimesFlattened = collection.mutable.HashMap[Mux, Int]()
+        def canFlatten(m: Mux) = {
+          val n = numTimesFlattened.getOrElse(m, 0)
+          numTimesFlattened(m) = n + 1
+          n < flattenThreshold
+        }
+
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
           netlist.getOrElse(e, e) match {
-            case m: Mux => {
+            case m: Mux if canFlatten(m) => {
               val ifStatement = Seq(tabs, "if(", m.cond, ") begin")
               val trueCase = addUpdate(m.tval, tabs + tab)
               val elseStatement = Seq(tabs, "end else begin")
