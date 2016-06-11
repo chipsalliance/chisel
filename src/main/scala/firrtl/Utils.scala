@@ -76,7 +76,7 @@ object Utils extends LazyLogging {
    def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
    val gen_names = Map[String,Int]()
    val delin = "_"
-   def BoolType () = { UIntType(IntWidth(1)) } 
+   val BoolType = UIntType(IntWidth(1))
    val one  = UIntLiteral(BigInt(1),IntWidth(1))
    val zero = UIntLiteral(BigInt(0),IntWidth(1))
    def uint (i:Int) : UIntLiteral = {
@@ -122,8 +122,8 @@ object Utils extends LazyLogging {
             val fieldss = t.fields.map { f => Field(f.name,f.flip,create_mask(f.tpe)) }
             BundleType(fieldss)
          }
-         case t:UIntType => BoolType()
-         case t:SIntType => BoolType()
+         case t:UIntType => BoolType
+         case t:SIntType => BoolType
       }
    }
    def create_exps (n:String, t:Type) : Seq[Expression] =
@@ -527,7 +527,7 @@ object Utils extends LazyLogging {
        case s:DefMemory => {
           val depth = s.depth
           val addr = Field("addr",Default,UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))
-          val en = Field("en",Default,BoolType())
+          val en = Field("en",Default,BoolType)
           val clk = Field("clk",Default,ClockType)
           val def_data = Field("data",Default,s.dataType)
           val rev_data = Field("data",Flip,s.dataType)

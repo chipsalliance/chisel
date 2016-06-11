@@ -180,60 +180,60 @@ object PrimOps extends LazyLogging {
          }
          case Lt => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:UIntType, t2:SIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:SIntType) => Utils.BoolType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
                case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case Leq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:UIntType, t2:SIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:SIntType) => Utils.BoolType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
                case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case Gt => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:UIntType, t2:SIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:SIntType) => Utils.BoolType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
                case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case Geq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:UIntType, t2:SIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:SIntType) => Utils.BoolType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
                case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case Eq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:UIntType, t2:SIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:SIntType) => Utils.BoolType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
                case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case Neq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:UIntType) => Utils.BoolType()
-               case (t1:UIntType, t2:SIntType) => Utils.BoolType()
-               case (t1:SIntType, t2:SIntType) => Utils.BoolType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
                case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
@@ -352,21 +352,21 @@ object PrimOps extends LazyLogging {
          }
          case Andr => {
             val t = (t1()) match {
-               case (_:UIntType|_:SIntType) => Utils.BoolType()
+               case (_:UIntType|_:SIntType) => Utils.BoolType
                case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case Orr => {
             val t = (t1()) match {
-               case (_:UIntType|_:SIntType) => Utils.BoolType()
+               case (_:UIntType|_:SIntType) => Utils.BoolType
                case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
          case Xorr => {
             val t = (t1()) match {
-               case (_:UIntType|_:SIntType) => Utils.BoolType()
+               case (_:UIntType|_:SIntType) => Utils.BoolType
                case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
