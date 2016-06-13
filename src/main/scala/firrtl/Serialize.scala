@@ -27,26 +27,27 @@ MODIFICATIONS.
 
 package firrtl
 
+import firrtl.ir._
 import firrtl.PrimOps._
 import firrtl.Utils._
 
 private object Serialize {
-  def serialize(root: AST): String = {
+  def serialize(root: FirrtlNode): String = {
     lazy val ser = new Serialize
     root match {
       case r: PrimOp => ser.serialize(r)
       case r: Expression => ser.serialize(r)
-      case r: Stmt => ser.serialize(r)
+      case r: Statement => ser.serialize(r)
       case r: Width => ser.serialize(r)
-      case r: Flip => ser.serialize(r)
+      case r: Orientation => ser.serialize(r)
       case r: Field => ser.serialize(r)
       case r: Type => ser.serialize(r)
       case r: Direction => ser.serialize(r)
       case r: Port => ser.serialize(r)
-      case r: Module => ser.serialize(r)
+      case r: DefModule => ser.serialize(r)
       case r: Circuit => ser.serialize(r)
       case r: StringLit => ser.serialize(r)
-      case _ => throw new Exception("serialize called on unknown AST node!")
+      case _ => throw new Exception("serialize called on unknown FirrtlNode!")
     }
   }
   /** Creates new instance of Serialize */
@@ -60,18 +61,18 @@ class Serialize {
 
   def serialize(info: Info): String = " " + info.toString
 
-  def serialize(op: PrimOp): String = op.getString
+  def serialize(op: PrimOp): String = op.toString
 
   def serialize(lit: StringLit): String = FIRRTLStringLitHandler.escape(lit)
 
   def serialize(exp: Expression): String = {
     exp match {
-      case v: UIntValue => s"UInt${serialize(v.width)}(${serialize(v.value)})"
-      case v: SIntValue => s"SInt${serialize(v.width)}(${serialize(v.value)})"
-      case r: Ref => r.name
-      case s: SubField => s"${serialize(s.exp)}.${s.name}"
-      case s: SubIndex => s"${serialize(s.exp)}[${s.value}]"
-      case s: SubAccess => s"${serialize(s.exp)}[${serialize(s.index)}]"
+      case v: UIntLiteral => s"UInt${serialize(v.width)}(${serialize(v.value)})"
+      case v: SIntLiteral => s"SInt${serialize(v.width)}(${serialize(v.value)})"
+      case r: Reference => r.name
+      case s: SubField => s"${serialize(s.expr)}.${s.name}"
+      case s: SubIndex => s"${serialize(s.expr)}[${s.value}]"
+      case s: SubAccess => s"${serialize(s.expr)}[${serialize(s.index)}]"
       case m: Mux => s"mux(${serialize(m.cond)}, ${serialize(m.tval)}, ${serialize(m.fval)})"
       case v: ValidIf => s"validif(${serialize(v.cond)}, ${serialize(v.value)})"
       case p: DoPrim =>
@@ -84,7 +85,7 @@ class Serialize {
     }
   }
 
-  def serialize(stmt: Stmt): String = {
+  def serialize(stmt: Statement): String = {
     stmt match {
       case w: DefWire => s"wire ${w.name} : ${serialize(w.tpe)}${w.info}"
       case r: DefRegister =>
@@ -99,10 +100,10 @@ class Serialize {
         val str = new StringBuilder(s"mem ${m.name} :${m.info}")
         withIndent {
           str ++= newline +
-            s"data-type => ${serialize(m.data_type)}" + newline +
+            s"data-type => ${serialize(m.dataType)}" + newline +
             s"depth => ${m.depth}" + newline +
-            s"read-latency => ${m.read_latency}" + newline +
-            s"write-latency => ${m.write_latency}" + newline +
+            s"read-latency => ${m.readLatency}" + newline +
+            s"write-latency => ${m.writeLatency}" + newline +
             (if (m.readers.nonEmpty) m.readers.map(r => s"reader => ${r}").mkString(newline) + newline
              else "") +
             (if (m.writers.nonEmpty) m.writers.map(w => s"writer => ${w}").mkString(newline) + newline
@@ -114,13 +115,13 @@ class Serialize {
         str.result
       }
       case n: DefNode => s"node ${n.name} = ${serialize(n.value)}${n.info}"
-      case c: Connect => s"${serialize(c.loc)} <= ${serialize(c.exp)}${c.info}"
-      case b: BulkConnect => s"${serialize(b.loc)} <- ${serialize(b.exp)}${b.info}"
+      case c: Connect => s"${serialize(c.loc)} <= ${serialize(c.expr)}${c.info}"
+      case p: PartialConnect => s"${serialize(p.loc)} <- ${serialize(p.expr)}${p.info}"
       case w: Conditionally => {
         var str = new StringBuilder(s"when ${serialize(w.pred)} :${w.info}")
         withIndent { str ++= newline + serialize(w.conseq) }
         w.alt match {
-          case s:Empty => str.result
+          case EmptyStmt => str.result
           case s => {
             str ++= newline + "else :"
             withIndent { str ++= newline + serialize(w.alt) }
@@ -136,7 +137,7 @@ class Serialize {
         }
         s.result
       }
-      case i: IsInvalid => s"${serialize(i.exp)} is invalid${i.info}"
+      case i: IsInvalid => s"${serialize(i.expr)} is invalid${i.info}"
       case s: Stop => s"stop(${serialize(s.clk)}, ${serialize(s.en)}, ${s.ret})${s.info}"
       case p: Print => {
         val q = '"'.toString
@@ -144,7 +145,7 @@ class Serialize {
                       (if (p.args.nonEmpty) p.args.map(serialize).mkString(", ", ", ", "") else "") +
                       s")${p.info}"
       }
-      case s: Empty => "skip"
+      case EmptyStmt => "skip"
       case s: CDefMemory => {
         if (s.seq) s"smem ${s.name} : ${serialize(s.tpe)} [${s.size}]${s.info}"
         else s"cmem ${s.name} : ${serialize(s.tpe)} [${s.size}]${s.info}"
@@ -163,16 +164,16 @@ class Serialize {
 
   def serialize(w: Width): String = {
     w match {
-      case w:UnknownWidth => ""
+      case UnknownWidth => ""
       case w: IntWidth => s"<${w.width.toString}>"
       case w: VarWidth => s"<${w.name}>"
     }
   }
 
-  def serialize(f: Flip): String = {
+  def serialize(f: Orientation): String = {
     f match {
-      case REVERSE => "flip "
-      case DEFAULT => ""
+      case Flip => "flip "
+      case Default => ""
     }
   }
 
@@ -182,8 +183,8 @@ class Serialize {
   def serialize(t: Type): String = {
     val commas = ", " // for mkString in BundleType
     t match {
-      case c:ClockType => "Clock"
-      case u:UnknownType => "?"
+      case ClockType => "Clock"
+      case UnknownType => "?"
       case t: UIntType => s"UInt${serialize(t.width)}"
       case t: SIntType => s"SInt${serialize(t.width)}"
       case t: BundleType => s"{ ${t.fields.map(serialize).mkString(commas)}}"
@@ -193,17 +194,17 @@ class Serialize {
 
   def serialize(d: Direction): String = {
     d match {
-      case INPUT => "input"
-      case OUTPUT => "output"
+      case Input => "input"
+      case Output => "output"
     }
   }
 
   def serialize(p: Port): String =
     s"${serialize(p.direction)} ${p.name} : ${serialize(p.tpe)}${p.info}"
 
-  def serialize(m: Module): String = {
+  def serialize(m: DefModule): String = {
     m match {
-      case m: InModule => {
+      case m: Module => {
         var s = new StringBuilder(s"module ${m.name} :${m.info}")
         withIndent {
           s ++= m.ports.map(newline ++ serialize(_)).mkString
@@ -211,7 +212,7 @@ class Serialize {
         }
         s.toString
       }
-      case m: ExModule => {
+      case m: ExtModule => {
         var s = new StringBuilder(s"extmodule ${m.name} :${m.info}")
         withIndent {
           s ++= m.ports.map(newline ++ serialize(_)).mkString

@@ -30,6 +30,7 @@ package firrtl
 import scala.collection.Seq
 import Utils._
 import firrtl.Serialize._
+import firrtl.ir._
 import WrappedExpression._
 import WrappedWidth._
 
@@ -53,21 +54,20 @@ case class WRef(name:String,tpe:Type,kind:Kind,gender:Gender) extends Expression
 case class WSubField(exp:Expression,name:String,tpe:Type,gender:Gender) extends Expression
 case class WSubIndex(exp:Expression,value:Int,tpe:Type,gender:Gender) extends Expression
 case class WSubAccess(exp:Expression,index:Expression,tpe:Type,gender:Gender) extends Expression
-case class WVoid() extends Expression { def tpe = UnknownType() }
-case class WInvalid() extends Expression { def tpe = UnknownType() }
+case class WVoid() extends Expression { def tpe = UnknownType }
+case class WInvalid() extends Expression { def tpe = UnknownType }
 // Useful for splitting then remerging references
-case object EmptyExpression extends Expression { def tpe = UnknownType() }
-case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Stmt with IsDeclaration
+case object EmptyExpression extends Expression { def tpe = UnknownType }
+case class WDefInstance(info:Info,name:String,module:String,tpe:Type) extends Statement with IsDeclaration
 
 // Resultant width is the same as the maximum input width
-case object ADDW_OP extends PrimOp
+case object Addw extends PrimOp { override def toString = "addw" }
 // Resultant width is the same as the maximum input width
-case object SUBW_OP extends PrimOp
+case object Subw extends PrimOp { override def toString = "subw" }
 // Resultant width is the same as input argument width
-case object DSHLW_OP extends PrimOp
+case object Dshlw extends PrimOp { override def toString = "dshlw" }
 // Resultant width is the same as input argument width
-case object SHLW_OP extends PrimOp
-
+case object Shlw extends PrimOp { override def toString = "shlw" }
 
 object WrappedExpression {
    def apply (e:Expression) = new WrappedExpression(e)
@@ -79,8 +79,8 @@ class WrappedExpression (val e1:Expression) {
       we match {
          case (we:WrappedExpression) => {
             (e1,we.e1) match {
-               case (e1:UIntValue,e2:UIntValue) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
-               case (e1:SIntValue,e2:SIntValue) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
+               case (e1:UIntLiteral,e2:UIntLiteral) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
+               case (e1:SIntLiteral,e2:SIntLiteral) => if (e1.value == e2.value) eqw(e1.width,e2.width) else false
                case (e1:WRef,e2:WRef) => e1.name equals e2.name
                case (e1:WSubField,e2:WSubField) => (e1.name equals e2.name) && weq(e1.exp,e2.exp)
                case (e1:WSubIndex,e2:WSubIndex) => (e1.value == e2.value) && weq(e1.exp,e2.exp)
@@ -125,7 +125,7 @@ class WrappedType (val t:Type) {
             (t,t2.t) match {
                case (t1:UIntType,t2:UIntType) => true
                case (t1:SIntType,t2:SIntType) => true
-               case (t1:ClockType,t2:ClockType) => true
+               case (ClockType, ClockType) => true
                case (t1:VectorType,t2:VectorType) => (wt(t1.tpe) == wt(t2.tpe) && t1.size == t2.size)
                case (t1:BundleType,t2:BundleType) => {
                   var ret = true
@@ -161,7 +161,7 @@ class WrappedWidth (val w:Width) {
          case (w:MinusWidth) => "(" + w.arg1 + " - " + w.arg2 + ")"
          case (w:ExpWidth) => "exp(" + w.arg1 + ")"
          case (w:IntWidth) => w.width.toString
-         case (w:UnknownWidth) => "?"
+         case UnknownWidth => "?"
       }
    }
    def ww (w:Width) : WrappedWidth = new WrappedWidth(w)
@@ -200,7 +200,7 @@ class WrappedWidth (val w:Width) {
                case (w1:MinusWidth,w2:MinusWidth) => 
                   (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) || (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
                case (w1:ExpWidth,w2:ExpWidth) => ww(w1.arg1) == ww(w2.arg1)
-               case (w1:UnknownWidth,w2:UnknownWidth) => true
+               case (UnknownWidth, UnknownWidth) => true
                case (w1,w2) => false
             }
          }
@@ -227,6 +227,6 @@ case object MRead extends MPortDir
 case object MWrite extends MPortDir
 case object MReadWrite extends MPortDir
 
-case class CDefMemory (val info: Info, val name: String, val tpe: Type, val size: Int, val seq: Boolean) extends Stmt
-case class CDefMPort (val info: Info, val name: String, val tpe: Type, val mem: String, val exps: Seq[Expression], val direction: MPortDir) extends Stmt
+case class CDefMemory (val info: Info, val name: String, val tpe: Type, val size: Int, val seq: Boolean) extends Statement
+case class CDefMPort (val info: Info, val name: String, val tpe: Type, val mem: String, val exps: Seq[Expression], val direction: MPortDir) extends Statement
 

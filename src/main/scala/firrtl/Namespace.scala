@@ -28,6 +28,7 @@ MODIFICATIONS.
 package firrtl
 
 import scala.collection.mutable.HashSet
+import firrtl.ir._
 import Mappers._
 
 class Namespace private {
@@ -59,10 +60,10 @@ object Namespace {
   def apply(): Namespace = new Namespace
 
   // Initializes a namespace from a Module
-  def apply(m: Module): Namespace = {
+  def apply(m: DefModule): Namespace = {
     val namespace = new Namespace
 
-    def buildNamespaceStmt(s: Stmt): Stmt =
+    def buildNamespaceStmt(s: Statement): Statement =
       s map buildNamespaceStmt match {
         case dec: IsDeclaration =>
           namespace.namespace += dec.name
@@ -77,7 +78,7 @@ object Namespace {
     }
     m.ports map buildNamespacePort
     m match {
-      case in: InModule => buildNamespaceStmt(in.body)
+      case in: Module => buildNamespaceStmt(in.body)
       case _ => // Do nothing
     }
 

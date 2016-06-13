@@ -27,57 +27,86 @@ MODIFICATIONS.
 
 package firrtl
 
+import firrtl.ir._
+
 import com.typesafe.scalalogging.LazyLogging
 
-import Utils._
-
+/** Definitions and Utility functions for [[ir.PrimOp]]s */
 object PrimOps extends LazyLogging {
+  /** Addition */
+  case object Add extends PrimOp { override def toString = "add" }
+  /** Subtraction */
+  case object Sub extends PrimOp { override def toString = "sub" }
+  /** Multiplication */
+  case object Mul extends PrimOp { override def toString = "mul" }
+  /** Division */
+  case object Div extends PrimOp { override def toString = "div" }
+  /** Remainder */
+  case object Rem extends PrimOp { override def toString = "rem" }
+  /** Less Than */
+  case object Lt extends PrimOp { override def toString = "lt" }
+  /** Less Than Or Equal To */
+  case object Leq extends PrimOp { override def toString = "leq" }
+  /** Greater Than */
+  case object Gt extends PrimOp { override def toString = "gt" }
+  /** Greater Than Or Equal To */
+  case object Geq extends PrimOp { override def toString = "geq" }
+  /** Equal To */
+  case object Eq extends PrimOp { override def toString = "eq" }
+  /** Not Equal To */
+  case object Neq extends PrimOp { override def toString = "neq" }
+  /** Padding */
+  case object Pad extends PrimOp { override def toString = "pad" }
+  /** Interpret As UInt */
+  case object AsUInt extends PrimOp { override def toString = "asUInt" }
+  /** Interpret As SInt */
+  case object AsSInt extends PrimOp { override def toString = "asSInt" }
+  /** Interpret As Clock */
+  case object AsClock extends PrimOp { override def toString = "asClock" }
+  /** Static Shift Left */
+  case object Shl extends PrimOp { override def toString = "shl" }
+  /** Static Shift Right */
+  case object Shr extends PrimOp { override def toString = "shr" }
+  /** Dynamic Shift Left */
+  case object Dshl extends PrimOp { override def toString = "dshl" }
+  /** Dynamic Shift Right */
+  case object Dshr extends PrimOp { override def toString = "dshr" }
+  /** Arithmetic Convert to Signed */
+  case object Cvt extends PrimOp { override def toString = "cvt" }
+  /** Negate */
+  case object Neg extends PrimOp { override def toString = "neg" }
+  /** Bitwise Complement */
+  case object Not extends PrimOp { override def toString = "not" }
+  /** Bitwise And */
+  case object And extends PrimOp { override def toString = "and" }
+  /** Bitwise Or */
+  case object Or extends PrimOp { override def toString = "or" }
+  /** Bitwise Exclusive Or */
+  case object Xor extends PrimOp { override def toString = "xor" }
+  /** Bitwise And Reduce */
+  case object Andr extends PrimOp { override def toString = "andr" }
+  /** Bitwise Or Reduce */
+  case object Orr extends PrimOp { override def toString = "orr" }
+  /** Bitwise Exclusive Or Reduce */
+  case object Xorr extends PrimOp { override def toString = "xorr" }
+  /** Concatenate */
+  case object Cat extends PrimOp { override def toString = "cat" }
+  /** Bit Extraction */
+  case object Bits extends PrimOp { override def toString = "bits" }
+  /** Head */
+  case object Head extends PrimOp { override def toString = "head" }
+  /** Tail */
+  case object Tail extends PrimOp { override def toString = "tail" }
 
-  private val mapPrimOp2String = Map[PrimOp, String](
-    ADD_OP -> "add",
-    SUB_OP -> "sub",
-    MUL_OP -> "mul",
-    DIV_OP -> "div",
-    REM_OP -> "rem",
-    LESS_OP -> "lt",
-    LESS_EQ_OP -> "leq",
-    GREATER_OP -> "gt",
-    GREATER_EQ_OP -> "geq",
-    EQUAL_OP -> "eq",
-    NEQUAL_OP -> "neq",
-    PAD_OP -> "pad",
-    AS_UINT_OP -> "asUInt",
-    AS_SINT_OP -> "asSInt",
-    AS_CLOCK_OP -> "asClock",
-    SHIFT_LEFT_OP -> "shl",
-    SHIFT_RIGHT_OP -> "shr",
-    DYN_SHIFT_LEFT_OP -> "dshl",
-    DYN_SHIFT_RIGHT_OP -> "dshr",
-    NEG_OP -> "neg",
-    CONVERT_OP -> "cvt",
-    NOT_OP -> "not",
-    AND_OP -> "and",
-    OR_OP -> "or",
-    XOR_OP -> "xor",
-    AND_REDUCE_OP -> "andr",
-    OR_REDUCE_OP -> "orr",
-    XOR_REDUCE_OP -> "xorr",
-    CONCAT_OP -> "cat",
-    BITS_SELECT_OP -> "bits",
-    HEAD_OP -> "head",
-    TAIL_OP -> "tail",
+  private lazy val builtinPrimOps: Seq[PrimOp] =
+    Seq(Add, Sub, Mul, Div, Rem, Lt, Leq, Gt, Geq, Eq, Neq, Pad, AsUInt, AsSInt, AsClock, Shl, Shr,
+        Dshl, Dshr, Neg, Cvt, Not, And, Or, Xor, Andr, Orr, Xorr, Cat, Bits, Head, Tail)
+  private lazy val strToPrimOp: Map[String, PrimOp] = builtinPrimOps map (op => op.toString -> op) toMap
 
-    //This are custom, we need to refactor to enable easily extending FIRRTL with custom primops
-    ADDW_OP -> "addw",
-    SUBW_OP -> "subw"
-  )
-  lazy val listing: Seq[String] = PrimOps.mapPrimOp2String.map { case (k,v) => v } toSeq
-  private val mapString2PrimOp = mapPrimOp2String.map(_.swap)
-  def fromString(op: String): PrimOp = mapString2PrimOp(op)
-
-  implicit class PrimOpImplicits(op: PrimOp){
-    def getString(): String = mapPrimOp2String(op)
-  }
+  /** Seq of String representations of [[ir.PrimOp]]s */
+  lazy val listing: Seq[String] = builtinPrimOps map (_.toString)
+  /** Gets the corresponding [[ir.PrimOp]] from its String representation */
+  def fromString(op: String): PrimOp = strToPrimOp(op)
 
   // Borrowed from Stanza implementation
    def set_primop_type (e:DoPrim) : DoPrim = {
@@ -90,283 +119,283 @@ object PrimOps extends LazyLogging {
       val o = e.op
       val a = e.args
       val c = e.consts
-      def t1 () = tpe(a(0))
-      def t2 () = tpe(a(1))
-      def t3 () = tpe(a(2))
-      def w1 () = widthBANG(tpe(a(0)))
-      def w2 () = widthBANG(tpe(a(1)))
-      def w3 () = widthBANG(tpe(a(2)))
+      def t1 () = a(0).tpe
+      def t2 () = a(1).tpe
+      def t3 () = a(2).tpe
+      def w1 () = Utils.widthBANG(a(0).tpe)
+      def w2 () = Utils.widthBANG(a(1).tpe)
+      def w3 () = Utils.widthBANG(a(2).tpe)
       def c1 () = IntWidth(c(0))
       def c2 () = IntWidth(c(1))
       o match {
-         case ADD_OP => {
+         case Add => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => UIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1:UIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1:SIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1:SIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => UIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1:UIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1:SIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1:SIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case SUB_OP => {
+         case Sub => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1:UIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1:SIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1:SIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),ONE))
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1:UIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1:SIntType, t2:UIntType) => SIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1:SIntType, t2:SIntType) => SIntType(PLUS(MAX(w1(),w2()),Utils.ONE))
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case MUL_OP => {
+         case Mul => {
             val t = (t1(),t2()) match {
                case (t1:UIntType, t2:UIntType) => UIntType(PLUS(w1(),w2()))
                case (t1:UIntType, t2:SIntType) => SIntType(PLUS(w1(),w2()))
                case (t1:SIntType, t2:UIntType) => SIntType(PLUS(w1(),w2()))
                case (t1:SIntType, t2:SIntType) => SIntType(PLUS(w1(),w2()))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case DIV_OP => {
+         case Div => {
             val t = (t1(),t2()) match {
                case (t1:UIntType, t2:UIntType) => UIntType(w1())
-               case (t1:UIntType, t2:SIntType) => SIntType(PLUS(w1(),ONE))
+               case (t1:UIntType, t2:SIntType) => SIntType(PLUS(w1(),Utils.ONE))
                case (t1:SIntType, t2:UIntType) => SIntType(w1())
-               case (t1:SIntType, t2:SIntType) => SIntType(PLUS(w1(),ONE))
-               case (t1, t2) => UnknownType()
+               case (t1:SIntType, t2:SIntType) => SIntType(PLUS(w1(),Utils.ONE))
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case REM_OP => {
+         case Rem => {
             val t = (t1(),t2()) match {
                case (t1:UIntType, t2:UIntType) => UIntType(MIN(w1(),w2()))
                case (t1:UIntType, t2:SIntType) => UIntType(MIN(w1(),w2()))
-               case (t1:SIntType, t2:UIntType) => SIntType(MIN(w1(),PLUS(w2(),ONE)))
+               case (t1:SIntType, t2:UIntType) => SIntType(MIN(w1(),PLUS(w2(),Utils.ONE)))
                case (t1:SIntType, t2:SIntType) => SIntType(MIN(w1(),w2()))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case LESS_OP => {
+         case Lt => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => BoolType()
-               case (t1:SIntType, t2:UIntType) => BoolType()
-               case (t1:UIntType, t2:SIntType) => BoolType()
-               case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case LESS_EQ_OP => {
+         case Leq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => BoolType()
-               case (t1:SIntType, t2:UIntType) => BoolType()
-               case (t1:UIntType, t2:SIntType) => BoolType()
-               case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case GREATER_OP => {
+         case Gt => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => BoolType()
-               case (t1:SIntType, t2:UIntType) => BoolType()
-               case (t1:UIntType, t2:SIntType) => BoolType()
-               case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case GREATER_EQ_OP => {
+         case Geq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => BoolType()
-               case (t1:SIntType, t2:UIntType) => BoolType()
-               case (t1:UIntType, t2:SIntType) => BoolType()
-               case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case EQUAL_OP => {
+         case Eq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => BoolType()
-               case (t1:SIntType, t2:UIntType) => BoolType()
-               case (t1:UIntType, t2:SIntType) => BoolType()
-               case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case NEQUAL_OP => {
+         case Neq => {
             val t = (t1(),t2()) match {
-               case (t1:UIntType, t2:UIntType) => BoolType()
-               case (t1:SIntType, t2:UIntType) => BoolType()
-               case (t1:UIntType, t2:SIntType) => BoolType()
-               case (t1:SIntType, t2:SIntType) => BoolType()
-               case (t1, t2) => UnknownType()
+               case (t1:UIntType, t2:UIntType) => Utils.BoolType
+               case (t1:SIntType, t2:UIntType) => Utils.BoolType
+               case (t1:UIntType, t2:SIntType) => Utils.BoolType
+               case (t1:SIntType, t2:SIntType) => Utils.BoolType
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case PAD_OP => {
+         case Pad => {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(MAX(w1(),c1()))
                case (t1:SIntType) => SIntType(MAX(w1(),c1()))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case AS_UINT_OP => {
+         case AsUInt => {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(w1())
                case (t1:SIntType) => UIntType(w1())
-               case (t1:ClockType) => UIntType(ONE)
-               case (t1) => UnknownType()
+               case ClockType => UIntType(Utils.ONE)
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case AS_SINT_OP => {
+         case AsSInt => {
             val t = (t1()) match {
                case (t1:UIntType) => SIntType(w1())
                case (t1:SIntType) => SIntType(w1())
-               case (t1:ClockType) => SIntType(ONE)
-               case (t1) => UnknownType()
+               case ClockType => SIntType(Utils.ONE)
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case AS_CLOCK_OP => {
+         case AsClock => {
             val t = (t1()) match {
-               case (t1:UIntType) => ClockType()
-               case (t1:SIntType) => ClockType()
-               case (t1:ClockType) => ClockType()
-               case (t1) => UnknownType()
+               case (t1:UIntType) => ClockType
+               case (t1:SIntType) => ClockType
+               case ClockType => ClockType
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case SHIFT_LEFT_OP => {
+         case Shl => {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(PLUS(w1(),c1()))
                case (t1:SIntType) => SIntType(PLUS(w1(),c1()))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case SHIFT_RIGHT_OP => {
+         case Shr => {
             val t = (t1()) match {
-               case (t1:UIntType) => UIntType(MAX(MINUS(w1(),c1()),ONE))
-               case (t1:SIntType) => SIntType(MAX(MINUS(w1(),c1()),ONE))
-               case (t1) => UnknownType()
+               case (t1:UIntType) => UIntType(MAX(MINUS(w1(),c1()),Utils.ONE))
+               case (t1:SIntType) => SIntType(MAX(MINUS(w1(),c1()),Utils.ONE))
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case DYN_SHIFT_LEFT_OP => {
+         case Dshl => {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(PLUS(w1(),POW(w2())))
                case (t1:SIntType) => SIntType(PLUS(w1(),POW(w2())))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case DYN_SHIFT_RIGHT_OP => {
+         case Dshr => {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(w1())
                case (t1:SIntType) => SIntType(w1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case CONVERT_OP => {
+         case Cvt => {
             val t = (t1()) match {
-               case (t1:UIntType) => SIntType(PLUS(w1(),ONE))
+               case (t1:UIntType) => SIntType(PLUS(w1(),Utils.ONE))
                case (t1:SIntType) => SIntType(w1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case NEG_OP => {
+         case Neg => {
             val t = (t1()) match {
-               case (t1:UIntType) => SIntType(PLUS(w1(),ONE))
-               case (t1:SIntType) => SIntType(PLUS(w1(),ONE))
-               case (t1) => UnknownType()
+               case (t1:UIntType) => SIntType(PLUS(w1(),Utils.ONE))
+               case (t1:SIntType) => SIntType(PLUS(w1(),Utils.ONE))
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case NOT_OP => {
+         case Not => {
             val t = (t1()) match {
                case (t1:UIntType) => UIntType(w1())
                case (t1:SIntType) => UIntType(w1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case AND_OP => {
+         case And => {
             val t = (t1(),t2()) match {
                case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1,t2) => UnknownType()
+               case (t1,t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case OR_OP => {
+         case Or => {
             val t = (t1(),t2()) match {
                case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1,t2) => UnknownType()
+               case (t1,t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case XOR_OP => {
+         case Xor => {
             val t = (t1(),t2()) match {
                case (_:SIntType|_:UIntType, _:SIntType|_:UIntType) => UIntType(MAX(w1(),w2()))
-               case (t1,t2) => UnknownType()
+               case (t1,t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case AND_REDUCE_OP => {
+         case Andr => {
             val t = (t1()) match {
-               case (_:UIntType|_:SIntType) => BoolType()
-               case (t1) => UnknownType()
+               case (_:UIntType|_:SIntType) => Utils.BoolType
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case OR_REDUCE_OP => {
+         case Orr => {
             val t = (t1()) match {
-               case (_:UIntType|_:SIntType) => BoolType()
-               case (t1) => UnknownType()
+               case (_:UIntType|_:SIntType) => Utils.BoolType
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case XOR_REDUCE_OP => {
+         case Xorr => {
             val t = (t1()) match {
-               case (_:UIntType|_:SIntType) => BoolType()
-               case (t1) => UnknownType()
+               case (_:UIntType|_:SIntType) => Utils.BoolType
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case CONCAT_OP => {
+         case Cat => {
             val t = (t1(),t2()) match {
                case (_:UIntType|_:SIntType,_:UIntType|_:SIntType) => UIntType(PLUS(w1(),w2()))
-               case (t1, t2) => UnknownType()
+               case (t1, t2) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case BITS_SELECT_OP => {
+         case Bits => {
             val t = (t1()) match {
-               case (_:UIntType|_:SIntType) => UIntType(PLUS(MINUS(c1(),c2()),ONE))
-               case (t1) => UnknownType()
+               case (_:UIntType|_:SIntType) => UIntType(PLUS(MINUS(c1(),c2()),Utils.ONE))
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case HEAD_OP => {
+         case Head => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => UIntType(c1())
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }
-         case TAIL_OP => {
+         case Tail => {
             val t = (t1()) match {
                case (_:UIntType|_:SIntType) => UIntType(MINUS(w1(),c1()))
-               case (t1) => UnknownType()
+               case (t1) => UnknownType
             }
             DoPrim(o,a,c,t)
          }

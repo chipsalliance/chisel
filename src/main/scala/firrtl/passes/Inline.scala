@@ -6,6 +6,7 @@ import scala.collection.mutable
 
 import firrtl.Mappers.{ExpMap,StmtMap}
 import firrtl.Utils.WithAs
+import firrtl.ir._
 
 
 // Tags an annotation to be consumed by this pass
@@ -47,12 +48,12 @@ object InlineInstances extends Transform {
          if (!moduleMap.contains(name))
             errors += new PassException(s"Annotated module does not exist: ${name}")
       def checkExternal(name: String): Unit = moduleMap(name) match {
-            case m: ExModule => errors += new PassException(s"Annotated module cannot be an external module: ${name}")
+            case m: ExtModule => errors += new PassException(s"Annotated module cannot be an external module: ${name}")
             case _ => {}
          }
       def checkInstance(cn: ComponentName): Unit = {
          var containsCN = false
-         def onStmt(name: String)(s: Stmt): Stmt = {
+         def onStmt(name: String)(s: Statement): Statement = {
             s match {
                case WDefInstance(_, inst_name, module_name, tpe) =>
                   if (name == inst_name) {
@@ -63,7 +64,7 @@ object InlineInstances extends Transform {
             }
             s map onStmt(name)
          }
-         onStmt(cn.name)(moduleMap(cn.module.name).asInstanceOf[InModule].body)
+         onStmt(cn.name)(moduleMap(cn.module.name).asInstanceOf[Module].body)
          if (!containsCN) errors += new PassException(s"Annotated instance does not exist: ${cn.module.name}.${cn.name}")
       }
       annModuleNames.foreach{n => checkExists(n)}
@@ -85,12 +86,12 @@ object InlineInstances extends Transform {
 
       // ---- Pass functions/data ----
       // Contains all unaltered modules
-      val originalModules = mutable.HashMap[String,Module]()
+      val originalModules = mutable.HashMap[String,DefModule]()
       // Contains modules whose direct/indirect children modules have been inlined, and whose tagged instances have been inlined.
-      val inlinedModules = mutable.HashMap[String,Module]()
+      val inlinedModules = mutable.HashMap[String,DefModule]()
 
       // Recursive.
-      def onModule(m: Module): Module = {
+      def onModule(m: DefModule): DefModule = {
          val inlinedInstances = mutable.ArrayBuffer[String]()
          // Recursive. Replaces inst.port with inst$port
          def onExp(e: Expression): Expression = e match {
@@ -106,7 +107,7 @@ object InlineInstances extends Transform {
             case e => e map onExp
          }
          // Recursive. Inlines tagged instances
-         def onStmt(s: Stmt): Stmt = s match {
+         def onStmt(s: Statement): Statement = s match {
                case WDefInstance(info, instName, moduleName, instTpe) => {
                   def rename(name:String): String = {
                      val newName = instName + inlineDelim + name
@@ -114,7 +115,7 @@ object InlineInstances extends Transform {
                      newName
                   }
                   // Rewrites references in inlined statements from ref to inst$ref
-                  def renameStmt(s: Stmt): Stmt = {
+                  def renameStmt(s: Statement): Statement = {
                      def renameExp(e: Expression): Expression = {
                         e map renameExp match {
                            case WRef(name, tpe, kind, gen) => WRef(rename(name), tpe, kind, gen)
@@ -136,10 +137,10 @@ object InlineInstances extends Transform {
                   if (shouldInline) {
                      inlinedInstances += instName
                      val instInModule = instModule match {
-                        case m: ExModule => throw new PassException("Cannot inline external module")
-                        case m: InModule => m
+                        case m: ExtModule => throw new PassException("Cannot inline external module")
+                        case m: Module => m
                      }
-                     val stmts = mutable.ArrayBuffer[Stmt]()
+                     val stmts = mutable.ArrayBuffer[Statement]()
                      for (p <- instInModule.ports) {
                         stmts += DefWire(p.info, rename(p.name), p.tpe)
                      }
@@ -150,12 +151,12 @@ object InlineInstances extends Transform {
                case s => s map onExp map onStmt
             }
          m match {
-            case InModule(info, name, ports, body) => {
-               val mx = InModule(info, name, ports, onStmt(body))
+            case Module(info, name, ports, body) => {
+               val mx = Module(info, name, ports, onStmt(body))
                inlinedModules(name) = mx
                mx
             }
-            case m: ExModule => {
+            case m: ExtModule => {
                inlinedModules(m.name) = m
                m
             }

@@ -31,12 +31,13 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.annotation.tailrec
 
 import firrtl._
+import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 
 /** Resolve name collisions that would occur in [[LowerTypes]]
   *
-  *  @note Must be run after [[InferTypes]] because [[DefNode]]s need type
+  *  @note Must be run after [[InferTypes]] because [[ir.DefNode]]s need type
   *  @example
   *  {{{
   *      wire a = { b, c }[2]
@@ -192,7 +193,7 @@ object Uniquify extends Pass {
         val (subExp, subMap) = rec(e.exp, m)
         val index = uniquifyNamesExp(e.index, map)
         (WSubAccess(subExp, index, e.tpe, e.gender), subMap)
-      case (_: UIntValue | _: SIntValue) => (exp, m)
+      case (_: UIntLiteral | _: SIntLiteral) => (exp, m)
       case (_: Mux | _: ValidIf | _: DoPrim) =>
         (exp map ((e: Expression) => uniquifyNamesExp(e, map)), m)
     }
@@ -220,28 +221,28 @@ object Uniquify extends Pass {
   }
 
   // Creates a Bundle Type from a Stmt
-  def stmtToType(s: Stmt)(implicit sinfo: Info, mname: String): BundleType = {
+  def stmtToType(s: Statement)(implicit sinfo: Info, mname: String): BundleType = {
     // Recursive helper
-    def recStmtToType(s: Stmt): Seq[Field] = s match {
-      case s: DefWire => Seq(Field(s.name, DEFAULT, s.tpe))
-      case s: DefRegister => Seq(Field(s.name, DEFAULT, s.tpe))
-      case s: WDefInstance => Seq(Field(s.name, DEFAULT, s.tpe))
-      case s: DefMemory => s.data_type match {
+    def recStmtToType(s: Statement): Seq[Field] = s match {
+      case s: DefWire => Seq(Field(s.name, Default, s.tpe))
+      case s: DefRegister => Seq(Field(s.name, Default, s.tpe))
+      case s: WDefInstance => Seq(Field(s.name, Default, s.tpe))
+      case s: DefMemory => s.dataType match {
         case (_: UIntType | _: SIntType) =>
-          Seq(Field(s.name, DEFAULT, get_type(s)))
+          Seq(Field(s.name, Default, get_type(s)))
         case tpe: BundleType =>
           val newFields = tpe.fields map ( f =>
-            DefMemory(s.info, f.name, f.tpe, s.depth, s.write_latency,
-              s.read_latency, s.readers, s.writers, s.readwriters)
+            DefMemory(s.info, f.name, f.tpe, s.depth, s.writeLatency,
+              s.readLatency, s.readers, s.writers, s.readwriters)
           ) flatMap (recStmtToType)
-          Seq(Field(s.name, DEFAULT, BundleType(newFields)))
+          Seq(Field(s.name, Default, BundleType(newFields)))
         case tpe: VectorType =>
           val newFields = (0 until tpe.size) map ( i =>
-            s.copy(name = i.toString, data_type = tpe.tpe)
+            s.copy(name = i.toString, dataType = tpe.tpe)
           ) flatMap (recStmtToType)
-          Seq(Field(s.name, DEFAULT, BundleType(newFields)))
+          Seq(Field(s.name, Default, BundleType(newFields)))
       }
-      case s: DefNode => Seq(Field(s.name, DEFAULT, get_type(s)))
+      case s: DefNode => Seq(Field(s.name, Default, get_type(s)))
       case s: Conditionally => recStmtToType(s.conseq) ++ recStmtToType(s.alt)
       case s: Begin => (s.stmts map (recStmtToType)).flatten
       case s => Seq()
@@ -258,7 +259,7 @@ object Uniquify extends Pass {
     val portNameMap = collection.mutable.HashMap[String, Map[String, NameMapNode]]()
     val portTypeMap = collection.mutable.HashMap[String, Type]()
 
-    def uniquifyModule(m: Module): Module = {
+    def uniquifyModule(m: DefModule): DefModule = {
       val namespace = collection.mutable.HashSet[String]()
       val nameMap = collection.mutable.HashMap[String, NameMapNode]()
 
@@ -267,11 +268,11 @@ object Uniquify extends Pass {
           uniquifyNamesExp(e, nameMap.toMap)
         case e: Mux => e map (uniquifyExp)
         case e: ValidIf => e map (uniquifyExp)
-        case (_: UIntValue | _: SIntValue) => e
+        case (_: UIntLiteral | _: SIntLiteral) => e
         case e: DoPrim => e map (uniquifyExp)
       }
 
-      def uniquifyStmt(s: Stmt): Stmt = {
+      def uniquifyStmt(s: Statement): Statement = {
         s map uniquifyStmt map uniquifyExp match {
           case s: DefWire =>
             sinfo = s.info
@@ -302,8 +303,8 @@ object Uniquify extends Pass {
             sinfo = s.info
             if (nameMap.contains(s.name)) {
               val node = nameMap(s.name)
-              val dataType = uniquifyNamesType(s.data_type, node.elts)
-              val mem = s.copy(name = node.name, data_type = dataType)
+              val dataType = uniquifyNamesType(s.dataType, node.elts)
+              val mem = s.copy(name = node.name, dataType = dataType)
               // Create new mapping to handle references to memory data fields
               val uniqueMemMap = createNameMapping(get_type(s), get_type(mem))
               nameMap(s.name) = NameMapNode(node.name, node.elts ++ uniqueMemMap)
@@ -323,7 +324,7 @@ object Uniquify extends Pass {
         }
       }
 
-      def uniquifyBody(s: Stmt): Stmt = {
+      def uniquifyBody(s: Statement): Statement = {
         val bodyType = stmtToType(s)
         val uniqueBodyType = uniquifyNames(bodyType, namespace)
         val localMap = createNameMapping(bodyType, uniqueBodyType)
@@ -336,8 +337,8 @@ object Uniquify extends Pass {
       sinfo = m.info
       mname = m.name
       m match {
-        case m: ExModule => m
-        case m: InModule =>
+        case m: ExtModule => m
+        case m: Module =>
           // Adds port names to namespace and namemap
           nameMap ++= portNameMap(m.name)
           namespace ++= create_exps("", portTypeMap(m.name)) map
@@ -346,7 +347,7 @@ object Uniquify extends Pass {
       }
     }
 
-    def uniquifyPorts(m: Module): Module = {
+    def uniquifyPorts(m: DefModule): DefModule = {
       def uniquifyPorts(ports: Seq[Port]): Seq[Port] = {
         val portsType = BundleType(ports map (_.toField))
         val uniquePortsType = uniquifyNames(portsType, collection.mutable.HashSet())
@@ -362,8 +363,8 @@ object Uniquify extends Pass {
       sinfo = m.info
       mname = m.name
       m match {
-        case m: ExModule => m.copy(ports = uniquifyPorts(m.ports))
-        case m: InModule => m.copy(ports = uniquifyPorts(m.ports))
+        case m: ExtModule => m.copy(ports = uniquifyPorts(m.ports))
+        case m: Module => m.copy(ports = uniquifyPorts(m.ports))
       }
     }
 

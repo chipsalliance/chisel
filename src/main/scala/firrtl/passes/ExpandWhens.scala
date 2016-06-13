@@ -28,6 +28,7 @@ MODIFICATIONS.
 package firrtl.passes
 
 import firrtl._
+import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.PrimOps._
@@ -59,7 +60,7 @@ object ExpandWhens extends Pass {
     hashx
   }
   private def getFemaleRefs(n: String, t: Type, g: Gender): Seq[Expression] = {
-    def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, DEFAULT))
+    def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, Default))
     val exps = create_exps(WRef(n, t, ExpKind(), g))
     val expsx = ArrayBuffer[Expression]()
     for (j <- 0 until exps.size) {
@@ -70,12 +71,12 @@ object ExpandWhens extends Pass {
     }
     expsx
   }
-  private def squashEmpty(s: Stmt): Stmt = {
+  private def squashEmpty(s: Statement): Statement = {
     s map squashEmpty match {
       case Begin(stmts) =>
-        val newStmts = stmts filter (_ != Empty())
+        val newStmts = stmts filter (_ != EmptyStmt)
         newStmts.size match {
-          case 0 => Empty()
+          case 0 => EmptyStmt
           case 1 => newStmts.head
           case _ => Begin(newStmts)
         }
@@ -102,16 +103,16 @@ object ExpandWhens extends Pass {
 
   // ------------ Pass -------------------
   def run(c: Circuit): Circuit = {
-    def expandWhens(m: InModule): (LinkedHashMap[WrappedExpression, Expression], ArrayBuffer[Stmt], Stmt) = {
+    def expandWhens(m: Module): (LinkedHashMap[WrappedExpression, Expression], ArrayBuffer[Statement], Statement) = {
       val namespace = Namespace(m)
-      val simlist = ArrayBuffer[Stmt]()
+      val simlist = ArrayBuffer[Statement]()
 
       // defaults ideally would be immutable.Map but conversion from mutable.LinkedHashMap to mutable.Map is VERY slow
       def expandWhens(
           netlist: LinkedHashMap[WrappedExpression, Expression],
           defaults: Seq[collection.mutable.Map[WrappedExpression, Expression]],
           p: Expression)
-          (s: Stmt): Stmt = {
+          (s: Statement): Statement = {
         s match {
           case w: DefWire =>
             getFemaleRefs(w.name, w.tpe, BIGENDER) foreach (ref => netlist(ref) = WVoid())
@@ -120,13 +121,13 @@ object ExpandWhens extends Pass {
             getFemaleRefs(r.name, r.tpe, BIGENDER) foreach (ref => netlist(ref) = ref)
             r
           case c: Connect =>
-            netlist(c.loc) = c.exp
-            Empty()
+            netlist(c.loc) = c.expr
+            EmptyStmt
           case c: IsInvalid =>
-            netlist(c.exp) = WInvalid()
-            Empty()
+            netlist(c.expr) = WInvalid()
+            EmptyStmt
           case s: Conditionally =>
-            val memos = ArrayBuffer[Stmt]()
+            val memos = ArrayBuffer[Statement]()
 
             val conseqNetlist = LinkedHashMap[WrappedExpression, Expression]()
             val altNetlist = LinkedHashMap[WrappedExpression, Expression]()
@@ -164,14 +165,14 @@ object ExpandWhens extends Pass {
             } else {
               simlist += Print(s.info, s.string, s.args, s.clk, AND(p, s.en))
             }
-            Empty()
+            EmptyStmt
           case s: Stop =>
             if (weq(p, one)) {
               simlist += s
             } else {
               simlist += Stop(s.info, s.ret, s.clk, AND(p, s.en))
             }
-            Empty()
+            EmptyStmt
           case s => s map expandWhens(netlist, defaults, p)
         }
       }
@@ -187,11 +188,11 @@ object ExpandWhens extends Pass {
     }
     val modulesx = c.modules map { m =>
       m match {
-        case m: ExModule => m
-        case m: InModule =>
+        case m: ExtModule => m
+        case m: Module =>
         val (netlist, simlist, bodyx) = expandWhens(m)
         val newBody = Begin(Seq(bodyx map squashEmpty) ++ expandNetlist(netlist) ++ simlist)
-        InModule(m.info, m.name, m.ports, newBody)
+        Module(m.info, m.name, m.ports, newBody)
       }
     }
     Circuit(c.info, modulesx, c.main)

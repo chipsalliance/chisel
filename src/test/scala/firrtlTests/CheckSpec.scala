@@ -3,7 +3,8 @@ package firrtlTests
 import java.io._
 import org.scalatest._
 import org.scalatest.prop._
-import firrtl.{Parser,Circuit}
+import firrtl.Parser
+import firrtl.ir.Circuit
 import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassExceptions}
 
 class CheckSpec extends FlatSpec with Matchers {

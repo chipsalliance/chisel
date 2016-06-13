@@ -1,6 +1,7 @@
 package firrtl
 package passes
 import firrtl.Mappers.{ExpMap, StmtMap}
+import firrtl.ir._
 
 // Removes ValidIf as an optimization
 object RemoveValidIf extends Pass {
@@ -13,12 +14,12 @@ object RemoveValidIf extends Pass {
       }
    }
    // Recursive.
-   private def onStmt(s: Stmt): Stmt = s map onStmt map onExp
+   private def onStmt(s: Statement): Statement = s map onStmt map onExp
 
-   private def onModule(m: Module): Module = {
+   private def onModule(m: DefModule): DefModule = {
       m match {
-         case m:InModule => InModule(m.info, m.name, m.ports, onStmt(m.body))
-         case m:ExModule => m
+         case m: Module => Module(m.info, m.name, m.ports, onStmt(m.body))
+         case m: ExtModule => m
       }
    }
 

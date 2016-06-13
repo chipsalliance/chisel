@@ -3,6 +3,8 @@ package passes
 
 import firrtl.Mappers.{ExpMap, StmtMap}
 import firrtl.Utils.{tpe, long_BANG}
+import firrtl.PrimOps._
+import firrtl.ir._
 
 // Makes all implicit width extensions and truncations explicit
 object PadWidths extends Pass {
@@ -17,17 +19,15 @@ object PadWidths extends Pass {
          // default case should never be reached
       }
       if (i > width(e))
-         DoPrim(PAD_OP, Seq(e), Seq(i), tx)
+         DoPrim(Pad, Seq(e), Seq(i), tx)
       else if (i < width(e))
-         DoPrim(BITS_SELECT_OP, Seq(e), Seq(i - 1, 0), tx)
+         DoPrim(Bits, Seq(e), Seq(i - 1, 0), tx)
       else e
    }
    // Recursive, updates expression so children exp's have correct widths
    private def onExp(e: Expression): Expression = {
-      val sensitiveOps = Seq(
-         LESS_OP, LESS_EQ_OP, GREATER_OP, GREATER_EQ_OP, EQUAL_OP,
-         NEQUAL_OP, NOT_OP, AND_OP, OR_OP, XOR_OP, ADD_OP, SUB_OP,
-         MUL_OP, DIV_OP, REM_OP, SHIFT_RIGHT_OP)
+      val sensitiveOps = Seq( Lt, Leq, Gt, Geq, Eq, Neq, Not, And, Or, Xor,
+        Add, Sub, Mul, Div, Rem, Shr)
       val x = e map onExp
       x match {
          case Mux(cond, tval, fval, tpe) => {
@@ -40,15 +40,15 @@ object PadWidths extends Pass {
                val i = args.map(a => width(a)).foldLeft(0) {(a, b) => math.max(a, b)}
                x map fixup(i)
             }
-            case DYN_SHIFT_LEFT_OP => {
+            case Dshl => {
                // special case as args aren't all same width
                val ax = fixup(width(tpe))(args(0))
-               DoPrim(DSHLW_OP, Seq(ax, args(1)), consts, tpe)
+               DoPrim(Dshlw, Seq(ax, args(1)), consts, tpe)
             }
-            case SHIFT_LEFT_OP => {
+            case Shl => {
                // special case as arg should be same width as result
                val ax = fixup(width(tpe))(args(0))
-               DoPrim(SHLW_OP, Seq(ax), consts, tpe)
+               DoPrim(Shlw, Seq(ax), consts, tpe)
             }
             case _ => x
          }
@@ -57,10 +57,10 @@ object PadWidths extends Pass {
       }
    }
    // Recursive. Fixes assignments and register initialization widths
-   private def onStmt(s: Stmt): Stmt = {
+   private def onStmt(s: Statement): Statement = {
       s map onExp match {
          case s: Connect => {
-            val ex = fixup(width(s.loc))(s.exp)
+            val ex = fixup(width(s.loc))(s.expr)
             Connect(s.info, s.loc, ex)
          }
          case s: DefRegister => {
@@ -70,10 +70,10 @@ object PadWidths extends Pass {
          case s => s map onStmt
       }
    }
-   private def onModule(m: Module): Module = {
+   private def onModule(m: DefModule): DefModule = {
       m match {
-         case m:InModule => InModule(m.info, m.name, m.ports, onStmt(m.body))
-         case m:ExModule => m
+         case m: Module => Module(m.info, m.name, m.ports, onStmt(m.body))
+         case m: ExtModule => m
       }
    }
    def run(c: Circuit): Circuit = Circuit(c.info, c.modules.map(onModule _), c.main)
