@@ -10,21 +10,26 @@ import core._
 import firrtl._
 
 private[chisel] class Namespace(parent: Option[Namespace], keywords: Set[String]) {
-  private var i = 0L
-  private val names = collection.mutable.HashSet[String]()
+  private val names = collection.mutable.HashMap[String, Long]()
+  for (keyword <- keywords)
+    names(keyword) = 1
 
-  private def rename(n: String) = { i += 1; s"${n}_${i}" }
+  private def rename(n: String): String = {
+    val index = names.getOrElse(n, 1L)
+    val tryName = s"${n}_${index}"
+    names(n) = index + 1
+    if (this contains tryName) rename(n) else tryName
+  }
 
   def contains(elem: String): Boolean = {
-    keywords.contains(elem) || names.contains(elem) ||
-      parent.map(_ contains elem).getOrElse(false)
+    names.contains(elem) || parent.map(_ contains elem).getOrElse(false)
   }
 
   def name(elem: String): String = {
     if (this contains elem) {
       name(rename(elem))
     } else {
-      names += elem
+      names(elem) = 1
       elem
     }
   }
