@@ -1,12 +1,12 @@
 // See LICENSE for license details.
 
-package chisel.core
+package chisel3.core
 
 import scala.language.experimental.macros
 
-import chisel.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-private[chisel] object SeqUtils {
+private[chisel3] object SeqUtils {
   /** Equivalent to Cat(r(n-1), ..., r(0)) */
   def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
 

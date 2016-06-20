@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package chisel.core
+package chisel3.core
 
 import scala.language.experimental.macros
 
-import chisel.internal._
-import chisel.internal.Builder.pushCommand
-import chisel.internal.firrtl._
-import chisel.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -53,9 +53,9 @@ abstract class Data(dirArg: Direction) extends HasId {
   private[core] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
   private[core] def lref: Node = Node(this)
-  private[chisel] def ref: Arg = if (isLit) litArg.get else lref
+  private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
   private[core] def cloneTypeWidth(width: Width): this.type
-  private[chisel] def toType: String
+  private[chisel3] def toType: String
 
   def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = this badConnect that
 
@@ -78,7 +78,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   // currently don't exist (while this information may be available during
   // FIRRTL emission, it would break directionality querying from Chisel, which
   // does get used).
-  private[chisel] def flatten: IndexedSeq[Bits]
+  private[chisel3] def flatten: IndexedSeq[Bits]
 
   /** Creates an new instance of this type, unpacking the input Bits into
     * structured data.
@@ -145,9 +145,9 @@ object Clock {
 // TODO: Document this.
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
-  private[chisel] override def flatten: IndexedSeq[Bits] = IndexedSeq()
+  private[chisel3] override def flatten: IndexedSeq[Bits] = IndexedSeq()
   private[core] def cloneTypeWidth(width: Width): this.type = cloneType
-  private[chisel] def toType = "Clock"
+  private[chisel3] def toType = "Clock"
 
   override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
     case _: Clock => this connect that

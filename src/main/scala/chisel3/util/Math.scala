@@ -3,9 +3,9 @@
 /** Scala-land math helper functions, like logs.
   */
 
-package chisel.util
+package chisel3.util
 
-import chisel._
+import chisel3._
 
 /** Compute the log2 rounded up with min value of 1 */
 object log2Up {

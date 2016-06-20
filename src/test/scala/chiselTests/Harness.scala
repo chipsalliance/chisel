@@ -2,13 +2,13 @@
 
 package chiselTests
 
-import chisel.testers.BasicTester
+import chisel3.testers.BasicTester
 import org.scalatest._
 import org.scalatest.prop._
 import java.io.File
 
 class HarnessSpec extends ChiselPropSpec
-  with chisel.BackendCompilationUtilities {
+  with chisel3.BackendCompilationUtilities {
 
   def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
 module ${prefix};

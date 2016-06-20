@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel
+package chisel3
 
 import scala.sys.process._
 import java.io._

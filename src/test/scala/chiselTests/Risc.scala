@@ -2,8 +2,8 @@
 
 package chiselTests
 
-import chisel._
-import chisel.util._
+import chisel3._
+import chisel3.util._
 
 class Risc extends Module {
   val io = new Bundle {

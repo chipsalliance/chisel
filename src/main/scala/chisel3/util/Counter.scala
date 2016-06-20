@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
-package chisel.util
+package chisel3.util
 
-import chisel._
+import chisel3._
 
 /** A counter module
   * @param n number of counts before the counter resets (or one more than the

@@ -1,15 +1,15 @@
 // See LICENSE for license details.
 
-package chisel.core
+package chisel3.core
 
 import scala.language.experimental.macros
 
-import chisel.internal._
-import chisel.internal.Builder.pushOp
-import chisel.internal.firrtl._
-import chisel.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
+import chisel3.internal._
+import chisel3.internal.Builder.pushOp
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
   UIntTransform, MuxTransform}
-import chisel.internal.firrtl.PrimOp._
+import chisel3.internal.firrtl.PrimOp._
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
@@ -25,9 +25,9 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
-  private[chisel] def fromInt(x: BigInt, w: Int): this.type
+  private[chisel3] def fromInt(x: BigInt, w: Int): this.type
 
-  private[chisel] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
+  private[chisel3] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   def cloneType: this.type = cloneTypeWidth(width)
 
@@ -360,9 +360,9 @@ sealed class UInt private[core] (dir: Direction, width: Width, lit: Option[ULit]
     extends Bits(dir, width, lit) with Num[UInt] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
-  private[chisel] def toType = s"UInt$width"
+  private[chisel3] def toType = s"UInt$width"
 
-  override private[chisel] def fromInt(value: BigInt, width: Int): this.type =
+  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
     UInt(value, width).asInstanceOf[this.type]
 
   override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
@@ -537,14 +537,14 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
     extends Bits(dir, width, lit) with Num[SInt] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
-  private[chisel] def toType = s"SInt$width"
+  private[chisel3] def toType = s"SInt$width"
 
   override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
     case _: SInt => this connect that
     case _ => this badConnect that
   }
 
-  override private[chisel] def fromInt(value: BigInt, width: Int): this.type =
+  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
     SInt(value, width).asInstanceOf[this.type]
 
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
@@ -671,7 +671,7 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
     new Bool(dir).asInstanceOf[this.type]
   }
 
-  override private[chisel] def fromInt(value: BigInt, width: Int): this.type = {
+  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type = {
     require((value == 0 || value == 1) && width == 1)
     Bool(value == 1).asInstanceOf[this.type]
   }

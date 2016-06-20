@@ -1,9 +1,9 @@
 // See LICENSE for license details.
 
-package chisel.util
+package chisel3.util
 
-import chisel._
-import chisel.core.SeqUtils
+import chisel3._
+import chisel3.core.SeqUtils
 
 object Cat {
   /** Combine data elements together

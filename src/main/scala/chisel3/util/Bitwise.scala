@@ -3,10 +3,10 @@
 /** Miscellaneous circuit generators operating on bits.
   */
 
-package chisel.util
+package chisel3.util
 
-import chisel._
-import chisel.core.SeqUtils
+import chisel3._
+import chisel3.core.SeqUtils
 
 object FillInterleaved
 {

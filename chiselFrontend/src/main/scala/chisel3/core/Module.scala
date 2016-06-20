@@ -1,15 +1,15 @@
 // See LICENSE for license details.
 
-package chisel.core
+package chisel3.core
 
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 import scala.language.experimental.macros
 
-import chisel.internal._
-import chisel.internal.Builder.pushCommand
-import chisel.internal.Builder.dynamicContext
-import chisel.internal.firrtl._
-import chisel.internal.sourceinfo.{SourceInfo, InstTransform, UnlocatableSourceInfo}
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.Builder.dynamicContext
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{SourceInfo, InstTransform, UnlocatableSourceInfo}
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -53,7 +53,7 @@ extends HasId {
   def this(_clock: Clock, _reset: Bool) = this(Option(_clock), Option(_reset))
 
   private[core] val _namespace = Builder.globalNamespace.child
-  private[chisel] val _commands = ArrayBuffer[Command]()
+  private[chisel3] val _commands = ArrayBuffer[Command]()
   private[core] val _ids = ArrayBuffer[HasId]()
   dynamicContext.currentModule = Some(this)
 
@@ -67,7 +67,7 @@ extends HasId {
   val clock = Clock(INPUT)
   val reset = Bool(INPUT)
 
-  private[chisel] def addId(d: HasId) { _ids += d }
+  private[chisel3] def addId(d: HasId) { _ids += d }
 
   private[core] def ports: Seq[(String,Data)] = Vector(
     ("clk", clock), ("reset", reset), ("io", io)

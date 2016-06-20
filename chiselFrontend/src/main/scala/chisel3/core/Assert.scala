@@ -1,14 +1,14 @@
 // See LICENSE for license details.
 
-package chisel.core
+package chisel3.core
 
 import scala.reflect.macros.blackbox.Context
 import scala.language.experimental.macros
 
-import chisel.internal._
-import chisel.internal.Builder.pushCommand
-import chisel.internal.firrtl._
-import chisel.internal.sourceinfo.SourceInfo
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.SourceInfo
 
 object assert { // scalastyle:ignore object.name
   /** Checks for a condition to be valid in the circuit at all times. If the

@@ -1,10 +1,10 @@
 // See LICENSE for license details.
 
-package chisel.core
+package chisel3.core
 
-import chisel.internal.Builder.pushCommand
-import chisel.internal.firrtl.{ModuleIO, DefInvalid}
-import chisel.internal.sourceinfo.SourceInfo
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl.{ModuleIO, DefInvalid}
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Defines a black box, which is a module that can be referenced from within
   * Chisel, but is not defined in the emitted Verilog. Useful for connecting

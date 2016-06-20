@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
-package chisel.testers
-import chisel._
+package chisel3.testers
+import chisel3._
 
 import scala.language.experimental.macros
 

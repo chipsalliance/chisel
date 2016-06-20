@@ -1,10 +1,10 @@
 // See LICENSE for license details.
 
-package chisel.internal.firrtl
-import chisel._
-import chisel.internal.sourceinfo.{NoSourceInfo, SourceLine}
+package chisel3.internal.firrtl
+import chisel3._
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
-private[chisel] object Emitter {
+private[chisel3] object Emitter {
   def emit(circuit: Circuit): String = new Emitter(circuit).toString
 }
 

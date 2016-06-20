@@ -2,9 +2,9 @@
 
 package chiselTests
 
-import chisel._
-import chisel.testers.BasicTester
-import chisel.util._
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class LFSR16 extends Module {
   val io = new Bundle {
@@ -36,7 +36,7 @@ class LFSR16Tester(c: LFSR16) extends Tester(c) {
 }
 */
 
-//TODO: Use chisel.util version instead?
+//TODO: Use chisel3.util version instead?
 
 class LFSRSpec extends ChiselPropSpec {
 
