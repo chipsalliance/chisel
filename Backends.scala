@@ -1,7 +1,7 @@
 // See LICENSE for license details.
-package chisel.iotesters
+package chisel3.iotesters
 
-import chisel.internal.HasId
+import chisel3.internal.HasId
 
 /**
   * define interface for ClassicTester backend implementations such as verilator and firrtl interpreter

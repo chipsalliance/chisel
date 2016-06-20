@@ -1,9 +1,9 @@
 // See LICENSE for license details.
 
-package chisel.iotesters
+package chisel3.iotesters
 
-import chisel._
-import chisel.internal.firrtl._
+import chisel3._
+import chisel3.internal.firrtl._
 import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 

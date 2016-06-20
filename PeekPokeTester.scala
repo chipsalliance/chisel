@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
-package chisel.iotesters
+package chisel3.iotesters
 
-import chisel._
+import chisel3._
 
 import scala.util.Random
 

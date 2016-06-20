@@ -1,12 +1,12 @@
 // See LICENSE for license details.
 
-package chisel.iotesters
+package chisel3.iotesters
 
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
-import chisel._
-import chisel.testers._
+import chisel3._
+import chisel3.testers._
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {

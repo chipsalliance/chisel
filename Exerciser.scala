@@ -1,9 +1,9 @@
 // See LICENSE for license details.
 
-package chisel.iotesters
+package chisel3.iotesters
 
-import chisel._
-import chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
 
 /**
   * experimental version of a Tester that allows arbitrary testing circuitry to be run

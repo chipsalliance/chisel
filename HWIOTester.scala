@@ -1,9 +1,9 @@
 // See LICENSE for license details.
 
-package chisel.iotesters
+package chisel3.iotesters
 
-import chisel.testers.BasicTester
-import chisel.{Bits, Module, printf}
+import chisel3.testers.BasicTester
+import chisel3.{Bits, Module, printf}
 
 import scala.util.Random
 

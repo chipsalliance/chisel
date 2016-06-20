@@ -1,7 +1,7 @@
 // See LICENSE for license details.
-package chisel.iotesters
+package chisel3.iotesters
 
-import chisel.internal.HasId
+import chisel3.internal.HasId
 
 import scala.collection.mutable.HashMap
 import scala.util.Random
@@ -292,19 +292,19 @@ class VerilatorCppHarnessCompiler(
 }
 
 private[iotesters] object setupVerilatorBackend {
-  def apply(dutGen: ()=> chisel.Module): Backend = {
+  def apply(dutGen: ()=> chisel3.Module): Backend = {
     val rootDirPath = new File(".").getCanonicalPath()
     val testDirPath = s"${rootDirPath}/test_run_dir"
     val dir = new File(testDirPath)
     dir.mkdirs()
 
     CircuitGraph.clear
-    val circuit = chisel.Driver.elaborate(dutGen)
+    val circuit = chisel3.Driver.elaborate(dutGen)
     val dut = CircuitGraph construct circuit
 
     // Dump FIRRTL for debugging
     val firrtlIRFilePath = s"${testDirPath}/${circuit.name}.ir"
-    chisel.Driver.dumpFirrtl(circuit, Some(new File(firrtlIRFilePath)))
+    chisel3.Driver.dumpFirrtl(circuit, Some(new File(firrtlIRFilePath)))
     // Generate Verilog
     val verilogFilePath = s"${testDirPath}/${circuit.name}.v"
     firrtl.Driver.compile(firrtlIRFilePath, verilogFilePath, new firrtl.VerilogCompiler)
@@ -319,8 +319,8 @@ private[iotesters] object setupVerilatorBackend {
     copyVerilatorHeaderFiles(testDirPath)
     firrtl.Driver.compile(firrtlIRFilePath, cppHarnessFilePath, new VerilatorCppHarnessCompiler(dut, vcdFilePath))
 
-    chisel.Driver.verilogToCpp(verilogFileName.split("\\.")(0), dut.name, new File(testDirPath), Seq(), new File(cppHarnessFileName)).!
-    chisel.Driver.cppToExe(verilogFileName.split("\\.")(0), new File(testDirPath)).!
+    chisel3.Driver.verilogToCpp(verilogFileName.split("\\.")(0), dut.name, new File(testDirPath), Seq(), new File(cppHarnessFileName)).!
+    chisel3.Driver.cppToExe(verilogFileName.split("\\.")(0), new File(testDirPath)).!
 
     new VerilatorBackend(dut, List(cppBinaryPath))
   }
