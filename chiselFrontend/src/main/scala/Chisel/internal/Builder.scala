@@ -41,11 +41,11 @@ private[Chisel] class IdGen {
 }
 
 private[Chisel] trait HasId {
-  private[Chisel] def _onModuleClose {} // scalastyle:ignore method.name
-  private[Chisel] val _parent = Builder.dynamicContext.currentModule
+  private[Chisel] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
+  private[Chisel] val _parent: Option[Module] = Builder.currentModule
   _parent.foreach(_.addId(this))
 
-  private[Chisel] val _id = Builder.idGen.next
+  private[Chisel] val _id: Long = Builder.idGen.next
   override def hashCode: Int = _id.toInt
   override def equals(that: Any): Boolean = that match {
     case x: HasId => _id == x._id
@@ -93,15 +93,29 @@ private[Chisel] class DynamicContext {
 private[Chisel] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
+  private def dynamicContext: DynamicContext =
+    dynamicContextVar.value.getOrElse(new DynamicContext)
 
-  def dynamicContext: DynamicContext =
-    dynamicContextVar.value getOrElse (new DynamicContext)
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
 
+  def currentModule: Option[Module] = dynamicContext.currentModule
+  def currentModule_=(target: Option[Module]): Unit = {
+    dynamicContext.currentModule = target
+  }
+  def forcedModule: Module = currentModule match {
+    case Some(module) => module
+    case None => throw new Exception(
+      "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
+      // A bare api call is, e.g. calling Wire() from the scala console).
+    )
+  }
+
+  // TODO(twigg): Ideally, binding checks and new bindings would all occur here
+  // However, rest of frontend can't support this yet.
   def pushCommand[T <: Command](c: T): T = {
-    dynamicContext.currentModule.foreach(_._commands += c)
+    forcedModule._commands += c
     c
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = pushCommand(cmd).id

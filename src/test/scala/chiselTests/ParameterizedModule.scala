@@ -7,10 +7,10 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class ParameterizedModule(invert: Boolean) extends Module {
-  val io = new Bundle {
-    val in = new Bool(INPUT)
-    val out = new Bool(OUTPUT)
-  }
+  val io = IO(new Bundle {
+    val in  = Input(Bool())
+    val out = Output(Bool())
+  })
   if (invert) {
     io.out := !io.in
   } else {

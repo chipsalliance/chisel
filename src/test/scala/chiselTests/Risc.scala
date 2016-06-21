@@ -4,14 +4,14 @@ package chiselTests
 import Chisel._
 
 class Risc extends Module {
-  val io = new Bundle {
-    val isWr   = Bool(INPUT)
-    val wrAddr = UInt(INPUT, 8)
-    val wrData = Bits(INPUT, 32)
-    val boot   = Bool(INPUT)
-    val valid  = Bool(OUTPUT)
-    val out    = Bits(OUTPUT, 32)
-  }
+  val io = IO(new Bundle {
+    val isWr   = Input(Bool())
+    val wrAddr = Input(UInt(8))
+    val wrData = Input(Bits(32))
+    val boot   = Input(Bool())
+    val valid  = Output(Bool())
+    val out    = Output(Bits(32))
+  })
   val memSize = 256
   val file = Mem(memSize, Bits(width = 32))
   val code = Mem(memSize, Bits(width = 32))

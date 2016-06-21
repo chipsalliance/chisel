@@ -12,7 +12,7 @@ import internal.sourceinfo.SourceInfo
 
 class BasicTester extends Module {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.
-  val io = new Bundle()
+  val io = IO(new Bundle())
 
   def popCount(n: Long): Int = n.toBinaryString.count(_=='1')
 

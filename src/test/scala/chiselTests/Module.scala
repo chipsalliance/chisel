@@ -4,20 +4,20 @@ package chiselTests
 import Chisel._
 
 class SimpleIO extends Bundle {
-  val in  = UInt(INPUT,  32)
-  val out = UInt(OUTPUT, 32)
+  val in  = Input(UInt(32))
+  val out = Output(UInt(32))
 }
 
 class PlusOne extends Module {
-  val io = new SimpleIO
+  val io = IO(new SimpleIO)
   io.out := io.in + UInt(1)
 }
 
 class ModuleVec(val n: Int) extends Module {
-  val io = new Bundle {
-    val ins  = Vec(n, UInt(INPUT,  32))
-    val outs = Vec(n, UInt(OUTPUT, 32))
-  }
+  val io = IO(new Bundle {
+    val ins  = Input(Vec(n, UInt(32)))
+    val outs = Output(Vec(n, UInt(32)))
+  })
   val pluses = Vec.fill(n){ Module(new PlusOne).io }
   for (i <- 0 until n) {
     pluses(i).in := io.ins(i)
@@ -39,8 +39,8 @@ class ModuleVecTester(c: ModuleVec) extends Tester(c) {
 */
 
 class ModuleWire extends Module {
-  val io = new SimpleIO
-  val inc = Wire(Module(new PlusOne).io)
+  val io = IO(new SimpleIO)
+  val inc = Wire(Module(new PlusOne).io.newType)
   inc.in := io.in
   io.out := inc.out
 }
@@ -57,10 +57,10 @@ class ModuleWireTester(c: ModuleWire) extends Tester(c) {
 */
 
 class ModuleWhen extends Module {
-  val io = new Bundle {
+  val io = IO(new Bundle {
     val s = new SimpleIO
     val en = Bool()
-  }
+  })
   when(io.en) {
     val inc = Module(new PlusOne).io
     inc.in := io.s.in

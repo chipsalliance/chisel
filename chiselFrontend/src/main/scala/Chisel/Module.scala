@@ -8,8 +8,9 @@ import scala.language.experimental.macros
 import internal._
 import internal.Builder.pushCommand
 import internal.Builder.dynamicContext
-import internal.firrtl._
 import internal.sourceinfo.{SourceInfo, InstTransform, UnlocatableSourceInfo}
+import internal.firrtl
+import internal.firrtl.{Command, Component, DefInstance, DefInvalid, ModuleIO}
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -26,14 +27,19 @@ object Module {
     // module de-duplication in FIRRTL emission.
     val childSourceInfo = UnlocatableSourceInfo
 
-    val parent = dynamicContext.currentModule
-    val m = bc.setRefs()
+    val parent: Option[Module] = Builder.currentModule
+    val m = bc.setRefs() // This will set currentModule!
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
-    dynamicContext.currentModule = parent
+    Builder.currentModule = parent // Back to parent!
     val ports = m.computePorts
     Builder.components += Component(m, m.name, ports, m._commands)
-    pushCommand(DefInstance(sourceInfo, m, ports))
-    m.setupInParent(childSourceInfo)
+    // Avoid referencing 'parent' in top module
+    if(!Builder.currentModule.isEmpty) {
+      pushCommand(DefInstance(sourceInfo, m, ports))
+      m.setupInParent(childSourceInfo)
+    }
+
+    m
   }
 }
 
@@ -52,10 +58,41 @@ extends HasId {
   def this(_reset: Bool)  = this(None, Option(_reset))
   def this(_clock: Clock, _reset: Bool) = this(Option(_clock), Option(_reset))
 
+  // This function binds the iodef as a port in the hardware graph
+  private[Chisel] def Port[T<:Data](iodef: T): iodef.type = {
+    // Bind each element of the iodef to being a Port
+    Binding.bind(iodef, PortBinder(this), "Error: iodef")
+    iodef
+  }
+
+  private[this] var ioDefined: Boolean = false
+
+  /**
+   * This must wrap the datatype used to set the io field of any Module.
+   * i.e. All concrete modules must have defined io in this form:
+   * [lazy] val io[: io type] = IO(...[: io type])
+   *
+   * Items in [] are optional.
+   *
+   * The granted iodef WILL NOT be cloned (to allow for more seamless use of
+   * anonymous Bundles in the IO) and thus CANNOT have been bound to any logic.
+   * This will error if any node is bound (e.g. due to logic in a Bundle
+   * constructor, which is considered improper).
+   *
+   * TODO(twigg): Specifically walk the Data definition to call out which nodes
+   * are problematic.
+   */
+  def IO[T<:Data](iodef: T): iodef.type = {
+    require(!ioDefined, "Another IO definition for this module was already declared!")
+    ioDefined = true
+
+    Port(iodef)
+  }
+
   private[Chisel] val _namespace = Builder.globalNamespace.child
   private[Chisel] val _commands = ArrayBuffer[Command]()
   private[Chisel] val _ids = ArrayBuffer[HasId]()
-  dynamicContext.currentModule = Some(this)
+  Builder.currentModule = Some(this)
 
   /** Name of the instance. */
   val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
@@ -64,8 +101,8 @@ extends HasId {
     * connections in and out of a Module may only go through `io` elements.
     */
   def io: Bundle
-  val clock = Clock(INPUT)
-  val reset = Bool(INPUT)
+  val clock = Port(Input(Clock()))
+  val reset = Port(Input(Bool()))
 
   private[Chisel] def addId(d: HasId) { _ids += d }
 
@@ -73,10 +110,13 @@ extends HasId {
     ("clk", clock), ("reset", reset), ("io", io)
   )
 
-  private[Chisel] def computePorts = for((name, port) <- ports) yield {
-    val bundleDir = if (port.isFlip) INPUT else OUTPUT
-    Port(port, if (port.dir == NO_DIR) bundleDir else port.dir)
-  }
+  private[Chisel] def computePorts: Seq[firrtl.Port] =
+    for((name, port) <- ports) yield {
+      // Port definitions need to know input or output at top-level.
+      // By FIRRTL semantics, 'flipped' becomes an Input
+      val direction = if(Data.isFlipped(port)) Direction.Input else Direction.Output
+      firrtl.Port(port, direction)
+    }
 
   private[Chisel] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
     _parent match {

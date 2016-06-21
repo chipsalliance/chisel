@@ -8,13 +8,13 @@ import org.scalatest.prop._
 import Chisel.testers.BasicTester
 
 class Tbl(w: Int, n: Int) extends Module {
-  val io = new Bundle {
-    val wi  = UInt(INPUT, log2Up(n))
-    val ri  = UInt(INPUT, log2Up(n))
-    val we  = Bool(INPUT)
-    val  d  = UInt(INPUT, w)
-    val  o  = UInt(OUTPUT, w)
-  }
+  val io = IO(new Bundle {
+    val wi  = Input(UInt(log2Up(n)))
+    val ri  = Input(UInt(log2Up(n)))
+    val we  = Input(Bool())
+    val  d  = Input(UInt(w))
+    val  o  = Output(UInt(w))
+  })
   val m = Mem(n, UInt(width = w))
   io.o := m(io.ri)
   when (io.we) {

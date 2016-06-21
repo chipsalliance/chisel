@@ -8,15 +8,15 @@ import Chisel.testers.BasicTester
 
 class OptionBundle(hasIn: Boolean) extends Bundle {
   val in = if (hasIn) {
-    Some(Bool(INPUT))
+    Some(Input(Bool()))
   } else {
     None
   }
-  val out = Bool(OUTPUT)
+  val out = Output(Bool())
 }
 
 class OptionBundleModule(hasIn: Boolean) extends Module {
-  val io = new OptionBundle(hasIn)
+  val io = IO(new OptionBundle(hasIn))
   if (hasIn) {
     io.out := io.in.get
   } else {

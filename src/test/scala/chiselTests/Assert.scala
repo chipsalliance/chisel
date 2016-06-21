@@ -25,7 +25,7 @@ class SucceedingAssertTester() extends BasicTester {
 }
 
 class PipelinedResetModule extends Module {
-  val io = new Bundle { }
+  val io = IO(new Bundle { })
   val a = Reg(init = UInt(0xbeef))
   val b = Reg(init = UInt(0xbeef))
   assert(a === b)
