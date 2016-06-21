@@ -8,25 +8,25 @@ import Chisel._
 import Chisel.testers.BasicTester
 
 class BlackBoxInverter extends BlackBox {
-  val io = new Bundle() {
-    val in = Bool(INPUT)
-    val out = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle() {
+    val in = Input(Bool())
+    val out = Output(Bool())
+  })
 }
 
 class BlackBoxPassthrough extends BlackBox {
-  val io = new Bundle() {
-    val in = Bool(INPUT)
-    val out = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle() {
+    val in = Input(Bool())
+    val out = Output(Bool())
+  })
 }
 
 class BlackBoxRegister extends BlackBox {
-  val io = new Bundle() {
-    val clock = Clock().asInput
-    val in = Bool(INPUT)
-    val out = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle() {
+    val clock = Input(Clock())
+    val in = Input(Bool())
+    val out = Output(Bool())
+  })
 }
 
 class BlackBoxTester extends BasicTester {
@@ -84,9 +84,9 @@ class BlackBoxWithClockTester extends BasicTester {
 /*
 // Must determine how to handle parameterized Verilog
 class BlackBoxConstant(value: Int) extends BlackBox {
-  val io = new Bundle() {
-    val out = UInt(width=log2Up(value)).asOutput
-  }
+  val io = IO(new Bundle() {
+    val out = Output(UInt(width=log2Up(value)))
+  })
   override val name = s"#(WIDTH=${log2Up(value)},VALUE=$value) "
 }
 

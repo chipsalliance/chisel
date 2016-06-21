@@ -8,10 +8,10 @@ import org.scalatest.prop._
 import Chisel.testers.BasicTester
 
 class DirectionHaver extends Module {
-  val io = new Bundle {
-    val in = UInt(INPUT, 32)
-    val out = UInt(OUTPUT, 32)
-  }
+  val io = IO(new Bundle {
+    val in = Input(UInt(32))
+    val out = Output(UInt(32))
+  })
 }
 
 class GoodDirection extends DirectionHaver {

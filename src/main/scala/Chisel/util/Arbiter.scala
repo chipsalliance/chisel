@@ -7,9 +7,9 @@ package Chisel
 
 /** An I/O bundle for the Arbiter */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
-  val in  = Vec(n, Decoupled(gen)).flip
-  val out = Decoupled(gen)
-  val chosen = UInt(OUTPUT, log2Up(n))
+  val in  = Flipped(Vec(n, DecoupledIO(gen)))
+  val out = DecoupledIO(gen)
+  val chosen = Output(UInt(log2Up(n)))
 }
 
 /** Arbiter Control determining which producer has access */
@@ -25,7 +25,7 @@ private object ArbiterCtrl
 abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module {
   def grant: Seq[Bool]
   def choice: UInt
-  val io = new ArbiterIO(gen, n)
+  val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := choice
   io.out.valid := io.in(io.chosen).valid
@@ -37,7 +37,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
     val locked = lockCount.value =/= UInt(0)
     val wantsLock = needsLock.map(_(io.out.bits)).getOrElse(Bool(true))
 
-    when (io.out.fire() && wantsLock) {
+    when (io.out.firing && wantsLock) {
       lockIdx := io.chosen
       lockCount.inc()
     }
@@ -53,7 +53,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
 
 class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  lazy val lastGrant = RegEnable(io.chosen, io.out.fire())
+  lazy val lastGrant = RegEnable(io.chosen, io.out.firing)
   lazy val grantMask = (0 until n).map(UInt(_) > lastGrant)
   lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
 
@@ -99,7 +99,7 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
    consumer.io.in <> arb.io.out
  */
 class Arbiter[T <: Data](gen: T, n: Int) extends Module {
-  val io = new ArbiterIO(gen, n)
+  val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := UInt(n-1)
   io.out.bits := io.in(n-1).bits
