@@ -28,13 +28,21 @@ abstract class BlackBox extends Module {
 
   // Do not do reflective naming of internal signals, just name io
   override private[core] def setRefs(): this.type = {
-    for ((name, port) <- ports) {
-      port.setRef(ModuleIO(this, _namespace.name(name)))
-    }
     // setRef is not called on the actual io.
     // There is a risk of user improperly attempting to connect directly with io
     // Long term solution will be to define BlackBox IO differently as part of
     //   it not descending from the (current) Module
+    for ((name, port) <- ports) {
+      port.setRef(ModuleIO(this, _namespace.name(name)))
+    }
+    // We need to call forceName and onModuleClose on all of the sub-elements
+    // of the io bundle, but NOT on the io bundle itself.
+    // Doing so would cause the wrong names to be assigned, since their parent
+    // is now the module itself instead of the io bundle.
+    for (id <- _ids; if id ne io) {
+      id.forceName(default="T", _namespace)
+      id._onModuleClose
+    }
     this
   }
 

@@ -40,7 +40,7 @@ object MuxLookup {
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  def apply[S <: UInt, T <: Bits] (key: S, default: T, mapping: Seq[(S, T)]): T = {
+  def apply[S <: UInt, T <: Data] (key: S, default: T, mapping: Seq[(S, T)]): T = {
     var res = default
     for ((k, v) <- mapping.reverse)
       res = Mux(k === key, v, res)
@@ -54,7 +54,7 @@ object MuxCase {
   /** @param default the default value if none are enabled
     * @param mapping a set of data values with associated enables
     * @return the first value in mapping that is enabled */
-  def apply[T <: Bits] (default: T, mapping: Seq[(Bool, T)]): T = {
+  def apply[T <: Data] (default: T, mapping: Seq[(Bool, T)]): T = {
     var res = default
     for ((t, v) <- mapping.reverse){
       res = Mux(t, v, res)
