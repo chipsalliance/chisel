@@ -401,22 +401,26 @@ class VerilogEmitter extends Emitter {
             }
          }
       }
-      def simulate (clk:Expression,en:Expression,s:Seq[Any]) = {
-         if (!at_clock.contains(clk)) at_clock(clk) = ArrayBuffer[Seq[Any]]()
-         at_clock(clk) += Seq("`ifndef SYNTHESIS")
-         at_clock(clk) += Seq("`ifdef PRINTF_COND")
-         at_clock(clk) += Seq(tab,"if (`PRINTF_COND) begin")
-         at_clock(clk) += Seq("`endif")
-         at_clock(clk) += Seq(tab,tab,"if (",en,") begin")
-         at_clock(clk) += Seq(tab,tab,tab,s)
-         at_clock(clk) += Seq(tab,tab,"end")
-         at_clock(clk) += Seq("`ifdef PRINTF_COND")
-         at_clock(clk) += Seq(tab,"end")
-         at_clock(clk) += Seq("`endif")
-         at_clock(clk) += Seq("`endif")
+      def simulate(clk: Expression, en: Expression, s: Seq[Any], cond: Option[String]) = {
+        if (!at_clock.contains(clk)) at_clock(clk) = ArrayBuffer[Seq[Any]]()
+        at_clock(clk) += Seq("`ifndef SYNTHESIS")
+        if (cond.nonEmpty) {
+          at_clock(clk) += Seq(s"`ifdef ${cond.get}")
+          at_clock(clk) += Seq(tab, s"if (`${cond.get}) begin")
+          at_clock(clk) += Seq("`endif")
+        }
+        at_clock(clk) += Seq(tab,tab,"if (",en,") begin")
+        at_clock(clk) += Seq(tab,tab,tab,s)
+        at_clock(clk) += Seq(tab,tab,"end")
+        if (cond.nonEmpty) {
+          at_clock(clk) += Seq(s"`ifdef ${cond.get}")
+          at_clock(clk) += Seq(tab,"end")
+          at_clock(clk) += Seq("`endif")
+        }
+        at_clock(clk) += Seq("`endif")
       }
-      def stop (ret:Int) : Seq[Any] = {
-         Seq("$fdisplay(32'h80000002,\"",ret,"\");$finish;")
+      def stop(ret: Int): Seq[Any] = {
+        Seq(if (ret == 0) "$finish;" else "$fatal;")
       }
       def printf (str:StringLit,args:Seq[Expression]) : Seq[Any] = {
          val q = '"'.toString
@@ -471,8 +475,12 @@ class VerilogEmitter extends Emitter {
                declare("wire",s.name,tpe(s.value))
                assign(WRef(s.name,tpe(s.value),NodeKind(),MALE),s.value)
             }
-            case (s:Stop) => simulate(s.clk,s.en,stop(s.ret))
-            case (s:Print) => simulate(s.clk,s.en,printf(s.string,s.args))
+            case (s:Stop) => {
+              val errorString = StringLit(s"${s.ret}\n".getBytes)
+              build_streams(Print(NoInfo, errorString, Seq(), s.clk, s.en))
+              simulate(s.clk, s.en, stop(s.ret), None)
+            }
+            case (s:Print) => simulate(s.clk, s.en, printf(s.string, s.args), Some("PRINTF_COND"))
             case (s:WDefInstance) => {
                val es = create_exps(WRef(s.name,s.tpe,InstanceKind(),MALE))
                instantiate(s.name,s.module,es)
