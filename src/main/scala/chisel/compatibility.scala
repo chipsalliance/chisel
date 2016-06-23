@@ -22,6 +22,7 @@ package object Chisel {
   type Bundle = chisel.core.Bundle
 
   val assert = chisel.core.assert
+  val stop = chisel.core.stop
 
   type Element = chisel.core.Element
   type Bits = chisel.core.Bits

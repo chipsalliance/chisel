@@ -71,3 +71,17 @@ object assert { // scalastyle:ignore object.name
     Predef.assert(cond, "")
   }
 }
+
+object stop { // scalastyle:ignore object.name
+  /** Terminate execution with a failure code. */
+  def apply(code: Int)(implicit sourceInfo: SourceInfo): Unit = {
+    when (!Builder.dynamicContext.currentModule.get.reset) {
+      pushCommand(Stop(sourceInfo, Node(Builder.dynamicContext.currentModule.get.clock), code))
+    }
+  }
+
+  /** Terminate execution, indicating success. */
+  def apply()(implicit sourceInfo: SourceInfo): Unit = {
+    stop(0)
+  }
+}
