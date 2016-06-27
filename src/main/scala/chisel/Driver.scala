@@ -71,6 +71,7 @@ trait BackendCompilationUtilities {
         "--top-module", topModule,
         "+define+TOP_TYPE=V" + dutFile,
         s"+define+PRINTF_COND=!$topModule.reset",
+        s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
         s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
         "-Mdir", dir.toString,
