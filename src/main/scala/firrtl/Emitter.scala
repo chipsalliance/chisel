@@ -478,7 +478,7 @@ class VerilogEmitter extends Emitter {
             case (s:Stop) => {
               val errorString = StringLit(s"${s.ret}\n".getBytes)
               build_streams(Print(NoInfo, errorString, Seq(), s.clk, s.en))
-              simulate(s.clk, s.en, stop(s.ret), None)
+              simulate(s.clk, s.en, stop(s.ret), Some("STOP_COND"))
             }
             case (s:Print) => simulate(s.clk, s.en, printf(s.string, s.args), Some("PRINTF_COND"))
             case (s:WDefInstance) => {
