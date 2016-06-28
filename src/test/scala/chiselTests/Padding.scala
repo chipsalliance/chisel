@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import chisel._
+import chisel3._
 
 class Padder extends Module {
   val io = new Bundle {
