@@ -106,14 +106,23 @@ abstract class PeekPokeTester[+T <: Module](
 
   def poke(signal: Bits, value: BigInt) {
     if (!signal.isLit) backend.poke(signal, value, None)
+    // TODO: Warn if signal.isLit
+  }
+
+  def poke(signal: Aggregate, value: IndexedSeq[BigInt]): Unit =  {
+    (signal.flatten zip value.reverse).foreach(x => poke(x._1, x._2))
   }
 
   def pokeAt[T <: Bits](data: Mem[T], value: BigInt, off: Int): Unit = {
     backend.poke(data, value, Some(off))
   }
 
-  def peek(signal: Bits) = {
+  def peek(signal: Bits):BigInt = {
     if (!signal.isLit) backend.peek(signal, None) else signal.litValue()
+  }
+
+  def peek(signal: Aggregate): IndexedSeq[BigInt] =  {
+    signal.flatten map (x => backend.peek(x, None))
   }
 
   def peekAt[T <: Bits](data: Mem[T], off: Int): BigInt = {
@@ -132,6 +141,10 @@ abstract class PeekPokeTester[+T <: Module](
       if (!good) fail
       good
     } else expect(signal.litValue() == expected, s"${signal.litValue()} == $expected")
+  }
+
+  def expect (signal: Aggregate, expected: IndexedSeq[BigInt]): Boolean = {
+    (signal.flatten, expected.reverse).zipped.foldLeft(true) { (result, x) => result && expect(x._1, x._2)}
   }
 
   def finish: Boolean = {
