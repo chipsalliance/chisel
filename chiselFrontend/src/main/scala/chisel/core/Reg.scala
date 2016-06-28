@@ -69,3 +69,11 @@ object Reg {
     x
   }
 }
+
+object RegNext {
+  def apply[T <: Data]( next: T ): T = { Reg(null.asInstanceOf[T], next, null.asInstanceOf[T]) }
+}
+
+object RegInit {
+  def apply[T <: Data]( init: T ): T = { Reg(null.asInstanceOf[T], null.asInstanceOf[T], init ) }
+}

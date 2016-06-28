@@ -50,6 +50,8 @@ package object chisel {
   val printf = chisel.core.printf
 
   val Reg = chisel.core.Reg
+  val RegNext = chisel.core.RegNext
+  val RegInit = chisel.core.RegInit
 
   val when = chisel.core.when
   type WhenContext = chisel.core.WhenContext
