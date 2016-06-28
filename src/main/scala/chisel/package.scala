@@ -32,6 +32,8 @@ package object chisel {
   val UInt = chisel.core.UInt
   type SInt = chisel.core.SInt
   val SInt = chisel.core.SInt
+  type Fixed = chisel.core.Fixed
+  val Fixed = chisel.core.Fixed
   type Bool = chisel.core.Bool
   val Bool = chisel.core.Bool
   val Mux = chisel.core.Mux

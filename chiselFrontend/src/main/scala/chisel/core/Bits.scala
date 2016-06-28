@@ -727,6 +727,8 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
   final def -& (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
   /** subtract (no growth) operator */
   final def -% (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+  /** multiple (no growth) operator */
+  final def *% (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
 
   def do_+& (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
     checkAligned( that )
@@ -743,6 +745,10 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
   def do_-% (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
     checkAligned( that )
     ( this.asSInt -% that.asSInt ).asFixed( this.fracWidth )
+  }
+  def do_*% (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    (this.asSInt * that.asSInt).do_head( this.width.get + this.fracWidth.get ).do_tail( this.width.get ).asSInt.asFixed( this.fracWidth )
   }
 
   final def & (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
@@ -802,32 +808,36 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
 }
 
 object Fixed {
+  def toFixed( x : Double, fw : Int ) : BigInt = BigInt((x * ( 1 << fw )).toInt) // TODO: deal with bw >= 32
+
   /** Create an Fixed type with inferred width. */
   def apply(): Fixed = apply(NO_DIR, Width(), Width())
   /** Create an Fixed type or port with fixed width. */
-  def apply(dir: Direction = NO_DIR, width: Int, fw : Int): Fixed = apply(dir, Width(width), Width(fw))
+  def apply(dir: Direction = NO_DIR, width: Int, fracWidth : Int): Fixed = apply(dir, Width(width), Width(fracWidth))
   /** Create an Fixed port with inferred width. */
   def apply(dir: Direction): Fixed = apply(dir, Width(), Width())
 
+  /** Create an Fixed literal with inferred width from a double */
+  def apply(value: Double, width : Int, fracWidth : Int): Fixed = apply( toFixed(value, fracWidth), width, fracWidth )
   /** Create an Fixed literal with inferred width. */
   def apply(value: BigInt): Fixed = apply(value, Width(), Width())
   /** Create a Fixed literal with inferred fractional width */
   def apply(value: BigInt, width : Int): Fixed = apply(value, Width(width), Width())
   /** Create an Fixed literal with fixed width. */
-  def apply(value: BigInt, width: Int, fw : Int): Fixed = apply(value, Width(width), Width(fw))
+  def apply(value: BigInt, width: Int, fracWidth : Int): Fixed = apply(value, Width(width), Width(fracWidth))
   /** Create a Fixed literal with fixed width */
-  def apply(value: BigInt, width: Int, fw : Width): Fixed = apply(value, Width(width), fw)
+  def apply(value: BigInt, width: Int, fracWidth : Width): Fixed = apply(value, Width(width), fracWidth)
   /** Create a Fixed literal with fixed width */
-  def apply(value: BigInt, width: Width, fw : Int): Fixed = apply(value, width, Width(fw))
+  def apply(value: BigInt, width: Width, fracWidth : Int): Fixed = apply(value, width, Width(fracWidth))
 
   /** Create an Fixed type with specified width. */
-  def apply(width: Width, fw : Width): Fixed = new Fixed(NO_DIR, width, fw)
+  def apply(width: Width, fracWidth : Width): Fixed = new Fixed(NO_DIR, width, fracWidth)
   /** Create an Fixed port with specified width. */
-  def apply(dir: Direction, width: Width, fw : Width): Fixed = new Fixed(dir, width, fw)
+  def apply(dir: Direction, width: Width, fracWidth : Width): Fixed = new Fixed(dir, width, fracWidth)
   /** Create an Fixed literal with specified width. */
-  def apply(value: BigInt, width: Width, fw : Width ): Fixed = {
+  def apply(value: BigInt, width: Width, fracWidth : Width ): Fixed = {
     val lit = SLit(value, width)
-    new Fixed(NO_DIR, lit.width, fw, Some(lit))
+    new Fixed(NO_DIR, lit.width, fracWidth, Some(lit))
   }
 }
 
