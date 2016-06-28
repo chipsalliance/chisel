@@ -204,7 +204,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   /** Reinterpret cast to a SInt.
     *
     * @note value not guaranteed to be preserved: for example, an UInt of width
-    * 3 and value 7 (0b111) would become a SInt with value -1
+    * 3 and value 7 (3b111) would become a SInt with value -1
     */
   final def asSInt(): SInt = macro SourceInfoTransform.noArg
 
@@ -213,7 +213,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   /** Reinterpret cast to an UInt.
     *
     * @note value not guaranteed to be preserved: for example, a SInt of width
-    * 3 and value -1 (0b111) would become an UInt with value 7
+    * 3 and value -1 (3b111) would become an UInt with value 7
     */
   final def asUInt(): UInt = macro SourceInfoTransform.noArg
 
@@ -635,6 +635,10 @@ sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = Non
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
+
+  final def asFixed( that : Width ): Fixed = macro SourceInfoTransform.thatArg
+  def do_asFixed ( that : Width ) (implicit sourceInfo: SourceInfo) : Fixed =
+    Fixed( this.width, that ).fromBits( this ) // do this or define primop?
 }
 
 object SInt {
@@ -658,6 +662,172 @@ object SInt {
   def apply(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
     new SInt(NO_DIR, lit.width, Some(lit))
+  }
+}
+
+/** Fixed class implementation */
+sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width, lit: Option[SLit] = None)
+    extends Bits(dir, width, lit ) with Num[Fixed] {
+
+  private[core] override def cloneTypeWidth(w: Width): this.type =
+    new Fixed(dir, w, fracWidth).asInstanceOf[this.type]
+
+  private[chisel] def toType = s"Fixed$width"
+
+  private[chisel] def checkAligned ( that : Fixed ) = {
+    require(this.fracWidth == that.fracWidth,
+      s"Illegal op with differing fracWidths of ${this.fracWidth} and ${that.fracWidth}")
+  }
+
+  override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
+    case _: Fixed => {
+      checkAligned( that.asInstanceOf[this.type] )
+      this connect that
+    }
+    case _ => this badConnect that
+  }
+
+  override private[chisel] def fromInt(value: BigInt, width: Int): this.type =
+    Fixed( value, width, fracWidth ).asInstanceOf[this.type]
+
+  final def unary_- (): Fixed = macro SourceInfoTransform.noArg
+  final def unary_-% (): Fixed = macro SourceInfoTransform.noArg
+
+  def unary_- (implicit sourceInfo: SourceInfo): Fixed = Fixed(0, this.width, this.fracWidth) - this
+  def unary_-% (implicit sourceInfo: SourceInfo): Fixed = Fixed(0, this.width, this.fracWidth) -% this
+
+  /** add (default - no growth) operator */
+  override def do_+ (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed =
+    this +% that
+  /** subtract (default - no growth) operator */
+  override def do_- (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed =
+    this -% that
+  override def do_* (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt * that.asSInt ).asFixed( this.fracWidth + that.fracWidth )
+  override def do_/ (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    require( that.fracWidth.known,
+      s"Cannot divide Fixed when the denominator has an unknown fractional width" )
+    ( ( this.asSInt << that.fracWidth.get ) / that.asSInt ).asFixed( this.fracWidth )
+  }
+  override def do_% (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt % that.asSInt ).asFixed( this.fracWidth )
+
+  final def * (that: UInt): Fixed = macro SourceInfoTransform.thatArg
+  def do_* (that: UInt)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt * that ).asFixed( this.fracWidth )
+  final def * (that: SInt): Fixed = macro SourceInfoTransform.thatArg
+  def do_* (that: SInt)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt * that ).asFixed( this.fracWidth )
+
+  /** add (width +1) operator */
+  final def +& (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+  /** add (no growth) operator */
+  final def +% (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+  /** subtract (width +1) operator */
+  final def -& (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+  /** subtract (no growth) operator */
+  final def -% (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+
+  def do_+& (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    ( this.asSInt +& that.asSInt ).asFixed( this.fracWidth )
+  }
+  def do_+% (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    (this.asSInt +% that.asSInt ).asFixed( this.fracWidth )
+  }
+  def do_-& (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    ( this.asSInt -& that.asSInt ).asFixed( this.fracWidth )
+  }
+  def do_-% (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    ( this.asSInt -% that.asSInt ).asFixed( this.fracWidth )
+  }
+
+  final def & (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+  final def | (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+  final def ^ (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
+
+  def do_& (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    ( this.asSInt & that.asSInt ).asFixed( this.fracWidth )
+  }
+  def do_| (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    ( this.asSInt | that.asSInt ).asFixed( this.fracWidth )
+  }
+  def do_^ (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
+    checkAligned( that )
+    ( this.asSInt ^ that.asSInt ).asFixed( this.fracWidth )
+  }
+
+  /** Returns this wire bitwise-inverted. */
+  def do_unary_~ (implicit sourceInfo: SourceInfo): Fixed =
+    ( ~(this.asSInt) ).asFixed( this.fracWidth )
+
+  override def do_< (that: Fixed)(implicit sourceInfo: SourceInfo): Bool = this.asSInt < that.asSInt
+  override def do_> (that: Fixed)(implicit sourceInfo: SourceInfo): Bool = this.asSInt > that.asSInt
+  override def do_<= (that: Fixed)(implicit sourceInfo: SourceInfo): Bool = this.asSInt <= that.asSInt
+  override def do_>= (that: Fixed)(implicit sourceInfo: SourceInfo): Bool = this.asSInt >= that.asSInt
+
+  final def != (that: Fixed): Bool = macro SourceInfoTransform.thatArg
+  final def =/= (that: Fixed): Bool = macro SourceInfoTransform.thatArg
+  final def === (that: Fixed): Bool = macro SourceInfoTransform.thatArg
+
+  def do_!= (that: Fixed)(implicit sourceInfo: SourceInfo): Bool = this.asSInt != that.asSInt
+  def do_=/= (that: Fixed)(implicit sourceInfo: SourceInfo): Bool = this.asSInt =/= that.asSInt
+  def do_=== (that: Fixed)(implicit sourceInfo: SourceInfo): Bool = this.asSInt === that.asSInt
+
+  final def abs(): Fixed = macro SourceInfoTransform.noArg
+
+  def do_abs(implicit sourceInfo: SourceInfo): Fixed = Mux(this < Fixed(0), -this, this)
+
+  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt << that ).asFixed( this.fracWidth )
+  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Fixed =
+    this << that.toInt
+  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt << that ).asFixed( this.fracWidth )
+  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt >> that ).asFixed( this.fracWidth )
+  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Fixed =
+    this >> that.toInt
+  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Fixed =
+    ( this.asSInt >> that ).asFixed( this.fracWidth )
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = SInt( this.width ).fromBits( this )
+    //pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+}
+
+object Fixed {
+  /** Create an Fixed type with inferred width. */
+  def apply(): Fixed = apply(NO_DIR, Width(), Width())
+  /** Create an Fixed type or port with fixed width. */
+  def apply(dir: Direction = NO_DIR, width: Int, fw : Int): Fixed = apply(dir, Width(width), Width(fw))
+  /** Create an Fixed port with inferred width. */
+  def apply(dir: Direction): Fixed = apply(dir, Width(), Width())
+
+  /** Create an Fixed literal with inferred width. */
+  def apply(value: BigInt): Fixed = apply(value, Width(), Width())
+  /** Create a Fixed literal with inferred fractional width */
+  def apply(value: BigInt, width : Int): Fixed = apply(value, Width(width), Width())
+  /** Create an Fixed literal with fixed width. */
+  def apply(value: BigInt, width: Int, fw : Int): Fixed = apply(value, Width(width), Width(fw))
+  /** Create a Fixed literal with fixed width */
+  def apply(value: BigInt, width: Int, fw : Width): Fixed = apply(value, Width(width), fw)
+  /** Create a Fixed literal with fixed width */
+  def apply(value: BigInt, width: Width, fw : Int): Fixed = apply(value, width, Width(fw))
+
+  /** Create an Fixed type with specified width. */
+  def apply(width: Width, fw : Width): Fixed = new Fixed(NO_DIR, width, fw)
+  /** Create an Fixed port with specified width. */
+  def apply(dir: Direction, width: Width, fw : Width): Fixed = new Fixed(dir, width, fw)
+  /** Create an Fixed literal with specified width. */
+  def apply(value: BigInt, width: Width, fw : Width ): Fixed = {
+    val lit = SLit(value, width)
+    new Fixed(NO_DIR, lit.width, fw, Some(lit))
   }
 }
 
