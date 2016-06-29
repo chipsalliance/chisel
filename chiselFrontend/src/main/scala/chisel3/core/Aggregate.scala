@@ -169,6 +169,31 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   for ((elt, i) <- self zipWithIndex)
     elt.setRef(this, i)
+
+  /** Applys a single pass of a reduce operation in a parallel tree structure */
+  def treeLayerReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : Vec[T] = macro VecTransform.treeLayerReduce
+
+  def do_treeLayerReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )
+    (implicit sourceInfo: SourceInfo) : Vec[T] = {
+    require( this.length > 0, "Cannot apply a tree reduction on a vec of size 0" )
+    Vec( this.grouped(2).map( x => {
+      if ( x.length == 1 )
+        layerOp( x(0) )
+      else
+        redOp( x(0), x(1) )
+    }).toSeq )
+  }
+
+  /** A reduce operation in a tree like structure instead of linear pass */
+  def treeReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : T = macro VecTransform.treeReduce
+
+  def do_treeReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )(implicit sourceInfo: SourceInfo) : T = {
+    var curLayer = this
+    while ( curLayer.length > 1 )
+      curLayer = curLayer.do_treeLayerReduce( redOp, layerOp )
+    require( curLayer.length == 1, "Cannot apply tree reduction on a vec of size 0" )
+    curLayer(0)
+  }
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection
