@@ -170,12 +170,20 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   for ((elt, i) <- self zipWithIndex)
     elt.setRef(this, i)
 
-  /** Applys a single pass of a reduce operation in a parallel tree structure */
-  def treeLayerReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : Vec[T] = macro VecTransform.treeLayerReduce
+  /** Pairs the outputs together to transform something such as [ 1, 2, 3, 4, 5 ] to [ redOp(1,2), redOp(3,4), layerOp(5) ]
+    * @example The following example could be used in timeseries multiplexing
+    * {{{
+    * val outputVec = inputVec.pair(
+    *   ( a : T, b : T ) => RegNext(Mux( myCond, a, b )),
+    *   ( a : T ) => RegNext( a )
+    * )
+    * }}}
+    */
+  def pair( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : Vec[T] = macro VecTransform.pair
 
-  def do_treeLayerReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )
+  def do_pair( redOp : ( T, T ) => T, layerOp : ( T ) => T )
     (implicit sourceInfo: SourceInfo) : Vec[T] = {
-    require( this.length > 0, "Cannot apply a tree reduction on a vec of size 0" )
+    require( this.length > 0, "Cannot apply a pairing on a vec of size 0" )
     Vec( this.grouped(2).map( x => {
       if ( x.length == 1 )
         layerOp( x(0) )
@@ -184,14 +192,22 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     }).toSeq )
   }
 
-  /** A reduce operation in a tree like structure instead of linear pass */
-  def treeReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : T = macro VecTransform.treeReduce
+  /** A reduce operation in a tree like structure instead of sequentially
+    * @example A pipelined adder tree
+    * {{{
+    * val sumOut = inputNums.reduce(
+    *   ( a : T, b : T ) => RegNext( a + b ),
+    *   ( a : T ) => RegNext( a )
+    * )
+    * }}}
+    */
+  def reduce( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : T = macro VecTransform.reduce
 
-  def do_treeReduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )(implicit sourceInfo: SourceInfo) : T = {
+  def do_reduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )(implicit sourceInfo: SourceInfo) : T = {
     var curLayer = this
     while ( curLayer.length > 1 )
       curLayer = curLayer.do_treeLayerReduce( redOp, layerOp )
-    require( curLayer.length == 1, "Cannot apply tree reduction on a vec of size 0" )
+    require( curLayer.length == 1, "Cannot apply reduction on a vec of size 0" )
     curLayer(0)
   }
 }

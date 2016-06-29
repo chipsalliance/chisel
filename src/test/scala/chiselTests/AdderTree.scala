@@ -13,7 +13,7 @@ class AdderTree[ T <: Bits with Num[T] ]( genType : T, vecSize : Int ) extends M
     val numIn = Vec( vecSize, genType ).asInput
     val numOut = genType.cloneType.asOutput
   }
-  io.numOut := io.numIn.treeReduce(
+  io.numOut := io.numIn.reduce(
     (a : T, b : T) => ( a + b ),
     ( a : T ) => ( a ) )
 }

@@ -92,8 +92,8 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   def treeLayerReduce(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
     q"$thisObj.do_treeLayerReduce($redOp,$layerOp)($implicitSourceInfo)"
   }
-  def treeReduce(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
-    q"$thisObj.do_treeReduce($redOp,$layerOp)($implicitSourceInfo)"
+  def reduce(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
+    q"$thisObj.do_reduce($redOp,$layerOp)($implicitSourceInfo)"
   }
 }
 
