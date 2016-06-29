@@ -2,9 +2,9 @@
 
 package chiselTests
 
-import chisel._
+import chisel3._
 import org.scalatest._
-import chisel.testers.BasicTester
+import chisel3.testers.BasicTester
 
 class UIntOps extends Module {
   val io = new Bundle {

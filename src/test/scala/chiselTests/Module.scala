@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import chisel._
+import chisel3._
 
 class SimpleIO extends Bundle {
   val in  = UInt(INPUT,  32)

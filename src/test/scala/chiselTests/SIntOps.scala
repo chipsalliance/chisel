@@ -2,8 +2,8 @@
 
 package chiselTests
 
-import chisel._
-import chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
 
 class SIntOps extends Module {
   val io = new Bundle {

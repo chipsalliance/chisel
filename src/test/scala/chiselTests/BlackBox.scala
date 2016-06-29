@@ -5,9 +5,9 @@ package chiselTests
 import java.io.File
 import org.scalatest._
 
-import chisel._
-import chisel.testers.BasicTester
-import chisel.util._
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class BlackBoxInverter extends BlackBox {
   val io = new Bundle() {
