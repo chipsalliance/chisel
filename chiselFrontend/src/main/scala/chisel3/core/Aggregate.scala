@@ -206,7 +206,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def do_reduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )(implicit sourceInfo: SourceInfo) : T = {
     var curLayer = this
     while ( curLayer.length > 1 )
-      curLayer = curLayer.do_treeLayerReduce( redOp, layerOp )
+      curLayer = curLayer.do_pair( redOp, layerOp )
     require( curLayer.length == 1, "Cannot apply reduction on a vec of size 0" )
     curLayer(0)
   }
