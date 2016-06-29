@@ -9,6 +9,42 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 
+class IOTesterMod( vecSize : Int ) extends Module {
+  val io = new Bundle {
+    val in = Vec( vecSize, UInt( INPUT ) )
+    val out = Vec( vecSize, UInt( OUTPUT ) )
+  }
+  io.out := io.in
+}
+
+class IOTester(w: Int, values: List[Int] ) extends BasicTester {
+  val v = Vec(values.map(UInt(_, width = w))) // TODO: does this need a Wire? Why no error?
+  val dut = Module( new IOTesterMod( values.length ) )
+  dut.io.in := v
+  for ((a,b) <- dut.io.out.zip(values)) {
+    assert(a === UInt(b))
+  }
+  stop()
+}
+
+class IOTesterModFill( vecSize : Int ) extends Module {
+  val io = new Bundle {
+    val in = Vec.fill( vecSize ) { UInt( INPUT ) }
+    val out = Vec.fill( vecSize ) { UInt( OUTPUT ) }
+  }
+  io.out := io.in
+}
+
+class IOTesterFill(w: Int, values: List[Int] ) extends BasicTester {
+  val v = Vec(values.map(UInt(_, width = w))) // TODO: does this need a Wire? Why no error?
+  val dut = Module( new IOTesterModFill( values.length ) )
+  dut.io.in := v
+  for ((a,b) <- dut.io.out.zip(values)) {
+    assert(a === UInt(b))
+  }
+  stop()
+}
+
 class ValueTester(w: Int, values: List[Int]) extends BasicTester {
   val v = Vec(values.map(UInt(_, width = w))) // TODO: does this need a Wire? Why no error?
   for ((a,b) <- v.zip(values)) {
@@ -73,6 +109,18 @@ class VecSpec extends ChiselPropSpec {
   property("Vecs should be assignable") {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new ValueTester(w, v) }
+    }
+  }
+
+  property("Vecs should be passed through vec IO") {
+    forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
+      assertTesterPasses{ new IOTester(w, v) }
+    }
+  }
+
+  property("Vecs should be passed through vec IO with fill") {
+    forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
+      assertTesterPasses{ new IOTesterFill(w, v) }
     }
   }
 
