@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import scala.collection.mutable.{ArrayBuffer, HashSet}
+import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 
 import chisel3.internal._
@@ -96,7 +96,11 @@ extends HasId {
     }
 
     // Suggest names to nodes using runtime reflection
-    val valNames = HashSet[String](getClass.getDeclaredFields.map(_.getName):_*)
+    def getValNames(c: Class[_]): Set[String] = {
+      if (c == classOf[Module]) Set()
+      else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+    }
+    val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
