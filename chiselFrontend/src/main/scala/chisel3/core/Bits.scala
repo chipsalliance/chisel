@@ -672,9 +672,9 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Fixed(dir, w, fracWidth).asInstanceOf[this.type]
 
-  private[chisel] def toType = s"Fixed$width"
+  private[chisel3] def toType = s"Fixed$width"
 
-  private[chisel] def checkAligned ( that : Fixed ) = {
+  private[chisel3] def checkAligned ( that : Fixed ) = {
     require(this.fracWidth == that.fracWidth,
       s"Illegal op with differing fracWidths of ${this.fracWidth} and ${that.fracWidth}")
   }
@@ -687,7 +687,7 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
     case _ => this badConnect that
   }
 
-  override private[chisel] def fromInt(value: BigInt, width: Int): this.type =
+  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
     Fixed( value, width, fracWidth ).asInstanceOf[this.type]
 
   final def unary_- (): Fixed = macro SourceInfoTransform.noArg
