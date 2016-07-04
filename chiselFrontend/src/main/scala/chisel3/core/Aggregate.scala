@@ -170,28 +170,6 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   for ((elt, i) <- self zipWithIndex)
     elt.setRef(this, i)
 
-  /** Pairs the outputs together to transform something such as [ 1, 2, 3, 4, 5 ] to [ redOp(1,2), redOp(3,4), layerOp(5) ]
-    * @example The following example could be used in timeseries multiplexing
-    * {{{
-    * val outputVec = inputVec.pair(
-    *   ( a : T, b : T ) => RegNext(Mux( myCond, a, b )),
-    *   ( a : T ) => RegNext( a )
-    * )
-    * }}}
-    */
-  def pair( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : Vec[T] = macro VecTransform.pair
-
-  def do_pair( redOp : ( T, T ) => T, layerOp : ( T ) => T )
-    (implicit sourceInfo: SourceInfo) : Vec[T] = {
-    require( this.length > 0, "Cannot apply a pairing on a vec of size 0" )
-    Vec( this.grouped(2).map( x => {
-      if ( x.length == 1 )
-        layerOp( x(0) )
-      else
-        redOp( x(0), x(1) )
-    }).toSeq )
-  }
-
   /** A reduce operation in a tree like structure instead of sequentially
     * @example A pipelined adder tree
     * {{{
@@ -205,8 +183,14 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   def do_reduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )(implicit sourceInfo: SourceInfo) : T = {
     var curLayer = this
-    while ( curLayer.length > 1 )
-      curLayer = curLayer.do_pair( redOp, layerOp )
+    while ( curLayer.length > 1 ) {
+      curLayer = Vec( curLayer.grouped(2).map( x => {
+      if ( x.length == 1 )
+        layerOp( x(0) )
+      else
+        redOp( x(0), x(1) )
+      }).toSeq )
+    }
     require( curLayer.length == 1, "Cannot apply reduction on a vec of size 0" )
     curLayer(0)
   }

@@ -89,9 +89,6 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   def contains(x: c.Tree)(ev: c.Tree): c.Tree = {
     q"$thisObj.do_contains($x)($implicitSourceInfo, $ev)"
   }
-  def pair(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
-    q"$thisObj.do_pair($redOp,$layerOp)($implicitSourceInfo)"
-  }
   def reduce(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
     q"$thisObj.do_reduce($redOp,$layerOp)($implicitSourceInfo)"
   }
