@@ -134,7 +134,7 @@ object CheckHighForm extends Pass with LazyLogging {
     }
 
     def checkFstring(s: StringLit, i: Int) = {
-      val validFormats = "bdx"
+      val validFormats = "bdxc"
       var percent = false
       var npercents = 0
       s.array.foreach { b =>
