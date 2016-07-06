@@ -1,4 +1,4 @@
-package Chisel
+package chisel3.core
 
 /**
  * The purpose of a Binding is to indicate what type of hardware 'entity' a

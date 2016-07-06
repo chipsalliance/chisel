@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.core
 
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -38,9 +38,9 @@ abstract class Data(dirArg: Direction) extends HasId {
   // Sucks this is mutable state, but cloneType doesn't take a Direction arg
   private var isFlipVar = dirArg == INPUT
   private var dirVar = dirArg
-  private[Chisel] def isFlip = isFlipVar
+  private[core] def isFlip = isFlipVar
 
-  private[Chisel] def overrideDirection(newDir: Direction => Direction,
+  private[core] def overrideDirection(newDir: Direction => Direction,
                                         newFlip: Boolean => Boolean): this.type = {
     this.isFlipVar = newFlip(this.isFlipVar)
     for (field <- this.flatten)
@@ -51,16 +51,16 @@ abstract class Data(dirArg: Direction) extends HasId {
   def asOutput: this.type = cloneType.overrideDirection(_ => OUTPUT, _ => false)
   def flip(): this.type = cloneType.overrideDirection(_.flip, !_)
 
-  private[Chisel] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
-  private[Chisel] def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[core] def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(Connect(sourceInfo, this.lref, that.ref))
-  private[Chisel] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[core] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
-  private[Chisel] def lref: Node = Node(this)
-  private[Chisel] def ref: Arg = if (isLit) litArg.get else lref
-  private[Chisel] def cloneTypeWidth(width: Width): this.type
-  private[Chisel] def toType: String
+  private[core] def lref: Node = Node(this)
+  private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
+  private[core] def cloneTypeWidth(width: Width): this.type
+  private[chisel3] def toType: String
 
   def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = this badConnect that
 
@@ -71,7 +71,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   def litValue(): BigInt = litArg.get.num
   def isLit(): Boolean = litArg.isDefined
 
-  def width: Width
+  private[core] def width: Width
   final def getWidth: Int = width.get
 
   // While this being in the Data API doesn't really make sense (should be in
@@ -83,7 +83,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   // currently don't exist (while this information may be available during
   // FIRRTL emission, it would break directionality querying from Chisel, which
   // does get used).
-  private[Chisel] def flatten: IndexedSeq[Bits]
+  private[chisel3] def flatten: IndexedSeq[Bits]
 
   /** Creates an new instance of this type, unpacking the input Bits into
     * structured data.
@@ -150,9 +150,9 @@ object Clock {
 // TODO: Document this.
 sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
   def cloneType: this.type = Clock(dirArg).asInstanceOf[this.type]
-  private[Chisel] override def flatten: IndexedSeq[Bits] = IndexedSeq()
-  private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
-  private[Chisel] def toType = "Clock"
+  private[chisel3] override def flatten: IndexedSeq[Bits] = IndexedSeq()
+  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
+  private[chisel3] def toType = "Clock"
 
   override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
     case _: Clock => this connect that

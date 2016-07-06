@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.core
 
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.SourceInfo
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.SourceInfo
 
 object printf { // scalastyle:ignore object.name
   /** Prints a message in simulation.
@@ -29,7 +29,7 @@ object printf { // scalastyle:ignore object.name
     }
   }
 
-  private[Chisel] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo) {
+  private[core] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo) {
     val clock = Builder.dynamicContext.currentModule.get.clock
     pushCommand(Printf(sourceInfo, Node(clock), fmt, data.map((d: Bits) => d.ref)))
   }

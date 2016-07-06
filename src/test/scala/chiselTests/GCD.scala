@@ -2,8 +2,8 @@
 
 package chiselTests
 
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
 import org.scalatest._
 import org.scalatest.prop._
 

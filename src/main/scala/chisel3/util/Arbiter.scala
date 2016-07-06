@@ -3,7 +3,9 @@
 /** Arbiters in all shapes and sizes.
   */
 
-package Chisel
+package chisel3.util
+
+import chisel3._
 
 /** An I/O bundle for the Arbiter */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {

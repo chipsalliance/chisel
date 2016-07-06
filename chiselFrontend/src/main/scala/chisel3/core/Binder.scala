@@ -1,4 +1,4 @@
-package Chisel
+package chisel3.core
 
 /**
 * A Binder is a function from UnboundBinding to some Binding.

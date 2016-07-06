@@ -1,15 +1,16 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.core
 
 import scala.collection.mutable.{ArrayBuffer, HashSet}
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.Builder.dynamicContext
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, InstTransform, UnlocatableSourceInfo}
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.Builder.dynamicContext
+import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.{Command, Component, DefInstance, DefInvalid, ModuleIO}
+import chisel3.internal.sourceinfo.{SourceInfo, InstTransform, UnlocatableSourceInfo}
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -52,9 +53,9 @@ extends HasId {
   def this(_reset: Bool)  = this(None, Option(_reset))
   def this(_clock: Clock, _reset: Bool) = this(Option(_clock), Option(_reset))
 
-  private[Chisel] val _namespace = Builder.globalNamespace.child
-  private[Chisel] val _commands = ArrayBuffer[Command]()
-  private[Chisel] val _ids = ArrayBuffer[HasId]()
+  private[core] val _namespace = Builder.globalNamespace.child
+  private[chisel3] val _commands = ArrayBuffer[Command]()
+  private[core] val _ids = ArrayBuffer[HasId]()
   dynamicContext.currentModule = Some(this)
 
   /** Name of the instance. */
@@ -67,18 +68,18 @@ extends HasId {
   val clock = Clock(INPUT)
   val reset = Bool(INPUT)
 
-  private[Chisel] def addId(d: HasId) { _ids += d }
+  private[chisel3] def addId(d: HasId) { _ids += d }
 
-  private[Chisel] def ports: Seq[(String,Data)] = Vector(
+  private[core] def ports: Seq[(String,Data)] = Vector(
     ("clk", clock), ("reset", reset), ("io", io)
   )
 
-  private[Chisel] def computePorts = for((name, port) <- ports) yield {
+  private[core] def computePorts = for((name, port) <- ports) yield {
     val bundleDir = if (port.isFlip) INPUT else OUTPUT
     Port(port, if (port.dir == NO_DIR) bundleDir else port.dir)
   }
 
-  private[Chisel] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
+  private[core] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
     _parent match {
       case Some(p) => {
         pushCommand(DefInvalid(sourceInfo, io.ref)) // init instance inputs
@@ -90,7 +91,7 @@ extends HasId {
     }
   }
 
-  private[Chisel] def setRefs(): this.type = {
+  private[core] def setRefs(): this.type = {
     for ((name, port) <- ports) {
       port.setRef(ModuleIO(this, _namespace.name(name)))
     }

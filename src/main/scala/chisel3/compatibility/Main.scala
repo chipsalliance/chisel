@@ -1,8 +1,10 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.compatibility
 
 import java.io.File
+
+import chisel3._
 
 @deprecated("chiselMain doesn't exist in Chisel3", "3.0") object chiselMain {
   def apply[T <: Module](args: Array[String], gen: () => T): Unit =

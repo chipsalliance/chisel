@@ -12,7 +12,7 @@
 // writers to append source locator information at the point of a library
 // function invocation.
 
-package Chisel.internal.sourceinfo
+package chisel3.internal.sourceinfo
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
@@ -42,7 +42,7 @@ object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
-    q"_root_.Chisel.internal.sourceinfo.SourceLine(${p.source.file.name}, ${p.line}, ${p.column})"
+    q"_root_.chisel3.internal.sourceinfo.SourceLine(${p.source.file.name}, ${p.line}, ${p.column})"
   }
 }
 

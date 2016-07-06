@@ -1,9 +1,11 @@
 // See LICENSE for license details.
 
-package Chisel.internal.firrtl
-import Chisel._
-import Chisel.internal._
-import Chisel.internal.sourceinfo.{SourceInfo, NoSourceInfo}
+package chisel3.internal.firrtl
+
+import chisel3._
+import core._
+import chisel3.internal._
+import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
 
 case class PrimOp(val name: String) {
   override def toString: String = name
@@ -53,8 +55,8 @@ case class Node(id: HasId) extends Arg {
 }
 
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
-  private[Chisel] def forcedWidth = widthArg.known
-  private[Chisel] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
+  private[chisel3] def forcedWidth = widthArg.known
+  private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
 
   protected def minWidth: Int
   if (forcedWidth) {

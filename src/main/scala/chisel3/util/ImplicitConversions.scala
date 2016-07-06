@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.util
+
+import chisel3._
 
 object ImplicitConversions {
   implicit def intToUInt(x: Int): UInt = UInt(x)

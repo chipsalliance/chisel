@@ -1,21 +1,21 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.core
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
   */
 sealed abstract class Aggregate(dirArg: Direction) extends Data(dirArg) {
-  private[Chisel] def cloneTypeWidth(width: Width): this.type = cloneType
+  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   def width: Width = flatten.map(_.width).reduce(_ + _)
 }
 
@@ -163,8 +163,8 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     Vec(length, gen).asInstanceOf[this.type]
 
   private val t = gen
-  private[Chisel] def toType: String = s"${t.toType}[$length]"
-  private[Chisel] lazy val flatten: IndexedSeq[Bits] =
+  private[chisel3] def toType: String = s"${t.toType}[$length]"
+  private[chisel3] lazy val flatten: IndexedSeq[Bits] =
     (0 until length).flatMap(i => this.apply(i).flatten)
 
   for ((elt, i) <- self zipWithIndex)
@@ -315,7 +315,7 @@ class Bundle extends Aggregate(NO_DIR) {
 
   /** Returns a list of elements in this Bundle.
     */
-  private[Chisel] lazy val namedElts = {
+  private[core] lazy val namedElts = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getClass.getMethods.sortWith(_.getName < _.getName)) {
@@ -331,17 +331,17 @@ class Bundle extends Aggregate(NO_DIR) {
     }
     ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
   }
-  private[Chisel] def toType = {
+  private[chisel3] def toType = {
     def eltPort(elt: Data): String = {
       val flipStr = if (elt.isFlip) "flip " else ""
       s"${flipStr}${elt.getRef.name} : ${elt.toType}"
     }
     s"{${namedElts.reverse.map(e => eltPort(e._2)).mkString(", ")}}"
   }
-  private[Chisel] lazy val flatten = namedElts.flatMap(_._2.flatten)
-  private[Chisel] def addElt(name: String, elt: Data): Unit =
+  private[chisel3] lazy val flatten = namedElts.flatMap(_._2.flatten)
+  private[core] def addElt(name: String, elt: Data): Unit =
     namedElts += name -> elt
-  private[Chisel] override def _onModuleClose: Unit = // scalastyle:ignore method.name
+  private[chisel3] override def _onModuleClose: Unit = // scalastyle:ignore method.name
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
 
   override def cloneType : this.type = {
@@ -372,6 +372,6 @@ class Bundle extends Aggregate(NO_DIR) {
   }
 }
 
-private[Chisel] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits")
+private[core] object Bundle {
+  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits", "newType")
 }

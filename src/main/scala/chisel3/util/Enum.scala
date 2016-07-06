@@ -3,7 +3,9 @@
 /** Enum generators, allowing circuit constants to have more meaningful names.
   */
 
-package Chisel
+package chisel3.util
+
+import chisel3._
 
 object Enum {
   /** Returns a sequence of Bits subtypes with values from 0 until n. Helper method. */

@@ -3,7 +3,9 @@
 /** Circuit generators for working with one-hot representations.
   */
 
-package Chisel
+package chisel3.util
+
+import chisel3._
 
 /** Converts from One Hot Encoding to a UInt indicating which bit is active
   * This is the inverse of [[Chisel.UIntToOH UIntToOH]]*/

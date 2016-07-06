@@ -1,11 +1,14 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
-import Chisel.testers.BasicTester
+
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class Decoder(bitpats: List[String]) extends Module {
   val io = new Bundle {

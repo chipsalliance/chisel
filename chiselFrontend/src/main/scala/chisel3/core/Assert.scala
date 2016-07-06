@@ -1,14 +1,14 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.core
 
 import scala.reflect.macros.blackbox.Context
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.SourceInfo
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.SourceInfo
 
 object assert { // scalastyle:ignore object.name
   /** Checks for a condition to be valid in the circuit at all times. If the
@@ -69,5 +69,19 @@ object assert { // scalastyle:ignore object.name
     * 'assert(cond, "")' */
   def apply(cond: Boolean) {
     Predef.assert(cond, "")
+  }
+}
+
+object stop { // scalastyle:ignore object.name
+  /** Terminate execution with a failure code. */
+  def apply(code: Int)(implicit sourceInfo: SourceInfo): Unit = {
+    when (!Builder.forcedModule.reset) {
+      pushCommand(Stop(sourceInfo, Node(Builder.forcedModule.clock), code))
+    }
+  }
+
+  /** Terminate execution, indicating success. */
+  def apply()(implicit sourceInfo: SourceInfo): Unit = {
+    stop(0)
   }
 }

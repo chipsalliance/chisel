@@ -1,10 +1,10 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.core
 
-import internal.Builder.pushCommand
-import internal.firrtl.{ModuleIO, DefInvalid}
-import internal.sourceinfo.SourceInfo
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl.{ModuleIO, DefInvalid}
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Defines a black box, which is a module that can be referenced from within
   * Chisel, but is not defined in the emitted Verilog. Useful for connecting
@@ -24,23 +24,31 @@ abstract class BlackBox extends Module {
   // The body of a BlackBox is empty, the real logic happens in firrtl/Emitter.scala
   // Bypass standard clock, reset, io port declaration by flattening io
   // TODO(twigg): ? Really, overrides are bad, should extend BaseModule....
-  override private[Chisel] def ports = io.elements.toSeq
+  override private[core] def ports = io.elements.toSeq
 
   // Do not do reflective naming of internal signals, just name io
-  override private[Chisel] def setRefs(): this.type = {
-    for ((name, port) <- ports) {
-      port.setRef(ModuleIO(this, _namespace.name(name)))
-    }
+  override private[core] def setRefs(): this.type = {
     // setRef is not called on the actual io.
     // There is a risk of user improperly attempting to connect directly with io
     // Long term solution will be to define BlackBox IO differently as part of
     //   it not descending from the (current) Module
+    for ((name, port) <- ports) {
+      port.setRef(ModuleIO(this, _namespace.name(name)))
+    }
+    // We need to call forceName and onModuleClose on all of the sub-elements
+    // of the io bundle, but NOT on the io bundle itself.
+    // Doing so would cause the wrong names to be assigned, since their parent
+    // is now the module itself instead of the io bundle.
+    for (id <- _ids; if id ne io) {
+      id.forceName(default="T", _namespace)
+      id._onModuleClose
+    }
     this
   }
 
   // Don't setup clock, reset
   // Cann't invalide io in one bunch, must invalidate each part separately
-  override private[Chisel] def setupInParent(implicit sourceInfo: SourceInfo): this.type = _parent match {
+  override private[core] def setupInParent(implicit sourceInfo: SourceInfo): this.type = _parent match {
     case Some(p) => {
       // Just init instance inputs
       for((_,port) <- ports) pushCommand(DefInvalid(sourceInfo, port.ref))

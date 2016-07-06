@@ -1,15 +1,15 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.core
 
 import scala.language.experimental.macros
 
-import internal._
-import internal.Builder.pushOp
-import internal.firrtl._
-import internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
+import chisel3.internal._
+import chisel3.internal.Builder.pushOp
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
   UIntTransform, MuxTransform}
-import firrtl.PrimOp._
+import chisel3.internal.firrtl.PrimOp._
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
@@ -25,9 +25,9 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
-  private[Chisel] def fromInt(x: BigInt, w: Int): this.type
+  private[chisel3] def fromInt(x: BigInt, w: Int): this.type
 
-  private[Chisel] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
+  private[chisel3] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   def cloneType: this.type = cloneTypeWidth(width)
 
@@ -118,16 +118,16 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   final def do_apply(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo): UInt =
     apply(x.toInt, y.toInt)
 
-  private[Chisel] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T =
+  private[core] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T =
     pushOp(DefPrim(sourceInfo, dest, op, this.ref))
-  private[Chisel] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T =
+  private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T =
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, ILit(other)))
-  private[Chisel] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T =
+  private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T =
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, other.ref))
 
-  private[Chisel] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool =
+  private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool =
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
-  private[Chisel] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool =
+  private[core] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool =
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
 
   /** Returns this wire zero padded up to the specified width.
@@ -356,13 +356,13 @@ abstract trait Num[T <: Data] {
 /** A data type for unsigned integers, represented as a binary bitvector.
   * Defines arithmetic operations between other integer types.
   */
-sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULit] = None)
+sealed class UInt private[core] (dir: Direction, width: Width, lit: Option[ULit] = None)
     extends Bits(dir, width, lit) with Num[UInt] {
-  private[Chisel] override def cloneTypeWidth(w: Width): this.type =
+  private[core] override def cloneTypeWidth(w: Width): this.type =
     new UInt(dir, w).asInstanceOf[this.type]
-  private[Chisel] def toType = s"UInt$width"
+  private[core] def toType = s"UInt$width"
 
-  override private[Chisel] def fromInt(value: BigInt, width: Int): this.type =
+  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
     UInt(value, width).asInstanceOf[this.type]
 
   override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
@@ -482,7 +482,7 @@ sealed class UInt private[Chisel] (dir: Direction, width: Width, lit: Option[ULi
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
-private[Chisel] sealed trait UIntFactory {
+private[core] sealed trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(NO_DIR, Width())
   /** Create a UInt type or port with fixed width. */
@@ -535,16 +535,16 @@ object UInt extends UIntFactory
 
 sealed class SInt private (dir: Direction, width: Width, lit: Option[SLit] = None)
     extends Bits(dir, width, lit) with Num[SInt] {
-  private[Chisel] override def cloneTypeWidth(w: Width): this.type =
+  private[core] override def cloneTypeWidth(w: Width): this.type =
     new SInt(dir, w).asInstanceOf[this.type]
-  private[Chisel] def toType = s"SInt$width"
+  private[chisel3] def toType = s"SInt$width"
 
   override def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
     case _: SInt => this connect that
     case _ => this badConnect that
   }
 
-  override private[Chisel] def fromInt(value: BigInt, width: Int): this.type =
+  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
     SInt(value, width).asInstanceOf[this.type]
 
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
@@ -666,12 +666,12 @@ object SInt {
 /** A data type for booleans, defined as a single bit indicating true or false.
   */
 sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Width(1), lit) {
-  private[Chisel] override def cloneTypeWidth(w: Width): this.type = {
+  private[core] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool(dir).asInstanceOf[this.type]
   }
 
-  override private[Chisel] def fromInt(value: BigInt, width: Int): this.type = {
+  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type = {
     require((value == 0 || value == 1) && width == 1)
     Bool(value == 1).asInstanceOf[this.type]
   }

@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 
-package Chisel
+package chisel3.util
+
+import chisel3._
 
 object ListLookup {
   def apply[T <: Data](addr: UInt, default: List[T], mapping: Array[(BitPat, List[T])]): List[T] = {
