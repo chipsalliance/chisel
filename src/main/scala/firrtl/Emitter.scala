@@ -129,14 +129,15 @@ class VerilogEmitter extends Emitter {
    //;------------- PASS -----------------
    def v_print (e:Expression) = {
       e match {
-         case (e:UIntLiteral) => {
-            val str = e.value.toString(16)
-            w.get.write(long_BANG(tpe(e)).toString + "'h" + str)
-         }
-         case (e:SIntLiteral) => {
-            val str = e.value.toString(16)
-            w.get.write(long_BANG(tpe(e)).toString + "'sh" + str)
-         }
+        case UIntLiteral(value, IntWidth(width)) => {
+          val str = s"$width'h${value.toString(16)}"
+          w.get.write(str)
+        }
+        case SIntLiteral(value, IntWidth(width)) => {
+          val unsignedValue = value + (if (value < 0) BigInt(1) << width.toInt else 0)
+          val str = s"$width'sh${unsignedValue.toString(16)}"
+          w.get.write(str)
+        }
       }
    }
    def op_stream (doprim:DoPrim) : Seq[Any] = {
