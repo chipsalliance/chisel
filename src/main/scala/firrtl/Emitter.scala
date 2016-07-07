@@ -515,7 +515,11 @@ class VerilogEmitter extends Emitter {
                   val mem_port = WSubAccess(mem,addrx,s.dataType,UNKNOWNGENDER)
                   val depthValue = UIntLiteral(s.depth, IntWidth(BigInt(s.depth).bitLength))
                   val garbageGuard = DoPrim(Geq, Seq(addrx, depthValue), Seq(), UnknownType)
-                  garbageAssign(data, mem_port, garbageGuard)
+
+                  if ((s.depth & (s.depth - 1)) == 0)
+                    assign(data, mem_port)
+                  else
+                    garbageAssign(data, mem_port, garbageGuard)
                }
    
                for (w <- s.writers ) {
