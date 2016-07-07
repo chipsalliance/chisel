@@ -57,8 +57,10 @@ object FIRRTLEmitter extends Emitter {
 }
 
 case class VIndent()
-case object VRandom extends Expression {
-  def tpe = UIntType(UnknownWidth)
+case class VRandom(width: BigInt) extends Expression {
+  def tpe = UIntType(IntWidth(width))
+  def nWords = (width + 31) / 32
+  def realWidth = nWords * 32
 }
 class VerilogEmitter extends Emitter {
    val tab = "  "
@@ -92,7 +94,7 @@ class VerilogEmitter extends Emitter {
                case (e:WSubAccess) => w.get.write(LowerTypes.loweredName(e.exp) + "[" + LowerTypes.loweredName(e.index) + "]")
                case (e:WSubIndex) => w.get.write(e.serialize)
                case (e:Literal) => v_print(e)
-               case VRandom => w.get.write("$random")
+               case (e:VRandom) => w.get.write(s"{${e.nWords}{$$random}}")
             }
          }
          case (t:Type) => {
@@ -311,12 +313,12 @@ class VerilogEmitter extends Emitter {
       }
       def assign (e:Expression,value:Expression) =
          assigns += Seq("assign ",e," = ",value,";")
-      // Like assign but with different versions for synthesis and simulation
-      def synSimAssign(e: Expression, syn: Expression, sim: Expression) = {
+      // In simulation, assign garbage under a predicate
+      def garbageAssign(e: Expression, syn: Expression, garbageCond: Expression) = {
          assigns += Seq("`ifdef SYNTHESIS")
          assigns += Seq("assign ", e, " = ", syn, ";")
          assigns += Seq("`else")
-         assigns += Seq("assign ", e, " = ", sim, ";")
+         assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(tpe(syn)), " : ", syn, ";")
          assigns += Seq("`endif")
       }
       def update_and_reset(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
@@ -371,11 +373,10 @@ class VerilogEmitter extends Emitter {
       // Then, return the correct number of bits selected from the random value
       def rand_string (t:Type) : Seq[Any] = {
          val nx = namespace.newTemp
-         val wx = ((long_BANG(t) + 31) / 32).toInt
-         val tx = SIntType(IntWidth(wx * 32))
-         val rand = Seq("{",wx.toString,"{",VRandom,"}}")
+         val rand = VRandom(long_BANG(t))
+         val tx = SIntType(IntWidth(rand.realWidth))
          declare("reg",nx,tx)
-         initials += Seq(wref(nx,tx)," = ",rand,";")
+         initials += Seq(wref(nx,tx)," = ",VRandom(long_BANG(t)),";")
          Seq(nx,"[",long_BANG(t) - 1,":0]")
       }
       def initialize (e:Expression) = initials += Seq(e," = ",rand_string(tpe(e)),";")
@@ -514,8 +515,7 @@ class VerilogEmitter extends Emitter {
                   val mem_port = WSubAccess(mem,addrx,s.dataType,UNKNOWNGENDER)
                   val depthValue = UIntLiteral(s.depth, IntWidth(BigInt(s.depth).bitLength))
                   val garbageGuard = DoPrim(Geq, Seq(addrx, depthValue), Seq(), UnknownType)
-                  val garbageMux = Mux(garbageGuard, VRandom, mem_port, UnknownType)
-                  synSimAssign(data, mem_port, garbageMux)
+                  garbageAssign(data, mem_port, garbageGuard)
                }
    
                for (w <- s.writers ) {
