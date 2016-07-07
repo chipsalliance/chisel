@@ -141,6 +141,7 @@ class EmitVerilogFromLowFirrtl (val writer: Writer) extends Transform with Simpl
       passes.RemoveValidIf,
       passes.ConstProp,
       passes.PadWidths,
+      passes.ConstProp,
       passes.VerilogWrap,
       passes.SplitExpressions,
       passes.CommonSubexpressionElimination,
