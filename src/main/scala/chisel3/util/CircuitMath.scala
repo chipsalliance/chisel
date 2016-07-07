@@ -7,11 +7,11 @@ package chisel3.util
 
 import chisel3._
 
-/** Compute Log2 with truncation of a UInt in hardware using a Mux Tree
-  * An alternative interpretation is it computes the minimum number of bits needed to represent x
+/** Compute the base-2 integer logarithm of a UInt
   * @example
   * {{{ data_out := Log2(data_in) }}}
-  * @note Truncation is used so Log2(UInt(12412)) = 13*/
+  * @note The result is truncated, so e.g. Log2(UInt(13)) = 3
+  */
 object Log2 {
   /** Compute the Log2 on the least significant n bits of x */
   def apply(x: Bits, width: Int): UInt = {
