@@ -316,7 +316,7 @@ class VerilogEmitter extends Emitter {
          assigns += Seq("assign ",e," = ",value,";")
       // In simulation, assign garbage under a predicate
       def garbageAssign(e: Expression, syn: Expression, garbageCond: Expression) = {
-         assigns += Seq("`ifdef SYNTHESIS")
+         assigns += Seq("`ifndef RANDOMIZE")
          assigns += Seq("assign ", e, " = ", syn, ";")
          assigns += Seq("`else")
          assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(tpe(syn)), " : ", syn, ";")
@@ -380,12 +380,18 @@ class VerilogEmitter extends Emitter {
          initials += Seq(wref(nx,tx)," = ",VRandom(long_BANG(t)),";")
          Seq(nx,"[",long_BANG(t) - 1,":0]")
       }
-      def initialize (e:Expression) = initials += Seq(e," = ",rand_string(tpe(e)),";")
+      def initialize(e: Expression) = {
+        initials += Seq("`ifdef RANDOMIZE")
+        initials += Seq(e, " = ", rand_string(tpe(e)), ";")
+        initials += Seq("`endif")
+      }
       def initialize_mem(s: DefMemory) = {
         val index = WRef("initvar", s.dataType, ExpKind(), UNKNOWNGENDER)
         val rstring = rand_string(s.dataType)
+        initials += Seq("`ifdef RANDOMIZE")
         initials += Seq("for (initvar = 0; initvar < ", s.depth, "; initvar = initvar+1)")
         initials += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, FEMALE), " = ", rstring,";")
+        initials += Seq("`endif")
       }
       def instantiate (n:String,m:String,es:Seq[Expression]) = {
          instdeclares += Seq(m," ",n," (")
@@ -622,7 +628,7 @@ class VerilogEmitter extends Emitter {
             for (x <- assigns) emit(Seq(tab,x))
          }
          if (not_empty(initials)) {
-            emit(Seq("`ifndef SYNTHESIS"))
+            emit(Seq("`ifdef RANDOMIZE"))
             emit(Seq("  integer initvar;"))
             emit(Seq("  initial begin"))
             // This enables test benches to set the random values at time 0.001,
