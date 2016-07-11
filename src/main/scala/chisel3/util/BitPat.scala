@@ -68,7 +68,8 @@ object BitPat {
     */
   def apply(x: UInt): BitPat = {
     require(x.isLit)
-    BitPat("b" + x.litValue.toString(2))
+    val len = if (x.width.known) x.getWidth else 0
+    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
 }
 
@@ -83,7 +84,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
-  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = UInt(value) === (that & UInt(mask))
+  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = UInt(value, width) === (that & UInt(mask))
   def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)
   def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that
 }
