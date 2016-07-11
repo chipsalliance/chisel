@@ -255,7 +255,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
     val res = Wire(this, null).asInstanceOf[this.type]
-    res := that
+    res connect that
     res
   }
 }
@@ -672,7 +672,7 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Fixed(dir, w, fracWidth).asInstanceOf[this.type]
 
-  private[chisel3] def toType = s"Fixed$width"
+  private[chisel3] def toType = s"SInt$width"
 
   private[chisel3] def checkAligned ( that : Fixed ) = {
     require(this.fracWidth == that.fracWidth,
@@ -748,7 +748,7 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
   }
   def do_*% (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
     checkAligned( that )
-    (this.asSInt * that.asSInt).do_head( this.width.get + this.fracWidth.get ).do_tail( this.width.get ).asSInt.asFixed( this.fracWidth )
+    (this.asSInt * that.asSInt).do_head( 2*this.width.get - this.fracWidth.get ).do_tail( this.fracWidth.get ).asSInt.asFixed( this.fracWidth )
   }
 
   final def & (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
