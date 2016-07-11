@@ -171,27 +171,36 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     elt.setRef(this, i)
 
   /** A reduce operation in a tree like structure instead of sequentially
+    * @example An adder tree
+    * {{{
+    * val sumOut = inputNums.reduceTree(
+    *   ( a : T, b : T ) => ( a + b ) )
+    * }}}
+    */
+  def reduceTree( redOp : ( T, T ) => T ) : T = macro VecTransform.reduceTreeDefault
+  /** A reduce operation in a tree like structure instead of sequentially
     * @example A pipelined adder tree
     * {{{
-    * val sumOut = inputNums.reduce(
+    * val sumOut = inputNums.reduceTree(
     *   ( a : T, b : T ) => RegNext( a + b ),
     *   ( a : T ) => RegNext( a )
     * )
     * }}}
     */
-  def reduce( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : T = macro VecTransform.reduce
+  def reduceTree( redOp : ( T, T ) => T, layerOp : ( T ) => T ) : T = macro VecTransform.reduceTree
 
-  def do_reduce( redOp : ( T, T ) => T, layerOp : ( T ) => T )(implicit sourceInfo: SourceInfo) : T = {
+  def do_reduceTree( redOp : ( T, T ) => T, layerOp : ( T ) => T = ( x : T ) => x )
+    (implicit sourceInfo: SourceInfo) : T = {
+    require( !isEmpty, "Cannot apply reduction on a vec of size 0" )
     var curLayer = this
     while ( curLayer.length > 1 ) {
       curLayer = Vec( curLayer.grouped(2).map( x => {
-      if ( x.length == 1 )
-        layerOp( x(0) )
-      else
-        redOp( x(0), x(1) )
+        if ( x.length == 1 )
+          layerOp( x(0) )
+        else
+          redOp( x(0), x(1) )
       }).toSeq )
     }
-    require( curLayer.length == 1, "Cannot apply reduction on a vec of size 0" )
     curLayer(0)
   }
 }
