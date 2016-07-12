@@ -9,12 +9,38 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 
+class RegTesterMod( vecSize : Int ) extends Module {
+  val io = new Bundle {
+    val in = Vec( vecSize, UInt( INPUT ) )
+    val out = Vec( vecSize, UInt( OUTPUT ) )
+  }
+  val vecReg = RegInit( Vec( vecSize, UInt( 0 ) ) )
+  vecReg := io.in
+  io.out := vecReg
+}
+
 class IOTesterMod( vecSize : Int ) extends Module {
   val io = new Bundle {
     val in = Vec( vecSize, UInt( INPUT ) )
     val out = Vec( vecSize, UInt( OUTPUT ) )
   }
   io.out := io.in
+}
+
+class RegTester(w: Int, values: List[Int] ) extends BasicTester {
+  val v = Vec(values.map(UInt(_, width = w)))
+  val dut = Module( new RegTesterMod( values.length ) )
+  val doneReg = RegInit( Bool(false) )
+  dut.io.in := v
+  when ( doneReg ) {
+    for ((a,b) <- dut.io.out.zip(values))
+      assert(a === UInt(b))
+    stop()
+  } .otherwise {
+    doneReg := Bool(true)
+    for ( a <- dut.io.out)
+      assert(a === UInt(0))
+  }
 }
 
 class IOTester(w: Int, values: List[Int] ) extends BasicTester {
@@ -121,6 +147,12 @@ class VecSpec extends ChiselPropSpec {
   property("Vecs should be passed through vec IO with fill") {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new IOTesterFill(w, v) }
+    }
+  }
+
+  property("A Reg of a Vec should operate correctly") {
+    forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
+      assertTesterPasses{ new RegTester(w, v) }
     }
   }
 
