@@ -1,6 +1,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util._
 import org.scalatest._
 import chisel3.testers.BasicTester
 
@@ -41,6 +42,22 @@ class FixedOps( bitWidth : Int, fracWidth : Int ) extends Module {
   io.greateqout := a >= b
 }
 
+class FixedDelay( bitWidth : Int, fracWidth : Int ) extends Module {
+  val io = new Bundle {
+    val in = Fixed( INPUT, bitWidth, fracWidth )
+    val initOut = Fixed( OUTPUT, bitWidth, fracWidth )
+    val nextOut = Fixed( OUTPUT, bitWidth, fracWidth )
+    val bothOut = Fixed( OUTPUT, bitWidth, fracWidth )
+    val vecOut = Vec( 10, Fixed( OUTPUT, bitWidth, fracWidth ) )
+  }
+  io.initOut := RegInit( Fixed( 0, bitWidth, fracWidth ) )
+  io.nextOut := RegNext( io.in )
+  val reg = RegInit( Fixed( 0, bitWidth, fracWidth ) )
+  reg := io.in
+  io.bothOut := reg
+  io.vecOut := RegInit( Vec(10, Fixed( 0, bitWidth, fracWidth ) ) )
+}
+
 class FixedOpsTester( bitWidth : Int, fracWidth : Int, a : BigInt, b : BigInt ) extends BasicTester {
   val dut = Module( new FixedOps( bitWidth, fracWidth ) )
   dut.io.a := Fixed( a, bitWidth, fracWidth )
@@ -66,6 +83,26 @@ class FixedOpsTester( bitWidth : Int, fracWidth : Int, a : BigInt, b : BigInt ) 
   stop()
 }
 
+class FixedDelayTester( bitWidth : Int, fracWidth : Int, a : BigInt) extends BasicTester {
+  val cntr = RegInit( UInt(0, 2) )
+  cntr := cntr + UInt(1)
+  val dut = Module( new FixedDelay( bitWidth, fracWidth ) )
+  dut.io.in := Fixed( a, bitWidth, fracWidth )
+  assert( dut.io.initOut === Fixed( 0, bitWidth, fracWidth ), "RegInit should init to 0" )
+  for ( i <- 0 until 10 ) {
+    assert( dut.io.vecOut(i) === Fixed( 0, bitWidth, fracWidth ), "Vec RegInit should init to 0" )
+  }
+  when ( cntr === UInt(0, 2) ) {
+    assert( dut.io.bothOut === Fixed( 0, bitWidth, fracWidth ), "RegInit with assign should init to 0" )
+  } .otherwise {
+    assert( dut.io.nextOut === Fixed( a, bitWidth, fracWidth ), "Reg should change to value" )
+    assert( dut.io.bothOut === Fixed( a, bitWidth, fracWidth ), "Reg should change to value" )
+  }
+  when ( cntr =/= UInt(0, 2) ) {
+    stop()
+  }
+}
+
 class FixedOpsSpec extends ChiselPropSpec with Matchers {
 
   val fixedNums = Table(
@@ -76,10 +113,24 @@ class FixedOpsSpec extends ChiselPropSpec with Matchers {
     ( 10, 4, 22, 6),
     ( 10, 5, 40, 16))
 
-
+  val fixedRegs = Table(
+    ("bw", "fw", "a"),  // First tuple defines column names
+    ( 22, 8, 35 ),  // Subsequent tuples define the data
+    ( 8, 4, 17 ),
+    ( 10, 4, 30 ),
+    ( 10, 4, 22 ),
+    ( 10, 5, 40 ))
+/*
   property("FixedOpsTester should return the correct result") {
     forAll (fixedNums) { (bw: Int, fw : Int, a: Int, b: Int) =>
       assertTesterPasses{ new FixedOpsTester(bw, fw, BigInt(a), BigInt(b)) }
     }
   }
+ */
+  property("FixedDelayTester should return the correct result") {
+    forAll (fixedRegs) { (bw: Int, fw : Int, a: Int) =>
+      assertTesterPasses{ new FixedDelayTester(bw, fw, BigInt(a)) }
+    }
+  }
+
 }

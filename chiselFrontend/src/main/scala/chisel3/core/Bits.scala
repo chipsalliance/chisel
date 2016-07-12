@@ -748,7 +748,7 @@ sealed class Fixed private (dir: Direction, width: Width, val fracWidth : Width,
   }
   def do_*% (that: Fixed)(implicit sourceInfo: SourceInfo): Fixed = {
     checkAligned( that )
-    (this.asSInt * that.asSInt).do_head( 2*this.width.get - this.fracWidth.get ).do_tail( this.fracWidth.get ).asSInt.asFixed( this.fracWidth )
+    (this.asSInt * that.asSInt).do_head( 2*this.width.get - this.fracWidth.get ).do_tail( this.width.get - this.fracWidth.get ).asSInt.asFixed( this.fracWidth )
   }
 
   final def & (that: Fixed): Fixed = macro SourceInfoTransform.thatArg
