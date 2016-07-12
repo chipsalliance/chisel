@@ -9,13 +9,19 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 
+class LitTesterMod( vecSize : Int ) extends Module {
+  val io = new Bundle {
+    val out = Vec( vecSize, UInt( OUTPUT ) )
+  }
+  io.out := Vec( vecSize, UInt( 0 ) )
+}
+
 class RegTesterMod( vecSize : Int ) extends Module {
   val io = new Bundle {
     val in = Vec( vecSize, UInt( INPUT ) )
     val out = Vec( vecSize, UInt( OUTPUT ) )
   }
-  val vecReg = RegInit( Vec( vecSize, UInt( 0 ) ) )
-  vecReg := io.in
+  val vecReg = Reg( init = Vec( vecSize, UInt( 0 ) ), next = io.in )
   io.out := vecReg
 }
 
@@ -25,6 +31,13 @@ class IOTesterMod( vecSize : Int ) extends Module {
     val out = Vec( vecSize, UInt( OUTPUT ) )
   }
   io.out := io.in
+}
+
+class LitTester(w: Int, values: List[Int] ) extends BasicTester {
+  val dut = Module( new LitTesterMod( values.length ) )
+  for ( a <- dut.io.out)
+    assert(a === UInt(0))
+  stop()
 }
 
 class RegTester(w: Int, values: List[Int] ) extends BasicTester {
@@ -153,6 +166,12 @@ class VecSpec extends ChiselPropSpec {
   property("A Reg of a Vec should operate correctly") {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new RegTester(w, v) }
+    }
+  }
+
+  property("A Vec of lit should operate correctly") {
+    forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
+      assertTesterPasses{ new LitTester(w, v) }
     }
   }
 

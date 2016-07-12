@@ -24,7 +24,12 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.cloneType, n)
+  def apply[T <: Data](n: Int, gen: T): Vec[T] = macro VecTransform.apply_ngen;
+
+  def do_apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo): Vec[T] = {
+    if ( gen.isLit ) Vec( Seq.fill(n)(gen) )
+    else new Vec(gen.cloneType, n)
+  }
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
@@ -92,7 +97,7 @@ object Vec {
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
 
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
-    apply(Seq.fill(n)(gen))
+    do_apply(n, gen)
 }
 
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
@@ -159,8 +164,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   @deprecated("Use Vec.apply instead", "chisel3")
   def write(idx: UInt, data: T): Unit = apply(idx).:=(data)(DeprecatedSourceInfo)
 
-  override def cloneType: this.type =
-    Vec(length, gen).asInstanceOf[this.type]
+  override def cloneType: this.type = (new Vec(gen.cloneType, length)).asInstanceOf[this.type]
 
   private val t = gen
   private[chisel3] def toType: String = s"${t.toType}[$length]"
