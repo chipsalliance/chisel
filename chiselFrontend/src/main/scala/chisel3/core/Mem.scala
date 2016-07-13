@@ -39,22 +39,25 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
     */
-  def apply(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.INFER)
+  def apply(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.INFER, None)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def read(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.READ)
+  def read(idx: UInt): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.READ, None)
+  def readOnClock(idx: UInt, clock: Clock): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.READ, Some(clock))
 
   /** Creates a write accessor into the memory.
     *
     * @param idx memory element index to write into
     * @param data new data to write
     */
-  def write(idx: UInt, data: T): Unit = {
+  private def writeSimpleHelper(idx: UInt, data: T, clock: Option[Clock] = None): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
-    makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE) := data
+    makePort(UnlocatableSourceInfo, idx, MemPortDirection.WRITE, clock) := data
   }
+  def writeOnClock(idx: UInt, data: T, clock: Clock) = writeSimpleHelper(idx, data, Some(clock))
+  def write(idx: UInt, data: T) = writeSimpleHelper(idx, data, None)
 
   /** Creates a masked write accessor into the memory.
     *
@@ -65,9 +68,9 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     *
     * @note this is only allowed if the memory's element data type is a Vec
     */
-  def write(idx: UInt, data: T, mask: Seq[Bool]) (implicit evidence: T <:< Vec[_]): Unit = {
+  def writeMaskHelper(idx: UInt, data: T, mask: Seq[Bool], clock: Option[Clock] = None) (implicit evidence: T <:< Vec[_]): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
-    val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE).asInstanceOf[Vec[Data]]
+    val accessor = makePort(sourceInfo, idx, MemPortDirection.WRITE, clock).asInstanceOf[Vec[Data]]
     val dataVec = data.asInstanceOf[Vec[Data]]
     if (accessor.length != dataVec.length) {
       Builder.error(s"Mem write data must contain ${accessor.length} elements (found ${dataVec.length})")
@@ -78,10 +81,12 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     for (((cond, port), datum) <- mask zip accessor zip dataVec)
       when (cond) { port := datum }
   }
+  def writeOnClock(idx: UInt, data: T, mask: Seq[Bool], clock: Clock) (implicit evidence: T <:< Vec[_]) = writeMaskHelper(idx, data, mask, Some(clock))
+  def write(idx: UInt, data: T, mask: Seq[Bool]) (implicit evidence: T <:< Vec[_]) = writeMaskHelper(idx, data, mask, None)
 
-  private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection): T =
+  private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection, clock: Option[Clock]): T =
     pushCommand(DefMemPort(sourceInfo,
-        t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))).id
+        t.cloneType, Node(this), dir, idx.ref, Node(clock.getOrElse(idx._parent.get.clock)))).id
 }
 
 /** A combinational-read, sequential-write memory.
@@ -130,5 +135,11 @@ sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
     val a = Wire(UInt())
     when (enable) { a := addr }
     read(a)
+  }
+  def readOnClock(addr: UInt, enable: Bool, clock: Clock): T = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+    val a = Wire(UInt())
+    when (enable) { a := addr }
+    readOnClock(a, clock)
   }
 }
