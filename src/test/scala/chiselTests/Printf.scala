@@ -3,8 +3,8 @@
 package chiselTests
 
 import org.scalatest._
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
 
 class SinglePrintfTester() extends BasicTester {
   val x = UInt(254)

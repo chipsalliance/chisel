@@ -1,10 +1,10 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+import chisel3._
 import org.scalatest._
 import org.scalatest.prop._
-import Chisel.testers.BasicTester
+import chisel3.testers.BasicTester
 
 class Coord extends Bundle {
   val x = UInt(width = 32)

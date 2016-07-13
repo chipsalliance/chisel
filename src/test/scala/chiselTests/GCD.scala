@@ -2,8 +2,8 @@
 
 package chiselTests
 
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
 import org.scalatest._
 import org.scalatest.prop._
 
@@ -31,7 +31,7 @@ class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
   dut.io.b := UInt(b)
   dut.io.e := first
   when(first) { first := Bool(false) }
-  when(dut.io.v) {
+  when(!first && dut.io.v) {
     assert(dut.io.z === UInt(z))
     stop()
   }

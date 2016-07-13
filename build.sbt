@@ -50,9 +50,14 @@ lazy val commonSettings = Seq (
   )
 )
 
+val defaultVersions = Map("firrtl" -> "0.2-BETA-SNAPSHOT")
+
 lazy val chiselSettings = Seq (
   name := "Chisel3",
 
+  // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
+  libraryDependencies ++= (Seq("firrtl").map {
+  dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
 
   /* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
    *  in subtly disturbing ways on Linux (but not on Mac):
@@ -67,7 +72,6 @@ lazy val chiselSettings = Seq (
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  libraryDependencies += "edu.berkeley.cs" %% "firrtl" % "0.2-BETA-SNAPSHOT",
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
@@ -110,3 +114,5 @@ lazy val chisel = (project in file(".")).
 publish <<= (publish) dependsOn (publish in coreMacros, publish in chiselFrontend)
 
 publishLocal <<= (publishLocal) dependsOn (publishLocal in coreMacros, publishLocal in chiselFrontend)
+
+//publishSigned <<= (publishSigned) dependsOn (publishSigned in coreMacros, publishSigned in chiselFrontend)
