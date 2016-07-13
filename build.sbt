@@ -116,3 +116,9 @@ publish <<= (publish) dependsOn (publish in coreMacros, publish in chiselFronten
 publishLocal <<= (publishLocal) dependsOn (publishLocal in coreMacros, publishLocal in chiselFrontend)
 
 //publishSigned <<= (publishSigned) dependsOn (publishSigned in coreMacros, publishSigned in chiselFrontend)
+
+// We need the following for the release version that uses sbt to invoke firrtl.
+// sbt doesn't deal well with multiple simulataneous invocations for the same user
+
+parallelExecution in Test := false
+
