@@ -370,9 +370,10 @@ private[iotesters] class VerilatorBackend(
                                           verbose: Boolean = true,
                                           logger: PrintStream = System.out,
                                           _base: Int = 16,
-                                          _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
+                                          _seed: Long = System.currentTimeMillis,
+                                          isPropagation: Boolean = true) extends Backend(_seed) {
 
-  val simApiInterface = new SimApiInterface(dut, cmd, logger)
+  val simApiInterface = new SimApiInterface(dut, cmd, logger, isPropagation)
 
   def poke(signal: HasId, value: BigInt, off: Option[Int]) {
     val idx = off map (x => s"[$x]") getOrElse ""

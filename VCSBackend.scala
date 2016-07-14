@@ -153,5 +153,6 @@ private[iotesters] class VCSBackend(
                                     verbose: Boolean = true,
                                     logger: PrintStream = System.out,
                                     _base: Int = 16,
-                                    _seed: Long = System.currentTimeMillis) 
-           extends VerilatorBackend(dut, cmd, verbose, logger, _base, _seed)
+                                    _seed: Long = System.currentTimeMillis,
+                                    isPropagation: Boolean = true) 
+           extends VerilatorBackend(dut, cmd, verbose, logger, _base, _seed, isPropagation)

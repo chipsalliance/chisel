@@ -34,8 +34,10 @@ abstract class PeekPokeTester[+T <: Module](
                                             _base: Int = 16,
                                             logFile: Option[String] = chiselMain.context.logFile,
                                             waveform: Option[String] = chiselMain.context.waveform,
-                                            _backend: Option[Backend] = None,
-                                            _seed: Long = System.currentTimeMillis) {
+                                            testCmd: List[String] = Nil,
+                                            _seed: Long = System.currentTimeMillis,
+                                            isPropagation: Boolean = chiselMain.context.isPropagation,
+                                            _backend: Option[Backend] = None) {
 
   implicit def longToInt(x: Long) = x.toInt
 
@@ -52,15 +54,15 @@ abstract class PeekPokeTester[+T <: Module](
   /*** Simulation Interface ***/
   /****************************/
   logger println s"SEED ${_seed}"
-  val cmd = chiselMain.context.testCmd.toList ++ (waveform match {
+  val cmd = (if (testCmd.isEmpty) chiselMain.context.testCmd.toList else testCmd) ++ (waveform match {
     case None    => Nil
     case Some(f) => logger println s"Waveform: $f" ; List(s"+waveform=$f")
   })
   val backend = _backend getOrElse (
     if (chiselMain.context.isVCS)
-      new VCSBackend(dut, cmd, verbose, logger, _base, _seed)
+      new VCSBackend(dut, cmd, verbose, logger, _base, _seed, isPropagation)
     else
-      new VerilatorBackend(dut, cmd, verbose, logger, _base, _seed)
+      new VerilatorBackend(dut, cmd, verbose, logger, _base, _seed, isPropagation)
   )
 
   /********************************/
