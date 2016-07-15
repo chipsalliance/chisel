@@ -35,7 +35,7 @@ abstract class PeekPokeTester[+T <: Module](
                                             logFile: Option[String] = chiselMain.context.logFile,
                                             waveform: Option[String] = chiselMain.context.waveform,
                                             testCmd: List[String] = Nil,
-                                            _seed: Long = System.currentTimeMillis,
+                                            _seed: Long = chiselMain.context.testerSeed,
                                             isPropagation: Boolean = chiselMain.context.isPropagation,
                                             _backend: Option[Backend] = None) {
 
