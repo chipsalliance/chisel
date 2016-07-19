@@ -3,15 +3,21 @@ package object chisel3 {
 
   import internal.firrtl.Width
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
-  
-  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
-    def U: UInt = UInt(x, Width())
-    def S: SInt = SInt(x, Width())
 
   import util.BitPat
 
 
   type Direction = chisel3.core.Direction
+  object Input {
+    def apply[T<:Data](target: T): T = chisel3.core.Input(target)
+  }
+  object Output {
+    def apply[T<:Data](target: T): T = chisel3.core.Output(target)
+  }
+  object Flipped {
+    def apply[T<:Data](target: T): T = chisel3.core.Flipped(target)
+  }
+
   type Data = chisel3.core.Data
   val Wire = chisel3.core.Wire
   val Clock = chisel3.core.Clock
@@ -63,30 +69,24 @@ package object chisel3 {
   *
   * Also provides .asBool to scala.Boolean and .asUInt to String
   *
-  * Note that, for stylistic reasons, one hould avoid extracting immediately
+  * Note that, for stylistic reasons, one should avoid extracting immediately
   * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
   * confusion (the 1 is a bit length and the 0 is a bit extraction position).
   * Prefer storing the result and then extracting from it.
   */
-  implicit class addLiteraltoScalaInt(val target: Int) extends AnyVal {
-    def asUInt() = UInt.Lit(target)
-    def asSInt() = SInt.Lit(target)
-    def asUInt(width: Int) = UInt.Lit(target, width)
-    def asSInt(width: Int) = SInt.Lit(target, width)
-
-    // These were recently added to chisel2/3 but are not to be used internally
-    @deprecated("asUInt should be used over U", "gchisel")
-    def U() = UInt.Lit(target)
-    @deprecated("asSInt should be used over S", "gchisel")
-    def S() = SInt.Lit(target)
-    @deprecated("asUInt should be used over U", "gchisel")
-    def U(width: Int) = UInt.Lit(target, width)
-    @deprecated("asSInt should be used over S", "gchisel")
-    def S(width: Int) = SInt.Lit(target, width)
-  }
   implicit class fromIntToLiteral(val x: Int) extends AnyVal {
     def U: UInt = UInt(BigInt(x), Width())
     def S: SInt = SInt(BigInt(x), Width())
+
+    def asUInt() = UInt(x, Width())
+    def asSInt() = SInt(x, Width())
+    def asUInt(width: Int) = UInt(x, width)
+    def asSInt(width: Int) = SInt(x, width)
+  }
+  
+  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
+    def U: UInt = UInt(x, Width())
+    def S: SInt = SInt(x, Width())
   }
   implicit class fromStringToLiteral(val x: String) extends AnyVal {
     def U: UInt = UInt(x)
@@ -104,4 +104,7 @@ package object chisel3 {
     def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x
     def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
   }
+
+  val INPUT = chisel3.core.Direction.Input
+  val OUTPUT = chisel3.core.Direction.Output
 }

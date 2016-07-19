@@ -12,8 +12,8 @@ class DecoupledIO[+T <: Data](gen: T) extends Bundle
 {
   val ready = Input(Bool())
   val valid = Output(Bool())
-  val bits  = Output(gen.newType)
-  override protected def cloneType: this.type = DecoupledIO(gen).asInstanceOf[this.type]
+  val bits  = Output(gen.cloneType)
+  override def cloneType: this.type = DecoupledIO(gen).asInstanceOf[this.type]
 }
 
 object DecoupledIO {
@@ -30,7 +30,7 @@ object DecoupledIO {
       * @return    dat.
       */
     def enq(dat: T): T = {
-      target.valid := true.asBool
+      target.valid := Bool(true)
       target.bits := dat
       dat
     }
@@ -38,7 +38,7 @@ object DecoupledIO {
     /** Indicate no enqueue occurs.  Valid is set to false, and all bits are set to zero.
       */
     def noenq(): Unit = {
-      target.valid := false.asBool
+      target.valid := Bool(false)
       target.bits := target.bits.fromBits(0.asUInt)
     }
 
@@ -48,17 +48,17 @@ object DecoupledIO {
       * @return the data for this device,
       */
     def deq(): T = {
-      target.ready := true.asBool
+      target.ready := Bool(true)
       target.bits
     }
 
     /** Indicate no dequeue occurs. Ready is set to false
       */
     def nodeq(): Unit = {
-      target.ready := false.asBool
+      target.ready := Bool(false)
     }
   }
-  override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
+//  override def cloneType: this.type = { DeqIO(gen).asInstanceOf[this.type]; }
 }
 
 object EnqIO {

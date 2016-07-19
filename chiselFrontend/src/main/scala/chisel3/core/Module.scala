@@ -91,7 +91,7 @@ extends HasId {
 
   private[core] val _namespace = Builder.globalNamespace.child
   private[chisel3] val _commands = ArrayBuffer[Command]()
-  private[code] val _ids = ArrayBuffer[HasId]()
+  private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
 
   /** Name of the instance. */
