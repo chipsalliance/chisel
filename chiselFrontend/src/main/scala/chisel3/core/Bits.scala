@@ -392,10 +392,6 @@ abstract trait Num[T <: Data] {
 sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
     extends Bits(width, lit) with Num[UInt] {
 
-  if (lit != None) {
-    this.binding = LitBinding()
-
-  }
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
   private[chisel3] def toType = s"UInt$width"
