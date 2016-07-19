@@ -34,8 +34,12 @@ class MultiAssignSpec extends ChiselFlatSpec {
   "The last assignment" should "be used when multiple assignments happen" in {
     assertTesterPasses{ new LastAssignTester }
   }
-  intercept[chisel3.internal.ChiselException] {
-//    "Reassignments to non-wire types" should "be disallowed" in {
-    assertTesterFails{ new ReassignmentTester }
+}
+
+class IllegalAssignSpec extends ChiselFlatSpec {
+  "Reassignments to non-wire types" should "be disallowed" in {
+    intercept[chisel3.internal.ChiselException] {
+      assertTesterFails{ new ReassignmentTester }
+    }
   }
 }

@@ -530,7 +530,7 @@ private[core] sealed trait UIntFactory {
     val lit = ULit(value, width)
     val result = new UInt(lit.width, Some(lit))
     // Bind result to being an Literal
-//    result.binding = LitBinding()
+    result.binding = LitBinding()
     result
   }
 
