@@ -124,7 +124,11 @@ private[chisel3] object Builder {
     forcedModule._commands += c
     c
   }
-  def pushOp[T <: Data](cmd: DefPrim[T]): T = pushCommand(cmd).id
+  def pushOp[T <: Data](cmd: DefPrim[T]): T = {
+    // Bind each element of the returned Data to being a Op
+    Binding.bind(cmd.id, OpBinder(forcedModule), "Error: During op creation, fresh result")
+    pushCommand(cmd).id
+  }
 
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
