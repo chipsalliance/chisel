@@ -20,7 +20,7 @@ object Mem {
     */
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): Mem[T] = {
-    val mt  = t.newType
+    val mt  = t.cloneType
     Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
     // TODO(twigg): Remove need for this Binding
 
@@ -86,7 +86,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
 
     val port = pushCommand(
       DefMemPort(sourceInfo,
-       t.newType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))
+       t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))
     ).id
     // Bind each element of port to being a MemoryPort
     Binding.bind(port, MemoryPortBinder(Builder.forcedModule), "Error: Fresh t")
@@ -103,7 +103,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-final class Mem[T <: Data] private (t: T, length: Int) extends MemBase(t, length)
+sealed class Mem[T <: Data] private (t: T, length: Int) extends MemBase(t, length)
 
 object SeqMem {
   @deprecated("SeqMem argument order should be size, t; this will be removed by the official release", "chisel3")
@@ -117,7 +117,7 @@ object SeqMem {
   def apply[T <: Data](size: Int, t: T): SeqMem[T] = macro MemTransform.apply[T]
 
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): SeqMem[T] = {
-    val mt  = t.newType
+    val mt  = t.cloneType
     Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
     // TODO(twigg): Remove need for this Binding
 
@@ -137,7 +137,7 @@ object SeqMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-final class SeqMem[T <: Data] private (t: T, n: Int) extends MemBase[T](t, n) {
+sealed class SeqMem[T <: Data] private (t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
     implicit val sourceInfo = UnlocatableSourceInfo
     val a = Wire(UInt())

@@ -12,16 +12,18 @@ object Reg {
 init: T = null): T = {
     if (t ne null) {
       Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using newType?")
-      t.newType
-    } else if (next ne null) next.cloneTypeWidth(Width())
-    else if (init ne null) {
+      t.cloneType
+    } else if (next ne null) {
+      next.cloneTypeWidth(Width())
+    } else if (init ne null) {
       init.litArg match {
-        // For e.g. Reg(init=0.asUInt(k)), fix the Reg's width to k
-        case Some(lit) if lit.forcedWidth => init.newType
+        // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
+        case Some(lit) if lit.forcedWidth => init.cloneType
         case _ => init.cloneTypeWidth(Width())
       }
+    } else {
+      throwException("cannot infer type")
     }
-    else throw new Exception("cannot infer type")
   }
 
   /** Creates a register with optional next and initialization values.
@@ -72,7 +74,6 @@ init: T = null): T = {
       Binding.checkSynthesizable(next, s"'next' ($next)")
       x := next
     }
-
     x
   }
 }
