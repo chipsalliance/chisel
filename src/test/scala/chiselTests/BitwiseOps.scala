@@ -2,10 +2,10 @@
 
 package chiselTests
 
-import Chisel._
+import chisel3._
 import org.scalatest._
 import org.scalatest.prop._
-import Chisel.testers.BasicTester
+import chisel3.testers.BasicTester
 
 class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   val mask = (1 << w) - 1

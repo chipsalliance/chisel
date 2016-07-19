@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
 
 class EnableShiftRegister extends Module {
   val io = IO(new Bundle {

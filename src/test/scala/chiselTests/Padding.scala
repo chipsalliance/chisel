@@ -1,7 +1,8 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+
+import chisel3._
 
 class Padder extends Module {
   val io = IO(new Bundle {
