@@ -11,7 +11,7 @@ class SimpleIO extends Bundle {
 
 class PlusOne extends Module {
   val io = IO(new SimpleIO)
-  io.out := io.in + UInt(1)
+  io.out := io.in + 1.asUInt
 }
 
 class ModuleVec(val n: Int) extends Module {

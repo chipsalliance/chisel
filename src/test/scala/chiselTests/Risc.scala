@@ -27,13 +27,13 @@ class Risc extends Module {
   val rai  = inst(15, 8)
   val rbi  = inst( 7, 0)
 
-  val ra = Mux(rai === Bits(0), Bits(0), file(rai))
-  val rb = Mux(rbi === Bits(0), Bits(0), file(rbi))
+  val ra = Mux(rai === 0.asUInt(), 0.asUInt(), file(rai))
+  val rb = Mux(rbi === 0.asUInt(), 0.asUInt(), file(rbi))
   val rc = Wire(Bits(width = 32))
 
   io.valid := Bool(false)
-  io.out   := Bits(0)
-  rc       := Bits(0)
+  io.out   := 0.asUInt()
+  rc       := 0.asUInt()
 
   when (io.isWr) {
     code(io.wrAddr) := io.wrData
@@ -45,12 +45,12 @@ class Risc extends Module {
       is(imm_op) { rc := (rai << 8) | rbi }
     }
     io.out := rc
-    when (rci === UInt(255)) {
+    when (rci === 255.asUInt()) {
       io.valid := Bool(true)
     } .otherwise {
       file(rci) := rc
     }
-    pc := pc +% UInt(1)
+    pc := pc +% 1.asUInt()
   }
 }
 

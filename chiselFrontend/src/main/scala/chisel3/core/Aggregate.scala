@@ -179,8 +179,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   @deprecated("Use Vec.apply instead", "chisel3")
   def write(idx: UInt, data: T): Unit = apply(idx).:=(data)(DeprecatedSourceInfo)
 
-  override def cloneType: this.type =
-    Vec(length, gen).asInstanceOf[this.type]
+  override def cloneType: this.type = {
+    val clone = Vec(length, gen).asInstanceOf[this.type]
+    clone.unBind()
+    clone
+  }
 
   private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
   private[chisel3] lazy val flatten: IndexedSeq[Bits] =

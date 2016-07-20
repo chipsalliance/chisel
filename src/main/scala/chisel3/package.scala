@@ -1,9 +1,10 @@
+// See LICENSE for license details.
+
 package object chisel3 {
   import scala.language.experimental.macros
 
   import internal.firrtl.Width
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
-
   import util.BitPat
 
 
@@ -87,6 +88,11 @@ package object chisel3 {
   implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
     def U: UInt = UInt(x, Width())
     def S: SInt = SInt(x, Width())
+
+    def asUInt() = UInt(x, Width())
+    def asSInt() = SInt(x, Width())
+    def asUInt(width: Int) = UInt(x, width)
+    def asSInt(width: Int) = SInt(x, width)
   }
   implicit class fromStringToLiteral(val x: String) extends AnyVal {
     def U: UInt = UInt(x)

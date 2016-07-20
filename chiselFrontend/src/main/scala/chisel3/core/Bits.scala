@@ -51,7 +51,11 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
 
   private[chisel3] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
-  def cloneType: this.type = cloneTypeWidth(width)
+  def cloneType: this.type = {
+    val clone = cloneTypeWidth(width)
+    clone.unBind()
+    clone
+  }
 
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
   final def head(n: Int): UInt = macro SourceInfoTransform.nArg
@@ -514,12 +518,12 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 private[core] sealed trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(Width())
+  /** Create a UInt type or port with fixed width. */
+  def apply(width: Int): UInt = apply(Width(width))
   /** Create a UInt port with specified width. */
   def apply(width: Width): UInt = new UInt(width)
   /** Create a UInt with a specified width - compatibility with Chisel2. */
-  def apply(dummy: Option[Direction] = None, width: Int): UInt = apply(Width(width))
-  /** Create a UInt literal with inferred width. */
-  def apply(value: BigInt): UInt = apply(value, Width())
+  def apply(dummy: Direction, width: Int): UInt = apply(Width(width))
   /** Create a UInt literal with fixed width. */
   def apply(value: BigInt, width: Int): UInt = apply(value, Width(width))
   /** Create a UInt literal with inferred width. */
@@ -733,7 +737,12 @@ object Bool {
 
   /** Creates Bool literal.
    */
-  def apply(x: Boolean): Bool = new Bool(Some(ULit(if (x) 1 else 0, Width(1))))
+  def apply(x: Boolean): Bool = {
+    val result = new Bool(Some(ULit(if (x) 1 else 0, Width(1))))
+    // Bind result to being an Literal
+    result.binding = LitBinding()
+    result
+  }
 }
 
 object Mux {

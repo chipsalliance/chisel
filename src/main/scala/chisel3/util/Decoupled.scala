@@ -58,7 +58,11 @@ object DecoupledIO {
       target.ready := Bool(false)
     }
   }
-//  override def cloneType: this.type = { DeqIO(gen).asInstanceOf[this.type]; }
+//  override def cloneType: this.type = {
+//    val clone = DeqIO(gen).asInstanceOf[this.type]
+//    clone.unBind()
+//    clone
+//  }
 }
 
 object EnqIO {

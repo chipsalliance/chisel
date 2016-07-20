@@ -13,7 +13,11 @@ class Valid[+T <: Data](gen: T) extends Bundle
   val valid = Output(Bool())
   val bits  = Output(gen.cloneType)
   def fire(dummy: Int = 0): Bool = valid
-  override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
+  override def cloneType: this.type = {
+    val clone = Valid(gen).asInstanceOf[this.type]
+    clone.unBind()
+    clone
+  }
 }
 
 /** Adds a valid protocol to any interface */
