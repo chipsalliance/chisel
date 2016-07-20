@@ -20,17 +20,17 @@ class FinishTester extends BasicTester {
     stop()
   }
 
-  val test_wire = Wire(UInt(1, width = test_wire_width))
+  val test_wire = UInt(1, width = test_wire_width)
 
   // though we just set test_wire to 1, the assert below will pass because
   // the finish will change its value
-  assert(test_wire === UInt(test_wire_override_value))
+  assert(test_wire === UInt.Lit(test_wire_override_value))
 
   /** In finish we use last connect semantics to alter the test_wire in the circuit
     * with a new value
     */
   override def finish(): Unit = {
-    test_wire := UInt(test_wire_override_value)
+    test_wire := UInt.Lit(test_wire_override_value)
   }
 }
 

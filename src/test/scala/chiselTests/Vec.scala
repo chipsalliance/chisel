@@ -12,7 +12,7 @@ import chisel3.util._
 class ValueTester(w: Int, values: List[Int]) extends BasicTester {
   val v = Vec(values.map(UInt(_, width = w))) // TODO: does this need a Wire? Why no error?
   for ((a,b) <- v.zip(values)) {
-    assert(a === UInt(b))
+    assert(a === UInt.Lit(b))
   }
   stop()
 }
@@ -34,8 +34,8 @@ class ShiftRegisterTester(n: Int) extends BasicTester {
   val shifter = Reg(Vec(n, UInt(width = log2Up(n))))
   (shifter, shifter drop 1).zipped.foreach(_ := _)
   shifter(n-1) := cnt
-  when (cnt >= UInt(n)) {
-    val expected = cnt - UInt(n)
+  when (cnt >= UInt.Lit(n)) {
+    val expected = cnt - UInt.Lit(n)
     assert(shifter(0) === expected)
   }
   when (wrap) {

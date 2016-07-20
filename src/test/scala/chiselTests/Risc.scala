@@ -8,7 +8,7 @@ import chisel3.util._
 class Risc extends Module {
   val io = IO(new Bundle {
     val isWr   = Input(Bool())
-    val wrAddr = Input(UInt(8))
+    val wrAddr = Input(UInt.width(8))
     val wrData = Input(Bits(32))
     val boot   = Input(Bool())
     val valid  = Output(Bool())
@@ -38,7 +38,7 @@ class Risc extends Module {
   when (io.isWr) {
     code(io.wrAddr) := io.wrData
   } .elsewhen (io.boot) {
-    pc := UInt(0)
+    pc := UInt.Lit(0)
   } .otherwise {
     switch(op) {
       is(add_op) { rc := ra +% rb }

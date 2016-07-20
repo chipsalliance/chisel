@@ -95,7 +95,7 @@ package object chisel3 {
     def asSInt(width: Int) = SInt(x, width)
   }
   implicit class fromStringToLiteral(val x: String) extends AnyVal {
-    def U: UInt = UInt(x)
+    def U: UInt = UInt.Lit(x)
   }
   implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
     def B: Bool = Bool(x)

@@ -13,19 +13,19 @@ class WhenTester() extends BasicTester {
   when(Bool(true)) { cnt.inc() }
 
   val out = Wire(UInt(width=3))
-  when(cnt.value === UInt(0)) {
-    out := UInt(1)
-  } .elsewhen (cnt.value === UInt(1)) {
-    out := UInt(2)
-  } .elsewhen (cnt.value === UInt(2)) {
-    out := UInt(3)
+  when(cnt.value === UInt.Lit(0)) {
+    out := UInt.Lit(1)
+  } .elsewhen (cnt.value === UInt.Lit(1)) {
+    out := UInt.Lit(2)
+  } .elsewhen (cnt.value === UInt.Lit(2)) {
+    out := UInt.Lit(3)
   } .otherwise {
-    out := UInt(0)
+    out := UInt.Lit(0)
   }
 
-  assert(out === cnt.value + UInt(1))
+  assert(out === cnt.value + UInt.Lit(1))
 
-  when(cnt.value === UInt(3)) {
+  when(cnt.value === UInt.Lit(3)) {
     stop()
   }
 }
@@ -35,19 +35,19 @@ class OverlappedWhenTester() extends BasicTester {
   when(Bool(true)) { cnt.inc() }
 
   val out = Wire(UInt(width=3))
-  when(cnt.value <= UInt(0)) {
-    out := UInt(1)
-  } .elsewhen (cnt.value <= UInt(1)) {
-    out := UInt(2)
-  } .elsewhen (cnt.value <= UInt(2)) {
-    out := UInt(3)
+  when(cnt.value <= UInt.Lit(0)) {
+    out := UInt.Lit(1)
+  } .elsewhen (cnt.value <= UInt.Lit(1)) {
+    out := UInt.Lit(2)
+  } .elsewhen (cnt.value <= UInt.Lit(2)) {
+    out := UInt.Lit(3)
   } .otherwise {
-    out := UInt(0)
+    out := UInt.Lit(0)
   }
 
-  assert(out === cnt.value + UInt(1))
+  assert(out === cnt.value + UInt.Lit(1))
 
-  when(cnt.value === UInt(3)) {
+  when(cnt.value === UInt.Lit(3)) {
     stop()
   }
 }

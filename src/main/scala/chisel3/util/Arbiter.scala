@@ -36,7 +36,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
   if (count > 1) {
     val lockCount = Counter(count)
     val lockIdx = Reg(UInt())
-    val locked = lockCount.value =/= UInt(0)
+    val locked = lockCount.value =/= UInt.Lit(0)
     val wantsLock = needsLock.map(_(io.out.bits)).getOrElse(Bool(true))
 
     when (io.out.firing && wantsLock) {
@@ -46,7 +46,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
 
     when (locked) { io.chosen := lockIdx }
     for ((in, (g, i)) <- io.in zip grant.zipWithIndex)
-      in.ready := Mux(locked, lockIdx === UInt(i), g) && io.out.ready
+      in.ready := Mux(locked, lockIdx === UInt.Lit(i), g) && io.out.ready
   } else {
     for ((in, g) <- io.in zip grant)
       in.ready := g && io.out.ready
@@ -66,9 +66,9 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
 
   override lazy val choice = Wire(init=UInt(n-1))
   for (i <- n-2 to 0 by -1)
-    when (io.in(i).valid) { choice := UInt(i) }
+    when (io.in(i).valid) { choice := UInt.Lit(i) }
   for (i <- n-1 to 1 by -1)
-    when (validMask(i)) { choice := UInt(i) }
+    when (validMask(i)) { choice := UInt.Lit(i) }
 }
 
 class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
@@ -77,7 +77,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
 
   override lazy val choice = Wire(init=UInt(n-1))
   for (i <- n-2 to 0 by -1)
-    when (io.in(i).valid) { choice := UInt(i) }
+    when (io.in(i).valid) { choice := UInt.Lit(i) }
 }
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
@@ -107,7 +107,7 @@ class Arbiter[T <: Data](gen: T, n: Int) extends Module {
   io.out.bits := io.in(n-1).bits
   for (i <- n-2 to 0 by -1) {
     when (io.in(i).valid) {
-      io.chosen := UInt(i)
+      io.chosen := UInt.Lit(i)
       io.out.bits := io.in(i).bits
     }
   }

@@ -14,8 +14,8 @@ class Tbl(w: Int, n: Int) extends Module {
     val wi  = Input(UInt(log2Up(n)))
     val ri  = Input(UInt(log2Up(n)))
     val we  = Input(Bool())
-    val  d  = Input(UInt(w))
-    val  o  = Output(UInt(w))
+    val  d  = Input(UInt.width(w))
+    val  o  = Output(UInt.width(w))
   })
   val m = Mem(n, UInt(width = w))
   io.o := m(io.ri)
@@ -32,13 +32,13 @@ class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends Basi
   val dut = Module(new Tbl(w, n))
   val vvalues = Vec(values.map(UInt(_)))
   val vidxs = Vec(idxs.map(UInt(_)))
-  val prev_idx = vidxs(cnt - UInt(1))
-  val prev_value = vvalues(cnt - UInt(1))
+  val prev_idx = vidxs(cnt - UInt.Lit(1))
+  val prev_value = vvalues(cnt - UInt.Lit(1))
   dut.io.wi := vidxs(cnt)
   dut.io.ri := prev_idx
   dut.io.we := Bool(true) //TODO enSequence
   dut.io.d := vvalues(cnt)
-  when (cnt > UInt(0)) {
+  when (cnt > UInt.Lit(0)) {
     when (prev_idx === vidxs(cnt)) {
       assert(dut.io.o === vvalues(cnt))
     } .otherwise {

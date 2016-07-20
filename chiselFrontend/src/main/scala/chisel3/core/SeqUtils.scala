@@ -25,11 +25,11 @@ private[chisel3] object SeqUtils {
 
   def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = {
     if (in.size == 0) {
-      UInt(0)
+      UInt.Lit(0)
     } else if (in.size == 1) {
       in.head
     } else {
-      count(in.slice(0, in.size/2)) + (UInt(0) ## count(in.slice(in.size/2, in.size)))
+      count(in.slice(0, in.size/2)) + (UInt.Lit(0) ## count(in.slice(in.size/2, in.size)))
     }
   }
 

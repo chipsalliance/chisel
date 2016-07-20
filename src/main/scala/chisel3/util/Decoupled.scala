@@ -153,9 +153,9 @@ extends Module(override_reset=override_reset) {
   } else {
     io.count := Mux(ptr_match,
                     Mux(maybe_full,
-                      UInt(entries), UInt(0)),
+                      UInt.Lit(entries), UInt.Lit(0)),
                     Mux(deq_ptr.value > enq_ptr.value,
-                      UInt(entries) + ptr_diff, ptr_diff))
+                      UInt.Lit(entries) + ptr_diff, ptr_diff))
   }
 }
 

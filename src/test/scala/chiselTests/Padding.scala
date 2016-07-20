@@ -6,9 +6,9 @@ import chisel3._
 
 class Padder extends Module {
   val io = IO(new Bundle {
-    val a   = Input(UInt(4))
-    val asp = Output(SInt(8))
-    val aup = Output(UInt(8))
+    val a   = Input(UInt.width(4))
+    val asp = Output(SInt.width(8))
+    val aup = Output(UInt.width(8))
   })
   io.asp := io.a.asSInt
   io.aup := io.a.asUInt

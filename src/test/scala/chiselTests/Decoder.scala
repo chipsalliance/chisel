@@ -12,7 +12,7 @@ import chisel3.util._
 
 class Decoder(bitpats: List[String]) extends Module {
   val io = IO(new Bundle {
-    val inst  = Input(UInt(32))
+    val inst  = Input(UInt.width(32))
     val matched = Output(Bool())
   })
   io.matched := Vec(bitpats.map(BitPat(_) === io.inst)).reduce(_||_)
@@ -24,7 +24,7 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   val dut = Module(new Decoder(bitpats))
   dut.io.inst := Vec(insts.map(UInt(_)))(cnt)
   when(!dut.io.matched) {
-    assert(cnt === UInt(0))
+    assert(cnt === UInt.Lit(0))
     stop()
   }
   when(wrap) {

@@ -270,9 +270,9 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
 
   def do_toBool(implicit sourceInfo: SourceInfo): Bool = {
     width match {
-    case KnownWidth(1) => this(0)
-    case _ => throwException(s"can't covert UInt<$width> to Bool")
-  }
+      case KnownWidth(1) => this(0)
+      case _ => throwException(s"can't covert UInt<$width> to Bool")
+    }
   }
 
   /** Returns this wire concatenated with `other`, where this wire forms the
@@ -407,8 +407,8 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
   final def unary_-% (): UInt = macro SourceInfoTransform.noArg
 
-  def do_unary_- (implicit sourceInfo: SourceInfo) : UInt = UInt(0) - this
-  def do_unary_-% (implicit sourceInfo: SourceInfo): UInt = UInt(0) -% this
+  def do_unary_- (implicit sourceInfo: SourceInfo) : UInt = UInt.Lit(0) - this
+  def do_unary_-% (implicit sourceInfo: SourceInfo): UInt = UInt.Lit(0) -% this
 
   override def do_+ (that: UInt)(implicit sourceInfo: SourceInfo): UInt = this +% that
   override def do_- (that: UInt)(implicit sourceInfo: SourceInfo): UInt = this -% that
@@ -456,8 +456,8 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def andR(): Bool = macro SourceInfoTransform.noArg
   final def xorR(): Bool = macro SourceInfoTransform.noArg
 
-  def do_orR(implicit sourceInfo: SourceInfo): Bool = this != UInt(0)
-  def do_andR(implicit sourceInfo: SourceInfo): Bool = ~this === UInt(0)
+  def do_orR(implicit sourceInfo: SourceInfo): Bool = this != UInt.Lit(0)
+  def do_andR(implicit sourceInfo: SourceInfo): Bool = ~this === UInt.Lit(0)
   def do_xorR(implicit sourceInfo: SourceInfo): Bool = redop(sourceInfo, XorReduceOp)
 
   override def do_< (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessOp, that)
@@ -523,14 +523,25 @@ private[core] sealed trait UIntFactory {
   /** Create a UInt port with specified width. */
   def apply(width: Width): UInt = new UInt(width)
   /** Create a UInt with a specified width - compatibility with Chisel2. */
+  def width(width: Int): UInt = apply(Width(width))
+  /** Create a UInt port with specified width. */
+  def width(width: Width): UInt = new UInt(width)
+  /** Create a UInt with a specified width - compatibility with Chisel2. */
   def apply(dummy: Direction, width: Int): UInt = apply(Width(width))
   /** Create a UInt literal with fixed width. */
-  def apply(value: BigInt, width: Int): UInt = apply(value, Width(width))
+  def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
   /** Create a UInt literal with inferred width. */
-  def apply(n: String): UInt = apply(parse(n), parsedWidth(n))
-  /** Create a UInt literal with fixed width. */
+  def apply(n: String): UInt = Lit(n)
   /** Create a UInt literal with specified width. */
-  def apply(value: BigInt, width: Width): UInt = {
+  def apply(value: BigInt, width: Width): UInt = Lit(value, width)
+  def Lit(value: BigInt, width: Int): UInt = Lit(value, Width(width))
+   /** Create a UInt literal with inferred width. */
+  def Lit(value: BigInt): UInt = Lit(value, Width())
+  def Lit(n: String): UInt = Lit(parse(n), parsedWidth(n))
+   /** Create a UInt literal with fixed width. */
+  def Lit(n: String, width: Int): UInt = Lit(parse(n), width)
+   /** Create a UInt literal with specified width. */
+  def Lit(value: BigInt, width: Width): UInt = {
     val lit = ULit(value, width)
     val result = new UInt(lit.width, Some(lit))
     // Bind result to being an Literal
@@ -575,8 +586,8 @@ sealed class SInt private (width: Width, lit: Option[SLit] = None)
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
   final def unary_-% (): SInt = macro SourceInfoTransform.noArg
 
-  def unary_- (implicit sourceInfo: SourceInfo): SInt = SInt(0) - this
-  def unary_-% (implicit sourceInfo: SourceInfo): SInt = SInt(0) -% this
+  def unary_- (implicit sourceInfo: SourceInfo): SInt = SInt.Lit(0) - this
+  def unary_-% (implicit sourceInfo: SourceInfo): SInt = SInt.Lit(0) -% this
 
   /** add (default - no growth) operator */
   override def do_+ (that: SInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -643,7 +654,7 @@ sealed class SInt private (width: Width, lit: Option[SLit] = None)
 
   final def abs(): UInt = macro SourceInfoTransform.noArg
 
-  def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < SInt(0), (-this).asUInt, this.asUInt)
+  def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < SInt.Lit(0), (-this).asUInt, this.asUInt)
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, that)
@@ -669,14 +680,24 @@ object SInt {
   def apply(width: Int): SInt = apply(Width(width))
   /** Create an SInt type with specified width. */
   def apply(width: Width): SInt = new SInt(width)
+  /** Create a SInt type or port with fixed width. */
+  def width(width: Int): SInt = apply(Width(width))
+  /** Create an SInt type with specified width. */
+  def width(width: Width): SInt = new SInt(width)
 
   /** Create an SInt literal with inferred width. */
-  def apply(value: BigInt): SInt = apply(value, Width())
+  def apply(value: BigInt): SInt = Lit(value)
   /** Create an SInt literal with fixed width. */
-  def apply(value: BigInt, width: Int): SInt = apply(value, Width(width))
+  def apply(value: BigInt, width: Int): SInt = Lit(value, width)
 
   /** Create an SInt literal with specified width. */
-  def apply(value: BigInt, width: Width): SInt = {
+  def apply(value: BigInt, width: Width): SInt = Lit(value, width)
+
+  def Lit(value: BigInt): SInt = Lit(value, Width())
+  def Lit(value: BigInt, width: Int): SInt = Lit(value, Width(width))
+   /** Create an SInt literal with specified width. */
+  def Lit(value: BigInt, width: Width): SInt = {
+
     val lit = SLit(value, width)
     val result = new SInt(lit.width, Some(lit))
     // Bind result to being an Literal
@@ -737,7 +758,8 @@ object Bool {
 
   /** Creates Bool literal.
    */
-  def apply(x: Boolean): Bool = {
+  def apply(x: Boolean): Bool = Lit(x)
+  def Lit(x: Boolean): Bool = {
     val result = new Bool(Some(ULit(if (x) 1 else 0, Width(1))))
     // Bind result to being an Literal
     result.binding = LitBinding()
@@ -754,7 +776,7 @@ object Mux {
     * @param alt the value chosen when `cond` is false
     * @example
     * {{{
-    * val muxOut = Mux(data_in === UInt(3), UInt(3, 4), UInt(0, 4))
+    * val muxOut = Mux(data_in === UInt.Lit(3), UInt(3, 4), UInt(0, 4))
     * }}}
     */
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = macro MuxTransform.apply[T]
