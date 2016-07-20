@@ -103,10 +103,28 @@ extends HasId {
     val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
+
+    /** Recursively suggests names to supported "container" classes
+      * Arbitrary nestings of supported classes are allowed so long as the
+      * innermost element is of type HasId
+      * Currently supported:
+      *   - Iterable
+      *   - Option
+      * (Note that Map is Iterable[Tuple2[_,_]] and thus excluded)
+      */
+    def nameRecursively(prefix: String, nameMe: Any): Unit =
+      nameMe match {
+        case (id: HasId) => id.suggestName(prefix)
+        case Some(elt) => nameRecursively(prefix, elt)
+        case (iter: Iterable[_]) if iter.hasDefiniteSize =>
+          for ((elt, i) <- iter.zipWithIndex) {
+            nameRecursively(s"${prefix}_${i}", elt)
+          }
+        case _ => // Do nothing
+      }
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
-    for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
-      case (id: HasId) => id.suggestName(m.getName)
-      case _ =>
+    for (m <- methods if isPublicVal(m)) {
+      nameRecursively(m.getName, m.invoke(this))
     }
 
     // For Module instances we haven't named, suggest the name of the Module
