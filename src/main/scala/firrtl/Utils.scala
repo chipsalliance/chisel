@@ -203,6 +203,22 @@ object Utils extends LazyLogging {
       }
    }
 
+   /** Returns true if t, or any subtype, contains a flipped field
+     * @param t [[firrtl.ir.Type]]
+     * @return if t contains [[firrtl.ir.Flip]]
+     */
+   def hasFlip(t: Type): Boolean = {
+      var has = false
+      def findFlip(t: Type): Type = t map (findFlip) match {
+         case t: BundleType =>
+            for (f <- t.fields) { if (f.flip == Flip) has = true }
+            t
+         case t: Type => t
+      }
+      findFlip(t)
+      has
+   }
+
 //============== TYPES ================
    def mux_type (e1:Expression,e2:Expression) : Type = mux_type(tpe(e1),tpe(e2))
    def mux_type (t1:Type,t2:Type) : Type = {
