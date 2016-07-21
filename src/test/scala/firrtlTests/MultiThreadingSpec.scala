@@ -13,7 +13,7 @@ class MultiThreadingSpec extends FirrtlPropSpec {
     def runCompiler(input: Seq[String], compiler: firrtl.Compiler): String = {
       val writer = new java.io.StringWriter
       val parsedInput = firrtl.Parser.parse(input)
-      compiler.compile(parsedInput, Seq(), writer)
+      compiler.compile(parsedInput,new firrtl.Annotations.AnnotationMap(Seq.empty), writer)
       writer.toString
     }
     // The parameters we're testing with
