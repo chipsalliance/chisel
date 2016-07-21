@@ -41,7 +41,7 @@ object Mappers {
       override def map(stmt: Statement): Statement = {
         stmt match {
           case s: Conditionally => Conditionally(s.info, s.pred, f(s.conseq), f(s.alt))
-          case s: Begin => Begin(s.stmts.map(f))
+          case s: Block => Block(s.stmts.map(f))
           case s: Statement => s
         }
       }

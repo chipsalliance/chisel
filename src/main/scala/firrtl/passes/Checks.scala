@@ -619,7 +619,7 @@ object CheckGenders extends Pass {
                check_gender(s.info,genders,MALE)(s.en)
                check_gender(s.info,genders,MALE)(s.clk)
             }
-            case (_:Begin|_:IsInvalid) => false
+            case (_:Block | _:IsInvalid) => false
          }
          s
       }

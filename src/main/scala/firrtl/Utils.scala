@@ -458,7 +458,7 @@ object Utils extends LazyLogging {
          case s:IsInvalid => s.info
          case s:Stop => s.info
          case s:Print => s.info
-         case s:Begin => NoInfo
+         case s:Block => NoInfo
          case EmptyStmt => NoInfo
       }
    }
@@ -484,7 +484,7 @@ object Utils extends LazyLogging {
        case s:DefNode => MALE
        case s:DefInstance => MALE
        case s:DefMemory => MALE
-       case s:Begin => UNKNOWNGENDER
+       case s:Block => UNKNOWNGENDER
        case s:Connect => UNKNOWNGENDER
        case s:PartialConnect => UNKNOWNGENDER
        case s:Stop => UNKNOWNGENDER
@@ -630,7 +630,7 @@ object Utils extends LazyLogging {
           case (None, Some(decl)) => Some(decl)
           case (None, None) => None
         }
-      case begin: Begin =>
+      case begin: Block =>
         val stmts = begin.stmts flatMap getRootDecl(name) // can we short circuit?
         if (stmts.nonEmpty) Some(stmts.head) else None
       case _ => None

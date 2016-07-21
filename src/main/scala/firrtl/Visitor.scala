@@ -32,55 +32,54 @@ MODIFICATIONS.
 
 package firrtl
 
-import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.tree.ParseTree
-import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.TerminalNode
 import scala.collection.JavaConversions._
-import antlr._
+import scala.collection.mutable
+import firrtl.antlr._
 import PrimOps._
 import FIRRTLParser._
-import Parser.{InfoMode, IgnoreInfo, UseInfo, GenInfo, AppendInfo}
+import Parser.{AppendInfo, GenInfo, IgnoreInfo, InfoMode, UseInfo}
 import firrtl.ir._
-import scala.annotation.tailrec
 
-class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode]
-{
+
+class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   // Strip file path
-  private def stripPath(filename: String) = filename.drop(filename.lastIndexOf("/")+1)
+  private def stripPath(filename: String) = filename.drop(filename.lastIndexOf("/") + 1)
 
   def visit[FirrtlNode](ctx: FIRRTLParser.CircuitContext): Circuit = visitCircuit(ctx)
 
   //  These regex have to change if grammar changes
   private def string2BigInt(s: String): BigInt = {
     // private define legal patterns
-    val HexPattern = """\"*h([a-zA-Z0-9]+)\"*""".r
+    val HexPattern =
+      """\"*h([a-zA-Z0-9]+)\"*""".r
     val DecPattern = """(\+|-)?([1-9]\d*)""".r
     val ZeroPattern = "0".r
     val NegPattern = "(89AaBbCcDdEeFf)".r
     s match {
       case ZeroPattern(_*) => BigInt(0)
-      case HexPattern(hexdigits) => 
-         hexdigits(0) match {
-            case NegPattern(_) =>{
-               BigInt("-" + hexdigits,16)
-            }
-            case _ => BigInt(hexdigits, 16)
-         }
+      case HexPattern(hexdigits) =>
+        hexdigits(0) match {
+          case NegPattern(_) => {
+            BigInt("-" + hexdigits, 16)
+          }
+          case _ => BigInt(hexdigits, 16)
+        }
       case DecPattern(sign, num) => {
-         if (sign != null) BigInt(sign + num,10)
-         else BigInt(num,10)
+        if (sign != null) BigInt(sign + num, 10)
+        else BigInt(num, 10)
       }
-      case  _  => throw new Exception("Invalid String for conversion to BigInt " + s)
+      case _ => throw new Exception("Invalid String for conversion to BigInt " + s)
     }
   }
+
   private def string2Int(s: String): Int = string2BigInt(s).toInt
 
   private def visitInfo(ctx: Option[FIRRTLParser.InfoContext], parentCtx: ParserRuleContext): Info = {
     def genInfo(filename: String): String =
       stripPath(filename) + "@" + parentCtx.getStart.getLine + "." +
-      parentCtx.getStart.getCharPositionInLine
+        parentCtx.getStart.getCharPositionInLine
     lazy val useInfo: String = ctx match {
       case Some(info) => info.getText.drop(2).init // remove surrounding @[ ... ]
       case None => ""
@@ -98,25 +97,30 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode]
     }
   }
 
-	private def visitCircuit[FirrtlNode](ctx: FIRRTLParser.CircuitContext): Circuit =
-    Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.map(visitModule), (ctx.id.getText))
-    
+  private def visitCircuit[FirrtlNode](ctx: FIRRTLParser.CircuitContext): Circuit =
+    Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.map(visitModule), ctx.id.getText)
+
   private def visitModule[FirrtlNode](ctx: FIRRTLParser.ModuleContext): DefModule = {
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0).getText match {
-      case "module" => Module(info, ctx.id.getText, ctx.port.map(visitPort), visitBlock(ctx.block))
+      case "module" => Module(info, ctx.id.getText, ctx.port.map(visitPort),
+        if (ctx.moduleBlock() != null)
+          visitBlock(ctx.moduleBlock())
+        else EmptyStmt)
       case "extmodule" => ExtModule(info, ctx.id.getText, ctx.port.map(visitPort))
     }
   }
 
   private def visitPort[FirrtlNode](ctx: FIRRTLParser.PortContext): Port = {
-    Port(visitInfo(Option(ctx.info), ctx), (ctx.id.getText), visitDir(ctx.dir), visitType(ctx.`type`))
+    Port(visitInfo(Option(ctx.info), ctx), ctx.id.getText, visitDir(ctx.dir), visitType(ctx.`type`))
   }
+
   private def visitDir[FirrtlNode](ctx: FIRRTLParser.DirContext): Direction =
     ctx.getText match {
       case "input" => Input
       case "output" => Output
     }
+
   private def visitMdir[FirrtlNode](ctx: FIRRTLParser.MdirContext): MPortDir =
     ctx.getText match {
       case "infer" => MInfer
@@ -128,64 +132,85 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode]
   // Match on a type instead of on strings?
   private def visitType[FirrtlNode](ctx: FIRRTLParser.TypeContext): Type = {
     ctx.getChild(0) match {
-      case term: TerminalNode => 
+      case term: TerminalNode =>
         term.getText match {
-          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
-                         else UIntType( UnknownWidth )
-          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText))) 
-                         else SIntType( UnknownWidth )
+          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit.getText)))
+          else UIntType(UnknownWidth)
+          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText)))
+          else SIntType(UnknownWidth)
           case "Clock" => ClockType
           case "{" => BundleType(ctx.field.map(visitField))
         }
-      case tpe: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.IntLit.getText))
+      case typeContext: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.IntLit.getText))
     }
   }
-      
-	private def visitField[FirrtlNode](ctx: FIRRTLParser.FieldContext): Field = {
-    val flip = if(ctx.getChild(0).getText == "flip") Flip else Default
-    Field((ctx.id.getText), flip, visitType(ctx.`type`))
-  }
-     
 
-  // visitBlock
-	private def visitBlock[FirrtlNode](ctx: FIRRTLParser.BlockContext): Statement =
-    Begin(ctx.stmt.map(visitStmt)) 
+  private def visitField[FirrtlNode](ctx: FIRRTLParser.FieldContext): Field = {
+    val flip = if (ctx.getChild(0).getText == "flip") Flip else Default
+    Field(ctx.id.getText, flip, visitType(ctx.`type`))
+  }
+
+  private def visitBlock[FirrtlNode](ctx: FIRRTLParser.ModuleBlockContext): Statement =
+    Block(ctx.simple_stmt().map(_.stmt).filter(_ != null).map(visitStmt))
+
+  private def visitSuite[FirrtlNode](ctx: FIRRTLParser.SuiteContext): Statement =
+    Block(ctx.simple_stmt().map(_.stmt).filter(_ != null).map(visitStmt))
+
 
   // Memories are fairly complicated to translate thus have a dedicated method
   private def visitMem[FirrtlNode](ctx: FIRRTLParser.StmtContext): Statement = {
-    def parseChildren(children: Seq[ParseTree], map: Map[String, Seq[ParseTree]]): Map[String, Seq[ParseTree]] = {
-      val field = children(0).getText
-      if (field == "}") map
-      else {
-        val newMap = 
-          if (field == "reader" || field == "writer" || field == "readwriter") {
-            val seq = map getOrElse (field, Seq())
-            map + (field -> (seq :+ children(2)))
-          } else { // data-type, depth, read-latency, write-latency, read-under-write
-            if (map.contains(field)) throw new ParameterRedefinedException(s"Redefinition of ${field}")
-            else map + (field -> Seq(children(2)))
-          }
-        parseChildren(children.drop(3), newMap) // We consume tokens in groups of three (eg. 'depth' '=>' 5)
+    val readers = mutable.ArrayBuffer.empty[String]
+    val writers = mutable.ArrayBuffer.empty[String]
+    val readwriters = mutable.ArrayBuffer.empty[String]
+    case class ParamValue(typ: Option[Type] = None, lit: Option[Int] = None, ruw: Option[String] = None, unique: Boolean = true)
+    val fieldMap = mutable.HashMap[String, ParamValue]()
+
+    def parseMemFields(memFields: Seq[MemFieldContext]): Unit =
+      memFields.foreach { field =>
+        val fieldName = field.children(0).getText
+
+        fieldName match {
+          case "reader" => readers ++= field.id().map(_.getText)
+          case "writer" => writers ++= field.id().map(_.getText)
+          case "readwriter" => readwriters ++= field.id().map(_.getText)
+          case _ =>
+            val paramDef = fieldName match {
+              case "data-type" => ParamValue(typ = Some(visitType(field.`type`())))
+              case "read-under-write" => ParamValue(ruw = Some(field.ruw().getText)) // TODO
+              case _ => ParamValue(lit = Some(field.IntLit().getText.toInt))
+            }
+            if (fieldMap.contains(fieldName))
+              throw new ParameterRedefinedException(s"Redefinition of $fieldName in FIRRTL line:${field.start.getLine}")
+            else
+              fieldMap += fieldName -> paramDef
+        }
       }
-    }
 
     val info = visitInfo(Option(ctx.info), ctx)
+
     // Build map of different Memory fields to their values
-    val map = try {
-      parseChildren(ctx.children.drop(4), Map[String, Seq[ParseTree]]()) // First 4 tokens are 'mem' id ':' '{', skip to fields
-    } catch { // attach line number
-      case e: ParameterRedefinedException => throw new ParameterRedefinedException(s"[${info}] ${e.message}") 
+    try {
+      parseMemFields(ctx.memField())
+    } catch {
+      // attach line number
+      case e: ParameterRedefinedException => throw new ParameterRedefinedException(s"[$info] ${e.message}")
     }
+
     // Check for required fields
     Seq("data-type", "depth", "read-latency", "write-latency") foreach { field =>
-      map.getOrElse(field, throw new ParameterNotSpecifiedException(s"[${info}] Required mem field ${field} not found"))
+      fieldMap.getOrElse(field, throw new ParameterNotSpecifiedException(s"[$info] Required mem field $field not found"))
     }
-    // Each memory field value has been left as ParseTree type, need to convert
-    // TODO Improve? Remove dynamic typecast of data-type
-    DefMemory(info, (ctx.id(0).getText), visitType(map("data-type").head.asInstanceOf[FIRRTLParser.TypeContext]), 
-              string2Int(map("depth").head.getText), string2Int(map("write-latency").head.getText), 
-              string2Int(map("read-latency").head.getText), map.getOrElse("reader", Seq()).map(x => (x.getText)),
-              map.getOrElse("writer", Seq()).map(x => (x.getText)), map.getOrElse("readwriter", Seq()).map(x => (x.getText)))
+
+    def lit(param: String) = fieldMap(param).lit.get
+    val ruw = fieldMap.get("read-under-write").map(_.ruw).getOrElse(None)
+
+    DefMemory(info,
+      name = ctx.id(0).getText, dataType = fieldMap("data-type").typ.get,
+      depth = lit("depth"),
+      writeLatency = lit("write-latency"), readLatency = lit("read-latency"),
+      readers = readers, writers = writers, readwriters = readwriters,
+      readUnderWrite = ruw
+    )
   }
 
   // visitStringLit
@@ -194,106 +219,122 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode]
     FIRRTLStringLitHandler.unescape(raw)
   }
 
+  private def visitWhen[FirrtlNode](ctx: WhenContext): Conditionally = {
+    val info = visitInfo(Option(ctx.info(0)), ctx)
+
+    val alt: Statement =
+      if (ctx.when() != null)
+        visitWhen(ctx.when())
+      else if (ctx.suite().length > 1)
+        visitSuite(ctx.suite(1))
+      else
+        EmptyStmt
+
+    Conditionally(info, visitExp(ctx.exp()), visitSuite(ctx.suite(0)), alt)
+  }
+
   // visitStmt
   private def visitStmt[FirrtlNode](ctx: FIRRTLParser.StmtContext): Statement = {
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0) match {
+      case when: WhenContext => visitWhen(when)
       case term: TerminalNode => term.getText match {
-        case "wire" => DefWire(info, (ctx.id(0).getText), visitType(ctx.`type`(0)))
-        case "reg"  => {
-          val name = (ctx.id(0).getText)
-          val tpe = visitType(ctx.`type`(0))
-          val reset = if (ctx.exp(1) != null) visitExp(ctx.exp(1)) else UIntLiteral(0, IntWidth(1))
-          val init  = if (ctx.exp(2) != null) visitExp(ctx.exp(2)) else Reference(name, tpe)
+        case "wire" => DefWire(info, ctx.id(0).getText, visitType(ctx.`type`()))
+        case "reg" =>
+          val name = ctx.id(0).getText
+          val tpe = visitType(ctx.`type`())
+          val (reset, init) = {
+            val rb = ctx.reset_block()
+            if (rb != null) {
+              val sr = rb.simple_reset(0).simple_reset0()
+              (visitExp(sr.exp(0)), visitExp(sr.exp(1)))
+            }
+            else
+              (UIntLiteral(0, IntWidth(1)), Reference(name, tpe))
+          }
           DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
-        }
         case "mem" => visitMem(ctx)
-        case "cmem" => {
-           val t = visitType(ctx.`type`(0))
-           t match {
-              case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,false)
-              case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
-           }
-        }
-        case "smem" => {
-           val t = visitType(ctx.`type`(0))
-           t match {
-              case (t:VectorType) => CDefMemory(info,ctx.id(0).getText,t.tpe,t.size,true)
-              case _ => throw new ParserException(s"${info}: Must provide cmem with vector type")
-           }
-        }
-        case "inst"  => DefInstance(info, (ctx.id(0).getText), (ctx.id(1).getText))
-        case "node" =>  DefNode(info, (ctx.id(0).getText), visitExp(ctx.exp(0)))
-        case "when" => {
-          val alt = if (ctx.block.length > 1) visitBlock(ctx.block(1)) else EmptyStmt
-          Conditionally(info, visitExp(ctx.exp(0)), visitBlock(ctx.block(0)), alt)
-        }
-        case "stop(" => Stop(info, string2Int(ctx.IntLit(0).getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+        case "cmem" =>
+          val t = visitType(ctx.`type`())
+          t match {
+            case (t: VectorType) => CDefMemory(info, ctx.id(0).getText, t.tpe, t.size, seq = false)
+            case _ => throw new ParserException(s"${
+              info
+            }: Must provide cmem with vector type")
+          }
+        case "smem" =>
+          val t = visitType(ctx.`type`())
+          t match {
+            case (t: VectorType) => CDefMemory(info, ctx.id(0).getText, t.tpe, t.size, seq = true)
+            case _ => throw new ParserException(s"${
+              info
+            }: Must provide cmem with vector type")
+          }
+        case "inst" => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
+        case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx.exp(0)))
+
+        case "stop(" => Stop(info, string2Int(ctx.IntLit().getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
         case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
-                                visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+          visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
         case "skip" => EmptyStmt
       }
       // If we don't match on the first child, try the next one
-      case _ => {
+      case _ =>
         ctx.getChild(1).getText match {
-          case "<=" => Connect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)) )
-          case "<-" => PartialConnect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)) )
+          case "<=" => Connect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+          case "<-" => PartialConnect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
           case "is" => IsInvalid(info, visitExp(ctx.exp(0)))
-          case "mport" => CDefMPort(info, ctx.id(0).getText, UnknownType,ctx.id(1).getText,Seq(visitExp(ctx.exp(0)),visitExp(ctx.exp(1))),visitMdir(ctx.mdir))
+          case "mport" => CDefMPort(info, ctx.id(0).getText, UnknownType, ctx.id(1).getText, Seq(visitExp(ctx.exp(0)), visitExp(ctx.exp(1))), visitMdir(ctx.mdir))
         }
-      }
     }
   }
-     
-  // add visitRuw ?
-	//T visitRuw(FIRRTLParser.RuwContext ctx);
-  //private def visitRuw[FirrtlNode](ctx: FIRRTLParser.RuwContext): 
 
-  // TODO 
+  // TODO
   // - Add mux
   // - Add validif
-	private def visitExp[FirrtlNode](ctx: FIRRTLParser.ExpContext): Expression = 
-    if( ctx.getChildCount == 1 ) 
-      Reference((ctx.getText), UnknownType)
+  private def visitExp[FirrtlNode](ctx: FIRRTLParser.ExpContext): Expression =
+    if (ctx.getChildCount == 1)
+      Reference(ctx.getText, UnknownType)
     else
       ctx.getChild(0).getText match {
-        case "UInt" => { // This could be better
-          val (width, value) = 
-            if (ctx.getChildCount > 4) 
+        case "UInt" => {
+          // This could be better
+          val (width, value) =
+            if (ctx.getChildCount > 4)
               (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
             else {
-               val bigint = string2BigInt(ctx.IntLit(0).getText)
-               (IntWidth(BigInt(scala.math.max(bigint.bitLength,1))),bigint)
+              val bigint = string2BigInt(ctx.IntLit(0).getText)
+              (IntWidth(BigInt(scala.math.max(bigint.bitLength, 1))), bigint)
             }
           UIntLiteral(value, width)
         }
         case "SInt" => {
-          val (width, value) = 
-            if (ctx.getChildCount > 4) 
+          val (width, value) =
+            if (ctx.getChildCount > 4)
               (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
             else {
-               val bigint = string2BigInt(ctx.IntLit(0).getText)
-               (IntWidth(BigInt(bigint.bitLength + 1)),bigint)
+              val bigint = string2BigInt(ctx.IntLit(0).getText)
+              (IntWidth(BigInt(bigint.bitLength + 1)), bigint)
             }
           SIntLiteral(value, width)
         }
         case "validif(" => ValidIf(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
         case "mux(" => Mux(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), visitExp(ctx.exp(2)), UnknownType)
-        case _ => 
+        case _ =>
           ctx.getChild(1).getText match {
-            case "." => new SubField(visitExp(ctx.exp(0)), (ctx.id.getText), UnknownType)
-            case "[" => if (ctx.exp(1) == null)  
-                          new SubIndex(visitExp(ctx.exp(0)), string2Int(ctx.IntLit(0).getText), UnknownType)
-                        else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
+            case "." => new SubField(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)
+            case "[" => if (ctx.exp(1) == null)
+              new SubIndex(visitExp(ctx.exp(0)), string2Int(ctx.IntLit(0).getText), UnknownType)
+            else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
             // Assume primop
             case _ => DoPrim(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
-                             ctx.IntLit.map(x => string2BigInt(x.getText)), UnknownType)
+              ctx.IntLit.map(x => string2BigInt(x.getText)), UnknownType)
           }
       }
-  
-  // stripSuffix("(") is included because in ANTLR concrete syntax we have to include open parentheses, 
+
+  // stripSuffix("(") is included because in ANTLR concrete syntax we have to include open parentheses,
   //  see grammar file for more details
-	private def visitPrimop[FirrtlNode](ctx: FIRRTLParser.PrimopContext): PrimOp = fromString(ctx.getText.stripSuffix("("))
+  private def visitPrimop[FirrtlNode](ctx: FIRRTLParser.PrimopContext): PrimOp = fromString(ctx.getText.stripSuffix("("))
 
   // visit Id and Keyword?
 }

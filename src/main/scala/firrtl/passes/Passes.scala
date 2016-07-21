@@ -690,7 +690,7 @@ object ExpandConnects extends Pass {
                      EmptyStmt
                   } else if (invalids.length == 1) {
                      invalids(0)
-                  } else Begin(invalids)
+                  } else Block(invalids)
                }
                case (s:Connect) => {
                   val n = get_size(tpe(s.loc))
@@ -706,7 +706,7 @@ object ExpandConnects extends Pass {
                      }
                      connects += sx
                   }
-                  Begin(connects)
+                  Block(connects)
                }
                case (s:PartialConnect) => {
                   val ls = get_valid_points(tpe(s.loc),tpe(s.expr),Default,Default)
@@ -722,7 +722,7 @@ object ExpandConnects extends Pass {
                      }
                      connects += sx
                   }}
-                  Begin(connects)
+                  Block(connects)
                }
                case (s) => s map (expand_s)
             }
@@ -873,7 +873,7 @@ object RemoveAccesses extends Pass {
                case (s) => s map (remove_e) map (remove_s)
             }
             stmts += sx
-            if (stmts.size != 1) Begin(stmts) else stmts(0)
+            if (stmts.size != 1) Block(stmts) else stmts(0)
          }
          Module(m.info,m.name,m.ports,remove_s(m.body))
       }
@@ -1053,7 +1053,7 @@ object CInferTypes extends Pass {
       def infer_types (m:DefModule) : DefModule = {
          val types = LinkedHashMap[String,Type]()
          def infer_types_e (e:Expression) : Expression = {
-            (e map (infer_types_e)) match { 
+            e map infer_types_e match {
                case (e:Reference) => Reference(e.name, types.getOrElse(e.name,UnknownType))
                case (e:SubField) => SubField(e.expr,e.name,field_type(tpe(e.expr),e.name))
                case (e:SubIndex) => SubIndex(e.expr,e.value,sub_type(tpe(e.expr)))
@@ -1065,10 +1065,10 @@ object CInferTypes extends Pass {
             }
          }
          def infer_types_s (s:Statement) : Statement = {
-            (s) match { 
+            s match {
                case (s:DefRegister) => {
                   types(s.name) = s.tpe
-                  s map (infer_types_e)
+                  s map infer_types_e
                   s
                }
                case (s:DefWire) => {
@@ -1076,7 +1076,7 @@ object CInferTypes extends Pass {
                   s
                }
                case (s:DefNode) => {
-                  val sx = s map (infer_types_e)
+                  val sx = s map infer_types_e
                   val t = get_type(sx)
                   types(s.name) = t
                   sx
@@ -1098,13 +1098,13 @@ object CInferTypes extends Pass {
                   types(s.name) = module_types.getOrElse(s.module,UnknownType)
                   s
                }
-               case (s) => s map(infer_types_s) map (infer_types_e)
+               case (s) => s map infer_types_s map infer_types_e
             }
          }
          for (p <- m.ports) {
             types(p.name) = p.tpe
          }
-         (m) match { 
+         m match {
             case (m:Module) => Module(m.info,m.name,m.ports,infer_types_s(m.body))
             case (m:ExtModule) => m
          }
@@ -1287,7 +1287,7 @@ object RemoveCHIRRTL extends Pass {
                   set_write(rws,"data","mask")
                   val read_l = if (s.seq) 1 else 0
                   val mem = DefMemory(s.info,s.name,s.tpe,s.size,1,read_l,rds.map(_.name),wrs.map(_.name),rws.map(_.name))
-                  Begin(Seq(mem,Begin(stmts)))
+                  Block(Seq(mem,Block(stmts)))
                }
                case (s:CDefMPort) => {
                   mport_types(s.name) = mport_types(s.mem)
@@ -1327,7 +1327,7 @@ object RemoveCHIRRTL extends Pass {
                   for (x <- ens ) {
                      stmts += Connect(s.info,SubField(SubField(Reference(s.mem,ut),s.name,ut),x,ut),one)
                   }
-                  Begin(stmts)
+                  Block(stmts)
                }
                case (s) => s map (collect_refs)
             }
@@ -1383,7 +1383,7 @@ object RemoveCHIRRTL extends Pass {
                         stmts += Connect(s.info,wmode,one)
                      }
                   }
-                  if (stmts.size > 1) Begin(stmts)
+                  if (stmts.size > 1) Block(stmts)
                   else stmts(0)
                }
                case (s:PartialConnect) => {
@@ -1403,7 +1403,7 @@ object RemoveCHIRRTL extends Pass {
                         stmts += Connect(s.info,wmode,one)
                      }
                   }
-                  if (stmts.size > 1) Begin(stmts)
+                  if (stmts.size > 1) Block(stmts)
                   else stmts(0)
                }
                case (s) => s map (remove_chirrtl_s) map (remove_chirrtl_e(MALE))

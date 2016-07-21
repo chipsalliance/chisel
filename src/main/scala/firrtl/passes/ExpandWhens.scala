@@ -73,12 +73,12 @@ object ExpandWhens extends Pass {
   }
   private def squashEmpty(s: Statement): Statement = {
     s map squashEmpty match {
-      case Begin(stmts) =>
+      case Block(stmts) =>
         val newStmts = stmts filter (_ != EmptyStmt)
         newStmts.size match {
           case 0 => EmptyStmt
           case 1 => newStmts.head
-          case _ => Begin(newStmts)
+          case _ => Block(newStmts)
         }
       case s => s
     }
@@ -157,7 +157,7 @@ object ExpandWhens extends Pass {
               memos += memoNode
               netlist(lvalue) = memoExpr
             }
-            Begin(Seq(conseqStmt, altStmt) ++ memos)
+            Block(Seq(conseqStmt, altStmt) ++ memos)
 
           case s: Print =>
             if(weq(p, one)) {
@@ -191,7 +191,7 @@ object ExpandWhens extends Pass {
         case m: ExtModule => m
         case m: Module =>
         val (netlist, simlist, bodyx) = expandWhens(m)
-        val newBody = Begin(Seq(bodyx map squashEmpty) ++ expandNetlist(netlist) ++ simlist)
+        val newBody = Block(Seq(bodyx map squashEmpty) ++ expandNetlist(netlist) ++ simlist)
         Module(m.info, m.name, m.ports, newBody)
       }
     }

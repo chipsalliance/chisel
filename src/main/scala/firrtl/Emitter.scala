@@ -603,7 +603,7 @@ class VerilogEmitter extends Emitter {
                   update(wmem_port,datax,clk,AND(tempWRef,wmode))
                }
             }
-            case (s:Begin) => s map (build_streams)
+            case (s:Block) => s map (build_streams)
          }
          s
       }

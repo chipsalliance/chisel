@@ -97,14 +97,16 @@ case class DefMemory(
     readLatency: Int,
     readers: Seq[String],
     writers: Seq[String],
-    readwriters: Seq[String]) extends Statement with IsDeclaration
+    readwriters: Seq[String],
+    // TODO: handle read-under-write
+    readUnderWrite: Option[String] = None) extends Statement with IsDeclaration
 case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration
 case class Conditionally(
     info: Info,
     pred: Expression,
     conseq: Statement,
     alt: Statement) extends Statement with HasInfo
-case class Begin(stmts: Seq[Statement]) extends Statement
+case class Block(stmts: Seq[Statement]) extends Statement
 case class PartialConnect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo

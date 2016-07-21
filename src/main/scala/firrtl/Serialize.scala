@@ -129,7 +129,7 @@ class Serialize {
             }
         }
       }
-      case b: Begin => {
+      case b: Block => {
         val s = new StringBuilder
         for (i <- 0 until b.stmts.size) {
           if (i != 0) s ++= newline ++ serialize(b.stmts(i))

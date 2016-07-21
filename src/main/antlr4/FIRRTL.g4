@@ -26,6 +26,27 @@ MODIFICATIONS.
 */
 grammar FIRRTL;
 
+tokens { INDENT, DEDENT }
+
+@lexer::header {
+import firrtl.LexerHelper;
+}
+
+@lexer::members {
+  private final LexerHelper denter = new firrtl.LexerHelper()
+  {
+    @Override
+    public Token pullToken() {
+      return FIRRTLLexer.super.nextToken();
+    }
+  };
+
+  @Override
+  public Token nextToken() {
+    return denter.nextToken();
+  }
+}
+
 /*------------------------------------------------------------------
  * PARSER RULES
  *------------------------------------------------------------------*/
@@ -37,16 +58,16 @@ grammar FIRRTL;
 
 // Does there have to be at least one module?
 circuit
-  : 'circuit' id ':' info? '{' module* '}'
+  : 'circuit' id ':' info? INDENT module* DEDENT
   ;
 
 module
-  : 'module' id ':' info? '{' port* block '}'
-  | 'extmodule' id ':' info? '{' port* '}'
+  : 'module' id ':' info? INDENT port* moduleBlock DEDENT
+  | 'extmodule' id ':' info? INDENT port* DEDENT
   ;
 
 port
-  : dir id ':' type info?
+  : dir id ':' type info? NEWLINE
   ;
 
 dir
@@ -66,25 +87,26 @@ field
   : 'flip'? id ':' type
   ;
 
-// Much faster than replacing block with stmt+
-block
-  : (stmt)*
-  ; 
+moduleBlock
+  : simple_stmt*
+  ;
+
+simple_reset0:  'reset' '=>' '(' exp exp ')';
+
+simple_reset
+	: simple_reset0
+	| '(' simple_reset0 ')'
+	;
+
+reset_block
+	: INDENT simple_reset NEWLINE DEDENT
+	| '(' +  simple_reset + ')'
+  ;
 
 stmt
   : 'wire' id ':' type info?
-  | 'reg' id ':' type exp ('with' ':' '{' 'reset' '=>' '(' exp exp ')' '}')? info?
-  | 'mem' id ':' info? '{'
-                     ( 'data-type' '=>' type
-                     | 'depth' '=>' IntLit
-                     | 'read-latency' '=>' IntLit
-                     | 'write-latency' '=>' IntLit
-                     | 'read-under-write' '=>' ruw
-                     | 'reader' '=>' id
-                     | 'writer' '=>' id
-                     | 'readwriter' '=>' id
-                     )*
-                 '}'
+  | 'reg' id ':' type exp ('with' ':' reset_block)? info?
+  | 'mem' id ':' info? INDENT memField* DEDENT
   | 'cmem' id ':' type info?
   | 'smem' id ':' type info?
   | mdir 'mport' id '=' id '[' exp ']' exp info?
@@ -93,10 +115,41 @@ stmt
   | exp '<=' exp info?
   | exp '<-' exp info?
   | exp 'is' 'invalid' info?
-  | 'when' exp ':' info? '{' block '}' ( 'else' ':' '{' block '}' )?
+  | when
   | 'stop(' exp exp IntLit ')' info?
-  | 'printf(' exp exp StringLit (exp)* ')' info?
+  | 'printf(' exp exp StringLit ( exp)* ')' info?
   | 'skip' info?
+  ;
+
+memField
+	:  'data-type' '=>' type NEWLINE
+	| 'depth' '=>' IntLit NEWLINE
+	| 'read-latency' '=>' IntLit NEWLINE
+	| 'write-latency' '=>' IntLit NEWLINE
+	| 'read-under-write' '=>' ruw NEWLINE
+	| 'reader' '=>' id+ NEWLINE
+	| 'writer' '=>' id+ NEWLINE
+	| 'readwriter' '=>' id+ NEWLINE
+	;
+
+simple_stmt
+  : stmt | NEWLINE
+  ;
+
+/*
+    We should provide syntatctical distinction between a "moduleBody" and a "suite":
+    - statements require a "suite" which means they can EITHER have a "simple statement" (one-liner) on the same line
+        OR a group of one or more _indented_ statements after a new-line. A "suite" may _not_ be empty
+    - modules on the other hand require a group of one or more statements without any indentation to follow "port"
+        definitions. Let's call that _the_ "moduleBody". A "moduleBody" could possibly be empty
+*/
+suite
+  : simple_stmt
+  | INDENT simple_stmt+ DEDENT
+  ;
+
+when
+  : 'when' exp ':' info? suite? ('else' ( when | ':' info? suite?) )?
   ;
 
 info
@@ -267,19 +320,18 @@ IdNondigit
   | [~!@#$%^*\-+=?/]
   ;
 
-Comment
-  : ';' ~[\r\n]* 
-    -> skip
+fragment COMMENT
+  : ';' ~[\r\n]*
   ;
 
-Whitespace
-  : [ \t,]+
-    -> skip
-  ;
+fragment WHITESPACE
+	: [ \t,]+
+	;
 
-Newline 
-  : ( '\r'? '\n' )+
-      -> skip
-  ;
+SKIP_
+	: ( WHITESPACE | COMMENT ) -> skip
+	;
 
-
+NEWLINE
+	:'\r'? '\n' ' '*
+	;

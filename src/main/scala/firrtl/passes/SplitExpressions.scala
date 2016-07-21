@@ -45,11 +45,11 @@ object SplitExpressions extends Pass {
          }
          val x = s map onExp
          x match {
-            case x: Begin => x map onStmt
+            case x: Block => x map onStmt
             case EmptyStmt => x
             case x => {
                v += x
-               if (v.size > 1) Begin(v.toVector)
+               if (v.size > 1) Block(v.toVector)
                else v(0)
             }
          }

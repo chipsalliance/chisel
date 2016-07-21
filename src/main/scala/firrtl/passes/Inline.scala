@@ -145,7 +145,7 @@ object InlineInstances extends Transform {
                         stmts += DefWire(p.info, rename(p.name), p.tpe)
                      }
                      stmts += renameStmt(instInModule.body)
-                     Begin(stmts.toSeq)
+                     Block(stmts.toSeq)
                   } else s
                }
                case s => s map onExp map onStmt

@@ -163,7 +163,7 @@ object LowerTypes extends Pass {
             } else {
               val exps = create_exps(s.name, s.tpe)
               val stmts = exps map (e => DefWire(s.info, loweredName(e), tpe(e)))
-              Begin(stmts)
+              Block(stmts)
             }
           case s: DefRegister =>
             sinfo = s.info
@@ -177,7 +177,7 @@ object LowerTypes extends Pass {
               val stmts = es zip inits map { case (e, i) =>
                 DefRegister(s.info, loweredName(e), tpe(e), clock, reset, i)
               }
-              Begin(stmts)
+              Block(stmts)
             }
           // Could instead just save the type of each Module as it gets processed
           case s: WDefInstance =>
@@ -206,7 +206,7 @@ object LowerTypes extends Pass {
                   s.writeLatency, s.readLatency, s.readers, s.writers,
                   s.readwriters)
               }
-              Begin(stmts)
+              Block(stmts)
             }
           // wire foo : { a , b }
           // node x = foo
@@ -222,13 +222,13 @@ object LowerTypes extends Pass {
             val stmts = names zip exps map { case (n, e) =>
               DefNode(s.info, loweredName(n), e)
             }
-            Begin(stmts)
+            Block(stmts)
           case s: IsInvalid =>
             sinfo = s.info
             kind(s.expr) match {
               case k: MemKind =>
                 val exps = lowerTypesMemExp(s.expr)
-                Begin(exps map (exp => IsInvalid(s.info, exp)))
+                Block(exps map (exp => IsInvalid(s.info, exp)))
               case _ => s map (lowerTypesExp)
             }
           case s: Connect =>
@@ -237,7 +237,7 @@ object LowerTypes extends Pass {
               case k: MemKind =>
                 val exp = lowerTypesExp(s.expr)
                 val locs = lowerTypesMemExp(s.loc)
-                Begin(locs map (loc => Connect(s.info, loc, exp)))
+                Block(locs map (loc => Connect(s.info, loc, exp)))
               case _ => s map (lowerTypesExp)
             }
           case s => s map (lowerTypesExp)
