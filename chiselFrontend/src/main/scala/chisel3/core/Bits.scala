@@ -518,8 +518,6 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 private[core] sealed trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(Width())
-  /** Create a UInt type or port with fixed width. */
-  def apply(width: Int): UInt = apply(Width(width))
   /** Create a UInt port with specified width. */
   def apply(width: Width): UInt = new UInt(width)
   /** Create a UInt with a specified width - compatibility with Chisel2. */
@@ -677,8 +675,6 @@ object SInt {
   /** Create an SInt type with inferred width. */
   def apply(): SInt = apply(Width())
   /** Create a SInt type or port with fixed width. */
-  def apply(width: Int): SInt = apply(Width(width))
-  /** Create an SInt type with specified width. */
   def apply(width: Width): SInt = new SInt(width)
   /** Create a SInt type or port with fixed width. */
   def width(width: Int): SInt = apply(Width(width))

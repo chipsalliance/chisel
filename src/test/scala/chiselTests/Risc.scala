@@ -9,17 +9,17 @@ class Risc extends Module {
   val io = IO(new Bundle {
     val isWr   = Input(Bool())
     val wrAddr = Input(UInt.width(8))
-    val wrData = Input(Bits(32))
+    val wrData = Input(Bits.width(32))
     val boot   = Input(Bool())
     val valid  = Output(Bool())
-    val out    = Output(Bits(32))
+    val out    = Output(Bits.width(32))
   })
   val memSize = 256
-  val file = Mem(memSize, Bits(width = 32))
-  val code = Mem(memSize, Bits(width = 32))
+  val file = Mem(memSize, Bits.width(32))
+  val code = Mem(memSize, Bits.width(32))
   val pc   = Reg(init=UInt(0, 8))
 
-  val add_op :: imm_op :: Nil = Enum(Bits(width = 8), 2)
+  val add_op :: imm_op :: Nil = Enum(Bits.width(8), 2)
 
   val inst = code(pc)
   val op   = inst(31,24)
@@ -29,7 +29,7 @@ class Risc extends Module {
 
   val ra = Mux(rai === 0.asUInt(), 0.asUInt(), file(rai))
   val rb = Mux(rbi === 0.asUInt(), 0.asUInt(), file(rbi))
-  val rc = Wire(Bits(width = 32))
+  val rc = Wire(Bits.width(32))
 
   io.valid := Bool(false)
   io.out   := 0.asUInt()

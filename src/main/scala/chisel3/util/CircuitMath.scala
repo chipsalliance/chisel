@@ -20,7 +20,7 @@ object Log2 {
     } else if (width == 2) {
       x(1)
     } else {
-      Mux(x(width-1), UInt(width-1), apply(x, width-1))
+      Mux(x(width-1), UInt.width(width-1), apply(x, width-1))
     }
   }
 

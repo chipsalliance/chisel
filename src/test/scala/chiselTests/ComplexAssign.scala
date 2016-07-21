@@ -17,11 +17,11 @@ class Complex[T <: Data](val re: T, val im: T) extends Bundle {
 class ComplexAssign(w: Int) extends Module {
   val io = IO(new Bundle {
     val e   = Input(Bool())
-    val in  = Input(new Complex(UInt(width = w), UInt(width = w)))
-    val out = Output(new Complex(UInt(width = w), UInt(width = w)))
+    val in  = Input(new Complex(UInt.width(w), UInt.width(w)))
+    val out = Output(new Complex(UInt.width(w), UInt.width(w)))
   })
   when (io.e) {
-    val tmp = Wire(new Complex(UInt(width = w), UInt(width = w)))
+    val tmp = Wire(new Complex(UInt.width(w), UInt.width(w)))
     tmp := io.in
     io.out.re := tmp.re
     io.out.im := tmp.im

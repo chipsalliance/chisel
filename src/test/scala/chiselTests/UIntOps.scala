@@ -86,7 +86,7 @@ class GoodBoolConversion extends Module {
 
 class BadBoolConversion extends Module {
   val io = IO(new Bundle {
-    val u = Input(UInt(width = 5))
+    val u = Input(UInt.width( 5))
     val b = Output(Bool())
   })
   io.b := io.u.toBool

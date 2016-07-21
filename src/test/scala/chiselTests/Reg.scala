@@ -16,7 +16,7 @@ class RegSpec extends ChiselFlatSpec {
 
   "A Reg" should "be of the same type and width as outType, if specified" in {
     class RegOutTypeWidthTester extends BasicTester {
-      val reg = Reg(t=UInt(width=2), next=Wire(UInt(width=3)), init=UInt.Lit(20))
+      val reg = Reg(t=UInt.width(2), next=Wire(UInt.width(3)), init=UInt.Lit(20))
       reg.getWidth should be (2)
     }
     elaborate{ new RegOutTypeWidthTester }
@@ -24,11 +24,11 @@ class RegSpec extends ChiselFlatSpec {
 
   "A Reg" should "be of unknown width if outType is not specified and width is not forced" in {
     class RegUnknownWidthTester extends BasicTester {
-      val reg1 = Reg(next=Wire(UInt(width=3)), init=20.U)
+      val reg1 = Reg(next=Wire(UInt.width(3)), init=20.U)
       DataMirror.widthOf(reg1).known should be (false)
       val reg2 = Reg(init=20.U)
       DataMirror.widthOf(reg2).known should be (false)
-      val reg3 = Reg(next=Wire(UInt(width=3)), init=5.U)
+      val reg3 = Reg(next=Wire(UInt.width(3)), init=5.U)
       DataMirror.widthOf(reg3).known should be (false)
     }
     elaborate { new RegUnknownWidthTester }

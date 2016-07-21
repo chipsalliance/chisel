@@ -82,7 +82,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq = DeqIO(gen)
   /** The current amount of data in the queue */
-  val count = Output(UInt(log2Up(entries + 1)))
+  val count = Output(UInt.width(log2Up(entries + 1)))
 }
 
 /** A hardware module implementing a Queue

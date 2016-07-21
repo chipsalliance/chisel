@@ -11,7 +11,7 @@ import chisel3.util._
 class LastAssignTester() extends BasicTester {
   val cnt = Counter(2)
 
-  val test = Wire(UInt(width=4))
+  val test = Wire(UInt.width(4))
   assert(test === 7.U)  // allow read references before assign references
 
   test := 13.U

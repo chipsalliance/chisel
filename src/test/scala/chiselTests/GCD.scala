@@ -15,8 +15,8 @@ class GCD extends Module {
     val z  = Output(UInt.width(32))
     val v  = Output(Bool())
   })
-  val x = Reg(UInt(width = 32))
-  val y = Reg(UInt(width = 32))
+  val x = Reg(UInt.width( 32))
+  val y = Reg(UInt.width( 32))
   when (x > y)   { x := x -% y }
   .otherwise     { y := y -% x }
   when (io.e) { x := io.a; y := io.b }

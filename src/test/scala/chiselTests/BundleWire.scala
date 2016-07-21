@@ -7,8 +7,8 @@ import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class Coord extends Bundle {
-  val x = UInt(width = 32)
-  val y = UInt(width = 32)
+  val x = UInt.width( 32)
+  val y = UInt.width( 32)
 }
 
 class BundleWire(n: Int) extends Module {

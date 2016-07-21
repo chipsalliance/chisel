@@ -12,7 +12,7 @@ import chisel3.util._
 class UsesDeqIOInfo extends Bundle {
   val test_width = 32
 
-  val info_data = UInt(width = test_width)
+  val info_data = UInt.width(test_width)
 }
 
 class UsesDeqIO extends Module {
