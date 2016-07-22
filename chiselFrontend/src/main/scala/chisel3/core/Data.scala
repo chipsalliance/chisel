@@ -120,6 +120,15 @@ abstract class Data extends HasId {
   private[chisel3] def toType: String
 
   def cloneType: this.type
+  def chiselCloneType: this.type = {
+    // Call the user-supplied cloneType method
+    val clone = this.cloneType
+    //TODO(twigg): Do recursively for better error messages
+    for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
+      clone_elem.binding = UnboundBinding(source_elem.binding.direction)
+    }
+    clone
+  }
   final def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = this connect that
   final def <> (that: Data)(implicit sourceInfo: SourceInfo): Unit = this bulkConnect that
   def litArg(): Option[LitArg] = None
@@ -154,7 +163,7 @@ abstract class Data extends HasId {
 
   def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
     var i = 0
-    val wire = Wire(this.cloneType)
+    val wire = Wire(this.chiselCloneType)
     val bits =
       if (that.width.known && that.width.get >= wire.width.get) {
         that
@@ -174,13 +183,6 @@ abstract class Data extends HasId {
     */
   @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
   def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
-
-  protected def unBind(): Unit = {
-    //TODO(twigg): Do recursively for better error messages
-    for(elem <- this.allElements) {
-      elem.binding = UnboundBinding(elem.binding.direction)
-    }
-  }
 }
 
 object Wire {
@@ -217,11 +219,7 @@ object Clock {
 
 // TODO: Document this.
 sealed class Clock extends Element(Width(1)) {
-  def cloneType: this.type = {
-    val clone = Clock().asInstanceOf[this.type]
-    clone.unBind()
-    clone
-  }
+  def cloneType: this.type = Clock().asInstanceOf[this.type]
   private[chisel3] override def flatten: IndexedSeq[Bits] = IndexedSeq()
   private[chisel3] def cloneTypeWidth(width: Width): this.type = cloneType
   private[chisel3] def toType = "Clock"

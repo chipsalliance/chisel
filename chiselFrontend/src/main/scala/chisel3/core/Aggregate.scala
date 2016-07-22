@@ -24,10 +24,10 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.cloneType, n)
+  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
+  def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen, n)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -104,12 +104,12 @@ object Vec {
   * @note Vecs, unlike classes in Scala's collection library, are propagated
   * intact to FIRRTL as a vector type, which may make debugging easier
   */
-sealed class Vec[T <: Data] private (gen: => T, val length: Int)
+sealed class Vec[T <: Data] private (gen: T, val length: Int)
     extends Aggregate with VecLike[T] {
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
-  private val self = IndexedSeq.fill(length)(gen)
+  private val self: Seq[T] = Vector.fill(length)(gen.chiselCloneType)
 
   /**
   * sample_element 'tracks' all changes to the elements of self.
@@ -118,7 +118,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   *
   * Needed specifically for the case when the Vec is length 0.
   */
-  private[core] val sample_element: T = gen
+  private[core] val sample_element: T = gen.chiselCloneType
 
   // allElements current includes sample_element
   // This is somewhat weird although I think the best course of action here is
@@ -157,7 +157,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     */
   def apply(idx: UInt): T = {
     Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
-    val port = sample_element.cloneType
+    val port = sample_element.chiselCloneType
     port.setRef(this, idx) //TODO(twigg): This is a bit too magical
 
     // Bind each element of port to being whatever the base type is
@@ -180,9 +180,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def write(idx: UInt, data: T): Unit = apply(idx).:=(data)(DeprecatedSourceInfo)
 
   override def cloneType: this.type = {
-    val clone = Vec(length, gen).asInstanceOf[this.type]
-    clone.unBind()
-    clone
+    Vec(length, gen).asInstanceOf[this.type]
   }
 
   private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
@@ -390,5 +388,5 @@ class Bundle extends Aggregate {
 }
 
 private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits")
+  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits", "chiselCloneType")
 }

@@ -12,7 +12,7 @@ class DecoupledIO[+T <: Data](gen: T) extends Bundle
 {
   val ready = Input(Bool())
   val valid = Output(Bool())
-  val bits  = Output(gen.cloneType)
+  val bits  = Output(gen.chiselCloneType)
   override def cloneType: this.type = DecoupledIO(gen).asInstanceOf[this.type]
 }
 
@@ -59,9 +59,7 @@ object DecoupledIO {
     }
   }
 //  override def cloneType: this.type = {
-//    val clone = DeqIO(gen).asInstanceOf[this.type]
-//    clone.unBind()
-//    clone
+//    DeqIO(gen).asInstanceOf[this.type]
 //  }
 }
 
@@ -171,7 +169,7 @@ extends Module(override_reset=override_reset) {
 object Queue
 {
   def apply[T <: Data](enq: DecoupledIO[T], entries: Int = 2, pipe: Boolean = false): DecoupledIO[T]  = {
-    val q = Module(new Queue(enq.bits.cloneType, entries, pipe))
+    val q = Module(new Queue(enq.bits.chiselCloneType, entries, pipe))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready

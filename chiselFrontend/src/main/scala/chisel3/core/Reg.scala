@@ -12,13 +12,13 @@ object Reg {
 init: T = null): T = {
     if (t ne null) {
       Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
-      t.cloneType
+      t.chiselCloneType
     } else if (next ne null) {
       next.cloneTypeWidth(Width())
     } else if (init ne null) {
       init.litArg match {
         // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-        case Some(lit) if lit.forcedWidth => init.cloneType
+        case Some(lit) if lit.forcedWidth => init.chiselCloneType
         case _ => init.cloneTypeWidth(Width())
       }
     } else {

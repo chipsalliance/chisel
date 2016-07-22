@@ -20,7 +20,7 @@ object Mem {
     */
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): Mem[T] = {
-    val mt  = t.cloneType
+    val mt  = t.chiselCloneType
     Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
     // TODO(twigg): Remove need for this Binding
 
@@ -86,7 +86,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
 
     val port = pushCommand(
       DefMemPort(sourceInfo,
-       t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))
+       t.chiselCloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))
     ).id
     // Bind each element of port to being a MemoryPort
     Binding.bind(port, MemoryPortBinder(Builder.forcedModule), "Error: Fresh t")
@@ -117,7 +117,7 @@ object SeqMem {
   def apply[T <: Data](size: Int, t: T): SeqMem[T] = macro MemTransform.apply[T]
 
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): SeqMem[T] = {
-    val mt  = t.cloneType
+    val mt  = t.chiselCloneType
     Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
     // TODO(twigg): Remove need for this Binding
 

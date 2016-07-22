@@ -51,11 +51,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
 
   private[chisel3] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
-  def cloneType: this.type = {
-    val clone = cloneTypeWidth(width)
-    clone.unBind()
-    clone
-  }
+  def cloneType: this.type = cloneTypeWidth(width)
 
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
   final def head(n: Int): UInt = macro SourceInfoTransform.nArg
