@@ -31,7 +31,15 @@ class DirectionSpec extends ChiselPropSpec {
   }
 
   property("Inputs should not be assignable") {
-    elaborate(new BadDirection)
+    var excepts: Boolean = false
+    try elaborate(new BadDirection)
+    catch {
+      case e: Exception => {
+        excepts = true
+      }
+      // Should except so this is okay
+      // Ideally, would throw and catch more precise exception
+    }
+    assert(excepts, "Bad connection should have thrown exception!")
   }
-
 }
