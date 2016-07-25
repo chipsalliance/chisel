@@ -24,10 +24,10 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.cloneType, n)
+  def apply[T <: Data](n: Int, gen: => T): Vec[T] = new Vec(gen.cloneType, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
+  def apply[T <: Data](gen: => T, n: Int): Vec[T] = new Vec(gen.cloneType, n)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -180,7 +180,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
-  
+
   @deprecated("Use Vec.apply instead", "chisel3")
   def read(idx: UInt): T
 
