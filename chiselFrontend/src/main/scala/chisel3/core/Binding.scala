@@ -112,17 +112,38 @@ object Binding {
   }
 
   // Excepts if any root element is unbound and thus not on the hardware graph
-  def checkSynthesizable(target: Data, error_prelude: String): Unit =
+  def checkSynthesizable(target: Data, error_prelude: String): Unit = {
+    // This is called is we support autoIOWrap
+    def elementOfIO(element: Data): Boolean = {
+      element._parent match {
+        case None => false
+        case Some(x: Module) => {
+          // io.flatten eliminates Clock elements, so we need to use io.allElements
+          val ports = x.io.allElements
+          val isIOElement = ports.contains(element) || element == x.clock || element == x.reset
+          isIOElement
+        }
+      }
+    }
     try walkToBinding(
       target,
       element => element.binding match {
         case SynthesizableBinding() => {} // OK
-        case binding => throw NotSynthesizableException
+        case binding =>
+          // The following kludge is an attempt to provide backward compatibility
+          // It should be done at at higher level.
+          if (!(autoIOWrap && elementOfIO(element)))
+            throw NotSynthesizableException
+          else
+            Binding.bind(element, PortBinder(element._parent.get), "Error: IO")
       }
     )
     catch {
       case BindingException(message) => throw BindingException(s"$error_prelude$message")
     }
+  }
+  // This should be configure by options in Driver.
+  private[chisel3] var autoIOWrap = true
 }
 
 // Location refers to 'where' in the Module hierarchy this lives

@@ -521,10 +521,6 @@ private[core] sealed trait UIntFactory {
   def width(width: Int): UInt = apply(Width(width))
   /** Create a UInt port with specified width. */
   def width(width: Width): UInt = new UInt(width)
-  /** Create a UInt with a specified width - compatibility with Chisel2. */
-  def apply(dummy: Option[Direction] = None, width: Int): UInt = apply(Width(width))
-  /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-  def apply(value: BigInt): UInt = apply(value, Width())
   /** Create a UInt literal with fixed width. */
   def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
   /** Create a UInt literal with inferred width. */
@@ -544,6 +540,20 @@ private[core] sealed trait UIntFactory {
     // Bind result to being an Literal
     result.binding = LitBinding()
     result
+  }
+
+  /** Create a UInt with a specified width - compatibility with Chisel2. */
+  def apply(dummy: Option[Direction] = None, width: Int): UInt = apply(Width(width))
+  /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
+  def apply(value: BigInt): UInt = apply(value, Width())
+  /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
+  def apply(direction: Direction, width: Int): UInt = {
+    val result = apply(Width(width))
+    direction match {
+      case Direction.Input => Input(result)
+      case Direction.Output => Output(result)
+      case Direction.Unspecified => result
+    }
   }
 
   private def parse(n: String) = {

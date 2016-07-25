@@ -16,6 +16,7 @@ sealed abstract class Direction(name: String) {
 object Direction {
   object Input  extends Direction("input") { override def flip: Direction = Output }
   object Output extends Direction("output") { override def flip: Direction = Input }
+  object Unspecified extends Direction("unspecified") { override def flip: Direction = Unspecified }
 }
 
 @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
