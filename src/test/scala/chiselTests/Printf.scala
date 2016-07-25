@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.testers.BasicTester
 
 class SinglePrintfTester() extends BasicTester {
-  val x = UInt.Lit(254)
+  val x = UInt(254)
   printf("x=%x", x)
   stop()
 }
@@ -18,8 +18,8 @@ class ASCIIPrintfTester() extends BasicTester {
 }
 
 class MultiPrintfTester() extends BasicTester {
-  val x = UInt.Lit(254)
-  val y = UInt.Lit(255)
+  val x = UInt(254)
+  val y = UInt(255)
   printf("x=%x y=%x", x, y)
   stop()
 }

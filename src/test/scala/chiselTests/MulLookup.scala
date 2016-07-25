@@ -24,9 +24,9 @@ class MulLookup(val w: Int) extends Module {
 
 class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new MulLookup(w))
-  dut.io.x := UInt.Lit(x)
-  dut.io.y := UInt.Lit(y)
-  assert(dut.io.z === UInt.Lit(x * y))
+  dut.io.x := UInt(x)
+  dut.io.y := UInt(y)
+  assert(dut.io.z === UInt(x * y))
   stop()
 }
 

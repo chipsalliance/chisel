@@ -7,6 +7,7 @@ package object Chisel {
   type Direction = chisel3.core.Direction
   val INPUT = chisel3.core.Direction.Input
   val OUTPUT = chisel3.core.Direction.Output
+  val NODIR = chisel3.core.Direction.Unspecified
   object Flipped {
     def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
   }

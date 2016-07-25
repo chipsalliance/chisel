@@ -31,7 +31,7 @@ object OHToUInt {
   * @example {{{ data_out := PriorityEncoder(data_in) }}}
   */
 object PriorityEncoder {
-  def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(UInt.Lit(_)))
+  def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(UInt(_)))
   def apply(in: Bits): UInt = apply(in.toBools)
 }
 
@@ -41,9 +41,9 @@ object UIntToOH
 {
   def apply(in: UInt, width: Int = -1): UInt =
     if (width == -1) {
-      UInt.Lit(1) << in
+      UInt(1) << in
     } else {
-      (UInt.Lit(1) << in(log2Up(width)-1,0))(width-1,0)
+      (UInt(1) << in(log2Up(width)-1,0))(width-1,0)
     }
 }
 

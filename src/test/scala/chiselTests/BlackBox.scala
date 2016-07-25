@@ -35,11 +35,11 @@ class BlackBoxTester extends BasicTester {
   val blackBoxPos = Module(new BlackBoxInverter)
   val blackBoxNeg = Module(new BlackBoxInverter)
 
-  blackBoxPos.io.in := UInt.Lit(1)
-  blackBoxNeg.io.in := UInt.Lit(0)
+  blackBoxPos.io.in := UInt(1)
+  blackBoxNeg.io.in := UInt(0)
 
-  assert(blackBoxNeg.io.out === UInt.Lit(1))
-  assert(blackBoxPos.io.out === UInt.Lit(0))
+  assert(blackBoxNeg.io.out === UInt(1))
+  assert(blackBoxPos.io.out === UInt(0))
   stop()
 }
 
@@ -54,15 +54,15 @@ class MultiBlackBoxTester extends BasicTester {
   val blackBoxPassPos = Module(new BlackBoxPassthrough)
   val blackBoxPassNeg = Module(new BlackBoxPassthrough)
 
-  blackBoxInvPos.io.in := UInt.Lit(1)
-  blackBoxInvNeg.io.in := UInt.Lit(0)
-  blackBoxPassPos.io.in := UInt.Lit(1)
-  blackBoxPassNeg.io.in := UInt.Lit(0)
+  blackBoxInvPos.io.in := UInt(1)
+  blackBoxInvNeg.io.in := UInt(0)
+  blackBoxPassPos.io.in := UInt(1)
+  blackBoxPassNeg.io.in := UInt(0)
 
-  assert(blackBoxInvNeg.io.out === UInt.Lit(1))
-  assert(blackBoxInvPos.io.out === UInt.Lit(0))
-  assert(blackBoxPassNeg.io.out === UInt.Lit(0))
-  assert(blackBoxPassPos.io.out === UInt.Lit(1))
+  assert(blackBoxInvNeg.io.out === UInt(1))
+  assert(blackBoxInvPos.io.out === UInt(0))
+  assert(blackBoxPassNeg.io.out === UInt(0))
+  assert(blackBoxPassPos.io.out === UInt(1))
   stop()
 }
 
@@ -77,7 +77,7 @@ class BlackBoxWithClockTester extends BasicTester {
   blackBox.io.in := impetus
   model := impetus
 
-  when(cycles > UInt.Lit(0)) {
+  when(cycles > UInt(0)) {
     assert(blackBox.io.out === model)
   }
   when(end) { stop() }
@@ -98,8 +98,8 @@ class BlackBoxWithParamsTester extends BasicTester {
 
   val (cycles, end) = Counter(Bool(true), 4)
 
-  assert(blackBoxOne.io.out  === UInt.Lit(1))
-  assert(blackBoxFour.io.out === UInt.Lit(4))
+  assert(blackBoxOne.io.out  === UInt(1))
+  assert(blackBoxFour.io.out === UInt(4))
 
   when(end) { stop() }
 }

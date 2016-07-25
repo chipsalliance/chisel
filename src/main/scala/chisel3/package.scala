@@ -95,7 +95,7 @@ package object chisel3 {
     def asSInt(width: Int) = SInt(x, width)
   }
   implicit class fromStringToLiteral(val x: String) extends AnyVal {
-    def U: UInt = UInt.Lit(x)
+    def U: UInt = UInt(x)
   }
   implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
     def B: Bool = Bool(x)
@@ -113,5 +113,6 @@ package object chisel3 {
 
   val INPUT = chisel3.core.Direction.Input
   val OUTPUT = chisel3.core.Direction.Output
+  val NODIR = chisel3.core.Direction.Unspecified
   type ChiselException = chisel3.internal.ChiselException
 }

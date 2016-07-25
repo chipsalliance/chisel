@@ -25,11 +25,11 @@ class BundleWire(n: Int) extends Module {
 
 class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new BundleWire(n))
-  dut.io.in.x := UInt.Lit(x)
-  dut.io.in.y := UInt.Lit(y)
+  dut.io.in.x := UInt(x)
+  dut.io.in.y := UInt(y)
   for (elt <- dut.io.outs) {
-    assert(elt.x === UInt.Lit(x))
-    assert(elt.y === UInt.Lit(y))
+    assert(elt.x === UInt(x))
+    assert(elt.y === UInt(y))
   }
   stop()
 }

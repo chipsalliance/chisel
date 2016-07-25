@@ -38,7 +38,7 @@ class Risc extends Module {
   when (io.isWr) {
     code(io.wrAddr) := io.wrData
   } .elsewhen (io.boot) {
-    pc := UInt.Lit(0)
+    pc := UInt(0)
   } .otherwise {
     switch(op) {
       is(add_op) { rc := ra +% rb }

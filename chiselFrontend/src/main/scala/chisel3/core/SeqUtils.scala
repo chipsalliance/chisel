@@ -24,7 +24,7 @@ private[chisel3] object SeqUtils {
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
   def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = in.size match {
-    case 0 => UInt.Lit(0)
+    case 0 => UInt(0)
     case 1 => in.head
     case n => count(in take n/2) +& count(in drop n/2)
   }
@@ -47,7 +47,7 @@ private[chisel3] object SeqUtils {
     if (in.tail.isEmpty) {
       in.head._2
     } else {
-      val masked = for ((s, i) <- in) yield Mux(s, i.toBits, Bits.Lit(0))
+      val masked = for ((s, i) <- in) yield Mux(s, i.toBits, Bits(0))
       val width = in.map(_._2.width).reduce(_ max _)
       in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
     }

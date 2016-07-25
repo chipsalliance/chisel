@@ -404,8 +404,8 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
   final def unary_-% (): UInt = macro SourceInfoTransform.noArg
 
-  def do_unary_- (implicit sourceInfo: SourceInfo) : UInt = UInt.Lit(0) - this
-  def do_unary_-% (implicit sourceInfo: SourceInfo): UInt = UInt.Lit(0) -% this
+  def do_unary_- (implicit sourceInfo: SourceInfo) : UInt = UInt(0) - this
+  def do_unary_-% (implicit sourceInfo: SourceInfo): UInt = UInt(0) -% this
 
   override def do_+ (that: UInt)(implicit sourceInfo: SourceInfo): UInt = this +% that
   override def do_- (that: UInt)(implicit sourceInfo: SourceInfo): UInt = this -% that
@@ -453,8 +453,8 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def andR(): Bool = macro SourceInfoTransform.noArg
   final def xorR(): Bool = macro SourceInfoTransform.noArg
 
-  def do_orR(implicit sourceInfo: SourceInfo): Bool = this != UInt.Lit(0)
-  def do_andR(implicit sourceInfo: SourceInfo): Bool = ~this === UInt.Lit(0)
+  def do_orR(implicit sourceInfo: SourceInfo): Bool = this != UInt(0)
+  def do_andR(implicit sourceInfo: SourceInfo): Bool = ~this === UInt(0)
   def do_xorR(implicit sourceInfo: SourceInfo): Bool = redop(sourceInfo, XorReduceOp)
 
   override def do_< (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessOp, that)
@@ -523,6 +523,8 @@ private[core] sealed trait UIntFactory {
   def width(width: Width): UInt = new UInt(width)
   /** Create a UInt with a specified width - compatibility with Chisel2. */
   def apply(dummy: Option[Direction] = None, width: Int): UInt = apply(Width(width))
+  /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
+  def apply(value: BigInt): UInt = apply(value, Width())
   /** Create a UInt literal with fixed width. */
   def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
   /** Create a UInt literal with inferred width. */
@@ -581,8 +583,8 @@ sealed class SInt private (width: Width, lit: Option[SLit] = None)
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
   final def unary_-% (): SInt = macro SourceInfoTransform.noArg
 
-  def unary_- (implicit sourceInfo: SourceInfo): SInt = SInt.Lit(0) - this
-  def unary_-% (implicit sourceInfo: SourceInfo): SInt = SInt.Lit(0) -% this
+  def unary_- (implicit sourceInfo: SourceInfo): SInt = SInt(0) - this
+  def unary_-% (implicit sourceInfo: SourceInfo): SInt = SInt(0) -% this
 
   /** add (default - no growth) operator */
   override def do_+ (that: SInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -649,7 +651,7 @@ sealed class SInt private (width: Width, lit: Option[SLit] = None)
 
   final def abs(): UInt = macro SourceInfoTransform.noArg
 
-  def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < SInt.Lit(0), (-this).asUInt, this.asUInt)
+  def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < SInt(0), (-this).asUInt, this.asUInt)
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, that)
@@ -769,7 +771,7 @@ object Mux {
     * @param alt the value chosen when `cond` is false
     * @example
     * {{{
-    * val muxOut = Mux(data_in === UInt.Lit(3), UInt(3, 4), UInt(0, 4))
+    * val muxOut = Mux(data_in === UInt(3), UInt(3, 4), UInt(0, 4))
     * }}}
     */
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = macro MuxTransform.apply[T]

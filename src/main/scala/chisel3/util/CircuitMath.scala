@@ -16,11 +16,11 @@ object Log2 {
   /** Compute the Log2 on the least significant n bits of x */
   def apply(x: Bits, width: Int): UInt = {
     if (width < 2) {
-      UInt.Lit(0)
+      UInt(0)
     } else if (width == 2) {
       x(1)
     } else if (width <= divideAndConquerThreshold) {
-      Mux(x(width-1), UInt.Lit(width-1), apply(x, width-1))
+      Mux(x(width-1), UInt(width-1), apply(x, width-1))
     } else {
       val mid = 1 << (log2Ceil(width) - 1)
       val hi = x(width-1, mid)

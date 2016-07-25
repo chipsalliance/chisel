@@ -32,9 +32,9 @@ class SIntOps extends Module {
   io.subout := a -% b
   // TODO:
   //io.timesout := (a * b)(15, 0)
-  //io.divout := a / Mux(b === SInt.Lit(0), SInt.Lit(1), b)
+  //io.divout := a / Mux(b === SInt(0), SInt(1), b)
   //io.divout := (a / b)(15, 0)
-  //io.modout := SInt.Lit(0)
+  //io.modout := SInt(0)
   //io.lshiftout := (a << 12)(15, 0) //  (a << ub(3, 0))(15, 0).toSInt
   io.rshiftout := (a >> 8) // (a >> ub).toSInt
   io.lessout := a < b
@@ -44,7 +44,7 @@ class SIntOps extends Module {
   io.lesseqout := a <= b
   io.greateqout := a >= b
   // io.negout := -a(15, 0).toSInt
-  io.negout := (SInt.Lit(0) -% a)
+  io.negout := (SInt(0) -% a)
 }
 
 /*

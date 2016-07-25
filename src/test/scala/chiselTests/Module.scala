@@ -16,8 +16,8 @@ class PlusOne extends Module {
 
 class ModuleVec(val n: Int) extends Module {
   val io = IO(new Bundle {
-    val ins  = Input(Vec(n, UInt.Lit(32)))
-    val outs = Output(Vec(n, UInt.Lit(32)))
+    val ins  = Input(Vec(n, UInt(32)))
+    val outs = Output(Vec(n, UInt(32)))
   })
   val pluses = Vec.fill(n){ Module(new PlusOne).io }
   for (i <- 0 until n) {

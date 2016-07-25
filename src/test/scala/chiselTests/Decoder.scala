@@ -24,7 +24,7 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   val dut = Module(new Decoder(bitpats))
   dut.io.inst := Vec(insts.map(UInt(_)))(cnt)
   when(!dut.io.matched) {
-    assert(cnt === UInt.Lit(0))
+    assert(cnt === UInt(0))
     stop()
   }
   when(wrap) {

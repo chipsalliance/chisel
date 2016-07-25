@@ -17,11 +17,11 @@ class MemorySearch extends Module {
   val elts  = Vec(vals.map(UInt(_,4)))
   // val elts  = Mem(UInt(width = 32), 8) TODO ????
   val elt  = elts(index)
-  val end  = !io.en && ((elt === io.target) || (index === UInt.Lit(7)))
+  val end  = !io.en && ((elt === io.target) || (index === UInt(7)))
   when (io.en) {
-    index := UInt.Lit(0)
+    index := UInt(0)
   } .elsewhen (!end) {
-    index := index +% UInt.Lit(1)
+    index := index +% UInt(1)
   }
   io.done    := end
   io.address := index

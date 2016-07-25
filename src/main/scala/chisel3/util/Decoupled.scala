@@ -23,7 +23,7 @@ object DecoupledIO {
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
   implicit class AddMethodsToDecoupled[T<:Data](val target: DecoupledIO[T]) extends AnyVal {
-    def firing: Bool = target.ready && target.valid
+    def fire(): Bool = target.ready && target.valid
 
     /** push dat onto the output bits of this interface to let the consumer know it has happened.
       * @param dat the values to assign to bits.
@@ -114,8 +114,8 @@ extends Module(override_reset=override_reset) {
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
   val full = ptr_match && maybe_full
-  val do_enq = Wire(init=io.enq.firing)
-  val do_deq = Wire(init=io.deq.firing)
+  val do_enq = Wire(init=io.enq.fire())
+  val do_deq = Wire(init=io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -151,9 +151,9 @@ extends Module(override_reset=override_reset) {
   } else {
     io.count := Mux(ptr_match,
                     Mux(maybe_full,
-                      UInt.Lit(entries), UInt.Lit(0)),
+                      UInt(entries), UInt(0)),
                     Mux(deq_ptr.value > enq_ptr.value,
-                      UInt.Lit(entries) + ptr_diff, ptr_diff))
+                      UInt(entries) + ptr_diff, ptr_diff))
   }
 }
 
