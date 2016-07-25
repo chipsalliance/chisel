@@ -113,4 +113,5 @@ package object chisel3 {
 
   val INPUT = chisel3.core.Direction.Input
   val OUTPUT = chisel3.core.Direction.Output
+  type ChiselException = chisel3.internal.ChiselException
 }

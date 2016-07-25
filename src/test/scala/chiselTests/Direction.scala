@@ -22,7 +22,7 @@ class BadDirection extends DirectionHaver {
   io.in := UInt.Lit(0)
 }
 
-class DirectionSpec extends ChiselPropSpec {
+class DirectionSpec extends ChiselPropSpec with ShouldMatchers {
 
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
@@ -31,15 +31,8 @@ class DirectionSpec extends ChiselPropSpec {
   }
 
   property("Inputs should not be assignable") {
-    var excepts: Boolean = false
-    try elaborate(new BadDirection)
-    catch {
-      case e: Exception => {
-        excepts = true
-      }
-      // Should except so this is okay
-      // Ideally, would throw and catch more precise exception
+    a[ChiselException] should be thrownBy {
+     elaborate(new BadDirection)
     }
-    assert(excepts, "Bad connection should have thrown exception!")
   }
 }
