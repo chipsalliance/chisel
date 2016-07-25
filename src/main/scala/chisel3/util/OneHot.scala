@@ -10,7 +10,7 @@ import chisel3._
 /** Converts from One Hot Encoding to a UInt indicating which bit is active
   * This is the inverse of [[Chisel.UIntToOH UIntToOH]]*/
 object OHToUInt {
-  def apply(in: Seq[Bool]): UInt = apply(Vec(in))
+  def apply(in: Seq[Bool]): UInt = apply(Cat(in.reverse), in.size)
   def apply(in: Vec[Bool]): UInt = apply(in.toBits, in.size)
   def apply(in: Bits): UInt = apply(in, in.getWidth)
 

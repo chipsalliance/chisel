@@ -36,6 +36,7 @@ abstract class Element(private[core] val width: Width) extends Data {
   def dir: Direction = binding.direction.get
 
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
+  def widthKnown: Boolean = width.known
 }
 
 /** A data type for values represented by a single bitvector. Provides basic
@@ -521,7 +522,7 @@ private[core] sealed trait UIntFactory {
   /** Create a UInt port with specified width. */
   def width(width: Width): UInt = new UInt(width)
   /** Create a UInt with a specified width - compatibility with Chisel2. */
-  def apply(dummy: Direction, width: Int): UInt = apply(Width(width))
+  def apply(dummy: Option[Direction] = None, width: Int): UInt = apply(Width(width))
   /** Create a UInt literal with fixed width. */
   def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
   /** Create a UInt literal with inferred width. */

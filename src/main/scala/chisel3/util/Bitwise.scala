@@ -11,7 +11,7 @@ import chisel3.core.SeqUtils
 object FillInterleaved
 {
   def apply(n: Int, in: UInt): UInt = apply(n, in.toBools)
-  def apply(n: Int, in: Seq[Bool]): UInt = Vec(in.map(Fill(n, _))).toBits
+  def apply(n: Int, in: Seq[Bool]): UInt = Cat(in.map(Fill(n, _)).reverse)
 }
 
 /** Returns the number of bits set (i.e value is 1) in the input signal.
@@ -29,22 +29,17 @@ object Fill {
     n match {
       case 0 => UInt.width(0)
       case 1 => x
-      case y if n > 1 =>
+      case _ if x.widthKnown && x.getWidth == 1 =>
+        Mux(x.toBool, UInt((BigInt(1) << n) - 1, n), UInt(0, n))
+      case _ if n > 1 =>
         val p2 = Array.ofDim[UInt](log2Up(n + 1))
         p2(0) = x
         for (i <- 1 until p2.length)
           p2(i) = Cat(p2(i-1), p2(i-1))
-        Cat((0 until log2Up(y + 1)).filter(i => (y & (1 << i)) != 0).map(p2(_)))
+        Cat((0 until log2Up(n + 1)).filter(i => (n & (1 << i)) != 0).map(p2(_)))
       case _ => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
     }
   }
-  /** Fan out x n times */
-  def apply(n: Int, x: Bool): UInt =
-    if (n > 1) {
-      UInt(0,n) - x
-    } else {
-      apply(n, x: UInt)
-    }
 }
 
 /** Litte/big bit endian convertion: reverse the order of the bits in a UInt.

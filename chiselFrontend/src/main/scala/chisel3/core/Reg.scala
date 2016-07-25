@@ -8,8 +8,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 object Reg {
-  private[core] def makeType[T <: Data](t: T = null, next: T = null,
-init: T = null): T = {
+  private[core] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
     if (t ne null) {
       Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
       t.chiselCloneType

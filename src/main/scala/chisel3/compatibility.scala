@@ -63,7 +63,7 @@ package object Chisel {
   val ImplicitConversions = chisel3.util.ImplicitConversions
   val chiselMain = chisel3.compatibility.chiselMain
   val throwException = chisel3.compatibility.throwException
-  val debug = chisel3.core.debug
+  val debug = chisel3.compatibility.debug
 
   object testers {
     type BasicTester = chisel3.testers.BasicTester

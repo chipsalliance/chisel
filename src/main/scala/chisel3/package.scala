@@ -100,7 +100,7 @@ package object chisel3 {
   implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
     def B: Bool = Bool(x)
   }
-  
+
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
