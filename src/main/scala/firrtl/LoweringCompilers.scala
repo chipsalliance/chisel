@@ -109,8 +109,9 @@ class HighFirrtlToMiddleFirrtl () extends Transform with SimpleRun {
       passes.CheckInitialization,
       passes.ResolveKinds,
       passes.InferTypes,
-      passes.ResolveGenders,
-      passes.InferWidths)
+      passes.ResolveGenders)
+      //passes.InferWidths,
+      //passes.CheckWidths)
    def execute (circuit: Circuit, annotations: Seq[CircuitAnnotation]): TransformResult =
       run(circuit, passSeq)
 }

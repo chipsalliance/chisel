@@ -284,7 +284,11 @@ object Utils extends LazyLogging {
    }
    def long_BANG (t:Type) : Long = {
       (t) match {
-         case g: GroundType => g.width.as[IntWidth].get.width.toLong
+         case g: GroundType => 
+           g.width match {
+             case IntWidth(x) => x.toLong
+             case _ => throw new FIRRTLException(s"Expecting IntWidth, got: ${g.width}")
+           }
          case (t:BundleType) => {
             var w = 0
             for (f <- t.fields) { w = w + long_BANG(f.tpe).toInt }
