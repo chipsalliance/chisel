@@ -111,8 +111,10 @@ package object chisel3 {
     def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
   }
 
+  // Compatibility with existing code.
   val INPUT = chisel3.core.Direction.Input
   val OUTPUT = chisel3.core.Direction.Output
   val NODIR = chisel3.core.Direction.Unspecified
   type ChiselException = chisel3.internal.ChiselException
+  type ValidIO[+T <: Data] = chisel3.util.Valid[T]
 }
