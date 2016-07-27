@@ -28,8 +28,8 @@ class Packet extends Bundle {
   * The problem does not occur if the Vec is taken out
   */
 class VectorPacketIO(n: Int) extends Bundle {
-  val ins  = Vec(n, DeqIO(new Packet()))
-  val outs = Vec(n, EnqIO(new Packet()))
+  val ins  = Vec(n, chisel3.util.DeqIO(new Packet()))
+  val outs = Vec(n, chisel3.util.EnqIO(new Packet()))
 }
 
 /**

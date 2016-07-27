@@ -17,8 +17,8 @@ class UsesDeqIOInfo extends Bundle {
 
 class UsesDeqIO extends Module {
   val io = IO(new Bundle {
-    val in = DeqIO(new UsesDeqIOInfo)
-    val out = EnqIO(new UsesDeqIOInfo)
+    val in = chisel3.util.DeqIO(new UsesDeqIOInfo)
+    val out = chisel3.util.EnqIO(new UsesDeqIOInfo)
   })
 }
 

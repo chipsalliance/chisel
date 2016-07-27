@@ -7,6 +7,9 @@ package object chisel3 {
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
   import util.BitPat
 
+  import chisel3.core.{Binding, Bits, Element, FlippedBinder}
+  import chisel3.util._
+  import chisel3.internal.firrtl.Port
 
   type Direction = chisel3.core.Direction
   object Input {
@@ -117,4 +120,31 @@ package object chisel3 {
   val NODIR = chisel3.core.Direction.Unspecified
   type ChiselException = chisel3.internal.ChiselException
   type ValidIO[+T <: Data] = chisel3.util.Valid[T]
+  val Decoupled = chisel3.util.DecoupledIO
+
+  class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    def init(): Unit = {
+      this.noenq()
+    }
+    override def cloneType: this.type = EnqIO(gen).asInstanceOf[this.type]
+  }
+  class DeqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    Binding.bind(this, FlippedBinder, "Error: Cannot flip ")
+    def init(): Unit = {
+      this.nodeq()
+    }
+    override def cloneType: this.type = DeqIO(gen).asInstanceOf[this.type]
+  }
+  object EnqIO {
+    def apply[T<:Data](gen: T): EnqIO[T] = new EnqIO(gen)
+  }
+  object DeqIO {
+    def apply[T<:Data](gen: T): DeqIO[T] = new DeqIO(gen)
+  }
+
+  // Debugger/Tester access to internal Chisel data structures and methods.
+  def getDataElements(a: Aggregate): Seq[Element] = {
+    a.allElements
+  }
+  def getModulePorts(m: Module): Seq[Port] = m.getPorts
 }

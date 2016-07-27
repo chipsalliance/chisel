@@ -178,4 +178,6 @@ extends HasId {
     _ids.foreach(_._onModuleClose)
     this
   }
+  // For debuggers/testers
+  lazy val getPorts = computePorts
 }

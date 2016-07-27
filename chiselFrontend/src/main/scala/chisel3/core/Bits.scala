@@ -33,10 +33,11 @@ abstract class Element(private[core] val width: Width) extends Data {
   private[core] def binding = _binding
 
   /** Return the binding for some bits. */
-  def dir: Direction = binding.direction.get
+  def dir: Direction = binding.direction.getOrElse(Direction.Unspecified)
 
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
   def widthKnown: Boolean = width.known
+  def name: String = getRef.name
 }
 
 /** A data type for values represented by a single bitvector. Provides basic
@@ -709,6 +710,15 @@ object SInt {
     result.binding = LitBinding()
     result
   }
+  /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
+  def apply(direction: Direction, width: Int): SInt = {
+    val result = apply(Width(width))
+    direction match {
+      case Direction.Input => Input(result)
+      case Direction.Output => Output(result)
+      case Direction.Unspecified => result
+    }
+  }
 }
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
@@ -769,6 +779,15 @@ object Bool {
     // Bind result to being an Literal
     result.binding = LitBinding()
     result
+  }
+  /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
+  def apply(direction: Direction): Bool = {
+    val result = apply()
+    direction match {
+      case Direction.Input => Input(result)
+      case Direction.Output => Output(result)
+      case Direction.Unspecified => result
+    }
   }
 }
 
