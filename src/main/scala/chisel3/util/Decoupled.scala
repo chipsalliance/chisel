@@ -64,10 +64,10 @@ object DecoupledIO {
 }
 
 object EnqIO {
-  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(DecoupledIO(gen))
+  def apply[T<:Data](gen: T): DecoupledIO[T] = DecoupledIO(gen)
 }
 object DeqIO {
-  def apply[T<:Data](gen: T): DecoupledIO[T] = DecoupledIO(gen)
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(DecoupledIO(gen))
 }
 
 /** An I/O Bundle for Queues
