@@ -108,10 +108,10 @@ package object Chisel {
   type DecoupledIO[+T <: Data] = chisel3.util.DecoupledIO[T]
   val DecoupledIO = chisel3.util.DecoupledIO
   object EnqIO {
-    def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(DecoupledIO(gen))
+    def apply[T<:Data](gen: T): DecoupledIO[T] = DecoupledIO(gen)
   }
   object DeqIO {
-    def apply[T<:Data](gen: T): DecoupledIO[T] = DecoupledIO(gen)
+    def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(DecoupledIO(gen))
   }
   type QueueIO[T <: Data] = chisel3.util.QueueIO[T]
   type Queue[T <: Data] = chisel3.util.Queue[T]
