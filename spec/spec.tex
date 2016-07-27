@@ -1754,7 +1754,7 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
                 &\pipe &\pd{type}\vv{[}\pd{int}\vv{]}                                                          &\text{Vector}\\
 \pd{field}      &=     &\opt{\vv{flip}} \pd{id} \vv{:} \pd{type}                                               &\text{Bundle Field}\\
 \pd{stmt}       &=     &\opt{\pd{info}} \vv{wire} \pd{id} \vv{:} \pd{type}                                     &\text{Wire}\\
-                &\pipe &\opt{\pd{info}} \vv{reg} \pd{id} \vv{:} \pd{type}, \pd{exp} \opt{\pd{exp}, \pd{exp}}   &\text{Register}\\
+                &\pipe &\opt{\pd{info}} \vv{reg} \pd{id} \vv{:} \pd{type} \opt{\vv{(with:} \vv{\{reset => (}\pd{exp}, \pd{exp}\vv{)\})}}   &\text{Register}\\
                 &\pipe &\opt{\pd{info}} \vv{mem} \pd{id} \vv{:} \vv{(}                                         &\text{Memory}\\
                 && \verb|       |\vv{data-type =>} \pd{type}\\
                 && \verb|       |\vv{depth =>} \pd{int}\\                
