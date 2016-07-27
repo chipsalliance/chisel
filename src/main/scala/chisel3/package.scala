@@ -7,7 +7,7 @@ package object chisel3 {
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
   import util.BitPat
 
-  import chisel3.core.{Binding, Bits, Element, FlippedBinder}
+  import chisel3.core.{Binding, FlippedBinder}
   import chisel3.util._
   import chisel3.internal.firrtl.Port
 
@@ -120,6 +120,7 @@ package object chisel3 {
   val NODIR = chisel3.core.Direction.Unspecified
   type ChiselException = chisel3.internal.ChiselException
   type ValidIO[+T <: Data] = chisel3.util.Valid[T]
+  val ValidIO = chisel3.util.Valid
   val Decoupled = chisel3.util.DecoupledIO
 
   class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {

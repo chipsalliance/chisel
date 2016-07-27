@@ -31,7 +31,7 @@ class DirectionSpec extends ChiselPropSpec with ShouldMatchers {
   }
 
   property("Inputs should not be assignable") {
-    a[ChiselException] should be thrownBy {
+    a[Exception] should be thrownBy {
      elaborate(new BadDirection)
     }
   }
