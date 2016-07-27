@@ -41,8 +41,8 @@ class BrokenVectorPacketModule extends Module {
   val io = IO(new VectorPacketIO(n))
 
   /* the following method of initializing the circuit may change in the future */
-  io.ins.foreach(_.noenq())
-  io.outs.foreach(_.nodeq())
+  io.ins.foreach(_.nodeq())
+  io.outs.foreach(_.noenq())
 }
 
 class VectorPacketIOUnitTester extends BasicTester {
