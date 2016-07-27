@@ -1227,6 +1227,7 @@ object RemoveCHIRRTL extends Pass {
       def remove_chirrtl_m (m:Module) : Module = {
          val hash = LinkedHashMap[String,MPorts]()
          val repl = LinkedHashMap[String,DataRef]()
+         val raddrs = HashMap[String, Expression]()
          val ut = UnknownType
          val mport_types = LinkedHashMap[String,Type]()
          def EMPs () : MPorts = MPorts(ArrayBuffer[MPort](),ArrayBuffer[MPort](),ArrayBuffer[MPort]())
@@ -1310,11 +1311,15 @@ object RemoveCHIRRTL extends Pass {
                         ens += "en"
                         masks += "mask"
                      }
-                     case _ => {
+                     case MRead => {
                         repl(s.name) = DataRef(SubField(Reference(s.mem,ut),s.name,ut),"data","data","blah",false)
                         addrs += "addr"
                         clks += "clk"
-                        ens += "en"
+                        s.exps(0) match {
+                           case e: Reference =>
+                              raddrs(e.name) = SubField(SubField(Reference(s.mem,ut),s.name,ut),"en",ut)
+                           case _=>
+                        }
                      }
                   }
                   val stmts = ArrayBuffer[Statement]()
@@ -1334,23 +1339,25 @@ object RemoveCHIRRTL extends Pass {
          }
          def remove_chirrtl_s (s:Statement) : Statement = {
             var has_write_mport = false
+            var has_read_mport: Option[Expression] = None
             var has_readwrite_mport:Option[Expression] = None
             def remove_chirrtl_e (g:Gender)(e:Expression) : Expression = {
-               (e) match { 
-                  case (e:Reference) => {
-                     if (repl.contains(e.name)) {
-                        val vt = repl(e.name)
-                        g match {
-                           case MALE => SubField(vt.exp,vt.male,e.tpe)
-                           case FEMALE => {
-                              has_write_mport = true
-                              if (vt.rdwrite == true) 
-                                 has_readwrite_mport = Some(SubField(vt.exp,"wmode",UIntType(IntWidth(1))))
-                              SubField(vt.exp,vt.female,e.tpe)
-                           }
+               (e) match {
+                  case (e:Reference) if repl contains e.name =>
+                     val vt = repl(e.name)
+                     g match {
+                        case MALE => SubField(vt.exp,vt.male,e.tpe)
+                        case FEMALE => {
+                           has_write_mport = true
+                           if (vt.rdwrite) 
+                              has_readwrite_mport = Some(SubField(vt.exp,"wmode",UIntType(IntWidth(1))))
+                           SubField(vt.exp,vt.female,e.tpe)
                         }
-                     } else e
-                  }
+                     }
+                  case (e:Reference) if g == FEMALE && (raddrs contains e.name) =>
+                     has_read_mport = Some(raddrs(e.name))
+                     e
+                  case (e:Reference) => e
                   case (e:SubAccess) => SubAccess(remove_chirrtl_e(g)(e.expr),remove_chirrtl_e(MALE)(e.index),e.tpe)
                   case (e) => e map (remove_chirrtl_e(g))
                }
@@ -1367,20 +1374,35 @@ object RemoveCHIRRTL extends Pass {
                   case (e) => e
                }
             }
-            (s) match { 
+            (s) match {
+               case (s:DefNode) => {
+                  val stmts = ArrayBuffer[Statement]()
+                  val valuex = remove_chirrtl_e(MALE)(s.value)
+                  stmts += DefNode(s.info,s.name,valuex)
+                  has_read_mport match {
+                    case None =>
+                    case Some(en) => stmts += Connect(s.info,en,one)
+                  }
+                  if (stmts.size > 1) Block(stmts)
+                  else stmts(0)
+               }
                case (s:Connect) => {
                   val stmts = ArrayBuffer[Statement]()
                   val rocx = remove_chirrtl_e(MALE)(s.expr)
                   val locx = remove_chirrtl_e(FEMALE)(s.loc)
                   stmts += Connect(s.info,locx,rocx)
+                  has_read_mport match {
+                    case None =>
+                    case Some(en) => stmts += Connect(s.info,en,one)
+                  }
                   if (has_write_mport) {
                      val e = get_mask(s.loc)
                      for (x <- create_exps(e) ) {
                         stmts += Connect(s.info,x,one)
                      }
-                     if (has_readwrite_mport != None) {
-                        val wmode = has_readwrite_mport.get
-                        stmts += Connect(s.info,wmode,one)
+                     has_readwrite_mport match {
+                        case None =>
+                        case Some(wmode) => stmts += Connect(s.info,wmode,one)
                      }
                   }
                   if (stmts.size > 1) Block(stmts)
@@ -1391,16 +1413,20 @@ object RemoveCHIRRTL extends Pass {
                   val locx = remove_chirrtl_e(FEMALE)(s.loc)
                   val rocx = remove_chirrtl_e(MALE)(s.expr)
                   stmts += PartialConnect(s.info,locx,rocx)
-                  if (has_write_mport != false) {
+                  has_read_mport match {
+                    case None =>
+                    case Some(en) => stmts += Connect(s.info,en,one)
+                  }
+                  if (has_write_mport) {
                      val ls = get_valid_points(tpe(s.loc),tpe(s.expr),Default,Default)
                      val locs = create_exps(get_mask(s.loc))
                      for (x <- ls ) {
                         val locx = locs(x._1)
                         stmts += Connect(s.info,locx,one)
                      }
-                     if (has_readwrite_mport != None) {
-                        val wmode = has_readwrite_mport.get
-                        stmts += Connect(s.info,wmode,one)
+                     has_readwrite_mport match {
+                        case None =>
+                        case Some(wmode) => stmts += Connect(s.info,wmode,one)
                      }
                   }
                   if (stmts.size > 1) Block(stmts)
