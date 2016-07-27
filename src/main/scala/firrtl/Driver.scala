@@ -44,6 +44,7 @@ Options:
                         Currently supported: high low verilog
   --info-mode <mode>    Specify Info Mode
                         Supported modes: ignore, use, gen, append
+  --inferRW <circuit>   Enable readwrite port inference for the target circuit
   """
 
   // Compiles circuit. First parses a circuit from an input file,
@@ -87,11 +88,15 @@ Options:
         case _ => throw new Exception(s"Bad inline instance/module name: $value")
       }
 
+    def handleInferRWOption(value: String) = 
+      passes.InferReadWriteAnnotation(value, TransID(-1))
+
     run(args: Array[String],
       Map( "high" -> new HighFirrtlCompiler(),
         "low" -> new LowFirrtlCompiler(),
         "verilog" -> new VerilogCompiler()),
-      Map("--inline" -> handleInlineOption _),
+      Map("--inline" -> handleInlineOption _,
+          "--inferRW" -> handleInferRWOption _),
       usage
     )
   }

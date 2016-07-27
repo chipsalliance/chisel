@@ -107,7 +107,6 @@ class HighFirrtlToMiddleFirrtl () extends Transform with SimpleRun {
       passes.ExpandConnects,
       passes.RemoveAccesses,
       passes.ExpandWhens,
-      passes.InferReadWrite,
       passes.CheckInitialization,
       passes.ConstProp,
       passes.ResolveKinds,
@@ -190,6 +189,7 @@ class LowFirrtlCompiler extends Compiler {
       new passes.InlineInstances(TransID(0)),
       new ResolveAndCheck(),
       new HighFirrtlToMiddleFirrtl(),
+      new passes.InferReadWrite(TransID(-1)),
       new MiddleFirrtlToLowFirrtl(),
       new EmitFirrtl(writer)
    )
@@ -202,6 +202,7 @@ class VerilogCompiler extends Compiler {
       new IRToWorkingIR(),
       new ResolveAndCheck(),
       new HighFirrtlToMiddleFirrtl(),
+      new passes.InferReadWrite(TransID(-1)),
       new MiddleFirrtlToLowFirrtl(),
       new passes.InlineInstances(TransID(0)),
       new EmitVerilogFromLowFirrtl(writer)
