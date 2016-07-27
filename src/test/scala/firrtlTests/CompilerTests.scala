@@ -14,6 +14,7 @@ import firrtl.{
    Compiler,
    Parser
 }
+import firrtl.Annotations.AnnotationMap
 
 /**
  * An example methodology for testing Firrtl compilers.
@@ -29,7 +30,7 @@ abstract class CompilerSpec extends FlatSpec {
    def input: String
    def check: String
    def getOutput: String = {
-      compiler.compile(parse(input), Seq.empty, writer)
+      compiler.compile(parse(input), new AnnotationMap(Seq.empty), writer)
       writer.toString()
    }
 }

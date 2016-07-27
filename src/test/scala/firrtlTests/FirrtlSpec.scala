@@ -36,6 +36,7 @@ import org.scalatest.prop._
 import scala.io.Source
 
 import firrtl._
+import firrtl.Annotations.AnnotationMap
 
 // This trait is borrowed from Chisel3, ideally this code should only exist in one location
 trait BackendCompilationUtilities {
@@ -134,7 +135,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   def compileFirrtlTest(
       prefix: String,
       srcDir: String,
-      annotations: Seq[CircuitAnnotation] = Seq.empty): File = {
+      annotations: AnnotationMap = new AnnotationMap(Seq.empty)): File = {
     val testDir = createTempDirectory(prefix)
     copyResourceToFile(s"${srcDir}/${prefix}.fir", new File(testDir, s"${prefix}.fir"))
 
@@ -149,7 +150,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   def runFirrtlTest(
       prefix: String,
       srcDir: String,
-      annotations: Seq[CircuitAnnotation] = Seq.empty) = {
+      annotations: AnnotationMap = new AnnotationMap(Seq.empty)) = {
     val testDir = compileFirrtlTest(prefix, srcDir, annotations)
     val harness = new File(testDir, s"top.cpp")
     copyResourceToFile(cppHarness.toString, harness)
