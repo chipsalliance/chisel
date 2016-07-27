@@ -61,6 +61,7 @@ trait SimpleRun extends LazyLogging {
 // TODO(izraelevitz): Create RenameMap from RemoveCHIRRTL
 class Chisel3ToHighFirrtl () extends Transform with SimpleRun {
    val passSeq = Seq(
+      passes.CheckChirrtl,
       passes.CInferTypes,
       passes.CInferMDir,
       passes.RemoveCHIRRTL)
@@ -108,8 +109,9 @@ class HighFirrtlToMiddleFirrtl () extends Transform with SimpleRun {
       passes.CheckInitialization,
       passes.ResolveKinds,
       passes.InferTypes,
-      passes.ResolveGenders,
-      passes.InferWidths)
+      passes.ResolveGenders)
+      //passes.InferWidths,
+      //passes.CheckWidths)
    def execute (circuit: Circuit, annotations: Seq[CircuitAnnotation]): TransformResult =
       run(circuit, passSeq)
 }

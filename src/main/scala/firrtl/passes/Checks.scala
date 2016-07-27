@@ -117,24 +117,6 @@ object CheckHighForm extends Pass with LazyLogging {
     }
   }
 
-  // Utility functions
-  def hasFlip(t: Type): Boolean = {
-    var has = false
-    def findFlip(t: Type): Type = {
-      t map (findFlip) match {
-        case t: BundleType => {
-          for (f <- t.fields) {
-            if (f.flip == Flip) has = true
-          }
-          t
-        }
-        case t: Type => t
-      }
-    }
-    findFlip(t)
-    has
-  }
-
   // TODO FIXME
   // - Do we need to check for uniquness on port names?
   // Global Variables
