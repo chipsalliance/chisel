@@ -76,9 +76,9 @@ object DeqIO {
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq = EnqIO(gen)
+  val enq = DeqIO(gen)
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq = DeqIO(gen)
+  val deq = EnqIO(gen)
   /** The current amount of data in the queue */
   val count = Output(UInt.width(log2Up(entries + 1)))
 }
