@@ -107,6 +107,7 @@ class HighFirrtlToMiddleFirrtl () extends Transform with SimpleRun {
       passes.ExpandConnects,
       passes.RemoveAccesses,
       passes.ExpandWhens,
+      passes.InferReadWrite,
       passes.CheckInitialization,
       passes.ConstProp,
       passes.ResolveKinds,
