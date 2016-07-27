@@ -1,0 +1,6 @@
+Proposed Firrtl Spec changes for Next Release
+
+Change tail -> drop
+Add ranges as a 'width' instead of actually declaring width.
+  proposed syntax: wire x: UInt{0,10}
+Add Analog type, and 'attach' statement (see #87)
