@@ -74,6 +74,9 @@ object Utils extends LazyLogging {
    implicit def toWrappedExpression (x:Expression) = new WrappedExpression(x)
    def ceil_log2(x: BigInt): BigInt = (x-1).bitLength
    def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
+   def max(a: BigInt, b: BigInt): BigInt = if (a >= b) a else b
+   def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
+   def pow_minus_one(a: BigInt, b: BigInt): BigInt = a.pow(b.toInt) - 1
    val gen_names = Map[String,Int]()
    val delin = "_"
    val BoolType = UIntType(IntWidth(1))
