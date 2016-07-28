@@ -40,6 +40,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
   import firrtl._
   import firrtl.ir._
   import firrtl.Mappers._
+  import firrtl.Annotations.AnnotationMap
 
   def loweredName(e: Expression): String = e match {
     case e: WRef => e.name
@@ -135,7 +136,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
     }
   }
 
-  def execute(circuit: Circuit, annotations: Seq[CircuitAnnotation]): TransformResult = {
+  def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult = {
     val (inputs, outputs) = getPorts(dut)
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
