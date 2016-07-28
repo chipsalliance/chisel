@@ -3,7 +3,7 @@ package chisel3.iotesters
 
 import chisel3.internal.HasId
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap, Queue => ScalaQueue}
 import scala.util.Random
 import java.io.{File, Writer, FileWriter, PrintStream, IOException}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
@@ -63,8 +63,49 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
     case UnknownType => throw new Exception("Can't be unknown type")
   }
 
-  private def findWidths(m: DefModule) = {
-    val nodes = CircuitGraph getNodes m.name
+  private def findPathMap(circuit: Circuit) = {
+    val children = HashMap[String, HashSet[String]]()
+    val insts = (circuit.modules map (m => m.name -> ArrayBuffer[String]())).toMap
+    def collectInsts(m: Module) {
+      def loop(s: Statement): Statement = s map loop match {
+        case inst: DefInstance =>
+          children(m.name) += inst.module
+          insts(inst.module) += inst.name
+          inst
+        case inst: WDefInstance =>
+          children(m.name) += inst.module
+          insts(inst.module) += inst.name
+          inst
+        case _ => s
+      }
+      children(m.name) = HashSet[String]()
+      loop(m.body)
+    }
+    circuit.modules foreach {
+      case m: ExtModule =>
+      case m: Module => collectInsts(m)
+    }
+
+    val heads = circuit.modules filter (_.name == circuit.main)
+    val queue = ScalaQueue(heads:_*)
+    val visited = HashSet((heads map (_.name)): _*)
+    val pathMap = HashMap((heads map (m => m.name -> ArrayBuffer(m.name))): _*)
+    while (!queue.isEmpty) {
+      val top = queue.dequeue
+      val paths = pathMap(top.name)
+      circuit.modules filter (m => children(top.name)(m.name) && !visited(m.name)) foreach { child =>
+        (pathMap getOrElseUpdate (child.name, ArrayBuffer[String]())) ++=
+        (paths flatMap (p => insts(child.name) map (inst => s"$p.$inst")))
+        queue enqueue child
+      }
+    }
+    (pathMap map { case (k, v) => k -> v.toSet }).toMap
+  }
+
+  private def findWidths(pathMap: Map[String, Set[String]])(m: DefModule) = {
+    val nodes = CircuitGraph.nodes filter { node =>
+      pathMap(m.name) contains (CircuitGraph getParentPathName (node, "."))
+    }
     val widthMap = HashMap[HasId, Int]()
 
     /* Sadly, ports disappear in verilator ...
@@ -73,7 +114,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
         case None =>
         case Some(node) => widthMap(node) = getWidth(Utils.tpe(exp))
       } 
-    } 
+    }
     */
 
     def loop(s: Statement): Statement = s map loop match {
@@ -89,27 +130,24 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
       */
       case reg: DefRegister if reg.name.slice(0, 2) != "T_" && reg.name.slice(0, 4) != "GEN_" =>
         Utils.create_exps(reg.name, reg.tpe) map { exp =>
-          nodes find (x => (CircuitGraph getName x) == validName(loweredName(exp))) match {
-            case None =>
-            case Some(node) => widthMap(node) = getWidth(Utils.tpe(exp))
+          nodes filter (x => (CircuitGraph getName x) == validName(loweredName(exp))) foreach {
+            widthMap(_) = getWidth(Utils.tpe(exp))
           }
         }
         reg
       case prim: DefNode if prim.name.slice(0, 2) != "T_" && prim.name.slice(0, 4) != "GEN_" =>
-        nodes find (x => (CircuitGraph getName x) == validName(prim.name)) match {
-          case None =>
-          case Some(node) => widthMap(node) = getWidth(Utils.tpe(prim.value))
+        nodes filter (x => (CircuitGraph getName x) == validName(prim.name)) foreach {
+          widthMap(_) = getWidth(Utils.tpe(prim.value))
         }
         prim
       case mem: DefMemory if mem.name.slice(0, 2) != "T_" && mem.name.slice(0, 4) != "GEN_" => mem.dataType match {
         case _: UIntType | _: SIntType =>
-          nodes find (x => (CircuitGraph getName x) == validName(mem.name)) match {
-            case None =>
-            case Some(node) => widthMap(node) = getWidth(mem.dataType)
+          nodes filter (x => (CircuitGraph getName x) == validName(mem.name)) foreach {
+            widthMap(_) = getWidth(mem.dataType)
           }
           mem
         case _ => mem
-        }
+      }
       case _ => s
     }
 
@@ -117,7 +155,6 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
       case m: ExtModule =>
       case m: Module => loop(m.body)
     }
-
     widthMap.toMap
   }
 
@@ -141,7 +178,8 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
-    val widthMap = (circuit.modules flatMap findWidths).toMap
+    val pathMap = findPathMap(circuit)
+    val widthMap = (circuit.modules flatMap findWidths(pathMap)).toMap
     writer.write("#include \"%s.h\"\n".format(dutVerilatorClassName))
     writer.write("#include \"verilated.h\"\n")
     writer.write("#include \"veri_api.h\"\n")
@@ -192,7 +230,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
       } catch {
         // For debugging
         case e: java.util.NoSuchElementException =>
-          println(pathName)
+          println(s"error with $id: $signalName")
           throw e
       }
     }
@@ -219,8 +257,18 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
     writer.write("    } \n")
     writer.write("    virtual inline void reset() {\n")
     writer.write("        dut->reset = 1;\n")
+    writer.write("        dut->clk = 0;\n")
+    writer.write("        dut->eval();\n")
+    writer.write("#if VM_TRACE\n")
+    writer.write("        if (tfp) tfp->dump(main_time);\n")
+    writer.write("#endif\n")
+    writer.write("        main_time++;\n")
     writer.write("        dut->clk = 1;\n")
     writer.write("        dut->eval();\n")
+    writer.write("#if VM_TRACE\n")
+    writer.write("        if (tfp) tfp->dump(main_time);\n")
+    writer.write("#endif\n")
+    writer.write("        main_time++;\n")
     writer.write("        dut->reset = 0;\n")
     writer.write("    }\n")
     writer.write("    virtual inline void start() { }\n")
@@ -333,9 +381,10 @@ private[iotesters] class VerilatorBackend(
                                           verbose: Boolean = true,
                                           logger: PrintStream = System.out,
                                           _base: Int = 16,
-                                          _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
+                                          _seed: Long = System.currentTimeMillis,
+                                          isPropagation: Boolean = true) extends Backend(_seed) {
 
-  val simApiInterface = new SimApiInterface(dut, cmd, logger)
+  val simApiInterface = new SimApiInterface(dut, cmd, logger, isPropagation)
 
   def poke(signal: HasId, value: BigInt, off: Option[Int]) {
     val idx = off map (x => s"[$x]") getOrElse ""

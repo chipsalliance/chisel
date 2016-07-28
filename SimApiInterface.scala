@@ -15,7 +15,8 @@ import java.nio.channels.FileChannel
 private[iotesters] class SimApiInterface(
                                          dut: Module,
                                          cmd: List[String],
-                                         logger: java.io.PrintStream) {
+                                         logger: java.io.PrintStream,
+                                         isPropagation: Boolean) {
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
     def genChunk(io: Data) = (CircuitGraph getPathName (io, ".")) -> ((io.getWidth-1)/64 + 1)
     val (inputs, outputs) = getPorts(dut)
@@ -238,7 +239,7 @@ private[iotesters] class SimApiInterface(
   }
 
   def peek(signal: String): Option[BigInt] = {
-    if (isStale && chiselMain.context.isPropagation) update
+    if (isStale && isPropagation) update
     if (outputsNameToChunkSizeMap contains signal) _peekMap get signal
     else if (inputsNameToChunkSizeMap contains signal) _pokeMap get signal
     else {
