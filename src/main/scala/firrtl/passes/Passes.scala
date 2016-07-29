@@ -490,9 +490,6 @@ object InferWidths extends Pass {
             if(in.isEmpty) Seq(default)
             else in
 
-         def max(a: BigInt, b: BigInt): BigInt = if (a >= b) a else b
-         def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
-         def pow_minus_one(a: BigInt, b: BigInt): BigInt = a.pow(b.toInt) - 1
 
          def solve(w: Width): Option[BigInt] = w match {
             case (w: VarWidth) =>
@@ -522,14 +519,20 @@ object InferWidths extends Pass {
          //println-all-debug(["WITH: " wx])
          wx
       }
+      def reduce_var_widths_s (s: Statement): Statement = {
+        def onType(t: Type): Type = t map onType map reduce_var_widths_w
+        s map onType
+      }
    
       val modulesx = c.modules.map{ m => {
          val portsx = m.ports.map{ p => {
             Port(p.info,p.name,p.direction,mapr(reduce_var_widths_w _,p.tpe)) }}
          (m) match {
             case (m:ExtModule) => ExtModule(m.info,m.name,portsx)
-            case (m:Module) => mname = m.name; Module(m.info,m.name,portsx,mapr(reduce_var_widths_w _,m.body)) }}}
-      Circuit(c.info,modulesx,c.main)
+            case (m:Module) =>
+              mname = m.name
+              Module(m.info,m.name,portsx,m.body map reduce_var_widths_s _) }}}
+      InferTypes.run(Circuit(c.info,modulesx,c.main))
    }
    
    def run (c:Circuit): Circuit = {
