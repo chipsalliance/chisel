@@ -107,6 +107,7 @@ package object Chisel {
 
   type DecoupledIO[+T <: Data] = chisel3.util.DecoupledIO[T]
   val DecoupledIO = chisel3.util.DecoupledIO
+  val Decoupled = chisel3.util.DecoupledIO
   class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
     def init(): Unit = {
       this.noenq()
