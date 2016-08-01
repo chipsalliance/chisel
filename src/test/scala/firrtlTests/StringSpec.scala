@@ -109,13 +109,12 @@ class StringSpec extends FirrtlPropSpec {
   }
 
   // Generators for random testing
-  val validChar = for (c <- Gen.choose(0x20.toChar, 0x7e.toChar) if c != '\\') yield c
+  val validChar = Gen.oneOf((0x20.toChar to 0x5b.toChar).toSeq ++
+                             (0x5e.toChar to 0x7e.toChar).toSeq) // exclude '\\'
   val validCharSeq = Gen.containerOf[Seq, Char](validChar)
   val invalidChar = Gen.oneOf(Gen.choose(0x00.toChar, 0x1f.toChar),
                              Gen.choose(0x7f.toChar, 0xff.toChar))
-  val invalidEsc = for (
-    c <- Gen.choose(0x00.toChar, 0xff.toChar
-  ) if (!validEsc.contains(c))) yield c
+  val invalidEsc = Gen.oneOf((0x00.toChar to 0xff.toChar).toSeq diff validEsc)
 
   property("Random invalid strings should fail") {
     forAll(validCharSeq, invalidChar, validCharSeq) { 
