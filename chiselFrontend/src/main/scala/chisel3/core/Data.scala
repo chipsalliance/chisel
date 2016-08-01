@@ -114,6 +114,18 @@ abstract class Data(dirArg: Direction) extends HasId {
     */
   @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
   def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
+
+  /** Reinterpret cast to UInt.
+    *
+    * @note value not guaranteed to be preserved: for example, a SInt of width
+    * 3 and value -1 (0b111) would become an UInt with value 7
+    * @note Aggregates are recursively packed with the first element appearing
+    * in the least-significant bits of the result.
+    */
+  final def asUInt(): UInt = macro SourceInfoTransform.noArg
+
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt =
+    SeqUtils.do_asUInt(this.flatten)(sourceInfo)
 }
 
 object Wire {
