@@ -22,7 +22,7 @@ class MultiThreadingSpec extends FirrtlPropSpec {
       new firrtl.LowFirrtlCompiler,
       new firrtl.VerilogCompiler)
     val inputFilePath = s"/integration/GCDTester.fir" // arbitrary
-    val numThreads = 8 // arbitrary
+    val numThreads = 64 // arbitrary
 
     // Begin the actual test
     val inputStream = getClass().getResourceAsStream(inputFilePath)

@@ -256,7 +256,7 @@ object CheckHighForm extends Pass with LazyLogging {
             if (!c.modules.map(_.name).contains(s.module))
               errors.append(new ModuleNotDefinedException(s.module))
             // Check to see if a recursive module instantiation has occured
-            val childToParent = moduleGraph.add(mname, s.module)
+            val childToParent = moduleGraph.add(m.name, s.module)
             if(childToParent.nonEmpty) {
               errors.append(new InstanceLoop(childToParent.mkString("->")))
             }
