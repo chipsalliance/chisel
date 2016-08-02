@@ -62,6 +62,12 @@ object Utils extends LazyLogging {
     result
   }
 
+  /** Indent the results of [[ir.FirrtlNode.serialize]] */
+  def indent(str: String) = str replaceAllLiterally ("\n", "\n  ")
+  def serialize(bi: BigInt): String =
+    if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
+    else "\"h" + bi.toString(16) + "\""
+
    implicit class WithAs[T](x: T) {
      import scala.reflect._
      def as[O: ClassTag]: Option[O] = x match {

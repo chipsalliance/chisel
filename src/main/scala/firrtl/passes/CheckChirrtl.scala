@@ -37,7 +37,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
-import firrtl.Serialize._
 import firrtl.PrimOps._
 import firrtl.WrappedType._
 

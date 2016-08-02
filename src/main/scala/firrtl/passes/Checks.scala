@@ -37,7 +37,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
-import firrtl.Serialize._
 import firrtl.PrimOps._
 import firrtl.WrappedType._
 
@@ -689,7 +688,7 @@ object CheckWidths extends Pass {
    class UninferredWidth (info:Info) extends PassException(s"${info} : [module ${mname}]  Uninferred width.")
    class WidthTooSmall(info: Info, b: BigInt) extends PassException(
          s"$info : [module $mname]  Width too small for constant " +
-         Serialize().serialize(b) + ".")
+         serialize(b) + ".")
    class NegWidthException(info:Info) extends PassException(s"${info}: [module ${mname}] Width cannot be negative or zero.")
    def run (c:Circuit): Circuit = {
       val errors = new Errors()
