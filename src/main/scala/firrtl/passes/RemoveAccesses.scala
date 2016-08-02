@@ -31,7 +31,6 @@ object RemoveAccesses extends Pass {
       val end = start + get_size(tpe(e))
       val stride = get_size(tpe(e.exp))
       val lsx = mutable.ArrayBuffer[Location]()
-      var c = 0
       for (i <- 0 until ls.size) {
         if (((i % stride) >= start) & ((i % stride) < end)) {
           lsx += ls(i)
@@ -44,7 +43,6 @@ object RemoveAccesses extends Pass {
       val end = start + get_size(tpe(e))
       val stride = get_size(tpe(e.exp))
       val lsx = mutable.ArrayBuffer[Location]()
-      var c = 0
       for (i <- 0 until ls.size) {
         if (((i % stride) >= start) & ((i % stride) < end)) { lsx += ls(i) }
       }
@@ -54,15 +52,11 @@ object RemoveAccesses extends Pass {
       val stride = get_size(tpe(e))
       val wrap = tpe(e.exp).asInstanceOf[VectorType].size
       val lsx = mutable.ArrayBuffer[Location]()
-      var c = 0
       for (i <- 0 until ls.size) {
-        if ((c % wrap) == 0) { c = 0 }
+        val c = (i / stride) % wrap
         val basex = ls(i).base
         val guardx = AND(ls(i).guard,EQV(uint(c),e.index))
         lsx += Location(basex,guardx)
-        if ((i + 1) % stride == 0) {
-          c = c + 1
-        }
       }
       lsx
   }
@@ -100,7 +94,7 @@ object RemoveAccesses extends Pass {
                 val temp = create_temp(e)
                 val temps = create_exps(temp)
                 def getTemp(i: Int) = temps(i % temps.size)
-                (rs,0 until rs.size).zipped.foreach { (x,i) => 
+                for((x, i) <- rs.zipWithIndex) {
                   if (i < temps.size) {
                     stmts += Connect(info(s),getTemp(i),x.base)
                   } else {
