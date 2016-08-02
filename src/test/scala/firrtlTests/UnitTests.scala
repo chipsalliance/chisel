@@ -194,4 +194,42 @@ class UnitTests extends FirrtlFlatSpec {
      val check = Seq("c <= mux(pred, a, pad(b, 32))")
      executeTest(input, check, passes)
   }
+  "Indexes into sub-accesses" should "be dealt with" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveGenders,
+      InferWidths,
+      PullMuxes,
+      ExpandConnects,
+      RemoveAccesses
+    )
+    val input =
+      """circuit AssignViaDeref : 
+         |  module AssignViaDeref : 
+         |    input clk : Clock
+         |    input reset : UInt<1>
+         |    output io : {a : UInt<8>, sel : UInt<1>}
+         |
+         |    io is invalid
+         |    reg table : {a : UInt<8>}[2], clk
+         |    reg otherTable : {a : UInt<8>}[2], clk
+         |    otherTable[table[UInt<1>("h01")].a].a <= UInt<1>("h00")""".stripMargin
+     //TODO(azidar): I realize this is brittle, but unfortunately there
+     //  isn't a better way to test this pass
+     val check = Seq(
+       """wire GEN_0 : { a : UInt<8>}""",
+       """GEN_0.a <= table[0].a""",
+       """when eq(UInt<1>("h1"), UInt<1>("h1")) :""",
+       """GEN_0.a <= table[1].a""",
+       """wire GEN_1 : UInt<8>""",
+       """when eq(UInt<1>("h0"), GEN_0.a) :""",
+       """otherTable[0].a <= GEN_1""",
+       """when eq(UInt<1>("h1"), GEN_0.a) :""",
+       """otherTable[1].a <= GEN_1""",
+       """GEN_1 <= UInt<1>("h0")"""
+     )
+     executeTest(input, check, passes)
+  }
 }
