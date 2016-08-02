@@ -36,7 +36,6 @@ import scala.sys.process._
 import scala.io.Source
 
 import Utils._
-import firrtl.Serialize._
 import firrtl.Mappers._
 import firrtl.passes._
 import firrtl.PrimOps._
@@ -61,6 +60,7 @@ case class VRandom(width: BigInt) extends Expression {
   def tpe = UIntType(IntWidth(width))
   def nWords = (width + 31) / 32
   def realWidth = nWords * 32
+  def serialize: String = "RANDOM"
 }
 class VerilogEmitter extends Emitter {
    val tab = "  "
