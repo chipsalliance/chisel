@@ -57,6 +57,46 @@ package object Chisel {
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
+  import chisel3.internal.firrtl.Width
+  /**
+  * These implicit classes allow one to convert scala.Int|scala.BigInt to
+  * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.
+  * The versions .asUInt(width)|.asSInt(width) are also available to explicitly
+  * mark a width for the new literal.
+  *
+  * Also provides .asBool to scala.Boolean and .asUInt to String
+  *
+  * Note that, for stylistic reasons, one should avoid extracting immediately
+  * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
+  * confusion (the 1 is a bit length and the 0 is a bit extraction position).
+  * Prefer storing the result and then extracting from it.
+  */
+  implicit class fromIntToLiteral(val x: Int) extends AnyVal {
+    def U: UInt = UInt(BigInt(x), Width())
+    def S: SInt = SInt(BigInt(x), Width())
+
+    def asUInt() = UInt(x, Width())
+    def asSInt() = SInt(x, Width())
+    def asUInt(width: Int) = UInt(x, width)
+    def asSInt(width: Int) = SInt(x, width)
+  }
+  
+  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
+    def U: UInt = UInt(x, Width())
+    def S: SInt = SInt(x, Width())
+
+    def asUInt() = UInt(x, Width())
+    def asSInt() = SInt(x, Width())
+    def asUInt(width: Int) = UInt(x, width)
+    def asSInt(width: Int) = SInt(x, width)
+  }
+  implicit class fromStringToLiteral(val x: String) extends AnyVal {
+    def U: UInt = UInt(x)
+  }
+  implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
+    def B: Bool = Bool(x)
+  }
+
 
   type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   val Driver = chisel3.Driver
@@ -158,14 +198,4 @@ package object Chisel {
   val Pipe = chisel3.util.Pipe
   type Pipe[T <: Data] = chisel3.util.Pipe[T]
 
-
-  import chisel3.internal.firrtl.Width
-  implicit def fromBigIntToLiteral(x: BigInt): chisel3.fromBigIntToLiteral =
-    new chisel3.fromBigIntToLiteral(x)
-  implicit def fromIntToLiteral(x: Int): chisel3.fromIntToLiteral=
-    new chisel3.fromIntToLiteral(x)
-  implicit def fromStringToLiteral(x: String): chisel3.fromStringToLiteral=
-    new chisel3.fromStringToLiteral(x)
-  implicit def fromBooleanToLiteral(x: Boolean): chisel3.fromBooleanToLiteral=
-    new chisel3.fromBooleanToLiteral(x)
 }
