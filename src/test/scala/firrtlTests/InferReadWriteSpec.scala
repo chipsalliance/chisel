@@ -36,25 +36,24 @@ import Annotations._
 class InferReadWriteSpec extends SimpleTransformSpec {
   object InferReadWriteCheckPass extends Pass {
     val name = "Check Infer ReadWrite Ports"
-    var foundReadWrite = false
-    def findReadWrite(s: Statement): Unit = s match {
-      case s: DefMemory if s.readLatency > 0 =>
-        foundReadWrite = s.name == "mem" && s.readwriters.size == 1
+    def findReadWrite(s: Statement): Boolean = s match {
+      case s: DefMemory if s.readLatency > 0 && s.readwriters.size == 1 =>
+        s.name == "mem" && s.readwriters.head == "rw_0"
       case s: Block =>
-        s.stmts foreach findReadWrite
-      case _ =>
+        s.stmts exists findReadWrite
+      case _ => false
     }
 
     def run (c: Circuit) = {
       val errors = new Errors
-      c.modules foreach {
+      val foundReadWrite = c.modules exists {
         case m: Module => findReadWrite(m.body)
-        case m: ExtModule => m
+        case m: ExtModule => false
       }
       if (!foundReadWrite) {
         errors append new PassException("Readwrite ports are not found!")
+        errors.trigger
       }
-      errors.trigger
       c
     }
   }
@@ -99,6 +98,9 @@ circuit sram6t :
 """.stripMargin
 
     val annotaitonMap = AnnotationMap(Seq(InferReadWriteAnnotation("sram6t", TransID(-1))))
-    compile(parse(input), annotaitonMap, new java.io.StringWriter)
+    val writer = new java.io.StringWriter
+    compile(parse(input), annotaitonMap, writer)
+    // Check correctness of firrtl
+    parse(writer.toString)
   }
 }

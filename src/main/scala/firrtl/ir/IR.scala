@@ -138,14 +138,14 @@ case class DefMemory(
   def serialize: String =
     s"mem $name :" + info.serialize +
     indent(
-      Seq("\ndata-type => " + dataType.serialize,
+      (Seq("\ndata-type => " + dataType.serialize,
           "depth => " + depth,
           "read-latency => " + readLatency,
-          "write-latency => " + writeLatency,
-          readers map ("reader => " + _),
-          writers map ("writer => " + _),
-          readwriters map ("readwriter" + _),
-          "read-under-write => undefined") mkString "\n")
+          "write-latency => " + writeLatency) ++
+          (readers map ("reader => " + _)) ++
+          (writers map ("writer => " + _)) ++
+          (readwriters map ("readwriter => " + _)) ++
+       Seq("read-under-write => undefined")) mkString "\n")
 }
 case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration {
   def serialize: String = s"node $name = ${value.serialize}" + info.serialize
