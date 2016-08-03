@@ -47,7 +47,7 @@ private[chisel3] object SeqUtils {
     if (in.tail.isEmpty) {
       in.head._2
     } else {
-      val masked = for ((s, i) <- in) yield Mux(s, i.toBits, Bits(0))
+      val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, UInt(0))
       val width = in.map(_._2.width).reduce(_ max _)
       in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
     }

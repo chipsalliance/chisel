@@ -245,15 +245,6 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
 
   def do_asSInt(implicit sourceInfo: SourceInfo): SInt
 
-  /** Reinterpret cast to an UInt.
-    *
-    * @note value not guaranteed to be preserved: for example, a SInt of width
-    * 3 and value -1 (0b111) would become an UInt with value 7
-    */
-  final def asUInt(): UInt = macro SourceInfoTransform.noArg
-
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
-
   /** Reinterpret cast to Bits. */
   final def asBits(): Bits = macro SourceInfoTransform.noArg
 

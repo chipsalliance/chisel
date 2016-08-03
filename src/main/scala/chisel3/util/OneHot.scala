@@ -11,7 +11,7 @@ import chisel3._
   * This is the inverse of [[Chisel.UIntToOH UIntToOH]]*/
 object OHToUInt {
   def apply(in: Seq[Bool]): UInt = apply(Cat(in.reverse), in.size)
-  def apply(in: Vec[Bool]): UInt = apply(in.toBits, in.size)
+  def apply(in: Vec[Bool]): UInt = apply(in.asUInt, in.size)
   def apply(in: Bits): UInt = apply(in, in.getWidth)
 
   def apply(in: Bits, width: Int): UInt = {

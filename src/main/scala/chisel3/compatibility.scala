@@ -100,7 +100,6 @@ package object Chisel {
 
   type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   val Driver = chisel3.Driver
-  type FileSystemUtilities = chisel3.compatibility.FileSystemUtilities
   val ImplicitConversions = chisel3.util.ImplicitConversions
   val chiselMain = chisel3.compatibility.chiselMain
   val throwException = chisel3.compatibility.throwException
