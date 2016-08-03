@@ -18,7 +18,13 @@ abstract class Backend(_seed: Long = System.currentTimeMillis) {
 
   def peek(path: String): BigInt
 
-  def expect(signal: HasId, expected: BigInt, msg: => String = "") : Boolean
+  def expect(signal: HasId, expected: BigInt) : Boolean = expect(signal, expected, "")
+
+  def expect(signal: HasId, expected: BigInt, msg: => String) : Boolean
+
+  def expect(path: String, expected: BigInt) : Boolean = expect(path, expected, "")
+
+  def expect(path: String, expected: BigInt, msg: => String) : Boolean
 
   def step(n: Int): Unit
 

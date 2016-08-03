@@ -43,16 +43,7 @@ private[iotesters] class FirrtlTerpBackend(
     }
   }
 
-  def poke(path: String, value: BigInt): Unit = {
-    assert(false)
-  }
-
-  def peek(path: String): BigInt = {
-    assert(false)
-    BigInt(rnd.nextInt)
-  }
-
-  def expect(signal: HasId, expected: BigInt, msg: => String = "") : Boolean = {
+  def expect(signal: HasId, expected: BigInt, msg: => String) : Boolean = {
     signal match {
       case port: Bits =>
         val name = portNames(port)
@@ -62,6 +53,20 @@ private[iotesters] class FirrtlTerpBackend(
         good
       case _ => false
     }
+  }
+
+  def poke(path: String, value: BigInt): Unit = {
+    assert(false)
+  }
+
+  def peek(path: String): BigInt = {
+    assert(false)
+    BigInt(rnd.nextInt)
+  }
+
+  def expect(path: String, expected: BigInt, msg: => String) : Boolean = {
+    assert(false)
+    false
   }
 
   def step(n: Int): Unit = {

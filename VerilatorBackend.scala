@@ -398,6 +398,11 @@ private[iotesters] class VerilatorBackend(
     peek(path)
   }
 
+  def expect(signal: HasId, expected: BigInt, msg: => String) = {
+    val path = CircuitGraph getPathName (signal, ".")
+    expect(path, expected, msg)
+  }
+
   def poke(path: String, value: BigInt) {
     if (verbose) logger println s"  POKE ${path} <- ${bigIntToStr(value, _base)}"
     simApiInterface.poke(path, value)
@@ -409,11 +414,10 @@ private[iotesters] class VerilatorBackend(
     result
   }
 
-  def expect(signal: HasId, expected: BigInt, msg: => String = "") = {
-    val name = CircuitGraph getPathName (signal, ".")
-    val got = simApiInterface.peek(name) getOrElse BigInt(rnd.nextInt)
+  def expect(path: String, expected: BigInt, msg: => String = "") = {
+    val got = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
     val good = got == expected
-    if (verbose) logger println s"""${msg}  EXPECT ${name} -> ${bigIntToStr(got, _base)} == ${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}"""
+    if (verbose) logger println s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, _base)} == ${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}"""
     good
   }
 
