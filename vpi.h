@@ -146,7 +146,9 @@ private:
     vpi_control(vpiFinish, 0);
   }
 
-  virtual void step() { }
+  virtual void clock_hi() { }
+
+  virtual void clock_lo() { }
 
   virtual void update() {
     s_cb_data data_s;
