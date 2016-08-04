@@ -56,7 +56,7 @@ object chiselMain {
   private def genHarness[T <: Module](dut: Module,
       firrtlIRFilePath: String, harnessFilePath:String, waveformPath: String) {
     if (context.isVCS) {
-      genVCSVerilogHarness(dut, new FileWriter(new File(harnessFilePath)), waveformPath)
+      genVCSVerilogHarness(dut, new FileWriter(new File(harnessFilePath)), waveformPath, context.isPropagation)
     } else {
       firrtl.Driver.compile(firrtlIRFilePath, harnessFilePath, new VerilatorCppHarnessCompiler(dut, waveformPath))
     }

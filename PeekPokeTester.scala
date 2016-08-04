@@ -35,8 +35,8 @@ abstract class PeekPokeTester[+T <: Module](
                                             logFile: Option[String] = chiselMain.context.logFile,
                                             waveform: Option[String] = chiselMain.context.waveform,
                                             testCmd: List[String] = Nil,
-                                            _seed: Long = chiselMain.context.testerSeed,
                                             isPropagation: Boolean = chiselMain.context.isPropagation,
+                                            _seed: Long = chiselMain.context.testerSeed,
                                             _backend: Option[Backend] = None) {
 
   implicit def longToInt(x: Long) = x.toInt
