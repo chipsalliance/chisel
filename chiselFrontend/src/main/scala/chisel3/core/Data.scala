@@ -227,6 +227,14 @@ object Wire {
 
 object Clock {
   def apply(): Clock = new Clock
+  def apply(dir: Direction): Clock = {
+    val result = apply()
+    dir match {
+      case Direction.Input => Input(result)
+      case Direction.Output => Output(result)
+      case Direction.Unspecified => result
+    }
+  }
 }
 
 // TODO: Document this.
