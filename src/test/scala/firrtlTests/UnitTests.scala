@@ -232,4 +232,61 @@ class UnitTests extends FirrtlFlatSpec {
      )
      executeTest(input, check, passes)
   }
+
+  "Oversized bit select" should "throw an exception" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveGenders,
+      InferWidths,
+      CheckWidths)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    node x = bits(UInt(1), 100, 0)""".stripMargin
+    intercept[CheckWidths.BitsWidthException] {
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+  }
+
+  "Oversized head select" should "throw an exception" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveGenders,
+      InferWidths,
+      CheckWidths)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    node x = head(UInt(1), 100)""".stripMargin
+    intercept[CheckWidths.HeadWidthException] {
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+  }
+
+  "Oversized tail select" should "throw an exception" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveGenders,
+      InferWidths,
+      CheckWidths)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    node x = tail(UInt(1), 100)""".stripMargin
+    intercept[CheckWidths.TailWidthException] {
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+  }
 }
