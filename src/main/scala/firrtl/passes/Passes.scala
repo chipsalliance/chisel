@@ -520,7 +520,7 @@ object InferWidths extends Pass {
       }
       def reduce_var_widths_s (s: Statement): Statement = {
         def onType(t: Type): Type = t map onType map reduce_var_widths_w
-        s map onType
+        s map reduce_var_widths_s map onType
       }
    
       val modulesx = c.modules.map{ m => {
