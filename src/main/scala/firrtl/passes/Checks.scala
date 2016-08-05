@@ -690,6 +690,9 @@ object CheckWidths extends Pass {
          s"$info : [module $mname]  Width too small for constant " +
          serialize(b) + ".")
    class NegWidthException(info:Info) extends PassException(s"${info}: [module ${mname}] Width cannot be negative or zero.")
+   class BitsWidthException(info: Info, hi: BigInt, width: BigInt) extends PassException(s"${info}: [module ${mname}] High bit $hi in bits operator is larger than input width $width.")
+   class HeadWidthException(info: Info, n: BigInt, width: BigInt) extends PassException(s"${info}: [module ${mname}] Parameter $n in head operator is larger than input width $width.")
+   class TailWidthException(info: Info, n: BigInt, width: BigInt) extends PassException(s"${info}: [module ${mname}] Parameter $n in tail operator is larger than input width $width.")
    def run (c:Circuit): Circuit = {
       val errors = new Errors()
       def check_width_m (m:DefModule) : Unit = {
@@ -720,6 +723,12 @@ object CheckWidths extends Pass {
                   }
                   check_width_w(info)(e.width)
                }
+               case DoPrim(Bits, Seq(a), Seq(hi, lo), _) if(long_BANG(a.tpe) <= hi) =>
+                 errors.append(new BitsWidthException(info, hi, long_BANG(a.tpe)))
+               case DoPrim(Head, Seq(a), Seq(n), _) if(long_BANG(a.tpe) < n) =>
+                 errors.append(new HeadWidthException(info, n, long_BANG(a.tpe)))
+               case DoPrim(Tail, Seq(a), Seq(n), _) if(long_BANG(a.tpe) <= n) =>
+                 errors.append(new TailWidthException(info, n, long_BANG(a.tpe)))
                case (e:DoPrim) => false
                case (e) => false
             }
