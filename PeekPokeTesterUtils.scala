@@ -24,7 +24,7 @@ private[iotesters] object validName {
     if (firrtl.Utils.v_keywords contains name) name + "$" else name
 }
 
-private[iotesters] object CircuitGraph {
+private[iotesters] class CircuitGraph {
   import internal.HasId
   import internal.firrtl._
   private val _modParent = HashMap[Module, Module]()
@@ -118,14 +118,6 @@ private[iotesters] object CircuitGraph {
       case None    => ""
       case Some(p) => getPathName(p, seperator)
     }
-  }
-
-  def clear {
-    _modParent.clear
-    _nodeParent.clear
-    _modToName.clear
-    _nodeToName.clear
-    _nodes.clear
   }
 }
 

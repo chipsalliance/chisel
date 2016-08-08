@@ -89,9 +89,9 @@ private[iotesters] object setupFirrtlTerpBackend {
     val dir = new File(testDirPath)
     dir.mkdirs()
 
-    CircuitGraph.clear
+    val graph = new CircuitGraph
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
+    val dut = (graph construct circuit).asInstanceOf[T]
 
     // Dump FIRRTL for debugging
     val firrtlIRFilePath = s"${testDirPath}/${circuit.name}.ir"

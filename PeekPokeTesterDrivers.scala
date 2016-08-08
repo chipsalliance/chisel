@@ -34,11 +34,11 @@ object runPeekPokeTester {
 object runPeekPokeTesterWithBinary {
   def apply[T <: Module] (dutGen: () => T, cmd: Seq[String])
                          (testerGen: (T, Option[Backend]) => PeekPokeTester[T]): Boolean = {
-    CircuitGraph.clear
+    val graph = new CircuitGraph
     val circuit = Driver.elaborate(dutGen)
-    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
+    val dut = (graph construct circuit).asInstanceOf[T]
     try {
-      testerGen(dut, Some(new VerilatorBackend(dut, cmd))).finish
+      testerGen(dut, Some(new VerilatorBackend(dut, graph, cmd))).finish
     } catch { case e: Throwable =>
       TesterProcess.killall
       throw e

@@ -116,9 +116,9 @@ object genVCSVerilogHarness {
 
 private[iotesters] object setupVCSBackend {
   def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
-    CircuitGraph.clear
+    val graph = new CircuitGraph
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
+    val dut = (graph construct circuit).asInstanceOf[T]
     val dir = new File(s"test_run_dir/${circuit.name}") ; dir.mkdirs()
 
     // Generate CHIRRTL
@@ -139,16 +139,17 @@ private[iotesters] object setupVCSBackend {
     genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
     verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).!
 
-    (dut, new VCSBackend(dut, Seq((new File(dir, circuit.name)).toString)))
+    (dut, new VCSBackend(dut, graph, Seq((new File(dir, circuit.name)).toString)))
   }
 }
 
 private[iotesters] class VCSBackend(
-                                    dut: chisel3.Module, 
+                                    dut: chisel3.Module,
+                                    graph: CircuitGraph,
                                     cmd: Seq[String],
                                     verbose: Boolean = true,
                                     logger: PrintStream = System.out,
                                     _base: Int = 16,
                                     _seed: Long = System.currentTimeMillis,
                                     isPropagation: Boolean = true) 
-           extends VerilatorBackend(dut, cmd, verbose, logger, _base, _seed, isPropagation)
+           extends VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed, isPropagation)

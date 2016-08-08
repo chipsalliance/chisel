@@ -4,7 +4,7 @@ package chisel3.iotesters
 
 import chisel3._
 
-import scala.util.Random
+import scala.util.{Random, DynamicVariable}
 
 // Provides a template to define tester transactions
 trait PeekPokeTests {
@@ -29,15 +29,20 @@ trait PeekPokeTests {
 }
 
 object PeekPokeTester {
+  private val contextVar = new DynamicVariable[Option[CircuitGraph]](None)
+  private[iotesters] def context = contextVar.value
+
   def apply[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
-    CircuitGraph.clear
-    val circuit = Driver.elaborate(dutGen)
-    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
-    try {
-      testerGen(dut).finish
-    } catch { case e: Throwable =>
-      TesterProcess.killall
-      throw e
+    contextVar.withValue(Some(new CircuitGraph)) {
+      val graph = context.get
+      val circuit = Driver.elaborate(dutGen)
+      val dut = (graph construct circuit).asInstanceOf[T]
+      try {
+        testerGen(dut).finish
+      } catch { case e: Throwable =>
+        TesterProcess.killall
+        throw e
+      }
     }
   }
 }
@@ -72,12 +77,16 @@ abstract class PeekPokeTester[+T <: Module](
     case None    => Nil
     case Some(f) => logger println s"Waveform: $f" ; List(s"+waveform=$f")
   })
-  val backend = _backend getOrElse (
+  val backend = _backend getOrElse {
+    val graph = PeekPokeTester.context match {
+      case Some(g) => g
+      case None => chiselMain.context.graph
+    }
     if (chiselMain.context.isVCS)
-      new VCSBackend(dut, cmd, verbose, logger, _base, _seed, isPropagation)
+      new VCSBackend(dut, graph, cmd, verbose, logger, _base, _seed, isPropagation)
     else
-      new VerilatorBackend(dut, cmd, verbose, logger, _base, _seed, isPropagation)
-  )
+      new VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed, isPropagation)
+  }
 
   /********************************/
   /*** Classic Tester Interface ***/

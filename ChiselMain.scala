@@ -21,6 +21,7 @@ private[iotesters] class TesterContext {
   var targetDir = new File("test_run_dir")
   var logFile: Option[String] = None
   var waveform: Option[String] = None
+  val graph = new CircuitGraph
 }
 
 object chiselMain {
@@ -51,13 +52,13 @@ object chiselMain {
     }
   }
 
-  private def genHarness[T <: Module](dut: Module,
+  private def genHarness[T <: Module](dut: Module, graph: CircuitGraph,
       chirrtl: firrtl.ir.Circuit, harness: FileWriter, waveform: String) {
     if (context.isVCS) {
       genVCSVerilogHarness(dut, harness, waveform, context.isPropagation)
     } else {
       val annotation = new firrtl.Annotations.AnnotationMap(Nil)
-      (new VerilatorCppHarnessCompiler(dut, waveform)).compile(chirrtl, annotation, harness)
+      (new VerilatorCppHarnessCompiler(dut, graph, waveform)).compile(chirrtl, annotation, harness)
       harness.close
     }
   }
@@ -82,7 +83,6 @@ object chiselMain {
 
   private def elaborate[T <: Module](args: Array[String], dutGen: () => T): T = {
     parseArgs(args)
-    CircuitGraph.clear
     try {
       Files.createDirectory(Paths.get(context.targetDir.toString))
     } catch {
@@ -90,8 +90,9 @@ object chiselMain {
       case x: IOException =>
         System.err.format("createFile error: %s%n", x)
     }
+    val graph = context.graph
     val circuit = Driver.elaborate(dutGen)
-    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
+    val dut = (graph construct circuit).asInstanceOf[T]
     val dir = context.targetDir
     val name = circuit.name
 
@@ -107,7 +108,7 @@ object chiselMain {
     val isVCS = context.isVCS
     val harnessFile = new File(dir, s"${name}-harness.%s".format(if (isVCS) "v" else "cpp"))
     val waveformFile = new File(dir, s"${name}.%s".format(if (isVCS) "vpd" else "vcd"))
-    if (context.isGenHarness) genHarness(dut, chirrtl, new FileWriter(harnessFile), waveformFile.toString)
+    if (context.isGenHarness) genHarness(dut, graph, chirrtl, new FileWriter(harnessFile), waveformFile.toString)
 
     if (context.isCompiling) compile(name)
 
