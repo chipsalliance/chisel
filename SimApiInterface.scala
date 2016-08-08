@@ -14,7 +14,7 @@ import java.nio.channels.FileChannel
 
 private[iotesters] class SimApiInterface(
                                          dut: Module,
-                                         cmd: List[String],
+                                         cmd: Seq[String],
                                          logger: java.io.PrintStream,
                                          isPropagation: Boolean) {
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {

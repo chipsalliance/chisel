@@ -19,6 +19,12 @@ package object iotesters {
       ciot.chiselMain(args, dutGen, testerGen)
     }
   }
+
+  object PeekPokeTester {
+    def apply[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
+      ciot.PeekPokeTester(dutGen)(testerGen)
+    }
+  }
   
   /**
     * Runs the ClassicTester and returns a Boolean indicating test success or failure
@@ -35,9 +41,14 @@ package object iotesters {
     * Runs the ClassicTester using the verilator backend without doing Verilator compilation and returns a Boolean indicating success or failure
     * Requires the caller to supply path the already compile Verilator binary
     */
-  object runPeekPokeTesterWithVerilatorBinary {
-    def apply[T <: Module](dutGen: () => T, verilatorBinaryFilePath: String)(testerGen: (T, Option[ciot.Backend]) => ciot.PeekPokeTester[T]): Boolean = {
-      ciot.runPeekPokeTesterWithVerilatorBinary(dutGen, verilatorBinaryFilePath)(testerGen)
+  object runPeekPokeTesterWithBinary {
+    def apply[T <: Module](dutGen: () => T, binary: String)(
+        testerGen: (T, Option[ciot.Backend]) => ciot.PeekPokeTester[T]): Boolean = {
+      ciot.runPeekPokeTesterWithBinary(dutGen, binary)(testerGen)
+    }
+    def apply[T <: Module](dutGen: () => T, cmd: Seq[String])(
+        testerGen: (T, Option[ciot.Backend]) => ciot.PeekPokeTester[T]): Boolean = {
+      ciot.runPeekPokeTesterWithBinary(dutGen, cmd)(testerGen)
     }
   }
 }

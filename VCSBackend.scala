@@ -139,13 +139,13 @@ private[iotesters] object setupVCSBackend {
     genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
     verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).!
 
-    (dut, new VCSBackend(dut, List((new File(dir, circuit.name)).toString)))
+    (dut, new VCSBackend(dut, Seq((new File(dir, circuit.name)).toString)))
   }
 }
 
 private[iotesters] class VCSBackend(
                                     dut: chisel3.Module, 
-                                    cmd: List[String],
+                                    cmd: Seq[String],
                                     verbose: Boolean = true,
                                     logger: PrintStream = System.out,
                                     _base: Int = 16,

@@ -28,6 +28,20 @@ trait PeekPokeTests {
   def finish: Boolean
 }
 
+object PeekPokeTester {
+  def apply[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
+    CircuitGraph.clear
+    val circuit = Driver.elaborate(dutGen)
+    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
+    try {
+      testerGen(dut).finish
+    } catch { case e: Throwable =>
+      TesterProcess.killall
+      throw e
+    }
+  }
+}
+
 abstract class PeekPokeTester[+T <: Module](
                                             val dut: T,
                                             verbose: Boolean = true,
@@ -36,8 +50,8 @@ abstract class PeekPokeTester[+T <: Module](
                                             waveform: Option[String] = chiselMain.context.waveform,
                                             testCmd: List[String] = Nil,
                                             isPropagation: Boolean = chiselMain.context.isPropagation,
-                                            _seed: Long = chiselMain.context.testerSeed,
-                                            _backend: Option[Backend] = None) {
+                                            _backend: Option[Backend] = None,
+                                            _seed: Long = chiselMain.context.testerSeed) {
 
   implicit def longToInt(x: Long) = x.toInt
 

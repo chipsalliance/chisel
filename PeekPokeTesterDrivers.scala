@@ -31,19 +31,21 @@ object runPeekPokeTester {
   * Runs the ClassicTester using the verilator backend without doing Verilator compilation and returns a Boolean indicating success or failure
   * Requires the caller to supply path the already compile Verilator binary
   */
-object runPeekPokeTesterWithVerilatorBinary {
-  def apply[T <: Module] (dutGen: () => T, verilatorBinaryFilePath: String)
+object runPeekPokeTesterWithBinary {
+  def apply[T <: Module] (dutGen: () => T, cmd: Seq[String])
                          (testerGen: (T, Option[Backend]) => PeekPokeTester[T]): Boolean = {
     CircuitGraph.clear
     val circuit = Driver.elaborate(dutGen)
     val dut = (CircuitGraph construct circuit).asInstanceOf[T]
-    val tester = testerGen(dut, Some(new VerilatorBackend(dut, List(verilatorBinaryFilePath))))
     try {
-      tester.finish
+      testerGen(dut, Some(new VerilatorBackend(dut, cmd))).finish
     } catch { case e: Throwable =>
       TesterProcess.killall
       throw e
     }
   }
+  def apply[T <: Module] (dutGen: () => T, binary: String)
+                         (testerGen: (T, Option[Backend]) => PeekPokeTester[T]): Boolean =
+    apply(dutGen, Seq(binary))(testerGen)
 }
 
