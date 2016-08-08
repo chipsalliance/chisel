@@ -21,16 +21,25 @@ private[chisel3] class Namespace(parent: Option[Namespace], keywords: Set[String
     if (this contains tryName) rename(n) else tryName
   }
 
+  private def sanitize(s: String): String = {
+    // TODO what character set does FIRRTL truly support? using ANSI C for now
+    def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+    def legal(c: Char) = legalStart(c) || (c >= '0' && c <= '9')
+    val res = s filter legal
+    if (res.isEmpty || !legalStart(res.head)) s"_$res" else res
+  }
+
   def contains(elem: String): Boolean = {
     names.contains(elem) || parent.map(_ contains elem).getOrElse(false)
   }
 
   def name(elem: String): String = {
-    if (this contains elem) {
-      name(rename(elem))
+    val sanitized = sanitize(elem)
+    if (this contains sanitized) {
+      name(rename(sanitized))
     } else {
-      names(elem) = 1
-      elem
+      names(sanitized) = 1
+      sanitized
     }
   }
 
