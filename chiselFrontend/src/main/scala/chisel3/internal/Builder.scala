@@ -55,10 +55,29 @@ private[chisel3] class IdGen {
   }
 }
 
-private[chisel3] trait HasId {
+/** Public API to Nodes.
+  * currently, the node's name, the full path name, and a reference to its parent.
+  */
+trait SignalID {
+  def signalName(component: Component): String
+  def signalPathName(component: Component, separator: String = "_"): String
+  def signalParent: Module
+}
+
+private[chisel3] trait HasId extends SignalID {
   private[chisel3] def _onModuleClose {} // scalastyle:ignore method.name
   private[chisel3] val _parent = Builder.dynamicContext.currentModule
   _parent.foreach(_.addId(this))
+
+  // Implementation of public methods.
+  override def signalParent = _parent.get
+  override def signalName(component: Component) = _ref.get.fullName(component)
+  override def signalPathName(component: Component, separator: String = "_"): String = {
+    _parent match {
+      case Some(p) => p.signalPathName(component, separator) + separator + signalName(component)
+      case None => signalName(component)
+    }
+  }
 
   private[chisel3] val _id = Builder.idGen.next
   override def hashCode: Int = _id.toInt

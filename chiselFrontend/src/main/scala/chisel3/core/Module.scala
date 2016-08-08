@@ -63,6 +63,9 @@ extends HasId {
   /** Legalized name of this module. */
   final val name = Builder.globalNamespace.name(desiredName)
 
+  /** Signal name (for simulation). */
+  override def signalName(component: Component) = name
+
   /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.
     */
