@@ -27,7 +27,6 @@ MODIFICATIONS.
 
 package firrtl
 
-import java.io.{PrintWriter, Writer, File}
 import scala.io.Source
 import scala.collection.mutable
 import Annotations._
@@ -57,9 +56,12 @@ Options:
       infoMode: InfoMode = IgnoreInfo,
       annotations: AnnotationMap = new AnnotationMap(Seq.empty)) = {
     val parsedInput = Parser.parse(Source.fromFile(input).getLines, infoMode)
-    val writerOutput = new PrintWriter(new File(output))
-    compiler.compile(parsedInput, annotations, writerOutput)
-    writerOutput.close
+    val outputBuffer = new java.io.CharArrayWriter
+    compiler.compile(parsedInput, annotations, outputBuffer)
+
+    val outputFile = new java.io.PrintWriter(output)
+    outputFile.write(outputBuffer.toString)
+    outputFile.close()
   }
 
   /**
