@@ -166,3 +166,26 @@ private[iotesters] object verilogToVCS {
 }
 
 private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage: String) extends RuntimeException(lastMessage)
+
+private[iotesters] object TesterProcess {
+  val processes = ArrayBuffer[Process]()
+
+  def apply(cmd: Seq[String], logs: ArrayBuffer[String]) = synchronized {
+    require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exists")
+    val processBuilder = Process(cmd mkString " ")
+    val processLogger = ProcessLogger(println, logs += _) // don't log stdout
+    val process = processBuilder run processLogger
+    processes += process
+    process
+  }
+
+  def finish(p: Process) = synchronized {
+    processes -= p
+    // p.destroy
+  }
+
+  def killall = synchronized {
+    processes foreach (_.destroy)
+    processes.clear
+  }
+}

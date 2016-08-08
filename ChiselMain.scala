@@ -6,7 +6,6 @@ import chisel3._
 
 import scala.collection.mutable.{ArrayBuffer}
 import scala.util.{DynamicVariable}
-import scala.sys.process.Process
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.io.{File, FileWriter, IOException}
 
@@ -19,10 +18,9 @@ private[iotesters] class TesterContext {
   var isPropagation = true
   var testerSeed = System.currentTimeMillis
   val testCmd = ArrayBuffer[String]()
-  var targetDir = new File("test_run_dir").getCanonicalPath
+  var targetDir = new File("test_run_dir")
   var logFile: Option[String] = None
   var waveform: Option[String] = None
-  val processes = ArrayBuffer[Process]()
 }
 
 object chiselMain {
@@ -44,7 +42,7 @@ object chiselMain {
         case "--test" => context.isRunTest = true
         case "--testCommand" => context.testCmd ++= args(i+1) split ' '
         case "--testerSeed" => context.testerSeed = args(i+1).toLong
-        case "--targetDir" => context.targetDir = args(i+1)
+        case "--targetDir" => context.targetDir = new File(args(i+1))
         case "--noPropagation" => context.isPropagation = false
         case "--logFile" => context.logFile = Some(args(i+1))
         case "--waveform" => context.waveform = Some(args(i+1))
@@ -54,25 +52,27 @@ object chiselMain {
   }
 
   private def genHarness[T <: Module](dut: Module,
-      firrtlIRFilePath: String, harnessFilePath:String, waveformPath: String) {
+      chirrtl: firrtl.ir.Circuit, harness: FileWriter, waveform: String) {
     if (context.isVCS) {
-      genVCSVerilogHarness(dut, new FileWriter(new File(harnessFilePath)), waveformPath, context.isPropagation)
+      genVCSVerilogHarness(dut, harness, waveform, context.isPropagation)
     } else {
-      firrtl.Driver.compile(firrtlIRFilePath, harnessFilePath, new VerilatorCppHarnessCompiler(dut, waveformPath))
+      val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+      (new VerilatorCppHarnessCompiler(dut, waveform)).compile(chirrtl, annotation, harness)
+      harness.close
     }
   }
 
   private def compile(dutName: String) {
-    val dir = new File(context.targetDir)
+    val dir = context.targetDir
 
     if (context.isVCS) {
       // Copy API files
-      copyVpiFiles(s"${context.targetDir}")
+      copyVpiFiles(context.targetDir.toString)
       // Compile VCS
       verilogToVCS(dutName, dir, new File(s"$dutName-harness.v")).!
     } else {
       // Copy API files
-      copyVerilatorHeaderFiles(s"${context.targetDir}")
+      copyVerilatorHeaderFiles(context.targetDir.toString)
       // Generate Verilator
       Driver.verilogToCpp(dutName, dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).!
       // Compile Verilator
@@ -84,7 +84,7 @@ object chiselMain {
     parseArgs(args)
     CircuitGraph.clear
     try {
-      Files.createDirectory(Paths.get(context.targetDir))
+      Files.createDirectory(Paths.get(context.targetDir.toString))
     } catch {
       case x: FileAlreadyExistsException =>
       case x: IOException =>
@@ -92,24 +92,27 @@ object chiselMain {
     }
     val circuit = Driver.elaborate(dutGen)
     val dut = (CircuitGraph construct circuit).asInstanceOf[T]
-    val dir = new File(context.targetDir)
+    val dir = context.targetDir
+    val name = circuit.name
 
-    val firrtlIRFilePath = s"${dir}/${circuit.name}.ir"
-    Driver.dumpFirrtl(circuit, Some(new File(firrtlIRFilePath)))
+    val chirrtl = firrtl.Parser.parse(Driver.emit(dutGen) split "\n")
+    val verilogFile = new File(dir, s"${name}.v")
+    if (context.isGenVerilog) {
+      val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+      val writer = new FileWriter(verilogFile)
+      (new firrtl.VerilogCompiler).compile(chirrtl, annotation, writer)
+      writer.close
+    } 
 
-    val verilogFilePath = s"${dir}/${circuit.name}.v"
-    if (context.isGenVerilog) firrtl.Driver.compile(
-      firrtlIRFilePath, verilogFilePath, new firrtl.VerilogCompiler())
+    val isVCS = context.isVCS
+    val harnessFile = new File(dir, s"${name}-harness.%s".format(if (isVCS) "v" else "cpp"))
+    val waveformFile = new File(dir, s"${name}.%s".format(if (isVCS) "vpd" else "vcd"))
+    if (context.isGenHarness) genHarness(dut, chirrtl, new FileWriter(harnessFile), waveformFile.toString)
 
-    val pathPrefix = s"${chiselMain.context.targetDir}/${circuit.name}"
-    val harnessFilePath = s"$pathPrefix-harness.%s".format(if (context.isVCS) "v" else "cpp")
-    val waveformFilePath = s"$pathPrefix.%s".format(if (context.isVCS) "vpd" else "vcd")
-    if (context.isGenHarness) genHarness(dut, firrtlIRFilePath, harnessFilePath, waveformFilePath)
-
-    if (context.isCompiling) compile(circuit.name)
+    if (context.isCompiling) compile(name)
 
     if (context.testCmd.isEmpty) {
-      context.testCmd += s"""${context.targetDir}/${if (context.isVCS) "" else "V"}${dut.name}"""
+      context.testCmd += s"""${context.targetDir}/${if (context.isVCS) "" else "V"}${name}"""
     }
     dut
   }
@@ -127,12 +130,12 @@ object chiselMain {
     contextVar.withValue(Some(new TesterContext)) {
       val dut = elaborate(args, dutGen)
       if (context.isRunTest) {
-        try {
-          assert(testerGen(dut).finish, "Test failed")
-        } finally {
-          context.processes foreach (_.destroy)
-          context.processes.clear
-        }
+        assert(try {
+          testerGen(dut).finish
+        } catch { case e: Throwable =>
+          TesterProcess.killall
+          false
+        }, "Test failed")
       }
       dut
     }

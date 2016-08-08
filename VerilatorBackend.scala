@@ -257,21 +257,10 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module, vcdFilePath: St
     writer.write("    } \n")
     writer.write("    virtual inline void reset() {\n")
     writer.write("        dut->reset = 1;\n")
-    writer.write("        dut->clk = 0;\n")
-    writer.write("        dut->eval();\n")
-    writer.write("#if VM_TRACE\n")
-    writer.write("        if (tfp) tfp->dump(main_time);\n")
-    writer.write("#endif\n")
-    writer.write("        main_time++;\n")
-    writer.write("        dut->clk = 1;\n")
-    writer.write("        dut->eval();\n")
-    writer.write("#if VM_TRACE\n")
-    writer.write("        if (tfp) tfp->dump(main_time);\n")
-    writer.write("#endif\n")
-    writer.write("        main_time++;\n")
+    writer.write("    }\n")
+    writer.write("    virtual inline void start() {\n")
     writer.write("        dut->reset = 0;\n")
     writer.write("    }\n")
-    writer.write("    virtual inline void start() { }\n")
     writer.write("    virtual inline void finish() {\n")
     writer.write("        dut->eval();\n")
     writer.write("        is_exit = true;\n")
@@ -343,37 +332,33 @@ class VerilatorCppHarnessCompiler(
 }
 
 private[iotesters] object setupVerilatorBackend {
-  def apply(dutGen: ()=> chisel3.Module): Backend = {
-    val rootDirPath = new File(".").getCanonicalPath()
-    val testDirPath = s"${rootDirPath}/test_run_dir"
-    val dir = new File(testDirPath)
-    dir.mkdirs()
-
+  def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
     CircuitGraph.clear
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = CircuitGraph construct circuit
+    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
+    val dir = new File(s"test_run_dir/${circuit.name}"); dir.mkdirs()
 
-    // Dump FIRRTL for debugging
-    val firrtlIRFilePath = s"${testDirPath}/${circuit.name}.ir"
-    chisel3.Driver.dumpFirrtl(circuit, Some(new File(firrtlIRFilePath)))
+    // Generate CHIRRTL
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen) split "\n")
     // Generate Verilog
-    val verilogFilePath = s"${testDirPath}/${circuit.name}.v"
-    firrtl.Driver.compile(firrtlIRFilePath, verilogFilePath, new firrtl.VerilogCompiler)
+    val verilogFile = new File(dir, s"${circuit.name}.v")
+    val verilogWriter = new FileWriter(verilogFile)
+    val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+    (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
+    verilogWriter.close
 
-    val verilogFileName = verilogFilePath.split("/").last
-    val cppHarnessFileName = "classic_tester_top.cpp"
-    val cppHarnessFilePath = s"${testDirPath}/${cppHarnessFileName}"
-    val cppBinaryPath = s"${testDirPath}/V${circuit.name}"
-    val vcdFilePath = s"${testDirPath}/${circuit.name}.vcd"
+    val cppHarnessFileName = s"${circuit.name}-harness.cpp"
+    val cppHarnessFile = new File(dir, cppHarnessFileName)
+    val cppHarnessWriter = new FileWriter(cppHarnessFile)
+    val vcdFile = new File(dir, s"${circuit.name}.vcd")
+    val harnessCompiler = new VerilatorCppHarnessCompiler(dut, vcdFile.toString)
+    copyVerilatorHeaderFiles(dir.toString)
+    harnessCompiler.compile(chirrtl, annotation, cppHarnessWriter)
+    cppHarnessWriter.close
+    chisel3.Driver.verilogToCpp(circuit.name, circuit.name, dir, Seq(), new File(cppHarnessFileName)).!
+    chisel3.Driver.cppToExe(circuit.name, dir).!
 
-    // Generate Harness
-    copyVerilatorHeaderFiles(testDirPath)
-    firrtl.Driver.compile(firrtlIRFilePath, cppHarnessFilePath, new VerilatorCppHarnessCompiler(dut, vcdFilePath))
-
-    chisel3.Driver.verilogToCpp(verilogFileName.split("\\.")(0), dut.name, new File(testDirPath), Seq(), new File(cppHarnessFileName)).!
-    chisel3.Driver.cppToExe(verilogFileName.split("\\.")(0), new File(testDirPath)).!
-
-    new VerilatorBackend(dut, List(cppBinaryPath))
+    (dut, new VerilatorBackend(dut, List((new File(dir, s"V${circuit.name}")).toString)))
   }
 }
 

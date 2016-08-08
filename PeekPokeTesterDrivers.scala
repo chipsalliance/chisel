@@ -10,17 +10,20 @@ import chisel3._
   * Will do intermediate compliation steps to setup the backend specified, including cpp compilation for the verilator backend and firrtl IR compilation for the firrlt backend
   */
 object runPeekPokeTester {
-  def apply[T <: Module](dutGen: () => T, backendType: String = "firrtl")(testerGen: (T, Option[Backend]) => PeekPokeTester[T]): Boolean = {
-    val backend = backendType match {
+  def apply[T <: Module](dutGen: () => T, backendType: String = "firrtl")(
+      testerGen: (T, Option[Backend]) => PeekPokeTester[T]): Boolean = {
+    val (dut, backend) = backendType match {
       case "firrtl" => setupFirrtlTerpBackend(dutGen)
       case "verilator" => setupVerilatorBackend(dutGen)
       case "vcs" => setupVCSBackend(dutGen)
       case _ => throw new Exception("Unrecongnized backend type $backendType")
     }
-    CircuitGraph.clear
-    val circuit = Driver.elaborate(dutGen)
-    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
-    testerGen(dut, Some(backend)).finish
+    try {
+      testerGen(dut, Some(backend)).finish
+    } catch { case e: Throwable =>
+      TesterProcess.killall
+      throw e
+    }
   }
 }
 
@@ -35,7 +38,12 @@ object runPeekPokeTesterWithVerilatorBinary {
     val circuit = Driver.elaborate(dutGen)
     val dut = (CircuitGraph construct circuit).asInstanceOf[T]
     val tester = testerGen(dut, Some(new VerilatorBackend(dut, List(verilatorBinaryFilePath))))
-    tester.finish
+    try {
+      tester.finish
+    } catch { case e: Throwable =>
+      TesterProcess.killall
+      throw e
+    }
   }
 }
 

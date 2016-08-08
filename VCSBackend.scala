@@ -115,35 +115,31 @@ object genVCSVerilogHarness {
 }
 
 private[iotesters] object setupVCSBackend {
-  def apply(dutGen: () => chisel3.Module): Backend = {
-    val rootDirPath = new File(".").getCanonicalPath()
-    val testDirPath = s"${rootDirPath}/test_run_dir"
-    val dir = new File(testDirPath)
-    dir.mkdirs()
-
+  def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
     CircuitGraph.clear
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = CircuitGraph construct circuit
+    val dut = (CircuitGraph construct circuit).asInstanceOf[T]
+    val dir = new File(s"test_run_dir/${circuit.name}") ; dir.mkdirs()
 
-    // Dump FIRRTL for debugging
-    val firrtlIRFilePath = s"${testDirPath}/${circuit.name}.ir"
-    chisel3.Driver.dumpFirrtl(circuit, Some(new File(firrtlIRFilePath)))
+    // Generate CHIRRTL
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen) split "\n")
+
     // Generate Verilog
-    val verilogFilePath = s"${testDirPath}/${circuit.name}.v"
-    firrtl.Driver.compile(firrtlIRFilePath, verilogFilePath, new firrtl.VerilogCompiler)
-
-    val verilogFileName = verilogFilePath.split("/").last
-    val vcsHarnessFileName = "classic_tester_top.v"
-    val vcsHarnessFilePath = s"${testDirPath}/${vcsHarnessFileName}"
-    val vcsBinaryPath = s"${testDirPath}/V${circuit.name}"
-    val vpdFilePath = s"${testDirPath}/${circuit.name}.vpd"
+    val verilogFile = new File(dir, s"${circuit.name}.v")
+    val verilogWriter = new FileWriter(verilogFile)
+    val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+    (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
+    verilogWriter.close
 
     // Generate Harness
-    copyVpiFiles(testDirPath)
-    genVCSVerilogHarness(dut, new FileWriter(new File(vcsHarnessFilePath)), vpdFilePath)
-    verilogToVCS(dut.name, new File(testDirPath), new File(vcsHarnessFileName)).!
+    val vcsHarnessFileName = s"${circuit.name}-harness.v"
+    val vcsHarnessFile = new File(dir, vcsHarnessFileName)
+    val vpdFile = new File(dir, s"${circuit.name}.vpd")
+    copyVpiFiles(dir.toString)
+    genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
+    verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).!
 
-    new VCSBackend(dut, List(vcsBinaryPath))
+    (dut, new VCSBackend(dut, List((new File(dir, circuit.name)).toString)))
   }
 }
 

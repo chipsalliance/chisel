@@ -10,6 +10,7 @@ import chisel3.testers._
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {
+  val backends = Seq("firrtl", "verilator", "vcs")
   def runTester(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
     TesterDriver.execute(() => t, additionalVResources)
   }
@@ -17,7 +18,6 @@ trait ChiselRunners extends Assertions {
     assert(runTester(t, additionalVResources))
   }
   def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
-
 }
 
 /** Spec base class for BDD-style testers. */
