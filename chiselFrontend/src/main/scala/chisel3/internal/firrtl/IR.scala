@@ -42,6 +42,7 @@ object PrimOp {
   val ConvertOp = PrimOp("cvt")
   val AsUIntOp = PrimOp("asUInt")
   val AsSIntOp = PrimOp("asSInt")
+  val AsFixedPointOp = PrimOp("asFixedPoint")
 }
 
 abstract class Arg {
@@ -80,6 +81,14 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
+  }
+  def minWidth: Int = 1 + n.bitLength
+}
+
+case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
+  def name: String = {
+    val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
+    s"asFP(${ULit(unsigned, width).name})"
   }
   def minWidth: Int = 1 + n.bitLength
 }
@@ -136,8 +145,8 @@ sealed case class KnownWidth(value: Int) extends Width {
 }
 
 object BinaryPoint {
-  def apply(x: Int): BinaryPoint = KnownBinaryPosition(x)
-  def apply(): BinaryPoint = UnknownBinaryPosition()
+  def apply(x: Int): BinaryPoint = KnownBinaryPoint(x)
+  def apply(): BinaryPoint = UnknownBinaryPoint()
 }
 
 sealed abstract class BinaryPoint {
@@ -154,18 +163,18 @@ sealed abstract class BinaryPoint {
   protected def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint
 }
 
-sealed case class UnknownBinaryPosition() extends BinaryPoint {
+sealed case class UnknownBinaryPoint() extends BinaryPoint {
   def known: Boolean = false
   def get: Int = None.get
   def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = this
   override def toString: String = ""
 }
 
-sealed case class KnownBinaryPosition(value: Int) extends BinaryPoint {
+sealed case class KnownBinaryPoint(value: Int) extends BinaryPoint {
   def known: Boolean = true
   def get: Int = value
   def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = that match {
-    case KnownBinaryPosition(x) => KnownBinaryPosition(f(value, x))
+    case KnownBinaryPoint(x) => KnownBinaryPoint(f(value, x))
     case _ => that
   }
   override def toString: String = s"<<${value.toString}>>"
