@@ -4,12 +4,10 @@ package chisel3.iotesters
 
 import chisel3._
 
-import scala.util.{Random, DynamicVariable}
-
 // Provides a template to define tester transactions
 trait PeekPokeTests {
   def t: Long
-  def rnd: Random
+  def rnd: scala.util.Random
   implicit def int(x: Boolean): BigInt
   implicit def int(x: Int):     BigInt
   implicit def int(x: Long):    BigInt
@@ -28,25 +26,6 @@ trait PeekPokeTests {
   def finish: Boolean
 }
 
-object PeekPokeTester {
-  private val contextVar = new DynamicVariable[Option[CircuitGraph]](None)
-  private[iotesters] def context = contextVar.value
-
-  def apply[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
-    contextVar.withValue(Some(new CircuitGraph)) {
-      val graph = context.get
-      val circuit = Driver.elaborate(dutGen)
-      val dut = (graph construct circuit).asInstanceOf[T]
-      try {
-        testerGen(dut).finish
-      } catch { case e: Throwable =>
-        TesterProcess.killall
-        throw e
-      }
-    }
-  }
-}
-
 abstract class PeekPokeTester[+T <: Module](
                                             val dut: T,
                                             verbose: Boolean = true,
@@ -55,7 +34,6 @@ abstract class PeekPokeTester[+T <: Module](
                                             waveform: Option[String] = chiselMain.context.waveform,
                                             testCmd: List[String] = Nil,
                                             isPropagation: Boolean = chiselMain.context.isPropagation,
-                                            _backend: Option[Backend] = None,
                                             _seed: Long = chiselMain.context.testerSeed) {
 
   implicit def longToInt(x: Long) = x.toInt
@@ -77,8 +55,8 @@ abstract class PeekPokeTester[+T <: Module](
     case None    => Nil
     case Some(f) => logger println s"Waveform: $f" ; List(s"+waveform=$f")
   })
-  val backend = _backend getOrElse {
-    val graph = PeekPokeTester.context match {
+  val backend = Driver.backend getOrElse {
+    val graph = Driver.graph match {
       case Some(g) => g
       case None => chiselMain.context.graph
     }

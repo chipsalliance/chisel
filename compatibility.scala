@@ -9,7 +9,6 @@ package object iotesters {
   type ChiselFlatSpec = ciot.ChiselFlatSpec
   type ChiselPropSpec = ciot.ChiselPropSpec
   type PeekPokeTester[+T <: Module] = ciot.PeekPokeTester[T]
-  type Backend = ciot.Backend
   type HWIOTester = ciot.HWIOTester
   type SteppedHWIOTester = ciot.SteppedHWIOTester
   type OrderedDecoupledHWIOTester = ciot.OrderedDecoupledHWIOTester
@@ -20,35 +19,30 @@ package object iotesters {
     }
   }
 
-  object PeekPokeTester {
-    def apply[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
-      ciot.PeekPokeTester(dutGen)(testerGen)
+  object Driver {
+    /**
+      * Runs the ClassicTester and returns a Boolean indicating test success or failure
+      * @@backendType determines whether the ClassicTester uses verilator or the firrtl interpreter to simulate the circuit
+      * Will do intermediate compliation steps to setup the backend specified, including cpp compilation for the verilator backend and firrtl IR compilation for the firrlt backend
+      */
+    def apply[T <: Module](dutGen: () => T, backendType: String = "firrtl")(
+        testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
+      ciot.Driver(dutGen, backendType)(testerGen)
     }
-  }
-  
-  /**
-    * Runs the ClassicTester and returns a Boolean indicating test success or failure
-    * @@backendType determines whether the ClassicTester uses verilator or the firrtl interpreter to simulate the circuit
-    * Will do intermediate compliation steps to setup the backend specified, including cpp compilation for the verilator backend and firrtl IR compilation for the firrlt backend
-    */
-  object runPeekPokeTester {
-    def apply[T <: Module](dutGen: () => T, backendType: String = "firrtl")(testerGen: (T, Option[ciot.Backend]) => ciot.PeekPokeTester[T]): Boolean = {
-      ciot.runPeekPokeTester(dutGen, backendType)(testerGen)
+    /**
+      * Runs the ClassicTester using the verilator backend without doing Verilator compilation and returns a Boolean indicating success or failure
+      * Requires the caller to supply path the already compile Verilator binary
+      */
+    def run[T <: Module](dutGen: () => T, binary: String)(
+        testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
+      ciot.Driver.run(dutGen, binary)(testerGen)
     }
-  }
-  
-  /**
-    * Runs the ClassicTester using the verilator backend without doing Verilator compilation and returns a Boolean indicating success or failure
-    * Requires the caller to supply path the already compile Verilator binary
-    */
-  object runPeekPokeTesterWithBinary {
-    def apply[T <: Module](dutGen: () => T, binary: String)(
-        testerGen: (T, Option[ciot.Backend]) => ciot.PeekPokeTester[T]): Boolean = {
-      ciot.runPeekPokeTesterWithBinary(dutGen, binary)(testerGen)
+    def run[T <: Module](dutGen: () => T, cmd: Seq[String])(
+        testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
+      ciot.Driver.run(dutGen, cmd)(testerGen)
     }
-    def apply[T <: Module](dutGen: () => T, cmd: Seq[String])(
-        testerGen: (T, Option[ciot.Backend]) => ciot.PeekPokeTester[T]): Boolean = {
-      ciot.runPeekPokeTesterWithBinary(dutGen, cmd)(testerGen)
+    def run[T <: Module](dutGen: () => T)(testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
+      ciot.Driver.run(dutGen)(testerGen)
     }
   }
 }

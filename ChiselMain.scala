@@ -75,9 +75,9 @@ object chiselMain {
       // Copy API files
       copyVerilatorHeaderFiles(context.targetDir.toString)
       // Generate Verilator
-      Driver.verilogToCpp(dutName, dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).!
+      chisel3.Driver.verilogToCpp(dutName, dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).!
       // Compile Verilator
-      Driver.cppToExe(dutName, dir).!
+      chisel3.Driver.cppToExe(dutName, dir).!
     }
   }
 
@@ -91,12 +91,12 @@ object chiselMain {
         System.err.format("createFile error: %s%n", x)
     }
     val graph = context.graph
-    val circuit = Driver.elaborate(dutGen)
+    val circuit = chisel3.Driver.elaborate(dutGen)
     val dut = (graph construct circuit).asInstanceOf[T]
     val dir = context.targetDir
     val name = circuit.name
 
-    val chirrtl = firrtl.Parser.parse(Driver.emit(dutGen) split "\n")
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen) split "\n")
     val verilogFile = new File(dir, s"${name}.v")
     if (context.isGenVerilog) {
       val annotation = new firrtl.Annotations.AnnotationMap(Nil)
