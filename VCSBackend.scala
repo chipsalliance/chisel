@@ -119,7 +119,7 @@ private[iotesters] object setupVCSBackend {
     val graph = new CircuitGraph
     val circuit = chisel3.Driver.elaborate(dutGen)
     val dut = (graph construct circuit).asInstanceOf[T]
-    val dir = new File(s"test_run_dir/${circuit.name}") ; dir.mkdirs()
+    val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Generate CHIRRTL
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen) split "\n")
