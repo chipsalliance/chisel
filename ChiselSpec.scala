@@ -7,10 +7,14 @@ import org.scalatest.prop._
 import org.scalacheck._
 import chisel3._
 import chisel3.testers._
+import sys.process.{stringSeqToProcess, BasicIO}
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {
-  val backends = Seq("firrtl", "verilator", "vcs")
+  val isVCSAvailable = {
+    (Seq("bash", "-c", "which vcs") run BasicIO(false, new StringBuffer, None)).exitValue == 0
+  }
+  val backends = Seq("firrtl", "verilator") ++ (if (isVCSAvailable) Seq("vcs") else Nil)
   def runTester(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
     TesterDriver.execute(() => t, additionalVResources)
   }
