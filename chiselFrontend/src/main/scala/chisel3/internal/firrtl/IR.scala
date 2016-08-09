@@ -135,6 +135,43 @@ sealed case class KnownWidth(value: Int) extends Width {
   override def toString: String = s"<${value.toString}>"
 }
 
+object BinaryPoint {
+  def apply(x: Int): BinaryPoint = KnownBinaryPosition(x)
+  def apply(): BinaryPoint = UnknownBinaryPosition()
+}
+
+sealed abstract class BinaryPoint {
+  type W = Int
+  def max(that: BinaryPoint): BinaryPoint = this.op(that, _ max _)
+  def + (that: BinaryPoint): BinaryPoint = this.op(that, _ + _)
+  def + (that: Int): BinaryPoint = this.op(this, (a, b) => a + that)
+  def shiftRight(that: Int): BinaryPoint = this.op(this, (a, b) => 0 max (a - that))
+  def dynamicShiftLeft(that: BinaryPoint): BinaryPoint =
+    this.op(that, (a, b) => a + (1 << b) - 1)
+
+  def known: Boolean
+  def get: W
+  protected def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint
+}
+
+sealed case class UnknownBinaryPosition() extends BinaryPoint {
+  def known: Boolean = false
+  def get: Int = None.get
+  def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = this
+  override def toString: String = ""
+}
+
+sealed case class KnownBinaryPosition(value: Int) extends BinaryPoint {
+  def known: Boolean = true
+  def get: Int = value
+  def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = that match {
+    case KnownBinaryPosition(x) => KnownBinaryPosition(f(value, x))
+    case _ => that
+  }
+  override def toString: String = s"<<${value.toString}>>"
+}
+
+
 sealed abstract class MemPortDirection(name: String) {
   override def toString: String = name
 }
