@@ -33,6 +33,7 @@ import java.nio.file.{Paths, Files}
 // Datastructures
 import scala.collection.mutable.LinkedHashMap
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 
 import firrtl._
@@ -1087,9 +1088,13 @@ object RemoveCHIRRTL extends Pass {
          val raddrs = HashMap[String, Expression]()
          val ut = UnknownType
          val mport_types = LinkedHashMap[String,Type]()
+         val smems = HashSet[String]()
          def EMPs () : MPorts = MPorts(ArrayBuffer[MPort](),ArrayBuffer[MPort](),ArrayBuffer[MPort]())
-         def collect_mports (s:Statement) : Statement = {
+         def collect_smems_and_mports (s:Statement) : Statement = {
             (s) match { 
+               case (s:CDefMemory) if s.seq =>
+                  smems += s.name
+                  s
                case (s:CDefMPort) => {
                   val mports = hash.getOrElse(s.mem,EMPs())
                   s.direction match {
@@ -1100,7 +1105,7 @@ object RemoveCHIRRTL extends Pass {
                   hash(s.mem) = mports
                   s
                }
-               case (s) => s map (collect_mports)
+               case (s) => s map (collect_smems_and_mports)
             }
          }
          def collect_refs (s:Statement) : Statement = {
@@ -1173,9 +1178,9 @@ object RemoveCHIRRTL extends Pass {
                         addrs += "addr"
                         clks += "clk"
                         s.exps(0) match {
-                           case e: Reference =>
+                           case e: Reference if smems(s.mem) =>
                               raddrs(e.name) = SubField(SubField(Reference(s.mem,ut),s.name,ut),"en",ut)
-                           case _=>
+                           case _ => ens += "en"
                         }
                      }
                   }
@@ -1197,7 +1202,7 @@ object RemoveCHIRRTL extends Pass {
          def remove_chirrtl_s (s:Statement) : Statement = {
             var has_write_mport = false
             var has_read_mport: Option[Expression] = None
-            var has_readwrite_mport:Option[Expression] = None
+            var has_readwrite_mport: Option[Expression] = None
             def remove_chirrtl_e (g:Gender)(e:Expression) : Expression = {
                (e) match {
                   case (e:Reference) if repl contains e.name =>
@@ -1292,7 +1297,7 @@ object RemoveCHIRRTL extends Pass {
                case (s) => s map (remove_chirrtl_s) map (remove_chirrtl_e(MALE))
             }
          }
-         collect_mports(m.body)
+         collect_smems_and_mports(m.body)
          val sx = collect_refs(m.body)
          Module(m.info,m.name, m.ports, remove_chirrtl_s(sx))
       }
