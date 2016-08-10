@@ -37,6 +37,9 @@ private[iotesters] class CircuitGraph {
     val component = (components find (_.name == modN)).get
     val mod = component.id
 
+    _nodeParent(mod.reset) = mod
+    _nodeToName(mod.reset) = validName("reset")
+
     getDataNames(mod) foreach {case (port, name) =>
       // _nodes += port
       _nodeParent(port) = mod

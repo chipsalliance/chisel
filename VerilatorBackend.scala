@@ -210,7 +210,9 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
       val pathName = graph getPathName (node, "->") replace (dutName, "dut") replace ("$", "__024")  
       pushBack("outputs", pathName, node.getWidth)
     }
-    (graph.nodes foldLeft 0){ (id, node) =>
+    pushBack("signals", "dut->reset", 1)
+    writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(graph getPathName (dut.reset, ".")))
+    (graph.nodes foldLeft 1){ (id, node) =>
       val pathName = graph getPathName (node, "__DOT__") replace (dutName, "v") replace ("$", "__024")
       val signalName = graph getPathName (node, ".")
       try {
