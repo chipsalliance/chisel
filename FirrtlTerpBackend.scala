@@ -27,7 +27,7 @@ private[iotesters] class FirrtlTerpBackend(
       case port: Bits =>
         val name = portNames(port)
         interpretiveTester.poke(name, value)
-        if (verbose) logger println s"  POKE ${name} <- ${bigIntToStr(value, _base)}"
+        if (verbose) logger println s"  POKE $name <- ${bigIntToStr(value, _base)}"
       case _ =>
     }
   }
@@ -37,7 +37,7 @@ private[iotesters] class FirrtlTerpBackend(
       case port: Bits =>
         val name = portNames(port)
         val result = interpretiveTester.peek(name)
-        if (verbose) logger println s"  PEEK ${name} -> ${bigIntToStr(result, _base)}"
+        if (verbose) logger println s"  PEEK $name -> ${bigIntToStr(result, _base)}"
         result
       case _ => BigInt(rnd.nextInt)
     }
@@ -49,7 +49,7 @@ private[iotesters] class FirrtlTerpBackend(
         val name = portNames(port)
         val got = interpretiveTester.peek(name)
         val good = got == expected
-        if (verbose) logger println s"""${msg}  EXPECT ${name} -> ${bigIntToStr(got, _base)} == ${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}"""
+        if (verbose) logger println s"""$msg  EXPECT $name -> ${bigIntToStr(got, _base)} == ${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}"""
         good
       case _ => false
     }
@@ -90,7 +90,7 @@ private[iotesters] object setupFirrtlTerpBackend {
     val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Dump FIRRTL for debugging
-    val firrtlIRFile = new File(dir, s"${circuit.name}.ir")
+    val firrtlIRFile = new File(dir, s"${circuit.name}.fir")
     chisel3.Driver.dumpFirrtl(circuit, Some(firrtlIRFile))
     val firrtlIR = chisel3.Driver.emit(dutGen)
 
