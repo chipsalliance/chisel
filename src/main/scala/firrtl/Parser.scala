@@ -82,6 +82,8 @@ object Parser extends LazyLogging {
 
   def parse(lines: Seq[String]): Circuit = parse(lines.iterator)
 
+  def parse(text: String): Circuit = parse(text split "\n")
+
   sealed abstract class InfoMode
 
   case object IgnoreInfo extends InfoMode
