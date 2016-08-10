@@ -122,7 +122,7 @@ private[iotesters] object setupVCSBackend {
     val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Generate CHIRRTL
-    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen) split "\n")
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen))
 
     // Generate Verilog
     val verilogFile = new File(dir, s"${circuit.name}.v")

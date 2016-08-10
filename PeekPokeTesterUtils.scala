@@ -157,7 +157,11 @@ private[iotesters] object verilogToVCS {
   }
 }
 
-private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage: String) extends RuntimeException(lastMessage)
+private[iotesters] case class BackendException(b: String)
+  extends Exception("Unknown backend: $b. Backend shoule be firrtl, verilator, or vcs")
+
+private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage: String)
+  extends RuntimeException(lastMessage)
 
 private[iotesters] object TesterProcess {
   val processes = ArrayBuffer[Process]()

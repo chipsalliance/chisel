@@ -90,10 +90,7 @@ private[iotesters] object setupFirrtlTerpBackend {
     val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Dump FIRRTL for debugging
-    val firrtlIRFile = new File(dir, s"${circuit.name}.fir")
-    chisel3.Driver.dumpFirrtl(circuit, Some(firrtlIRFile))
-    val firrtlIR = chisel3.Driver.emit(dutGen)
-
-    (dut, new FirrtlTerpBackend(dut, firrtlIR))
+    chisel3.Driver.dumpFirrtl(circuit, Some(new File(dir, s"${circuit.name}.ir")))
+    (dut, new FirrtlTerpBackend(dut, chisel3.Driver.emit(dutGen)))
   }
 }
