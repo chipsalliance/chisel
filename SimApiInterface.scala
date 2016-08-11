@@ -16,8 +16,7 @@ private[iotesters] class SimApiInterface(
                                          dut: Module,
                                          graph: CircuitGraph,
                                          cmd: Seq[String],
-                                         logger: java.io.PrintStream,
-                                         isPropagation: Boolean) {
+                                         logger: java.io.PrintStream) {
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
     def genChunk(io: Data) = (graph getPathName (io, ".")) -> ((io.getWidth-1)/64 + 1)
     val (inputs, outputs) = getPorts(dut)
@@ -240,7 +239,7 @@ private[iotesters] class SimApiInterface(
   }
 
   def peek(signal: String): Option[BigInt] = {
-    if (isStale && isPropagation) update
+    if (isStale) update
     if (outputsNameToChunkSizeMap contains signal) _peekMap get signal
     else if (inputsNameToChunkSizeMap contains signal) _pokeMap get signal
     else {

@@ -33,7 +33,6 @@ abstract class PeekPokeTester[+T <: Module](
                                             logFile: Option[String] = chiselMain.context.logFile,
                                             waveform: Option[String] = chiselMain.context.waveform,
                                             testCmd: List[String] = Nil,
-                                            isPropagation: Boolean = chiselMain.context.isPropagation,
                                             _seed: Long = chiselMain.context.testerSeed) {
 
   implicit def longToInt(x: Long) = x.toInt
@@ -63,9 +62,9 @@ abstract class PeekPokeTester[+T <: Module](
         val ir = io.Source.fromFile(file).getLines mkString "\n"
         new FirrtlTerpBackend(dut, ir, verbose, logger, _base, _seed)
       case "verilator" =>
-        new VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed, isPropagation)
+        new VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed)
       case "vcs" =>
-        new VCSBackend(dut, graph, cmd, verbose, logger, _base, _seed, isPropagation)
+        new VCSBackend(dut, graph, cmd, verbose, logger, _base, _seed)
       case b => throw BackendException(b)
     }
   }

@@ -43,14 +43,14 @@ object copyVpiFiles {
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object genVCSVerilogHarness {
-  def apply(dut: chisel3.Module, writer: Writer, vpdFilePath: String, isPropagation: Boolean = true) {
+  def apply(dut: chisel3.Module, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
     val (inputs, outputs) = getDataNames(dut) partition (_._1.dir == chisel3.INPUT)
 
     writer write "module test;\n"
     writer write "  reg clk = 1;\n"
     writer write "  reg rst = 1;\n"
-    val delay = if (isPropagation) "" else "#0.1"
+    val delay = if (isGateLevel) "#0.1" else ""
     inputs foreach { case (node, name) =>
       writer write s"  reg[${node.getWidth-1}:0] $name = 0;\n"
       writer write s"  wire[${node.getWidth-1}:0] ${name}_delay;\n"
@@ -98,7 +98,7 @@ object genVCSVerilogHarness {
     writer write "    $vcdplusautoflushon;\n"
     writer write "  end\n\n"
 
-    writer write "  always @(%s clk) begin\n".format(if (isPropagation) "negedge" else "posedge")
+    writer write "  always @(%s clk) begin\n".format(if (isGateLevel) "posedge" else "negedge")
     writer write "    if (vcdfile && rst) begin\n"
     writer write "      $dumpoff;\n"
     writer write "      vcdon = 0;\n"
@@ -150,6 +150,5 @@ private[iotesters] class VCSBackend(
                                     verbose: Boolean = true,
                                     logger: PrintStream = System.out,
                                     _base: Int = 16,
-                                    _seed: Long = System.currentTimeMillis,
-                                    isPropagation: Boolean = true) 
-           extends VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed, isPropagation)
+                                    _seed: Long = System.currentTimeMillis)
+           extends VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed)

@@ -268,15 +268,13 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("        dut->eval();\n")
     writer.write("        is_exit = true;\n")
     writer.write("    }\n")
-    writer.write("    virtual inline void clock_lo() {\n")
+    writer.write("    virtual inline void step() {\n")
     writer.write("        dut->clk = 0;\n")
     writer.write("        dut->eval();\n")
     writer.write("#if VM_TRACE\n")
     writer.write("        if (tfp) tfp->dump(main_time);\n")
     writer.write("#endif\n")
     writer.write("        main_time++;\n")
-    writer.write("    }\n")
-    writer.write("    virtual inline void clock_hi() {\n")
     writer.write("        dut->clk = 1;\n")
     writer.write("        dut->eval();\n")
     writer.write("#if VM_TRACE\n")
@@ -372,10 +370,9 @@ private[iotesters] class VerilatorBackend(
                                           verbose: Boolean = true,
                                           logger: PrintStream = System.out,
                                           _base: Int = 16,
-                                          _seed: Long = System.currentTimeMillis,
-                                          isPropagation: Boolean = true) extends Backend(_seed) {
+                                          _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
 
-  val simApiInterface = new SimApiInterface(dut, graph, cmd, logger, isPropagation)
+  val simApiInterface = new SimApiInterface(dut, graph, cmd, logger)
 
   def poke(signal: HasId, value: BigInt, off: Option[Int]) {
     val idx = off map (x => s"[$x]") getOrElse ""

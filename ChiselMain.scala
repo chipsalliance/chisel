@@ -14,7 +14,7 @@ private[iotesters] class TesterContext {
   var isGenHarness = false
   var isCompiling = false
   var isRunTest = false
-  var isPropagation = true
+  var isGateLevel = false
   var testerSeed = System.currentTimeMillis
   val testCmd = ArrayBuffer[String]()
   var backend = "verilator"
@@ -40,7 +40,7 @@ object chiselMain {
     case "--testCommand" :: value :: tail => context.testCmd ++= value split ' ' ; parseArgs(tail)
     case "--testerSeed" :: value :: tail => context.testerSeed = value.toLong ; parseArgs(tail)
     case "--targetDir" :: value :: tail => context.targetDir = new File(value) ; parseArgs(tail)
-    case "--noPropagation" :: tail => context.isPropagation = false ; parseArgs(tail)
+    case "--gateLevel" :: tail => context.isGateLevel = false ; parseArgs(tail)
     case "--logFile" :: value :: tail => context.logFile = Some(value) ; parseArgs(tail)
     case "--waveform" :: value :: tail => context.waveform = Some(value) ; parseArgs(tail)
     case flag :: tail => parseArgs(tail) // skip unknown flag
@@ -60,7 +60,7 @@ object chiselMain {
       case "vcs" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.v"))
         val waveform = (new File(dir, s"${chirrtl.main}.vpd")).toString
-        genVCSVerilogHarness(dut, harness, waveform.toString, context.isPropagation)
+        genVCSVerilogHarness(dut, harness, waveform.toString, context.isGateLevel)
       case b => throw BackendException(b)
     }
   }
