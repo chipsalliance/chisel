@@ -230,7 +230,7 @@ private[iotesters] class SimApiInterface(
       _pokeMap(signal) = value
       isStale = true
     } else {
-      val id = _signalMap getOrElse (signal, getId(signal))
+      val id = _signalMap getOrElseUpdate (signal, getId(signal))
       if (id >= 0) {
         poke(id, _chunks getOrElseUpdate (signal, getChunk(id)), value)
       } else {
@@ -244,7 +244,7 @@ private[iotesters] class SimApiInterface(
     if (outputsNameToChunkSizeMap contains signal) _peekMap get signal
     else if (inputsNameToChunkSizeMap contains signal) _pokeMap get signal
     else {
-      val id = _signalMap getOrElse (signal, getId(signal))
+      val id = _signalMap getOrElseUpdate (signal, getId(signal))
       if (id >= 0) {
         Some(peek(id, _chunks getOrElse (signal, getChunk(id))))
       } else {
