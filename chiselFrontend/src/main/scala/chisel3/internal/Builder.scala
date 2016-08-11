@@ -55,13 +55,15 @@ private[chisel3] class IdGen {
   }
 }
 
-/** Public API to Nodes.
-  * currently, the node's name, the full path name, and a reference to its parent.
+/** Public API to access Node/Signal names.
+  * currently, the node's name, the full path name, and references to its parent Module and component.
+  * These are only valid once the design has been elaborated, and should not be used during its construction.
   */
 trait SignalID {
   def signalName(component: Component): String
-  def signalPathName(component: Component, separator: String = "_"): String
+  def signalPathName(component: Component, separator: String = "."): String
   def signalParent: Module
+  def signalComponent: Option[Component]
 }
 
 private[chisel3] trait HasId extends SignalID {
@@ -78,6 +80,7 @@ private[chisel3] trait HasId extends SignalID {
       case None => signalName(component)
     }
   }
+  override def signalComponent: Option[Component] = None
 
   private[chisel3] val _id = Builder.idGen.next
   override def hashCode: Int = _id.toInt
