@@ -94,8 +94,11 @@ extends HasId {
   private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
 
-  /** Name of the instance. */
-  val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
+  /** Desired name of this module. */
+  def desiredName = this.getClass.getName.split('.').last
+
+  /** Legalized name of this module. */
+  final val name = Builder.globalNamespace.name(desiredName)
 
   /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.
