@@ -166,9 +166,8 @@ public:
     static bool is_step = true;
      if (is_step) {
        // First, Send output tokens
-       clock_lo();
+       step();
        while(!send_tokens());
-       clock_hi();
        if (is_reset) {
          start();
          is_reset = false;
@@ -221,9 +220,8 @@ private:
   virtual void reset() = 0;
   virtual void start() = 0; 
   virtual void finish() = 0;
+  virtual void step() = 0;
   virtual void update() = 0; 
-  virtual void clock_hi() = 0;
-  virtual void clock_lo() = 0;
   // Consumes input tokens 
   virtual size_t put_value(T& sig, uint64_t* data, bool force = false) = 0;
   // Generate output tokens
