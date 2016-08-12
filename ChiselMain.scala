@@ -14,7 +14,6 @@ private[iotesters] class TesterContext {
   var isGenHarness = false
   var isCompiling = false
   var isRunTest = false
-  var isGateLevel = false
   var testerSeed = System.currentTimeMillis
   val testCmd = ArrayBuffer[String]()
   var backend = "verilator"
@@ -32,6 +31,7 @@ object chiselMain {
     case "--firrtl" :: tail => context.backend = "firrtl" ; parseArgs(tail)
     case "--verilator" :: tail => context.backend = "verilator" ; parseArgs(tail)
     case "--vcs" :: tail => context.backend = "vcs" ; parseArgs(tail)
+    case "--glsim" :: tail => context.backend = "glsim" ; parseArgs(tail)
     case "--v" :: tail  => context.isGenVerilog = true ; parseArgs(tail)
     case "--backend" :: value :: tail => context.backend = value ; parseArgs(tail)
     case "--genHarness" :: tail => context.isGenHarness = true ; parseArgs(tail)
@@ -40,7 +40,6 @@ object chiselMain {
     case "--testCommand" :: value :: tail => context.testCmd ++= value split ' ' ; parseArgs(tail)
     case "--testerSeed" :: value :: tail => context.testerSeed = value.toLong ; parseArgs(tail)
     case "--targetDir" :: value :: tail => context.targetDir = new File(value) ; parseArgs(tail)
-    case "--gateLevel" :: tail => context.isGateLevel = false ; parseArgs(tail)
     case "--logFile" :: value :: tail => context.logFile = Some(value) ; parseArgs(tail)
     case "--waveform" :: value :: tail => context.waveform = Some(value) ; parseArgs(tail)
     case flag :: tail => parseArgs(tail) // skip unknown flag
@@ -57,10 +56,10 @@ object chiselMain {
         val annotation = new firrtl.Annotations.AnnotationMap(Nil)
         (new VerilatorCppHarnessCompiler(dut, graph, waveform)).compile(chirrtl, annotation, harness)
         harness.close
-      case "vcs" =>
+      case "vcs" | "glsim" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.v"))
         val waveform = (new File(dir, s"${chirrtl.main}.vpd")).toString
-        genVCSVerilogHarness(dut, harness, waveform.toString, context.isGateLevel)
+        genVCSVerilogHarness(dut, harness, waveform.toString, context.backend == "glsim")
       case b => throw BackendException(b)
     }
   }
@@ -76,7 +75,7 @@ object chiselMain {
         chisel3.Driver.verilogToCpp(dutName, dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).!
         // Compile Verilator
         chisel3.Driver.cppToExe(dutName, dir).!
-      case "vcs" =>
+      case "vcs" | "glsim" =>
         // Copy API files
         copyVpiFiles(context.targetDir.toString)
         // Compile VCS
@@ -123,7 +122,7 @@ object chiselMain {
         case "firrtl" => // skip
         case "verilator" =>
           context.testCmd += (new File(context.targetDir, s"V$name")).toString
-        case "vcs" =>
+        case "vcs" | "glsim" =>
           context.testCmd += (new File(context.targetDir, name)).toString
         case b => throw BackendException(b)
       }

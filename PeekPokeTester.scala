@@ -63,7 +63,7 @@ abstract class PeekPokeTester[+T <: Module](
         new FirrtlTerpBackend(dut, ir, verbose, logger, _base, _seed)
       case "verilator" =>
         new VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed)
-      case "vcs" =>
+      case "vcs" | "glsim" =>
         new VCSBackend(dut, graph, cmd, verbose, logger, _base, _seed)
       case b => throw BackendException(b)
     }

@@ -161,7 +161,7 @@ private[iotesters] object verilogToVCS {
 }
 
 private[iotesters] case class BackendException(b: String)
-  extends Exception("Unknown backend: $b. Backend shoule be firrtl, verilator, or vcs")
+  extends Exception(s"Unknown backend: $b. Backend shoule be firrtl, verilator, vcs, or glsim")
 
 private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage: String)
   extends RuntimeException(lastMessage)
