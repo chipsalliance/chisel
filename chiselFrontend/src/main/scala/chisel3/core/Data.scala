@@ -72,6 +72,8 @@ abstract class Data(dirArg: Direction) extends HasId {
   final def getWidth: Int = width.get
   /** Returns whether the width is currently known. */
   final def isWidthKnown: Boolean = width.known
+  /** Returns Some(width) if the width is known, else None. */
+  final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
   // While this being in the Data API doesn't really make sense (should be in
   // Aggregate, right?) this is because of an implementation limitation:
