@@ -162,42 +162,21 @@ public:
     delete cmd_channel;
   }
   virtual void tick() {
-    static bool is_reset = false;
-    static bool is_step = true;
-     if (is_step) {
-       // First, Send output tokens
-       step();
-       while(!send_tokens());
-       if (is_reset) {
-         start();
-         is_reset = false;
-       }
-     } else {
-       while(!send_tokens());
-       is_step = true;
-    }
-    
+    static bool is_reset;
+    // First, Send output tokens
+    while(!send_tokens());
+    if (is_reset) start();
+    is_reset = false;
+
     // Next, handle commands from the testers
     bool is_exit = false;
     do {
       size_t cmd;
       while(!recv_cmd(cmd));
       switch ((SIM_CMD) cmd) {
-        case RESET: 
-           reset();
-           is_reset = true;
-           is_exit = true;
-           break;
-         case STEP:
-           while(!recv_tokens());
-           is_exit = true;
-           break;
-         case UPDATE:
-           while(!recv_tokens());
-           update();
-           is_step = false;
-           is_exit = true;
-           break;
+        case RESET: reset(); is_reset = true; is_exit = true; break;
+        case STEP: while(!recv_tokens()); step(); is_exit = true; break;
+        case UPDATE: while(!recv_tokens()); update(); is_exit = true; break;
         case POKE: poke(); break; 
         case PEEK: peek(); break;
         case FORCE: poke(true); break;
