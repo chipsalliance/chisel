@@ -1,9 +1,9 @@
 package chisel3.core
 
-import chisel3.internal.Builder.pushCommand
+import chisel3.internal.Builder.{compileOptions, pushCommand}
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, WireTransform}
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.
@@ -78,7 +78,11 @@ object MonoConnect {
           try {
             source_b.elements.get(field) match {
               case Some(source_sub) => connect(sourceInfo, sink_sub, source_sub, context_mod)
-              case None => throw MissingFieldException(field)
+              case None => {
+                if (compileOptions.connectFieldsMustMatch) {
+                  throw MissingFieldException(field)
+                }
+              }
             }
           } catch {
             case MonoConnectException(message) => throw MonoConnectException(s".$field$message")

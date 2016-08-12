@@ -118,6 +118,7 @@ private[chisel3] object Builder {
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
+  def compileOptions = dynamicContext.compileOptions
 
   def currentModule: Option[Module] = dynamicContext.currentModule
   def currentModule_=(target: Option[Module]): Unit = {
@@ -133,7 +134,6 @@ private[chisel3] object Builder {
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
-  def compileOptions = dynamicContext.compileOptions
   def pushCommand[T <: Command](c: T): T = {
     forcedModule._commands += c
     c

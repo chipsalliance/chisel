@@ -1,9 +1,9 @@
 package chisel3.core
 
-import chisel3.internal.Builder.pushCommand
+import chisel3.internal.Builder.{compileOptions, pushCommand}
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.internal.sourceinfo._
 
 /**
 * BiConnect.connect executes a bidirectional connection element-wise.
@@ -69,14 +69,22 @@ object BiConnect {
       case (left_b: Bundle, right_b: Bundle) => {
         // Verify right has no extra fields that left doesn't have
         for((field, right_sub) <- right_b.elements) {
-          if(!left_b.elements.isDefinedAt(field)) throw MissingLeftFieldException(field)
+          if(!left_b.elements.isDefinedAt(field)) {
+            if (compileOptions.connectFieldsMustMatch) {
+              throw MissingLeftFieldException(field)
+            }
+          }
         }
         // For each field in left, descend with right
         for((field, left_sub) <- left_b.elements) {
           try {
             right_b.elements.get(field) match {
               case Some(right_sub) => connect(sourceInfo, left_sub, right_sub, context_mod)
-              case None => throw MissingRightFieldException(field)
+              case None => {
+                if (compileOptions.connectFieldsMustMatch) {
+                  throw MissingRightFieldException(field)
+                }
+              }
             }
           } catch {
             case BiConnectException(message) => throw BiConnectException(s".$field$message")
