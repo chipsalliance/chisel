@@ -161,7 +161,6 @@ private[iotesters] class SimApiInterface(
     mwhile(!sendInputs) { }
     mwhile(!recvOutputs) { }
     dumpLogs
-    isStale = true
   }
 
   private def getId(path: String) = {
@@ -197,7 +196,6 @@ private[iotesters] class SimApiInterface(
     mwhile(!sendCmd(cmd)) { }
     mwhile(!sendCmd(id)) { }
     mwhile(!sendValue(v, chunk)) { }
-    isStale = true
   }
 
   private def peek(id: Int, chunk: Int): BigInt = {
@@ -232,6 +230,7 @@ private[iotesters] class SimApiInterface(
       val id = _signalMap getOrElseUpdate (signal, getId(signal))
       if (id >= 0) {
         poke(id, _chunks getOrElseUpdate (signal, getChunk(id)), value)
+        isStale = true
       } else {
         logger println s"Can't find $signal in the emulator..."
       }
@@ -254,6 +253,7 @@ private[iotesters] class SimApiInterface(
   }
 
   def step(n: Int) {
+    update
     (0 until n) foreach (_ => takeStep)
   }
 
