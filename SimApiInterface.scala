@@ -14,12 +14,13 @@ import java.nio.channels.FileChannel
 
 private[iotesters] class SimApiInterface(
                                          dut: Module,
-                                         graph: CircuitGraph,
                                          cmd: Seq[String],
                                          logger: java.io.PrintStream) {
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
-    def genChunk(io: Data) = (graph getPathName (io, ".")) -> ((io.getWidth-1)/64 + 1)
     val (inputs, outputs) = getPorts(dut)
+    def genChunk(args: (Data, String)) = args match {
+      case (pin, name) => name -> ((pin.getWidth-1)/64 + 1)
+    }
     (ListMap((inputs map genChunk): _*), ListMap((outputs map genChunk): _*))
   }
   private object SIM_CMD extends Enumeration {

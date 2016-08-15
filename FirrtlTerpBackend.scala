@@ -20,7 +20,7 @@ private[iotesters] class FirrtlTerpBackend(
   val interpretiveTester = new InterpretiveTester(firrtlIR)
   reset(5) // reset firrtl interpreter on construction
 
-  val portNames = getDataNames(dut).toMap
+  val portNames = getDataNames("io", dut.io).toMap
 
   def poke(signal: HasId, value: BigInt, off: Option[Int]): Unit = {
     signal match {

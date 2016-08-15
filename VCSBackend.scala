@@ -45,7 +45,7 @@ object copyVpiFiles {
 object genVCSVerilogHarness {
   def apply(dut: chisel3.Module, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
-    val (inputs, outputs) = getDataNames(dut) partition (_._1.dir == chisel3.INPUT)
+    val (inputs, outputs) = getDataNames("io", dut.io) partition (_._1.dir == chisel3.INPUT)
 
     writer write "module test;\n"
     writer write "  reg clk = 1;\n"

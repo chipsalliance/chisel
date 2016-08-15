@@ -6,22 +6,24 @@ import chisel3._
 import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
+private[iotesters] object validName {
+  def apply(name: String) =
+    if (firrtl.Utils.v_keywords contains name) name + "$" else name
+}
+
 private[iotesters] object getDataNames {
   def apply(name: String, data: Data): Seq[(Data, String)] = data match {
     case b: Element => Seq(b -> name)
     case b: Bundle => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => apply(s"${name}_$i", e)}
   }
-  def apply(dut: Module): Seq[(Data, String)] = apply("io", dut.io)
+  def apply(dut: Module, separator: String = "."): Seq[(Data, String)] =
+    apply(dut.io pathName separator, dut.io)
 }
 
 private[iotesters] object getPorts {
-  def apply(dut: Module) = getDataNames(dut).unzip._1 partition (_.dir == INPUT)
-}
-
-private[iotesters] object validName {
-  def apply(name: String) =
-    if (firrtl.Utils.v_keywords contains name) name + "$" else name
+  def apply(dut: Module, separator: String = ".") =
+    getDataNames(dut, separator) partition (_._1.dir == INPUT)
 }
 
 private[iotesters] class CircuitGraph {
@@ -40,7 +42,7 @@ private[iotesters] class CircuitGraph {
     _nodeParent(mod.reset) = mod
     _nodeToName(mod.reset) = validName("reset")
 
-    getDataNames(mod) foreach {case (port, name) =>
+    getDataNames("io", mod.io) foreach {case (port, name) =>
       // _nodes += port
       _nodeParent(port) = mod
       _nodeToName(port) = validName(name)
@@ -101,25 +103,25 @@ private[iotesters] class CircuitGraph {
 
   def getName(node: HasId) = _nodeToName(node)
 
-  def getPathName(mod: Module, seperator: String): String = {
+  def getPathName(mod: Module, separator: String): String = {
     val modName = _modToName getOrElse (mod, mod.name)
     (_modParent get mod) match {
       case None    => modName
-      case Some(p) => s"${getPathName(p, seperator)}$seperator$modName"
+      case Some(p) => s"${getPathName(p, separator)}$separator$modName"
     }
   }
 
-  def getPathName(node: HasId, seperator: String): String = {
+  def getPathName(node: HasId, separator: String): String = {
     (_nodeParent get node) match {
       case None    => getName(node)
-      case Some(p) => s"${getPathName(p, seperator)}$seperator${getName(node)}"
+      case Some(p) => s"${getPathName(p, separator)}$separator${getName(node)}"
     }
   }
 
-  def getParentPathName(node: HasId, seperator: String): String = {
+  def getParentPathName(node: HasId, separator: String): String = {
     (_nodeParent get node) match {
       case None    => ""
-      case Some(p) => getPathName(p, seperator)
+      case Some(p) => getPathName(p, separator)
     }
   }
 }

@@ -175,7 +175,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
   }
 
   def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult = {
-    val (inputs, outputs) = getPorts(dut)
+    val (inputs, outputs) = getPorts(dut, "->")
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
@@ -202,13 +202,11 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("        sim_data.inputs.clear();\n")
     writer.write("        sim_data.outputs.clear();\n")
     writer.write("        sim_data.signals.clear();\n")
-    inputs.toList foreach { node =>
-      val pathName = graph getPathName (node, "->") replace (dutName, "dut") replace ("$", "__024")
-      pushBack("inputs", pathName, node.getWidth)
+    inputs.toList foreach { case (node, name) =>
+      pushBack("inputs", name replace (dutName, "dut"), node.getWidth)
     }
-    outputs.toList foreach { node =>
-      val pathName = graph getPathName (node, "->") replace (dutName, "dut") replace ("$", "__024")  
-      pushBack("outputs", pathName, node.getWidth)
+    outputs.toList foreach { case (node, name) =>
+      pushBack("outputs", name replace (dutName, "dut"), node.getWidth)
     }
     pushBack("signals", "dut->reset", 1)
     writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(graph getPathName (dut.reset, ".")))
@@ -372,7 +370,7 @@ private[iotesters] class VerilatorBackend(
                                           _base: Int = 16,
                                           _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
 
-  val simApiInterface = new SimApiInterface(dut, graph, cmd, logger)
+  val simApiInterface = new SimApiInterface(dut, cmd, logger)
 
   def poke(signal: HasId, value: BigInt, off: Option[Int]) {
     val idx = off map (x => s"[$x]") getOrElse ""
