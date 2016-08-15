@@ -39,3 +39,9 @@ sbt
 > compile
 > test
 ```
+
+##### Using Firrtl as a commandline tool
+```
+utils/bin/firrtl -i regress/rocket.fir -o regress/rocket.v -X verilog // Compiles rocket-chip to Verilog
+utils/bin/firrtl --help // Returns usage string
+```
