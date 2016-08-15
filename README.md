@@ -12,33 +12,30 @@
 *Disclaimer*: This project is in alpha, so there is no guarantee anything works. The installation instructions should work for OSX/Linux machines.
 
 ##### Prerequisites
- 1. If not already installed, install [verilator](http://www.veripool.org/projects/verilator/wiki/Installing):
- `brew install verilator`
- 1. If not already installed, install [sbt](http://www.scala-sbt.org/):
- `brew install sbt`
- * **Note** Requires at least sbt 0.13.6
+ 1. If not already installed, install [verilator](http://www.veripool.org/projects/verilator/wiki/Installing) (Requires at least v3.880)
+ 2. If not already installed, install [sbt](http://www.scala-sbt.org/) (Requires at least v0.13.6)
 
 ##### Installation
  1. Clone the repository:
- `git clone https://github.com/ucb-bar/firrtl`
- `cd firrtl`
- 1. Compile firrtl:
- `sbt compile`
- 1. Run tests:
- `sbt test`
- 1. Build executable (utils/bin/firrtl):
- `sbt assembly`
- * **Note** You can add this directory to your path to call firrtl from other processes with th
- 1. Run regression:
- `mkdir -p build`
- `./utils/bin/firrtl -i regress/rocket.fir -o build/rocket.v -X verilog
+    ```git clone https://github.com/ucb-bar/firrtl; cd firrtl```
+ 2. Compile firrtl:```sbt compile```
+ 3. Run tests: ```sbt test```
+ 4. Build executable (`utils/bin/firrtl`): ```sbt assembly```
+    * **Note:** You can add `utils/bin/firrtl` to your path to call firrtl from other processes
+ 5. Run regression:
+```
+mkdir -p build
+./utils/bin/firrtl -i regress/rocket.fir -o build/rocket.v -X verilog
+```
 
 ##### Useful sbt Tips
- 1. Only invoke sbt once:
- `sbt`
- `> compile`
- `> test`
  1. Run a single test suite:
  `sbt "testOnly firrtlTests.UnitTests"`
- 1. Continually execute a command:
+ 2. Continually execute a command:
  `sbt ~compile`
+ 3. Only invoke sbt once:
+```
+sbt
+> compile
+> test
+```
