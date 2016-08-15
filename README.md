@@ -1,56 +1,44 @@
 # firrtl
 #### Flexible Internal Representation for RTL
 
- This repository contains the compiler for .fir files. It is in ALPHA VERSION, so many things may change in the coming months.
- There are two implementations, one in stanza and one in scala.
+ Firrtl is an intermediate representation (IR) for digital circuits designed as a platform for writing circuit-level transformations.
+ This repository consists of a collection of transformations (written in Scala) which simplify, verify, transform, or emit their input circuit.
+
+ A Firrtl compiler is constructed by chaining together these transformations, then writing the final circuit to a file.
+
+ This repository is in ALPHA VERSION, so many things may change in the coming months. 
 
 #### Installation Instructions
-*Disclaimer*: This project is in alpha, so there is no guarantee anything works.
+*Disclaimer*: This project is in alpha, so there is no guarantee anything works. The installation instructions should work for OSX/Linux machines.
 
-##### For Linux:
+##### Prerequisites
+ 1. If not already installed, install [verilator](http://www.veripool.org/projects/verilator/wiki/Installing):
+ `brew install verilator`
+ 1. If not already installed, install [sbt](http://www.scala-sbt.org/):
+ `brew install sbt`
+ * **Note** Requires at least sbt 0.13.6
+
+##### Installation
  1. Clone the repository:
  `git clone https://github.com/ucb-bar/firrtl`
- 1. Install lit (you need to have pip installed first):
- `pip install lit`
- 1. Inflate stanza (this will fail before it builds firrtl):
- `make build`
- 1. Remove first empty line in `utils/bin/stanza`, so the first line now becomes `#!/bin/bash`.
- 1. Actually build firrtl:
- `make build`
- 1. Run `make set-linux`, which links the FileCheck binary to the Linux version.
-   * **Note**: This compiled binary may not run on all platforms. You may need to build
-     Clang/LLVM from source to extract the compiled FileCheck utility.
- 1. Add `firrtl/utils/bin` to your `PATH`, so that the compiled firrtl will be
- available anywhere. This also makes FileCheck available for the tests.
+ `cd firrtl`
+ 1. Compile firrtl:
+ `sbt compile`
  1. Run tests:
- `make check`
-   * **Note**: Stanza eats a 🐣🐣🐣🐣ton of memory and running many instances
-     simultaneously (as the build script does) may stall your system due to
-     excessive paging. Setting a memory limit seems to make everything behave
-     better: `ulimit -v 3096000`
- 1. Build and test:
- `make`
+ `sbt test`
+ 1. Build executable (utils/bin/firrtl):
+ `sbt assembly`
+ * **Note** You can add this directory to your path to call firrtl from other processes with th
+ 1. Run regression:
+ `mkdir -p build`
+ `./utils/bin/firrtl -i regress/rocket.fir -o build/rocket.v -X verilog
 
-##### For Mac:
- 1. Clone the repository:
- `git clone https://github.com/ucb-bar/firrtl`
- 1. Install lit (you need to have pip installed first):
- `pip install lit`
- 1. Build firrtl:
- `make build`
- 1. Run `make set-osx`, which links the FileCheck binary to the Mac version.
- 1. Run tests:
- `make check`
- 1. Build and test:
- `make`
-
-#### Scala implementation
-The Scala FIRRTL implementation relies upon sbt 0.13.6. It uses sbt-assembly to create a fat JAR.
-Using a bash script and a symbolic link it can be used with the same command-line arguments as the stanza implementation.
-Example use:
-  1. Build the fat JAR using the makefile: `make build-scala`, or using sbt: `sbt assembly`
-    * For development, you can have sbt automatically monitor for changes and recompile: `sbt ~assembly`
-  1. Link firrtl to the Scala version: `make set-scala` (can be reverted with `make set-stanza`)
-  1. Scala firrtl can be invoked in the same way as Stanza firrtl (and the test
-  make targets should continue to work):
-  `./utils/bin/firrtl -i <input> -o <output> -X <compiler>`
+##### Useful sbt Tips
+ 1. Only invoke sbt once:
+ `sbt`
+ `> compile`
+ `> test`
+ 1. Run a single test suite:
+ `sbt "testOnly firrtlTests.UnitTests"`
+ 1. Continually execute a command:
+ `sbt ~compile`
