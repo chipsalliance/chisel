@@ -84,9 +84,8 @@ private[iotesters] class FirrtlTerpBackend(
 
 private[iotesters] object setupFirrtlTerpBackend {
   def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
-    val graph = new CircuitGraph
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (graph construct circuit).asInstanceOf[T]
+    val dut = (circuit.components find (_.name == circuit.name)).get.id.asInstanceOf[T]
     val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Dump FIRRTL for debugging

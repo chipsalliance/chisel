@@ -6,8 +6,6 @@ import chisel3.Module
 import scala.util.DynamicVariable
 
 object Driver {
-  private val graphVar = new DynamicVariable[Option[CircuitGraph]](None)
-  private[iotesters] def graph = graphVar.value
   private val backendVar = new DynamicVariable[Option[Backend]](None)
   private[iotesters] def backend = backendVar.value
 
@@ -40,10 +38,9 @@ object Driver {
     */
   def run[T <: Module] (dutGen: () => T, cmd: Seq[String])
                        (testerGen: T => PeekPokeTester[T]): Boolean = {
-    val graph = new CircuitGraph
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (graph construct circuit).asInstanceOf[T]
-    backendVar.withValue(Some(new VerilatorBackend(dut, graph, cmd))) {
+    val dut = (circuit.components find (_.name == circuit.name)).get.id.asInstanceOf[T]
+    backendVar.withValue(Some(new VerilatorBackend(dut, cmd))) {
       try {
         testerGen(dut).finish
       } catch { case e: Throwable =>
@@ -58,15 +55,13 @@ object Driver {
     run(dutGen, Seq(binary))(testerGen)
 
   def run[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
-    graphVar.withValue(Some(new CircuitGraph)) {
-      val circuit = chisel3.Driver.elaborate(dutGen)
-      val dut = (graph.get construct circuit).asInstanceOf[T]
-      try {
-        testerGen(dut).finish
-      } catch { case e: Throwable =>
-        TesterProcess.killall
-        throw e
-      }
+    val circuit = chisel3.Driver.elaborate(dutGen)
+    val dut = (circuit.components find (_.name == circuit.name)).get.id.asInstanceOf[T]
+    try {
+      testerGen(dut).finish
+    } catch { case e: Throwable =>
+      TesterProcess.killall
+      throw e
     }
   }
 }

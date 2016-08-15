@@ -20,7 +20,6 @@ private[iotesters] class TesterContext {
   var targetDir = new File("test_run_dir")
   var logFile: Option[String] = None
   var waveform: Option[String] = None
-  val graph = new CircuitGraph
 }
 
 object chiselMain {
@@ -93,7 +92,7 @@ object chiselMain {
       case x: IOException =>
         System.err.format("createFile error: %s%n", x)
     }
-    val graph = context.graph
+    val graph = new CircuitGraph
     val circuit = chisel3.Driver.elaborate(dutGen)
     val dut = (graph construct circuit).asInstanceOf[T]
     val dir = context.targetDir

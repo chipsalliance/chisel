@@ -357,13 +357,12 @@ private[iotesters] object setupVerilatorBackend {
     chisel3.Driver.verilogToCpp(circuit.name, circuit.name, dir, Seq(), new File(cppHarnessFileName)).!
     chisel3.Driver.cppToExe(circuit.name, dir).!
 
-    (dut, new VerilatorBackend(dut, graph, Seq((new File(dir, s"V${circuit.name}")).toString)))
+    (dut, new VerilatorBackend(dut, Seq((new File(dir, s"V${circuit.name}")).toString)))
   }
 }
 
 private[iotesters] class VerilatorBackend(
                                           dut: Chisel.Module, 
-                                          graph: CircuitGraph,
                                           cmd: Seq[String],
                                           verbose: Boolean = true,
                                           logger: PrintStream = System.out,
@@ -374,18 +373,18 @@ private[iotesters] class VerilatorBackend(
 
   def poke(signal: HasId, value: BigInt, off: Option[Int]) {
     val idx = off map (x => s"[$x]") getOrElse ""
-    val path = "%s%s".format(graph getPathName (signal, "."), idx)
+    val path = s"${signal.parentPathName()}.${validName(signal.signalName)}$idx"
     poke(path, value)
   }
 
   def peek(signal: HasId, off: Option[Int]) = {
     val idx = off map (x => s"[$x]") getOrElse ""
-    val path = "%s%s".format(graph getPathName (signal, "."), idx)
+    val path = s"${signal.parentPathName()}.${validName(signal.signalName)}$idx"
     peek(path)
   }
 
   def expect(signal: HasId, expected: BigInt, msg: => String) = {
-    val path = graph getPathName (signal, ".")
+    val path = s"${signal.parentPathName()}.${validName(signal.signalName)}"
     expect(path, expected, msg)
   }
 

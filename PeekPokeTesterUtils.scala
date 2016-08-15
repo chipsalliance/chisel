@@ -6,9 +6,10 @@ import chisel3._
 import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
+// TODO: FIRRTL will eventually return valid names
 private[iotesters] object validName {
-  def apply(name: String) =
-    if (firrtl.Utils.v_keywords contains name) name + "$" else name
+  def apply(name: String) = (if (firrtl.Utils.v_keywords contains name) name + "$"
+    else name) replace (".", "_") replace ("[", "_") replace ("]", "")
 }
 
 private[iotesters] object getDataNames {
