@@ -4,7 +4,7 @@ package chisel3.iotesters
 import java.io.File
 
 import chisel3.{Module, Bits}
-import chisel3.internal.HasId
+import chisel3.internal.SignalId
 
 import scala.collection.mutable.HashMap
 
@@ -22,7 +22,7 @@ private[iotesters] class FirrtlTerpBackend(
 
   val portNames = getDataNames("io", dut.io).toMap
 
-  def poke(signal: HasId, value: BigInt, off: Option[Int]): Unit = {
+  def poke(signal: SignalId, value: BigInt, off: Option[Int]): Unit = {
     signal match {
       case port: Bits =>
         val name = portNames(port)
@@ -32,7 +32,7 @@ private[iotesters] class FirrtlTerpBackend(
     }
   }
 
-  def peek(signal: HasId, off: Option[Int]): BigInt = {
+  def peek(signal: SignalId, off: Option[Int]): BigInt = {
     signal match {
       case port: Bits =>
         val name = portNames(port)
@@ -43,7 +43,7 @@ private[iotesters] class FirrtlTerpBackend(
     }
   }
 
-  def expect(signal: HasId, expected: BigInt, msg: => String) : Boolean = {
+  def expect(signal: SignalId, expected: BigInt, msg: => String) : Boolean = {
     signal match {
       case port: Bits =>
         val name = portNames(port)
@@ -85,7 +85,7 @@ private[iotesters] class FirrtlTerpBackend(
 private[iotesters] object setupFirrtlTerpBackend {
   def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (circuit.components find (_.name == circuit.name)).get.id.asInstanceOf[T]
+    val dut = getTopModule(circuit).asInstanceOf[T]
     val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Dump FIRRTL for debugging

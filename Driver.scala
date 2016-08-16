@@ -39,7 +39,7 @@ object Driver {
   def run[T <: Module] (dutGen: () => T, cmd: Seq[String])
                        (testerGen: T => PeekPokeTester[T]): Boolean = {
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (circuit.components find (_.name == circuit.name)).get.id.asInstanceOf[T]
+    val dut = getTopModule(circuit).asInstanceOf[T]
     backendVar.withValue(Some(new VerilatorBackend(dut, cmd))) {
       try {
         testerGen(dut).finish
@@ -56,7 +56,7 @@ object Driver {
 
   def run[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (circuit.components find (_.name == circuit.name)).get.id.asInstanceOf[T]
+    val dut = getTopModule(circuit).asInstanceOf[T]
     try {
       testerGen(dut).finish
     } catch { case e: Throwable =>

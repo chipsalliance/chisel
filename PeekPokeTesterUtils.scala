@@ -2,7 +2,9 @@
 
 package chisel3.iotesters
 
-import chisel3._
+import chisel3.{Module, Data, Element, Bundle, Vec}
+import chisel3.internal.SignalId
+import chisel3.internal.firrtl.Circuit
 import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
@@ -19,111 +21,45 @@ private[iotesters] object getDataNames {
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => apply(s"${name}_$i", e)}
   }
   def apply(dut: Module, separator: String = "."): Seq[(Data, String)] =
-    apply(dut.io pathName separator, dut.io)
+    apply(dut.io.pathName replace (".", separator), dut.io)
 }
 
 private[iotesters] object getPorts {
   def apply(dut: Module, separator: String = ".") =
-    getDataNames(dut, separator) partition (_._1.dir == INPUT)
+    getDataNames(dut, separator) partition (_._1.dir == chisel3.INPUT)
 }
 
-private[iotesters] class CircuitGraph {
-  import internal.HasId
-  import internal.firrtl._
-  private val _modParent = HashMap[Module, Module]()
-  private val _nodeParent = HashMap[HasId, Module]()
-  private val _modToName = HashMap[Module, String]()
-  private val _nodeToName = HashMap[HasId, String]()
-  private val _nodes = ArrayBuffer[HasId]()
+private[iotesters] object flatten {
+  def apply(data: Data): Seq[Element] = data match {
+    case b: Element => Seq(b)
+    case b: Bundle => b.elements.toSeq flatMap (x => apply(x._2))
+    case v: Vec[_] => v.toSeq flatMap apply
+  }
+}
 
-  private def construct(modN: String, components: Seq[Component]): Module = {
-    val component = (components find (_.name == modN)).get
-    val mod = component.id
+private[iotesters] object getTopModule {
+  def apply(circuit: Circuit) = {
+    (circuit.components find (_.name == circuit.name)).get.id
+  }
+}
 
-    _nodeParent(mod.reset) = mod
-    _nodeToName(mod.reset) = validName("reset")
-
-    getDataNames("io", mod.io) foreach {case (port, name) =>
-      // _nodes += port
-      _nodeParent(port) = mod
-      _nodeToName(port) = validName(name)
-    }
-
-    component.commands foreach {
-      case inst: DefInstance =>
-        val child = construct(validName(inst.id.name), components)
-        _modParent(child) = mod
-        _modToName(child) = inst.name
-      case reg: DefReg if reg.name.slice(0, 2) != "T_" =>
-        getDataNames(reg.name, reg.id) foreach { case (data, name) =>
-          _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-        }
-      case reg: DefRegInit if reg.name.slice(0, 2) != "T_" =>
-        getDataNames(reg.name, reg.id) foreach { case (data, name) =>
-          _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-        }
-      case wire: DefWire if wire.name.slice(0, 2) != "T_" =>
-        getDataNames(wire.name, wire.id) foreach { case (data, name) =>
-          // _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-        }
-      case prim: DefPrim[_] if prim.name.slice(0, 2) != "T_" =>
-        getDataNames(prim.name, prim.id) foreach { case (data, name) =>
-          // _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-        }
-      case mem: DefMemory if mem.name.slice(0, 2) != "T_" => mem.t match {
-        case _: Bits =>
-          _nodes += mem.id
-          _nodeParent(mem.id) = mod
-          _nodeToName(mem.id) = validName(mem.name)
-        case _ => // Do not supoort aggregate type memories
+/* TODO: Chisel should provide nodes of the circuit? */
+private[iotesters] object getChiselNodes {
+  import chisel3.internal.firrtl._
+  def apply(circuit: Circuit): Seq[SignalId] = {
+    circuit.components flatMap (_.commands flatMap {
+      case x: DefReg => flatten(x.id)
+      case x: DefRegInit => flatten(x.id)
+      case mem: DefMemory => mem.t match {
+        case _: Element => Seq(mem.id)
+        case _ => Nil // Do not supoort aggregate type memories
       }
-      case mem: DefSeqMemory if mem.name.slice(0, 2) != "T_" => mem.t match {
-        case _: Bits =>
-          _nodes += mem.id
-          _nodeParent(mem.id) = mod
-          _nodeToName(mem.id) = validName(mem.name)
-        case _ => // Do not supoort aggregate type memories
+      case mem: DefSeqMemory => mem.t match {
+        case _: Element => Seq(mem.id)
+        case _ => Nil // Do not supoort aggregate type memories
       }
-      case _ =>
-    }
-    mod
-  }
-
-  def construct(circuit: Circuit): Module =
-    construct(circuit.name, circuit.components)
-  
-  def nodes = _nodes.toList
-
-  def getName(node: HasId) = _nodeToName(node)
-
-  def getPathName(mod: Module, separator: String): String = {
-    val modName = _modToName getOrElse (mod, mod.name)
-    (_modParent get mod) match {
-      case None    => modName
-      case Some(p) => s"${getPathName(p, separator)}$separator$modName"
-    }
-  }
-
-  def getPathName(node: HasId, separator: String): String = {
-    (_nodeParent get node) match {
-      case None    => getName(node)
-      case Some(p) => s"${getPathName(p, separator)}$separator${getName(node)}"
-    }
-  }
-
-  def getParentPathName(node: HasId, separator: String): String = {
-    (_nodeParent get node) match {
-      case None    => ""
-      case Some(p) => getPathName(p, separator)
-    }
+      case _ => Nil
+    }) filterNot (x => (x.signalName slice (0, 2)) == "T_") 
   }
 }
 

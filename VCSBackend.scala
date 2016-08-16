@@ -1,8 +1,6 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import chisel3.internal.HasId
-
 import scala.collection.mutable.HashMap
 import scala.util.Random
 import java.io.{File, Writer, FileWriter, PrintStream, IOException}
@@ -117,7 +115,7 @@ object genVCSVerilogHarness {
 private[iotesters] object setupVCSBackend {
   def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (circuit.components find (_.name == circuit.name)).get.id.asInstanceOf[T]
+    val dut = getTopModule(circuit).asInstanceOf[T]
     val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Generate CHIRRTL
