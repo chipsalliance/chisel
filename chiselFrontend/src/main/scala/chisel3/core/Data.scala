@@ -56,6 +56,7 @@ abstract class Data(dirArg: Direction) extends HasId {
   private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
   private[core] def cloneTypeWidth(width: Width): this.type
   private[chisel3] def toType: String
+  private[core] def width: Width
 
   def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = this badConnect that
 
@@ -66,8 +67,13 @@ abstract class Data(dirArg: Direction) extends HasId {
   def litValue(): BigInt = litArg.get.num
   def isLit(): Boolean = litArg.isDefined
 
-  def width: Width
+  /** Returns the width, in bits, if currently known.
+    * @throws java.util.NoSuchElementException if the width is not known. */
   final def getWidth: Int = width.get
+  /** Returns whether the width is currently known. */
+  final def isWidthKnown: Boolean = width.known
+  /** Returns Some(width) if the width is known, else None. */
+  final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
   // While this being in the Data API doesn't really make sense (should be in
   // Aggregate, right?) this is because of an implementation limitation:

@@ -14,7 +14,7 @@ import chisel3.internal.firrtl.PrimOp._
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
   */
-abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
+abstract class Element(dirArg: Direction, private[core] val width: Width) extends Data(dirArg)
 
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.

@@ -29,7 +29,7 @@ object Fill {
     n match {
       case 0 => UInt(width=0)
       case 1 => x
-      case _ if x.width.known && x.getWidth == 1 =>
+      case _ if x.isWidthKnown && x.getWidth == 1 =>
         Mux(x.toBool, UInt((BigInt(1) << n) - 1, n), UInt(0, n))
       case _ if n > 1 =>
         val p2 = Array.ofDim[UInt](log2Up(n + 1))
