@@ -112,6 +112,8 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
 
+  def emit[T <: Module](ir: Circuit): String = Emitter.emit(ir)
+
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
