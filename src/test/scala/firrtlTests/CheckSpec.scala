@@ -5,7 +5,7 @@ import org.scalatest._
 import org.scalatest.prop._
 import firrtl.Parser
 import firrtl.ir.Circuit
-import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassExceptions}
+import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassExceptions,InferWidths,CheckWidths,ResolveGenders,CheckGenders}
 
 class CheckSpec extends FlatSpec with Matchers {
   "Connecting bundles of different types" should "throw an exception" in {
@@ -140,6 +140,47 @@ class CheckSpec extends FlatSpec with Matchers {
       (c: Circuit, p: Pass) => p.run(c)
     }
 
+  }
+
+  "Clock Types" should "be connectable" in {
+    val passes = Seq(
+      ToWorkingIR,
+      CheckHighForm,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes,
+      ResolveGenders,
+      CheckGenders,
+      InferWidths,
+      CheckWidths)
+    val input =
+      """
+          |circuit TheRealTop : 
+          |    
+          |  module Top : 
+          |    output io : {flip debug_clk : Clock}
+          |        
+          |  extmodule BlackBoxTop : 
+          |    input jtag : {TCK : Clock}
+          | 
+          |  module TheRealTop : 
+          |    input clk : Clock
+          |    input reset : UInt<1>
+          |    output io : {flip jtag : {TCK : Clock}}
+          |    
+          |    io is invalid
+          |    inst sub of Top
+          |    sub.io is invalid
+          |    inst bb of BlackBoxTop
+          |    bb.jtag is invalid
+          |    bb.jtag <- io.jtag 
+          | 
+          |    sub.io.debug_clk <= io.jtag.TCK 
+          |
+          |""".stripMargin
+    passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+      (c: Circuit, p: Pass) => p.run(c)
+    }
   }
 
 }
