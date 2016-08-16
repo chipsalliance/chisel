@@ -59,28 +59,17 @@ private[chisel3] class IdGen {
   * currently, the node's name, the full path name, and references to its parent Module and component.
   * These are only valid once the design has been elaborated, and should not be used during its construction.
   */
-trait SignalID {
-  def signalName(component: Component): String
-  def signalPathName(component: Component, separator: String = "."): String
-  def signalParent: Module
-  def signalComponent: Option[Component]
+trait SignalId {
+  def signalName: String
+  def pathName: String
+  def parentPathName: String
+  def parentModName: String
 }
 
-private[chisel3] trait HasId extends SignalID {
+private[chisel3] trait HasId extends SignalId {
   private[chisel3] def _onModuleClose {} // scalastyle:ignore method.name
   private[chisel3] val _parent = Builder.dynamicContext.currentModule
   _parent.foreach(_.addId(this))
-
-  // Implementation of public methods.
-  override def signalParent = _parent.get
-  override def signalName(component: Component) = _ref.get.fullName(component)
-  override def signalPathName(component: Component, separator: String = "_"): String = {
-    _parent match {
-      case Some(p) => p.signalPathName(component, separator) + separator + signalName(component)
-      case None => signalName(component)
-    }
-  }
-  override def signalComponent: Option[Component] = None
 
   private[chisel3] val _id = Builder.idGen.next
   override def hashCode: Int = _id.toInt
@@ -117,6 +106,27 @@ private[chisel3] trait HasId extends SignalID {
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
+
+  // Implementation of public methods.
+  def signalName = _parent match {
+    case Some(p) => p._component match {
+      case Some(c) => getRef fullName c
+      case None => throwException("signalName/pathName should be called after circuit elaboration")
+    }
+    case None => throwException("this cannot happen")
+  }
+  def pathName = _parent match {
+    case None => signalName
+    case Some(p) => s"${p.pathName}.$signalName"
+  }
+  def parentPathName = _parent match {
+    case Some(p) => p.pathName
+    case None => throwException(s"$signalName doesn't have a parent")
+  }
+  def parentModName = _parent match {
+    case Some(p) => p.modName
+    case None => throwException(s"$signalName doesn't have a parent")
+  }
 }
 
 private[chisel3] class DynamicContext {
