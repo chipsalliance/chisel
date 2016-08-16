@@ -114,7 +114,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
     val input_values = Vec(
       test_actions.map { step =>
         default_value = step.input_map.getOrElse(input_port, default_value)
-        UInt(default_value, input_port.width)
+        UInt(default_value, input_port.getWidth)
       }
     )
     input_port := input_values(counter.value)
