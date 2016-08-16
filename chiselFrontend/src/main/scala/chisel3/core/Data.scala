@@ -117,8 +117,9 @@ abstract class Data extends HasId {
   }
   private[chisel3] def lref: Node = Node(this)
   private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
-  private[chisel3] def cloneTypeWidth(width: Width): this.type
+  private[core] def cloneTypeWidth(width: Width): this.type
   private[chisel3] def toType: String
+  private[core] def width: Width
 
   def cloneType: this.type
   def chiselCloneType: this.type = {
@@ -136,8 +137,13 @@ abstract class Data extends HasId {
   def litValue(): BigInt = litArg.get.num
   def isLit(): Boolean = litArg.isDefined
 
-  private[core] def width: Width
+  /** Returns the width, in bits, if currently known.
+    * @throws java.util.NoSuchElementException if the width is not known. */
   final def getWidth: Int = width.get
+  /** Returns whether the width is currently known. */
+  final def isWidthKnown: Boolean = width.known
+  /** Returns Some(width) if the width is known, else None. */
+  final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
   // While this being in the Data API doesn't really make sense (should be in
   // Aggregate, right?) this is because of an implementation limitation:
@@ -241,7 +247,7 @@ object Clock {
 sealed class Clock extends Element(Width(1)) {
   def cloneType: this.type = Clock().asInstanceOf[this.type]
   private[chisel3] override def flatten: IndexedSeq[Bits] = IndexedSeq()
-  private[chisel3] def cloneTypeWidth(width: Width): this.type = cloneType
+  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   private[chisel3] def toType = "Clock"
 
   override def connect (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {

@@ -15,8 +15,8 @@ import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransfo
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] def cloneTypeWidth(width: Width): this.type = cloneType
-  private[chisel3] def width: Width = flatten.map(_.width).reduce(_ + _)
+  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
+  private[core] def width: Width = flatten.map(_.width).reduce(_ + _)
 }
 
 object Vec {
@@ -388,5 +388,6 @@ class Bundle extends Aggregate {
 }
 
 private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits", "chiselCloneType")
+  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits",
+                      "widthOption", "chiselCloneType")
 }
