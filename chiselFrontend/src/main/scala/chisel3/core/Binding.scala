@@ -1,5 +1,7 @@
 package chisel3.core
 
+import chisel3.internal.Builder.compileOptions
+
 /**
  * The purpose of a Binding is to indicate what type of hardware 'entity' a
  * specific Data's leaf Elements is actually bound to. All Data starts as being
@@ -88,6 +90,8 @@ object Binding {
         case unbound @ UnboundBinding(_) => {
           element.binding = binder(unbound)
         }
+          // If autoIOWrap is enabled and we're rebinding a PortBinding, just ignore the rebinding.
+        case portBound @ PortBinding(_, _) if (compileOptions.autoIOWrap && binder.isInstanceOf[PortBinder]) =>
         case binding => throw AlreadyBoundException(binding.toString)
       }
     )
@@ -113,15 +117,24 @@ object Binding {
 
   // Excepts if any root element is unbound and thus not on the hardware graph
   def checkSynthesizable(target: Data, error_prelude: String): Unit = {
-    // This is called is we support autoIOWrap
-    def elementOfIO(element: Data): Boolean = {
+    // This is called if we support autoIOWrap
+    def elementOfIO(element: Element): Boolean = {
       element._parent match {
         case None => false
         case Some(x: Module) => {
-          // io.flatten eliminates Clock elements, so we need to use io.allElements
-          val ports = x.io.allElements
-          val isIOElement = ports.contains(element) || element == x.clock || element == x.reset
-          isIOElement
+          // Have we defined the IO ports for this module? If not, do so now.
+          if (!x.ioDefined) {
+            x.computePorts
+            element.binding match {
+              case SynthesizableBinding() => true
+              case _ => false
+            }
+          } else {
+            // io.flatten eliminates Clock elements, so we need to use io.allElements
+            val ports = x.io.allElements
+            val isIOElement = ports.contains(element) || element == x.clock || element == x.reset
+            isIOElement
+          }
         }
       }
     }
@@ -132,7 +145,7 @@ object Binding {
         case binding =>
           // The following kludge is an attempt to provide backward compatibility
           // It should be done at at higher level.
-          if (!(autoIOWrap && elementOfIO(element)))
+          if (!(compileOptions.autoIOWrap && elementOfIO(element)))
             throw NotSynthesizableException
           else
             Binding.bind(element, PortBinder(element._parent.get), "Error: IO")
@@ -142,8 +155,6 @@ object Binding {
       case BindingException(message) => throw BindingException(s"$error_prelude$message")
     }
   }
-  // This should be configure by options in Driver.
-  private[chisel3] var autoIOWrap = true
 }
 
 // Location refers to 'where' in the Module hierarchy this lives
@@ -196,5 +207,5 @@ case class PortBinding(enclosure: Module, direction: Option[Direction])
 case class RegBinding(enclosure: Module)
     extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding
 
-case class WireBinding(enclosure: Module)
-    extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding
+case class WireBinding(enclosure: Module, direction: Option[Direction])
+    extends SynthesizableBinding with ConstrainedBinding

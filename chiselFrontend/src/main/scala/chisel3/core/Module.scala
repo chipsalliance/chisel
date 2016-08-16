@@ -4,13 +4,11 @@ package chisel3.core
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
-
 import chisel3.internal._
-import chisel3.internal.Builder.pushCommand
-import chisel3.internal.Builder.dynamicContext
+import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.firrtl.{Command, Component, DefInstance, DefInvalid, ModuleIO}
-import chisel3.internal.sourceinfo.{SourceInfo, InstTransform, UnlocatableSourceInfo}
+import chisel3.internal.firrtl.{Command => _, _}
+import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -65,7 +63,7 @@ extends HasId {
     iodef
   }
 
-  private[this] var ioDefined: Boolean = false
+  private[core] var ioDefined: Boolean = false
 
   /**
    * This must wrap the datatype used to set the io field of any Module.
@@ -115,6 +113,10 @@ extends HasId {
 
   private[core] def computePorts: Seq[firrtl.Port] =
     for((name, port) <- ports) yield {
+      // If we're auto-wrapping IO definitions, do so now.
+      if (compileOptions.autoIOWrap && name == "io" && !ioDefined) {
+        IO(port)
+      }
       // Port definitions need to know input or output at top-level.
       // By FIRRTL semantics, 'flipped' becomes an Input
       val direction = if(Data.isFlipped(port)) Direction.Input else Direction.Output

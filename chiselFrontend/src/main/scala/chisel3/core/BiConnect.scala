@@ -166,8 +166,28 @@ object BiConnect {
         case (Some(Output), None)         => issueConnectR2L(left, right)
         case (None,         Some(Input))  => issueConnectR2L(left, right)
 
-        case (Some(Input),  Some(Input))  => throw BothDriversException
-        case (Some(Output), Some(Output)) => throw NeitherDriverException
+        case (Some(Input),  Some(Input))  => {
+          if (compileOptions.portDeterminesDirection)
+          (left.binding, right.binding) match {
+            case (PortBinding(_, _), PortBinding(_, _)) => throw BothDriversException
+            case (PortBinding(_, _), _) => issueConnectL2R(left, right)
+            case (_, PortBinding(_, _)) => issueConnectR2L(left, right)
+            case _ => throw BothDriversException
+          } else {
+            throw BothDriversException
+          }
+        }
+        case (Some(Output), Some(Output)) => {
+          if (compileOptions.portDeterminesDirection)
+            (left.binding, right.binding) match {
+              case (PortBinding(_, _), PortBinding(_, _)) => throw BothDriversException
+              case (PortBinding(_, _), _) => issueConnectR2L(left, right)
+              case (_, PortBinding(_, _)) => issueConnectL2R(left, right)
+              case _ => throw BothDriversException
+            } else {
+            throw BothDriversException
+          }
+        }
         case (None,         None)         => throw UnknownDriverException
       }
     }

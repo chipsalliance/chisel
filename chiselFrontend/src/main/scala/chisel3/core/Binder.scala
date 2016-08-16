@@ -58,7 +58,8 @@ case class RegBinder(enclosure: Module) extends Binder[RegBinding] {
   def apply(in: UnboundBinding) = RegBinding(enclosure)
 }
 
+// Notice how WireBinder uses the direction of the UnboundNode
 case class WireBinder(enclosure: Module) extends Binder[WireBinding] {
-  def apply(in: UnboundBinding) = WireBinding(enclosure)
+  def apply(in: UnboundBinding) = WireBinding(enclosure, in.direction)
 }
 

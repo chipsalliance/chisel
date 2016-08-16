@@ -118,6 +118,7 @@ object MonoConnect {
         //    CURRENT MOD   CURRENT MOD
         case (Some(Output), _) => issueConnect(sink, source)
         case (None,         _) => issueConnect(sink, source)
+        case (_,         None) if (compileOptions.internalConnectionToInputOk) => issueConnect(sink, source)
         case (Some(Input),  _) => throw UnwritableSinkException
       }
     }
@@ -134,6 +135,7 @@ object MonoConnect {
         case (Some(Output), Some(Output)) => issueConnect(sink, source)
         case (Some(Output), Some(Input))  => issueConnect(sink, source)
         case (_,            None) => throw UnreadableSourceException
+        case (Some(Input),  Some(Output)) if (compileOptions.tryConnectionsSwapped) => issueConnect(source, sink)
         case (Some(Input),  _)    => throw UnwritableSinkException
       }
     }
