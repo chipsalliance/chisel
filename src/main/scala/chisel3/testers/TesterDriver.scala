@@ -22,7 +22,8 @@ object TesterDriver extends BackendCompilationUtilities {
 
   /** For use with modules that should successfully be elaborated by the
     * frontend, and which can be turned into executables with assertions. */
-  def execute(t: () => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
+  def execute(t: () => BasicTester, additionalVResources: Seq[String] = Seq(),
+      vcs: Boolean = false): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(finishWrapper(t))
 
@@ -36,9 +37,10 @@ object TesterDriver extends BackendCompilationUtilities {
     // For now, dump the IR out to a file
     Driver.dumpFirrtl(circuit, Some(new File(fname.toString + ".fir")))
 
-    // Copy CPP harness and other Verilog sources from resources into files
-    val cppHarness =  new File(path, "top.cpp")
-    copyResourceToFile("/top.cpp", cppHarness)
+    // Copy harness and other Verilog sources from resources into files
+    val harnessFileName = if (vcs) "top.v" else "top.cpp"
+    val harness = new File(path, harnessFileName)
+    copyResourceToFile(s"/$harnessFileName", harness)
     val additionalVFiles = additionalVResources.map((name: String) => {
       val mangledResourceName = name.replace("/", "_")
       val out = new File(path, mangledResourceName)
@@ -47,9 +49,11 @@ object TesterDriver extends BackendCompilationUtilities {
     })
 
     // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
-    if ((firrtlToVerilog(target, path) #&&
-        verilogToCpp(target, target, path, additionalVFiles, cppHarness) #&&
-        cppToExe(target, path)).! == 0) {
+    val exitcode = (firrtlToVerilog(target, path) #&& (if (vcs)
+       verilogToVCS(target, target, path, additionalVFiles, harness) else
+       verilogToCpp(target, target, path, additionalVFiles, harness) #&&
+       cppToExe(target, path))).!
+    if (exitcode == 0) {
       executeExpectingSuccess(target, path)
     } else {
       false
