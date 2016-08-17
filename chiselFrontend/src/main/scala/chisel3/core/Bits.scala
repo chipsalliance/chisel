@@ -900,27 +900,21 @@ object FixedPoint {
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
   def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): FixedPoint =
-    if(width == -1) apply(value, Width(), BinaryPoint(binaryPoint))
-    else apply(value, Width(width), BinaryPoint(binaryPoint))
-
-//  def apply(value: BigInt, dummy: PrivateType = PrivateObject, width: Int = -1, binaryPoint: Int = 0): FixedPoint =
-//    if(width == -1) apply(value, Width(), BinaryPoint(binaryPoint))
-//    else apply(value, Width(width), BinaryPoint(binaryPoint))
-//
+    if(width == -1) {
+      apply(value, Width(), BinaryPoint(binaryPoint))
+    }
+    else {
+      apply(value, Width(width), BinaryPoint(binaryPoint))
+    }
   /** Create an FixedPoint literal with inferred width from Double.
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
   def fromDouble(value: Double, dummy: PrivateType = PrivateObject,
                  width: Int = -1, binaryPoint: Int = 0): FixedPoint = {
     fromBigInt(
-      java.math.BigDecimal.valueOf(value)
-        .movePointLeft(binaryPoint)
-        .setScale(0, BigDecimal.RoundingMode.HALF_UP)
-        .toBigInt())
+      toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
+    )
   }
-
-//  def literal(value: Double, dummy: PrivateType = PrivateObject, width: Int = -1, binaryPoint: Int = 0): FixedPoint =
-//    BigDecimal.valueOf(value).movePointLeft(binaryPoint).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt()
 
   /** Create an FixedPoint type with specified width and binary position. */
   def apply(width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(NO_DIR, width, binaryPoint)
@@ -930,4 +924,31 @@ object FixedPoint {
     val lit = FPLit(value, width, binaryPoint)
     new FixedPoint(NO_DIR, lit.width, lit.binaryPoint, Some(lit))
   }
+
+  /**
+    * How to create a bigint from a double with a specific binaryPoint
+    * @param x               a double value
+    * @param binaryPoint     a binaryPoint that you would like to use
+    * @return
+    */
+  def toBigInt(x: Double, binaryPoint    : Int): BigInt = {
+    val multiplier = math.pow(2,binaryPoint    )
+    val result = BigInt(math.round(x * multiplier))
+    // println(s"toBigInt:x = $x, width = $binaryPoint     multiplier $multiplier result $result")
+    result
+  }
+
+  /**
+    * converts a bigInt with the given binaryPoint into the double representation
+    * @param i            a bigint
+    * @param binaryPoint  the implied binaryPoint of @i
+    * @return
+    */
+  def toDouble(i: BigInt, binaryPoint    : Int): Double = {
+    val multiplier = math.pow(2,binaryPoint    )
+    val result = i.toDouble / multiplier
+    // println(s"toDouble:i = $i, fw = $binaryPoint    , multiplier = $multiplier, result $result")
+    result
+  }
+
 }
