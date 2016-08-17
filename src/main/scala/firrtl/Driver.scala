@@ -35,16 +35,55 @@ import Utils._
 import Parser.{InfoMode, IgnoreInfo, UseInfo, GenInfo, AppendInfo}
 
 object Driver {
-  private val usage = """
-Usage: sbt "run-main firrtl.Driver -i <input_file> -o <output_file> -X <compiler>"
-       firrtl -i <input_file> -o <output_file> -X <compiler> [options]
-Options:
+  /**
+   * Implements the default Firrtl compilers and an inlining pass.
+   *
+   * Arguments specify the compiler, input file, output file, and
+   * optionally the module/instances to inline.
+   */
+  def main(args: Array[String]) = {
+    val usage = """
+Usage: firrtl -i <input_file> -o <output_file> -X <compiler> [options] 
+       sbt "run-main firrtl.Driver -i <input_file> -o <output_file> -X <compiler> [options]"
+
+Required Arguments:
+  -i <filename>         Specify the input *.fir file
+  -o <filename>         Specify the output file
   -X <compiler>         Specify the target compiler
                         Currently supported: high low verilog
-  --info-mode <mode>    Specify Info Mode
-                        Supported modes: ignore, use, gen, append
-  --inferRW <circuit>   Enable readwrite port inference for the target circuit
-  """
+
+Optional Arguments:
+  --info-mode <mode>             Specify Info Mode
+                                 Supported modes: ignore, use, gen, append
+  --inferRW <circuit>            Enable readwrite port inference for the target circuit
+  --inline <module>|<instance>   Inline a module (e.g. "MyModule") or instance (e.g. "MyModule.myinstance")
+  [--help|-h]                    Print usage string
+"""
+
+    def handleInlineOption(value: String): Annotation =
+      value.split('.') match {
+        case Array(circuit) =>
+          passes.InlineAnnotation(CircuitName(circuit), TransID(0))
+        case Array(circuit, module) =>
+          passes.InlineAnnotation(ModuleName(module, CircuitName(circuit)), TransID(0))
+        case Array(circuit, module, inst) =>
+          passes.InlineAnnotation((ComponentName(inst,ModuleName(module,CircuitName(circuit)))), TransID(0))
+        case _ => throw new Exception(s"Bad inline instance/module name: $value" + usage)
+      }
+
+    def handleInferRWOption(value: String) = 
+      passes.InferReadWriteAnnotation(value, TransID(-1))
+
+    run(args: Array[String],
+      Map( "high" -> new HighFirrtlCompiler(),
+        "low" -> new LowFirrtlCompiler(),
+        "verilog" -> new VerilogCompiler()),
+      Map("--inline" -> handleInlineOption _,
+          "--inferRW" -> handleInferRWOption _),
+      usage
+    )
+  }
+
 
   // Compiles circuit. First parses a circuit from an input file,
   //  executes all compiler passes, and writes result to an output
@@ -62,45 +101,6 @@ Options:
     val outputFile = new java.io.PrintWriter(output)
     outputFile.write(outputBuffer.toString)
     outputFile.close()
-  }
-
-  /**
-   * Implements the default Firrtl compilers and an inlining pass.
-   *
-   * Arguments specify the compiler, input file, output file, and
-   * optionally the module/instances to inline.
-   */
-  def main(args: Array[String]) = {
-    val usage = """
-    Usage: sbt "run-main firrtl.google.Driver -i <input_file> -o <output_file> -X <compiler> [--inline [<module_name>|<module_name>.<instance_name>]]"
-           firrtl -i <input_file> -o <output_file> -X <compiler> [--inline [<module_name>|<module_name>.<instance_name>]]
-    Options:
-          -X <compiler>    Specify the target compiler
-                           Currently supported: high low verilog
-    """
-
-    def handleInlineOption(value: String): Annotation =
-      value.split('.') match {
-        case Array(circuit) =>
-          passes.InlineAnnotation(CircuitName(circuit), TransID(0))
-        case Array(circuit, module) =>
-          passes.InlineAnnotation(ModuleName(module, CircuitName(circuit)), TransID(0))
-        case Array(circuit, module, inst) =>
-          passes.InlineAnnotation((ComponentName(inst,ModuleName(module,CircuitName(circuit)))), TransID(0))
-        case _ => throw new Exception(s"Bad inline instance/module name: $value")
-      }
-
-    def handleInferRWOption(value: String) = 
-      passes.InferReadWriteAnnotation(value, TransID(-1))
-
-    run(args: Array[String],
-      Map( "high" -> new HighFirrtlCompiler(),
-        "low" -> new LowFirrtlCompiler(),
-        "verilog" -> new VerilogCompiler()),
-      Map("--inline" -> handleInlineOption _,
-          "--inferRW" -> handleInferRWOption _),
-      usage
-    )
   }
 
   /**
@@ -147,7 +147,7 @@ Options:
           nextOption(map, tail)
         case ("-h" | "--help") :: tail => { println(usage); sys.exit(0) }
         case option :: tail =>
-          throw new Exception("Unknown option " + option)
+          throw new Exception("Unknown option " + option + usage)
       }
     }
 
@@ -163,7 +163,7 @@ Options:
       case Some("ignore") => IgnoreInfo
       case Some("gen") => GenInfo(input)
       case Some("append") => AppendInfo(input)
-      case Some(other) => throw new Exception("Unknown info mode option: " + other)
+      case Some(other) => throw new Exception("Unknown info mode option: " + other + usage)
     }
 
     // Execute selected compiler - error if not recognized compiler
@@ -171,9 +171,9 @@ Options:
       case Some(name) =>
         compilers.get(name) match {
           case Some(compiler) => compile(input, output, compiler, infoMode, new AnnotationMap(annotations.toSeq))
-          case None => throw new Exception("Unknown compiler option: " + name)
+          case None => throw new Exception("Unknown compiler option: " + name + usage)
         }
-      case None => throw new Exception("No specified compiler option.")
+      case None => throw new Exception("No specified compiler option." + usage)
     }
   }
 }
