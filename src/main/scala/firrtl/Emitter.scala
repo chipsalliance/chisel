@@ -559,8 +559,8 @@ class VerilogEmitter extends Emitter {
                for (rw <- s.readwriters) {
                   val wmode = mem_exp(rw,"wmode")
                   val rdata = mem_exp(rw,"rdata")
-                  val data = mem_exp(rw,"data")
-                  val mask = mem_exp(rw,"mask")
+                  val wdata = mem_exp(rw,"wdata")
+                  val wmask = mem_exp(rw,"wmask")
                   val addr = mem_exp(rw,"addr")
                   val en = mem_exp(rw,"en")
                   //Ports should share an always@posedge, so can't have intermediary wire
@@ -568,16 +568,16 @@ class VerilogEmitter extends Emitter {
                   
                   declare("wire",LowerTypes.loweredName(wmode),tpe(wmode))
                   declare("wire",LowerTypes.loweredName(rdata),tpe(rdata))
-                  declare("wire",LowerTypes.loweredName(data),tpe(data))
-                  declare("wire",LowerTypes.loweredName(mask),tpe(mask))
+                  declare("wire",LowerTypes.loweredName(wdata),tpe(wdata))
+                  declare("wire",LowerTypes.loweredName(wmask),tpe(wmask))
                   declare("wire",LowerTypes.loweredName(addr),tpe(addr))
                   declare("wire",LowerTypes.loweredName(en),tpe(en))
    
                   //; Assigned to lowered wires of each
                   assign(addr,netlist(addr))
-                  assign(data,netlist(data))
+                  assign(wdata,netlist(wdata))
                   assign(addr,netlist(addr))
-                  assign(mask,netlist(mask))
+                  assign(wmask,netlist(wmask))
                   assign(en,netlist(en))
                   assign(wmode,netlist(wmode))
    
@@ -586,8 +586,8 @@ class VerilogEmitter extends Emitter {
                   val waddrx = delay(addr,s.writeLatency - 1,clk)
                   val enx = delay(en,s.writeLatency - 1,clk)
                   val rmodx = delay(wmode,s.writeLatency - 1,clk)
-                  val datax = delay(data,s.writeLatency - 1,clk)
-                  val maskx = delay(mask,s.writeLatency - 1,clk)
+                  val wdatax = delay(wdata,s.writeLatency - 1,clk)
+                  val wmaskx = delay(wmask,s.writeLatency - 1,clk)
    
                   //; Write 
    
@@ -596,11 +596,11 @@ class VerilogEmitter extends Emitter {
                   val wmem_port = WSubAccess(mem,waddrx,s.dataType,UNKNOWNGENDER)
 
                   val tempName = namespace.newTemp
-                  val tempExp = AND(enx,maskx)
+                  val tempExp = AND(enx,wmaskx)
                   declare("wire", tempName, tpe(tempExp))
                   val tempWRef = wref(tempName, tpe(tempExp))
                   assign(tempWRef, tempExp)
-                  update(wmem_port,datax,clk,AND(tempWRef,wmode))
+                  update(wmem_port,wdatax,clk,AND(tempWRef,wmode))
                }
             }
             case (s:Block) => s map (build_streams)

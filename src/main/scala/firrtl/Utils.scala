@@ -578,9 +578,11 @@ object Utils extends LazyLogging {
           val mask = Field("mask",Default,create_mask(s.dataType))
           val wmode = Field("wmode",Default,UIntType(IntWidth(1)))
           val rdata = Field("rdata",Flip,s.dataType)
+          val wdata = Field("wdata",Default,s.dataType)
+          val wmask = Field("wmask",Default,create_mask(s.dataType))
           val read_type = BundleType(Seq(rev_data,addr,en,clk))
           val write_type = BundleType(Seq(def_data,mask,addr,en,clk))
-          val readwrite_type = BundleType(Seq(wmode,rdata,def_data,mask,addr,en,clk))
+          val readwrite_type = BundleType(Seq(wmode,rdata,wdata,wmask,addr,en,clk))
 
           val mem_fields = ArrayBuffer[Field]()
           s.readers.foreach {x => mem_fields += Field(x,Flip,read_type)}

@@ -1147,7 +1147,7 @@ object RemoveCHIRRTL extends Pass {
                   set_poison(rws,"addr")
                   set_wmode(rws,"wmode")
                   set_enable(rws,"en")
-                  set_write(rws,"data","mask")
+                  set_write(rws,"wdata","wmask")
                   val read_l = if (s.seq) 1 else 0
                   val mem = DefMemory(s.info,s.name,s.tpe,s.size,1,read_l,rds.map(_.name),wrs.map(_.name),rws.map(_.name))
                   Block(Seq(mem,Block(stmts)))
@@ -1160,11 +1160,11 @@ object RemoveCHIRRTL extends Pass {
                   val masks = ArrayBuffer[String]()
                   s.direction match {
                      case MReadWrite => {
-                        repl(s.name) = DataRef(SubField(Reference(s.mem,ut),s.name,ut),"rdata","data","mask",true)
+                        repl(s.name) = DataRef(SubField(Reference(s.mem,ut),s.name,ut),"rdata","wdata","wmask",true)
                         addrs += "addr"
                         clks += "clk"
                         ens += "en"
-                        masks += "mask"
+                        masks += "wmask"
                      }
                      case MWrite => {
                         repl(s.name) = DataRef(SubField(Reference(s.mem,ut),s.name,ut),"data","data","mask",false)

@@ -28,14 +28,14 @@ circuit MemTester :
     m.rw.clk <= clk
     m.rw.addr <= addr
     m.rw.wmode <= wmode
-    m.rw.data <= n
-    m.rw.mask <= UInt(1)
+    m.rw.wdata <= n
+    m.rw.wmask <= UInt(1)
     m.rw.en <= UInt(1)
 
     when not(reset) :
       when eq(wmode, UInt(0)) :
         when neq(m.rw.rdata, n) :
-          printf(clk, UInt(1), "Assertion failed! m.rw.data has the wrong value!\n")
+          printf(clk, UInt(1), "Assertion failed! m.rw.rdata has the wrong value!\n")
           stop(clk, UInt(1), 1)
 
   module MemTester :

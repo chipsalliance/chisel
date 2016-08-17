@@ -139,8 +139,8 @@ object InferReadWritePass extends Pass {
             repl(s"${mem.name}.$w.en")   = WSubField(rw_exp, "wmode", bt, FEMALE)
             repl(s"${mem.name}.$w.clk")  = EmptyExpression
             repl(s"${mem.name}.$w.addr") = EmptyExpression
-            repl(s"${mem.name}.$w.data") = WSubField(rw_exp, "data", mem.dataType, FEMALE)
-            repl(s"${mem.name}.$w.mask") = WSubField(rw_exp, "mask", ut, FEMALE)
+            repl(s"${mem.name}.$w.data") = WSubField(rw_exp, "wdata", mem.dataType, FEMALE)
+            repl(s"${mem.name}.$w.mask") = WSubField(rw_exp, "wmask", ut, FEMALE)
             stmts += Connect(NoInfo, WSubField(rw_exp, "clk", ClockType, FEMALE),
               WRef("clk", ClockType, NodeKind(), MALE))
             stmts += Connect(NoInfo, WSubField(rw_exp, "en", bt, FEMALE),

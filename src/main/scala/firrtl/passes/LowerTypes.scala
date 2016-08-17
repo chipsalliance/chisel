@@ -96,7 +96,7 @@ object LowerTypes extends Pass {
       // Since mems with Bundle type must be split into multiple ground type
       //   mem, references to fields addr, en, clk, and rmode must be replicated
       //   for each resulting memory
-      // References to data, mask, and rdata have already been split in expand connects
+      // References to data, mask, rdata, wdata, and wmask have already been split in expand connects
       //   and just need to be converted to refer to the correct new memory
       def lowerTypesMemExp(e: Expression): Seq[Expression] = {
         val (mem, port, field, tail) = splitMemRef(e)
@@ -117,8 +117,8 @@ object LowerTypes extends Pass {
           }
         // Fields that need not be replicated for each
         // eg. mem.reader.data[0].a
-        // (Connect/IsInvalid must already have been split to gorund types)
-        } else if (Seq("data", "mask", "rdata").contains(field.name)) {
+        // (Connect/IsInvalid must already have been split to ground types)
+        } else if (Seq("data", "mask", "rdata", "wdata", "wmask").contains(field.name)) {
           val loMem = tail match {
             case Some(e) =>
               val loMemExp = mergeRef(mem, e)

@@ -827,10 +827,10 @@ If the \verb|en| field is high, then the non-masked portion of the \verb|data| f
 \subsubsection{Readwrite Ports}
 Finally, the readwrite ports have type:
 \begin{verbatim}
-{wmode:UInt<1>, flip rdata:T, data:T, mask:M, 
+{wmode:UInt<1>, flip rdata:T, wdata:T, wmask:M, 
  addr:UInt<N>, en:UInt<1>, clk:Clock}
 \end{verbatim}
-A readwrite port is a single port that, on a given cycle, can be used either as a read or a write port. If the readwrite port is not in write mode (the \verb|wmode| field is low), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is in write mode (the \verb|wmode| field is high), then the \verb|data|, \verb|mask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly. 
+A readwrite port is a single port that, on a given cycle, can be used either as a read or a write port. If the readwrite port is not in write mode (the \verb|wmode| field is low), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is in write mode (the \verb|wmode| field is high), then the \verb|wdata|, \verb|wmask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly. 
 
 \subsubsection{Read Under Write Behaviour}
 
