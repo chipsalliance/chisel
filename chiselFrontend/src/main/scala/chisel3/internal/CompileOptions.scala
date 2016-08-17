@@ -19,4 +19,5 @@ class CompileOptions(optionsMap: Map[String, String]) {
   val portDeterminesDirection: Boolean = optionsMap.getOrElse("portDeterminesDirection", looseDefault).toBoolean
   val internalConnectionToInputOk: Boolean = optionsMap.getOrElse("internalConnectionToInputOk", looseDefault).toBoolean
   val tryConnectionsSwapped: Boolean = optionsMap.getOrElse("tryConnectionsSwapped", looseDefault).toBoolean
+  val assumeLHSIsOutput: Boolean = optionsMap.getOrElse("assumeLHSIsOutput", looseDefault).toBoolean
 }

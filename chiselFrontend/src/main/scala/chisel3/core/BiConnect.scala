@@ -188,7 +188,13 @@ object BiConnect {
             throw BothDriversException
           }
         }
-        case (None,         None)         => throw UnknownDriverException
+        case (None,         None)         => {
+          if (compileOptions.assumeLHSIsOutput) {
+            issueConnectR2L(left, right)
+          } else {
+            throw UnknownDriverException
+          }
+        }
       }
     }
 

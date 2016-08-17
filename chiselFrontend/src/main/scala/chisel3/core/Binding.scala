@@ -207,5 +207,5 @@ case class PortBinding(enclosure: Module, direction: Option[Direction])
 case class RegBinding(enclosure: Module)
     extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding
 
-case class WireBinding(enclosure: Module, direction: Option[Direction])
-    extends SynthesizableBinding with ConstrainedBinding
+case class WireBinding(enclosure: Module)
+    extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding
