@@ -447,7 +447,6 @@ object CheckTypes extends Pass with LazyLogging {
             case (e:Mux) => {
                if (wt(tpe(e.tval)) != wt(tpe(e.fval))) errors.append(new MuxSameType(info))
                if (!passive(tpe(e))) errors.append(new MuxPassiveTypes(info))
-               if (!passive(tpe(e))) errors.append(new MuxPassiveTypes(info))
                if (!(tpe(e.cond).typeof[UIntType])) errors.append(new MuxCondUInt(info))
             }
             case (e:ValidIf) => {
