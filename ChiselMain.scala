@@ -106,7 +106,8 @@ object chiselMain {
       firrtl.FIRRTLEmitter run (chirrtl, writer)
       writer.close
     } else if (context.isGenVerilog) {
-      val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+      val annotation = new firrtl.Annotations.AnnotationMap(Seq(
+        new firrtl.passes.InferReadWriteAnnotation(name, firrtl.Annotations.TransID(-1))))
       val writer = new FileWriter(verilogFile)
       new firrtl.VerilogCompiler compile (chirrtl, annotation, writer)
       writer.close
