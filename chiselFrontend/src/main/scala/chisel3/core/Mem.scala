@@ -19,9 +19,11 @@ object Mem {
     * @param t data type of memory element
     */
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
-
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): Mem[T] = {
-    val mt  = t.cloneType
+    val mt  = t.chiselCloneType
+    Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
+    // TODO(twigg): Remove need for this Binding
+
     val mem = new Mem(mt, size)
     pushCommand(DefMemory(sourceInfo, mem, mt, size)) // TODO multi-clock
     mem
@@ -60,7 +62,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     *
     * @param idx memory element index to write into
     * @param data new data to write
-    * @param mask write mask as a Vec of Bool: a write to the Vec element in
+    * @param mask write mask as a Seq of Bool: a write to the Vec element in
     * memory is only performed if the corresponding mask index is true.
     *
     * @note this is only allowed if the memory's element data type is a Vec
@@ -79,9 +81,17 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
       when (cond) { port := datum }
   }
 
-  private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection): T =
-    pushCommand(DefMemPort(sourceInfo,
-        t.cloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))).id
+  private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection): T = {
+    Binding.checkSynthesizable(idx, s"'idx' ($idx)")
+
+    val port = pushCommand(
+      DefMemPort(sourceInfo,
+       t.chiselCloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))
+    ).id
+    // Bind each element of port to being a MemoryPort
+    Binding.bind(port, MemoryPortBinder(Builder.forcedModule), "Error: Fresh t")
+    port
+  }
 }
 
 /** A combinational-read, sequential-write memory.
@@ -107,7 +117,10 @@ object SeqMem {
   def apply[T <: Data](size: Int, t: T): SeqMem[T] = macro MemTransform.apply[T]
 
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): SeqMem[T] = {
-    val mt  = t.cloneType
+    val mt  = t.chiselCloneType
+    Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
+    // TODO(twigg): Remove need for this Binding
+
     val mem = new SeqMem(mt, size)
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size)) // TODO multi-clock
     mem

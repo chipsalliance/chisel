@@ -25,7 +25,8 @@ object RegInit {
 object RegEnable
 {
   def apply[T <: Data](updateData: T, enable: Bool): T = {
-    val r = Reg(updateData)
+    val clonedUpdateData = updateData.chiselCloneType
+    val r = Reg(clonedUpdateData)
     when (enable) { r := updateData }
     r
   }

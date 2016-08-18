@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package object chisel3 {
   import scala.language.experimental.macros
 
@@ -5,12 +7,15 @@ package object chisel3 {
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
   import util.BitPat
 
+  import chisel3.core.{Binding, FlippedBinder}
+  import chisel3.util._
+  import chisel3.internal.firrtl.Port
 
   type Direction = chisel3.core.Direction
-  val INPUT = chisel3.core.INPUT
-  val OUTPUT = chisel3.core.OUTPUT
-  val NO_DIR = chisel3.core.NO_DIR
-  type Flipped = chisel3.core.Flipped
+  val Input   = chisel3.core.Input
+  val Output  = chisel3.core.Output
+  val Flipped = chisel3.core.Flipped
+
   type Data = chisel3.core.Data
   val Wire = chisel3.core.Wire
   val Clock = chisel3.core.Clock
@@ -54,14 +59,37 @@ package object chisel3 {
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
-
-  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
-    def U: UInt = UInt(x, Width())
-    def S: SInt = SInt(x, Width())
-  }
+  /**
+  * These implicit classes allow one to convert scala.Int|scala.BigInt to
+  * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.
+  * The versions .asUInt(width)|.asSInt(width) are also available to explicitly
+  * mark a width for the new literal.
+  *
+  * Also provides .asBool to scala.Boolean and .asUInt to String
+  *
+  * Note that, for stylistic reasons, one should avoid extracting immediately
+  * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
+  * confusion (the 1 is a bit length and the 0 is a bit extraction position).
+  * Prefer storing the result and then extracting from it.
+  */
   implicit class fromIntToLiteral(val x: Int) extends AnyVal {
     def U: UInt = UInt(BigInt(x), Width())
     def S: SInt = SInt(BigInt(x), Width())
+
+    def asUInt() = UInt(x, Width())
+    def asSInt() = SInt(x, Width())
+    def asUInt(width: Int) = UInt(x, width)
+    def asSInt(width: Int) = SInt(x, width)
+  }
+  
+  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
+    def U: UInt = UInt(x, Width())
+    def S: SInt = SInt(x, Width())
+
+    def asUInt() = UInt(x, Width())
+    def asSInt() = SInt(x, Width())
+    def asUInt(width: Int) = UInt(x, width)
+    def asSInt(width: Int) = SInt(x, width)
   }
   implicit class fromStringToLiteral(val x: String) extends AnyVal {
     def U: UInt = UInt(x)
@@ -79,4 +107,39 @@ package object chisel3 {
     def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x
     def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
   }
+
+  // Compatibility with existing code.
+  val INPUT = chisel3.core.Direction.Input
+  val OUTPUT = chisel3.core.Direction.Output
+  val NODIR = chisel3.core.Direction.Unspecified
+  type ChiselException = chisel3.internal.ChiselException
+  type ValidIO[+T <: Data] = chisel3.util.Valid[T]
+  val ValidIO = chisel3.util.Valid
+  val Decoupled = chisel3.util.DecoupledIO
+
+  class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    def init(): Unit = {
+      this.noenq()
+    }
+    override def cloneType: this.type = EnqIO(gen).asInstanceOf[this.type]
+  }
+  class DeqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    Binding.bind(this, FlippedBinder, "Error: Cannot flip ")
+    def init(): Unit = {
+      this.nodeq()
+    }
+    override def cloneType: this.type = DeqIO(gen).asInstanceOf[this.type]
+  }
+  object EnqIO {
+    def apply[T<:Data](gen: T): EnqIO[T] = new EnqIO(gen)
+  }
+  object DeqIO {
+    def apply[T<:Data](gen: T): DeqIO[T] = new DeqIO(gen)
+  }
+
+  // Debugger/Tester access to internal Chisel data structures and methods.
+  def getDataElements(a: Aggregate): Seq[Element] = {
+    a.allElements
+  }
+  def getModulePorts(m: Module): Seq[Port] = m.getPorts
 }

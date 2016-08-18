@@ -12,7 +12,7 @@ class WhenTester() extends BasicTester {
   val cnt = Counter(4)
   when(Bool(true)) { cnt.inc() }
 
-  val out = Wire(UInt(width=3))
+  val out = Wire(UInt.width(3))
   when(cnt.value === UInt(0)) {
     out := UInt(1)
   } .elsewhen (cnt.value === UInt(1)) {
@@ -34,7 +34,7 @@ class OverlappedWhenTester() extends BasicTester {
   val cnt = Counter(4)
   when(Bool(true)) { cnt.inc() }
 
-  val out = Wire(UInt(width=3))
+  val out = Wire(UInt.width(3))
   when(cnt.value <= UInt(0)) {
     out := UInt(1)
   } .elsewhen (cnt.value <= UInt(1)) {

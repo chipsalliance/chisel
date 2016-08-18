@@ -56,11 +56,11 @@ private[chisel3] class IdGen {
 }
 
 private[chisel3] trait HasId {
-  private[chisel3] def _onModuleClose {} // scalastyle:ignore method.name
-  private[chisel3] val _parent = Builder.dynamicContext.currentModule
+  private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
+  private[chisel3] val _parent: Option[Module] = Builder.currentModule
   _parent.foreach(_.addId(this))
 
-  private[chisel3] val _id = Builder.idGen.next
+  private[chisel3] val _id: Long = Builder.idGen.next
   override def hashCode: Int = _id.toInt
   override def equals(that: Any): Boolean = that match {
     case x: HasId => _id == x._id
@@ -97,35 +97,58 @@ private[chisel3] trait HasId {
   private[chisel3] def getRef: Arg = _ref.get
 }
 
-private[chisel3] class DynamicContext {
+private[chisel3] class DynamicContext(optionMap: Option[Map[String, String]] = None) {
   val idGen = new IdGen
   val globalNamespace = new Namespace(None, Set())
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
   val errors = new ErrorLog
+  val compileOptions = new CompileOptions(optionMap match {
+    case Some(map: Map[String, String]) => map
+    case None => Map[String, String]()
+  })
 }
 
 private[chisel3] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
+  private def dynamicContext: DynamicContext =
+    dynamicContextVar.value.getOrElse(new DynamicContext)
 
-  def dynamicContext: DynamicContext =
-    dynamicContextVar.value getOrElse (new DynamicContext)
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
+  def compileOptions = dynamicContext.compileOptions
 
+  def currentModule: Option[Module] = dynamicContext.currentModule
+  def currentModule_=(target: Option[Module]): Unit = {
+    dynamicContext.currentModule = target
+  }
+  def forcedModule: Module = currentModule match {
+    case Some(module) => module
+    case None => throw new Exception(
+      "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
+      // A bare api call is, e.g. calling Wire() from the scala console).
+    )
+  }
+
+  // TODO(twigg): Ideally, binding checks and new bindings would all occur here
+  // However, rest of frontend can't support this yet.
   def pushCommand[T <: Command](c: T): T = {
-    dynamicContext.currentModule.foreach(_._commands += c)
+    forcedModule._commands += c
     c
   }
-  def pushOp[T <: Data](cmd: DefPrim[T]): T = pushCommand(cmd).id
+  def pushOp[T <: Data](cmd: DefPrim[T]): T = {
+    // Bind each element of the returned Data to being a Op
+    Binding.bind(cmd.id, OpBinder(forcedModule), "Error: During op creation, fresh result")
+    pushCommand(cmd).id
+  }
 
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
 
-  def build[T <: Module](f: => T): Circuit = {
-    dynamicContextVar.withValue(Some(new DynamicContext)) {
+  def build[T <: Module](f: => T, optionMap: Option[Map[String, String]] = None): Circuit = {
+    dynamicContextVar.withValue(Some(new DynamicContext(optionMap))) {
       errors.info("Elaborating design...")
       val mod = f
       mod.forceName(mod.name, globalNamespace)

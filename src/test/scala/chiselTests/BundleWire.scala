@@ -7,15 +7,15 @@ import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class Coord extends Bundle {
-  val x = UInt(width = 32)
-  val y = UInt(width = 32)
+  val x = UInt.width( 32)
+  val y = UInt.width( 32)
 }
 
 class BundleWire(n: Int) extends Module {
-  val io = new Bundle {
-    val in   = (new Coord).asInput
-    val outs = Vec(n, new Coord).asOutput
-  }
+  val io = IO(new Bundle {
+    val in   = Input(new Coord)
+    val outs = Output(Vec(n, new Coord))
+  })
   val coords = Wire(Vec(n, new Coord))
   for (i <- 0 until n) {
     coords(i)  := io.in

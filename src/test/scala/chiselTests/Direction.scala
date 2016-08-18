@@ -8,10 +8,10 @@ import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class DirectionHaver extends Module {
-  val io = new Bundle {
-    val in = UInt(INPUT, 32)
-    val out = UInt(OUTPUT, 32)
-  }
+  val io = IO(new Bundle {
+    val in = Input(UInt.width(32))
+    val out = Output(UInt.width(32))
+  })
 }
 
 class GoodDirection extends DirectionHaver {
@@ -22,7 +22,7 @@ class BadDirection extends DirectionHaver {
   io.in := UInt(0)
 }
 
-class DirectionSpec extends ChiselPropSpec {
+class DirectionSpec extends ChiselPropSpec with ShouldMatchers {
 
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
@@ -31,7 +31,8 @@ class DirectionSpec extends ChiselPropSpec {
   }
 
   property("Inputs should not be assignable") {
-    elaborate(new BadDirection)
+    a[Exception] should be thrownBy {
+     elaborate(new BadDirection)
+    }
   }
-
 }

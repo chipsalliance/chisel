@@ -10,7 +10,7 @@ import chisel3._
 /** Compute the base-2 integer logarithm of a UInt
   * @example
   * {{{ data_out := Log2(data_in) }}}
-  * @note The result is truncated, so e.g. Log2(UInt(13)) = 3
+  * @note The result is truncated, so e.g. Log2(13.U) = 3
   */
 object Log2 {
   /** Compute the Log2 on the least significant n bits of x */

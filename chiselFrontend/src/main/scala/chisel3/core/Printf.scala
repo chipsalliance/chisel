@@ -24,13 +24,13 @@ object printf { // scalastyle:ignore object.name
     * @param data format string varargs containing data to print
     */
   def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo) {
-    when (!(Builder.dynamicContext.currentModule.get.reset)) {
+    when (!Builder.forcedModule.reset) {
       printfWithoutReset(fmt, data:_*)
     }
   }
 
   private[core] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo) {
-    val clock = Builder.dynamicContext.currentModule.get.clock
+    val clock = Builder.forcedModule.clock
     pushCommand(Printf(sourceInfo, Node(clock), fmt, data.map((d: Bits) => d.ref)))
   }
 }

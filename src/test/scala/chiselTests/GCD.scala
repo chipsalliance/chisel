@@ -8,31 +8,31 @@ import org.scalatest._
 import org.scalatest.prop._
 
 class GCD extends Module {
-  val io = new Bundle {
-    val a  = UInt(INPUT, 32)
-    val b  = UInt(INPUT, 32)
-    val e  = Bool(INPUT)
-    val z  = UInt(OUTPUT, 32)
-    val v  = Bool(OUTPUT)
-  }
-  val x = Reg(UInt(width = 32))
-  val y = Reg(UInt(width = 32))
+  val io = IO(new Bundle {
+    val a  = Input(UInt.width(32))
+    val b  = Input(UInt.width(32))
+    val e  = Input(Bool())
+    val z  = Output(UInt.width(32))
+    val v  = Output(Bool())
+  })
+  val x = Reg(UInt.width( 32))
+  val y = Reg(UInt.width( 32))
   when (x > y)   { x := x -% y }
   .otherwise     { y := y -% x }
   when (io.e) { x := io.a; y := io.b }
   io.z := x
-  io.v := y === UInt(0)
+  io.v := y === 0.U
 }
 
 class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
   val dut = Module(new GCD)
-  val first = Reg(init=Bool(true))
-  dut.io.a := UInt(a)
-  dut.io.b := UInt(b)
+  val first = Reg(init=true.B)
+  dut.io.a := a.U
+  dut.io.b := b.U
   dut.io.e := first
   when(first) { first := Bool(false) }
   when(!first && dut.io.v) {
-    assert(dut.io.z === UInt(z))
+    assert(dut.io.z === z.U)
     stop()
   }
 }
