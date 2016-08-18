@@ -4,20 +4,31 @@ package chiselTests
 
 import chisel3._
 import chisel3.core.Module
-import chisel3.internal.Builder
-import chisel3.internal.firrtl.{Emitter, Circuit}
+import chisel3.internal.SignalId
 import chisel3.testers.BasicTester
 import org.scalatest._
-import org.scalatest.prop._
 
 import scala.util.DynamicVariable
 
-class SomeSubMod extends Module {
+//scalastyle:off magic.number
+
+/**
+  * This Spec file illustrates use of Donggyu's component name API, it currently only
+  * uses three methods .signalName, .parentModName and .pathName
+  *
+  * This is also an illustration of how to implement an annotation system in chisel3
+  * A local (my) Driver and Builder are created to provide thread-local access to
+  * an annotation map, and then a post elaboration annotation processor can resolve
+  * the keys and could serialize the annotations to a file for use by firrtl passes
+  */
+
+class SomeSubMod(param1: Int, param2: Int) extends Module {
   val io = new Bundle {
     val in = UInt(INPUT, 16)
     val out = SInt(OUTPUT, 32)
   }
-  MyBuilder.myDynamicContext.annotationMap(AnnotationKey(io.in, AllRefs))  = "sub mod io.in"
+  MyBuilder.myDynamicContext.annotationMap(AnnotationKey(this, JustThisRef))   = s"SomeSubMod($param1, $param2)"
+  MyBuilder.myDynamicContext.annotationMap(AnnotationKey(io.in, AllRefs))      = "sub mod io.in"
   MyBuilder.myDynamicContext.annotationMap(AnnotationKey(io.out, JustThisRef)) = "sub mod io.out"
 }
 
@@ -36,15 +47,17 @@ class AnnotatingExample extends Module {
   val x = Reg(UInt(width = 32))
   val y = Reg(UInt(width = 32))
 
-  val subModule1 = Module(new SomeSubMod)
-  val subModule2 = Module(new SomeSubMod)
+  val subModule1 = Module(new SomeSubMod(1, 2))
+  val subModule2 = Module(new SomeSubMod(3, 4))
 
 
   val annotate = MyBuilder.myDynamicContext.annotationMap
 
+  annotate(AnnotationKey(subModule2, AllRefs))     = s"SomeSubMod was used"
+
   annotate(AnnotationKey(x, JustThisRef)) = "I am register X"
   annotate(AnnotationKey(io.a, JustThisRef)) = "I am io.a"
-  annotate(AnnotationKey(io.bun.nested_1, JustThisRef)) = "I am io.bun.nested_1"
+  annotate(AnnotationKey(io.bun.nested_1, AllRefs)) = "I am io.bun.nested_1"
   annotate(AnnotationKey(io.bun.nested_2, JustThisRef)) = "I am io.bun.nested_2"
 
   when (x > y)   { x := x -% y }
@@ -67,49 +80,78 @@ class AnnotatingExampleTester(a: Int, b: Int, z: Int) extends BasicTester {
   }
 }
 
-class AnnotatingExampleSpec extends ChiselPropSpec {
+class AnnotatingExampleSpec extends FlatSpec with Matchers {
+  behavior of "Annotating components of a circuit"
 
-  property("show node info") {
-    MyDriver.doStuff { () => new AnnotatingExampleTester(1, 2, 3) }
+  val annotationMap = MyDriver.doStuff { () => new AnnotatingExampleTester(1, 2, 3) }
+  it should "contain the following relative keys" in {
+    annotationMap.contains("SomeSubMod.io.in") should be(true)
+    annotationMap("SomeSubMod.io.in") should be("sub mod io.in")
   }
-
+  it should "contain the following absolute keys" in {
+    annotationMap.contains("AnnotatingExampleTester.dut.subModule2.io.out") should be (true)
+    annotationMap("AnnotatingExampleTester.dut.subModule2.io.out") should be ("sub mod io.out")
+  }
 }
 
 trait AnnotationScope
-case object Default extends AnnotationScope
-case object AllRefs extends AnnotationScope
+case object AllRefs     extends AnnotationScope
 case object JustThisRef extends AnnotationScope
 
-case class AnnotationKey(val component: Data, scope: AnnotationScope)
+object AnnotationKey {
+  def apply(component: SignalId): AnnotationKey = {
+    AnnotationKey(component, AllRefs)
+  }
+}
+case class AnnotationKey(val component: SignalId, scope: AnnotationScope) {
+  override def toString: String = {
+    scope match {
+      case JustThisRef =>
+        s"${component.pathName}"
+      case AllRefs =>
+        s"${component.parentModName}.${component.signalName}"
+      case  _ =>
+        s"${component.toString}_unknown_scope"
+    }
+  }
+}
+
+class AnnotationMap extends scala.collection.mutable.HashMap[AnnotationKey, String]
 
 class MyDynamicContext {
-  val annotationMap = new scala.collection.mutable.HashMap[AnnotationKey, String]
+  val annotationMap = new AnnotationMap
 }
 
 object MyBuilder {
   private val myDynamicContextVar = new DynamicVariable[Option[MyDynamicContext]](None)
 
   def myDynamicContext: MyDynamicContext =
-    myDynamicContextVar.value getOrElse (new MyDynamicContext)
+    myDynamicContextVar.value getOrElse new MyDynamicContext
 
-  def build[T <: Module](f: => T): Unit = {
+  def processAnnotations(annotationMap: AnnotationMap): Map[String, String] = {
+    val list = annotationMap.map { case (k,v) =>
+      k match {
+        case (AnnotationKey(signal, JustThisRef)) =>
+          f"Just this ref $k%60s -> $v%40s  component $signal"
+        case (AnnotationKey(signal, AllRefs)) =>
+          f"All refs      $k%60s -> $v%40s  component $signal"
+        case  _ =>
+          s"Unknown annotation key $k"
+      }
+    }.toList.sorted.mkString("\n")
+    println(s"Sorted list of annotations\n$list")
+
+    annotationMap.map { case (k,v) => k.toString -> v}.toMap
+  }
+
+  def build[T <: Module](f: => T): Map[String, String] = {
     myDynamicContextVar.withValue(Some(new MyDynamicContext)) {
       Driver.emit(() => f)
-      val list = myDynamicContextVar.value.get.annotationMap.map { case (k,v) =>
-        k match {
-          case (AnnotationKey(signal, JustThisRef)) =>
-            f"Just this ref ${signal.pathName + signal.signalName}%60s -> $v%30s  component $signal"
-          case (AnnotationKey(signal, AllRefs)) =>
-            f"All refs      ${signal.signalName}%60s -> $v%30s  component $signal"
-          case  _ =>
-            s"Unknown annotation key $k"
-        }
-      }.toList.sorted
-      println(list.mkString("\n"))
+      processAnnotations(myDynamicContextVar.value.get.annotationMap)
     }
   }
 }
 
 object MyDriver extends BackendCompilationUtilities {
-  def doStuff[T <: Module](gen: () => T): Unit = MyBuilder.build(Module(gen()))
+  def doStuff[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(Module(gen()))
 }
