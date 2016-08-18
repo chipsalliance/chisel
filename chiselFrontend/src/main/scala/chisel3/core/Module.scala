@@ -119,7 +119,7 @@ extends HasId {
       }
       // Port definitions need to know input or output at top-level.
       // By FIRRTL semantics, 'flipped' becomes an Input
-      val direction = if(Data.isFlipped(port)) Direction.Input else Direction.Output
+      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
       firrtl.Port(port, direction)
     }
 
