@@ -151,27 +151,18 @@ object Utils extends LazyLogging {
    }
    def create_exps (n:String, t:Type) : Seq[Expression] =
       create_exps(WRef(n,t,ExpKind(),UNKNOWNGENDER))
-   def create_exps (e:Expression) : Seq[Expression] = {
-      e match {
-         case (e:Mux) => {
-            val e1s = create_exps(e.tval)
-            val e2s = create_exps(e.fval)
-            (e1s, e2s).zipped.map { (e1,e2) => Mux(e.cond,e1,e2,mux_type_and_widths(e1,e2)) }
-         }
-         case (e:ValidIf) => create_exps(e.value).map { e1 => ValidIf(e.cond,e1,tpe(e1)) }
-         case (e) => {
-            tpe(e) match {
-               case (t:UIntType) => Seq(e)
-               case (t:SIntType) => Seq(e)
-               case ClockType => Seq(e)
-               case (t:BundleType) => {
-                  t.fields.flatMap { f => create_exps(WSubField(e,f.name,f.tpe,times(gender(e), f.flip))) }
-               }
-               case (t:VectorType) => {
-                  (0 until t.size).flatMap { i => create_exps(WSubIndex(e,i,t.tpe,gender(e))) }
-               }
-            }
-         }
+   def create_exps (e:Expression) : Seq[Expression] = e match {
+      case (e:Mux) =>
+         val e1s = create_exps(e.tval)
+         val e2s = create_exps(e.fval)
+         (e1s,e2s).zipped map ((e1,e2) => Mux(e.cond,e1,e2,mux_type_and_widths(e1,e2)))
+      case (e:ValidIf) => create_exps(e.value) map (e1 => ValidIf(e.cond,e1,tpe(e1)))
+      case (e) => tpe(e) match {
+         case (_:GroundType) => Seq(e)
+         case (t:BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
+            exps ++ create_exps(WSubField(e,f.name,f.tpe,times(gender(e), f.flip))))
+         case (t:VectorType) => ((0 until t.size) foldLeft Seq[Expression]())((exps, i) =>
+            exps ++ create_exps(WSubIndex(e,i,t.tpe,gender(e))))
       }
    }
    def get_flip (t:Type, i:Int, f:Orientation) : Orientation = {
