@@ -111,17 +111,18 @@ extends HasId {
     ("clk", clock), ("reset", reset), ("io", io)
   )
 
-  private[core] def computePorts: Seq[firrtl.Port] =
-    for((name, port) <- ports) yield {
-      // If we're auto-wrapping IO definitions, do so now.
-      if (compileOptions.autoIOWrap && name == "io" && !ioDefined) {
-        IO(port)
-      }
+  private[core] def computePorts: Seq[firrtl.Port] = {
+    // If we're auto-wrapping IO definitions, do so now.
+    if (compileOptions.autoIOWrap && !ioDefined) {
+      IO(io)
+    }
+    for ((name, port) <- ports) yield {
       // Port definitions need to know input or output at top-level.
       // By FIRRTL semantics, 'flipped' becomes an Input
       val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
       firrtl.Port(port, direction)
     }
+  }
 
   private[core] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
     _parent match {
