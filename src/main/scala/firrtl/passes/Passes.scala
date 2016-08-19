@@ -602,149 +602,115 @@ object InferWidths extends Pass {
 }
 
 object PullMuxes extends Pass {
-   private var mname = ""
    def name = "Pull Muxes"
-   def run (c:Circuit): Circuit = {
-      def pull_muxes_e (e:Expression) : Expression = {
-         val ex = e map (pull_muxes_e) match {
-            case (e:WRef) => e
-            case (e:WSubField) => {
-               e.exp match {
-                  case (ex:Mux) => Mux(ex.cond,WSubField(ex.tval,e.name,e.tpe,e.gender),WSubField(ex.fval,e.name,e.tpe,e.gender),e.tpe)
-                  case (ex:ValidIf) => ValidIf(ex.cond,WSubField(ex.value,e.name,e.tpe,e.gender),e.tpe)
-                  case (ex) => e
-               }
-            }
-            case (e:WSubIndex) => {
-               e.exp match {
-                  case (ex:Mux) => Mux(ex.cond,WSubIndex(ex.tval,e.value,e.tpe,e.gender),WSubIndex(ex.fval,e.value,e.tpe,e.gender),e.tpe)
-                  case (ex:ValidIf) => ValidIf(ex.cond,WSubIndex(ex.value,e.value,e.tpe,e.gender),e.tpe)
-                  case (ex) => e
-               }
-            }
-            case (e:WSubAccess) => {
-               e.exp match {
-                  case (ex:Mux) => Mux(ex.cond,WSubAccess(ex.tval,e.index,e.tpe,e.gender),WSubAccess(ex.fval,e.index,e.tpe,e.gender),e.tpe)
-                  case (ex:ValidIf) => ValidIf(ex.cond,WSubAccess(ex.value,e.index,e.tpe,e.gender),e.tpe)
-                  case (ex) => e
-               }
-            }
-            case (e:Mux) => e
-            case (e:ValidIf) => e
-            case (e) => e
+   def run(c: Circuit): Circuit = {
+     def pull_muxes_e(e: Expression): Expression = {
+       val ex = e map (pull_muxes_e) match {
+         case (e: WSubField) => e.exp match {
+           case (ex: Mux) => Mux(ex.cond,
+              WSubField(ex.tval, e.name, e.tpe, e.gender),
+              WSubField(ex.fval, e.name, e.tpe, e.gender), e.tpe)
+           case (ex: ValidIf) => ValidIf(ex.cond,
+              WSubField(ex.value, e.name, e.tpe, e.gender), e.tpe)
+           case (ex) => e
          }
-         ex map (pull_muxes_e)
-      }
-      def pull_muxes (s:Statement) : Statement = s map (pull_muxes) map (pull_muxes_e)
-      val modulesx = c.modules.map {
-         m => {
-            mname = m.name
-            m match {
-               case (m:Module) => Module(m.info,m.name,m.ports,pull_muxes(m.body))
-               case (m:ExtModule) => m
-            }
+         case (e: WSubIndex) => e.exp match {
+           case (ex: Mux) => Mux(ex.cond,
+              WSubIndex(ex.tval, e.value, e.tpe, e.gender),
+              WSubIndex(ex.fval, e.value, e.tpe, e.gender), e.tpe)
+           case (ex: ValidIf) => ValidIf(ex.cond,
+              WSubIndex(ex.value, e.value, e.tpe, e.gender), e.tpe)
+           case (ex) => e
          }
-      }
-      Circuit(c.info,modulesx,c.main)
+         case (e: WSubAccess) => e.exp match {
+           case (ex: Mux) => Mux(ex.cond,
+              WSubAccess(ex.tval, e.index, e.tpe, e.gender),
+              WSubAccess(ex.fval, e.index, e.tpe, e.gender), e.tpe)
+           case (ex: ValidIf) => ValidIf(ex.cond,
+              WSubAccess(ex.value, e.index, e.tpe, e.gender), e.tpe)
+           case (ex) => e
+         }
+         case (e) => e
+       }
+       ex map (pull_muxes_e)
+     }
+     def pull_muxes(s: Statement): Statement = s map (pull_muxes) map (pull_muxes_e)
+     val modulesx = c.modules.map {
+       case (m:Module) => Module(m.info, m.name, m.ports, pull_muxes(m.body))
+       case (m:ExtModule) => m
+     }
+     Circuit(c.info, modulesx, c.main)
    }
 }
 
 object ExpandConnects extends Pass {
-   private var mname = ""
-   def name = "Expand Connects"
-   def run (c:Circuit): Circuit = {
-      def expand_connects (m:Module) : Module = {
-         mname = m.name
-         val genders = LinkedHashMap[String,Gender]()
-         def expand_s (s:Statement) : Statement = {
-            def set_gender (e:Expression) : Expression = {
-               e map (set_gender) match {
-                  case (e:WRef) => WRef(e.name,e.tpe,e.kind,genders(e.name))
-                  case (e:WSubField) => {
-                     val f = get_field(e.exp.tpe,e.name)
-                     val genderx = times(gender(e.exp),f.flip)
-                     WSubField(e.exp,e.name,e.tpe,genderx)
-                  }
-                  case (e:WSubIndex) => WSubIndex(e.exp,e.value,e.tpe,gender(e.exp))
-                  case (e:WSubAccess) => WSubAccess(e.exp,e.index,e.tpe,gender(e.exp))
-                  case (e) => e
+  def name = "Expand Connects"
+  def run(c: Circuit): Circuit = {
+    def expand_connects(m: Module): Module = {
+      val genders = LinkedHashMap[String,Gender]()
+      def expand_s(s: Statement): Statement = {
+        def set_gender(e: Expression): Expression = e map (set_gender) match {
+          case (e: WRef) => WRef(e.name, e.tpe, e.kind, genders(e.name))
+          case (e: WSubField) =>
+            val f = get_field(e.exp.tpe, e.name)
+            val genderx = times(gender(e.exp), f.flip)
+            WSubField(e.exp, e.name, e.tpe, genderx)
+          case (e: WSubIndex) => WSubIndex(e.exp, e.value, e.tpe, gender(e.exp))
+          case (e: WSubAccess) => WSubAccess(e.exp, e.index, e.tpe, gender(e.exp))
+          case (e) => e
+        }
+        s match {
+          case (s: DefWire) => genders(s.name) = BIGENDER; s
+          case (s: DefRegister) => genders(s.name) = BIGENDER; s
+          case (s: WDefInstance) => genders(s.name) = MALE; s
+          case (s: DefMemory) => genders(s.name) = MALE; s
+          case (s: DefNode) => genders(s.name) = MALE; s
+          case (s: IsInvalid) =>
+            val invalids = (create_exps(s.expr) foldLeft Seq[Statement]())(
+               (invalids,  expx) => gender(set_gender(expx)) match {
+                  case BIGENDER => invalids :+ IsInvalid(s.info, expx)
+                  case FEMALE => invalids :+ IsInvalid(s.info, expx)
+                  case _ => invalids
                }
+            )
+            invalids.size match {
+               case 0 => EmptyStmt
+               case 1 => invalids.head
+               case _ => Block(invalids)
             }
-            s match {
-               case (s:DefWire) => { genders(s.name) = BIGENDER; s }
-               case (s:DefRegister) => { genders(s.name) = BIGENDER; s }
-               case (s:WDefInstance) => { genders(s.name) = MALE; s }
-               case (s:DefMemory) => { genders(s.name) = MALE; s }
-               case (s:DefNode) => { genders(s.name) = MALE; s }
-               case (s:IsInvalid) => {
-                  val n = get_size(s.expr.tpe)
-                  val invalids = ArrayBuffer[Statement]()
-                  val exps = create_exps(s.expr)
-                  for (i <- 0 until n) {
-                     val expx = exps(i)
-                     val gexpx = set_gender(expx)
-                     gender(gexpx) match {
-                        case BIGENDER => invalids += IsInvalid(s.info,expx)
-                        case FEMALE => invalids += IsInvalid(s.info,expx)
-                        case _ => {}
-                     }
-                  }
-                  if (invalids.length == 0) {
-                     EmptyStmt
-                  } else if (invalids.length == 1) {
-                     invalids(0)
-                  } else Block(invalids)
+          case (s: Connect) =>
+            val locs = create_exps(s.loc)
+            val exps = create_exps(s.expr)
+            Block((locs zip exps).zipWithIndex map {case ((locx, expx), i) =>
+               get_flip(s.loc.tpe, i, Default) match {
+                  case Default => Connect(s.info, locx, expx)
+                  case Flip => Connect(s.info, expx, locx)
                }
-               case (s:Connect) => {
-                  val n = get_size(s.loc.tpe)
-                  val connects = ArrayBuffer[Statement]()
-                  val locs = create_exps(s.loc)
-                  val exps = create_exps(s.expr)
-                  for (i <- 0 until n) {
-                     val locx = locs(i)
-                     val expx = exps(i)
-                     val sx = get_flip(s.loc.tpe,i,Default) match {
-                        case Default => Connect(s.info,locx,expx)
-                        case Flip => Connect(s.info,expx,locx)
-                     }
-                     connects += sx
-                  }
-                  Block(connects)
-               }
-               case (s:PartialConnect) => {
-                  val ls = get_valid_points(s.loc.tpe,s.expr.tpe,Default,Default)
-                  val connects = ArrayBuffer[Statement]()
-                  val locs = create_exps(s.loc)
-                  val exps = create_exps(s.expr)
-                  ls.foreach { x => {
-                     val locx = locs(x._1)
-                     val expx = exps(x._2)
-                     val sx = get_flip(s.loc.tpe,x._1,Default) match {
-                        case Default => Connect(s.info,locx,expx)
-                        case Flip => Connect(s.info,expx,locx)
-                     }
-                     connects += sx
-                  }}
-                  Block(connects)
-               }
-               case (s) => s map (expand_s)
-            }
-         }
-   
-         m.ports.foreach { p => genders(p.name) = to_gender(p.direction) }
-         Module(m.info,m.name,m.ports,expand_s(m.body))
+            })
+          case (s: PartialConnect) =>
+            val ls = get_valid_points(s.loc.tpe, s.expr.tpe, Default, Default)
+            val locs = create_exps(s.loc)
+            val exps = create_exps(s.expr)
+            Block(ls map {case (x, y) =>
+              get_flip(s.loc.tpe, x, Default) match {
+                 case Default => Connect(s.info, locs(x), exps(y))
+                 case Flip => Connect(s.info, exps(y), locs(x))
+              }
+            })
+          case (s) => s map (expand_s)
+        }
       }
-   
-      val modulesx = c.modules.map { 
-         m => {
-            m match {
-               case (m:ExtModule) => m
-               case (m:Module) => expand_connects(m)
-            }
-         }
-      }
-      Circuit(c.info,modulesx,c.main)
-   }
+
+      m.ports.foreach { p => genders(p.name) = to_gender(p.direction) }
+      Module(m.info, m.name, m.ports, expand_s(m.body))
+    }
+
+    val modulesx = c.modules.map {
+       case (m: ExtModule) => m
+       case (m: Module) => expand_connects(m)
+    }
+    Circuit(c.info, modulesx, c.main)
+  }
 }
 
 
@@ -754,8 +720,8 @@ object Legalize extends Pass {
   def name = "Legalize"
   def legalizeShiftRight (e: DoPrim): Expression = e.op match {
     case Shr => {
-      val amount = e.consts(0).toInt
-      val width = long_BANG(e.args(0).tpe)
+      val amount = e.consts.head.toInt
+      val width = long_BANG(e.args.head.tpe)
       lazy val msb = width - 1
       if (amount >= width) {
         e.tpe match {
