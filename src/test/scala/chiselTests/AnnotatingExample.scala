@@ -27,9 +27,11 @@ class SomeSubMod(param1: Int, param2: Int) extends Module {
     val in = UInt(INPUT, 16)
     val out = SInt(OUTPUT, 32)
   }
-  MyBuilder.myDynamicContext.annotationMap(AnnotationKey(this, JustThisRef))   = s"SomeSubMod($param1, $param2)"
-  MyBuilder.myDynamicContext.annotationMap(AnnotationKey(io.in, AllRefs))      = "sub mod io.in"
-  MyBuilder.myDynamicContext.annotationMap(AnnotationKey(io.out, JustThisRef)) = "sub mod io.out"
+  val annotate = MyBuilder.myDynamicContext.annotationMap
+
+  annotate(AnnotationKey(this, JustThisRef))   = s"SomeSubMod($param1, $param2)"
+  annotate(AnnotationKey(io.in, AllRefs))      = "sub mod io.in"
+  annotate(AnnotationKey(io.out, JustThisRef)) = "sub mod io.out"
 }
 
 class AnnotatingExample extends Module {
@@ -56,40 +58,35 @@ class AnnotatingExample extends Module {
   annotate(AnnotationKey(subModule2, AllRefs))     = s"SomeSubMod was used"
 
   annotate(AnnotationKey(x, JustThisRef)) = "I am register X"
+  annotate(AnnotationKey(y, AllRefs)) = "I am register Y"
   annotate(AnnotationKey(io.a, JustThisRef)) = "I am io.a"
   annotate(AnnotationKey(io.bun.nested_1, AllRefs)) = "I am io.bun.nested_1"
   annotate(AnnotationKey(io.bun.nested_2, JustThisRef)) = "I am io.bun.nested_2"
-
-  when (x > y)   { x := x -% y }
-  .otherwise     { y := y -% x }
-  when (io.e) { x := io.a; y := io.b }
-  io.z := x
-  io.v := y === UInt(0)
 }
 
-class AnnotatingExampleTester(a: Int, b: Int, z: Int) extends BasicTester {
+class AnnotatingExampleTester extends BasicTester {
   val dut = Module(new AnnotatingExample)
-  val first = Reg(init=Bool(true))
-  dut.io.a := UInt(a)
-  dut.io.b := UInt(b)
-  dut.io.e := first
-  when(first) { first := Bool(false) }
-  when(!first && dut.io.v) {
-    assert(dut.io.z === UInt(z))
-    stop()
-  }
+
+  stop()
 }
 
 class AnnotatingExampleSpec extends FlatSpec with Matchers {
   behavior of "Annotating components of a circuit"
 
-  val annotationMap = MyDriver.doStuff { () => new AnnotatingExampleTester(1, 2, 3) }
   it should "contain the following relative keys" in {
+    val annotationMap = MyDriver.buildAnnotatedCircuit { () => new AnnotatingExampleTester }
+
     annotationMap.contains("SomeSubMod.io.in") should be(true)
+    annotationMap.contains("AnnotatingExample.y") should be(true)
+
     annotationMap("SomeSubMod.io.in") should be("sub mod io.in")
   }
   it should "contain the following absolute keys" in {
+    val annotationMap = MyDriver.buildAnnotatedCircuit { () => new AnnotatingExampleTester }
+
     annotationMap.contains("AnnotatingExampleTester.dut.subModule2.io.out") should be (true)
+    annotationMap.contains("AnnotatingExampleTester.dut.x") should be (true)
+
     annotationMap("AnnotatingExampleTester.dut.subModule2.io.out") should be ("sub mod io.out")
   }
 }
@@ -129,18 +126,6 @@ object MyBuilder {
     myDynamicContextVar.value getOrElse new MyDynamicContext
 
   def processAnnotations(annotationMap: AnnotationMap): Map[String, String] = {
-    val list = annotationMap.map { case (k,v) =>
-      k match {
-        case (AnnotationKey(signal, JustThisRef)) =>
-          f"Just this ref $k%60s -> $v%40s  component $signal"
-        case (AnnotationKey(signal, AllRefs)) =>
-          f"All refs      $k%60s -> $v%40s  component $signal"
-        case  _ =>
-          s"Unknown annotation key $k"
-      }
-    }.toList.sorted.mkString("\n")
-    println(s"Sorted list of annotations\n$list")
-
     annotationMap.map { case (k,v) => k.toString -> v}.toMap
   }
 
@@ -153,5 +138,8 @@ object MyBuilder {
 }
 
 object MyDriver extends BackendCompilationUtilities {
-  def doStuff[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(Module(gen()))
+  /**
+    * illustrates a chisel3 style driver that, annotations can only processed within this structure
+    */
+  def buildAnnotatedCircuit[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(Module(gen()))
 }
