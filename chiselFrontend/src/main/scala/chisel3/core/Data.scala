@@ -31,27 +31,28 @@ object DataMirror {
 /**
 * Input, Output, and Flipped are used to define the directions of Module IOs.
 *
-* Note that they do not currently call target to be a newType or cloneType.
-* This is nominally for performance reasons to avoid too many extra copies when
-* something is flipped multiple times.
+* Note that they currently clone their source argument, including its bindings.
 *
 * Thus, an error will be thrown if these are used on bound Data
 */
 object Input {
-  def apply[T<:Data](target: T): T = {
+  def apply[T<:Data](source: T): T = {
+    val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Direction.Input)
     Binding.bind(target, InputBinder, "Error: Cannot set as input ")
   }
 }
 object Output {
-  def apply[T<:Data](target: T): T = {
+  def apply[T<:Data](source: T): T = {
+    val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Direction.Output)
     Binding.bind(target, OutputBinder, "Error: Cannot set as output ")
   }
 }
 object Flipped {
-  def apply[T<:Data](target: T): T = {
-    Data.setFirrtlDirection(target, Data.getFirrtlDirection(target).flip)
+  def apply[T<:Data](source: T): T = {
+    val target = source.chiselCloneType
+    Data.setFirrtlDirection(target, Data.getFirrtlDirection(source).flip)
     Binding.bind(target, FlippedBinder, "Error: Cannot flip ")
   }
 }
