@@ -15,6 +15,48 @@ import java.io.Writer
 
 import scala.util.matching.Regex
 
+sealed trait PassOption
+case object InputConfigFileName extends PassOption
+case object OutputConfigFileName extends PassOption
+case object PassCircuitName extends PassOption
+
+object PassConfigUtil {
+
+  def getPassOptions(t: String, usage: String = "") = {
+    
+    type PassOptionMap = Map[PassOption, String] 
+
+    // can't use space to delimit sub arguments (otherwise, Driver.scala will throw error)
+    val passArgList = t.split(":").toList
+    
+    def nextPassOption(map: PassOptionMap, list: List[String]): PassOptionMap = {
+      list match {
+        case Nil => map
+        case "-i" :: value :: tail =>
+          nextPassOption(map + (InputConfigFileName -> value), tail)
+        case "-o" :: value :: tail =>
+          nextPassOption(map + (OutputConfigFileName -> value), tail)
+        case "-c" :: value :: tail =>
+          nextPassOption(map + (PassCircuitName -> value), tail)
+        case option :: tail =>
+          throw new Exception("Unknown option " + option + usage)
+      }
+    }
+    nextPassOption(Map[PassOption, String](), passArgList)
+  }
+
+}
+
+class OutputWriter(filename: String) {
+  val outputBuffer = new java.io.CharArrayWriter
+  def append(s: String) = outputBuffer.append(s)
+  def serialize = {
+    val outputFile = new java.io.PrintWriter(filename)
+    outputFile.write(outputBuffer.toString)
+    outputFile.close()
+  }
+}
+
 case class ReplSeqMemAnnotation(t: String, tID: TransID)
     extends Annotation with Loose with Unstable {
 
@@ -34,41 +76,15 @@ Optional Arguments:
   -i<filename>         Specify the input configuration file
 """    
 
-  sealed trait PassOption
-  case object InputConfigFileName extends PassOption
-  case object OutputConfigFileName extends PassOption
-  case object PassCircuitName extends PassOption
-  
-  type PassOptionMap = Map[PassOption, String] 
-
-  // can't use space to delimit sub arguments (otherwise, Driver.scala will throw error)
-  val passArgList = t.split(":").toList
-  
-  def nextPassOption(map: PassOptionMap, list: List[String]): PassOptionMap = {
-    list match {
-      case Nil => map
-      case "-i" :: value :: tail =>
-        nextPassOption(map + (InputConfigFileName -> value), tail)
-      case "-o" :: value :: tail =>
-        nextPassOption(map + (OutputConfigFileName -> value), tail)
-      case "-c" :: value :: tail =>
-        nextPassOption(map + (PassCircuitName -> value), tail)
-      case option :: tail =>
-        throw new Exception("Unknown option " + option + usage)
-    }
-  }
-
-  val passOptions = nextPassOption(Map[PassOption, String](), passArgList)
-  val inputConfig = passOptions.getOrElse(InputConfigFileName, throw new Exception("No input config file provided for ReplSeqMem!" + usage))
+  val passOptions = PassConfigUtil.getPassOptions(t,usage)
   val outputConfig = passOptions.getOrElse(OutputConfigFileName, throw new Exception("No output config file provided for ReplSeqMem!" + usage))
   val passCircuit = passOptions.getOrElse(PassCircuitName, throw new Exception("No circuit name specified for ReplSeqMem!" + usage))
-
   val target = CircuitName(passCircuit)
   def duplicate(n: Named) = this.copy(t=t.replace("-c:"+passCircuit,"-c:"+n.name))
   
 }
 
-object ReplSeqMem extends Pass {
+class ReplSeqMemPass(out: OutputWriter) extends Pass {
 
   def name = "Replace Sequential Memories with Blackboxes + Configuration File"
 
@@ -146,6 +162,7 @@ object ReplSeqMem extends Pass {
       (numReaders == m.numReaders) && 
       (wpEq && rwpEq)
     }
+    def getInterfacePorts = MemPortUtils.memToBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe))
   }
 
   def analyzeMemsInModule(m: Module): Seq[SMem] = {
@@ -231,13 +248,15 @@ object ReplSeqMem extends Pass {
   }
 
   def run(c: Circuit) = {
+    lazy val moduleNamespace = Namespace(c)
+
     val uniqueMems = ArrayBuffer[SMem]()
+    val mems = ArrayBuffer[SMem]()
     def analyzeMemsInCircuit(c: Circuit) = {
-      val mems = ArrayBuffer[SMem]()
-      c.modules foreach { _ match {
+      c.modules foreach { 
         case m: Module => mems ++= analyzeMemsInModule(m)
         case m: ExtModule =>
-      }}
+      }
       mems map {m =>
         val memProto = uniqueMems.find(_.eq(m))
         if (memProto == None) {
@@ -248,8 +267,30 @@ object ReplSeqMem extends Pass {
       }
     }
     val memMap = analyzeMemsInCircuit(c)
-    println(memMap)
-    c
+    val newMods = mems map (m => ExtModule(m.m.info,m.name,m.getInterfacePorts)) 
+
+    def replaceMemInstsInCircuit(c: Circuit) = {
+      def replaceMemInstsInModule(m: Module) = {
+        def findMemInsts(s: Statement): Statement = s match {
+          case m: DefMemory if m.readLatency > 0 =>  WDefInstance(m.info, m.name, m.name, UnknownType) 
+          case b: Block => Block(b.stmts map findMemInsts)
+          case s => s
+        }
+        m.copy(body = findMemInsts(m.body))
+      }
+      c.modules map {
+        case m: Module => replaceMemInstsInModule(m)
+        case m: ExtModule => m
+      } 
+    } 
+
+    uniqueMems foreach { m =>
+      moduleNamespace.newName(m.name)
+      moduleNamespace.newName(m.name + "_ext")
+      out.append(m.serialize)
+    }
+    out.serialize
+    c.copy(modules = replaceMemInstsInCircuit(c) ++ newMods)
   }
 
 }
@@ -258,19 +299,35 @@ class ReplSeqMem(transID: TransID) extends Transform with LazyLogging {
   def execute(circuit:Circuit, map: AnnotationMap) = 
     map get transID match {
       case Some(p) => p get CircuitName(circuit.main) match {
-        case Some(ReplSeqMemAnnotation(_, _)) => TransformResult((Seq(
-          Legalize,
-          ReplSeqMem,
-          CheckInitialization,
-          ResolveKinds,
-          InferTypes,
-          ResolveGenders) foldLeft circuit){ (c, pass) =>
-            val x = Utils.time(pass.name)(pass run c)
-            logger debug x.serialize
-            x
-          }, None, Some(map))
+        case Some(ReplSeqMemAnnotation(t, _)) => {
+          val outConfigFile = PassConfigUtil.getPassOptions(t).get(OutputConfigFileName).get
+          TransformResult(
+            (
+              Seq(
+                Legalize,
+                new ReplSeqMemPass(new OutputWriter(outConfigFile)),
+                RemoveEmpty,
+                CheckInitialization,
+                ResolveKinds,                                       // Must be run for the transform to work!
+                InferTypes,
+                ResolveGenders
+              ) foldLeft circuit
+            ){ 
+              (c, pass) =>
+                val x = Utils.time(pass.name)(pass run c)
+                logger debug x.serialize
+                x
+            }, 
+            None, 
+            Some(map)
+          )
+        }  
         case _ => TransformResult(circuit, None, Some(map))
       }
       case _ => TransformResult(circuit, None, Some(map))
     }
 }
+
+// Eliminate extra modules
+// Tag modules
+// connect internals
