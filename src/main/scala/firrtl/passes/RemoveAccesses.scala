@@ -13,7 +13,6 @@ import scala.collection.mutable
   */
 object RemoveAccesses extends Pass {
   def name = "Remove Accesses"
-
   /** Container for a base expression and its corresponding guard
     */
   private case class Location(base: Expression, guard: Expression)
@@ -28,21 +27,21 @@ object RemoveAccesses extends Pass {
     case e: WSubIndex =>
       val ls = getLocations(e.exp)
       val start = get_point(e)
-      val end = start + get_size(tpe(e))
-      val stride = get_size(tpe(e.exp))
+      val end = start + get_size(e.tpe)
+      val stride = get_size(e.exp.tpe)
       for ((l, i) <- ls.zipWithIndex
         if ((i % stride) >= start) & ((i % stride) < end)) yield l
     case e: WSubField =>
       val ls = getLocations(e.exp)
       val start = get_point(e)
-      val end = start + get_size(tpe(e))
-      val stride = get_size(tpe(e.exp))
+      val end = start + get_size(e.tpe)
+      val stride = get_size(e.exp.tpe)
       for ((l, i) <- ls.zipWithIndex
         if ((i % stride) >= start) & ((i % stride) < end)) yield l
     case e: WSubAccess =>
       val ls = getLocations(e.exp)
-      val stride = get_size(tpe(e))
-      val wrap = tpe(e.exp).asInstanceOf[VectorType].size
+      val stride = get_size(e.tpe)
+      val wrap = e.exp.tpe.asInstanceOf[VectorType].size
       ls.zipWithIndex map {case (l, i) =>
         val c = (i / stride) % wrap
         val basex = l.base
@@ -50,6 +49,7 @@ object RemoveAccesses extends Pass {
         Location(basex,guardx)
       }
   }
+
   /** Returns true if e contains a [[firrtl.WSubAccess]]
     */
   private def hasAccess(e: Expression): Boolean = {
@@ -64,13 +64,19 @@ object RemoveAccesses extends Pass {
     rec_has_access(e)
     ret
   }
+
+  // This improves the performance of this pass
+  private val createExpsCache = mutable.HashMap[Expression, Seq[Expression]]()
+  private def create_exps(e: Expression) =
+    createExpsCache getOrElseUpdate (e, firrtl.Utils.create_exps(e))
+
   def run(c: Circuit): Circuit = {
     def remove_m(m: Module): Module = {
       val namespace = Namespace(m)
       def onStmt(s: Statement): Statement = {
         def create_temp(e: Expression): (Statement, Expression) = {
           val n = namespace.newTemp
-          (DefWire(info(s), n, tpe(e)), WRef(n, tpe(e), kind(e), gender(e)))
+          (DefWire(info(s), n, e.tpe), WRef(n, e.tpe, kind(e), gender(e)))
         }
 
         /** Replaces a subaccess in a given male expression
@@ -144,10 +150,10 @@ object RemoveAccesses extends Pass {
       Module(m.info, m.name, m.ports, squashEmpty(onStmt(m.body)))
     }
   
-    val newModules = c.modules.map( _ match {
+    val newModules = c.modules.map {
       case m: ExtModule => m
       case m: Module => remove_m(m)
-    })
+    }
     Circuit(c.info, newModules, c.main)
   }
 }
