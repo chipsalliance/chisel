@@ -57,6 +57,12 @@ Optional Arguments:
                                  Supported modes: ignore, use, gen, append
   --inferRW <circuit>            Enable readwrite port inference for the target circuit
   --inline <module>|<instance>   Inline a module (e.g. "MyModule") or instance (e.g. "MyModule.myinstance")
+
+  --replSeqMem -c:<circuit>:-i<filename>:-o<filename> 
+  *** Replace sequential memories with blackboxes + configuration file
+  *** Input configuration file optional
+  *** Note: sub-arguments to --replSeqMem should be delimited by : and not white space!
+  
   [--help|-h]                    Print usage string
 """
 
@@ -74,12 +80,16 @@ Optional Arguments:
     def handleInferRWOption(value: String) = 
       passes.InferReadWriteAnnotation(value, TransID(-1))
 
+    def handleReplSeqMem(value: String) = 
+      passes.ReplSeqMemAnnotation(value, TransID(-2))
+
     run(args: Array[String],
       Map( "high" -> new HighFirrtlCompiler(),
         "low" -> new LowFirrtlCompiler(),
         "verilog" -> new VerilogCompiler()),
       Map("--inline" -> handleInlineOption _,
-          "--inferRW" -> handleInferRWOption _),
+          "--inferRW" -> handleInferRWOption _,
+          "--replSeqMem" -> handleReplSeqMem _),
       usage
     )
   }
