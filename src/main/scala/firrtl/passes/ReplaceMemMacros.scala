@@ -72,7 +72,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     //val bbioPorts = MemPortUtils.memToBundle(bbProto).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
     val bbioPorts = MemPortUtils.memToFlattenBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
 
-    stmts += WDefInstance(m.info,bbName,bbName,UnknownType)
+    stmts += WDefInstance(NoInfo,bbName,bbName,UnknownType)
     val bbRef = createRef(bbName)
     stmts ++= (m.readers zip bbProto.readers).map{ 
       case (x,y) => adaptReader(createRef(x),m,createSubField(bbRef,y),bbProto)
@@ -83,11 +83,9 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     stmts ++= (m.readwriters zip bbProto.readwriters).map{ 
       case (x,y) => adaptReadWriter(createRef(x),m,createSubField(bbRef,y),bbProto)
     }.flatten  
-    val wrapper = Module(m.info,m.name,wrapperioPorts,Block(stmts))   
-
-    //println(wrapper.body.serialize)
-
-    val bb = ExtModule(m.info,bbName,bbioPorts) 
+    val wrapper = Module(NoInfo,m.name,wrapperioPorts,Block(stmts))   
+    val bb = ExtModule(NoInfo,bbName,bbioPorts) 
+    // TODO: Annotate? -- use actual annotation map
 
     // add to conf file
     writer.append(m)
