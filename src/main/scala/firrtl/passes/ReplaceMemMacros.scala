@@ -6,6 +6,7 @@ import AnalysisUtils._
 import MemTransformUtils._
 import firrtl._
 import firrtl.Utils._
+import MemPortUtils._
 
 object ReplaceMemMacros extends Pass {
 
@@ -65,8 +66,10 @@ object ReplaceMemMacros extends Pass {
     val bbName = m.name + "_ext"
     val stmts = ArrayBuffer[Statement]()
     val wrapperioPorts = MemPortUtils.memToBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
-    val bbProto = m.copy(dataType = UIntType(IntWidth(bitWidth(m.dataType))))
-    val bbioPorts = MemPortUtils.memToBundle(bbProto).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
+    val bbProto = m.copy(dataType = flattenType(m.dataType))
+    //val bbioPorts = MemPortUtils.memToBundle(bbProto).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
+    val bbioPorts = MemPortUtils.memToFlattenBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
+
     stmts += WDefInstance(m.info,bbName,bbName,UnknownType)
     val bbRef = createRef(bbName)
     stmts ++= (m.readers zip bbProto.readers).map{ 
@@ -80,7 +83,7 @@ object ReplaceMemMacros extends Pass {
     }.flatten  
     val wrapper = Module(m.info,m.name,wrapperioPorts,Block(stmts))   
 
-    println(wrapper.body.serialize)
+    //println(wrapper.body.serialize)
 
     val bb = ExtModule(m.info,bbName,bbioPorts) 
     Seq(bb,wrapper)
@@ -107,12 +110,17 @@ object ReplaceMemMacros extends Pass {
         toBits(WSubField(aggPort,"data",aggMem.dataType,UNKNOWNGENDER))
       )
     )
-    if (containsInfo(aggMem.info,"maskGran"))
+    if (containsInfo(aggMem.info,"maskGran")) {
+      val wrapperMask = create_mask(aggMem.dataType)
+      val bbMask = flattenType(wrapperMask)
       defaultSeq :+ Connect(
         NoInfo,
-        WSubField(groundPort,"mask",create_mask(groundMem.dataType),UNKNOWNGENDER),
-        toBitMask(WSubField(aggPort,"mask",create_mask(aggMem.dataType),UNKNOWNGENDER),aggMem.dataType)
+        //WSubField(groundPort,"mask",create_mask(groundMem.dataType),UNKNOWNGENDER),
+        //toBitMask(WSubField(aggPort,"mask",create_mask(aggMem.dataType),UNKNOWNGENDER),aggMem.dataType)
+        WSubField(groundPort,"mask",bbMask,UNKNOWNGENDER),
+        toBits(WSubField(aggPort,"mask",wrapperMask,UNKNOWNGENDER))
       )
+    }
     else defaultSeq
   }
 
@@ -132,12 +140,17 @@ object ReplaceMemMacros extends Pass {
         WSubField(groundPort,"rdata",groundMem.dataType,UNKNOWNGENDER)
       )
     )
-    if (containsInfo(aggMem.info,"maskGran"))
+    if (containsInfo(aggMem.info,"maskGran")){
+      val wrapperMask = create_mask(aggMem.dataType)
+      val bbMask = flattenType(wrapperMask)
       defaultSeq :+ Connect(
         NoInfo,
-        WSubField(groundPort,"wmask",create_mask(groundMem.dataType),UNKNOWNGENDER),
-        toBitMask(WSubField(aggPort,"wmask",create_mask(aggMem.dataType),UNKNOWNGENDER),aggMem.dataType)
+        //WSubField(groundPort,"wmask",create_mask(groundMem.dataType),UNKNOWNGENDER),
+        //toBitMask(WSubField(aggPort,"wmask",create_mask(aggMem.dataType),UNKNOWNGENDER),aggMem.dataType)
+        WSubField(groundPort,"wmask",bbMask,UNKNOWNGENDER),
+        toBits(WSubField(aggPort,"wmask",wrapperMask,UNKNOWNGENDER))
       )
+    }
     else defaultSeq
   }
 

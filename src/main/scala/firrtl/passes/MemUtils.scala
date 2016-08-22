@@ -135,6 +135,8 @@ object MemPortUtils {
 
   import AnalysisUtils._
 
+  def flattenType(t: Type) = UIntType(IntWidth(bitWidth(t)))
+
   def defaultPortSeq(mem: DefMemory) = Seq(
     Field("addr", Default, UIntType(IntWidth(ceil_log2(mem.depth)))),
     Field("en", Default, UIntType(IntWidth(1))),
@@ -142,6 +144,7 @@ object MemPortUtils {
   )
 
   def rPortToBundle(mem: DefMemory) = BundleType(defaultPortSeq(mem) :+ Field("data", Flip, mem.dataType))
+  def rPortToFlattenBundle(mem: DefMemory) = BundleType(defaultPortSeq(mem) :+ Field("data", Flip, flattenType(mem.dataType)))
 
   def wPortToBundle(mem: DefMemory) = {
     val defaultSeq = defaultPortSeq(mem) :+ Field("data", Default, mem.dataType)
@@ -149,6 +152,13 @@ object MemPortUtils {
       if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("mask", Default, create_mask(mem.dataType))
       else defaultSeq
     )
+  }
+  def wPortToFlattenBundle(mem: DefMemory) = {
+    val defaultSeq = defaultPortSeq(mem) :+ Field("data", Default, flattenType(mem.dataType))
+    BundleType(
+      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("mask", Default, flattenType(create_mask(mem.dataType)))
+      else defaultSeq
+    )  
   }
 
   def rwPortToBundle(mem: DefMemory) ={
@@ -162,9 +172,24 @@ object MemPortUtils {
       else defaultSeq
     )
   }
+  def rwPortToFlattenBundle(mem: DefMemory) ={
+    val defaultSeq = defaultPortSeq(mem) ++ Seq(
+      Field("wmode", Default, UIntType(IntWidth(1))),
+      Field("wdata", Default, flattenType(mem.dataType)),
+      Field("rdata", Flip, flattenType(mem.dataType))
+    )
+    BundleType(
+      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("wmask", Default, flattenType(create_mask(mem.dataType)))
+      else defaultSeq
+    )
+  }
 
   def memToBundle(s: DefMemory) = BundleType(
     s.readers.map(p => Field(p, Default, rPortToBundle(s))) ++
       s.writers.map(p => Field(p, Default, wPortToBundle(s))) ++
       s.readwriters.map(p => Field(p, Default, rwPortToBundle(s))))
+  def memToFlattenBundle(s: DefMemory) = BundleType(
+    s.readers.map(p => Field(p, Default, rPortToFlattenBundle(s))) ++
+      s.writers.map(p => Field(p, Default, wPortToFlattenBundle(s))) ++
+      s.readwriters.map(p => Field(p, Default, rwPortToFlattenBundle(s))))
 }
