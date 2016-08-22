@@ -124,6 +124,8 @@ package object chisel3 {
     override def cloneType: this.type = EnqIO(gen).asInstanceOf[this.type]
   }
   class DeqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    val Data = chisel3.core.Data
+    Data.setFirrtlDirection(this, Data.getFirrtlDirection(this).flip)
     Binding.bind(this, FlippedBinder, "Error: Cannot flip ")
     def init(): Unit = {
       this.nodeq()
