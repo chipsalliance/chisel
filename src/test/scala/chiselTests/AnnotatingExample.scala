@@ -3,12 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.Module
-import chisel3.internal.SignalId
+import chisel3.core.{Annotation, Module}
 import chisel3.testers.BasicTester
 import org.scalatest._
-
-import scala.util.DynamicVariable
 
 //scalastyle:off magic.number
 
@@ -21,17 +18,18 @@ import scala.util.DynamicVariable
   * an annotation map, and then a post elaboration annotation processor can resolve
   * the keys and could serialize the annotations to a file for use by firrtl passes
   */
+object Pass {
+  val PassId = 42
+}
 
 class SomeSubMod(param1: Int, param2: Int) extends Module {
   val io = new Bundle {
     val in = UInt(INPUT, 16)
     val out = SInt(OUTPUT, 32)
   }
-  val annotate = MyBuilder.myDynamicContext.annotationMap
-
-  annotate(AnnotationKey(this, JustThisRef))   = s"SomeSubMod($param1, $param2)"
-  annotate(AnnotationKey(io.in, AllRefs))      = "sub mod io.in"
-  annotate(AnnotationKey(io.out, JustThisRef)) = "sub mod io.out"
+  annotate(Pass.PassId, this, Annotation.JustThisRef, s"SomeSubMod($param1, $param2)")
+  annotate(Pass.PassId, io.in, Annotation.AllRefs, "sub mod io.in")
+  annotate(Pass.PassId, io.out, Annotation.JustThisRef, "sub mod io.out")
 }
 
 class AnnotatingExample extends Module {
@@ -53,15 +51,13 @@ class AnnotatingExample extends Module {
   val subModule2 = Module(new SomeSubMod(3, 4))
 
 
-  val annotate = MyBuilder.myDynamicContext.annotationMap
+  annotate(Pass.PassId, subModule2, Annotation.AllRefs, s"SomeSubMod was used")
 
-  annotate(AnnotationKey(subModule2, AllRefs))     = s"SomeSubMod was used"
-
-  annotate(AnnotationKey(x, JustThisRef)) = "I am register X"
-  annotate(AnnotationKey(y, AllRefs)) = "I am register Y"
-  annotate(AnnotationKey(io.a, JustThisRef)) = "I am io.a"
-  annotate(AnnotationKey(io.bun.nested_1, AllRefs)) = "I am io.bun.nested_1"
-  annotate(AnnotationKey(io.bun.nested_2, JustThisRef)) = "I am io.bun.nested_2"
+  annotate(Pass.PassId, x, Annotation.JustThisRef, "I am register X")
+  annotate(Pass.PassId, y, Annotation.AllRefs, "I am register Y")
+  annotate(Pass.PassId, io.a, Annotation.JustThisRef, "I am io.a")
+  annotate(Pass.PassId, io.bun.nested_1, Annotation.AllRefs, "I am io.bun.nested_1")
+  annotate(Pass.PassId, io.bun.nested_2, Annotation.JustThisRef, "I am io.bun.nested_2")
 }
 
 class AnnotatingExampleTester extends BasicTester {
@@ -73,73 +69,36 @@ class AnnotatingExampleTester extends BasicTester {
 class AnnotatingExampleSpec extends FlatSpec with Matchers {
   behavior of "Annotating components of a circuit"
 
+  def hasComponent(name: String, annotations: Seq[Annotation.Resolved]): Boolean = {
+    annotations.exists { annotation =>
+      annotation.componentName == name }
+  }
+  def valueOf(name: String, annotations: Seq[Annotation.Resolved]): Option[String] = {
+    annotations.find { annotation => annotation.componentName == name } match {
+      case Some(annotation) => Some(annotation.value)
+      case _ => None
+    }
+  }
+
   it should "contain the following relative keys" in {
-    val annotationMap = MyDriver.buildAnnotatedCircuit { () => new AnnotatingExampleTester }
+    val circuit = Driver.elaborate{ () => new AnnotatingExampleTester }
+    val annotations = circuit.annotations
 
-    annotationMap.contains("SomeSubMod.io.in") should be(true)
-    annotationMap.contains("AnnotatingExample.y") should be(true)
+    // Driver.dumpFirrtl(circuit)
+    // Driver.dumpFirrtl(circuit, Some(new java.io.File("./aaa_file.fir")))
+    // Driver.dumpFirrtl(circuit, Some(new java.io.File("./aaa_file.blur")))
 
-    annotationMap("SomeSubMod.io.in") should be("sub mod io.in")
+    hasComponent("SomeSubMod.io.in", annotations) should be (true)
+    hasComponent("AnnotatingExample.y", annotations) should be (true)
+
+    valueOf("SomeSubMod.io.in", annotations) should be (Some("sub mod io.in"))
   }
   it should "contain the following absolute keys" in {
-    val annotationMap = MyDriver.buildAnnotatedCircuit { () => new AnnotatingExampleTester }
+    val annotations = Driver.elaborate{ () => new AnnotatingExampleTester }.annotations
 
-    annotationMap.contains("AnnotatingExampleTester.dut.subModule2.io.out") should be (true)
-    annotationMap.contains("AnnotatingExampleTester.dut.x") should be (true)
+    hasComponent("AnnotatingExampleTester.dut.subModule2.io.out", annotations) should be (true)
+    hasComponent("AnnotatingExampleTester.dut.x", annotations) should be (true)
 
-    annotationMap("AnnotatingExampleTester.dut.subModule2.io.out") should be ("sub mod io.out")
+    assert(valueOf("AnnotatingExampleTester.dut.subModule2.io.out", annotations) === (Some("sub mod io.out")))
   }
-}
-
-trait AnnotationScope
-case object AllRefs     extends AnnotationScope
-case object JustThisRef extends AnnotationScope
-
-object AnnotationKey {
-  def apply(component: SignalId): AnnotationKey = {
-    AnnotationKey(component, AllRefs)
-  }
-}
-case class AnnotationKey(val component: SignalId, scope: AnnotationScope) {
-  override def toString: String = {
-    scope match {
-      case JustThisRef =>
-        s"${component.pathName}"
-      case AllRefs =>
-        s"${component.parentModName}.${component.signalName}"
-      case  _ =>
-        s"${component.toString}_unknown_scope"
-    }
-  }
-}
-
-class AnnotationMap extends scala.collection.mutable.HashMap[AnnotationKey, String]
-
-class MyDynamicContext {
-  val annotationMap = new AnnotationMap
-}
-
-object MyBuilder {
-  private val myDynamicContextVar = new DynamicVariable[Option[MyDynamicContext]](None)
-
-  def myDynamicContext: MyDynamicContext =
-    myDynamicContextVar.value getOrElse new MyDynamicContext
-
-  def processAnnotations(annotationMap: AnnotationMap): Map[String, String] = {
-    annotationMap.map { case (k,v) => k.toString -> v}.toMap
-  }
-
-  def build[T <: Module](f: => T): Map[String, String] = {
-    myDynamicContextVar.withValue(Some(new MyDynamicContext)) {
-      Driver.emit(() => f)
-      processAnnotations(myDynamicContextVar.value.get.annotationMap)
-    }
-  }
-}
-
-object MyDriver extends BackendCompilationUtilities {
-  /**
-    * illustrates a chisel3 style driver that, annotations can only processed within this structure
-    */
-  def buildAnnotatedCircuit[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(Module(gen()))
 }

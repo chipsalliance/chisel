@@ -187,4 +187,4 @@ case class Printf(sourceInfo: SourceInfo, clk: Arg, formatIn: String, ids: Seq[A
   }
 }
 
-case class Circuit(name: String, components: Seq[Component])
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation.Resolved] = Seq.empty)

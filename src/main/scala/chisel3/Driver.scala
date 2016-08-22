@@ -102,6 +102,7 @@ trait BackendCompilationUtilities {
 }
 
 object Driver extends BackendCompilationUtilities {
+  val FirrtlSuffix = ".fir"
 
   /** Elaborates the Module specified in the gen function into a Circuit
     *
@@ -114,12 +115,46 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: Module](ir: Circuit): String = Emitter.emit(ir)
 
-  def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
-    val f = optName.getOrElse(new File(ir.name + ".fir"))
-    val w = new FileWriter(f)
-    w.write(Emitter.emit(ir))
-    w.close()
-    f
+  def dumpFirrtl(ir: Circuit, optName: Option[File] = None): File = {
+    val (directory: File, fileName: String) = optName match {
+      case Some(file) =>
+        val fileDirectory = new File(file.getParent)
+        val fileName = file.getName
+        if(fileName.endsWith(FirrtlSuffix)) {
+          (fileDirectory, fileName.dropRight(FirrtlSuffix.length))
+        }
+        else {
+          (fileDirectory, fileName)
+        }
+      case _ =>
+        (new File("."), ir.name)
+    }
+    dumpFirrtlWithAnnotations(ir, Some(directory), Some(fileName))
+  }
+
+  def dumpFirrtlWithAnnotations(ir: Circuit,
+                                directoryOpt: Option[File] = None,
+                                nameOpt: Option[String] = None
+                               ): File = {
+    val directory = directoryOpt.getOrElse(new File("."))
+    if(!directory.isDirectory) {
+      throwException(s"dumpFirrtlWithAnnotations, directory name ${directory.getPath} is not a directory")
+    }
+    val name = nameOpt.getOrElse(ir.name)
+
+    if(ir.annotations.nonEmpty) {
+      val annotationFile = new File(directory, name + ".anno")
+      val annotationWriter = new FileWriter(annotationFile)
+      annotationWriter.write(ir.annotations.mkString("\n"))
+      annotationWriter.close()
+    }
+
+    val firrtlFile = new File(directory, name + FirrtlSuffix)
+    val firrtlWriter = new FileWriter(firrtlFile)
+    firrtlWriter.write(Emitter.emit(ir))
+    firrtlWriter.close()
+
+    firrtlFile
   }
 
   private var target_dir: Option[String] = None
