@@ -7,16 +7,16 @@ import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 private[iotesters] object getDataNames {
-  def apply(name: String, data: Data): Seq[(Data, String)] = data match {
-    case b: Element => Seq(b -> name)
+  def apply(name: String, data: Data): Seq[(Element, String)] = data match {
+    case e: Element => Seq(e -> name)
     case b: Bundle => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => apply(s"${name}_$i", e)}
   }
-  def apply(dut: Module): Seq[(Data, String)] = apply("io", dut.io)
+  def apply(dut: Module): Seq[(Element, String)] = apply("io", dut.io)
 }
 
 private[iotesters] object getPorts {
-  def apply(dut: Module) = getDataNames(dut).unzip._1 partition (_.dir == INPUT)
+  def apply(dut: Module): (Seq[Element], Seq[Element]) = getDataNames(dut).unzip._1 partition (_.dir == INPUT)
 }
 
 private[iotesters] object validName {

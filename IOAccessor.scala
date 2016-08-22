@@ -35,9 +35,13 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     }
 
     def add_to_ports_by_direction(port: Data): Unit = {
-      port.dir match {
-        case INPUT => dut_inputs += port
-        case OUTPUT => dut_outputs += port
+      port match {
+        case e: Element =>
+          e.dir match {
+            case INPUT => dut_inputs += port
+            case OUTPUT => dut_outputs += port
+            case _ =>
+          }
         case _ =>
       }
     }
@@ -113,10 +117,14 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
     println("-" * 80)
 
     for((port,index) <- port_to_name.keys.toList.sortWith(orderPorts).zipWithIndex) {
+      val dir = port match {
+        case e: Element => show_dir(e.dir)
+        case _ => "-"
+      }
       val port_name = port_to_name(port)
       println("%3d  %3s   %-4s%4s    %-25s %s".format(
         index,
-        show_dir(port.dir),
+        dir,
         showDecoupledCode(port_name),
         if(ports_referenced.contains(port)) "y" else "",
         port_name,

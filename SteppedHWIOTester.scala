@@ -46,7 +46,6 @@ abstract class SteppedHWIOTester extends HWIOTester {
   step(1) // gives us a slot to put in our input and outputs from beginning
 
   def poke(io_port: Data, value: BigInt): Unit = {
-    require(io_port.dir == INPUT, s"poke error: $io_port not an input")
     require(!test_actions.last.input_map.contains(io_port),
       s"second poke to $io_port without step\nkeys ${test_actions.last.input_map.keys.mkString(",")}")
 
@@ -55,7 +54,6 @@ abstract class SteppedHWIOTester extends HWIOTester {
 //  def poke(io_port: Data, bool_value: Boolean) = poke(io_port, if(bool_value) 1 else 0)
 
   def expect(io_port: Data, value: BigInt): Unit = {
-    require(io_port.dir == OUTPUT, s"expect error: $io_port not an output")
     require(!test_actions.last.output_map.contains(io_port), s"second expect to $io_port without step")
 
     test_actions.last.output_map(io_port) = value
@@ -123,7 +121,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
   private def createVectorsAndTestsForOutput(output_port: Data, counter: Counter): Unit = {
     val output_values = Vec(
       test_actions.map { step =>
-        output_port.fromBits(UInt(step.output_map.getOrElse(output_port, BigInt(0))))
+        output_port.chiselCloneType.fromBits(UInt(step.output_map.getOrElse(output_port, BigInt(0))))
       }
     )
     val ok_to_test_output_values = Vec(
