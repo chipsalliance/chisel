@@ -54,7 +54,7 @@ object toBits {
     case t => error("Invalid operand expression for toBits!")
   }
   def hiercat(e: Expression, dt: Type): Expression = dt match {
-    case t:VectorType => seqCat((0 to t.size).map(i => hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER),t.tpe)))
+    case t:VectorType => seqCat((0 until t.size).reverse.map(i => hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER),t.tpe)))
     case t:BundleType => seqCat(t.fields.map(f => hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER), f.tpe)))
     case t:GroundType => e
     case t => error("Unknown type encountered in toBits!")
@@ -69,7 +69,7 @@ object toBitMask {
     case t => error("Invalid operand expression for toBits!")
   }
   def hiermask(e: Expression, maskType: Type, dataType: Type): Expression = (maskType, dataType) match {
-    case (mt:VectorType, dt:VectorType) => seqCat((0 to mt.size).map(i => hiermask(WSubIndex(e, i, mt.tpe, UNKNOWNGENDER), mt.tpe, dt.tpe)))
+    case (mt:VectorType, dt:VectorType) => seqCat((0 until mt.size).reverse.map(i => hiermask(WSubIndex(e, i, mt.tpe, UNKNOWNGENDER), mt.tpe, dt.tpe)))
     case (mt:BundleType, dt:BundleType) => seqCat((mt.fields zip dt.fields).map{ case (mf,df) =>
       hiermask(WSubField(e, mf.name, mf.tpe, UNKNOWNGENDER), mf.tpe, df.tpe) })
     case (mt:UIntType, dt:GroundType) => seqCat(List.fill(bitWidth(dt).intValue)(e))
@@ -108,7 +108,7 @@ object fromBits {
       case t:VectorType => {
         var currentOffset = offset
         var stmts = Seq.empty[Statement]
-        for (i <- (0 to t.size)) {
+        for (i <- (0 until t.size)) {
           val (tmpOffset, substmts) = getPart(WSubIndex(lhs, i, t.tpe, UNKNOWNGENDER), t.tpe, rhs, currentOffset)
           stmts = stmts ++ substmts
           currentOffset = tmpOffset
@@ -132,28 +132,37 @@ object fromBits {
 }
 
 object MemPortUtils {
-  def rPortToBundle(mem: DefMemory) =
-    BundleType(Seq(
-      Field("data", Flip, mem.dataType),
-      Field("addr", Default, UIntType(IntWidth(ceil_log2(mem.depth)))),
-      Field("en", Default, UIntType(IntWidth(1))),
-      Field("clk", Default, ClockType)))
-  def wPortToBundle(mem: DefMemory) =
-    BundleType(Seq(
-      Field("data", Default, mem.dataType),
-      Field("mask", Default, create_mask(mem.dataType)),
-      Field("addr", Default, UIntType(IntWidth(ceil_log2(mem.depth)))),
-      Field("en", Default, UIntType(IntWidth(1))),
-      Field("clk", Default, ClockType)))
-  def rwPortToBundle(mem: DefMemory) =
-    BundleType(Seq(
+
+  import AnalysisUtils._
+
+  def defaultPortSeq(mem: DefMemory) = Seq(
+    Field("addr", Default, UIntType(IntWidth(ceil_log2(mem.depth)))),
+    Field("en", Default, UIntType(IntWidth(1))),
+    Field("clk", Default, ClockType)
+  )
+
+  def rPortToBundle(mem: DefMemory) = BundleType(defaultPortSeq(mem) :+ Field("data", Flip, mem.dataType))
+
+  def wPortToBundle(mem: DefMemory) = {
+    val defaultSeq = defaultPortSeq(mem) :+ Field("data", Default, mem.dataType)
+    BundleType(
+      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("mask", Default, create_mask(mem.dataType))
+      else defaultSeq
+    )
+  }
+
+  def rwPortToBundle(mem: DefMemory) ={
+    val defaultSeq = defaultPortSeq(mem) ++ Seq(
       Field("wmode", Default, UIntType(IntWidth(1))),
       Field("wdata", Default, mem.dataType),
-      Field("rdata", Flip, mem.dataType),
-      Field("wmask", Default, create_mask(mem.dataType)),
-      Field("addr", Default, UIntType(IntWidth(ceil_log2(mem.depth)))),
-      Field("en", Default, UIntType(IntWidth(1))),
-      Field("clk", Default, ClockType)))
+      Field("rdata", Flip, mem.dataType)
+    )
+    BundleType(
+      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("wmask", Default, create_mask(mem.dataType))
+      else defaultSeq
+    )
+  }
+
   def memToBundle(s: DefMemory) = BundleType(
     s.readers.map(p => Field(p, Default, rPortToBundle(s))) ++
       s.writers.map(p => Field(p, Default, wPortToBundle(s))) ++
