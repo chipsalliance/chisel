@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3.util
 
 import chisel3._
@@ -16,7 +18,7 @@ object TransitName {
     from
   }
   def withSuffix[T<:HasId](suffix: String)(from: T, to: HasId): T = {
-    from.addPostnameHook((given_name: String) => {to.suggestName(given_name+suffix)})
+    from.addPostnameHook((given_name: String) => {to.suggestName(given_name + suffix)})
     from
   }
 }

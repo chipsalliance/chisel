@@ -84,7 +84,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
-  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = value.asUInt === (that & mask.asUInt)
-  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)
-  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that
+  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = value.asUInt === (that & mask.asUInt)    // scalastyle:ignore method.name
+  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)    // scalastyle:ignore method.name
+  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that        // scalastyle:ignore method.name
 }

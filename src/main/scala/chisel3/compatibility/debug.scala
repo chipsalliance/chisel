@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3.compatibility
 
 import chisel3.core._

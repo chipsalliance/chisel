@@ -3,7 +3,7 @@
 // Allows legacy users to continue using Chisel (capital C) package name while
 // moving to the more standard package naming convention chisel3 (lowercase c).
 
-package object Chisel {
+package object Chisel {     // scalastyle:ignore package.object.name
   type Direction = chisel3.core.Direction
   val INPUT = chisel3.core.Direction.Input
   val OUTPUT = chisel3.core.Direction.Output
@@ -72,29 +72,29 @@ package object Chisel {
   * Prefer storing the result and then extracting from it.
   */
   implicit class fromIntToLiteral(val x: Int) extends AnyVal {
-    def U: UInt = UInt(BigInt(x), Width())
-    def S: SInt = SInt(BigInt(x), Width())
+    def U: UInt = UInt(BigInt(x), Width())    // scalastyle:ignore method.name
+    def S: SInt = SInt(BigInt(x), Width())    // scalastyle:ignore method.name
 
-    def asUInt() = UInt(x, Width())
-    def asSInt() = SInt(x, Width())
-    def asUInt(width: Int) = UInt(x, width)
-    def asSInt(width: Int) = SInt(x, width)
+    def asUInt(): UInt = UInt(x, Width())
+    def asSInt(): SInt = SInt(x, Width())
+    def asUInt(width: Int): UInt = UInt(x, width)
+    def asSInt(width: Int): SInt = SInt(x, width)
   }
-  
-  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
-    def U: UInt = UInt(x, Width())
-    def S: SInt = SInt(x, Width())
 
-    def asUInt() = UInt(x, Width())
-    def asSInt() = SInt(x, Width())
-    def asUInt(width: Int) = UInt(x, width)
-    def asSInt(width: Int) = SInt(x, width)
+  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
+    def U: UInt = UInt(x, Width())       // scalastyle:ignore method.name
+    def S: SInt = SInt(x, Width())       // scalastyle:ignore method.name
+
+    def asUInt(): UInt = UInt(x, Width())
+    def asSInt(): SInt = SInt(x, Width())
+    def asUInt(width: Int): UInt = UInt(x, width)
+    def asSInt(width: Int): SInt = SInt(x, width)
   }
   implicit class fromStringToLiteral(val x: String) extends AnyVal {
-    def U: UInt = UInt(x)
+    def U: UInt = UInt(x)       // scalastyle:ignore method.name
   }
   implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
-    def B: Bool = Bool(x)
+    def B: Bool = Bool(x)       // scalastyle:ignore method.name
   }
 
 
@@ -105,7 +105,7 @@ package object Chisel {
   val throwException = chisel3.compatibility.throwException
   val debug = chisel3.compatibility.debug
 
-  object testers {
+  object testers {    // scalastyle:ignore object.name
     type BasicTester = chisel3.testers.BasicTester
     val TesterDriver = chisel3.testers.TesterDriver
   }

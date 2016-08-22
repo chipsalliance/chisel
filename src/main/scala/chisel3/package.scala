@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package object chisel3 {
+package object chisel3 {    // scalastyle:ignore package.object.name
   import scala.language.experimental.macros
 
   import internal.firrtl.Width
@@ -73,29 +73,29 @@ package object chisel3 {
   * Prefer storing the result and then extracting from it.
   */
   implicit class fromIntToLiteral(val x: Int) extends AnyVal {
-    def U: UInt = UInt(BigInt(x), Width())
-    def S: SInt = SInt(BigInt(x), Width())
+    def U: UInt = UInt(BigInt(x), Width())    // scalastyle:ignore method.name
+    def S: SInt = SInt(BigInt(x), Width())    // scalastyle:ignore method.name
 
-    def asUInt() = UInt(x, Width())
-    def asSInt() = SInt(x, Width())
-    def asUInt(width: Int) = UInt(x, width)
-    def asSInt(width: Int) = SInt(x, width)
+    def asUInt(): UInt = UInt(x, Width())
+    def asSInt(): SInt = SInt(x, Width())
+    def asUInt(width: Int): UInt = UInt(x, width)
+    def asSInt(width: Int): SInt = SInt(x, width)
   }
-  
-  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
-    def U: UInt = UInt(x, Width())
-    def S: SInt = SInt(x, Width())
 
-    def asUInt() = UInt(x, Width())
-    def asSInt() = SInt(x, Width())
-    def asUInt(width: Int) = UInt(x, width)
-    def asSInt(width: Int) = SInt(x, width)
+  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
+    def U: UInt = UInt(x, Width())    // scalastyle:ignore method.name
+    def S: SInt = SInt(x, Width())    // scalastyle:ignore method.name
+
+    def asUInt(): UInt = UInt(x, Width())
+    def asSInt(): SInt = SInt(x, Width())
+    def asUInt(width: Int): UInt = UInt(x, width)
+    def asSInt(width: Int): SInt = SInt(x, width)
   }
   implicit class fromStringToLiteral(val x: String) extends AnyVal {
-    def U: UInt = UInt(x)
+    def U: UInt = UInt(x)    // scalastyle:ignore method.name
   }
   implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
-    def B: Bool = Bool(x)
+    def B: Bool = Bool(x)    // scalastyle:ignore method.name
   }
 
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
@@ -103,9 +103,9 @@ package object chisel3 {
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
-    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x
-    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x
-    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
+    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x    // scalastyle:ignore method.name
+    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x      // scalastyle:ignore method.name
+    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x    // scalastyle:ignore method.name
   }
 
   // Compatibility with existing code.

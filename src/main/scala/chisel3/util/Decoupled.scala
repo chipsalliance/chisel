@@ -103,7 +103,7 @@ class Queue[T <: Data](gen: T, val entries: Int,
 extends Module(override_reset=override_reset) {
   def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) =
     this(gen, entries, pipe, flow, Some(_reset))
-  
+
   val io = IO(new QueueIO(gen, entries))
 
   val ram = Mem(entries, gen)
