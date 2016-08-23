@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.core.Annotation.StringValue
 import chisel3.core.{Annotation, Module}
 import chisel3.testers.BasicTester
 import org.scalatest._
@@ -27,9 +28,9 @@ class SomeSubMod(param1: Int, param2: Int) extends Module {
     val in = UInt(INPUT, 16)
     val out = SInt(OUTPUT, 32)
   }
-  annotate(Pass.PassId, this, Annotation.JustThisRef, s"SomeSubMod($param1, $param2)")
-  annotate(Pass.PassId, io.in, Annotation.AllRefs, "sub mod io.in")
-  annotate(Pass.PassId, io.out, Annotation.JustThisRef, "sub mod io.out")
+  annotate(this, Annotation.JustThisRef, Annotation.StringValue(s"SomeSubMod($param1, $param2)"))
+  annotate(io.in, Annotation.AllRefs, Annotation.StringValue("sub mod io.in"))
+  annotate(io.out, Annotation.JustThisRef, Annotation.StringValue("sub mod io.out"))
 }
 
 class AnnotatingExample extends Module {
@@ -51,13 +52,13 @@ class AnnotatingExample extends Module {
   val subModule2 = Module(new SomeSubMod(3, 4))
 
 
-  annotate(Pass.PassId, subModule2, Annotation.AllRefs, s"SomeSubMod was used")
+  annotate(subModule2, Annotation.AllRefs, Annotation.StringValue("SomeSubMod was used"))
 
-  annotate(Pass.PassId, x, Annotation.JustThisRef, "I am register X")
-  annotate(Pass.PassId, y, Annotation.AllRefs, "I am register Y")
-  annotate(Pass.PassId, io.a, Annotation.JustThisRef, "I am io.a")
-  annotate(Pass.PassId, io.bun.nested_1, Annotation.AllRefs, "I am io.bun.nested_1")
-  annotate(Pass.PassId, io.bun.nested_2, Annotation.JustThisRef, "I am io.bun.nested_2")
+  annotate(x, Annotation.JustThisRef, Annotation.StringValue("I am register X"))
+  annotate(y, Annotation.AllRefs, Annotation.StringValue("I am register Y"))
+  annotate(io.a, Annotation.JustThisRef, Annotation.StringValue("I am io.a"))
+  annotate(io.bun.nested_1, Annotation.AllRefs, Annotation.StringValue("I am io.bun.nested_1"))
+  annotate(io.bun.nested_2, Annotation.JustThisRef, Annotation.StringValue("I am io.bun.nested_2"))
 }
 
 class AnnotatingExampleTester extends BasicTester {
@@ -75,7 +76,7 @@ class AnnotatingExampleSpec extends FlatSpec with Matchers {
   }
   def valueOf(name: String, annotations: Seq[Annotation.Resolved]): Option[String] = {
     annotations.find { annotation => annotation.componentName == name } match {
-      case Some(annotation) => Some(annotation.value)
+      case Some(Annotation.Resolved(_, StringValue(value))) => Some(value)
       case _ => None
     }
   }
