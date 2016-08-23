@@ -47,6 +47,7 @@ object MemTransformUtils {
     }
     def updateStmtRefs(s: Statement): Statement = s map updateStmtRefs map updateRef match {
       case Connect(info, loc, exp) if loc == EmptyExpression => EmptyStmt 
+      case Connect(info, WSubIndex(EmptyExpression,_,_,_), exp)  => EmptyStmt
       case s => s
     }
     updateStmtRefs(s)
