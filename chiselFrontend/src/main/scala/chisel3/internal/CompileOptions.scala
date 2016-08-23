@@ -19,5 +19,5 @@ class CompileOptions(optionsMap: Map[String, String]) {
   val portDeterminesDirection: Boolean = optionsMap.getOrElse("portDeterminesDirection", looseDefault).toBoolean
   val tryConnectionsSwapped: Boolean = optionsMap.getOrElse("tryConnectionsSwapped", looseDefault).toBoolean
   val assumeLHSIsOutput: Boolean = optionsMap.getOrElse("assumeLHSIsOutput", looseDefault).toBoolean
-  val assumeNoDirectionIsOutput: Boolean = optionsMap.getOrElse("assumeNoDirectionIsOutput", looseDefault).toBoolean
+  val assumeNoDirectionIsInput: Boolean = optionsMap.getOrElse("assumeNoDirectionIsInput", looseDefault).toBoolean
 }
