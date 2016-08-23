@@ -16,17 +16,18 @@ import chisel3.internal.{throwException, SignalId}
   *
   */
 object Annotation {
-  trait Scope
   val Separator = ","
 
   trait Value
 
-  case class StringValue(value: String) extends Value
+  trait ScopeType
+  trait Absolute extends ScopeType
+  trait Relative extends ScopeType
 
-  case object AllRefs     extends Scope
-  case object JustThisRef extends Scope
+  case class AbsoluteStringValue(value: String) extends Value with Absolute
+  case class RelativeStringValue(value: String) extends Value with Relative
 
-  case class Raw(component: SignalId, scope: Scope, value: Value)
+  case class Raw(component: SignalId, value: Value)
 
   case class Resolved(componentName: String, value: Value) {
     override def toString: String = {
@@ -35,9 +36,9 @@ object Annotation {
   }
 
   def resolve(raw: Raw): Resolved = {
-    val componentName = raw.scope match {
-      case JustThisRef => s"${raw.component.pathName}"
-      case AllRefs     => s"${raw.component.parentModName}.${raw.component.signalName}"
+    val componentName = raw.value match {
+      case v: Absolute => s"${raw.component.pathName}"
+      case v: Relative => s"${raw.component.parentModName}.${raw.component.signalName}"
       case  _          => throwException(s"Unknown annotation scope for ${raw}")
     }
     Resolved(componentName, raw.value)

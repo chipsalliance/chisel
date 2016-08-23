@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.Annotation.StringValue
 import chisel3.core.{Annotation, Module}
 import chisel3.testers.BasicTester
 import org.scalatest._
@@ -19,18 +18,17 @@ import org.scalatest._
   * an annotation map, and then a post elaboration annotation processor can resolve
   * the keys and could serialize the annotations to a file for use by firrtl passes
   */
-object Pass {
-  val PassId = 42
-}
+case class ExampleRelative(value: String) extends Annotation.Value with Annotation.Relative
+case class ExampleAbsolute(value: String) extends Annotation.Value with Annotation.Absolute
 
 class SomeSubMod(param1: Int, param2: Int) extends Module {
   val io = new Bundle {
     val in = UInt(INPUT, 16)
     val out = SInt(OUTPUT, 32)
   }
-  annotate(this, Annotation.JustThisRef, Annotation.StringValue(s"SomeSubMod($param1, $param2)"))
-  annotate(io.in, Annotation.AllRefs, Annotation.StringValue("sub mod io.in"))
-  annotate(io.out, Annotation.JustThisRef, Annotation.StringValue("sub mod io.out"))
+  annotate(this, ExampleAbsolute(s"SomeSubMod($param1, $param2)"))
+  annotate(io.in, ExampleRelative("sub mod io.in"))
+  annotate(io.out, ExampleAbsolute("sub mod io.out"))
 }
 
 class AnnotatingExample extends Module {
@@ -52,13 +50,13 @@ class AnnotatingExample extends Module {
   val subModule2 = Module(new SomeSubMod(3, 4))
 
 
-  annotate(subModule2, Annotation.AllRefs, Annotation.StringValue("SomeSubMod was used"))
+  annotate(subModule2, ExampleRelative("SomeSubMod was used"))
 
-  annotate(x, Annotation.JustThisRef, Annotation.StringValue("I am register X"))
-  annotate(y, Annotation.AllRefs, Annotation.StringValue("I am register Y"))
-  annotate(io.a, Annotation.JustThisRef, Annotation.StringValue("I am io.a"))
-  annotate(io.bun.nested_1, Annotation.AllRefs, Annotation.StringValue("I am io.bun.nested_1"))
-  annotate(io.bun.nested_2, Annotation.JustThisRef, Annotation.StringValue("I am io.bun.nested_2"))
+  annotate(x, ExampleAbsolute("I am register X"))
+  annotate(y, ExampleRelative("I am register Y"))
+  annotate(io.a, ExampleAbsolute("I am io.a"))
+  annotate(io.bun.nested_1, ExampleRelative("I am io.bun.nested_1"))
+  annotate(io.bun.nested_2, ExampleAbsolute("I am io.bun.nested_2"))
 }
 
 class AnnotatingExampleTester extends BasicTester {
@@ -76,7 +74,8 @@ class AnnotatingExampleSpec extends FlatSpec with Matchers {
   }
   def valueOf(name: String, annotations: Seq[Annotation.Resolved]): Option[String] = {
     annotations.find { annotation => annotation.componentName == name } match {
-      case Some(Annotation.Resolved(_, StringValue(value))) => Some(value)
+      case Some(Annotation.Resolved(_, ExampleAbsolute(value))) => Some(value)
+      case Some(Annotation.Resolved(_, ExampleRelative(value))) => Some(value)
       case _ => None
     }
   }
