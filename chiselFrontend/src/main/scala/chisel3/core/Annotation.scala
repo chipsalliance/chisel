@@ -42,11 +42,11 @@ object Annotation {
       case v: Absolute => s"${raw.component.pathName}"
       case v: Relative => s"${raw.component.parentModName}.${raw.component.signalName}"
       case v: All =>
-        f"${raw.component}%29s" +
-        f"${raw.component.signalName}%25s" +
-        f"${raw.component.parentModName}%25s" +
-        f"${raw.component.pathName}%40s" +
-        f"${raw.component.parentPathName}%35s"
+        f"${raw.component}%-29s" +
+        f"${raw.component.signalName}%-25s" +
+        f"${raw.component.parentModName}%-25s" +
+        f"${raw.component.pathName}%-40s" +
+        f"${raw.component.parentPathName}%-35s"
 
       case  _          => throwException(s"Unknown annotation scope for ${raw}")
     }
