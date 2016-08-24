@@ -46,8 +46,8 @@ class AnnotatingExample extends Module {
   val x = Reg(UInt(width = 32))
   val y = Reg(UInt(width = 32))
 
-  val subModule1 = Module(new SomeSubMod(1, 2))
-  val subModule2 = Module(new SomeSubMod(3, 4))
+  val subModule1 = Module(new ModC(1, 2))
+  val subModule2 = Module(new ModC(3, 4))
 
 
   annotate(subModule2, ExampleRelative("SomeSubMod was used"))
@@ -84,7 +84,7 @@ class AnnotatingExampleSpec extends FlatSpec with Matchers {
     val circuit = Driver.elaborate{ () => new AnnotatingExampleTester }
     val annotations = circuit.annotations
 
-    // Driver.dumpFirrtl(circuit)
+     Driver.dumpFirrtl(circuit)
     // Driver.dumpFirrtl(circuit, Some(new java.io.File("./aaa_file.fir")))
     // Driver.dumpFirrtl(circuit, Some(new java.io.File("./aaa_file.blur")))
 

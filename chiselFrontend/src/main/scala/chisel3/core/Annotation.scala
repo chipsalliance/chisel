@@ -23,7 +23,9 @@ object Annotation {
   trait ScopeType
   trait Absolute extends ScopeType
   trait Relative extends ScopeType
+  trait All      extends ScopeType  /* for debugging, key becomes all name api strings */
 
+  // Trivial string annotations included here as an example, with relative and absolute types
   case class AbsoluteStringValue(value: String) extends Value with Absolute
   case class RelativeStringValue(value: String) extends Value with Relative
 
@@ -31,7 +33,7 @@ object Annotation {
 
   case class Resolved(componentName: String, value: Value) {
     override def toString: String = {
-      s"$Separator$componentName$Separator$value"
+      s"$componentName$Separator$value"
     }
   }
 
@@ -39,6 +41,13 @@ object Annotation {
     val componentName = raw.value match {
       case v: Absolute => s"${raw.component.pathName}"
       case v: Relative => s"${raw.component.parentModName}.${raw.component.signalName}"
+      case v: All =>
+        f"${raw.component}%29s" +
+        f"${raw.component.signalName}%25s" +
+        f"${raw.component.parentModName}%25s" +
+        f"${raw.component.pathName}%40s" +
+        f"${raw.component.parentPathName}%35s"
+
       case  _          => throwException(s"Unknown annotation scope for ${raw}")
     }
     Resolved(componentName, raw.value)
