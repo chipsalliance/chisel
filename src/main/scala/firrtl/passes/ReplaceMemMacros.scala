@@ -33,11 +33,12 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
           
           // prototype mem
           if (ref == None) {
-            val newName = moduleNamespace.newName(m.name)
-            val newMem = m.copy(name = newName)
-            memMods ++= createMemModule(newMem)
+            val newWrapperName = moduleNamespace.newName(m.name)
+            val newMemBBName = moduleNamespace.newName(m.name + "_ext")
+            val newMem = m.copy(name = newMemBBName)
+            memMods ++= createMemModule(newMem,newWrapperName)
             uniqueMems += newMem
-            WDefInstance(info, m.name, newMem.name, UnknownType) 
+            WDefInstance(info, m.name, newWrapperName, UnknownType) 
           }
           else {
             val r = ref.get match {case s: String => s}
@@ -63,17 +64,16 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
   }  
 
   // from Albert
-  def createMemModule(m: DefMemory): Seq[DefModule] = {
+  def createMemModule(m: DefMemory, wrapperName: String): Seq[DefModule] = {
     assert(m.dataType != UnknownType)
-    val bbName = m.name + "_ext"
     val stmts = ArrayBuffer[Statement]()
     val wrapperioPorts = MemPortUtils.memToBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
     val bbProto = m.copy(dataType = flattenType(m.dataType))
     //val bbioPorts = MemPortUtils.memToBundle(bbProto).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
     val bbioPorts = MemPortUtils.memToFlattenBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
 
-    stmts += WDefInstance(NoInfo,bbName,bbName,UnknownType)
-    val bbRef = createRef(bbName)
+    stmts += WDefInstance(NoInfo,m.name,m.name,UnknownType)
+    val bbRef = createRef(m.name)
     stmts ++= (m.readers zip bbProto.readers).map{ 
       case (x,y) => adaptReader(createRef(x),m,createSubField(bbRef,y),bbProto)
     }.flatten 
@@ -83,8 +83,8 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     stmts ++= (m.readwriters zip bbProto.readwriters).map{ 
       case (x,y) => adaptReadWriter(createRef(x),m,createSubField(bbRef,y),bbProto)
     }.flatten  
-    val wrapper = Module(NoInfo,m.name,wrapperioPorts,Block(stmts))   
-    val bb = ExtModule(NoInfo,bbName,bbioPorts) 
+    val wrapper = Module(NoInfo,wrapperName,wrapperioPorts,Block(stmts))   
+    val bb = ExtModule(NoInfo,m.name,bbioPorts) 
     // TODO: Annotate? -- use actual annotation map
 
     // add to conf file

@@ -9,7 +9,7 @@ import firrtl.Utils._
 
 case class AppendableInfo(fields: Map[String,Any]) extends Info {
   def append(a: Map[String,Any]) = this.copy(fields = fields ++ a)
-  def append(a: Tuple2[String,Any]): AppendableInfo = append(Map(a))
+  def append(a: (String,Any)): AppendableInfo = append(Map(a))
   def get(f: String) = fields.get(f)
   override def equals(b: Any) = b match {
     case i: AppendableInfo => fields - "info" == i.fields - "info"
@@ -89,7 +89,7 @@ object AnalysisUtils {
     case i: AppendableInfo => i.append(add)
     case _ => AppendableInfo(fields = add + ("info" -> info))
   }
-  def appendInfo[T <: Info](info: T, add: Tuple2[String,Any]): AppendableInfo = appendInfo(info,Map(add))
+  def appendInfo[T <: Info](info: T, add: (String,Any)): AppendableInfo = appendInfo(info,Map(add))
   def getInfo[T <: Info](info: T, k: String) = info match{
     case i: AppendableInfo => i.get(k)
     case _ => None

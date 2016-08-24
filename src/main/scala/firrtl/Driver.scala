@@ -58,7 +58,7 @@ Optional Arguments:
   --inferRW <circuit>            Enable readwrite port inference for the target circuit
   --inline <module>|<instance>   Inline a module (e.g. "MyModule") or instance (e.g. "MyModule.myinstance")
 
-  --replSeqMem -c:<circuit>:-i<filename>:-o<filename> 
+  --replSeqMem -c:<circuit>:-i:<filename>:-o:<filename> 
   *** Replace sequential memories with blackboxes + configuration file
   *** Input configuration file optional
   *** Note: sub-arguments to --replSeqMem should be delimited by : and not white space!

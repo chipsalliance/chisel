@@ -12,6 +12,10 @@ case object InputConfigFileName extends PassOption
 case object OutputConfigFileName extends PassOption
 case object PassCircuitName extends PassOption
 
+object Error {
+  def apply[T <: Any](msg: String) = throw new Exception(msg)
+}
+
 object PassConfigUtil {
 
   def getPassOptions(t: String, usage: String = "") = {
@@ -31,7 +35,7 @@ object PassConfigUtil {
         case "-c" :: value :: tail =>
           nextPassOption(map + (PassCircuitName -> value), tail)
         case option :: tail =>
-          throw new Exception("Unknown option " + option + usage)
+          Error("Unknown option " + option + usage)
       }
     }
     nextPassOption(Map[PassOption, String](), passArgList)
@@ -50,7 +54,7 @@ class ConfWriter(filename: String) {
     val ports = (writers ++ readers ++ readwriters).mkString(",")
     val maskGranConf = if (maskGran == None) "" else s"mask_gran ${maskGran.get}"
     val width = bitWidth(m.dataType)
-    val conf = s"name ${m.name}_ext depth ${m.depth} width ${width} ports ${ports} ${maskGranConf} \n"
+    val conf = s"name ${m.name} depth ${m.depth} width ${width} ports ${ports} ${maskGranConf} \n"
     outputBuffer.append(conf)
   }
   def serialize = {
@@ -68,7 +72,7 @@ case class ReplSeqMemAnnotation(t: String, tID: TransID)
   Pass to replace sequential memories with blackboxes + configuration file
 
 Usage: 
-  --replSeqMem -c:<circuit>:-i<filename>:-o<filename>
+  --replSeqMem -c:<circuit>:-i:<filename>:-o:<filename>
   *** Note: sub-arguments to --replSeqMem should be delimited by : and not white space!
 
 Required Arguments:
@@ -82,11 +86,11 @@ Optional Arguments:
   val passOptions = PassConfigUtil.getPassOptions(t,usage)
   val outputConfig = passOptions.getOrElse(
     OutputConfigFileName, 
-    throw new Exception("No output config file provided for ReplSeqMem!" + usage)
+    Error("No output config file provided for ReplSeqMem!" + usage)
   )
   val passCircuit = passOptions.getOrElse(
     PassCircuitName, 
-    throw new Exception("No circuit name specified for ReplSeqMem!" + usage)
+    Error("No circuit name specified for ReplSeqMem!" + usage)
   )
   val target = CircuitName(passCircuit)
   def duplicate(n: Named) = this.copy(t=t.replace("-c:"+passCircuit,"-c:"+n.name))
@@ -98,6 +102,14 @@ class ReplSeqMem(transID: TransID) extends Transform with LazyLogging {
     map get transID match {
       case Some(p) => p get CircuitName(circuit.main) match {
         case Some(ReplSeqMemAnnotation(t, _)) => {
+
+          val inputFileName = PassConfigUtil.getPassOptions(t).getOrElse(InputConfigFileName,"")
+          val inConfigFile = {
+            if (inputFileName.isEmpty) None 
+            else if (new java.io.File(inputFileName).exists) Some(new YamlFileReader(inputFileName))
+            else Error("Input configuration file does not exist!")
+          }
+
           val outConfigFile = new ConfWriter(PassConfigUtil.getPassOptions(t).get(OutputConfigFileName).get)
           TransformResult(
             (
@@ -105,6 +117,7 @@ class ReplSeqMem(transID: TransID) extends Transform with LazyLogging {
                 Legalize,
                 AnnotateMemMacros,
                 UpdateDuplicateMemMacros,
+                new AnnotateValidMemConfigs(inConfigFile),
                 new ReplaceMemMacros(outConfigFile),
                 RemoveEmpty,
                 CheckInitialization,
