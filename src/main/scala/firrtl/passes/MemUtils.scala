@@ -61,6 +61,7 @@ object toBits {
   }
 }
 
+// TODO: make easier to understand
 object toBitMask {
   def apply(e: Expression, dataType: Type): Expression = e match {
     case ex: WRef => hiermask(ex,ex.tpe,dataType)
@@ -143,6 +144,12 @@ object MemPortUtils {
     Field("clk", Default, ClockType)
   )
 
+  def getFillWMask(mem: DefMemory) = {
+    val maskGran = getInfo(mem.info,"maskGran")
+    if (maskGran == None) false
+    else maskGran.get == 1
+  }
+
   def rPortToBundle(mem: DefMemory) = BundleType(defaultPortSeq(mem) :+ Field("data", Flip, mem.dataType))
   def rPortToFlattenBundle(mem: DefMemory) = BundleType(defaultPortSeq(mem) :+ Field("data", Flip, flattenType(mem.dataType)))
 
@@ -153,13 +160,20 @@ object MemPortUtils {
       else defaultSeq
     )
   }
+
   def wPortToFlattenBundle(mem: DefMemory) = {
     val defaultSeq = defaultPortSeq(mem) :+ Field("data", Default, flattenType(mem.dataType))
     BundleType(
-      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("mask", Default, flattenType(create_mask(mem.dataType)))
+      if (containsInfo(mem.info,"maskGran")) {
+        defaultSeq :+ {
+          if (getFillWMask(mem)) Field("mask", Default, flattenType(mem.dataType))
+          else Field("mask", Default, flattenType(create_mask(mem.dataType)))
+        }
+      }
       else defaultSeq
     )  
   }
+  // TODO: Don't use create_mask???
 
   def rwPortToBundle(mem: DefMemory) ={
     val defaultSeq = defaultPortSeq(mem) ++ Seq(
@@ -172,6 +186,7 @@ object MemPortUtils {
       else defaultSeq
     )
   }
+
   def rwPortToFlattenBundle(mem: DefMemory) ={
     val defaultSeq = defaultPortSeq(mem) ++ Seq(
       Field("wmode", Default, UIntType(IntWidth(1))),
@@ -179,15 +194,21 @@ object MemPortUtils {
       Field("rdata", Flip, flattenType(mem.dataType))
     )
     BundleType(
-      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("wmask", Default, flattenType(create_mask(mem.dataType)))
+      if (containsInfo(mem.info,"maskGran")) {
+        defaultSeq :+ {
+          if (getFillWMask(mem)) Field("wmask", Default, flattenType(mem.dataType))
+          else Field("wmask", Default, flattenType(create_mask(mem.dataType)))
+        }
+      }
       else defaultSeq
-    )
+    )  
   }
 
   def memToBundle(s: DefMemory) = BundleType(
     s.readers.map(p => Field(p, Default, rPortToBundle(s))) ++
       s.writers.map(p => Field(p, Default, wPortToBundle(s))) ++
       s.readwriters.map(p => Field(p, Default, rwPortToBundle(s))))
+  
   def memToFlattenBundle(s: DefMemory) = BundleType(
     s.readers.map(p => Field(p, Default, rPortToFlattenBundle(s))) ++
       s.writers.map(p => Field(p, Default, wPortToFlattenBundle(s))) ++

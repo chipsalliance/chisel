@@ -69,7 +69,6 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     val stmts = ArrayBuffer[Statement]()
     val wrapperioPorts = MemPortUtils.memToBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
     val bbProto = m.copy(dataType = flattenType(m.dataType))
-    //val bbioPorts = MemPortUtils.memToBundle(bbProto).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
     val bbioPorts = MemPortUtils.memToFlattenBundle(m).fields.map(f => Port(NoInfo, f.name, Input, f.tpe)) 
 
     stmts += WDefInstance(NoInfo,m.name,m.name,UnknownType)
@@ -92,66 +91,73 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     Seq(bb,wrapper)
   }
 
-  def adaptReader(aggPort: Expression, aggMem: DefMemory, groundPort: Expression, groundMem: DefMemory) = Seq(
-    connectFields(groundPort,"addr",aggPort,"addr"),
-    connectFields(groundPort,"en",aggPort,"en"),
-    connectFields(groundPort,"clk",aggPort,"clk"),
+  // TODO: get rid of copy pasta
+  def adaptReader(wrapperPort: Expression, wrapperMem: DefMemory, bbPort: Expression, bbMem: DefMemory) = Seq(
+    connectFields(bbPort,"addr",wrapperPort,"addr"),
+    connectFields(bbPort,"en",wrapperPort,"en"),
+    connectFields(bbPort,"clk",wrapperPort,"clk"),
     fromBits(
-      WSubField(aggPort,"data",aggMem.dataType,UNKNOWNGENDER),
-      WSubField(groundPort,"data",groundMem.dataType,UNKNOWNGENDER)
+      WSubField(wrapperPort,"data",wrapperMem.dataType,UNKNOWNGENDER),
+      WSubField(bbPort,"data",bbMem.dataType,UNKNOWNGENDER)
     )
   )
 
-  def adaptWriter(aggPort: Expression, aggMem: DefMemory, groundPort: Expression, groundMem: DefMemory) = {
+  def adaptWriter(wrapperPort: Expression, wrapperMem: DefMemory, bbPort: Expression, bbMem: DefMemory) = {
     val defaultSeq = Seq(
-      connectFields(groundPort,"addr",aggPort,"addr"),
-      connectFields(groundPort,"en",aggPort,"en"),
-      connectFields(groundPort,"clk",aggPort,"clk"),
+      connectFields(bbPort,"addr",wrapperPort,"addr"),
+      connectFields(bbPort,"en",wrapperPort,"en"),
+      connectFields(bbPort,"clk",wrapperPort,"clk"),
       Connect(
         NoInfo,
-        WSubField(groundPort,"data",groundMem.dataType,UNKNOWNGENDER),
-        toBits(WSubField(aggPort,"data",aggMem.dataType,UNKNOWNGENDER))
+        WSubField(bbPort,"data",bbMem.dataType,UNKNOWNGENDER),
+        toBits(WSubField(wrapperPort,"data",wrapperMem.dataType,UNKNOWNGENDER))
       )
     )
-    if (containsInfo(aggMem.info,"maskGran")) {
-      val wrapperMask = create_mask(aggMem.dataType)
-      val bbMask = flattenType(wrapperMask)
+    if (containsInfo(wrapperMem.info,"maskGran")) {
+      val wrapperMask = create_mask(wrapperMem.dataType)
+      val fillWMask = getFillWMask(wrapperMem)
+      val bbMask = if (fillWMask) flattenType(wrapperMem.dataType) else flattenType(wrapperMask)
+      val rhs = {
+        if (fillWMask) toBitMask(WSubField(wrapperPort,"mask",wrapperMask,UNKNOWNGENDER),wrapperMem.dataType)
+        else toBits(WSubField(wrapperPort,"mask",wrapperMask,UNKNOWNGENDER))
+      }
       defaultSeq :+ Connect(
         NoInfo,
-        //WSubField(groundPort,"mask",create_mask(groundMem.dataType),UNKNOWNGENDER),
-        //toBitMask(WSubField(aggPort,"mask",create_mask(aggMem.dataType),UNKNOWNGENDER),aggMem.dataType)
-        WSubField(groundPort,"mask",bbMask,UNKNOWNGENDER),
-        toBits(WSubField(aggPort,"mask",wrapperMask,UNKNOWNGENDER))
+        WSubField(bbPort,"mask",bbMask,UNKNOWNGENDER),
+        rhs
       )
     }
     else defaultSeq
   }
 
-  def adaptReadWriter(aggPort: Expression, aggMem: DefMemory, groundPort: Expression, groundMem: DefMemory) = {
+  def adaptReadWriter(wrapperPort: Expression, wrapperMem: DefMemory, bbPort: Expression, bbMem: DefMemory) = {
     val defaultSeq = Seq(
-      connectFields(groundPort,"addr",aggPort,"addr"),
-      connectFields(groundPort,"en",aggPort,"en"),
-      connectFields(groundPort,"clk",aggPort,"clk"),
-      connectFields(groundPort,"wmode",aggPort,"wmode"),
+      connectFields(bbPort,"addr",wrapperPort,"addr"),
+      connectFields(bbPort,"en",wrapperPort,"en"),
+      connectFields(bbPort,"clk",wrapperPort,"clk"),
+      connectFields(bbPort,"wmode",wrapperPort,"wmode"),
       Connect(
         NoInfo,
-        WSubField(groundPort,"wdata",groundMem.dataType,UNKNOWNGENDER),
-        toBits(WSubField(aggPort,"wdata",aggMem.dataType,UNKNOWNGENDER))
+        WSubField(bbPort,"wdata",bbMem.dataType,UNKNOWNGENDER),
+        toBits(WSubField(wrapperPort,"wdata",wrapperMem.dataType,UNKNOWNGENDER))
       ),
       fromBits(
-        WSubField(aggPort,"rdata",aggMem.dataType,UNKNOWNGENDER),
-        WSubField(groundPort,"rdata",groundMem.dataType,UNKNOWNGENDER)
+        WSubField(wrapperPort,"rdata",wrapperMem.dataType,UNKNOWNGENDER),
+        WSubField(bbPort,"rdata",bbMem.dataType,UNKNOWNGENDER)
       )
     )
-    if (containsInfo(aggMem.info,"maskGran")){
-      val wrapperMask = create_mask(aggMem.dataType)
-      val bbMask = flattenType(wrapperMask)
+    if (containsInfo(wrapperMem.info,"maskGran")) {
+      val wrapperMask = create_mask(wrapperMem.dataType)
+      val fillWMask = getFillWMask(wrapperMem)
+      val bbMask = if (fillWMask) flattenType(wrapperMem.dataType) else flattenType(wrapperMask)
+      val rhs = {
+        if (fillWMask) toBitMask(WSubField(wrapperPort,"wmask",wrapperMask,UNKNOWNGENDER),wrapperMem.dataType)
+        else toBits(WSubField(wrapperPort,"wmask",wrapperMask,UNKNOWNGENDER))
+      }
       defaultSeq :+ Connect(
         NoInfo,
-        //WSubField(groundPort,"wmask",create_mask(groundMem.dataType),UNKNOWNGENDER),
-        //toBitMask(WSubField(aggPort,"wmask",create_mask(aggMem.dataType),UNKNOWNGENDER),aggMem.dataType)
-        WSubField(groundPort,"wmask",bbMask,UNKNOWNGENDER),
-        toBits(WSubField(aggPort,"wmask",wrapperMask,UNKNOWNGENDER))
+        WSubField(bbPort,"wmask",bbMask,UNKNOWNGENDER),
+        rhs
       )
     }
     else defaultSeq

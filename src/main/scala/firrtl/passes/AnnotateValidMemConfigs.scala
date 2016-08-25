@@ -13,7 +13,7 @@ object CustomYAMLProtocol extends DefaultYamlProtocol {
   implicit val md = yamlFormat2(MemDimension)
   implicit val sr = yamlFormat4(SRAMRules)
   implicit val wm = yamlFormat2(WMaskArg)
-  implicit val sc = yamlFormat10(SRAMCompiler)
+  implicit val sc = yamlFormat11(SRAMCompiler)
 }
 
 case class DimensionRules(
@@ -113,7 +113,10 @@ case class SRAMCompiler(
     // config pattern
     configPattern: Option[String],
     // read documentation for details 
-    defaultArgs: Option[String]
+    defaultArgs: Option[String],
+    // default behavior (if not used) is to have wmask port width = datawidth/maskgran
+    // if true: wmask port width pre-filled to datawidth
+    fillWMask: Boolean
 ){
   require(portType == "RW" || portType == "R,W", "Memory must be single port RW or dual port R,W")
   require(
@@ -143,16 +146,19 @@ case class SRAMCompiler(
       if (validCombos.nonEmpty) validCombos.head
       else getBestAlternative(m)
     }
+    val usesMaskGran = containsInfo(m.info,"maskGran")
     if (configPattern != None) {
       val newConfig = usedConfig.serialize(configPattern.get) + "\n"
       val currentBuff = {
-        if (containsInfo(m.info,"maskGran")) maskConfigOutputBuffer 
+        if (usesMaskGran) maskConfigOutputBuffer 
         else noMaskConfigOutputBuffer
       }
       if (!currentBuff.toString.contains(newConfig))
         currentBuff.append(newConfig)
     }
-    m.copy(info = appendInfo(m.info,"sramConfig" -> usedConfig))    
+    val temp = appendInfo(m.info,"sramConfig" -> usedConfig)
+    val newInfo = if(usesMaskGran && fillWMask) appendInfo(temp,"maskGran" -> 1) else temp
+    m.copy(info = newInfo)    
   }
 
   // TODO: Should you really be splitting in 2 if, say, depth is 1 more than allowed? should be thresholded and
