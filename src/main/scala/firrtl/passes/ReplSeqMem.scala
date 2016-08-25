@@ -13,7 +13,13 @@ case object OutputConfigFileName extends PassOption
 case object PassCircuitName extends PassOption
 
 object Error {
-  def apply[T <: Any](msg: String) = throw new Exception(msg)
+  def apply(msg: String) = throw new Exception(msg)
+}
+object Warn {
+  def apply[T <: Any](msg: String, r: T) = {
+    println(Console.RED + msg + Console.RESET)
+    r
+  }
 }
 
 object PassConfigUtil {

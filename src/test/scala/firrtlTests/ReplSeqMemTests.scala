@@ -17,7 +17,7 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     new EmitFirrtl(writer)
   )
 
-  "ReplSeqMem" should "generated blackbox wrappers (no wmask, r, w ports)" in {
+  "ReplSeqMem" should "generate blackbox wrappers (no wmask, r, w ports)" in {
     val input = """
 circuit sram6t :
   module sram6t :
