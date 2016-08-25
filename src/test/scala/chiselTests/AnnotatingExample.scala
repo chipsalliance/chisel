@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.core.Module
-import chisel3.internal.SignalId
+import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import org.scalatest._
 
@@ -96,17 +96,17 @@ case object AllRefs     extends AnnotationScope
 case object JustThisRef extends AnnotationScope
 
 object AnnotationKey {
-  def apply(component: SignalId): AnnotationKey = {
+  def apply(component: InstanceId): AnnotationKey = {
     AnnotationKey(component, AllRefs)
   }
 }
-case class AnnotationKey(val component: SignalId, scope: AnnotationScope) {
+case class AnnotationKey(val component: InstanceId, scope: AnnotationScope) {
   override def toString: String = {
     scope match {
       case JustThisRef =>
         s"${component.pathName}"
       case AllRefs =>
-        s"${component.parentModName}.${component.signalName}"
+        s"${component.parentModName}.${component.instanceName}"
       case  _ =>
         s"${component.toString}_unknown_scope"
     }

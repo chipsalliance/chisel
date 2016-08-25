@@ -78,7 +78,7 @@ extends HasId {
 
 
   /** Signal name (for simulation). */
-  override def signalName =
+  override def instanceName =
     if (_parent == None) name else _component match {
       case None => getRef.name
       case Some(c) => getRef fullName c
