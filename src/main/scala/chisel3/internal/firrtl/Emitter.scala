@@ -87,7 +87,7 @@ private class Emitter(circuit: Circuit) {
         ""
       case None =>
         defnMap((m.id.desiredName, defn)) = m
-        m.id setModName m.id.name
+        m.id setModName m.name
         moduleDecl(m) + defn
     }
   }
