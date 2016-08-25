@@ -49,9 +49,16 @@ object Vec {
     // DummyImplicit or additional type parameter will break some code.
     require(!elts.isEmpty)
     val width = elts.map(_.width).reduce(_ max _)
+    // If an element has a direction associated with it, use the bulk connect operator.
     val vec = Wire(new Vec(elts.head.cloneTypeWidth(width), elts.length))
-    for ((v, e) <- vec zip elts)
-      v := e
+    def doConnect(sink: T, source: T) = if (elts.head.flatten.exists(_.firrtlDirection != Direction.Unspecified)) {
+      sink bulkConnect source
+    } else {
+      sink connect source
+    }
+    for ((v, e) <- vec zip elts) {
+      doConnect(v, e)
+    }
     vec
   }
 
