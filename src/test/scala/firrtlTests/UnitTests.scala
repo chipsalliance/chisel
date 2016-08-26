@@ -203,7 +203,8 @@ class UnitTests extends FirrtlFlatSpec {
       InferWidths,
       PullMuxes,
       ExpandConnects,
-      RemoveAccesses
+      RemoveAccesses,
+      ConstProp
     )
     val input =
       """circuit AssignViaDeref : 
@@ -221,7 +222,7 @@ class UnitTests extends FirrtlFlatSpec {
      val check = Seq(
        """wire GEN_0 : { a : UInt<8>}""",
        """GEN_0.a <= table[0].a""",
-       """when eq(UInt<1>("h1"), UInt<1>("h1")) :""",
+       """when UInt<1>("h1") :""",
        """GEN_0.a <= table[1].a""",
        """wire GEN_1 : UInt<8>""",
        """when eq(UInt<1>("h0"), GEN_0.a) :""",

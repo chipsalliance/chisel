@@ -62,6 +62,26 @@ case class VRandom(width: BigInt) extends Expression {
 }
 class VerilogEmitter extends Emitter {
   val tab = "  "
+  def AND(e1: WrappedExpression, e2: WrappedExpression): Expression = {
+    if (e1 == e2) e1.e1
+    else if ((e1 == we(zero)) | (e2 == we(zero))) zero
+    else if (e1 == we(one)) e2.e1
+    else if (e2 == we(one)) e1.e1
+    else DoPrim(And, Seq(e1.e1, e2.e1), Nil, UIntType(IntWidth(1)))
+  }
+  def OR(e1: WrappedExpression, e2: WrappedExpression): Expression = {
+    if (e1 == e2) e1.e1
+    else if ((e1 == we(one)) | (e2 == we(one))) one
+    else if (e1 == we(zero)) e2.e1
+    else if (e2 == we(zero)) e1.e1
+    else DoPrim(Or, Seq(e1.e1, e2.e1), Nil, UIntType(IntWidth(1)))
+  }
+  def NOT(e: WrappedExpression): Expression = {
+    if (e == we(one)) zero
+    else if (e == we(zero)) one
+    else DoPrim(Eq, Seq(e.e1, zero), Nil, UIntType(IntWidth(1)))
+  }
+
   def wref(n: String, t: Type) = WRef(n, t, ExpKind(), UNKNOWNGENDER)
   def remove_root(ex: Expression): Expression = ex match {
     case ex: WSubField => ex.exp match {

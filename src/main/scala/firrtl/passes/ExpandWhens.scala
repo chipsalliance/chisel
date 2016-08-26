@@ -34,10 +34,6 @@ import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 
-// Datastructures
-import scala.collection.mutable
-import scala.collection.mutable.{HashMap, LinkedHashMap, ArrayBuffer}
-
 import annotation.tailrec
 
 /** Expand Whens
@@ -49,6 +45,9 @@ import annotation.tailrec
 */
 object ExpandWhens extends Pass {
   def name = "Expand Whens"
+  type Netlist = collection.mutable.LinkedHashMap[WrappedExpression, Expression]
+  type Simlist = collection.mutable.ArrayBuffer[Statement]
+  type Defaults = Seq[collection.mutable.Map[WrappedExpression, Expression]]
 
   // ========== Expand When Utilz ==========
   private def getFemaleRefs(n: String, t: Type, g: Gender): Seq[Expression] = {
@@ -61,7 +60,7 @@ object ExpandWhens extends Pass {
       }
     }
   }
-  private def expandNetlist(netlist: LinkedHashMap[WrappedExpression, Expression]) =
+  private def expandNetlist(netlist: Netlist) =
     netlist map {
       case (k, WInvalid()) => IsInvalid(NoInfo, k.e1)
       case (k, v) => Connect(NoInfo, k.e1, v)
@@ -69,8 +68,7 @@ object ExpandWhens extends Pass {
   // Searches nested scopes of defaults for lvalue
   // defaults uses mutable Map because we are searching LinkedHashMaps and conversion to immutable is VERY slow
   @tailrec
-  private def getDefault(lvalue: WrappedExpression,
-      defaults: Seq[mutable.Map[WrappedExpression, Expression]]): Option[Expression] = {
+  private def getDefault(lvalue: WrappedExpression, defaults: Defaults): Option[Expression] = {
     defaults match {
       case Nil => None
       case head :: tail => head get lvalue match {
@@ -80,18 +78,22 @@ object ExpandWhens extends Pass {
     }
   }
 
+  private def AND(e1: Expression, e2: Expression) =
+    DoPrim(And, Seq(e1, e2), Nil, UIntType(IntWidth(1)))
+  private def NOT(e: Expression) =
+    DoPrim(Eq, Seq(e, zero), Nil, UIntType(IntWidth(1)))
+
   // ------------ Pass -------------------
   def run(c: Circuit): Circuit = {
-    def expandWhens(m: Module): (LinkedHashMap[WrappedExpression, Expression], ArrayBuffer[Statement], Statement) = {
+    def expandWhens(m: Module): (Netlist, Simlist, Statement) = {
       val namespace = Namespace(m)
-      val simlist = ArrayBuffer[Statement]()
+      val simlist = new Simlist
 
       // defaults ideally would be immutable.Map but conversion from mutable.LinkedHashMap to mutable.Map is VERY slow
-      def expandWhens(
-          netlist: LinkedHashMap[WrappedExpression, Expression],
-          defaults: Seq[mutable.Map[WrappedExpression, Expression]],
-          p: Expression)
-          (s: Statement): Statement = s match {
+      def expandWhens(netlist: Netlist,
+                      defaults: Defaults,
+                      p: Expression)
+                      (s: Statement): Statement = s match {
         case w: DefWire =>
           netlist ++= (getFemaleRefs(w.name, w.tpe, BIGENDER) map (ref => we(ref) -> WVoid()))
           w
@@ -105,8 +107,8 @@ object ExpandWhens extends Pass {
           netlist(c.expr) = WInvalid()
           EmptyStmt
         case s: Conditionally =>
-          val conseqNetlist = LinkedHashMap[WrappedExpression, Expression]()
-          val altNetlist = LinkedHashMap[WrappedExpression, Expression]()
+          val conseqNetlist = new Netlist
+          val altNetlist = new Netlist
           val conseqStmt = expandWhens(conseqNetlist, netlist +: defaults, AND(p, s.pred))(s.conseq)
           val altStmt = expandWhens(altNetlist, netlist +: defaults, AND(p, NOT(s.pred)))(s.alt)
 
@@ -145,7 +147,7 @@ object ExpandWhens extends Pass {
           EmptyStmt
         case s => s map expandWhens(netlist, defaults, p)
       }
-      val netlist = LinkedHashMap[WrappedExpression, Expression]()
+      val netlist = new Netlist
       // Add ports to netlist
       netlist ++= (m.ports flatMap { case Port(_, name, dir, tpe) =>
         getFemaleRefs(name, tpe, to_gender(dir)) map (ref => we(ref) -> WVoid())

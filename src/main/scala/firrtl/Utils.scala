@@ -98,28 +98,6 @@ object Utils extends LazyLogging {
      val ix = if (i < 0) ((-1 * i) - 1) else i
      ceil_log2(ix + 1) + 1
   }
-  def EQV (e1:Expression,e2:Expression) : Expression =
-     DoPrim(Eq, Seq(e1, e2), Nil, e1.tpe)
-  // TODO: these should be fixed
-  def AND (e1:WrappedExpression,e2:WrappedExpression) : Expression = {
-     if (e1 == e2) e1.e1
-     else if ((e1 == we(zero)) | (e2 == we(zero))) zero
-     else if (e1 == we(one)) e2.e1
-     else if (e2 == we(one)) e1.e1
-     else DoPrim(And,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
-  }
-  def OR (e1:WrappedExpression,e2:WrappedExpression) : Expression = {
-     if (e1 == e2) e1.e1
-     else if ((e1 == we(one)) | (e2 == we(one))) one
-     else if (e1 == we(zero)) e2.e1
-     else if (e2 == we(zero)) e1.e1
-     else DoPrim(Or,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
-  }
-  def NOT (e1:WrappedExpression) : Expression = {
-     if (e1 == we(one)) zero
-     else if (e1 == we(zero)) one
-     else DoPrim(Eq,Seq(e1.e1,zero),Seq(),UIntType(IntWidth(1)))
-  }
 
   def create_mask(dt: Type): Type = dt match {
     case t: VectorType => VectorType(create_mask(t.tpe),t.size)
