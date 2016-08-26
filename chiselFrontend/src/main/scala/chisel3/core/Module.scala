@@ -31,7 +31,9 @@ object Module {
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
     dynamicContext.currentModule = parent
     val ports = m.computePorts
-    Builder.components += Component(m, m.name, ports, m._commands)
+    val component = Component(m, m.name, ports, m._commands)
+    m._component = Some(component)
+    Builder.components += component
     pushCommand(DefInstance(sourceInfo, m, ports))
     m.setupInParent(childSourceInfo)
   }
@@ -62,6 +64,25 @@ extends HasId {
 
   /** Legalized name of this module. */
   final val name = Builder.globalNamespace.name(desiredName)
+
+  /** FIRRTL Module name */
+  private var _modName: Option[String] = None
+  private[chisel3] def setModName(name: String) = _modName = Some(name)
+  def modName = _modName match {
+    case Some(name) => name
+    case None => throwException("modName should be called after circuit elaboration")
+  }
+
+  /** Keep component for signal names */
+  private[chisel3] var _component: Option[Component] = None
+
+
+  /** Signal name (for simulation). */
+  override def instanceName =
+    if (_parent == None) name else _component match {
+      case None => getRef.name
+      case Some(c) => getRef fullName c
+    }
 
   /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.

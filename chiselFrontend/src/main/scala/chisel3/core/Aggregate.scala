@@ -374,5 +374,5 @@ class Bundle extends Aggregate(NO_DIR) {
 
 private[core] object Bundle {
   val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits",
-                      "widthOption")
+    "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
 }

@@ -27,11 +27,7 @@ private class Emitter(circuit: Circuit) {
       case e: Stop => s"stop(${e.clk.fullName(ctx)}, UInt<1>(1), ${e.ret})"
       case e: Printf => s"""printf(${e.clk.fullName(ctx)}, UInt<1>(1), "${e.format}"${e.ids.map(_.fullName(ctx)).fold(""){_ + ", " + _}})"""
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
-      case e: DefInstance => {
-        val modName = moduleMap.get(e.id.name).get
-        s"inst ${e.name} of $modName"
-      }
-
+      case e: DefInstance => s"inst ${e.name} of ${e.id.modName}"
       case w: WhenBegin =>
         indent()
         s"when ${w.pred.fullName(ctx)} :"
@@ -47,8 +43,6 @@ private class Emitter(circuit: Circuit) {
 
   // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
   private val defnMap = collection.mutable.HashMap[(String, String), Component]()
-  // Map of Component name to FIRRTL id.
-  private val moduleMap = collection.mutable.HashMap[String, String]()
 
   /** Generates the FIRRTL module declaration.
     */
@@ -89,15 +83,11 @@ private class Emitter(circuit: Circuit) {
 
     defnMap get (m.id.desiredName, defn) match {
       case Some(duplicate) =>
-        moduleMap(m.name) = duplicate.name
+        m.id setModName duplicate.name
         ""
       case None =>
-        require(!(moduleMap contains m.name),
-            "emitting module with same name but different contents")
-
-        moduleMap(m.name) = m.name
         defnMap((m.id.desiredName, defn)) = m
-
+        m.id setModName m.name
         moduleDecl(m) + defn
     }
   }
