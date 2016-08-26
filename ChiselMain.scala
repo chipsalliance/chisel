@@ -45,7 +45,7 @@ object chiselMain {
     case Nil => // finish
   }
 
-  private def genHarness[T <: Module](dut: Module, nodes: Seq[internal.SignalId], chirrtl: firrtl.ir.Circuit) {
+  private def genHarness[T <: Module](dut: Module, nodes: Seq[internal.InstanceId], chirrtl: firrtl.ir.Circuit) {
     val dir = context.targetDir
     context.backend match {
       case "firrtl" => // skip

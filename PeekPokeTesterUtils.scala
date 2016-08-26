@@ -3,7 +3,7 @@
 package chisel3.iotesters
 
 import chisel3.{Module, Data, Element, Bundle, Vec}
-import chisel3.internal.SignalId
+import chisel3.internal.InstanceId
 import chisel3.internal.firrtl.Circuit
 import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
@@ -46,7 +46,7 @@ private[iotesters] object getTopModule {
 /* TODO: Chisel should provide nodes of the circuit? */
 private[iotesters] object getChiselNodes {
   import chisel3.internal.firrtl._
-  def apply(circuit: Circuit): Seq[SignalId] = {
+  def apply(circuit: Circuit): Seq[InstanceId] = {
     circuit.components flatMap (_.commands flatMap {
       case x: DefReg => flatten(x.id)
       case x: DefRegInit => flatten(x.id)
@@ -59,7 +59,7 @@ private[iotesters] object getChiselNodes {
         case _ => Nil // Do not supoort aggregate type memories
       }
       case _ => Nil
-    }) filterNot (x => (x.signalName slice (0, 2)) == "T_") 
+    }) filterNot (x => (x.instanceName slice (0, 2)) == "T_") 
   }
 }
 

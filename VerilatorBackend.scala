@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import chisel3.internal.SignalId
+import chisel3.internal.InstanceId
 
 import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap, Queue => ScalaQueue}
 import scala.util.Random
@@ -37,7 +37,7 @@ object copyVerilatorHeaderFiles {
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
 class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
-    nodes: Seq[SignalId], vcdFilePath: String) extends firrtl.Transform {
+    nodes: Seq[InstanceId], vcdFilePath: String) extends firrtl.Transform {
   import firrtl._
   import firrtl.ir._
   import firrtl.Mappers._
@@ -66,13 +66,13 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
 
   private def findWidths(m: DefModule) = {
     val modNodes = nodes filter (_.parentModName == m.name)
-    val widthMap = HashMap[SignalId, Int]()
+    val widthMap = HashMap[InstanceId, Int]()
 
     /* Sadly, ports disappear in verilator ...
     def getPortWidth(port: Port) = Utils.create_exps(port.name, port.tpe) map { exp =>
-      modNodes filter (x => x.signalName == loweredName(exp)) match {
+      modNodes filter (x => x.instanceName == exp.serialize) match {
         case None =>
-        case Some(node) => widthMap(node) = getWidth(Utils.tpe(exp))
+        case Some(node) => widthMap(node) = getWidth(exp.tpe)
       } 
     }
     */
@@ -81,28 +81,28 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
       /* Sadly, wires disappear in verilator...
       case wire: DefWire if wire.name.slice(0, 2) != "T_" && wire.name.slice(0, 4) != "GEN_" =>
         Utils.create_exps(wire.name, wire.tpe) map { exp =>
-          modNodes filter (x => x.signalName == loweredName(exp)) match {
+          modNodes filter (x => x.instanceName == exp.serialize) match {
             case None =>
-            case Some(node) => widthMap(node) = getWidth(Utils.tpe(exp))
+            case Some(node) => widthMap(node) = getWidth(exp.tpe)
           }
         }
         wire
       */
       case reg: DefRegister if reg.name.slice(0, 2) != "T_" && reg.name.slice(0, 4) != "GEN_" =>
         Utils.create_exps(reg.name, reg.tpe) map { exp =>
-          modNodes filter (x => x.signalName == loweredName(exp)) foreach {
-            widthMap(_) = getWidth(Utils.tpe(exp))
+          modNodes filter (x => x.instanceName == exp.serialize) foreach {
+            widthMap(_) = getWidth(exp.tpe)
           }
         }
         reg
       case prim: DefNode if prim.name.slice(0, 2) != "T_" && prim.name.slice(0, 4) != "GEN_" =>
-        modNodes filter (x => x.signalName == prim.name) foreach {
-          widthMap(_) = getWidth(Utils.tpe(prim.value))
+        modNodes filter (x => x.instanceName == prim.name) foreach {
+          widthMap(_) = getWidth(prim.value.tpe)
         }
         prim
       case mem: DefMemory if mem.name.slice(0, 2) != "T_" && mem.name.slice(0, 4) != "GEN_" => mem.dataType match {
         case _: UIntType | _: SIntType =>
-          modNodes filter (x => x.signalName == mem.name) foreach {
+          modNodes filter (x => x.instanceName == mem.name) foreach {
             widthMap(_) = getWidth(mem.dataType)
           }
           mem
@@ -111,10 +111,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
       case _ => s
     }
 
-    m match {
-      case m: ExtModule =>
-      case m: Module => loop(m.body)
-    }
+    m map loop
     widthMap.toMap
   }
 
@@ -169,27 +166,27 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     pushBack("signals", "dut->reset", 1)
     writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
     (nodes foldLeft 1){ (id, node) =>
-      val signalName = s"%s.%s".format(node.parentPathName, validName(node.signalName))
-      val pathName = signalName replace (dutName, "v") replace (".", "__DOT__") replace ("$", "__024")
+      val instanceName = s"%s.%s".format(node.parentPathName, validName(node.instanceName))
+      val pathName = instanceName replace (dutName, "v") replace (".", "__DOT__") replace ("$", "__024")
       try {
         node match {
           case mem: Chisel.MemBase[_] =>
             writer.write(s"        for (size_t i = 0 ; i < ${mem.length} ; i++) {\n")
             pushBack("signals", s"dut->${pathName}[i]", widthMap(node))
             writer.write(s"          ostringstream oss;\n")
-            writer.write(s"""          oss << "${signalName}" << "[" << i << "]";\n""")
+            writer.write(s"""          oss << "${instanceName}" << "[" << i << "]";\n""")
             writer.write(s"          sim_data.signal_map[oss.str()] = $id + i;\n")
             writer.write(s"        }\n")
             id + mem.length
           case _ =>
             pushBack("signals", s"dut->$pathName", widthMap(node))
-            writer.write(s"""        sim_data.signal_map["${signalName}"] = $id;\n""")
+            writer.write(s"""        sim_data.signal_map["${instanceName}"] = $id;\n""")
             id + 1
         }
       } catch {
         // For debugging
         case e: java.util.NoSuchElementException =>
-          println(s"error with $id: $signalName")
+          println(s"error with $id: $instanceName")
           throw e
       }
     }
@@ -279,7 +276,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
 }
 
 class VerilatorCppHarnessCompiler(dut: Chisel.Module,
-    nodes: Seq[SignalId], vcdFilePath: String) extends firrtl.Compiler {
+    nodes: Seq[InstanceId], vcdFilePath: String) extends firrtl.Compiler {
   def transforms(w: Writer) = Seq(
     new firrtl.Chisel3ToHighFirrtl,
     new firrtl.IRToWorkingIR,
@@ -330,20 +327,20 @@ private[iotesters] class VerilatorBackend(
 
   val simApiInterface = new SimApiInterface(dut, cmd, logger)
 
-  def poke(signal: SignalId, value: BigInt, off: Option[Int]) {
+  def poke(signal: InstanceId, value: BigInt, off: Option[Int]) {
     val idx = off map (x => s"[$x]") getOrElse ""
-    val path = s"${signal.parentPathName}.${validName(signal.signalName)}$idx"
+    val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     poke(path, value)
   }
 
-  def peek(signal: SignalId, off: Option[Int]): BigInt = {
+  def peek(signal: InstanceId, off: Option[Int]): BigInt = {
     val idx = off map (x => s"[$x]") getOrElse ""
-    val path = s"${signal.parentPathName}.${validName(signal.signalName)}$idx"
+    val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     peek(path)
   }
 
-  def expect(signal: SignalId, expected: BigInt, msg: => String): Boolean = {
-    val path = s"${signal.parentPathName}.${validName(signal.signalName)}"
+  def expect(signal: InstanceId, expected: BigInt, msg: => String): Boolean = {
+    val path = s"${signal.parentPathName}.${validName(signal.instanceName)}"
     expect(path, expected, msg)
   }
 
@@ -361,7 +358,8 @@ private[iotesters] class VerilatorBackend(
   def expect(path: String, expected: BigInt, msg: => String = ""): Boolean = {
     val got = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
     val good = got == expected
-    if (verbose) logger println s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, _base)} == ${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}"""
+    if (verbose) logger println (s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, _base)} == """
+                               + s"""${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}""")
     good
   }
 

@@ -4,7 +4,7 @@ package chisel3.iotesters
 import java.io.File
 
 import chisel3.{Module, Bits}
-import chisel3.internal.SignalId
+import chisel3.internal.InstanceId
 
 import scala.collection.mutable.HashMap
 
@@ -22,7 +22,7 @@ private[iotesters] class FirrtlTerpBackend(
 
   val portNames = getDataNames("io", dut.io).toMap
 
-  def poke(signal: SignalId, value: BigInt, off: Option[Int]): Unit = {
+  def poke(signal: InstanceId, value: BigInt, off: Option[Int]): Unit = {
     signal match {
       case port: Bits =>
         val name = portNames(port)
@@ -32,7 +32,7 @@ private[iotesters] class FirrtlTerpBackend(
     }
   }
 
-  def peek(signal: SignalId, off: Option[Int]): BigInt = {
+  def peek(signal: InstanceId, off: Option[Int]): BigInt = {
     signal match {
       case port: Bits =>
         val name = portNames(port)
@@ -43,7 +43,7 @@ private[iotesters] class FirrtlTerpBackend(
     }
   }
 
-  def expect(signal: SignalId, expected: BigInt, msg: => String) : Boolean = {
+  def expect(signal: InstanceId, expected: BigInt, msg: => String) : Boolean = {
     signal match {
       case port: Bits =>
         val name = portNames(port)
