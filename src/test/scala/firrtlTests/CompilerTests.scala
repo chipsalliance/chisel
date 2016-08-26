@@ -106,7 +106,10 @@ circuit Top :
     b <= a
 """
    val check = Seq(
-      "`ifdef RANDOMIZE_ASSIGN",
+      "`ifdef RANDOMIZE_GARBAGE_ASSIGN",
+      "`define RANDOMIZE",
+      "`endif",
+      "`ifdef RANDOMIZE_INVALID_ASSIGN",
       "`define RANDOMIZE",
       "`endif",
       "`ifdef RANDOMIZE_REG_INIT",

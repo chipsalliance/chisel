@@ -316,11 +316,16 @@ class VerilogEmitter extends Emitter {
          assigns += Seq("assign ",e," = ",value,";")
       // In simulation, assign garbage under a predicate
       def garbageAssign(e: Expression, syn: Expression, garbageCond: Expression) = {
-         assigns += Seq("`ifndef RANDOMIZE_ASSIGN")
+         assigns += Seq("`ifndef RANDOMIZE_GARBAGE_ASSIGN")
          assigns += Seq("assign ", e, " = ", syn, ";")
          assigns += Seq("`else")
          assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(tpe(syn)), " : ", syn, ";")
          assigns += Seq("`endif")
+      }
+      def invalidAssign(e: Expression) = {
+        assigns += Seq("`ifdef RANDOMIZE_INVALID_ASSIGN")
+        assigns += Seq("assign ", e, " = ", rand_string(tpe(e)), ";")
+        assigns += Seq("`endif")
       }
       def update_and_reset(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
         // We want to flatten Mux trees for reg updates into if-trees for
@@ -474,8 +479,8 @@ class VerilogEmitter extends Emitter {
             }
             case (s:IsInvalid) => {
                val wref = netlist(s.expr).as[WRef].get
-               declare("reg",wref.name,tpe(s.expr))
-               initialize(wref)
+               declare("wire",wref.name,tpe(s.expr))
+               invalidAssign(wref)
             }
             case (s:DefNode) => {
                declare("wire",s.name,tpe(s.value))
@@ -683,7 +688,10 @@ class VerilogEmitter extends Emitter {
 
    def emit_preamble() {
     emit(Seq(
-        "`ifdef RANDOMIZE_ASSIGN\n",
+        "`ifdef RANDOMIZE_GARBAGE_ASSIGN\n",
+        "`define RANDOMIZE\n",
+        "`endif\n",
+        "`ifdef RANDOMIZE_INVALID_ASSIGN\n",
         "`define RANDOMIZE\n",
         "`endif\n",
         "`ifdef RANDOMIZE_REG_INIT\n",
