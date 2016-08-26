@@ -3,7 +3,6 @@ package chisel3.iotesters
 
 import chisel3.internal.InstanceId
 
-import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap, Queue => ScalaQueue}
 import scala.util.Random
 import java.io.{File, Writer, FileWriter, PrintStream, IOException}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
@@ -42,80 +41,46 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
   import firrtl.ir._
   import firrtl.Mappers._
   import firrtl.Annotations.AnnotationMap
-
-  def loweredName(e: Expression): String = e match {
-    case e: WRef => e.name
-    case e: WSubField => loweredName(e.exp) + "." + e.name
-    case e: WSubIndex => loweredName(e.exp) + "[" + e.value + "]"
-  }
-
-  private def getWidth(tpe: Type): Int = tpe match {
-    case UIntType(w) => w match {
-      case IntWidth(width) => width.toInt
-      case UnknownWidth => throw new Exception("Can't be unknown width")
-    }
-    case SIntType(w) => w match {
-      case IntWidth(width) => width.toInt
-      case UnknownWidth => throw new Exception("Can't be unknown width")
-    }
-    case BundleType(fields) => (fields foldLeft 0)((w, f) => w + getWidth(f.tpe))
-    case VectorType(tpe, size) => size * getWidth(tpe)
-    case ClockType => 1
-    case UnknownType => throw new Exception("Can't be unknown type")
-  }
+  import firrtl.Utils.{create_exps, long_BANG}
 
   private def findWidths(m: DefModule) = {
+    type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, Long)]
     val modNodes = nodes filter (_.parentModName == m.name)
-    val widthMap = HashMap[InstanceId, Int]()
+    val widthMap = new WidthMap
 
     /* Sadly, ports disappear in verilator ...
-    def getPortWidth(port: Port) = Utils.create_exps(port.name, port.tpe) map { exp =>
-      modNodes filter (x => x.instanceName == exp.serialize) match {
-        case None =>
-        case Some(node) => widthMap(node) = getWidth(exp.tpe)
-      } 
+    def loop_port(port: Port) = {
+      widthMap ++= (create_exps(port.name, port.tpe) flatMap (exp =>
+        modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+      port
     }
     */
 
-    def loop(s: Statement): Statement = s map loop match {
-      /* Sadly, wires disappear in verilator...
-      case wire: DefWire if wire.name.slice(0, 2) != "T_" && wire.name.slice(0, 4) != "GEN_" =>
-        Utils.create_exps(wire.name, wire.tpe) map { exp =>
-          modNodes filter (x => x.instanceName == exp.serialize) match {
-            case None =>
-            case Some(node) => widthMap(node) = getWidth(exp.tpe)
-          }
-        }
-        wire
-      */
-      case reg: DefRegister if reg.name.slice(0, 2) != "T_" && reg.name.slice(0, 4) != "GEN_" =>
-        Utils.create_exps(reg.name, reg.tpe) map { exp =>
-          modNodes filter (x => x.instanceName == exp.serialize) foreach {
-            widthMap(_) = getWidth(exp.tpe)
-          }
-        }
-        reg
-      case prim: DefNode if prim.name.slice(0, 2) != "T_" && prim.name.slice(0, 4) != "GEN_" =>
-        modNodes filter (x => x.instanceName == prim.name) foreach {
-          widthMap(_) = getWidth(prim.value.tpe)
-        }
-        prim
-      case mem: DefMemory if mem.name.slice(0, 2) != "T_" && mem.name.slice(0, 4) != "GEN_" => mem.dataType match {
-        case _: UIntType | _: SIntType =>
-          modNodes filter (x => x.instanceName == mem.name) foreach {
-            widthMap(_) = getWidth(mem.dataType)
-          }
-          mem
-        case _ => mem
+    def loop(s: Statement): Statement = {
+      s match {
+        /* Sadly, wires disappear in verilator...
+        case s: DefWire if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+        */
+        case s: DefRegister if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+        case s: DefNode if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (create_exps(s.name, s.value.tpe) flatMap (exp =>
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+        case s: DefMemory if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (modNodes filter (_.instanceName == s.name) map (_ -> long_BANG(s.dataType)))
+        case _ =>
       }
-      case _ => s
+      s map loop
     }
 
     m map loop
-    widthMap.toMap
+    widthMap.toSeq
   }
 
-  private def pushBack(vector: String, pathName: String, width: Int) {
+  private def pushBack(vector: String, pathName: String, width: Long) {
     if (width <= 8) {
       writer.write(s"        sim_data.$vector.push_back(new VerilatorCData(&(${pathName})));\n")
     } else if (width <= 16) {
