@@ -7,8 +7,8 @@ import chisel3._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Await, blocking}
 import scala.concurrent.duration._
-import scala.concurrent.{Future, _}
 import scala.sys.process.{Process, ProcessLogger}
 import java.nio.channels.FileChannel
 
@@ -281,7 +281,7 @@ private[iotesters] class SimApiInterface(
   private val exitValue: Future[Int] = Future {
     blocking {
       process.exitValue
-     }
+    }
   }
   // memory mapped channels
   private val (inChannel, outChannel, cmdChannel) = {

@@ -122,8 +122,16 @@ private[iotesters] object TesterProcess {
     // p.destroy
   }
 
+  import scala.concurrent.{Future, Await, blocking}
+  import scala.concurrent.duration._
+  import scala.concurrent.ExecutionContext.Implicits.global
   def killall = synchronized {
-    processes foreach (_.destroy)
+    processes map { p =>
+      val exitValue = Future(blocking(p.exitValue))
+      while(!exitValue.isCompleted) p.destroy
+      println("Exit Code: %d".format(
+        Await.result(exitValue, Duration(-1, SECONDS))))
+    }
     processes.clear
   }
 }
