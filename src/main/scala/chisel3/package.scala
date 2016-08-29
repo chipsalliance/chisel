@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package object chisel3 {
   import scala.language.experimental.macros
 
@@ -32,9 +34,12 @@ package object chisel3 {
   val UInt = chisel3.core.UInt
   type SInt = chisel3.core.SInt
   val SInt = chisel3.core.SInt
+  type FixedPoint = chisel3.core.FixedPoint
+  val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
   val Bool = chisel3.core.Bool
   val Mux = chisel3.core.Mux
+
 
   type BlackBox = chisel3.core.BlackBox
 
@@ -68,6 +73,10 @@ package object chisel3 {
   }
   implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
     def B: Bool = Bool(x)
+  }
+
+  implicit class fromDoubleToLiteral(val x: Double) extends AnyVal {
+    def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(x, binaryPoint = binaryPoint)
   }
 
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
