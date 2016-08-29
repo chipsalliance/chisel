@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 class SIntOps extends Module {
   val io = IO(new Bundle {

@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 /** An I/O bundle for the Arbiter */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {

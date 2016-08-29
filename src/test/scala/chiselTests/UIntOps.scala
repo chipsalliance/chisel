@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import org.scalatest._
 import chisel3.testers.BasicTester
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 class UIntOps extends Module {
   val io = IO(new Bundle {

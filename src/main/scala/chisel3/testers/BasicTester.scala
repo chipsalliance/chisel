@@ -9,7 +9,7 @@ import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
 import internal.sourceinfo.SourceInfo
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 class BasicTester extends Module() {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.

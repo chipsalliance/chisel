@@ -5,7 +5,7 @@ package chiselTests
 import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 class OptionBundle(hasIn: Boolean) extends Bundle {
   val in = if (hasIn) {

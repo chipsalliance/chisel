@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 class Risc extends Module {
   val io = IO(new Bundle {

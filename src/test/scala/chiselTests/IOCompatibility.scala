@@ -3,7 +3,7 @@
 package chiselTests
 
 import Chisel._
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 class IOCSimpleIO extends Bundle {
   val in  = UInt(INPUT,  32)

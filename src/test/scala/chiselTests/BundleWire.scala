@@ -5,7 +5,7 @@ import chisel3._
 import org.scalatest._
 import org.scalatest.prop._
 import chisel3.testers.BasicTester
-import chisel3.Strict.StrictCompileOptions
+import chisel3.Strict.CompileOptions
 
 class Coord extends Bundle {
   val x = UInt.width( 32)

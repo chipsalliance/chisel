@@ -6,7 +6,7 @@ import chisel3.internal.ExplicitCompileOptions
 
 
 object Strict {
-  implicit object StrictCompileOptions extends ExplicitCompileOptions {
+  implicit object CompileOptions extends ExplicitCompileOptions {
     val connectFieldsMustMatch = true
     val declaredTypeMustBeUnbound = true
     val requireIOWrap = true

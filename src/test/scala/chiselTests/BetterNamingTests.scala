@@ -4,7 +4,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import collection.mutable
 
 import Chisel._
-import chisel3.NotStrict.NotStrictCompileOptions
+import chisel3.NotStrict.CompileOptions
 
 
 // Defined outside of the class so we don't get $ in name

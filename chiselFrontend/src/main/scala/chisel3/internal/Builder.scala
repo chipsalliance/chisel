@@ -105,7 +105,7 @@ private[chisel3] class DynamicContext(moduleCompileOptions: Option[ExplicitCompi
   val errors = new ErrorLog
   val compileOptions = moduleCompileOptions match {
     case Some(options: ExplicitCompileOptions) => options
-    case None => chisel3.NotStrict.NotStrictCompileOptions
+    case None => chisel3.NotStrict.CompileOptions
   }
 }
 
