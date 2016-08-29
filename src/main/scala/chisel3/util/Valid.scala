@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.NotStrict.NotStrictCompileOptions
 
 /** An Bundle containing data and a signal determining if it is valid */
 class Valid[+T <: Data](gen: T) extends Bundle

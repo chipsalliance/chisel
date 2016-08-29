@@ -8,6 +8,7 @@ import org.scalatest.prop._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.NotStrict.NotStrictCompileOptions
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle {
   override def cloneType: this.type =

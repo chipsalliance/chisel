@@ -6,6 +6,7 @@ import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.NotStrict.NotStrictCompileOptions
 
 class FailingAssertTester() extends BasicTester {
   assert(Bool(false))

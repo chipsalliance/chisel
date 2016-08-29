@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.NotStrict.NotStrictCompileOptions
 
 class Padder extends Module {
   val io = IO(new Bundle {

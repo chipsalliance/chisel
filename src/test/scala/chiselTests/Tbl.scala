@@ -8,6 +8,7 @@ import org.scalatest.prop._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.NotStrict.NotStrictCompileOptions
 
 class Tbl(w: Int, n: Int) extends Module {
   val io = IO(new Bundle {

@@ -5,6 +5,7 @@ package chiselTests
 import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
+import chisel3.NotStrict.NotStrictCompileOptions
 
 class ParameterizedModule(invert: Boolean) extends Module {
   val io = IO(new Bundle {

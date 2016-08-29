@@ -9,6 +9,7 @@ import org.scalacheck._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.NotStrict.NotStrictCompileOptions
 
 class Decoder(bitpats: List[String]) extends Module {
   val io = IO(new Bundle {

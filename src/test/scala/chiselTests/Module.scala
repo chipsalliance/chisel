@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.NotStrict.NotStrictCompileOptions
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt.width(32))

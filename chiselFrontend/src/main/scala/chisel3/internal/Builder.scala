@@ -97,16 +97,16 @@ private[chisel3] trait HasId {
   private[chisel3] def getRef: Arg = _ref.get
 }
 
-private[chisel3] class DynamicContext(optionMap: Option[Map[String, String]] = None) {
+private[chisel3] class DynamicContext(moduleCompileOptions: Option[ExplicitCompileOptions] = None) {
   val idGen = new IdGen
   val globalNamespace = new Namespace(None, Set())
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
   val errors = new ErrorLog
-  val compileOptions = new CompileOptions(optionMap match {
-    case Some(map: Map[String, String]) => map
-    case None => Map[String, String]()
-  })
+  val compileOptions = moduleCompileOptions match {
+    case Some(options: ExplicitCompileOptions) => options
+    case None => chisel3.NotStrict.NotStrictCompileOptions
+  }
 }
 
 private[chisel3] object Builder {
@@ -147,8 +147,8 @@ private[chisel3] object Builder {
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
 
-  def build[T <: Module](f: => T, optionMap: Option[Map[String, String]] = None): Circuit = {
-    dynamicContextVar.withValue(Some(new DynamicContext(optionMap))) {
+  def build[T <: Module](f: => T, moduleCompileOptions: Option[ExplicitCompileOptions] = None): Circuit = {
+    dynamicContextVar.withValue(Some(new DynamicContext(moduleCompileOptions))) {
       errors.info("Elaborating design...")
       val mod = f
       mod.forceName(mod.name, globalNamespace)
