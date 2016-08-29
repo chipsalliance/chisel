@@ -134,13 +134,13 @@ object MonoConnect {
         case (Some(Output), Some(Output)) => issueConnect(sink, source)
         case (Some(Output), Some(Input))  => issueConnect(sink, source)
         case (_,            None) => {
-          if (compileOptions.assumeNoDirectionIsInput) {
+          if (!compileOptions.dontAssumeDirectionality) {
             issueConnect(sink, source)
           } else {
             throw UnreadableSourceException
           }
         }
-        case (Some(Input),  Some(Output)) if (compileOptions.tryConnectionsSwapped) => issueConnect(source, sink)
+        case (Some(Input),  Some(Output)) if (!compileOptions.dontTryConnectionsSwapped) => issueConnect(source, sink)
         case (Some(Input),  _)    => throw UnwritableSinkException
       }
     }
@@ -172,7 +172,7 @@ object MonoConnect {
         case (Some(Input),  Some(Output)) => issueConnect(sink, source)
         case (Some(Output), _)            => throw UnwritableSinkException
         case (_,            None) => {
-          if (compileOptions.assumeNoDirectionIsInput) {
+          if (!compileOptions.dontAssumeDirectionality) {
             issueConnect(sink, source)
           } else {
             throw UnreadableSourceException

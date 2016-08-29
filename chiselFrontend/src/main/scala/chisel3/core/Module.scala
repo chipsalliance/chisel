@@ -113,7 +113,7 @@ extends HasId {
 
   private[core] def computePorts: Seq[firrtl.Port] = {
     // If we're auto-wrapping IO definitions, do so now.
-    if (compileOptions.autoIOWrap && !ioDefined) {
+    if (!(compileOptions.requireIOWrap || ioDefined)) {
       IO(io)
     }
     for ((name, port) <- ports) yield {

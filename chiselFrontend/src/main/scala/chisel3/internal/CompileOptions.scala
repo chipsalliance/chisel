@@ -15,9 +15,8 @@ class CompileOptions(optionsMap: Map[String, String]) {
   // MissingLeftFieldException, or MissingRightFieldException will be thrown.
   val connectFieldsMustMatch: Boolean = optionsMap.getOrElse("connectFieldsMustMatch", strictDefault).toBoolean
   val regTypeMustBeUnbound: Boolean = optionsMap.getOrElse("regTypeMustBeUnbound", strictDefault).toBoolean
-  val autoIOWrap: Boolean = optionsMap.getOrElse("autoIOWrap", looseDefault).toBoolean
-  val portDeterminesDirection: Boolean = optionsMap.getOrElse("portDeterminesDirection", looseDefault).toBoolean
-  val tryConnectionsSwapped: Boolean = optionsMap.getOrElse("tryConnectionsSwapped", looseDefault).toBoolean
-  val assumeLHSIsOutput: Boolean = optionsMap.getOrElse("assumeLHSIsOutput", looseDefault).toBoolean
-  val assumeNoDirectionIsInput: Boolean = optionsMap.getOrElse("assumeNoDirectionIsInput", looseDefault).toBoolean
+  val declaredTypeMustBeUnbound: Boolean = optionsMap.getOrElse("declaredTypeMustBeUnbound", strictDefault).toBoolean
+  val requireIOWrap: Boolean = optionsMap.getOrElse("requireIOWrap", strictDefault).toBoolean
+  val dontTryConnectionsSwapped: Boolean = optionsMap.getOrElse("dontTryConnectionsSwapped", strictDefault).toBoolean
+  val dontAssumeDirectionality: Boolean = optionsMap.getOrElse("dontAssumeDirectionality", strictDefault).toBoolean
 }
