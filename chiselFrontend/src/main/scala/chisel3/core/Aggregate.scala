@@ -395,6 +395,6 @@ class Bundle extends Aggregate {
 }
 
 private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "toBits",
-                      "widthOption", "chiselCloneType")
+  val keywords = List("flip", "asInput", "asOutput", "cloneType", "chiselCloneType", "toBits",
+    "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
 }

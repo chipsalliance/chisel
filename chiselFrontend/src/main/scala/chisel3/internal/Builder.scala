@@ -55,7 +55,18 @@ private[chisel3] class IdGen {
   }
 }
 
-private[chisel3] trait HasId {
+/** Public API to access Node/Signal names.
+  * currently, the node's name, the full path name, and references to its parent Module and component.
+  * These are only valid once the design has been elaborated, and should not be used during its construction.
+  */
+trait InstanceId {
+  def instanceName: String
+  def pathName: String
+  def parentPathName: String
+  def parentModName: String
+}
+
+private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
   private[chisel3] val _parent: Option[Module] = Builder.currentModule
   _parent.foreach(_.addId(this))
@@ -95,6 +106,27 @@ private[chisel3] trait HasId {
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
+
+  // Implementation of public methods.
+  def instanceName = _parent match {
+    case Some(p) => p._component match {
+      case Some(c) => getRef fullName c
+      case None => throwException("signalName/pathName should be called after circuit elaboration")
+    }
+    case None => throwException("this cannot happen")
+  }
+  def pathName = _parent match {
+    case None => instanceName
+    case Some(p) => s"${p.pathName}.$instanceName"
+  }
+  def parentPathName = _parent match {
+    case Some(p) => p.pathName
+    case None => throwException(s"$instanceName doesn't have a parent")
+  }
+  def parentModName = _parent match {
+    case Some(p) => p.modName
+    case None => throwException(s"$instanceName doesn't have a parent")
+  }
 }
 
 private[chisel3] class DynamicContext(moduleCompileOptions: Option[ExplicitCompileOptions] = None) {
