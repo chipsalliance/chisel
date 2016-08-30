@@ -20,7 +20,6 @@ private[iotesters] class TesterContext {
   var targetDir = new File("test_run_dir")
   var logFile: Option[String] = None
   var waveform: Option[String] = None
-  val graph = new CircuitGraph
 }
 
 object chiselMain {
@@ -46,7 +45,7 @@ object chiselMain {
     case Nil => // finish
   }
 
-  private def genHarness[T <: Module](dut: Module, graph: CircuitGraph, chirrtl: firrtl.ir.Circuit) {
+  private def genHarness[T <: Module](dut: Module, nodes: Seq[internal.InstanceId], chirrtl: firrtl.ir.Circuit) {
     val dir = context.targetDir
     context.backend match {
       case "firrtl" => // skip
@@ -54,7 +53,7 @@ object chiselMain {
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.cpp"))
         val waveform = (new File(dir, s"${chirrtl.main}.vcd")).toString
         val annotation = new firrtl.Annotations.AnnotationMap(Nil)
-        (new VerilatorCppHarnessCompiler(dut, graph, waveform)).compile(chirrtl, annotation, harness)
+        (new VerilatorCppHarnessCompiler(dut, nodes, waveform)).compile(chirrtl, annotation, harness)
         harness.close
       case "vcs" | "glsim" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.v"))
@@ -93,13 +92,13 @@ object chiselMain {
       case x: IOException =>
         System.err.format("createFile error: %s%n", x)
     }
-    val graph = context.graph
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (graph construct circuit).asInstanceOf[T]
+    val dut = getTopModule(circuit).asInstanceOf[T]
+    val nodes = getChiselNodes(circuit)
     val dir = context.targetDir
     val name = circuit.name
 
-    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen))
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
     val chirrtlFile = new File(dir, s"${name}.ir")
     val verilogFile = new File(dir, s"${name}.v")
     if (context.backend == "firrtl") {
@@ -107,13 +106,14 @@ object chiselMain {
       firrtl.FIRRTLEmitter run (chirrtl, writer)
       writer.close
     } else if (context.isGenVerilog) {
-      val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+      val annotation = new firrtl.Annotations.AnnotationMap(Seq(
+        new firrtl.passes.InferReadWriteAnnotation(name, firrtl.Annotations.TransID(-1))))
       val writer = new FileWriter(verilogFile)
       new firrtl.VerilogCompiler compile (chirrtl, annotation, writer)
       writer.close
     } 
 
-    if (context.isGenHarness) genHarness(dut, graph, chirrtl)
+    if (context.isGenHarness) genHarness(dut, nodes, chirrtl)
 
     if (context.isCompiling) compile(name)
 

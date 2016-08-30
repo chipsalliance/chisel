@@ -7,19 +7,20 @@ import chisel3._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.immutable.ListMap
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Await, blocking}
 import scala.concurrent.duration._
-import scala.concurrent.{Future, _}
 import scala.sys.process.{Process, ProcessLogger}
 import java.nio.channels.FileChannel
 
 private[iotesters] class SimApiInterface(
                                          dut: Module,
-                                         graph: CircuitGraph,
                                          cmd: Seq[String],
                                          logger: java.io.PrintStream) {
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
-    def genChunk(io: Data) = (graph getPathName (io, ".")) -> ((io.getWidth-1)/64 + 1)
     val (inputs, outputs) = getPorts(dut)
+    def genChunk(args: (Data, String)) = args match {
+      case (pin, name) => name -> ((pin.getWidth-1)/64 + 1)
+    }
     (ListMap((inputs map genChunk): _*), ListMap((outputs map genChunk): _*))
   }
   private object SIM_CMD extends Enumeration {
@@ -280,7 +281,7 @@ private[iotesters] class SimApiInterface(
   private val exitValue: Future[Int] = Future {
     blocking {
       process.exitValue
-     }
+    }
   }
   // memory mapped channels
   private val (inChannel, outChannel, cmdChannel) = {

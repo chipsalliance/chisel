@@ -1,9 +1,8 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import chisel3.internal.HasId
+import chisel3.internal.InstanceId
 
-import scala.collection.mutable.{ArrayBuffer, HashSet, HashMap, Queue => ScalaQueue}
 import scala.util.Random
 import java.io.{File, Writer, FileWriter, PrintStream, IOException}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
@@ -37,129 +36,51 @@ object copyVerilatorHeaderFiles {
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
 class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
-    graph: CircuitGraph, vcdFilePath: String) extends firrtl.Transform {
+    nodes: Seq[InstanceId], vcdFilePath: String) extends firrtl.Transform {
   import firrtl._
   import firrtl.ir._
   import firrtl.Mappers._
   import firrtl.Annotations.AnnotationMap
+  import firrtl.Utils.{create_exps, long_BANG}
 
-  def loweredName(e: Expression): String = e match {
-    case e: WRef => e.name
-    case e: WSubField => loweredName(e.exp) + "_" + e.name
-    case e: WSubIndex => loweredName(e.exp) + "_" + e.value
-  }
-
-  private def getWidth(tpe: Type): Int = tpe match {
-    case UIntType(w) => w match {
-      case IntWidth(width) => width.toInt
-      case UnknownWidth => throw new Exception("Can't be unknown width")
-    }
-    case SIntType(w) => w match {
-      case IntWidth(width) => width.toInt
-      case UnknownWidth => throw new Exception("Can't be unknown width")
-    }
-    case BundleType(fields) => (fields foldLeft 0)((w, f) => w + getWidth(f.tpe))
-    case VectorType(tpe, size) => size * getWidth(tpe)
-    case ClockType => 1
-    case UnknownType => throw new Exception("Can't be unknown type")
-  }
-
-  private def findPathMap(circuit: Circuit) = {
-    val children = HashMap[String, HashSet[String]]()
-    val insts = (circuit.modules map (m => m.name -> ArrayBuffer[String]())).toMap
-    def collectInsts(m: Module) {
-      def loop(s: Statement): Statement = s map loop match {
-        case inst: DefInstance =>
-          children(m.name) += inst.module
-          insts(inst.module) += inst.name
-          inst
-        case inst: WDefInstance =>
-          children(m.name) += inst.module
-          insts(inst.module) += inst.name
-          inst
-        case _ => s
-      }
-      children(m.name) = HashSet[String]()
-      loop(m.body)
-    }
-    circuit.modules foreach {
-      case m: ExtModule =>
-      case m: Module => collectInsts(m)
-    }
-
-    val heads = circuit.modules filter (_.name == circuit.main)
-    val queue = ScalaQueue(heads:_*)
-    val visited = HashSet((heads map (_.name)): _*)
-    val pathMap = HashMap((heads map (m => m.name -> ArrayBuffer(m.name))): _*)
-    while (!queue.isEmpty) {
-      val top = queue.dequeue
-      val paths = pathMap(top.name)
-      circuit.modules filter (m => children(top.name)(m.name) && !visited(m.name)) foreach { child =>
-        (pathMap getOrElseUpdate (child.name, ArrayBuffer[String]())) ++=
-        (paths flatMap (p => insts(child.name) map (inst => s"$p.$inst")))
-        queue enqueue child
-      }
-    }
-    (pathMap map { case (k, v) => k -> v.toSet }).toMap
-  }
-
-  private def findWidths(pathMap: Map[String, Set[String]])(m: DefModule) = {
-    val nodes = graph.nodes filter { node =>
-      pathMap(m.name) contains (graph getParentPathName (node, "."))
-    }
-    val widthMap = HashMap[HasId, Int]()
+  private def findWidths(m: DefModule) = {
+    type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, Long)]
+    val modNodes = nodes filter (_.parentModName == m.name)
+    val widthMap = new WidthMap
 
     /* Sadly, ports disappear in verilator ...
-    def getPortWidth(port: Port) = Utils.create_exps(port.name, port.tpe) map { exp =>
-      nodes find (x => (graph getName x) == loweredName(exp)) match {
-        case None =>
-        case Some(node) => widthMap(node) = getWidth(Utils.tpe(exp))
-      } 
+    def loop_port(port: Port) = {
+      widthMap ++= (create_exps(port.name, port.tpe) flatMap (exp =>
+        modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+      port
     }
     */
 
-    def loop(s: Statement): Statement = s map loop match {
-      /* Sadly, wires disappear in verilator...
-      case wire: DefWire if wire.name.slice(0, 2) != "T_" && wire.name.slice(0, 4) != "GEN_" =>
-        Utils.create_exps(wire.name, wire.tpe) map { exp =>
-          nodes find (x => (graph getName x) == validName(loweredName(exp))) match {
-            case None =>
-            case Some(node) => widthMap(node) = getWidth(Utils.tpe(exp))
-          }
-        }
-        wire
-      */
-      case reg: DefRegister if reg.name.slice(0, 2) != "T_" && reg.name.slice(0, 4) != "GEN_" =>
-        Utils.create_exps(reg.name, reg.tpe) map { exp =>
-          nodes filter (x => (graph getName x) == validName(loweredName(exp))) foreach {
-            widthMap(_) = getWidth(Utils.tpe(exp))
-          }
-        }
-        reg
-      case prim: DefNode if prim.name.slice(0, 2) != "T_" && prim.name.slice(0, 4) != "GEN_" =>
-        nodes filter (x => (graph getName x) == validName(prim.name)) foreach {
-          widthMap(_) = getWidth(Utils.tpe(prim.value))
-        }
-        prim
-      case mem: DefMemory if mem.name.slice(0, 2) != "T_" && mem.name.slice(0, 4) != "GEN_" => mem.dataType match {
-        case _: UIntType | _: SIntType =>
-          nodes filter (x => (graph getName x) == validName(mem.name)) foreach {
-            widthMap(_) = getWidth(mem.dataType)
-          }
-          mem
-        case _ => mem
+    def loop(s: Statement): Statement = {
+      s match {
+        /* Sadly, wires disappear in verilator...
+        case s: DefWire if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+        */
+        case s: DefRegister if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+        case s: DefNode if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (create_exps(s.name, s.value.tpe) flatMap (exp =>
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+        case s: DefMemory if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
+          widthMap ++= (modNodes filter (_.instanceName == s.name) map (_ -> long_BANG(s.dataType)))
+        case _ =>
       }
-      case _ => s
+      s map loop
     }
 
-    m match {
-      case m: ExtModule =>
-      case m: Module => loop(m.body)
-    }
-    widthMap.toMap
+    m map loop
+    widthMap.toSeq
   }
 
-  private def pushBack(vector: String, pathName: String, width: Int) {
+  private def pushBack(vector: String, pathName: String, width: Long) {
     if (width <= 8) {
       writer.write(s"        sim_data.$vector.push_back(new VerilatorCData(&(${pathName})));\n")
     } else if (width <= 16) {
@@ -175,12 +96,11 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
   }
 
   def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult = {
-    val (inputs, outputs) = getPorts(dut)
+    val (inputs, outputs) = getPorts(dut, "->")
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
-    val pathMap = findPathMap(circuit)
-    val widthMap = (circuit.modules flatMap findWidths(pathMap)).toMap
+    val widthMap = (circuit.modules flatMap findWidths).toMap
     writer.write("#include \"%s.h\"\n".format(dutVerilatorClassName))
     writer.write("#include \"verilated.h\"\n")
     writer.write("#include \"veri_api.h\"\n")
@@ -202,38 +122,36 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("        sim_data.inputs.clear();\n")
     writer.write("        sim_data.outputs.clear();\n")
     writer.write("        sim_data.signals.clear();\n")
-    inputs.toList foreach { node =>
-      val pathName = graph getPathName (node, "->") replace (dutName, "dut") replace ("$", "__024")
-      pushBack("inputs", pathName, node.getWidth)
+    inputs.toList foreach { case (node, name) =>
+      pushBack("inputs", name replace (dutName, "dut"), node.getWidth)
     }
-    outputs.toList foreach { node =>
-      val pathName = graph getPathName (node, "->") replace (dutName, "dut") replace ("$", "__024")  
-      pushBack("outputs", pathName, node.getWidth)
+    outputs.toList foreach { case (node, name) =>
+      pushBack("outputs", name replace (dutName, "dut"), node.getWidth)
     }
     pushBack("signals", "dut->reset", 1)
-    writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(graph getPathName (dut.reset, ".")))
-    (graph.nodes foldLeft 1){ (id, node) =>
-      val pathName = graph getPathName (node, "__DOT__") replace (dutName, "v") replace ("$", "__024")
-      val signalName = graph getPathName (node, ".")
+    writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
+    (nodes foldLeft 1){ (id, node) =>
+      val instanceName = s"%s.%s".format(node.parentPathName, validName(node.instanceName))
+      val pathName = instanceName replace (dutName, "v") replace (".", "__DOT__") replace ("$", "__024")
       try {
         node match {
           case mem: Chisel.MemBase[_] =>
             writer.write(s"        for (size_t i = 0 ; i < ${mem.length} ; i++) {\n")
             pushBack("signals", s"dut->${pathName}[i]", widthMap(node))
             writer.write(s"          ostringstream oss;\n")
-            writer.write(s"""          oss << "${signalName}" << "[" << i << "]";\n""")
+            writer.write(s"""          oss << "${instanceName}" << "[" << i << "]";\n""")
             writer.write(s"          sim_data.signal_map[oss.str()] = $id + i;\n")
             writer.write(s"        }\n")
             id + mem.length
           case _ =>
             pushBack("signals", s"dut->$pathName", widthMap(node))
-            writer.write(s"""        sim_data.signal_map["${signalName}"] = $id;\n""")
+            writer.write(s"""        sim_data.signal_map["${instanceName}"] = $id;\n""")
             id + 1
         }
       } catch {
         // For debugging
         case e: java.util.NoSuchElementException =>
-          println(s"error with $id: $signalName")
+          println(s"error with $id: $instanceName")
           throw e
       }
     }
@@ -323,28 +241,29 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
 }
 
 class VerilatorCppHarnessCompiler(dut: Chisel.Module,
-    graph: CircuitGraph, vcdFilePath: String) extends firrtl.Compiler {
+    nodes: Seq[InstanceId], vcdFilePath: String) extends firrtl.Compiler {
   def transforms(w: Writer) = Seq(
     new firrtl.Chisel3ToHighFirrtl,
     new firrtl.IRToWorkingIR,
     new firrtl.ResolveAndCheck,
-    new GenVerilatorCppHarness(w, dut, graph, vcdFilePath)
+    new GenVerilatorCppHarness(w, dut, nodes, vcdFilePath)
   )
 }
 
 private[iotesters] object setupVerilatorBackend {
   def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
-    val graph = new CircuitGraph
+    // Generate CHIRRTL
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (graph construct circuit).asInstanceOf[T]
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
+    val dut = getTopModule(circuit).asInstanceOf[T]
+    val nodes = getChiselNodes(circuit)
     val dir = new File(s"test_run_dir/${dut.getClass.getName}"); dir.mkdirs()
 
-    // Generate CHIRRTL
-    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen))
     // Generate Verilog
     val verilogFile = new File(dir, s"${circuit.name}.v")
     val verilogWriter = new FileWriter(verilogFile)
-    val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+    val annotation = new firrtl.Annotations.AnnotationMap(Seq(
+      new firrtl.passes.InferReadWriteAnnotation(circuit.name, firrtl.Annotations.TransID(-1))))
     (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
     verilogWriter.close
 
@@ -352,42 +271,41 @@ private[iotesters] object setupVerilatorBackend {
     val cppHarnessFile = new File(dir, cppHarnessFileName)
     val cppHarnessWriter = new FileWriter(cppHarnessFile)
     val vcdFile = new File(dir, s"${circuit.name}.vcd")
-    val harnessCompiler = new VerilatorCppHarnessCompiler(dut, graph, vcdFile.toString)
+    val harnessCompiler = new VerilatorCppHarnessCompiler(dut, nodes, vcdFile.toString)
     copyVerilatorHeaderFiles(dir.toString)
     harnessCompiler.compile(chirrtl, annotation, cppHarnessWriter)
     cppHarnessWriter.close
     chisel3.Driver.verilogToCpp(circuit.name, circuit.name, dir, Seq(), new File(cppHarnessFileName)).!
     chisel3.Driver.cppToExe(circuit.name, dir).!
 
-    (dut, new VerilatorBackend(dut, graph, Seq((new File(dir, s"V${circuit.name}")).toString)))
+    (dut, new VerilatorBackend(dut, Seq((new File(dir, s"V${circuit.name}")).toString)))
   }
 }
 
 private[iotesters] class VerilatorBackend(
                                           dut: Chisel.Module, 
-                                          graph: CircuitGraph,
                                           cmd: Seq[String],
                                           verbose: Boolean = true,
                                           logger: PrintStream = System.out,
                                           _base: Int = 16,
                                           _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
 
-  val simApiInterface = new SimApiInterface(dut, graph, cmd, logger)
+  val simApiInterface = new SimApiInterface(dut, cmd, logger)
 
-  def poke(signal: HasId, value: BigInt, off: Option[Int]) {
+  def poke(signal: InstanceId, value: BigInt, off: Option[Int]) {
     val idx = off map (x => s"[$x]") getOrElse ""
-    val path = "%s%s".format(graph getPathName (signal, "."), idx)
+    val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     poke(path, value)
   }
 
-  def peek(signal: HasId, off: Option[Int]) = {
+  def peek(signal: InstanceId, off: Option[Int]): BigInt = {
     val idx = off map (x => s"[$x]") getOrElse ""
-    val path = "%s%s".format(graph getPathName (signal, "."), idx)
+    val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     peek(path)
   }
 
-  def expect(signal: HasId, expected: BigInt, msg: => String) = {
-    val path = graph getPathName (signal, ".")
+  def expect(signal: InstanceId, expected: BigInt, msg: => String): Boolean = {
+    val path = s"${signal.parentPathName}.${validName(signal.instanceName)}"
     expect(path, expected, msg)
   }
 
@@ -396,16 +314,17 @@ private[iotesters] class VerilatorBackend(
     simApiInterface.poke(path, value)
   }
 
-  def peek(path: String) = {
+  def peek(path: String): BigInt = {
     val result = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
     if (verbose) logger println s"  PEEK ${path} -> ${bigIntToStr(result, _base)}"
     result
   }
 
-  def expect(path: String, expected: BigInt, msg: => String = "") = {
+  def expect(path: String, expected: BigInt, msg: => String = ""): Boolean = {
     val got = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
     val good = got == expected
-    if (verbose) logger println s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, _base)} == ${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}"""
+    if (verbose) logger println (s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, _base)} == """
+                               + s"""${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}""")
     good
   }
 

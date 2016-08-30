@@ -1,8 +1,6 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import chisel3.internal.HasId
-
 import scala.collection.mutable.HashMap
 import scala.util.Random
 import java.io.{File, Writer, FileWriter, PrintStream, IOException}
@@ -45,7 +43,7 @@ object copyVpiFiles {
 object genVCSVerilogHarness {
   def apply(dut: chisel3.Module, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
-    val (inputs, outputs) = getDataNames(dut) partition (_._1.dir == chisel3.INPUT)
+    val (inputs, outputs) = getDataNames("io", dut.io) partition (_._1.dir == chisel3.INPUT)
 
     writer write "module test;\n"
     writer write "  reg clk = 1;\n"
@@ -116,9 +114,8 @@ object genVCSVerilogHarness {
 
 private[iotesters] object setupVCSBackend {
   def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
-    val graph = new CircuitGraph
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = (graph construct circuit).asInstanceOf[T]
+    val dut = getTopModule(circuit).asInstanceOf[T]
     val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
 
     // Generate CHIRRTL
@@ -127,7 +124,8 @@ private[iotesters] object setupVCSBackend {
     // Generate Verilog
     val verilogFile = new File(dir, s"${circuit.name}.v")
     val verilogWriter = new FileWriter(verilogFile)
-    val annotation = new firrtl.Annotations.AnnotationMap(Nil)
+    val annotation = new firrtl.Annotations.AnnotationMap(Seq(
+      new firrtl.passes.InferReadWriteAnnotation(circuit.name, firrtl.Annotations.TransID(-1))))
     (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
     verilogWriter.close
 
@@ -139,16 +137,15 @@ private[iotesters] object setupVCSBackend {
     genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
     verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).!
 
-    (dut, new VCSBackend(dut, graph, Seq((new File(dir, circuit.name)).toString)))
+    (dut, new VCSBackend(dut, Seq((new File(dir, circuit.name)).toString)))
   }
 }
 
 private[iotesters] class VCSBackend(
                                     dut: chisel3.Module,
-                                    graph: CircuitGraph,
                                     cmd: Seq[String],
                                     verbose: Boolean = true,
                                     logger: PrintStream = System.out,
                                     _base: Int = 16,
                                     _seed: Long = System.currentTimeMillis)
-           extends VerilatorBackend(dut, graph, cmd, verbose, logger, _base, _seed)
+           extends VerilatorBackend(dut, cmd, verbose, logger, _base, _seed)
