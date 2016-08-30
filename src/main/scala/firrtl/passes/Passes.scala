@@ -549,8 +549,8 @@ object InferWidths extends Pass {
       def get_constraints_e (e:Expression) : Expression = {
          (e map (get_constraints_e)) match {
             case (e:Mux) => {
-               constrain(width_BANG(e.cond),ONE)
-               constrain(ONE,width_BANG(e.cond))
+               constrain(width_BANG(e.cond),IntWidth(1))
+               constrain(IntWidth(1),width_BANG(e.cond))
                e }
             case (e) => e }}
       def get_constraints (s:Statement) : Statement = {
@@ -576,13 +576,13 @@ object InferWidths extends Pass {
                      case Flip => constrain(width_BANG(expx),width_BANG(locx)) }}
                s }
             case (s:DefRegister) => {
-               constrain(width_BANG(s.reset),ONE)
-               constrain(ONE,width_BANG(s.reset))
+               constrain(width_BANG(s.reset),IntWidth(1))
+               constrain(IntWidth(1),width_BANG(s.reset))
                get_constraints_t(s.tpe,s.init.tpe,Default)
                s }
             case (s:Conditionally) => {
-               v += WGeq(width_BANG(s.pred),ONE)
-               v += WGeq(ONE,width_BANG(s.pred))
+               v += WGeq(width_BANG(s.pred),IntWidth(1))
+               v += WGeq(IntWidth(1),width_BANG(s.pred))
                s map (get_constraints) }
             case (s) => s map (get_constraints) }}
 

@@ -642,7 +642,6 @@ object Utils extends LazyLogging {
       def apply_s (s:Statement) : Statement = s map (apply_s) map (apply_e) map (apply_t)
       apply_s(s)
    }
-   val ONE = IntWidth(1)
    //def digits (s:String) : Boolean {
    //   val digits = "0123456789"
    //   var yes:Boolean = true
