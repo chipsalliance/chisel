@@ -249,6 +249,9 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     res := that
     res
   }
+
+  /** Default print as [[Decimal]] */
+  final def toPrintable: Printable = Decimal(this)
 }
 
 /** Provides a set of operations to create UInt types and literals.
