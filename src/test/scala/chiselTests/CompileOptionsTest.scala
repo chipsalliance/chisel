@@ -5,6 +5,7 @@ package chiselTests
 import org.scalatest._
 import chisel3._
 import chisel3.core.Binding.BindingException
+import chisel3.internal.ExplicitCompileOptions
 import chisel3.testers.BasicTester
 
 class CompileOptionsSpec extends ChiselFlatSpec {
@@ -234,6 +235,31 @@ class CompileOptionsSpec extends ChiselFlatSpec {
       elaborate {
         new RequireIOWrapModule()
       }
+    }
+  }
+
+  "A Module with unwrapped IO when compiled with an explicit requireIOWrap false " should "not throw an exception" in {
+
+    object StrictNotIOWrap {
+
+      implicit object CompileOptions extends ExplicitCompileOptions {
+        val connectFieldsMustMatch = true
+        val declaredTypeMustBeUnbound = true
+        val requireIOWrap = false
+        val dontTryConnectionsSwapped = true
+        val dontAssumeDirectionality = true
+      }
+
+    }
+    class NotIOWrapModule extends Module()(StrictNotIOWrap.CompileOptions) {
+      val io = new Bundle {
+        val in = UInt(width = 32).asInput
+        val out = Bool().asOutput
+      }
+      io.out := io.in(1)
+    }
+    elaborate {
+      new NotIOWrapModule()
     }
   }
 }
