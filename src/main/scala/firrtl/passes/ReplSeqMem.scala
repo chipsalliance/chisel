@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtl.passes
 
 import com.typesafe.scalalogging.LazyLogging
@@ -11,16 +13,6 @@ sealed trait PassOption
 case object InputConfigFileName extends PassOption
 case object OutputConfigFileName extends PassOption
 case object PassCircuitName extends PassOption
-
-object Error {
-  def apply(msg: String) = throw new Exception(msg)
-}
-object Warn {
-  def apply[T <: Any](msg: String, r: T) = {
-    println(Console.RED + msg + Console.RESET)
-    r
-  }
-}
 
 object PassConfigUtil {
 
@@ -41,7 +33,7 @@ object PassConfigUtil {
         case "-c" :: value :: tail =>
           nextPassOption(map + (PassCircuitName -> value), tail)
         case option :: tail =>
-          Error("Unknown option " + option + usage)
+          error("Unknown option " + option + usage)
       }
     }
     nextPassOption(Map[PassOption, String](), passArgList)
@@ -53,7 +45,7 @@ class ConfWriter(filename: String) {
   val outputBuffer = new java.io.CharArrayWriter
   def append(m: DefMemory) = {
     // legacy
-    val maskGran = getInfo(m.info,"maskGran")
+    val maskGran = getInfo(m.info, "maskGran")
     val writers = m.writers map (x => if (maskGran == None) "write" else "mwrite")
     val readers = List.fill(m.readers.length)("read")
     val readwriters = m.readwriters map (x => if (maskGran == None) "rw" else "mrw")
@@ -89,17 +81,17 @@ Optional Arguments:
   -i<filename>         Specify the input configuration file (for additional optimizations)
 """    
 
-  val passOptions = PassConfigUtil.getPassOptions(t,usage)
+  val passOptions = PassConfigUtil.getPassOptions(t, usage)
   val outputConfig = passOptions.getOrElse(
     OutputConfigFileName, 
-    Error("No output config file provided for ReplSeqMem!" + usage)
+    error("No output config file provided for ReplSeqMem!" + usage)
   )
   val passCircuit = passOptions.getOrElse(
     PassCircuitName, 
-    Error("No circuit name specified for ReplSeqMem!" + usage)
+    error("No circuit name specified for ReplSeqMem!" + usage)
   )
   val target = CircuitName(passCircuit)
-  def duplicate(n: Named) = this.copy(t=t.replace("-c:"+passCircuit,"-c:"+n.name))
+  def duplicate(n: Named) = this.copy(t=t.replace("-c:"+passCircuit, "-c:"+n.name))
   
 }
 
@@ -109,11 +101,11 @@ class ReplSeqMem(transID: TransID) extends Transform with LazyLogging {
       case Some(p) => p get CircuitName(circuit.main) match {
         case Some(ReplSeqMemAnnotation(t, _)) => {
 
-          val inputFileName = PassConfigUtil.getPassOptions(t).getOrElse(InputConfigFileName,"")
+          val inputFileName = PassConfigUtil.getPassOptions(t).getOrElse(InputConfigFileName, "")
           val inConfigFile = {
             if (inputFileName.isEmpty) None 
             else if (new java.io.File(inputFileName).exists) Some(new YamlFileReader(inputFileName))
-            else Error("Input configuration file does not exist!")
+            else error("Input configuration file does not exist!")
           }
 
           val outConfigFile = new ConfWriter(PassConfigUtil.getPassOptions(t).get(OutputConfigFileName).get)
@@ -131,17 +123,17 @@ class ReplSeqMem(transID: TransID) extends Transform with LazyLogging {
                 InferTypes,
                 ResolveGenders
               ) foldLeft circuit
-            ){ 
+            ) { 
               (c, pass) =>
                 val x = Utils.time(pass.name)(pass run c)
                 logger debug x.serialize
                 x
-            }, 
+            } , 
             None, 
             Some(map)
           )
         }  
-        case _ => TransformResult(circuit, None, Some(map))
+        case _ => error("Unexpected transform annotation")
       }
       case _ => TransformResult(circuit, None, Some(map))
     }

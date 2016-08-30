@@ -85,7 +85,7 @@ object Namespace {
     namespace
   }
 
-  /** Initializes a [[Namespace]] for [[Module]] names in a [[Circuit]] */
+  /** Initializes a [[Namespace]] for [[ir.Module]] names in a [[ir.Circuit]] */
   def apply(c: Circuit): Namespace = {
     val namespace = new Namespace
     c.modules foreach { m =>

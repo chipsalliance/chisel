@@ -41,22 +41,22 @@ object seqCat {
     case 2 => DoPrim(PrimOps.Cat, args, Seq.empty[BigInt], UIntType(UnknownWidth))
     case _ => {
       val seqs = args.splitAt(args.length/2)
-      DoPrim(PrimOps.Cat, Seq(seqCat(seqs._1),seqCat(seqs._2)), Seq.empty[BigInt], UIntType(UnknownWidth))
+      DoPrim(PrimOps.Cat, Seq(seqCat(seqs._1), seqCat(seqs._2)), Seq.empty[BigInt], UIntType(UnknownWidth))
     }
   }
 }
 
 object toBits {
   def apply(e: Expression): Expression = e match {
-    case ex: WRef => hiercat(ex,ex.tpe)
-    case ex: WSubField => hiercat(ex,ex.tpe)
-    case ex: WSubIndex => hiercat(ex,ex.tpe)
+    case ex: WRef => hiercat(ex, ex.tpe)
+    case ex: WSubField => hiercat(ex, ex.tpe)
+    case ex: WSubIndex => hiercat(ex, ex.tpe)
     case t => error("Invalid operand expression for toBits!")
   }
   def hiercat(e: Expression, dt: Type): Expression = dt match {
-    case t:VectorType => seqCat((0 until t.size).reverse.map(i => hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER),t.tpe)))
-    case t:BundleType => seqCat(t.fields.map(f => hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER), f.tpe)))
-    case t:GroundType => e
+    case t: VectorType => seqCat((0 until t.size).reverse.map(i => hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER), t.tpe)))
+    case t: BundleType => seqCat(t.fields.map(f => hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER), f.tpe)))
+    case t: GroundType => e
     case t => error("Unknown type encountered in toBits!")
   }
 }
@@ -64,16 +64,16 @@ object toBits {
 // TODO: make easier to understand
 object toBitMask {
   def apply(e: Expression, dataType: Type): Expression = e match {
-    case ex: WRef => hiermask(ex,ex.tpe,dataType)
-    case ex: WSubField => hiermask(ex,ex.tpe,dataType)
-    case ex: WSubIndex => hiermask(ex,ex.tpe,dataType)
+    case ex: WRef => hiermask(ex, ex.tpe, dataType)
+    case ex: WSubField => hiermask(ex, ex.tpe, dataType)
+    case ex: WSubIndex => hiermask(ex, ex.tpe, dataType)
     case t => error("Invalid operand expression for toBits!")
   }
   def hiermask(e: Expression, maskType: Type, dataType: Type): Expression = (maskType, dataType) match {
-    case (mt:VectorType, dt:VectorType) => seqCat((0 until mt.size).reverse.map(i => hiermask(WSubIndex(e, i, mt.tpe, UNKNOWNGENDER), mt.tpe, dt.tpe)))
-    case (mt:BundleType, dt:BundleType) => seqCat((mt.fields zip dt.fields).map{ case (mf,df) =>
-      hiermask(WSubField(e, mf.name, mf.tpe, UNKNOWNGENDER), mf.tpe, df.tpe) })
-    case (mt:UIntType, dt:GroundType) => seqCat(List.fill(bitWidth(dt).intValue)(e))
+    case (mt: VectorType, dt: VectorType) => seqCat((0 until mt.size).reverse.map(i => hiermask(WSubIndex(e, i, mt.tpe, UNKNOWNGENDER), mt.tpe, dt.tpe)))
+    case (mt: BundleType, dt: BundleType) => seqCat((mt.fields zip dt.fields).map { case (mf, df) =>
+      hiermask(WSubField(e, mf.name, mf.tpe, UNKNOWNGENDER), mf.tpe, df.tpe) } )
+    case (mt: UIntType, dt: GroundType) => seqCat(List.fill(bitWidth(dt).intValue)(e))
     case (mt, dt) => error("Invalid type for mask component!")
   }
 }
@@ -81,8 +81,8 @@ object toBitMask {
 object bitWidth {
   def apply(dt: Type): BigInt = widthOf(dt)
   def widthOf(dt: Type): BigInt = dt match {
-    case t:VectorType => t.size * bitWidth(t.tpe)
-    case t:BundleType => t.fields.map(f => bitWidth(f.tpe)).foldLeft(BigInt(0))(_+_)
+    case t: VectorType => t.size * bitWidth(t.tpe)
+    case t: BundleType => t.fields.map(f => bitWidth(f.tpe)).foldLeft(BigInt(0))(_+_)
     case UIntType(IntWidth(width)) => width
     case SIntType(IntWidth(width)) => width
     case t => error("Unknown type encountered in bitWidth!")
@@ -101,12 +101,12 @@ object fromBits {
   }
   def getPartGround(lhs: Expression, lhst: Type, rhs: Expression, offset: BigInt): (BigInt, Seq[Statement]) = {
     val intWidth = bitWidth(lhst)
-    val sel = DoPrim(PrimOps.Bits, Seq(rhs), Seq(offset+intWidth-1,offset), UnknownType)
-    (offset + intWidth, Seq(Connect(NoInfo,lhs,sel)))
+    val sel = DoPrim(PrimOps.Bits, Seq(rhs), Seq(offset+intWidth-1, offset), UnknownType)
+    (offset + intWidth, Seq(Connect(NoInfo, lhs, sel)))
   }
   def getPart(lhs: Expression, lhst: Type, rhs: Expression, offset: BigInt): (BigInt, Seq[Statement]) = {
     lhst match {
-      case t:VectorType => {
+      case t: VectorType => {
         var currentOffset = offset
         var stmts = Seq.empty[Statement]
         for (i <- (0 until t.size)) {
@@ -116,7 +116,7 @@ object fromBits {
         }
         (currentOffset, stmts)
       }
-      case t:BundleType => {
+      case t: BundleType => {
         var currentOffset = offset
         var stmts = Seq.empty[Statement]
         for (f <- t.fields.reverse) {
@@ -126,7 +126,7 @@ object fromBits {
         }
         (currentOffset, stmts)
       }
-      case t:GroundType => getPartGround(lhs, t, rhs, offset)
+      case t: GroundType => getPartGround(lhs, t, rhs, offset)
       case t => error("Unknown type encountered in fromBits!")
     }
   }
@@ -145,7 +145,7 @@ object MemPortUtils {
   )
 
   def getFillWMask(mem: DefMemory) = {
-    val maskGran = getInfo(mem.info,"maskGran")
+    val maskGran = getInfo(mem.info, "maskGran")
     if (maskGran == None) false
     else maskGran.get == 1
   }
@@ -156,7 +156,7 @@ object MemPortUtils {
   def wPortToBundle(mem: DefMemory) = {
     val defaultSeq = defaultPortSeq(mem) :+ Field("data", Default, mem.dataType)
     BundleType(
-      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("mask", Default, create_mask(mem.dataType))
+      if (containsInfo(mem.info, "maskGran")) defaultSeq :+ Field("mask", Default, create_mask(mem.dataType))
       else defaultSeq
     )
   }
@@ -164,7 +164,7 @@ object MemPortUtils {
   def wPortToFlattenBundle(mem: DefMemory) = {
     val defaultSeq = defaultPortSeq(mem) :+ Field("data", Default, flattenType(mem.dataType))
     BundleType(
-      if (containsInfo(mem.info,"maskGran")) {
+      if (containsInfo(mem.info, "maskGran")) {
         defaultSeq :+ {
           if (getFillWMask(mem)) Field("mask", Default, flattenType(mem.dataType))
           else Field("mask", Default, flattenType(create_mask(mem.dataType)))
@@ -175,26 +175,26 @@ object MemPortUtils {
   }
   // TODO: Don't use create_mask???
 
-  def rwPortToBundle(mem: DefMemory) ={
+  def rwPortToBundle(mem: DefMemory) = {
     val defaultSeq = defaultPortSeq(mem) ++ Seq(
       Field("wmode", Default, UIntType(IntWidth(1))),
       Field("wdata", Default, mem.dataType),
       Field("rdata", Flip, mem.dataType)
     )
     BundleType(
-      if (containsInfo(mem.info,"maskGran")) defaultSeq :+ Field("wmask", Default, create_mask(mem.dataType))
+      if (containsInfo(mem.info, "maskGran")) defaultSeq :+ Field("wmask", Default, create_mask(mem.dataType))
       else defaultSeq
     )
   }
 
-  def rwPortToFlattenBundle(mem: DefMemory) ={
+  def rwPortToFlattenBundle(mem: DefMemory) = {
     val defaultSeq = defaultPortSeq(mem) ++ Seq(
       Field("wmode", Default, UIntType(IntWidth(1))),
       Field("wdata", Default, flattenType(mem.dataType)),
       Field("rdata", Flip, flattenType(mem.dataType))
     )
     BundleType(
-      if (containsInfo(mem.info,"maskGran")) {
+      if (containsInfo(mem.info, "maskGran")) {
         defaultSeq :+ {
           if (getFillWMask(mem)) Field("wmask", Default, flattenType(mem.dataType))
           else Field("wmask", Default, flattenType(create_mask(mem.dataType)))
