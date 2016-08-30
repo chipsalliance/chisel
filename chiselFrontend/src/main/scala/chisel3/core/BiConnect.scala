@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3.core
 
 import chisel3.internal.Builder.{compileOptions, pushCommand}
@@ -70,7 +72,7 @@ object BiConnect {
         // Verify right has no extra fields that left doesn't have
         for((field, right_sub) <- right_b.elements) {
           if(!left_b.elements.isDefinedAt(field)) {
-            if (compileOptions.connectFieldsMustMatch) {
+            if (compileOptions.connectFieldsMustMatch || context_mod.compileOptions.connectFieldsMustMatch) {
               throw MissingLeftFieldException(field)
             }
           }
@@ -81,7 +83,7 @@ object BiConnect {
             right_b.elements.get(field) match {
               case Some(right_sub) => connect(sourceInfo, left_sub, right_sub, context_mod)
               case None => {
-                if (compileOptions.connectFieldsMustMatch) {
+                if (compileOptions.connectFieldsMustMatch || context_mod.compileOptions.connectFieldsMustMatch) {
                   throw MissingRightFieldException(field)
                 }
               }
@@ -167,7 +169,7 @@ object BiConnect {
         case (None,         Some(Input))  => issueConnectR2L(left, right)
 
         case (Some(Input),  Some(Input))  => {
-          if (compileOptions.dontAssumeDirectionality) {
+          if (compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality) {
             throw BothDriversException
           } else {
             (left.binding, right.binding) match {
@@ -179,7 +181,7 @@ object BiConnect {
           }
         }
         case (Some(Output), Some(Output)) => {
-          if (compileOptions.dontAssumeDirectionality) {
+          if (compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality) {
             throw BothDriversException
           } else {
             (left.binding, right.binding) match {
@@ -191,7 +193,7 @@ object BiConnect {
           }
         }
         case (None,         None)         => {
-          if (compileOptions.dontAssumeDirectionality) {
+          if (compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality) {
             throw UnknownDriverException
           } else {
             issueConnectR2L(left, right)

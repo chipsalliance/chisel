@@ -1,6 +1,6 @@
 package chisel3.core
 
-import chisel3.internal.Builder.compileOptions
+import chisel3.internal.Builder.{compileOptions, forcedModule}
 
 /**
  * The purpose of a Binding is to indicate what type of hardware 'entity' a
@@ -91,7 +91,7 @@ object Binding {
           element.binding = binder(unbound)
         }
           // If autoIOWrap is enabled and we're rebinding a PortBinding, just ignore the rebinding.
-        case portBound @ PortBinding(_, _) if (!compileOptions.requireIOWrap && binder.isInstanceOf[PortBinder]) =>
+        case portBound @ PortBinding(_, _) if (!(compileOptions.requireIOWrap || forcedModule.compileOptions.requireIOWrap)&& binder.isInstanceOf[PortBinder]) =>
         case binding => throw AlreadyBoundException(binding.toString)
       }
     )
@@ -145,7 +145,7 @@ object Binding {
         case binding =>
           // The following kludge is an attempt to provide backward compatibility
           // It should be done at at higher level.
-          if ((compileOptions.requireIOWrap || !elementOfIO(element)))
+          if ((compileOptions.requireIOWrap || forcedModule.compileOptions.requireIOWrap || !elementOfIO(element)))
             throw NotSynthesizableException
           else
             Binding.bind(element, PortBinder(element._parent.get), "Error: IO")
