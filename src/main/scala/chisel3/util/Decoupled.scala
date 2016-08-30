@@ -40,7 +40,8 @@ object DecoupledIO {
       */
     def noenq(): Unit = {
       target.valid := Bool(false)
-      target.bits := target.bits.fromBits(0.asUInt)
+      // We want the type from the following, not any existing binding.
+      target.bits := target.bits.cloneType.fromBits(0.asUInt)
     }
 
     /** Assert ready on this port and return the associated data bits.
