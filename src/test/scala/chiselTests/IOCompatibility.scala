@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import Chisel._
+import chisel3._
 import chisel3.NotStrict.CompileOptions
 
 class IOCSimpleIO extends Bundle {

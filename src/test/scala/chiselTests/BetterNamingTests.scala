@@ -3,7 +3,8 @@ package chiselTests
 import org.scalatest.{FlatSpec, Matchers}
 import collection.mutable
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import chisel3.NotStrict.CompileOptions
 
 

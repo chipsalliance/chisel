@@ -4,7 +4,7 @@
 // moving to the more standard package naming convention chisel3 (lowercase c).
 
 package object Chisel {     // scalastyle:ignore package.object.name
-  import chisel3.NotStrict.CompileOptions
+  implicit val compileOptions = chisel3.NotStrict.CompileOptions
   type Direction = chisel3.core.Direction
   val INPUT = chisel3.core.Direction.Input
   val OUTPUT = chisel3.core.Direction.Output
