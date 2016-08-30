@@ -47,7 +47,7 @@ trait BackendCompilationUtilities {
     * C++ sources and headers as well as a makefile to compile them.
     *
     * @param dutFile name of the DUT .v without the .v extension
-    * @param name of the top-level module in the design
+    * @param topModule of the top-level module in the design
     * @param dir output directory
     * @param vSources list of additional Verilog sources to compile
     * @param cppHarness C++ testharness to compile/link against
