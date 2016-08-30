@@ -105,15 +105,15 @@ object LowerTypes extends Pass {
           require(tail.isEmpty) // there can't be a tail for these
           val memType = memDataTypeMap(mem.name)
 
-          if (memType.isGround) {
-            Seq(e)
-          } else {
-            val exps = create_exps(mem.name, memType)
-            exps map { e =>
-              val loMemName = loweredName(e)
-              val loMem = WRef(loMemName, UnknownType, kind(mem), UNKNOWNGENDER)
-              mergeRef(loMem, mergeRef(port, field))
-            }
+          memType match {
+            case _: GroundType => Seq(e)
+            case _ =>
+              val exps = create_exps(mem.name, memType)
+              exps map { e =>
+                val loMemName = loweredName(e)
+                val loMem = WRef(loMemName, UnknownType, kind(mem), UNKNOWNGENDER)
+                mergeRef(loMem, mergeRef(port, field))
+              }
           }
         // Fields that need not be replicated for each
         // eg. mem.reader.data[0].a
@@ -158,26 +158,26 @@ object LowerTypes extends Pass {
         s map lowerTypesStmt match {
           case s: DefWire =>
             sinfo = s.info
-            if (s.tpe.isGround) {
-              s
-            } else {
-              val exps = create_exps(s.name, s.tpe)
-              val stmts = exps map (e => DefWire(s.info, loweredName(e), e.tpe))
-              Block(stmts)
+            s.tpe match {
+              case _: GroundType => s
+              case _ =>
+                val exps = create_exps(s.name, s.tpe)
+                val stmts = exps map (e => DefWire(s.info, loweredName(e), e.tpe))
+                Block(stmts)
             }
           case s: DefRegister =>
             sinfo = s.info
-            if (s.tpe.isGround) {
-              s map lowerTypesExp
-            } else {
-              val es = create_exps(s.name, s.tpe)
-              val inits = create_exps(s.init) map (lowerTypesExp)
-              val clock = lowerTypesExp(s.clock)
-              val reset = lowerTypesExp(s.reset)
-              val stmts = es zip inits map { case (e, i) =>
-                DefRegister(s.info, loweredName(e), e.tpe, clock, reset, i)
-              }
-              Block(stmts)
+            s.tpe match {
+              case _: GroundType => s map lowerTypesExp
+              case _ =>
+                val es = create_exps(s.name, s.tpe)
+                val inits = create_exps(s.init) map (lowerTypesExp)
+                val clock = lowerTypesExp(s.clock)
+                val reset = lowerTypesExp(s.reset)
+                val stmts = es zip inits map { case (e, i) =>
+                  DefRegister(s.info, loweredName(e), e.tpe, clock, reset, i)
+                }
+                Block(stmts)
             }
           // Could instead just save the type of each Module as it gets processed
           case s: WDefInstance =>
@@ -188,7 +188,7 @@ object LowerTypes extends Pass {
                   val exps = create_exps(WRef(f.name, f.tpe, ExpKind(), times(f.flip, MALE)))
                   exps map ( e =>
                     // Flip because inst genders are reversed from Module type
-                    Field(loweredName(e), toFlip(gender(e)).flip, e.tpe)
+                    Field(loweredName(e), swap(to_flip(gender(e))), e.tpe)
                   )
                 }
                 WDefInstance(s.info, s.name, s.module, BundleType(fieldsx))
@@ -197,16 +197,16 @@ object LowerTypes extends Pass {
           case s: DefMemory =>
             sinfo = s.info
             memDataTypeMap += (s.name -> s.dataType)
-            if (s.dataType.isGround) {
-              s
-            } else {
-              val exps = create_exps(s.name, s.dataType)
-              val stmts = exps map { e =>
-                DefMemory(s.info, loweredName(e), e.tpe, s.depth,
-                  s.writeLatency, s.readLatency, s.readers, s.writers,
-                  s.readwriters)
-              }
-              Block(stmts)
+            s.dataType match {
+              case _: GroundType => s
+              case _ =>
+                val exps = create_exps(s.name, s.dataType)
+                val stmts = exps map { e =>
+                  DefMemory(s.info, loweredName(e), e.tpe, s.depth,
+                    s.writeLatency, s.readLatency, s.readers, s.writers,
+                    s.readwriters)
+                }
+                Block(stmts)
             }
           // wire foo : { a , b }
           // node x = foo

@@ -68,9 +68,9 @@ class VerilogEmitter extends Emitter {
    var mname = ""
    def wref (n:String,t:Type) = WRef(n,t,ExpKind(),UNKNOWNGENDER)
    def remove_root (ex:Expression) : Expression = {
-      (ex.as[WSubField].get.exp) match {
+      (ex.asInstanceOf[WSubField].exp) match {
          case (e:WSubField) => remove_root(e)
-         case (e:WRef) => WRef(ex.as[WSubField].get.name,ex.tpe,InstanceKind(),UNKNOWNGENDER)
+         case (e:WRef) => WRef(ex.asInstanceOf[WSubField].name,ex.tpe,InstanceKind(),UNKNOWNGENDER)
       }
    }
    def not_empty (s:ArrayBuffer[_]) : Boolean = if (s.size == 0) false else true
@@ -120,7 +120,7 @@ class VerilogEmitter extends Emitter {
          case (i:Long) => w.get.write(i.toString)
          case (t:VIndent) => w.get.write("   ")
          case (s:Seq[Any]) => {
-            s.foreach((x:Any) => emit2(x.as[Any].get, top + 1))
+            s.foreach((x:Any) => emit2(x, top + 1))
             if (top == 0) w.get.write("\n")
          }
       }
@@ -142,7 +142,10 @@ class VerilogEmitter extends Emitter {
    }
    def op_stream (doprim:DoPrim) : Seq[Any] = {
       def cast_if (e:Expression) : Any = {
-         val signed = doprim.args.find(x => x.tpe.typeof[SIntType])
+         val signed = doprim.args.find(x => x.tpe match {
+           case _: SIntType => true
+           case _ => false
+         })
          if (signed == None) e
          else e.tpe match {
             case (t:SIntType) => Seq("$signed(",e,")")
@@ -478,7 +481,7 @@ class VerilogEmitter extends Emitter {
                initialize(e)
             }
             case (s:IsInvalid) => {
-               val wref = netlist(s.expr).as[WRef].get
+               val wref = netlist(s.expr).asInstanceOf[WRef]
                declare("wire",wref.name,s.expr.tpe)
                invalidAssign(wref)
             }
