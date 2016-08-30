@@ -165,72 +165,52 @@ object Utils extends LazyLogging {
             exps ++ create_exps(WSubIndex(e,i,t.tpe,gender(e))))
       }
    }
+
    def get_flip (t:Type, i:Int, f:Orientation) : Orientation = {
-      if (i >= get_size(t)) error("Shouldn't be here")
-      val x = t match {
-         case (t:UIntType) => f
-         case (t:SIntType) => f
-         case ClockType => f
-         case (t:BundleType) => {
-            var n = i
-            var ret:Option[Orientation] = None
-            t.fields.foreach { x => {
-               if (n < get_size(x.tpe)) {
-                  ret match {
-                     case None => ret = Some(get_flip(x.tpe,n,times(x.flip,f)))
-                     case ret => {}
-                  }
-               } else { n = n - get_size(x.tpe) }
-            }}
-            ret.asInstanceOf[Some[Orientation]].get
-         }
-         case (t:VectorType) => {
-            var n = i
-            var ret:Option[Orientation] = None
-            for (j <- 0 until t.size) {
-               if (n < get_size(t.tpe)) {
-                  ret = Some(get_flip(t.tpe,n,f))
-               } else {
-                  n = n - get_size(t.tpe)
-               }
+     if (i >= get_size(t)) error("Shouldn't be here")
+     t match {
+       case (_: GroundType) => f
+       case (t: BundleType) => 
+         val (_, flip) = ((t.fields foldLeft (i, None: Option[Orientation])){
+            case ((n, ret), x) if n < get_size(x.tpe) => ret match {
+              case None => (n, Some(get_flip(x.tpe,n,times(x.flip,f))))
+              case Some(_) => (n, ret)
             }
-            ret.asInstanceOf[Some[Orientation]].get
-         }
-      }
-      x
+            case ((n, ret), x) => (n - get_size(x.tpe), ret)
+         })
+         flip.get
+       case (t: VectorType) => 
+         val (_, flip) = (((0 until t.size) foldLeft (i, None: Option[Orientation])){
+           case ((n, ret), x) if n < get_size(t.tpe) => ret match {
+             case None => (n, Some(get_flip(t.tpe,n,f)))
+             case Some(_) => (n, ret)
+           }
+           case ((n, ret), x) => (n - get_size(t.tpe), ret)
+         })
+         flip.get
+     }
    }
-   
-   def get_point (e:Expression) : Int = { 
-      e match {
-         case (e:WRef) => 0
-         case (e:WSubField) => {
-            var i = 0
-            tpe(e.exp).asInstanceOf[BundleType].fields.find { f => {
-               val b = f.name == e.name
-               if (!b) { i = i + get_size(f.tpe)}
-               b
-            }}
-            i
-         }
-         case (e:WSubIndex) => e.value * get_size(e.tpe)
-         case (e:WSubAccess) => get_point(e.exp)
-      }
+  
+   def get_point (e:Expression) : Int = e match {
+     case (e: WRef) => 0
+     case (e: WSubField) => tpe(e.exp) match {case b: BundleType =>
+       (b.fields takeWhile (_.name != e.name) foldLeft 0)(
+         (point, f) => point + get_size(f.tpe))
+     }
+     case (e: WSubIndex) => e.value * get_size(e.tpe)
+     case (e: WSubAccess) => get_point(e.exp)
    }
 
    /** Returns true if t, or any subtype, contains a flipped field
      * @param t [[firrtl.ir.Type]]
      * @return if t contains [[firrtl.ir.Flip]]
      */
-   def hasFlip(t: Type): Boolean = {
-      var has = false
-      def findFlip(t: Type): Type = t map (findFlip) match {
-         case t: BundleType =>
-            for (f <- t.fields) { if (f.flip == Flip) has = true }
-            t
-         case t: Type => t
-      }
-      findFlip(t)
-      has
+   def hasFlip(t: Type): Boolean = t match {
+     case t: BundleType =>
+       (t.fields exists (_.flip == Flip)) ||
+       (t.fields exists (f => hasFlip(f.tpe)))
+     case t: VectorType => hasFlip(t.tpe)
+     case _ => false
    }
 
 //============== TYPES ================
@@ -327,63 +307,44 @@ object Utils extends LazyLogging {
    }
 
 //// =============== EXPANSION FUNCTIONS ================
-   def get_size (t:Type) : Int = {
-      t match {
-         case (t:BundleType) => {
-            var sum = 0
-            for (f <- t.fields) {
-               sum = sum + get_size(f.tpe)
-            }
-            sum
-         }
-         case (t:VectorType) => t.size * get_size(t.tpe)
-         case (t) => 1
-      }
+   def get_size(t: Type) : Int = t match {
+     case (t: BundleType) => (t.fields foldLeft 0)(
+       (sum, f) => sum + get_size(f.tpe))
+     case (t: VectorType) => t.size * get_size(t.tpe)
+     case (t) => 1
    }
-   def get_valid_points (t1:Type, t2:Type, flip1:Orientation, flip2:Orientation) : Seq[(Int,Int)] = {
-      //;println_all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
-      (t1,t2) match {
-         case (t1:UIntType,t2:UIntType) => if (flip1 == flip2) Seq((0, 0)) else Seq()
-         case (t1:SIntType,t2:SIntType) => if (flip1 == flip2) Seq((0, 0)) else Seq()
-         case (t1:BundleType,t2:BundleType) => {
-            val points = ArrayBuffer[(Int,Int)]()
-            var ilen = 0
-            var jlen = 0
-            for (i <- 0 until t1.fields.size) {
-               for (j <- 0 until t2.fields.size) {
-                  val f1 = t1.fields(i)
-                  val f2 = t2.fields(j)
-                  if (f1.name == f2.name) {
-                     val ls = get_valid_points(f1.tpe,f2.tpe,times(flip1, f1.flip),times(flip2, f2.flip))
-                     for (x <- ls) {
-                        points += ((x._1 + ilen, x._2 + jlen))
-                     }
-                  }
-                  jlen = jlen + get_size(t2.fields(j).tpe)
-               }
-               ilen = ilen + get_size(t1.fields(i).tpe)
-               jlen = 0
-            }
-            points
-         }
-         case (t1:VectorType,t2:VectorType) => {
-            val points = ArrayBuffer[(Int,Int)]()
-            var ilen = 0
-            var jlen = 0
-            for (i <- 0 until scala.math.min(t1.size,t2.size)) {
-               val ls = get_valid_points(t1.tpe,t2.tpe,flip1,flip2)
-               for (x <- ls) {
-                  val y = ((x._1 + ilen), (x._2 + jlen))
-                  points += y
-               }
-               ilen = ilen + get_size(t1.tpe)
-               jlen = jlen + get_size(t2.tpe)
-            }
-            points
-         }
-        case (ClockType,ClockType) => if (flip1 == flip2) Seq((0, 0)) else Seq()
-      }
+
+   def get_valid_points (t1: Type, t2: Type, flip1: Orientation, flip2: Orientation) : Seq[(Int,Int)] = {
+     //;println_all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
+     (t1, t2) match {
+       case (t1: UIntType, t2: UIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
+       case (t1: SIntType, t2: SIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
+       case (t1: BundleType, t2: BundleType) =>
+         def emptyMap = Map[String, (Type, Orientation, Int)]()
+         val t1_fields = ((t1.fields foldLeft (emptyMap, 0)){case ((map, ilen), f1) =>
+           (map + (f1.name -> (f1.tpe, f1.flip, ilen)), ilen + get_size(f1.tpe))})._1
+         ((t2.fields foldLeft (Seq[(Int, Int)](), 0)){case ((points, jlen), f2) =>
+           t1_fields get f2.name match {
+             case None => (points, jlen + get_size(f2.tpe))
+             case Some((f1_tpe, f1_flip, ilen))=>
+               val f1_times = times(flip1, f1_flip)
+               val f2_times = times(flip2, f2.flip)
+               val ls = get_valid_points(f1_tpe, f2.tpe, f1_times, f2_times)
+               (points ++ (ls map {case (x, y) => (x + ilen, y + jlen)}), jlen + get_size(f2.tpe))
+           }
+         })._1
+       case (t1: VectorType, t2: VectorType) =>
+         val size = math.min(t1.size, t2.size)
+         (((0 until size) foldLeft (Seq[(Int, Int)](), 0, 0)){case ((points, ilen, jlen), _) =>
+           val ls = get_valid_points(t1.tpe, t2.tpe, flip1, flip2)
+           (points ++ (ls map {case (x, y) => ((x + ilen), (y + jlen))}),
+             ilen + get_size(t1.tpe), jlen + get_size(t2.tpe))
+         })._1
+       case (ClockType, ClockType) => if (flip1 == flip2) Seq((0, 0)) else Nil
+       case _ => error("shouldn't be here")
+     }
    }
+
 // =========== GENDER/FLIP UTILS ============
    def swap (g:Gender) : Gender = {
       g match {
