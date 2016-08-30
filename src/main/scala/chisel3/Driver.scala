@@ -108,9 +108,9 @@ object Driver extends BackendCompilationUtilities {
     *  @param gen a function that creates a Module hierarchy
     *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
-  def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
+  def elaborate[T <: Module](gen: () => T, moduleCompileOptions: Option[ExplicitCompileOptions] = None): Circuit = Builder.build(Module(gen()), moduleCompileOptions)
 
-  def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
+  def emit[T <: Module](gen: () => T, moduleCompileOptions: Option[ExplicitCompileOptions] = None): String = Emitter.emit(elaborate(gen, moduleCompileOptions))
 
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
