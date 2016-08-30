@@ -138,7 +138,7 @@ object LowerTypes extends Pass {
           case k: InstanceKind =>
             val (root, tail) = splitRef(e)
             val name = loweredName(tail)
-            WSubField(root, name, tpe(e), gender(e))
+            WSubField(root, name, e.tpe, gender(e))
           case k: MemKind =>
             val exps = lowerTypesMemExp(e)
             if (exps.length > 1)
@@ -146,7 +146,7 @@ object LowerTypes extends Pass {
                     " to be expanded!")
             exps(0)
           case k =>
-            WRef(loweredName(e), tpe(e), kind(e), gender(e))
+            WRef(loweredName(e), e.tpe, kind(e), gender(e))
         }
         case e: Mux => e map (lowerTypesExp)
         case e: ValidIf => e map (lowerTypesExp)
@@ -162,7 +162,7 @@ object LowerTypes extends Pass {
               s
             } else {
               val exps = create_exps(s.name, s.tpe)
-              val stmts = exps map (e => DefWire(s.info, loweredName(e), tpe(e)))
+              val stmts = exps map (e => DefWire(s.info, loweredName(e), e.tpe))
               Block(stmts)
             }
           case s: DefRegister =>
@@ -175,7 +175,7 @@ object LowerTypes extends Pass {
               val clock = lowerTypesExp(s.clock)
               val reset = lowerTypesExp(s.reset)
               val stmts = es zip inits map { case (e, i) =>
-                DefRegister(s.info, loweredName(e), tpe(e), clock, reset, i)
+                DefRegister(s.info, loweredName(e), e.tpe, clock, reset, i)
               }
               Block(stmts)
             }
@@ -188,7 +188,7 @@ object LowerTypes extends Pass {
                   val exps = create_exps(WRef(f.name, f.tpe, ExpKind(), times(f.flip, MALE)))
                   exps map ( e =>
                     // Flip because inst genders are reversed from Module type
-                    Field(loweredName(e), toFlip(gender(e)).flip, tpe(e))
+                    Field(loweredName(e), toFlip(gender(e)).flip, e.tpe)
                   )
                 }
                 WDefInstance(s.info, s.name, s.module, BundleType(fieldsx))
@@ -202,7 +202,7 @@ object LowerTypes extends Pass {
             } else {
               val exps = create_exps(s.name, s.dataType)
               val stmts = exps map { e =>
-                DefMemory(s.info, loweredName(e), tpe(e), s.depth,
+                DefMemory(s.info, loweredName(e), e.tpe, s.depth,
                   s.writeLatency, s.readLatency, s.readers, s.writers,
                   s.readwriters)
               }
@@ -217,7 +217,7 @@ object LowerTypes extends Pass {
           // node y = x_a
           case s: DefNode =>
             sinfo = s.info
-            val names = create_exps(s.name, tpe(s.value)) map (lowerTypesExp)
+            val names = create_exps(s.name, s.value.tpe) map (lowerTypesExp)
             val exps = create_exps(s.value) map (lowerTypesExp)
             val stmts = names zip exps map { case (n, e) =>
               DefNode(s.info, loweredName(n), e)
@@ -249,7 +249,7 @@ object LowerTypes extends Pass {
       // Lower Ports
       val portsx = m.ports flatMap { p =>
         val exps = create_exps(WRef(p.name, p.tpe, PortKind(), to_gender(p.direction)))
-        exps map ( e => Port(p.info, loweredName(e), to_dir(gender(e)), tpe(e)) )
+        exps map ( e => Port(p.info, loweredName(e), to_dir(gender(e)), e.tpe) )
       }
       m match {
         case m: ExtModule => m.copy(ports = portsx)

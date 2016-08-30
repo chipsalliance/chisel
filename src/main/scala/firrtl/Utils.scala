@@ -126,7 +126,7 @@ object Utils extends LazyLogging {
       else if (e2 == we(zero)) e1.e1
       else DoPrim(Or,Seq(e1.e1,e2.e1),Seq(),UIntType(IntWidth(1)))
    }
-   def EQV (e1:Expression,e2:Expression) : Expression = { DoPrim(Eq,Seq(e1,e2),Seq(),tpe(e1)) }
+   def EQV (e1:Expression,e2:Expression) : Expression = { DoPrim(Eq,Seq(e1,e2),Seq(),e1.tpe) }
    def NOT (e1:WrappedExpression) : Expression = {
       if (e1 == we(one)) zero
       else if (e1 == we(zero)) one
@@ -135,7 +135,7 @@ object Utils extends LazyLogging {
 
    
    //def MUX (p:Expression,e1:Expression,e2:Expression) : Expression = {
-   //   Mux(p,e1,e2,mux_type(tpe(e1),tpe(e2)))
+   //   Mux(p,e1,e2,mux_type(e1.tpe,e2.tpe))
    //}
 
    def create_mask (dt:Type) : Type = {
@@ -156,8 +156,8 @@ object Utils extends LazyLogging {
          val e1s = create_exps(e.tval)
          val e2s = create_exps(e.fval)
          (e1s,e2s).zipped map ((e1,e2) => Mux(e.cond,e1,e2,mux_type_and_widths(e1,e2)))
-      case (e:ValidIf) => create_exps(e.value) map (e1 => ValidIf(e.cond,e1,tpe(e1)))
-      case (e) => tpe(e) match {
+      case (e:ValidIf) => create_exps(e.value) map (e1 => ValidIf(e.cond,e1,e1.tpe))
+      case (e) => e.tpe match {
          case (_:GroundType) => Seq(e)
          case (t:BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
             exps ++ create_exps(WSubField(e,f.name,f.tpe,times(gender(e), f.flip))))
@@ -193,7 +193,7 @@ object Utils extends LazyLogging {
   
    def get_point (e:Expression) : Int = e match {
      case (e: WRef) => 0
-     case (e: WSubField) => tpe(e.exp) match {case b: BundleType =>
+     case (e: WSubField) => e.exp.tpe match {case b: BundleType =>
        (b.fields takeWhile (_.name != e.name) foldLeft 0)(
          (point, f) => point + get_size(f.tpe))
      }
@@ -214,7 +214,7 @@ object Utils extends LazyLogging {
    }
 
 //============== TYPES ================
-   def mux_type (e1:Expression,e2:Expression) : Type = mux_type(tpe(e1),tpe(e2))
+   def mux_type (e1:Expression,e2:Expression) : Type = mux_type(e1.tpe,e2.tpe)
    def mux_type (t1:Type,t2:Type) : Type = {
       if (wt(t1) == wt(t2)) {
          (t1,t2) match { 
@@ -228,7 +228,7 @@ object Utils extends LazyLogging {
          }
       } else UnknownType
    }
-   def mux_type_and_widths (e1:Expression,e2:Expression) : Type = mux_type_and_widths(tpe(e1),tpe(e2))
+   def mux_type_and_widths (e1:Expression,e2:Expression) : Type = mux_type_and_widths(e1.tpe,e2.tpe)
    def mux_type_and_widths (t1:Type,t2:Type) : Type = {
       def wmax (w1:Width,w2:Width) : Width = {
          (w1,w2) match {
@@ -497,29 +497,11 @@ object Utils extends LazyLogging {
          case e:WSubIndex => kind(e.exp)
          case e => ExpKind()
       }
-   def tpe (e:Expression) : Type =
-      e match {
-         case e:Reference => e.tpe
-         case e:SubField => e.tpe
-         case e:SubIndex => e.tpe
-         case e:SubAccess => e.tpe
-         case e:WRef => e.tpe
-         case e:WSubField => e.tpe
-         case e:WSubIndex => e.tpe
-         case e:WSubAccess => e.tpe
-         case e:DoPrim => e.tpe
-         case e:Mux => e.tpe
-         case e:ValidIf => e.tpe
-         case e:UIntLiteral => UIntType(e.width)
-         case e:SIntLiteral => SIntType(e.width)
-         case e:WVoid => UnknownType
-         case e:WInvalid => UnknownType
-      }
    def get_type (s:Statement) : Type = {
       s match {
        case s:DefWire => s.tpe
        case s:DefRegister => s.tpe
-       case s:DefNode => tpe(s.value)
+       case s:DefNode => s.value.tpe
        case s:DefMemory => {
           val depth = s.depth
           val addr = Field("addr",Default,UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))

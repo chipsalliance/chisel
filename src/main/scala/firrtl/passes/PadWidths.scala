@@ -2,7 +2,7 @@ package firrtl
 package passes
 
 import firrtl.Mappers.{ExpMap, StmtMap}
-import firrtl.Utils.{tpe, long_BANG}
+import firrtl.Utils.long_BANG
 import firrtl.PrimOps._
 import firrtl.ir._
 
@@ -10,10 +10,10 @@ import firrtl.ir._
 object PadWidths extends Pass {
    def name = "Pad Widths"
    private def width(t: Type): Int = long_BANG(t).toInt
-   private def width(e: Expression): Int = width(tpe(e))
+   private def width(e: Expression): Int = width(e.tpe)
    // Returns an expression with the correct integer width
    private def fixup(i: Int)(e: Expression) = {
-      def tx = tpe(e) match {
+      def tx = e.tpe match {
          case t: UIntType => UIntType(IntWidth(i))
          case t: SIntType => SIntType(IntWidth(i))
          // default case should never be reached

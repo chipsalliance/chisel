@@ -129,7 +129,7 @@ object ConstProp extends Pass {
 
   private def foldComparison(e: DoPrim) = {
     def foldIfZeroedArg(x: Expression): Expression = {
-      def isUInt(e: Expression): Boolean = tpe(e) match {
+      def isUInt(e: Expression): Boolean = e.tpe match {
         case UIntType(_) => true
         case _ => false
       }
@@ -163,7 +163,7 @@ object ConstProp extends Pass {
       def range(e: Expression): Range = e match {
         case UIntLiteral(value, _) => Range(value, value)
         case SIntLiteral(value, _) => Range(value, value)
-        case _ => tpe(e) match {
+        case _ => e.tpe match {
           case SIntType(IntWidth(width)) => Range(
             min = BigInt(0) - BigInt(2).pow(width.toInt - 1),
             max = BigInt(2).pow(width.toInt - 1) - BigInt(1)
@@ -226,7 +226,7 @@ object ConstProp extends Pass {
     case Pad => e.args(0) match {
       case UIntLiteral(v, _) => UIntLiteral(v, IntWidth(e.consts(0)))
       case SIntLiteral(v, _) => SIntLiteral(v, IntWidth(e.consts(0)))
-      case _ if long_BANG(tpe(e.args(0))) == e.consts(0) => e.args(0)
+      case _ if long_BANG(e.args(0).tpe) == e.consts(0) => e.args(0)
       case _ => e
     }
     case Bits => e.args(0) match {
@@ -234,9 +234,9 @@ object ConstProp extends Pass {
         val hi = e.consts(0).toInt
         val lo = e.consts(1).toInt
         require(hi >= lo)
-        UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), widthBANG(tpe(e)))
+        UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), widthBANG(e.tpe))
       }
-      case x if long_BANG(tpe(e)) == long_BANG(tpe(x)) => tpe(x) match {
+      case x if long_BANG(e.tpe) == long_BANG(x.tpe) => x.tpe match {
         case t: UIntType => x
         case _ => asUInt(x, e.tpe)
       }
