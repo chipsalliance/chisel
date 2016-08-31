@@ -60,7 +60,7 @@ class CheckInitializationSpec extends FirrtlFlatSpec {
         |    wire x : UInt<32>
         |    when p :
         |      x <= UInt(1)""".stripMargin
-    intercept[PassExceptions] {
+    intercept[CheckInitialization.RefNotInitializedException] {
       passes.foldLeft(parse(input)) {
         (c: Circuit, p: Pass) => p.run(c)
       }
@@ -75,7 +75,7 @@ class CheckInitializationSpec extends FirrtlFlatSpec {
         |    when p :
         |    else :
         |      x <= UInt(1)""".stripMargin
-    intercept[PassExceptions] {
+    intercept[CheckInitialization.RefNotInitializedException] {
       passes.foldLeft(parse(input)) {
         (c: Circuit, p: Pass) => p.run(c)
       }
