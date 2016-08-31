@@ -8,7 +8,7 @@ ghpages.settings
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0",
+  version := "3.1-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   scalaVersion := "2.11.7"
 )
