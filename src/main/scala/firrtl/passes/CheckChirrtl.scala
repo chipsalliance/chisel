@@ -27,21 +27,14 @@ MODIFICATIONS.
 
 package firrtl.passes
 
-import com.typesafe.scalalogging.LazyLogging
-
-// Datastructures
-import scala.collection.mutable.HashSet
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
-import firrtl.PrimOps._
-import firrtl.WrappedType._
 
-
-object CheckChirrtl extends Pass with LazyLogging {
+object CheckChirrtl extends Pass {
   def name = "Chirrtl Check"
+  type NameSet = collection.mutable.HashSet[String]
 
   class NotUniqueException(info: Info, mname: String, name: String) extends PassException(
     s"${info}: [module ${mname}] Reference ${name} does not have a unique name.")
@@ -101,7 +94,7 @@ object CheckChirrtl extends Pass with LazyLogging {
       e
     }
 
-    def checkChirrtlE(info: Info, mname: String, names: HashSet[String])(e: Expression): Expression = {
+    def checkChirrtlE(info: Info, mname: String, names: NameSet)(e: Expression): Expression = {
       e match {
         case _: DoPrim | _:Mux | _:ValidIf | _: UIntLiteral =>
         case e: Reference if !names(e.name) =>
@@ -114,14 +107,14 @@ object CheckChirrtl extends Pass with LazyLogging {
          map checkChirrtlE(info, mname, names))
     }
 
-    def checkName(info: Info, mname: String, names: HashSet[String])(name: String): String = {
+    def checkName(info: Info, mname: String, names: NameSet)(name: String): String = {
       if (names(name))
         errors append (new NotUniqueException(info, mname, name))
       names += name
       name 
     }
 
-    def checkChirrtlS(minfo: Info, mname: String, names: HashSet[String])(s: Statement): Statement = {
+    def checkChirrtlS(minfo: Info, mname: String, names: NameSet)(s: Statement): Statement = {
       val info = get_info(s) match {case NoInfo => minfo case x => x}
       (s map checkName(info, mname, names)) match {
         case s: DefMemory =>
@@ -138,7 +131,7 @@ object CheckChirrtl extends Pass with LazyLogging {
          map checkChirrtlS(info, mname, names))
     }
 
-    def checkChirrtlP(mname: String, names: HashSet[String])(p: Port): Port = {
+    def checkChirrtlP(mname: String, names: NameSet)(p: Port): Port = {
       names += p.name
       (p.tpe map checkChirrtlT(p.info, mname)
              map checkChirrtlW(p.info, mname))
@@ -146,7 +139,7 @@ object CheckChirrtl extends Pass with LazyLogging {
     }
 
     def checkChirrtlM(m: DefModule) {
-      val names = HashSet[String]()
+      val names = new NameSet
       (m map checkChirrtlP(m.name, names)
          map checkChirrtlS(m.info, m.name, names))
     }

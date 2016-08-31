@@ -27,8 +27,6 @@ MODIFICATIONS.
 
 package firrtl.passes
 
-import com.typesafe.scalalogging.LazyLogging
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
