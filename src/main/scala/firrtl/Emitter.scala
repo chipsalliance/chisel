@@ -247,7 +247,6 @@ class VerilogEmitter extends Emitter {
    
     def emit_verilog(m: Module)(implicit w: Writer): DefModule = {
       val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
-      val simlist = ArrayBuffer[Statement]()
       val namespace = Namespace(m)
       def build_netlist(s: Statement): Statement = s map build_netlist match {
         case (s: Connect) =>
@@ -255,9 +254,6 @@ class VerilogEmitter extends Emitter {
           s
         case (s: IsInvalid) =>
           netlist(s.expr) = wref(namespace.newTemp, s.expr.tpe)
-          s
-        case (s: Conditionally) =>
-          simlist += s
           s
         case (s: DefNode) =>
           val e = WRef(s.name, s.value.tpe, NodeKind, MALE)
@@ -285,11 +281,11 @@ class VerilogEmitter extends Emitter {
 
       // In simulation, assign garbage under a predicate
       def garbageAssign(e: Expression, syn: Expression, garbageCond: Expression) = {
-         assigns += Seq("`ifndef RANDOMIZE_GARBAGE_ASSIGN")
-         assigns += Seq("assign ", e, " = ", syn, ";")
-         assigns += Seq("`else")
-         assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(syn.tpe), " : ", syn, ";")
-         assigns += Seq("`endif")
+        assigns += Seq("`ifndef RANDOMIZE_GARBAGE_ASSIGN")
+        assigns += Seq("assign ", e, " = ", syn, ";")
+        assigns += Seq("`else")
+        assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(syn.tpe), " : ", syn, ";")
+        assigns += Seq("`endif")
       }
       def invalidAssign(e: Expression) = {
         assigns += Seq("`ifdef RANDOMIZE_INVALID_ASSIGN")
@@ -311,19 +307,24 @@ class VerilogEmitter extends Emitter {
         }
 
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
-          netlist.getOrElse(e, e) match {
-            case m: Mux if canFlatten(m) =>
-              val ifStatement = Seq(tabs, "if(", m.cond, ") begin")
+          if (weq(e, r)) Nil else netlist getOrElse (e, e) match {
+            case m: Mux if canFlatten(m) => {
+              val ifStatement = Seq(tabs, "if (", m.cond, ") begin")
               val trueCase = addUpdate(m.tval, tabs + tab)
               val elseStatement = Seq(tabs, "end else begin")
+              val ifNotStatement = Seq(tabs, "if (!(", m.cond, ")) begin")
               val falseCase = addUpdate(m.fval, tabs + tab)
               val endStatement = Seq(tabs, "end")
 
-              if (falseCase.isEmpty)
-                ifStatement +: trueCase :+ endStatement
-              else
-                ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
-            case _ if (weq(e, r)) => Seq()
+              ((trueCase.nonEmpty, falseCase.nonEmpty): @ unchecked) match {
+                case (true, true) =>
+                  ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
+                case (true, false) =>
+                  ifStatement +: trueCase :+ endStatement
+                case (false, true) =>
+                  ifNotStatement +: falseCase :+ endStatement
+              }
+            }
             case _ => Seq(Seq(tabs, r, " <= ", e, ";"))
           }
         }
@@ -331,7 +332,10 @@ class VerilogEmitter extends Emitter {
         at_clock.getOrElseUpdate(clk, ArrayBuffer[Seq[Any]]()) ++= {
           val tv = init
           val fv = netlist(r)
-          addUpdate(Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), "")
+          if (weq(tv, r))
+            addUpdate(fv, "")
+          else
+            addUpdate(Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), "")
         }
       }
 
@@ -426,21 +430,21 @@ class VerilogEmitter extends Emitter {
         }
       }
 
-      def build_ports(): Unit = m.ports.zipWithIndex foreach {case (p, i) =>
-        p.direction match {
+      def build_ports(): Unit = portdefs ++= m.ports.zipWithIndex map {
+        case (p, i) => p.direction match {
           case Input =>
-            portdefs += Seq(p.direction, "  ", p.tpe, " ", p.name)
+            Seq(p.direction, "  ", p.tpe, " ", p.name)
           case Output =>
-            portdefs += Seq(p.direction, " ", p.tpe, " ", p.name)
             val ex = WRef(p.name, p.tpe, PortKind, FEMALE)
             assign(ex, netlist(ex))
+            Seq(p.direction, " ", p.tpe, " ", p.name)
         }
       }
 
       def build_streams(s: Statement): Statement = s map build_streams match {
         case (s: DefWire) => 
-          declare("wire",s.name,s.tpe)
-          val e = wref(s.name,s.tpe)
+          declare("wire",s.name, s.tpe)
+          val e = wref(s.name, s.tpe)
           assign(e,netlist(e))
           s
         case (s: DefRegister) =>
