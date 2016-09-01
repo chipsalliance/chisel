@@ -2,10 +2,11 @@
 
 package chisel3.core
 
-import chisel3.internal.Builder.{compileOptions, pushCommand}
+import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
+import chisel3.internal.ExplicitCompileOptions
 
 /**
 * BiConnect.connect executes a bidirectional connection element-wise.
@@ -49,11 +50,11 @@ object BiConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, left: Data, right: Data, context_mod: Module): Unit =
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions, left: Data, right: Data, context_mod: Module): Unit =
     (left, right) match {
       // Handle element case (root case)
       case (left_e: Element, right_e: Element) => {
-        elemConnect(sourceInfo, left_e, right_e, context_mod)
+        elemConnect(sourceInfo, connectCompileOptions, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
       }
       // Handle Vec case
@@ -61,7 +62,7 @@ object BiConnect {
         if(left_v.length != right_v.length) { throw MismatchedVecException }
         for(idx <- 0 until left_v.length) {
           try {
-            connect(sourceInfo, left_v(idx), right_v(idx), context_mod)
+            connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
           } catch {
             case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
           }
@@ -72,7 +73,7 @@ object BiConnect {
         // Verify right has no extra fields that left doesn't have
         for((field, right_sub) <- right_b.elements) {
           if(!left_b.elements.isDefinedAt(field)) {
-            if (compileOptions.connectFieldsMustMatch || context_mod.compileOptions.connectFieldsMustMatch) {
+            if (connectCompileOptions.connectFieldsMustMatch) {
               throw MissingLeftFieldException(field)
             }
           }
@@ -81,9 +82,9 @@ object BiConnect {
         for((field, left_sub) <- left_b.elements) {
           try {
             right_b.elements.get(field) match {
-              case Some(right_sub) => connect(sourceInfo, left_sub, right_sub, context_mod)
+              case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
               case None => {
-                if (compileOptions.connectFieldsMustMatch || context_mod.compileOptions.connectFieldsMustMatch) {
+                if (connectCompileOptions.connectFieldsMustMatch) {
                   throw MissingRightFieldException(field)
                 }
               }
@@ -109,7 +110,7 @@ object BiConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, left: Element, right: Element, context_mod: Module): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions, left: Element, right: Element, context_mod: Module): Unit = {
     import Direction.{Input, Output} // Using extensively so import these
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
@@ -169,7 +170,7 @@ object BiConnect {
         case (None,         Some(Input))  => issueConnectR2L(left, right)
 
         case (Some(Input),  Some(Input))  => {
-          if (compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality) {
+          if (connectCompileOptions.dontAssumeDirectionality) {
             throw BothDriversException
           } else {
             (left.binding, right.binding) match {
@@ -181,7 +182,7 @@ object BiConnect {
           }
         }
         case (Some(Output), Some(Output)) => {
-          if (compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality) {
+          if (connectCompileOptions.dontAssumeDirectionality) {
             throw BothDriversException
           } else {
             (left.binding, right.binding) match {
@@ -193,7 +194,7 @@ object BiConnect {
           }
         }
         case (None,         None)         => {
-          if (compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality) {
+          if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownDriverException
           } else {
             issueConnectR2L(left, right)

@@ -8,9 +8,9 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 object Reg {
-  private[core] def makeType[T <: Data](t: T = null, next: T = null, init: T = null): T = {
+  private[core] def makeType[T <: Data](compileOptions: ExplicitCompileOptions, t: T = null, next: T = null, init: T = null): T = {
     if (t ne null) {
-      if (Builder.compileOptions.declaredTypeMustBeUnbound || Builder.forcedModule.compileOptions.declaredTypeMustBeUnbound) {
+      if (compileOptions.declaredTypeMustBeUnbound) {
         Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
       }
       t.chiselCloneType
@@ -40,18 +40,18 @@ object Reg {
     * is a valid value. In those cases, you can either use the outType only Reg
     * constructor or pass in `null.asInstanceOf[T]`.
     */
-  def apply[T <: Data](t: T = null, next: T = null, init: T = null): T =
+  def apply[T <: Data](t: T = null, next: T = null, init: T = null)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions): T =
     // Scala macros can't (yet) handle named or default arguments.
-    do_apply(t, next, init)(UnlocatableSourceInfo)
+    do_apply(t, next, init)(sourceInfo, compileOptions)
 
   /** Creates a register without initialization (reset is ignored). Value does
     * not change unless assigned to (using the := operator).
     *
     * @param outType: data type for the register
     */
-  def apply[T <: Data](outType: T): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])
+  def apply[T <: Data](outType: T)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])(sourceInfo, compileOptions)
 
-  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions = chisel3.Strict.CompileOptions): T = {
     // TODO: write this in a way that doesn't need nulls (bad Scala style),
     // null.asInstanceOf[T], and two constructors. Using Option types are an
     // option, but introduces cumbersome syntax (wrap everything in a Some()).
@@ -59,7 +59,7 @@ object Reg {
     // but Scala's type inferencer and implicit insertion isn't smart enough
     // to resolve all use cases. If the type inferencer / implicit resolution
     // system improves, this may be changed.
-    val x = makeType(t, next, init)
+    val x = makeType(compileOptions, t, next, init)
     val clock = Node(x._parent.get.clock) // TODO multi-clock
 
     // Bind each element of x to being a Reg

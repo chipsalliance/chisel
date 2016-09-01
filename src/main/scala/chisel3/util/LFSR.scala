@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.Strict.CompileOptions
 
 // scalastyle:off magic.number
 /** linear feedback shift register

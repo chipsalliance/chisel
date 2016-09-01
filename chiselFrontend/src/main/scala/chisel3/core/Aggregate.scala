@@ -10,6 +10,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
+import chisel3.Strict.CompileOptions
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -51,10 +52,12 @@ object Vec {
     val width = elts.map(_.width).reduce(_ max _)
     // If an element has a direction associated with it, use the bulk connect operator.
     val vec = Wire(new Vec(elts.head.cloneTypeWidth(width), elts.length))
-    def doConnect(sink: T, source: T) = if (elts.head.flatten.exists(_.firrtlDirection != Direction.Unspecified)) {
-      sink bulkConnect source
-    } else {
-      sink connect source
+    def doConnect(sink: T, source: T) = {
+      if (elts.head.flatten.exists(_.firrtlDirection != Direction.Unspecified)) {
+        sink bulkConnect source
+      } else {
+        sink connect source
+      }
     }
     for ((v, e) <- vec zip elts) {
       doConnect(v, e)
@@ -138,27 +141,27 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
     *
     * @note the length of this Vec must match the length of the input Seq
     */
-  def <> (that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  def <> (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ExplicitCompileOptions): Unit = {
     require(this.length == that.length)
     for ((a, b) <- this zip that)
       a <> b
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = this bulkConnect that.asInstanceOf[Data]
+  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ExplicitCompileOptions): Unit = this bulkConnect that.asInstanceOf[Data]
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
     * @note the length of this Vec must match the length of the input Seq
     */
-  def := (that: Seq[T])(implicit sourceInfo: SourceInfo): Unit = {
+  def := (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ExplicitCompileOptions): Unit = {
     require(this.length == that.length)
     for ((a, b) <- this zip that)
       a := b
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def := (that: Vec[T])(implicit sourceInfo: SourceInfo): Unit = this connect that
+  def := (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ExplicitCompileOptions): Unit = this connect that
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
@@ -184,7 +187,9 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
   def read(idx: UInt): T = apply(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T): Unit = apply(idx).:=(data)(DeprecatedSourceInfo)
+  def write(idx: UInt, data: T): Unit = {
+    apply(idx).:=(data)(DeprecatedSourceInfo, chisel3.Strict.CompileOptions)
+  }
 
   override def cloneType: this.type = {
     Vec(length, gen).asInstanceOf[this.type]

@@ -8,6 +8,7 @@ import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.Strict.CompileOptions
 
 class BlackBoxInverter extends BlackBox {
   val io = IO(new Bundle() {

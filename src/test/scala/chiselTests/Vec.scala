@@ -8,6 +8,7 @@ import org.scalatest.prop._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.Strict.CompileOptions
 
 class ValueTester(w: Int, values: List[Int]) extends BasicTester {
   val v = Vec(values.map(UInt(_, width = w))) // TODO: does this need a Wire? Why no error?

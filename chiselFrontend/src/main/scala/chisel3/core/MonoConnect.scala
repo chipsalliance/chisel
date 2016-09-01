@@ -1,9 +1,12 @@
+// See LICENSE for license details.
+
 package chisel3.core
 
-import chisel3.internal.Builder.{compileOptions, pushCommand}
+import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, WireTransform}
+import chisel3.internal.ExplicitCompileOptions
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.
@@ -53,11 +56,11 @@ object MonoConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, sink: Data, source: Data, context_mod: Module): Unit =
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions, sink: Data, source: Data, context_mod: Module): Unit =
     (sink, source) match {
       // Handle element case (root case)
       case (sink_e: Element, source_e: Element) => {
-        elemConnect(sourceInfo, sink_e, source_e, context_mod)
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
       }
       // Handle Vec case
@@ -65,7 +68,7 @@ object MonoConnect {
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
         for(idx <- 0 until sink_v.length) {
           try {
-            connect(sourceInfo, sink_v(idx), source_v(idx), context_mod)
+            connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
           } catch {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
           }
@@ -77,9 +80,9 @@ object MonoConnect {
         for((field, sink_sub) <- sink_b.elements) {
           try {
             source_b.elements.get(field) match {
-              case Some(source_sub) => connect(sourceInfo, sink_sub, source_sub, context_mod)
+              case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
               case None => {
-                if (compileOptions.connectFieldsMustMatch || context_mod.compileOptions.connectFieldsMustMatch) {
+                if (connectCompileOptions.connectFieldsMustMatch) {
                   throw MissingFieldException(field)
                 }
               }
@@ -100,7 +103,7 @@ object MonoConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, sink: Element, source: Element, context_mod: Module): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions, sink: Element, source: Element, context_mod: Module): Unit = {
     import Direction.{Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
@@ -134,13 +137,13 @@ object MonoConnect {
         case (Some(Output), Some(Output)) => issueConnect(sink, source)
         case (Some(Output), Some(Input))  => issueConnect(sink, source)
         case (_,            None) => {
-          if (!(compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality)) {
+          if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
             throw UnreadableSourceException
           }
         }
-        case (Some(Input),  Some(Output)) if (!(compileOptions.dontTryConnectionsSwapped || context_mod.compileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
+        case (Some(Input),  Some(Output)) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
         case (Some(Input),  _)    => throw UnwritableSinkException
       }
     }
@@ -172,7 +175,7 @@ object MonoConnect {
         case (Some(Input),  Some(Output)) => issueConnect(sink, source)
         case (Some(Output), _)            => throw UnwritableSinkException
         case (_,            None) => {
-          if (!(compileOptions.dontAssumeDirectionality || context_mod.compileOptions.dontAssumeDirectionality)) {
+          if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
             throw UnreadableSourceException

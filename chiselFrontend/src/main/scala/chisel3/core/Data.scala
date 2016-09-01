@@ -8,6 +8,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.Strict.CompileOptions
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -124,11 +125,11 @@ abstract class Data extends HasId {
 
   private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
-  private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions): Unit = {
     Binding.checkSynthesizable(this, s"'this' ($this)")
     Binding.checkSynthesizable(that, s"'that' ($that)")
     try {
-      MonoConnect.connect(sourceInfo, this, that, Builder.forcedModule)
+      MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
     } catch {
       case MonoConnect.MonoConnectException(message) =>
         throwException(
@@ -136,11 +137,11 @@ abstract class Data extends HasId {
         )
     }
   }
-  private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions): Unit = {
     Binding.checkSynthesizable(this, s"'this' ($this)")
     Binding.checkSynthesizable(that, s"'that' ($that)")
     try {
-      BiConnect.connect(sourceInfo, this, that, Builder.forcedModule)
+      BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
     } catch {
       case BiConnect.BiConnectException(message) =>
         throwException(
@@ -165,8 +166,8 @@ abstract class Data extends HasId {
     }
     clone
   }
-  final def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = this connect that
-  final def <> (that: Data)(implicit sourceInfo: SourceInfo): Unit = this bulkConnect that
+  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: ExplicitCompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+  final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: ExplicitCompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
   def litArg(): Option[LitArg] = None
   def litValue(): BigInt = litArg.get.num
   def isLit(): Boolean = litArg.isDefined
@@ -254,7 +255,7 @@ object Wire {
     do_apply(t, init)(UnlocatableSourceInfo)
 
   def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
-    val x = Reg.makeType(t, null.asInstanceOf[T], init)
+    val x = Reg.makeType(chisel3.Strict.CompileOptions, t, null.asInstanceOf[T], init)
 
     // Bind each element of x to being a Wire
     Binding.bind(x, WireBinder(Builder.forcedModule), "Error: t")
@@ -288,8 +289,8 @@ sealed class Clock extends Element(Width(1)) {
   private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   private[chisel3] def toType = "Clock"
 
-  override def connect (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
-    case _: Clock => super.connect(that)(sourceInfo)
+  override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions): Unit = that match {
+    case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
 }

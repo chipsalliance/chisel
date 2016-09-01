@@ -13,6 +13,16 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   abstract class StrictModule extends Module()(chisel3.Strict.CompileOptions)
   abstract class NotStrictModule extends Module()(chisel3.NotStrict.CompileOptions)
 
+  // Generate a set of options that do not have requireIOWrap enabled, in order to
+  // ensure its definition comes from the implicit options passed to the Module constructor.
+  object StrictWithoutIOWrap extends ExplicitCompileOptions {
+    val connectFieldsMustMatch = true
+    val declaredTypeMustBeUnbound = true
+    val requireIOWrap = false
+    val dontTryConnectionsSwapped = true
+    val dontAssumeDirectionality = true
+  }
+
   class SmallBundle extends Bundle {
     val f1 = UInt(width = 4)
     val f2 = UInt(width = 5)
@@ -199,7 +209,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   }
 
   "A Module with wrapped IO when compiled with explicit Strict.CompileOption " should "not throw an exception" in {
-
+    implicit val strictWithoutIOWrap = StrictWithoutIOWrap
     class RequireIOWrapModule extends StrictModule {
       val io = IO(new Bundle {
         val in = UInt(width = 32).asInput
@@ -207,11 +217,13 @@ class CompileOptionsSpec extends ChiselFlatSpec {
       })
       io.out := io.in(1)
     }
-    elaborate { new RequireIOWrapModule() }
+    elaborate {
+      new RequireIOWrapModule()
+    }
   }
 
   "A Module with unwrapped IO when compiled with explicit NotStrict.CompileOption " should "not throw an exception" in {
-
+    implicit val strictWithoutIOWrap = StrictWithoutIOWrap
     class RequireIOWrapModule extends NotStrictModule {
       val io = new Bundle {
         val in = UInt(width = 32).asInput
@@ -219,12 +231,14 @@ class CompileOptionsSpec extends ChiselFlatSpec {
       }
       io.out := io.in(1)
     }
-    elaborate { new RequireIOWrapModule() }
+    elaborate {
+      new RequireIOWrapModule()
+    }
   }
 
   "A Module with unwrapped IO when compiled with explicit Strict.CompileOption " should "throw an exception" in {
     a [BindingException] should be thrownBy {
-
+      implicit val strictWithoutIOWrap = StrictWithoutIOWrap
       class RequireIOWrapModule extends StrictModule {
         val io = new Bundle {
           val in = UInt(width = 32).asInput
@@ -256,7 +270,6 @@ class CompileOptionsSpec extends ChiselFlatSpec {
         val in = UInt(width = 32).asInput
         val out = Bool().asOutput
       }
-      io.out := io.in(1)
     }
     elaborate {
       new NotIOWrapModule()

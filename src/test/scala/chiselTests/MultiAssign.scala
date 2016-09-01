@@ -7,6 +7,7 @@ import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.Strict.CompileOptions
 
 class LastAssignTester() extends BasicTester {
   val cnt = Counter(2)
