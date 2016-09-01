@@ -48,8 +48,21 @@ object Vec {
     // with apply(Seq) after type erasure. Workarounds by either introducing a
     // DummyImplicit or additional type parameter will break some code.
     require(!elts.isEmpty)
-    val width = elts.map(_.width).reduce(_ max _)
-    val vec = Wire(new Vec(elts.head.cloneTypeWidth(width), elts.length))
+    def gen = elts.head match {
+      case e: Element =>
+        // Vec[Element] must have homogeneous types, but may differ in width
+        for (elt <- elts.tail)
+          require(e.getClass == elt.getClass,
+              s"can't create Vec of heterogeneous types ${e.getClass} and ${elt.getClass}")
+        val maxWidth = elts.map(_.width).reduce(_ max _)
+        elts.head.cloneTypeWidth(maxWidth)
+      case a: Aggregate =>
+        // Vec[Aggregate] must be homogeneous in type and width
+        for (elt <- elts.tail)
+          require(Mux.typesCompatible(a, elt), s"can't create Vec of heterogeneous types ${a.getClass} and ${elt.getClass}")
+        elts.head.cloneType
+    }
+    val vec = Wire(new Vec(gen, elts.length))
     for ((v, e) <- vec zip elts)
       v := e
     vec
