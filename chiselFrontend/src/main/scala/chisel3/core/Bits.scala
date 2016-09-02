@@ -558,6 +558,15 @@ private[core] sealed trait UIntFactory {
       case Direction.Unspecified => result
     }
   }
+  /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
+  def apply(dir: Direction): UInt = {
+    val result = apply(Width())
+    dir match {
+      case Direction.Input => Input(result)
+      case Direction.Output => Output(result)
+      case Direction.Unspecified => result
+    }
+  }
 
   private def parse(n: String) = {
     val (base, num) = n.splitAt(1)
