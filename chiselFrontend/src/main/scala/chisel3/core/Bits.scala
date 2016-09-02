@@ -211,6 +211,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
   def do_asSInt(implicit sourceInfo: SourceInfo): SInt
 
   /** Reinterpret cast to Bits. */
+  @deprecated("Use asUInt, which does the same thing but returns a more concrete type", "chisel3")
   final def asBits(): Bits = macro SourceInfoTransform.noArg
 
   def do_asBits(implicit sourceInfo: SourceInfo): Bits = asUInt()
@@ -241,7 +242,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
   }
 
-  @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
+  @deprecated("Use asUInt, which does the same thing but makes the reinterpret cast more explicit", "chisel3")
   override def toBits: UInt = do_asUInt(DeprecatedSourceInfo)
 
   override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
