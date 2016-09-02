@@ -47,9 +47,20 @@ object Vec {
     // changing apply(elt0, elts*) to apply(elts*) causes a function collision
     // with apply(Seq) after type erasure. Workarounds by either introducing a
     // DummyImplicit or additional type parameter will break some code.
+
+    // Check that types are homogeneous.  Width mismatch for Elements is safe.
     require(!elts.isEmpty)
-    val width = elts.map(_.width).reduce(_ max _)
-    val vec = Wire(new Vec(elts.head.cloneTypeWidth(width), elts.length))
+    def eltsCompatible(a: Data, b: Data) = a match {
+      case _: Element => a.getClass == b.getClass
+      case _: Aggregate => Mux.typesCompatible(a, b)
+    }
+
+    val t = elts.head
+    for (e <- elts.tail)
+      require(eltsCompatible(t, e), s"can't create Vec of heterogeneous types ${t.getClass} and ${e.getClass}")
+
+    val maxWidth = elts.map(_.width).reduce(_ max _)
+    val vec = Wire(new Vec(t.cloneTypeWidth(maxWidth), elts.length))
     for ((v, e) <- vec zip elts)
       v := e
     vec
