@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.internal.{throwException, SignalId}
+import chisel3.internal.{throwException, InstanceId}
 
 /**
   * support for annotation of components in chisel circuits, resolves problem with component
@@ -29,7 +29,7 @@ object Annotation {
   case class AbsoluteStringValue(value: String) extends Value with Absolute
   case class RelativeStringValue(value: String) extends Value with Relative
 
-  case class Raw(component: SignalId, value: Value)
+  case class Raw(component: InstanceId, value: Value)
 
   case class Resolved(componentName: String, value: Value) {
     override def toString: String = {
@@ -40,10 +40,10 @@ object Annotation {
   def resolve(raw: Raw): Resolved = {
     val componentName = raw.value match {
       case v: Absolute => s"${raw.component.pathName}"
-      case v: Relative => s"${raw.component.parentModName}.${raw.component.signalName}"
+      case v: Relative => s"${raw.component.parentModName}.${raw.component.instanceName}"
       case v: All =>
         f"${raw.component}%-29s" +
-        f"${raw.component.signalName}%-25s" +
+        f"${raw.component.instanceName}%-25s" +
         f"${raw.component.parentModName}%-25s" +
         f"${raw.component.pathName}%-40s" +
         f"${raw.component.parentPathName}%-35s"
