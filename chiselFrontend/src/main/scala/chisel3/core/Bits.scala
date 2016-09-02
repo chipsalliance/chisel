@@ -737,10 +737,15 @@ object Mux {
     pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, con.ref, alt.ref))
   }
 
+  private[core] def typesCompatible[T <: Data](x: T, y: T): Boolean = {
+    val sameTypes = x.getClass == y.getClass
+    val sameElements = x.flatten zip y.flatten forall { case (a, b) => a.getClass == b.getClass && a.width == b.width }
+    val sameNumElements = x.flatten.size == y.flatten.size
+    sameTypes && sameElements && sameNumElements
+  }
+
   private def doAggregateMux[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo): T = {
-    require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
-    for ((c, a) <- con.flatten zip alt.flatten)
-      require(c.width == a.width, "can't Mux between aggregates of different width")
+    require(typesCompatible(con, alt), s"can't Mux between heterogeneous types ${con.getClass} and ${alt.getClass}")
     doMux(cond, con, alt)
   }
 }
