@@ -82,6 +82,14 @@ object toBitMask {
     }
 }
 
+object getWidth {
+  def apply(t: Type): Width = t match {
+    case t: GroundType => t.width
+    case _ => error("No width!")
+  }
+  def apply(e: Expression): Width = apply(e.tpe)
+}
+
 object bitWidth {
   def apply(dt: Type): BigInt = widthOf(dt)
   private def widthOf(dt: Type): BigInt = dt match {

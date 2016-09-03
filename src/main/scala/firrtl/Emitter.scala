@@ -112,10 +112,10 @@ class VerilogEmitter extends Emitter {
       case (e: Literal) => v_print(e)
       case (e: VRandom) => w write s"{${e.nWords}{$$random}}"
       case (t: UIntType) => 
-        val wx = long_BANG(t) - 1
+        val wx = bitWidth(t) - 1
         if (wx > 0) w write s"[$wx:0]"
       case (t: SIntType) => 
-        val wx = long_BANG(t) - 1
+        val wx = bitWidth(t) - 1
         if (wx > 0) w write s"[$wx:0]"
       case ClockType =>
       case (t: VectorType) => 
@@ -126,6 +126,7 @@ class VerilogEmitter extends Emitter {
       case (s: String) => w write s
       case (i: Int) => w write i.toString
       case (i: Long) => w write i.toString
+      case (i: BigInt) => w write i.toString
       case (t: VIndent) => w write "   "
       case (s: Seq[Any]) =>
         s foreach (emit(_, top + 1))
@@ -189,7 +190,7 @@ class VerilogEmitter extends Emitter {
        case Eq => Seq(cast_if(a0), " == ", cast_if(a1))
        case Neq => Seq(cast_if(a0), " != ", cast_if(a1))
        case Pad =>
-         val w = long_BANG(a0.tpe)
+         val w = bitWidth(a0.tpe)
          val diff = (c0 - w)
          if (w == 0) Seq(a0)
          else doprim.tpe match {
@@ -210,9 +211,9 @@ class VerilogEmitter extends Emitter {
        }
        case Shlw => Seq(cast(a0), " << ", c0)
        case Shl => Seq(cast(a0), " << ", c0)
-       case Shr if c0 >= long_BANG(a0.tpe) =>
+       case Shr if c0 >= bitWidth(a0.tpe) =>
          error("Verilog emitter does not support SHIFT_RIGHT >= arg width")
-       case Shr => Seq(a0,"[", long_BANG(a0.tpe) - 1, ":", c0, "]")
+       case Shr => Seq(a0,"[", bitWidth(a0.tpe) - 1, ":", c0, "]")
        case Neg => Seq("-{", cast(a0), "}")
        case Cvt => a0.tpe match {
          case (_: UIntType) => Seq("{1'b0,", cast(a0), "}")
@@ -222,24 +223,24 @@ class VerilogEmitter extends Emitter {
        case And => Seq(cast_as(a0), " & ", cast_as(a1))
        case Or => Seq(cast_as(a0), " | ", cast_as(a1))
        case Xor => Seq(cast_as(a0), " ^ ", cast_as(a1))
-       case Andr => (0 until long_BANG(doprim.tpe).toInt) map (
+       case Andr => (0 until bitWidth(doprim.tpe).toInt) map (
          Seq(cast(a0), "[", _, "]")) reduce (_ + " & " + _)
-       case Orr => (0 until long_BANG(doprim.tpe).toInt) map (
+       case Orr => (0 until bitWidth(doprim.tpe).toInt) map (
          Seq(cast(a0), "[", _, "]")) reduce (_ + " | " + _)
-       case Xorr => (0 until long_BANG(doprim.tpe).toInt) map (
+       case Xorr => (0 until bitWidth(doprim.tpe).toInt) map (
          Seq(cast(a0), "[", _, "]")) reduce (_ + " ^ " + _)
        case Cat => Seq("{", cast(a0), ",", cast(a1), "}")
        // If selecting zeroth bit and single-bit wire, just emit the wire
-       case Bits if c0 == 0 && c1 == 0 && long_BANG(a0.tpe) == 1 => Seq(a0)
+       case Bits if c0 == 0 && c1 == 0 && bitWidth(a0.tpe) == 1 => Seq(a0)
        case Bits if c0 == c1 => Seq(a0, "[", c0, "]")
        case Bits => Seq(a0, "[", c0, ":", c1, "]")
        case Head =>
-         val w = long_BANG(a0.tpe)
+         val w = bitWidth(a0.tpe)
          val high = w - 1
          val low = w - c0
          Seq(a0, "[", high, ":", low, "]")
        case Tail =>
-         val w = long_BANG(a0.tpe)
+         val w = bitWidth(a0.tpe)
          val low = w - c0 - 1
          Seq(a0, "[", low, ":", 0, "]")
      }
@@ -350,11 +351,11 @@ class VerilogEmitter extends Emitter {
       // Then, return the correct number of bits selected from the random value
       def rand_string(t: Type) : Seq[Any] = {
          val nx = namespace.newTemp
-         val rand = VRandom(long_BANG(t))
+         val rand = VRandom(bitWidth(t))
          val tx = SIntType(IntWidth(rand.realWidth))
          declare("reg",nx, tx)
-         initials += Seq(wref(nx, tx), " = ", VRandom(long_BANG(t)), ";")
-         Seq(nx, "[", long_BANG(t) - 1, ":0]")
+         initials += Seq(wref(nx, tx), " = ", VRandom(bitWidth(t)), ";")
+         Seq(nx, "[", bitWidth(t) - 1, ":0]")
       }
 
       def initialize(e: Expression) = {

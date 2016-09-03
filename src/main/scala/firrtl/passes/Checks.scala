@@ -572,12 +572,12 @@ object CheckWidths extends Pass {
             errors append new WidthTooSmall(info, mname, e.value)
           case _ =>
         }
-        case DoPrim(Bits, Seq(a), Seq(hi, lo), _) if long_BANG(a.tpe) <= hi =>
-          errors append new BitsWidthException(info, mname, hi, long_BANG(a.tpe))
-        case DoPrim(Head, Seq(a), Seq(n), _) if long_BANG(a.tpe) < n =>
-          errors append new HeadWidthException(info, mname, n, long_BANG(a.tpe))
-        case DoPrim(Tail, Seq(a), Seq(n), _) if long_BANG(a.tpe) <= n =>
-          errors append new TailWidthException(info, mname, n, long_BANG(a.tpe))
+        case DoPrim(Bits, Seq(a), Seq(hi, lo), _) if bitWidth(a.tpe) <= hi =>
+          errors append new BitsWidthException(info, mname, hi, bitWidth(a.tpe))
+        case DoPrim(Head, Seq(a), Seq(n), _) if bitWidth(a.tpe) < n =>
+          errors append new HeadWidthException(info, mname, n, bitWidth(a.tpe))
+        case DoPrim(Tail, Seq(a), Seq(n), _) if bitWidth(a.tpe) <= n =>
+          errors append new TailWidthException(info, mname, n, bitWidth(a.tpe))
         case _ =>
       }
       e map check_width_w(info, mname) map check_width_e(info, mname)

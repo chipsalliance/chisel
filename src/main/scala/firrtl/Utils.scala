@@ -209,22 +209,6 @@ object Utils extends LazyLogging {
     case v => UnknownType
   }
    
-////=====================================
-  def width_BANG(t: Type) : Width = t match {
-    case g: GroundType => g.width
-    case t => error("No width!")
-  }
-  def width_BANG(e: Expression) : Width = width_BANG(e.tpe)
-  def long_BANG(t: Type): Long = t match {
-    case (g: GroundType) => g.width match {
-      case IntWidth(x) => x.toLong
-      case _ => error(s"Expecting IntWidth, got: ${g.width}")
-    }
-    case (t: BundleType) => (t.fields foldLeft 0)((w, f) =>
-      w + long_BANG(f.tpe).toInt)
-    case (t: VectorType) => t.size * long_BANG(t.tpe)
-  }
-
 // =================================
   def error(str: String) = throw new FIRRTLException(str)
 
