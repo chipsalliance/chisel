@@ -106,7 +106,7 @@ class InlineInstances (transID: TransID) extends Transform {
                if (inlinedInstances.contains(ref)) {
                   val newName = ref + inlineDelim + field
                   set(ComponentName(ref, ModuleName(m.name, cname)), Seq.empty)
-                  WRef(newName, tpe, WireKind(), gen)
+                  WRef(newName, tpe, WireKind, gen)
                }
                else e
             }

@@ -34,14 +34,14 @@ import WrappedExpression._
 import WrappedWidth._
 
 trait Kind
-case class WireKind() extends Kind
-case class PoisonKind() extends Kind 
-case class RegKind() extends Kind
-case class InstanceKind() extends Kind
-case class PortKind() extends Kind
-case class NodeKind() extends Kind
-case class MemKind(ports: Seq[String]) extends Kind
-case class ExpKind() extends Kind
+case object WireKind extends Kind
+case object PoisonKind extends Kind
+case object RegKind extends Kind
+case object InstanceKind extends Kind
+case object PortKind extends Kind
+case object NodeKind extends Kind
+case object MemKind extends Kind
+case object ExpKind extends Kind
 
 trait Gender
 case object MALE extends Gender

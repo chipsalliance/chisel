@@ -120,11 +120,11 @@ object LowerTypes extends Pass {
       info: Info, mname: String)(e: Expression): Expression = e match {
     case e: WRef => e
     case (_: WSubField | _: WSubIndex) => kind(e) match {
-      case k: InstanceKind =>
+      case InstanceKind =>
         val (root, tail) = splitRef(e)
         val name = loweredName(tail)
         WSubField(root, name, e.tpe, gender(e))
-      case k: MemKind =>
+      case MemKind =>
         val exps = lowerTypesMemExp(memDataTypeMap, info, mname)(e)
         exps.size match {
           case 1 => exps.head
@@ -163,7 +163,7 @@ object LowerTypes extends Pass {
       case s: WDefInstance => s.tpe match {
         case t: BundleType =>
           val fieldsx = t.fields flatMap (f =>
-            create_exps(WRef(f.name, f.tpe, ExpKind(), times(f.flip, MALE))) map (
+            create_exps(WRef(f.name, f.tpe, ExpKind, times(f.flip, MALE))) map (
               // Flip because inst genders are reversed from Module type
               e => Field(loweredName(e), swap(to_flip(gender(e))), e.tpe)))
           WDefInstance(s.info, s.name, s.module, BundleType(fieldsx))
@@ -188,12 +188,12 @@ object LowerTypes extends Pass {
         val exps = create_exps(s.value) map lowerTypesExp(memDataTypeMap, info, mname)
         Block(names zip exps map { case (n, e) => DefNode(info, loweredName(n), e) })
       case s: IsInvalid => kind(s.expr) match {
-        case _: MemKind =>
+        case MemKind =>
           Block(lowerTypesMemExp(memDataTypeMap, info, mname)(s.expr) map (IsInvalid(info, _)))
         case _ => s map lowerTypesExp(memDataTypeMap, info, mname)
       }
       case s: Connect => kind(s.loc) match {
-        case k: MemKind =>
+        case MemKind =>
           val exp = lowerTypesExp(memDataTypeMap, info, mname)(s.expr)
           val locs = lowerTypesMemExp(memDataTypeMap, info, mname)(s.loc)
           Block(locs map (Connect(info, _, exp)))
@@ -207,7 +207,7 @@ object LowerTypes extends Pass {
     val memDataTypeMap = new MemDataTypeMap
     // Lower Ports
     val portsx = m.ports flatMap { p =>
-      val exps = create_exps(WRef(p.name, p.tpe, PortKind(), to_gender(p.direction)))
+      val exps = create_exps(WRef(p.name, p.tpe, PortKind, to_gender(p.direction)))
       exps map (e => Port(p.info, loweredName(e), to_dir(gender(e)), e.tpe))
     }
     m match {

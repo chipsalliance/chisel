@@ -36,16 +36,16 @@ object ResolveKinds extends Pass {
   type KindMap = collection.mutable.LinkedHashMap[String, Kind]
 
   def find_port(kinds: KindMap)(p: Port): Port = {
-    kinds(p.name) = PortKind() ; p
+    kinds(p.name) = PortKind ; p
   }
 
   def find_stmt(kinds: KindMap)(s: Statement):Statement = {
     s match {
-      case s: DefWire => kinds(s.name) = WireKind()
-      case s: DefNode => kinds(s.name) = NodeKind()
-      case s: DefRegister => kinds(s.name) = RegKind()
-      case s: WDefInstance => kinds(s.name) = InstanceKind()
-      case s: DefMemory => kinds(s.name) = MemKind(s.readers ++ s.writers ++ s.readwriters)
+      case s: DefWire => kinds(s.name) = WireKind
+      case s: DefNode => kinds(s.name) = NodeKind
+      case s: DefRegister => kinds(s.name) = RegKind
+      case s: WDefInstance => kinds(s.name) = InstanceKind
+      case s: DefMemory => kinds(s.name) = MemKind
       case s =>
     } 
     s map find_stmt(kinds)

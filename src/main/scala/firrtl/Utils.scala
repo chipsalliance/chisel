@@ -100,7 +100,7 @@ object Utils extends LazyLogging {
   }
 
   def create_exps(n: String, t: Type): Seq[Expression] =
-    create_exps(WRef(n, t, ExpKind(), UNKNOWNGENDER))
+    create_exps(WRef(n, t, ExpKind, UNKNOWNGENDER))
   def create_exps(e: Expression): Seq[Expression] = e match {
     case (e: Mux) =>
       val e1s = create_exps(e.tval)
@@ -325,7 +325,7 @@ object Utils extends LazyLogging {
     case e: WSubField => kind(e.exp)
     case e: WSubIndex => kind(e.exp)
     case e: WSubAccess => kind(e.exp)
-    case e => ExpKind()
+    case e => ExpKind
   }
   def gender(e: Expression): Gender = e match {
     case e: WRef => e.gender

@@ -85,11 +85,11 @@ class VerilogEmitter extends Emitter {
     else DoPrim(Eq, Seq(e.e1, zero), Nil, UIntType(IntWidth(1)))
   }
 
-  def wref(n: String, t: Type) = WRef(n, t, ExpKind(), UNKNOWNGENDER)
+  def wref(n: String, t: Type) = WRef(n, t, ExpKind, UNKNOWNGENDER)
   def remove_root(ex: Expression): Expression = ex match {
     case ex: WSubField => ex.exp match {
       case (e: WSubField) => remove_root(e)
-      case (_: WRef) => WRef(ex.name, ex.tpe, InstanceKind(), UNKNOWNGENDER)
+      case (_: WRef) => WRef(ex.name, ex.tpe, InstanceKind, UNKNOWNGENDER)
     }
     case _ => error("Shouldn't be here")
   }
@@ -261,7 +261,7 @@ class VerilogEmitter extends Emitter {
           simlist += s
           s
         case (s: DefNode) =>
-          val e = WRef(s.name, s.value.tpe, NodeKind(), MALE)
+          val e = WRef(s.name, s.value.tpe, NodeKind, MALE)
           netlist(e) = s.value
           s
         case (s) => s
@@ -434,7 +434,7 @@ class VerilogEmitter extends Emitter {
             portdefs += Seq(p.direction, "  ", p.tpe, " ", p.name)
           case Output =>
             portdefs += Seq(p.direction, " ", p.tpe, " ", p.name)
-            val ex = WRef(p.name, p.tpe, PortKind(), FEMALE)
+            val ex = WRef(p.name, p.tpe, PortKind, FEMALE)
             assign(ex, netlist(ex))
         }
       }
@@ -458,7 +458,7 @@ class VerilogEmitter extends Emitter {
           s
         case (s: DefNode) =>
           declare("wire", s.name, s.value.tpe)
-          assign(WRef(s.name, s.value.tpe, NodeKind(), MALE), s.value)
+          assign(WRef(s.name, s.value.tpe, NodeKind, MALE), s.value)
           s
         case (s: Stop) =>
           val errorString = StringLit(s"${s.ret}\n".getBytes)
@@ -468,12 +468,11 @@ class VerilogEmitter extends Emitter {
           simulate(s.clk, s.en, printf(s.string, s.args), Some("PRINTF_COND"))
           s
         case (s: WDefInstance) =>
-          val es = create_exps(WRef(s.name, s.tpe, InstanceKind(), MALE))
+          val es = create_exps(WRef(s.name, s.tpe, InstanceKind, MALE))
           instantiate(s.name, s.module, es)
           s
         case (s: DefMemory) =>
-          val mem = WRef(s.name, MemPortUtils.memType(s),
-            MemKind(s.readers ++ s.writers ++ s.readwriters), UNKNOWNGENDER)
+          val mem = WRef(s.name, MemPortUtils.memType(s), MemKind, UNKNOWNGENDER)
           def mem_exp (p: String, f: String) = {
             val t1 = field_type(mem.tpe, p)
             val t2 = field_type(t1, f)
