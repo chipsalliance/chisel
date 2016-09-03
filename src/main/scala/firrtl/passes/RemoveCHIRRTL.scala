@@ -101,7 +101,7 @@ object RemoveCHIRRTL extends Pass {
         Connect(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), wmode, taddr), zero)
       )
       def set_write (vec: Seq[MPort], data: String, mask: String) = vec flatMap {r =>
-        val tmask = create_mask(s.tpe)
+        val tmask = createMask(s.tpe)
         IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), data, tdata)) +:
              (create_exps(SubField(SubField(Reference(s.name, ut), r.name, ut), mask, tmask))
                map (Connect(s.info, _, zero))
@@ -160,7 +160,7 @@ object RemoveCHIRRTL extends Pass {
     e map get_mask(refs) match {
       case e: Reference => refs get e.name match {
         case None => e
-        case Some(p) => SubField(p.exp, p.mask, create_mask(e.tpe))
+        case Some(p) => SubField(p.exp, p.mask, createMask(e.tpe))
       }
       case e => e
     }

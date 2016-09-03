@@ -87,23 +87,16 @@ object Utils extends LazyLogging {
   def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
   def pow_minus_one(a: BigInt, b: BigInt): BigInt = a.pow(b.toInt) - 1
   val BoolType = UIntType(IntWidth(1))
-  val one  = UIntLiteral(BigInt(1),IntWidth(1))
-  val zero = UIntLiteral(BigInt(0),IntWidth(1))
-  def uint (i:Int) : UIntLiteral = {
-     val num_bits = req_num_bits(i)
-     val w = IntWidth(scala.math.max(1,num_bits - 1))
-     UIntLiteral(BigInt(i),w)
+  val one  = UIntLiteral(BigInt(1), IntWidth(1))
+  val zero = UIntLiteral(BigInt(0), IntWidth(1))
+  def uint(i: Int): UIntLiteral = {
+    val num_bits = req_num_bits(i)
+    val w = IntWidth(scala.math.max(1, num_bits - 1))
+    UIntLiteral(BigInt(i), w)
   }
-  def req_num_bits (i: Int) : Int = {
-     val ix = if (i < 0) ((-1 * i) - 1) else i
-     ceil_log2(ix + 1) + 1
-  }
-
-  def create_mask(dt: Type): Type = dt match {
-    case t: VectorType => VectorType(create_mask(t.tpe),t.size)
-    case t: BundleType => BundleType(t.fields.map (f => f.copy(tpe=create_mask(f.tpe))))
-    case t: UIntType => BoolType
-    case t: SIntType => BoolType
+  def req_num_bits(i: Int): Int = {
+    val ix = if (i < 0) ((-1 * i) - 1) else i
+    ceil_log2(ix + 1) + 1
   }
 
   def create_exps(n: String, t: Type): Seq[Expression] =
@@ -390,11 +383,11 @@ object Utils extends LazyLogging {
       val clk = Field("clk", Default, ClockType)
       val def_data = Field("data", Default, s.dataType)
       val rev_data = Field("data", Flip, s.dataType)
-      val mask = Field("mask", Default, create_mask(s.dataType))
+      val mask = Field("mask", Default, passes.createMask(s.dataType))
       val wmode = Field("wmode", Default, UIntType(IntWidth(1)))
       val rdata = Field("rdata", Flip, s.dataType)
       val wdata = Field("wdata", Default, s.dataType)
-      val wmask = Field("wmask", Default, create_mask(s.dataType))
+      val wmask = Field("wmask", Default, passes.createMask(s.dataType))
       val read_type = BundleType(Seq(rev_data, addr, en, clk))
       val write_type = BundleType(Seq(def_data, mask, addr, en, clk))
       val readwrite_type = BundleType(Seq(wmode, rdata, wdata, wmask, addr, en, clk))
