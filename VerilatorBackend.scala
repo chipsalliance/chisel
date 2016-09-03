@@ -41,17 +41,18 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
   import firrtl.ir._
   import firrtl.Mappers._
   import firrtl.Annotations.AnnotationMap
-  import firrtl.Utils.{create_exps, long_BANG}
+  import firrtl.Utils.create_exps
+  import firrtl.passes.bitWidth
 
   private def findWidths(m: DefModule) = {
-    type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, Long)]
+    type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, BigInt)]
     val modNodes = nodes filter (_.parentModName == m.name)
     val widthMap = new WidthMap
 
     /* Sadly, ports disappear in verilator ...
     def loop_port(port: Port) = {
       widthMap ++= (create_exps(port.name, port.tpe) flatMap (exp =>
-        modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+        modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe)))
       port
     }
     */
@@ -61,16 +62,16 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
         /* Sadly, wires disappear in verilator...
         case s: DefWire if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
           widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe)))
         */
         case s: DefRegister if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
           widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe))))
         case s: DefNode if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
           widthMap ++= (create_exps(s.name, s.value.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe))))
         case s: DefMemory if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
-          widthMap ++= (modNodes filter (_.instanceName == s.name) map (_ -> long_BANG(s.dataType)))
+          widthMap ++= (modNodes filter (_.instanceName == s.name) map (_ -> bitWidth(s.dataType)))
         case _ =>
       }
       s map loop
@@ -80,7 +81,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     widthMap.toSeq
   }
 
-  private def pushBack(vector: String, pathName: String, width: Long) {
+  private def pushBack(vector: String, pathName: String, width: BigInt) {
     if (width <= 8) {
       writer.write(s"        sim_data.$vector.push_back(new VerilatorCData(&(${pathName})));\n")
     } else if (width <= 16) {
