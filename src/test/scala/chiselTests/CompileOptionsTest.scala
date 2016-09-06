@@ -168,6 +168,8 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
   "A Module with directionless connections when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [ChiselException] should be thrownBy {
+      // Verify we can suppress the inclusion of default compileOptions
+      import Chisel.{defaultCompileOptions => _, _}
       import chisel3.Strict.CompileOptions
 
       class SimpleModule extends Module {
