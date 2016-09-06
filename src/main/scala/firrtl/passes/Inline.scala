@@ -1,12 +1,12 @@
 package firrtl
 package passes
 
+import firrtl.ir._
+import firrtl.Mappers._
+import firrtl.Annotations._
+
 // Datastructures
 import scala.collection.mutable
-
-import firrtl.ir._
-import firrtl.Annotations._
-import firrtl.Mappers.{ExpMap, StmtMap}
 
 // Tags an annotation to be consumed by this pass
 case class InlineAnnotation(target: Named, tID: TransID) extends Annotation with Loose with Unstable {
