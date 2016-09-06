@@ -50,7 +50,7 @@ object Mappers {
       override def map(stmt: Statement): Statement = stmt mapString f
     }
   }
-  implicit class StmtMap(stmt: Statement) {
+  implicit class StmtMap(val stmt: Statement) extends AnyVal {
     // Using implicit types to allow overloading of function type to map, see StmtMagnet above
     def map[T](f: T => T)(implicit magnet: (T => T) => StmtMagnet): Statement = magnet(f).map(stmt)
   }
@@ -70,7 +70,7 @@ object Mappers {
       override def map(expr: Expression): Expression = expr mapWidth f
     }
   }
-  implicit class ExprMap(expr: Expression) {
+  implicit class ExprMap(val expr: Expression) extends AnyVal {
     def map[T](f: T => T)(implicit magnet: (T => T) => ExprMagnet): Expression = magnet(f).map(expr)
   }
 
@@ -86,7 +86,7 @@ object Mappers {
       override def map(tpe: Type): Type = tpe mapWidth f
     }
   }
-  implicit class TypeMap(tpe: Type) {
+  implicit class TypeMap(val tpe: Type) extends AnyVal {
     def map[T](f: T => T)(implicit magnet: (T => T) => TypeMagnet): Type = magnet(f).map(tpe)
   }
 
@@ -102,7 +102,7 @@ object Mappers {
       }
     }
   }
-  implicit class WidthMap(width: Width) {
+  implicit class WidthMap(val width: Width) extends AnyVal {
     def map[T](f: T => T)(implicit magnet: (T => T) => WidthMagnet): Width = magnet(f).map(width)
   }
 
@@ -121,7 +121,7 @@ object Mappers {
       override def map(module: DefModule): DefModule = module mapString f
     }
   }
-  implicit class ModuleMap(module: DefModule) {
+  implicit class ModuleMap(val module: DefModule) extends AnyVal {
     def map[T](f: T => T)(implicit magnet: (T => T) => ModuleMagnet): DefModule = magnet(f).map(module)
   }
 
