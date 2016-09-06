@@ -157,10 +157,6 @@ private[chisel3] object Builder {
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
 
-  def resolveAnnotations: Seq[Annotation.Resolved] = {
-    dynamicContext.annotations.map { rawAnnotation => Annotation.resolve((rawAnnotation)) }.toSeq
-  }
-
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       errors.info("Elaborating design...")
@@ -168,9 +164,7 @@ private[chisel3] object Builder {
       mod.forceName(mod.name, globalNamespace)
       errors.checkpoint()
       errors.info("Done elaborating.")
-
-      val resolvedAnnotations = resolveAnnotations
-      Circuit(components.last.name, components, resolvedAnnotations)
+      Circuit(components.last.name, components, dynamicContext.annotations)
     }
   }
 }

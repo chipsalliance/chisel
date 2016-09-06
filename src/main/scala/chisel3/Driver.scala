@@ -2,6 +2,8 @@
 
 package chisel3
 
+import chisel3.core.Annotation
+
 import scala.sys.process._
 import java.io._
 
@@ -101,6 +103,9 @@ trait BackendCompilationUtilities {
   }
 }
 
+
+case class Emitted(circuit: Circuit, firrtlString: String, annotationString: String)
+
 object Driver extends BackendCompilationUtilities {
   val FirrtlSuffix = ".fir"
 
@@ -114,6 +119,14 @@ object Driver extends BackendCompilationUtilities {
   def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
 
   def emit[T <: Module](ir: Circuit): String = Emitter.emit(ir)
+
+  def getEmitted(ir: Circuit): Emitted = {
+    val emittedString = emit(ir)
+    val processedAnnotations = ir.annotations.map { raw =>
+      Annotation.resolve(raw)
+    }
+    Emitted(ir, emittedString, processedAnnotations.mkString("\n"))
+  }
 
   def dumpFirrtl(ir: Circuit, optName: Option[File] = None): File = {
     val (directory: File, fileName: String) = optName match {
@@ -145,7 +158,10 @@ object Driver extends BackendCompilationUtilities {
     if(ir.annotations.nonEmpty) {
       val annotationFile = new File(directory, name + ".anno")
       val annotationWriter = new FileWriter(annotationFile)
-      annotationWriter.write(ir.annotations.mkString("\n"))
+      val processedAnnotations = ir.annotations.map { raw =>
+        Annotation.resolve(raw)
+      }
+      annotationWriter.write(processedAnnotations.mkString("\n"))
       annotationWriter.close()
     }
 

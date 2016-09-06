@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import chisel3.core.Annotation.ScopeType
 import chisel3.internal.{throwException, InstanceId}
 
 /**
@@ -20,14 +21,21 @@ object Annotation {
 
   trait Value
 
+  object Scope {
+    abstract trait ScopeType
+    trait Specific extends ScopeType  // Annotation applies only to this specific instance
+    trait General  extends ScopeType  // Annotation applies to all instances of this component
+    trait All      extends ScopeType  // Debugging only: name becomes composite of all InstanceId API methods
+
+  }
   trait ScopeType
   trait Absolute extends ScopeType
   trait Relative extends ScopeType
   trait All      extends ScopeType  /* for debugging, key becomes all name api strings */
 
-  // Trivial string annotations included here as an example, with relative and absolute types
-  case class AbsoluteStringValue(value: String) extends Value with Absolute
-  case class RelativeStringValue(value: String) extends Value with Relative
+//  // Trivial string annotations included here as an example, with relative and absolute types
+//  case class AbsoluteStringValue(value: String) extends Value with Absolute
+//  case class RelativeStringValue(value: String) extends Value with Relative
 
   case class Raw(component: InstanceId, value: Value)
 
@@ -48,8 +56,34 @@ object Annotation {
         f"${raw.component.pathName}%-40s" +
         f"${raw.component.parentPathName}%-35s"
 
-      case  _          => throwException(s"Unknown annotation scope for ${raw}")
+      case  _          => throwException(s"Unknown annotation scope for $raw")
     }
     Resolved(componentName, raw.value)
   }
 }
+
+abstract class Annotation extends Annotation.Scope.ScopeType {
+  def component: InstanceId
+  private var _firttlInstanceName : Option[String] = None
+  def firrtlInstanceName: String = {
+    _firttlInstanceName.getOrElse(resolve)
+  }
+  private def resolve: String = this match {
+    case _: Annotation.Scope.Specific => s"${component.pathName}"
+    case _: Annotation.Scope.General => s"${component.parentModName}.${component.instanceName}"
+    case _: Annotation.Scope.All =>
+      f"${component}%-29s" +
+        f"${component.instanceName}%-25s" +
+        f"${component.parentModName}%-25s" +
+        f"${component.pathName}%-40s" +
+        f"${component.parentPathName}%-35s"
+  }
+}
+
+/**
+  * An example annotation that will resolve component in as a specific reference
+ *
+  * @param component  // chisel component to be annotated
+  * @param value      // a string value to associate with the comnponent
+  */
+case class StringAnnotation(component: InstanceId, value: String) extends Annotation.Scope.Specific

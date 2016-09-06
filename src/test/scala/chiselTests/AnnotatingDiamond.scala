@@ -133,9 +133,11 @@ class DiamondSpec extends FlatSpec with Matchers {
 
   it should "contain the following relative keys" in {
     val circuit = Driver.elaborate { () => new DiamondTester }
-    val annotations = circuit.annotations
+    val emitted = Driver.getEmitted(circuit)
 
-    show(annotations)
-    Driver.dumpFirrtlWithAnnotations(circuit)
+    println(emitted.annotationString)
+
+//    show(annotations)
+//    Driver.dumpFirrtlWithAnnotations(circuit)
   }
 }
