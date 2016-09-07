@@ -1061,24 +1061,20 @@ case class DataRef( val exp : Expression, val male : String, val female : String
 object RemoveCHIRRTL extends Pass {
    def name = "Remove CHIRRTL"
    var mname = ""
-   def create_exps (e:Expression) : Seq[Expression] = {
-      (e) match { 
-         case (e:Mux)=> 
-            (create_exps(e.tval),create_exps(e.fval)).zipped.map((e1,e2) => {
-               Mux(e.cond,e1,e2,mux_type(e1,e2))
-            })
-         case (e:ValidIf) => 
-            create_exps(e.value).map(e1 => {
-               ValidIf(e.cond,e1,tpe(e1))
-            })
-         case (e) => (tpe(e)) match  { 
-            case (_:UIntType|_:SIntType|ClockType) => Seq(e)
-            case (t:BundleType) => 
-               t.fields.flatMap(f => create_exps(SubField(e,f.name,f.tpe)))
-            case (t:VectorType)=> 
-               (0 until t.size).flatMap(i => create_exps(SubIndex(e,i,t.tpe)))
-            case UnknownType => Seq(e)
-         }
+   def create_exps (e:Expression) : Seq[Expression] = e match {
+      case (e:Mux) =>
+         val e1s = create_exps(e.tval)
+         val e2s = create_exps(e.fval)
+         (e1s,e2s).zipped map ((e1,e2) => Mux(e.cond,e1,e2,mux_type(e1,e2)))
+      case (e:ValidIf) =>
+         create_exps(e.value) map (e1 => ValidIf(e.cond,e1,tpe(e1)))
+      case (e) => (tpe(e)) match {
+         case (_:GroundType) => Seq(e)
+         case (t:BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
+            exps ++ create_exps(SubField(e,f.name,f.tpe)))
+         case (t:VectorType) => ((0 until t.size) foldLeft Seq[Expression]())((exps, i) =>
+            exps ++ create_exps(SubIndex(e,i,t.tpe)))
+         case UnknownType => Seq(e)
       }
    }
    def run (c:Circuit) : Circuit = {

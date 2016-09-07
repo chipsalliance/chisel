@@ -105,12 +105,9 @@ class WrappedExpression (val e1:Expression) {
                case (e1:WSubAccess,e2:WSubAccess) => weq(e1.index,e2.index) && weq(e1.exp,e2.exp)
                case (e1:WVoid,e2:WVoid) => true
                case (e1:WInvalid,e2:WInvalid) => true
-               case (e1:DoPrim,e2:DoPrim) => {
-                  var are_equal = e1.op == e2.op
-                  (e1.args,e2.args).zipped.foreach{ (x,y) => { if (!weq(x,y)) are_equal = false }}
-                  (e1.consts,e2.consts).zipped.foreach{ (x,y) => { if (x != y) are_equal = false }}
-                  are_equal
-               }
+               case (e1:DoPrim,e2:DoPrim) => e1.op == e2.op &&
+                  ((e1.consts zip e2.consts) forall {case (x, y) => x == y}) &&
+                  ((e1.args zip e2.args) forall {case (x, y) => weq(x, y)})
                case (e1:Mux,e2:Mux) => weq(e1.cond,e2.cond) && weq(e1.tval,e2.tval) && weq(e1.fval,e2.fval)
                case (e1:ValidIf,e2:ValidIf) => weq(e1.cond,e2.cond) && weq(e1.value,e2.value)
                case (e1,e2) => false
@@ -156,17 +153,13 @@ class WrappedType (val t:Type) {
                case (t1:UIntType,t2:UIntType) => true
                case (t1:SIntType,t2:SIntType) => true
                case (ClockType, ClockType) => true
-               case (t1:VectorType,t2:VectorType) => (wt(t1.tpe) == wt(t2.tpe) && t1.size == t2.size)
-               case (t1:BundleType,t2:BundleType) => {
-                  var ret = true
-                  (t1.fields,t2.fields).zipped.foreach{ (f1,f2) => {
-                     if (f1.flip != f2.flip) ret = false
-                     if (f1.name != f2.name) ret = false
-                     if (wt(f1.tpe) != wt(f2.tpe)) ret = false
-                  }}
-                  if (t1.fields.size != t2.fields.size) ret = false
-                  ret
-               }
+               case (t1:VectorType,t2:VectorType) =>
+                 t1.size == t2.size && wt(t1.tpe) == wt(t2.tpe)
+               case (t1:BundleType,t2:BundleType) =>
+                  t1.fields.size == t2.fields.size && (
+                  (t1.fields zip t2.fields) forall {case (f1, f2) =>
+                    f1.flip == f2.flip && f1.name == f2.name && wt(f1.tpe) == wt(f2.tpe)
+                  })
                case (t1,t2) => false
             }
          }

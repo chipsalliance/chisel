@@ -104,6 +104,7 @@ class ResolveAndCheck () extends Transform with SimpleRun {
 class HighFirrtlToMiddleFirrtl () extends Transform with SimpleRun {
    val passSeq = Seq(
       passes.PullMuxes,
+      passes.ReplaceAccesses,
       passes.ExpandConnects,
       passes.RemoveAccesses,
       passes.ExpandWhens,

@@ -63,22 +63,16 @@ object Namespace {
   def apply(m: DefModule): Namespace = {
     val namespace = new Namespace
 
-    def buildNamespaceStmt(s: Statement): Statement =
-      s map buildNamespaceStmt match {
-        case dec: IsDeclaration =>
-          namespace.namespace += dec.name
-          dec
-        case x => x
-      }
-    def buildNamespacePort(p: Port): Port = p match {
-      case dec: IsDeclaration =>
-        namespace.namespace += dec.name
-        dec
-      case x => x
+    def buildNamespaceStmt(s: Statement): Seq[String] = s match {
+      case s: IsDeclaration => Seq(s.name)
+      case s: Conditionally => buildNamespaceStmt(s.conseq) ++ buildNamespaceStmt(s.alt)
+      case s: Block => s.stmts flatMap buildNamespaceStmt
+      case _ => Nil
     }
-    m.ports map buildNamespacePort
+    namespace.namespace ++= (m.ports collect { case dec: IsDeclaration => dec.name })
     m match {
-      case in: Module => buildNamespaceStmt(in.body)
+      case in: Module =>
+        namespace.namespace ++= buildNamespaceStmt(in.body)
       case _ => // Do nothing
     }
 
