@@ -180,6 +180,17 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   for ((elt, i) <- self zipWithIndex)
     elt.setRef(this, i)
+
+  /** Default "pretty-print" implementation
+    * Analogous to printing a Seq
+    * Results in "Vec(elt0, elt1, ...)"
+    */
+  def toPrintable: Printable = {
+    val elts =
+      if (length == 0) List.empty[Printable]
+      else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
+    PString("Vec(") + Printables(elts) + PString(")")
+  }
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection
@@ -380,6 +391,21 @@ class Bundle extends Aggregate(NO_DIR) {
         Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method")
         this
     }
+  }
+
+  /** Default "pretty-print" implementation
+    * Analogous to printing a Map
+    * Results in "Bundle(elt0.name -> elt0.value, ...)"
+    */
+  def toPrintable: Printable = {
+    val elts =
+      if (elements.isEmpty) List.empty[Printable]
+      else {
+        elements.toList.reverse flatMap { case (name, data) =>
+          List(PString(s"$name -> "), data.toPrintable, PString(", "))
+        } dropRight 1 // Remove trailing ", "
+      }
+    PString("Bundle(") + Printables(elts) + PString(")")
   }
 }
 
