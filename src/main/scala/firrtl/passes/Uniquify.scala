@@ -109,8 +109,9 @@ object Uniquify extends Pass {
           val newName = findValidPrefix(f.name, Seq(""), namespace)
           namespace += newName
           Field(newName, f.flip, f.tpe)
-        } map { f =>
-          if (f.tpe.isAggregate) {
+        } map { f => f.tpe match {
+          case _: GroundType => f
+          case _ =>
             val tpe = recUniquifyNames(f.tpe, collection.mutable.HashSet())
             val elts = enumerateNames(tpe)
             // Need leading _ for findValidPrefix, it doesn't add _ for checks
@@ -123,8 +124,6 @@ object Uniquify extends Pass {
             }
             namespace ++= (elts map (e => LowerTypes.loweredName(prefix +: e)))
             Field(prefix, f.flip, tpe)
-          } else {
-            f
           }
         }
         BundleType(newFields)
@@ -349,7 +348,9 @@ object Uniquify extends Pass {
 
     def uniquifyPorts(m: DefModule): DefModule = {
       def uniquifyPorts(ports: Seq[Port]): Seq[Port] = {
-        val portsType = BundleType(ports map (_.toField))
+        val portsType = BundleType(ports map {
+          case Port(_, name, dir, tpe) => Field(name, to_flip(dir), tpe)
+        })
         val uniquePortsType = uniquifyNames(portsType, collection.mutable.HashSet())
         val localMap = createNameMapping(portsType, uniquePortsType)
         portNameMap += (m.name -> localMap)

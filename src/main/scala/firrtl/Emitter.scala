@@ -68,9 +68,9 @@ class VerilogEmitter extends Emitter {
    var mname = ""
    def wref (n:String,t:Type) = WRef(n,t,ExpKind(),UNKNOWNGENDER)
    def remove_root (ex:Expression) : Expression = {
-      (ex.as[WSubField].get.exp) match {
+      (ex.asInstanceOf[WSubField].exp) match {
          case (e:WSubField) => remove_root(e)
-         case (e:WRef) => WRef(ex.as[WSubField].get.name,tpe(ex),InstanceKind(),UNKNOWNGENDER)
+         case (e:WRef) => WRef(ex.asInstanceOf[WSubField].name,ex.tpe,InstanceKind(),UNKNOWNGENDER)
       }
    }
    def not_empty (s:ArrayBuffer[_]) : Boolean = if (s.size == 0) false else true
@@ -120,7 +120,7 @@ class VerilogEmitter extends Emitter {
          case (i:Long) => w.get.write(i.toString)
          case (t:VIndent) => w.get.write("   ")
          case (s:Seq[Any]) => {
-            s.foreach((x:Any) => emit2(x.as[Any].get, top + 1))
+            s.foreach((x:Any) => emit2(x, top + 1))
             if (top == 0) w.get.write("\n")
          }
       }
@@ -142,9 +142,12 @@ class VerilogEmitter extends Emitter {
    }
    def op_stream (doprim:DoPrim) : Seq[Any] = {
       def cast_if (e:Expression) : Any = {
-         val signed = doprim.args.find(x => tpe(x).typeof[SIntType])
+         val signed = doprim.args.find(x => x.tpe match {
+           case _: SIntType => true
+           case _ => false
+         })
          if (signed == None) e
-         else tpe(e) match {
+         else e.tpe match {
             case (t:SIntType) => Seq("$signed(",e,")")
             case (t:UIntType) => Seq("$signed({1'b0,",e,"})")
          }
@@ -156,7 +159,7 @@ class VerilogEmitter extends Emitter {
          }
       }
       def cast_as (e:Expression) : Any = {
-         (tpe(e)) match {
+         (e.tpe) match {
             case (t:UIntType) => e
             case (t:SIntType) => Seq("$signed(",e,")")
          }
@@ -192,7 +195,7 @@ class VerilogEmitter extends Emitter {
          case Eq => Seq(cast_if(a0())," == ", cast_if(a1()))
          case Neq => Seq(cast_if(a0())," != ", cast_if(a1()))
          case Pad => {
-            val w = long_BANG(tpe(a0()))
+            val w = long_BANG(a0().tpe)
             val diff = (c0() - w)
             if (w == 0) Seq(a0())
             else doprim.tpe match {
@@ -219,13 +222,13 @@ class VerilogEmitter extends Emitter {
          case Shlw => Seq(cast(a0())," << ", c0())
          case Shl => Seq(cast(a0())," << ",c0())
          case Shr => {
-           if (c0 >= long_BANG(tpe(a0)))
+           if (c0 >= long_BANG(a0.tpe))
              error("Verilog emitter does not support SHIFT_RIGHT >= arg width")
-           Seq(a0(),"[", long_BANG(tpe(a0())) - 1,":",c0(),"]")
+           Seq(a0(),"[", long_BANG(a0().tpe) - 1,":",c0(),"]")
          }
          case Neg => Seq("-{",cast(a0()),"}")
          case Cvt => {
-            tpe(a0()) match {
+            a0().tpe match {
                case (t:UIntType) => Seq("{1'b0,",cast(a0()),"}")
                case (t:SIntType) => Seq(cast(a0()))
             }
@@ -258,18 +261,18 @@ class VerilogEmitter extends Emitter {
          case Cat => Seq("{",cast(a0()),",",cast(a1()),"}")
          case Bits => {
             // If selecting zeroth bit and single-bit wire, just emit the wire
-            if (c0() == 0 && c1() == 0 && long_BANG(tpe(a0())) == 1) Seq(a0())
+            if (c0() == 0 && c1() == 0 && long_BANG(a0().tpe) == 1) Seq(a0())
             else if (c0() == c1()) Seq(a0(),"[",c0(),"]")
             else Seq(a0(),"[",c0(),":",c1(),"]")
          }
          case Head => {
-            val w = long_BANG(tpe(a0()))
+            val w = long_BANG(a0().tpe)
             val high = w - 1
             val low = w - c0()
             Seq(a0(),"[",high,":",low,"]")
          }
          case Tail => {
-            val w = long_BANG(tpe(a0()))
+            val w = long_BANG(a0().tpe)
             val low = w - c0() - 1
             Seq(a0(),"[",low,":",0,"]")
          }
@@ -286,7 +289,7 @@ class VerilogEmitter extends Emitter {
             case (s:Connect) => netlist(s.loc) = s.expr
             case (s:IsInvalid) => {
                val n = namespace.newTemp
-               val e = wref(n,tpe(s.expr))
+               val e = wref(n,s.expr.tpe)
                netlist(s.expr) = e
             }
             case (s:Conditionally) => simlist += s
@@ -319,12 +322,12 @@ class VerilogEmitter extends Emitter {
          assigns += Seq("`ifndef RANDOMIZE_GARBAGE_ASSIGN")
          assigns += Seq("assign ", e, " = ", syn, ";")
          assigns += Seq("`else")
-         assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(tpe(syn)), " : ", syn, ";")
+         assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(syn.tpe), " : ", syn, ";")
          assigns += Seq("`endif")
       }
       def invalidAssign(e: Expression) = {
         assigns += Seq("`ifdef RANDOMIZE_INVALID_ASSIGN")
-        assigns += Seq("assign ", e, " = ", rand_string(tpe(e)), ";")
+        assigns += Seq("assign ", e, " = ", rand_string(e.tpe), ";")
         assigns += Seq("`endif")
       }
       def update_and_reset(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
@@ -387,7 +390,7 @@ class VerilogEmitter extends Emitter {
       }
       def initialize(e: Expression) = {
         initials += Seq("`ifdef RANDOMIZE_REG_INIT")
-        initials += Seq(e, " = ", rand_string(tpe(e)), ";")
+        initials += Seq(e, " = ", rand_string(e.tpe), ";")
         initials += Seq("`endif")
       }
       def initialize_mem(s: DefMemory) = {
@@ -407,8 +410,8 @@ class VerilogEmitter extends Emitter {
          }}
          instdeclares += Seq(");")
          for (e <- es) {
-            declare("wire",LowerTypes.loweredName(e),tpe(e))
-            val ex = WRef(LowerTypes.loweredName(e),tpe(e),kind(e),gender(e))
+            declare("wire",LowerTypes.loweredName(e),e.tpe)
+            val ex = WRef(LowerTypes.loweredName(e),e.tpe,kind(e),gender(e))
             if (gender(e) == FEMALE) {
                assign(ex,netlist(e))
             }
@@ -444,8 +447,8 @@ class VerilogEmitter extends Emitter {
       def delay (e:Expression, n:Int, clk:Expression) : Expression = {
          ((0 until n) foldLeft e){(ex, i) =>
             val name = namespace.newTemp
-            declare("reg",name,tpe(e))
-            val exx = WRef(name,tpe(e),ExpKind(),UNKNOWNGENDER)
+            declare("reg",name,e.tpe)
+            val exx = WRef(name,e.tpe,ExpKind(),UNKNOWNGENDER)
             initialize(exx)
             update(exx,ex,clk,one)
             exx
@@ -478,13 +481,13 @@ class VerilogEmitter extends Emitter {
                initialize(e)
             }
             case (s:IsInvalid) => {
-               val wref = netlist(s.expr).as[WRef].get
-               declare("wire",wref.name,tpe(s.expr))
+               val wref = netlist(s.expr).asInstanceOf[WRef]
+               declare("wire",wref.name,s.expr.tpe)
                invalidAssign(wref)
             }
             case (s:DefNode) => {
-               declare("wire",s.name,tpe(s.value))
-               assign(WRef(s.name,tpe(s.value),NodeKind(),MALE),s.value)
+               declare("wire",s.name,s.value.tpe)
+               assign(WRef(s.name,s.value.tpe,NodeKind(),MALE),s.value)
             }
             case (s:Stop) => {
               val errorString = StringLit(s"${s.ret}\n".getBytes)
@@ -513,9 +516,9 @@ class VerilogEmitter extends Emitter {
                   //Ports should share an always@posedge, so can't have intermediary wire
                   val clk = netlist(mem_exp(r,"clk")) 
                   
-                  declare("wire",LowerTypes.loweredName(data),tpe(data))
-                  declare("wire",LowerTypes.loweredName(addr),tpe(addr))
-                  declare("wire",LowerTypes.loweredName(en),tpe(en))
+                  declare("wire",LowerTypes.loweredName(data),data.tpe)
+                  declare("wire",LowerTypes.loweredName(addr),addr.tpe)
+                  declare("wire",LowerTypes.loweredName(en),en.tpe)
 
                   //; Read port
                   assign(addr,netlist(addr)) //;Connects value to m.r.addr
@@ -524,8 +527,8 @@ class VerilogEmitter extends Emitter {
                   val en_pipe = if (weq(en,one)) one else delay(en,s.readLatency-1,clk)
                   val addrx = if (s.readLatency > 0) {
                     val name = namespace.newTemp
-                    val ref = WRef(name,tpe(addr),ExpKind(),UNKNOWNGENDER)
-                    declare("reg",name,tpe(addr))
+                    val ref = WRef(name,addr.tpe,ExpKind(),UNKNOWNGENDER)
+                    declare("reg",name,addr.tpe)
                     initialize(ref)
                     update(ref,addr_pipe,clk,en_pipe)
                     ref
@@ -548,10 +551,10 @@ class VerilogEmitter extends Emitter {
                   //Ports should share an always@posedge, so can't have intermediary wire
                   val clk = netlist(mem_exp(w,"clk"))
                   
-                  declare("wire",LowerTypes.loweredName(data),tpe(data))
-                  declare("wire",LowerTypes.loweredName(addr),tpe(addr))
-                  declare("wire",LowerTypes.loweredName(mask),tpe(mask))
-                  declare("wire",LowerTypes.loweredName(en),tpe(en))
+                  declare("wire",LowerTypes.loweredName(data),data.tpe)
+                  declare("wire",LowerTypes.loweredName(addr),addr.tpe)
+                  declare("wire",LowerTypes.loweredName(mask),mask.tpe)
+                  declare("wire",LowerTypes.loweredName(en),en.tpe)
    
                   //; Write port
                   assign(data,netlist(data))
@@ -577,12 +580,12 @@ class VerilogEmitter extends Emitter {
                   //Ports should share an always@posedge, so can't have intermediary wire
                   val clk = netlist(mem_exp(rw,"clk"))
                   
-                  declare("wire",LowerTypes.loweredName(wmode),tpe(wmode))
-                  declare("wire",LowerTypes.loweredName(rdata),tpe(rdata))
-                  declare("wire",LowerTypes.loweredName(wdata),tpe(wdata))
-                  declare("wire",LowerTypes.loweredName(wmask),tpe(wmask))
-                  declare("wire",LowerTypes.loweredName(addr),tpe(addr))
-                  declare("wire",LowerTypes.loweredName(en),tpe(en))
+                  declare("wire",LowerTypes.loweredName(wmode),wmode.tpe)
+                  declare("wire",LowerTypes.loweredName(rdata),rdata.tpe)
+                  declare("wire",LowerTypes.loweredName(wdata),wdata.tpe)
+                  declare("wire",LowerTypes.loweredName(wmask),wmask.tpe)
+                  declare("wire",LowerTypes.loweredName(addr),addr.tpe)
+                  declare("wire",LowerTypes.loweredName(en),en.tpe)
    
                   //; Assigned to lowered wires of each
                   assign(addr,netlist(addr))
@@ -602,8 +605,8 @@ class VerilogEmitter extends Emitter {
 
                   val raddrxx = if (s.readLatency > 0) {
                     val name = namespace.newTemp
-                    val ref = WRef(name,tpe(raddrx),ExpKind(),UNKNOWNGENDER)
-                    declare("reg",name,tpe(raddrx))
+                    val ref = WRef(name,raddrx.tpe,ExpKind(),UNKNOWNGENDER)
+                    declare("reg",name,raddrx.tpe)
                     initialize(ref)
                     ref
                   } else addr
@@ -613,8 +616,8 @@ class VerilogEmitter extends Emitter {
 
                   def declare_and_assign(exp: Expression) = {
                     val name = namespace.newTemp
-                    val ref = wref(name, tpe(exp))
-                    declare("wire", name, tpe(exp))
+                    val ref = wref(name, exp.tpe)
+                    declare("wire", name, exp.tpe)
                     assign(ref, exp)
                     ref
                   }

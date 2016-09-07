@@ -2,7 +2,7 @@ package firrtl
 package passes
 
 import firrtl.Mappers.{ExpMap, StmtMap}
-import firrtl.Utils.{tpe, kind, gender, info}
+import firrtl.Utils.{kind, gender, get_info}
 import firrtl.ir._
 import scala.collection.mutable
 
@@ -20,18 +20,18 @@ object SplitExpressions extends Pass {
          def split(e: Expression): Expression = e match {
             case e: DoPrim => {
                val name = namespace.newTemp
-               v += DefNode(info(s), name, e)
-               WRef(name, tpe(e), kind(e), gender(e))
+               v += DefNode(get_info(s), name, e)
+               WRef(name, e.tpe, kind(e), gender(e))
             }
             case e: Mux => {
                val name = namespace.newTemp
-               v += DefNode(info(s), name, e)
-               WRef(name, tpe(e), kind(e), gender(e))
+               v += DefNode(get_info(s), name, e)
+               WRef(name, e.tpe, kind(e), gender(e))
             }
             case e: ValidIf => {
                val name = namespace.newTemp
-               v += DefNode(info(s), name, e)
-               WRef(name, tpe(e), kind(e), gender(e))
+               v += DefNode(get_info(s), name, e)
+               WRef(name, e.tpe, kind(e), gender(e))
             }
             case e => e
          }

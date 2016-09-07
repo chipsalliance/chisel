@@ -76,7 +76,7 @@ object RemoveAccesses extends Pass {
       def onStmt(s: Statement): Statement = {
         def create_temp(e: Expression): (Statement, Expression) = {
           val n = namespace.newTemp
-          (DefWire(info(s), n, e.tpe), WRef(n, e.tpe, kind(e), gender(e)))
+          (DefWire(get_info(s), n, e.tpe), WRef(n, e.tpe, kind(e), gender(e)))
         }
 
         /** Replaces a subaccess in a given male expression
@@ -94,9 +94,9 @@ object RemoveAccesses extends Pass {
                 stmts += wire
                 rs.zipWithIndex foreach {
                   case (x, i) if i < temps.size =>
-                    stmts += Connect(info(s),getTemp(i),x.base)
+                    stmts += Connect(get_info(s),getTemp(i),x.base)
                   case (x, i) =>
-                    stmts += Conditionally(info(s),x.guard,Connect(info(s),getTemp(i),x.base),EmptyStmt)
+                    stmts += Conditionally(get_info(s),x.guard,Connect(get_info(s),getTemp(i),x.base),EmptyStmt)
                 }
                 temp
             }

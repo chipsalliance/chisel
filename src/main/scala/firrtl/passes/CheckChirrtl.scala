@@ -105,7 +105,7 @@ object CheckChirrtl extends Pass with LazyLogging {
         e
       }
       def checkChirrtlS(s: Statement): Statement = {
-        sinfo = s.getInfo
+        sinfo = get_info(s)
         def checkName(name: String): String = {
           if (names.contains(name)) errors.append(new NotUniqueException(name))
           else names(name) = true
@@ -138,7 +138,7 @@ object CheckChirrtl extends Pass with LazyLogging {
       for (p <- m.ports) {
         sinfo = p.info
         names(p.name) = true
-        val tpe = p.getType
+        val tpe = p.tpe
         tpe map (checkChirrtlT)
         tpe map (checkChirrtlW)
       }

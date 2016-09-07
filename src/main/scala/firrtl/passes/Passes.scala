@@ -103,7 +103,7 @@ object ResolveKinds extends Pass {
          def resolve (body:Statement) = {
             def resolve_expr (e:Expression):Expression = {
                e match {
-                  case e:WRef => WRef(e.name,tpe(e),kinds(e.name),e.gender)
+                  case e:WRef => WRef(e.name,e.tpe,kinds(e.name),e.gender)
                   case e => e map (resolve_expr)
                }
             }
@@ -170,11 +170,11 @@ object InferTypes extends Pass {
          val types = LinkedHashMap[String,Type]()
          def infer_types_e (e:Expression) : Expression = {
             e map (infer_types_e) match {
-               case e:ValidIf => ValidIf(e.cond,e.value,tpe(e.value))
+               case e:ValidIf => ValidIf(e.cond,e.value,e.value.tpe)
                case e:WRef => WRef(e.name, types(e.name),e.kind,e.gender)
-               case e:WSubField => WSubField(e.exp,e.name,field_type(tpe(e.exp),e.name),e.gender)
-               case e:WSubIndex => WSubIndex(e.exp,e.value,sub_type(tpe(e.exp)),e.gender)
-               case e:WSubAccess => WSubAccess(e.exp,e.index,sub_type(tpe(e.exp)),e.gender)
+               case e:WSubField => WSubField(e.exp,e.name,field_type(e.exp.tpe,e.name),e.gender)
+               case e:WSubIndex => WSubIndex(e.exp,e.value,sub_type(e.exp.tpe),e.gender)
+               case e:WSubAccess => WSubAccess(e.exp,e.index,sub_type(e.exp.tpe),e.gender)
                case e:DoPrim => set_primop_type(e)
                case e:Mux => Mux(e.cond,e.tval,e.fval,mux_type_and_widths(e.tval,e.fval))
                case e:UIntLiteral => e
@@ -246,7 +246,7 @@ object ResolveGenders extends Pass {
             case e:WRef => WRef(e.name,e.tpe,e.kind,g)
             case e:WSubField => {
                val expx = 
-                  field_flip(tpe(e.exp),e.name) match {
+                  field_flip(e.exp.tpe,e.name) match {
                      case Default => resolve_e(g)(e.exp)
                      case Flip => resolve_e(swap(g))(e.exp)
                   }
@@ -474,7 +474,7 @@ object InferWidths extends Pass {
          case (t:SIntType) => t.width
          case ClockType => IntWidth(1)
          case (t) => error("No width!"); IntWidth(-1) } }
-   def width_BANG (e:Expression) : Width = width_BANG(tpe(e))
+   def width_BANG (e:Expression) : Width = width_BANG(e.tpe)
 
    def reduce_var_widths(c: Circuit, h: LinkedHashMap[String,Width]): Circuit = {
       def evaluate(w: Width): Width = {
@@ -549,40 +549,40 @@ object InferWidths extends Pass {
       def get_constraints_e (e:Expression) : Expression = {
          (e map (get_constraints_e)) match {
             case (e:Mux) => {
-               constrain(width_BANG(e.cond),ONE)
-               constrain(ONE,width_BANG(e.cond))
+               constrain(width_BANG(e.cond),IntWidth(1))
+               constrain(IntWidth(1),width_BANG(e.cond))
                e }
             case (e) => e }}
       def get_constraints (s:Statement) : Statement = {
          (s map (get_constraints_e)) match {
             case (s:Connect) => {
-               val n = get_size(tpe(s.loc))
+               val n = get_size(s.loc.tpe)
                val ce_loc = create_exps(s.loc)
                val ce_exp = create_exps(s.expr)
                for (i <- 0 until n) {
                   val locx = ce_loc(i)
                   val expx = ce_exp(i)
-                  get_flip(tpe(s.loc),i,Default) match {
+                  get_flip(s.loc.tpe,i,Default) match {
                      case Default => constrain(width_BANG(locx),width_BANG(expx))
                      case Flip => constrain(width_BANG(expx),width_BANG(locx)) }}
                s }
             case (s:PartialConnect) => {
-               val ls = get_valid_points(tpe(s.loc),tpe(s.expr),Default,Default)
+               val ls = get_valid_points(s.loc.tpe,s.expr.tpe,Default,Default)
                for (x <- ls) {
                   val locx = create_exps(s.loc)(x._1)
                   val expx = create_exps(s.expr)(x._2)
-                  get_flip(tpe(s.loc),x._1,Default) match {
+                  get_flip(s.loc.tpe,x._1,Default) match {
                      case Default => constrain(width_BANG(locx),width_BANG(expx))
                      case Flip => constrain(width_BANG(expx),width_BANG(locx)) }}
                s }
             case (s:DefRegister) => {
-               constrain(width_BANG(s.reset),ONE)
-               constrain(ONE,width_BANG(s.reset))
-               get_constraints_t(s.tpe,tpe(s.init),Default)
+               constrain(width_BANG(s.reset),IntWidth(1))
+               constrain(IntWidth(1),width_BANG(s.reset))
+               get_constraints_t(s.tpe,s.init.tpe,Default)
                s }
             case (s:Conditionally) => {
-               v += WGeq(width_BANG(s.pred),ONE)
-               v += WGeq(ONE,width_BANG(s.pred))
+               v += WGeq(width_BANG(s.pred),IntWidth(1))
+               v += WGeq(IntWidth(1),width_BANG(s.pred))
                s map (get_constraints) }
             case (s) => s map (get_constraints) }}
 
@@ -661,7 +661,7 @@ object ExpandConnects extends Pass {
                e map (set_gender) match {
                   case (e:WRef) => WRef(e.name,e.tpe,e.kind,genders(e.name))
                   case (e:WSubField) => {
-                     val f = get_field(tpe(e.exp),e.name)
+                     val f = get_field(e.exp.tpe,e.name)
                      val genderx = times(gender(e.exp),f.flip)
                      WSubField(e.exp,e.name,e.tpe,genderx)
                   }
@@ -677,7 +677,7 @@ object ExpandConnects extends Pass {
                case (s:DefMemory) => { genders(s.name) = MALE; s }
                case (s:DefNode) => { genders(s.name) = MALE; s }
                case (s:IsInvalid) => {
-                  val n = get_size(tpe(s.expr))
+                  val n = get_size(s.expr.tpe)
                   val invalids = ArrayBuffer[Statement]()
                   val exps = create_exps(s.expr)
                   for (i <- 0 until n) {
@@ -696,14 +696,14 @@ object ExpandConnects extends Pass {
                   } else Block(invalids)
                }
                case (s:Connect) => {
-                  val n = get_size(tpe(s.loc))
+                  val n = get_size(s.loc.tpe)
                   val connects = ArrayBuffer[Statement]()
                   val locs = create_exps(s.loc)
                   val exps = create_exps(s.expr)
                   for (i <- 0 until n) {
                      val locx = locs(i)
                      val expx = exps(i)
-                     val sx = get_flip(tpe(s.loc),i,Default) match {
+                     val sx = get_flip(s.loc.tpe,i,Default) match {
                         case Default => Connect(s.info,locx,expx)
                         case Flip => Connect(s.info,expx,locx)
                      }
@@ -712,14 +712,14 @@ object ExpandConnects extends Pass {
                   Block(connects)
                }
                case (s:PartialConnect) => {
-                  val ls = get_valid_points(tpe(s.loc),tpe(s.expr),Default,Default)
+                  val ls = get_valid_points(s.loc.tpe,s.expr.tpe,Default,Default)
                   val connects = ArrayBuffer[Statement]()
                   val locs = create_exps(s.loc)
                   val exps = create_exps(s.expr)
                   ls.foreach { x => {
                      val locx = locs(x._1)
                      val expx = exps(x._2)
-                     val sx = get_flip(tpe(s.loc),x._1,Default) match {
+                     val sx = get_flip(s.loc.tpe,x._1,Default) match {
                         case Default => Connect(s.info,locx,expx)
                         case Flip => Connect(s.info,expx,locx)
                      }
@@ -755,7 +755,7 @@ object Legalize extends Pass {
   def legalizeShiftRight (e: DoPrim): Expression = e.op match {
     case Shr => {
       val amount = e.consts(0).toInt
-      val width = long_BANG(tpe(e.args(0)))
+      val width = long_BANG(e.args(0).tpe)
       lazy val msb = width - 1
       if (amount >= width) {
         e.tpe match {
@@ -771,9 +771,9 @@ object Legalize extends Pass {
     case _ => e
   }
   def legalizeConnect(c: Connect): Statement = {
-    val t = tpe(c.loc)
+    val t = c.loc.tpe
     val w = long_BANG(t)
-    if (w >= long_BANG(tpe(c.expr))) c
+    if (w >= long_BANG(c.expr.tpe)) c
     else {
       val newType = t match {
         case _: UIntType => UIntType(IntWidth(w))
@@ -811,8 +811,8 @@ object VerilogWrap extends Pass {
             if (e.op == Tail) {
                (a0()) match {
                   case (e0:DoPrim) => {
-                     if (e0.op == Add) DoPrim(Addw,e0.args,Seq(),tpe(e))
-                     else if (e0.op == Sub) DoPrim(Subw,e0.args,Seq(),tpe(e))
+                     if (e0.op == Add) DoPrim(Addw,e0.args,Seq(),e.tpe)
+                     else if (e0.op == Sub) DoPrim(Subw,e0.args,Seq(),e.tpe)
                      else e
                   }
                   case (e0) => e
@@ -913,12 +913,12 @@ object CInferTypes extends Pass {
          def infer_types_e (e:Expression) : Expression = {
             e map infer_types_e match {
                case (e:Reference) => Reference(e.name, types.getOrElse(e.name,UnknownType))
-               case (e:SubField) => SubField(e.expr,e.name,field_type(tpe(e.expr),e.name))
-               case (e:SubIndex) => SubIndex(e.expr,e.value,sub_type(tpe(e.expr)))
-               case (e:SubAccess) => SubAccess(e.expr,e.index,sub_type(tpe(e.expr)))
+               case (e:SubField) => SubField(e.expr,e.name,field_type(e.expr.tpe,e.name))
+               case (e:SubIndex) => SubIndex(e.expr,e.value,sub_type(e.expr.tpe))
+               case (e:SubAccess) => SubAccess(e.expr,e.index,sub_type(e.expr.tpe))
                case (e:DoPrim) => set_primop_type(e)
                case (e:Mux) => Mux(e.cond,e.tval,e.fval,mux_type(e.tval,e.tval))
-               case (e:ValidIf) => ValidIf(e.cond,e.value,tpe(e.value))
+               case (e:ValidIf) => ValidIf(e.cond,e.value,e.value.tpe)
                case (_:UIntLiteral | _:SIntLiteral) => e
             }
          }
@@ -1067,8 +1067,8 @@ object RemoveCHIRRTL extends Pass {
          val e2s = create_exps(e.fval)
          (e1s,e2s).zipped map ((e1,e2) => Mux(e.cond,e1,e2,mux_type(e1,e2)))
       case (e:ValidIf) =>
-         create_exps(e.value) map (e1 => ValidIf(e.cond,e1,tpe(e1)))
-      case (e) => (tpe(e)) match {
+         create_exps(e.value) map (e1 => ValidIf(e.cond,e1,e1.tpe))
+      case (e) => (e.tpe) match {
          case (_:GroundType) => Seq(e)
          case (t:BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
             exps ++ create_exps(SubField(e,f.name,f.tpe)))
@@ -1276,7 +1276,7 @@ object RemoveCHIRRTL extends Pass {
                     case Some(en) => stmts += Connect(s.info,en,one)
                   }
                   if (has_write_mport) {
-                     val ls = get_valid_points(tpe(s.loc),tpe(s.expr),Default,Default)
+                     val ls = get_valid_points(s.loc.tpe,s.expr.tpe,Default,Default)
                      val locs = create_exps(get_mask(s.loc))
                      for (x <- ls ) {
                         val locx = locs(x._1)

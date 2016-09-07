@@ -241,7 +241,7 @@ object CheckHighForm extends Pass with LazyLogging {
           else names(name) = true
           name 
         }
-        sinfo = s.getInfo
+        sinfo = get_info(s)
 
         s map (checkName)
         s map (checkHighFormT)
@@ -276,7 +276,7 @@ object CheckHighForm extends Pass with LazyLogging {
       for (p <- m.ports) {
         // FIXME should we set sinfo here?
         names(p.name) = true
-        val tpe = p.getType
+        val tpe = p.tpe
         tpe map (checkHighFormT)
         tpe map (checkHighFormW)
       }
@@ -336,27 +336,36 @@ object CheckTypes extends Pass with LazyLogging {
       def all_same_type (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls) {
-            if (wt(tpe(ls.head)) != wt(tpe(x))) error = true
+            if (wt(ls.head.tpe) != wt(x.tpe)) error = true
          }
          if (error) errors.append(new OpNotAllSameType(info,e.op.serialize))
       }
       def all_ground (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls ) {
-            if (!(tpe(x).typeof[UIntType] || tpe(x).typeof[SIntType])) error = true
+            x.tpe match {
+              case _: UIntType | _: SIntType =>
+              case _ => error = true
+            }
          }
          if (error) errors.append(new OpNotGround(info,e.op.serialize))
       }
       def all_uint (ls:Seq[Expression]) : Unit = {
          var error = false
          for (x <- ls ) {
-            if (!(tpe(x).typeof[UIntType])) error = true
+            x.tpe match {
+              case _: UIntType =>
+              case _ => error = true
+            }
          }
          if (error) errors.append(new OpNotAllUInt(info,e.op.serialize))
       }
       def is_uint (x:Expression) : Unit = {
          var error = false
-         if (!(tpe(x).typeof[UIntType])) error = true
+         x.tpe match {
+           case _: UIntType =>
+           case _ => error = true
+         }
          if (error) errors.append(new OpNotUInt(info,e.op.serialize,x.serialize))
       }
       
@@ -417,7 +426,7 @@ object CheckTypes extends Pass with LazyLogging {
          (e map (check_types_e(info))) match { 
             case (e:WRef) => e
             case (e:WSubField) => {
-               (tpe(e.exp)) match  { 
+               (e.exp.tpe) match  { 
                   case (t:BundleType) => {
                      val ft = t.fields.find(p => p.name == e.name)
                      if (ft == None) errors.append(new SubfieldNotInBundle(info,e.name))
@@ -426,7 +435,7 @@ object CheckTypes extends Pass with LazyLogging {
                }
             }
             case (e:WSubIndex) => {
-               (tpe(e.exp)) match { 
+               (e.exp.tpe) match { 
                   case (t:VectorType) => {
                      if (e.value >= t.size) errors.append(new IndexTooLarge(info,e.value))
                   }
@@ -434,24 +443,30 @@ object CheckTypes extends Pass with LazyLogging {
                }
             }
             case (e:WSubAccess) => {
-               (tpe(e.exp)) match { 
+               (e.exp.tpe) match { 
                   case (t:VectorType) => false
                   case (t) => errors.append(new IndexOnNonVector(info))
                }
-               (tpe(e.index)) match { 
+               (e.index.tpe) match { 
                   case (t:UIntType) => false
                   case (t) => errors.append(new AccessIndexNotUInt(info))
                }
             }
             case (e:DoPrim) => check_types_primop(e,errors,info)
             case (e:Mux) => {
-               if (wt(tpe(e.tval)) != wt(tpe(e.fval))) errors.append(new MuxSameType(info))
-               if (!passive(tpe(e))) errors.append(new MuxPassiveTypes(info))
-               if (!(tpe(e.cond).typeof[UIntType])) errors.append(new MuxCondUInt(info))
+               if (wt(e.tval.tpe) != wt(e.fval.tpe)) errors.append(new MuxSameType(info))
+               if (!passive(e.tpe)) errors.append(new MuxPassiveTypes(info))
+               e.cond.tpe match {
+                 case _: UIntType =>
+                 case _ => errors.append(new MuxCondUInt(info))
+               }
             }
             case (e:ValidIf) => {
-               if (!passive(tpe(e))) errors.append(new ValidIfPassiveTypes(info))
-               if (!(tpe(e.cond).typeof[UIntType])) errors.append(new ValidIfCondUInt(info))
+               if (!passive(e.tpe)) errors.append(new ValidIfPassiveTypes(info))
+               e.cond.tpe match {
+                 case _: UIntType =>
+                 case _ => errors.append(new ValidIfCondUInt(info))
+               }
             }
             case (_:UIntLiteral | _:SIntLiteral) => false
          }
@@ -484,22 +499,22 @@ object CheckTypes extends Pass with LazyLogging {
 
       def check_types_s (s:Statement) : Statement = {
          s map (check_types_e(get_info(s))) match { 
-            case (s:Connect) => if (wt(tpe(s.loc)) != wt(tpe(s.expr))) errors.append(new InvalidConnect(s.info, s.loc.serialize, s.expr.serialize))
-            case (s:DefRegister) => if (wt(s.tpe) != wt(tpe(s.init))) errors.append(new InvalidRegInit(s.info))
-            case (s:PartialConnect) => if (!bulk_equals(tpe(s.loc),tpe(s.expr),Default,Default) ) errors.append(new InvalidConnect(s.info, s.loc.serialize, s.expr.serialize))
+            case (s:Connect) => if (wt(s.loc.tpe) != wt(s.expr.tpe)) errors.append(new InvalidConnect(s.info, s.loc.serialize, s.expr.serialize))
+            case (s:DefRegister) => if (wt(s.tpe) != wt(s.init.tpe)) errors.append(new InvalidRegInit(s.info))
+            case (s:PartialConnect) => if (!bulk_equals(s.loc.tpe,s.expr.tpe,Default,Default) ) errors.append(new InvalidConnect(s.info, s.loc.serialize, s.expr.serialize))
             case (s:Stop) => {
-               if (wt(tpe(s.clk)) != wt(ClockType) ) errors.append(new ReqClk(s.info))
-               if (wt(tpe(s.en)) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
+               if (wt(s.clk.tpe) != wt(ClockType) ) errors.append(new ReqClk(s.info))
+               if (wt(s.en.tpe) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
             }
             case (s:Print)=> {
                for (x <- s.args ) {
-                  if (wt(tpe(x)) != wt(ut()) && wt(tpe(x)) != wt(st()) ) errors.append(new PrintfArgNotGround(s.info))
+                  if (wt(x.tpe) != wt(ut()) && wt(x.tpe) != wt(st()) ) errors.append(new PrintfArgNotGround(s.info))
                }
-               if (wt(tpe(s.clk)) != wt(ClockType) ) errors.append(new ReqClk(s.info))
-               if (wt(tpe(s.en)) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
+               if (wt(s.clk.tpe) != wt(ClockType) ) errors.append(new ReqClk(s.info))
+               if (wt(s.en.tpe) != wt(ut()) ) errors.append(new EnNotUInt(s.info))
             }
-            case (s:Conditionally) => if (wt(tpe(s.pred)) != wt(ut()) ) errors.append(new PredNotUInt(s.info))
-            case (s:DefNode) => if (!passive(tpe(s.value)) ) errors.append(new NodePassiveType(s.info))
+            case (s:Conditionally) => if (wt(s.pred.tpe) != wt(ut()) ) errors.append(new PredNotUInt(s.info))
+            case (s:DefNode) => if (!passive(s.value.tpe) ) errors.append(new NodePassiveType(s.info))
             case (s) => false
          }
          s map (check_types_s)
@@ -571,7 +586,7 @@ object CheckGenders extends Pass {
             fQ
          }
             
-         val has_flipQ = flipQ(tpe(e))
+         val has_flipQ = flipQ(e.tpe)
          //println(e)
          //println(gender)
          //println(desired)
@@ -597,7 +612,7 @@ object CheckGenders extends Pass {
          (e) match { 
             case (e:WRef) => genders(e.name)
             case (e:WSubField) => 
-               val f = tpe(e.exp).as[BundleType].get.fields.find(f => f.name == e.name).get
+               val f = e.exp.tpe.asInstanceOf[BundleType].fields.find(f => f.name == e.name).get
                times(get_gender(e.exp,genders),f.flip)
             case (e:WSubIndex) => get_gender(e.exp,genders)
             case (e:WSubAccess) => get_gender(e.exp,genders)
@@ -735,7 +750,7 @@ object CheckWidths extends Pass {
          }
          def check_width_s (s:Statement) : Statement = {
             s map (check_width_s) map (check_width_e(get_info(s)))
-            def tm (t:Type) : Type = mapr(check_width_w(info(s)) _,t)
+            def tm (t:Type) : Type = mapr(check_width_w(get_info(s)) _,t)
             s map (tm)
          }
       
