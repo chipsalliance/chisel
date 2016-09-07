@@ -25,7 +25,8 @@ object Decoupled {
 }
 
 /** An extension of DecoupledIO that promises to not change the value of 'bits'
-  * after a cycle where 'valid' is high and 'ready' is low.
+  * after a cycle where 'valid' is high and 'ready' is low, and that once 
+  * 'valid' is raised it will never be lowered until after 'ready' has also been raised.
   */
 class IrrevocableIO[+T <: Data](gen: T) extends DecoupledIO[T](gen)
 
