@@ -59,8 +59,8 @@ extends HasId {
   private[core] val _ids = ArrayBuffer[HasId]()
   dynamicContext.currentModule = Some(this)
 
-  def annotate(component: InstanceId, value: Annotation.Value): Unit = {
-    dynamicContext.annotations += Annotation.Raw(component, value)
+  def annotate(annotation: Annotation): Unit = {
+    dynamicContext.annotations += annotation
   }
 
   /** Desired name of this module. */

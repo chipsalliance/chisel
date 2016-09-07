@@ -52,6 +52,9 @@ package object chisel3 {
   val Module = chisel3.core.Module
   type Module = chisel3.core.Module
 
+  val Annotation = chisel3.core.Annotation
+  type Annotation = chisel3.core.Annotation
+
   val printf = chisel3.core.printf
 
   val Reg = chisel3.core.Reg

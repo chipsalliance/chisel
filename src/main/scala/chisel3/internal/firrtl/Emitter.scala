@@ -2,10 +2,15 @@
 
 package chisel3.internal.firrtl
 import chisel3._
+import chisel3.core.Annotation
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
 private[chisel3] object Emitter {
-  def emit(circuit: Circuit): String = new Emitter(circuit).toString
+  def emit(circuit: Circuit): String = {
+    val emitString = new Emitter(circuit).toString
+    Annotation.resolveAnnotations(circuit)
+    emitString
+  }
 }
 
 private class Emitter(circuit: Circuit) {

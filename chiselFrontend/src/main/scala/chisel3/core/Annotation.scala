@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.core.Annotation.ScopeType
+import chisel3.internal.firrtl.Circuit
 import chisel3.internal.{throwException, InstanceId}
 
 /**
@@ -22,43 +22,17 @@ object Annotation {
   trait Value
 
   object Scope {
-    abstract trait ScopeType
+    trait ScopeType
+
     trait Specific extends ScopeType  // Annotation applies only to this specific instance
-    trait General  extends ScopeType  // Annotation applies to all instances of this component
-    trait All      extends ScopeType  // Debugging only: name becomes composite of all InstanceId API methods
-
-  }
-  trait ScopeType
-  trait Absolute extends ScopeType
-  trait Relative extends ScopeType
-  trait All      extends ScopeType  /* for debugging, key becomes all name api strings */
-
-//  // Trivial string annotations included here as an example, with relative and absolute types
-//  case class AbsoluteStringValue(value: String) extends Value with Absolute
-//  case class RelativeStringValue(value: String) extends Value with Relative
-
-  case class Raw(component: InstanceId, value: Value)
-
-  case class Resolved(componentName: String, value: Value) {
-    override def toString: String = {
-      s"$componentName$Separator$value"
-    }
+    trait General extends ScopeType   // Annotation applies to all instances of this component
+    trait All extends ScopeType       // Debugging only: name becomes composite of all InstanceId API methods
   }
 
-  def resolve(raw: Raw): Resolved = {
-    val componentName = raw.value match {
-      case v: Absolute => s"${raw.component.pathName}"
-      case v: Relative => s"${raw.component.parentModName}.${raw.component.instanceName}"
-      case v: All =>
-        f"${raw.component}%-29s" +
-        f"${raw.component.instanceName}%-25s" +
-        f"${raw.component.parentModName}%-25s" +
-        f"${raw.component.pathName}%-40s" +
-        f"${raw.component.parentPathName}%-35s"
-
-      case  _          => throwException(s"Unknown annotation scope for $raw")
+  def resolveAnnotations(circuit: Circuit): Unit = {
+    for (annotation <- circuit.annotations) {
+      annotation.resolve
     }
-    Resolved(componentName, raw.value)
   }
 }
 
@@ -68,15 +42,23 @@ abstract class Annotation extends Annotation.Scope.ScopeType {
   def firrtlInstanceName: String = {
     _firttlInstanceName.getOrElse(resolve)
   }
-  private def resolve: String = this match {
-    case _: Annotation.Scope.Specific => s"${component.pathName}"
-    case _: Annotation.Scope.General => s"${component.parentModName}.${component.instanceName}"
-    case _: Annotation.Scope.All =>
-      f"${component}%-29s" +
-        f"${component.instanceName}%-25s" +
-        f"${component.parentModName}%-25s" +
-        f"${component.pathName}%-40s" +
-        f"${component.parentPathName}%-35s"
+  def isResolved: Boolean = _firttlInstanceName.isDefined
+
+  def resolve: String = {
+    val name = this match {
+      case _: Annotation.Scope.Specific => s"${component.pathName}"
+      case _: Annotation.Scope.General => s"${component.parentModName}.${component.instanceName}"
+      case _: Annotation.Scope.All =>
+        f"$component%-29s" +
+          f"${component.instanceName}%-25s" +
+          f"${component.parentModName}%-25s" +
+          f"${component.pathName}%-40s" +
+          f"${component.parentPathName}%-35s"
+      case _ =>
+        throwException(s"Annotation $this has unknown scope")
+    }
+    _firttlInstanceName = Some(name)
+    name
   }
 }
 

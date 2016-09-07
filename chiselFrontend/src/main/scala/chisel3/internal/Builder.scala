@@ -134,7 +134,7 @@ private[chisel3] class DynamicContext {
   val globalNamespace = new Namespace(None, Set())
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
-  val annotations = ArrayBuffer[Annotation.Raw]()
+  val annotations = new ArrayBuffer[Annotation]()
   val errors = new ErrorLog
 }
 
@@ -160,6 +160,8 @@ private[chisel3] object Builder {
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext)) {
       errors.info("Elaborating design...")
+      val d = dynamicContext
+      val a = d.annotations
       val mod = f
       mod.forceName(mod.name, globalNamespace)
       errors.checkpoint()

@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.core.{UInt, Annotation, Module}
-import chisel3.internal.firrtl.Emitter
+import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import org.scalatest._
 
@@ -16,8 +16,8 @@ import org.scalatest._
   *
   * This is currently not much of a test, read the printout to see what annotations look like
   */
-case class RelativeAnno(value: String) extends Annotation.Value with Annotation.All
-case class AbsoluteAnno(value: String) extends Annotation.Value with Annotation.All
+case class GeneralAnno(component: InstanceId, value: String) extends Annotation with Annotation.Scope.General
+case class SpecificAnno(component: InstanceId, value: String) extends Annotation with Annotation.Scope.Specific
 
 class ModC(param1: Int, param2: Int) extends Module {
   val io = new Bundle {
@@ -26,12 +26,11 @@ class ModC(param1: Int, param2: Int) extends Module {
   }
   io.out := io.in
 
-  annotate(this, AbsoluteAnno(s"ModC Absolute"))
-  annotate(this, RelativeAnno(s"ModC Relative"))
+  annotate(SpecificAnno(this, s"ModC Absolute"))
+  annotate(GeneralAnno(this, s"ModC Relative"))
 
-  annotate(io.in, AbsoluteAnno(s"ModuleC($param1,$param2) width < $param1"))
-  annotate(io.out, RelativeAnno(s"ModuleC($param1,$param2) width < $param2"))
-  println(s"ModuleName: ModC is ${this.getClass.getName}")
+  annotate(SpecificAnno(io.in, s"ModuleC($param1,$param2) width < $param1"))
+  annotate(GeneralAnno(io.out, s"ModuleC($param1,$param2) width < $param2"))
 }
 
 class ModA(aParam1: Int, aParam2: Int) extends Module {
@@ -43,12 +42,11 @@ class ModA(aParam1: Int, aParam2: Int) extends Module {
   modC.io.in := io.in
   io.out := modC.io.out
 
-  annotate(this, AbsoluteAnno(s"ModA Absolute"))
-  annotate(this, RelativeAnno(s"ModA Relative"))
+  annotate(SpecificAnno(this, s"ModA Absolute"))
+  annotate(GeneralAnno(this, s"ModA Relative"))
 
-  annotate(io.in, AbsoluteAnno(s"ModuleA($aParam1,$aParam2) width < $aParam1"))
-  annotate(io.out, RelativeAnno(s"ModuleA($aParam1,$aParam2) width < $aParam2"))
-  println(s"ModuleName: ModA is ${this.getClass.getName}")
+  annotate(SpecificAnno(io.in, s"ModuleA($aParam1,$aParam2) width < $aParam1"))
+  annotate(GeneralAnno(io.out, s"ModuleA($aParam1,$aParam2) width < $aParam2"))
 }
 
 class ModB(bParam1: Int, bParam2: Int) extends Module {
@@ -59,11 +57,10 @@ class ModB(bParam1: Int, bParam2: Int) extends Module {
   val modC = Module(new ModC(42, 77))
   modC.io.in := io.in
   io.out := modC.io.out
-  annotate(io.in, AbsoluteAnno(s"ModuleB($bParam1,$bParam2) width < $bParam1"))
-  annotate(io.out, RelativeAnno(s"ModuleB($bParam1,$bParam2) width < $bParam2"))
-  annotate(modC.io.in, AbsoluteAnno(s"ModuleB.c.io.in absolute"))
-  annotate(modC.io.in, RelativeAnno(s"ModuleB.c.io.in relative"))
-  println(s"ModuleName: ModA is ${this.getClass.getName}")
+  annotate(SpecificAnno(io.in, s"ModuleB($bParam1,$bParam2) width < $bParam1"))
+  annotate(GeneralAnno(io.out, s"ModuleB($bParam1,$bParam2) width < $bParam2"))
+  annotate(SpecificAnno(modC.io.in, s"ModuleB.c.io.in absolute"))
+  annotate(GeneralAnno(modC.io.in, s"ModuleB.c.io.in relative"))
 }
 
 class TopOfDiamond extends Module {
@@ -84,13 +81,11 @@ class TopOfDiamond extends Module {
   y := modA.io.out + modB.io.out
   io.out := y
 
-  annotate(this, AbsoluteAnno(s"TopOfDiamond Absolute"))
-  annotate(this, RelativeAnno(s"TopOfDiamond Relative"))
+  annotate(SpecificAnno(this, s"TopOfDiamond Absolute"))
+  annotate(GeneralAnno(this, s"TopOfDiamond Relative"))
 
-  annotate(modB.io.in, AbsoluteAnno(s"TopOfDiamond.moduleB.io.in"))
-  annotate(modB.io.in, RelativeAnno(s"TopOfDiamond.moduleB.io.in"))
-  println(s"ModuleName: Top is ${this.getClass.getName}")
-
+  annotate(SpecificAnno(modB.io.in, s"TopOfDiamond.moduleB.io.in"))
+  annotate(GeneralAnno(modB.io.in, s"TopOfDiamond.moduleB.io.in"))
 }
 
 class DiamondTester extends BasicTester {
@@ -99,45 +94,66 @@ class DiamondTester extends BasicTester {
   stop()
 }
 
-class DiamondSpec extends FlatSpec with Matchers {
-  behavior of "Annotating components of a circuit"
-
-  def hasComponent(name: String, annotations: Seq[Annotation.Resolved]): Boolean = {
-    annotations.exists { annotation =>
-      annotation.componentName == name }
-  }
-  def valueOf(name: String, annotations: Seq[Annotation.Resolved]): Option[String] = {
-    annotations.find { annotation => annotation.componentName == name } match {
-      case Some(Annotation.Resolved(_, AbsoluteAnno(value))) => Some(value)
-      case Some(Annotation.Resolved(_, RelativeAnno(value))) => Some(value)
-      case _ => None
+class DiamondSpec extends FreeSpec with Matchers {
+  def getValue(a: Annotation): String = {
+    a match {
+      case SpecificAnno(_, value1) => value1
+      case GeneralAnno(_, value2) => value2
     }
   }
-
-  def show(annotations: Seq[Annotation.Resolved]): Unit = {
-    println("All annotations\n")
-
-    println(
-      f"${"component"}%-29s" +
-        f"${"signalName"}%-25s" +
-        f"${"parentModName"}%-25s" +
-        f"${"pathName"}%-40s" +
-        f"${"parentPathName"}%-35s"
-    )
-    val lines = annotations.map { a =>
-      f"${a.componentName}%60s -- ${a.value}"
-    }
-    println(lines.toSeq.sorted.mkString("\n"))
-
+  def findAnno(as: Seq[Annotation], name: String): Option[Annotation] = {
+    as.find { a => a.firrtlInstanceName == name }
   }
 
-  it should "contain the following relative keys" in {
-    val circuit = Driver.elaborate { () => new DiamondTester }
-    val emitted = Driver.getEmitted(circuit)
+  """
+    |Diamond is an example of a module that has two submoduesl A and B who both instantiate their
+    |own instances of module C.  This highlights the difference between specific and general
+    |annotation scopes
+  """.stripMargin - {
 
-    println(emitted.annotationString)
+    """
+      |annotations are not resolved at after circuit elaboration,
+      |that happens only after emit has been called on circuit""".stripMargin in {
+      val circuit = Driver.elaborate { () => new DiamondTester }
+      val annotations =  circuit.annotations
 
-//    show(annotations)
-//    Driver.dumpFirrtlWithAnnotations(circuit)
+      annotations.forall { a =>
+        !a.isResolved } should be (true)
+    }
+    "dumpFirrtl invokes the emitter so now annotations should be resolved" in {
+      val circuit = Driver.elaborate { () => new DiamondTester }
+      val annotations =  circuit.annotations
+      Driver.dumpFirrtlWithAnnotations(circuit)
+
+      annotations.forall { _.isResolved } should be (true)
+    }
+
+    "a bunch of annotations are created" - {
+      val circuit = Driver.elaborate { () => new DiamondTester }
+      val annotations =  circuit.annotations
+      Driver.dumpFirrtlWithAnnotations(circuit)
+
+      """
+        |a general annotation in module c, will appear multiple times in list
+        |and thus is a bad way to try and capture module parameterization
+      """.stripMargin in {
+        annotations.count{ a => a.firrtlInstanceName == "ModC.io.out"} should be > 1
+      }
+      "a specific annotation in module C will only appear once" in {
+        annotations.count { a => a.firrtlInstanceName == "DiamondTester.dut.modA.modC.io.in" } should be(1)
+      }
+
+      """
+        |Although specific can appear twice, in this example B annotated Cs out specifically.
+        |in addition to C's doing it internally""".stripMargin in {
+        annotations.count{ a => a.firrtlInstanceName == "DiamondTester.dut.modB.modC.io.in"} should be (2)
+
+      }
+      //scalastyle:off regex
+      //  "show the list" in {
+      //    println(circuit.annotations.map { a => s"${a.firrtlInstanceName} ${getValue(a)}" }.mkString("\n"))
+      //  }
+      //scalastyle:on regex
+    }
   }
 }

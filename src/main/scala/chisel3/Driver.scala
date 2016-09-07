@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.core.Annotation
+import chisel3._
 
 import scala.sys.process._
 import java.io._
@@ -120,13 +120,6 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: Module](ir: Circuit): String = Emitter.emit(ir)
 
-  def getEmitted(ir: Circuit): Emitted = {
-    val emittedString = emit(ir)
-    val processedAnnotations = ir.annotations.map { raw =>
-      Annotation.resolve(raw)
-    }
-    Emitted(ir, emittedString, processedAnnotations.mkString("\n"))
-  }
 
   def dumpFirrtl(ir: Circuit, optName: Option[File] = None): File = {
     val (directory: File, fileName: String) = optName match {
@@ -155,20 +148,18 @@ object Driver extends BackendCompilationUtilities {
     }
     val name = nameOpt.getOrElse(ir.name)
 
-    if(ir.annotations.nonEmpty) {
-      val annotationFile = new File(directory, name + ".anno")
-      val annotationWriter = new FileWriter(annotationFile)
-      val processedAnnotations = ir.annotations.map { raw =>
-        Annotation.resolve(raw)
-      }
-      annotationWriter.write(processedAnnotations.mkString("\n"))
-      annotationWriter.close()
-    }
-
     val firrtlFile = new File(directory, name + FirrtlSuffix)
     val firrtlWriter = new FileWriter(firrtlFile)
     firrtlWriter.write(Emitter.emit(ir))
     firrtlWriter.close()
+
+    if(ir.annotations.nonEmpty) {
+      val annotationFile = new File(directory, name + ".anno")
+      val annotationWriter = new FileWriter(annotationFile)
+      annotationWriter.write(ir.annotations.mkString("\n"))
+      annotationWriter.close()
+    }
+
 
     firrtlFile
   }
