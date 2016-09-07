@@ -14,53 +14,53 @@ object SplitExpressions extends Pass {
    private def onModule(m: Module): Module = {
       val namespace = Namespace(m)
       def onStmt(s: Statement): Statement = {
-         val v = mutable.ArrayBuffer[Statement]()
-         // Splits current expression if needed
-         // Adds named temporaries to v
-         def split(e: Expression): Expression = e match {
-            case e: DoPrim => {
-               val name = namespace.newTemp
-               v += DefNode(get_info(s), name, e)
-               WRef(name, e.tpe, kind(e), gender(e))
-            }
-            case e: Mux => {
-               val name = namespace.newTemp
-               v += DefNode(get_info(s), name, e)
-               WRef(name, e.tpe, kind(e), gender(e))
-            }
-            case e: ValidIf => {
-               val name = namespace.newTemp
-               v += DefNode(get_info(s), name, e)
-               WRef(name, e.tpe, kind(e), gender(e))
-            }
-            case e => e
+        val v = mutable.ArrayBuffer[Statement]()
+        // Splits current expression if needed
+        // Adds named temporaries to v
+        def split(e: Expression): Expression = e match {
+          case e: DoPrim => {
+            val name = namespace.newTemp
+            v += DefNode(get_info(s), name, e)
+            WRef(name, e.tpe, kind(e), gender(e))
+          }
+          case e: Mux => {
+            val name = namespace.newTemp
+            v += DefNode(get_info(s), name, e)
+            WRef(name, e.tpe, kind(e), gender(e))
+          }
+          case e: ValidIf => {
+            val name = namespace.newTemp
+            v += DefNode(get_info(s), name, e)
+            WRef(name, e.tpe, kind(e), gender(e))
+          }
+          case e => e
+        }
+
+        // Recursive. Splits compound nodes
+        def onExp(e: Expression): Expression =
+          e map onExp match {
+            case ex: DoPrim => ex map split
+            case v => v
          }
-         // Recursive. Splits compound nodes
-         def onExp(e: Expression): Expression = {
-            val ex = e map onExp
-            ex match {
-               case (_: DoPrim) => ex map split
-               case v => v
-            }
-         }
-         val x = s map onExp
-         x match {
-            case x: Block => x map onStmt
-            case EmptyStmt => x
-            case x => {
-               v += x
-               if (v.size > 1) Block(v.toVector)
-               else v(0)
-            }
-         }
+
+        s map onExp match {
+           case x: Block => x map onStmt
+           case EmptyStmt => EmptyStmt
+           case x =>
+             v += x
+             v.size match {
+               case 1 => v.head
+               case _ => Block(v.toSeq)
+             }
+        }
       }
       Module(m.info, m.name, m.ports, onStmt(m.body))
    }
    def run(c: Circuit): Circuit = {
-      val modulesx = c.modules.map( _ match {
-         case m: Module => onModule(m)
-         case m: ExtModule => m
-      })
-      Circuit(c.info, modulesx, c.main)
+     val modulesx = c.modules map {
+       case m: Module => onModule(m)
+       case m: ExtModule => m
+     }
+     Circuit(c.info, modulesx, c.main)
    }
 }
