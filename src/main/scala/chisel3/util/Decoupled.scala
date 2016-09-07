@@ -24,6 +24,19 @@ object Decoupled {
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 }
 
+/** An extension of DecoupledIO that promises to not change the value of 'bits'
+  * after a cycle where 'valid' is high and 'ready' is low.
+  */
+class IrrevocableIO[+T <: Data](gen: T) extends DecoupledIO[T](gen)
+
+/** Adds an irrevocable ready-valid handshaking protocol to any interface.
+  * The standard used is that the consumer uses the flipped interface.
+  */
+object Irrevocable {
+  def apply[T <: Data](gen: T): IrrevocableIO[T] = new IrrevocableIO(gen)
+}
+
+
 /** An I/O bundle for enqueuing data with valid/ready handshaking
   * Initialization must be handled, if necessary, by the parent circuit
   */
@@ -85,7 +98,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
   val enq   = Decoupled(gen.cloneType).flip()
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq   = Decoupled(gen.cloneType)
+  val deq   = Irrevocable(gen.cloneType)
   /** The current amount of data in the queue */
   val count = UInt(OUTPUT, log2Up(entries + 1))
 }
@@ -169,13 +182,11 @@ extends Module(override_reset=override_reset) {
   from the inputs.
 
   Example usage:
-     {{{ val q = Queue(Decoupled(UInt()), 16)
-     q.io.enq <> producer.io.out
-     consumer.io.in <> q.io.deq }}}
+     {{{ consumer.io.in <> Queue(producer.io.out, 16) }}}
   */
 object Queue
 {
-  def apply[T <: Data](enq: DecoupledIO[T], entries: Int = 2, pipe: Boolean = false): DecoupledIO[T]  = {
+  def apply[T <: Data](enq: DecoupledIO[T], entries: Int = 2, pipe: Boolean = false): IrrevocableIO[T]  = {
     val q = Module(new Queue(enq.bits.cloneType, entries, pipe))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
