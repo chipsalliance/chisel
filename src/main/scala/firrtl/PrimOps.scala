@@ -138,9 +138,9 @@ object PrimOps extends LazyLogging {
       def t1 () = a(0).tpe
       def t2 () = a(1).tpe
       def t3 () = a(2).tpe
-      def w1 () = Utils.widthBANG(a(0).tpe)
-      def w2 () = Utils.widthBANG(a(1).tpe)
-      def w3 () = Utils.widthBANG(a(2).tpe)
+      def w1 () = Utils.width_BANG(a(0).tpe)
+      def w2 () = Utils.width_BANG(a(1).tpe)
+      def w3 () = Utils.width_BANG(a(2).tpe)
       def c1 () = IntWidth(c(0))
       def c2 () = IntWidth(c(1))
       o match {

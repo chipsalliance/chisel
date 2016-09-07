@@ -4,11 +4,9 @@ package passes
 // Datastructures
 import scala.collection.mutable
 
-import firrtl.Mappers.{ExpMap,StmtMap}
 import firrtl.ir._
-import firrtl.passes.{PassException,PassExceptions}
-import Annotations.{Loose, Unstable, Annotation, TransID, Named, ModuleName, ComponentName, CircuitName, AnnotationMap}
-
+import firrtl.Annotations._
+import firrtl.Mappers.{ExpMap, StmtMap}
 
 // Tags an annotation to be consumed by this pass
 case class InlineAnnotation(target: Named, tID: TransID) extends Annotation with Loose with Unstable {

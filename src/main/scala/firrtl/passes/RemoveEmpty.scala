@@ -15,5 +15,3 @@ object RemoveEmpty extends Pass {
   }
   def run(c: Circuit): Circuit = Circuit(c.info, c.modules.map(onModule _), c.main)
 }
-
-// vim: set ts=4 sw=4 et:

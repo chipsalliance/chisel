@@ -234,7 +234,7 @@ object ConstProp extends Pass {
         val hi = e.consts(0).toInt
         val lo = e.consts(1).toInt
         require(hi >= lo)
-        UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), widthBANG(e.tpe))
+        UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), width_BANG(e.tpe))
       }
       case x if long_BANG(e.tpe) == long_BANG(x.tpe) => x.tpe match {
         case t: UIntType => x
