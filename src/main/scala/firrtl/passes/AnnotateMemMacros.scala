@@ -21,22 +21,22 @@ case class AppendableInfo(fields: Map[String, Any]) extends Info {
 }
 
 object AnalysisUtils {
-
-  def getConnects(m: Module) = {
-    val connects = mutable.HashMap[String, Expression]()
-    def getConnects(s: Statement): Statement = {
-      s map getConnects match {
+  type Connects = collection.mutable.HashMap[String, Expression]
+  def getConnects(m: DefModule): Connects = {
+    def getConnects(connects: Connects)(s: Statement): Statement = {
+      s match {
         case Connect(_, loc, expr) =>
           connects(loc.serialize) = expr
         case DefNode(_, name, value) =>
           connects(name) = value
         case _ => // do nothing
       }
-      s // return because we only have map and not foreach
+      s map getConnects(connects)
     }
-    getConnects(m.body)
-    connects.toMap
-  }  
+    val connects = new Connects
+    m map getConnects(connects)
+    connects
+  }
 
   // takes in a list of node-to-node connections in a given module and looks to find the origin of the LHS.
   // if the source is a trivial primop/mux, etc. that has yet to be optimized via constant propagation,
@@ -44,12 +44,12 @@ object AnalysisUtils {
   // use case: compare if two nodes have the same origin
   // limitation: only works in a module (stops @ module inputs)
   // TODO: more thorough (i.e. a + 0 = a)
-  def getConnectOrigin(connects: Map[String, Expression], node: String): Expression = {
+  def getConnectOrigin(connects: Connects, node: String): Expression = {
     if (connects contains node) getOrigin(connects, connects(node))
     else EmptyExpression
   }
 
-  private def getOrigin(connects: Map[String, Expression], e: Expression): Expression = e match { 
+  private def getOrigin(connects: Connects, e: Expression): Expression = e match { 
     case Mux(cond, tv, fv, _) =>
       val fvOrigin = getOrigin(connects, fv)
       val tvOrigin = getOrigin(connects, tv)

@@ -51,25 +51,13 @@ object InferReadWritePass extends Pass {
   def name = "Infer ReadWrite Ports"
 
   def inferReadWrite(m: Module) = {
+    import AnalysisUtils._
     import WrappedExpression.we
-    val connects = HashMap[String, Expression]()
+    val connects = getConnects(m)
     val repl = HashMap[String, Expression]()
     val stmts = ArrayBuffer[Statement]()
     val zero = we(UIntLiteral(0, IntWidth(1)))
     val one = we(UIntLiteral(1, IntWidth(1)))
-
-    // find all wire connections
-    def analyze(s: Statement): Unit = s match {
-      case s: Connect  =>
-        connects(s.loc.serialize) = s.expr
-      case s: PartialConnect =>
-        connects(s.loc.serialize) = s.expr
-      case s: DefNode =>
-        connects(s.name) = s.value
-      case s: Block =>
-        s.stmts foreach analyze
-      case _ =>
-    }
 
     def getProductTermsFromExp(e: Expression): Seq[Expression] =
       e match {
@@ -169,7 +157,6 @@ object InferReadWritePass extends Pass {
         case s => s
       }
     
-    analyze(m.body)
     Module(m.info, m.name, m.ports, Block((m.body map inferReadWrite map replaceStmt) +: stmts.toSeq))
   }
 
