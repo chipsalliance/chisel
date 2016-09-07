@@ -7,33 +7,59 @@ package chisel3.util
 
 import chisel3._
 
-/** An I/O Bundle with simple handshaking using valid and ready signals for data 'bits'*/
-class DecoupledIO[+T <: Data](gen: T) extends Bundle
+/** An I/O Bundle containing 'valid' and 'ready' signals that handshake
+  * the transfer of data stored in the 'bits' subfield.
+  * The base protocol implied by the directionality is that the consumer
+  * uses the flipped interface. Actual semantics of ready/valid are
+  * enforced via use of concrete subclasses.
+  */
+abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
   val ready = Bool(INPUT)
   val valid = Bool(OUTPUT)
   val bits  = gen.cloneType.asOutput
   def fire(dummy: Int = 0): Bool = ready && valid
+}
+
+/** A concrete subclass of ReadyValidIO signalling that the user expects a
+  * "decoupled" interface: 'valid' indicates that the producer has
+  * put valid data in 'bits', and 'ready' indicates that the consumer is ready
+  * to accept the data this cycle. No requirements are placed on the signalling
+  * of ready or valid.
+  */
+class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
+{
   override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
 }
 
-/** Adds a ready-valid handshaking protocol to any interface.
-  * The standard used is that the consumer uses the flipped interface.
-  */
-object Decoupled {
+/** Factory adds a decoupled handshaking protocol to a data bundle. */
+object Decoupled
+{
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+
+  def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
+    require(irr.bits.dir == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
+    val d = Wire(new DecoupledIO(irr.bits))
+    d.bits := irr.bits
+    d.valid := irr.valid
+    irr.ready := d.ready
+    d
+  }
 }
 
-/** An extension of DecoupledIO that promises to not change the value of 'bits'
-  * after a cycle where 'valid' is high and 'ready' is low, and that once 
-  * 'valid' is raised it will never be lowered until after 'ready' has also been raised.
+/** A concrete subclass of ReadyValidIO that promises to not change
+  * the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.
+  * Additionally, once 'valid' is raised it will never be lowered until after
+  * 'ready' has also been raised.
   */
-class IrrevocableIO[+T <: Data](gen: T) extends DecoupledIO[T](gen)
+class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
+{
+  override def cloneType: this.type = new IrrevocableIO(gen).asInstanceOf[this.type]
+}
 
-/** Adds an irrevocable ready-valid handshaking protocol to any interface.
-  * The standard used is that the consumer uses the flipped interface.
-  */
-object Irrevocable {
+/** Factory adds an irrevocable handshaking protocol to a data bundle. */
+object Irrevocable
+{
   def apply[T <: Data](gen: T): IrrevocableIO[T] = new IrrevocableIO(gen)
 }
 
@@ -99,7 +125,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
   val enq   = Decoupled(gen.cloneType).flip()
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq   = Irrevocable(gen.cloneType)
+  val deq   = Decoupled(gen.cloneType)
   /** The current amount of data in the queue */
   val count = UInt(OUTPUT, log2Up(entries + 1))
 }
@@ -117,7 +143,8 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   *    q.io.enq <> producer.io.out
   *    consumer.io.in <> q.io.deq }}}
   */
-class Queue[T <: Data](gen: T, val entries: Int,
+class Queue[T <: Data](gen: T,
+                       val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false,
                        override_reset: Option[Bool] = None)
@@ -178,7 +205,7 @@ extends Module(override_reset=override_reset) {
   }
 }
 
-/** Generic hardware queue. Required parameter entries controls
+/** Generic hardware queue . Required parameter entries controls
   the depth of the queues. The width of the queue is determined
   from the inputs.
 
@@ -187,11 +214,26 @@ extends Module(override_reset=override_reset) {
   */
 object Queue
 {
-  def apply[T <: Data](enq: DecoupledIO[T], entries: Int = 2, pipe: Boolean = false): IrrevocableIO[T]  = {
+  def apply[T <: Data](
+      enq: ReadyValidIO[T],
+      entries: Int = 2,
+      pipe: Boolean = false): DecoupledIO[T] = {
     val q = Module(new Queue(enq.bits.cloneType, entries, pipe))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready
     TransitName(q.io.deq, q)
+  }
+
+  def irrevocable[T <: Data](
+      enq: ReadyValidIO[T],
+      entries: Int = 2,
+      pipe: Boolean = false): IrrevocableIO[T] = {
+    val deq = apply(enq, entries, pipe)
+    val irr = Wire(new IrrevocableIO(deq.bits))
+    irr.bits := deq.bits
+    irr.valid := deq.valid
+    deq.ready := irr.ready
+    irr
   }
 }
