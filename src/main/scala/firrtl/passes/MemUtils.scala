@@ -146,7 +146,7 @@ object MemPortUtils {
   def flattenType(t: Type) = UIntType(IntWidth(bitWidth(t)))
 
   def defaultPortSeq(mem: DefMemory) = Seq(
-    Field("addr", Default, UIntType(IntWidth(ceil_log2(mem.depth)))),
+    Field("addr", Default, UIntType(IntWidth(ceil_log2(mem.depth) max 1))),
     Field("en", Default, BoolType),
     Field("clk", Default, ClockType)
   )
@@ -197,14 +197,14 @@ object MemPortUtils {
   )
 
   def memToBundle(s: DefMemory) = BundleType(
-    s.readers.map(Field(_, Default, rPortToBundle(s))) ++
-    s.writers.map(Field(_, Default, wPortToBundle(s))) ++
-    s.readwriters.map(Field(_, Default, rwPortToBundle(s))))
+    s.readers.map(Field(_, Flip, rPortToBundle(s))) ++
+    s.writers.map(Field(_, Flip, wPortToBundle(s))) ++
+    s.readwriters.map(Field(_, Flip, rwPortToBundle(s))))
   
   def memToFlattenBundle(s: DefMemory) = BundleType(
-    s.readers.map(Field(_, Default, rPortToFlattenBundle(s))) ++
-    s.writers.map(Field(_, Default, wPortToFlattenBundle(s))) ++
-    s.readwriters.map(Field(_, Default, rwPortToFlattenBundle(s))))
+    s.readers.map(Field(_, Flip, rPortToFlattenBundle(s))) ++
+    s.writers.map(Field(_, Flip, wPortToFlattenBundle(s))) ++
+    s.readwriters.map(Field(_, Flip, rwPortToFlattenBundle(s))))
 
   // Todo: merge it with memToBundle
   def memType(mem: DefMemory) = {
