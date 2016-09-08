@@ -97,7 +97,14 @@ class PrintableSpec extends FlatSpec with Matchers {
       case e => fail()
     }
   }
-  it should "support names of circuit elements and the current module" in {
+  it should "support names of circuit elements including submodule IO" in {
+    // Submodule IO is a subtle issue because the Chisel element has a different
+    // parent module
+    class MySubModule extends Module {
+      val io = new Bundle {
+        val fizz = UInt(width = 32)
+      }
+    }
     class MyBundle extends Bundle {
       val foo = UInt(width = 32)
       override def cloneType = (new MyBundle).asInstanceOf[this.type]
@@ -105,15 +112,33 @@ class PrintableSpec extends FlatSpec with Matchers {
     class MyModule extends BasicTester {
       override def desiredName = "MyModule"
       val myWire = Wire(new MyBundle)
+      val myInst = Module(new MySubModule)
       printf(p"${Name(myWire.foo)}")
       printf(p"${FullName(myWire.foo)}")
-      printf(p"${FullName(this)}")
+      printf(p"${FullName(myInst.io.fizz)}")
     }
     val firrtl = Driver.emit(() => new MyModule)
+    println(firrtl)
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
                Printf("myWire.foo", Seq()),
-               Printf("MyModule", Seq())) =>
+               Printf("myInst.io.fizz", Seq())) =>
+      case e => fail()
+    }
+  }
+  it should "handle printing ports of submodules" in {
+    class MySubModule extends Module {
+      val io = new Bundle {
+        val fizz = UInt(width = 32)
+      }
+    }
+    class MyModule extends BasicTester {
+      val myInst = Module(new MySubModule)
+      printf(p"${myInst.io.fizz}")
+    }
+    val firrtl = Driver.emit(() => new MyModule)
+    getPrintfs(firrtl) match {
+      case Seq(Printf("%d", Seq("myInst.io.fizz"))) =>
       case e => fail()
     }
   }

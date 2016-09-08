@@ -15,6 +15,9 @@ import java.util.{
 /** Superclass of things that can be printed in the resulting circuit
   *
   * Usually created using the custom string interpolator p"..."
+  * TODO Add support for names of Modules
+  *   Currently impossible because unpack is called before the name is selected
+  *   Could be implemented by adding a new format specifier to Firrtl (eg. %m)
   * TODO Should we provide more functions like map and mkPrintable?
   */
 sealed abstract class Printable {
@@ -22,7 +25,7 @@ sealed abstract class Printable {
     * @note This must be called after elaboration when Chisel nodes actually
     *   have names
     */
-  def unpack: (String, Iterable[String])
+  def unpack(ctx: Component): (String, Iterable[String])
   /** Allow for appending Printables like Strings */
   final def +(that: Printable) = Printables(List(this, that))
   /** Allow for appending Strings to Printables */
@@ -87,22 +90,21 @@ object Printable {
 
 case class Printables(pables: Iterable[Printable]) extends Printable {
   require(pables.hasDefiniteSize, "Infinite-sized iterables are not supported!")
-  final def unpack: (String, Iterable[String]) = {
-    val (fmts, args) = pables.map(_.unpack).unzip
+  final def unpack(ctx: Component): (String, Iterable[String]) = {
+    val (fmts, args) = pables.map(_ unpack ctx).unzip
     (fmts.mkString, args.flatten)
   }
 }
 /** Wrapper for printing Scala Strings */
 case class PString(str: String) extends Printable {
-  final def unpack: (String, Iterable[String]) =
+  final def unpack(ctx: Component): (String, Iterable[String]) =
     (str replaceAll ("%", "%%"), List.empty)
 }
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(specifier: Char) extends Printable {
   def bits: Bits
-  def unpack: (String, Iterable[String]) = {
-    val id = if (bits.isLit) bits.ref.name else bits.instanceName
-    (s"%$specifier", List(id))
+  def unpack(ctx: Component): (String, Iterable[String]) = {
+    (s"%$specifier", List(bits.ref.fullName(ctx)))
   }
 }
 object FirrtlFormat {
@@ -138,13 +140,13 @@ case class Binary(bits: Bits) extends FirrtlFormat('b')
 case class Character(bits: Bits) extends FirrtlFormat('c')
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
-  final def unpack: (String, Iterable[String]) = (data.ref.name, List.empty)
+  final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.name, List.empty)
 }
 /** Put full name within parent namespace (eg. bundleName.field) */
-case class FullName(hasId: HasId) extends Printable {
-  final def unpack: (String, Iterable[String]) = (hasId.instanceName, List.empty)
+case class FullName(data: Data) extends Printable {
+  final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.fullName(ctx), List.empty)
 }
 /** Represents escaped percents */
 case object Percent extends Printable {
-  final def unpack: (String, Iterable[String]) = ("%%", List.empty)
+  final def unpack(ctx: Component): (String, Iterable[String]) = ("%%", List.empty)
 }
