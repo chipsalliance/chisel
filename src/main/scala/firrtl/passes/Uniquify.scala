@@ -242,7 +242,7 @@ object Uniquify extends Pass {
           ) flatMap (recStmtToType)
           Seq(Field(s.name, Default, BundleType(newFields)))
       }
-      case s: DefNode => Seq(Field(s.name, Default, get_type(s)))
+      case s: DefNode => Seq(Field(s.name, Default, s.value.tpe))
       case s: Conditionally => recStmtToType(s.conseq) ++ recStmtToType(s.alt)
       case s: Block => (s.stmts map (recStmtToType)).flatten
       case s => Seq()

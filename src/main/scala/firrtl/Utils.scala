@@ -372,33 +372,6 @@ object Utils extends LazyLogging {
     case EmptyStmt => UNKNOWNGENDER
   }
   def get_gender(p: Port): Gender = if (p.direction == Input) MALE else FEMALE
-  def get_type(s: Statement): Type = s match {
-    case s: DefWire => s.tpe
-    case s: DefRegister => s.tpe
-    case s: DefNode => s.value.tpe
-    case s: DefMemory =>
-      val depth = s.depth
-      val addr = Field("addr", Default, UIntType(IntWidth(scala.math.max(ceil_log2(depth), 1))))
-      val en = Field("en", Default, BoolType)
-      val clk = Field("clk", Default, ClockType)
-      val def_data = Field("data", Default, s.dataType)
-      val rev_data = Field("data", Flip, s.dataType)
-      val mask = Field("mask", Default, passes.createMask(s.dataType))
-      val wmode = Field("wmode", Default, UIntType(IntWidth(1)))
-      val rdata = Field("rdata", Flip, s.dataType)
-      val wdata = Field("wdata", Default, s.dataType)
-      val wmask = Field("wmask", Default, passes.createMask(s.dataType))
-      val read_type = BundleType(Seq(rev_data, addr, en, clk))
-      val write_type = BundleType(Seq(def_data, mask, addr, en, clk))
-      val readwrite_type = BundleType(Seq(wmode, rdata, wdata, wmask, addr, en, clk))
-      BundleType(
-        (s.readers map (Field(_, Flip, read_type))) ++
-        (s.writers map (Field(_, Flip, write_type))) ++
-        (s.readwriters map (Field(_, Flip, readwrite_type)))
-      )
-    case s: WDefInstance => s.tpe
-    case _ => UnknownType
-  }
   def get_info(s: Statement): Info = s match {
     case s: HasInfo => s.info
     case _ => NoInfo

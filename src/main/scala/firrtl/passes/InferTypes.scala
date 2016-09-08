@@ -66,16 +66,16 @@ object InferTypes extends Pass {
         types(s.name) = t
         s copy (tpe = t)
       case s: DefWire =>
-        val t = remove_unknowns(get_type(s))
+        val t = remove_unknowns(s.tpe)
         types(s.name) = t
         s copy (tpe = t)
       case s: DefNode =>
-        val sx = s map infer_types_e(types)
-        val t = remove_unknowns(get_type(sx))
+        val sx = (s map infer_types_e(types)).asInstanceOf[DefNode]
+        val t = remove_unknowns(sx.value.tpe)
         types(s.name) = t
         sx map infer_types_e(types)
       case s: DefRegister =>
-        val t = remove_unknowns(get_type(s))
+        val t = remove_unknowns(s.tpe)
         types(s.name) = t
         s copy (tpe = t) map infer_types_e(types)
       case s: DefMemory =>
@@ -128,7 +128,7 @@ object CInferTypes extends Pass {
         types(s.name) = s.tpe
         s
       case (s: DefNode) =>
-        types(s.name) = get_type(s)
+        types(s.name) = s.value.tpe
         s
       case (s: DefMemory) =>
         types(s.name) = MemPortUtils.memType(s)
