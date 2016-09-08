@@ -106,14 +106,14 @@ object Utils extends LazyLogging {
       val e1s = create_exps(e.tval)
       val e2s = create_exps(e.fval)
       e1s zip e2s map {case (e1, e2) =>
-        Mux(e.cond, e1, e2, mux_type_and_widths(e1,e2))
+        Mux(e.cond, e1, e2, mux_type_and_widths(e1, e2))
       }
     case (e: ValidIf) => create_exps(e.value) map (e1 => ValidIf(e.cond, e1, e1.tpe))
     case (e) => e.tpe match {
       case (_: GroundType) => Seq(e)
       case (t: BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
         exps ++ create_exps(WSubField(e, f.name, f.tpe,times(gender(e), f.flip))))
-      case (t: VectorType) => ((0 until t.size) foldLeft Seq[Expression]())((exps, i) =>
+      case (t: VectorType) => (0 until t.size foldLeft Seq[Expression]())((exps, i) =>
         exps ++ create_exps(WSubIndex(e, i, t.tpe,gender(e))))
     }
   }
@@ -165,30 +165,30 @@ object Utils extends LazyLogging {
   }
 
 //============== TYPES ================
-  def mux_type (e1:Expression, e2:Expression) : Type = mux_type(e1.tpe, e2.tpe)
-  def mux_type (t1:Type, t2:Type) : Type = (t1,t2) match { 
-    case (t1:UIntType, t2:UIntType) => UIntType(UnknownWidth)
-    case (t1:SIntType, t2:SIntType) => SIntType(UnknownWidth)
-    case (t1:VectorType, t2:VectorType) => VectorType(mux_type(t1.tpe, t2.tpe), t1.size)
-    case (t1:BundleType, t2:BundleType) => BundleType((t1.fields zip t2.fields) map {
+  def mux_type(e1: Expression, e2: Expression): Type = mux_type(e1.tpe, e2.tpe)
+  def mux_type(t1: Type, t2: Type): Type = (t1, t2) match {
+    case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
+    case (t1: SIntType, t2: SIntType) => SIntType(UnknownWidth)
+    case (t1: VectorType, t2: VectorType) => VectorType(mux_type(t1.tpe, t2.tpe), t1.size)
+    case (t1: BundleType, t2: BundleType) => BundleType(t1.fields zip t2.fields map {
       case (f1, f2) => Field(f1.name, f1.flip, mux_type(f1.tpe, f2.tpe))
     })
     case _ => UnknownType
   }
-  def mux_type_and_widths (e1:Expression,e2:Expression) : Type =
+  def mux_type_and_widths(e1: Expression,e2: Expression): Type =
     mux_type_and_widths(e1.tpe, e2.tpe)
-  def mux_type_and_widths (t1:Type, t2:Type) : Type = {
-    def wmax (w1:Width, w2:Width) : Width = (w1,w2) match {
-      case (w1:IntWidth, w2:IntWidth) => IntWidth(w1.width max w2.width)
+  def mux_type_and_widths(t1: Type, t2: Type): Type = {
+    def wmax(w1: Width, w2: Width): Width = (w1, w2) match {
+      case (w1: IntWidth, w2: IntWidth) => IntWidth(w1.width max w2.width)
       case (w1, w2) => MaxWidth(Seq(w1, w2))
     }
     (t1, t2) match {
-      case (t1:UIntType, t2:UIntType) => UIntType(wmax(t1.width, t2.width))
-      case (t1:SIntType, t2:SIntType) => SIntType(wmax(t1.width, t2.width))
-      case (t1:VectorType, t2:VectorType) => VectorType(
+      case (t1: UIntType, t2: UIntType) => UIntType(wmax(t1.width, t2.width))
+      case (t1: SIntType, t2: SIntType) => SIntType(wmax(t1.width, t2.width))
+      case (t1: VectorType, t2: VectorType) => VectorType(
         mux_type_and_widths(t1.tpe, t2.tpe), t1.size)
-      case (t1:BundleType, t2:BundleType) => BundleType((t1.fields zip t2.fields) map {
-        case (f1, f2) => Field(f1.name,f1.flip,mux_type_and_widths(f1.tpe, f2.tpe))
+      case (t1: BundleType, t2: BundleType) => BundleType(t1.fields zip t2.fields map {
+        case (f1, f2) => Field(f1.name, f1.flip, mux_type_and_widths(f1.tpe, f2.tpe))
       })
       case _ => UnknownType
     }
@@ -201,7 +201,7 @@ object Utils extends LazyLogging {
     case v: VectorType => v.tpe
     case v => UnknownType
   }
-  def field_type(v:Type, s: String) : Type = v match {
+  def field_type(v: Type, s: String) : Type = v match {
     case v: BundleType => v.fields find (_.name == s) match {
       case Some(f) => f.tpe
       case None => UnknownType
@@ -299,15 +299,15 @@ object Utils extends LazyLogging {
     case FEMALE => Default
   }
 
-  def field_flip(v:Type, s:String) : Orientation = v match {
-    case (v:BundleType) => v.fields find (_.name == s) match {
+  def field_flip(v: Type, s: String): Orientation = v match {
+    case (v: BundleType) => v.fields find (_.name == s) match {
       case Some(ft) => ft.flip
       case None => Default
     }
     case v => Default
   }
-  def get_field(v:Type, s:String) : Field = v match {
-    case (v:BundleType) => v.fields find (_.name == s) match {
+  def get_field(v: Type, s: String): Field = v match {
+    case (v: BundleType) => v.fields find (_.name == s) match {
       case Some(ft) => ft
       case None => error("Shouldn't be here")
     }
@@ -343,7 +343,7 @@ object Utils extends LazyLogging {
     case e: WSubAccess => kind(e.exp)
     case e => ExpKind()
   }
-  def gender (e: Expression): Gender = e match {
+  def gender(e: Expression): Gender = e match {
     case e: WRef => e.gender
     case e: WSubField => e.gender
     case e: WSubIndex => e.gender
@@ -356,7 +356,7 @@ object Utils extends LazyLogging {
     case e: WInvalid => MALE
     case e => println(e); error("Shouldn't be here")
   }
-  def get_gender(s:Statement): Gender = s match {
+  def get_gender(s: Statement): Gender = s match {
     case s: DefWire => BIGENDER
     case s: DefRegister => BIGENDER
     case s: WDefInstance => MALE
@@ -398,10 +398,6 @@ object Utils extends LazyLogging {
       )
     case s: WDefInstance => s.tpe
     case _ => UnknownType
-  }
-  def get_name(s: Statement): String = s match {
-    case s: HasName => s.name
-    case _ => error("Shouldn't be here")
   }
   def get_info(s: Statement): Info = s match {
     case s: HasInfo => s.info
@@ -484,68 +480,6 @@ object Utils extends LazyLogging {
       case e => error(s"getDeclaration does not support Expressions of type ${e.getClass}")
     }
   }
-
-// =============== RECURISVE MAPPERS ===================
-   def mapr (f: Width => Width, t:Type) : Type = {
-      def apply_t (t:Type) : Type = t map (apply_t) map (f)
-      apply_t(t)
-   }
-   def mapr (f: Width => Width, s:Statement) : Statement = {
-      def apply_t (t:Type) : Type = mapr(f,t)
-      def apply_e (e:Expression) : Expression = e map (apply_e) map (apply_t) map (f)
-      def apply_s (s:Statement) : Statement = s map (apply_s) map (apply_e) map (apply_t)
-      apply_s(s)
-   }
-   //def digits (s:String) : Boolean {
-   //   val digits = "0123456789"
-   //   var yes:Boolean = true
-   //   for (c <- s) {
-   //      if !digits.contains(c) : yes = false
-   //   }
-   //   yes
-   //}
-   //def generated (s:String) : Option[Int] = {
-   //   (1 until s.length() - 1).find{
-   //      i => {
-   //         val sub = s.substring(i + 1)
-   //         s.substring(i,i).equals("_") & digits(sub) & !s.substring(i - 1,i-1).equals("_")
-   //      }
-   //   }
-   //}
-   //def get-sym-hash (m:InModule) : LinkedHashMap[String,Int] = { get-sym-hash(m,Seq()) }
-   //def get-sym-hash (m:InModule,keywords:Seq[String]) : LinkedHashMap[String,Int] = {
-   //   val sym-hash = LinkedHashMap[String,Int]()
-   //   for (k <- keywords) { sym-hash += (k -> 0) }
-   //   def add-name (s:String) : String = {
-   //      val sx = to-string(s)
-   //      val ix = generated(sx)
-   //      ix match {
-   //         case (i:False) => {
-   //            if (sym_hash.contains(s)) {
-   //               val num = sym-hash(s)
-   //               sym-hash += (s -> max(num,0))
-   //            } else {
-   //               sym-hash += (s -> 0)
-   //            }
-   //         }
-   //         case (i:Int) => {
-   //            val name = sx.substring(0,i)
-   //            val digit = to-int(substring(sx,i + 1))
-   //            if key?(sym-hash,name) :
-   //               val num = sym-hash[name]
-   //               sym-hash[name] = max(num,digit)
-   //            else :
-   //               sym-hash[name] = digit
-   //         }
-   //      s
-   //         
-   //   defn to-port (p:Port) : add-name(name(p))
-   //   defn to-stmt (s:Stmt) -> Stmt :
-   //     map{to-stmt,_} $ map(add-name,s)
-   //
-   //   to-stmt(body(m))
-   //   map(to-port,ports(m))
-   //   sym-hash
 
   val v_keywords = Set(
     "alias", "always", "always_comb", "always_ff", "always_latch",
