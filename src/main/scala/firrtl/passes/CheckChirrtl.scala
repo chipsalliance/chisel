@@ -30,8 +30,7 @@ package firrtl.passes
 import com.typesafe.scalalogging.LazyLogging
 
 // Datastructures
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashSet
 
 import firrtl._
 import firrtl.ir._
@@ -44,122 +43,120 @@ import firrtl.WrappedType._
 object CheckChirrtl extends Pass with LazyLogging {
   def name = "Chirrtl Check"
 
+  class NotUniqueException(info: Info, mname: String, name: String) extends PassException(
+    s"${info}: [module ${mname}] Reference ${name} does not have a unique name.")
+  class InvalidLOCException(info: Info, mname: String) extends PassException(
+    s"${info}: [module ${mname}] Invalid connect to an expression that is not a reference or a WritePort.")
+  class UndeclaredReferenceException(info: Info, mname: String, name: String) extends PassException(
+    s"${info}: [module ${mname}] Reference ${name} is not declared.")
+  class MemWithFlipException(info: Info, mname: String, name: String) extends PassException(
+    s"${info}: [module ${mname}] Memory ${name} cannot be a bundle type with flips.")
+  class InvalidAccessException(info: Info, mname: String) extends PassException(
+    s"${info}: [module ${mname}] Invalid access to non-reference.")
+  class ModuleNotDefinedException(info: Info, mname: String, name: String) extends PassException(
+    s"${info}: Module ${name} is not defined.")
+  class NegWidthException(info: Info, mname: String) extends PassException(
+    s"${info}: [module ${mname}] Width cannot be negative or zero.")
+  class NegVecSizeException(info: Info, mname: String) extends PassException(
+    s"${info}: [module ${mname}] Vector type size cannot be negative.")
+  class NegMemSizeException(info: Info, mname: String) extends PassException(
+    s"${info}: [module ${mname}] Memory size cannot be negative or zero.")
+  class NoTopModuleException(info: Info, name: String) extends PassException(
+    s"${info}: A single module must be named ${name}.")
+
   // TODO FIXME
   // - Do we need to check for uniquness on port names?
   def run (c: Circuit): Circuit = {
-    var mname: String = ""
-    var sinfo: Info = NoInfo
-
-    class NotUniqueException(name: String) extends PassException(s"${sinfo}: [module ${mname}] Reference ${name} does not have a unique name.")
-    class InvalidLOCException extends PassException(s"${sinfo}: [module ${mname}] Invalid connect to an expression that is not a reference or a WritePort.")
-    class UndeclaredReferenceException(name: String) extends PassException(s"${sinfo}: [module ${mname}] Reference ${name} is not declared.")
-    class MemWithFlipException(name: String) extends PassException(s"${sinfo}: [module ${mname}] Memory ${name} cannot be a bundle type with flips.")
-    class InvalidAccessException extends PassException(s"${sinfo}: [module ${mname}] Invalid access to non-reference.")
-    class NoTopModuleException(name: String) extends PassException(s"${sinfo}: A single module must be named ${name}.")
-    class ModuleNotDefinedException(name: String) extends PassException(s"${sinfo}: Module ${name} is not defined.")
-    class NegWidthException extends PassException(s"${sinfo}: [module ${mname}] Width cannot be negative or zero.")
-    class NegVecSizeException extends PassException(s"${sinfo}: [module ${mname}] Vector type size cannot be negative.")
-    class NegMemSizeException extends PassException(s"${sinfo}: [module ${mname}] Memory size cannot be negative or zero.")
-
     val errors = new Errors()
-    def checkValidLoc(e: Expression) = e match {
-      case e @ (_: UIntLiteral | _: SIntLiteral | _: DoPrim ) => errors.append(new InvalidLOCException)
+    val moduleNames = (c.modules map (_.name)).toSet
+
+    def checkValidLoc(info: Info, mname: String, e: Expression) = e match {
+      case _: UIntLiteral | _: SIntLiteral | _: DoPrim =>
+        errors append new InvalidLOCException(info, mname)
       case _ => // Do Nothing
     }
-    def checkChirrtlW(w: Width): Width = w match {
-      case w: IntWidth if (w.width <= BigInt(0)) =>
-        errors.append(new NegWidthException)
+
+    def checkChirrtlW(info: Info, mname: String)(w: Width): Width = w match {
+      case w: IntWidth if w.width <= 0 =>
+        errors append new NegWidthException(info, mname)
         w
       case _ => w
     }
-    def checkChirrtlT(t: Type): Type = {
-      t map (checkChirrtlT) match {
-        case t: VectorType if (t.size < 0) => errors.append(new NegVecSizeException)
+
+    def checkChirrtlT(info: Info, mname: String)(t: Type): Type = {
+      t map checkChirrtlT(info, mname) match {
+        case t: VectorType if t.size < 0 =>
+          errors append new NegVecSizeException(info, mname)
         case _ => // Do nothing
       }
-      t map (checkChirrtlW)
+      t map checkChirrtlW(info, mname) map checkChirrtlT(info, mname)
     }
 
-    def checkChirrtlM(m: DefModule): DefModule = {
-      val names = HashMap[String, Boolean]()
-      val mnames = HashMap[String, Boolean]()
-      def checkChirrtlE(e: Expression): Expression = {
-        def validSubexp(e: Expression): Expression = e match {
-          case (_:Reference|_:SubField|_:SubIndex|_:SubAccess|_:Mux|_:ValidIf) => e // No error
-          case _ => 
-            errors.append(new InvalidAccessException)
-            e
-        }
-        e map (checkChirrtlE) match {
-          case e: Reference if (!names.contains(e.name)) => errors.append(new UndeclaredReferenceException(e.name))
-          case e: DoPrim => {}
-          case (_:Mux|_:ValidIf) => {}
-          case e: SubAccess =>
-            validSubexp(e.expr)
-            e
-          case e: UIntLiteral => {}
-          case e => e map (validSubexp)
-        }
-        e map (checkChirrtlW)
-        e map (checkChirrtlT)
-        e
+    def validSubexp(info: Info, mname: String)(e: Expression): Expression = {
+      e match {
+        case _: Reference | _: SubField | _: SubIndex | _: SubAccess |
+             _: Mux | _: ValidIf => // No error
+        case _ => errors append new InvalidAccessException(info, mname)
       }
-      def checkChirrtlS(s: Statement): Statement = {
-        sinfo = get_info(s)
-        def checkName(name: String): String = {
-          if (names.contains(name)) errors.append(new NotUniqueException(name))
-          else names(name) = true
-          name 
-        }
+      e
+    }
 
-        s map (checkName)
-        s map (checkChirrtlT)
-        s map (checkChirrtlE)
-        s match {
-          case s: DefMemory =>
-            if (hasFlip(s.dataType)) errors.append(new MemWithFlipException(s.name))
-            if (s.depth <= 0) errors.append(new NegMemSizeException)
-          case s: DefInstance =>
-            if (!c.modules.map(_.name).contains(s.module))
-              errors.append(new ModuleNotDefinedException(s.module))
-          case s: Connect => checkValidLoc(s.loc)
-          case s: PartialConnect => checkValidLoc(s.loc)
-          case s: Print => {}
-          case _ => // Do Nothing
-        }
+    def checkChirrtlE(info: Info, mname: String, names: HashSet[String])(e: Expression): Expression = {
+      e match {
+        case _: DoPrim | _:Mux | _:ValidIf | _: UIntLiteral =>
+        case e: Reference if !names(e.name) =>
+          errors append new UndeclaredReferenceException(info, mname, e.name)
+        case e: SubAccess => validSubexp(info, mname)(e.expr)
+        case e => e map validSubexp(info, mname)
+      }
+      (e map checkChirrtlW(info, mname)
+         map checkChirrtlT(info, mname)
+         map checkChirrtlE(info, mname, names))
+    }
 
-        s map (checkChirrtlS)
-      }
+    def checkName(info: Info, mname: String, names: HashSet[String])(name: String): String = {
+      if (names(name))
+        errors append (new NotUniqueException(info, mname, name))
+      names += name
+      name 
+    }
 
-      mname = m.name
-      for (m <- c.modules) {
-        mnames(m.name) = true
+    def checkChirrtlS(minfo: Info, mname: String, names: HashSet[String])(s: Statement): Statement = {
+      val info = get_info(s) match {case NoInfo => minfo case x => x}
+      (s map checkName(info, mname, names)) match {
+        case s: DefMemory =>
+          if (hasFlip(s.dataType)) errors append new MemWithFlipException(info, mname, s.name)
+          if (s.depth <= 0) errors append new NegMemSizeException(info, mname)
+        case s: DefInstance if !moduleNames(s.module) =>
+          errors append new ModuleNotDefinedException(info, mname, s.module)
+        case s: Connect => checkValidLoc(info, mname, s.loc)
+        case s: PartialConnect => checkValidLoc(info, mname, s.loc)
+        case _ => // Do Nothing
       }
-      for (p <- m.ports) {
-        sinfo = p.info
-        names(p.name) = true
-        val tpe = p.tpe
-        tpe map (checkChirrtlT)
-        tpe map (checkChirrtlW)
-      }
+      (s map checkChirrtlT(info, mname)
+         map checkChirrtlE(info, mname, names)
+         map checkChirrtlS(info, mname, names))
+    }
 
-      m match {
-        case m: Module => checkChirrtlS(m.body)
-        case m: ExtModule => // Do Nothing
-      }
-      m
+    def checkChirrtlP(mname: String, names: HashSet[String])(p: Port): Port = {
+      names += p.name
+      (p.tpe map checkChirrtlT(p.info, mname)
+             map checkChirrtlW(p.info, mname))
+      p
+    }
+
+    def checkChirrtlM(m: DefModule) {
+      val names = HashSet[String]()
+      (m map checkChirrtlP(m.name, names)
+         map checkChirrtlS(m.info, m.name, names))
     }
     
-    var numTopM = 0
-    for (m <- c.modules) {
-      if (m.name == c.main) numTopM = numTopM + 1
-      checkChirrtlM(m)
+    c.modules foreach checkChirrtlM
+    (c.modules filter (_.name == c.main)).size match {
+      case 1 =>
+      case _ => errors append new NoTopModuleException(c.info, c.main)
     }
-    sinfo = c.info
-    if (numTopM != 1) errors.append(new NoTopModuleException(c.main))
     errors.trigger
     c
   }
 }
-
-// vim: set ts=4 sw=4 et:

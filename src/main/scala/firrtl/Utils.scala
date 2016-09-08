@@ -662,3 +662,56 @@ class MemoizedHash[T](val t: T) {
     case _ => false
   }
 }
+
+/**
+  * Maintains a one to many graph of each modules instantiated child module.
+  * This graph can be searched for a path from a child module back to one of
+  * it's parents.  If one is found a recursive loop has happened
+  * The graph is a map between the name of a node to set of names of that nodes children
+  */
+class ModuleGraph {
+  val nodes = HashMap[String, HashSet[String]]()
+
+  /**
+    * Add a child to a parent node
+    * A parent node is created if it does not already exist
+    *
+    * @param parent module that instantiates another module
+    * @param child  module instantiated by parent
+    * @return a list indicating a path from child to parent, empty if no such path
+    */
+  def add(parent: String, child: String): List[String] = {
+    val childSet = nodes.getOrElseUpdate(parent, new HashSet[String])
+    childSet += child
+    pathExists(child, parent, List(child, parent))
+  }
+
+  /**
+    * Starting at the name of a given child explore the tree of all children in depth first manner.
+    * Return the first path (a list of strings) that goes from child to parent,
+    * or an empty list of no such path is found.
+    *
+    * @param child  starting name
+    * @param parent name to find in children (recursively)
+    * @param path
+    * @return
+    */
+  def pathExists(child: String, parent: String, path: List[String] = Nil): List[String] = {
+    nodes.get(child) match {
+      case Some(children) =>
+        if(children(parent)) {
+          parent :: path
+        }
+        else {
+          children.foreach { grandchild =>
+            val newPath = pathExists(grandchild, parent, grandchild :: path)
+            if(newPath.nonEmpty) {
+              return newPath
+            }
+          }
+          Nil
+        }
+      case _ => Nil
+    }
+  }
+}
