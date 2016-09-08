@@ -471,7 +471,7 @@ class VerilogEmitter extends Emitter {
           instantiate(s.name, s.module, es)
           s
         case (s: DefMemory) =>
-          val mem = WRef(s.name, get_type(s),
+          val mem = WRef(s.name, MemPortUtils.memType(s),
             MemKind(s.readers ++ s.writers ++ s.readwriters), UNKNOWNGENDER)
           def mem_exp (p: String, f: String) = {
             val t1 = field_type(mem.tpe, p)

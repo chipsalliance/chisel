@@ -79,7 +79,7 @@ object InferTypes extends Pass {
         types(s.name) = t
         s copy (tpe = t) map infer_types_e(types)
       case s: DefMemory =>
-        val t = remove_unknowns(get_type(s))
+        val t = remove_unknowns(MemPortUtils.memType(s))
         types(s.name) = t
         s copy (dataType = remove_unknowns(s.dataType))
       case s => s map infer_types_s(types) map infer_types_e(types)
@@ -131,7 +131,7 @@ object CInferTypes extends Pass {
         types(s.name) = get_type(s)
         s
       case (s: DefMemory) =>
-        types(s.name) = get_type(s)
+        types(s.name) = MemPortUtils.memType(s)
         s
       case (s: CDefMPort) =>
         val t = types getOrElse(s.mem, UnknownType)
