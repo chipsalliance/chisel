@@ -1,11 +1,11 @@
 package firrtl.passes
 
+import firrtl.{WRef, WSubAccess, WSubIndex, WSubField, Namespace}
+import firrtl.PrimOps.{And, Eq}
 import firrtl.ir._
-import firrtl.{WRef, WSubAccess, WSubIndex, WSubField}
 import firrtl.Mappers._
 import firrtl.Utils._
 import firrtl.WrappedExpression._
-import firrtl.Namespace
 import scala.collection.mutable
 
 
@@ -13,6 +13,13 @@ import scala.collection.mutable
   */
 object RemoveAccesses extends Pass {
   def name = "Remove Accesses"
+
+  private def AND(e1: Expression, e2: Expression) =
+    DoPrim(And, Seq(e1, e2), Nil, UIntType(IntWidth(1)))
+
+  private def EQV(e1: Expression, e2: Expression): Expression =
+    DoPrim(Eq, Seq(e1, e2), Nil, e1.tpe)
+
   /** Container for a base expression and its corresponding guard
     */
   private case class Location(base: Expression, guard: Expression)
@@ -53,13 +60,13 @@ object RemoveAccesses extends Pass {
   /** Returns true if e contains a [[firrtl.WSubAccess]]
     */
   private def hasAccess(e: Expression): Boolean = {
-     var ret: Boolean = false
-     def rec_has_access(e: Expression): Expression = {
-       e match {
-         case e : WSubAccess => ret = true
-         case e =>
-       }
-       e map rec_has_access
+    var ret: Boolean = false
+    def rec_has_access(e: Expression): Expression = {
+      e match {
+        case e : WSubAccess => ret = true
+        case e =>
+      }
+      e map rec_has_access
     }
     rec_has_access(e)
     ret
@@ -150,10 +157,9 @@ object RemoveAccesses extends Pass {
       Module(m.info, m.name, m.ports, squashEmpty(onStmt(m.body)))
     }
   
-    val newModules = c.modules.map {
+    c copy (modules = (c.modules map {
       case m: ExtModule => m
       case m: Module => remove_m(m)
-    }
-    Circuit(c.info, newModules, c.main)
+    }))
   }
 }

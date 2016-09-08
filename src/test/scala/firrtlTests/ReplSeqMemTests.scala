@@ -5,7 +5,8 @@ import firrtl.passes._
 import Annotations._
 
 class ReplSeqMemSpec extends SimpleTransformSpec {
-
+  val passSeq = Seq(
+    ConstProp, CommonSubexpressionElimination, DeadCodeElimination, RemoveEmpty)
   def transforms (writer: java.io.Writer) = Seq(
     new Chisel3ToHighFirrtl(),
     new IRToWorkingIR(),
@@ -14,6 +15,8 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     new passes.InferReadWrite(TransID(-1)),
     new passes.ReplSeqMem(TransID(-2)),
     new MiddleFirrtlToLowFirrtl(),
+    (new Transform with SimpleRun {
+     def execute(c: ir.Circuit, a: AnnotationMap) = run(c, passSeq) }),
     new EmitFirrtl(writer)
   )
 
@@ -97,27 +100,24 @@ circuit sram6t :
     input io_wdata : UInt<32>
     input io_raddr : UInt<8>
     output io_rdata : UInt<32>
-  
+
     inst mem of mem
     node T_0 = eq(io_wen, UInt<1>("h0"))
     node T_1 = and(io_en, T_0)
     wire T_2 : UInt<8>
     node GEN_0 = validif(T_1, io_raddr)
-    node GEN_1 = mux(T_1, UInt<1>("h1"), UInt<1>("h0"))
     node T_4 = and(io_en, io_wen)
+    node GEN_4 = validif(T_4, io_wdata)
     node GEN_2 = validif(T_4, io_waddr)
-    node GEN_3 = validif(T_4, clk)
-    node GEN_4 = mux(T_4, UInt<1>("h1"), UInt<1>("h0"))
-    node GEN_5 = validif(T_4, io_wdata)
-    node GEN_6 = mux(T_4, UInt<1>("h1"), UInt<1>("h0"))
+    node GEN_5 = validif(T_4, clk)
     io_rdata <= mem.R0_data
     mem.R0_addr <= bits(T_2, 6, 0)
     mem.R0_clk <= clk
-    mem.R0_en <= GEN_1
+    mem.R0_en <= T_1
     mem.W0_addr <= bits(GEN_2, 6, 0)
-    mem.W0_clk <= GEN_3
-    mem.W0_en <= GEN_4
-    mem.W0_data <= GEN_5
+    mem.W0_clk <= GEN_5
+    mem.W0_en <= T_4
+    mem.W0_data <= GEN_4
     T_2 <= GEN_0
 
   extmodule mem_ext :
@@ -140,16 +140,16 @@ circuit sram6t :
     input W0_en : UInt<1>
     input W0_clk : Clock
     input W0_data : UInt<32>
-  
+
     inst mem_ext of mem_ext
     mem_ext.R0_addr <= R0_addr
     mem_ext.R0_en <= R0_en
     mem_ext.R0_clk <= R0_clk
-    R0_data <= bits(mem_ext.R0_data, 31, 0)
+    R0_data <= mem_ext.R0_data
     mem_ext.W0_addr <= W0_addr
     mem_ext.W0_en <= W0_en
     mem_ext.W0_clk <= W0_clk
-    mem_ext.W0_data <= W0_data     
+    mem_ext.W0_data <= W0_data
 """.stripMargin
 
     val checkConf = """name mem_ext depth 128 width 32 ports write,read  """
