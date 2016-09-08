@@ -32,11 +32,16 @@ class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
   override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
 }
 
-/** Factory adds a decoupled handshaking protocol to a data bundle. */
+/** This factory adds a decoupled handshaking protocol to a data bundle. */
 object Decoupled
 {
+  /** Take any Data and wrap it in a DecoupledIO interface */
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
+  /** Take an IrrevocableIO and cast it to a DecoupledIO.
+    * This cast is only safe to do in cases where the IrrevocableIO
+    * is being produced as an output.
+    */
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(irr.bits.dir == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
@@ -205,19 +210,21 @@ extends Module(override_reset=override_reset) {
   }
 }
 
-/** Generic hardware queue . Required parameter entries controls
-  the depth of the queues. The width of the queue is determined
-  from the inputs.
-
-  Example usage:
-     {{{ consumer.io.in <> Queue(producer.io.out, 16) }}}
+/** Factory for a generic hardware queue. Required parameter 'entries' controls
+  * the depth of the queues. The width of the queue is determined
+  * from the input 'enq'.
+  *
+  * Example usage:
+  *   {{{ consumer.io.in <> Queue(producer.io.out, 16) }}}
   */
 object Queue
 {
+  /** Create a queue and supply a DecoupledIO containing the product. */
   def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
-      pipe: Boolean = false): DecoupledIO[T] = {
+      pipe: Boolean = false,
+      flow: Boolean = false): DecoupledIO[T] = {
     val q = Module(new Queue(enq.bits.cloneType, entries, pipe))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
@@ -225,10 +232,16 @@ object Queue
     TransitName(q.io.deq, q)
   }
 
+  /** Create a queue and supply a IrrevocableIO containing the product.
+    * Casting from Decoupled is safe here because we know the Queue has
+    * Irrevocable semantics; we didn't want to change the return type of
+    * apply() for backwards compatibility reasons.
+    */
   def irrevocable[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
-      pipe: Boolean = false): IrrevocableIO[T] = {
+      pipe: Boolean = false,
+      flow: Boolean = false): IrrevocableIO[T] = {
     val deq = apply(enq, entries, pipe)
     val irr = Wire(new IrrevocableIO(deq.bits))
     irr.bits := deq.bits
