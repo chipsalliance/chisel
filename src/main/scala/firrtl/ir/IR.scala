@@ -300,8 +300,39 @@ abstract class Width extends FirrtlNode {
   }
 }
 /** Positive Integer Bit Width of a [[GroundType]] */
-case class IntWidth(width: BigInt) extends Width {
+object IntWidth {
+  private val maxCached = 1024
+  private val cache = new Array[IntWidth](maxCached + 1)
+  def apply(width: BigInt): IntWidth = {
+    if (0 <= width && width <= maxCached) {
+      val i = width.toInt
+      var w = cache(i)
+      if (w eq null) {
+        w = new IntWidth(width)
+        cache(i) = w
+      }
+      w
+    } else new IntWidth(width)
+  }
+  // For pattern matching
+  def unapply(w: IntWidth): Option[BigInt] = Some(w.width)
+}
+class IntWidth(val width: BigInt) extends Width with Product {
   def serialize: String = s"<$width>"
+  override def equals(that: Any) = that match {
+    case w: IntWidth => width == w.width
+    case _ => false
+  }
+  override def hashCode = width.toInt
+  override def productPrefix = "IntWidth"
+  override def toString = s"$productPrefix($width)"
+  def copy(width: BigInt = width) = IntWidth(width)
+  def canEqual(that: Any) = that.isInstanceOf[Width]
+  def productArity = 1
+  def productElement(int: Int) = int match {
+    case 0 => width
+    case _ => throw new IndexOutOfBoundsException
+  }
 }
 case object UnknownWidth extends Width {
   def serialize: String = ""
