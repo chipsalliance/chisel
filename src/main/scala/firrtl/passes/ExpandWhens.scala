@@ -80,9 +80,9 @@ object ExpandWhens extends Pass {
   }
 
   private def AND(e1: Expression, e2: Expression) =
-    DoPrim(And, Seq(e1, e2), Nil, UIntType(IntWidth(1)))
+    DoPrim(And, Seq(e1, e2), Nil, BoolType)
   private def NOT(e: Expression) =
-    DoPrim(Eq, Seq(e, zero), Nil, UIntType(IntWidth(1)))
+    DoPrim(Eq, Seq(e, zero), Nil, BoolType)
 
   // ------------ Pass -------------------
   def run(c: Circuit): Circuit = {
