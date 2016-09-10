@@ -18,8 +18,8 @@ private[iotesters] class TesterContext {
   val testCmd = ArrayBuffer[String]()
   var backend = "verilator"
   var targetDir = new File("test_run_dir")
-  var logFile: Option[String] = None
-  var waveform: Option[String] = None
+  var logFile: Option[File] = None
+  var waveform: Option[File] = None
 }
 
 object chiselMain {
@@ -39,8 +39,8 @@ object chiselMain {
     case "--testCommand" :: value :: tail => context.testCmd ++= value split ' ' ; parseArgs(tail)
     case "--testerSeed" :: value :: tail => context.testerSeed = value.toLong ; parseArgs(tail)
     case "--targetDir" :: value :: tail => context.targetDir = new File(value) ; parseArgs(tail)
-    case "--logFile" :: value :: tail => context.logFile = Some(value) ; parseArgs(tail)
-    case "--waveform" :: value :: tail => context.waveform = Some(value) ; parseArgs(tail)
+    case "--logFile" :: value :: tail => context.logFile = Some(new File(value)) ; parseArgs(tail)
+    case "--waveform" :: value :: tail => context.waveform = Some(new File(value)) ; parseArgs(tail)
     case flag :: tail => parseArgs(tail) // skip unknown flag
     case Nil => // finish
   }

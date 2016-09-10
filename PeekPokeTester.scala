@@ -29,8 +29,8 @@ trait PeekPokeTests {
 abstract class PeekPokeTester[+T <: Module](val dut: T,
                                             verbose: Boolean = true,
                                             base: Int = 16,
-                                            logFile: Option[String] = chiselMain.context.logFile,
-                                            waveform: Option[String] = chiselMain.context.waveform,
+                                            logFile: Option[java.io.File] = chiselMain.context.logFile,
+                                            waveform: Option[java.io.File] = chiselMain.context.waveform,
                                             testCmd: List[String] = Nil,
                                             _seed: Long = chiselMain.context.testerSeed) {
 
