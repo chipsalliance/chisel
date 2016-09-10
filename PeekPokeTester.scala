@@ -30,8 +30,6 @@ abstract class PeekPokeTester[+T <: Module](val dut: T,
                                             verbose: Boolean = true,
                                             base: Int = 16,
                                             logFile: Option[java.io.File] = chiselMain.context.logFile,
-                                            waveform: Option[java.io.File] = chiselMain.context.waveform,
-                                            testCmd: List[String] = Nil,
                                             _seed: Long = chiselMain.context.testerSeed) {
 
   implicit def longToInt(x: Long) = x.toInt
@@ -51,11 +49,8 @@ abstract class PeekPokeTester[+T <: Module](val dut: T,
   /*** Simulation Interface ***/
   /****************************/
   logger println s"SEED ${_seed}"
-  val cmd = (if (testCmd.isEmpty) chiselMain.context.testCmd.toList else testCmd) ++ (waveform match {
-    case None    => Nil
-    case Some(f) => logger println s"Waveform: $f" ; List(s"+waveform=$f")
-  })
   val backend = Driver.backend getOrElse {
+    val cmd = chiselMain.context.testCmd.toList
     chiselMain.context.backend match {
       case "firrtl" =>
         val file = new java.io.File(chiselMain.context.targetDir, s"${dut.name}.ir")

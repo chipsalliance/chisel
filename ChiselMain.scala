@@ -127,6 +127,10 @@ object chiselMain {
         case b => throw BackendException(b)
       }
     }
+    context.waveform match {
+      case None =>
+      case Some(f) => context.testCmd += s"+waveform=$f"
+    }
     dut
   }
 
