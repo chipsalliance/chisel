@@ -846,6 +846,11 @@ sealed class FixedPoint private (dir: Direction, width: Width, val binaryPoint: 
   def do_^ (that: FixedPoint)(implicit sourceInfo: SourceInfo): FixedPoint =
     throwException(s"Xor is illegal between $this and $that")
 
+  final def setBinaryPoint(that: Int): FixedPoint = macro SourceInfoTransform.thatArg
+
+  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): FixedPoint =
+    binop(sourceInfo, FixedPoint(this.width, KnownBinaryPoint(that)), SetBinaryPoint, that)
+
   /** Returns this wire bitwise-inverted. */
   def do_unary_~ (implicit sourceInfo: SourceInfo): FixedPoint =
     throwException(s"Not is illegal on $this")

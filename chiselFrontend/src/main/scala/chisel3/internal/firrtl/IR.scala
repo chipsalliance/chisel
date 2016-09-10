@@ -43,6 +43,7 @@ object PrimOp {
   val AsUIntOp = PrimOp("asUInt")
   val AsSIntOp = PrimOp("asSInt")
   val AsFixedPointOp = PrimOp("asFixedPoint")
+  val SetBinaryPoint = PrimOp("bpset")
 }
 
 abstract class Arg {
