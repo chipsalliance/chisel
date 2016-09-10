@@ -51,7 +51,7 @@ object Reg {
     */
   def apply[T <: Data](outType: T)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])(sourceInfo, compileOptions)
 
-  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions = chisel3.Strict.CompileOptions): T = {
+  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions = chisel3.NotStrict.CompileOptions): T = {
     // TODO: write this in a way that doesn't need nulls (bad Scala style),
     // null.asInstanceOf[T], and two constructors. Using Option types are an
     // option, but introduces cumbersome syntax (wrap everything in a Some()).

@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.Strict.CompileOptions
+import chisel3.NotStrict.CompileOptions
 
 object RegNext {
 

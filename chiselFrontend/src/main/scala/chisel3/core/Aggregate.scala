@@ -10,7 +10,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
-import chisel3.Strict.CompileOptions
+import chisel3.NotStrict.CompileOptions
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -189,7 +189,7 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
 
   @deprecated("Use Vec.apply instead", "chisel3")
   def write(idx: UInt, data: T): Unit = {
-    apply(idx).:=(data)(DeprecatedSourceInfo, chisel3.Strict.CompileOptions)
+    apply(idx).:=(data)(DeprecatedSourceInfo, chisel3.NotStrict.CompileOptions)
   }
 
   override def cloneType: this.type = {

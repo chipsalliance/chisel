@@ -8,7 +8,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
-import chisel3.Strict.CompileOptions
+import chisel3.NotStrict.CompileOptions
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -255,7 +255,7 @@ object Wire {
     do_apply(t, init)(UnlocatableSourceInfo)
 
   def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
-    val x = Reg.makeType(chisel3.Strict.CompileOptions, t, null.asInstanceOf[T], init)
+    val x = Reg.makeType(chisel3.NotStrict.CompileOptions, t, null.asInstanceOf[T], init)
 
     // Bind each element of x to being a Wire
     Binding.bind(x, WireBinder(Builder.forcedModule), "Error: t")
