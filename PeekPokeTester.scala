@@ -26,10 +26,9 @@ trait PeekPokeTests {
   def finish: Boolean
 }
 
-abstract class PeekPokeTester[+T <: Module](
-                                            val dut: T,
+abstract class PeekPokeTester[+T <: Module](val dut: T,
                                             verbose: Boolean = true,
-                                            _base: Int = 16,
+                                            base: Int = 16,
                                             logFile: Option[String] = chiselMain.context.logFile,
                                             waveform: Option[String] = chiselMain.context.waveform,
                                             testCmd: List[String] = Nil,
@@ -41,6 +40,8 @@ abstract class PeekPokeTester[+T <: Module](
     case None    => System.out
     case Some(f) => new java.io.PrintStream(f)
   }
+  implicit val _verbose = verbose
+  implicit val _base = base
 
   def println(msg: String = "") {
     logger println msg
@@ -59,11 +60,11 @@ abstract class PeekPokeTester[+T <: Module](
       case "firrtl" =>
         val file = new java.io.File(chiselMain.context.targetDir, s"${dut.name}.ir")
         val ir = io.Source.fromFile(file).getLines mkString "\n"
-        new FirrtlTerpBackend(dut, ir, verbose, logger, _base, _seed)
+        new FirrtlTerpBackend(dut, ir, _seed)
       case "verilator" =>
-        new VerilatorBackend(dut, cmd, verbose, logger, _base, _seed)
+        new VerilatorBackend(dut, cmd, _seed)
       case "vcs" | "glsim" =>
-        new VCSBackend(dut, cmd, verbose, logger, _base, _seed)
+        new VCSBackend(dut, cmd, _seed)
       case b => throw BackendException(b)
     }
   }

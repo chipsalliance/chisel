@@ -36,8 +36,8 @@ object Driver {
     * Runs the ClassicTester using the verilator backend without doing Verilator compilation and returns a Boolean indicating success or failure
     * Requires the caller to supply path the already compile Verilator binary
     */
-  def run[T <: Module] (dutGen: () => T, cmd: Seq[String])
-                       (testerGen: T => PeekPokeTester[T]): Boolean = {
+  def run[T <: Module](dutGen: () => T, cmd: Seq[String])
+                      (testerGen: T => PeekPokeTester[T]): Boolean = {
     val circuit = chisel3.Driver.elaborate(dutGen)
     val dut = getTopModule(circuit).asInstanceOf[T]
     backendVar.withValue(Some(new VerilatorBackend(dut, cmd))) {
@@ -50,9 +50,13 @@ object Driver {
     }
   }
 
-  def run[T <: Module] (dutGen: () => T, binary: String)
-                       (testerGen: T => PeekPokeTester[T]): Boolean =
-    run(dutGen, Seq(binary))(testerGen)
+  def run[T <: Module](dutGen: () => T, binary: String, args: String*)
+                      (testerGen: T => PeekPokeTester[T]): Boolean =
+    run(dutGen, binary +: args.toSeq)(testerGen)
+
+  def run[T <: Module](dutGen: () => T, binary: java.io.File, args: String*)
+                      (testerGen: T => PeekPokeTester[T]): Boolean =
+    run(dutGen, binary.toString +: args.toSeq)(testerGen)
 
   def run[T <: Module](dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Boolean = {
     val circuit = chisel3.Driver.elaborate(dutGen)
