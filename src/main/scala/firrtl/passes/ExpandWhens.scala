@@ -137,15 +137,20 @@ object ExpandWhens extends Pass {
                 conseqNetlist getOrElse (lvalue, altNetlist(lvalue))
             }
 
-            nodes get res match {
-              case Some(name) =>
-                netlist(lvalue) = WRef(name, res.tpe, NodeKind(), MALE)
+            res match {
+              case _: ValidIf | _: Mux | _: DoPrim => nodes get res match {
+                case Some(name) =>
+                  netlist(lvalue) = WRef(name, res.tpe, NodeKind(), MALE)
+                  EmptyStmt
+                case None =>
+                  val name = namespace.newTemp
+                  nodes(res) = name
+                  netlist(lvalue) = WRef(name, res.tpe, NodeKind(), MALE)
+                  DefNode(s.info, name, res)
+              }
+              case _ =>
+                netlist(lvalue) = res
                 EmptyStmt
-              case None =>
-                val name = namespace.newTemp
-                nodes(res) = name
-                netlist(lvalue) = WRef(name, res.tpe, NodeKind(), MALE)
-                DefNode(s.info, name, res)
             }
           }
           Block(Seq(conseqStmt, altStmt) ++ memos)
