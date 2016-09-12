@@ -43,13 +43,23 @@ object MemTransformUtils {
   }
 
   def updateStmtRefs(s: Statement, repl: Map[String, Expression]): Statement = {
-    def updateRef(e: Expression): Expression = e map updateRef match {
-      case e: WSubField => repl getOrElse (e.serialize, e)
-      case e => e
+    def updateRef(e: Expression): Expression = e map updateRef match { 
+      case e => repl getOrElse (e.serialize, e) 
+    }
+    def hasEmptyExpr(stmt: Statement): Boolean = {
+      var foundEmpty = false
+      def testEmptyExpr(e: Expression): Expression = {
+        e map testEmptyExpr match {
+          case EmptyExpression => foundEmpty = true
+          case _ =>
+        }
+        e // map must return; no foreach
+      }
+      stmt map testEmptyExpr
+      foundEmpty
     }
     def updateStmtRefs(s: Statement): Statement = s map updateStmtRefs map updateRef match {
-      case Connect(info, EmptyExpression, exp) => EmptyStmt 
-      case Connect(info, WSubIndex(EmptyExpression, _, _, _), exp)  => EmptyStmt
+      case c: Connect if hasEmptyExpr(c) => EmptyStmt
       case s => s
     }
     updateStmtRefs(s)
