@@ -59,6 +59,9 @@ case class VRandom(width: BigInt) extends Expression {
   def nWords = (width + 31) / 32
   def realWidth = nWords * 32
   def serialize: String = "RANDOM"
+  def mapExpr(f: Expression => Expression): Expression = this
+  def mapType(f: Type => Type): Expression = this
+  def mapWidth(f: Width => Width): Expression = this
 }
 class VerilogEmitter extends Emitter {
   val tab = "  "

@@ -51,31 +51,56 @@ case object UNKNOWNGENDER extends Gender
 
 case class WRef(name: String, tpe: Type, kind: Kind, gender: Gender) extends Expression {
   def serialize: String = name
+  def mapExpr(f: Expression => Expression): Expression = this
+  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
+  def mapWidth(f: Width => Width): Expression = this
 }
 case class WSubField(exp: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
   def serialize: String = s"${exp.serialize}.$name"
+  def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp))
+  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
+  def mapWidth(f: Width => Width): Expression = this
 }
 case class WSubIndex(exp: Expression, value: Int, tpe: Type, gender: Gender) extends Expression {
   def serialize: String = s"${exp.serialize}[$value]"
+  def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp))
+  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
+  def mapWidth(f: Width => Width): Expression = this
 }
 case class WSubAccess(exp: Expression, index: Expression, tpe: Type, gender: Gender) extends Expression {
   def serialize: String = s"${exp.serialize}[${index.serialize}]"
+  def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp), index = f(index))
+  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
+  def mapWidth(f: Width => Width): Expression = this
 }
 case class WVoid() extends Expression {
   def tpe = UnknownType
   def serialize: String = "VOID"
+  def mapExpr(f: Expression => Expression): Expression = this
+  def mapType(f: Type => Type): Expression = this
+  def mapWidth(f: Width => Width): Expression = this
 }
 case class WInvalid() extends Expression {
   def tpe = UnknownType
   def serialize: String = "INVALID"
+  def mapExpr(f: Expression => Expression): Expression = this
+  def mapType(f: Type => Type): Expression = this
+  def mapWidth(f: Width => Width): Expression = this
 }
 // Useful for splitting then remerging references
 case object EmptyExpression extends Expression {
   def tpe = UnknownType
   def serialize: String = "EMPTY"
+  def mapExpr(f: Expression => Expression): Expression = this
+  def mapType(f: Type => Type): Expression = this
+  def mapWidth(f: Width => Width): Expression = this
 }
 case class WDefInstance(info: Info, name: String, module: String, tpe: Type) extends Statement with IsDeclaration {
   def serialize: String = s"inst $name of $module" + info.serialize
+  def mapExpr(f: Expression => Expression): Statement = this
+  def mapStmt(f: Statement => Statement): Statement = this
+  def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
+  def mapString(f: String => String): Statement = this.copy(name = f(name))
 }
 
 // Resultant width is the same as the maximum input width
@@ -115,25 +140,33 @@ class WrappedExpression (val e1: Expression) {
    override def hashCode = e1.serialize.hashCode
    override def toString = e1.serialize
 }
-      
 
-case class VarWidth(name: String) extends Width {
+private[firrtl] sealed trait HasMapWidth {
+  def mapWidth(f: Width => Width): Width
+}
+case class VarWidth(name: String) extends Width with HasMapWidth {
   def serialize: String = name
+  def mapWidth(f: Width => Width): Width = this
 }
-case class PlusWidth(arg1: Width, arg2: Width) extends Width {
+case class PlusWidth(arg1: Width, arg2: Width) extends Width with HasMapWidth {
   def serialize: String = "(" + arg1.serialize + " + " + arg2.serialize + ")"
+  def mapWidth(f: Width => Width): Width = PlusWidth(f(arg1), f(arg2))
 }
-case class MinusWidth(arg1: Width, arg2: Width) extends Width {
+case class MinusWidth(arg1: Width, arg2: Width) extends Width with HasMapWidth {
   def serialize: String = "(" + arg1.serialize + " - " + arg2.serialize + ")"
+  def mapWidth(f: Width => Width): Width = MinusWidth(f(arg1), f(arg2))
 }
-case class MaxWidth(args: Seq[Width]) extends Width {
+case class MaxWidth(args: Seq[Width]) extends Width with HasMapWidth {
   def serialize: String = args map (_.serialize) mkString ("max(", ", ", ")")
+  def mapWidth(f: Width => Width): Width = MaxWidth(args map f)
 }
-case class MinWidth(args: Seq[Width]) extends Width {
+case class MinWidth(args: Seq[Width]) extends Width with HasMapWidth {
   def serialize: String = args map (_.serialize) mkString ("min(", ", ", ")")
+  def mapWidth(f: Width => Width): Width = MinWidth(args map f)
 }
-case class ExpWidth(arg1: Width) extends Width {
+case class ExpWidth(arg1: Width) extends Width with HasMapWidth {
   def serialize: String = "exp(" + arg1.serialize + " )"
+  def mapWidth(f: Width => Width): Width = ExpWidth(f(arg1))
 }
 
 object WrappedType {
@@ -234,6 +267,10 @@ case class CDefMemory(
     seq: Boolean) extends Statement {
   def serialize: String = (if (seq) "smem" else "cmem") +
     s" $name : ${tpe.serialize} [$size]" + info.serialize
+  def mapExpr(f: Expression => Expression): Statement = this
+  def mapStmt(f: Statement => Statement): Statement = this
+  def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
+  def mapString(f: String => String): Statement = this.copy(name = f(name))
 }
 case class CDefMPort(info: Info,
     name: String,
@@ -245,5 +282,9 @@ case class CDefMPort(info: Info,
     val dir = direction.serialize
     s"$dir mport $name = $mem[${exps(0).serialize}], ${exps(1).serialize}" + info.serialize
   }
+  def mapExpr(f: Expression => Expression): Statement = this.copy(exps = exps map f)
+  def mapStmt(f: Statement => Statement): Statement = this
+  def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
+  def mapString(f: String => String): Statement = this.copy(name = f(name))
 }
 

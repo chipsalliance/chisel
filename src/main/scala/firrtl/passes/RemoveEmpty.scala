@@ -2,7 +2,7 @@ package firrtl
 package passes
 
 import scala.collection.mutable
-import firrtl.Mappers.{ExpMap, StmtMap}
+import firrtl.Mappers._
 import firrtl.ir._
 
 object RemoveEmpty extends Pass {

@@ -1,11 +1,12 @@
 package firrtl
 package passes
 
-import firrtl.Mappers.{ExpMap, StmtMap}
-import firrtl.Utils.{kind, gender, get_info}
 import firrtl.ir._
-import scala.collection.mutable
+import firrtl.Mappers._
+import firrtl.Utils.{kind, gender, get_info}
 
+// Datastructures
+import scala.collection.mutable
 
 // Splits compound expressions into simple expressions
 //  and named intermediate nodes
