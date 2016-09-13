@@ -329,6 +329,9 @@ abstract class GroundType extends Type {
   val width: Width
   def mapType(f: Type => Type): Type = this
 }
+object GroundType {
+  def unapply(ground: GroundType): Option[Width] = Some(ground.width)
+}
 abstract class AggregateType extends Type {
   def mapWidth(f: Width => Width): Type = this
 }
