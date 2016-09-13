@@ -34,6 +34,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
+import MemPortUtils.memType
 
 /** Resolve name collisions that would occur in [[LowerTypes]]
   *
@@ -228,7 +229,7 @@ object Uniquify extends Pass {
       case s: WDefInstance => Seq(Field(s.name, Default, s.tpe))
       case s: DefMemory => s.dataType match {
         case (_: UIntType | _: SIntType) =>
-          Seq(Field(s.name, Default, get_type(s)))
+          Seq(Field(s.name, Default, memType(s)))
         case tpe: BundleType =>
           val newFields = tpe.fields map ( f =>
             DefMemory(s.info, f.name, f.tpe, s.depth, s.writeLatency,
@@ -241,7 +242,7 @@ object Uniquify extends Pass {
           ) flatMap (recStmtToType)
           Seq(Field(s.name, Default, BundleType(newFields)))
       }
-      case s: DefNode => Seq(Field(s.name, Default, get_type(s)))
+      case s: DefNode => Seq(Field(s.name, Default, s.value.tpe))
       case s: Conditionally => recStmtToType(s.conseq) ++ recStmtToType(s.alt)
       case s: Block => (s.stmts map (recStmtToType)).flatten
       case s => Seq()
@@ -305,7 +306,7 @@ object Uniquify extends Pass {
               val dataType = uniquifyNamesType(s.dataType, node.elts)
               val mem = s.copy(name = node.name, dataType = dataType)
               // Create new mapping to handle references to memory data fields
-              val uniqueMemMap = createNameMapping(get_type(s), get_type(mem))
+              val uniqueMemMap = createNameMapping(memType(s), memType(mem))
               nameMap(s.name) = NameMapNode(node.name, node.elts ++ uniqueMemMap)
               mem
             } else {

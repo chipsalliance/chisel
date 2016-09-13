@@ -214,8 +214,8 @@ object InferWidths extends Pass {
     def get_constraints_e(e: Expression): Expression = {
       e match {
         case (e: Mux) => v ++= Seq(
-          WGeq(width_BANG(e.cond), IntWidth(1)),
-          WGeq(IntWidth(1), width_BANG(e.cond))
+          WGeq(getWidth(e.cond), IntWidth(1)),
+          WGeq(IntWidth(1), getWidth(e.cond))
         )
         case _ =>
       }
@@ -230,8 +230,8 @@ object InferWidths extends Pass {
           val exps = create_exps(s.expr)
           v ++= ((locs zip exps).zipWithIndex map {case ((locx, expx), i) =>
             get_flip(s.loc.tpe, i, Default) match {
-              case Default => WGeq(width_BANG(locx), width_BANG(expx))
-              case Flip => WGeq(width_BANG(expx), width_BANG(locx))
+              case Default => WGeq(getWidth(locx), getWidth(expx))
+              case Flip => WGeq(getWidth(expx), getWidth(locx))
             }
           })
         case (s: PartialConnect) =>
@@ -242,17 +242,17 @@ object InferWidths extends Pass {
             val locx = locs(x)
             val expx = exps(y)
             get_flip(s.loc.tpe, x, Default) match {
-              case Default => WGeq(width_BANG(locx), width_BANG(expx))
-              case Flip => WGeq(width_BANG(expx), width_BANG(locx))
+              case Default => WGeq(getWidth(locx), getWidth(expx))
+              case Flip => WGeq(getWidth(expx), getWidth(locx))
             }
           })
         case (s:DefRegister) => v ++= (Seq(
-           WGeq(width_BANG(s.reset), IntWidth(1)),
-           WGeq(IntWidth(1), width_BANG(s.reset))
+           WGeq(getWidth(s.reset), IntWidth(1)),
+           WGeq(IntWidth(1), getWidth(s.reset))
         ) ++ get_constraints_t(s.tpe, s.init.tpe, Default))
         case (s:Conditionally) => v ++= Seq(
-           WGeq(width_BANG(s.pred), IntWidth(1)),
-           WGeq(IntWidth(1), width_BANG(s.pred))
+           WGeq(getWidth(s.pred), IntWidth(1)),
+           WGeq(IntWidth(1), getWidth(s.pred))
         )
         case _ =>
       }

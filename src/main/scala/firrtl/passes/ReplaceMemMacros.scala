@@ -117,7 +117,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
       )
     )
     if (containsInfo(wrapperMem.info, "maskGran")) {
-      val wrapperMask = create_mask(wrapperMem.dataType)
+      val wrapperMask = createMask(wrapperMem.dataType)
       val fillWMask = getFillWMask(wrapperMem)
       val bbMask = if (fillWMask) flattenType(wrapperMem.dataType) else flattenType(wrapperMask)
       val rhs = {
@@ -150,7 +150,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
       )
     )
     if (containsInfo(wrapperMem.info, "maskGran")) {
-      val wrapperMask = create_mask(wrapperMem.dataType)
+      val wrapperMask = createMask(wrapperMem.dataType)
       val fillWMask = getFillWMask(wrapperMem)
       val bbMask = if (fillWMask) flattenType(wrapperMem.dataType) else flattenType(wrapperMask)
       val rhs = {

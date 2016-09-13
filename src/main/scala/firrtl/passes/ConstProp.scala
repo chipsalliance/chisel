@@ -38,7 +38,7 @@ import annotation.tailrec
 object ConstProp extends Pass {
   def name = "Constant Propagation"
 
-  private def pad(e: Expression, t: Type) = (long_BANG(e.tpe), long_BANG(t)) match {
+  private def pad(e: Expression, t: Type) = (bitWidth(e.tpe), bitWidth(t)) match {
     case (we, wt) if we < wt => DoPrim(Pad, Seq(e), Seq(wt), t)
     case (we, wt) if we == wt => e
   }
@@ -62,7 +62,7 @@ object ConstProp extends Pass {
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
       case UIntLiteral(v, w) if v == 0 => UIntLiteral(0, w)
       case SIntLiteral(v, w) if v == 0 => UIntLiteral(0, w)
-      case UIntLiteral(v, IntWidth(w)) if v == (BigInt(1) << long_BANG(rhs.tpe).toInt) - 1 => rhs
+      case UIntLiteral(v, IntWidth(w)) if v == (BigInt(1) << bitWidth(rhs.tpe).toInt) - 1 => rhs
       case _ => e
     }
   }
@@ -72,7 +72,7 @@ object ConstProp extends Pass {
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
       case UIntLiteral(v, _) if v == 0 => rhs
       case SIntLiteral(v, _) if v == 0 => asUInt(rhs, e.tpe)
-      case UIntLiteral(v, IntWidth(w)) if v == (BigInt(1) << long_BANG(rhs.tpe).toInt) - 1 => lhs
+      case UIntLiteral(v, IntWidth(w)) if v == (BigInt(1) << bitWidth(rhs.tpe).toInt) - 1 => lhs
       case _ => e
     }
   }
@@ -89,7 +89,7 @@ object ConstProp extends Pass {
   object FoldEqual extends FoldLogicalOp {
     def fold(c1: Literal, c2: Literal) = UIntLiteral(if (c1.value == c2.value) 1 else 0, IntWidth(1))
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
-      case UIntLiteral(v, IntWidth(w)) if v == 1 && w == 1 && long_BANG(rhs.tpe) == 1 => rhs
+      case UIntLiteral(v, IntWidth(w)) if v == 1 && w == 1 && bitWidth(rhs.tpe) == 1 => rhs
       case _ => e
     }
   }
@@ -97,7 +97,7 @@ object ConstProp extends Pass {
   object FoldNotEqual extends FoldLogicalOp {
     def fold(c1: Literal, c2: Literal) = UIntLiteral(if (c1.value != c2.value) 1 else 0, IntWidth(1))
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
-      case UIntLiteral(v, IntWidth(w)) if v == 0 && w == 1 && long_BANG(rhs.tpe) == 1 => rhs
+      case UIntLiteral(v, IntWidth(w)) if v == 0 && w == 1 && bitWidth(rhs.tpe) == 1 => rhs
       case _ => e
     }
   }
@@ -226,7 +226,7 @@ object ConstProp extends Pass {
     case Pad => e.args(0) match {
       case UIntLiteral(v, _) => UIntLiteral(v, IntWidth(e.consts(0)))
       case SIntLiteral(v, _) => SIntLiteral(v, IntWidth(e.consts(0)))
-      case _ if long_BANG(e.args(0).tpe) == e.consts(0) => e.args(0)
+      case _ if bitWidth(e.args(0).tpe) == e.consts(0) => e.args(0)
       case _ => e
     }
     case Bits => e.args(0) match {
@@ -234,9 +234,9 @@ object ConstProp extends Pass {
         val hi = e.consts(0).toInt
         val lo = e.consts(1).toInt
         require(hi >= lo)
-        UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), width_BANG(e.tpe))
+        UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), getWidth(e.tpe))
       }
-      case x if long_BANG(e.tpe) == long_BANG(x.tpe) => x.tpe match {
+      case x if bitWidth(e.tpe) == bitWidth(x.tpe) => x.tpe match {
         case t: UIntType => x
         case _ => asUInt(x, e.tpe)
       }
@@ -253,7 +253,7 @@ object ConstProp extends Pass {
   private def constPropMux(m: Mux): Expression = (m.tval, m.fval) match {
     case _ if m.tval == m.fval => m.tval
     case (t: UIntLiteral, f: UIntLiteral) =>
-      if (t.value == 1 && f.value == 0 && long_BANG(m.tpe) == 1) m.cond
+      if (t.value == 1 && f.value == 0 && bitWidth(m.tpe) == 1) m.cond
       else constPropMuxCond(m)
     case _ => constPropMuxCond(m)
   }
