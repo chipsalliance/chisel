@@ -225,7 +225,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): DecoupledIO[T] = {
-    val q = Module(new Queue(enq.bits.cloneType, entries, pipe))
+    val q = Module(new Queue(enq.bits.cloneType, entries, pipe, flow))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready
@@ -242,7 +242,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): IrrevocableIO[T] = {
-    val deq = apply(enq, entries, pipe)
+    val deq = apply(enq, entries, pipe, flow)
     val irr = Wire(new IrrevocableIO(deq.bits))
     irr.bits := deq.bits
     irr.valid := deq.valid
