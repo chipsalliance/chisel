@@ -128,7 +128,7 @@ object InferReadWritePass extends Pass {
                 newName = s"rw_$idx"
                 if !allPorts(newName)
               } yield newName).head
-            val rw_exp = WSubField(WRef(mem.name, ut, NodeKind(), ug), rw, ut, ug)
+            val rw_exp = WSubField(WRef(mem.name, ut, MemKind, ug), rw, ut, ug)
             readwriters += rw
             readers += r
             writers += w
@@ -142,7 +142,7 @@ object InferReadWritePass extends Pass {
             repl(s"${mem.name}.$w.data") = WSubField(rw_exp, "wdata", mem.dataType, FEMALE)
             repl(s"${mem.name}.$w.mask") = WSubField(rw_exp, "wmask", ut, FEMALE)
             stmts += Connect(NoInfo, WSubField(rw_exp, "clk", ClockType, FEMALE),
-              WRef("clk", ClockType, NodeKind(), MALE))
+              WRef("clk", ClockType, NodeKind, MALE))
             stmts += Connect(NoInfo, WSubField(rw_exp, "en", bt, FEMALE),
               DoPrim(Or, List(connects(s"${mem.name}.$r.en"), connects(s"${mem.name}.$w.en")), Nil, bt))
             stmts += Connect(NoInfo, WSubField(rw_exp, "addr", ut, FEMALE),

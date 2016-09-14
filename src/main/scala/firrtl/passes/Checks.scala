@@ -469,7 +469,7 @@ object CheckGenders extends Pass {
         case (MALE, FEMALE) =>
           errors append new WrongGender(info, mname, e.serialize, desired, gender)
         case (FEMALE, MALE) => kind(e) match {
-          case _: PortKind | _: InstanceKind if !flip_q(e.tpe) => // OK!
+          case PortKind | InstanceKind if !flip_q(e.tpe) => // OK!
           case _ =>
             errors append new WrongGender(info, mname, e.serialize, desired, gender)
         }

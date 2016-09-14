@@ -59,8 +59,8 @@ class Errors {
 object ToWorkingIR extends Pass {
   def name = "Working IR"
 
-  def toExp(e:Expression) : Expression = e map (toExp) match {
-    case e: Reference => WRef(e.name, e.tpe, NodeKind(), UNKNOWNGENDER)
+  def toExp(e: Expression): Expression = e map (toExp) match {
+    case e: Reference => WRef(e.name, e.tpe, NodeKind, UNKNOWNGENDER)
     case e: SubField => WSubField(e.expr, e.name, e.tpe, UNKNOWNGENDER)
     case e: SubIndex => WSubIndex(e.expr, e.value, e.tpe, UNKNOWNGENDER)
     case e: SubAccess => WSubAccess(e.expr, e.index, e.tpe, UNKNOWNGENDER)

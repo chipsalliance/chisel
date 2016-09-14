@@ -12,7 +12,7 @@ import firrtl.Utils._
 
 object MemTransformUtils {
 
-  def createRef(n: String) = WRef(n, UnknownType, ExpKind(), UNKNOWNGENDER)
+  def createRef(n: String) = WRef(n, UnknownType, ExpKind, UNKNOWNGENDER)
   def createSubField(exp: Expression, n: String) = WSubField(exp, n, UnknownType, UNKNOWNGENDER)
   def connectFields(lref: Expression, lname: String, rref: Expression, rname: String) = 
     Connect(NoInfo, createSubField(lref, lname), createSubField(rref, rname))

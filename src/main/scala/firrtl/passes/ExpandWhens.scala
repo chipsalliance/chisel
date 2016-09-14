@@ -53,7 +53,7 @@ object ExpandWhens extends Pass {
   // ========== Expand When Utilz ==========
   private def getFemaleRefs(n: String, t: Type, g: Gender): Seq[Expression] = {
     def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, Default))
-    val exps = create_exps(WRef(n, t, ExpKind(), g))
+    val exps = create_exps(WRef(n, t, ExpKind, g))
     (exps.zipWithIndex foldLeft Seq[Expression]()){
       case (expsx, (exp, j)) => getGender(t, j, g) match {
         case (BIGENDER | FEMALE) => expsx :+ exp
@@ -140,12 +140,12 @@ object ExpandWhens extends Pass {
             res match {
               case _: ValidIf | _: Mux | _: DoPrim => nodes get res match {
                 case Some(name) =>
-                  netlist(lvalue) = WRef(name, res.tpe, NodeKind(), MALE)
+                  netlist(lvalue) = WRef(name, res.tpe, NodeKind, MALE)
                   EmptyStmt
                 case None =>
                   val name = namespace.newTemp
                   nodes(res) = name
-                  netlist(lvalue) = WRef(name, res.tpe, NodeKind(), MALE)
+                  netlist(lvalue) = WRef(name, res.tpe, NodeKind, MALE)
                   DefNode(s.info, name, res)
               }
               case _ =>
