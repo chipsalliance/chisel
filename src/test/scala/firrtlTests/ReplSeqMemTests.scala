@@ -20,7 +20,7 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     new EmitFirrtl(writer)
   )
 
-  "ReplSeqMem" should "generate blackbox wrappers" in {
+  "ReplSeqMem" should "generate blackbox wrappers for mems of bundle type" in {
     val input = """
 circuit Top : 
   module Top : 
@@ -55,6 +55,29 @@ circuit Top :
       
     read mport R1 = entries_info2[head_ptr], clk
     io2.commit_entry.bits.info <- R1
+""".stripMargin
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc, TransID(-2))))
+    val writer = new java.io.StringWriter
+    compile(parse(input), aMap, writer)
+    // Check correctness of firrtl
+    parse(writer.toString)
+    (new java.io.File(confLoc)).delete()
+  }
+
+  "ReplSeqMem" should "not infinite loop if control signals are derived from registered versions of themselves" in {
+    val input = """
+circuit Top :
+  module Top :
+    input clk : Clock
+    input hsel : UInt<1>
+
+    reg p_valid : UInt<1>, clk
+    reg p_address : UInt<5>, clk
+    smem mem : UInt<8>[8][32] 
+    when hsel : 
+      when p_valid : 
+        write mport T_155 = mem[p_address], clk
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
     val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc, TransID(-2))))
