@@ -25,13 +25,13 @@ private class Emitter(circuit: Circuit) {
       case e: Connect => s"${e.loc.fullName(ctx)} <= ${e.exp.fullName(ctx)}"
       case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"
       case e: Stop => s"stop(${e.clk.fullName(ctx)}, UInt<1>(1), ${e.ret})"
-      case e: Printf => s"""printf(${e.clk.fullName(ctx)}, UInt<1>(1), "${e.format}"${e.ids.map(_.fullName(ctx)).fold(""){_ + ", " + _}})"""
+      case e: Printf =>
+        val (fmt, args) = e.pable.unpack(ctx)
+        val printfArgs = Seq(e.clk.fullName(ctx), "UInt<1>(1)",
+          "\"" + printf.format(fmt) + "\"") ++ args
+        printfArgs mkString ("printf(", ", ", ")")
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
-      case e: DefInstance => {
-        val modName = moduleMap.get(e.id.name).get
-        s"inst ${e.name} of $modName"
-      }
-
+      case e: DefInstance => s"inst ${e.name} of ${e.id.modName}"
       case w: WhenBegin =>
         indent()
         s"when ${w.pred.fullName(ctx)} :"
@@ -46,18 +46,19 @@ private class Emitter(circuit: Circuit) {
   }
 
   // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
-  private val defnMap = collection.mutable.HashMap[String, String]()
-  // Map of Component name to FIRRTL id.
-  private val moduleMap = collection.mutable.HashMap[String, String]()
+  private val defnMap = collection.mutable.HashMap[(String, String), Component]()
 
-  /** Generates the FIRRTL module definition with a specified name.
+  /** Generates the FIRRTL module declaration.
     */
-  private def moduleDefn(m: Component, name: String): String = {
+  private def moduleDecl(m: Component): String = m.id match {
+    case _: BlackBox => newline + s"extmodule ${m.name} : "
+    case _: Module => newline + s"module ${m.name} : "
+  }
+
+  /** Generates the FIRRTL module definition.
+    */
+  private def moduleDefn(m: Component): String = {
     val body = new StringBuilder
-    m.id match {
-      case _: BlackBox => body ++= newline + s"extmodule $name : "
-      case _: Module => body ++= newline + s"module $name : "
-    }
     withIndent {
       for (p <- m.ports)
         body ++= newline + emitPort(p)
@@ -82,21 +83,16 @@ private class Emitter(circuit: Circuit) {
     */
   private def emit(m: Component): String = {
     // Generate the body.
-    val moduleName = m.id.getClass.getName.split('.').last
-    val defn = moduleDefn(m, moduleName)
+    val defn = moduleDefn(m)
 
-    defnMap get defn match {
-      case Some(deduplicatedName) =>
-        moduleMap(m.name) = deduplicatedName
+    defnMap get (m.id.desiredName, defn) match {
+      case Some(duplicate) =>
+        m.id setModName duplicate.name
         ""
       case None =>
-        require(!(moduleMap contains m.name),
-            "emitting module with same name but different contents")
-
-        moduleMap(m.name) = m.name
-        defnMap(defn) = m.name
-
-        moduleDefn(m, m.name)
+        defnMap((m.id.desiredName, defn)) = m
+        m.id setModName m.name
+        moduleDecl(m) + defn
     }
   }
 

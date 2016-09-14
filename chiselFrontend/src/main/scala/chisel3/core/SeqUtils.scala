@@ -23,14 +23,10 @@ private[chisel3] object SeqUtils {
   /** Counts the number of true Bools in a Seq */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
-  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = {
-    if (in.size == 0) {
-      UInt(0)
-    } else if (in.size == 1) {
-      in.head
-    } else {
-      count(in.slice(0, in.size/2)) + (UInt(0) ## count(in.slice(in.size/2, in.size)))
-    }
+  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = in.size match {
+    case 0 => UInt(0)
+    case 1 => in.head
+    case n => count(in take n/2) +& count(in drop n/2)
   }
 
   /** Returns data value corresponding to first true predicate */
@@ -51,7 +47,7 @@ private[chisel3] object SeqUtils {
     if (in.tail.isEmpty) {
       in.head._2
     } else {
-      val masked = for ((s, i) <- in) yield Mux(s, i.toBits, Bits(0))
+      val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, UInt(0))
       val width = in.map(_._2.width).reduce(_ max _)
       in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
     }

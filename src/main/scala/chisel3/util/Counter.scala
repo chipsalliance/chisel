@@ -32,8 +32,8 @@ class Counter(val n: Int) {
 /** Counter Object
   * Example Usage:
   * {{{ val countOn = Bool(true) // increment counter every clock cycle
-  * val myCounter = Counter(countOn, n)
-  * when ( myCounter.value === UInt(3) ) { ... } }}}*/
+  * val (myCounterValue, myCounterWrap) = Counter(countOn, n)
+  * when ( myCounterValue === UInt(3) ) { ... } }}}*/
 object Counter
 {
   def apply(n: Int): Counter = new Counter(n)

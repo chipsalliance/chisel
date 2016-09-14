@@ -31,7 +31,9 @@ object Module {
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
     dynamicContext.currentModule = parent
     val ports = m.computePorts
-    Builder.components += Component(m, m.name, ports, m._commands)
+    val component = Component(m, m.name, ports, m._commands)
+    m._component = Some(component)
+    Builder.components += component
     pushCommand(DefInstance(sourceInfo, m, ports))
     m.setupInParent(childSourceInfo)
   }
@@ -57,8 +59,30 @@ extends HasId {
   private[core] val _ids = ArrayBuffer[HasId]()
   dynamicContext.currentModule = Some(this)
 
-  /** Name of the instance. */
-  val name = Builder.globalNamespace.name(getClass.getName.split('.').last)
+  /** Desired name of this module. */
+  def desiredName = this.getClass.getName.split('.').last
+
+  /** Legalized name of this module. */
+  final val name = Builder.globalNamespace.name(desiredName)
+
+  /** FIRRTL Module name */
+  private var _modName: Option[String] = None
+  private[chisel3] def setModName(name: String) = _modName = Some(name)
+  def modName = _modName match {
+    case Some(name) => name
+    case None => throwException("modName should be called after circuit elaboration")
+  }
+
+  /** Keep component for signal names */
+  private[chisel3] var _component: Option[Component] = None
+
+
+  /** Signal name (for simulation). */
+  override def instanceName =
+    if (_parent == None) name else _component match {
+      case None => getRef.name
+      case Some(c) => getRef fullName c
+    }
 
   /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.
@@ -103,10 +127,28 @@ extends HasId {
     val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
       m.getParameterTypes.isEmpty && valNames.contains(m.getName)
+
+    /** Recursively suggests names to supported "container" classes
+      * Arbitrary nestings of supported classes are allowed so long as the
+      * innermost element is of type HasId
+      * Currently supported:
+      *   - Iterable
+      *   - Option
+      * (Note that Map is Iterable[Tuple2[_,_]] and thus excluded)
+      */
+    def nameRecursively(prefix: String, nameMe: Any): Unit =
+      nameMe match {
+        case (id: HasId) => id.suggestName(prefix)
+        case Some(elt) => nameRecursively(prefix, elt)
+        case (iter: Iterable[_]) if iter.hasDefiniteSize =>
+          for ((elt, i) <- iter.zipWithIndex) {
+            nameRecursively(s"${prefix}_${i}", elt)
+          }
+        case _ => // Do nothing
+      }
     val methods = getClass.getMethods.sortWith(_.getName > _.getName)
-    for (m <- methods; if isPublicVal(m)) m.invoke(this) match {
-      case (id: HasId) => id.suggestName(m.getName)
-      case _ =>
+    for (m <- methods if isPublicVal(m)) {
+      nameRecursively(m.getName, m.invoke(this))
     }
 
     // For Module instances we haven't named, suggest the name of the Module

@@ -54,6 +54,27 @@ package object chisel3 {
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
+  type Printable = chisel3.core.Printable
+  val Printable = chisel3.core.Printable
+  type Printables = chisel3.core.Printables
+  val Printables = chisel3.core.Printables
+  type PString = chisel3.core.PString
+  val PString = chisel3.core.PString
+  type FirrtlFormat = chisel3.core.FirrtlFormat
+  val FirrtlFormat = chisel3.core.FirrtlFormat
+  type Decimal = chisel3.core.Decimal
+  val Decimal = chisel3.core.Decimal
+  type Hexadecimal = chisel3.core.Hexadecimal
+  val Hexadecimal = chisel3.core.Hexadecimal
+  type Binary = chisel3.core.Binary
+  val Binary = chisel3.core.Binary
+  type Character = chisel3.core.Character
+  val Character = chisel3.core.Character
+  type Name = chisel3.core.Name
+  val Name = chisel3.core.Name
+  type FullName = chisel3.core.FullName
+  val FullName = chisel3.core.FullName
+  val Percent = chisel3.core.Percent
 
   implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
     def U: UInt = UInt(x, Width())
@@ -79,4 +100,34 @@ package object chisel3 {
     def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x
     def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x
   }
+
+  /** Implicit for custom Printable string interpolator */
+  implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
+    /** Custom string interpolator for generating Printables: p"..."
+      * Will call .toString on any non-Printable arguments (mimicking s"...")
+      */
+    def p(args: Any*): Printable = {
+      sc.checkLengths(args) // Enforce sc.parts.size == pargs.size + 1
+      val pargs: Seq[Option[Printable]] = args map {
+        case p: Printable => Some(p)
+        case d: Data => Some(d.toPrintable)
+        case any => for {
+          v <- Option(any) // Handle null inputs
+          str = v.toString
+          if !str.isEmpty // Handle empty Strings
+        } yield PString(str)
+      }
+      val parts = sc.parts map StringContext.treatEscapes
+      // Zip sc.parts and pargs together ito flat Seq
+      // eg. Seq(sc.parts(0), pargs(0), sc.parts(1), pargs(1), ...)
+      val seq = for { // append None because sc.parts.size == pargs.size + 1
+        (literal, arg) <- parts zip (pargs :+ None)
+        optPable <- Seq(Some(PString(literal)), arg)
+        pable <- optPable // Remove Option[_]
+      } yield pable
+      Printables(seq)
+    }
+  }
+
+  implicit def string2Printable(str: String): Printable = PString(str)
 }

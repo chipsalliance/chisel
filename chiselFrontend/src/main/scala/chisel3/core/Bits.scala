@@ -14,7 +14,7 @@ import chisel3.internal.firrtl.PrimOp._
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
   */
-abstract class Element(dirArg: Direction, val width: Width) extends Data(dirArg)
+abstract class Element(dirArg: Direction, private[core] val width: Width) extends Data(dirArg)
 
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.
@@ -210,16 +210,8 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
 
   def do_asSInt(implicit sourceInfo: SourceInfo): SInt
 
-  /** Reinterpret cast to an UInt.
-    *
-    * @note value not guaranteed to be preserved: for example, a SInt of width
-    * 3 and value -1 (0b111) would become an UInt with value 7
-    */
-  final def asUInt(): UInt = macro SourceInfoTransform.noArg
-
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
-
   /** Reinterpret cast to Bits. */
+  @deprecated("Use asUInt, which does the same thing but returns a more concrete type", "chisel3")
   final def asBits(): Bits = macro SourceInfoTransform.noArg
 
   def do_asBits(implicit sourceInfo: SourceInfo): Bits = asUInt()
@@ -250,7 +242,7 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
   }
 
-  @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
+  @deprecated("Use asUInt, which does the same thing but makes the reinterpret cast more explicit", "chisel3")
   override def toBits: UInt = do_asUInt(DeprecatedSourceInfo)
 
   override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
@@ -258,6 +250,9 @@ sealed abstract class Bits(dirArg: Direction, width: Width, override val litArg:
     res := that
     res
   }
+
+  /** Default print as [[Decimal]] */
+  final def toPrintable: Printable = Decimal(this)
 }
 
 /** Provides a set of operations to create UInt types and literals.
@@ -746,10 +741,15 @@ object Mux {
     pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, con.ref, alt.ref))
   }
 
+  private[core] def typesCompatible[T <: Data](x: T, y: T): Boolean = {
+    val sameTypes = x.getClass == y.getClass
+    val sameElements = x.flatten zip y.flatten forall { case (a, b) => a.getClass == b.getClass && a.width == b.width }
+    val sameNumElements = x.flatten.size == y.flatten.size
+    sameTypes && sameElements && sameNumElements
+  }
+
   private def doAggregateMux[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo): T = {
-    require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
-    for ((c, a) <- con.flatten zip alt.flatten)
-      require(c.width == a.width, "can't Mux between aggregates of different width")
+    require(typesCompatible(con, alt), s"can't Mux between heterogeneous types ${con.getClass} and ${alt.getClass}")
     doMux(cond, con, alt)
   }
 }
