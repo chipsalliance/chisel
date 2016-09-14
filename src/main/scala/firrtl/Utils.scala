@@ -337,7 +337,7 @@ object Utils extends LazyLogging {
     case e: SIntLiteral => MALE
     case e: Mux => MALE
     case e: ValidIf => MALE
-    case e: WInvalid => MALE
+    case WInvalid => MALE
     case e => println(e); error("Shouldn't be here")
   }
   def get_gender(s: Statement): Gender = s match {

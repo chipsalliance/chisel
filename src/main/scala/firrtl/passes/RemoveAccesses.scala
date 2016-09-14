@@ -15,7 +15,7 @@ object RemoveAccesses extends Pass {
   def name = "Remove Accesses"
 
   private def AND(e1: Expression, e2: Expression) =
-    DoPrim(And, Seq(e1, e2), Nil, UIntType(IntWidth(1)))
+    DoPrim(And, Seq(e1, e2), Nil, BoolType)
 
   private def EQV(e1: Expression, e2: Expression): Expression =
     DoPrim(Eq, Seq(e1, e2), Nil, e1.tpe)

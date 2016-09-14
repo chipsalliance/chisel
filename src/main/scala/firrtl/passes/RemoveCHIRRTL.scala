@@ -174,7 +174,7 @@ object RemoveCHIRRTL extends Pass {
         case Some(p) => g match {
           case FEMALE =>
             has_write_mport = true
-            if (p.rdwrite) has_readwrite_mport = Some(SubField(p.exp, "wmode", UIntType(IntWidth(1))))
+            if (p.rdwrite) has_readwrite_mport = Some(SubField(p.exp, "wmode", BoolType))
             SubField(p.exp, p.female, tpe)
           case MALE =>
             SubField(p.exp, p.male, tpe)

@@ -53,7 +53,6 @@ object FIRRTLEmitter extends Emitter {
   def run(c: Circuit, w: Writer) = w.write(c.serialize)
 }
 
-case class VIndent()
 case class VRandom(width: BigInt) extends Expression {
   def tpe = UIntType(IntWidth(width))
   def nWords = (width + 31) / 32
@@ -127,7 +126,6 @@ class VerilogEmitter extends Emitter {
       case (i: Int) => w write i.toString
       case (i: Long) => w write i.toString
       case (i: BigInt) => w write i.toString
-      case (t: VIndent) => w write "   "
       case (s: Seq[Any]) =>
         s foreach (emit(_, top + 1))
         if (top == 0) w write "\n"
