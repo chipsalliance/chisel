@@ -45,7 +45,9 @@ class IntegrationSpec extends FirrtlPropSpec {
     }
   }
 
-  val compileTests = Seq(Test("rocket", "/regress"), Test("rocket-firrtl", "/regress"))
+  val compileTests = Seq(Test("rocket", "/regress"),
+                         Test("rocket-firrtl", "/regress"),
+                         Test("Rob", "/regress"))
 
   compileTests foreach { test =>
     property(s"${test.name} should compile to Verilog") {
