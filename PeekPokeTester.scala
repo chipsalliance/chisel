@@ -29,14 +29,15 @@ trait PeekPokeTests {
 abstract class PeekPokeTester[+T <: Module](val dut: T,
                                             verbose: Boolean = true,
                                             base: Int = 16,
-                                            logFile: Option[java.io.File] = chiselMain.context.logFile,
+                                            logFile: Option[java.io.File] = None,
                                             _seed: Long = chiselMain.context.testerSeed) {
 
   implicit def longToInt(x: Long) = x.toInt
 
-  implicit val logger = logFile match {
-    case None    => System.out
-    case Some(f) => new java.io.PrintStream(f)
+  implicit val logger = (logFile, chiselMain.context.logFile) match {
+    case (None, None) => System.out
+    case (Some(f), _) => new java.io.PrintStream(f)
+    case (_, Some(f)) => new java.io.PrintStream(f)
   }
   implicit val _verbose = verbose
   implicit val _base = base
