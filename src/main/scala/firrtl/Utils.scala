@@ -81,23 +81,14 @@ object Utils extends LazyLogging {
     else "\"h" + bi.toString(16) + "\""
 
   implicit def toWrappedExpression (x:Expression) = new WrappedExpression(x)
-  def ceil_log2(x: BigInt): BigInt = (x-1).bitLength
-  def ceil_log2(x: Int): Int = scala.math.ceil(scala.math.log(x) / scala.math.log(2)).toInt
+  def ceilLog2(x: BigInt): Int = (x-1).bitLength
   def max(a: BigInt, b: BigInt): BigInt = if (a >= b) a else b
   def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
   def pow_minus_one(a: BigInt, b: BigInt): BigInt = a.pow(b.toInt) - 1
   val BoolType = UIntType(IntWidth(1))
   val one  = UIntLiteral(BigInt(1), IntWidth(1))
   val zero = UIntLiteral(BigInt(0), IntWidth(1))
-  def uint(i: Int): UIntLiteral = {
-    val num_bits = req_num_bits(i)
-    val w = IntWidth(scala.math.max(1, num_bits - 1))
-    UIntLiteral(BigInt(i), w)
-  }
-  def req_num_bits(i: Int): Int = {
-    val ix = if (i < 0) ((-1 * i) - 1) else i
-    ceil_log2(ix + 1) + 1
-  }
+  def uint(i: BigInt): UIntLiteral = UIntLiteral(i, IntWidth(1 max i.bitLength))
 
   def create_exps(n: String, t: Type): Seq[Expression] =
     create_exps(WRef(n, t, ExpKind, UNKNOWNGENDER))
