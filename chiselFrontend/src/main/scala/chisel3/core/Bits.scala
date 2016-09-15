@@ -247,6 +247,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   def do_asSInt(implicit sourceInfo: SourceInfo): SInt
 
   /** Reinterpret cast to Bits. */
+  @deprecated("Use asUInt, which does the same thing but returns a more concrete type", "chisel3")
   final def asBits(): Bits = macro SourceInfoTransform.noArg
 
   def do_asBits(implicit sourceInfo: SourceInfo): Bits = asUInt()
@@ -277,7 +278,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
   }
 
-  @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
+  @deprecated("Use asUInt, which does the same thing but makes the reinterpret cast more explicit", "chisel3")
   override def toBits: UInt = do_asUInt(DeprecatedSourceInfo)
 
   override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
@@ -285,6 +286,9 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     res := that
     res
   }
+
+  /** Default print as [[Decimal]] */
+  final def toPrintable: Printable = Decimal(this)
 }
 
 /** Provides a set of operations to create UInt types and literals.
@@ -827,10 +831,15 @@ object Mux {
     pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, con.ref, alt.ref))
   }
 
+  private[core] def typesCompatible[T <: Data](x: T, y: T): Boolean = {
+    val sameTypes = x.getClass == y.getClass
+    val sameElements = x.flatten zip y.flatten forall { case (a, b) => a.getClass == b.getClass && a.width == b.width }
+    val sameNumElements = x.flatten.size == y.flatten.size
+    sameTypes && sameElements && sameNumElements
+  }
+
   private def doAggregateMux[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo): T = {
-    require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
-    for ((c, a) <- con.flatten zip alt.flatten)
-      require(c.width == a.width, "can't Mux between aggregates of different width")
+    require(typesCompatible(con, alt), s"can't Mux between heterogeneous types ${con.getClass} and ${alt.getClass}")
     doMux(cond, con, alt)
   }
 }

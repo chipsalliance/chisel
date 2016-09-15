@@ -223,7 +223,7 @@ abstract class Data extends HasId {
     *
     * This performs the inverse operation of fromBits(Bits).
     */
-  @deprecated("Use asBits, which makes the reinterpret cast more explicit and actually returns Bits", "chisel3")
+  @deprecated("Use asUInt, which does the same thing but makes the reinterpret cast more explicit", "chisel3")
   def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
 
   /** Reinterpret cast to UInt.
@@ -241,6 +241,8 @@ abstract class Data extends HasId {
   // firrtlDirection is the direction we report to firrtl.
   // It maintains the user-specified value (as opposed to the "actual" or applied/propagated value).
   var firrtlDirection: Direction = Direction.Unspecified
+  /** Default pretty printing */
+  def toPrintable: Printable
 }
 
 object Wire {
@@ -293,4 +295,7 @@ sealed class Clock extends Element(Width(1)) {
     case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
+
+  /** Not really supported */
+  def toPrintable: Printable = PString("CLOCK")
 }

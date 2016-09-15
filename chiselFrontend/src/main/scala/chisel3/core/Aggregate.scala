@@ -48,10 +48,20 @@ object Vec {
     // changing apply(elt0, elts*) to apply(elts*) causes a function collision
     // with apply(Seq) after type erasure. Workarounds by either introducing a
     // DummyImplicit or additional type parameter will break some code.
+
+    // Check that types are homogeneous.  Width mismatch for Elements is safe.
     require(!elts.isEmpty)
-    val width = elts.map(_.width).reduce(_ max _)
-    // If an element has a direction associated with it, use the bulk connect operator.
-    val vec = Wire(new Vec(elts.head.cloneTypeWidth(width), elts.length))
+    def eltsCompatible(a: Data, b: Data) = a match {
+      case _: Element => a.getClass == b.getClass
+      case _: Aggregate => Mux.typesCompatible(a, b)
+    }
+
+    val t = elts.head
+    for (e <- elts.tail)
+      require(eltsCompatible(t, e), s"can't create Vec of heterogeneous types ${t.getClass} and ${e.getClass}")
+
+    val maxWidth = elts.map(_.width).reduce(_ max _)
+    val vec = Wire(new Vec(t.cloneTypeWidth(maxWidth), elts.length))
     def doConnect(sink: T, source: T) = {
       if (elts.head.flatten.exists(_.firrtlDirection != Direction.Unspecified)) {
         sink bulkConnect source
@@ -202,6 +212,17 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
 
   for ((elt, i) <- self zipWithIndex)
     elt.setRef(this, i)
+
+  /** Default "pretty-print" implementation
+    * Analogous to printing a Seq
+    * Results in "Vec(elt0, elt1, ...)"
+    */
+  def toPrintable: Printable = {
+    val elts =
+      if (length == 0) List.empty[Printable]
+      else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
+    PString("Vec(") + Printables(elts) + PString(")")
+  }
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection
@@ -397,6 +418,21 @@ class Bundle extends Aggregate {
         Builder.error(s"Parameterized Bundle ${this.getClass} needs cloneType method")
         this
     }
+  }
+
+  /** Default "pretty-print" implementation
+    * Analogous to printing a Map
+    * Results in "Bundle(elt0.name -> elt0.value, ...)"
+    */
+  def toPrintable: Printable = {
+    val elts =
+      if (elements.isEmpty) List.empty[Printable]
+      else {
+        elements.toList.reverse flatMap { case (name, data) =>
+          List(PString(s"$name -> "), data.toPrintable, PString(", "))
+        } dropRight 1 // Remove trailing ", "
+      }
+    PString("Bundle(") + Printables(elts) + PString(")")
   }
 }
 

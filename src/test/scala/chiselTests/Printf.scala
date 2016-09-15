@@ -4,6 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
+import chisel3.util._
 import chisel3.testers.BasicTester
 
 class SinglePrintfTester() extends BasicTester {
@@ -24,6 +25,11 @@ class MultiPrintfTester() extends BasicTester {
   stop()
 }
 
+class ASCIIPrintableTester extends BasicTester {
+  printf(PString((0x20 to 0x7e) map (_.toChar) mkString ""))
+  stop()
+}
+
 class PrintfSpec extends ChiselFlatSpec {
   "A printf with a single argument" should "run" in {
     assertTesterPasses { new SinglePrintfTester }
@@ -33,5 +39,8 @@ class PrintfSpec extends ChiselFlatSpec {
   }
   "A printf with ASCII characters 1-127" should "run" in {
     assertTesterPasses { new ASCIIPrintfTester }
+  }
+  "A printf with Printable ASCII characters 1-127" should "run" in {
+    assertTesterPasses { new ASCIIPrintableTester }
   }
 }
