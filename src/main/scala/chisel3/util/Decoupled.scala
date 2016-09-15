@@ -21,26 +21,9 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
   val bits  = Output(gen.chiselCloneType)
 }
 
-object DecoupledIO {
-  /** Adds a ready-valid handshaking protocol to any interface.
-    * The standard used is that the consumer uses the flipped interface.
-    */
-  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+object ReadyValidIO {
 
-  /** Take an IrrevocableIO and cast it to a DecoupledIO.
-    * This cast is only safe to do in cases where the IrrevocableIO
-    * is being produced as an output.
-    */
-  def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(getFirrtlDirection(irr.bits) == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
-    val d = Wire(new DecoupledIO(irr.bits))
-    d.bits := irr.bits
-    d.valid := irr.valid
-    irr.ready := d.ready
-    d
-  }
-
-  implicit class AddMethodsToDecoupled[T<:Data](val target: DecoupledIO[T]) extends AnyVal {
+  implicit class AddMethodsToReadyValid[T<:Data](val target: ReadyValidIO[T]) extends AnyVal {
     def fire(): Bool = target.ready && target.valid
 
     /** push dat onto the output bits of this interface to let the consumer know it has happened.
@@ -76,6 +59,26 @@ object DecoupledIO {
     def nodeq(): Unit = {
       target.ready := Bool(false)
     }
+  }
+}
+
+object DecoupledIO {
+  /** Adds a ready-valid handshaking protocol to any interface.
+    * The standard used is that the consumer uses the flipped interface.
+    */
+  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+
+  /** Take an IrrevocableIO and cast it to a DecoupledIO.
+    * This cast is only safe to do in cases where the IrrevocableIO
+    * is being produced as an output.
+    */
+  def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
+    require(getFirrtlDirection(irr.bits) == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
+    val d = Wire(new DecoupledIO(irr.bits))
+    d.bits := irr.bits
+    d.valid := irr.valid
+    irr.ready := d.ready
+    d
   }
 //  override def cloneType: this.type = {
 //    DeqIO(gen).asInstanceOf[this.type]
