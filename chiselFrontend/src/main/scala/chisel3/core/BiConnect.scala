@@ -217,8 +217,18 @@ object BiConnect {
 
         case (Some(Input),  Some(Input))  => throw NeitherDriverException
         case (Some(Output), Some(Output)) => throw BothDriversException
-        case (_, None)                    => throw UnknownRelationException
-        case (None, _)                    => throw UnknownRelationException
+        case (_, None)                    =>
+          if (connectCompileOptions.dontAssumeDirectionality) {
+            throw UnknownRelationException
+          } else {
+            issueConnectR2L(left, right)
+          }
+        case (None, _)                    =>
+          if (connectCompileOptions.dontAssumeDirectionality) {
+            throw UnknownRelationException
+          } else {
+            issueConnectR2L(left, right)
+          }
       }
     }
 
