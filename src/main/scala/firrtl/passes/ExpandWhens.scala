@@ -114,9 +114,9 @@ object ExpandWhens extends Pass {
           val conseqStmt = expandWhens(conseqNetlist, netlist +: defaults, AND(p, s.pred))(s.conseq)
           val altStmt = expandWhens(altNetlist, netlist +: defaults, AND(p, NOT(s.pred)))(s.alt)
 
-          // Process combined set of keys because we only want to create 1 mux for each node
-          //   being connected to in the conseq and/or alt
-          val memos = (conseqNetlist.keySet ++ altNetlist.keySet) map { lvalue =>
+          // Process combined maps because we only want to create 1 mux for each node
+          //   present in the conseq and/or alt
+          val memos = (conseqNetlist ++ altNetlist) map { case (lvalue, _) =>
             // Defaults in netlist get priority over those in defaults
             val default = netlist get lvalue match {
               case Some(v) => Some(v)
