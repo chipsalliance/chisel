@@ -45,12 +45,7 @@ object AnalysisUtils {
   // limitation: only works in a module (stops @ module inputs)
   // TODO: more thorough (i.e. a + 0 = a)
   def getConnectOrigin(connects: Map[String, Expression], node: String): Expression = {
-    if (connects contains node) {
-      val exp = connects(node)
-      // handles case when a node is connected to itself (connecting reg output back to input)
-      if (exp.serialize == node) exp
-      else getOrigin(connects, exp)
-    }
+    if (connects contains node) getOrigin(connects, connects(node))
     else EmptyExpression
   }
 
@@ -75,7 +70,8 @@ object AnalysisUtils {
       else e
     case DoPrim((PrimOps.AsUInt | PrimOps.AsSInt | PrimOps.AsClock), args, _, _) => 
       getOrigin(connects, args.head)
-    case _: WRef | _: SubField | _: SubIndex | _: SubAccess if connects contains e.serialize =>
+    // note: this should stop on a reg, but will stack overflow for combinational loops (not allowed)
+    case _: WRef | _: SubField | _: SubIndex | _: SubAccess if connects.contains(e.serialize) && kind(e) != RegKind =>
       getConnectOrigin(connects, e.serialize) 
     case _ => e
   }
