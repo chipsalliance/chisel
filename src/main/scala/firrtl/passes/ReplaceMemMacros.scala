@@ -22,7 +22,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     val uniqueMems = mutable.ArrayBuffer[DefMemory]()
 
     def updateMemMods(m: Module) = {
-      val memPortMap = mutable.HashMap[String, Expression]()
+      val memPortMap = new MemPortMap
 
       def updateMemStmts(s: Statement): Statement = s match {
         case m: DefMemory if containsInfo(m.info, "useMacro") => 
@@ -52,7 +52,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
       }
 
       val updatedMems = updateMemStmts(m.body)
-      val updatedConns = updateStmtRefs(updatedMems, memPortMap.toMap)
+      val updatedConns = updateStmtRefs(memPortMap)(updatedMems)
       m.copy(body = updatedConns)
     }
 
