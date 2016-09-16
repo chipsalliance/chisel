@@ -110,6 +110,19 @@ class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 object Irrevocable
 {
   def apply[T <: Data](gen: T): IrrevocableIO[T] = new IrrevocableIO(gen)
+
+  /** Take a DecoupledIO and cast it to an IrrevocableIO.
+    * This cast is only safe to do in cases where the IrrevocableIO
+    * is being consumed as an input.
+    */
+  def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
+    require(getFirrtlDirection(dec.bits) == INPUT, "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    val i = Wire(new IrrevocableIO(dec.bits))
+    dec.bits := i.bits
+    dec.valid := i.valid
+    i.ready := dec.ready
+    i
+  }
 }
 
 object EnqIO {
