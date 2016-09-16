@@ -13,9 +13,12 @@ object MemTransformUtils {
 
   type MemPortMap = collection.mutable.HashMap[String, Expression]
   type Memories = collection.mutable.ArrayBuffer[DefMemory]
+  type Modules = collection.mutable.ArrayBuffer[DefModule]
 
-  def createRef(n: String) = WRef(n, UnknownType, ExpKind, UNKNOWNGENDER)
-  def createSubField(exp: Expression, n: String) = WSubField(exp, n, UnknownType, UNKNOWNGENDER)
+  def createRef(n: String, t: Type = UnknownType, k: Kind = ExpKind) =
+    WRef(n, t, k, UNKNOWNGENDER)
+  def createSubField(exp: Expression, n: String) =
+    WSubField(exp, n, field_type(exp.tpe, n), UNKNOWNGENDER)
   def connectFields(lref: Expression, lname: String, rref: Expression, rname: String) = 
     Connect(NoInfo, createSubField(lref, lname), createSubField(rref, rname))
 
