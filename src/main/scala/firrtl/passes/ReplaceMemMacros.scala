@@ -14,13 +14,12 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
   def name = "Replace memories with black box wrappers" +
              " (optimizes when write mask isn't needed) + configuration file"
 
-
   // from Albert
   def createMemModule(m: DefMemory, wrapperName: String): Seq[DefModule] = {
     assert(m.dataType != UnknownType)
-    val wrapperIoType = MemPortUtils.memToBundle(m)
+    val wrapperIoType = memToBundle(m)
     val wrapperIoPorts = wrapperIoType.fields map (f => Port(NoInfo, f.name, Input, f.tpe))
-    val bbIoType = MemPortUtils.memToFlattenBundle(m)
+    val bbIoType = memToFlattenBundle(m)
     val bbIoPorts = bbIoType.fields map (f => Port(NoInfo, f.name, Input, f.tpe))
     val bbRef = createRef(m.name, bbIoType)
     val hasMask = containsInfo(m.info, "maskGran")
