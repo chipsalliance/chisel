@@ -10,8 +10,8 @@ import chisel3.NotStrict.CompileOptions
 
 /** An I/O bundle for the Arbiter */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
-  val in  = Flipped(Vec(n, DecoupledIO(gen)))
-  val out = DecoupledIO(gen)
+  val in  = Flipped(Vec(n, Decoupled(gen)))
+  val out = Decoupled(gen)
   val chosen = Output(UInt.width(log2Up(n)))
 }
 

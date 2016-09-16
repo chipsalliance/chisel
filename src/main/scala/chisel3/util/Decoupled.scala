@@ -62,7 +62,7 @@ object ReadyValidIO {
   }
 }
 
-object DecoupledIO {
+object Decoupled {
   /** Adds a ready-valid handshaking protocol to any interface.
     * The standard used is that the consumer uses the flipped interface.
     */
@@ -113,10 +113,10 @@ object Irrevocable
 }
 
 object EnqIO {
-  def apply[T<:Data](gen: T): DecoupledIO[T] = DecoupledIO(gen)
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
 }
 object DeqIO {
-  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(DecoupledIO(gen))
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
 }
 
 /** An I/O Bundle for Queues
