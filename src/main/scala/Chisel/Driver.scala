@@ -93,7 +93,9 @@ trait BackendCompilationUtilities {
         triggered = triggered || line.contains(assertionMsg)
         System.out.println(line)
       })
-    triggered
+    // Fail if a line contained an assertion or if we get a non-zero
+    // exit code
+    triggered || e != 0
   }
 
   def executeExpectingSuccess(prefix: String, dir: File): Boolean = {
