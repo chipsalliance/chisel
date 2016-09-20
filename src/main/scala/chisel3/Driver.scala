@@ -3,6 +3,7 @@
 package chisel3
 
 import chisel3._
+import scopt.OptionParser
 
 import scala.sys.process._
 import java.io._
@@ -166,7 +167,7 @@ object Driver extends BackendCompilationUtilities {
 
   private var target_dir: Option[String] = None
   def parseArgs(args: Array[String]): Unit = {
-    for (i <- 0 until args.size) {
+    for (i <- 0 until args.length) {
       if (args(i) == "--targetDir") {
         target_dir = Some(args(i + 1))
       }
@@ -174,4 +175,60 @@ object Driver extends BackendCompilationUtilities {
   }
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
+
+  case class ExecuteConfig(
+                         writeFiles:       Boolean = true,
+                         targetDir:        String  = ""
+                       )
+
+  case class ExecuteResult(
+                          circuit: Circuit,
+                          emittedString: String
+                          )
+
+  val parser = new OptionParser[ExecuteConfig]("scopt") {
+    head("scopt", "3.x")
+    //    opt[Boolean]('w', "write-files") action { (x, c) =>
+    //      c.copy(writeFiles = x)
+    //    } text { "write chisel files to target-dir" }
+
+    opt[String]('t', "target-dir") action { (x, c) =>
+      c.copy(targetDir = x)
+    } text { "directory to write firrtl and annotation files" }
+    opt[String]('f', "run-firrtl") action { (x, c) =>
+      c.copy(targetDir = x)
+    } text { "directory to write firrtl and annotation files" }
+  }
+
+  trait ChiselFileParser { self: OptionParser[ExecuteConfig] =>
+    head("scopt", "3.x")
+    //    opt[Boolean]('w', "write-files") action { (x, c) =>
+    //      c.copy(writeFiles = x)
+    //    } text { "write chisel files to target-dir" }
+
+    opt[String]('t', "target-dir") action { (x, c) =>
+      c.copy(targetDir = x)
+    } text { "directory to write firrtl and annotation files" }
+  }
+
+  def execute[T <: Module](dut: () => T, executeConfig: ExecuteConfig): ExecuteResult = {
+    val circuit = elaborate(dut)
+    val emittedString = emit(circuit)
+
+    if(executeConfig.targetDir.nonEmpty) {
+      dumpFirrtlWithAnnotations(circuit, Some(new File(executeConfig.targetDir)))
+    }
+
+    ExecuteResult(circuit, emittedString)
+  }
+
+  def execute[T <: Module](dut: () => T, args: Array[String]): ExecuteResult = {
+    parser.parse(args, ExecuteConfig()) match {
+      case Some(execConfig) =>
+        val result = execute(dut, execConfig)
+        result
+      case _ =>
+        throwException(s"Whoops no execution configuration generated for args: ${args.mkString(" ")}")
+    }
+  }
 }

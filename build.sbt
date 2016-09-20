@@ -67,6 +67,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
+  libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
