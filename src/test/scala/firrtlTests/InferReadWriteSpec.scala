@@ -38,7 +38,7 @@ class InferReadWriteSpec extends SimpleTransformSpec {
     val name = "Check Infer ReadWrite Ports"
     def findReadWrite(s: Statement): Boolean = s match {
       case s: DefMemory if s.readLatency > 0 && s.readwriters.size == 1 =>
-        s.name == "mem" && s.readwriters.head == "rw_0"
+        s.name == "mem" && s.readwriters.head == "rw"
       case s: Block =>
         s.stmts exists findReadWrite
       case _ => false

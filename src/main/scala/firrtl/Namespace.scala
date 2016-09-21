@@ -57,8 +57,6 @@ class Namespace private {
 }
 
 object Namespace {
-  def apply(): Namespace = new Namespace
-
   // Initializes a namespace from a Module
   def apply(m: DefModule): Namespace = {
     val namespace = new Namespace
@@ -69,7 +67,7 @@ object Namespace {
       case s: Block => s.stmts flatMap buildNamespaceStmt
       case _ => Nil
     }
-    namespace.namespace ++= (m.ports collect { case dec: IsDeclaration => dec.name })
+    namespace.namespace ++= m.ports map (_.name)
     m match {
       case in: Module =>
         namespace.namespace ++= buildNamespaceStmt(in.body)
@@ -82,9 +80,14 @@ object Namespace {
   /** Initializes a [[Namespace]] for [[ir.Module]] names in a [[ir.Circuit]] */
   def apply(c: Circuit): Namespace = {
     val namespace = new Namespace
-    c.modules foreach { m =>
-      namespace.namespace += m.name
-    }
+    namespace.namespace ++= c.modules map (_.name)
+    namespace
+  }
+
+  /** Initializes a [[Namespace]] from arbitrary strings **/
+  def apply(names: Seq[String] = Nil): Namespace = {
+    val namespace = new Namespace
+    namespace.namespace ++= names
     namespace
   }
 }
