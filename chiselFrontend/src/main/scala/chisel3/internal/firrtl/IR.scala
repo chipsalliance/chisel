@@ -42,6 +42,7 @@ object PrimOp {
   val ConvertOp = PrimOp("cvt")
   val AsUIntOp = PrimOp("asUInt")
   val AsSIntOp = PrimOp("asSInt")
+  val AsClockOp = PrimOp("asClock")
 }
 
 abstract class Arg {
