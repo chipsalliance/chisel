@@ -4,6 +4,7 @@ package chisel3.iotesters
 
 import chisel3._
 import chisel3.testers.BasicTester
+import chisel3.Strict.CompileOptions
 
 /**
   * experimental version of a Tester that allows arbitrary testing circuitry to be run
