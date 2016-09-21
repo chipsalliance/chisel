@@ -1,6 +1,7 @@
 package Chisel
 
 import chisel3.{ iotesters => ciot }
+import java.io.File
 
 /**
   * Provide "Chisel" interface to specific chisel3 internals.
@@ -33,16 +34,17 @@ package object iotesters {
       * Runs the ClassicTester using the verilator backend without doing Verilator compilation and returns a Boolean indicating success or failure
       * Requires the caller to supply path the already compile Verilator binary
       */
-    def run[T <: Module](dutGen: () => T, binary: String)(
+    def run[T <: Module](dutGen: () => T, binary: String, args: String*)(
         testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
-      ciot.Driver.run(dutGen, binary)(testerGen)
+      ciot.Driver.run(dutGen, binary +: args.toSeq)(testerGen)
+    }
+    def run[T <: Module](dutGen: () => T, binary: File, waveform: Option[File] = None)(
+        testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
+      ciot.Driver.run(dutGen, binary, waveform)(testerGen)
     }
     def run[T <: Module](dutGen: () => T, cmd: Seq[String])(
         testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
       ciot.Driver.run(dutGen, cmd)(testerGen)
-    }
-    def run[T <: Module](dutGen: () => T)(testerGen: T => ciot.PeekPokeTester[T]): Boolean = {
-      ciot.Driver.run(dutGen)(testerGen)
     }
   }
 }

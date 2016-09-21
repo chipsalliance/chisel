@@ -41,17 +41,18 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
   import firrtl.ir._
   import firrtl.Mappers._
   import firrtl.Annotations.AnnotationMap
-  import firrtl.Utils.{create_exps, long_BANG}
+  import firrtl.Utils.create_exps
+  import firrtl.passes.bitWidth
 
   private def findWidths(m: DefModule) = {
-    type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, Long)]
+    type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, BigInt)]
     val modNodes = nodes filter (_.parentModName == m.name)
     val widthMap = new WidthMap
 
     /* Sadly, ports disappear in verilator ...
     def loop_port(port: Port) = {
       widthMap ++= (create_exps(port.name, port.tpe) flatMap (exp =>
-        modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+        modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe)))
       port
     }
     */
@@ -61,16 +62,16 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
         /* Sadly, wires disappear in verilator...
         case s: DefWire if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
           widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe)))
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe)))
         */
         case s: DefRegister if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
           widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe))))
         case s: DefNode if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
           widthMap ++= (create_exps(s.name, s.value.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> long_BANG(exp.tpe))))
+            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe))))
         case s: DefMemory if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
-          widthMap ++= (modNodes filter (_.instanceName == s.name) map (_ -> long_BANG(s.dataType)))
+          widthMap ++= (modNodes filter (_.instanceName == s.name) map (_ -> bitWidth(s.dataType)))
         case _ =>
       }
       s map loop
@@ -80,7 +81,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     widthMap.toSeq
   }
 
-  private def pushBack(vector: String, pathName: String, width: Long) {
+  private def pushBack(vector: String, pathName: String, width: BigInt) {
     if (width <= 8) {
       writer.write(s"        sim_data.$vector.push_back(new VerilatorCData(&(${pathName})));\n")
     } else if (width <= 16) {
@@ -282,53 +283,56 @@ private[iotesters] object setupVerilatorBackend {
   }
 }
 
-private[iotesters] class VerilatorBackend(
-                                          dut: Chisel.Module, 
+private[iotesters] class VerilatorBackend(dut: Chisel.Module, 
                                           cmd: Seq[String],
-                                          verbose: Boolean = true,
-                                          logger: PrintStream = System.out,
-                                          _base: Int = 16,
                                           _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
 
-  val simApiInterface = new SimApiInterface(dut, cmd, logger)
+  val simApiInterface = new SimApiInterface(dut, cmd)
 
-  def poke(signal: InstanceId, value: BigInt, off: Option[Int]) {
+  def poke(signal: InstanceId, value: BigInt, off: Option[Int])
+          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
     val idx = off map (x => s"[$x]") getOrElse ""
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     poke(path, value)
   }
 
-  def peek(signal: InstanceId, off: Option[Int]): BigInt = {
+  def peek(signal: InstanceId, off: Option[Int])
+          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
     val idx = off map (x => s"[$x]") getOrElse ""
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     peek(path)
   }
 
-  def expect(signal: InstanceId, expected: BigInt, msg: => String): Boolean = {
+  def expect(signal: InstanceId, expected: BigInt, msg: => String)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}"
     expect(path, expected, msg)
   }
 
-  def poke(path: String, value: BigInt) {
-    if (verbose) logger println s"  POKE ${path} <- ${bigIntToStr(value, _base)}"
+  def poke(path: String, value: BigInt)
+          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
+    if (verbose) logger println s"  POKE ${path} <- ${bigIntToStr(value, base)}"
     simApiInterface.poke(path, value)
   }
 
-  def peek(path: String): BigInt = {
+  def peek(path: String)
+          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
     val result = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
-    if (verbose) logger println s"  PEEK ${path} -> ${bigIntToStr(result, _base)}"
+    if (verbose) logger println s"  PEEK ${path} -> ${bigIntToStr(result, base)}"
     result
   }
 
-  def expect(path: String, expected: BigInt, msg: => String = ""): Boolean = {
+  def expect(path: String, expected: BigInt, msg: => String = "")
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
     val got = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
     val good = got == expected
-    if (verbose) logger println (s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, _base)} == """
-                               + s"""${bigIntToStr(expected, _base)} ${if (good) "PASS" else "FAIL"}""")
+    if (verbose) logger println (
+      s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, base)} == """ +
+      s"""${bigIntToStr(expected, base)} ${if (good) "PASS" else "FAIL"}""")
     good
   }
 
-  def step(n: Int): Unit = {
+  def step(n: Int)(implicit logger: PrintStream): Unit = {
     simApiInterface.step(n)
   }
 
@@ -336,7 +340,7 @@ private[iotesters] class VerilatorBackend(
     simApiInterface.reset(n)
   }
 
-  def finish: Unit = {
+  def finish(implicit logger: PrintStream): Unit = {
     simApiInterface.finish
   }
 }

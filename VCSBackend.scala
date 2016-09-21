@@ -141,11 +141,7 @@ private[iotesters] object setupVCSBackend {
   }
 }
 
-private[iotesters] class VCSBackend(
-                                    dut: chisel3.Module,
+private[iotesters] class VCSBackend(dut: chisel3.Module,
                                     cmd: Seq[String],
-                                    verbose: Boolean = true,
-                                    logger: PrintStream = System.out,
-                                    _base: Int = 16,
                                     _seed: Long = System.currentTimeMillis)
-           extends VerilatorBackend(dut, cmd, verbose, logger, _base, _seed)
+           extends VerilatorBackend(dut, cmd, _seed)
