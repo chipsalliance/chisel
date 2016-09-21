@@ -33,7 +33,7 @@ import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.Utils.{one, zero, BoolType}
 import MemPortUtils.memPortField
-import AnalysisUtils.{Connects, getConnects}
+import AnalysisUtils.{Connects, getConnects, getConnectOrigin}
 import WrappedExpression.weq
 import Annotations._
 
@@ -117,7 +117,9 @@ object InferReadWritePass extends Pass {
       for (w <- mem.writers ; r <- mem.readers) {
         val wp = getProductTerms(connects)(memPortField(mem, w, "en"))
         val rp = getProductTerms(connects)(memPortField(mem, r, "en"))
-        if (wp exists (a => rp exists (b => checkComplement(a, b)))) {
+        val wclk = getConnectOrigin(connects, memPortField(mem, w, "clk"))
+        val rclk = getConnectOrigin(connects, memPortField(mem, r, "clk"))
+        if (weq(wclk, rclk) && (wp exists (a => rp exists (b => checkComplement(a, b))))) {
           val rw = namespace newName "rw"
           val rwExp = createSubField(createRef(mem.name), rw)
           readwriters += rw
@@ -132,7 +134,7 @@ object InferReadWritePass extends Pass {
           repl(memPortField(mem, w, "addr")) = EmptyExpression
           repl(memPortField(mem, w, "data")) = createSubField(rwExp, "wdata")
           repl(memPortField(mem, w, "mask")) = createSubField(rwExp, "wmask")
-          stmts += Connect(NoInfo, createSubField(rwExp, "clk"), createRef("clk")) // TODO: fix it
+          stmts += Connect(NoInfo, createSubField(rwExp, "clk"), wclk)
           stmts += Connect(NoInfo, createSubField(rwExp, "en"),
              DoPrim(Or, Seq(connects(memPortField(mem, r, "en")),
                             connects(memPortField(mem, w, "en"))), Nil, BoolType))

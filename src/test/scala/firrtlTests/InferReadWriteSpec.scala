@@ -34,6 +34,9 @@ import firrtl.Mappers._
 import Annotations._
 
 class InferReadWriteSpec extends SimpleTransformSpec {
+  class InferReadWriteCheckException extends PassException(
+    "Readwrite ports are not found!")
+
   object InferReadWriteCheckPass extends Pass {
     val name = "Check Infer ReadWrite Ports"
     def findReadWrite(s: Statement): Boolean = s match {
@@ -51,7 +54,7 @@ class InferReadWriteSpec extends SimpleTransformSpec {
         case m: ExtModule => false
       }
       if (!foundReadWrite) {
-        errors append new PassException("Readwrite ports are not found!")
+        errors append new InferReadWriteCheckException
         errors.trigger
       }
       c
@@ -73,7 +76,7 @@ class InferReadWriteSpec extends SimpleTransformSpec {
      new EmitFirrtl(writer)
   )
 
-  "Infer ReadWrite Ports" should "infer readwrite ports" in {
+  "Infer ReadWrite Ports" should "infer readwrite ports for the same clock" in {
     val input = """
 circuit sram6t :
   module sram6t :
@@ -97,10 +100,42 @@ circuit sram6t :
       T_5 <= io.wdata
 """.stripMargin
 
-    val annotaitonMap = AnnotationMap(Seq(InferReadWriteAnnotation("sram6t", TransID(-1))))
+    val annotationMap = AnnotationMap(Seq(InferReadWriteAnnotation("sram6t", TransID(-1))))
     val writer = new java.io.StringWriter
-    compile(parse(input), annotaitonMap, writer)
+    compile(parse(input), annotationMap, writer)
     // Check correctness of firrtl
     parse(writer.toString)
+  }
+
+  "Infer ReadWrite Ports" should "not infer readwrite ports for the difference clocks" in {
+    val input = """
+circuit sram6t :
+  module sram6t :
+    input clk1 : Clock
+    input clk2 : Clock
+    input reset : UInt<1>
+    output io : {flip en : UInt<1>, flip wen : UInt<1>, flip waddr : UInt<8>, flip wdata : UInt<32>, flip raddr : UInt<8>, rdata : UInt<32>}
+
+    io is invalid
+    smem mem : UInt<32>[128]
+    node T_0 = eq(io.wen, UInt<1>("h00"))
+    node T_1 = and(io.en, T_0)
+    wire T_2 : UInt
+    T_2 is invalid
+    when T_1 :
+      T_2 <= io.raddr
+    read mport T_3 = mem[T_2], clk1
+    io.rdata <= T_3
+    node T_4 = and(io.en, io.wen)
+    when T_4 :
+      write mport T_5 = mem[io.waddr], clk2
+      T_5 <= io.wdata
+""".stripMargin
+
+    val annotationMap = AnnotationMap(Seq(InferReadWriteAnnotation("sram6t", TransID(-1))))
+    val writer = new java.io.StringWriter
+    intercept[InferReadWriteCheckException] {
+      compile(parse(input), annotationMap, writer)
+    }
   }
 }

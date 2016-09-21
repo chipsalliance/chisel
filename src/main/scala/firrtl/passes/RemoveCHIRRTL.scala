@@ -74,9 +74,9 @@ object RemoveCHIRRTL extends Pass {
       case (s:CDefMPort) =>
         val p = mports getOrElse (s.mem, EMPs)
         s.direction match {
-          case MRead => p.readers += MPort(s.name,s.exps(1))
-          case MWrite => p.writers += MPort(s.name,s.exps(1))
-          case MReadWrite => p.readwriters += MPort(s.name,s.exps(1))
+          case MRead => p.readers += MPort(s.name, s.exps(1))
+          case MWrite => p.writers += MPort(s.name, s.exps(1))
+          case MReadWrite => p.readwriters += MPort(s.name, s.exps(1))
         }
         mports(s.mem) = p
       case s =>
@@ -90,17 +90,14 @@ object RemoveCHIRRTL extends Pass {
       types(s.name) = s.tpe
       val taddr = UIntType(IntWidth(1 max ceilLog2(s.size)))
       val tdata = s.tpe
-      def set_poison(vec: Seq[MPort], addr: String) = vec flatMap (r => Seq(
-        IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), addr, taddr)),
-        IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), "clk", taddr))
+      def set_poison(vec: Seq[MPort]) = vec flatMap (r => Seq(
+        IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), "addr", taddr)),
+        IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), "clk", ClockType))
       ))
       def set_enable(vec: Seq[MPort], en: String) = vec map (r =>
-        Connect(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), en, taddr), zero)
+        Connect(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), en, BoolType), zero)
       )
-      def set_wmode (vec: Seq[MPort], wmode: String) = vec map (r =>
-        Connect(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), wmode, taddr), zero)
-      )
-      def set_write (vec: Seq[MPort], data: String, mask: String) = vec flatMap {r =>
+      def set_write(vec: Seq[MPort], data: String, mask: String) = vec flatMap {r =>
         val tmask = createMask(s.tpe)
         IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), data, tdata)) +:
              (create_exps(SubField(SubField(Reference(s.name, ut), r.name, ut), mask, tmask))
@@ -110,13 +107,13 @@ object RemoveCHIRRTL extends Pass {
       val rds = (mports getOrElse (s.name, EMPs)).readers
       val wrs = (mports getOrElse (s.name, EMPs)).writers
       val rws = (mports getOrElse (s.name, EMPs)).readwriters
-      val stmts = set_poison(rds, "addr") ++
+      val stmts = set_poison(rds) ++
         set_enable(rds, "en") ++
-        set_poison(wrs, "addr") ++
+        set_poison(wrs) ++
         set_enable(wrs, "en") ++
         set_write(wrs, "data", "mask") ++
-        set_poison(rws, "addr") ++
-        set_wmode(rws, "wmode") ++
+        set_poison(rws) ++
+        set_enable(rws, "wmode") ++
         set_enable(rws, "en") ++
         set_write(rws, "wdata", "wmask")
       val mem = DefMemory(s.info, s.name, s.tpe, s.size, 1, if (s.seq) 1 else 0,
