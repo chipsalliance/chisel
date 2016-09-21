@@ -166,9 +166,9 @@ case class WhenEnd(sourceInfo: SourceInfo) extends Command
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-case class Stop(sourceInfo: SourceInfo, clk: Arg, ret: Int) extends Command
+case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
-case class Printf(sourceInfo: SourceInfo, clk: Arg, pable: Printable) extends Command
+case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
 
 case class Circuit(name: String, components: Seq[Component])
