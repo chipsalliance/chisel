@@ -699,6 +699,11 @@ sealed class Bool(dir: Direction, lit: Option[ULit] = None) extends UInt(dir, Wi
   def && (that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   def do_&& (that: Bool)(implicit sourceInfo: SourceInfo): Bool = this & that
+
+  /** Reinterprets this Bool as a Clock.  */
+  def asClock(): Clock = macro SourceInfoTransform.noArg
+
+  def do_asClock(implicit sourceInfo: SourceInfo): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
 }
 
 object Bool {
