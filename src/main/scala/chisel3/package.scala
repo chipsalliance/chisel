@@ -165,9 +165,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val OUTPUT = chisel3.core.Direction.Output
   val NODIR = chisel3.core.Direction.Unspecified
   type ChiselException = chisel3.internal.ChiselException
-  type ValidIO[+T <: Data] = chisel3.util.Valid[T]
-  val ValidIO = chisel3.util.Valid
-  val DecoupledIO = chisel3.util.Decoupled
 
   class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
     def init(): Unit = {
