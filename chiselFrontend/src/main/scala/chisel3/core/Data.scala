@@ -5,9 +5,10 @@ package chisel3.core
 import scala.language.experimental.macros
 
 import chisel3.internal._
-import chisel3.internal.Builder.pushCommand
+import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.internal.firrtl.PrimOp.AsUIntOp
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name
@@ -177,4 +178,6 @@ sealed class Clock(dirArg: Direction) extends Element(dirArg, Width(1)) {
 
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
 }
