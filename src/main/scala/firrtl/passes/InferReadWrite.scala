@@ -80,12 +80,12 @@ object InferReadWritePass extends Pass {
     case (DoPrim(Not, args, _, _), _) => weq(args.head, b)
     // b ?= Eq(a, 0) or b ?= Eq(0, a)
     case (_, DoPrim(Eq, args, _, _)) =>
-      weq(args(0), a) && weq(args(1), zero) ||
-      weq(args(1), a) && weq(args(0), zero)
+      weq(args.head, a) && weq(args(1), zero) ||
+      weq(args(1), a) && weq(args.head, zero)
     // a ?= Eq(b, 0) or b ?= Eq(0, a)
     case (DoPrim(Eq, args, _, _), _) =>
-      weq(args(0), b) && weq(args(1), zero) ||
-      weq(args(1), b) && weq(args(0), zero)
+      weq(args.head, b) && weq(args(1), zero) ||
+      weq(args(1), b) && weq(args.head, zero)
     case _ => false
   }
 

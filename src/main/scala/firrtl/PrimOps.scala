@@ -132,12 +132,12 @@ object PrimOps extends LazyLogging {
       case (IntWidth(i), IntWidth(j)) => IntWidth(min(i,j))
       case _ => MinWidth(Seq(w1, w2))
     }
-    def t1 = e.args(0).tpe
+    def t1 = e.args.head.tpe
     def t2 = e.args(1).tpe
     def t3 = e.args(2).tpe
-    def w1 = passes.getWidth(e.args(0).tpe)
+    def w1 = passes.getWidth(e.args.head.tpe)
     def w2 = passes.getWidth(e.args(1).tpe)
-    def c1 = IntWidth(e.consts(0))
+    def c1 = IntWidth(e.consts.head)
     def c2 = IntWidth(e.consts(1))
     e copy (tpe = (e.op match {
       case Add => (t1, t2) match {

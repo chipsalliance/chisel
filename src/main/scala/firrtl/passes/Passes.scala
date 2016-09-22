@@ -211,7 +211,7 @@ object Legalize extends Pass {
     }
   }
   private def legalizeBits(expr: DoPrim): Expression = {
-    lazy val (hi, low) = (expr.consts(0), expr.consts(1))
+    lazy val (hi, low) = (expr.consts.head, expr.consts(1))
     lazy val mask = (BigInt(1) << (hi - low + 1).toInt) - 1
     lazy val width = IntWidth(hi - low + 1)
     expr.args.head match {

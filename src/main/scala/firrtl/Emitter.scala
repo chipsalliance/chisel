@@ -163,9 +163,9 @@ class VerilogEmitter extends Emitter {
        case (t: UIntType) => e
        case (t: SIntType) => Seq("$signed(",e,")")
      }
-     def a0: Expression = doprim.args(0)
+     def a0: Expression = doprim.args.head
      def a1: Expression = doprim.args(1)
-     def c0: Int = doprim.consts(0).toInt
+     def c0: Int = doprim.consts.head.toInt
      def c1: Int = doprim.consts(1).toInt
 
      def checkArgumentLegality(e: Expression) = e match {

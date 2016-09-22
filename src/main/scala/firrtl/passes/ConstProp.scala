@@ -49,7 +49,7 @@ object ConstProp extends Pass {
     def fold(c1: Literal, c2: Literal): Expression
     def simplify(e: Expression, lhs: Literal, rhs: Expression): Expression
 
-    def apply(e: DoPrim): Expression = (e.args(0), e.args(1)) match {
+    def apply(e: DoPrim): Expression = (e.args.head, e.args(1)) match {
       case (lhs: Literal, rhs: Literal) => fold(lhs, rhs)
       case (lhs: Literal, rhs) => pad(simplify(e, lhs, rhs), e.tpe)
       case (lhs, rhs: Literal) => pad(simplify(e, rhs, lhs), e.tpe)
@@ -102,23 +102,23 @@ object ConstProp extends Pass {
     }
   }
 
-  private def foldConcat(e: DoPrim) = (e.args(0), e.args(1)) match {
+  private def foldConcat(e: DoPrim) = (e.args.head, e.args(1)) match {
     case (UIntLiteral(xv, IntWidth(xw)), UIntLiteral(yv, IntWidth(yw))) => UIntLiteral(xv << yw.toInt | yv, IntWidth(xw + yw))
     case _ => e
   }
 
-  private def foldShiftLeft(e: DoPrim) = e.consts(0).toInt match {
-    case 0 => e.args(0)
-    case x => e.args(0) match {
+  private def foldShiftLeft(e: DoPrim) = e.consts.head.toInt match {
+    case 0 => e.args.head
+    case x => e.args.head match {
       case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v << x, IntWidth(w + x))
       case SIntLiteral(v, IntWidth(w)) => SIntLiteral(v << x, IntWidth(w + x))
       case _ => e
     }
   }
 
-  private def foldShiftRight(e: DoPrim) = e.consts(0).toInt match {
-    case 0 => e.args(0)
-    case x => e.args(0) match {
+  private def foldShiftRight(e: DoPrim) = e.consts.head.toInt match {
+    case 0 => e.args.head
+    case x => e.args.head match {
       // TODO when amount >= x.width, return a zero-width wire
       case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v >> x, IntWidth((w - x) max 1))
       // take sign bit if shift amount is larger than arg width
@@ -153,7 +153,7 @@ object ConstProp extends Pass {
         def === (that: Range) =
           Seq(this.min, this.max, that.min, that.max)
             .sliding(2,1)
-            .map(x => x(0) == x(1))
+            .map(x => x.head == x(1))
             .reduce(_ && _)
         def > (that: Range) = this.min > that.max
         def >= (that: Range) = this.min >= that.max
@@ -177,7 +177,7 @@ object ConstProp extends Pass {
       // Calculates an expression's range of values
       x match {
         case e: DoPrim => {
-          def r0 = range(e.args(0))
+          def r0 = range(e.args.head)
           def r1 = range(e.args(1))
           e.op match {
             // Always true
@@ -209,29 +209,29 @@ object ConstProp extends Pass {
     case Eq => FoldEqual(e)
     case Neq => FoldNotEqual(e)
     case (Lt | Leq | Gt | Geq) => foldComparison(e)
-    case Not => e.args(0) match {
+    case Not => e.args.head match {
       case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v ^ ((BigInt(1) << w.toInt) - 1), IntWidth(w))
       case _ => e
     }
-    case AsUInt => e.args(0) match {
+    case AsUInt => e.args.head match {
       case SIntLiteral(v, IntWidth(w)) => UIntLiteral(v + (if (v < 0) BigInt(1) << w.toInt else 0), IntWidth(w))
       case u: UIntLiteral => u
       case _ => e
     }
-    case AsSInt => e.args(0) match {
+    case AsSInt => e.args.head match {
       case UIntLiteral(v, IntWidth(w)) => SIntLiteral(v - ((v >> (w.toInt-1)) << w.toInt), IntWidth(w))
       case s: SIntLiteral => s
       case _ => e
     }
-    case Pad => e.args(0) match {
-      case UIntLiteral(v, _) => UIntLiteral(v, IntWidth(e.consts(0)))
-      case SIntLiteral(v, _) => SIntLiteral(v, IntWidth(e.consts(0)))
-      case _ if bitWidth(e.args(0).tpe) == e.consts(0) => e.args(0)
+    case Pad => e.args.head match {
+      case UIntLiteral(v, _) => UIntLiteral(v, IntWidth(e.consts.head))
+      case SIntLiteral(v, _) => SIntLiteral(v, IntWidth(e.consts.head))
+      case _ if bitWidth(e.args.head.tpe) == e.consts.head => e.args.head
       case _ => e
     }
-    case Bits => e.args(0) match {
+    case Bits => e.args.head match {
       case lit: Literal => {
-        val hi = e.consts(0).toInt
+        val hi = e.consts.head.toInt
         val lo = e.consts(1).toInt
         require(hi >= lo)
         UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), getWidth(e.tpe))

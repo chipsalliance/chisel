@@ -35,7 +35,7 @@ import firrtl.PrimOps._
 object seqCat {
   def apply(args: Seq[Expression]): Expression = args.length match {
     case 0 => error("Empty Seq passed to seqcat")
-    case 1 => args(0)
+    case 1 => args.head
     case 2 => DoPrim(PrimOps.Cat, args, Nil, UIntType(UnknownWidth))
     case _ =>
       val (high, low) = args splitAt (args.length / 2)

@@ -280,7 +280,7 @@ case class CDefMPort(info: Info,
     direction: MPortDir) extends Statement {
   def serialize: String = {
     val dir = direction.serialize
-    s"$dir mport $name = $mem[${exps(0).serialize}], ${exps(1).serialize}" + info.serialize
+    s"$dir mport $name = $mem[${exps.head.serialize}], ${exps(1).serialize}" + info.serialize
   }
   def mapExpr(f: Expression => Expression): Statement = this.copy(exps = exps map f)
   def mapStmt(f: Statement => Statement): Statement = this

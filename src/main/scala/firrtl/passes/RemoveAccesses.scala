@@ -115,7 +115,7 @@ object RemoveAccesses extends Pass {
         def removeFemale(info: Info, loc: Expression): Expression = loc match {
           case (_: WSubAccess| _: WSubField| _: WSubIndex| _: WRef) if (hasAccess(loc)) => 
             val ls = getLocations(loc)
-            if (ls.size == 1 & weq(ls(0).guard,one)) loc
+            if (ls.size == 1 & weq(ls.head.guard,one)) loc
             else {
               val (wire, temp) = create_temp(loc)
               stmts += wire
