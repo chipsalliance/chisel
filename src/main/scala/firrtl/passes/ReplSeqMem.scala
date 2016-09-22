@@ -44,8 +44,8 @@ class ConfWriter(filename: String) {
     // legacy
     val maskGran = getInfo(m.info, "maskGran")
     val readers = List.fill(m.readers.length)("read")
-    val writers = List.fill(m.writers.length)(if (maskGran == None) "write" else "mwrite")
-    val readwriters = List.fill(m.readwriters.length)(if (maskGran == None) "rw" else "mrw")
+    val writers = List.fill(m.writers.length)(if (maskGran.isEmpty) "write" else "mwrite")
+    val readwriters = List.fill(m.readwriters.length)(if (maskGran.isEmpty) "rw" else "mrw")
     val ports = (writers ++ readers ++ readwriters) mkString ","
     val maskGranConf = maskGran match { case None => "" case Some(p) => s"mask_gran $p" }
     val width = bitWidth(m.dataType)

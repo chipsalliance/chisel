@@ -72,11 +72,11 @@ class InlineInstances (transID: TransID) extends Transform {
       }
 
       moduleNames.foreach{mn => checkExists(mn.name)}
-      if (!errors.isEmpty) throw new PassExceptions(errors)
+      if (errors.nonEmpty) throw new PassExceptions(errors)
       moduleNames.foreach{mn => checkExternal(mn.name)}
-      if (!errors.isEmpty) throw new PassExceptions(errors)
+      if (errors.nonEmpty) throw new PassExceptions(errors)
       instanceNames.foreach{cn => checkInstance(cn)}
-      if (!errors.isEmpty) throw new PassExceptions(errors)
+      if (errors.nonEmpty) throw new PassExceptions(errors)
    }
 
    def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName]): TransformResult = {

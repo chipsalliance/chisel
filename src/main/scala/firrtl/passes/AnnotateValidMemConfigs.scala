@@ -39,7 +39,7 @@ case class MemDimension(
     rules: Option[DimensionRules],
     set: Option[List[Int]]) {
   require (
-    if (rules == None) set != None else set == None, 
+    if (rules.isEmpty) set.isDefined else set.isEmpty,
     "Should specify either rules or a list of valid options, but not both"
   )
   def getValid = set.getOrElse(rules.get.getValid).sorted
@@ -120,7 +120,7 @@ case class SRAMCompiler(
     fillWMask: Boolean) {
   require(portType == "RW" || portType == "R,W", "Memory must be single port RW or dual port R,W")
   require(
-    (configFile != None && configPattern != None && wMaskArg != None) || configFile == None, 
+    (configFile.isDefined && configPattern.isDefined && wMaskArg.isDefined) || configFile.isEmpty,
     "Config pattern must be provided with config file"
   ) 
   def ymuxVals = rules.map(_.ymux._1).sortWith(_ < _)

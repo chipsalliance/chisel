@@ -616,7 +616,7 @@ class VerilogEmitter extends Emitter {
         for (x <- declares) emit(Seq(tab, x))
         for (x <- instdeclares) emit(Seq(tab, x))
         for (x <- assigns) emit(Seq(tab, x))
-        if (!initials.isEmpty) {
+        if (initials.nonEmpty) {
           emit(Seq("`ifdef RANDOMIZE"))
           emit(Seq("  integer initvar;"))
           emit(Seq("  initial begin"))
@@ -631,7 +631,7 @@ class VerilogEmitter extends Emitter {
           emit(Seq("`endif"))
         }
  
-        for (clk_stream <- at_clock if !clk_stream._2.isEmpty) {
+        for (clk_stream <- at_clock if clk_stream._2.nonEmpty) {
           emit(Seq(tab, "always @(posedge ", clk_stream._1, ") begin"))
           for (x <- clk_stream._2) emit(Seq(tab, tab, x))
           emit(Seq(tab, "end"))

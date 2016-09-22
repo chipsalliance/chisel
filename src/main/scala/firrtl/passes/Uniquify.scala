@@ -148,7 +148,7 @@ object Uniquify extends Pass {
       case (from: BundleType, to: BundleType) =>
         (from.fields zip to.fields flatMap { case (f, t) =>
           val eltsMap = createNameMapping(f.tpe, t.tpe)
-          if ((f.name != t.name) || (eltsMap.size > 0)) {
+          if ((f.name != t.name) || eltsMap.nonEmpty) {
             Map(f.name -> NameMapNode(t.name, eltsMap))
           } else {
             Map[String, NameMapNode]()
