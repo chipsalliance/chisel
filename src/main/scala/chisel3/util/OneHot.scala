@@ -7,8 +7,12 @@ package chisel3.util
 
 import chisel3._
 
-/** Converts from One Hot Encoding to a UInt indicating which bit is active
-  * This is the inverse of [[Chisel.UIntToOH UIntToOH]]*/
+/** Returns the bit position of the sole high bit of the input bitvector.
+  *
+  * Inverse operation of [[UIntToOH]].
+  *
+  * @note assumes exactly one high bit, results undefined otherwise
+  */
 object OHToUInt {
   def apply(in: Seq[Bool]): UInt = apply(Cat(in.reverse), in.size)
   def apply(in: Vec[Bool]): UInt = apply(in.asUInt, in.size)
@@ -26,9 +30,9 @@ object OHToUInt {
   }
 }
 
-/** @return the bit position of the trailing 1 in the input vector
-  * with the assumption that multiple bits of the input bit vector can be set
-  * @example {{{ data_out := PriorityEncoder(data_in) }}}
+/** Returns the bit position of the least-significant high bit of the input bitvector.
+  *
+  * Multiple bits may be high in the input.
   */
 object PriorityEncoder {
   def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(UInt(_)))
@@ -37,8 +41,7 @@ object PriorityEncoder {
 
 /** Returns the one hot encoding of the input UInt.
   */
-object UIntToOH
-{
+object UIntToOH {
   def apply(in: UInt, width: Int = -1): UInt =
     if (width == -1) {
       UInt(1) << in
@@ -47,11 +50,10 @@ object UIntToOH
     }
 }
 
-/** Returns a bit vector in which only the least-significant 1 bit in
-  the input vector, if any, is set.
+/** Returns a bit vector in which only the least-significant 1 bit in the input vector, if any,
+  * is set.
   */
-object PriorityEncoderOH
-{
+object PriorityEncoderOH {
   private def encode(in: Seq[Bool]): UInt = {
     val outs = Seq.tabulate(in.size)(i => UInt(BigInt(1) << i, in.size))
     PriorityMux(in :+ Bool(true), outs :+ UInt(0, in.size))

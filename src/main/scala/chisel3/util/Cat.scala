@@ -6,16 +6,15 @@ import chisel3._
 import chisel3.core.SeqUtils
 
 object Cat {
-  /** Combine data elements together
-    * @param a Data to combine with
-    * @param r any number of other Data elements to be combined in order
-    * @return A UInt which is all of the bits combined together
+  /** Concatenates the argument data elements, in argument order, together.
     */
   def apply[T <: Bits](a: T, r: T*): UInt = apply(a :: r.toList)
 
-  /** Combine data elements together
-    * @param r any number of other Data elements to be combined in order
-    * @return A UInt which is all of the bits combined together
+  /** Concatenates the data elements of the input sequence, in reverse sequence order, together.
+    * The first element of the sequence forms the most significant bits, while the last element
+    * in the sequence forms the least significant bits.
+    *
+    * Equivalent to r(0) ## r(1) ## ... ## r(n-1).
     */
   def apply[T <: Bits](r: Seq[T]): UInt = SeqUtils.asUInt(r.reverse)
 }
