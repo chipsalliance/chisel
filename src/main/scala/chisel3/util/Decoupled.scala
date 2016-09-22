@@ -21,10 +21,10 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
   def fire(dummy: Int = 0): Bool = ready && valid
 }
 
-/** A concrete subclass of ReadyValidIO signalling that the user expects a
+/** A concrete subclass of ReadyValidIO signaling that the user expects a
   * "decoupled" interface: 'valid' indicates that the producer has
   * put valid data in 'bits', and 'ready' indicates that the consumer is ready
-  * to accept the data this cycle. No requirements are placed on the signalling
+  * to accept the data this cycle. No requirements are placed on the signaling
   * of ready or valid.
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
@@ -35,12 +35,12 @@ class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 /** This factory adds a decoupled handshaking protocol to a data bundle. */
 object Decoupled
 {
-  /** Take any Data and wrap it in a DecoupledIO interface */
+  /** Wraps some Data with a DecoupledIO interface. */
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
-  /** Take an IrrevocableIO and cast it to a DecoupledIO.
-    * This cast is only safe to do in cases where the IrrevocableIO
-    * is being produced as an output.
+  /** Downconverts an IrrevocableIO output to a DecoupledIO, dropping guarantees of irrevocability.
+    *
+    * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(irr.bits.dir == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
@@ -67,9 +67,10 @@ object Irrevocable
 {
   def apply[T <: Data](gen: T): IrrevocableIO[T] = new IrrevocableIO(gen)
 
-  /** Take a DecoupledIO and cast it to an IrrevocableIO.
-    * This cast is only safe to do in cases where the IrrevocableIO
-    * is being consumed as an input.
+  /** Upconverts a DecoupledIO input to an IrrevocableIO, allowing an IrrevocableIO to be used
+    * where a DecoupledIO is expected.
+    *
+    * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
     require(dec.bits.dir == INPUT, "Only safe to cast consumed Decoupled bits to Irrevocable.")
@@ -156,10 +157,11 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
   * The ''valid'' signals are coupled.
   *
-  * Example usage:
-  *    {{{ val q = new Queue(UInt(), 16)
-  *    q.io.enq <> producer.io.out
-  *    consumer.io.in <> q.io.deq }}}
+  * @example {{{
+  * val q = new Queue(UInt(), 16)
+  * q.io.enq <> producer.io.out
+  * consumer.io.in <> q.io.deq
+  * }}}
   */
 class Queue[T <: Data](gen: T,
                        val entries: Int,
@@ -223,12 +225,16 @@ extends Module(override_reset=override_reset) {
   }
 }
 
-/** Factory for a generic hardware queue. Required parameter 'entries' controls
-  * the depth of the queues. The width of the queue is determined
-  * from the input 'enq'.
+/** Factory for a generic hardware queue.
   *
-  * Example usage:
-  *   {{{ consumer.io.in <> Queue(producer.io.out, 16) }}}
+  * @param enq input (enqueue) interface to the queue, also determines width of queue elements
+  * @param entries depth (number of elements) of the queue
+  *
+  * @returns output (dequeue) interface from the queue
+  *
+  * @example {{{
+  * consumer.io.in <> Queue(producer.io.out, 16)
+  * }}}
   */
 object Queue
 {

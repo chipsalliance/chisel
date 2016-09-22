@@ -9,10 +9,11 @@ import chisel3._
 import chisel3.core.SeqUtils
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
-  select signal. Returns the output of the Mux tree.
+  * select signal. Returns the output of the Mux tree.
+  *
+  * @note results undefined if multiple select signals are simultaneously high
   */
-object Mux1H
-{
+object Mux1H {
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
     apply(sel zip in)
   def apply[T <: Data](in: Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
@@ -22,18 +23,17 @@ object Mux1H
 }
 
 /** Builds a Mux tree under the assumption that multiple select signals
-  can be enabled. Priority is given to the first select signal.
-
-  Returns the output of the Mux tree.
+  * can be enabled. Priority is given to the first select signal.
+  *
+  * Returns the output of the Mux tree.
   */
-object PriorityMux
-{
+object PriorityMux {
   def apply[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = apply(sel zip in)
   def apply[T <: Data](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
 }
 
-/** MuxLookup creates a cascade of n Muxs to search for a key value */
+/** Creates a cascade of n Muxs to search for a key value. */
 object MuxLookup {
   /** @param key a key to search for
     * @param default a default value if nothing is found
@@ -46,10 +46,11 @@ object MuxLookup {
       res = Mux(k === key, v, res)
     res
   }
-
 }
 
-/** MuxCase returns the first value that is enabled in a map of values */
+/** Given an association of values to enable signals, returns the first value with an associated
+  * high enable signal.
+  */
 object MuxCase {
   /** @param default the default value if none are enabled
     * @param mapping a set of data values with associated enables

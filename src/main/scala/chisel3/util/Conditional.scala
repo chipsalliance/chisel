@@ -65,9 +65,8 @@ object is {   // scalastyle:ignore object.name
 }
 
 /** Conditional logic to form a switch block. See [[is$ is]] for the case API.
- *
-  * @example
-  * {{{
+  *
+  * @example {{{
   * switch (myState) {
   *   is (state1) {
   *     // some logic here that runs when myState === state1
