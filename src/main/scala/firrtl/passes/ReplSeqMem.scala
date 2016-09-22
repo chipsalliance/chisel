@@ -52,7 +52,7 @@ class ConfWriter(filename: String) {
     val conf = s"name ${m.name} depth ${m.depth} width ${width} ports ${ports} ${maskGranConf} \n"
     outputBuffer.append(conf)
   }
-  def serialize = {
+  def serialize() = {
     val outputFile = new PrintWriter(filename)
     outputFile.write(outputBuffer.toString)
     outputFile.close()

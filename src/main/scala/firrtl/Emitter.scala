@@ -426,7 +426,7 @@ class VerilogEmitter extends Emitter {
         }
       }
 
-      def build_ports: Unit = m.ports.zipWithIndex foreach {case (p, i) =>
+      def build_ports(): Unit = m.ports.zipWithIndex foreach {case (p, i) =>
         p.direction match {
           case Input =>
             portdefs += Seq(p.direction, "  ", p.tpe, " ", p.name)
@@ -602,7 +602,7 @@ class VerilogEmitter extends Emitter {
         case s => s
       }
    
-      def emit_streams {
+      def emit_streams() {
         emit(Seq("module ", m.name, "("))
         for ((x, i) <- portdefs.zipWithIndex) {
           if (i != portdefs.size - 1)

@@ -46,7 +46,7 @@ class PassExceptions(exceptions: Seq[PassException]) extends Exception("\n" + ex
 class Errors {
   val errors = collection.mutable.ArrayBuffer[PassException]()
   def append(pe: PassException) = errors.append(pe)
-  def trigger = errors.size match {
+  def trigger() = errors.size match {
     case 0 =>
     case 1 => throw errors.head
     case _ =>

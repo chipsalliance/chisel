@@ -231,10 +231,10 @@ class YamlFileWriter(file: String) {
   def append(in: YamlValue) {
     outputBuffer append s"$separator${in.prettyPrint}"
   }
-  def dump {
+  def dump() {
     val outputFile = new PrintWriter(file)
     outputFile write outputBuffer.toString
-    outputFile.close
+    outputFile.close()
   }
 }
 
@@ -247,7 +247,7 @@ class AnnotateValidMemConfigs(reader: Option[YamlFileReader]) extends Pass {
   case class SRAMCompilerSet(
       sp: Option[SRAMCompiler] = None, 
       dp: Option[SRAMCompiler] = None) {
-    def serialize = {
+    def serialize() = {
       sp match {
         case None =>
         case Some(p) => p.serialize
