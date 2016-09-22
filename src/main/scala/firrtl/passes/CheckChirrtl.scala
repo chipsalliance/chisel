@@ -145,7 +145,7 @@ object CheckChirrtl extends Pass {
     }
     
     c.modules foreach checkChirrtlM
-    (c.modules filter (_.name == c.main)).size match {
+    c.modules count (_.name == c.main) match {
       case 1 =>
       case _ => errors append new NoTopModuleException(c.info, c.main)
     }
