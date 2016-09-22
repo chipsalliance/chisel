@@ -142,15 +142,15 @@ object PrimOps extends LazyLogging {
     e copy (tpe = (e.op match {
       case Add => (t1, t2) match {
         case (_: UIntType, _: UIntType) => UIntType(PLUS(MAX(w1, w2), IntWidth(1)))
-        case (_: UIntType, _: SIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
-        case (_: SIntType, _: UIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
+        case (_: UIntType, _: SIntType) => SIntType(PLUS(MAX(w1, MINUS(w2, IntWidth(1))), IntWidth(2)))
+        case (_: SIntType, _: UIntType) => SIntType(PLUS(MAX(w2, MINUS(w1, IntWidth(1))), IntWidth(2)))
         case (_: SIntType, _: SIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
         case _ => UnknownType
       }
       case Sub => (t1, t2) match {
         case (_: UIntType, _: UIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
-        case (_: UIntType, _: SIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
-        case (_: SIntType, _: UIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
+        case (_: UIntType, _: SIntType) => SIntType(MAX(PLUS(w2, IntWidth(1)), PLUS(w1, IntWidth(2))))
+        case (_: SIntType, _: UIntType) => SIntType(MAX(PLUS(w1, IntWidth(1)), PLUS(w2, IntWidth(2))))
         case (_: SIntType, _: SIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
         case _ => UnknownType
       }
