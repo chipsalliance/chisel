@@ -87,9 +87,9 @@ object MemTransformUtils {
   }
 
   def createMemProto(m: DefMemory) = {
-    val rports = (0 until m.readers.length) map (i => s"R$i")
-    val wports = (0 until m.writers.length) map (i => s"W$i")
-    val rwports = (0 until m.readwriters.length) map (i => s"RW$i")
+    val rports = m.readers.indices map (i => s"R$i")
+    val wports = m.writers.indices map (i => s"W$i")
+    val rwports = m.readwriters.indices map (i => s"RW$i")
     m copy (readers = rports, writers = wports, readwriters = rwports)
   }
 
