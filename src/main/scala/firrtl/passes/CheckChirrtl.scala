@@ -149,7 +149,7 @@ object CheckChirrtl extends Pass {
       case 1 =>
       case _ => errors append new NoTopModuleException(c.info, c.main)
     }
-    errors.trigger
+    errors.trigger()
     c
   }
 }

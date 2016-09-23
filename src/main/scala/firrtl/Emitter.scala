@@ -640,9 +640,9 @@ class VerilogEmitter extends Emitter {
       }
 
       build_netlist(m.body)
-      build_ports
+      build_ports()
       build_streams(m.body)
-      emit_streams
+      emit_streams()
       m
    }
 

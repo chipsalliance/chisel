@@ -116,7 +116,7 @@ object CheckInitialization extends Pass {
       case m: Module => checkInitM(m)
       case m => // Do nothing
     }
-    errors.trigger
+    errors.trigger()
     c
   }
 }

@@ -118,7 +118,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     val memMods = new Modules
     val modules = c.modules map updateMemMods(namespace, memMods)
     // print conf
-    writer.serialize
+    writer.serialize()
     c copy (modules = modules ++ memMods)
   }  
 }

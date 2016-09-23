@@ -222,7 +222,7 @@ object CheckHighForm extends Pass {
       case 1 =>
       case _ => errors append new NoTopModuleException(c.info, c.main)
     }
-    errors.trigger
+    errors.trigger()
     c
   }
 }
@@ -419,7 +419,7 @@ object CheckTypes extends Pass {
     }
 
     c.modules foreach (m => m map check_types_s(m.info, m.name))
-    errors.trigger
+    errors.trigger()
     c
   }
 }
@@ -522,7 +522,7 @@ object CheckGenders extends Pass {
       genders ++= (m.ports map (p => p.name -> to_gender(p.direction)))
       m map check_genders_s(m.info, m.name, genders)
     }
-    errors.trigger
+    errors.trigger()
     c
   }
 }
@@ -594,7 +594,7 @@ object CheckWidths extends Pass {
     }
 
     c.modules foreach check_width_m
-    errors.trigger
+    errors.trigger()
     c
   }
 }
