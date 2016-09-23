@@ -66,14 +66,10 @@ abstract class AdvTester[+T <: Module](dut: T,
       work
       postprocessors.foreach(_.process())
     } catch {
-      case e: java.lang.AssertionError =>
-        // catch assert
-        if (verbose) logger println e.toString
-        assert(false, e.toString)
-      case e: java.lang.IllegalArgumentException =>
-        // catch require
-        if (verbose) logger println e.toString
-        assert(false, e.toString)
+      case e: Throwable =>
+        fail
+        e printStackTrace logger
+        assert(finish, "test fail")
     }
   }
   def takesteps(n: Int)(work: =>Unit = {}): Unit = {
