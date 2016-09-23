@@ -115,6 +115,7 @@ class DiamondSpec extends FreeSpec with Matchers {
       |annotations are not resolved at after circuit elaboration,
       |that happens only after emit has been called on circuit""".stripMargin in {
       val circuit = Driver.elaborate { () => new DiamondTester }
+      // val e = Driver.emit(circuit)
       val annotations =  circuit.annotations
 
       annotations.forall { a =>

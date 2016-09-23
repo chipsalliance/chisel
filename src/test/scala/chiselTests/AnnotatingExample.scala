@@ -88,6 +88,8 @@ class AnnotatingExampleSpec extends FlatSpec with Matchers {
 
     val annotations = circuit.annotations
 
+    println(annotations.map { a => a.firrtlInstanceName }.mkString("\n"))
+
     hasComponent("SomeSubMod.io.in", annotations) should be (true)
     hasComponent("AnnotatingExample.y", annotations) should be (true)
 

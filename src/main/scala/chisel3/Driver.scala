@@ -8,8 +8,7 @@ import scopt.OptionParser
 import scala.sys.process._
 import java.io._
 
-import internal._
-import internal.firrtl._
+import internal.{firrtl => ifirrtl,_}
 
 trait BackendCompilationUtilities {
   /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.
@@ -50,7 +49,7 @@ trait BackendCompilationUtilities {
     * C++ sources and headers as well as a makefile to compile them.
     *
     * @param dutFile name of the DUT .v without the .v extension
-    * @param name of the top-level module in the design
+    * @param topModule of the top-level module in the design
     * @param dir output directory
     * @param vSources list of additional Verilog sources to compile
     * @param cppHarness C++ testharness to compile/link against
@@ -105,24 +104,25 @@ trait BackendCompilationUtilities {
 }
 
 
-case class Emitted(circuit: Circuit, firrtlString: String, annotationString: String)
+case class Emitted(circuit: ifirrtl.Circuit, firrtlString: String, annotationString: String)
 
 object Driver extends BackendCompilationUtilities {
   val FirrtlSuffix = ".fir"
+  case object ChiselConfigKey extends firrtl.ExecutionModel.ExecutionKey
 
   /** Elaborates the Module specified in the gen function into a Circuit
     *
     *  @param gen a function that creates a Module hierarchy
     *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
-  def elaborate[T <: Module](gen: () => T): Circuit = Builder.build(Module(gen()))
+  def elaborate[T <: Module](gen: () => T): ifirrtl.Circuit = Builder.build(Module(gen()))
 
-  def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
+  def emit[T <: Module](gen: () => T): String = ifirrtl.Emitter.emit(elaborate(gen))
 
-  def emit[T <: Module](ir: Circuit): String = Emitter.emit(ir)
+  def emit[T <: Module](ir: ifirrtl.Circuit): String = ifirrtl.Emitter.emit(ir)
 
 
-  def dumpFirrtl(ir: Circuit, optName: Option[File] = None): File = {
+  def dumpFirrtl(ir: ifirrtl.Circuit, optName: Option[File] = None): File = {
     val (directory: File, fileName: String) = optName match {
       case Some(file) =>
         val fileDirectory = new File(file.getParent)
@@ -139,7 +139,7 @@ object Driver extends BackendCompilationUtilities {
     dumpFirrtlWithAnnotations(ir, Some(directory), Some(fileName))
   }
 
-  def dumpFirrtlWithAnnotations(ir: Circuit,
+  def dumpFirrtlWithAnnotations(ir: ifirrtl.Circuit,
                                 directoryOpt: Option[File] = None,
                                 nameOpt: Option[String] = None
                                ): File = {
@@ -151,7 +151,7 @@ object Driver extends BackendCompilationUtilities {
 
     val firrtlFile = new File(directory, name + FirrtlSuffix)
     val firrtlWriter = new FileWriter(firrtlFile)
-    firrtlWriter.write(Emitter.emit(ir))
+    firrtlWriter.write(ifirrtl.Emitter.emit(ir))
     firrtlWriter.close()
 
     if(ir.annotations.nonEmpty) {
@@ -182,7 +182,7 @@ object Driver extends BackendCompilationUtilities {
                        )
 
   case class ExecuteResult(
-                          circuit: Circuit,
+                          circuit: ifirrtl.Circuit,
                           emittedString: String
                           )
 
