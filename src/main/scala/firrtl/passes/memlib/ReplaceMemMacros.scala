@@ -96,7 +96,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
       (m.writers flatMap (w => adaptWriter(portRef(w), createSubField(bbRef, w), hasMask, fillMask))) ++
       (m.readwriters flatMap (rw => adaptReadWriter(portRef(rw), createSubField(bbRef, rw), hasMask, fillMask)))
     val wrapper = Module(NoInfo, wrapperName, wrapperIoPorts, Block(stmts))
-    val bb = ExtModule(NoInfo, m.name, bbIoPorts)
+    val bb = ExtModule(NoInfo, m.name, bbIoPorts, m.name, Seq.empty)
     // TODO: Annotate? -- use actual annotation map
 
     // add to conf file

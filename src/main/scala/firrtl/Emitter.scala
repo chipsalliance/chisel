@@ -82,6 +82,14 @@ class VerilogEmitter extends Emitter {
     }
     case _ => error("Shouldn't be here")
   }
+  /** Turn Params into Verilog Strings */
+  def stringify(param: Param): String = param match {
+    case IntParam(name, value) => s".$name($value)"
+    case DoubleParam(name, value) => s".$name($value)"
+    case StringParam(name, value) =>
+      val strx = "\"" + VerilogStringLitHandler.escape(value) + "\""
+      s".${name}($strx)"
+  }
   def emit(x: Any)(implicit w: Writer) { emit(x, 0) }
   def emit(x: Any, top: Int)(implicit w: Writer) {
     def cast(e: Expression): Any = e.tpe match {
@@ -237,7 +245,7 @@ class VerilogEmitter extends Emitter {
      }
    }
    
-    def emit_verilog(m: Module)(implicit w: Writer): DefModule = {
+    def emit_verilog(m: Module, moduleMap: Map[String, DefModule])(implicit w: Writer): DefModule = {
       val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
       val addrRegs = mutable.HashSet[WrappedExpression]()
       val namespace = Namespace(m)
@@ -448,8 +456,13 @@ class VerilogEmitter extends Emitter {
           simulate(sx.clk, sx.en, printf(sx.string, sx.args), Some("PRINTF_COND"))
           sx
         case sx: WDefInstanceConnector =>
+          val (module, params) = moduleMap(sx.module) match {
+            case ExtModule(_, _, _, extname, params) => (extname, params)
+            case Module(_, name, _, _) => (name, Seq.empty)
+          }
           val es = create_exps(WRef(sx.name, sx.tpe, InstanceKind, MALE))
-          instdeclares += Seq(sx.module, " ", sx.name, " (")
+          val ps = if (params.nonEmpty) params map stringify mkString ("#(", ", ", ") ") else ""
+          instdeclares += Seq(module, " ", ps, sx.name ," (")
           (es zip sx.exprs).zipWithIndex foreach {case ((l, r), i) =>
             val s = Seq(tab, ".", remove_root(l), "(", r, ")")
             if (i != es.size - 1) instdeclares += Seq(s, ",")
@@ -581,8 +594,9 @@ class VerilogEmitter extends Emitter {
 
    def run(c: Circuit, w: Writer) = {
      emit_preamble(w)
+     val moduleMap = (c.modules map (m => m.name -> m)).toMap
      c.modules foreach {
-       case (m: Module) => emit_verilog(m)(w)
+       case (m: Module) => emit_verilog(m, moduleMap)(w)
        case (m: ExtModule) =>
      }
    }

@@ -108,7 +108,7 @@ object ConvertFixedToSInt extends Pass {
       val newPorts = m.ports.map(p => Port(p.info,p.name,p.direction,toSIntType(p.tpe)))
       m match {
          case Module(info, name, ports, body) => Module(info,name,newPorts,body)
-         case ExtModule(info, name, ports) => ExtModule(info,name,newPorts)
+         case ext: ExtModule => ext.copy(ports = newPorts)
       }
     }
     newModules.foreach(m => moduleTypes(m.name) = module_type(m))

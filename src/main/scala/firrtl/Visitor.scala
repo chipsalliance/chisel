@@ -105,12 +105,26 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
         if (ctx.moduleBlock() != null)
           visitBlock(ctx.moduleBlock())
         else EmptyStmt)
-      case "extmodule" => ExtModule(info, ctx.id.getText, ctx.port.map(visitPort))
+      case "extmodule" =>
+        val defname = if (ctx.defname != null) ctx.defname.id.getText else ctx.id.getText
+        val ports = ctx.port map visitPort
+        val params = ctx.parameter map visitParameter
+        ExtModule(info, ctx.id.getText, ports, defname, params)
     }
   }
 
   private def visitPort[FirrtlNode](ctx: FIRRTLParser.PortContext): Port = {
     Port(visitInfo(Option(ctx.info), ctx), ctx.id.getText, visitDir(ctx.dir), visitType(ctx.`type`))
+  }
+
+  private def visitParameter[FirrtlNode](ctx: FIRRTLParser.ParameterContext): Param = {
+    val name = ctx.id.getText
+    (ctx.IntLit, ctx.StringLit, ctx.DoubleLit) match {
+      case (int, null, null) => IntParam(name, string2BigInt(int.getText))
+      case (null, str, null) => StringParam(name, visitStringLit(str))
+      case (null, null, dbl) => DoubleParam(name, dbl.getText.toDouble)
+      case _ => throw new Exception(s"Internal error: Visiting impossible parameter ${ctx.getText}")
+    }
   }
 
   private def visitDir[FirrtlNode](ctx: FIRRTLParser.DirContext): Direction =

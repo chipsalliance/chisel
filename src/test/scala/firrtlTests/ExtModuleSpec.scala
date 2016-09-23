@@ -31,4 +31,8 @@ class SimpleExtModuleExecutionTest extends ExecutionTest("SimpleExtModuleTester"
                                                          Seq("SimpleExtModule"))
 class MultiExtModuleExecutionTest extends ExecutionTest("MultiExtModuleTester", "/blackboxes",
                                                         Seq("SimpleExtModule", "AdderExtModule"))
+class RenamedExtModuleExecutionTest extends ExecutionTest("RenamedExtModuleTester", "/blackboxes",
+                                                          Seq("SimpleExtModule"))
+class ParameterizedExtModuleExecutionTest extends ExecutionTest(
+    "ParameterizedExtModuleTester", "/blackboxes", Seq("ParameterizedExtModule"))
 
