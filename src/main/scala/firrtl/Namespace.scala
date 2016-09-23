@@ -27,6 +27,7 @@ MODIFICATIONS.
 
 package firrtl
 
+import scala.collection.mutable
 import scala.collection.mutable.HashSet
 import firrtl.ir._
 import Mappers._
@@ -34,7 +35,7 @@ import Mappers._
 class Namespace private {
   private val tempNamePrefix: String = "GEN"
   // Begin with a tempNamePrefix in namespace so we always have a number suffix
-  private val namespace = HashSet[String](tempNamePrefix)
+  private val namespace = mutable.HashSet[String](tempNamePrefix)
   private var n = 0L
 
   def tryName(value: String): Boolean = {

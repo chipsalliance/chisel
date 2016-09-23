@@ -31,6 +31,7 @@ import com.typesafe.scalalogging.LazyLogging
 import java.nio.file.{Paths, Files}
 import java.io.{Reader, Writer}
 
+import scala.collection.mutable
 import scala.sys.process._
 import scala.io.Source
 
@@ -245,7 +246,7 @@ class VerilogEmitter extends Emitter {
    }
    
     def emit_verilog(m: Module)(implicit w: Writer): DefModule = {
-      val netlist = LinkedHashMap[WrappedExpression, Expression]()
+      val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
       val simlist = ArrayBuffer[Statement]()
       val namespace = Namespace(m)
       def build_netlist(s: Statement): Statement = s map build_netlist match {
@@ -269,7 +270,7 @@ class VerilogEmitter extends Emitter {
       val declares = ArrayBuffer[Seq[Any]]()
       val instdeclares = ArrayBuffer[Seq[Any]]()
       val assigns = ArrayBuffer[Seq[Any]]()
-      val at_clock = LinkedHashMap[Expression,ArrayBuffer[Seq[Any]]]()
+      val at_clock = mutable.LinkedHashMap[Expression,ArrayBuffer[Seq[Any]]]()
       val initials = ArrayBuffer[Seq[Any]]()
       val simulates = ArrayBuffer[Seq[Any]]()
       def declare (b: String, n: String, t: Type) = t match {

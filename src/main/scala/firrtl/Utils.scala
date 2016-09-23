@@ -41,6 +41,7 @@ import firrtl.PrimOps._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
 import firrtl.WrappedType._
+import scala.collection.mutable
 import scala.collection.mutable.{StringBuilder, ArrayBuffer, LinkedHashMap, HashMap, HashSet}
 import java.io.PrintWriter
 import com.typesafe.scalalogging.LazyLogging
@@ -144,6 +145,7 @@ object Utils extends LazyLogging {
   }
 
   /** Returns true if t, or any subtype, contains a flipped field
+    *
     * @param t type [[firrtl.ir.Type]] to be checked
     * @return if t contains [[firrtl.ir.Flip]]
     */
@@ -523,7 +525,7 @@ class MemoizedHash[T](val t: T) {
   * The graph is a map between the name of a node to set of names of that nodes children
   */
 class ModuleGraph {
-  val nodes = HashMap[String, HashSet[String]]()
+  val nodes = mutable.HashMap[String, mutable.HashSet[String]]()
 
   /**
     * Add a child to a parent node
@@ -534,7 +536,7 @@ class ModuleGraph {
     * @return a list indicating a path from child to parent, empty if no such path
     */
   def add(parent: String, child: String): List[String] = {
-    val childSet = nodes.getOrElseUpdate(parent, new HashSet[String])
+    val childSet = nodes.getOrElseUpdate(parent, new mutable.HashSet[String])
     childSet += child
     pathExists(child, parent, List(child, parent))
   }
