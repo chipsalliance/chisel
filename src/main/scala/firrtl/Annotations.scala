@@ -163,7 +163,7 @@ object Annotations {
     def serialize: String = this.toString
     def update(tos: Seq[Named]): Seq[Annotation] = {
       check(target, tos, this)
-      propagate(target, tos, duplicate _)
+      propagate(target, tos, duplicate)
     }
   }
 
