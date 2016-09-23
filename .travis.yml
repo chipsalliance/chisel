@@ -27,6 +27,7 @@ install:
 
 script:
   # FIRRTL Tests
+  - verilator --version
   - cd $TRAVIS_BUILD_DIR
   - sbt clean test
   - make clean build-scala regress
