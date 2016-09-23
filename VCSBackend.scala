@@ -93,7 +93,6 @@ object genVCSVerilogHarness {
     writer write "      $vcdplusmemon;\n"
     writer write "    end\n"
     writer write "    $vcdpluson(0);\n"
-    writer write "    $vcdplusautoflushon;\n"
     writer write "  end\n\n"
 
     writer write "  always @(%s clock) begin\n".format(if (isGateLevel) "posedge" else "negedge")
@@ -106,6 +105,7 @@ object genVCSVerilogHarness {
     writer write "      vcdon = 1;\n"
     writer write "    end\n"
     writer write "    %s $tick();\n".format(if (isGateLevel) "#0.05" else "")
+    writer write "    $vcdplusflush;\n"
     writer write "  end\n\n"
     writer write "endmodule\n"
     writer.close
