@@ -55,7 +55,7 @@ object InferReadWritePass extends Pass {
   type Statements = collection.mutable.ArrayBuffer[Statement]
   type PortSet = collection.mutable.HashSet[String]
 
-  private implicit def toString(e: Expression) = e.serialize
+  private implicit def toString(e: Expression): String = e.serialize
 
   def getProductTerms(connects: Connects)(e: Expression): Seq[Expression] = e match {
     // No ConstProp yet...
