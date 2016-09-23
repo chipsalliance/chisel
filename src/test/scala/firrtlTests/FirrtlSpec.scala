@@ -132,6 +132,12 @@ trait BackendCompilationUtilities {
 
 trait FirrtlRunners extends BackendCompilationUtilities {
   lazy val cppHarness = new File(s"/top.cpp")
+  /** Compile a Firrtl file
+    *
+    * @param prefix is the name of the Firrtl file without path or file extension
+    * @param srcDir directory where all Resources for this test are located
+    * @param annotations Optional Firrtl annotations
+    */
   def compileFirrtlTest(
       prefix: String,
       srcDir: String,
@@ -147,15 +153,30 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       annotations)
     testDir
   }
+  /** Execute a Firrtl Test
+    *
+    * @param prefix is the name of the Firrtl file without path or file extension
+    * @param srcDir directory where all Resources for this test are located
+    * @param verilogPrefixes names of option Verilog resources without path or file extension
+    * @param annotations Optional Firrtl annotations
+    */
   def runFirrtlTest(
       prefix: String,
       srcDir: String,
+      verilogPrefixes: Seq[String] = Seq.empty,
       annotations: AnnotationMap = new AnnotationMap(Seq.empty)) = {
     val testDir = compileFirrtlTest(prefix, srcDir, annotations)
     val harness = new File(testDir, s"top.cpp")
     copyResourceToFile(cppHarness.toString, harness)
 
-    verilogToCpp(prefix, testDir, Seq(), harness).!
+    // Note file copying side effect
+    val verilogFiles = verilogPrefixes map { vprefix =>
+      val file = new File(testDir, s"$vprefix.v")
+      copyResourceToFile(s"$srcDir/$vprefix.v", file)
+      file
+    }
+
+    verilogToCpp(prefix, testDir, verilogFiles, harness).!
     cppToExe(prefix, testDir).!
     assert(executeExpectingSuccess(prefix, testDir))
   }
@@ -171,7 +192,21 @@ trait FirrtlMatchers {
   }
 }
 
-class FirrtlPropSpec extends PropSpec with PropertyChecks with FirrtlRunners with LazyLogging
+abstract class FirrtlPropSpec extends PropSpec with PropertyChecks with FirrtlRunners with LazyLogging
 
-class FirrtlFlatSpec extends FlatSpec with Matchers with FirrtlRunners with FirrtlMatchers with LazyLogging
+abstract class FirrtlFlatSpec extends FlatSpec with Matchers with FirrtlRunners with FirrtlMatchers with LazyLogging
+
+/** Super class for execution driven Firrtl tests */
+abstract class ExecutionTest(name: String, dir: String, vFiles: Seq[String] = Seq.empty) extends FirrtlPropSpec {
+  property(s"$name should execute correctly") {
+    runFirrtlTest(name, dir, vFiles)
+  }
+}
+/** Super class for compilation driven Firrtl tests */
+abstract class CompilationTest(name: String, dir: String) extends FirrtlPropSpec {
+  property(s"$name should compile correctly") {
+    compileFirrtlTest(name, dir)
+  }
+}
+
 

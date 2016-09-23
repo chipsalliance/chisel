@@ -47,9 +47,6 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
       l.contains(notExpected) should be (false)
     }
   }
-  "Expand Whens" should "compile and run" in {
-    runFirrtlTest("ExpandWhens", "/passes/ExpandWhens")
-  }
   "Expand Whens" should "not emit INVALID" in {
     val passes = Seq(
       ToWorkingIR,
@@ -80,3 +77,6 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     executeTest(input, check, passes)
   }
 }
+
+class ExpandWhensExecutionTest extends ExecutionTest("ExpandWhens", "/passes/ExpandWhens")
+

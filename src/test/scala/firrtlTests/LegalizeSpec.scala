@@ -29,10 +29,5 @@ package firrtlTests
 
 import firrtl._
 
-class LegalizeSpec extends FirrtlFlatSpec {
-  behavior of "Legalize"
+class LegalizeExecutionTest extends ExecutionTest("Legalize", "/passes/Legalize")
 
-  it should "compile and run" in {
-    runFirrtlTest("Legalize", "/passes/Legalize")
-  }
-}

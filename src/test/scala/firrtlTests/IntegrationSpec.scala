@@ -30,28 +30,11 @@ package firrtlTests
 import org.scalatest._
 import org.scalatest.prop._
 
-class IntegrationSpec extends FirrtlPropSpec {
+class GCDExecutionTest extends ExecutionTest("GCDTester", "/integration")
+class RightShiftExecutionTest extends ExecutionTest("RightShiftTester", "/integration")
+class MemExecutionTest extends ExecutionTest("MemTester", "/integration")
 
-  case class Test(name: String, dir: String)
+class RocketCompilationTest extends CompilationTest("rocket", "/regress")
+class RocketFirrtlCompilationTest extends CompilationTest("rocket-firrtl", "/regress")
+class BOOMRobCompilationTest extends CompilationTest("Rob", "/regress")
 
-  val runTests = Seq(Test("GCDTester", "/integration"),
-                     Test("RightShiftTester", "/integration"),
-                     Test("MemTester", "/integration"))
-      
-
-  runTests foreach { test =>
-    property(s"${test.name} should execute correctly") {
-      runFirrtlTest(test.name, test.dir)
-    }
-  }
-
-  val compileTests = Seq(Test("rocket", "/regress"),
-                         Test("rocket-firrtl", "/regress"),
-                         Test("Rob", "/regress"))
-
-  compileTests foreach { test =>
-    property(s"${test.name} should compile to Verilog") {
-      compileFirrtlTest(test.name, test.dir)
-    }
-  }
-}

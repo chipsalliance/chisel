@@ -93,8 +93,7 @@ class ChirrtlSpec extends FirrtlFlatSpec {
       }
     }
   }
-
-  it should "compile and run" in {
-    runFirrtlTest("ChirrtlMems", "/features")
-  }
 }
+
+class ChirrtlMemsExecutionTest extends ExecutionTest("ChirrtlMems", "/features")
+
