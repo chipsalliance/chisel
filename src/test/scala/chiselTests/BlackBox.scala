@@ -6,6 +6,7 @@ import java.io.File
 import org.scalatest._
 
 import chisel3._
+import chisel3.experimental._
 import chisel3.testers.BasicTester
 import chisel3.util._
 //import chisel3.core.ExplicitCompileOptions.Strict
@@ -84,27 +85,55 @@ class BlackBoxWithClockTester extends BasicTester {
   when(end) { stop() }
 }
 
-/*
-// Must determine how to handle parameterized Verilog
-class BlackBoxConstant(value: Int) extends BlackBox {
-  val io = IO(new Bundle() {
-    val out = Output(UInt(width=log2Up(value)))
+class BlackBoxConstant(value: Int) extends BlackBox(
+    Map("VALUE" -> value, "WIDTH" -> log2Up(value + 1))) {
+  require(value >= 0, "value must be a UInt!")
+  val io = IO(new Bundle {
+    val out = UInt(width = log2Up(value + 1)).asOutput
   })
-  override val name = s"#(WIDTH=${log2Up(value)},VALUE=$value) "
+}
+
+class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) {
+  val io = IO(new Bundle {
+    val out = UInt(width = 32)
+  })
+}
+
+class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) {
+  val io = IO(new Bundle {
+    val out = UInt(width = 64)
+  })
+}
+
+class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw))) {
+  val io = IO(new Bundle {
+    val out = UInt(width = w)
+  })
 }
 
 class BlackBoxWithParamsTester extends BasicTester {
   val blackBoxOne  = Module(new BlackBoxConstant(1))
-  val blackBoxFour = Module(new BlackBoxConstant(4))
+  val blackBoxFour  = Module(new BlackBoxConstant(4))
+  val blackBoxStringParamOne = Module(new BlackBoxStringParam("one"))
+  val blackBoxStringParamTwo = Module(new BlackBoxStringParam("two"))
+  val blackBoxRealParamOne = Module(new BlackBoxRealParam(1.0))
+  val blackBoxRealParamNeg = Module(new BlackBoxRealParam(-1.0))
+  val blackBoxTypeParamBit = Module(new BlackBoxTypeParam(1, "bit"))
+  val blackBoxTypeParamWord = Module(new BlackBoxTypeParam(32, "bit [31:0]"))
 
   val (cycles, end) = Counter(Bool(true), 4)
 
   assert(blackBoxOne.io.out  === UInt(1))
   assert(blackBoxFour.io.out === UInt(4))
+  assert(blackBoxStringParamOne.io.out === UInt(1))
+  assert(blackBoxStringParamTwo.io.out === UInt(2))
+  assert(blackBoxRealParamOne.io.out === UInt(0x3ff0000000000000L))
+  assert(blackBoxRealParamNeg.io.out === UInt(BigInt("bff0000000000000", 16)))
+  assert(blackBoxTypeParamBit.io.out === UInt(1))
+  assert(blackBoxTypeParamWord.io.out === UInt("hdeadbeef", 32))
 
   when(end) { stop() }
 }
-*/
 
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
@@ -117,6 +146,10 @@ class BlackBoxSpec extends ChiselFlatSpec {
   }
   "A BlackBoxed register" should "work" in {
     assertTesterPasses({ new BlackBoxWithClockTester },
+        Seq("/BlackBoxTest.v"))
+  }
+  "BlackBoxes with parameters" should "work" in {
+    assertTesterPasses({ new BlackBoxWithParamsTester },
         Seq("/BlackBoxTest.v"))
   }
 }

@@ -179,4 +179,28 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
   def getFirrtlDirection(d: Data): Direction = chisel3.core.Data.getFirrtlDirection(d)
+
+  /** Package for experimental features, which may have their API changed, be removed, etc.
+    *
+    * Because its contents won't necessarily have the same level of stability and support as
+    * non-experimental, you must explicitly import this package to use its contents.
+    */
+  object experimental {
+    type Param = chisel3.core.Param
+    type IntParam = chisel3.core.IntParam
+    val IntParam = chisel3.core.IntParam
+    type DoubleParam = chisel3.core.DoubleParam
+    val DoubleParam = chisel3.core.DoubleParam
+    type StringParam = chisel3.core.StringParam
+    val StringParam = chisel3.core.StringParam
+    type RawParam = chisel3.core.RawParam
+    val RawParam = chisel3.core.RawParam
+
+    // Implicit conversions for BlackBox Parameters
+    implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
+    implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
+    implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
+    implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
+    implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+  }
 }

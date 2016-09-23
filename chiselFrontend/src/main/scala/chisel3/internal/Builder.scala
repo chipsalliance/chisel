@@ -181,7 +181,10 @@ private[chisel3] object Builder {
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
   def pushCommand[T <: Command](c: T): T = {
-    forcedModule._commands += c
+    forcedModule match {
+      case _: BlackBox => throwException("Cannot add hardware to a BlackBox")
+      case m => m._commands += c
+    }
     c
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
