@@ -126,17 +126,17 @@ object RemoveCHIRRTL extends Pass {
       val ens = ArrayBuffer[String]()
       s.direction match {
         case MReadWrite =>
-          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "rdata", "wdata", "wmask", true)
+          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "rdata", "wdata", "wmask", rdwrite = true)
           addrs += "addr"
           clks += "clk"
           ens += "en"
         case MWrite =>
-          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "data", "data", "mask", false)
+          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "data", "data", "mask", rdwrite = false)
           addrs += "addr"
           clks += "clk"
           ens += "en"
         case MRead =>
-          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "data", "data", "blah", false)
+          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "data", "data", "blah", rdwrite = false)
           addrs += "addr"
           clks += "clk"
           s.exps.head match {

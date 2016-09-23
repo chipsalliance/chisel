@@ -111,11 +111,11 @@ object VerilogStringLitHandler extends StringLitHandler {
     def format(in: Array[Byte], out: Array[Byte], percent: Boolean): Array[Byte] = {
       if (in.isEmpty) out
       else {
-        if (percent && in.head == 'x') format(in.tail, out :+ 'h'.toByte, false)
+        if (percent && in.head == 'x') format(in.tail, out :+ 'h'.toByte, percent = false)
         else format(in.tail, out :+ in.head, in.head == '%' && !percent)
       }
     }
-    StringLit(format(lit.array, Array(), false))
+    StringLit(format(lit.array, Array(), percent = false))
   }
 }
 
