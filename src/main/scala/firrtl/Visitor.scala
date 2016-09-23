@@ -119,10 +119,11 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
   private def visitParameter[FirrtlNode](ctx: FIRRTLParser.ParameterContext): Param = {
     val name = ctx.id.getText
-    (ctx.IntLit, ctx.StringLit, ctx.DoubleLit) match {
-      case (int, null, null) => IntParam(name, string2BigInt(int.getText))
-      case (null, str, null) => StringParam(name, visitStringLit(str))
-      case (null, null, dbl) => DoubleParam(name, dbl.getText.toDouble)
+    (ctx.IntLit, ctx.StringLit, ctx.DoubleLit, ctx.RawString) match {
+      case (int, null, null, null) => IntParam(name, string2BigInt(int.getText))
+      case (null, str, null, null) => StringParam(name, visitStringLit(str))
+      case (null, null, dbl, null) => DoubleParam(name, dbl.getText.toDouble)
+      case (null, null, null, raw) => RawStringParam(name, raw.getText.tail.init) // Remove "\'"s
       case _ => throw new Exception(s"Internal error: Visiting impossible parameter ${ctx.getText}")
     }
   }

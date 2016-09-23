@@ -7,6 +7,7 @@ circuit ParameterizedExtModuleTester :
     parameter VALUE = 1
     parameter STRING = "one"
     parameter REAL = -1.7
+    parameter TYP = 'bit'
 
   extmodule ParameterizedExtModule_2 :
     input foo : UInt<16>
@@ -16,6 +17,7 @@ circuit ParameterizedExtModuleTester :
     parameter VALUE = 2
     parameter STRING = "two"
     parameter REAL = 2.6E50
+    parameter TYP = 'bit [1:0]'
 
   module ParameterizedExtModuleTester  :
     input clk : Clock
@@ -32,7 +34,7 @@ circuit ParameterizedExtModuleTester :
         printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
         stop(clk, not(reset), 1)
       else :
-        when neq(dut2.bar, UInt(1006)) :
+        when neq(dut2.bar, UInt(1008)) :
           printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
           stop(clk, not(reset), 1)
         else :

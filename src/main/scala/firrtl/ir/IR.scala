@@ -457,6 +457,13 @@ case class DoubleParam(name: String, value: Double) extends Param {
 case class StringParam(name: String, value: StringLit) extends Param {
   override def serialize: String = super.serialize + value.serialize
 }
+/** Raw String Parameter
+  * Useful for Verilog type parameters
+  * @note Firrtl doesn't guarantee anything about this String being legal in any backend
+  */
+case class RawStringParam(name: String, value: String) extends Param {
+  override def serialize: String = super.serialize + s"'$value'"
+}
 
 /** Base class for modules */
 abstract class DefModule extends FirrtlNode with IsDeclaration {

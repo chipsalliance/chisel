@@ -89,6 +89,7 @@ class VerilogEmitter extends Emitter {
     case StringParam(name, value) =>
       val strx = "\"" + VerilogStringLitHandler.escape(value) + "\""
       s".${name}($strx)"
+    case RawStringParam(name, value) => s".$name($value)"
   }
   def emit(x: Any)(implicit w: Writer) { emit(x, 0) }
   def emit(x: Any, top: Int)(implicit w: Writer) {
