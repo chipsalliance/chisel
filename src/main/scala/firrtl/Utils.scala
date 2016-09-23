@@ -144,7 +144,7 @@ object Utils extends LazyLogging {
   }
 
   /** Returns true if t, or any subtype, contains a flipped field
-    * @param t [[firrtl.ir.Type]]
+    * @param t type [[firrtl.ir.Type]] to be checked
     * @return if t contains [[firrtl.ir.Flip]]
     */
   def hasFlip(t: Type): Boolean = t match {
@@ -546,7 +546,7 @@ class ModuleGraph {
     *
     * @param child  starting name
     * @param parent name to find in children (recursively)
-    * @param path
+    * @param path   path being investigated as possible route
     * @return
     */
   def pathExists(child: String, parent: String, path: List[String] = Nil): List[String] = {

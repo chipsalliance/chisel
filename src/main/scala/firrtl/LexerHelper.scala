@@ -107,7 +107,7 @@ abstract class LexerHelper {
       t
   }
 
-  // will be overriden to FIRRTLLexer.super.nextToken() in the g4 file
+  // will be overridden to FIRRTLLexer.super.nextToken() in the g4 file
   protected def pullToken(): Token
 
   private def createToken(tokenType: Int, copyFrom: Token): Token =
