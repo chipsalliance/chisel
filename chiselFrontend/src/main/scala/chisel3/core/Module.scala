@@ -130,7 +130,7 @@ extends HasId {
   private[chisel3] def addId(d: HasId) { _ids += d }
 
   private[core] def ports: Seq[(String,Data)] = Vector(
-    ("clk", clock), ("reset", reset), ("io", io)
+    ("clock", clock), ("reset", reset), ("io", io)
   )
 
   private[core] def computePorts: Seq[firrtl.Port] = {

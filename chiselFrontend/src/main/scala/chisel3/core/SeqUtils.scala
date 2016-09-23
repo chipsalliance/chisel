@@ -7,7 +7,12 @@ import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 private[chisel3] object SeqUtils {
-  /** Equivalent to Cat(r(n-1), ..., r(0)) */
+  /** Concatenates the data elements of the input sequence, in sequence order, together.
+    * The first element of the sequence forms the least significant bits, while the last element
+    * in the sequence forms the most significant bits.
+    *
+    * Equivalent to r(n-1) ## ... ## r(1) ## r(0).
+    */
   def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
 
   def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo): UInt = {
@@ -20,7 +25,8 @@ private[chisel3] object SeqUtils {
     }
   }
 
-  /** Counts the number of true Bools in a Seq */
+  /** Outputs the number of elements that === Bool(true).
+    */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
   def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = in.size match {
@@ -29,7 +35,8 @@ private[chisel3] object SeqUtils {
     case n => count(in take n/2) +& count(in drop n/2)
   }
 
-  /** Returns data value corresponding to first true predicate */
+  /** Returns the data value corresponding to the first true predicate.
+    */
   def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   def do_priorityMux[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
@@ -40,7 +47,10 @@ private[chisel3] object SeqUtils {
     }
   }
 
-  /** Returns data value corresponding to lone true predicate */
+  /** Returns the data value corresponding to the lone true predicate.
+    *
+    * @note assumes exactly one true predicate, results undefined otherwise
+    */
   def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
