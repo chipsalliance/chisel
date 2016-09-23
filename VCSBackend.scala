@@ -46,8 +46,8 @@ object genVCSVerilogHarness {
     val (inputs, outputs) = getDataNames("io", dut.io) partition (_._1.dir == chisel3.INPUT)
 
     writer write "module test;\n"
-    writer write "  reg clk = 1;\n"
-    writer write "  reg rst = 1;\n"
+    writer write "  reg clock = 1;\n"
+    writer write "  reg reset = 1;\n"
     val delay = if (isGateLevel) "#0.1" else ""
     inputs foreach { case (node, name) =>
       writer write s"  reg[${node.getWidth-1}:0] $name = 0;\n"
@@ -60,20 +60,20 @@ object genVCSVerilogHarness {
       writer write s"  assign $delay $name = ${name}_delay;\n"
     }
 
-    writer write "  always #`CLOCK_PERIOD clk = ~clk;\n"
+    writer write "  always #`CLOCK_PERIOD clock = ~clock;\n"
     writer write "  reg vcdon = 0;\n"
     writer write "  reg [1023:0] vcdfile = 0;\n"
     writer write "  reg [1023:0] vpdfile = 0;\n"
 
     writer write "\n  /*** DUT instantiation ***/\n"
     writer write s"  ${dutName} ${dutName}(\n"
-    writer write "    .clk(clk),\n"
-    writer write "    .reset(rst),\n"
+    writer write "    .clock(clock),\n"
+    writer write "    .reset(reset),\n"
     writer write ((inputs ++ outputs).unzip._2 map (name => s"    .${name}(${name}_delay)") mkString ",\n")
     writer write "  );\n\n"
 
     writer write "  initial begin\n"
-    writer write "    $init_rsts(rst);\n"
+    writer write "    $init_rsts(reset);\n"
     writer write "    $init_ins(%s);\n".format(inputs.unzip._2 mkString ", ")
     writer write "    $init_outs(%s);\n".format(outputs.unzip._2 mkString ", ")
     writer write "    $init_sigs(%s);\n".format(dutName)
@@ -96,8 +96,8 @@ object genVCSVerilogHarness {
     writer write "    $vcdplusautoflushon;\n"
     writer write "  end\n\n"
 
-    writer write "  always @(%s clk) begin\n".format(if (isGateLevel) "posedge" else "negedge")
-    writer write "    if (vcdfile && rst) begin\n"
+    writer write "  always @(%s clock) begin\n".format(if (isGateLevel) "posedge" else "negedge")
+    writer write "    if (vcdfile && reset) begin\n"
     writer write "      $dumpoff;\n"
     writer write "      vcdon = 0;\n"
     writer write "    end\n"

@@ -27,6 +27,7 @@ object Driver {
       try {
         testerGen(dut).finish
       } catch { case e: Throwable =>
+        e.printStackTrace
         TesterProcess.killall
         throw e
       }
@@ -45,6 +46,7 @@ object Driver {
       try {
         testerGen(dut).finish
       } catch { case e: Throwable =>
+        e.printStackTrace
         TesterProcess.killall
         throw e
       }

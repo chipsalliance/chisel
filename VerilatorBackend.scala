@@ -161,6 +161,12 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("     void init_dump(VerilatedVcdC* _tfp) { tfp = _tfp; }\n")
     writer.write("#endif\n")
     writer.write("    inline bool exit() { return is_exit; }\n")
+
+    // required for sc_time_stamp()
+    writer.write("    virtual inline double get_time_stamp() {\n")
+    writer.write("        return main_time;\n")
+    writer.write("    }\n")
+
     writer.write("private:\n")
     writer.write(s"    ${dutVerilatorClassName}* dut;\n")
     writer.write("    bool is_exit;\n")
@@ -189,13 +195,13 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("        is_exit = true;\n")
     writer.write("    }\n")
     writer.write("    virtual inline void step() {\n")
-    writer.write("        dut->clk = 0;\n")
+    writer.write("        dut->clock = 0;\n")
     writer.write("        dut->eval();\n")
     writer.write("#if VM_TRACE\n")
     writer.write("        if (tfp) tfp->dump(main_time);\n")
     writer.write("#endif\n")
     writer.write("        main_time++;\n")
-    writer.write("        dut->clk = 1;\n")
+    writer.write("        dut->clock = 1;\n")
     writer.write("        dut->eval();\n")
     writer.write("#if VM_TRACE\n")
     writer.write("        if (tfp) tfp->dump(main_time);\n")
@@ -206,6 +212,12 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("        dut->_eval_settle(dut->__VlSymsp);\n")
     writer.write("    }\n")
     writer.write("};\n")
+
+    // The following isn't strictly required unless we emit (possibly indirectly) something
+    // requiring a time-stamp (such as an assert).
+    writer.write(s"static ${dutApiClassName} * _Top_api;\n")
+    writer.write("double sc_time_stamp () { return _Top_api->get_time_stamp(); }\n")
+
     writer.write("int main(int argc, char **argv, char **env) {\n")
     writer.write("    Verilated::commandArgs(argc, argv);\n")
     writer.write(s"    ${dutVerilatorClassName}* top = new ${dutVerilatorClassName};\n")
@@ -223,6 +235,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("    tfp->open(vcdfile.c_str());\n")
     writer.write("#endif\n")
     writer.write(s"    ${dutApiClassName} api(top);\n")
+    writer.write("    _Top_api = &api; /* required for sc_time_stamp() */\n")
     writer.write("    api.init_sim_data();\n")
     writer.write("    api.init_channels();\n")
     writer.write("#if VM_TRACE\n")
