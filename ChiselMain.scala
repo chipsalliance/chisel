@@ -150,6 +150,7 @@ object chiselMain {
         assert(try {
           testerGen(dut).finish
         } catch { case e: Throwable =>
+          e.printStackTrace
           TesterProcess.killall
           false
         }, "Test failed")
