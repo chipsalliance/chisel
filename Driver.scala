@@ -3,6 +3,7 @@
 package chisel3.iotesters
 
 import chisel3.Module
+import chisel3.Driver.createTempDirectory
 import scala.util.DynamicVariable
 import java.io.File
 
@@ -15,12 +16,14 @@ object Driver {
     * @@backendType determines whether the ClassicTester uses verilator or the firrtl interpreter to simulate the circuit
     * Will do intermediate compliation steps to setup the backend specified, including cpp compilation for the verilator backend and firrtl IR compilation for the firrlt backend
     */
-  def apply[T <: Module](dutGen: () => T, backendType: String = "firrtl")(
-      testerGen: T => PeekPokeTester[T]): Boolean = {
+  def apply[T <: Module](dutGen: () => T,
+                         backendType: String = "firrtl",
+                         dir: File = createTempDirectory("test-out"))
+                         (testerGen: T => PeekPokeTester[T]): Boolean = {
     val (dut, backend) = backendType match {
-      case "firrtl" => setupFirrtlTerpBackend(dutGen)
-      case "verilator" => setupVerilatorBackend(dutGen)
-      case "vcs" => setupVCSBackend(dutGen)
+      case "firrtl" => setupFirrtlTerpBackend(dutGen, dir)
+      case "verilator" => setupVerilatorBackend(dutGen, dir)
+      case "vcs" => setupVCSBackend(dutGen, dir)
       case _ => throw new Exception("Unrecongnized backend type $backendType")
     }
     backendVar.withValue(Some(backend)) {

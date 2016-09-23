@@ -265,13 +265,12 @@ class VerilatorCppHarnessCompiler(dut: Chisel.Module,
 }
 
 private[iotesters] object setupVerilatorBackend {
-  def apply[T <: chisel3.Module](dutGen: () => T): (T, Backend) = {
+  def apply[T <: chisel3.Module](dutGen: () => T, dir: File): (T, Backend) = {
     // Generate CHIRRTL
     val circuit = chisel3.Driver.elaborate(dutGen)
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
     val dut = getTopModule(circuit).asInstanceOf[T]
     val nodes = getChiselNodes(circuit)
-    val dir = new File(s"test_run_dir/${dut.getClass.getName}"); dir.mkdirs()
 
     // Generate Verilog
     val verilogFile = new File(dir, s"${circuit.name}.v")
