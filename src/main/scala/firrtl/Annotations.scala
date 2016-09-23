@@ -177,7 +177,7 @@ object Annotations {
     val (namedMap: NamedMap, idMap:IDMap) =
       //annotations.foldLeft(Tuple2[NamedMap, IDMap](Map.empty, Map.empty)){
       annotations.foldLeft((Map.empty: NamedMap, Map.empty: IDMap)){
-        (partialMaps: Tuple2[NamedMap, IDMap], annotation: Annotation) => {
+        (partialMaps: (NamedMap, IDMap), annotation: Annotation) => {
           val tIDToAnn = partialMaps._1.getOrElse(annotation.target, Map.empty)
           val pNMap = partialMaps._1 + (annotation.target -> (tIDToAnn + (annotation.tID -> annotation)))
 
