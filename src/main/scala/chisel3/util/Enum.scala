@@ -12,12 +12,42 @@ object Enum {
   private def createValues[T <: Bits](nodeType: T, n: Int): Seq[T] =
     (0 until n).map(x => nodeType.fromInt(x, log2Up(n)))
 
-  /** create n enum values of given type */
+  /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
+    *
+    * @example {{{
+    * val state_on :: state_off :: Nil = Enum(UInt(), 2)
+    * val current_state = UInt()
+    * switch (current_state) {
+    *   is (state_on) {
+    *      ...
+    *   }
+    *   if (state_off) {
+    *      ...
+    *   }
+    * }
+    * }}}
+    *
+    */
   def apply[T <: Bits](nodeType: T, n: Int): List[T] = createValues(nodeType, n).toList
 
-  /** create enum values of given type and names */
+  /** Returns a map of the input symbols to unique values of the specified type.
+    *
+    * @example {{{
+    * val states = Enum(UInt(), 'on, 'off)
+    * val current_state = UInt()
+    * switch (current_state) {
+    *   is (states('on)) {
+    *     ...
+    *   }
+    *   if (states('off)) {
+    *     ..
+    *   }
+    * }
+    * }}}
+    */
   def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = (l zip createValues(nodeType, l.length)).toMap
 
-  /** create enum values of given type and names */
+  /** Returns a map of the input symbols to unique values of the specified type.
+    */
   def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = (l zip createValues(nodeType, l.length)).toMap
 }

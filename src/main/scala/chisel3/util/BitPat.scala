@@ -37,7 +37,7 @@ object BitPat {
   /** Creates a [[BitPat]] literal from a string.
    *
     * @param n the literal value as a string, in binary, prefixed with 'b'
-    * @note legal characters are '0', '1', and '?', as well as '_' as white
+    * @note legal characters are '0', '1', and '?', as well as '_' and white
     * space (which are ignored)
     */
   def apply(n: String): BitPat = {

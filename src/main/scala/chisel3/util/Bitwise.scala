@@ -8,9 +8,18 @@ package chisel3.util
 import chisel3._
 import chisel3.core.SeqUtils
 
-object FillInterleaved
-{
+object FillInterleaved {
+  /** Creates n repetitions of each bit of x in order.
+    *
+    * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
+    * For example, FillInterleaved(2, "b1000") === UInt("b11 00 00 00")
+    */
   def apply(n: Int, in: UInt): UInt = apply(n, in.toBools)
+
+  /** Creates n repetitions of each bit of x in order.
+    *
+    * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
+    */
   def apply(n: Int, in: Seq[Bool]): UInt = Cat(in.map(Fill(n, _)).reverse)
 }
 
@@ -22,9 +31,11 @@ object PopCount
   def apply(in: Bits): UInt = apply((0 until in.getWidth).map(in(_)))
 }
 
-/** Fill fans out a UInt to multiple copies */
 object Fill {
-  /** Fan out x n times */
+  /** Create n repetitions of x using a tree fanout topology.
+    *
+    * Output data-equivalent to x ## x ## ... ## x (n repetitions).
+    */
   def apply(n: Int, x: UInt): UInt = {
     n match {
       case 0 => UInt(width=0)
@@ -42,10 +53,7 @@ object Fill {
   }
 }
 
-/** Litte/big bit endian convertion: reverse the order of the bits in a UInt.
-*/
-object Reverse
-{
+object Reverse {
   private def doit(in: UInt, length: Int): UInt = {
     if (length == 1) {
       in
@@ -65,5 +73,7 @@ object Reverse
       Cat(doit(in(half-1,0), half), doit(in(length-1,half), length-half))
     }
   }
+  /** Returns the input in bit-reversed order. Useful for little/big-endian conversion.
+    */
   def apply(in: UInt): UInt = doit(in, in.getWidth)
 }
