@@ -60,8 +60,8 @@ object ConstProp extends Pass {
   object FoldAND extends FoldLogicalOp {
     def fold(c1: Literal, c2: Literal) = UIntLiteral(c1.value & c2.value, c1.width max c2.width)
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
-      case UIntLiteral(v, w) if v == 0 => UIntLiteral(0, w)
-      case SIntLiteral(v, w) if v == 0 => UIntLiteral(0, w)
+      case UIntLiteral(v, w) if v == BigInt(0) => UIntLiteral(0, w)
+      case SIntLiteral(v, w) if v == BigInt(0) => UIntLiteral(0, w)
       case UIntLiteral(v, IntWidth(w)) if v == (BigInt(1) << bitWidth(rhs.tpe).toInt) - 1 => rhs
       case _ => e
     }
@@ -70,8 +70,8 @@ object ConstProp extends Pass {
   object FoldOR extends FoldLogicalOp {
     def fold(c1: Literal, c2: Literal) = UIntLiteral(c1.value | c2.value, c1.width max c2.width)
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
-      case UIntLiteral(v, _) if v == 0 => rhs
-      case SIntLiteral(v, _) if v == 0 => asUInt(rhs, e.tpe)
+      case UIntLiteral(v, _) if v == BigInt(0) => rhs
+      case SIntLiteral(v, _) if v == BigInt(0) => asUInt(rhs, e.tpe)
       case UIntLiteral(v, IntWidth(w)) if v == (BigInt(1) << bitWidth(rhs.tpe).toInt) - 1 => lhs
       case _ => e
     }
@@ -80,8 +80,8 @@ object ConstProp extends Pass {
   object FoldXOR extends FoldLogicalOp {
     def fold(c1: Literal, c2: Literal) = UIntLiteral(c1.value ^ c2.value, c1.width max c2.width)
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
-      case UIntLiteral(v, _) if v == 0 => rhs
-      case SIntLiteral(v, _) if v == 0 => asUInt(rhs, e.tpe)
+      case UIntLiteral(v, _) if v == BigInt(0) => rhs
+      case SIntLiteral(v, _) if v == BigInt(0) => asUInt(rhs, e.tpe)
       case _ => e
     }
   }
@@ -89,7 +89,7 @@ object ConstProp extends Pass {
   object FoldEqual extends FoldLogicalOp {
     def fold(c1: Literal, c2: Literal) = UIntLiteral(if (c1.value == c2.value) 1 else 0, IntWidth(1))
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
-      case UIntLiteral(v, IntWidth(w)) if v == 1 && w == 1 && bitWidth(rhs.tpe) == 1 => rhs
+      case UIntLiteral(v, IntWidth(w)) if v == BigInt(1) && w == BigInt(1) && bitWidth(rhs.tpe) == BigInt(1) => rhs
       case _ => e
     }
   }
@@ -97,7 +97,7 @@ object ConstProp extends Pass {
   object FoldNotEqual extends FoldLogicalOp {
     def fold(c1: Literal, c2: Literal) = UIntLiteral(if (c1.value != c2.value) 1 else 0, IntWidth(1))
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
-      case UIntLiteral(v, IntWidth(w)) if v == 0 && w == 1 && bitWidth(rhs.tpe) == 1 => rhs
+      case UIntLiteral(v, IntWidth(w)) if v == BigInt(0) && w == BigInt(1) && bitWidth(rhs.tpe) == BigInt(1) => rhs
       case _ => e
     }
   }
@@ -246,14 +246,14 @@ object ConstProp extends Pass {
   }
 
   private def constPropMuxCond(m: Mux) = m.cond match {
-    case UIntLiteral(c, _) => pad(if (c == 1) m.tval else m.fval, m.tpe)
+    case UIntLiteral(c, _) => pad(if (c == BigInt(1)) m.tval else m.fval, m.tpe)
     case _ => m
   }
 
   private def constPropMux(m: Mux): Expression = (m.tval, m.fval) match {
     case _ if m.tval == m.fval => m.tval
     case (t: UIntLiteral, f: UIntLiteral) =>
-      if (t.value == 1 && f.value == 0 && bitWidth(m.tpe) == 1) m.cond
+      if (t.value == BigInt(1) && f.value == BigInt(0) && bitWidth(m.tpe) == BigInt(1)) m.cond
       else constPropMuxCond(m)
     case _ => constPropMuxCond(m)
   }

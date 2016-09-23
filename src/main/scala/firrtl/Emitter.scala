@@ -190,11 +190,11 @@ class VerilogEmitter extends Emitter {
        case Pad =>
          val w = bitWidth(a0.tpe)
          val diff = (c0 - w)
-         if (w == 0) Seq(a0)
+         if (w == BigInt(0)) Seq(a0)
          else doprim.tpe match {
            // Either sign extend or zero extend.
-           // If width == 1, don't extract bit
-           case (_: SIntType) if w == 1 => Seq("{", c0, "{", a0, "}}")
+           // If width == BigInt(1), don't extract bit
+           case (_: SIntType) if w == BigInt(1) => Seq("{", c0, "{", a0, "}}")
            case (_: SIntType) => Seq("{{", diff, "{", a0, "[", w - 1, "]}},", a0, "}")
            case (_) => Seq("{{", diff, "'d0}, ", a0, "}")
          }
@@ -229,7 +229,7 @@ class VerilogEmitter extends Emitter {
          Seq(cast(a0), "[", _, "]")) reduce (_ + " ^ " + _)
        case Cat => Seq("{", cast(a0), ",", cast(a1), "}")
        // If selecting zeroth bit and single-bit wire, just emit the wire
-       case Bits if c0 == 0 && c1 == 0 && bitWidth(a0.tpe) == 1 => Seq(a0)
+       case Bits if c0 == 0 && c1 == 0 && bitWidth(a0.tpe) == BigInt(1) => Seq(a0)
        case Bits if c0 == c1 => Seq(a0, "[", c0, "]")
        case Bits => Seq(a0, "[", c0, ":", c1, "]")
        case Head =>
