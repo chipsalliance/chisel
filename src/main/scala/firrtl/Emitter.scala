@@ -311,7 +311,7 @@ class VerilogEmitter extends Emitter {
 
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
           netlist.getOrElse(e, e) match {
-            case m: Mux if canFlatten(m) => {
+            case m: Mux if canFlatten(m) =>
               val ifStatement = Seq(tabs, "if(", m.cond, ") begin")
               val trueCase = addUpdate(m.tval, tabs + tab)
               val elseStatement = Seq(tabs, "end else begin")
@@ -322,7 +322,6 @@ class VerilogEmitter extends Emitter {
                 ifStatement +: trueCase :+ endStatement
               else
                 ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
-            }
             case _ if (weq(e, r)) => Seq()
             case _ => Seq(Seq(tabs, r, " <= ", e, ";"))
           }

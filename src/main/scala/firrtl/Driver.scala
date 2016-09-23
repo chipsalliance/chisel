@@ -155,7 +155,7 @@ Optional Arguments:
         case flag :: value :: tail if(customOptions.contains(flag)) =>
           annotations += customOptions(flag)(value)
           nextOption(map, tail)
-        case ("-h" | "--help") :: tail => { println(usage); sys.exit(0) }
+        case ("-h" | "--help") :: tail => println(usage); sys.exit(0)
         case option :: tail =>
           throw new Exception("Unknown option " + option + usage)
       }

@@ -79,11 +79,10 @@ trait StringLitHandler {
             // TODO Finalize supported escapes, implement hex2Bytes
             //case 0x78 => (4, hex2Bytes(in.slice(2, 3)))) // hex escape
             //case 0x75 => (6, hex2Bytes(in.slice(2, 5))) // unicode excape 
-            case e => { // error
-              val msg = s"Invalid escape character ${e.toChar}! " + 
+            case e => // error
+              val msg = s"Invalid escape character ${e.toChar}! " +
                          "Valid characters [nt'\"\\]"
               throw new InvalidEscapeCharException(msg)
-            }
           }
           unescape(in.drop(n), out ++ bytes) // consume n
         } else {

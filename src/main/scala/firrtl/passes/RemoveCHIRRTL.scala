@@ -119,7 +119,7 @@ object RemoveCHIRRTL extends Pass {
       val mem = DefMemory(s.info, s.name, s.tpe, s.size, 1, if (s.seq) 1 else 0,
                   rds map (_.name), wrs map (_.name), rws map (_.name))
       Block(mem +: stmts)
-    case (s: CDefMPort) => {
+    case (s: CDefMPort) =>
       types(s.name) = types(s.mem)
       val addrs = ArrayBuffer[String]()
       val clks = ArrayBuffer[String]()
@@ -149,7 +149,6 @@ object RemoveCHIRRTL extends Pass {
         (addrs map (x => Connect(s.info, SubField(SubField(Reference(s.mem, ut), s.name, ut), x, ut), s.exps.head))) ++
         (clks map (x => Connect(s.info, SubField(SubField(Reference(s.mem, ut), s.name, ut), x, ut), s.exps(1)))) ++
         (ens map (x => Connect(s.info,SubField(SubField(Reference(s.mem,ut), s.name, ut), x, ut), one))))
-    }
     case (s) => s map collect_refs(mports, smems, types, refs, raddrs)
   }
 

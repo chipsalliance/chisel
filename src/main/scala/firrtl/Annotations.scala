@@ -81,7 +81,7 @@ object Annotations {
   trait Rigid extends Permissibility {
     def check(from: Named, tos: Seq[Named], which: Annotation): Unit = tos.size match {
       case 0 => throw new AnnotationException(s"Cannot remove the rigid annotation ${which.serialize} on ${from.name}")
-      case 1 => {}
+      case 1 =>
       case _ => throw new AnnotationException(s"Cannot expand a rigid annotation on ${from.name} -> ${tos.map(_.name)}")
     }
   }
@@ -92,7 +92,7 @@ object Annotations {
   trait Firm extends Permissibility {
     def check(from: Named, tos: Seq[Named], which: Annotation): Unit = tos.size match {
       case 0 => throw new AnnotationException(s"Cannot remove the firm annotation ${which.serialize} on ${from.name}")
-      case _ => {}
+      case _ =>
     }
   }
 

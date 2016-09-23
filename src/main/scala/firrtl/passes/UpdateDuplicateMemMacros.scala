@@ -78,7 +78,7 @@ object MemTransformUtils {
       for ((p, i) <- ports.zipWithIndex; f <- fields) {
         val newPort = createSubField(createRef(m.name), portType+i)        
         val field = createSubField(newPort, f)
-        memPortMap(s"${m.name}.${p}.${f}") = field
+        memPortMap(s"${m.name}.$p.$f") = field
       }
     updateMemPortMap(m.readers, rFields, "R")
     updateMemPortMap(m.writers, wFields, "W")

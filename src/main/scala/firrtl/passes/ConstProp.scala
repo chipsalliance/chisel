@@ -176,7 +176,7 @@ object ConstProp extends Pass {
       }
       // Calculates an expression's range of values
       x match {
-        case e: DoPrim => {
+        case e: DoPrim =>
           def r0 = range(e.args.head)
           def r1 = range(e.args(1))
           e.op match {
@@ -192,7 +192,6 @@ object ConstProp extends Pass {
             case Geq if (r0 < r1) => zero
             case _ => e
           }
-        }
         case e => e
       }
     }
@@ -230,12 +229,11 @@ object ConstProp extends Pass {
       case _ => e
     }
     case Bits => e.args.head match {
-      case lit: Literal => {
+      case lit: Literal =>
         val hi = e.consts.head.toInt
         val lo = e.consts(1).toInt
         require(hi >= lo)
         UIntLiteral((lit.value >> lo) & ((BigInt(1) << (hi - lo + 1)) - 1), getWidth(e.tpe))
-      }
       case x if bitWidth(e.tpe) == bitWidth(x.tpe) => x.tpe match {
         case t: UIntType => x
         case _ => asUInt(x, e.tpe)

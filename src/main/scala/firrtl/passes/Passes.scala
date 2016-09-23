@@ -204,7 +204,7 @@ object Legalize extends Pass {
         case SIntType(_) =>
           val bits = DoPrim(Bits, e.args, Seq(msb, msb), BoolType)
           DoPrim(AsSInt, Seq(bits), Seq.empty, SIntType(IntWidth(1)))
-        case t => error(s"Unsupported type ${t} for Primop Shift Right")
+        case t => error(s"Unsupported type $t for Primop Shift Right")
       }
     } else {
       e

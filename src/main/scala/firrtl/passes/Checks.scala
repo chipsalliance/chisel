@@ -40,41 +40,41 @@ object CheckHighForm extends Pass {
 
   // Custom Exceptions
   class NotUniqueException(info: Info, mname: String, name: String) extends PassException(
-    s"${info}: [module ${mname}] Reference ${name} does not have a unique name.")
+    s"$info: [module $mname] Reference $name does not have a unique name.")
   class InvalidLOCException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Invalid connect to an expression that is not a reference or a WritePort.")
+    s"$info: [module $mname] Invalid connect to an expression that is not a reference or a WritePort.")
   class NegUIntException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] UIntLiteral cannot be negative.")
+    s"$info: [module $mname] UIntLiteral cannot be negative.")
   class UndeclaredReferenceException(info: Info, mname: String, name: String) extends PassException(
-    s"${info}: [module ${mname}] Reference ${name} is not declared.")
+    s"$info: [module $mname] Reference $name is not declared.")
   class PoisonWithFlipException(info: Info, mname: String, name: String) extends PassException(
-    s"${info}: [module ${mname}] Poison ${name} cannot be a bundle type with flips.")
+    s"$info: [module $mname] Poison $name cannot be a bundle type with flips.")
   class MemWithFlipException(info: Info, mname: String, name: String) extends PassException(
-    s"${info}: [module ${mname}] Memory ${name} cannot be a bundle type with flips.")
+    s"$info: [module $mname] Memory $name cannot be a bundle type with flips.")
   class InvalidAccessException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Invalid access to non-reference.")
+    s"$info: [module $mname] Invalid access to non-reference.")
   class ModuleNotDefinedException(info: Info, mname: String, name: String) extends PassException(
-    s"${info}: Module ${name} is not defined.")
+    s"$info: Module $name is not defined.")
   class IncorrectNumArgsException(info: Info, mname: String, op: String, n: Int) extends PassException(
-    s"${info}: [module ${mname}] Primop ${op} requires ${n} expression arguments.")
+    s"$info: [module $mname] Primop $op requires $n expression arguments.")
   class IncorrectNumConstsException(info: Info, mname: String, op: String, n: Int) extends PassException(
-    s"${info}: [module ${mname}] Primop ${op} requires ${n} integer arguments.")
+    s"$info: [module $mname] Primop $op requires $n integer arguments.")
   class NegWidthException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Width cannot be negative or zero.")
+    s"$info: [module $mname] Width cannot be negative or zero.")
   class NegVecSizeException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Vector type size cannot be negative.")
+    s"$info: [module $mname] Vector type size cannot be negative.")
   class NegMemSizeException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Memory size cannot be negative or zero.")
+    s"$info: [module $mname] Memory size cannot be negative or zero.")
   class BadPrintfException(info: Info, mname: String, x: Char) extends PassException(
-    s"${info}: [module ${mname}] Bad printf format: " + "\"%" + x + "\"")
+    s"$info: [module $mname] Bad printf format: " + "\"%" + x + "\"")
   class BadPrintfTrailingException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Bad printf format: trailing " + "\"%\"")
+    s"$info: [module $mname] Bad printf format: trailing " + "\"%\"")
   class BadPrintfIncorrectNumException(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Bad printf format: incorrect number of arguments")
+    s"$info: [module $mname] Bad printf format: incorrect number of arguments")
   class InstanceLoop(info: Info, mname: String, loop: String) extends PassException(
-    s"${info}: [module ${mname}] Has instance loop $loop")
+    s"$info: [module $mname] Has instance loop $loop")
   class NoTopModuleException(info: Info, name: String) extends PassException(
-    s"${info}: A single module must be named ${name}.")
+    s"$info: A single module must be named $name.")
 
   // TODO FIXME
   // - Do we need to check for uniquness on port names?
@@ -232,51 +232,51 @@ object CheckTypes extends Pass {
 
   // Custom Exceptions
   class SubfieldNotInBundle(info: Info, mname: String, name: String) extends PassException(
-    s"${info}: [module ${mname} ]  Subfield ${name} is not in bundle.")
+    s"$info: [module $mname ]  Subfield $name is not in bundle.")
   class SubfieldOnNonBundle(info: Info, mname: String, name: String) extends PassException(
-    s"${info}: [module ${mname}]  Subfield ${name} is accessed on a non-bundle.")
+    s"$info: [module $mname]  Subfield $name is accessed on a non-bundle.")
   class IndexTooLarge(info: Info, mname: String, value: Int) extends PassException(
-    s"${info}: [module ${mname}]  Index with value ${value} is too large.")
+    s"$info: [module $mname]  Index with value $value is too large.")
   class IndexOnNonVector(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Index illegal on non-vector type.")
+    s"$info: [module $mname]  Index illegal on non-vector type.")
   class AccessIndexNotUInt(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Access index must be a UInt type.")
+    s"$info: [module $mname]  Access index must be a UInt type.")
   class IndexNotUInt(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Index is not of UIntType.")
+    s"$info: [module $mname]  Index is not of UIntType.")
   class EnableNotUInt(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Enable is not of UIntType.")
+    s"$info: [module $mname]  Enable is not of UIntType.")
   class InvalidConnect(info: Info, mname: String, lhs: String, rhs: String) extends PassException(
-    s"${info}: [module ${mname}]  Type mismatch. Cannot connect ${lhs} to ${rhs}.")
+    s"$info: [module $mname]  Type mismatch. Cannot connect $lhs to $rhs.")
   class InvalidRegInit(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Type of init must match type of DefRegister.")
+    s"$info: [module $mname]  Type of init must match type of DefRegister.")
   class PrintfArgNotGround(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Printf arguments must be either UIntType or SIntType.")
+    s"$info: [module $mname]  Printf arguments must be either UIntType or SIntType.")
   class ReqClk(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Requires a clock typed signal.")
+    s"$info: [module $mname]  Requires a clock typed signal.")
   class EnNotUInt(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Enable must be a UIntType typed signal.")
+    s"$info: [module $mname]  Enable must be a UIntType typed signal.")
   class PredNotUInt(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Predicate not a UIntType.")
+    s"$info: [module $mname]  Predicate not a UIntType.")
   class OpNotGround(info: Info, mname: String, op: String) extends PassException(
-    s"${info}: [module ${mname}]  Primop ${op} cannot operate on non-ground types.")
+    s"$info: [module $mname]  Primop $op cannot operate on non-ground types.")
   class OpNotUInt(info: Info, mname: String, op: String, e: String) extends PassException(
-    s"${info}: [module ${mname}]  Primop ${op} requires argument ${e} to be a UInt type.")
+    s"$info: [module $mname]  Primop $op requires argument $e to be a UInt type.")
   class OpNotAllUInt(info: Info, mname: String, op: String) extends PassException(
-    s"${info}: [module ${mname}]  Primop ${op} requires all arguments to be UInt type.")
+    s"$info: [module $mname]  Primop $op requires all arguments to be UInt type.")
   class OpNotAllSameType(info: Info, mname: String, op: String) extends PassException(
-    s"${info}: [module ${mname}]  Primop ${op} requires all operands to have the same type.")
+    s"$info: [module $mname]  Primop $op requires all operands to have the same type.")
   class NodePassiveType(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Node must be a passive type.")
+    s"$info: [module $mname]  Node must be a passive type.")
   class MuxSameType(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Must mux between equivalent types.")
+    s"$info: [module $mname]  Must mux between equivalent types.")
   class MuxPassiveTypes(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Must mux between passive types.")
+    s"$info: [module $mname]  Must mux between passive types.")
   class MuxCondUInt(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  A mux condition must be of type UInt.")
+    s"$info: [module $mname]  A mux condition must be of type UInt.")
   class ValidIfPassiveTypes(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  Must validif a passive type.")
+    s"$info: [module $mname]  Must validif a passive type.")
   class ValidIfCondUInt(info: Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}]  A validif condition must be of type UInt.")
+    s"$info: [module $mname]  A validif condition must be of type UInt.")
 
   //;---------------- Helper Functions --------------
   def ut: UIntType = UIntType(UnknownWidth)
@@ -436,7 +436,7 @@ object CheckGenders extends Pass {
   }
    
   class WrongGender(info:Info, mname: String, expr: String, wrong: Gender, right: Gender) extends PassException(
-    s"${info}: [module ${mname}]  Expression ${expr} is used as a ${wrong} but can only be used as a ${right}.")
+    s"$info: [module $mname]  Expression $expr is used as a $wrong but can only be used as a $right.")
    
   def run (c:Circuit): Circuit = {
     val errors = new Errors()
@@ -530,17 +530,17 @@ object CheckGenders extends Pass {
 object CheckWidths extends Pass {
   def name = "Width Check"
   class UninferredWidth (info: Info, mname: String) extends PassException(
-    s"${info} : [module ${mname}]  Uninferred width.")
+    s"$info : [module $mname]  Uninferred width.")
   class WidthTooSmall(info: Info, mname: String, b: BigInt) extends PassException(
     s"$info : [module $mname]  Width too small for constant ${serialize(b)}.")
   class NegWidthException(info:Info, mname: String) extends PassException(
-    s"${info}: [module ${mname}] Width cannot be negative or zero.")
+    s"$info: [module $mname] Width cannot be negative or zero.")
   class BitsWidthException(info: Info, mname: String, hi: BigInt, width: BigInt) extends PassException(
-    s"${info}: [module ${mname}] High bit $hi in bits operator is larger than input width $width.")
+    s"$info: [module $mname] High bit $hi in bits operator is larger than input width $width.")
   class HeadWidthException(info: Info, mname: String, n: BigInt, width: BigInt) extends PassException(
-    s"${info}: [module ${mname}] Parameter $n in head operator is larger than input width $width.")
+    s"$info: [module $mname] Parameter $n in head operator is larger than input width $width.")
   class TailWidthException(info: Info, mname: String, n: BigInt, width: BigInt) extends PassException(
-    s"${info}: [module ${mname}] Parameter $n in tail operator is larger than input width $width.")
+    s"$info: [module $mname] Parameter $n in tail operator is larger than input width $width.")
 
   def run(c: Circuit): Circuit = {
     val errors = new Errors()
