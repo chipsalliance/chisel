@@ -108,7 +108,6 @@ case class Emitted(circuit: ifirrtl.Circuit, firrtlString: String, annotationStr
 
 object Driver extends BackendCompilationUtilities {
   val FirrtlSuffix = ".fir"
-  case object ChiselConfigKey extends firrtl.ExecutionModel.ExecutionKey
 
   /** Elaborates the Module specified in the gen function into a Circuit
     *
