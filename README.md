@@ -14,7 +14,7 @@
 *Disclaimer*: This project is in alpha, so there is no guarantee anything works. The installation instructions should work for OSX/Linux machines.
 
 ##### Prerequisites
- 1. If not already installed, install [verilator](http://www.veripool.org/projects/verilator/wiki/Installing) (Requires at least v3.880)
+ 1. If not already installed, install [verilator](http://www.veripool.org/projects/verilator/wiki/Installing) (Requires at least v3.886)
  2. If not already installed, install [sbt](http://www.scala-sbt.org/) (Requires at least v0.13.6)
 
 ##### Installation
