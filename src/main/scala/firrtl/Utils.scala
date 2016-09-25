@@ -41,6 +41,7 @@ import firrtl.PrimOps._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
 import firrtl.WrappedType._
+import scala.collection.mutable
 import scala.collection.mutable.{StringBuilder, ArrayBuffer, LinkedHashMap, HashMap, HashSet}
 import java.io.PrintWriter
 import com.typesafe.scalalogging.LazyLogging
@@ -80,7 +81,7 @@ object Utils extends LazyLogging {
     if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
     else "\"h" + bi.toString(16) + "\""
 
-  implicit def toWrappedExpression (x:Expression) = new WrappedExpression(x)
+  implicit def toWrappedExpression (x:Expression): WrappedExpression = new WrappedExpression(x)
   def ceilLog2(x: BigInt): Int = (x-1).bitLength
   def max(a: BigInt, b: BigInt): BigInt = if (a >= b) a else b
   def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
@@ -144,7 +145,8 @@ object Utils extends LazyLogging {
   }
 
   /** Returns true if t, or any subtype, contains a flipped field
-    * @param t [[firrtl.ir.Type]]
+    *
+    * @param t type [[firrtl.ir.Type]] to be checked
     * @return if t contains [[firrtl.ir.Flip]]
     */
   def hasFlip(t: Type): Boolean = t match {
@@ -523,7 +525,7 @@ class MemoizedHash[T](val t: T) {
   * The graph is a map between the name of a node to set of names of that nodes children
   */
 class ModuleGraph {
-  val nodes = HashMap[String, HashSet[String]]()
+  val nodes = mutable.HashMap[String, mutable.HashSet[String]]()
 
   /**
     * Add a child to a parent node
@@ -534,7 +536,7 @@ class ModuleGraph {
     * @return a list indicating a path from child to parent, empty if no such path
     */
   def add(parent: String, child: String): List[String] = {
-    val childSet = nodes.getOrElseUpdate(parent, new HashSet[String])
+    val childSet = nodes.getOrElseUpdate(parent, new mutable.HashSet[String])
     childSet += child
     pathExists(child, parent, List(child, parent))
   }
@@ -546,7 +548,7 @@ class ModuleGraph {
     *
     * @param child  starting name
     * @param parent name to find in children (recursively)
-    * @param path
+    * @param path   path being investigated as possible route
     * @return
     */
   def pathExists(child: String, parent: String, path: List[String] = Nil): List[String] = {

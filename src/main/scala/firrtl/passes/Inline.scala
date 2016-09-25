@@ -22,7 +22,7 @@ class InlineInstances (transID: TransID) extends Transform {
    def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult = {
      annotationMap.get(transID) match {
        case None => TransformResult(circuit, None, None)
-       case Some(map) => {
+       case Some(map) =>
          val moduleNames = mutable.HashSet[ModuleName]()
          val instanceNames = mutable.HashSet[ComponentName]()
          map.values.foreach {x: Annotation => x match {
@@ -32,7 +32,6 @@ class InlineInstances (transID: TransID) extends Transform {
          }}
          check(circuit, moduleNames.toSet, instanceNames.toSet)
          run(circuit, moduleNames.toSet, instanceNames.toSet)
-       }
 
        // Default behavior is to error if more than one annotation for inlining
        //  This could potentially change
@@ -49,11 +48,11 @@ class InlineInstances (transID: TransID) extends Transform {
       val moduleMap = (for(m <- c.modules) yield m.name -> m).toMap
       def checkExists(name: String): Unit =
          if (!moduleMap.contains(name))
-            errors += new PassException(s"Annotated module does not exist: ${name}")
+            errors += new PassException(s"Annotated module does not exist: $name")
       def checkExternal(name: String): Unit = moduleMap(name) match {
-            case m: ExtModule => errors += new PassException(s"Annotated module cannot be an external module: ${name}")
-            case _ => {}
-         }
+            case m: ExtModule => errors += new PassException(s"Annotated module cannot be an external module: $name")
+            case _ =>
+      }
       def checkInstance(cn: ComponentName): Unit = {
          var containsCN = false
          def onStmt(name: String)(s: Statement): Statement = {
@@ -63,7 +62,7 @@ class InlineInstances (transID: TransID) extends Transform {
                      containsCN = true
                      checkExternal(module_name)
                   }
-               case _ => {}
+               case _ =>
             }
             s map onStmt(name)
          }
@@ -101,71 +100,67 @@ class InlineInstances (transID: TransID) extends Transform {
          val inlinedInstances = mutable.ArrayBuffer[String]()
          // Recursive. Replaces inst.port with inst$port
          def onExp(e: Expression): Expression = e match {
-            case WSubField(WRef(ref, _, _, _), field, tpe, gen) => {
-               // Relies on instance declaration before any instance references
-               if (inlinedInstances.contains(ref)) {
-                  val newName = ref + inlineDelim + field
-                  set(ComponentName(ref, ModuleName(m.name, cname)), Seq.empty)
-                  WRef(newName, tpe, WireKind, gen)
-               }
-               else e
-            }
+            case WSubField(WRef(ref, _, _, _), field, tpe, gen) =>
+              // Relies on instance declaration before any instance references
+              if (inlinedInstances.contains(ref)) {
+                 val newName = ref + inlineDelim + field
+                 set(ComponentName(ref, ModuleName(m.name, cname)), Seq.empty)
+                 WRef(newName, tpe, WireKind, gen)
+              }
+              else e
             case e => e map onExp
          }
          // Recursive. Inlines tagged instances
          def onStmt(s: Statement): Statement = s match {
-               case WDefInstance(info, instName, moduleName, instTpe) => {
-                  def rename(name:String): String = {
-                     val newName = instName + inlineDelim + name
-                     update(ComponentName(name, ModuleName(moduleName, cname)), ComponentName(newName, ModuleName(m.name, cname)))
-                     newName
-                  }
-                  // Rewrites references in inlined statements from ref to inst$ref
-                  def renameStmt(s: Statement): Statement = {
-                     def renameExp(e: Expression): Expression = {
-                        e map renameExp match {
-                           case WRef(name, tpe, kind, gen) => WRef(rename(name), tpe, kind, gen)
-                           case e => e
-                        }
-                     }
-                     s map rename map renameStmt map renameExp
-                  }
-                  val shouldInline =
-                     modsToInline.contains(ModuleName(moduleName, cname)) ||
-                        instsToInline.contains(ComponentName(instName, ModuleName(m.name, cname)))
-                  // Used memoized instance if available
-                  val instModule =
-                     if (inlinedModules.contains(name)) inlinedModules(name)
-                     else {
-                        // Warning - can infinitely recurse if there is an instance loop
-                        onModule(originalModules(moduleName))
-                     }
-                  if (shouldInline) {
-                     inlinedInstances += instName
-                     val instInModule = instModule match {
-                        case m: ExtModule => throw new PassException("Cannot inline external module")
-                        case m: Module => m
-                     }
-                     val stmts = mutable.ArrayBuffer[Statement]()
-                     for (p <- instInModule.ports) {
-                        stmts += DefWire(p.info, rename(p.name), p.tpe)
-                     }
-                     stmts += renameStmt(instInModule.body)
-                     Block(stmts.toSeq)
-                  } else s
-               }
+               case WDefInstance(info, instName, moduleName, instTpe) =>
+                 def rename(name:String): String = {
+                    val newName = instName + inlineDelim + name
+                    update(ComponentName(name, ModuleName(moduleName, cname)), ComponentName(newName, ModuleName(m.name, cname)))
+                    newName
+                 }
+                 // Rewrites references in inlined statements from ref to inst$ref
+                 def renameStmt(s: Statement): Statement = {
+                    def renameExp(e: Expression): Expression = {
+                       e map renameExp match {
+                          case WRef(name, tpe, kind, gen) => WRef(rename(name), tpe, kind, gen)
+                          case e => e
+                       }
+                    }
+                    s map rename map renameStmt map renameExp
+                 }
+                 val shouldInline =
+                    modsToInline.contains(ModuleName(moduleName, cname)) ||
+                       instsToInline.contains(ComponentName(instName, ModuleName(m.name, cname)))
+                 // Used memoized instance if available
+                 val instModule =
+                    if (inlinedModules.contains(name)) inlinedModules(name)
+                    else {
+                       // Warning - can infinitely recurse if there is an instance loop
+                       onModule(originalModules(moduleName))
+                    }
+                 if (shouldInline) {
+                    inlinedInstances += instName
+                    val instInModule = instModule match {
+                       case m: ExtModule => throw new PassException("Cannot inline external module")
+                       case m: Module => m
+                    }
+                    val stmts = mutable.ArrayBuffer[Statement]()
+                    for (p <- instInModule.ports) {
+                       stmts += DefWire(p.info, rename(p.name), p.tpe)
+                    }
+                    stmts += renameStmt(instInModule.body)
+                    Block(stmts.toSeq)
+                 } else s
                case s => s map onExp map onStmt
             }
          m match {
-            case Module(info, name, ports, body) => {
-               val mx = Module(info, name, ports, onStmt(body))
-               inlinedModules(name) = mx
-               mx
-            }
-            case m: ExtModule => {
-               inlinedModules(m.name) = m
-               m
-            }
+            case Module(info, name, ports, body) =>
+              val mx = Module(info, name, ports, onStmt(body))
+              inlinedModules(name) = mx
+              mx
+            case m: ExtModule =>
+              inlinedModules(m.name) = m
+              m
          }
       }
 

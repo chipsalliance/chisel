@@ -112,7 +112,7 @@ object LowerTypes extends Pass {
           case None => mem
         }
         Seq(mergeRef(loMem, mergeRef(port, field)))
-      case name => error(s"Error! Unhandled memory field ${name}")(info, mname)
+      case name => error(s"Error! Unhandled memory field $name")(info, mname)
     }
   }
 

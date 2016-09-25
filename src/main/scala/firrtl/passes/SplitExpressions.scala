@@ -19,21 +19,18 @@ object SplitExpressions extends Pass {
         // Splits current expression if needed
         // Adds named temporaries to v
         def split(e: Expression): Expression = e match {
-          case e: DoPrim => {
+          case e: DoPrim =>
             val name = namespace.newTemp
             v += DefNode(get_info(s), name, e)
             WRef(name, e.tpe, kind(e), gender(e))
-          }
-          case e: Mux => {
+          case e: Mux =>
             val name = namespace.newTemp
             v += DefNode(get_info(s), name, e)
             WRef(name, e.tpe, kind(e), gender(e))
-          }
-          case e: ValidIf => {
+          case e: ValidIf =>
             val name = namespace.newTemp
             v += DefNode(get_info(s), name, e)
             WRef(name, e.tpe, kind(e), gender(e))
-          }
           case e => e
         }
 

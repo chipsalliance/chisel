@@ -55,7 +55,7 @@ object InferReadWritePass extends Pass {
   type Statements = collection.mutable.ArrayBuffer[Statement]
   type PortSet = collection.mutable.HashSet[String]
 
-  private implicit def toString(e: Expression) = e.serialize
+  private implicit def toString(e: Expression): String = e.serialize
 
   def getProductTerms(connects: Connects)(e: Expression): Seq[Expression] = e match {
     // No ConstProp yet...
@@ -178,7 +178,7 @@ class InferReadWrite(transID: TransID) extends Transform with SimpleRun {
   def execute(c: Circuit, map: AnnotationMap) = map get transID match {
     case Some(p) => p get CircuitName(c.main) match {
       case Some(InferReadWriteAnnotation(_, _)) => run(c, passSeq)
-      case _ => error("Unexpected annotation for InferReadWrite")
+      case _ => sys.error("Unexpected annotation for InferReadWrite")
     }
     case _ => TransformResult(c)
   }

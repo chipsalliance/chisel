@@ -287,8 +287,8 @@ object InferWidths extends Pass {
             v <- h.get(w.name) if !v.isInstanceOf[VarWidth]
             result <- solve(v)
           } yield result
-        case (w: MaxWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _), Some(BigInt(0))), max)
-        case (w: MinWidth) => reduceOptions(forceNonEmpty(w.args.map(solve _), None), min)
+        case (w: MaxWidth) => reduceOptions(forceNonEmpty(w.args.map(solve), Some(BigInt(0))), max)
+        case (w: MinWidth) => reduceOptions(forceNonEmpty(w.args.map(solve), None), min)
         case (w: PlusWidth) => map2(solve(w.arg1), solve(w.arg2), {_ + _})
         case (w: MinusWidth) => map2(solve(w.arg1), solve(w.arg2), {_ - _})
         case (w: ExpWidth) => map2(Some(BigInt(2)), solve(w.arg1), pow_minus_one)

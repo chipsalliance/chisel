@@ -85,8 +85,8 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
                      (s: Statement): Statement = s match {
     case m: DefMemory if containsInfo(m.info, "useMacro") => 
       if (!containsInfo(m.info, "maskGran")) {
-        m.writers foreach { w => memPortMap(s"${m.name}.${w}.mask") = EmptyExpression }
-        m.readwriters foreach { w => memPortMap(s"${m.name}.${w}.wmask") = EmptyExpression }
+        m.writers foreach { w => memPortMap(s"${m.name}.$w.mask") = EmptyExpression }
+        m.readwriters foreach { w => memPortMap(s"${m.name}.$w.wmask") = EmptyExpression }
       }
       val info = getInfo(m.info, "info") match {
         case None => NoInfo
@@ -118,7 +118,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     val memMods = new Modules
     val modules = c.modules map updateMemMods(namespace, memMods)
     // print conf
-    writer.serialize
+    writer.serialize()
     c copy (modules = modules ++ memMods)
   }  
 }

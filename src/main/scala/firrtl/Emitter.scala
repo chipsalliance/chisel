@@ -31,6 +31,7 @@ import com.typesafe.scalalogging.LazyLogging
 import java.nio.file.{Paths, Files}
 import java.io.{Reader, Writer}
 
+import scala.collection.mutable
 import scala.sys.process._
 import scala.io.Source
 
@@ -190,11 +191,11 @@ class VerilogEmitter extends Emitter {
        case Pad =>
          val w = bitWidth(a0.tpe)
          val diff = (c0 - w)
-         if (w == 0) Seq(a0)
+         if (w == BigInt(0)) Seq(a0)
          else doprim.tpe match {
            // Either sign extend or zero extend.
-           // If width == 1, don't extract bit
-           case (_: SIntType) if w == 1 => Seq("{", c0, "{", a0, "}}")
+           // If width == BigInt(1), don't extract bit
+           case (_: SIntType) if w == BigInt(1) => Seq("{", c0, "{", a0, "}}")
            case (_: SIntType) => Seq("{{", diff, "{", a0, "[", w - 1, "]}},", a0, "}")
            case (_) => Seq("{{", diff, "'d0}, ", a0, "}")
          }
@@ -229,7 +230,7 @@ class VerilogEmitter extends Emitter {
          Seq(cast(a0), "[", _, "]")) reduce (_ + " ^ " + _)
        case Cat => Seq("{", cast(a0), ",", cast(a1), "}")
        // If selecting zeroth bit and single-bit wire, just emit the wire
-       case Bits if c0 == 0 && c1 == 0 && bitWidth(a0.tpe) == 1 => Seq(a0)
+       case Bits if c0 == 0 && c1 == 0 && bitWidth(a0.tpe) == BigInt(1) => Seq(a0)
        case Bits if c0 == c1 => Seq(a0, "[", c0, "]")
        case Bits => Seq(a0, "[", c0, ":", c1, "]")
        case Head =>
@@ -245,7 +246,7 @@ class VerilogEmitter extends Emitter {
    }
    
     def emit_verilog(m: Module)(implicit w: Writer): DefModule = {
-      val netlist = LinkedHashMap[WrappedExpression, Expression]()
+      val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
       val simlist = ArrayBuffer[Statement]()
       val namespace = Namespace(m)
       def build_netlist(s: Statement): Statement = s map build_netlist match {
@@ -269,7 +270,7 @@ class VerilogEmitter extends Emitter {
       val declares = ArrayBuffer[Seq[Any]]()
       val instdeclares = ArrayBuffer[Seq[Any]]()
       val assigns = ArrayBuffer[Seq[Any]]()
-      val at_clock = LinkedHashMap[Expression,ArrayBuffer[Seq[Any]]]()
+      val at_clock = mutable.LinkedHashMap[Expression,ArrayBuffer[Seq[Any]]]()
       val initials = ArrayBuffer[Seq[Any]]()
       val simulates = ArrayBuffer[Seq[Any]]()
       def declare (b: String, n: String, t: Type) = t match {
@@ -311,7 +312,7 @@ class VerilogEmitter extends Emitter {
 
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
           netlist.getOrElse(e, e) match {
-            case m: Mux if canFlatten(m) => {
+            case m: Mux if canFlatten(m) =>
               val ifStatement = Seq(tabs, "if(", m.cond, ") begin")
               val trueCase = addUpdate(m.tval, tabs + tab)
               val elseStatement = Seq(tabs, "end else begin")
@@ -322,7 +323,6 @@ class VerilogEmitter extends Emitter {
                 ifStatement +: trueCase :+ endStatement
               else
                 ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
-            }
             case _ if (weq(e, r)) => Seq()
             case _ => Seq(Seq(tabs, r, " <= ", e, ";"))
           }
@@ -640,9 +640,9 @@ class VerilogEmitter extends Emitter {
       }
 
       build_netlist(m.body)
-      build_ports
+      build_ports()
       build_streams(m.body)
-      emit_streams
+      emit_streams()
       m
    }
 
