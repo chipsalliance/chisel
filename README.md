@@ -6,7 +6,9 @@
 
  A Firrtl compiler is constructed by chaining together these transformations, then writing the final circuit to a file.
 
- This repository is in ALPHA VERSION, so many things may change in the coming months. 
+ For a detailed description of Firrtl's intermediate representation, see the document "Specification of the Firrtl Language" located in [spec/spec.pdf](https://github.com/ucb-bar/firrtl/blob/master/spec/spec.pdf).
+
+ This repository is in ALPHA VERSION, so many things may change in the coming months.
 
 #### Installation Instructions
 *Disclaimer*: This project is in alpha, so there is no guarantee anything works. The installation instructions should work for OSX/Linux machines.
