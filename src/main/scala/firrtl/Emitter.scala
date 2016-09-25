@@ -35,16 +35,17 @@ import scala.collection.mutable
 import scala.sys.process._
 import scala.io.Source
 
-import Utils._
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
+import Utils._
+import MemPortUtils.{memPortField, memType}
 // Datastructures
-import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+import scala.collection.mutable.{ArrayBuffer, LinkedHashMap, HashSet}
 
-class EmitterException(message: String) extends PassException(message)
+case class EmitterException(message: String) extends PassException(message)
 
 trait Emitter extends LazyLogging {
   def run(c: Circuit, w: Writer)
@@ -72,19 +73,6 @@ class VerilogEmitter extends Emitter {
     else if (e2 == we(one)) e1.e1
     else DoPrim(And, Seq(e1.e1, e2.e1), Nil, UIntType(IntWidth(1)))
   }
-  def OR(e1: WrappedExpression, e2: WrappedExpression): Expression = {
-    if (e1 == e2) e1.e1
-    else if ((e1 == we(one)) | (e2 == we(one))) one
-    else if (e1 == we(zero)) e2.e1
-    else if (e2 == we(zero)) e1.e1
-    else DoPrim(Or, Seq(e1.e1, e2.e1), Nil, UIntType(IntWidth(1)))
-  }
-  def NOT(e: WrappedExpression): Expression = {
-    if (e == we(one)) zero
-    else if (e == we(zero)) one
-    else DoPrim(Eq, Seq(e.e1, zero), Nil, UIntType(IntWidth(1)))
-  }
-
   def wref(n: String, t: Type) = WRef(n, t, ExpKind, UNKNOWNGENDER)
   def remove_root(ex: Expression): Expression = ex match {
     case ex: WSubField => ex.exp match {
@@ -171,7 +159,7 @@ class VerilogEmitter extends Emitter {
 
      def checkArgumentLegality(e: Expression) = e match {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
-       case _ => throw new EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
+       case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
      doprim.args foreach checkArgumentLegality
      doprim.op match {
@@ -247,17 +235,18 @@ class VerilogEmitter extends Emitter {
    
     def emit_verilog(m: Module)(implicit w: Writer): DefModule = {
       val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
-      val simlist = ArrayBuffer[Statement]()
+      val addrRegs = mutable.HashSet[WrappedExpression]()
       val namespace = Namespace(m)
       def build_netlist(s: Statement): Statement = s map build_netlist match {
         case (s: Connect) =>
           netlist(s.loc) = s.expr
+          (kind(s.loc), kind(s.expr)) match {
+            case (MemKind, RegKind) => addrRegs += s.expr
+            case _ =>
+          }
           s
         case (s: IsInvalid) =>
           netlist(s.expr) = wref(namespace.newTemp, s.expr.tpe)
-          s
-        case (s: Conditionally) =>
-          simlist += s
           s
         case (s: DefNode) =>
           val e = WRef(s.name, s.value.tpe, NodeKind, MALE)
@@ -273,23 +262,23 @@ class VerilogEmitter extends Emitter {
       val at_clock = mutable.LinkedHashMap[Expression,ArrayBuffer[Seq[Any]]]()
       val initials = ArrayBuffer[Seq[Any]]()
       val simulates = ArrayBuffer[Seq[Any]]()
-      def declare (b: String, n: String, t: Type) = t match {
+      def declare(b: String, n: String, t: Type) = t match {
         case (t: VectorType) =>
           declares += Seq(b, " ", t.tpe, " ", n, " [0:", t.size - 1, "];")
         case (t) =>
           declares += Seq(b, " ", t, " ", n,";")
       }
-      def assign (e: Expression, value: Expression) {
-         assigns += Seq("assign ", e, " = ", value, ";")
+      def assign(e: Expression, value: Expression) {
+        assigns += Seq("assign ", e, " = ", value, ";")
       }
 
       // In simulation, assign garbage under a predicate
       def garbageAssign(e: Expression, syn: Expression, garbageCond: Expression) = {
-         assigns += Seq("`ifndef RANDOMIZE_GARBAGE_ASSIGN")
-         assigns += Seq("assign ", e, " = ", syn, ";")
-         assigns += Seq("`else")
-         assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(syn.tpe), " : ", syn, ";")
-         assigns += Seq("`endif")
+        assigns += Seq("`ifndef RANDOMIZE_GARBAGE_ASSIGN")
+        assigns += Seq("assign ", e, " = ", syn, ";")
+        assigns += Seq("`else")
+        assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(syn.tpe), " : ", syn, ";")
+        assigns += Seq("`endif")
       }
       def invalidAssign(e: Expression) = {
         assigns += Seq("`ifdef RANDOMIZE_INVALID_ASSIGN")
@@ -311,19 +300,26 @@ class VerilogEmitter extends Emitter {
         }
 
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
-          netlist.getOrElse(e, e) match {
+          if (weq(e, r)) Nil else netlist getOrElse (e, e) match {
             case m: Mux if canFlatten(m) =>
-              val ifStatement = Seq(tabs, "if(", m.cond, ") begin")
-              val trueCase = addUpdate(m.tval, tabs + tab)
+              val ifStatement = Seq(tabs, "if (", m.cond, ") begin")
+              val trueCase =
+                // Don't generate mux trees for mem addr pipes
+                if (addrRegs(r)) Seq(Seq(tabs + tab, r, " <= ", m.tval, ";"))
+                else addUpdate(m.tval, tabs + tab)
               val elseStatement = Seq(tabs, "end else begin")
+              val ifNotStatement = Seq(tabs, "if (!(", m.cond, ")) begin")
               val falseCase = addUpdate(m.fval, tabs + tab)
               val endStatement = Seq(tabs, "end")
 
-              if (falseCase.isEmpty)
-                ifStatement +: trueCase :+ endStatement
-              else
-                ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
-            case _ if (weq(e, r)) => Seq()
+              ((trueCase.nonEmpty, falseCase.nonEmpty): @ unchecked) match {
+                case (true, true) =>
+                  ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
+                case (true, false) =>
+                  ifStatement +: trueCase :+ endStatement
+                case (false, true) =>
+                  ifNotStatement +: falseCase :+ endStatement
+              }
             case _ => Seq(Seq(tabs, r, " <= ", e, ";"))
           }
         }
@@ -331,7 +327,10 @@ class VerilogEmitter extends Emitter {
         at_clock.getOrElseUpdate(clk, ArrayBuffer[Seq[Any]]()) ++= {
           val tv = init
           val fv = netlist(r)
-          addUpdate(Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), "")
+          if (weq(tv, r))
+            addUpdate(fv, "")
+          else
+            addUpdate(Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), "")
         }
       }
 
@@ -373,18 +372,18 @@ class VerilogEmitter extends Emitter {
       }
 
       def instantiate(n: String,m: String, es: Seq[Expression]) {
-         instdeclares += Seq(m, " ", n, " (")
-         es.zipWithIndex foreach {case (e, i) =>
-           val s = Seq(tab, ".", remove_root(e), "(", LowerTypes.loweredName(e), ")")
-           if (i != es.size - 1) instdeclares += Seq(s, ",")
-           else instdeclares += s
-         }
-         instdeclares += Seq(");")
-         es foreach { e => 
-           declare("wire",LowerTypes.loweredName(e), e.tpe)
-           val ex = WRef(LowerTypes.loweredName(e), e.tpe, kind(e), gender(e))
-           if (gender(e) == FEMALE) assign(ex,netlist(e))
-         }
+        instdeclares += Seq(m, " ", n, " (")
+        es.zipWithIndex foreach {case (e, i) =>
+          val s = Seq(tab, ".", remove_root(e), "(", LowerTypes.loweredName(e), ")")
+          if (i != es.size - 1) instdeclares += Seq(s, ",")
+          else instdeclares += s
+        }
+        instdeclares += Seq(");")
+        es foreach { e => 
+          declare("wire",LowerTypes.loweredName(e), e.tpe)
+          val ex = WRef(LowerTypes.loweredName(e), e.tpe, kind(e), gender(e))
+          if (gender(e) == FEMALE) assign(ex,netlist(e))
+        }
       }
 
       def simulate(clk: Expression, en: Expression, s: Seq[Any], cond: Option[String]) {
@@ -415,32 +414,21 @@ class VerilogEmitter extends Emitter {
         Seq("$fwrite(32'h80000002,", strx, ");")
       }
 
-      def delay(e: Expression, n: Int, clk: Expression): Expression = {
-        ((0 until n) foldLeft e){(ex, i) =>
-          val name = namespace.newTemp
-          declare("reg", name, e.tpe)
-          val exx = wref(name, e.tpe)
-          initialize(exx)
-          update(exx, ex, clk, one)
-          exx
-        }
-      }
-
-      def build_ports(): Unit = m.ports.zipWithIndex foreach {case (p, i) =>
-        p.direction match {
+      def build_ports(): Unit = portdefs ++= m.ports.zipWithIndex map {
+        case (p, i) => p.direction match {
           case Input =>
-            portdefs += Seq(p.direction, "  ", p.tpe, " ", p.name)
+            Seq(p.direction, "  ", p.tpe, " ", p.name)
           case Output =>
-            portdefs += Seq(p.direction, " ", p.tpe, " ", p.name)
             val ex = WRef(p.name, p.tpe, PortKind, FEMALE)
             assign(ex, netlist(ex))
+            Seq(p.direction, " ", p.tpe, " ", p.name)
         }
       }
 
       def build_streams(s: Statement): Statement = s map build_streams match {
         case (s: DefWire) => 
-          declare("wire",s.name,s.tpe)
-          val e = wref(s.name,s.tpe)
+          declare("wire", s.name, s.tpe)
+          val e = wref(s.name, s.tpe)
           assign(e,netlist(e))
           s
         case (s: DefRegister) =>
@@ -470,57 +458,43 @@ class VerilogEmitter extends Emitter {
           instantiate(s.name, s.module, es)
           s
         case (s: DefMemory) =>
-          val mem = WRef(s.name, MemPortUtils.memType(s), MemKind, UNKNOWNGENDER)
-          def mem_exp (p: String, f: String) = {
-            val t1 = field_type(mem.tpe, p)
-            val t2 = field_type(t1, f)
-            val x = WSubField(mem, p, t1, UNKNOWNGENDER)
-            WSubField(x, f, t2, UNKNOWNGENDER)
-          }
-
           declare("reg", s.name, VectorType(s.dataType, s.depth))
           initialize_mem(s)
+          if (s.readLatency != 0 || s.writeLatency != 1)
+            throw EmitterException("All memories should be transformed into " +
+              "blackboxes or combinational by previous passses")
           for (r <- s.readers) {
-            val data = mem_exp(r, "data")
-            val addr = mem_exp(r, "addr")
-            val en = mem_exp(r, "en")
+            val data = memPortField(s, r, "data")
+            val addr = memPortField(s, r, "addr")
+            val en = memPortField(s, r, "en")
             // Ports should share an always@posedge, so can't have intermediary wire
-            val clk = netlist(mem_exp(r, "clk"))
+            val clk = netlist(memPortField(s, r, "clk"))
 
             declare("wire", LowerTypes.loweredName(data), data.tpe)
             declare("wire", LowerTypes.loweredName(addr), addr.tpe)
-            declare("wire", LowerTypes.loweredName(en), en.tpe)
+            // declare("wire", LowerTypes.loweredName(en), en.tpe)
 
             //; Read port
             assign(addr, netlist(addr)) //;Connects value to m.r.addr
-            assign(en, netlist(en))     //;Connects value to m.r.en
-            val addr_pipe = delay(addr,s.readLatency-1,clk)
-            val en_pipe = if (weq(en,one)) one else delay(en,s.readLatency-1,clk)
-            val addrx = if (s.readLatency > 0) {
-              val name = namespace.newTemp
-              val ref = wref(name, addr.tpe)
-              declare("reg", name, addr.tpe)
-              initialize(ref)
-              update(ref,addr_pipe,clk,en_pipe)
-              ref
-            } else addr
-            val mem_port = WSubAccess(mem,addrx,s.dataType,UNKNOWNGENDER)
+            // assign(en, netlist(en))     //;Connects value to m.r.en
+            val mem = WRef(s.name, memType(s), MemKind, UNKNOWNGENDER)
+            val memPort = WSubAccess(mem, addr, s.dataType, UNKNOWNGENDER)
             val depthValue = UIntLiteral(s.depth, IntWidth(BigInt(s.depth).bitLength))
-            val garbageGuard = DoPrim(Geq, Seq(addrx, depthValue), Seq(), UnknownType)
+            val garbageGuard = DoPrim(Geq, Seq(addr, depthValue), Seq(), UnknownType)
 
             if ((s.depth & (s.depth - 1)) == 0)
-              assign(data, mem_port)
+              assign(data, memPort)
             else
-              garbageAssign(data, mem_port, garbageGuard)
+              garbageAssign(data, memPort, garbageGuard)
           }
  
           for (w <- s.writers) {
-            val data = mem_exp(w, "data")
-            val addr = mem_exp(w, "addr")
-            val mask = mem_exp(w, "mask")
-            val en = mem_exp(w, "en")
+            val data = memPortField(s, w, "data")
+            val addr = memPortField(s, w, "addr")
+            val mask = memPortField(s, w, "mask")
+            val en = memPortField(s, w, "en")
             //Ports should share an always@posedge, so can't have intermediary wire
-            val clk = netlist(mem_exp(w, "clk"))
+            val clk = netlist(memPortField(s, w, "clk"))
 
             declare("wire", LowerTypes.loweredName(data), data.tpe)
             declare("wire", LowerTypes.loweredName(addr), addr.tpe)
@@ -528,76 +502,19 @@ class VerilogEmitter extends Emitter {
             declare("wire", LowerTypes.loweredName(en), en.tpe)
 
             //; Write port
-            assign(data,netlist(data))
-            assign(addr,netlist(addr))
-            assign(mask,netlist(mask))
-            assign(en,netlist(en))
-
-            val datax = delay(data, s.writeLatency - 1, clk)
-            val addrx = delay(addr, s.writeLatency - 1, clk)
-            val maskx = delay(mask, s.writeLatency - 1, clk)
-            val enx = delay(en, s.writeLatency - 1, clk)
-            val mem_port = WSubAccess(mem, addrx, s.dataType, UNKNOWNGENDER)
-            update(mem_port, datax, clk, AND(enx, maskx))
-          }
-
-          for (rw <- s.readwriters) {
-            val wmode = mem_exp(rw, "wmode")
-            val rdata = mem_exp(rw, "rdata")
-            val wdata = mem_exp(rw, "wdata")
-            val wmask = mem_exp(rw, "wmask")
-            val addr = mem_exp(rw, "addr")
-            val en = mem_exp(rw, "en")
-            //Ports should share an always@posedge, so can't have intermediary wire
-            val clk = netlist(mem_exp(rw, "clk"))
-
-            declare("wire", LowerTypes.loweredName(wmode), wmode.tpe)
-            declare("wire", LowerTypes.loweredName(rdata), rdata.tpe)
-            declare("wire", LowerTypes.loweredName(wdata), wdata.tpe)
-            declare("wire", LowerTypes.loweredName(wmask), wmask.tpe)
-            declare("wire", LowerTypes.loweredName(addr), addr.tpe)
-            declare("wire", LowerTypes.loweredName(en), en.tpe)
-
-            //; Assigned to lowered wires of each
+            assign(data, netlist(data))
             assign(addr, netlist(addr))
-            assign(wdata, netlist(wdata))
-            assign(addr, netlist(addr))
-            assign(wmask, netlist(wmask))
+            assign(mask, netlist(mask))
             assign(en, netlist(en))
-            assign(wmode, netlist(wmode))
 
-            //; Delay new signals by latency
-            val raddrx = if (s.readLatency > 0) delay(addr, s.readLatency - 1, clk) else addr
-            val waddrx = delay(addr,s.writeLatency - 1,clk)
-            val enx = delay(en,s.writeLatency - 1,clk)
-            val wmodex = delay(wmode,s.writeLatency - 1,clk)
-            val wdatax = delay(wdata,s.writeLatency - 1,clk)
-            val wmaskx = delay(wmask,s.writeLatency - 1,clk)
-
-            val raddrxx = if (s.readLatency > 0) {
-              val name = namespace.newTemp
-              val ref = wref(name, raddrx.tpe)
-              declare("reg", name, raddrx.tpe)
-              initialize(ref)
-              ref
-            } else addr
-            val rmem_port = WSubAccess(mem, raddrxx, s.dataType, UNKNOWNGENDER)
-            assign(rdata, rmem_port)
-            val wmem_port = WSubAccess(mem, waddrx, s.dataType, UNKNOWNGENDER)
-
-            def declare_and_assign(exp: Expression) = {
-              val name = namespace.newTemp
-              val ref = wref(name, exp.tpe)
-              declare("wire", name, exp.tpe)
-              assign(ref, exp)
-              ref
-            }
-            val ren = declare_and_assign(NOT(wmodex))
-            val wen = declare_and_assign(AND(wmodex, wmaskx))
-            if (s.readLatency > 0)
-              update(raddrxx, raddrx, clk, AND(enx, ren))
-            update(wmem_port, wdatax, clk, AND(enx, wen))
+            val mem = WRef(s.name, memType(s), MemKind, UNKNOWNGENDER)
+            val memPort = WSubAccess(mem, addr, s.dataType, UNKNOWNGENDER)
+            update(memPort, data, clk, AND(en, mask))
           }
+
+          if (s.readwriters.nonEmpty)
+            throw EmitterException("All readwrite ports should be transformed into " +
+              "read & write ports by previous passes")
           s
         case s => s
       }
