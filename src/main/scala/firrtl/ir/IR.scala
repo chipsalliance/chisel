@@ -250,6 +250,13 @@ case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInf
   def mapType(f: Type => Type): Statement = this
   def mapString(f: String => String): Statement = this
 }
+case class Attach(info: Info, source: Expression, exprs: Seq[Expression]) extends Statement with HasInfo {
+  def serialize: String = "attach " + source.serialize + " to (" + exprs.map(_.serialize).mkString(", ") + ")"
+  def mapStmt(f: Statement => Statement): Statement = this
+  def mapExpr(f: Expression => Expression): Statement = Attach(info, f(source), exprs map f)
+  def mapType(f: Type => Type): Statement = this
+  def mapString(f: String => String): Statement = this
+}
 case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Statement with HasInfo {
   def serialize: String = s"stop(${clk.serialize}, ${en.serialize}, $ret)" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
@@ -387,6 +394,10 @@ case object ClockType extends GroundType {
   val width = IntWidth(1)
   def serialize: String = "Clock"
   def mapWidth(f: Width => Width): Type = this
+}
+case class AnalogType(width: Width) extends GroundType {
+  def serialize: String = "Analog" + width.serialize
+  def mapWidth(f: Width => Width): Type = AnalogType(f(width))
 }
 case object UnknownType extends Type {
   def serialize: String = "?"

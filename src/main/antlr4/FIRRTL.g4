@@ -79,6 +79,7 @@ type
   : 'UInt' ('<' IntLit '>')?
   | 'SInt' ('<' IntLit '>')?
   | 'Clock'
+  | 'Analog' ('<' IntLit '>')?
   | '{' field* '}'        // Bundle
   | type '[' IntLit ']'   // Vector
   ;
@@ -119,6 +120,7 @@ stmt
   | 'stop(' exp exp IntLit ')' info?
   | 'printf(' exp exp StringLit ( exp)* ')' info?
   | 'skip' info?
+  | 'attach' exp 'to' '(' exp* ')' info?
   ;
 
 memField

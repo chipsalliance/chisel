@@ -265,6 +265,8 @@ object CheckTypes extends Pass {
     s"$info: [module $mname]  Primop $op requires all arguments to be UInt type.")
   class OpNotAllSameType(info: Info, mname: String, op: String) extends PassException(
     s"$info: [module $mname]  Primop $op requires all operands to have the same type.")
+  class OpNotAnalog(info: Info, mname: String, exp: String) extends PassException(
+    s"$info: [module $mname]  Attach requires all arguments to be Analog type: $exp.")
   class NodePassiveType(info: Info, mname: String) extends PassException(
     s"$info: [module $mname]  Node must be a passive type.")
   class MuxSameType(info: Info, mname: String) extends PassException(
@@ -277,6 +279,12 @@ object CheckTypes extends Pass {
     s"$info: [module $mname]  Must validif a passive type.")
   class ValidIfCondUInt(info: Info, mname: String) extends PassException(
     s"$info: [module $mname]  A validif condition must be of type UInt.")
+  class IllegalAnalogDeclaration(info: Info, mname: String, decName: String) extends PassException(
+    s"$info: [module $mname]  Cannot declare a reg, node, or memory with an Analog type: $decName.")
+  class IllegalAttachSource(info: Info, mname: String, sourceName: String) extends PassException(
+    s"$info: [module $mname]  Attach source must be a wire or port with an analog type: $sourceName.")
+  class IllegalAttachExp(info: Info, mname: String, expName: String) extends PassException(
+    s"$info: [module $mname]  Attach expression must be an instance: $expName.")
 
   //;---------------- Helper Functions --------------
   def ut: UIntType = UIntType(UnknownWidth)
@@ -291,13 +299,12 @@ object CheckTypes extends Pass {
       case (t: BundleType) => t.fields forall (x => x.flip == Default && passive(x.tpe))
       case (t) => true
     }
-
     def check_types_primop(info: Info, mname: String, e: DoPrim) {
       def all_same_type (ls:Seq[Expression]) {
         if (ls exists (x => wt(ls.head.tpe) != wt(e.tpe)))
           errors append new OpNotAllSameType(info, mname, e.op.serialize)
       }
-      def all_ground (ls: Seq[Expression]) {
+      def allInt(ls: Seq[Expression]) {
         if (ls exists (x => x.tpe match {
           case _: UIntType | _: SIntType => false
           case _ => true
@@ -315,12 +322,11 @@ object CheckTypes extends Pass {
           case _ => true
         }) errors append new OpNotUInt(info, mname, e.op.serialize, x.serialize)
       }
-
       e.op match {
         case AsUInt | AsSInt | AsClock =>
-        case Dshl => is_uint(e.args(1)); all_ground(e.args)
-        case Dshr => is_uint(e.args(1)); all_ground(e.args)
-        case _ => all_ground(e.args)
+        case Dshl => is_uint(e.args(1)); allInt(e.args)
+        case Dshr => is_uint(e.args(1)); allInt(e.args)
+        case _ => allInt(e.args)
       }
     }
 
@@ -377,6 +383,7 @@ object CheckTypes extends Pass {
         case (ClockType, ClockType) => flip1 == flip2
         case (_: UIntType, _: UIntType) => flip1 == flip2
         case (_: SIntType, _: SIntType) => flip1 == flip2
+        case (_: AnalogType, _: AnalogType) => false
         case (t1: BundleType, t2: BundleType) =>
           val t1_fields = (t1.fields foldLeft Map[String, (Type, Orientation)]())(
             (map, f1) => map + (f1.name -> (f1.tpe, f1.flip)))
@@ -397,14 +404,35 @@ object CheckTypes extends Pass {
       s match {
         case (s: Connect) if wt(s.loc.tpe) != wt(s.expr.tpe) =>
           errors append new InvalidConnect(info, mname, s.loc.serialize, s.expr.serialize)
-        case (s:PartialConnect) if !bulk_equals(s.loc.tpe, s.expr.tpe, Default, Default) =>
+        case (s: PartialConnect) if !bulk_equals(s.loc.tpe, s.expr.tpe, Default, Default) =>
           errors append new InvalidConnect(info, mname, s.loc.serialize, s.expr.serialize)
-        case (s: DefRegister) if wt(s.tpe) != wt(s.init.tpe) =>
-          errors append new InvalidRegInit(info, mname)
+        case (s: DefRegister) => s.tpe match {
+          case AnalogType(w) => errors append new IllegalAnalogDeclaration(info, mname, s.name)
+          case t if (wt(s.tpe) != wt(s.init.tpe)) => errors append new InvalidRegInit(info, mname)
+          case t =>
+        }
         case (s: Conditionally) if wt(s.pred.tpe) != wt(ut) =>
           errors append new PredNotUInt(info, mname)
-        case (s: DefNode) if !passive(s.value.tpe) =>
-          errors append new NodePassiveType(info, mname)
+        case (s: DefNode) => s.value.tpe match {
+          case AnalogType(w) => errors append new IllegalAnalogDeclaration(info, mname, s.name)
+          case t if !passive(s.value.tpe) => errors append new NodePassiveType(info, mname)
+          case t =>
+        }
+        case (s: Attach) => 
+          (s.source.tpe, kind(s.source)) match {
+            case (AnalogType(w), PortKind | WireKind)  =>
+            case _ => errors append new IllegalAttachSource(info, mname, s.source.serialize)
+          }
+          (s.exprs foreach) { e =>
+            e.tpe match {
+              case _: AnalogType =>
+              case _ => errors append new OpNotAnalog(info, mname, e.serialize)
+            }
+            kind(e) match {
+              case InstanceKind =>
+              case _ =>  errors append new IllegalAttachExp(info, mname, e.serialize)
+            }
+          }
         case (s: Stop) =>
           if (wt(s.clk.tpe) != wt(ClockType)) errors append new ReqClk(info, mname)
           if (wt(s.en.tpe) != wt(ut)) errors append new EnNotUInt(info, mname)
@@ -413,6 +441,10 @@ object CheckTypes extends Pass {
             errors append new PrintfArgNotGround(info, mname)
           if (wt(s.clk.tpe) != wt(ClockType)) errors append new ReqClk(info, mname)
           if (wt(s.en.tpe) != wt(ut)) errors append new EnNotUInt(info, mname)
+        case (s: DefMemory) => s.dataType match {
+          case AnalogType(w) => errors append new IllegalAnalogDeclaration(info, mname, s.name)
+          case t =>
+        }
         case _ =>
       }
       s map check_types_e(info, mname) map check_types_s(info, mname)
@@ -541,6 +573,8 @@ object CheckWidths extends Pass {
     s"$info: [module $mname] Parameter $n in head operator is larger than input width $width.")
   class TailWidthException(info: Info, mname: String, n: BigInt, width: BigInt) extends PassException(
     s"$info: [module $mname] Parameter $n in tail operator is larger than input width $width.")
+  class AttachWidthsNotEqual(info: Info, mname: String, eName: String, source: String) extends PassException(
+    s"$info: [module $mname] Attach source $source and expression $eName must have identical widths.")
 
   def run(c: Circuit): Circuit = {
     val errors = new Errors()
@@ -581,7 +615,15 @@ object CheckWidths extends Pass {
 
     def check_width_s(minfo: Info, mname: String)(s: Statement): Statement = {
       val info = get_info(s) match { case NoInfo => minfo case x => x }
-      s map check_width_e(info, mname) map check_width_s(info, mname)
+      s map check_width_e(info, mname) map check_width_s(info, mname) match {
+        case Attach(info, source, exprs) => 
+          exprs foreach ( e =>
+            if (bitWidth(e.tpe) != bitWidth(source.tpe))
+              errors append new AttachWidthsNotEqual(info, mname, e.serialize, source.serialize)
+          )
+          s
+        case _ => s
+      }
     }
 
     def check_width_p(minfo: Info, mname: String)(p: Port): Port = {

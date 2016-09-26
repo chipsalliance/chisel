@@ -64,6 +64,7 @@ case class VRandom(width: BigInt) extends Expression {
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
 }
+
 class VerilogEmitter extends Emitter {
   val tab = "  "
   def AND(e1: WrappedExpression, e2: WrappedExpression): Expression = {
@@ -87,6 +88,7 @@ class VerilogEmitter extends Emitter {
       case (t: UIntType) => e
       case (t: SIntType) => Seq("$signed(",e,")")
       case ClockType => e
+      case AnalogType(w) => e
     }
     (x) match {
       case (e: DoPrim) => emit(op_stream(e), top + 1)
@@ -106,6 +108,9 @@ class VerilogEmitter extends Emitter {
         val wx = bitWidth(t) - 1
         if (wx > 0) w write s"[$wx:0]"
       case ClockType =>
+      case t: AnalogType =>
+        val wx = bitWidth(t) - 1
+        if (wx > 0) w write s"[$wx:0]"
       case (t: VectorType) => 
         emit(t.tpe, top + 1)
         w write s"[${t.size - 1}:0]"
@@ -371,21 +376,6 @@ class VerilogEmitter extends Emitter {
         initials += Seq("`endif")
       }
 
-      def instantiate(n: String,m: String, es: Seq[Expression]) {
-        instdeclares += Seq(m, " ", n, " (")
-        es.zipWithIndex foreach {case (e, i) =>
-          val s = Seq(tab, ".", remove_root(e), "(", LowerTypes.loweredName(e), ")")
-          if (i != es.size - 1) instdeclares += Seq(s, ",")
-          else instdeclares += s
-        }
-        instdeclares += Seq(");")
-        es foreach { e => 
-          declare("wire",LowerTypes.loweredName(e), e.tpe)
-          val ex = WRef(LowerTypes.loweredName(e), e.tpe, kind(e), gender(e))
-          if (gender(e) == FEMALE) assign(ex,netlist(e))
-        }
-      }
-
       def simulate(clk: Expression, en: Expression, s: Seq[Any], cond: Option[String]) {
         if (!at_clock.contains(clk)) at_clock(clk) = ArrayBuffer[Seq[Any]]()
         at_clock(clk) += Seq("`ifndef SYNTHESIS")
@@ -415,10 +405,12 @@ class VerilogEmitter extends Emitter {
       }
 
       def build_ports(): Unit = portdefs ++= m.ports.zipWithIndex map {
-        case (p, i) => p.direction match {
-          case Input =>
+        case (p, i) => (p.tpe, p.direction) match {
+          case (AnalogType(_), _) =>
+            Seq("inout", "  ", p.tpe, " ", p.name)
+          case (_, Input) =>
             Seq(p.direction, "  ", p.tpe, " ", p.name)
-          case Output =>
+          case (_, Output) =>
             val ex = WRef(p.name, p.tpe, PortKind, FEMALE)
             assign(ex, netlist(ex))
             Seq(p.direction, " ", p.tpe, " ", p.name)
@@ -427,9 +419,12 @@ class VerilogEmitter extends Emitter {
 
       def build_streams(s: Statement): Statement = s map build_streams match {
         case (s: DefWire) => 
-          declare("wire", s.name, s.tpe)
-          val e = wref(s.name, s.tpe)
-          assign(e,netlist(e))
+          declare("wire",s.name,s.tpe)
+          val e = wref(s.name,s.tpe)
+          netlist get e match {
+            case Some(n) => assign(e,n)
+            case None =>
+          }
           s
         case (s: DefRegister) =>
           declare("reg", s.name, s.tpe)
@@ -453,9 +448,15 @@ class VerilogEmitter extends Emitter {
         case (s: Print) =>
           simulate(s.clk, s.en, printf(s.string, s.args), Some("PRINTF_COND"))
           s
-        case (s: WDefInstance) =>
+        case (s: WDefInstanceConnector) =>
           val es = create_exps(WRef(s.name, s.tpe, InstanceKind, MALE))
-          instantiate(s.name, s.module, es)
+          instdeclares += Seq(s.module, " ", s.name, " (")
+          (es zip s.exprs).zipWithIndex foreach {case ((l, r), i) =>
+            val s = Seq(tab, ".", remove_root(l), "(", r, ")")
+            if (i != es.size - 1) instdeclares += Seq(s, ",")
+            else instdeclares += s
+          }
+          instdeclares += Seq(");")
           s
         case (s: DefMemory) =>
           declare("reg", s.name, VectorType(s.dataType, s.depth))

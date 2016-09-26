@@ -137,6 +137,8 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
           case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText)))
           else SIntType(UnknownWidth)
           case "Clock" => ClockType
+          case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.IntLit.getText)))
+          else AnalogType(UnknownWidth)
           case "{" => BundleType(ctx.field.map(visitField))
         }
       case typeContext: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.IntLit.getText))
@@ -272,6 +274,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
         case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx.exp(0)))
 
         case "stop(" => Stop(info, string2Int(ctx.IntLit().getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+        case "attach" => Attach(info, visitExp(ctx.exp.head), ctx.exp.tail map visitExp)
         case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
           visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
         case "skip" => EmptyStmt

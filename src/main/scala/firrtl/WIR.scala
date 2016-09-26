@@ -102,6 +102,14 @@ case class WDefInstance(info: Info, name: String, module: String, tpe: Type) ext
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
 }
+case class WDefInstanceConnector(info: Info, name: String, module: String, tpe: Type, exprs: Seq[Expression]) extends Statement with IsDeclaration {
+  def serialize: String = s"inst $name of $module with ${tpe.serialize} connected to (" + exprs.map(_.serialize).mkString(", ") + ")" + info.serialize
+  def mapExpr(f: Expression => Expression): Statement = this.copy(exprs = exprs map f)
+  def mapStmt(f: Statement => Statement): Statement = this
+  def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
+  def mapString(f: String => String): Statement = this.copy(name = f(name))
+}
+
 
 // Resultant width is the same as the maximum input width
 case object Addw extends PrimOp { override def toString = "addw" }
@@ -180,6 +188,11 @@ class WrappedType(val t: Type) {
       case (_: UIntType, _: UIntType) => true
       case (_: SIntType, _: SIntType) => true
       case (ClockType, ClockType) => true
+      // Analog totally skips out of the Firrtl type system.
+      // The only way Analog can play with another Analog component is through Attach.
+      // Ohterwise, we'd need to special case it during ExpandWhens, Lowering,
+      // ExpandConnects, etc.
+      case (_: AnalogType, _: AnalogType) => false
       case (t1: VectorType, t2: VectorType) =>
         t1.size == t2.size && wt(t1.tpe) == wt(t2.tpe)
       case (t1: BundleType, t2: BundleType) =>

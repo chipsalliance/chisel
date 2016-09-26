@@ -308,3 +308,43 @@ object VerilogRename extends Pass {
   def run(c: Circuit): Circuit =
     c copy (modules = (c.modules map (_ map verilogRenameP map verilogRenameS)))
 }
+
+
+object VerilogPrep extends Pass {
+  def name = "Verilog Prep"
+  type InstAttaches = collection.mutable.HashMap[String, Expression]
+  def run(c: Circuit): Circuit = {
+    def buildS(attaches: InstAttaches)(s: Statement): Statement = s match {
+      case Attach(_, source, exps) => 
+        exps foreach { e => attaches(e.serialize) = source }
+        s
+      case _ => s map buildS(attaches)
+    }
+    def lowerE(e: Expression): Expression = e match {
+      case _: WRef|_: WSubField if (kind(e) == InstanceKind) => 
+        WRef(LowerTypes.loweredName(e), e.tpe, kind(e), gender(e))
+      case _ => e map lowerE
+    }
+    def lowerS(attaches: InstAttaches)(s: Statement): Statement = s match {
+      case WDefInstance(info, name, module, tpe) =>
+        val exps = create_exps(WRef(name, tpe, ExpKind, MALE))
+        val wcon = WDefInstanceConnector(info, name, module, tpe, exps.map( e => e.tpe match {
+          case AnalogType(w) => attaches(e.serialize)
+          case _ => WRef(LowerTypes.loweredName(e), e.tpe, WireKind, MALE)
+        }))
+        val wires = exps.map ( e => e.tpe match {
+          case AnalogType(w) => EmptyStmt
+          case _ => DefWire(info, LowerTypes.loweredName(e), e.tpe)
+        })
+        Block(Seq(wcon) ++ wires)
+      case Attach(info, source, exps) => EmptyStmt
+      case _ => s map lowerS(attaches) map lowerE
+    }
+    def prepModule(m: DefModule): DefModule = {
+      val attaches = new InstAttaches
+      m map buildS(attaches)
+      m map lowerS(attaches)
+    }
+    c copy (modules = (c.modules map prepModule))
+  }
+}

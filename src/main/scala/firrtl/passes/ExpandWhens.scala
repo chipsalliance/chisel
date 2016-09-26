@@ -48,6 +48,7 @@ object ExpandWhens extends Pass {
   type NodeMap = collection.mutable.HashMap[MemoizedHash[Expression], String]
   type Netlist = collection.mutable.LinkedHashMap[WrappedExpression, Expression]
   type Simlist = collection.mutable.ArrayBuffer[Statement]
+  type Attachlist = collection.mutable.ArrayBuffer[Statement]
   type Defaults = Seq[collection.mutable.Map[WrappedExpression, Expression]]
 
   // ========== Expand When Utilz ==========
@@ -55,9 +56,12 @@ object ExpandWhens extends Pass {
     def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, Default))
     val exps = create_exps(WRef(n, t, ExpKind, g))
     (exps.zipWithIndex foldLeft Seq[Expression]()){
-      case (expsx, (exp, j)) => getGender(t, j, g) match {
-        case (BIGENDER | FEMALE) => expsx :+ exp
-        case _ => expsx
+      case (expsx, (exp, j)) => exp.tpe match {
+        case AnalogType(w) => expsx
+        case _ => getGender(t, j, g) match {
+          case (BIGENDER | FEMALE) => expsx :+ exp
+          case _ => expsx
+        }
       }
     }
   }
@@ -108,6 +112,7 @@ object ExpandWhens extends Pass {
         case c: IsInvalid =>
           netlist(c.expr) = WInvalid
           EmptyStmt
+        case c: Attach => c
         case s: Conditionally =>
           val conseqNetlist = new Netlist
           val altNetlist = new Netlist

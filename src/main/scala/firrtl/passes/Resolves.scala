@@ -87,6 +87,7 @@ object ResolveGenders extends Pass {
   }
         
   def resolve_s(s: Statement): Statement = s match {
+    //TODO(azidar): pretty sure don't need to do anything for Attach, but not positive...
     case IsInvalid(info, expr) =>
       IsInvalid(info, resolve_e(FEMALE)(expr))
     case Connect(info, loc, expr) =>

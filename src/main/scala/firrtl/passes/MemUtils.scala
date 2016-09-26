@@ -140,8 +140,7 @@ object createMask {
   def apply(dt: Type): Type = dt match {
     case t: VectorType => VectorType(apply(t.tpe), t.size)
     case t: BundleType => BundleType(t.fields map (f => f copy (tpe=apply(f.tpe))))
-    case t: UIntType => BoolType
-    case t: SIntType => BoolType
+    case t: GroundType => BoolType
   }
 }
 
