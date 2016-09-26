@@ -139,10 +139,10 @@ object ConstProp extends Pass {
           case _ => false
         }
       x match {
-        case DoPrim(Lt,  Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => zero
-        case DoPrim(Leq, Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => one
-        case DoPrim(Gt,  Seq(a,b),_,_) if(isZero(a) && isUInt(b)) => zero
-        case DoPrim(Geq, Seq(a,b),_,_) if(isUInt(a) && isZero(b)) => one
+        case DoPrim(Lt,  Seq(a,b),_,_) if isUInt(a) && isZero(b) => zero
+        case DoPrim(Leq, Seq(a,b),_,_) if isZero(a) && isUInt(b) => one
+        case DoPrim(Gt,  Seq(a,b),_,_) if isZero(a) && isUInt(b) => zero
+        case DoPrim(Geq, Seq(a,b),_,_) if isUInt(a) && isZero(b) => one
         case e => e
       }
     }
@@ -181,15 +181,15 @@ object ConstProp extends Pass {
           def r1 = range(e.args(1))
           e.op match {
             // Always true
-            case Lt  if (r0 < r1) => one
-            case Leq if (r0 <= r1) => one
-            case Gt  if (r0 > r1) => one
-            case Geq if (r0 >= r1) => one
+            case Lt  if r0 < r1 => one
+            case Leq if r0 <= r1 => one
+            case Gt  if r0 > r1 => one
+            case Geq if r0 >= r1 => one
             // Always false
-            case Lt  if (r0 >= r1) => zero
-            case Leq if (r0 > r1) => zero
-            case Gt  if (r0 <= r1) => zero
-            case Geq if (r0 < r1) => zero
+            case Lt  if r0 >= r1 => zero
+            case Leq if r0 > r1 => zero
+            case Gt  if r0 <= r1 => zero
+            case Geq if r0 < r1 => zero
             case _ => e
           }
         case e => e

@@ -234,17 +234,17 @@ object Uniquify extends Pass {
           val newFields = tpe.fields map ( f =>
             DefMemory(s.info, f.name, f.tpe, s.depth, s.writeLatency,
               s.readLatency, s.readers, s.writers, s.readwriters)
-          ) flatMap (recStmtToType)
+          ) flatMap recStmtToType
           Seq(Field(s.name, Default, BundleType(newFields)))
         case tpe: VectorType =>
           val newFields = (0 until tpe.size) map ( i =>
             s.copy(name = i.toString, dataType = tpe.tpe)
-          ) flatMap (recStmtToType)
+          ) flatMap recStmtToType
           Seq(Field(s.name, Default, BundleType(newFields)))
       }
       case s: DefNode => Seq(Field(s.name, Default, s.value.tpe))
       case s: Conditionally => recStmtToType(s.conseq) ++ recStmtToType(s.alt)
-      case s: Block => (s.stmts map (recStmtToType)).flatten
+      case s: Block => (s.stmts map recStmtToType).flatten
       case s => Seq()
     }
     BundleType(recStmtToType(s))
@@ -266,10 +266,10 @@ object Uniquify extends Pass {
       def uniquifyExp(e: Expression): Expression = e match {
         case (_: WRef | _: WSubField | _: WSubIndex | _: WSubAccess ) =>
           uniquifyNamesExp(e, nameMap.toMap)
-        case e: Mux => e map (uniquifyExp)
-        case e: ValidIf => e map (uniquifyExp)
+        case e: Mux => e map uniquifyExp
+        case e: ValidIf => e map uniquifyExp
         case (_: UIntLiteral | _: SIntLiteral) => e
-        case e: DoPrim => e map (uniquifyExp)
+        case e: DoPrim => e map uniquifyExp
       }
 
       def uniquifyStmt(s: Statement): Statement = {
@@ -342,7 +342,7 @@ object Uniquify extends Pass {
           // Adds port names to namespace and namemap
           nameMap ++= portNameMap(m.name)
           namespace ++= create_exps("", portTypeMap(m.name)) map
-                        (LowerTypes.loweredName) map (_.tail)
+                        LowerTypes.loweredName map (_.tail)
           m.copy(body = uniquifyBody(m.body) )
       }
     }

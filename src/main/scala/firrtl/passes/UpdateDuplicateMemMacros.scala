@@ -150,6 +150,6 @@ object UpdateDuplicateMemMacros extends Pass {
        map updateStmtRefs(memPortMap))
   }
 
-  def run(c: Circuit) = c copy (modules = (c.modules map updateMemMods)) 
+  def run(c: Circuit) = c copy (modules = c.modules map updateMemMods)
 }
 // TODO: Module namespace?

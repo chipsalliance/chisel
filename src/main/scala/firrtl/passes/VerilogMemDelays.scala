@@ -72,8 +72,8 @@ object VerilogMemDelays extends Pass {
       // 2. memories are transformed into combinational
       //    because latency pipes are added for longer latencies
       val mem = s copy (
-        readers = (s.readers ++ (s.readwriters map (rw => rwMap(rw)._1))),
-        writers = (s.writers ++ (s.readwriters map (rw => rwMap(rw)._2))),
+        readers = s.readers ++ (s.readwriters map (rw => rwMap(rw)._1)),
+        writers = s.writers ++ (s.readwriters map (rw => rwMap(rw)._2)),
         readwriters = Nil, readLatency = 0, writeLatency = 1)
       def pipe(e: Expression, // Expression to be piped
                n: Int, // pipe depth
@@ -180,5 +180,5 @@ object VerilogMemDelays extends Pass {
   }
 
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map memDelayMod))
+    c copy (modules = c.modules map memDelayMod)
 }

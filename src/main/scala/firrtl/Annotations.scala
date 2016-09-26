@@ -68,7 +68,7 @@ object Annotations {
     def check(from: Named, tos: Seq[Named], which: Annotation): Unit = tos.size match {
       case 0 =>
         throw new AnnotationException(s"Cannot remove the strict annotation ${which.serialize} on ${from.name}")
-      case 1 if(from != tos.head) =>
+      case 1 if from != tos.head =>
         throw new AnnotationException(s"Cannot rename the strict annotation ${which.serialize} on ${from.name} -> ${tos.head.name}")
       case _ =>
         throw new AnnotationException(s"Cannot expand a strict annotation on ${from.name} -> ${tos.map(_.name)}")
@@ -143,7 +143,7 @@ object Annotations {
    */
   trait Unstable extends Tenacity {
     protected def propagate(from: Named, tos: Seq[Named], dup: Named=>Annotation): Seq[Annotation] = tos.size match {
-      case 1 if(tos.head == from) => Seq(dup(tos.head))
+      case 1 if tos.head == from => Seq(dup(tos.head))
       case _ => Seq.empty
     }
   }

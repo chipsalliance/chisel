@@ -67,7 +67,7 @@ object ResolveKinds extends Pass {
   }
  
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map resolve_kinds))
+    c copy (modules = c.modules map resolve_kinds)
 }
 
 object ResolveGenders extends Pass {
@@ -100,7 +100,7 @@ object ResolveGenders extends Pass {
   def resolve_gender(m: DefModule): DefModule = m map resolve_s
 
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map resolve_gender))
+    c copy (modules = c.modules map resolve_gender)
 }
 
 object CInferMDir extends Pass {
@@ -108,7 +108,7 @@ object CInferMDir extends Pass {
   type MPortDirMap = collection.mutable.LinkedHashMap[String, MPortDir]
 
   def infer_mdir_e(mports: MPortDirMap, dir: MPortDir)(e: Expression): Expression = {
-    (e map infer_mdir_e(mports, dir)) match {
+    e map infer_mdir_e(mports, dir) match {
       case e: Reference => mports get e.name match {
         case Some(p) => mports(e.name) = (p, dir) match {
           case (MInfer, MInfer) => Utils.error("Shouldn't be here")
@@ -160,5 +160,5 @@ object CInferMDir extends Pass {
   }
      
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map infer_mdir))
+    c copy (modules = c.modules map infer_mdir)
 }

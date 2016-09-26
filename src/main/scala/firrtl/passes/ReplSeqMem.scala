@@ -88,7 +88,7 @@ Optional Arguments:
     error("No circuit name specified for ReplSeqMem!" + usage)
   )
   val target = CircuitName(passCircuit)
-  def duplicate(n: Named) = this copy (t = (t replace (s"-c:$passCircuit", s"-c:${n.name}")))
+  def duplicate(n: Named) = this copy (t = t.replace(s"-c:$passCircuit", s"-c:${n.name}"))
 }
 
 class ReplSeqMem(transID: TransID) extends Transform with SimpleRun {

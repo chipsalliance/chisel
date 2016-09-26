@@ -60,5 +60,5 @@ object PadWidths extends Pass {
     case s => s map onStmt
   }
 
-  def run(c: Circuit): Circuit = c copy (modules = (c.modules map (_ map onStmt)))
+  def run(c: Circuit): Circuit = c copy (modules = c.modules map (_ map onStmt))
 }

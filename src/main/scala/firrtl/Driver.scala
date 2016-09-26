@@ -73,7 +73,7 @@ Optional Arguments:
         case Array(circuit, module) =>
           passes.InlineAnnotation(ModuleName(module, CircuitName(circuit)), TransID(0))
         case Array(circuit, module, inst) =>
-          passes.InlineAnnotation((ComponentName(inst,ModuleName(module,CircuitName(circuit)))), TransID(0))
+          passes.InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))), TransID(0))
         case _ => throw new Exception(s"Bad inline instance/module name: $value" + usage)
       }
 
@@ -152,7 +152,7 @@ Optional Arguments:
           nextOption(map + (CompilerName -> value), tail)
         case "--info-mode" :: value :: tail =>
           nextOption(map + (InfoModeOption -> value), tail)
-        case flag :: value :: tail if(customOptions.contains(flag)) =>
+        case flag :: value :: tail if customOptions.contains(flag) =>
           annotations += customOptions(flag)(value)
           nextOption(map, tail)
         case ("-h" | "--help") :: tail => println(usage); sys.exit(0)

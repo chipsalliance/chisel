@@ -271,7 +271,7 @@ case class Print(
     clk: Expression,
     en: Expression) extends Statement with HasInfo {
   def serialize: String = {
-    val strs = Seq(clk.serialize, en.serialize, ("\"" + string.serialize + "\"")) ++
+    val strs = Seq(clk.serialize, en.serialize, "\"" + string.serialize + "\"") ++
                (args map (_.serialize))
     "printf(" + (strs mkString ", ") + ")" + info.serialize
   }

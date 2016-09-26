@@ -114,22 +114,22 @@ object Utils extends LazyLogging {
      t match {
        case (_: GroundType) => f
        case (t: BundleType) => 
-         val (_, flip) = ((t.fields foldLeft (i, None: Option[Orientation])){
-            case ((n, ret), x) if n < get_size(x.tpe) => ret match {
-              case None => (n, Some(get_flip(x.tpe,n,times(x.flip,f))))
-              case Some(_) => (n, ret)
-            }
-            case ((n, ret), x) => (n - get_size(x.tpe), ret)
-         })
+         val (_, flip) = t.fields.foldLeft(i, None: Option[Orientation]) {
+           case ((n, ret), x) if n < get_size(x.tpe) => ret match {
+             case None => (n, Some(get_flip(x.tpe, n, times(x.flip, f))))
+             case Some(_) => (n, ret)
+           }
+           case ((n, ret), x) => (n - get_size(x.tpe), ret)
+         }
          flip.get
        case (t: VectorType) => 
-         val (_, flip) = (((0 until t.size) foldLeft (i, None: Option[Orientation])){
+         val (_, flip) = (0 until t.size).foldLeft(i, None: Option[Orientation]) {
            case ((n, ret), x) if n < get_size(t.tpe) => ret match {
-             case None => (n, Some(get_flip(t.tpe,n,f)))
+             case None => (n, Some(get_flip(t.tpe, n, f)))
              case Some(_) => (n, ret)
            }
            case ((n, ret), x) => (n - get_size(t.tpe), ret)
-         })
+         }
          flip.get
      }
    }
@@ -220,25 +220,26 @@ object Utils extends LazyLogging {
       case (t1: SIntType, t2: SIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
       case (t1: BundleType, t2: BundleType) =>
         def emptyMap = Map[String, (Type, Orientation, Int)]()
-        val t1_fields = ((t1.fields foldLeft (emptyMap, 0)){case ((map, ilen), f1) =>
-          (map + (f1.name -> (f1.tpe, f1.flip, ilen)), ilen + get_size(f1.tpe))})._1
-        ((t2.fields foldLeft (Seq[(Int, Int)](), 0)){case ((points, jlen), f2) =>
+        val t1_fields = t1.fields.foldLeft(emptyMap, 0) { case ((map, ilen), f1) =>
+          (map + (f1.name ->(f1.tpe, f1.flip, ilen)), ilen + get_size(f1.tpe))
+        }._1
+        t2.fields.foldLeft(Seq[(Int, Int)](), 0) { case ((points, jlen), f2) =>
           t1_fields get f2.name match {
             case None => (points, jlen + get_size(f2.tpe))
-            case Some((f1_tpe, f1_flip, ilen))=>
+            case Some((f1_tpe, f1_flip, ilen)) =>
               val f1_times = times(flip1, f1_flip)
               val f2_times = times(flip2, f2.flip)
               val ls = get_valid_points(f1_tpe, f2.tpe, f1_times, f2_times)
-              (points ++ (ls map {case (x, y) => (x + ilen, y + jlen)}), jlen + get_size(f2.tpe))
+              (points ++ (ls map { case (x, y) => (x + ilen, y + jlen) }), jlen + get_size(f2.tpe))
           }
-        })._1
+        }._1
       case (t1: VectorType, t2: VectorType) =>
         val size = math.min(t1.size, t2.size)
-        (((0 until size) foldLeft (Seq[(Int, Int)](), 0, 0)){case ((points, ilen, jlen), _) =>
+        (0 until size).foldLeft(Seq[(Int, Int)](), 0, 0) { case ((points, ilen, jlen), _) =>
           val ls = get_valid_points(t1.tpe, t2.tpe, flip1, flip2)
-          (points ++ (ls map {case (x, y) => ((x + ilen), (y + jlen))}),
+          (points ++ (ls map { case (x, y) => ((x + ilen), (y + jlen)) }),
             ilen + get_size(t1.tpe), jlen + get_size(t2.tpe))
-        })._1
+        }._1
       case (ClockType, ClockType) => if (flip1 == flip2) Seq((0, 0)) else Nil
       case (AnalogType(w1), AnalogType(w2)) => Nil
       case _ => error("shouldn't be here")

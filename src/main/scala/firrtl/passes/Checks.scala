@@ -87,7 +87,7 @@ object CheckHighForm extends Pass {
       def correctNum(ne: Option[Int], nc: Int) {
         ne match {
           case Some(i) if e.args.length != i =>
-            errors append (new IncorrectNumArgsException(info, mname, e.op.toString, i))
+            errors append new IncorrectNumArgsException(info, mname, e.op.toString, i)
           case _ => // Do Nothing
         }
         if (e.consts.length != nc)
@@ -181,7 +181,7 @@ object CheckHighForm extends Pass {
 
     def checkHighFormS(minfo: Info, mname: String, names: NameSet)(s: Statement): Statement = {
       val info = get_info(s) match {case NoInfo => minfo case x => x}
-      (s map checkName(info, mname, names)) match {
+      s map checkName(info, mname, names) match {
         case s: DefMemory =>
           if (hasFlip(s.dataType))
             errors append new MemWithFlipException(info, mname, s.name)
@@ -342,9 +342,9 @@ object CheckTypes extends Pass {
         case (e: WSubIndex) => e.exp.tpe match {
           case (t: VectorType) if e.value < t.size =>
           case (t: VectorType) =>
-            errors append (new IndexTooLarge(info, mname, e.value))
+            errors append new IndexTooLarge(info, mname, e.value)
           case _ =>
-            errors append (new IndexOnNonVector(info, mname))
+            errors append new IndexOnNonVector(info, mname)
         }
         case (e: WSubAccess) =>
           e.exp.tpe match {

@@ -109,14 +109,14 @@ object CheckChirrtl extends Pass {
 
     def checkName(info: Info, mname: String, names: NameSet)(name: String): String = {
       if (names(name))
-        errors append (new NotUniqueException(info, mname, name))
+        errors append new NotUniqueException(info, mname, name)
       names += name
       name 
     }
 
     def checkChirrtlS(minfo: Info, mname: String, names: NameSet)(s: Statement): Statement = {
       val info = get_info(s) match {case NoInfo => minfo case x => x}
-      (s map checkName(info, mname, names)) match {
+      s map checkName(info, mname, names) match {
         case s: DefMemory =>
           if (hasFlip(s.dataType)) errors append new MemWithFlipException(info, mname, s.name)
           if (s.depth <= 0) errors append new NegMemSizeException(info, mname)
