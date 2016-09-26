@@ -39,7 +39,7 @@ object PadWidths extends Pass {
       case Lt | Leq | Gt | Geq | Eq | Neq | Not | And | Or | Xor |
            Add | Sub | Mul | Div | Rem | Shr =>
         // sensitive ops
-        e map fixup((e.args map width _ foldLeft 0)(math.max))
+        e map fixup((e.args map width foldLeft 0)(math.max))
       case Dshl =>
         // special case as args aren't all same width
         e copy (op = Dshlw, args = Seq(fixup(width(e.tpe))(e.args.head), e.args(1)))
