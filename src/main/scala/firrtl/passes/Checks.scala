@@ -565,6 +565,8 @@ object CheckWidths extends Pass {
     s"$info : [module $mname]  Uninferred width.")
   class WidthTooSmall(info: Info, mname: String, b: BigInt) extends PassException(
     s"$info : [module $mname]  Width too small for constant ${serialize(b)}.")
+  class WidthTooBig(info: Info, mname: String) extends PassException(
+    s"$info : [module $mname]  Width of dshl shift amount cannot be larger than 31 bits.")
   class NegWidthException(info:Info, mname: String) extends PassException(
     s"$info: [module $mname] Width cannot be negative or zero.")
   class BitsWidthException(info: Info, mname: String, hi: BigInt, width: BigInt) extends PassException(
@@ -608,6 +610,8 @@ object CheckWidths extends Pass {
           errors append new HeadWidthException(info, mname, n, bitWidth(a.tpe))
         case DoPrim(Tail, Seq(a), Seq(n), _) if bitWidth(a.tpe) <= n =>
           errors append new TailWidthException(info, mname, n, bitWidth(a.tpe))
+        case DoPrim(Dshl, Seq(a, b), _, _) if bitWidth(b.tpe) >= BigInt(32) =>
+          errors append new WidthTooBig(info, mname)
         case _ =>
       }
       e map check_width_w(info, mname) map check_width_e(info, mname)

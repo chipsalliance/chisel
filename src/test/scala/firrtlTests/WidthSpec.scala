@@ -84,4 +84,24 @@ class WidthSpec extends FirrtlFlatSpec {
     val check = Seq( "output z : SInt<5>")
     executeTest(input, check, passes)
   }
+  "Dshl by 32 bits" should "result in an error" in {
+    val passes = Seq(
+      ToWorkingIR,
+      CheckHighForm,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes,
+      InferWidths,
+      CheckWidths)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    input x: UInt<3>
+        |    input y: UInt<32>
+        |    output z: UInt
+        |    z <= dshl(x, y)""".stripMargin
+    intercept[CheckWidths.WidthTooBig] {
+      executeTest(input, Nil, passes)
+    }
+  }
 }
