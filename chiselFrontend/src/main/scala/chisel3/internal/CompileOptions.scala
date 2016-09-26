@@ -2,6 +2,9 @@
 
 package chisel3.internal
 
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
+
 trait CompileOptions {
   // Should Bundle connections require a strict match of fields.
   // If true and the same fields aren't present in both source and sink, a MissingFieldException,
@@ -14,6 +17,11 @@ trait CompileOptions {
 }
 
 trait ExplicitCompileOptions extends CompileOptions
+
+object ExplicitCompileOptions {
+  // Provides a low priority Strict default. Can be overridden by importing the NotStrict option.
+  implicit def materialize: ExplicitCompileOptions = chisel3.Strict.CompileOptions
+}
 
 ///** Initialize compilation options from a string map.
 //  *
