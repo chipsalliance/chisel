@@ -9,7 +9,6 @@ import Utils.error
 import AnalysisUtils._
 
 import net.jcazevedo.moultingyaml._
-import net.jcazevedo.moultingyaml.DefaultYamlProtocol._
 import scala.collection.mutable
 import java.io.{File, CharArrayWriter, PrintWriter}
 
@@ -58,7 +57,7 @@ case class SRAMConfig(
     val fieldMap = getClass.getDeclaredFields.map { f => 
       f.setAccessible(true)
       f.getName -> f.get(this)
-    } toMap
+    }.toMap
 
     val fieldDelimiter = """\[.*?\]""".r
     val configOptions = fieldDelimiter.findAllIn(pattern).toList

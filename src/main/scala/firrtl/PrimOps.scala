@@ -102,7 +102,7 @@ object PrimOps extends LazyLogging {
   private lazy val builtinPrimOps: Seq[PrimOp] =
     Seq(Add, Sub, Mul, Div, Rem, Lt, Leq, Gt, Geq, Eq, Neq, Pad, AsUInt, AsSInt, AsClock, Shl, Shr,
         Dshl, Dshr, Neg, Cvt, Not, And, Or, Xor, Andr, Orr, Xorr, Cat, Bits, Head, Tail)
-  private lazy val strToPrimOp: Map[String, PrimOp] = builtinPrimOps map (op => op.toString -> op) toMap
+  private lazy val strToPrimOp: Map[String, PrimOp] = builtinPrimOps.map { case op : PrimOp=> op.toString -> op }.toMap
 
   /** Seq of String representations of [[ir.PrimOp]]s */
   lazy val listing: Seq[String] = builtinPrimOps map (_.toString)
