@@ -39,7 +39,7 @@ object VerilogMemDelays extends Pass {
   def name = "Verilog Memory Delays"
   val ug = UNKNOWNGENDER
   type Netlist = collection.mutable.HashMap[String, Expression]
-  implicit def expToString(e: Expression) = e.serialize
+  implicit def expToString(e: Expression): String = e.serialize
   private def NOT(e: Expression) = DoPrim(Not, Seq(e), Nil, BoolType)
   private def AND(e1: Expression, e2: Expression) = DoPrim(And, Seq(e1, e2), Nil, BoolType)
 
