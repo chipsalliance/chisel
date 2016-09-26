@@ -63,7 +63,7 @@ object VerilogMemDelays extends Pass {
       val ports = (s.readers ++ s.writers).toSet
       def newPortName(rw: String, p: String) = (for {
         idx <- Stream from 0
-        newName = s"${rw}_${p}_${idx}"
+        newName = s"${rw}_${p}_$idx"
         if !ports(newName)
       } yield newName).head
       val rwMap = (s.readwriters map (rw =>
