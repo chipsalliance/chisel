@@ -14,7 +14,7 @@ lazy val commonSettings = Seq (
 )
 
 lazy val chiselSettings = Seq (
-  name := "Chisel3",
+  name := "chisel3",
 
   publishMavenStyle := true,
   publishArtifact in Test := false,
