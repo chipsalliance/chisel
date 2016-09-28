@@ -84,7 +84,7 @@ object Decoupled
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(getFirrtlDirection(irr.bits) == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
+    require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
     d.valid := irr.valid
@@ -117,7 +117,7 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
-    require(getFirrtlDirection(dec.bits) == INPUT, "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    require(dec.bits.flatten forall (_.dir == INPUT), "Only safe to cast consumed Decoupled bits to Irrevocable.")
     val i = Wire(new IrrevocableIO(dec.bits))
     dec.bits := i.bits
     dec.valid := i.valid
