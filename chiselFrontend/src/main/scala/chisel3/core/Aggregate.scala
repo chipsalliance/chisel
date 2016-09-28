@@ -63,7 +63,7 @@ object Vec {
     val maxWidth = elts.map(_.width).reduce(_ max _)
     val vec = Wire(new Vec(t.cloneTypeWidth(maxWidth), elts.length))
     def doConnect(sink: T, source: T) = {
-      if (elts.head.flatten.exists(_.firrtlDirection != Direction.Unspecified)) {
+      if (elts.head.flatten.exists(_.dir != Direction.Unspecified)) {
         sink bulkConnect source
       } else {
         sink connect source

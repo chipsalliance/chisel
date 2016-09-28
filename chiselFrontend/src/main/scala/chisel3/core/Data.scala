@@ -241,7 +241,9 @@ abstract class Data extends HasId {
 
   // firrtlDirection is the direction we report to firrtl.
   // It maintains the user-specified value (as opposed to the "actual" or applied/propagated value).
-  var firrtlDirection: Direction = Direction.Unspecified
+  // NOTE: This should only be used for emitting acceptable firrtl.
+  // The Element.dir should be used for any tests involving direction.
+  private var firrtlDirection: Direction = Direction.Unspecified
   /** Default pretty printing */
   def toPrintable: Printable
 }
