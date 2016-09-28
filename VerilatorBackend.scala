@@ -133,7 +133,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
     (nodes foldLeft 1){ (id, node) =>
       val instanceName = s"%s.%s".format(node.parentPathName, validName(node.instanceName))
-      val pathName = instanceName replace (dutName, "v") replace (".", "__DOT__") replace ("$", "__024")
+      val pathName = instanceName replace (".", "__DOT__") replace ("$", "__024")
       try {
         node match {
           case mem: Chisel.MemBase[_] =>
