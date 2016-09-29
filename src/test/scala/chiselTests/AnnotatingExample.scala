@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.core.Module
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
-import chisel3.NotStrict.CompileOptions
 import org.scalatest._
 
 import scala.util.DynamicVariable

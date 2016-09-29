@@ -5,8 +5,6 @@ import collection.mutable
 
 import chisel3._
 import chisel3.util._
-import chisel3.NotStrict.CompileOptions
-
 
 // Defined outside of the class so we don't get $ in name
 class Other(w: Int) extends Module {

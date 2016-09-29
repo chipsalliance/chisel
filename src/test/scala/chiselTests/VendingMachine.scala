@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
-import chisel3.NotStrict.CompileOptions
 
 class VendingMachine extends Module {
   val io = IO(new Bundle {

@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.NotStrict.CompileOptions
 
 class MemorySearch extends Module {
   val io = IO(new Bundle {

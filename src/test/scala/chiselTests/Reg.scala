@@ -6,7 +6,6 @@ import org.scalatest._
 import chisel3._
 import chisel3.core.DataMirror
 import chisel3.testers.BasicTester
-import chisel3.Strict.CompileOptions
 
 class RegSpec extends ChiselFlatSpec {
   "A Reg" should "throw an exception if not given any parameters" in {

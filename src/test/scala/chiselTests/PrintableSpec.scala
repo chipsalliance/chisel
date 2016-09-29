@@ -5,7 +5,6 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.Strict.CompileOptions
 
 /* Printable Tests */
 class PrintableSpec extends FlatSpec with Matchers {
