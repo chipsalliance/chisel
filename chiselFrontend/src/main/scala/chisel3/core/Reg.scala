@@ -6,7 +6,6 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
-//import chisel3.CompileOptions
 
 object Reg {
   private[core] def makeType[T <: Data](compileOptions: CompileOptions, t: T = null, next: T = null, init: T = null): T = {
