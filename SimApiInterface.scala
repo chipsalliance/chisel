@@ -6,8 +6,7 @@ import chisel3._
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.immutable.ListMap
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Await, blocking}
+import scala.concurrent.{Future, Await, ExecutionContext, blocking}
 import scala.concurrent.duration._
 import scala.sys.process.{Process, ProcessLogger}
 import java.io.{File, PrintStream}
@@ -32,6 +31,47 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
   private val _signalMap = HashMap[String, Int]()
   private val _chunks = HashMap[String, Int]()
   private val _logs = ArrayBuffer[String]()
+
+  //initialize simulator process
+  private[iotesters] val process = TesterProcess(cmd, _logs)
+  // Set up a Future to wait for (and signal) the test process exit.
+  import ExecutionContext.Implicits.global
+  private[iotesters] val exitValue = Future(blocking(process.exitValue))
+  // memory mapped channels
+  private val (inChannel, outChannel, cmdChannel) = {
+    // Wait for the startup message
+    // NOTE: There may be several messages before we see our startup message.
+    val simStartupMessageStart = "sim start on "
+    while (!_logs.exists(_ startsWith simStartupMessageStart) && !exitValue.isCompleted) { Thread.sleep(100) }
+    // Remove the startup message (and any precursors).
+    while (!_logs.isEmpty && !_logs.head.startsWith(simStartupMessageStart)) {
+      println(_logs.remove(0))
+    }
+    println(if (!_logs.isEmpty) _logs.remove(0) else "<no startup message>")
+    while (_logs.size < 3) {
+      // If the test application died, throw a run-time error.
+      throwExceptionIfDead(exitValue)
+      Thread.sleep(100)
+    }
+    val in_channel_name = _logs.remove(0)
+    val out_channel_name = _logs.remove(0)
+    val cmd_channel_name = _logs.remove(0)
+    val in_channel = new Channel(in_channel_name)
+    val out_channel = new Channel(out_channel_name)
+    val cmd_channel = new Channel(cmd_channel_name)
+
+    println(s"inChannelName: ${in_channel_name}")
+    println(s"outChannelName: ${out_channel_name}")
+    println(s"cmdChannelName: ${cmd_channel_name}")
+
+    in_channel.consume
+    cmd_channel.consume
+    in_channel.release
+    out_channel.release
+    cmd_channel.release
+
+    (in_channel, out_channel, cmd_channel)
+  }
 
   private def dumpLogs(implicit logger: PrintStream) {
     _logs foreach logger.println
@@ -266,56 +306,12 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
 
   def finish(implicit logger: PrintStream) {
     mwhile(!sendCmd(SIM_CMD.FIN)) { }
-    while(!exitValue.isCompleted) { }
+    println("Exit Code: %d".format(
+      Await.result(exitValue, Duration.Inf)))
     dumpLogs
     inChannel.close
     outChannel.close
     cmdChannel.close
-    TesterProcess.finish(process)
-  }
-
-  //initialize cpp process
-  private val process = TesterProcess(cmd, _logs)
-  // Set up a Future to wait for (and signal) the test process exit.
-  private val exitValue: Future[Int] = Future {
-    blocking {
-      process.exitValue
-    }
-  }
-  // memory mapped channels
-  private val (inChannel, outChannel, cmdChannel) = {
-    // Wait for the startup message
-    // NOTE: There may be several messages before we see our startup message.
-    val simStartupMessageStart = "sim start on "
-    while (!_logs.exists(_ startsWith simStartupMessageStart) && !exitValue.isCompleted) { Thread.sleep(100) }
-    // Remove the startup message (and any precursors).
-    while (!_logs.isEmpty && !_logs.head.startsWith(simStartupMessageStart)) {
-      println(_logs.remove(0))
-    }
-    println(if (!_logs.isEmpty) _logs.remove(0) else "<no startup message>")
-    while (_logs.size < 3) {
-      // If the test application died, throw a run-time error.
-      throwExceptionIfDead(exitValue)
-      Thread.sleep(100)
-    }
-    val in_channel_name = _logs.remove(0)
-    val out_channel_name = _logs.remove(0)
-    val cmd_channel_name = _logs.remove(0)
-    val in_channel = new Channel(in_channel_name)
-    val out_channel = new Channel(out_channel_name)
-    val cmd_channel = new Channel(cmd_channel_name)
-
-    println(s"inChannelName: ${in_channel_name}")
-    println(s"outChannelName: ${out_channel_name}")
-    println(s"cmdChannelName: ${cmd_channel_name}")
-
-    in_channel.consume
-    cmd_channel.consume
-    in_channel.release
-    out_channel.release
-    cmd_channel.release
-
-    (in_channel, out_channel, cmd_channel)
   }
 
   // Once everything has been prepared, we can start the communications.

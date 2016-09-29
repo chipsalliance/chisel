@@ -106,32 +106,20 @@ private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage
   extends RuntimeException(lastMessage)
 
 private[iotesters] object TesterProcess {
-  val processes = ArrayBuffer[Process]()
-
-  def apply(cmd: Seq[String], logs: ArrayBuffer[String]) = synchronized {
+  def apply(cmd: Seq[String], logs: ArrayBuffer[String]) = {
     require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exists")
     val processBuilder = Process(cmd mkString " ")
     val processLogger = ProcessLogger(println, logs += _) // don't log stdout
-    val process = processBuilder run processLogger
-    processes += process
-    process
+    processBuilder run processLogger
   }
-
-  def finish(p: Process) = synchronized {
-    processes -= p
-    // p.destroy
+  def kill(sim: SimApiInterface) {
+    while(!sim.exitValue.isCompleted) sim.process.destroy
+    println("Exit Code: %d".format(sim.process.exitValue))
   }
-
-  import scala.concurrent.{Future, Await, blocking}
-  import scala.concurrent.duration._
-  import scala.concurrent.ExecutionContext.Implicits.global
-  def killall = synchronized {
-    processes map { p =>
-      val exitValue = Future(blocking(p.exitValue))
-      while(!exitValue.isCompleted) p.destroy
-      println("Exit Code: %d".format(
-        Await.result(exitValue, Duration(-1, SECONDS))))
-    }
-    processes.clear
+  def kill(p: VCSBackend) {
+    kill(p.simApiInterface)
+  }
+  def kill(p: VerilatorBackend) {
+    kill(p.simApiInterface)
   }
 }

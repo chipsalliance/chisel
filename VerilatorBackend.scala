@@ -299,7 +299,7 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
                                           cmd: Seq[String],
                                           _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
 
-  val simApiInterface = new SimApiInterface(dut, cmd)
+  private[iotesters] val simApiInterface = new SimApiInterface(dut, cmd)
 
   def poke(signal: InstanceId, value: BigInt, off: Option[Int])
           (implicit logger: PrintStream, verbose: Boolean, base: Int) {
