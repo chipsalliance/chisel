@@ -5,7 +5,7 @@ package chisel3.core
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{ModuleIO, DefInvalid}
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.NotStrict.CompileOptions
+//import chisel3.ExplicitCompileOptions.NotStrict
 
 /** Defines a black box, which is a module that can be referenced from within
   * Chisel, but is not defined in the emitted Verilog. Useful for connecting

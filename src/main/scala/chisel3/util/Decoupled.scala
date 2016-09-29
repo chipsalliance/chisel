@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.NotStrict.CompileOptions
+//import chisel3.ExplicitCompileOptions.NotStrict
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.

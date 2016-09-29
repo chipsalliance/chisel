@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.NotStrict.CompileOptions
+//import chisel3.ExplicitCompileOptions.NotStrict
 
 /** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
   * (selects) at most one.

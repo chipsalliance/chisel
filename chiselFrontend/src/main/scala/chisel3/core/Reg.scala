@@ -6,9 +6,10 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.ImplicitCompileOptions
 
 object Reg {
-  private[core] def makeType[T <: Data](compileOptions: ExplicitCompileOptions, t: T = null, next: T = null, init: T = null): T = {
+  private[core] def makeType[T <: Data](compileOptions: ImplicitCompileOptions, t: T = null, next: T = null, init: T = null): T = {
     if (t ne null) {
       if (compileOptions.declaredTypeMustBeUnbound) {
         Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
@@ -40,7 +41,7 @@ object Reg {
     * is a valid value. In those cases, you can either use the outType only Reg
     * constructor or pass in `null.asInstanceOf[T]`.
     */
-  def apply[T <: Data](t: T = null, next: T = null, init: T = null)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions): T =
+  def apply[T <: Data](t: T = null, next: T = null, init: T = null)(implicit sourceInfo: SourceInfo, compileOptions: ImplicitCompileOptions): T =
     // Scala macros can't (yet) handle named or default arguments.
     do_apply(t, next, init)(sourceInfo, compileOptions)
 
@@ -49,9 +50,9 @@ object Reg {
     *
     * @param outType: data type for the register
     */
-  def apply[T <: Data](outType: T)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])(sourceInfo, compileOptions)
+  def apply[T <: Data](outType: T)(implicit sourceInfo: SourceInfo, compileOptions: ImplicitCompileOptions): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])(sourceInfo, compileOptions)
 
-  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: ExplicitCompileOptions = chisel3.NotStrict.CompileOptions): T = {
+  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: ImplicitCompileOptions = chisel3.ExplicitCompileOptions.NotStrict): T = {
     // TODO: write this in a way that doesn't need nulls (bad Scala style),
     // null.asInstanceOf[T], and two constructors. Using Option types are an
     // option, but introduces cumbersome syntax (wrap everything in a Some()).

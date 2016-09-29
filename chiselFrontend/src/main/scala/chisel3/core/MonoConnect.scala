@@ -6,7 +6,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, WireTransform}
-import chisel3.internal.ExplicitCompileOptions
+import chisel3.ImplicitCompileOptions
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.
@@ -56,7 +56,7 @@ object MonoConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions, sink: Data, source: Data, context_mod: Module): Unit =
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: ImplicitCompileOptions, sink: Data, source: Data, context_mod: Module): Unit =
     (sink, source) match {
       // Handle element case (root case)
       case (sink_e: Element, source_e: Element) => {
@@ -103,7 +103,7 @@ object MonoConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: ExplicitCompileOptions, sink: Element, source: Element, context_mod: Module): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: ImplicitCompileOptions, sink: Element, source: Element, context_mod: Module): Unit = {
     import Direction.{Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously

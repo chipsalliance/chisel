@@ -3,7 +3,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.NotStrict.CompileOptions
+//import chisel3.ExplicitCompileOptions.NotStrict
 
 object RegNext {
   /** Returns a register with the specified next and no reset initialization.

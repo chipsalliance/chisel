@@ -9,7 +9,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.firrtl.{Command => _, _}
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
-import chisel3.NotStrict.CompileOptions
+import chisel3.ImplicitCompileOptions
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -51,7 +51,7 @@ object Module {
   */
 abstract class Module(
   override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-                     (implicit moduleCompileOptions: ExplicitCompileOptions)
+                     (implicit moduleCompileOptions: ImplicitCompileOptions)
 extends HasId {
   // _clock and _reset can be clock and reset in these 2ary constructors
   // once chisel2 compatibility issues are resolved

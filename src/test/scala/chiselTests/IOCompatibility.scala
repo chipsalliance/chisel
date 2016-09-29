@@ -3,23 +3,22 @@
 package chiselTests
 
 import chisel3._
-import chisel3.NotStrict.CompileOptions
 
 class IOCSimpleIO extends Bundle {
-  val in  = UInt(INPUT,  32)
-  val out = UInt(OUTPUT, 32)
+  val in  = Input(UInt(width=32))
+  val out = Output(UInt(width=32))
 }
 
 class IOCPlusOne extends Module {
-  val io = new IOCSimpleIO
+  val io = IO(new IOCSimpleIO)
   io.out := io.in + UInt(1)
 }
 
 class IOCModuleVec(val n: Int) extends Module {
-  val io = new Bundle {
-    val ins  = Vec(n, UInt(INPUT,  32))
-    val outs = Vec(n, UInt(OUTPUT, 32))
-  }
+  val io = IO(new Bundle {
+    val ins  = Vec(n, Input(UInt(width=32)))
+    val outs = Vec(n, Output(UInt(width=32)))
+  })
   val pluses = Vec.fill(n){ Module(new IOCPlusOne).io }
   for (i <- 0 until n) {
     pluses(i).in := io.ins(i)
@@ -28,7 +27,7 @@ class IOCModuleVec(val n: Int) extends Module {
 }
 
 class IOCModuleWire extends Module {
-  val io = new IOCSimpleIO
+  val io = IO(new IOCSimpleIO)
   val inc = Wire(Module(new IOCPlusOne).io.chiselCloneType)
   inc.in := io.in
   io.out := inc.out
