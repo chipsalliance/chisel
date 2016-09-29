@@ -56,7 +56,7 @@ object RemoveCHIRRTL extends Pass {
       (e1s zip e2s) map { case (e1, e2) => Mux(e.cond, e1, e2, mux_type(e1, e2)) }
     case (e: ValidIf) =>
       create_exps(e.value) map (e1 => ValidIf(e.cond, e1, e1.tpe))
-    case (e) => (e.tpe) match {
+    case (e) => e.tpe match {
       case (_: GroundType) => Seq(e)
       case (t: BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
         exps ++ create_exps(SubField(e, f.name, f.tpe)))
@@ -187,7 +187,7 @@ object RemoveCHIRRTL extends Pass {
         remove_chirrtl_e(g)(expr), remove_chirrtl_e(MALE)(index), tpe)
       case e => e map remove_chirrtl_e(g)
    }
-   (s) match {
+   s match {
       case DefNode(info, name, value) =>
         val valuex = remove_chirrtl_e(MALE)(value)
         val sx = DefNode(info, name, valuex)
@@ -250,5 +250,5 @@ object RemoveCHIRRTL extends Pass {
   }
 
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map remove_chirrtl_m))
+    c copy (modules = c.modules map remove_chirrtl_m)
 }

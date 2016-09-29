@@ -137,7 +137,7 @@ object AnnotateMemMacros extends Pass {
 
   def annotateModMems(m: DefModule) = m map updateStmts(getConnects(m))
 
-  def run(c: Circuit) = c copy (modules = (c.modules map annotateModMems))
+  def run(c: Circuit) = c copy (modules = c.modules map annotateModMems)
 }
 
 // TODO: Add floorplan info?

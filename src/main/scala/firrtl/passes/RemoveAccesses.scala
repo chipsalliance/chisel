@@ -90,7 +90,7 @@ object RemoveAccesses extends Pass {
           */
         val stmts = mutable.ArrayBuffer[Statement]()
         def removeMale(e: Expression): Expression = e match {
-          case (_:WSubAccess| _: WSubField| _: WSubIndex| _: WRef) if (hasAccess(e)) => 
+          case (_:WSubAccess| _: WSubField| _: WSubIndex| _: WRef) if hasAccess(e) =>
             val rs = getLocations(e)
             rs find (x => x.guard != one) match {
               case None => error("Shouldn't be here")
@@ -113,7 +113,7 @@ object RemoveAccesses extends Pass {
         /** Replaces a subaccess in a given female expression
           */
         def removeFemale(info: Info, loc: Expression): Expression = loc match {
-          case (_: WSubAccess| _: WSubField| _: WSubIndex| _: WRef) if (hasAccess(loc)) => 
+          case (_: WSubAccess| _: WSubField| _: WSubIndex| _: WRef) if hasAccess(loc) =>
             val ls = getLocations(loc)
             if (ls.size == 1 & weq(ls.head.guard,one)) loc
             else {
@@ -149,7 +149,7 @@ object RemoveAccesses extends Pass {
         val sx = s match {
           case Connect(info, loc, exp) =>
             Connect(info, removeFemale(info, fixFemale(loc)), fixMale(exp))
-          case (s) => s map (fixMale) map (onStmt)
+          case (s) => s map fixMale map onStmt
         }
         stmts += sx
         if (stmts.size != 1) Block(stmts) else stmts(0)
@@ -157,9 +157,9 @@ object RemoveAccesses extends Pass {
       Module(m.info, m.name, m.ports, squashEmpty(onStmt(m.body)))
     }
   
-    c copy (modules = (c.modules map {
+    c copy (modules = c.modules map {
       case m: ExtModule => m
       case m: Module => remove_m(m)
-    }))
+    })
   }
 }

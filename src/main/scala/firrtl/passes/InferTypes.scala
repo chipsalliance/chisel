@@ -96,7 +96,7 @@ object InferTypes extends Pass {
       m map infer_types_p(types) map infer_types_s(types)
     }
  
-    c copy (modules = (c.modules map infer_types))
+    c copy (modules = c.modules map infer_types)
   }
 }
 
@@ -110,7 +110,7 @@ object CInferTypes extends Pass {
 
     def infer_types_e(types: TypeMap)(e: Expression) : Expression =
       e map infer_types_e(types) match {
-         case (e: Reference) => e copy (tpe = (types getOrElse (e.name, UnknownType)))
+         case (e: Reference) => e copy (tpe = types.getOrElse(e.name, UnknownType))
          case (e: SubField) => e copy (tpe = field_type(e.expr.tpe, e.name))
          case (e: SubIndex) => e copy (tpe = sub_type(e.expr.tpe))
          case (e: SubAccess) => e copy (tpe = sub_type(e.expr.tpe))
@@ -156,6 +156,6 @@ object CInferTypes extends Pass {
       m map infer_types_p(types) map infer_types_s(types)
     }
    
-    c copy (modules = (c.modules map infer_types))
+    c copy (modules = c.modules map infer_types)
   }
 }

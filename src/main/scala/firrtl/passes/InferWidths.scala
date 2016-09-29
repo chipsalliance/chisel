@@ -80,7 +80,7 @@ object InferWidths extends Pass {
       //;println-all-debug(["Substituting for [" w "]"])
       val wx = simplify(w)
       //;println-all-debug(["After Simplify: [" wx "]"])
-      (wx map substitute(h)) match {
+      wx map substitute(h) match {
         //;("matched  println-debugvarwidth!")
         case w: VarWidth => h get w.name match {
           case None => w
@@ -106,7 +106,7 @@ object InferWidths extends Pass {
 
     def remove_cycle(n: String)(w: Width): Width = {
       //;println-all-debug(["Removing cycle for " n " inside " w])
-      (w map remove_cycle(n)) match {
+      w map remove_cycle(n) match {
         case w: MaxWidth => MaxWidth(w.args filter {
           case w: VarWidth => !(n equals w.name)
           case w => true

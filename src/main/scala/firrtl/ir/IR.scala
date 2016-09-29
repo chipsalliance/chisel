@@ -271,7 +271,7 @@ case class Print(
     clk: Expression,
     en: Expression) extends Statement with HasInfo {
   def serialize: String = {
-    val strs = Seq(clk.serialize, en.serialize, ("\"" + string.serialize + "\"")) ++
+    val strs = Seq(clk.serialize, en.serialize, "\"" + string.serialize + "\"") ++
                (args map (_.serialize))
     "printf(" + (strs mkString ", ") + ")" + info.serialize
   }
@@ -429,8 +429,7 @@ abstract class DefModule extends FirrtlNode with IsDeclaration {
   val name : String
   val ports : Seq[Port]
   protected def serializeHeader(tpe: String): String =
-    s"$tpe $name :" + info.serialize +
-    indent(ports map ("\n" + _.serialize) mkString) + "\n"
+    s"$tpe $name :${info.serialize}${indent(ports.map("\n" + _.serialize).mkString)}\n"
   def mapStmt(f: Statement => Statement): DefModule
   def mapPort(f: Port => Port): DefModule
   def mapString(f: String => String): DefModule

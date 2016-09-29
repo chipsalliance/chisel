@@ -9,7 +9,6 @@ import Utils.error
 import AnalysisUtils._
 
 import net.jcazevedo.moultingyaml._
-import net.jcazevedo.moultingyaml.DefaultYamlProtocol._
 import scala.collection.mutable
 import java.io.{File, CharArrayWriter, PrintWriter}
 
@@ -58,7 +57,7 @@ case class SRAMConfig(
     val fieldMap = getClass.getDeclaredFields.map { f => 
       f.setAccessible(true)
       f.getName -> f.get(this)
-    } toMap
+    }.toMap
 
     val fieldDelimiter = """\[.*?\]""".r
     val configOptions = fieldDelimiter.findAllIn(pattern).toList
@@ -193,7 +192,7 @@ case class SRAMCompiler(
     val squarestAspectRatio = validMinConfigsSquareness.unzip._1.min
     val validConfig = validMinConfigsSquareness(squarestAspectRatio)
     val validRules = defaultSearchOrdering filter (r =>
-      (validConfig.width <= r.getValidWidths.max && validConfig.depth <= r.getValidDepths.max))
+      validConfig.width <= r.getValidWidths.max && validConfig.depth <= r.getValidDepths.max)
     // TODO: don't just take first option
     // TODO: More optimal split if particular value is in range but not supported
     // TODO: Support up to 2 read ports, 2 write ports; should be power of 2?
@@ -271,7 +270,7 @@ class AnnotateValidMemConfigs(reader: Option[YamlFileReader]) extends Pass {
   def updateStmts(s: Statement): Statement = s match {
     case m: DefMemory if containsInfo(m.info, "useMacro") => sramCompilers match {
       case None => m
-      case Some(compiler) if (m.readwriters.length == 1) =>
+      case Some(compiler) if m.readwriters.length == 1 =>
         compiler.sp match {
           case None => error("Design needs RW port memory compiler!")
           case Some(p) => p append m
@@ -285,5 +284,5 @@ class AnnotateValidMemConfigs(reader: Option[YamlFileReader]) extends Pass {
     case s => s map updateStmts
   }
 
-  def run(c: Circuit) = c copy (modules = (c.modules map (_ map updateStmts)))
+  def run(c: Circuit) = c copy (modules = c.modules map (_ map updateStmts))
 }

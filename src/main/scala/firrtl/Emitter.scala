@@ -90,14 +90,13 @@ class VerilogEmitter extends Emitter {
       case ClockType => e
       case AnalogType(w) => e
     }
-    (x) match {
+    x match {
       case (e: DoPrim) => emit(op_stream(e), top + 1)
       case (e: Mux) => emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
       case (e: ValidIf) => emit(Seq(cast(e.value)),top + 1)
       case (e: WRef) => w write e.serialize
       case (e: WSubField) => w write LowerTypes.loweredName(e)
-      case (e: WSubAccess) => w write (
-        s"${LowerTypes.loweredName(e.exp)}[${LowerTypes.loweredName(e.index)}]")
+      case (e: WSubAccess) => w write s"${LowerTypes.loweredName(e.exp)}[${LowerTypes.loweredName(e.index)}]"
       case (e: WSubIndex) => w write e.serialize
       case (e: Literal) => v_print(e)
       case (e: VRandom) => w write s"{${e.nWords}{$$random}}"
@@ -183,7 +182,7 @@ class VerilogEmitter extends Emitter {
        case Neq => Seq(cast_if(a0), " != ", cast_if(a1))
        case Pad =>
          val w = bitWidth(a0.tpe)
-         val diff = (c0 - w)
+         val diff = c0 - w
          if (w == BigInt(0)) Seq(a0)
          else doprim.tpe match {
            // Either sign extend or zero extend.
@@ -197,7 +196,7 @@ class VerilogEmitter extends Emitter {
        case AsClock => Seq("$unsigned(", a0, ")")
        case Dshlw => Seq(cast(a0), " << ", a1)
        case Dshl => Seq(cast(a0), " << ", a1)
-       case Dshr => (doprim.tpe) match {
+       case Dshr => doprim.tpe match {
          case (_: SIntType) => Seq(cast(a0)," >>> ", a1)
          case (_) => Seq(cast(a0), " >> ", a1)
        }

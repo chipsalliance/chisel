@@ -39,7 +39,7 @@ object VerilogMemDelays extends Pass {
   def name = "Verilog Memory Delays"
   val ug = UNKNOWNGENDER
   type Netlist = collection.mutable.HashMap[String, Expression]
-  implicit def expToString(e: Expression) = e.serialize
+  implicit def expToString(e: Expression): String = e.serialize
   private def NOT(e: Expression) = DoPrim(Not, Seq(e), Nil, BoolType)
   private def AND(e1: Expression, e2: Expression) = DoPrim(And, Seq(e1, e2), Nil, BoolType)
 
@@ -63,7 +63,7 @@ object VerilogMemDelays extends Pass {
       val ports = (s.readers ++ s.writers).toSet
       def newPortName(rw: String, p: String) = (for {
         idx <- Stream from 0
-        newName = s"${rw}_${p}_${idx}"
+        newName = s"${rw}_${p}_$idx"
         if !ports(newName)
       } yield newName).head
       val rwMap = (s.readwriters map (rw =>
@@ -72,8 +72,8 @@ object VerilogMemDelays extends Pass {
       // 2. memories are transformed into combinational
       //    because latency pipes are added for longer latencies
       val mem = s copy (
-        readers = (s.readers ++ (s.readwriters map (rw => rwMap(rw)._1))),
-        writers = (s.writers ++ (s.readwriters map (rw => rwMap(rw)._2))),
+        readers = s.readers ++ (s.readwriters map (rw => rwMap(rw)._1)),
+        writers = s.writers ++ (s.readwriters map (rw => rwMap(rw)._2)),
         readwriters = Nil, readLatency = 0, writeLatency = 1)
       def pipe(e: Expression, // Expression to be piped
                n: Int, // pipe depth
@@ -180,5 +180,5 @@ object VerilogMemDelays extends Pass {
   }
 
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map memDelayMod))
+    c copy (modules = c.modules map memDelayMod)
 }

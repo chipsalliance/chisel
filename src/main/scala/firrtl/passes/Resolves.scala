@@ -67,7 +67,7 @@ object ResolveKinds extends Pass {
   }
  
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map resolve_kinds))
+    c copy (modules = c.modules map resolve_kinds)
 }
 
 object ResolveGenders extends Pass {
@@ -100,7 +100,7 @@ object ResolveGenders extends Pass {
   def resolve_gender(m: DefModule): DefModule = m map resolve_s
 
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map resolve_gender))
+    c copy (modules = c.modules map resolve_gender)
 }
 
 object CInferMDir extends Pass {
@@ -164,5 +164,5 @@ object CInferMDir extends Pass {
   }
      
   def run(c: Circuit): Circuit =
-    c copy (modules = (c.modules map infer_mdir))
+    c copy (modules = c.modules map infer_mdir)
 }
