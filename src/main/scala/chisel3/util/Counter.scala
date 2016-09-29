@@ -3,7 +3,7 @@
 package chisel3.util
 
 import chisel3._
-//import chisel3.ExplicitCompileOptions.Strict
+//import chisel3.core.ExplicitCompileOptions.Strict
 
 /** A counter module
  *

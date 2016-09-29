@@ -10,7 +10,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
-import chisel3.ImplicitCompileOptions
+//import chisel3.CompileOptions
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -152,27 +152,27 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
     *
     * @note the length of this Vec must match the length of the input Seq
     */
-  def <> (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ImplicitCompileOptions): Unit = {
+  def <> (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     require(this.length == that.length)
     for ((a, b) <- this zip that)
       a <> b
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ImplicitCompileOptions): Unit = this bulkConnect that.asInstanceOf[Data]
+  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this bulkConnect that.asInstanceOf[Data]
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
     * @note the length of this Vec must match the length of the input Seq
     */
-  def := (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ImplicitCompileOptions): Unit = {
+  def := (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
     require(this.length == that.length)
     for ((a, b) <- this zip that)
       a := b
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def := (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: ImplicitCompileOptions): Unit = this connect that
+  def := (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this connect that
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
@@ -199,7 +199,7 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
 
   @deprecated("Use Vec.apply instead", "chisel3")
   def write(idx: UInt, data: T): Unit = {
-    apply(idx).:=(data)(DeprecatedSourceInfo, chisel3.ExplicitCompileOptions.NotStrict)
+    apply(idx).:=(data)(DeprecatedSourceInfo, chisel3.core.ExplicitCompileOptions.NotStrict)
   }
 
   override def cloneType: this.type = {

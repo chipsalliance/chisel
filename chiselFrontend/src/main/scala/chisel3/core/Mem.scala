@@ -8,7 +8,8 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, MemTransform}
-//import chisel3.ExplicitCompileOptions.NotStrict
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
 object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")

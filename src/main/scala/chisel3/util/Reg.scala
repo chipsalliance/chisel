@@ -3,7 +3,8 @@
 package chisel3.util
 
 import chisel3._
-//import chisel3.ExplicitCompileOptions.NotStrict
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
 object RegNext {
   /** Returns a register with the specified next and no reset initialization.

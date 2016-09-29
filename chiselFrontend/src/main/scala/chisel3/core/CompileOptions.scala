@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3
+package chisel3.core
 
 import scala.language.experimental.macros
 
@@ -19,21 +19,16 @@ trait CompileOptions {
   val dontAssumeDirectionality: Boolean
 }
 
-trait ImplicitCompileOptions extends CompileOptions
-
-object ImplicitCompileOptions {
+object CompileOptions {
   // Provides a low priority Strict default. Can be overridden by importing the NotStrict option.
-  implicit def materialize: ImplicitCompileOptions = chisel3.ExplicitCompileOptions.Strict
+  implicit def materialize: CompileOptions = chisel3.core.ExplicitCompileOptions.Strict
 }
-
-// Define a more-specific trait which should be perferred if both are available.
-trait ExplicitImplicitCompileOptions extends ImplicitCompileOptions
 
 object ExplicitCompileOptions {
   // Collection of "not strict" connection compile options.
   // These provide compatibility with existing code.
-  // import chisel3.ExplicitCompileOptions.NotStrict
-  implicit object NotStrict extends ExplicitImplicitCompileOptions {
+  // import chisel3.core.ExplicitCompileOptions.NotStrict
+  implicit object NotStrict extends CompileOptions {
     val connectFieldsMustMatch = false
     val declaredTypeMustBeUnbound = false
     val requireIOWrap = false
@@ -42,8 +37,8 @@ object ExplicitCompileOptions {
   }
 
   // Collection of "strict" connection compile options, preferred for new code.
-  // import chisel3.ExplicitCompileOptions.Strict
-  implicit object Strict extends ExplicitImplicitCompileOptions {
+  // import chisel3.core.ExplicitCompileOptions.Strict
+  implicit object Strict extends CompileOptions {
     val connectFieldsMustMatch = true
     val declaredTypeMustBeUnbound = true
     val requireIOWrap = true

@@ -6,7 +6,6 @@ import scala.collection.mutable.Stack
 
 import chisel3._
 import chisel3.util._
-//import chisel3.ExplicitCompileOptions.NotStrict
 
 class ChiselStack(val depth: Int) extends Module {
   val io = IO(new Bundle {

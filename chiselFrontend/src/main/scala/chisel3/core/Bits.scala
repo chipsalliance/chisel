@@ -10,7 +10,8 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
   UIntTransform, MuxTransform}
 import chisel3.internal.firrtl.PrimOp._
-//import chisel3.ImplicitCompileOptions.NotStrict
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
