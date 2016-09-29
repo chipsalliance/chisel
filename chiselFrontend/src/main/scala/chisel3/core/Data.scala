@@ -9,7 +9,6 @@ import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
 import chisel3.internal.firrtl.PrimOp.AsUIntOp
-//import chisel3.CompileOptions
 
 sealed abstract class Direction(name: String) {
   override def toString: String = name

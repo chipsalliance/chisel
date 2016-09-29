@@ -6,7 +6,6 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, WireTransform}
-//import chisel3.CompileOptions
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.

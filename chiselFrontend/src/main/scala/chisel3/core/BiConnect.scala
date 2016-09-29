@@ -6,7 +6,6 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
-//import chisel3.CompileOptions
 
 /**
 * BiConnect.connect executes a bidirectional connection element-wise.

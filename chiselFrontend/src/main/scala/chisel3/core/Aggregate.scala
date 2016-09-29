@@ -10,7 +10,6 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
-//import chisel3.CompileOptions
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
