@@ -12,6 +12,16 @@ package object Chisel {     // scalastyle:ignore package.object.name
   object Flipped {
     def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
   }
+  // TODO: Possibly move the AddDirectionToData class here?
+  implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
+    def dir: Direction = {
+      target match {
+        case e: Element => e.dir
+        case _ => chisel3.core.Direction.Unspecified
+      }
+    }
+  }
+
   type ChiselException = chisel3.internal.ChiselException
 
   type Data = chisel3.core.Data
