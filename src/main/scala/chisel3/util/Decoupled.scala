@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
@@ -15,10 +17,50 @@ import chisel3._
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
-  val ready = Bool(INPUT)
-  val valid = Bool(OUTPUT)
-  val bits  = gen.cloneType.asOutput
-  def fire(dummy: Int = 0): Bool = ready && valid
+  val ready = Input(Bool())
+  val valid = Output(Bool())
+  val bits  = Output(gen.chiselCloneType)
+}
+
+object ReadyValidIO {
+
+  implicit class AddMethodsToReadyValid[T<:Data](val target: ReadyValidIO[T]) extends AnyVal {
+    def fire(): Bool = target.ready && target.valid
+
+    /** push dat onto the output bits of this interface to let the consumer know it has happened.
+      * @param dat the values to assign to bits.
+      * @return    dat.
+      */
+    def enq(dat: T): T = {
+      target.valid := Bool(true)
+      target.bits := dat
+      dat
+    }
+
+    /** Indicate no enqueue occurs.  Valid is set to false, and all bits are set to zero.
+      */
+    def noenq(): Unit = {
+      target.valid := Bool(false)
+      // We want the type from the following, not any existing binding.
+      target.bits := target.bits.cloneType.fromBits(0.asUInt)
+    }
+
+    /** Assert ready on this port and return the associated data bits.
+      * This is typically used when valid has been asserted by the producer side.
+      * @param b ignored
+      * @return the data for this device,
+      */
+    def deq(): T = {
+      target.ready := Bool(true)
+      target.bits
+    }
+
+    /** Indicate no dequeue occurs. Ready is set to false
+      */
+    def nodeq(): Unit = {
+      target.ready := Bool(false)
+    }
+  }
 }
 
 /** A concrete subclass of ReadyValidIO signaling that the user expects a
@@ -43,13 +85,16 @@ object Decoupled
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(irr.bits.dir == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
+    require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
     d.valid := irr.valid
     irr.ready := d.ready
     d
   }
+//  override def cloneType: this.type = {
+//    DeqIO(gen).asInstanceOf[this.type]
+//  }
 }
 
 /** A concrete subclass of ReadyValidIO that promises to not change
@@ -73,7 +118,7 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
-    require(dec.bits.dir == INPUT, "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    require(dec.bits.flatten forall (_.dir == INPUT), "Only safe to cast consumed Decoupled bits to Irrevocable.")
     val i = Wire(new IrrevocableIO(dec.bits))
     dec.bits := i.bits
     dec.valid := i.valid
@@ -82,58 +127,11 @@ object Irrevocable
   }
 }
 
-
-/** An I/O bundle for enqueuing data with valid/ready handshaking
-  * Initialization must be handled, if necessary, by the parent circuit
-  */
-class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
-{
-  /** push dat onto the output bits of this interface to let the consumer know it has happened.
-    * @param dat the values to assign to bits.
-    * @return    dat.
-    */
-  def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
-
-  /** Initialize this Bundle.  Valid is set to false, and all bits are set to zero.
-    * NOTE: This method of initialization is still being discussed and could change in the
-    * future.
-    */
-  def init(): Unit = {
-    valid := Bool(false)
-    for (io <- bits.flatten)
-      io := UInt(0)
-  }
-  override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
+object EnqIO {
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
 }
-
-/** An I/O bundle for dequeuing data with valid/ready handshaking.
-  * Initialization must be handled, if necessary, by the parent circuit
-  */
-class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen) with Flipped
-{
-  /** Assert ready on this port and return the associated data bits.
-    * This is typically used when valid has been asserted by the producer side.
-    * @param b ignored
-    * @return the data for this device,
-    */
-  def deq(b: Boolean = false): T = { ready := Bool(true); bits }
-
-  /** Initialize this Bundle.
-    * NOTE: This method of initialization is still being discussed and could change in the
-    * future.
-    */
-  def init(): Unit = {
-    ready := Bool(false)
-  }
-  override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
-}
-
-/** An I/O bundle for dequeuing data with valid/ready handshaking */
-class DecoupledIOC[+T <: Data](gen: T) extends Bundle
-{
-  val ready = Bool(INPUT)
-  val valid = Bool(OUTPUT)
-  val bits  = gen.cloneType.asOutput
+object DeqIO {
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
 }
 
 /** An I/O Bundle for Queues
@@ -142,11 +140,11 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType).flip()
+  val enq = DeqIO(gen)
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq   = Decoupled(gen.cloneType)
+  val deq = EnqIO(gen)
   /** The current amount of data in the queue */
-  val count = UInt(OUTPUT, log2Up(entries + 1))
+  val count = Output(UInt.width(log2Up(entries + 1)))
 }
 
 /** A hardware module implementing a Queue
@@ -172,7 +170,7 @@ extends Module(override_reset=override_reset) {
   def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) =
     this(gen, entries, pipe, flow, Some(_reset))
 
-  val io = new QueueIO(gen, entries)
+  val io = IO(new QueueIO(gen, entries))
 
   val ram = Mem(entries, gen)
   val enq_ptr = Counter(entries)

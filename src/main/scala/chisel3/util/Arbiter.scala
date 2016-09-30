@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
 /** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
   * (selects) at most one.
@@ -14,9 +16,9 @@ import chisel3._
   * @param n number of inputs
   */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
-  val in  = Vec(n, Decoupled(gen)).flip
+  val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
-  val chosen = UInt(OUTPUT, log2Up(n))
+  val chosen = Output(UInt.width(log2Up(n)))
 }
 
 /** Arbiter Control determining which producer has access
@@ -32,7 +34,7 @@ private object ArbiterCtrl {
 abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module {
   def grant: Seq[Bool]
   def choice: UInt
-  val io = new ArbiterIO(gen, n)
+  val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := choice
   io.out.valid := io.in(io.chosen).valid
@@ -108,7 +110,7 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
   * }}}
   */
 class Arbiter[T <: Data](gen: T, n: Int) extends Module {
-  val io = new ArbiterIO(gen, n)
+  val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := UInt(n-1)
   io.out.bits := io.in(n-1).bits

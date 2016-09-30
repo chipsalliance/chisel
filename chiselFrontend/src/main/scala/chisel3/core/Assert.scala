@@ -50,12 +50,12 @@ object assert { // scalastyle:ignore object.name
   }
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String])(implicit sourceInfo: SourceInfo) {
-    when (!(cond || Builder.dynamicContext.currentModule.get.reset)) {
+    when (!(cond || Builder.forcedModule.reset)) {
       message match {
         case Some(str) => printf.printfWithoutReset(s"Assertion failed: $str\n    at $line\n")
         case None => printf.printfWithoutReset(s"Assertion failed\n    at $line\n")
       }
-      pushCommand(Stop(sourceInfo, Node(Builder.dynamicContext.currentModule.get.clock), 1))
+      pushCommand(Stop(sourceInfo, Node(Builder.forcedModule.clock), 1))
     }
   }
 
@@ -75,8 +75,8 @@ object assert { // scalastyle:ignore object.name
 object stop { // scalastyle:ignore object.name
   /** Terminate execution with a failure code. */
   def apply(code: Int)(implicit sourceInfo: SourceInfo): Unit = {
-    when (!Builder.dynamicContext.currentModule.get.reset) {
-      pushCommand(Stop(sourceInfo, Node(Builder.dynamicContext.currentModule.get.clock), code))
+    when (!Builder.forcedModule.reset) {
+      pushCommand(Stop(sourceInfo, Node(Builder.forcedModule.clock), code))
     }
   }
 

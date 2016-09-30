@@ -3,6 +3,8 @@
 package chisel3.util
 
 import chisel3._
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
 object RegNext {
   /** Returns a register with the specified next and no reset initialization.
@@ -28,7 +30,8 @@ object RegEnable {
   /** Returns a register with the specified next, update enable gate, and no reset initialization.
     */
   def apply[T <: Data](updateData: T, enable: Bool): T = {
-    val r = Reg(updateData)
+    val clonedUpdateData = updateData.chiselCloneType
+    val r = Reg(clonedUpdateData)
     when (enable) { r := updateData }
     r
   }

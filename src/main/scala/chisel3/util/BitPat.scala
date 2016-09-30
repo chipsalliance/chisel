@@ -76,7 +76,7 @@ object BitPat {
 // TODO: Break out of Core? (this doesn't involve FIRRTL generation)
 /** Bit patterns are literals with masks, used to represent values with don't
   * cares. Equality comparisons will ignore don't care bits (for example,
-  * BitPat(0b10?1) === UInt(0b1001) and UInt(0b1011)).
+  * BitPat(0b10?1) === 0b1001.asUInt and 0b1011.asUInt.
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
@@ -84,7 +84,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
-  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = UInt(value, width) === (that & UInt(mask))
-  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)
-  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that
+  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = value.asUInt === (that & mask.asUInt)    // scalastyle:ignore method.name
+  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)    // scalastyle:ignore method.name
+  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that        // scalastyle:ignore method.name
 }

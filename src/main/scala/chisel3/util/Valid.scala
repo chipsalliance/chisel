@@ -6,21 +6,21 @@
 package chisel3.util
 
 import chisel3._
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
-/** An I/O Bundle containing data and a signal determining if it is valid */
-class ValidIO[+T <: Data](gen2: T) extends Bundle
+/** An Bundle containing data and a signal determining if it is valid */
+class Valid[+T <: Data](gen: T) extends Bundle
 {
-  val valid = Bool(OUTPUT)
-  val bits = gen2.cloneType.asOutput
+  val valid = Output(Bool())
+  val bits  = Output(gen.chiselCloneType)
   def fire(dummy: Int = 0): Bool = valid
-  override def cloneType: this.type = new ValidIO(gen2).asInstanceOf[this.type]
+  override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
 }
 
-/** Adds a valid protocol to any interface. The standard used is
-  that the consumer uses the flipped interface.
-*/
+/** Adds a valid protocol to any interface */
 object Valid {
-  def apply[T <: Data](gen: T): ValidIO[T] = new ValidIO(gen)
+  def apply[T <: Data](gen: T): Valid[T] = new Valid(gen)
 }
 
 /** A hardware module that delays data coming down the pipeline
@@ -34,7 +34,7 @@ object Valid {
   */
 object Pipe
 {
-  def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): ValidIO[T] = {
+  def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): Valid[T] = {
     if (latency == 0) {
       val out = Wire(Valid(enqBits))
       out.valid <> enqValid
@@ -46,16 +46,16 @@ object Pipe
       apply(v, b, latency-1)
     }
   }
-  def apply[T <: Data](enqValid: Bool, enqBits: T): ValidIO[T] = apply(enqValid, enqBits, 1)
-  def apply[T <: Data](enq: ValidIO[T], latency: Int = 1): ValidIO[T] = apply(enq.valid, enq.bits, latency)
+  def apply[T <: Data](enqValid: Bool, enqBits: T): Valid[T] = apply(enqValid, enqBits, 1)
+  def apply[T <: Data](enq: Valid[T], latency: Int = 1): Valid[T] = apply(enq.valid, enq.bits, latency)
 }
 
 class Pipe[T <: Data](gen: T, latency: Int = 1) extends Module
 {
-  val io = new Bundle {
-    val enq = Valid(gen).flip
-    val deq = Valid(gen)
-  }
+  val io = IO(new Bundle {
+    val enq = Input(Valid(gen))
+    val deq = Output(Valid(gen))
+  })
 
   io.deq <> Pipe(io.enq, latency)
 }

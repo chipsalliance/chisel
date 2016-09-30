@@ -6,12 +6,12 @@ import chisel3._
 import chisel3.testers.BasicTester
 
 class MemorySearch extends Module {
-  val io = new Bundle {
-    val target  = UInt(INPUT,  4)
-    val en      = Bool(INPUT)
-    val done    = Bool(OUTPUT)
-    val address = UInt(OUTPUT, 3)
-  }
+  val io = IO(new Bundle {
+    val target  = Input(UInt.width(4))
+    val en      = Input(Bool())
+    val done    = Output(Bool())
+    val address = Output(UInt.width(3))
+  })
   val vals  = Array(0, 4, 15, 14, 2, 5, 13)
   val index = Reg(init = UInt(0, width = 3))
   val elts  = Vec(vals.map(UInt(_,4)))

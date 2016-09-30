@@ -3,13 +3,27 @@
 // Allows legacy users to continue using Chisel (capital C) package name while
 // moving to the more standard package naming convention chisel3 (lowercase c).
 
-package object Chisel {
+package object Chisel {     // scalastyle:ignore package.object.name
+  implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
   type Direction = chisel3.core.Direction
-  val INPUT = chisel3.core.INPUT
-  val OUTPUT = chisel3.core.OUTPUT
-  val NO_DIR = chisel3.core.NO_DIR
+  val INPUT = chisel3.core.Direction.Input
+  val OUTPUT = chisel3.core.Direction.Output
+  val NODIR = chisel3.core.Direction.Unspecified
+  object Flipped {
+    def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
+  }
+  // TODO: Possibly move the AddDirectionToData class here?
+  implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
+    def dir: Direction = {
+      target match {
+        case e: Element => e.dir
+        case _ => chisel3.core.Direction.Unspecified
+      }
+    }
+  }
 
-  type Flipped = chisel3.core.Flipped
+  type ChiselException = chisel3.internal.ChiselException
+
   type Data = chisel3.core.Data
   val Wire = chisel3.core.Wire
   val Clock = chisel3.core.Clock
@@ -54,6 +68,46 @@ package object Chisel {
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
+  import chisel3.internal.firrtl.Width
+  /**
+  * These implicit classes allow one to convert scala.Int|scala.BigInt to
+  * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.
+  * The versions .asUInt(width)|.asSInt(width) are also available to explicitly
+  * mark a width for the new literal.
+  *
+  * Also provides .asBool to scala.Boolean and .asUInt to String
+  *
+  * Note that, for stylistic reasons, one should avoid extracting immediately
+  * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
+  * confusion (the 1 is a bit length and the 0 is a bit extraction position).
+  * Prefer storing the result and then extracting from it.
+  */
+  implicit class fromIntToLiteral(val x: Int) extends AnyVal {
+    def U: UInt = UInt(BigInt(x), Width())    // scalastyle:ignore method.name
+    def S: SInt = SInt(BigInt(x), Width())    // scalastyle:ignore method.name
+
+    def asUInt(): UInt = UInt(x, Width())
+    def asSInt(): SInt = SInt(x, Width())
+    def asUInt(width: Int): UInt = UInt(x, width)
+    def asSInt(width: Int): SInt = SInt(x, width)
+  }
+
+  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
+    def U: UInt = UInt(x, Width())       // scalastyle:ignore method.name
+    def S: SInt = SInt(x, Width())       // scalastyle:ignore method.name
+
+    def asUInt(): UInt = UInt(x, Width())
+    def asSInt(): SInt = SInt(x, Width())
+    def asUInt(width: Int): UInt = UInt(x, width)
+    def asSInt(width: Int): SInt = SInt(x, width)
+  }
+  implicit class fromStringToLiteral(val x: String) extends AnyVal {
+    def U: UInt = UInt(x)       // scalastyle:ignore method.name
+  }
+  implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
+    def B: Bool = Bool(x)       // scalastyle:ignore method.name
+  }
+
 
   type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   val Driver = chisel3.Driver
@@ -62,7 +116,7 @@ package object Chisel {
   val throwException = chisel3.compatibility.throwException
   val debug = chisel3.compatibility.debug
 
-  object testers {
+  object testers {    // scalastyle:ignore object.name
     type BasicTester = chisel3.testers.BasicTester
     val TesterDriver = chisel3.testers.TesterDriver
   }
@@ -102,10 +156,27 @@ package object Chisel {
   val Counter = chisel3.util.Counter
 
   type DecoupledIO[+T <: Data] = chisel3.util.DecoupledIO[T]
+  val DecoupledIO = chisel3.util.Decoupled
   val Decoupled = chisel3.util.Decoupled
-  type EnqIO[T <: Data] = chisel3.util.EnqIO[T]
-  type DeqIO[T <: Data] = chisel3.util.DeqIO[T]
-  type DecoupledIOC[+T <: Data] = chisel3.util.DecoupledIOC[T]
+  class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    def init(): Unit = {
+      this.noenq()
+    }
+    override def cloneType: this.type = EnqIO(gen).asInstanceOf[this.type]
+  }
+  class DeqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    chisel3.core.Binding.bind(this, chisel3.core.FlippedBinder, "Error: Cannot flip ")
+    def init(): Unit = {
+      this.nodeq()
+    }
+    override def cloneType: this.type = DeqIO(gen).asInstanceOf[this.type]
+  }
+  object EnqIO {
+    def apply[T<:Data](gen: T): DecoupledIO[T] = DecoupledIO(gen)
+  }
+  object DeqIO {
+    def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(DecoupledIO(gen))
+  }
   type QueueIO[T <: Data] = chisel3.util.QueueIO[T]
   type Queue[T <: Data] = chisel3.util.Queue[T]
   val Queue = chisel3.util.Queue
@@ -132,19 +203,9 @@ package object Chisel {
   val RegEnable = chisel3.util.RegEnable
   val ShiftRegister = chisel3.util.ShiftRegister
 
-  type ValidIO[+T <: Data] = chisel3.util.ValidIO[T]
+  type ValidIO[+T <: Data] = chisel3.util.Valid[T]
   val Valid = chisel3.util.Valid
   val Pipe = chisel3.util.Pipe
   type Pipe[T <: Data] = chisel3.util.Pipe[T]
 
-
-  import chisel3.internal.firrtl.Width
-  implicit def fromBigIntToLiteral(x: BigInt): chisel3.fromBigIntToLiteral =
-    new chisel3.fromBigIntToLiteral(x)
-  implicit def fromIntToLiteral(x: Int): chisel3.fromIntToLiteral=
-    new chisel3.fromIntToLiteral(x)
-  implicit def fromStringToLiteral(x: String): chisel3.fromStringToLiteral=
-    new chisel3.fromStringToLiteral(x)
-  implicit def fromBooleanToLiteral(x: Boolean): chisel3.fromBooleanToLiteral=
-    new chisel3.fromBooleanToLiteral(x)
 }

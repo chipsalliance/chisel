@@ -38,7 +38,7 @@ object Fill {
     */
   def apply(n: Int, x: UInt): UInt = {
     n match {
-      case 0 => UInt(width=0)
+      case 0 => UInt.width(0)
       case 1 => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
         Mux(x.toBool, UInt((BigInt(1) << n) - 1, n), UInt(0, n))
