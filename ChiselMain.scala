@@ -71,14 +71,14 @@ object chiselMain {
         // Copy API files
         copyVerilatorHeaderFiles(context.targetDir.toString)
         // Generate Verilator
-        chisel3.Driver.verilogToCpp(dutName, dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).!
+        assert(chisel3.Driver.verilogToCpp(dutName, dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).! == 0)
         // Compile Verilator
-        chisel3.Driver.cppToExe(dutName, dir).!
+        assert(chisel3.Driver.cppToExe(dutName, dir).! == 0)
       case "vcs" | "glsim" =>
         // Copy API files
         copyVpiFiles(context.targetDir.toString)
         // Compile VCS
-        verilogToVCS(dutName, dir, new File(s"$dutName-harness.v")).!
+        assert(verilogToVCS(dutName, dir, new File(s"$dutName-harness.v")).! == 0)
       case b => throw BackendException(b)
     }
   }
