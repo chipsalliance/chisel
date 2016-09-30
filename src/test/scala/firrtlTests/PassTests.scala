@@ -36,6 +36,7 @@ abstract class SimpleTransformSpec extends FlatSpec with Matchers with Compiler 
 
    // Utility function
    def parse(s: String): Circuit = Parser.parse(s.split("\n").toIterator, infoMode = IgnoreInfo)
+   def squash(c: Circuit): Circuit = RemoveEmpty.run(c)
 
    // Executes the test. Call in tests.
    def execute(writer: Writer, annotations: AnnotationMap, input: String, check: String) = {

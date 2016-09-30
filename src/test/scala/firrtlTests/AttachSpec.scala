@@ -53,28 +53,28 @@ class InoutVerilog extends FirrtlFlatSpec {
          |    input an: Analog<3>
          |    inst a of A
          |    inst b of B
-         |    attach an to (a.an, b.an)
+         |    attach an to (a.an1, b.an2)
          |  module A: 
-         |    input an: Analog<3>
+         |    input an1: Analog<3>
          |  module B:
-         |    input an: Analog<3> """.stripMargin
+         |    input an2: Analog<3> """.stripMargin
      val check = 
       """module Attaching(
         |  inout  [2:0] an
         |);
         |  A a (
-        |    .an(an)
+        |    .an1(an)
         |  );
         |  B b (
-        |    .an(an)
+        |    .an2(an)
         |  );
         |endmodule
         |module A(
-        |  inout  [2:0] an
+        |  inout  [2:0] an1
         |);
         |endmodule
         |module B(
-        |  inout  [2:0] an
+        |  inout  [2:0] an2
         |);
         |endmodule
         |""".stripMargin.split("\n") map normalized
@@ -89,28 +89,28 @@ class InoutVerilog extends FirrtlFlatSpec {
          |    output an: Analog<3>
          |    inst a of A
          |    inst b of B
-         |    attach an to (a.an, b.an)
+         |    attach an to (a.an1, b.an2)
          |  module A: 
-         |    input an: Analog<3>
+         |    input an1: Analog<3>
          |  module B:
-         |    input an: Analog<3> """.stripMargin
+         |    input an2: Analog<3> """.stripMargin
      val check = 
       """module Attaching(
         |  inout  [2:0] an
         |);
         |  A a (
-        |    .an(an)
+        |    .an1(an)
         |  );
         |  B b (
-        |    .an(an)
+        |    .an2(an)
         |  );
         |endmodule
         |module A(
-        |  inout  [2:0] an
+        |  inout  [2:0] an1
         |);
         |endmodule
         |module B(
-        |  inout  [2:0] an
+        |  inout  [2:0] an2
         |);
         |endmodule
         |""".stripMargin.split("\n") map normalized

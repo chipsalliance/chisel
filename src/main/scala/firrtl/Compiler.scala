@@ -176,8 +176,9 @@ object CompilerUtils {
     } else {
       inputForm match {
         case ChirrtlForm => Seq(new ChirrtlToHighFirrtl) ++ getLoweringTransforms(HighForm, outputForm)
-        case HighForm => Seq(new IRToWorkingIR, new ResolveAndCheck, new HighFirrtlToMiddleFirrtl) ++
-                         getLoweringTransforms(MidForm, outputForm)
+        case HighForm =>
+          Seq(new IRToWorkingIR, new ResolveAndCheck, new transforms.DedupModules,
+              new HighFirrtlToMiddleFirrtl) ++ getLoweringTransforms(MidForm, outputForm)
         case MidForm => Seq(new MiddleFirrtlToLowFirrtl) ++ getLoweringTransforms(LowForm, outputForm)
         case LowForm => error("Internal Error! This shouldn't be possible") // should be caught by if above
       }
