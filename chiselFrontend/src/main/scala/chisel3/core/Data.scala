@@ -163,6 +163,7 @@ abstract class Data extends HasId {
     //TODO(twigg): Do recursively for better error messages
     for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
       clone_elem.binding = UnboundBinding(source_elem.binding.direction)
+      Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
     }
     clone
   }
