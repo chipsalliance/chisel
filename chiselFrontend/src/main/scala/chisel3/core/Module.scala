@@ -54,9 +54,9 @@ abstract class Module(
 extends HasId {
   // _clock and _reset can be clock and reset in these 2ary constructors
   // once chisel2 compatibility issues are resolved
-  def this(_clock: Clock) = this(Option(_clock), None)
-  def this(_reset: Bool)  = this(None, Option(_reset))
-  def this(_clock: Clock, _reset: Bool) = this(Option(_clock), Option(_reset))
+  def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
+  def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
+  def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
   // This function binds the iodef as a port in the hardware graph
   private[chisel3] def Port[T<:Data](iodef: T): iodef.type = {
