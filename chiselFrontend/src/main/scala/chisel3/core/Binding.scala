@@ -53,6 +53,7 @@ object Binding {
   case class BindingException(message: String) extends Exception(message)
   def AlreadyBoundException(binding: String) = BindingException(s": Already bound to $binding")
   def NotSynthesizableException = BindingException(s": Not bound to synthesizable node, currently only Type description")
+  def MissingIOWrapperException = BindingException(": Missing IO() wrapper")
 
   // This recursively walks down the Data tree to look at all the leaf 'Element's
   // Will build up an error string in case something goes wrong
@@ -138,6 +139,29 @@ object Binding {
         }
       }
     }
+
+    /** Diagnose a binding error caused by a missing IO() wrapper.
+      * @param element the element triggering the binding error.
+      * @return true if the element is a member of the module's io but ioDefined is false.
+      */
+    def isMissingIOWrapper(element: Element): Boolean = {
+      element._parent match {
+        case None => false
+        case Some(x: Module) => {
+          // If the IO() wrapper has been executed, it isn't missing.
+          if (x.ioDefined) {
+            false
+          } else {
+            // TODO: We should issue the message only once, and if we get here,
+            //  we know the wrapper is missing, whether or not the element is a member of io.
+            //  But if it's not an io element, we want to issue the complementary "unbound" error.
+            //  Revisit this when we collect error messages instead of throwing exceptions.
+            x.io.flatten.contains(element)
+          }
+        }
+      }
+    }
+
     try walkToBinding(
       target,
       element => element.binding match {
@@ -145,10 +169,16 @@ object Binding {
         case binding =>
           // The following kludge is an attempt to provide backward compatibility
           // It should be done at at higher level.
-          if ((forcedModule.compileOptions.requireIOWrap || !elementOfIO(element)))
-            throw NotSynthesizableException
-          else
+          if ((forcedModule.compileOptions.requireIOWrap || !elementOfIO(element))) {
+            // Generate a better error message if this is a result of a missing IO() wrapper.
+            if (isMissingIOWrapper(element)) {
+              throw MissingIOWrapperException
+            } else {
+              throw NotSynthesizableException
+            }
+          } else {
             Binding.bind(element, PortBinder(element._parent.get), "Error: IO")
+          }
       }
     )
     catch {
