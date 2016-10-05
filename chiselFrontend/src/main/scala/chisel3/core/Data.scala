@@ -135,27 +135,35 @@ abstract class Data extends HasId {
   private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
-    Binding.checkSynthesizable(that, s"'that' ($that)")
-    try {
-      MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
-    } catch {
-      case MonoConnect.MonoConnectException(message) =>
-        throwException(
-          s"Connection between sink ($this) and source ($that) failed @$message"
-        )
+    if (connectCompileOptions.checkSynthesizable) {
+      Binding.checkSynthesizable(this, s"'this' ($this)")
+      Binding.checkSynthesizable(that, s"'that' ($that)")
+      try {
+        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+      } catch {
+        case MonoConnect.MonoConnectException(message) =>
+          throwException(
+            s"Connection between sink ($this) and source ($that) failed @$message"
+          )
+      }
+    } else {
+      this legacyConnect that
     }
   }
   private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
-    Binding.checkSynthesizable(that, s"'that' ($that)")
-    try {
-      BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
-    } catch {
-      case BiConnect.BiConnectException(message) =>
-        throwException(
-          s"Connection between left ($this) and source ($that) failed @$message"
-        )
+    if (connectCompileOptions.checkSynthesizable) {
+      Binding.checkSynthesizable(this, s"'this' ($this)")
+      Binding.checkSynthesizable(that, s"'that' ($that)")
+      try {
+        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+      } catch {
+        case BiConnect.BiConnectException(message) =>
+          throwException(
+            s"Connection between left ($this) and source ($that) failed @$message"
+          )
+      }
+    } else {
+      this legacyConnect that
     }
   }
   private[chisel3] def lref: Node = Node(this)
@@ -163,6 +171,7 @@ abstract class Data extends HasId {
   private[core] def cloneTypeWidth(width: Width): this.type
   private[chisel3] def toType: String
   private[core] def width: Width
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   def cloneType: this.type
   def chiselCloneType: this.type = {
