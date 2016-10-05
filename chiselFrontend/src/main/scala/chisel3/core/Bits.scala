@@ -5,7 +5,7 @@ package chisel3.core
 import scala.language.experimental.macros
 
 import chisel3.internal._
-import chisel3.internal.Builder.pushOp
+import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
   UIntTransform, MuxTransform}
@@ -40,6 +40,9 @@ abstract class Element(private[core] val width: Width) extends Data {
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
+
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+    pushCommand(Connect(sourceInfo, this.lref, that.ref))
 }
 
 /** A data type for values represented by a single bitvector. Provides basic

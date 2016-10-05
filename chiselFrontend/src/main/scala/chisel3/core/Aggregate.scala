@@ -17,6 +17,8 @@ import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransfo
 sealed abstract class Aggregate extends Data {
   private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   private[core] def width: Width = flatten.map(_.width).reduce(_ + _)
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+    pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 }
 
 object Vec {
