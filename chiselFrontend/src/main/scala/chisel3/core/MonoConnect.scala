@@ -115,7 +115,7 @@ object MonoConnect {
 
     // CASE: Context is same module that both left node and right node are in
     if( (context_mod == sink_mod) && (context_mod == source_mod) ) {
-      (sink_direction, source_direction) match {
+      ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CURRENT MOD   CURRENT MOD
         case (Some(Output), _) => issueConnect(sink, source)
@@ -128,7 +128,7 @@ object MonoConnect {
     else if( (sink_mod == context_mod) &&
              (source_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
       // Thus, right node better be a port node and thus have a direction
-      (sink_direction, source_direction) match {
+      ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CURRENT MOD   CHILD MOD
         case (None,         Some(Output)) => issueConnect(sink, source)
@@ -151,7 +151,7 @@ object MonoConnect {
     else if( (source_mod == context_mod) &&
              (sink_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
       // Thus, left node better be a port node and thus have a direction
-      (sink_direction, source_direction) match {
+      ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CHILD MOD     CURRENT MOD
         case (Some(Input),  _) => issueConnect(sink, source)
@@ -167,7 +167,7 @@ object MonoConnect {
              (source_mod._parent.map(_ == context_mod).getOrElse(false))
     ) {
       // Thus both nodes must be ports and have a direction
-      (sink_direction, source_direction) match {
+      ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CHILD MOD     CHILD MOD
         case (Some(Input),  Some(Input))  => issueConnect(sink, source)

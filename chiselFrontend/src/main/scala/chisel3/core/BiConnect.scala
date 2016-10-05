@@ -124,7 +124,7 @@ object BiConnect {
     if( (left_mod == context_mod) &&
         (right_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
       // Thus, right node better be a port node and thus have a direction hint
-      (left_direction, right_direction) match {
+      ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CHILD MOD
         case (Some(Input),  Some(Input))  => issueConnectL2R(left, right)
         case (None,         Some(Input))  => issueConnectL2R(left, right)
@@ -142,7 +142,7 @@ object BiConnect {
     else if( (right_mod == context_mod) &&
              (left_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
       // Thus, left node better be a port node and thus have a direction hint
-      (left_direction, right_direction) match {
+      ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CURRENT MOD
         case (Some(Input),  Some(Input))  => issueConnectR2L(left, right)
         case (Some(Input),  None)         => issueConnectR2L(left, right)
@@ -158,7 +158,7 @@ object BiConnect {
 
     // CASE: Context is same module that both left node and right node are in
     else if( (context_mod == left_mod) && (context_mod == right_mod) ) {
-      (left_direction, right_direction) match {
+      ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CURRENT MOD
         case (Some(Input),  Some(Output)) => issueConnectL2R(left, right)
         case (Some(Input),  None)         => issueConnectL2R(left, right)
@@ -209,7 +209,7 @@ object BiConnect {
              (right_mod._parent.map(_ == context_mod).getOrElse(false))
     ) {
       // Thus both nodes must be ports and have a direction hint
-      (left_direction, right_direction) match {
+      ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CHILD MOD
         case (Some(Input),  Some(Output)) => issueConnectR2L(left, right)
         case (Some(Output), Some(Input))  => issueConnectL2R(left, right)
