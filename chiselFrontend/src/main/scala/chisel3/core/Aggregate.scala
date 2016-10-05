@@ -9,7 +9,7 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform}
+import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform, UnlocatableSourceInfo}
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -113,6 +113,15 @@ object Vec {
 
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
     apply(Seq.fill(n)(gen))
+
+  /** Truncate an index to implement modulo-power-of-2 addressing. */
+  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo): UInt = {
+    val w = BigInt(n-1).bitLength
+    if (n <= 1) UInt(0)
+    else if (idx.width.known && idx.width.get <= w) idx
+    else if (idx.width.known) idx(w-1,0)
+    else Wire(UInt(width = w), init = idx)
+  }
 }
 
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
@@ -178,7 +187,8 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
   def apply(idx: UInt): T = {
     Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
     val port = sample_element.chiselCloneType
-    port.setRef(this, idx) //TODO(twigg): This is a bit too magical
+    val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo)
+    port.setRef(this, i)
 
     // Bind each element of port to being whatever the base type is
     // Using the head element as the sample_element

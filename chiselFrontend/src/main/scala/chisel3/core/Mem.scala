@@ -38,7 +38,10 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(idx: Int): T = apply(UInt(idx))
+  def apply(idx: Int): T = {
+    require(idx >= 0 && idx < length)
+    apply(UInt(idx))
+  }
 
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
@@ -85,10 +88,11 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
 
   private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection): T = {
     Binding.checkSynthesizable(idx, s"'idx' ($idx)")
+    val i = Vec.truncateIndex(idx, length)(sourceInfo)
 
     val port = pushCommand(
       DefMemPort(sourceInfo,
-       t.chiselCloneType, Node(this), dir, idx.ref, Node(idx._parent.get.clock))
+       t.chiselCloneType, Node(this), dir, i.ref, Node(i._parent.get.clock))
     ).id
     // Bind each element of port to being a MemoryPort
     Binding.bind(port, MemoryPortBinder(Builder.forcedModule), "Error: Fresh t")
