@@ -25,6 +25,10 @@ private[chisel3] class ErrorLog {
   def warning(m: => String): Unit =
     errors += new Warning(m, getUserLineNumber)
 
+  /** Log a deprecation warning message */
+  def deprecated(m: => String): Unit =
+    errors += new DeprecationWarning(m, getUserLineNumber)
+
   /** Emit an informational message */
   def info(m: String): Unit =
     println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))  // scalastyle:ignore regex
@@ -84,6 +88,10 @@ private class Error(msg: => String, line: Option[StackTraceElement]) extends Log
 
 private class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
   def format: String = tag("warn", Console.YELLOW)
+}
+
+private class DeprecationWarning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {
+  def format: String = tag("warn", Console.CYAN)
 }
 
 private class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line) {

@@ -104,12 +104,21 @@ object Data {
   }
 
   implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
-    @deprecated("Input(Data) should be used over Data.asInput", "gchisel")
-    def asInput: T = Input(target)
-    @deprecated("Output(Data) should be used over Data.asOutput", "gchisel")
-    def asOutput: T = Output(target)
-    @deprecated("Flipped(Data) should be used over Data.flip", "gchisel")
-    def flip(): T = Flipped(target)
+    def asInput(implicit opts: CompileOptions): T = {
+      if (opts.deprecateOldDirectionMethods)
+        Builder.deprecated("Input(Data) should be used over Data.asInput")
+      Input(target)
+    }
+    def asOutput(implicit opts: CompileOptions): T = {
+      if (opts.deprecateOldDirectionMethods)
+        Builder.deprecated("Output(Data) should be used over Data.asOutput")
+      Output(target)
+    }
+    def flip()(implicit opts: CompileOptions): T = {
+      if (opts.deprecateOldDirectionMethods)
+        Builder.deprecated("Flipped(Data) should be used over Data.flip")
+      Flipped(target)
+    }
   }
 }
 

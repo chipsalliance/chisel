@@ -22,6 +22,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
     val requireIOWrap = false
     val dontTryConnectionsSwapped = true
     val dontAssumeDirectionality = true
+    val deprecateOldDirectionMethods = true
   }
 
   class SmallBundle extends Bundle {
@@ -265,6 +266,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
         val requireIOWrap = false
         val dontTryConnectionsSwapped = true
         val dontAssumeDirectionality = true
+        val deprecateOldDirectionMethods = false
       }
 
     }
