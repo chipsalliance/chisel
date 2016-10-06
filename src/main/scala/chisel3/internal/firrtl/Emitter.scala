@@ -104,7 +104,7 @@ private class Emitter(circuit: Circuit) {
 
   private val res = new StringBuilder()
   res ++= s";${Driver.chiselVersionString}\n"
-  res ++= "circuit ${circuit.name} : "
+  res ++= s"circuit ${circuit.name} : "
   withIndent { circuit.components.foreach(c => res ++= emit(c)) }
   res ++= newline
 }
