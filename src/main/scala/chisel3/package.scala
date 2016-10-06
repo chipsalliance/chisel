@@ -166,6 +166,28 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val NODIR = chisel3.core.Direction.Unspecified
   type ChiselException = chisel3.internal.ChiselException
 
+  class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    def init(): Unit = {
+      this.noenq()
+    }
+    override def cloneType: this.type = EnqIO(gen).asInstanceOf[this.type]
+  }
+  class DeqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
+    val Data = chisel3.core.Data
+    Data.setFirrtlDirection(this, Data.getFirrtlDirection(this).flip)
+    Binding.bind(this, FlippedBinder, "Error: Cannot flip ")
+    def init(): Unit = {
+      this.nodeq()
+    }
+    override def cloneType: this.type = DeqIO(gen).asInstanceOf[this.type]
+  }
+  object EnqIO {
+    def apply[T<:Data](gen: T): EnqIO[T] = new EnqIO(gen)
+  }
+  object DeqIO {
+    def apply[T<:Data](gen: T): DeqIO[T] = new DeqIO(gen)
+  }
+
   // Debugger/Tester access to internal Chisel data structures and methods.
   def getDataElements(a: Aggregate): Seq[Element] = {
     a.allElements
