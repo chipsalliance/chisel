@@ -155,7 +155,19 @@ abstract class Data extends HasId {
   private[chisel3] def toType: String
   private[core] def width: Width
 
+  /** cloneType must be defined for any Chisel object extending Data.
+    * It is responsible for constructing a basic copy of the object being cloned.
+    * If cloneType needs to recursively clone elements of an object, it should call
+    * the cloneType methods on those elements.
+    * @return a copy of the object.
+    */
   def cloneType: this.type
+
+  /** chiselCloneType is called at the top-level of a clone chain.
+    * It calls the client's cloneType() method to construct a basic copy of the object being cloned,
+    * then performs any fixups required to reconstruct the appropriate core state of the cloned object.
+    * @return a copy of the object with appropriate core state.
+    */
   def chiselCloneType: this.type = {
     // Call the user-supplied cloneType method
     val clone = this.cloneType
