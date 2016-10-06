@@ -158,25 +158,6 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type DecoupledIO[+T <: Data] = chisel3.util.DecoupledIO[T]
   val DecoupledIO = chisel3.util.Decoupled
   val Decoupled = chisel3.util.Decoupled
-  class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
-    def init(): Unit = {
-      this.noenq()
-    }
-    override def cloneType: this.type = EnqIO(gen).asInstanceOf[this.type]
-  }
-  class DeqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
-    chisel3.core.Binding.bind(this, chisel3.core.FlippedBinder, "Error: Cannot flip ")
-    def init(): Unit = {
-      this.nodeq()
-    }
-    override def cloneType: this.type = DeqIO(gen).asInstanceOf[this.type]
-  }
-  object EnqIO {
-    def apply[T<:Data](gen: T): DecoupledIO[T] = DecoupledIO(gen)
-  }
-  object DeqIO {
-    def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(DecoupledIO(gen))
-  }
   type QueueIO[T <: Data] = chisel3.util.QueueIO[T]
   type Queue[T <: Data] = chisel3.util.Queue[T]
   val Queue = chisel3.util.Queue
