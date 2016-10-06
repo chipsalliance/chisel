@@ -107,9 +107,10 @@ object CInferMDir extends Pass {
   def name = "CInfer MDir"
   type MPortDirMap = collection.mutable.LinkedHashMap[String, MPortDir]
 
-  def infer_mdir_e(mports: MPortDirMap, dir: MPortDir)(e: Expression): Expression = {
-    e map infer_mdir_e(mports, dir) match {
-      case e: Reference => mports get e.name match {
+  def infer_mdir_e(mports: MPortDirMap, dir: MPortDir)(e: Expression): Expression = e match {
+    case e: Reference =>
+      mports get e.name match {
+        case None =>
         case Some(p) => mports(e.name) = (p, dir) match {
           case (MInfer, MInfer) => Utils.error("Shouldn't be here")
           case (MInfer, MWrite) => MWrite
@@ -127,11 +128,14 @@ object CInferMDir extends Pass {
           case (MReadWrite, MWrite) => MReadWrite
           case (MReadWrite, MRead) => MReadWrite
           case (MReadWrite, MReadWrite) => MReadWrite
-        } ; e
-        case None => e
+        }
       }
-      case _ => e
-    }
+      e
+    case e: SubAccess =>
+      infer_mdir_e(mports, dir)(e.expr)
+      infer_mdir_e(mports, MRead)(e.index) // index can't be a write port
+      e
+    case e => e map infer_mdir_e(mports, dir)
   }
 
   def infer_mdir_s(mports: MPortDirMap)(s: Statement): Statement = s match { 
