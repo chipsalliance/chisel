@@ -24,21 +24,22 @@ object assert { // scalastyle:ignore object.name
     *
     * @param cond condition, assertion fires (simulation fails) when false
     * @param message optional message to print when the assertion fires
+    * @param data optional bits to print in the message formatting
     *
     * @note currently cannot be used in core Chisel / libraries because macro
     * defs need to be compiled first and the SBT project is not set up to do
     * that
     */
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
-  def apply(cond: Bool, message: String)(implicit sourceInfo: SourceInfo): Unit = macro apply_impl_msg
+  def apply(cond: Bool, message: String, data: Bits*)(implicit sourceInfo: SourceInfo): Unit = macro apply_impl_msg_data
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Unit = macro apply_impl
 
-  def apply_impl_msg(c: Context)(cond: c.Tree, message: c.Tree)(sourceInfo: c.Tree): c.Tree = {
+  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
     val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("apply_impl_do"))
-    q"$apply_impl_do($cond, $condStr, _root_.scala.Some($message))($sourceInfo)"
+    q"$apply_impl_do($cond, $condStr, _root_.scala.Some($message), ..$data)($sourceInfo)"
   }
 
   def apply_impl(c: Context)(cond: c.Tree)(sourceInfo: c.Tree): c.Tree = {
@@ -49,11 +50,11 @@ object assert { // scalastyle:ignore object.name
     q"$apply_impl_do($cond, $condStr, _root_.scala.None)($sourceInfo)"
   }
 
-  def apply_impl_do(cond: Bool, line: String, message: Option[String])(implicit sourceInfo: SourceInfo) {
+  def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo) {
     when (!(cond || Builder.forcedModule.reset)) {
       message match {
-        case Some(str) => printf.printfWithoutReset(s"Assertion failed: $str\n    at $line\n")
-        case None => printf.printfWithoutReset(s"Assertion failed\n    at $line\n")
+        case Some(str) => printf.printfWithoutReset(s"Assertion failed: $str\n    at $line\n", data:_*)
+        case None => printf.printfWithoutReset(s"Assertion failed\n    at $line\n", data:_*)
       }
       pushCommand(Stop(sourceInfo, Node(Builder.forcedModule.clock), 1))
     }

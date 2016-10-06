@@ -17,6 +17,11 @@ trait CompileOptions {
   val dontTryConnectionsSwapped: Boolean
   // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
   val dontAssumeDirectionality: Boolean
+  // Issue a deprecation warning if Data.{flip, asInput,asOutput} is used
+  // instead of Flipped, Input, or Output.
+  val deprecateOldDirectionMethods: Boolean
+  // Check that referenced Data have actually been declared.
+  val checkSynthesizable: Boolean
 }
 
 object CompileOptions {
@@ -34,6 +39,8 @@ object ExplicitCompileOptions {
     val requireIOWrap = false
     val dontTryConnectionsSwapped = false
     val dontAssumeDirectionality = false
+    val deprecateOldDirectionMethods = false
+    val checkSynthesizable = false
   }
 
   // Collection of "strict" connection compile options, preferred for new code.
@@ -44,5 +51,7 @@ object ExplicitCompileOptions {
     val requireIOWrap = true
     val dontTryConnectionsSwapped = true
     val dontAssumeDirectionality = true
+    val deprecateOldDirectionMethods = true
+    val checkSynthesizable = true
   }
 }

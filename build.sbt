@@ -6,15 +6,23 @@ site.includeScaladoc()
 
 ghpages.settings
 
+import UnidocKeys._
+
+lazy val customUnidocSettings = unidocSettings ++ Seq (
+  doc in Compile := (doc in ScalaUnidoc).value,
+  target in unidoc in ScalaUnidoc := crossTarget.value / "api"
+)
+
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.1-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
+  autoAPIMappings := true,
   scalaVersion := "2.11.7"
 )
 
 lazy val chiselSettings = Seq (
-  name := "Chisel3",
+  name := "chisel3",
 
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -50,8 +58,8 @@ lazy val chiselSettings = Seq (
   },
 
   resolvers ++= Seq(
-    "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
-    "Sonatype Releases" at "http://oss.sonatype.org/content/repositories/releases"
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
   ),
 
   /* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
@@ -113,18 +121,16 @@ lazy val chisel = (project in file(".")).
     mappings in (Compile, packageSrc) += { ((sourceManaged in Compile).value / "sbt-buildinfo" / "BuildInfo.scala") -> "BuildInfo.scala" }
   ).
   settings(commonSettings: _*).
+  settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
   dependsOn(coreMacros).
   dependsOn(chiselFrontend).
   settings(
+    aggregate in doc := false,
     // Include macro classes, resources, and sources main jar.
     mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (coreMacros, Compile, packageSrc),
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
-  )
-
-// This is ugly. There must be a better way.
-publish <<= (publish) dependsOn (publish in coreMacros, publish in chiselFrontend)
-
-publishLocal <<= (publishLocal) dependsOn (publishLocal in coreMacros, publishLocal in chiselFrontend)
+  ).
+  aggregate(coreMacros, chiselFrontend)

@@ -104,12 +104,21 @@ object Data {
   }
 
   implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
-    @deprecated("Input(Data) should be used over Data.asInput", "gchisel")
-    def asInput: T = Input(target)
-    @deprecated("Output(Data) should be used over Data.asOutput", "gchisel")
-    def asOutput: T = Output(target)
-    @deprecated("Flipped(Data) should be used over Data.flip", "gchisel")
-    def flip(): T = Flipped(target)
+    def asInput(implicit opts: CompileOptions): T = {
+      if (opts.deprecateOldDirectionMethods)
+        Builder.deprecated("Input(Data) should be used over Data.asInput")
+      Input(target)
+    }
+    def asOutput(implicit opts: CompileOptions): T = {
+      if (opts.deprecateOldDirectionMethods)
+        Builder.deprecated("Output(Data) should be used over Data.asOutput")
+      Output(target)
+    }
+    def flip()(implicit opts: CompileOptions): T = {
+      if (opts.deprecateOldDirectionMethods)
+        Builder.deprecated("Flipped(Data) should be used over Data.flip")
+      Flipped(target)
+    }
   }
 }
 
@@ -126,27 +135,35 @@ abstract class Data extends HasId {
   private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
-    Binding.checkSynthesizable(that, s"'that' ($that)")
-    try {
-      MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
-    } catch {
-      case MonoConnect.MonoConnectException(message) =>
-        throwException(
-          s"Connection between sink ($this) and source ($that) failed @$message"
-        )
+    if (connectCompileOptions.checkSynthesizable) {
+      Binding.checkSynthesizable(this, s"'this' ($this)")
+      Binding.checkSynthesizable(that, s"'that' ($that)")
+      try {
+        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+      } catch {
+        case MonoConnect.MonoConnectException(message) =>
+          throwException(
+            s"Connection between sink ($this) and source ($that) failed @$message"
+          )
+      }
+    } else {
+      this legacyConnect that
     }
   }
   private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
-    Binding.checkSynthesizable(that, s"'that' ($that)")
-    try {
-      BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
-    } catch {
-      case BiConnect.BiConnectException(message) =>
-        throwException(
-          s"Connection between left ($this) and source ($that) failed @$message"
-        )
+    if (connectCompileOptions.checkSynthesizable) {
+      Binding.checkSynthesizable(this, s"'this' ($this)")
+      Binding.checkSynthesizable(that, s"'that' ($that)")
+      try {
+        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+      } catch {
+        case BiConnect.BiConnectException(message) =>
+          throwException(
+            s"Connection between left ($this) and source ($that) failed @$message"
+          )
+      }
+    } else {
+      this legacyConnect that
     }
   }
   private[chisel3] def lref: Node = Node(this)
@@ -154,8 +171,21 @@ abstract class Data extends HasId {
   private[core] def cloneTypeWidth(width: Width): this.type
   private[chisel3] def toType: String
   private[core] def width: Width
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
+  /** cloneType must be defined for any Chisel object extending Data.
+    * It is responsible for constructing a basic copy of the object being cloned.
+    * If cloneType needs to recursively clone elements of an object, it should call
+    * the cloneType methods on those elements.
+    * @return a copy of the object.
+    */
   def cloneType: this.type
+
+  /** chiselCloneType is called at the top-level of a clone chain.
+    * It calls the client's cloneType() method to construct a basic copy of the object being cloned,
+    * then performs any fixups required to reconstruct the appropriate core state of the cloned object.
+    * @return a copy of the object with appropriate core state.
+    */
   def chiselCloneType: this.type = {
     // Call the user-supplied cloneType method
     val clone = this.cloneType
@@ -163,6 +193,7 @@ abstract class Data extends HasId {
     //TODO(twigg): Do recursively for better error messages
     for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
       clone_elem.binding = UnboundBinding(source_elem.binding.direction)
+      Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
     }
     clone
   }
