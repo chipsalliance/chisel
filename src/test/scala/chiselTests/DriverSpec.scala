@@ -7,10 +7,10 @@ import chisel3._
 import org.scalatest.{Matchers, FreeSpec}
 
 class DummyModule extends Module {
-  val io = new Bundle {
-    val in = UInt(1).flip()
-    val out = UInt(1)
-  }
+  val io = IO(new Bundle {
+    val in = UInt(INPUT, 1)
+    val out = UInt(OUTPUT, 1)
+  })
   io.out := io.in
 }
 
