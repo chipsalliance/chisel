@@ -1,28 +1,29 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
-import Chisel.testers.BasicTester
+
+import chisel3._
+import chisel3.testers.BasicTester
 
 class SIntOps extends Module {
-  val io = new Bundle {
-    val a = SInt(INPUT, 16)
-    val b = SInt(INPUT, 16)
-    val addout = SInt(OUTPUT, 16)
-    val subout = SInt(OUTPUT, 16)
-    val timesout = SInt(OUTPUT, 16)
-    val divout = SInt(OUTPUT, 16)
-    val modout = SInt(OUTPUT, 16)
-    val lshiftout = SInt(OUTPUT, 16)
-    val rshiftout = SInt(OUTPUT, 16)
-    val lessout = Bool(OUTPUT)
-    val greatout = Bool(OUTPUT)
-    val eqout = Bool(OUTPUT)
-    val noteqout = Bool(OUTPUT)
-    val lesseqout = Bool(OUTPUT)
-    val greateqout = Bool(OUTPUT)
-    val negout = SInt(OUTPUT, 16)
-  }
+  val io = IO(new Bundle {
+    val a = Input(SInt.width(16))
+    val b = Input(SInt.width(16))
+    val addout = Output(SInt.width(16))
+    val subout = Output(SInt.width(16))
+    val timesout = Output(SInt.width(16))
+    val divout = Output(SInt.width(16))
+    val modout = Output(SInt.width(16))
+    val lshiftout = Output(SInt.width(16))
+    val rshiftout = Output(SInt.width(16))
+    val lessout = Output(Bool())
+    val greatout = Output(Bool())
+    val eqout = Output(Bool())
+    val noteqout = Output(Bool())
+    val lesseqout = Output(Bool())
+    val greateqout = Output(Bool())
+    val negout = Output(SInt.width(16))
+  })
 
   val a = io.a
   val b = io.b

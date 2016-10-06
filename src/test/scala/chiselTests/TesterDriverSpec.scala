@@ -2,8 +2,10 @@
 
 package chiselTests
 
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
+//import chisel3.core.ExplicitCompileOptions.Strict
 
 /** Extend BasicTester with a simple circuit and finish method.  TesterDriver will call the
   * finish method after the FinishTester's constructor has completed, which will alter the
@@ -19,7 +21,7 @@ class FinishTester extends BasicTester {
     stop()
   }
 
-  val test_wire = Wire(UInt(1, width = test_wire_width))
+  val test_wire = Wire(init=UInt(1, test_wire_width))
 
   // though we just set test_wire to 1, the assert below will pass because
   // the finish will change its value

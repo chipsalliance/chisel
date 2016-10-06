@@ -3,8 +3,9 @@
 package chiselTests
 
 import org.scalatest._
-import Chisel._
-import Chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class FailingAssertTester() extends BasicTester {
   assert(Bool(false))
@@ -25,7 +26,7 @@ class SucceedingAssertTester() extends BasicTester {
 }
 
 class PipelinedResetModule extends Module {
-  val io = new Bundle { }
+  val io = IO(new Bundle { })
   val a = Reg(init = UInt(0xbeef))
   val b = Reg(init = UInt(0xbeef))
   assert(a === b)

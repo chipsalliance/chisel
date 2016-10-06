@@ -1,25 +1,27 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+
 import org.scalatest._
 import org.scalatest.prop._
 
-import Chisel.testers.BasicTester
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle {
   override def cloneType: this.type =
-    new Complex(re.cloneType, im.cloneType).asInstanceOf[this.type]
+    new Complex(re.chiselCloneType, im.chiselCloneType).asInstanceOf[this.type]
 }
 
 class ComplexAssign(w: Int) extends Module {
-  val io = new Bundle {
-    val e   = new Bool(INPUT)
-    val in  = new Complex(UInt(width = w), UInt(width = w)).asInput
-    val out = new Complex(UInt(width = w), UInt(width = w)).asOutput
-  }
+  val io = IO(new Bundle {
+    val e   = Input(Bool())
+    val in  = Input(new Complex(UInt.width(w), UInt.width(w)))
+    val out = Output(new Complex(UInt.width(w), UInt.width(w)))
+  })
   when (io.e) {
-    val tmp = Wire(new Complex(UInt(width = w), UInt(width = w)))
+    val tmp = Wire(new Complex(UInt.width(w), UInt.width(w)))
     tmp := io.in
     io.out.re := tmp.re
     io.out.im := tmp.im

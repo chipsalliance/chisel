@@ -1,14 +1,16 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
-import Chisel.testers.BasicTester
+
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class LFSR16 extends Module {
-  val io = new Bundle {
-    val inc = Bool(INPUT)
-    val out = UInt(OUTPUT, 16)
-  }
+  val io = IO(new Bundle {
+    val inc = Input(Bool())
+    val out = Output(UInt.width(16))
+  })
   val res = Reg(init = UInt(1, 16))
   when (io.inc) {
     val nxt_res = Cat(res(0)^res(2)^res(3)^res(5), res(15,1))
@@ -34,7 +36,7 @@ class LFSR16Tester(c: LFSR16) extends Tester(c) {
 }
 */
 
-//TODO: Use chisel.util version instead?
+//TODO: Use chisel3.util version instead?
 
 class LFSRSpec extends ChiselPropSpec {
 

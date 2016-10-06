@@ -3,36 +3,43 @@
 package chiselTests
 
 import org.scalatest._
-import Chisel._
-import Chisel.testers.BasicTester
+
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class LastAssignTester() extends BasicTester {
   val cnt = Counter(2)
 
-  val test = Wire(UInt(width=4))
-  assert(test === UInt(7))  // allow read references before assign references
+  val test = Wire(UInt.width(4))
+  assert(test === 7.U)  // allow read references before assign references
 
-  test := UInt(13)
-  assert(test === UInt(7))  // output value should be position-independent
+  test := 13.U
+  assert(test === 7.U)  // output value should be position-independent
 
-  test := UInt(7)
-  assert(test === UInt(7))  // this obviously should work
+  test := 7.U
+  assert(test === 7.U)  // this obviously should work
 
-  when(cnt.value === UInt(1)) {
+  when(cnt.value === 1.U) {
     stop()
   }
 }
 
 class ReassignmentTester() extends BasicTester {
-  val test = UInt(15)
-  test := UInt(7)
+  val test = 15.U
+  test := 7.U
 }
 
 class MultiAssignSpec extends ChiselFlatSpec {
   "The last assignment" should "be used when multiple assignments happen" in {
     assertTesterPasses{ new LastAssignTester }
   }
+}
+
+class IllegalAssignSpec extends ChiselFlatSpec {
   "Reassignments to non-wire types" should "be disallowed" in {
-    assertTesterFails{ new ReassignmentTester }
+    intercept[chisel3.internal.ChiselException] {
+      assertTesterFails{ new ReassignmentTester }
+    }
   }
 }

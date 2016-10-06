@@ -1,17 +1,20 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
-import Chisel.testers.BasicTester
+
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class Decoder(bitpats: List[String]) extends Module {
-  val io = new Bundle {
-    val inst  = UInt(INPUT, 32)
-    val matched = Bool(OUTPUT)
-  }
+  val io = IO(new Bundle {
+    val inst  = Input(UInt.width(32))
+    val matched = Output(Bool())
+  })
   io.matched := Vec(bitpats.map(BitPat(_) === io.inst)).reduce(_||_)
 }
 

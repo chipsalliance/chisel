@@ -1,10 +1,13 @@
 // See LICENSE for license details.
 
 package chiselTests
-import Chisel._
+
 import org.scalatest._
 import org.scalatest.prop._
-import Chisel.testers.BasicTester
+
+import chisel3._
+import chisel3.testers.BasicTester
+import chisel3.util._
 
 class CountTester(max: Int) extends BasicTester {
   val cnt = Counter(max)
