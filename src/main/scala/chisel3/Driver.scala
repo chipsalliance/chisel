@@ -139,5 +139,4 @@ object Driver extends BackendCompilationUtilities {
 
   val version = BuildInfo.version
   val chiselVersionString = BuildInfo.toString
-  println(chiselVersionString)
 }

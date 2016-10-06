@@ -102,7 +102,7 @@ private class Emitter(circuit: Circuit) {
   private def unindent() { require(indentLevel > 0); indentLevel -= 1 }
   private def withIndent(f: => Unit) { indent(); f; unindent() }
 
-  private val res = new StringBuilder(s"circuit ${circuit.name} : ")
+  private val res = new StringBuilder(s";${Driver.chiselVersionString}\ncircuit ${circuit.name} : ")
   withIndent { circuit.components.foreach(c => res ++= emit(c)) }
   res ++= newline
 }

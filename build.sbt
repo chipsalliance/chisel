@@ -106,19 +106,7 @@ lazy val chisel = (project in file(".")).
     // We should really be using name.value, but currently, the package is "Chisel" (uppercase first letter)
     buildInfoPackage := /* name.value */ "chisel3",
     buildInfoOptions += BuildInfoOption.BuildTime,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion),
-    // Move the managed source directory where git won't complain about it,
-    //  and where we can easily package its files as part of the source jar artifact.
-    //  We'd like to use versionToArray(), slice(), and mkString() to convert an explicit
-    //  Scala version (like 2.10.6), into the leftmost two components (2.10),
-    //  but this seems to run afoul of assumptions sbt makes about the inclusion
-    //  of Scala-version-specfic code (we get
-    //    BuildInfo is already defined as case class BuildInfo
-    //  so use the full version spec.
-    //sourceManaged in Compile <<= (sourceDirectory in Compile, scalaVersion){ (s,v) => s / ("scala-" + versionToArray(v).slice(0,2).mkString(".") + "/src_managed") },
-    sourceManaged in Compile <<= (sourceDirectory in Compile, scalaVersion){ (s,v) => s / ("scala-" + v + "/src_managed") },
-    // Add the generated sources to the packagedSrc artifact since they are excluded by default.
-    mappings in (Compile, packageSrc) += { ((sourceManaged in Compile).value / "sbt-buildinfo" / "BuildInfo.scala") -> "BuildInfo.scala" }
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
