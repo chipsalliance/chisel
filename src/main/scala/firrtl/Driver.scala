@@ -169,10 +169,10 @@ Optional Arguments:
     val output = options.getOrElse(OutputFileName, throw new Exception("No output file provided!" + usage))
 
     val infoMode = options.get(InfoModeOption) match {
-      case (Some("use") | None) => UseInfo
+      case (Some("append") | None) => AppendInfo(input)
+      case Some("use") => UseInfo
       case Some("ignore") => IgnoreInfo
       case Some("gen") => GenInfo(input)
-      case Some("append") => AppendInfo(input)
       case Some(other) => throw new Exception("Unknown info mode option: " + other + usage)
     }
 
