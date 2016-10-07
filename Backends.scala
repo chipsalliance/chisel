@@ -8,7 +8,7 @@ import java.io.PrintStream
   * define interface for ClassicTester backend implementations such as verilator and firrtl interpreter
   */
 
-private[iotesters] abstract class Backend(_seed: Long = System.currentTimeMillis) {
+private[iotesters] abstract class Backend(private[iotesters] val _seed: Long = System.currentTimeMillis) {
   val rnd = new scala.util.Random(_seed)
 
   def poke(signal: InstanceId, value: BigInt, off: Option[Int])

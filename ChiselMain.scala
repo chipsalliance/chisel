@@ -16,7 +16,8 @@ private[iotesters] class TesterContext {
   var isRunTest = false
   var testerSeed = System.currentTimeMillis
   val testCmd = ArrayBuffer[String]()
-  var backend = "verilator"
+  var backendType = "verilator"
+  var backend: Option[Backend] = None
   var targetDir = new File("test_run_dir")
   var logFile: Option[File] = None
   var waveform: Option[File] = None
@@ -27,12 +28,12 @@ object chiselMain {
   private[iotesters] def context = contextVar.value getOrElse (new TesterContext)
 
   private def parseArgs(args: List[String]): Unit = args match {
-    case "--firrtl" :: tail => context.backend = "firrtl" ; parseArgs(tail)
-    case "--verilator" :: tail => context.backend = "verilator" ; parseArgs(tail)
-    case "--vcs" :: tail => context.backend = "vcs" ; parseArgs(tail)
-    case "--glsim" :: tail => context.backend = "glsim" ; parseArgs(tail)
+    case "--firrtl" :: tail => context.backendType = "firrtl" ; parseArgs(tail)
+    case "--verilator" :: tail => context.backendType = "verilator" ; parseArgs(tail)
+    case "--vcs" :: tail => context.backendType = "vcs" ; parseArgs(tail)
+    case "--glsim" :: tail => context.backendType = "glsim" ; parseArgs(tail)
     case "--v" :: tail  => context.isGenVerilog = true ; parseArgs(tail)
-    case "--backend" :: value :: tail => context.backend = value ; parseArgs(tail)
+    case "--backend" :: value :: tail => context.backendType = value ; parseArgs(tail)
     case "--genHarness" :: tail => context.isGenHarness = true ; parseArgs(tail)
     case "--compile" :: tail => context.isCompiling = true ; parseArgs(tail)
     case "--test" :: tail => context.isRunTest = true ; parseArgs(tail)
@@ -47,7 +48,7 @@ object chiselMain {
 
   private def genHarness[T <: Module](dut: Module, nodes: Seq[internal.InstanceId], chirrtl: firrtl.ir.Circuit) {
     val dir = context.targetDir
-    context.backend match {
+    context.backendType match {
       case "firrtl" => // skip
       case "verilator" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.cpp"))
@@ -58,14 +59,14 @@ object chiselMain {
       case "vcs" | "glsim" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.v"))
         val waveform = (new File(dir, s"${chirrtl.main}.vpd")).toString
-        genVCSVerilogHarness(dut, harness, waveform.toString, context.backend == "glsim")
+        genVCSVerilogHarness(dut, harness, waveform.toString, context.backendType == "glsim")
       case b => throw BackendException(b)
     }
   }
 
   private def compile(dutName: String) {
     val dir = context.targetDir
-    context.backend match {
+    context.backendType match {
       case "firrtl" => // skip
       case "verilator" =>
         // Copy API files
@@ -101,24 +102,32 @@ object chiselMain {
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
     val chirrtlFile = new File(dir, s"${name}.ir")
     val verilogFile = new File(dir, s"${name}.v")
-    if (context.backend == "firrtl") {
-       val writer = new FileWriter(chirrtlFile)
-      firrtl.FIRRTLEmitter run (chirrtl, writer)
-      writer.close
-    } else if (context.isGenVerilog) {
-      val annotation = new firrtl.Annotations.AnnotationMap(Seq(
-        new firrtl.passes.InferReadWriteAnnotation(name, firrtl.Annotations.TransID(-1))))
-      val writer = new FileWriter(verilogFile)
-      new firrtl.VerilogCompiler compile (chirrtl, annotation, writer)
-      writer.close
+    context.backendType match {
+      case "firrtl" =>
+        val writer = new FileWriter(chirrtlFile)
+        firrtl.FIRRTLEmitter run (chirrtl, writer)
+        writer.close
+      case _ if (context.isGenVerilog) =>
+        val annotation = new firrtl.Annotations.AnnotationMap(Seq(
+          new firrtl.passes.InferReadWriteAnnotation(name, firrtl.Annotations.TransID(-1))))
+        val writer = new FileWriter(verilogFile)
+        new firrtl.VerilogCompiler compile (chirrtl, annotation, writer)
+        writer.close
+      case _ =>
     } 
 
     if (context.isGenHarness) genHarness(dut, nodes, chirrtl)
 
     if (context.isCompiling) compile(name)
 
+    dut
+  }
+
+  private def setupBackend[T <: Module](dut: T) {
+    val name = dut.name
+
     if (context.testCmd.isEmpty) {
-      context.backend match {
+      context.backendType match {
         case "firrtl" => // skip
         case "verilator" =>
           context.testCmd += (new File(context.targetDir, s"V$name")).toString
@@ -127,11 +136,23 @@ object chiselMain {
         case b => throw BackendException(b)
       }
     }
+
     context.waveform match {
       case None =>
       case Some(f) => context.testCmd += s"+waveform=$f"
     }
-    dut
+
+    context.backend = Some(context.backendType match {
+      case "firrtl" =>
+        val file = new java.io.File(context.targetDir, s"${dut.name}.ir")
+        val ir = io.Source.fromFile(file).getLines mkString "\n"
+        new FirrtlTerpBackend(dut, ir, context.testerSeed)
+      case "verilator" =>
+        new VerilatorBackend(dut, context.testCmd.toList, context.testerSeed)
+      case "vcs" | "glsim" =>
+        new VCSBackend(dut, context.testCmd.toList, context.testerSeed)
+      case b => throw BackendException(b)
+    })
   }
 
   def apply[T <: Module](args: Array[String], dutGen: () => T): T = {
@@ -147,11 +168,18 @@ object chiselMain {
     contextVar.withValue(Some(new TesterContext)) {
       val dut = elaborate(args, dutGen)
       if (context.isRunTest) {
+        setupBackend(dut)
         assert(try {
           testerGen(dut).finish
         } catch { case e: Throwable =>
           e.printStackTrace
-          TesterProcess.killall
+          context.backend match {
+            case Some(b: VCSBackend) =>
+              TesterProcess kill b
+            case Some(b: VerilatorBackend) =>
+              TesterProcess kill b
+            case _ =>
+          }
           false
         }, "Test failed")
       }

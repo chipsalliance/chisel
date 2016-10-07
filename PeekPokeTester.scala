@@ -29,8 +29,7 @@ trait PeekPokeTests {
 abstract class PeekPokeTester[+T <: Module](val dut: T,
                                             verbose: Boolean = true,
                                             base: Int = 16,
-                                            logFile: Option[java.io.File] = None,
-                                            _seed: Long = chiselMain.context.testerSeed) {
+                                            logFile: Option[java.io.File] = None) {
 
   implicit def longToInt(x: Long) = x.toInt
 
@@ -49,21 +48,11 @@ abstract class PeekPokeTester[+T <: Module](val dut: T,
   /****************************/
   /*** Simulation Interface ***/
   /****************************/
-  logger println s"SEED ${_seed}"
-  val backend = Driver.backend getOrElse {
-    val cmd = chiselMain.context.testCmd.toList
-    chiselMain.context.backend match {
-      case "firrtl" =>
-        val file = new java.io.File(chiselMain.context.targetDir, s"${dut.name}.ir")
-        val ir = io.Source.fromFile(file).getLines mkString "\n"
-        new FirrtlTerpBackend(dut, ir, _seed)
-      case "verilator" =>
-        new VerilatorBackend(dut, cmd, _seed)
-      case "vcs" | "glsim" =>
-        new VCSBackend(dut, cmd, _seed)
-      case b => throw BackendException(b)
-    }
+  val backend = ((Driver.backend, chiselMain.context.backend): @unchecked) match {
+    case (Some(b), _) => b
+    case (None, Some(b)) => b
   }
+  logger println s"SEED ${backend._seed}"
 
   /********************************/
   /*** Classic Tester Interface ***/
