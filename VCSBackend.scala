@@ -134,7 +134,7 @@ private[iotesters] object setupVCSBackend {
     val vpdFile = new File(dir, s"${circuit.name}.vpd")
     copyVpiFiles(dir.toString)
     genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
-    verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).!
+    assert(verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).! == 0)
 
     (dut, new VCSBackend(dut, Seq((new File(dir, circuit.name)).toString)))
   }

@@ -133,7 +133,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
     (nodes foldLeft 1){ (id, node) =>
       val instanceName = s"%s.%s".format(node.parentPathName, validName(node.instanceName))
-      val pathName = instanceName replace (dutName, "v") replace (".", "__DOT__") replace ("$", "__024")
+      val pathName = instanceName replace (".", "__DOT__") replace ("$", "__024")
       try {
         node match {
           case mem: Chisel.MemBase[_] =>
@@ -288,8 +288,8 @@ private[iotesters] object setupVerilatorBackend {
     copyVerilatorHeaderFiles(dir.toString)
     harnessCompiler.compile(chirrtl, annotation, cppHarnessWriter)
     cppHarnessWriter.close
-    chisel3.Driver.verilogToCpp(circuit.name, circuit.name, dir, Seq(), new File(cppHarnessFileName)).!
-    chisel3.Driver.cppToExe(circuit.name, dir).!
+    assert(chisel3.Driver.verilogToCpp(circuit.name, circuit.name, dir, Seq(), new File(cppHarnessFileName)).! == 0)
+    assert(chisel3.Driver.cppToExe(circuit.name, dir).! == 0)
 
     (dut, new VerilatorBackend(dut, Seq((new File(dir, s"V${circuit.name}")).toString)))
   }
