@@ -101,6 +101,13 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   dependsOn(coreMacros)
 
 lazy val chisel = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    // We should really be using name.value, but currently, the package is "Chisel" (uppercase first letter)
+    buildInfoPackage := /* name.value */ "chisel3",
+    buildInfoOptions += BuildInfoOption.BuildTime,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  ).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).

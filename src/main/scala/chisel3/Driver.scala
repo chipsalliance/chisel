@@ -7,6 +7,7 @@ import java.io._
 
 import internal._
 import internal.firrtl._
+import BuildInfo._
 
 trait BackendCompilationUtilities {
   /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.
@@ -135,4 +136,7 @@ object Driver extends BackendCompilationUtilities {
   }
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
+
+  val version = BuildInfo.version
+  val chiselVersionString = BuildInfo.toString
 }
