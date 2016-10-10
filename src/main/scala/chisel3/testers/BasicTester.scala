@@ -9,10 +9,11 @@ import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
 import internal.sourceinfo.SourceInfo
+//import chisel3.core.ExplicitCompileOptions.NotStrict
 
-class BasicTester extends Module {
+class BasicTester extends Module() {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.
-  val io = new Bundle()
+  val io = IO(new Bundle())
 
   def popCount(n: Long): Int = n.toBinaryString.count(_=='1')
 

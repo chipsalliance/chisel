@@ -10,14 +10,14 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 
 class Tbl(w: Int, n: Int) extends Module {
-  val io = new Bundle {
-    val wi  = UInt(INPUT, log2Up(n))
-    val ri  = UInt(INPUT, log2Up(n))
-    val we  = Bool(INPUT)
-    val  d  = UInt(INPUT, w)
-    val  o  = UInt(OUTPUT, w)
-  }
-  val m = Mem(n, UInt(width = w))
+  val io = IO(new Bundle {
+    val wi  = Input(UInt.width(log2Up(n)))
+    val ri  = Input(UInt.width(log2Up(n)))
+    val we  = Input(Bool())
+    val  d  = Input(UInt.width(w))
+    val  o  = Output(UInt.width(w))
+  })
+  val m = Mem(n, UInt.width(w))
   io.o := m(io.ri)
   when (io.we) {
     m(io.wi) := io.d

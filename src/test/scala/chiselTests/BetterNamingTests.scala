@@ -3,8 +3,8 @@ package chiselTests
 import org.scalatest.{FlatSpec, Matchers}
 import collection.mutable
 
-import Chisel._
-
+import chisel3._
+import chisel3.util._
 
 // Defined outside of the class so we don't get $ in name
 class Other(w: Int) extends Module {

@@ -5,11 +5,11 @@ package chiselTests
 import chisel3._
 
 class Padder extends Module {
-  val io = new Bundle {
-    val a   = Bits(INPUT,  4)
-    val asp = SInt(OUTPUT, 8)
-    val aup = UInt(OUTPUT, 8)
-  }
+  val io = IO(new Bundle {
+    val a   = Input(UInt.width(4))
+    val asp = Output(SInt.width(8))
+    val aup = Output(UInt.width(8))
+  })
   io.asp := io.a.asSInt
   io.aup := io.a.asUInt
 }

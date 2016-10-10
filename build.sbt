@@ -6,11 +6,31 @@ site.includeScaladoc()
 
 ghpages.settings
 
+import UnidocKeys._
+
+lazy val customUnidocSettings = unidocSettings ++ Seq (
+  doc in Compile := (doc in ScalaUnidoc).value,
+  target in unidoc in ScalaUnidoc := crossTarget.value / "api"
+)
+
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.0-BETA-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   scalaVersion := "2.11.7",
+  autoAPIMappings := true,
+
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  )
+)
+
+val defaultVersions = Map("firrtl" -> "0.2-BETA-SNAPSHOT")
+
+lazy val chiselSettings = Seq (
+  name := "chisel3",
+
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
@@ -43,17 +63,6 @@ lazy val commonSettings = Seq (
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
     }
   },
-
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  )
-)
-
-val defaultVersions = Map("firrtl" -> "0.2-BETA-SNAPSHOT")
-
-lazy val chiselSettings = Seq (
-  name := "Chisel3",
 
   // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
   libraryDependencies ++= (Seq("firrtl").map {
@@ -98,27 +107,30 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   dependsOn(coreMacros)
 
 lazy val chisel = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    // We should really be using name.value, but currently, the package is "Chisel" (uppercase first letter)
+    buildInfoPackage := /* name.value */ "chisel3",
+    buildInfoOptions += BuildInfoOption.BuildTime,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  ).
   settings(commonSettings: _*).
+  settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
   dependsOn(coreMacros).
   dependsOn(chiselFrontend).
   settings(
+    aggregate in doc := false,
     // Include macro classes, resources, and sources main jar.
     mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (coreMacros, Compile, packageSrc),
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
-  )
-
-// This is ugly. There must be a better way.
-publish <<= (publish) dependsOn (publish in coreMacros, publish in chiselFrontend)
-
-publishLocal <<= (publishLocal) dependsOn (publishLocal in coreMacros, publishLocal in chiselFrontend)
-
-//publishSigned <<= (publishSigned) dependsOn (publishSigned in coreMacros, publishSigned in chiselFrontend)
+  ).
+  aggregate(coreMacros, chiselFrontend)
 
 // We need the following for the release version that uses sbt to invoke firrtl.
 // sbt doesn't deal well with multiple simulataneous invocations for the same user
 
-parallelExecution in Test := false
+  parallelExecution in Test := false
 

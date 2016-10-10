@@ -8,11 +8,11 @@ import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class MulLookup(val w: Int) extends Module {
-  val io = new Bundle {
-    val x   = UInt(INPUT,  w)
-    val y   = UInt(INPUT,  w)
-    val z   = UInt(OUTPUT, 2 * w)
-  }
+  val io = IO(new Bundle {
+    val x   = Input(UInt.width(w))
+    val y   = Input(UInt.width(w))
+    val z   = Output(UInt.width(2 * w))
+  })
   val tbl = Vec(
     for {
       i <- 0 until 1 << w

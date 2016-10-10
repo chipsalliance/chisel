@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
@@ -15,16 +17,56 @@ import chisel3._
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
-  val ready = Bool(INPUT)
-  val valid = Bool(OUTPUT)
-  val bits  = gen.cloneType.asOutput
-  def fire(dummy: Int = 0): Bool = ready && valid
+  val ready = Input(Bool())
+  val valid = Output(Bool())
+  val bits  = Output(gen.chiselCloneType)
 }
 
-/** A concrete subclass of ReadyValidIO signalling that the user expects a
+object ReadyValidIO {
+
+  implicit class AddMethodsToReadyValid[T<:Data](val target: ReadyValidIO[T]) extends AnyVal {
+    def fire(): Bool = target.ready && target.valid
+
+    /** push dat onto the output bits of this interface to let the consumer know it has happened.
+      * @param dat the values to assign to bits.
+      * @return    dat.
+      */
+    def enq(dat: T): T = {
+      target.valid := Bool(true)
+      target.bits := dat
+      dat
+    }
+
+    /** Indicate no enqueue occurs.  Valid is set to false, and all bits are set to zero.
+      */
+    def noenq(): Unit = {
+      target.valid := Bool(false)
+      // We want the type from the following, not any existing binding.
+      target.bits := target.bits.cloneType.fromBits(0.asUInt)
+    }
+
+    /** Assert ready on this port and return the associated data bits.
+      * This is typically used when valid has been asserted by the producer side.
+      * @param b ignored
+      * @return the data for this device,
+      */
+    def deq(): T = {
+      target.ready := Bool(true)
+      target.bits
+    }
+
+    /** Indicate no dequeue occurs. Ready is set to false
+      */
+    def nodeq(): Unit = {
+      target.ready := Bool(false)
+    }
+  }
+}
+
+/** A concrete subclass of ReadyValidIO signaling that the user expects a
   * "decoupled" interface: 'valid' indicates that the producer has
   * put valid data in 'bits', and 'ready' indicates that the consumer is ready
-  * to accept the data this cycle. No requirements are placed on the signalling
+  * to accept the data this cycle. No requirements are placed on the signaling
   * of ready or valid.
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
@@ -35,21 +77,24 @@ class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 /** This factory adds a decoupled handshaking protocol to a data bundle. */
 object Decoupled
 {
-  /** Take any Data and wrap it in a DecoupledIO interface */
+  /** Wraps some Data with a DecoupledIO interface. */
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
-  /** Take an IrrevocableIO and cast it to a DecoupledIO.
-    * This cast is only safe to do in cases where the IrrevocableIO
-    * is being produced as an output.
+  /** Downconverts an IrrevocableIO output to a DecoupledIO, dropping guarantees of irrevocability.
+    *
+    * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(irr.bits.dir == OUTPUT, "Only safe to cast produced Irrevocable bits to Decoupled.")
+    require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
     d.valid := irr.valid
     irr.ready := d.ready
     d
   }
+//  override def cloneType: this.type = {
+//    DeqIO(gen).asInstanceOf[this.type]
+//  }
 }
 
 /** A concrete subclass of ReadyValidIO that promises to not change
@@ -66,60 +111,27 @@ class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 object Irrevocable
 {
   def apply[T <: Data](gen: T): IrrevocableIO[T] = new IrrevocableIO(gen)
-}
 
-
-/** An I/O bundle for enqueuing data with valid/ready handshaking
-  * Initialization must be handled, if necessary, by the parent circuit
-  */
-class EnqIO[T <: Data](gen: T) extends DecoupledIO(gen)
-{
-  /** push dat onto the output bits of this interface to let the consumer know it has happened.
-    * @param dat the values to assign to bits.
-    * @return    dat.
+  /** Upconverts a DecoupledIO input to an IrrevocableIO, allowing an IrrevocableIO to be used
+    * where a DecoupledIO is expected.
+    *
+    * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
-  def enq(dat: T): T = { valid := Bool(true); bits := dat; dat }
-
-  /** Initialize this Bundle.  Valid is set to false, and all bits are set to zero.
-    * NOTE: This method of initialization is still being discussed and could change in the
-    * future.
-    */
-  def init(): Unit = {
-    valid := Bool(false)
-    for (io <- bits.flatten)
-      io := UInt(0)
+  def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
+    require(dec.bits.flatten forall (_.dir == INPUT), "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    val i = Wire(new IrrevocableIO(dec.bits))
+    dec.bits := i.bits
+    dec.valid := i.valid
+    i.ready := dec.ready
+    i
   }
-  override def cloneType: this.type = { new EnqIO(gen).asInstanceOf[this.type]; }
 }
 
-/** An I/O bundle for dequeuing data with valid/ready handshaking.
-  * Initialization must be handled, if necessary, by the parent circuit
-  */
-class DeqIO[T <: Data](gen: T) extends DecoupledIO(gen) with Flipped
-{
-  /** Assert ready on this port and return the associated data bits.
-    * This is typically used when valid has been asserted by the producer side.
-    * @param b ignored
-    * @return the data for this device,
-    */
-  def deq(b: Boolean = false): T = { ready := Bool(true); bits }
-
-  /** Initialize this Bundle.
-    * NOTE: This method of initialization is still being discussed and could change in the
-    * future.
-    */
-  def init(): Unit = {
-    ready := Bool(false)
-  }
-  override def cloneType: this.type = { new DeqIO(gen).asInstanceOf[this.type]; }
+object EnqIO {
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
 }
-
-/** An I/O bundle for dequeuing data with valid/ready handshaking */
-class DecoupledIOC[+T <: Data](gen: T) extends Bundle
-{
-  val ready = Bool(INPUT)
-  val valid = Bool(OUTPUT)
-  val bits  = gen.cloneType.asOutput
+object DeqIO {
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
 }
 
 /** An I/O Bundle for Queues
@@ -128,11 +140,11 @@ class DecoupledIOC[+T <: Data](gen: T) extends Bundle
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq   = Decoupled(gen.cloneType).flip()
+  val enq = DeqIO(gen)
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq   = Decoupled(gen.cloneType)
+  val deq = EnqIO(gen)
   /** The current amount of data in the queue */
-  val count = UInt(OUTPUT, log2Up(entries + 1))
+  val count = Output(UInt.width(log2Up(entries + 1)))
 }
 
 /** A hardware module implementing a Queue
@@ -143,10 +155,11 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
   * The ''valid'' signals are coupled.
   *
-  * Example usage:
-  *    {{{ val q = new Queue(UInt(), 16)
-  *    q.io.enq <> producer.io.out
-  *    consumer.io.in <> q.io.deq }}}
+  * @example {{{
+  * val q = new Queue(UInt(), 16)
+  * q.io.enq <> producer.io.out
+  * consumer.io.in <> q.io.deq
+  * }}}
   */
 class Queue[T <: Data](gen: T,
                        val entries: Int,
@@ -157,7 +170,7 @@ extends Module(override_reset=override_reset) {
   def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) =
     this(gen, entries, pipe, flow, Some(_reset))
 
-  val io = new QueueIO(gen, entries)
+  val io = IO(new QueueIO(gen, entries))
 
   val ram = Mem(entries, gen)
   val enq_ptr = Counter(entries)
@@ -210,12 +223,16 @@ extends Module(override_reset=override_reset) {
   }
 }
 
-/** Factory for a generic hardware queue. Required parameter 'entries' controls
-  * the depth of the queues. The width of the queue is determined
-  * from the input 'enq'.
+/** Factory for a generic hardware queue.
   *
-  * Example usage:
-  *   {{{ consumer.io.in <> Queue(producer.io.out, 16) }}}
+  * @param enq input (enqueue) interface to the queue, also determines width of queue elements
+  * @param entries depth (number of elements) of the queue
+  *
+  * @returns output (dequeue) interface from the queue
+  *
+  * @example {{{
+  * consumer.io.in <> Queue(producer.io.out, 16)
+  * }}}
   */
 object Queue
 {
@@ -225,7 +242,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): DecoupledIO[T] = {
-    val q = Module(new Queue(enq.bits.cloneType, entries, pipe))
+    val q = Module(new Queue(enq.bits.cloneType, entries, pipe, flow))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready
@@ -242,7 +259,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): IrrevocableIO[T] = {
-    val deq = apply(enq, entries, pipe)
+    val deq = apply(enq, entries, pipe, flow)
     val irr = Wire(new IrrevocableIO(deq.bits))
     irr.bits := deq.bits
     irr.valid := deq.valid

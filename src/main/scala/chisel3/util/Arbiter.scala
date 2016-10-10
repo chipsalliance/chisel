@@ -6,17 +6,24 @@
 package chisel3.util
 
 import chisel3._
+// TODO: remove this once we have CompileOptions threaded through the macro system.
+import chisel3.core.ExplicitCompileOptions.NotStrict
 
-/** An I/O bundle for the Arbiter */
+/** IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs
+  * (selects) at most one.
+  *
+  * @param gen data type
+  * @param n number of inputs
+  */
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
-  val in  = Vec(n, Decoupled(gen)).flip
+  val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
-  val chosen = UInt(OUTPUT, log2Up(n))
+  val chosen = Output(UInt.width(log2Up(n)))
 }
 
-/** Arbiter Control determining which producer has access */
-private object ArbiterCtrl
-{
+/** Arbiter Control determining which producer has access
+  */
+private object ArbiterCtrl {
   def apply(request: Seq[Bool]): Seq[Bool] = request.length match {
     case 0 => Seq()
     case 1 => Seq(Bool(true))
@@ -27,7 +34,7 @@ private object ArbiterCtrl
 abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module {
   def grant: Seq[Bool]
   def choice: UInt
-  val io = new ArbiterIO(gen, n)
+  val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := choice
   io.out.valid := io.in(io.chosen).valid
@@ -81,27 +88,29 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
 }
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
-  Producers are chosen in round robin order.
-
-  Example usage:
-    val arb = new RRArbiter(2, UInt())
-    arb.io.in(0) <> producer0.io.out
-    arb.io.in(1) <> producer1.io.out
-    consumer.io.in <> arb.io.out
+  * Producers are chosen in round robin order.
+  *
+  * @example {{{
+  * val arb = new RRArbiter(2, UInt())
+  * arb.io.in(0) <> producer0.io.out
+  * arb.io.in(1) <> producer1.io.out
+  * consumer.io.in <> arb.io.out
+  * }}}
   */
 class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
- Priority is given to lower producer
-
- Example usage:
-   val arb = Module(new Arbiter(2, UInt()))
-   arb.io.in(0) <> producer0.io.out
-   arb.io.in(1) <> producer1.io.out
-   consumer.io.in <> arb.io.out
- */
+  * Priority is given to lower producer.
+  *
+  * @example {{{
+  * val arb = Module(new Arbiter(2, UInt()))
+  * arb.io.in(0) <> producer0.io.out
+  * arb.io.in(1) <> producer1.io.out
+  * consumer.io.in <> arb.io.out
+  * }}}
+  */
 class Arbiter[T <: Data](gen: T, n: Int) extends Module {
-  val io = new ArbiterIO(gen, n)
+  val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := UInt(n-1)
   io.out.bits := io.in(n-1).bits

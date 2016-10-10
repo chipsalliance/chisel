@@ -56,13 +56,13 @@ object printf { // scalastyle:ignore object.name
     * @param pable [[Printable]] to print
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo): Unit = {
-    when (!Builder.dynamicContext.currentModule.get.reset) {
+    when (!Builder.forcedModule.reset) {
       printfWithoutReset(pable)
     }
   }
 
   private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo): Unit = {
-    val clock = Builder.dynamicContext.currentModule.get.clock
+    val clock = Builder.forcedModule.clock
     pushCommand(Printf(sourceInfo, Node(clock), pable))
   }
   private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Unit =

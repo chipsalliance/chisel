@@ -7,6 +7,7 @@ import java.io._
 
 import internal._
 import internal.firrtl._
+import BuildInfo._
 
 trait BackendCompilationUtilities {
   /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.
@@ -48,7 +49,7 @@ trait BackendCompilationUtilities {
     * C++ sources and headers as well as a makefile to compile them.
     *
     * @param dutFile name of the DUT .v without the .v extension
-    * @param name of the top-level module in the design
+    * @param topModule of the top-level module in the design
     * @param dir output directory
     * @param vSources list of additional Verilog sources to compile
     * @param cppHarness C++ testharness to compile/link against
@@ -87,14 +88,17 @@ trait BackendCompilationUtilities {
   def executeExpectingFailure(
       prefix: String,
       dir: File,
-      assertionMsg: String = "Assertion failed"): Boolean = {
+      assertionMsg: String = ""): Boolean = {
     var triggered = false
+    val assertionMessageSupplied = assertionMsg != ""
     val e = Process(s"./V${prefix}", dir) !
       ProcessLogger(line => {
-        triggered = triggered || line.contains(assertionMsg)
+        triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
         System.out.println(line) // scalastyle:ignore regex
       })
-    triggered
+    // Fail if a line contained an assertion or if we get a non-zero exit code
+    //  or, we get a SIGABRT (assertion failure) and we didn't provide a specific assertion message
+    triggered || (e != 0 && (e != 134 || !assertionMessageSupplied))
   }
 
   def executeExpectingSuccess(prefix: String, dir: File): Boolean = {
@@ -133,4 +137,7 @@ object Driver extends BackendCompilationUtilities {
   }
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
+
+  val version = BuildInfo.version
+  val chiselVersionString = BuildInfo.toString
 }
