@@ -26,11 +26,7 @@ lazy val commonSettings = Seq (
   )
 )
 
-val defaultVersions = Map("firrtl" -> "0.2-BETA-SNAPSHOT")
-
-lazy val chiselSettings = Seq (
-  name := "chisel3",
-
+lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
@@ -62,7 +58,13 @@ lazy val chiselSettings = Seq (
     else {
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
     }
-  },
+  }
+)
+
+val defaultVersions = Map("firrtl" -> "0.2-BETA-SNAPSHOT")
+
+lazy val chiselSettings = Seq (
+  name := "chisel3",
 
   // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
   libraryDependencies ++= (Seq("firrtl").map {
@@ -95,12 +97,14 @@ lazy val chiselSettings = Seq (
 
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
+  settings(publishSettings: _*).
   settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   )
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
+  settings(publishSettings: _*).
   settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   ).
@@ -117,6 +121,7 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
+  settings(publishSettings: _*).
   dependsOn(coreMacros).
   dependsOn(chiselFrontend).
   settings(
