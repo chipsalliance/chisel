@@ -281,7 +281,7 @@ class AnnotateValidMemConfigs(reader: Option[YamlFileReader]) extends Pass {
           case Some(p) => p append m
         }
     }
-    case s => s map updateStmts
+    case sx => sx map updateStmts
   }
 
   def run(c: Circuit) = c copy (modules = c.modules map (_ map updateStmts))

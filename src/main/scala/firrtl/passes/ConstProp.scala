@@ -143,7 +143,7 @@ object ConstProp extends Pass {
         case DoPrim(Leq, Seq(a,b),_,_) if isZero(a) && isUInt(b) => one
         case DoPrim(Gt,  Seq(a,b),_,_) if isZero(a) && isUInt(b) => zero
         case DoPrim(Geq, Seq(a,b),_,_) if isUInt(a) && isZero(b) => one
-        case e => e
+        case ex => ex
       }
     }
 
@@ -176,10 +176,10 @@ object ConstProp extends Pass {
       }
       // Calculates an expression's range of values
       x match {
-        case e: DoPrim =>
-          def r0 = range(e.args.head)
-          def r1 = range(e.args(1))
-          e.op match {
+        case ex: DoPrim =>
+          def r0 = range(ex.args.head)
+          def r1 = range(ex.args(1))
+          ex.op match {
             // Always true
             case Lt  if r0 < r1 => one
             case Leq if r0 <= r1 => one
@@ -190,9 +190,9 @@ object ConstProp extends Pass {
             case Leq if r0 > r1 => zero
             case Gt  if r0 <= r1 => zero
             case Geq if r0 < r1 => zero
-            case _ => e
+            case _ => ex
           }
-        case e => e
+        case ex => ex
       }
     }
     foldIfZeroedArg(foldIfOutsideRange(e))

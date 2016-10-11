@@ -103,7 +103,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
         case Some(ref: String) =>
           WDefInstance(info, m.name, ref, UnknownType) 
       }
-    case s => s map updateMemStmts(namespace, memPortMap, memMods)
+    case sx => sx map updateMemStmts(namespace, memPortMap, memMods)
   }
 
   def updateMemMods(namespace: Namespace, memMods: Modules)(m: DefModule) = {

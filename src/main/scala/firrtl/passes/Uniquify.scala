@@ -104,9 +104,9 @@ object Uniquify extends Pass {
       namespace: collection.mutable.HashSet[String])
       (implicit sinfo: Info, mname: String): BundleType = {
     def recUniquifyNames(t: Type, namespace: collection.mutable.HashSet[String]): Type = t match {
-      case t: BundleType =>
+      case tx: BundleType =>
         // First add everything
-        val newFields = t.fields map { f =>
+        val newFields = tx.fields map { f =>
           val newName = findValidPrefix(f.name, Seq(""), namespace)
           namespace += newName
           Field(newName, f.flip, f.tpe)
@@ -128,13 +128,13 @@ object Uniquify extends Pass {
           }
         }
         BundleType(newFields)
-      case t: VectorType =>
-        VectorType(recUniquifyNames(t.tpe, namespace), t.size)
-      case t => t
+      case tx: VectorType =>
+        VectorType(recUniquifyNames(tx.tpe, namespace), tx.size)
+      case tx => tx
     }
     recUniquifyNames(t, namespace) match {
-      case t: BundleType => t
-      case t => error("Shouldn't be here")
+      case tx: BundleType => tx
+      case tx => error("Shouldn't be here")
     }
   }
 
@@ -145,8 +145,8 @@ object Uniquify extends Pass {
       to: Type)
       (implicit sinfo: Info, mname: String): Map[String, NameMapNode] = {
     (from, to) match {
-      case (from: BundleType, to: BundleType) =>
-        (from.fields zip to.fields flatMap { case (f, t) =>
+      case (fromx: BundleType, tox: BundleType) =>
+        (fromx.fields zip tox.fields flatMap { case (f, t) =>
           val eltsMap = createNameMapping(f.tpe, t.tpe)
           if ((f.name != t.name) || eltsMap.nonEmpty) {
             Map(f.name -> NameMapNode(t.name, eltsMap))
@@ -154,10 +154,10 @@ object Uniquify extends Pass {
             Map[String, NameMapNode]()
           }
         }).toMap
-      case (from: VectorType, to: VectorType) =>
-        createNameMapping(from.tpe, to.tpe)
-      case (from, to) =>
-        if (from.getClass == to.getClass) Map()
+      case (fromx: VectorType, tox: VectorType) =>
+        createNameMapping(fromx.tpe, tox.tpe)
+      case (fromx, tox) =>
+        if (fromx.getClass == tox.getClass) Map()
         else error("Types to map between do not match!")
     }
   }
@@ -224,28 +224,28 @@ object Uniquify extends Pass {
   def stmtToType(s: Statement)(implicit sinfo: Info, mname: String): BundleType = {
     // Recursive helper
     def recStmtToType(s: Statement): Seq[Field] = s match {
-      case s: DefWire => Seq(Field(s.name, Default, s.tpe))
-      case s: DefRegister => Seq(Field(s.name, Default, s.tpe))
-      case s: WDefInstance => Seq(Field(s.name, Default, s.tpe))
-      case s: DefMemory => s.dataType match {
+      case sx: DefWire => Seq(Field(sx.name, Default, sx.tpe))
+      case sx: DefRegister => Seq(Field(sx.name, Default, sx.tpe))
+      case sx: WDefInstance => Seq(Field(sx.name, Default, sx.tpe))
+      case sx: DefMemory => sx.dataType match {
         case (_: UIntType | _: SIntType) =>
-          Seq(Field(s.name, Default, memType(s)))
+          Seq(Field(sx.name, Default, memType(sx)))
         case tpe: BundleType =>
           val newFields = tpe.fields map ( f =>
-            DefMemory(s.info, f.name, f.tpe, s.depth, s.writeLatency,
-              s.readLatency, s.readers, s.writers, s.readwriters)
+            DefMemory(sx.info, f.name, f.tpe, sx.depth, sx.writeLatency,
+              sx.readLatency, sx.readers, sx.writers, sx.readwriters)
           ) flatMap recStmtToType
-          Seq(Field(s.name, Default, BundleType(newFields)))
+          Seq(Field(sx.name, Default, BundleType(newFields)))
         case tpe: VectorType =>
           val newFields = (0 until tpe.size) map ( i =>
-            s.copy(name = i.toString, dataType = tpe.tpe)
+            sx.copy(name = i.toString, dataType = tpe.tpe)
           ) flatMap recStmtToType
-          Seq(Field(s.name, Default, BundleType(newFields)))
+          Seq(Field(sx.name, Default, BundleType(newFields)))
       }
-      case s: DefNode => Seq(Field(s.name, Default, s.value.tpe))
-      case s: Conditionally => recStmtToType(s.conseq) ++ recStmtToType(s.alt)
-      case s: Block => (s.stmts map recStmtToType).flatten
-      case s => Seq()
+      case sx: DefNode => Seq(Field(sx.name, Default, sx.value.tpe))
+      case sx: Conditionally => recStmtToType(sx.conseq) ++ recStmtToType(sx.alt)
+      case sx: Block => (sx.stmts map recStmtToType).flatten
+      case sx => Seq()
     }
     BundleType(recStmtToType(s))
   }
@@ -274,53 +274,53 @@ object Uniquify extends Pass {
 
       def uniquifyStmt(s: Statement): Statement = {
         s map uniquifyStmt map uniquifyExp match {
-          case s: DefWire =>
-            sinfo = s.info
-            if (nameMap.contains(s.name)) {
-              val node = nameMap(s.name)
-              DefWire(s.info, node.name, uniquifyNamesType(s.tpe, node.elts))
+          case sx: DefWire =>
+            sinfo = sx.info
+            if (nameMap.contains(sx.name)) {
+              val node = nameMap(sx.name)
+              DefWire(sx.info, node.name, uniquifyNamesType(sx.tpe, node.elts))
             } else {
-              s
+              sx
             }
-          case s: DefRegister =>
-            sinfo = s.info
-            if (nameMap.contains(s.name)) {
-              val node = nameMap(s.name)
-              DefRegister(s.info, node.name, uniquifyNamesType(s.tpe, node.elts),
-                          s.clock, s.reset, s.init)
+          case sx: DefRegister =>
+            sinfo = sx.info
+            if (nameMap.contains(sx.name)) {
+              val node = nameMap(sx.name)
+              DefRegister(sx.info, node.name, uniquifyNamesType(sx.tpe, node.elts),
+                          sx.clock, sx.reset, sx.init)
             } else {
-              s
+              sx
             }
-          case s: WDefInstance =>
-            sinfo = s.info
-            if (nameMap.contains(s.name)) {
-              val node = nameMap(s.name)
-              WDefInstance(s.info, node.name, s.module, s.tpe)
+          case sx: WDefInstance =>
+            sinfo = sx.info
+            if (nameMap.contains(sx.name)) {
+              val node = nameMap(sx.name)
+              WDefInstance(sx.info, node.name, sx.module, sx.tpe)
             } else {
-              s
+              sx
             }
-          case s: DefMemory =>
-            sinfo = s.info
-            if (nameMap.contains(s.name)) {
-              val node = nameMap(s.name)
-              val dataType = uniquifyNamesType(s.dataType, node.elts)
-              val mem = s.copy(name = node.name, dataType = dataType)
+          case sx: DefMemory =>
+            sinfo = sx.info
+            if (nameMap.contains(sx.name)) {
+              val node = nameMap(sx.name)
+              val dataType = uniquifyNamesType(sx.dataType, node.elts)
+              val mem = sx.copy(name = node.name, dataType = dataType)
               // Create new mapping to handle references to memory data fields
-              val uniqueMemMap = createNameMapping(memType(s), memType(mem))
-              nameMap(s.name) = NameMapNode(node.name, node.elts ++ uniqueMemMap)
+              val uniqueMemMap = createNameMapping(memType(sx), memType(mem))
+              nameMap(sx.name) = NameMapNode(node.name, node.elts ++ uniqueMemMap)
               mem
             } else {
-              s
+              sx
             }
-          case s: DefNode =>
-            sinfo = s.info
-            if (nameMap.contains(s.name)) {
-              val node = nameMap(s.name)
-              DefNode(s.info, node.name, s.value)
+          case sx: DefNode =>
+            sinfo = sx.info
+            if (nameMap.contains(sx.name)) {
+              val node = nameMap(sx.name)
+              DefNode(sx.info, node.name, sx.value)
             } else {
-              s
+              sx
             }
-          case s => s
+          case sx => sx
         }
       }
 

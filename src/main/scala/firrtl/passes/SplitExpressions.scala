@@ -31,14 +31,14 @@ object SplitExpressions extends Pass {
             val name = namespace.newTemp
             v += DefNode(get_info(s), name, e)
             WRef(name, e.tpe, kind(e), gender(e))
-          case e => e
+          case _ => e
         }
 
         // Recursive. Splits compound nodes
         def onExp(e: Expression): Expression =
           e map onExp match {
             case ex: DoPrim => ex map split
-            case v => v
+            case ex => ex
          }
 
         s map onExp match {

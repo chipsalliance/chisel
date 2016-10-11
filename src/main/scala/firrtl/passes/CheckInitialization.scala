@@ -78,7 +78,7 @@ object CheckInitialization extends Pass {
               voidDeps += e
             }
             e
-          case e => e map hasVoid
+          case _ => e map hasVoid
         }
         hasVoid(e)
         (void, voidDeps)
@@ -96,7 +96,7 @@ object CheckInitialization extends Pass {
               voidExprs(nodeRef) = VoidExpr(node, voidDeps)
             }
             node
-          case s => s map checkInitS
+          case sx => sx map checkInitS
         }
       }
       checkInitS(m.body)

@@ -128,20 +128,20 @@ object WrappedExpression {
 class WrappedExpression(val e1: Expression) {
   override def equals(we: Any) = we match {
     case (we: WrappedExpression) => (e1,we.e1) match {
-      case (e1: UIntLiteral, e2: UIntLiteral) => e1.value == e2.value && eqw(e1.width, e2.width)
-      case (e1: SIntLiteral, e2: SIntLiteral) => e1.value == e2.value && eqw(e1.width, e2.width)
-      case (e1: WRef, e2: WRef) => e1.name equals e2.name
-      case (e1: WSubField, e2: WSubField) => (e1.name equals e2.name) && weq(e1.exp,e2.exp)
-      case (e1: WSubIndex, e2: WSubIndex) => (e1.value == e2.value) && weq(e1.exp,e2.exp)
-      case (e1: WSubAccess, e2: WSubAccess) => weq(e1.index,e2.index) && weq(e1.exp,e2.exp)
+      case (e1x: UIntLiteral, e2x: UIntLiteral) => e1x.value == e2x.value && eqw(e1x.width, e2x.width)
+      case (e1x: SIntLiteral, e2x: SIntLiteral) => e1x.value == e2x.value && eqw(e1x.width, e2x.width)
+      case (e1x: WRef, e2x: WRef) => e1x.name equals e2x.name
+      case (e1x: WSubField, e2x: WSubField) => (e1x.name equals e2x.name) && weq(e1x.exp,e2x.exp)
+      case (e1x: WSubIndex, e2x: WSubIndex) => (e1x.value == e2x.value) && weq(e1x.exp,e2x.exp)
+      case (e1x: WSubAccess, e2x: WSubAccess) => weq(e1x.index,e2x.index) && weq(e1x.exp,e2x.exp)
       case (WVoid, WVoid) => true
       case (WInvalid, WInvalid) => true
-      case (e1: DoPrim, e2: DoPrim) => e1.op == e2.op &&
-         ((e1.consts zip e2.consts) forall {case (x, y) => x == y}) &&
-         ((e1.args zip e2.args) forall {case (x, y) => weq(x, y)})
-      case (e1: Mux, e2: Mux) => weq(e1.cond,e2.cond) && weq(e1.tval,e2.tval) && weq(e1.fval,e2.fval)
-      case (e1: ValidIf, e2: ValidIf) => weq(e1.cond,e2.cond) && weq(e1.value,e2.value)
-      case (e1, e2) => false
+      case (e1x: DoPrim, e2x: DoPrim) => e1x.op == e2x.op &&
+         ((e1x.consts zip e2x.consts) forall {case (x, y) => x == y}) &&
+         ((e1x.args zip e2x.args) forall {case (x, y) => weq(x, y)})
+      case (e1x: Mux, e2x: Mux) => weq(e1x.cond,e2x.cond) && weq(e1x.tval,e2x.tval) && weq(e1x.fval,e2x.fval)
+      case (e1x: ValidIf, e2x: ValidIf) => weq(e1x.cond,e2x.cond) && weq(e1x.value,e2x.value)
+      case (e1x, e2x) => false
     }
     case _ => false
   }

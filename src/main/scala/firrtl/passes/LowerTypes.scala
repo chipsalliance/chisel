@@ -105,8 +105,8 @@ object LowerTypes extends Pass {
       // (Connect/IsInvalid must already have been split to ground types)
       case "data" | "mask" | "rdata" | "wdata" | "wmask" =>
         val loMem = tail match {
-          case Some(e) =>
-            val loMemExp = mergeRef(mem, e)
+          case Some(ex) =>
+            val loMemExp = mergeRef(mem, ex)
             val loMemName = loweredName(loMemExp)
             WRef(loMemName, UnknownType, kind(mem), UNKNOWNGENDER)
           case None => mem
@@ -148,33 +148,33 @@ object LowerTypes extends Pass {
         case _ => Block(create_exps(s.name, s.tpe) map (
           e => DefWire(s.info, loweredName(e), e.tpe)))
       }
-      case s: DefRegister => s.tpe match {
-        case _: GroundType => s map lowerTypesExp(memDataTypeMap, info, mname)
+      case sx: DefRegister => sx.tpe match {
+        case _: GroundType => sx map lowerTypesExp(memDataTypeMap, info, mname)
         case _ =>
-          val es = create_exps(s.name, s.tpe)
-          val inits = create_exps(s.init) map lowerTypesExp(memDataTypeMap, info, mname)
-          val clock = lowerTypesExp(memDataTypeMap, info, mname)(s.clock)
-          val reset = lowerTypesExp(memDataTypeMap, info, mname)(s.reset)
+          val es = create_exps(sx.name, sx.tpe)
+          val inits = create_exps(sx.init) map lowerTypesExp(memDataTypeMap, info, mname)
+          val clock = lowerTypesExp(memDataTypeMap, info, mname)(sx.clock)
+          val reset = lowerTypesExp(memDataTypeMap, info, mname)(sx.reset)
           Block(es zip inits map { case (e, i) =>
-            DefRegister(s.info, loweredName(e), e.tpe, clock, reset, i)
+            DefRegister(sx.info, loweredName(e), e.tpe, clock, reset, i)
           })
       }
       // Could instead just save the type of each Module as it gets processed
-      case s: WDefInstance => s.tpe match {
+      case sx: WDefInstance => sx.tpe match {
         case t: BundleType =>
           val fieldsx = t.fields flatMap (f =>
             create_exps(WRef(f.name, f.tpe, ExpKind, times(f.flip, MALE))) map (
               // Flip because inst genders are reversed from Module type
               e => Field(loweredName(e), swap(to_flip(gender(e))), e.tpe)))
-          WDefInstance(s.info, s.name, s.module, BundleType(fieldsx))
+          WDefInstance(sx.info, sx.name, sx.module, BundleType(fieldsx))
         case _ => error("WDefInstance type should be Bundle!")(info, mname)
       }
-      case s: DefMemory =>
-        memDataTypeMap(s.name) = s.dataType
-        s.dataType match {
-          case _: GroundType => s
-          case _ => Block(create_exps(s.name, s.dataType) map (e =>
-            s copy (name = loweredName(e), dataType = e.tpe)))
+      case sx: DefMemory =>
+        memDataTypeMap(sx.name) = sx.dataType
+        sx.dataType match {
+          case _: GroundType => sx
+          case _ => Block(create_exps(sx.name, sx.dataType) map (e =>
+            sx copy (name = loweredName(e), dataType = e.tpe)))
         }
       // wire foo : { a , b }
       // node x = foo
@@ -183,23 +183,23 @@ object LowerTypes extends Pass {
       // node x_a = foo_a
       // node x_b = foo_b
       // node y = x_a
-      case s: DefNode =>
-        val names = create_exps(s.name, s.value.tpe) map lowerTypesExp(memDataTypeMap, info, mname)
-        val exps = create_exps(s.value) map lowerTypesExp(memDataTypeMap, info, mname)
+      case sx: DefNode =>
+        val names = create_exps(sx.name, sx.value.tpe) map lowerTypesExp(memDataTypeMap, info, mname)
+        val exps = create_exps(sx.value) map lowerTypesExp(memDataTypeMap, info, mname)
         Block(names zip exps map { case (n, e) => DefNode(info, loweredName(n), e) })
-      case s: IsInvalid => kind(s.expr) match {
+      case sx: IsInvalid => kind(sx.expr) match {
         case MemKind =>
-          Block(lowerTypesMemExp(memDataTypeMap, info, mname)(s.expr) map (IsInvalid(info, _)))
-        case _ => s map lowerTypesExp(memDataTypeMap, info, mname)
+          Block(lowerTypesMemExp(memDataTypeMap, info, mname)(sx.expr) map (IsInvalid(info, _)))
+        case _ => sx map lowerTypesExp(memDataTypeMap, info, mname)
       }
-      case s: Connect => kind(s.loc) match {
+      case sx: Connect => kind(sx.loc) match {
         case MemKind =>
-          val exp = lowerTypesExp(memDataTypeMap, info, mname)(s.expr)
-          val locs = lowerTypesMemExp(memDataTypeMap, info, mname)(s.loc)
+          val exp = lowerTypesExp(memDataTypeMap, info, mname)(sx.expr)
+          val locs = lowerTypesMemExp(memDataTypeMap, info, mname)(sx.loc)
           Block(locs map (Connect(info, _, exp)))
-        case _ => s map lowerTypesExp(memDataTypeMap, info, mname)
+        case _ => sx map lowerTypesExp(memDataTypeMap, info, mname)
       }
-      case s => s map lowerTypesExp(memDataTypeMap, info, mname)
+      case sx => sx map lowerTypesExp(memDataTypeMap, info, mname)
     }
   }
 

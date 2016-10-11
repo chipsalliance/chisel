@@ -72,7 +72,7 @@ object Utils extends LazyLogging {
         case 1 => newStmts.head
         case _ => Block(newStmts)
       }
-    case s => s
+    case sx => sx
   }
 
   /** Indent the results of [[ir.FirrtlNode.serialize]] */
@@ -94,27 +94,27 @@ object Utils extends LazyLogging {
   def create_exps(n: String, t: Type): Seq[Expression] =
     create_exps(WRef(n, t, ExpKind, UNKNOWNGENDER))
   def create_exps(e: Expression): Seq[Expression] = e match {
-    case (e: Mux) =>
-      val e1s = create_exps(e.tval)
-      val e2s = create_exps(e.fval)
+    case ex: Mux =>
+      val e1s = create_exps(ex.tval)
+      val e2s = create_exps(ex.fval)
       e1s zip e2s map {case (e1, e2) =>
-        Mux(e.cond, e1, e2, mux_type_and_widths(e1, e2))
+        Mux(ex.cond, e1, e2, mux_type_and_widths(e1, e2))
       }
-    case (e: ValidIf) => create_exps(e.value) map (e1 => ValidIf(e.cond, e1, e1.tpe))
-    case (e) => e.tpe match {
-      case (_: GroundType) => Seq(e)
+    case ex: ValidIf => create_exps(ex.value) map (e1 => ValidIf(ex.cond, e1, e1.tpe))
+    case ex => ex.tpe match {
+      case (_: GroundType) => Seq(ex)
       case (t: BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
-        exps ++ create_exps(WSubField(e, f.name, f.tpe,times(gender(e), f.flip))))
+        exps ++ create_exps(WSubField(ex, f.name, f.tpe,times(gender(ex), f.flip))))
       case (t: VectorType) => (0 until t.size foldLeft Seq[Expression]())((exps, i) =>
-        exps ++ create_exps(WSubIndex(e, i, t.tpe,gender(e))))
+        exps ++ create_exps(WSubIndex(ex, i, t.tpe,gender(ex))))
     }
   }
    def get_flip(t: Type, i: Int, f: Orientation): Orientation = {
      if (i >= get_size(t)) error("Shouldn't be here")
      t match {
        case (_: GroundType) => f
-       case (t: BundleType) => 
-         val (_, flip) = t.fields.foldLeft(i, None: Option[Orientation]) {
+       case (tx: BundleType) =>
+         val (_, flip) = tx.fields.foldLeft(i, None: Option[Orientation]) {
            case ((n, ret), x) if n < get_size(x.tpe) => ret match {
              case None => (n, Some(get_flip(x.tpe, n, times(x.flip, f))))
              case Some(_) => (n, ret)
@@ -122,13 +122,13 @@ object Utils extends LazyLogging {
            case ((n, ret), x) => (n - get_size(x.tpe), ret)
          }
          flip.get
-       case (t: VectorType) => 
-         val (_, flip) = (0 until t.size).foldLeft(i, None: Option[Orientation]) {
-           case ((n, ret), x) if n < get_size(t.tpe) => ret match {
-             case None => (n, Some(get_flip(t.tpe, n, f)))
+       case (tx: VectorType) =>
+         val (_, flip) = (0 until tx.size).foldLeft(i, None: Option[Orientation]) {
+           case ((n, ret), x) if n < get_size(tx.tpe) => ret match {
+             case None => (n, Some(get_flip(tx.tpe, n, f)))
              case Some(_) => (n, ret)
            }
-           case ((n, ret), x) => (n - get_size(t.tpe), ret)
+           case ((n, ret), x) => (n - get_size(tx.tpe), ret)
          }
          flip.get
      }
@@ -172,15 +172,15 @@ object Utils extends LazyLogging {
     mux_type_and_widths(e1.tpe, e2.tpe)
   def mux_type_and_widths(t1: Type, t2: Type): Type = {
     def wmax(w1: Width, w2: Width): Width = (w1, w2) match {
-      case (w1: IntWidth, w2: IntWidth) => IntWidth(w1.width max w2.width)
-      case (w1, w2) => MaxWidth(Seq(w1, w2))
+      case (w1x: IntWidth, w2x: IntWidth) => IntWidth(w1x.width max w2x.width)
+      case (w1x, w2x) => MaxWidth(Seq(w1x, w2x))
     }
     (t1, t2) match {
-      case (t1: UIntType, t2: UIntType) => UIntType(wmax(t1.width, t2.width))
-      case (t1: SIntType, t2: SIntType) => SIntType(wmax(t1.width, t2.width))
-      case (t1: VectorType, t2: VectorType) => VectorType(
-        mux_type_and_widths(t1.tpe, t2.tpe), t1.size)
-      case (t1: BundleType, t2: BundleType) => BundleType(t1.fields zip t2.fields map {
+      case (t1x: UIntType, t2x: UIntType) => UIntType(wmax(t1x.width, t2x.width))
+      case (t1x: SIntType, t2x: SIntType) => SIntType(wmax(t1x.width, t2x.width))
+      case (t1x: VectorType, t2x: VectorType) => VectorType(
+        mux_type_and_widths(t1x.tpe, t2x.tpe), t1x.size)
+      case (t1x: BundleType, t2x: BundleType) => BundleType(t1x.fields zip t2x.fields map {
         case (f1, f2) => Field(f1.name, f1.flip, mux_type_and_widths(f1.tpe, f2.tpe))
       })
       case _ => UnknownType
@@ -191,15 +191,15 @@ object Utils extends LazyLogging {
     case Port(_, name, dir, tpe) => Field(name, to_flip(dir), tpe)
   })
   def sub_type(v: Type): Type = v match {
-    case v: VectorType => v.tpe
-    case v => UnknownType
+    case vx: VectorType => vx.tpe
+    case vx => UnknownType
   }
   def field_type(v: Type, s: String) : Type = v match {
-    case v: BundleType => v.fields find (_.name == s) match {
+    case vx: BundleType => vx.fields find (_.name == s) match {
       case Some(f) => f.tpe
       case None => UnknownType
     }
-    case v => UnknownType
+    case vx => UnknownType
   }
    
 // =================================
@@ -207,23 +207,23 @@ object Utils extends LazyLogging {
 
 //// =============== EXPANSION FUNCTIONS ================
   def get_size(t: Type): Int = t match {
-    case (t: BundleType) => (t.fields foldLeft 0)(
+    case tx: BundleType => (tx.fields foldLeft 0)(
       (sum, f) => sum + get_size(f.tpe))
-    case (t: VectorType) => t.size * get_size(t.tpe)
-    case (t) => 1
+    case tx: VectorType => tx.size * get_size(tx.tpe)
+    case tx => 1
   }
 
   def get_valid_points(t1: Type, t2: Type, flip1: Orientation, flip2: Orientation): Seq[(Int,Int)] = {
     //;println_all(["Inside with t1:" t1 ",t2:" t2 ",f1:" flip1 ",f2:" flip2])
     (t1, t2) match {
-      case (t1: UIntType, t2: UIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
-      case (t1: SIntType, t2: SIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
-      case (t1: BundleType, t2: BundleType) =>
+      case (_: UIntType, _: UIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
+      case (_: SIntType, _: SIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
+      case (t1x: BundleType, t2x: BundleType) =>
         def emptyMap = Map[String, (Type, Orientation, Int)]()
-        val t1_fields = t1.fields.foldLeft(emptyMap, 0) { case ((map, ilen), f1) =>
+        val t1_fields = t1x.fields.foldLeft(emptyMap, 0) { case ((map, ilen), f1) =>
           (map + (f1.name ->(f1.tpe, f1.flip, ilen)), ilen + get_size(f1.tpe))
         }._1
-        t2.fields.foldLeft(Seq[(Int, Int)](), 0) { case ((points, jlen), f2) =>
+        t2x.fields.foldLeft(Seq[(Int, Int)](), 0) { case ((points, jlen), f2) =>
           t1_fields get f2.name match {
             case None => (points, jlen + get_size(f2.tpe))
             case Some((f1_tpe, f1_flip, ilen)) =>
@@ -233,12 +233,12 @@ object Utils extends LazyLogging {
               (points ++ (ls map { case (x, y) => (x + ilen, y + jlen) }), jlen + get_size(f2.tpe))
           }
         }._1
-      case (t1: VectorType, t2: VectorType) =>
-        val size = math.min(t1.size, t2.size)
+      case (t1x: VectorType, t2x: VectorType) =>
+        val size = math.min(t1x.size, t2x.size)
         (0 until size).foldLeft(Seq[(Int, Int)](), 0, 0) { case ((points, ilen, jlen), _) =>
-          val ls = get_valid_points(t1.tpe, t2.tpe, flip1, flip2)
-          (points ++ (ls map { case (x, y) => ((x + ilen), (y + jlen)) }),
-            ilen + get_size(t1.tpe), jlen + get_size(t2.tpe))
+          val ls = get_valid_points(t1x.tpe, t2x.tpe, flip1, flip2)
+          (points ++ (ls map { case (x, y) => (x + ilen, y + jlen) }),
+            ilen + get_size(t1x.tpe), jlen + get_size(t2x.tpe))
         }._1
       case (ClockType, ClockType) => if (flip1 == flip2) Seq((0, 0)) else Nil
       case (AnalogType(w1), AnalogType(w2)) => Nil
@@ -279,18 +279,18 @@ object Utils extends LazyLogging {
   }
 
   def field_flip(v: Type, s: String): Orientation = v match {
-    case (v: BundleType) => v.fields find (_.name == s) match {
+    case vx: BundleType => vx.fields find (_.name == s) match {
       case Some(ft) => ft.flip
       case None => Default
     }
-    case v => Default
+    case vx => Default
   }
   def get_field(v: Type, s: String): Field = v match {
-    case (v: BundleType) => v.fields find (_.name == s) match {
+    case vx: BundleType => vx.fields find (_.name == s) match {
       case Some(ft) => ft
       case None => error("Shouldn't be here")
     }
-    case v => error("Shouldn't be here")
+    case vx => error("Shouldn't be here")
   }
 
   def times(flip: Orientation, d: Direction): Direction = times(flip, d)
@@ -304,7 +304,7 @@ object Utils extends LazyLogging {
     case MALE => swap(d) // MALE == INPUT == REVERSE
   }
 
-  def times(g: Gender,flip: Orientation): Gender = times(flip, g)
+  def times(g: Gender, flip: Orientation): Gender = times(flip, g)
   def times(flip: Orientation, g: Gender): Gender = flip match {
     case Default => g
     case Flip => swap(g)
@@ -316,38 +316,38 @@ object Utils extends LazyLogging {
 
 // =========== ACCESSORS =========
   def kind(e: Expression): Kind = e match {
-    case e: WRef => e.kind
-    case e: WSubField => kind(e.exp)
-    case e: WSubIndex => kind(e.exp)
-    case e: WSubAccess => kind(e.exp)
-    case e => ExpKind
+    case ex: WRef => ex.kind
+    case ex: WSubField => kind(ex.exp)
+    case ex: WSubIndex => kind(ex.exp)
+    case ex: WSubAccess => kind(ex.exp)
+    case ex => ExpKind
   }
   def gender(e: Expression): Gender = e match {
-    case e: WRef => e.gender
-    case e: WSubField => e.gender
-    case e: WSubIndex => e.gender
-    case e: WSubAccess => e.gender
-    case e: DoPrim => MALE
-    case e: UIntLiteral => MALE
-    case e: SIntLiteral => MALE
-    case e: Mux => MALE
-    case e: ValidIf => MALE
+    case ex: WRef => ex.gender
+    case ex: WSubField => ex.gender
+    case ex: WSubIndex => ex.gender
+    case ex: WSubAccess => ex.gender
+    case ex: DoPrim => MALE
+    case ex: UIntLiteral => MALE
+    case ex: SIntLiteral => MALE
+    case ex: Mux => MALE
+    case ex: ValidIf => MALE
     case WInvalid => MALE
-    case e => println(e); error("Shouldn't be here")
+    case ex => println(ex); error("Shouldn't be here")
   }
   def get_gender(s: Statement): Gender = s match {
-    case s: DefWire => BIGENDER
-    case s: DefRegister => BIGENDER
-    case s: WDefInstance => MALE
-    case s: DefNode => MALE
-    case s: DefInstance => MALE
-    case s: DefMemory => MALE
-    case s: Block => UNKNOWNGENDER
-    case s: Connect => UNKNOWNGENDER
-    case s: PartialConnect => UNKNOWNGENDER
-    case s: Stop => UNKNOWNGENDER
-    case s: Print => UNKNOWNGENDER
-    case s: IsInvalid => UNKNOWNGENDER
+    case sx: DefWire => BIGENDER
+    case sx: DefRegister => BIGENDER
+    case sx: WDefInstance => MALE
+    case sx: DefNode => MALE
+    case sx: DefInstance => MALE
+    case sx: DefMemory => MALE
+    case sx: Block => UNKNOWNGENDER
+    case sx: Connect => UNKNOWNGENDER
+    case sx: PartialConnect => UNKNOWNGENDER
+    case sx: Stop => UNKNOWNGENDER
+    case sx: Print => UNKNOWNGENDER
+    case sx: IsInvalid => UNKNOWNGENDER
     case EmptyStmt => UNKNOWNGENDER
   }
   def get_gender(p: Port): Gender = if (p.direction == Input) MALE else FEMALE

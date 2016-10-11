@@ -113,11 +113,11 @@ object ExpandWhens extends Pass {
           netlist(c.expr) = WInvalid
           EmptyStmt
         case c: Attach => c
-        case s: Conditionally =>
+        case sx: Conditionally =>
           val conseqNetlist = new Netlist
           val altNetlist = new Netlist
-          val conseqStmt = expandWhens(conseqNetlist, netlist +: defaults, AND(p, s.pred))(s.conseq)
-          val altStmt = expandWhens(altNetlist, netlist +: defaults, AND(p, NOT(s.pred)))(s.alt)
+          val conseqStmt = expandWhens(conseqNetlist, netlist +: defaults, AND(p, sx.pred))(sx.conseq)
+          val altStmt = expandWhens(altNetlist, netlist +: defaults, AND(p, NOT(sx.pred)))(sx.alt)
 
           // Process combined maps because we only want to create 1 mux for each node
           //   present in the conseq and/or alt
@@ -133,9 +133,9 @@ object ExpandWhens extends Pass {
                 val falseValue = altNetlist getOrElse (lvalue, defaultValue)
                 (trueValue, falseValue) match {
                   case (WInvalid, WInvalid) => WInvalid
-                  case (WInvalid, fv) => ValidIf(NOT(s.pred), fv, fv.tpe)
-                  case (tv, WInvalid) => ValidIf(s.pred, tv, tv.tpe)
-                  case (tv, fv) => Mux(s.pred, tv, fv, mux_type_and_widths(tv, fv))
+                  case (WInvalid, fv) => ValidIf(NOT(sx.pred), fv, fv.tpe)
+                  case (tv, WInvalid) => ValidIf(sx.pred, tv, tv.tpe)
+                  case (tv, fv) => Mux(sx.pred, tv, fv, mux_type_and_widths(tv, fv))
                 }
               case None =>
                 // Since not in netlist, lvalue must be declared in EXACTLY one of conseq or alt
@@ -151,7 +151,7 @@ object ExpandWhens extends Pass {
                   val name = namespace.newTemp
                   nodes(res) = name
                   netlist(lvalue) = WRef(name, res.tpe, NodeKind, MALE)
-                  DefNode(s.info, name, res)
+                  DefNode(sx.info, name, res)
               }
               case _ =>
                 netlist(lvalue) = res
@@ -159,13 +159,13 @@ object ExpandWhens extends Pass {
             }
           }
           Block(Seq(conseqStmt, altStmt) ++ memos)
-        case s: Print =>
-          simlist += (if (weq(p, one)) s else Print(s.info, s.string, s.args, s.clk, AND(p, s.en)))
+        case sx: Print =>
+          simlist += (if (weq(p, one)) sx else Print(sx.info, sx.string, sx.args, sx.clk, AND(p, sx.en)))
           EmptyStmt
-        case s: Stop =>
-          simlist += (if (weq(p, one)) s else Stop(s.info, s.ret, s.clk, AND(p, s.en)))
+        case sx: Stop =>
+          simlist += (if (weq(p, one)) sx else Stop(sx.info, sx.ret, sx.clk, AND(p, sx.en)))
           EmptyStmt
-        case s => s map expandWhens(netlist, defaults, p)
+        case sx => sx map expandWhens(netlist, defaults, p)
       }
       val netlist = new Netlist
       // Add ports to netlist

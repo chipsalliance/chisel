@@ -50,19 +50,19 @@ object RemoveCHIRRTL extends Pass {
   type AddrMap = collection.mutable.HashMap[String, Expression]
 
   def create_exps(e: Expression): Seq[Expression] = e match {
-    case (e: Mux) =>
-      val e1s = create_exps(e.tval)
-      val e2s = create_exps(e.fval)
-      (e1s zip e2s) map { case (e1, e2) => Mux(e.cond, e1, e2, mux_type(e1, e2)) }
-    case (e: ValidIf) =>
-      create_exps(e.value) map (e1 => ValidIf(e.cond, e1, e1.tpe))
-    case (e) => e.tpe match {
-      case (_: GroundType) => Seq(e)
-      case (t: BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
-        exps ++ create_exps(SubField(e, f.name, f.tpe)))
-      case (t: VectorType) => ((0 until t.size) foldLeft Seq[Expression]())((exps, i) =>
-        exps ++ create_exps(SubIndex(e, i, t.tpe)))
-      case UnknownType => Seq(e)
+    case ex: Mux =>
+      val e1s = create_exps(ex.tval)
+      val e2s = create_exps(ex.fval)
+      (e1s zip e2s) map { case (e1, e2) => Mux(ex.cond, e1, e2, mux_type(e1, e2)) }
+    case ex: ValidIf =>
+      create_exps(ex.value) map (e1 => ValidIf(ex.cond, e1, e1.tpe))
+    case ex => ex.tpe match {
+      case _: GroundType => Seq(ex)
+      case t: BundleType => (t.fields foldLeft Seq[Expression]())((exps, f) =>
+        exps ++ create_exps(SubField(ex, f.name, f.tpe)))
+      case t: VectorType => ((0 until t.size) foldLeft Seq[Expression]())((exps, i) =>
+        exps ++ create_exps(SubIndex(ex, i, t.tpe)))
+      case UnknownType => Seq(ex)
     }
   }
 
@@ -70,43 +70,43 @@ object RemoveCHIRRTL extends Pass {
 
   def collect_smems_and_mports(mports: MPortMap, smems: SeqMemSet)(s: Statement): Statement = {
     s match {
-      case (s:CDefMemory) if s.seq => smems += s.name
-      case (s:CDefMPort) =>
-        val p = mports getOrElse (s.mem, EMPs)
-        s.direction match {
-          case MRead => p.readers += MPort(s.name, s.exps(1))
-          case MWrite => p.writers += MPort(s.name, s.exps(1))
-          case MReadWrite => p.readwriters += MPort(s.name, s.exps(1))
+      case sx: CDefMemory if sx.seq => smems += sx.name
+      case sx: CDefMPort =>
+        val p = mports getOrElse (sx.mem, EMPs)
+        sx.direction match {
+          case MRead => p.readers += MPort(sx.name, sx.exps(1))
+          case MWrite => p.writers += MPort(sx.name, sx.exps(1))
+          case MReadWrite => p.readwriters += MPort(sx.name, sx.exps(1))
         }
-        mports(s.mem) = p
-      case s =>
+        mports(sx.mem) = p
+      case _ =>
     }
     s map collect_smems_and_mports(mports, smems)
   }
 
   def collect_refs(mports: MPortMap, smems: SeqMemSet, types: MPortTypeMap,
       refs: DataRefMap, raddrs: AddrMap)(s: Statement): Statement = s match {
-    case (s: CDefMemory) =>
-      types(s.name) = s.tpe
-      val taddr = UIntType(IntWidth(1 max ceilLog2(s.size)))
-      val tdata = s.tpe
+    case sx: CDefMemory =>
+      types(sx.name) = sx.tpe
+      val taddr = UIntType(IntWidth(1 max ceilLog2(sx.size)))
+      val tdata = sx.tpe
       def set_poison(vec: Seq[MPort]) = vec flatMap (r => Seq(
-        IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), "addr", taddr)),
-        IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), "clk", ClockType))
+        IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), "addr", taddr)),
+        IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), "clk", ClockType))
       ))
       def set_enable(vec: Seq[MPort], en: String) = vec map (r =>
-        Connect(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), en, BoolType), zero)
+        Connect(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), en, BoolType), zero)
       )
       def set_write(vec: Seq[MPort], data: String, mask: String) = vec flatMap {r =>
-        val tmask = createMask(s.tpe)
-        IsInvalid(s.info, SubField(SubField(Reference(s.name, ut), r.name, ut), data, tdata)) +:
-             (create_exps(SubField(SubField(Reference(s.name, ut), r.name, ut), mask, tmask))
-               map (Connect(s.info, _, zero))
+        val tmask = createMask(sx.tpe)
+        IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), data, tdata)) +:
+             (create_exps(SubField(SubField(Reference(sx.name, ut), r.name, ut), mask, tmask))
+               map (Connect(sx.info, _, zero))
              )
       }
-      val rds = (mports getOrElse (s.name, EMPs)).readers
-      val wrs = (mports getOrElse (s.name, EMPs)).writers
-      val rws = (mports getOrElse (s.name, EMPs)).readwriters
+      val rds = (mports getOrElse (sx.name, EMPs)).readers
+      val wrs = (mports getOrElse (sx.name, EMPs)).writers
+      val rws = (mports getOrElse (sx.name, EMPs)).readwriters
       val stmts = set_poison(rds) ++
         set_enable(rds, "en") ++
         set_poison(wrs) ++
@@ -116,49 +116,49 @@ object RemoveCHIRRTL extends Pass {
         set_enable(rws, "wmode") ++
         set_enable(rws, "en") ++
         set_write(rws, "wdata", "wmask")
-      val mem = DefMemory(s.info, s.name, s.tpe, s.size, 1, if (s.seq) 1 else 0,
+      val mem = DefMemory(sx.info, sx.name, sx.tpe, sx.size, 1, if (sx.seq) 1 else 0,
                   rds map (_.name), wrs map (_.name), rws map (_.name))
       Block(mem +: stmts)
-    case (s: CDefMPort) =>
-      types(s.name) = types(s.mem)
+    case sx: CDefMPort =>
+      types(sx.name) = types(sx.mem)
       val addrs = ArrayBuffer[String]()
       val clks = ArrayBuffer[String]()
       val ens = ArrayBuffer[String]()
-      s.direction match {
+      sx.direction match {
         case MReadWrite =>
-          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "rdata", "wdata", "wmask", rdwrite = true)
+          refs(sx.name) = DataRef(SubField(Reference(sx.mem, ut), sx.name, ut), "rdata", "wdata", "wmask", rdwrite = true)
           addrs += "addr"
           clks += "clk"
           ens += "en"
         case MWrite =>
-          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "data", "data", "mask", rdwrite = false)
+          refs(sx.name) = DataRef(SubField(Reference(sx.mem, ut), sx.name, ut), "data", "data", "mask", rdwrite = false)
           addrs += "addr"
           clks += "clk"
           ens += "en"
         case MRead =>
-          refs(s.name) = DataRef(SubField(Reference(s.mem, ut), s.name, ut), "data", "data", "blah", rdwrite = false)
+          refs(sx.name) = DataRef(SubField(Reference(sx.mem, ut), sx.name, ut), "data", "data", "blah", rdwrite = false)
           addrs += "addr"
           clks += "clk"
-          s.exps.head match {
-            case e: Reference if smems(s.mem) =>
-              raddrs(e.name) = SubField(SubField(Reference(s.mem, ut), s.name, ut), "en", ut)
+          sx.exps.head match {
+            case e: Reference if smems(sx.mem) =>
+              raddrs(e.name) = SubField(SubField(Reference(sx.mem, ut), sx.name, ut), "en", ut)
             case _ => ens += "en"
           }
       }
       Block(
-        (addrs map (x => Connect(s.info, SubField(SubField(Reference(s.mem, ut), s.name, ut), x, ut), s.exps.head))) ++
-        (clks map (x => Connect(s.info, SubField(SubField(Reference(s.mem, ut), s.name, ut), x, ut), s.exps(1)))) ++
-        (ens map (x => Connect(s.info,SubField(SubField(Reference(s.mem,ut), s.name, ut), x, ut), one))))
-    case (s) => s map collect_refs(mports, smems, types, refs, raddrs)
+        (addrs map (x => Connect(sx.info, SubField(SubField(Reference(sx.mem, ut), sx.name, ut), x, ut), sx.exps.head))) ++
+        (clks map (x => Connect(sx.info, SubField(SubField(Reference(sx.mem, ut), sx.name, ut), x, ut), sx.exps(1)))) ++
+        (ens map (x => Connect(sx.info,SubField(SubField(Reference(sx.mem,ut), sx.name, ut), x, ut), one))))
+    case sx => sx map collect_refs(mports, smems, types, refs, raddrs)
   }
 
   def get_mask(refs: DataRefMap)(e: Expression): Expression =
     e map get_mask(refs) match {
-      case e: Reference => refs get e.name match {
-        case None => e
-        case Some(p) => SubField(p.exp, p.mask, createMask(e.tpe))
+      case ex: Reference => refs get ex.name match {
+        case None => ex
+        case Some(p) => SubField(p.exp, p.mask, createMask(ex.tpe))
       }
-      case e => e
+      case ex => ex
     }
 
   def remove_chirrtl_s(refs: DataRefMap, raddrs: AddrMap)(s: Statement): Statement = {
@@ -185,7 +185,7 @@ object RemoveCHIRRTL extends Pass {
       }
       case SubAccess(expr, index, tpe)  => SubAccess(
         remove_chirrtl_e(g)(expr), remove_chirrtl_e(MALE)(index), tpe)
-      case e => e map remove_chirrtl_e(g)
+      case ex => ex map remove_chirrtl_e(g)
    }
    s match {
       case DefNode(info, name, value) =>
@@ -234,7 +234,7 @@ object RemoveCHIRRTL extends Pass {
           }
         }
         if (stmts.isEmpty) sx else Block(sx +: stmts)
-      case s => s map remove_chirrtl_s(refs, raddrs) map remove_chirrtl_e(MALE)
+      case sx => sx map remove_chirrtl_s(refs, raddrs) map remove_chirrtl_e(MALE)
     }
   }
 

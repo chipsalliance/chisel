@@ -63,8 +63,8 @@ object RemoveAccesses extends Pass {
     var ret: Boolean = false
     def rec_has_access(e: Expression): Expression = {
       e match {
-        case e : WSubAccess => ret = true
-        case e =>
+        case _ : WSubAccess => ret = true
+        case _ =>
       }
       e map rec_has_access
     }
@@ -149,7 +149,7 @@ object RemoveAccesses extends Pass {
         val sx = s match {
           case Connect(info, loc, exp) =>
             Connect(info, removeFemale(info, fixFemale(loc)), fixMale(exp))
-          case (s) => s map fixMale map onStmt
+          case sxx => sxx map fixMale map onStmt
         }
         stmts += sx
         if (stmts.size != 1) Block(stmts) else stmts(0)

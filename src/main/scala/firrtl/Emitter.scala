@@ -88,7 +88,7 @@ class VerilogEmitter extends Emitter {
       case (t: UIntType) => e
       case (t: SIntType) => Seq("$signed(",e,")")
       case ClockType => e
-      case AnalogType(w) => e
+      case AnalogType(_) => e
     }
     x match {
       case (e: DoPrim) => emit(op_stream(e), top + 1)
@@ -242,21 +242,21 @@ class VerilogEmitter extends Emitter {
       val addrRegs = mutable.HashSet[WrappedExpression]()
       val namespace = Namespace(m)
       def build_netlist(s: Statement): Statement = s map build_netlist match {
-        case (s: Connect) =>
-          netlist(s.loc) = s.expr
-          (kind(s.loc), kind(s.expr)) match {
-            case (MemKind, RegKind) => addrRegs += s.expr
+        case sx: Connect =>
+          netlist(sx.loc) = sx.expr
+          (kind(sx.loc), kind(sx.expr)) match {
+            case (MemKind, RegKind) => addrRegs += sx.expr
             case _ =>
           }
-          s
-        case (s: IsInvalid) =>
-          netlist(s.expr) = wref(namespace.newTemp, s.expr.tpe)
-          s
-        case (s: DefNode) =>
-          val e = WRef(s.name, s.value.tpe, NodeKind, MALE)
-          netlist(e) = s.value
-          s
-        case (s) => s
+          sx
+        case sx: IsInvalid =>
+          netlist(sx.expr) = wref(namespace.newTemp, sx.expr.tpe)
+          sx
+        case sx: DefNode =>
+          val e = WRef(sx.name, sx.value.tpe, NodeKind, MALE)
+          netlist(e) = sx.value
+          sx
+        case sx => sx
       }
    
       val portdefs = ArrayBuffer[Seq[Any]]()
@@ -267,10 +267,10 @@ class VerilogEmitter extends Emitter {
       val initials = ArrayBuffer[Seq[Any]]()
       val simulates = ArrayBuffer[Seq[Any]]()
       def declare(b: String, n: String, t: Type) = t match {
-        case (t: VectorType) =>
-          declares += Seq(b, " ", t.tpe, " ", n, " [0:", t.size - 1, "];")
-        case (t) =>
-          declares += Seq(b, " ", t, " ", n,";")
+        case tx: VectorType =>
+          declares += Seq(b, " ", tx.tpe, " ", n, " [0:", tx.size - 1, "];")
+        case tx =>
+          declares += Seq(b, " ", tx, " ", n,";")
       }
       def assign(e: Expression, value: Expression) {
         assigns += Seq("assign ", e, " = ", value, ";")
@@ -417,58 +417,58 @@ class VerilogEmitter extends Emitter {
       }
 
       def build_streams(s: Statement): Statement = s map build_streams match {
-        case (s: DefWire) => 
-          declare("wire",s.name,s.tpe)
-          val e = wref(s.name,s.tpe)
+        case sx: DefWire =>
+          declare("wire",sx.name,sx.tpe)
+          val e = wref(sx.name,sx.tpe)
           netlist get e match {
             case Some(n) => assign(e,n)
             case None =>
           }
-          s
-        case (s: DefRegister) =>
-          declare("reg", s.name, s.tpe)
-          val e = wref(s.name, s.tpe)
-          update_and_reset(e, s.clock, s.reset, s.init)
+          sx
+        case sx: DefRegister =>
+          declare("reg", sx.name, sx.tpe)
+          val e = wref(sx.name, sx.tpe)
+          update_and_reset(e, sx.clock, sx.reset, sx.init)
           initialize(e)
-          s
-        case (s: IsInvalid) =>
-          val wref = netlist(s.expr) match { case e: WRef => e }
-          declare("reg", wref.name, s.expr.tpe)
+          sx
+        case sx: IsInvalid =>
+          val wref = netlist(sx.expr) match { case e: WRef => e }
+          declare("reg", wref.name, sx.expr.tpe)
           initialize(wref)
-          s
-        case (s: DefNode) =>
-          declare("wire", s.name, s.value.tpe)
-          assign(WRef(s.name, s.value.tpe, NodeKind, MALE), s.value)
-          s
-        case (s: Stop) =>
-          val errorString = StringLit(s"${s.ret}\n".getBytes)
-          simulate(s.clk, s.en, stop(s.ret), Some("STOP_COND"))
-          s
-        case (s: Print) =>
-          simulate(s.clk, s.en, printf(s.string, s.args), Some("PRINTF_COND"))
-          s
-        case (s: WDefInstanceConnector) =>
-          val es = create_exps(WRef(s.name, s.tpe, InstanceKind, MALE))
-          instdeclares += Seq(s.module, " ", s.name, " (")
-          (es zip s.exprs).zipWithIndex foreach {case ((l, r), i) =>
+          sx
+        case sx: DefNode =>
+          declare("wire", sx.name, sx.value.tpe)
+          assign(WRef(sx.name, sx.value.tpe, NodeKind, MALE), sx.value)
+          sx
+        case sx: Stop =>
+          val errorString = StringLit(s"${sx.ret}\n".getBytes)
+          simulate(sx.clk, sx.en, stop(sx.ret), Some("STOP_COND"))
+          sx
+        case sx: Print =>
+          simulate(sx.clk, sx.en, printf(sx.string, sx.args), Some("PRINTF_COND"))
+          sx
+        case sx: WDefInstanceConnector =>
+          val es = create_exps(WRef(sx.name, sx.tpe, InstanceKind, MALE))
+          instdeclares += Seq(sx.module, " ", sx.name, " (")
+          (es zip sx.exprs).zipWithIndex foreach {case ((l, r), i) =>
             val s = Seq(tab, ".", remove_root(l), "(", r, ")")
             if (i != es.size - 1) instdeclares += Seq(s, ",")
             else instdeclares += s
           }
           instdeclares += Seq(");")
-          s
-        case (s: DefMemory) =>
-          declare("reg", s.name, VectorType(s.dataType, s.depth))
-          initialize_mem(s)
-          if (s.readLatency != 0 || s.writeLatency != 1)
+          sx
+        case sx: DefMemory =>
+          declare("reg", sx.name, VectorType(sx.dataType, sx.depth))
+          initialize_mem(sx)
+          if (sx.readLatency != 0 || sx.writeLatency != 1)
             throw EmitterException("All memories should be transformed into " +
               "blackboxes or combinational by previous passses")
-          for (r <- s.readers) {
-            val data = memPortField(s, r, "data")
-            val addr = memPortField(s, r, "addr")
-            val en = memPortField(s, r, "en")
+          for (r <- sx.readers) {
+            val data = memPortField(sx, r, "data")
+            val addr = memPortField(sx, r, "addr")
+            val en = memPortField(sx, r, "en")
             // Ports should share an always@posedge, so can't have intermediary wire
-            val clk = netlist(memPortField(s, r, "clk"))
+            val clk = netlist(memPortField(sx, r, "clk"))
 
             declare("wire", LowerTypes.loweredName(data), data.tpe)
             declare("wire", LowerTypes.loweredName(addr), addr.tpe)
@@ -477,24 +477,24 @@ class VerilogEmitter extends Emitter {
             //; Read port
             assign(addr, netlist(addr)) //;Connects value to m.r.addr
             // assign(en, netlist(en))     //;Connects value to m.r.en
-            val mem = WRef(s.name, memType(s), MemKind, UNKNOWNGENDER)
-            val memPort = WSubAccess(mem, addr, s.dataType, UNKNOWNGENDER)
-            val depthValue = UIntLiteral(s.depth, IntWidth(BigInt(s.depth).bitLength))
+            val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
+            val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
+            val depthValue = UIntLiteral(sx.depth, IntWidth(BigInt(sx.depth).bitLength))
             val garbageGuard = DoPrim(Geq, Seq(addr, depthValue), Seq(), UnknownType)
 
-            if ((s.depth & (s.depth - 1)) == 0)
+            if ((sx.depth & (sx.depth - 1)) == 0)
               assign(data, memPort)
             else
               garbageAssign(data, memPort, garbageGuard)
           }
  
-          for (w <- s.writers) {
-            val data = memPortField(s, w, "data")
-            val addr = memPortField(s, w, "addr")
-            val mask = memPortField(s, w, "mask")
-            val en = memPortField(s, w, "en")
+          for (w <- sx.writers) {
+            val data = memPortField(sx, w, "data")
+            val addr = memPortField(sx, w, "addr")
+            val mask = memPortField(sx, w, "mask")
+            val en = memPortField(sx, w, "en")
             //Ports should share an always@posedge, so can't have intermediary wire
-            val clk = netlist(memPortField(s, w, "clk"))
+            val clk = netlist(memPortField(sx, w, "clk"))
 
             declare("wire", LowerTypes.loweredName(data), data.tpe)
             declare("wire", LowerTypes.loweredName(addr), addr.tpe)
@@ -507,16 +507,16 @@ class VerilogEmitter extends Emitter {
             assign(mask, netlist(mask))
             assign(en, netlist(en))
 
-            val mem = WRef(s.name, memType(s), MemKind, UNKNOWNGENDER)
-            val memPort = WSubAccess(mem, addr, s.dataType, UNKNOWNGENDER)
+            val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
+            val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
             update(memPort, data, clk, AND(en, mask))
           }
 
-          if (s.readwriters.nonEmpty)
+          if (sx.readwriters.nonEmpty)
             throw EmitterException("All readwrite ports should be transformed into " +
               "read & write ports by previous passes")
-          s
-        case s => s
+          sx
+        case sx => sx
       }
    
       def emit_streams() {

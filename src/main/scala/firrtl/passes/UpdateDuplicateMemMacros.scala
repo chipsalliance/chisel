@@ -115,7 +115,7 @@ object MemTransformUtils {
     def updateStmtRefs(s: Statement): Statement =
       s map updateStmtRefs map updateRef match {
         case c: Connect if hasEmptyExpr(c) => EmptyStmt
-        case s => s
+        case sx => sx
       }
 
     updateStmtRefs(s)
@@ -140,7 +140,7 @@ object UpdateDuplicateMemMacros extends Pass {
         case Some(proto) =>
           updatedMem copy (info = appendInfo(updatedMem.info, "ref" -> proto.name))
       }
-    case s => s map updateMemStmts(uniqueMems, memPortMap)
+    case sx => sx map updateMemStmts(uniqueMems, memPortMap)
   }
 
   def updateMemMods(m: DefModule) = {
