@@ -127,7 +127,7 @@ This will walk you through installing Chisel and its dependencies:
 
     ```
     git pull
-    git checkout verilator_3_880
+    git checkout verilator_3_886
     ```
   1. In the Verilator repository directory, build and install:
 
