@@ -463,6 +463,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   override def do_<= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterEqOp, that)
 
+  @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   final def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
   final def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
   final def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
@@ -658,6 +659,7 @@ sealed class SInt private (width: Width, lit: Option[SLit] = None)
   override def do_<= (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterEqOp, that)
 
+  @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   final def != (that: SInt): Bool = macro SourceInfoTransform.thatArg
   final def =/= (that: SInt): Bool = macro SourceInfoTransform.thatArg
   final def === (that: SInt): Bool = macro SourceInfoTransform.thatArg
