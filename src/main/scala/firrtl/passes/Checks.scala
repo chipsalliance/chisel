@@ -100,7 +100,7 @@ object CheckHighForm extends Pass {
           correctNum(Option(2), 0)
         case AsUInt | AsSInt | AsClock | Cvt | Neq | Not =>
           correctNum(Option(1), 0)
-        case Pad | Shl | Shr | Head | Tail =>
+        case AsFixedPoint | Pad | Shl | Shr | Head | Tail | BPShl | BPShr | BPSet =>
           correctNum(Option(1), 1)
         case Bits =>
           correctNum(Option(1), 2)
@@ -132,21 +132,20 @@ object CheckHighForm extends Pass {
 
     def checkHighFormW(info: Info, mname: String)(w: Width): Width = {
       w match {
-        case wx: IntWidth if wx.width <= 0 =>
+        case wx: IntWidth if wx.width < 0 =>
           errors append new NegWidthException(info, mname)
         case wx => // Do nothing
       }
       w
     }
 
-    def checkHighFormT(info: Info, mname: String)(t: Type): Type = {
-      t match {
-        case tx: VectorType if tx.size < 0 =>
+    def checkHighFormT(info: Info, mname: String)(t: Type): Type =
+      t map checkHighFormT(info, mname) match {
+        case tx: VectorType if tx.size < 0 => 
           errors append new NegVecSizeException(info, mname)
-        case _ => // Do nothing
+          t
+        case _ => t map checkHighFormW(info, mname)
       }
-      t map checkHighFormW(info, mname) map checkHighFormT(info, mname)
-    }
 
     def validSubexp(info: Info, mname: String)(e: Expression): Expression = {
       e match {
@@ -265,6 +264,7 @@ object CheckTypes extends Pass {
     s"$info: [module $mname]  Primop $op requires all arguments to be UInt type.")
   class OpNotAllSameType(info: Info, mname: String, op: String) extends PassException(
     s"$info: [module $mname]  Primop $op requires all operands to have the same type.")
+  class OpNoMixFix(info:Info, mname: String, op: String) extends PassException(s"${info}: [module ${mname}]  Primop ${op} cannot operate on args of some, but not all, fixed type.")
   class OpNotAnalog(info: Info, mname: String, exp: String) extends PassException(
     s"$info: [module $mname]  Attach requires all arguments to be Analog type: $exp.")
   class NodePassiveType(info: Info, mname: String) extends PassException(
@@ -304,12 +304,39 @@ object CheckTypes extends Pass {
         if (ls exists (x => wt(ls.head.tpe) != wt(e.tpe)))
           errors append new OpNotAllSameType(info, mname, e.op.serialize)
       }
-      def allInt(ls: Seq[Expression]) {
+      def allUSC(ls: Seq[Expression]) {
+        val error = ls.foldLeft(false)((error, x) => x.tpe match {
+          case (_: UIntType| _: SIntType| ClockType) => error
+          case _ => true
+        })
+        if (error) errors.append(new OpNotGround(info, mname, e.op.serialize))
+      }
+      def allUSF(ls: Seq[Expression]) {
+        val error = ls.foldLeft(false)((error, x) => x.tpe match {
+          case (_: UIntType| _: SIntType| _: FixedType) => error
+          case _ => true
+        })
+        if (error) errors.append(new OpNotGround(info, mname, e.op.serialize))
+      }
+      def allUS(ls: Seq[Expression]) {
         if (ls exists (x => x.tpe match {
           case _: UIntType | _: SIntType => false
           case _ => true
         })) errors append new OpNotGround(info, mname, e.op.serialize)
       }
+      def allF(ls: Seq[Expression]) {
+        val error = ls.foldLeft(false)((error, x) => x.tpe match {
+          case _:FixedType => error
+          case _ => true
+        })
+        if (error) errors.append(new OpNotGround(info, mname, e.op.serialize))
+      }
+      def strictFix(ls: Seq[Expression]) = 
+        ls.filter(!_.tpe.isInstanceOf[FixedType]).size match {
+          case 0 => 
+          case x if(x == ls.size) =>
+          case x => errors.append(new OpNoMixFix(info, mname, e.op.serialize))
+        }
       def all_uint (ls: Seq[Expression]) {
         if (ls exists (x => x.tpe match {
           case _: UIntType => false
@@ -323,10 +350,14 @@ object CheckTypes extends Pass {
         }) errors append new OpNotUInt(info, mname, e.op.serialize, x.serialize)
       }
       e.op match {
-        case AsUInt | AsSInt | AsClock =>
-        case Dshl => is_uint(e.args(1)); allInt(e.args)
-        case Dshr => is_uint(e.args(1)); allInt(e.args)
-        case _ => allInt(e.args)
+        case AsUInt | AsSInt | AsFixedPoint =>
+        case AsClock => allUSC(e.args)
+        case Dshl => is_uint(e.args(1)); allUSF(e.args)
+        case Dshr => is_uint(e.args(1)); allUSF(e.args)
+        case Add | Sub | Mul | Lt | Leq | Gt | Geq | Eq | Neq => allUSF(e.args); strictFix(e.args)
+        case Pad | Shl | Shr | Cat | Bits | Head | Tail => allUSF(e.args)
+        case BPShl | BPShr | BPSet => allF(e.args)
+        case _ => allUS(e.args)
       }
     }
 
@@ -383,6 +414,7 @@ object CheckTypes extends Pass {
         case (ClockType, ClockType) => flip1 == flip2
         case (_: UIntType, _: UIntType) => flip1 == flip2
         case (_: SIntType, _: SIntType) => flip1 == flip2
+        case (_: FixedType, _: FixedType) => flip1 == flip2
         case (_: AnalogType, _: AnalogType) => false
         case (t1: BundleType, t2: BundleType) =>
           val t1_fields = (t1.fields foldLeft Map[String, (Type, Orientation)]())(
@@ -583,7 +615,7 @@ object CheckWidths extends Pass {
 
     def check_width_w(info: Info, mname: String)(w: Width): Width = {
       w match {
-        case w: IntWidth if w.width > 0 =>
+        case w: IntWidth if w.width >= 0 =>
         case _: IntWidth =>
           errors append new NegWidthException(info, mname)
         case _ =>
@@ -591,6 +623,9 @@ object CheckWidths extends Pass {
       }
       w
     }
+
+    def check_width_t(info: Info, mname: String)(t: Type): Type =
+      t map check_width_t(info, mname) map check_width_w(info, mname)
 
     def check_width_e(info: Info, mname: String)(e: Expression): Expression = {
       e match {
@@ -614,26 +649,25 @@ object CheckWidths extends Pass {
           errors append new WidthTooBig(info, mname)
         case _ =>
       }
-      e map check_width_w(info, mname) map check_width_e(info, mname)
+      //e map check_width_t(info, mname) map check_width_e(info, mname)
+      e map check_width_e(info, mname)
     }
+
 
     def check_width_s(minfo: Info, mname: String)(s: Statement): Statement = {
       val info = get_info(s) match { case NoInfo => minfo case x => x }
-      s map check_width_e(info, mname) map check_width_s(info, mname) match {
-        case Attach(infox, source, exprs) =>
+      s map check_width_e(info, mname) map check_width_s(info, mname) map check_width_t(info, mname) match {
+        case Attach(infox, source, exprs) => 
           exprs foreach ( e =>
             if (bitWidth(e.tpe) != bitWidth(source.tpe))
               errors append new AttachWidthsNotEqual(infox, mname, e.serialize, source.serialize)
           )
           s
         case _ => s
-      }
+      } 
     }
 
-    def check_width_p(minfo: Info, mname: String)(p: Port): Port = {
-      p.tpe map check_width_w(p.info, mname)
-      p
-    }
+    def check_width_p(minfo: Info, mname: String)(p: Port): Port = p.copy(tpe =  check_width_t(p.info, mname)(p.tpe))
 
     def check_width_m(m: DefModule) {
       m map check_width_p(m.info, m.name) map check_width_s(m.info, m.name)

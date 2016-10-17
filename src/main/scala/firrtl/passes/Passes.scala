@@ -217,6 +217,7 @@ object Legalize extends Pass {
     expr.args.head match {
       case UIntLiteral(value, _) => UIntLiteral((value >> low.toInt) & mask, width)
       case SIntLiteral(value, _) => SIntLiteral((value >> low.toInt) & mask, width)
+      //case FixedLiteral
       case _ => expr
     }
   }
@@ -237,6 +238,7 @@ object Legalize extends Pass {
       val expr = t match {
         case UIntType(_) => bits
         case SIntType(_) => DoPrim(AsSInt, Seq(bits), Seq(), SIntType(IntWidth(w)))
+        //case FixedType(width, point) => FixedType(width, point)
       }
       Connect(c.info, c.loc, expr)
     }

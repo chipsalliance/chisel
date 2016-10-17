@@ -78,6 +78,7 @@ dir
 type 
   : 'UInt' ('<' IntLit '>')?
   | 'SInt' ('<' IntLit '>')?
+  | 'Fixed' ('<' IntLit '>')? ('<' '<' IntLit '>' '>')?
   | 'Clock'
   | 'Analog' ('<' IntLit '>')?
   | '{' field* '}'        // Bundle
@@ -274,6 +275,10 @@ primop
   | 'bits('
   | 'head('
   | 'tail('
+  | 'asFixedPoint('
+  | 'bpshl('
+  | 'bpshr('
+  | 'bpset('
   ;
 
 /*------------------------------------------------------------------

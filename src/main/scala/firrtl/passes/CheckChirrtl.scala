@@ -68,22 +68,21 @@ object CheckChirrtl extends Pass {
         errors append new InvalidLOCException(info, mname)
       case _ => // Do Nothing
     }
-
     def checkChirrtlW(info: Info, mname: String)(w: Width): Width = w match {
-      case w: IntWidth if w.width <= 0 =>
-        errors append new NegWidthException(info, mname)
+      case w: IntWidth if (w.width < BigInt(0)) =>
+        errors.append(new NegWidthException(info, mname))
         w
       case _ => w
     }
 
-    def checkChirrtlT(info: Info, mname: String)(t: Type): Type = {
+    def checkChirrtlT(info: Info, mname: String)(t: Type): Type =
       t map checkChirrtlT(info, mname) match {
         case t: VectorType if t.size < 0 =>
           errors append new NegVecSizeException(info, mname)
-        case _ => // Do nothing
+          t map checkChirrtlW(info, mname)
+        //case FixedType(width, point) => FixedType(checkChirrtlW(width), point)
+        case _ => t map checkChirrtlW(info, mname)
       }
-      t map checkChirrtlW(info, mname) map checkChirrtlT(info, mname)
-    }
 
     def validSubexp(info: Info, mname: String)(e: Expression): Expression = {
       e match {

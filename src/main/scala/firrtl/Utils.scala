@@ -158,10 +158,90 @@ object Utils extends LazyLogging {
   }
 
 //============== TYPES ================
+//<<<<<<< HEAD
+//   def mux_type (e1:Expression,e2:Expression) : Type = mux_type(tpe(e1),tpe(e2))
+//   def mux_type (t1:Type,t2:Type) : Type = {
+//      if (wt(t1) == wt(t2)) {
+//         (t1,t2) match { 
+//            case (t1:UIntType,t2:UIntType) => UIntType(UnknownWidth)
+//            case (t1:SIntType,t2:SIntType) => SIntType(UnknownWidth)
+//            case (t1:FixedType,t2:FixedType) => FixedType(UnknownWidth, UnknownWidth)
+//            case (t1:VectorType,t2:VectorType) => VectorType(mux_type(t1.tpe,t2.tpe),t1.size)
+//            case (t1:BundleType,t2:BundleType) => 
+//               BundleType((t1.fields,t2.fields).zipped.map((f1,f2) => {
+//                  Field(f1.name,f1.flip,mux_type(f1.tpe,f2.tpe))
+//               }))
+//         }
+//      } else UnknownType
+//   }
+//   def mux_type_and_widths (e1:Expression,e2:Expression) : Type = mux_type_and_widths(tpe(e1),tpe(e2))
+//   def PLUS (w1:Width,w2:Width) : Width = (w1, w2) match {
+//     case (IntWidth(i), IntWidth(j)) => IntWidth(i + j)
+//     case _ => PlusWidth(w1,w2)
+//   }
+//   def MAX (w1:Width,w2:Width) : Width = (w1, w2) match {
+//     case (IntWidth(i), IntWidth(j)) => IntWidth(max(i,j))
+//     case _ => MaxWidth(Seq(w1,w2))
+//   }
+//   def MINUS (w1:Width,w2:Width) : Width = (w1, w2) match {
+//     case (IntWidth(i), IntWidth(j)) => IntWidth(i - j)
+//     case _ => MinusWidth(w1,w2)
+//   }
+//   def POW (w1:Width) : Width = w1 match {
+//     case IntWidth(i) => IntWidth(pow_minus_one(BigInt(2), i))
+//     case _ => ExpWidth(w1)
+//   }
+//   def MIN (w1:Width,w2:Width) : Width = (w1, w2) match {
+//     case (IntWidth(i), IntWidth(j)) => IntWidth(min(i,j))
+//     case _ => MinWidth(Seq(w1,w2))
+//   }
+//   def mux_type_and_widths (t1:Type,t2:Type) : Type = {
+//      def wmax (w1:Width,w2:Width) : Width = {
+//         (w1,w2) match {
+//            case (w1:IntWidth,w2:IntWidth) => IntWidth(w1.width.max(w2.width))
+//            case (w1,w2) => MaxWidth(Seq(w1,w2))
+//         }
+//      }
+//      val wt1 = new WrappedType(t1)
+//      val wt2 = new WrappedType(t2)
+//      if (wt1 == wt2) {
+//         (t1,t2) match {
+//            case (t1:UIntType,t2:UIntType) => UIntType(wmax(t1.width,t2.width))
+//            case (t1:SIntType,t2:SIntType) => SIntType(wmax(t1.width,t2.width))
+//            case (FixedType(w1, p1), FixedType(w2, p2)) =>
+//              FixedType(PLUS(MAX(p1, p2),MAX(MINUS(w1, p1), MINUS(w2, p2))), MAX(p1, p2))
+//            case (t1:VectorType,t2:VectorType) => VectorType(mux_type_and_widths(t1.tpe,t2.tpe),t1.size)
+//            case (t1:BundleType,t2:BundleType) => BundleType((t1.fields zip t2.fields).map{case (f1, f2) => Field(f1.name,f1.flip,mux_type_and_widths(f1.tpe,f2.tpe))})
+//         }
+//      } else UnknownType
+//   }
+//   def module_type (m:DefModule) : Type = {
+//      BundleType(m.ports.map(p => p.toField))
+//   }
+//   def sub_type (v:Type) : Type = {
+//      v match {
+//         case v:VectorType => v.tpe
+//         case v => UnknownType
+//      }
+//   }
+//   def field_type (v:Type,s:String) : Type = {
+//      v match {
+//         case v:BundleType => {
+//            val ft = v.fields.find(p => p.name == s)
+//            ft match {
+//               case ft:Some[Field] => ft.get.tpe
+//               case ft => UnknownType
+//            }
+//         }
+//         case v => UnknownType
+//      }
+//   }
+//=======
   def mux_type(e1: Expression, e2: Expression): Type = mux_type(e1.tpe, e2.tpe)
   def mux_type(t1: Type, t2: Type): Type = (t1, t2) match {
     case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
     case (t1: SIntType, t2: SIntType) => SIntType(UnknownWidth)
+    case (t1: FixedType, t2: FixedType) => FixedType(UnknownWidth, UnknownWidth)
     case (t1: VectorType, t2: VectorType) => VectorType(mux_type(t1.tpe, t2.tpe), t1.size)
     case (t1: BundleType, t2: BundleType) => BundleType(t1.fields zip t2.fields map {
       case (f1, f2) => Field(f1.name, f1.flip, mux_type(f1.tpe, f2.tpe))
@@ -178,6 +258,8 @@ object Utils extends LazyLogging {
     (t1, t2) match {
       case (t1x: UIntType, t2x: UIntType) => UIntType(wmax(t1x.width, t2x.width))
       case (t1x: SIntType, t2x: SIntType) => SIntType(wmax(t1x.width, t2x.width))
+      case (FixedType(w1, p1), FixedType(w2, p2)) =>
+        FixedType(PLUS(MAX(p1, p2),MAX(MINUS(w1, p1), MINUS(w2, p2))), MAX(p1, p2))
       case (t1x: VectorType, t2x: VectorType) => VectorType(
         mux_type_and_widths(t1x.tpe, t2x.tpe), t1x.size)
       case (t1x: BundleType, t2x: BundleType) => BundleType(t1x.fields zip t2x.fields map {
@@ -201,6 +283,7 @@ object Utils extends LazyLogging {
     }
     case vx => UnknownType
   }
+//>>>>>>> e54fb610c6bf0a7fe5c9c0f0e0b3acbb3728cfd0
    
 // =================================
   def error(str: String) = throw new FIRRTLException(str)
@@ -218,6 +301,7 @@ object Utils extends LazyLogging {
     (t1, t2) match {
       case (_: UIntType, _: UIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
       case (_: SIntType, _: SIntType) => if (flip1 == flip2) Seq((0, 0)) else Nil
+      case (_: FixedType, _: FixedType) => if (flip1 == flip2) Seq((0, 0)) else Nil
       case (t1x: BundleType, t2x: BundleType) =>
         def emptyMap = Map[String, (Type, Orientation, Int)]()
         val t1_fields = t1x.fields.foldLeft(emptyMap, 0) { case ((map, ilen), f1) =>
@@ -455,11 +539,8 @@ object Utils extends LazyLogging {
 
     "final", "first_match", "for", "force", "foreach", "forever",
     "fork", "forkjoin", "function",
-
     "generate", "genvar",
-
     "highz0", "highz1",
-
     "if", "iff", "ifnone", "ignore_bins", "illegal_bins", "import",
     "incdir", "include", "initial", "initvar", "inout", "input",
     "inside", "instance", "int", "integer", "interconnect",

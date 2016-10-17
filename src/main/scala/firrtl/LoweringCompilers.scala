@@ -126,7 +126,8 @@ class MiddleFirrtlToLowFirrtl extends Transform with SimpleRun {
     passes.ResolveKinds,
     passes.InferTypes,
     passes.ResolveGenders,
-    passes.InferWidths)
+    passes.InferWidths,
+    passes.ConvertFixedToSInt)
   def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult =
     run(circuit, passSeq)
 }

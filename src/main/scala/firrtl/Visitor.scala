@@ -129,19 +129,28 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
   // Match on a type instead of on strings?
   private def visitType[FirrtlNode](ctx: FIRRTLParser.TypeContext): Type = {
+    def getWidth(n: TerminalNode): Width = IntWidth(string2BigInt(n.getText))
     ctx.getChild(0) match {
       case term: TerminalNode =>
         term.getText match {
-          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit.getText)))
+          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit(0).getText)))
           else UIntType(UnknownWidth)
-          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit.getText)))
+          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit(0).getText)))
           else SIntType(UnknownWidth)
+          case "Fixed" => ctx.IntLit.size match {
+            case 0 => FixedType(UnknownWidth, UnknownWidth)
+            case 1 => ctx.getChild(2).getText match {
+              case "<" => FixedType(UnknownWidth, getWidth(ctx.IntLit(0)))
+              case _ => FixedType(getWidth(ctx.IntLit(0)), UnknownWidth)
+            }
+            case 2 => FixedType(getWidth(ctx.IntLit(0)), getWidth(ctx.IntLit(1)))
+          }
           case "Clock" => ClockType
-          case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.IntLit.getText)))
+          case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.IntLit(0).getText)))
           else AnalogType(UnknownWidth)
           case "{" => BundleType(ctx.field.map(visitField))
         }
-      case typeContext: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.IntLit.getText))
+      case typeContext: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.IntLit(0).getText))
     }
   }
 
