@@ -4,12 +4,10 @@ package chisel3.iotesters
 
 import chisel3._
 
-import scala.util.Random
-
 // Provides a template to define tester transactions
 trait PeekPokeTests {
   def t: Long
-  def rnd: Random
+  def rnd: scala.util.Random
   implicit def int(x: Boolean): BigInt
   implicit def int(x: Int):     BigInt
   implicit def int(x: Long):    BigInt
@@ -28,21 +26,20 @@ trait PeekPokeTests {
   def finish: Boolean
 }
 
-abstract class PeekPokeTester[+T <: Module](
-                                            val dut: T,
+abstract class PeekPokeTester[+T <: Module](val dut: T,
                                             verbose: Boolean = true,
-                                            _base: Int = 16,
-                                            logFile: Option[String] = chiselMain.context.logFile,
-                                            waveform: Option[String] = chiselMain.context.waveform,
-                                            _backend: Option[Backend] = None,
-                                            _seed: Long = System.currentTimeMillis) {
+                                            base: Int = 16,
+                                            logFile: Option[java.io.File] = None) {
 
   implicit def longToInt(x: Long) = x.toInt
 
-  implicit val logger = logFile match {
-    case None    => System.out
-    case Some(f) => new java.io.PrintStream(f)
+  implicit val logger = (logFile, chiselMain.context.logFile) match {
+    case (None, None) => System.out
+    case (Some(f), _) => new java.io.PrintStream(f)
+    case (_, Some(f)) => new java.io.PrintStream(f)
   }
+  implicit val _verbose = verbose
+  implicit val _base = base
 
   def println(msg: String = "") {
     logger println msg
@@ -51,17 +48,11 @@ abstract class PeekPokeTester[+T <: Module](
   /****************************/
   /*** Simulation Interface ***/
   /****************************/
-  logger println s"SEED ${_seed}"
-  val cmd = chiselMain.context.testCmd.toList ++ (waveform match {
-    case None    => Nil
-    case Some(f) => logger println s"Waveform: $f" ; List(s"+waveform=$f")
-  })
-  val backend = _backend getOrElse (
-    if (chiselMain.context.isVCS)
-      new VCSBackend(dut, cmd, verbose, logger, _base, _seed)
-    else
-      new VerilatorBackend(dut, cmd, verbose, logger, _base, _seed)
-  )
+  val backend = ((Driver.backend, chiselMain.context.backend): @unchecked) match {
+    case (Some(b), _) => b
+    case (None, Some(b)) => b
+  }
+  logger println s"SEED ${backend._seed}"
 
   /********************************/
   /*** Classic Tester Interface ***/

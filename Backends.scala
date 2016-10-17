@@ -1,30 +1,47 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import chisel3.internal.HasId
+import chisel3.internal.InstanceId
+import java.io.PrintStream
 
 /**
   * define interface for ClassicTester backend implementations such as verilator and firrtl interpreter
   */
 
-abstract class Backend(_seed: Long = System.currentTimeMillis) {
+private[iotesters] abstract class Backend(private[iotesters] val _seed: Long = System.currentTimeMillis) {
   val rnd = new scala.util.Random(_seed)
 
-  def poke(signal: HasId, value: BigInt, off: Option[Int]): Unit
+  def poke(signal: InstanceId, value: BigInt, off: Option[Int])
+          (implicit logger: PrintStream, verbose: Boolean, base: Int): Unit
 
-  def peek(signal: HasId, off: Option[Int]): BigInt
+  def peek(signal: InstanceId, off: Option[Int])
+          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt
 
-  def poke(path: String, value: BigInt): Unit
+  def poke(path: String, value: BigInt)
+          (implicit logger: PrintStream, verbose: Boolean, base: Int): Unit
 
-  def peek(path: String): BigInt
+  def peek(path: String)
+          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt
 
-  def expect(signal: HasId, expected: BigInt, msg: => String = "") : Boolean
+  def expect(signal: InstanceId, expected: BigInt)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean =
+    expect(signal, expected, "")
 
-  def step(n: Int): Unit
+  def expect(signal: InstanceId, expected: BigInt, msg: => String)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean
 
-  def reset(n: Int = 1): Unit
+  def expect(path: String, expected: BigInt)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean =
+    expect(path, expected, "")
 
-  def finish: Unit
+  def expect(path: String, expected: BigInt, msg: => String)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean
+
+  def step(n: Int)(implicit logger: PrintStream): Unit
+
+  def reset(n: Int): Unit
+
+  def finish(implicit logger: PrintStream): Unit
 }
 
 

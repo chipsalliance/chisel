@@ -1,8 +1,6 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import chisel3.internal.HasId
-
 import scala.collection.mutable.HashMap
 import scala.util.Random
 import java.io.{File, Writer, FileWriter, PrintStream, IOException}
@@ -43,14 +41,14 @@ object copyVpiFiles {
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
 object genVCSVerilogHarness {
-  def apply(dut: chisel3.Module, writer: Writer, vpdFilePath: String) {
+  def apply(dut: chisel3.Module, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
-    val (inputs, outputs) = getDataNames(dut) partition (_._1.dir == chisel3.INPUT)
+    val (inputs, outputs) = getDataNames("io", dut.io) partition (_._1.dir == chisel3.INPUT)
 
     writer write "module test;\n"
-    writer write "  reg clk = 1;\n"
-    writer write "  reg rst = 1;\n"
-    val delay = if (chiselMain.context.isPropagation) "" else "#0.1"
+    writer write "  reg clock = 1;\n"
+    writer write "  reg reset = 1;\n"
+    val delay = if (isGateLevel) "#0.1" else ""
     inputs foreach { case (node, name) =>
       writer write s"  reg[${node.getWidth-1}:0] $name = 0;\n"
       writer write s"  wire[${node.getWidth-1}:0] ${name}_delay;\n"
@@ -62,20 +60,20 @@ object genVCSVerilogHarness {
       writer write s"  assign $delay $name = ${name}_delay;\n"
     }
 
-    writer write "  always #`CLOCK_PERIOD clk = ~clk;\n"
+    writer write "  always #`CLOCK_PERIOD clock = ~clock;\n"
     writer write "  reg vcdon = 0;\n"
     writer write "  reg [1023:0] vcdfile = 0;\n"
     writer write "  reg [1023:0] vpdfile = 0;\n"
 
     writer write "\n  /*** DUT instantiation ***/\n"
     writer write s"  ${dutName} ${dutName}(\n"
-    writer write "    .clk(clk),\n"
-    writer write "    .reset(rst),\n"
+    writer write "    .clock(clock),\n"
+    writer write "    .reset(reset),\n"
     writer write ((inputs ++ outputs).unzip._2 map (name => s"    .${name}(${name}_delay)") mkString ",\n")
     writer write "  );\n\n"
 
     writer write "  initial begin\n"
-    writer write "    $init_rsts(rst);\n"
+    writer write "    $init_rsts(reset);\n"
     writer write "    $init_ins(%s);\n".format(inputs.unzip._2 mkString ", ")
     writer write "    $init_outs(%s);\n".format(outputs.unzip._2 mkString ", ")
     writer write "    $init_sigs(%s);\n".format(dutName)
@@ -95,11 +93,10 @@ object genVCSVerilogHarness {
     writer write "      $vcdplusmemon;\n"
     writer write "    end\n"
     writer write "    $vcdpluson(0);\n"
-    writer write "    $vcdplusautoflushon;\n"
     writer write "  end\n\n"
 
-    writer write "  always @(%s clk) begin\n".format(if (chiselMain.context.isPropagation) "negedge" else "posedge")
-    writer write "    if (vcdfile && rst) begin\n"
+    writer write "  always @(%s clock) begin\n".format(if (isGateLevel) "posedge" else "negedge")
+    writer write "    if (vcdfile && reset) begin\n"
     writer write "      $dumpoff;\n"
     writer write "      vcdon = 0;\n"
     writer write "    end\n"
@@ -107,7 +104,8 @@ object genVCSVerilogHarness {
     writer write "      $dumpon;\n"
     writer write "      vcdon = 1;\n"
     writer write "    end\n"
-    writer write "    $tick();\n"
+    writer write "    %s $tick();\n".format(if (isGateLevel) "#0.05" else "")
+    writer write "    $vcdplusflush;\n"
     writer write "  end\n\n"
     writer write "endmodule\n"
     writer.close
@@ -115,43 +113,34 @@ object genVCSVerilogHarness {
 }
 
 private[iotesters] object setupVCSBackend {
-  def apply(dutGen: () => chisel3.Module): Backend = {
-    val rootDirPath = new File(".").getCanonicalPath()
-    val testDirPath = s"${rootDirPath}/test_run_dir"
-    val dir = new File(testDirPath)
-    dir.mkdirs()
-
-    CircuitGraph.clear
+  def apply[T <: chisel3.Module](dutGen: () => T, dir: File): (T, Backend) = {
     val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = CircuitGraph construct circuit
+    val dut = getTopModule(circuit).asInstanceOf[T]
 
-    // Dump FIRRTL for debugging
-    val firrtlIRFilePath = s"${testDirPath}/${circuit.name}.ir"
-    chisel3.Driver.dumpFirrtl(circuit, Some(new File(firrtlIRFilePath)))
+    // Generate CHIRRTL
+    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen))
+
     // Generate Verilog
-    val verilogFilePath = s"${testDirPath}/${circuit.name}.v"
-    firrtl.Driver.compile(firrtlIRFilePath, verilogFilePath, new firrtl.VerilogCompiler)
-
-    val verilogFileName = verilogFilePath.split("/").last
-    val vcsHarnessFileName = "classic_tester_top.v"
-    val vcsHarnessFilePath = s"${testDirPath}/${vcsHarnessFileName}"
-    val vcsBinaryPath = s"${testDirPath}/V${circuit.name}"
-    val vpdFilePath = s"${testDirPath}/${circuit.name}.vpd"
+    val verilogFile = new File(dir, s"${circuit.name}.v")
+    val verilogWriter = new FileWriter(verilogFile)
+    val annotation = new firrtl.Annotations.AnnotationMap(Seq(
+      new firrtl.passes.InferReadWriteAnnotation(circuit.name, firrtl.Annotations.TransID(-1))))
+    (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
+    verilogWriter.close
 
     // Generate Harness
-    copyVpiFiles(testDirPath)
-    genVCSVerilogHarness(dut, new FileWriter(new File(vcsHarnessFilePath)), vpdFilePath)
-    verilogToVCS(dut.name, new File(testDirPath), new File(vcsHarnessFileName)).!
+    val vcsHarnessFileName = s"${circuit.name}-harness.v"
+    val vcsHarnessFile = new File(dir, vcsHarnessFileName)
+    val vpdFile = new File(dir, s"${circuit.name}.vpd")
+    copyVpiFiles(dir.toString)
+    genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
+    assert(verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).! == 0)
 
-    new VCSBackend(dut, List(vcsBinaryPath))
+    (dut, new VCSBackend(dut, Seq((new File(dir, circuit.name)).toString)))
   }
 }
 
-private[iotesters] class VCSBackend(
-                                    dut: chisel3.Module, 
-                                    cmd: List[String],
-                                    verbose: Boolean = true,
-                                    logger: PrintStream = System.out,
-                                    _base: Int = 16,
-                                    _seed: Long = System.currentTimeMillis) 
-           extends VerilatorBackend(dut, cmd, verbose, logger, _base, _seed)
+private[iotesters] class VCSBackend(dut: chisel3.Module,
+                                    cmd: Seq[String],
+                                    _seed: Long = System.currentTimeMillis)
+           extends VerilatorBackend(dut, cmd, _seed)

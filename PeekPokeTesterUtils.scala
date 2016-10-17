@@ -2,135 +2,64 @@
 
 package chisel3.iotesters
 
-import chisel3._
-import chisel3.internal.firrtl._
+import chisel3.{Module, Data, Element, Bundle, Vec}
+import chisel3.internal.InstanceId
+import chisel3.internal.firrtl.Circuit
 import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
+// TODO: FIRRTL will eventually return valid names
+private[iotesters] object validName {
+  def apply(name: String) = (if (firrtl.Utils.v_keywords contains name) name + "$"
+    else name) replace (".", "_") replace ("[", "_") replace ("]", "")
+}
+
 private[iotesters] object getDataNames {
-  def apply(name: String, data: Data): Seq[(Data, String)] = data match {
-    case b: Element => Seq(b -> name)
+  def apply(name: String, data: Data): Seq[(Element, String)] = data match {
+    case e: Element => Seq(e -> name)
     case b: Bundle => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => apply(s"${name}_$i", e)}
   }
-  def apply(dut: Module): Seq[(Data, String)] = apply("io", dut.io)
+  def apply(dut: Module, separator: String = "."): Seq[(Element, String)] =
+    apply(dut.io.pathName replace (".", separator), dut.io)
 }
 
 private[iotesters] object getPorts {
-  def apply(dut: Module) = getDataNames(dut).unzip._1 partition (_.dir == INPUT)
+  def apply(dut: Module, separator: String = ".") =
+    getDataNames(dut, separator) partition (_._1.dir == chisel3.INPUT)
 }
 
-private[iotesters] object validName {
-  def apply(name: String) =
-    if (firrtl.Utils.v_keywords contains name) name + "$" else name
+private[iotesters] object flatten {
+  def apply(data: Data): Seq[Element] = data match {
+    case b: Element => Seq(b)
+    case b: Bundle => b.elements.toSeq flatMap (x => apply(x._2))
+    case v: Vec[_] => v.toSeq flatMap apply
+  }
 }
 
-private[iotesters] object CircuitGraph {
-  import internal.HasId
-  private val _modParent = HashMap[Module, Module]()
-  private val _nodeParent = HashMap[HasId, Module]()
-  private val _modToName = HashMap[Module, String]()
-  private val _nodeToName = HashMap[HasId, String]()
-  private val _nodes = ArrayBuffer[HasId]()
-  private val _modNameToNodes = HashMap[String, ArrayBuffer[HasId]]()
+private[iotesters] object getTopModule {
+  def apply(circuit: Circuit) = {
+    (circuit.components find (_.name == circuit.name)).get.id
+  }
+}
 
-  private def construct(modN: String, components: Seq[Component]): Module = {
-    val component = (components find (_.name == modN)).get
-    val mod = component.id
-    val modName = validName(modN)
-
-    getDataNames(mod) foreach {case (port, name) =>
-      // _nodes += port
-      _nodeParent(port) = mod
-      _nodeToName(port) = validName(name)
-    }
-
-    _modNameToNodes(modName) = ArrayBuffer[HasId]()
-    component.commands foreach {
-      case inst: DefInstance =>
-        val child = construct(inst.id.name, components)
-        _modParent(child) = mod
-        _modToName(child) = inst.name
-      case reg: DefReg if reg.name.slice(0, 2) != "T_" =>
-        getDataNames(reg.name, reg.id) foreach { case (data, name) =>
-          _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-          _modNameToNodes(modName) += data
-        }
-      case reg: DefRegInit if reg.name.slice(0, 2) != "T_" =>
-        getDataNames(reg.name, reg.id) foreach { case (data, name) =>
-          _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-          _modNameToNodes(modName) += data
-        }
-      case wire: DefWire if wire.name.slice(0, 2) != "T_" =>
-        getDataNames(wire.name, wire.id) foreach { case (data, name) =>
-          // _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-          _modNameToNodes(modName) += data
-        }
-      case prim: DefPrim[_] if prim.name.slice(0, 2) != "T_" =>
-        getDataNames(prim.name, prim.id) foreach { case (data, name) =>
-          // _nodes += data
-          _nodeParent(data) = mod
-          _nodeToName(data) = validName(name)
-          _modNameToNodes(modName) += data
-        }
-      case mem: DefMemory if mem.name.slice(0, 2) != "T_" => mem.t match {
-        case _: Bits =>
-          _nodes += mem.id
-          _nodeParent(mem.id) = mod
-          _nodeToName(mem.id) = validName(mem.name)
-          _modNameToNodes(modName) += mem.id
-        case _ => // Do not supoort aggregate type memories
+/* TODO: Chisel should provide nodes of the circuit? */
+private[iotesters] object getChiselNodes {
+  import chisel3.internal.firrtl._
+  def apply(circuit: Circuit): Seq[InstanceId] = {
+    circuit.components flatMap (_.commands flatMap {
+      case x: DefReg => flatten(x.id)
+      case x: DefRegInit => flatten(x.id)
+      case mem: DefMemory => mem.t match {
+        case _: Element => Seq(mem.id)
+        case _ => Nil // Do not supoort aggregate type memories
       }
-      case mem: DefSeqMemory if mem.name.slice(0, 2) != "T_" => mem.t match {
-        case _: Bits =>
-          _nodes += mem.id
-          _nodeParent(mem.id) = mod
-          _nodeToName(mem.id) = validName(mem.name)
-          _modNameToNodes(modName) += mem.id
-        case _ => // Do not supoort aggregate type memories
+      case mem: DefSeqMemory => mem.t match {
+        case _: Element => Seq(mem.id)
+        case _ => Nil // Do not supoort aggregate type memories
       }
-      case _ =>
-    }
-    mod
-  }
-
-  def construct(circuit: Circuit): Module =
-    construct(circuit.name, circuit.components)
-  
-  def nodes = _nodes.toList
-
-  def getNodes(name: String) = _modNameToNodes(name).toList
-
-  def getName(node: HasId) = _nodeToName(node)
-
-  def getPathName(mod: Module, seperator: String): String = {
-    val modName = _modToName getOrElse (mod, mod.name)
-    (_modParent get mod) match {
-      case None    => modName
-      case Some(p) => s"${getPathName(p, seperator)}$seperator$modName"
-    }
-  }
-
-  def getPathName(node: HasId, seperator: String): String = {
-    (_nodeParent get node) match {
-      case None    => getName(node)
-      case Some(p) => s"${getPathName(p, seperator)}$seperator${getName(node)}"
-    }
-  }
-
-  def clear {
-    _modParent.clear
-    _nodeParent.clear
-    _modToName.clear
-    _nodeToName.clear
-    _nodes.clear
-    _modNameToNodes.clear
+      case _ => Nil
+    }) filterNot (x => (x.instanceName slice (0, 2)) == "T_") 
   }
 }
 
@@ -170,4 +99,27 @@ private[iotesters] object verilogToVCS {
   }
 }
 
-private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage: String) extends RuntimeException(lastMessage)
+private[iotesters] case class BackendException(b: String)
+  extends Exception(s"Unknown backend: $b. Backend shoule be firrtl, verilator, vcs, or glsim")
+
+private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage: String)
+  extends RuntimeException(lastMessage)
+
+private[iotesters] object TesterProcess {
+  def apply(cmd: Seq[String], logs: ArrayBuffer[String]) = {
+    require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exists")
+    val processBuilder = Process(cmd mkString " ")
+    val processLogger = ProcessLogger(println, logs += _) // don't log stdout
+    processBuilder run processLogger
+  }
+  def kill(sim: SimApiInterface) {
+    while(!sim.exitValue.isCompleted) sim.process.destroy
+    println("Exit Code: %d".format(sim.process.exitValue))
+  }
+  def kill(p: VCSBackend) {
+    kill(p.simApiInterface)
+  }
+  def kill(p: VerilatorBackend) {
+    kill(p.simApiInterface)
+  }
+}

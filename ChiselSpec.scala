@@ -7,17 +7,19 @@ import org.scalatest.prop._
 import org.scalacheck._
 import chisel3._
 import chisel3.testers._
+import sys.process.{stringSeqToProcess, BasicIO}
+import scala.util.Properties.envOrElse
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {
+  val backends = envOrElse("TESTER_BACKENDS", "firrtl") split " "
   def runTester(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
     TesterDriver.execute(() => t, additionalVResources)
   }
   def assertTesterPasses(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
     assert(runTester(t, additionalVResources))
   }
-  def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
-
+  def elaborate(t: => Module): Unit = chisel3.Driver.elaborate(() => t)
 }
 
 /** Spec base class for BDD-style testers. */
