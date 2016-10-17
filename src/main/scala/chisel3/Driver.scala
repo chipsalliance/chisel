@@ -84,6 +84,36 @@ trait BackendCompilationUtilities {
   def cppToExe(prefix: String, dir: File): ProcessBuilder =
     Seq("make", "-C", dir.toString, "-j", "-f", s"V${prefix}.mk", s"V${prefix}")
 
+  /** Compile a VCS simulator from verilog sources
+    *
+    * @param dutFile name of the DUT .v without the .v extension
+    * @param name of the top-level module in the design
+    * @param dir output directory
+    * @param vSources list of additional Verilog sources including test harness to compile
+    * @param vHarness Verilog testharness to compile/link against
+    */
+  def verilogToVCS(
+      dutFile: String,
+      topModule: String,
+      dir: File,
+      vSources: Seq[File],
+      vHarness: File
+                  ): ProcessBuilder = {
+    val command = Seq("cd", dir.toString, "&&", "vcs", "-o", "V" + topModule) ++
+      Seq("-full64", "-quiet",
+        "-timescale=1ns/1ps",
+        "+define+CLOCK_PERIOD=1",
+        s"+define+TOP_MODULE=$topModule",
+        s"-Mdir=$topModule.csrc",
+        s"+define+PRINTF_COND=!$topModule.reset",
+        s"+define+STOP_COND=!$topModule.reset",
+        "+vcs+lic+wait",
+        "+vcs+initreg+random") ++
+      Seq(s"$dutFile.v", vHarness.toString) ++ vSources.map(_.toString) mkString " "
+    System.out.println(command)
+    Seq("bash", "-c", command)
+  }
+
   def executeExpectingFailure(
       prefix: String,
       dir: File,
