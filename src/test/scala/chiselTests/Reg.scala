@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import firrtl.ir.Input
 import org.scalatest._
 import chisel3._
 import chisel3.core.DataMirror
