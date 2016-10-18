@@ -122,4 +122,6 @@ private[iotesters] object TesterProcess {
   def kill(p: VerilatorBackend) {
     kill(p.simApiInterface)
   }
+  def kill(p: FirrtlTerpBackend) {
+  }
 }

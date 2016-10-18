@@ -1,19 +1,20 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import java.io.{File, PrintStream}
+import java.io.PrintStream
 
-import chisel3.{Module, Bits}
+import chisel3._
 import chisel3.internal.InstanceId
-
-import scala.collection.mutable.HashMap
 
 import firrtl_interpreter.InterpretiveTester
 
-private[iotesters] class FirrtlTerpBackend(dut: Module,
-                                           firrtlIR: String,
-                                           _seed: Long = System.currentTimeMillis) extends Backend(_seed) {
-  val interpretiveTester = new InterpretiveTester(firrtlIR)
+private[iotesters] class FirrtlTerpBackend(
+    dut: Module,
+    firrtlIR: String,
+    _seed: Long = System.currentTimeMillis,
+    optionsManager: TesterOptionsManager = new TesterOptionsManager)
+  extends Backend(_seed) {
+  val interpretiveTester = new InterpretiveTester(firrtlIR, optionsManager)
   reset(5) // reset firrtl interpreter on construction
 
   val portNames = getDataNames("io", dut.io).toMap
@@ -50,7 +51,7 @@ private[iotesters] class FirrtlTerpBackend(dut: Module,
         val good = got == expected
         if (verbose) logger println
            s"""$msg  EXPECT $name -> ${bigIntToStr(got, base)} == ${bigIntToStr(expected, base)}""" +
-           s"""${if (good) "PASS" else "FAIL"}"""
+           s""" ${if (good) "PASS" else "FAIL"}"""
         good
       case _ => false
     }
@@ -83,16 +84,31 @@ private[iotesters] class FirrtlTerpBackend(dut: Module,
     interpretiveTester.poke("reset", 0)
   }
 
-  def finish(implicit logger: PrintStream): Unit = Unit
+  def finish(implicit logger: PrintStream): Unit = {
+    interpretiveTester.report()
+  }
 }
 
 private[iotesters] object setupFirrtlTerpBackend {
-  def apply[T <: chisel3.Module](dutGen: () => T, dir: File): (T, Backend) = {
-    val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = getTopModule(circuit).asInstanceOf[T]
+  def apply[T <: chisel3.Module](
+      dutGen: () => T,
+      optionsManager: TesterOptionsManager = new TesterOptionsManager): (T, Backend) = {
 
-    // Dump FIRRTL for debugging
-    chisel3.Driver.dumpFirrtl(circuit, Some(new File(dir, s"${circuit.name}.fir")))
-    (dut, new FirrtlTerpBackend(dut, chisel3.Driver.emit(dutGen)))
+    chisel3.Driver.execute(optionsManager, dutGen) match {
+      case ChiselExecutionSucccess(Some(circuit), firrtlText, Some(firrtlExecutionResult)) =>
+        val dut = getTopModule(circuit).asInstanceOf[T]
+        (dut, new FirrtlTerpBackend(dut, chisel3.Driver.emit(dutGen), optionsManager = optionsManager))
+      case _ =>
+        throw new Exception("Problem with compilation")
+    }
+//
+//
+//    val circuit = chisel3.Driver.elaborate(dutGen)
+//    val dut = getTopModule(circuit).asInstanceOf[T]
+//    val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
+//
+//    // Dump FIRRTL for debugging
+//    chisel3.Driver.dumpFirrtl(circuit, Some(new File(dir, s"${circuit.name}.fir")))
+//    (dut, new FirrtlTerpBackend(dut, chisel3.Driver.emit(dutGen)))
   }
 }

@@ -113,7 +113,10 @@ object genVCSVerilogHarness {
 }
 
 private[iotesters] object setupVCSBackend {
-  def apply[T <: chisel3.Module](dutGen: () => T, dir: File): (T, Backend) = {
+  def apply[T <: chisel3.Module](dutGen: () => T, optionsManager: TesterOptionsManager): (T, Backend) = {
+    optionsManager.makeTargetDir()
+    val dir = new File(optionsManager.targetDirName)
+
     val circuit = chisel3.Driver.elaborate(dutGen)
     val dut = getTopModule(circuit).asInstanceOf[T]
 

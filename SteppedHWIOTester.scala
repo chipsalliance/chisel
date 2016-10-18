@@ -50,7 +50,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
   def dir(target: Data): Direction = {
     target match {
       case e: Element => e.dir
-      case _ => chisel3.core.Direction.Unspecified
+      case _ => chisel3.NODIR
     }
   }
 
@@ -132,7 +132,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
   private def createVectorsAndTestsForOutput(output_port: Data, counter: Counter): Unit = {
     val output_values = Vec(
       test_actions.map { step =>
-        output_port.chiselCloneType.fromBits(UInt(step.output_map.getOrElse(output_port, BigInt(0))))
+        output_port.cloneType.fromBits(UInt(step.output_map.getOrElse(output_port, BigInt(0))))
       }
     )
     val ok_to_test_output_values = Vec(
