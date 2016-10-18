@@ -32,8 +32,9 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.Utils.{one, zero, BoolType}
+import firrtl.passes.memlib._
 import MemPortUtils.memPortField
-import AnalysisUtils.{Connects, getConnects, getConnectOrigin}
+import AnalysisUtils.{Connects, getConnects, getOrigin}
 import WrappedExpression.weq
 import Annotations._
 
@@ -117,8 +118,8 @@ object InferReadWritePass extends Pass {
       for (w <- mem.writers ; r <- mem.readers) {
         val wp = getProductTerms(connects)(memPortField(mem, w, "en"))
         val rp = getProductTerms(connects)(memPortField(mem, r, "en"))
-        val wclk = getConnectOrigin(connects, memPortField(mem, w, "clk"))
-        val rclk = getConnectOrigin(connects, memPortField(mem, r, "clk"))
+        val wclk = getOrigin(connects)(memPortField(mem, w, "clk"))
+        val rclk = getOrigin(connects)(memPortField(mem, r, "clk"))
         if (weq(wclk, rclk) && (wp exists (a => rp exists (b => checkComplement(a, b))))) {
           val rw = namespace newName "rw"
           val rwExp = createSubField(createRef(mem.name), rw)

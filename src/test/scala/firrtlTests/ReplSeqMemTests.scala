@@ -2,6 +2,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.passes._
+import firrtl.passes.memlib._
 import Annotations._
 
 class ReplSeqMemSpec extends SimpleTransformSpec {
@@ -13,7 +14,7 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     new ResolveAndCheck(),
     new HighFirrtlToMiddleFirrtl(),
     new passes.InferReadWrite(TransID(-1)),
-    new passes.ReplSeqMem(TransID(-2)),
+    new passes.memlib.ReplSeqMem(TransID(-2)),
     new MiddleFirrtlToLowFirrtl(),
     (new Transform with SimpleRun {
      def execute(c: ir.Circuit, a: AnnotationMap) = run(c, passSeq) } ),
@@ -107,7 +108,7 @@ circuit Top :
       val circuit = InferTypes.run(ToWorkingIR.run(parse(input)))
       val m = circuit.modules.head.asInstanceOf[ir.Module]
       val connects = AnalysisUtils.getConnects(m)
-      val calculatedOrigin = AnalysisUtils.getConnectOrigin(connects)("f").serialize 
+      val calculatedOrigin = AnalysisUtils.getOrigin(connects, "f").serialize 
       require(calculatedOrigin == origin, s"getConnectOrigin returns incorrect origin $calculatedOrigin !")
     }
 

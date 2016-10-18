@@ -81,7 +81,7 @@ Optional Arguments:
       passes.InferReadWriteAnnotation(value, TransID(-1))
 
     def handleReplSeqMem(value: String) = 
-      passes.ReplSeqMemAnnotation(value, TransID(-2))
+      passes.memlib.ReplSeqMemAnnotation(value, TransID(-2))
 
     run(args: Array[String],
       Map( "high" -> new HighFirrtlCompiler(),

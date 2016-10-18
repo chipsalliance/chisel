@@ -43,39 +43,55 @@ object seqCat {
   }
 }
 
+/** Given an expression, return an expression consisting of all sub-expressions
+ * concatenated (or flattened).
+ */
 object toBits {
   def apply(e: Expression): Expression = e match {
-    case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiercat(ex, ex.tpe)
+    case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiercat(ex)
     case t => error("Invalid operand expression for toBits!")
   }
-  private def hiercat(e: Expression, dt: Type): Expression = dt match {
+  private def hiercat(e: Expression): Expression = e.tpe match {
     case t: VectorType => seqCat((0 until t.size) map (i =>
-      hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER),t.tpe)))
+      hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER))))
     case t: BundleType => seqCat(t.fields map (f =>
-      hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER), f.tpe)))
+      hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER))))
     case t: GroundType => e
     case t => error("Unknown type encountered in toBits!")
   }
 }
 
-// TODO: make easier to understand
+/** Given a mask, return a bitmask corresponding to the desired datatype.
+ *  Requirements:
+ *    - The mask type and datatype must be equivalent, except any ground type in
+ *         datatype must be matched by a 1-bit wide UIntType.
+ *    - The mask must be a reference, subfield, or subindex
+ *  The bitmask is a series of concatenations of the single mask bit over the
+ *    length of the corresponding ground type, e.g.:
+ *{{{
+ * wire mask: {x: UInt<1>, y: UInt<1>}
+ * wire data: {x: UInt<2>, y: SInt<2>}
+ * // this would return:
+ * cat(cat(mask.x, mask.x), cat(mask.y, mask.y))
+ * }}}
+ */
 object toBitMask {
-  def apply(e: Expression, dataType: Type): Expression = e match {
-    case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiermask(ex, ex.tpe, dataType)
+  def apply(mask: Expression, dataType: Type): Expression = mask match {
+    case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiermask(ex, dataType)
     case t => error("Invalid operand expression for toBits!")
   }
-  private def hiermask(e: Expression, maskType: Type, dataType: Type): Expression =
-    (maskType, dataType) match {
+  private def hiermask(mask: Expression, dataType: Type): Expression =
+    (mask.tpe, dataType) match {
       case (mt: VectorType, dt: VectorType) =>
         seqCat((0 until mt.size).reverse map { i =>
-          hiermask(WSubIndex(e, i, mt.tpe, UNKNOWNGENDER), mt.tpe, dt.tpe)
+          hiermask(WSubIndex(mask, i, mt.tpe, UNKNOWNGENDER), dt.tpe)
         })
       case (mt: BundleType, dt: BundleType) =>
         seqCat((mt.fields zip dt.fields) map { case (mf, df) =>
-          hiermask(WSubField(e, mf.name, mf.tpe, UNKNOWNGENDER), mf.tpe, df.tpe)
+          hiermask(WSubField(mask, mf.name, mf.tpe, UNKNOWNGENDER), df.tpe)
         })
-      case (mt: UIntType, dt: GroundType) =>
-        seqCat(List.fill(bitWidth(dt).intValue)(e))
+      case (UIntType(width), dt: GroundType) if width == IntWidth(BigInt(1)) =>
+        seqCat(List.fill(bitWidth(dt).intValue)(mask))
       case (mt, dt) => error("Invalid type for mask component!")
     }
 }
@@ -153,7 +169,7 @@ object createSubField {
 }
 
 object connectFields {
-  def apply(lref: Expression, lname: String, rref: Expression, rname: String) =
+  def apply(lref: Expression, lname: String, rref: Expression, rname: String): Connect =
     Connect(NoInfo, createSubField(lref, lname), createSubField(rref, rname))
 }
 
@@ -166,14 +182,14 @@ object MemPortUtils {
   type Memories = collection.mutable.ArrayBuffer[DefMemory]
   type Modules = collection.mutable.ArrayBuffer[DefModule]
 
-  def defaultPortSeq(mem: DefMemory) = Seq(
+  def defaultPortSeq(mem: DefMemory): Seq[Field] = Seq(
     Field("addr", Default, UIntType(IntWidth(ceilLog2(mem.depth) max 1))),
     Field("en", Default, BoolType),
     Field("clk", Default, ClockType)
   )
 
   // Todo: merge it with memToBundle
-  def memType(mem: DefMemory) = {
+  def memType(mem: DefMemory): Type = {
     val rType = BundleType(defaultPortSeq(mem) :+
       Field("data", Flip, mem.dataType))
     val wType = BundleType(defaultPortSeq(mem) ++ Seq(
@@ -190,7 +206,7 @@ object MemPortUtils {
       (mem.readwriters map (Field(_, Flip, rwType))))
   }
 
-  def memPortField(s: DefMemory, p: String, f: String) = {
+  def memPortField(s: DefMemory, p: String, f: String): Expression = {
     val mem = WRef(s.name, memType(s), MemKind, UNKNOWNGENDER)
     val t1 = field_type(mem.tpe, p)
     val t2 = field_type(t1, f)

@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 package firrtl.passes
+package memlib
 
 import firrtl._
 import firrtl.ir._
@@ -40,9 +41,9 @@ object PassConfigUtil {
 
 class ConfWriter(filename: String) {
   val outputBuffer = new CharArrayWriter
-  def append(m: DefMemory) = {
+  def append(m: DefAnnotatedMemory) = {
     // legacy
-    val maskGran = getInfo(m.info, "maskGran")
+    val maskGran = m.maskGran
     val readers = List.fill(m.readers.length)("read")
     val writers = List.fill(m.writers.length)(if (maskGran.isEmpty) "write" else "mwrite")
     val readwriters = List.fill(m.readwriters.length)(if (maskGran.isEmpty) "rw" else "mrw")
@@ -94,13 +95,16 @@ Optional Arguments:
 class ReplSeqMem(transID: TransID) extends Transform with SimpleRun {
   def passSeq(inConfigFile: Option[YamlFileReader], outConfigFile: ConfWriter) =
     Seq(Legalize,
-        AnnotateMemMacros,
-        UpdateDuplicateMemMacros,
-        new AnnotateValidMemConfigs(inConfigFile),
+        ToMemIR,
+        ResolveMaskGranularity,
+        RenameAnnotatedMemoryPorts,
+        ResolveMemoryReference,
+        //new AnnotateValidMemConfigs(inConfigFile),
         new ReplaceMemMacros(outConfigFile),
         RemoveEmpty,
         CheckInitialization,
         InferTypes,
+        Uniquify,
         ResolveKinds,         // Must be run for the transform to work!
         ResolveGenders)
 
