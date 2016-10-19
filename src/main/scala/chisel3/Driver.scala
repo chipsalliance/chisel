@@ -119,13 +119,13 @@ trait BackendCompilationUtilities {
         "-Wno-WIDTH",
         "-Wno-STMTDLY",
         "--trace",
-        "-O2",
+        "-O0",
         "--top-module", topModule,
         "+define+TOP_TYPE=V" + dutFile,
         s"+define+PRINTF_COND=!$topModule.reset",
         s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
-        s"""-Wno-undefined-bool-conversion -O2 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
+        s"""-Wno-undefined-bool-conversion -O0 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
         "-Mdir", dir.toString,
         "--exe", cppHarness.toString)
     System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
