@@ -24,7 +24,6 @@ case class TesterOptions(
                           logFileName:     String  = "",
                           waveform:        Option[File] = None) extends ComposableOptions
 
-//Todo: Add options for isVerbose, displayBase, any othe missing things
 trait HasTesterOptions {
   self: ExecutionOptionsManager =>
 
@@ -32,10 +31,14 @@ trait HasTesterOptions {
 
   parser.note("tester options")
 
-  parser.opt[String]("backend-name")
+  parser.opt[String]("backend-name").valueName("<firrtl|verilator|vcs>")
     .abbr("tbn")
+    .validate { x =>
+      if (Array("firrtl", "verilator", "vcs").contains(x.toLowerCase)) parser.success
+      else parser.failure(s"$x not a legal backend name")
+    }
     .foreach { x => testerOptions = testerOptions.copy(backendName = x) }
-    .text("run this as test command")
+    .text(s"backend to use with tester, default is ${testerOptions.backendName}")
 
   parser.opt[Unit]("is-gen-verilog")
     .abbr("tigv")
@@ -51,6 +54,16 @@ trait HasTesterOptions {
     .abbr("tic")
     .foreach { _ => testerOptions = testerOptions.copy(isCompiling = true) }
     .text("has harness already been generated")
+
+  parser.opt[Unit]("is-verbose")
+    .abbr("tiv")
+    .foreach { _ => testerOptions = testerOptions.copy(isVerbose = true) }
+    .text(s"set verbose flag on PeekPokeTesters, default is ${testerOptions.isVerbose}")
+
+  parser.opt[Int]("display-base")
+    .abbr("tdb")
+    .foreach { x => testerOptions = testerOptions.copy(displayBase = x) }
+    .text(s"provides a seed for random number generator, default is ${testerOptions.displayBase}")
 
   parser.opt[Seq[String]]("test-command")
     .abbr("ttc")
