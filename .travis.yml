@@ -29,7 +29,7 @@ script:
   # FIRRTL Tests
   - verilator --version
   - cd $TRAVIS_BUILD_DIR
-  - sbt clean test
+  - sbt clean test publish-local
   - make clean build-scala regress
   # Chisel 3 Tests
   - cd chisel3
