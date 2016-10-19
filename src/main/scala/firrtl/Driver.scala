@@ -104,7 +104,7 @@ object Driver {
 
     val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
     val outputBuffer = new java.io.CharArrayWriter
-    firrtlConfig.compiler.compile(parsedInput, new AnnotationMap(Seq.empty), outputBuffer)
+    firrtlConfig.compiler.compile(parsedInput, new AnnotationMap(firrtlConfig.annotations), outputBuffer)
 
     val outputFileName = firrtlConfig.getOutputFileName(optionsManager)
     val outputFile     = new java.io.PrintWriter(outputFileName)
