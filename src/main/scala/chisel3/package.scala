@@ -152,6 +152,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
