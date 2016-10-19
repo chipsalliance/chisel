@@ -146,7 +146,7 @@ object chiselMain {
       case "firrtl" =>
         val file = new java.io.File(context.targetDir, s"${dut.name}.ir")
         val ir = io.Source.fromFile(file).getLines mkString "\n"
-        new FirrtlTerpBackend(dut, ir, context.testerSeed)
+        new FirrtlTerpBackend(dut, ir)
       case "verilator" =>
         new VerilatorBackend(dut, context.testCmd.toList, context.testerSeed)
       case "vcs" | "glsim" =>

@@ -52,11 +52,7 @@ abstract class PeekPokeTester[+T <: Module](
   /****************************/
   /*** Simulation Interface ***/
   /****************************/
-  val backend = ((Driver.backend, chiselMain.context.backend): @unchecked) match {
-    case (Some(b), _)    => b
-    case (None, Some(b)) => b
-  }
-  logger.println(s"SEED ${backend._seed}")
+  val backend = Driver.backend.get
 
   /********************************/
   /*** Classic Tester Interface ***/
@@ -76,6 +72,7 @@ abstract class PeekPokeTester[+T <: Module](
 
   val rnd = backend.rnd
   rnd.setSeed(optionsManager.testerOptions.testerSeed)
+  logger.println(s"SEED ${optionsManager.testerOptions.testerSeed}")
 
   /** Convert a Boolean to BigInt */
   implicit def int(x: Boolean): BigInt = if (x) 1 else 0
@@ -91,7 +88,7 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def step(n: Int) {
-    if (verbose) logger println s"STEP ${simTime} -> ${simTime+n}"
+    if (verbose) logger println s"STEP $simTime -> ${simTime+n}"
     backend.step(n)
     incTime(n)
   }
@@ -104,7 +101,7 @@ abstract class PeekPokeTester[+T <: Module](
     if (!signal.isLit) backend.poke(signal, value, None)
   }
 
-  def pokeAt[T <: Bits](data: Mem[T], value: BigInt, off: Int): Unit = {
+  def pokeAt[TT <: Bits](data: Mem[TT], value: BigInt, off: Int): Unit = {
     backend.poke(data, value, Some(off))
   }
 
@@ -112,12 +109,12 @@ abstract class PeekPokeTester[+T <: Module](
     if (!signal.isLit) backend.peek(signal, None) else signal.litValue()
   }
 
-  def peekAt[T <: Bits](data: Mem[T], off: Int): BigInt = {
+  def peekAt[TT <: Bits](data: Mem[TT], off: Int): BigInt = {
     backend.peek(data, Some(off))
   }
 
   def expect (good: Boolean, msg: => String): Boolean = {
-    if (verbose) logger println s"""EXPECT ${msg} ${if (good) "PASS" else "FAIL"}"""
+    if (verbose) logger println s"""EXPECT $msg ${if (good) "PASS" else "FAIL"}"""
     if (!good) fail
     good
   }
@@ -140,7 +137,7 @@ abstract class PeekPokeTester[+T <: Module](
       //  Anything other than 0 is an error.
       case e: TestApplicationException => if (e.exitVal != 0) fail
     }
-    logger println s"""RAN ${simTime} CYCLES ${if (ok) "PASSED" else s"FAILED FIRST AT CYCLE ${failureTime}"}"""
+    logger println s"""RAN $simTime CYCLES ${if (ok) "PASSED" else s"FAILED FIRST AT CYCLE $failureTime"}"""
     ok
   }
 }

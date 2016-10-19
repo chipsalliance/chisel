@@ -11,9 +11,8 @@ import firrtl_interpreter.InterpretiveTester
 private[iotesters] class FirrtlTerpBackend(
     dut: Module,
     firrtlIR: String,
-    _seed: Long = System.currentTimeMillis,
     optionsManager: TesterOptionsManager = new TesterOptionsManager)
-  extends Backend(_seed) {
+  extends Backend(_seed = System.currentTimeMillis()) {
   val interpretiveTester = new InterpretiveTester(firrtlIR, optionsManager)
   reset(5) // reset firrtl interpreter on construction
 
