@@ -2,6 +2,8 @@
 
 package chisel3.iotesters
 
+import java.io.File
+
 import chisel3._
 
 // Provides a template to define tester transactions
@@ -26,33 +28,35 @@ trait PeekPokeTests {
   def finish: Boolean
 }
 
-abstract class PeekPokeTester[+T <: Module](val dut: T,
-                                            verbose: Boolean = true,
-                                            base: Int = 16,
-                                            logFile: Option[java.io.File] = None) {
+abstract class PeekPokeTester[+T <: Module](
+    val dut: T,
+    verbose: Boolean = true,
+    base: Int = 16,
+    logFile: Option[File] = None) {
 
   implicit def longToInt(x: Long) = x.toInt
+  val optionsManager = Driver.optionsManager
 
-  implicit val logger = (logFile, chiselMain.context.logFile) match {
-    case (None, None) => System.out
-    case (Some(f), _) => new java.io.PrintStream(f)
-    case (_, Some(f)) => new java.io.PrintStream(f)
+  implicit val logger = (logFile, optionsManager.testerOptions.logFileName) match {
+    case (None, "")        => System.out
+    case (Some(f), _)      => new java.io.PrintStream(f)
+    case (_, logFileName)  => new java.io.PrintStream(new File(logFileName))
   }
-  implicit val _verbose = verbose
-  implicit val _base = base
+  implicit val _verbose = optionsManager.testerOptions.isVerbose
+  implicit val _base    = optionsManager.testerOptions.displayBase
 
   def println(msg: String = "") {
-    logger println msg
+    logger.println(msg)
   }
 
   /****************************/
   /*** Simulation Interface ***/
   /****************************/
   val backend = ((Driver.backend, chiselMain.context.backend): @unchecked) match {
-    case (Some(b), _) => b
+    case (Some(b), _)    => b
     case (None, Some(b)) => b
   }
-  logger println s"SEED ${backend._seed}"
+  logger.println(s"SEED ${backend._seed}")
 
   /********************************/
   /*** Classic Tester Interface ***/
@@ -71,6 +75,7 @@ abstract class PeekPokeTester[+T <: Module](val dut: T,
   }
 
   val rnd = backend.rnd
+  rnd.setSeed(optionsManager.testerOptions.testerSeed)
 
   /** Convert a Boolean to BigInt */
   implicit def int(x: Boolean): BigInt = if (x) 1 else 0

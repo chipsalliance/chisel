@@ -16,12 +16,15 @@ case class TesterOptions(
                           isGenHarness:    Boolean = false,
                           isCompiling:     Boolean = false,
                           isRunTest:       Boolean = false,
+                          isVerbose:       Boolean = false,
+                          displayBase:     Int     = 10,
                           testerSeed:      Long    = System.currentTimeMillis,
                           testCmd:         mutable.ArrayBuffer[String]= mutable.ArrayBuffer[String](),
                           backendName:     String  = "firrtl",
                           logFileName:     String  = "",
                           waveform:        Option[File] = None) extends ComposableOptions
 
+//Todo: Add options for isVerbose, displayBase, any othe missing things
 trait HasTesterOptions {
   self: ExecutionOptionsManager =>
 

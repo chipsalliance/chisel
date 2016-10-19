@@ -16,6 +16,10 @@ object Driver {
   private val backendVar = new DynamicVariable[Option[Backend]](None)
   private[iotesters] def backend = backendVar.value
 
+  private val optionsManagerVar = new DynamicVariable[Option[TesterOptionsManager]](None)
+  private[iotesters] def optionsManager = optionsManagerVar.value.getOrElse(new TesterOptionsManager)
+
+
   def execute[T <: Module](
                             dutGenerator: () => T,
                             optionsManager: TesterOptionsManager
@@ -39,18 +43,20 @@ object Driver {
     if(optionsManager.topName.isEmpty) {
       optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/${testerGen.getClass.getName}")
     }
-
-    backendVar.withValue(Some(backend)) {
-      try {
-        testerGen(dut).finish
-      } catch { case e: Throwable =>
-        e.printStackTrace()
-        backend match {
-          case b: VCSBackend => TesterProcess.kill(b)
-          case b: VerilatorBackend => TesterProcess.kill(b)
-          case _ =>
+    optionsManagerVar.withValue(Some(optionsManager)) {
+      backendVar.withValue(Some(backend)) {
+        try {
+          testerGen(dut).finish
+        } catch {
+          case e: Throwable =>
+            e.printStackTrace()
+            backend match {
+              case b: VCSBackend => TesterProcess.kill(b)
+              case b: VerilatorBackend => TesterProcess.kill(b)
+              case _ =>
+            }
+            throw e
         }
-        throw e
       }
     }
   }
