@@ -2,7 +2,11 @@
 #include <iostream>
 
 #if VM_TRACE
-# include <verilated_vcd_c.h>	// Trace file format header
+    #include <verilated_vcd_c.h>	// Trace file format header
+    #ifdef VCD_FILE // stringify -DVCD_FILE value in Makefrag-verilator
+        #define str(s) #s
+        #define xstr(s) str(s)
+    #endif
 #endif
 
 using namespace std;
@@ -19,7 +23,7 @@ double sc_time_stamp () { // Called by $time in Verilog
                           // what SystemC does
 }
 
-// TODO Provide command-line options like vcd filename, timeout count, etc.
+// TODO Provide command-line options like timeout count, etc.
 const long timeout = 100000000L;
 
 int main(int argc, char** argv) {
@@ -31,7 +35,11 @@ int main(int argc, char** argv) {
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace (tfp, 99);	// Trace 99 levels of hierarchy
-    tfp->open ("dump.vcd");	// Open the dump file
+    #ifdef VCD_FILE
+        tfp->open (xstr(VCD_FILE));	// if -DVCD_FILE is defined
+    #else
+        tfp->open ("dump.vcd");	// default dump file
+    #endif
 #endif
 
 
