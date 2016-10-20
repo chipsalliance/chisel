@@ -145,8 +145,8 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
             writer.write(s"        }\n")
             id + mem.length
           case _ =>
-            pushBack("signals", s"dut->$pathName", widthMap(node))
-            writer.write(s"""        sim_data.signal_map["${instanceName}"] = $id;\n""")
+//            pushBack("signals", s"dut->$pathName", widthMap(node))
+//            writer.write(s"""        sim_data.signal_map["${instanceName}"] = $id;\n""")
             id + 1
         }
       } catch {
