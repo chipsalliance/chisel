@@ -64,24 +64,20 @@ lazy val chiselSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
 
-  libraryDependencies ++= (Seq("firrtl").map {
-    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
-
-
-/* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
- *  in subtly disturbing ways on Linux (but not on Mac):
- *  - some fields in the generated .h file are re-named,
- *  - an additional field is added
- *  - the generated .cpp file has additional differences:
- *    - different temps in clock_lo
- *    - missing assignments
- *    - change of assignment order
- *    - use of "Tx" vs. "Tx.values"
- */
-  libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
+  libraryDependencies ++= Seq("firrtl").collect {
+    // If we have an unmanaged jar file in the lib directory, assume we're to use that,
+    case dep: String if (java.nio.file.Files.notExists(java.nio.file.Paths.get(s"${unmanagedBase.value}/$dep.jar"))) =>
+      //  otherwise let sbt fetch the appropriate version.
+      "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+      // This should really be something like:
+      //   case dep: String if !unmanagedClasspath.value.contains(s"$dep.jar") => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+      //  but this generates - error: A setting cannot depend on a task
+  } ++ Seq(
+    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
+    "com.github.scopt" %% "scopt" % "3.4.0"
+  ),
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
