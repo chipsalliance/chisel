@@ -11,7 +11,8 @@ import WiringUtils._
 
 /** A component, e.g. register etc. Must be declared only once under the TopAnnotation
   */
-case class SourceAnnotation(target: ComponentName, tID: TransID) extends Annotation with Loose with Unstable {
+case class SourceAnnotation(target: ComponentName) extends Annotation with Loose with Unstable {
+  def transform = classOf[WiringTransform]
   def duplicate(n: Named) = n match {
     case n: ComponentName => this.copy(target = n)
     case _ => throwInternalError
@@ -20,7 +21,8 @@ case class SourceAnnotation(target: ComponentName, tID: TransID) extends Annotat
 
 /** A module, e.g. ExtModule etc., that should add the input pin
   */
-case class SinkAnnotation(target: ModuleName, tID: TransID, pin: String) extends Annotation with Loose with Unstable {
+case class SinkAnnotation(target: ModuleName, pin: String) extends Annotation with Loose with Unstable {
+  def transform = classOf[WiringTransform]
   def duplicate(n: Named) = n match {
     case n: ModuleName => this.copy(target = n)
     case _ => throwInternalError
@@ -30,7 +32,8 @@ case class SinkAnnotation(target: ModuleName, tID: TransID, pin: String) extends
 /** A module under which all sink module must be declared, and there is only
   * one source component
   */
-case class TopAnnotation(target: ModuleName, tID: TransID) extends Annotation with Loose with Unstable {
+case class TopAnnotation(target: ModuleName) extends Annotation with Loose with Unstable {
+  def transform = classOf[WiringTransform]
   def duplicate(n: Named) = n match {
     case n: ModuleName => this.copy(target = n)
     case _ => throwInternalError
@@ -49,13 +52,15 @@ case class TopAnnotation(target: ModuleName, tID: TransID) extends Annotation wi
   * Notes:
   *   - No module uniquification occurs (due to imposed restrictions)
   */
-class WiringTransform(transID: TransID) extends Transform with SimpleRun {
+class WiringTransform extends Transform with SimpleRun {
+  def inputForm = MidForm
+  def outputForm = MidForm
   def passSeq(wi: WiringInfo) =
     Seq(new Wiring(wi),
         InferTypes,
         ResolveKinds,
         ResolveGenders)
-  def execute(c: Circuit, map: AnnotationMap) = map get transID match {
+  def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
     case Some(p) => 
       val sinks = mutable.HashMap[String, String]()
       val sources = mutable.Set[String]()
@@ -63,18 +68,20 @@ class WiringTransform(transID: TransID) extends Transform with SimpleRun {
       val comp = mutable.Set[String]()
       p.values.foreach { a =>
         a match {
-          case SinkAnnotation(m, _, pin) => sinks(m.name) = pin
-          case SourceAnnotation(c, _) =>
+          case SinkAnnotation(m, pin) => sinks(m.name) = pin
+          case SourceAnnotation(c) =>
             sources += c.module.name
             comp += c.name
-          case TopAnnotation(m, _) => tops += m.name
+          case TopAnnotation(m) => tops += m.name
         }
       }
       (sources.size, tops.size, sinks.size, comp.size) match {
-        case (0, 0, p, 0) => TransformResult(c)
-        case (1, 1, p, 1) if p > 0 => run(c, passSeq(WiringInfo(sources.head, comp.head, sinks.toMap, tops.head)))
+        case (0, 0, p, 0) => state
+        case (1, 1, p, 1) if p > 0 =>
+          val winfo = WiringInfo(sources.head, comp.head, sinks.toMap, tops.head)
+          state.copy(circuit = runPasses(state.circuit, passSeq(winfo)))
         case _ => error("Wrong number of sources, tops, or sinks!")
       }
-    case None => TransformResult(c)
+      case None => state
   }
 }

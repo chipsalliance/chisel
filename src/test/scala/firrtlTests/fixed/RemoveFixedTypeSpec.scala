@@ -35,7 +35,6 @@ import firrtl.passes._
 import firrtl.Parser.IgnoreInfo
 
 class RemoveFixedTypeSpec extends FirrtlFlatSpec {
-  def parse (input:String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Pass]) = {
     val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
       (c: Circuit, p: Pass) => p.run(c)
@@ -204,14 +203,14 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
         |    io_out <= io_in
       """.stripMargin
 
-    class CheckChirrtlTransform extends Transform with SimpleRun {
+    class CheckChirrtlTransform extends PassBasedTransform {
+      def inputForm = ChirrtlForm
+      def outputForm = ChirrtlForm
       val passSeq = Seq(passes.CheckChirrtl)
-      def execute (circuit: Circuit, annotationMap: AnnotationMap): TransformResult =
-        run(circuit, passSeq)
     }
 
     val chirrtlTransform = new CheckChirrtlTransform
-    chirrtlTransform.execute(parse(input), new AnnotationMap(Seq.empty))
+    chirrtlTransform.execute(CircuitState(parse(input), ChirrtlForm, Some(new AnnotationMap(Seq.empty))))
   }
 }
 

@@ -9,34 +9,37 @@ import firrtl.Annotations._
 import scala.collection.mutable
 
 // Tags an annotation to be consumed by this pass
-case class InlineAnnotation(target: Named, tID: TransID) extends Annotation with Loose with Unstable {
+case class InlineAnnotation(target: Named) extends Annotation with Loose with Unstable {
   def duplicate(n: Named) = this.copy(target=n)
+  def transform = classOf[InlineInstances]
 }
 
 // Only use on legal Firrtl. Specifically, the restriction of
 //  instance loops must have been checked, or else this pass can
 //  infinitely recurse
-class InlineInstances (transID: TransID) extends Transform {
+class InlineInstances extends Transform {
+   def inputForm = LowForm
+   def outputForm = LowForm
    val inlineDelim = "$"
-   def name = "Inline Instances"
-   def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult = {
-     annotationMap.get(transID) match {
-       case None => TransformResult(circuit, None, None)
-       case Some(map) =>
-         val moduleNames = mutable.HashSet[ModuleName]()
-         val instanceNames = mutable.HashSet[ComponentName]()
-         map.values.foreach {x: Annotation => x match {
-           case InlineAnnotation(ModuleName(mod, cir), _)  => moduleNames += ModuleName(mod, cir)
-           case InlineAnnotation(ComponentName(com, mod), _)  => instanceNames += ComponentName(com, mod)
-           case _ => throw new PassException("Annotation must be InlineAnnotation")
-         }}
-         check(circuit, moduleNames.toSet, instanceNames.toSet)
-         run(circuit, moduleNames.toSet, instanceNames.toSet)
+   override def name = "Inline Instances"
 
-       // Default behavior is to error if more than one annotation for inlining
-       //  This could potentially change
-       case _ => throw new PassException("Found more than one circuit annotation of InlineCAKind!")
+   private def collectAnns(anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
+     anns.foldLeft(Set.empty[ModuleName], Set.empty[ComponentName]) {
+       case ((modNames, instNames), ann) => ann match {
+         case InlineAnnotation(ModuleName(mod, cir)) => (modNames + ModuleName(mod, cir), instNames)
+         case InlineAnnotation(ComponentName(com, mod)) => (modNames, instNames + ComponentName(com, mod))
+         case _ => throw new PassException("Annotation must be InlineAnnotation")
+       }
      }
+
+   def execute(state: CircuitState): CircuitState = {
+     // TODO Add error check for more than one annotation for inlining
+     // TODO Propagate other annotations
+     val result = for {
+       myAnnotations <- getMyAnnotations(state)
+       (modNames, instNames) = collectAnns(myAnnotations.values)
+     } yield run(state.circuit, modNames, instNames)
+     result getOrElse state // Return state if nothing to do
    }
 
    // Checks the following properties:
@@ -78,7 +81,10 @@ class InlineInstances (transID: TransID) extends Transform {
       if (errors.nonEmpty) throw new PassExceptions(errors)
    }
 
-   def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName]): TransformResult = {
+   def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName]): CircuitState = {
+      // Check annotations and circuit match up
+      check(c, modsToInline, instsToInline)
+
       // ---- Rename functions/data ----
       val renameMap = mutable.HashMap[Named,Seq[Named]]()
       // Updates renameMap with new names
@@ -168,6 +174,6 @@ class InlineInstances (transID: TransID) extends Transform {
       val top = c.modules.find(m => m.name == c.main).get
       onModule(top)
       val modulesx = c.modules.map(m => inlinedModules(m.name))
-      TransformResult(Circuit(c.info, modulesx, c.main), Some(RenameMap(renameMap.toMap)), None)
+      CircuitState(Circuit(c.info, modulesx, c.main), LowForm, None, Some(RenameMap(renameMap.toMap)))
    }
 }

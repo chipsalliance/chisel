@@ -140,6 +140,7 @@ case class FirrtlExecutionOptions(
     infoModeName:           String = "append",
     inferRW:                Seq[String] = Seq.empty,
     firrtlSource:           Option[String] = None,
+    customTransforms:       Seq[Transform] = List.empty,
     annotations:            List[Annotation] = List.empty)
   extends ComposableOptions {
 
@@ -249,14 +250,17 @@ trait HasFirrtlOptions {
       val newAnnotations = x.map { value =>
         value.split('.') match {
           case Array(circuit) =>
-            passes.InlineAnnotation(CircuitName(circuit), TransID(0))
+            passes.InlineAnnotation(CircuitName(circuit))
           case Array(circuit, module) =>
-            passes.InlineAnnotation(ModuleName(module, CircuitName(circuit)), TransID(0))
+            passes.InlineAnnotation(ModuleName(module, CircuitName(circuit)))
           case Array(circuit, module, inst) =>
-            passes.InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))), TransID(0))
+            passes.InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))))
         }
       }
-      firrtlOptions = firrtlOptions.copy(annotations = firrtlOptions.annotations ++ newAnnotations)
+      firrtlOptions = firrtlOptions.copy(
+        annotations = firrtlOptions.annotations ++ newAnnotations,
+        customTransforms = firrtlOptions.customTransforms :+ new passes.InlineInstances
+      )
     }
     .text {
       """Inline one or more module (comma separated, no spaces) module looks like "MyModule" or "MyModule.myinstance"""
@@ -267,7 +271,8 @@ trait HasFirrtlOptions {
     .valueName ("<circuit>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations :+ InferReadWriteAnnotation(x, TransID(-1))
+        annotations = firrtlOptions.annotations :+ InferReadWriteAnnotation(x),
+        customTransforms = firrtlOptions.customTransforms :+ new passes.memlib.InferReadWrite
       )
     }.text {
       "Enable readwrite port inference for the target circuit"
@@ -278,7 +283,8 @@ trait HasFirrtlOptions {
     .valueName ("-c:<circuit>:-i:<filename>:-o:<filename>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations :+ ReplSeqMemAnnotation(x, TransID(-2))
+        annotations = firrtlOptions.annotations :+ ReplSeqMemAnnotation(x),
+        customTransforms = firrtlOptions.customTransforms :+ new passes.memlib.ReplSeqMem
       )
     }
     .text {

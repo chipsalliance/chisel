@@ -9,14 +9,16 @@ import org.scalatest.junit.JUnitRunner
 import firrtl.ir.Circuit
 import firrtl.Parser
 import firrtl.{
+   CircuitState,
    ResolveAndCheck,
    RenameMap,
    Compiler,
-   CompilerResult,
-   VerilogCompiler
+   ChirrtlForm,
+   LowForm,
+   VerilogCompiler,
+   Transform
 }
 import firrtl.Annotations.{
-   TransID,
    Named,
    CircuitName,
    ModuleName,
@@ -39,17 +41,17 @@ import firrtl.Annotations.{
  */
 trait AnnotationSpec extends LowTransformSpec {
   // Dummy transform
-  def transform = new ResolveAndCheck()
+  def transform = new CustomResolveAndCheck(LowForm)
 
   // Check if Annotation Exception is thrown
   override def failingexecute(writer: Writer, annotations: AnnotationMap, input: String) = {
     intercept[AnnotationException] {
-      compile(parse(input), annotations, writer)
+      compile(CircuitState(parse(input), ChirrtlForm, Some(annotations)), writer)
     }
   }
   def execute(writer: Writer, annotations: AnnotationMap, input: String, check: Annotation) = {
-    val cr = compile(parse(input), annotations, writer)
-    (cr.annotationMap.annotations.head) should be (check)
+    val cr = compile(CircuitState(parse(input), ChirrtlForm, Some(annotations)), writer)
+    (cr.annotations.get.annotations.head) should be (check)
   }
 }
 
@@ -63,7 +65,6 @@ trait AnnotationSpec extends LowTransformSpec {
  */
 class AnnotationTests extends AnnotationSpec with Matchers {
   def getAMap (a: Annotation): AnnotationMap = new AnnotationMap(Seq(a))
-  val tID = TransID(1)
   val input =
     """circuit Top :
        |  module Top :
@@ -76,11 +77,12 @@ class AnnotationTests extends AnnotationSpec with Matchers {
   val cName = ComponentName("c", mName)
 
   "Loose and Sticky annotation on a node" should "pass through" in {
-    case class TestAnnotation(target: Named, tID: TransID) extends Annotation with Loose with Sticky {
+    case class TestAnnotation(target: Named) extends Annotation with Loose with Sticky {
       def duplicate(to: Named) = this.copy(target=to)
+      def transform = classOf[Transform]
     }
     val w = new StringWriter()
-    val ta = TestAnnotation(cName, tID)
+    val ta = TestAnnotation(cName)
     execute(w, getAMap(ta), input, ta)
   }
 }

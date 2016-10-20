@@ -16,7 +16,8 @@ import wiring._
 
 /** Annotates the name of the pin to add for WiringTransform
   */
-case class PinAnnotation(target: CircuitName, tID: TransID, pin: String) extends Annotation with Loose with Unstable {
+case class PinAnnotation(target: CircuitName, pin: String) extends Annotation with Loose with Unstable {
+  def transform = classOf[ReplaceMemMacros]
   def duplicate(n: Named) = n match {
     case n: CircuitName => this.copy(target = n)
     case _ => throwInternalError
@@ -27,8 +28,10 @@ case class PinAnnotation(target: CircuitName, tID: TransID, pin: String) extends
   * This will not generate wmask ports if not needed.
   * Creates the minimum # of black boxes needed by the design.
   */
-class ReplaceMemMacros(writer: ConfWriter, myID: TransID, wiringID: TransID) extends Transform {
-  def name = "Replace Memory Macros"
+class ReplaceMemMacros(writer: ConfWriter) extends Transform {
+  override def name = "Replace Memory Macros"
+  def inputForm = MidForm
+  def outputForm = MidForm
 
   /** Return true if mask granularity is per bit, false if per byte or unspecified
     */
@@ -206,7 +209,8 @@ class ReplaceMemMacros(writer: ConfWriter, myID: TransID, wiringID: TransID) ext
        map updateStmtRefs(memPortMap))
   }
 
-  def execute(c: Circuit, map: AnnotationMap): TransformResult = {
+  def execute(state: CircuitState): CircuitState = {
+    val c = state.circuit
     val namespace = Namespace(c)
     val memMods = new Modules
     val nameMap = new NameMap
@@ -214,15 +218,15 @@ class ReplaceMemMacros(writer: ConfWriter, myID: TransID, wiringID: TransID) ext
     val modules = c.modules map updateMemMods(namespace, nameMap, memMods)
     // print conf
     writer.serialize()
-    val pin = map get myID match {
-      case Some(p) => 
+    val pin = getMyAnnotations(state) match {
+      case Some(p) =>
         p.values.head match {
-          case PinAnnotation(c, _, pin) => pin
+          case PinAnnotation(c, pin) => pin
           case _ => error(s"Bad Annotations: ${p.values}")
         }
       case None => "pin"
     }
-    val annos = memMods.collect { case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), wiringID, pin) }
-    TransformResult(c.copy(modules = modules ++ memMods), None, Some(AnnotationMap(annos)))
-  }  
+    val annos = memMods.collect { case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin) }
+    CircuitState(c.copy(modules = modules ++ memMods), inputForm, Some(AnnotationMap(annos)))
+  }
 }

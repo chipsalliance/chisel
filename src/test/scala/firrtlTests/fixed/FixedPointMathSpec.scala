@@ -5,12 +5,11 @@ package firrtlTests.fixed
 import java.io.StringWriter
 
 import firrtl.Annotations.AnnotationMap
-import firrtl.{LowFirrtlCompiler, Parser}
+import firrtl.{CircuitState, ChirrtlForm, LowFirrtlCompiler, Parser}
 import firrtl.Parser.IgnoreInfo
 import firrtlTests.FirrtlFlatSpec
 
 class FixedPointMathSpec extends FirrtlFlatSpec {
-  def parse(input: String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
 
   val SumPattern        = """.*output sum.*<(\d+)>.*.*""".r
   val ProductPattern    = """.*output product.*<(\d+)>.*""".r
@@ -45,7 +44,7 @@ class FixedPointMathSpec extends FirrtlFlatSpec {
 
       val writer = new StringWriter()
 
-      lowerer.compile(parse(input), new AnnotationMap(Seq.empty), writer)
+      lowerer.compile(CircuitState(parse(input), ChirrtlForm), writer)
 
       val output = writer.toString.split("\n")
 

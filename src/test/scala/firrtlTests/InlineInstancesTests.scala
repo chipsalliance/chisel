@@ -14,7 +14,6 @@ import firrtl.Annotations.{
    CircuitName,
    ModuleName,
    ComponentName,
-   TransID,
    Annotation,
    AnnotationMap
 }
@@ -24,9 +23,8 @@ import firrtl.passes.{InlineInstances, InlineAnnotation}
 /**
  * Tests inline instances transformation
  */
-class InlineInstancesTests extends HighTransformSpec {
-   val tID = TransID(0)
-   val transform = new InlineInstances(tID)
+class InlineInstancesTests extends LowTransformSpec {
+   def transform = new InlineInstances
    "The module Inline" should "be inlined" in {
       val input =
          """circuit Top :
@@ -48,14 +46,14 @@ class InlineInstancesTests extends HighTransformSpec {
            |    wire i$a : UInt<32>
            |    wire i$b : UInt<32>
            |    i$b <= i$a
-           |    i$a <= a
            |    b <= i$b
+           |    i$a <= a
            |  module Inline :
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Inline", CircuitName("Top")), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Inline", CircuitName("Top")))))
       execute(writer, aMap, input, check)
    }
 
@@ -85,15 +83,15 @@ class InlineInstancesTests extends HighTransformSpec {
            |    wire i1$a : UInt<32>
            |    wire i1$b : UInt<32>
            |    i1$b <= i1$a
+           |    b <= i1$b
            |    i0$a <= a
            |    i1$a <= i0$b
-           |    b <= i1$b
            |  module Simple :
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Simple", CircuitName("Top")), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Simple", CircuitName("Top")))))
       execute(writer, aMap, input, check)
    }
 
@@ -121,15 +119,15 @@ class InlineInstancesTests extends HighTransformSpec {
            |    wire i0$b : UInt<32>
            |    i0$b <= i0$a
            |    inst i1 of Simple
+           |    b <= i1.b
            |    i0$a <= a
            |    i1.a <= i0$b
-           |    b <= i1.b
            |  module Simple :
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ComponentName("i0",ModuleName("Top", CircuitName("Top"))), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ComponentName("i0",ModuleName("Top", CircuitName("Top"))))))
       execute(writer, aMap, input, check)
    }
 
@@ -163,9 +161,9 @@ class InlineInstancesTests extends HighTransformSpec {
            |    wire i0$b : UInt<32>
            |    i0$b <= i0$a
            |    inst i1 of B
+           |    b <= i1.b
            |    i0$a <= a
            |    i1.a <= i0$b
-           |    b <= i1.b
            |  module A :
            |    input a : UInt<32>
            |    output b : UInt<32>
@@ -176,10 +174,10 @@ class InlineInstancesTests extends HighTransformSpec {
            |    wire i$a : UInt<32>
            |    wire i$b : UInt<32>
            |    i$b <= i$a
-           |    i$a <= a
-           |    b <= i$b""".stripMargin
+           |    b <= i$b
+           |    i$a <= a""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
       execute(writer, aMap, input, check)
    }
 
@@ -199,7 +197,7 @@ class InlineInstancesTests extends HighTransformSpec {
            |    input a : UInt<32>
            |    output b : UInt<32>""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
       failingexecute(writer, aMap, input)
    }
    // 2) ext instance
@@ -216,7 +214,7 @@ class InlineInstancesTests extends HighTransformSpec {
            |    input a : UInt<32>
            |    output b : UInt<32>""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
       failingexecute(writer, aMap, input)
    }
    // 3) no module
@@ -228,7 +226,7 @@ class InlineInstancesTests extends HighTransformSpec {
            |    output b : UInt<32>
            |    b <= a""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
       failingexecute(writer, aMap, input)
    }
    // 4) no inst
@@ -240,7 +238,7 @@ class InlineInstancesTests extends HighTransformSpec {
            |    output b : UInt<32>
            |    b <= a""".stripMargin
       val writer = new StringWriter()
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")), tID)))
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
       failingexecute(writer, aMap, input)
    }
 }

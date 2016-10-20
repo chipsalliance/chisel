@@ -36,7 +36,6 @@ import firrtl.passes._
 import firrtl.Parser.IgnoreInfo
 
 class UnitTests extends FirrtlFlatSpec {
-  def parse (input:String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Pass]) = {
     val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
       (c: Circuit, p: Pass) => p.run(c)
@@ -114,7 +113,7 @@ class UnitTests extends FirrtlFlatSpec {
       (c: Circuit, p: Pass) => p.run(c)
     }
     val writer = new StringWriter()
-    FIRRTLEmitter.run(c_result,writer)
+    (new FirrtlEmitter).emit(CircuitState(c_result, HighForm), writer)
     (parse(writer.toString())) should be (parse(check))
   }
 
@@ -136,7 +135,7 @@ class UnitTests extends FirrtlFlatSpec {
     intercept[PassException] {
       val c = Parser.parse(splitExpTestCode.split("\n").toIterator)
       val c2 = passes.foldLeft(c)((c, p) => p run c)
-      new VerilogEmitter().run(c2, new OutputStreamWriter(new ByteArrayOutputStream))
+      (new VerilogEmitter).emit(CircuitState(c2, LowForm), new StringWriter)
     }
   }
 
@@ -147,7 +146,7 @@ class UnitTests extends FirrtlFlatSpec {
       InferTypes)
     val c = Parser.parse(splitExpTestCode.split("\n").toIterator)
     val c2 = passes.foldLeft(c)((c, p) => p run c)
-    new VerilogEmitter().run(c2, new OutputStreamWriter(new ByteArrayOutputStream))
+    (new VerilogEmitter).emit(CircuitState(c2, LowForm), new StringWriter)
   }
 
   "Simple compound expressions" should "be split" in {

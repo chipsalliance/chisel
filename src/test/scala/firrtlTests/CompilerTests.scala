@@ -8,13 +8,14 @@ import org.scalatest.junit.JUnitRunner
 
 import firrtl.ir.Circuit
 import firrtl.{
-   HighFirrtlCompiler,
-   LowFirrtlCompiler,
-   VerilogCompiler,
-   Compiler,
-   Parser
+  ChirrtlForm,
+  CircuitState,
+  Compiler,
+  HighFirrtlCompiler,
+  LowFirrtlCompiler,
+  Parser,
+  VerilogCompiler
 }
-import firrtl.Annotations.AnnotationMap
 
 /**
  * An example methodology for testing Firrtl compilers.
@@ -30,7 +31,7 @@ abstract class CompilerSpec extends FlatSpec {
    def input: String
    def check: String
    def getOutput: String = {
-      compiler.compile(parse(input), new AnnotationMap(Seq.empty), writer)
+      compiler.compile(CircuitState(parse(input), ChirrtlForm), writer)
       writer.toString()
    }
 }

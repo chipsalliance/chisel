@@ -36,6 +36,7 @@ import org.scalatest.prop._
 import scala.io.Source
 
 import firrtl._
+import firrtl.Parser.IgnoreInfo
 import firrtl.Annotations.AnnotationMap
 
 // This trait is borrowed from Chisel3, ideally this code should only exist in one location
@@ -131,6 +132,7 @@ trait BackendCompilationUtilities {
 }
 
 trait FirrtlRunners extends BackendCompilationUtilities {
+  def parse(str: String) = Parser.parse(str.split("\n").toIterator, IgnoreInfo)
   lazy val cppHarness = new File(s"/top.cpp")
   /** Compile a Firrtl file
     *
@@ -141,6 +143,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   def compileFirrtlTest(
       prefix: String,
       srcDir: String,
+      customTransforms: Seq[Transform] = Seq.empty,
       annotations: AnnotationMap = new AnnotationMap(Seq.empty)): File = {
     val testDir = createTempDirectory(prefix)
     copyResourceToFile(s"${srcDir}/${prefix}.fir", new File(testDir, s"${prefix}.fir"))
@@ -150,6 +153,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       s"$testDir/$prefix.v",
       new VerilogCompiler(),
       Parser.IgnoreInfo,
+      customTransforms,
       annotations)
     testDir
   }
@@ -164,8 +168,9 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       prefix: String,
       srcDir: String,
       verilogPrefixes: Seq[String] = Seq.empty,
+      customTransforms: Seq[Transform] = Seq.empty,
       annotations: AnnotationMap = new AnnotationMap(Seq.empty)) = {
-    val testDir = compileFirrtlTest(prefix, srcDir, annotations)
+    val testDir = compileFirrtlTest(prefix, srcDir, customTransforms, annotations)
     val harness = new File(testDir, s"top.cpp")
     copyResourceToFile(cppHarness.toString, harness)
 

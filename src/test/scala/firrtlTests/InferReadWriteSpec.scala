@@ -61,19 +61,19 @@ class InferReadWriteSpec extends SimpleTransformSpec {
     }
   }
 
-  object InferReadWriteCheck extends Transform with SimpleRun {
-    def execute (c: Circuit, map: AnnotationMap) =
-      run(c, Seq(InferReadWriteCheckPass))
+  class InferReadWriteCheck extends PassBasedTransform {
+    def inputForm = MidForm
+    def outputForm = MidForm
+    def passSeq = Seq(InferReadWriteCheckPass)
   }
 
-  def transforms (writer: java.io.Writer) = Seq(
-     new Chisel3ToHighFirrtl(),
-     new IRToWorkingIR(),
-     new ResolveAndCheck(),
-     new HighFirrtlToMiddleFirrtl(),
-     new memlib.InferReadWrite(TransID(-1)),
-     InferReadWriteCheck,
-     new EmitFirrtl(writer)
+  def transforms = Seq(
+    new ChirrtlToHighFirrtl,
+    new IRToWorkingIR,
+    new ResolveAndCheck,
+    new HighFirrtlToMiddleFirrtl,
+    new memlib.InferReadWrite,
+    new InferReadWriteCheck
   )
 
   "Infer ReadWrite Ports" should "infer readwrite ports for the same clock" in {
@@ -100,9 +100,9 @@ circuit sram6t :
       T_5 <= io.wdata
 """.stripMargin
 
-    val annotationMap = AnnotationMap(Seq(memlib.InferReadWriteAnnotation("sram6t", TransID(-1))))
+    val annotationMap = AnnotationMap(Seq(memlib.InferReadWriteAnnotation("sram6t")))
     val writer = new java.io.StringWriter
-    compile(parse(input), annotationMap, writer)
+    compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), writer)
     // Check correctness of firrtl
     parse(writer.toString)
   }
@@ -132,10 +132,10 @@ circuit sram6t :
       T_5 <= io.wdata
 """.stripMargin
 
-    val annotationMap = AnnotationMap(Seq(memlib.InferReadWriteAnnotation("sram6t", TransID(-1))))
+    val annotationMap = AnnotationMap(Seq(memlib.InferReadWriteAnnotation("sram6t")))
     val writer = new java.io.StringWriter
     intercept[InferReadWriteCheckException] {
-      compile(parse(input), annotationMap, writer)
+      compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), writer)
     }
   }
 }

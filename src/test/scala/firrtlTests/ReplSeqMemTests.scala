@@ -6,19 +6,19 @@ import firrtl.passes.memlib._
 import Annotations._
 
 class ReplSeqMemSpec extends SimpleTransformSpec {
-  val passSeq = Seq(
-    ConstProp, CommonSubexpressionElimination, DeadCodeElimination, RemoveEmpty)
-  def transforms (writer: java.io.Writer) = Seq(
-    new Chisel3ToHighFirrtl(),
+  def transforms = Seq(
+    new ChirrtlToHighFirrtl(),
     new IRToWorkingIR(),
     new ResolveAndCheck(),
     new HighFirrtlToMiddleFirrtl(),
-    new InferReadWrite(TransID(-1)),
-    new ReplSeqMem(TransID(-2)),
+    new InferReadWrite(),
+    new ReplSeqMem(),
     new MiddleFirrtlToLowFirrtl(),
-    (new Transform with SimpleRun {
-     def execute(c: ir.Circuit, a: AnnotationMap) = run(c, passSeq) } ),
-    new EmitFirrtl(writer)
+    new PassBasedTransform {
+      def inputForm = LowForm
+      def outputForm = LowForm
+      def passSeq = Seq(ConstProp, CommonSubexpressionElimination, DeadCodeElimination, RemoveEmpty)
+    }
   )
 
   "ReplSeqMem" should "generate blackbox wrappers for mems of bundle type" in {
@@ -58,9 +58,9 @@ circuit Top :
     io2.commit_entry.bits.info <- R1
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc, TransID(-2))))
+    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc)))
     val writer = new java.io.StringWriter
-    compile(parse(input), aMap, writer)
+    compile(CircuitState(parse(input), ChirrtlForm, Some(aMap)), writer)
     // Check correctness of firrtl
     parse(writer.toString)
     (new java.io.File(confLoc)).delete()
@@ -81,9 +81,9 @@ circuit Top :
         write mport T_155 = mem[p_address], clk
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc, TransID(-2))))
+    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc)))
     val writer = new java.io.StringWriter
-    compile(parse(input), aMap, writer)
+    compile(CircuitState(parse(input), ChirrtlForm, Some(aMap)), writer)
     // Check correctness of firrtl
     parse(writer.toString)
     (new java.io.File(confLoc)).delete()

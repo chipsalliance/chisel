@@ -36,7 +36,6 @@ import firrtl.ir._
 import firrtl.Parser.IgnoreInfo
 
 class ExpandWhensSpec extends FirrtlFlatSpec {
-  private def parse(input: String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private def executeTest(input: String, notExpected: String, passes: Seq[Pass]) = {
     val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
       (c: Circuit, p: Pass) => p.run(c)

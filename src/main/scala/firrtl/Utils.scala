@@ -44,7 +44,7 @@ import firrtl.WrappedType._
 import scala.collection.mutable
 import scala.collection.mutable.{StringBuilder, ArrayBuffer, LinkedHashMap, HashMap, HashSet}
 import java.io.PrintWriter
-import com.typesafe.scalalogging.LazyLogging
+import logger.LazyLogging
 //import scala.reflect.runtime.universe._
 
 class FIRRTLException(str: String) extends Exception(str)

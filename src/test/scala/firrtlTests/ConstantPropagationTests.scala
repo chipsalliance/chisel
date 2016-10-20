@@ -22,7 +22,6 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
       ResolveGenders,
       InferWidths,
       ConstProp)
-  def parse(input: String): Circuit = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private def exec (input: String) = {
     passes.foldLeft(parse(input)) {
       (c: Circuit, p: Pass) => p.run(c)

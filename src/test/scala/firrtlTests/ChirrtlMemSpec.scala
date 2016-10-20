@@ -76,12 +76,11 @@ class ChirrtlMemSpec extends LowTransformSpec {
     }
   }
 
-  object MemEnableCheck extends Transform with SimpleRun {
-    def execute(c: Circuit, map: AnnotationMap) =
-      run(c, Seq(ConstProp, MemEnableCheckPass))
+  def transform = new PassBasedTransform {
+    def inputForm = LowForm
+    def outputForm = LowForm
+    def passSeq = Seq(ConstProp, MemEnableCheckPass)
   }
-
-  def transform = MemEnableCheck
 
   "Sequential Memory" should "have correct enable signals" in {
     val input = """
@@ -104,7 +103,7 @@ circuit foo :
 
     val annotationMap = AnnotationMap(Nil)
     val writer = new java.io.StringWriter
-    compile(parse(input), annotationMap, writer)
+    compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), writer)
     // Check correctness of firrtl
     parse(writer.toString)
   }
@@ -131,7 +130,7 @@ circuit foo :
 
     val annotationMap = AnnotationMap(Nil)
     val writer = new java.io.StringWriter
-    compile(parse(input), annotationMap, writer)
+    compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), writer)
     // Check correctness of firrtl
     parse(writer.toString)
   }

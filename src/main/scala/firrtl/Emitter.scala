@@ -47,12 +47,8 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap, HashSet}
 
 case class EmitterException(message: String) extends PassException(message)
 
-trait Emitter extends LazyLogging {
-  def run(c: Circuit, w: Writer)
-}
-
-object FIRRTLEmitter extends Emitter {
-  def run(c: Circuit, w: Writer) = w.write(c.serialize)
+class FirrtlEmitter extends Emitter {
+  def emit(state: CircuitState, writer: Writer): Unit = writer.write(state.circuit.serialize)
 }
 
 case class VRandom(width: BigInt) extends Expression {
@@ -65,7 +61,7 @@ case class VRandom(width: BigInt) extends Expression {
   def mapWidth(f: Width => Width): Expression = this
 }
 
-class VerilogEmitter extends Emitter {
+class VerilogEmitter extends Emitter with PassBased {
   val tab = "  "
   def AND(e1: WrappedExpression, e2: WrappedExpression): Expression = {
     if (e1 == e2) e1.e1
@@ -590,12 +586,18 @@ class VerilogEmitter extends Emitter {
         "`endif\n"))
    }
 
-   def run(c: Circuit, w: Writer) = {
-     emit_preamble(w)
-     val moduleMap = (c.modules map (m => m.name -> m)).toMap
-     c.modules foreach {
-       case (m: Module) => emit_verilog(m, moduleMap)(w)
-       case (m: ExtModule) =>
-     }
-   }
+  def passSeq = Seq(
+    passes.VerilogWrap,
+    passes.VerilogRename,
+    passes.VerilogPrep)
+
+  def emit(state: CircuitState, writer: Writer): Unit = {
+    val circuit = runPasses(state.circuit)
+    emit_preamble(writer)
+    val moduleMap = (circuit.modules map (m => m.name -> m)).toMap
+    circuit.modules foreach {
+      case (m: Module) => emit_verilog(m, moduleMap)(writer)
+      case (m: ExtModule) =>
+    }
+  }
 }

@@ -30,7 +30,8 @@ import scala.collection._
   *          firrtl.Driver.execute(Array("--top-name Dummy --compiler verilog".split(" +"))
   *          }}}
   * each approach has its own endearing aspects
-  * @see  firrtlTests.DriverSpec.scala in the test directory for a lot more examples
+  * @see firrtlTests/DriverSpec.scala in the test directory for a lot more examples
+  * @see [[CompilerUtils.mergeTransforms]] to see how customTransformations are inserted
   */
 
 object Driver {
@@ -42,11 +43,15 @@ object Driver {
       output: String,
       compiler: Compiler,
       infoMode: InfoMode = IgnoreInfo,
+      customTransforms: Seq[Transform] = Seq.empty,
       annotations: AnnotationMap = new AnnotationMap(Seq.empty)
   ): String = {
     val parsedInput = Parser.parse(Source.fromFile(input).getLines(), infoMode)
     val outputBuffer = new java.io.CharArrayWriter
-    compiler.compile(parsedInput, annotations, outputBuffer)
+    compiler.compile(
+      CircuitState(parsedInput, ChirrtlForm, Some(annotations)),
+      outputBuffer,
+      customTransforms)
 
     val outputFile = new java.io.PrintWriter(output)
     val outputString = outputBuffer.toString
@@ -108,7 +113,11 @@ object Driver {
 
     val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
     val outputBuffer = new java.io.CharArrayWriter
-    firrtlConfig.compiler.compile(parsedInput, new AnnotationMap(firrtlConfig.annotations), outputBuffer)
+    firrtlConfig.compiler.compile(
+      CircuitState(parsedInput, ChirrtlForm, Some(new AnnotationMap(firrtlConfig.annotations))),
+      outputBuffer,
+      firrtlConfig.customTransforms
+    )
 
     val outputFileName = firrtlConfig.getOutputFileName(optionsManager)
     val outputFile     = new java.io.PrintWriter(outputFileName)

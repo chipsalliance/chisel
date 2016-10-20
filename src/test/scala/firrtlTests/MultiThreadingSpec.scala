@@ -2,6 +2,8 @@
 
 package firrtlTests
 
+import firrtl.{ChirrtlForm, CircuitState, Compiler, Annotations}
+
 import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.concurrent.duration.Duration
 
@@ -13,7 +15,7 @@ class MultiThreadingSpec extends FirrtlPropSpec {
     def runCompiler(input: Seq[String], compiler: firrtl.Compiler): String = {
       val writer = new java.io.StringWriter
       val parsedInput = firrtl.Parser.parse(input)
-      compiler.compile(parsedInput,new firrtl.Annotations.AnnotationMap(Seq.empty), writer)
+      compiler.compile(CircuitState(parsedInput, ChirrtlForm), writer)
       writer.toString
     }
     // The parameters we're testing with

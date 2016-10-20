@@ -12,7 +12,6 @@ import wiring.WiringUtils._
 import wiring._
 
 class WiringTests extends FirrtlFlatSpec {
-  def parse (input:String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Pass]) = {
     val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
       (c: Circuit, p: Pass) => p.run(c)

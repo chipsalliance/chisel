@@ -36,7 +36,6 @@ import firrtl.Parser.IgnoreInfo
 import firrtl.passes._
 
 class CheckInitializationSpec extends FirrtlFlatSpec {
-  private def parse(input: String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
   private val passes = Seq(
      ToWorkingIR,
      CheckHighForm,
