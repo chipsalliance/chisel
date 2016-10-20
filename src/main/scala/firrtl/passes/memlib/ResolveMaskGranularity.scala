@@ -77,7 +77,8 @@ object AnalysisUtils {
 
   /** Checks whether the two memories are equivalent in all respects except name
     */
-  def eqMems(a: DefAnnotatedMemory, b: DefAnnotatedMemory) = a == b.copy(name = a.name) 
+  def eqMems(a: DefAnnotatedMemory, b: DefAnnotatedMemory) =
+    a == b.copy(info = a.info, name = a.name, memRef = a.memRef)
 }
 
 /** Determines if a write mask is needed (wmode/en and wmask are equivalent).

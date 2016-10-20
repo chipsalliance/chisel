@@ -29,10 +29,8 @@ object ResolveMemoryReference extends Pass {
     case s => s map updateMemStmts(uniqueMems)
   }
 
-  def updateMemMods(m: DefModule) = {
+  def run(c: Circuit) = {
     val uniqueMems = new AnnotatedMemories
-    (m map updateMemStmts(uniqueMems))
+    c copy (modules = c.modules map (_ map updateMemStmts(uniqueMems)))
   }
-
-  def run(c: Circuit) = c copy (modules = c.modules map updateMemMods)
 }
