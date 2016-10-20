@@ -889,7 +889,6 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 
   private[chisel3] def fromInt(value: BigInt, width: Int): this.type = {
     throwException(s"Don't use $this.fromInt($value, $width): Use literal constructors instead")
-    //FixedPoint.fromBigInt(value, width, 0).asInstanceOf[this.type]
   }
 
   final def unary_- (): FixedPoint = macro SourceInfoTransform.noArg
@@ -1028,17 +1027,6 @@ object FixedPoint {
       toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
     )
   }
-//  def Lit(value: BigInt): SInt = Lit(value, Width())
-//  def Lit(value: BigInt, width: Int): SInt = Lit(value, Width(width))
-//  /** Create an SInt literal with specified width. */
-//  def Lit(value: BigInt, width: Width): SInt = {
-//
-//    val lit = SLit(value, width)
-//    val result = new SInt(lit.width, Some(lit))
-//    // Bind result to being an Literal
-//    result.binding = LitBinding()
-//    result
-//  }
 
   /** Create an FixedPoint type with specified width and binary position. */
   def apply(width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
@@ -1060,7 +1048,6 @@ object FixedPoint {
   def toBigInt(x: Double, binaryPoint    : Int): BigInt = {
     val multiplier = math.pow(2,binaryPoint    )
     val result = BigInt(math.round(x * multiplier))
-    // println(s"toBigInt:x = $x, width = $binaryPoint     multiplier $multiplier result $result")
     result
   }
 
@@ -1073,7 +1060,6 @@ object FixedPoint {
   def toDouble(i: BigInt, binaryPoint    : Int): Double = {
     val multiplier = math.pow(2,binaryPoint    )
     val result = i.toDouble / multiplier
-    // println(s"toDouble:i = $i, fw = $binaryPoint    , multiplier = $multiplier, result $result")
     result
   }
 

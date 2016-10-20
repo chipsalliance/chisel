@@ -7,7 +7,6 @@ import chisel3.testers.BasicTester
 import org.scalatest._
 
 //scalastyle:off magic.number
-
 class FixedPointSpec extends FlatSpec with Matchers {
   behavior of "fixed point utilities"
 
@@ -36,11 +35,7 @@ class SBPTester extends BasicTester {
   stop()
 }
 class SBPSpec extends ChiselPropSpec {
-
   property("should allow set binary point") {
-    //    val c = Driver.elaborate(() => new SBPTester)
-    //    val e = Driver.emit(c)
-    //    println(e)
     assertTesterPasses { new SBPTester }
   }
 }

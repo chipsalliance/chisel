@@ -148,7 +148,7 @@ sealed case class KnownWidth(value: Int) extends Width {
 
 object BinaryPoint {
   def apply(x: Int): BinaryPoint = KnownBinaryPoint(x)
-  def apply(): BinaryPoint = UnknownBinaryPoint()
+  def apply(): BinaryPoint = UnknownBinaryPoint
 }
 
 sealed abstract class BinaryPoint {
@@ -165,7 +165,7 @@ sealed abstract class BinaryPoint {
   protected def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint
 }
 
-sealed case class UnknownBinaryPoint() extends BinaryPoint {
+case object UnknownBinaryPoint extends BinaryPoint {
   def known: Boolean = false
   def get: Int = None.get
   def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = this
