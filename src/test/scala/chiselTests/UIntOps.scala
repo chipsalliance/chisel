@@ -31,7 +31,7 @@ class UIntOps extends Module {
   io.addout := a +% b
   io.subout := a -% b
   io.timesout := (a * b)(15, 0)
-  io.divout := a / Mux(b === UInt(0), UInt(1), b)
+  io.divout := a / Mux(b === UInt.Lit(0), UInt.Lit(1), b)
   // io.modout := a % b
   // TODO:
   io.modout := UInt(0)

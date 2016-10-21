@@ -4,8 +4,6 @@ package chiselTests
 
 import chisel3._
 import org.scalatest._
-import org.scalatest.prop._
-import chisel3.testers.BasicTester
 
 class DirectionHaver extends Module {
   val io = IO(new Bundle {
@@ -22,6 +20,13 @@ class BadDirection extends DirectionHaver {
   io.in := UInt(0)
 }
 
+class DeprecatedDirection extends Module {
+  val io = IO(new Bundle {
+    val in = UInt(INPUT, 32)
+    val out = UInt(OUTPUT, 32)
+  })
+}
+
 class DirectionSpec extends ChiselPropSpec with ShouldMatchers {
 
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
@@ -34,5 +39,9 @@ class DirectionSpec extends ChiselPropSpec with ShouldMatchers {
     a[Exception] should be thrownBy {
      elaborate(new BadDirection)
     }
+  }
+
+  property("Chisel2 directions should be deprecated") {
+    elaborate(new DeprecatedDirection)
   }
 }
