@@ -550,12 +550,20 @@ private[core] sealed trait UIntFactory {
   // NOTE: This resolves UInt(width = 32)
   def apply(dir: Option[Direction] = None, width: Int): UInt = apply(Width(width))
   /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-  def apply(value: BigInt): UInt = apply(value, Width())
+  def apply(value: BigInt)(implicit opts: CompileOptions): UInt = {
+    if (opts.deprecateSingleArgumentFactoryMethods) {
+      Builder.deprecated("UInt.Lit(val) or val.U should be used over UInt(val)")
+    }
+    apply(value, Width())
+  }
   /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-  def apply(dir: Direction, width: Int): UInt = apply(dir, Width(width))
+  def apply(dir: Direction, width: Int)(implicit opts: CompileOptions): UInt = apply(dir, Width(width))(opts)
   /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-  def apply(dir: Direction): UInt = apply(dir, Width())
-  def apply(dir: Direction, wWidth: Width): UInt = {
+  def apply(dir: Direction)(implicit opts: CompileOptions): UInt = apply(dir, Width())(opts)
+  def apply(dir: Direction, wWidth: Width)(implicit opts: CompileOptions): UInt = {
+    if (opts.deprecateOldDirectionMethods) {
+      Builder.deprecated("Direction(UInt(...)) should be used over UInt(DIRECTION, ...)")
+    }
     val result = apply(wWidth)
     dir match {
       case Direction.Input => Input(result)
@@ -700,7 +708,12 @@ object SInt {
   def width(width: Width): SInt = new SInt(width)
 
   /** Create an SInt literal with inferred width. */
-  def apply(value: BigInt): SInt = Lit(value)
+  def apply(value: BigInt)(implicit opts: CompileOptions): SInt = {
+    if (opts.deprecateSingleArgumentFactoryMethods) {
+      Builder.deprecated("SInt.Lit(val) or val.S should be used over SInt(val)")
+    }
+    Lit(value)
+  }
   /** Create an SInt literal with fixed width. */
   def apply(value: BigInt, width: Int): SInt = Lit(value, width)
 
@@ -721,10 +734,13 @@ object SInt {
   /** Create a SInt with a specified width - compatibility with Chisel2. */
   def apply(dir: Option[Direction] = None, width: Int): SInt = apply(Width(width))
   /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
-  def apply(dir: Direction, width: Int): SInt = apply(dir, Width(width))
+  def apply(dir: Direction, width: Int)(implicit opts: CompileOptions): SInt = apply(dir, Width(width))(opts)
   /** Create a SInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-  def apply(dir: Direction): SInt = apply(dir, Width())
-  def apply(dir: Direction, wWidth: Width): SInt = {
+  def apply(dir: Direction)(implicit opts: CompileOptions): SInt = apply(dir, Width())(opts)
+  def apply(dir: Direction, wWidth: Width)(implicit opts: CompileOptions): SInt = {
+    if (opts.deprecateOldDirectionMethods) {
+      Builder.deprecated("Direction(SInt(...)) should be used over SInt(DIRECTION, ...)")
+    }
     val result = apply(wWidth)
     dir match {
       case Direction.Input => Input(result)
@@ -799,7 +815,10 @@ object Bool {
     result
   }
   /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-  def apply(dir: Direction): Bool = {
+  def apply(dir: Direction)(implicit opts: CompileOptions): Bool = {
+    if (opts.deprecateOldDirectionMethods) {
+      Builder.deprecated("Direction(Bool()) should be used over Bool(DIRECTION)")
+    }
     val result = apply()
     dir match {
       case Direction.Input => Input(result)

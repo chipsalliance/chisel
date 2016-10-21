@@ -22,6 +22,10 @@ trait CompileOptions {
   val deprecateOldDirectionMethods: Boolean
   // Check that referenced Data have actually been declared.
   val checkSynthesizable: Boolean
+  // Issue a deprecation warning for single argument UInt factory methods
+  val deprecateSingleArgumentFactoryMethods: Boolean
+  // Issue a deprecation warning for chisel2 direction usage.
+  val deprecateChisel2DirectionUsage: Boolean
 }
 
 object CompileOptions {
@@ -41,6 +45,8 @@ object ExplicitCompileOptions {
     val dontAssumeDirectionality = false
     val deprecateOldDirectionMethods = false
     val checkSynthesizable = false
+    val deprecateSingleArgumentFactoryMethods = false
+    val deprecateChisel2DirectionUsage = false
   }
 
   // Collection of "strict" connection compile options, preferred for new code.
@@ -53,5 +59,7 @@ object ExplicitCompileOptions {
     val dontAssumeDirectionality = true
     val deprecateOldDirectionMethods = true
     val checkSynthesizable = true
+    val deprecateSingleArgumentFactoryMethods = true
+    val deprecateChisel2DirectionUsage = true
   }
 }
