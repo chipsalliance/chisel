@@ -876,6 +876,19 @@ object Mux {
   }
 }
 
+//scalastyle:off number.of.methods
+/**
+  * A sealed class representing a fixed point number that has a bit width and a binary point
+  * The width and binary point may be inferred.
+  *
+  * IMPORTANT: The API provided here is experimental and may change in the future.
+  *
+  * @param width       bit width of the fixed point number
+  * @param binaryPoint the position of the binary point with respect to the right most bit of the width
+  *                    currently this should be positive but it is hoped to soon support negative points
+  *                    and thus use this field as a simple exponent
+  * @param lit
+  */
 sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit: Option[FPLit] = None)
     extends Bits(width, lit) with Num[FixedPoint] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
@@ -999,6 +1012,10 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 sealed trait PrivateType
 private case object PrivateObject extends PrivateType
 
+/**
+  * Factory and convenience methods for the FixedPoint class
+  * IMPORTANT: The API provided here is experimental and may change in the future.
+  */
 object FixedPoint {
   /** Create an FixedPoint type with inferred width. */
   def apply(): FixedPoint = apply(Width(), BinaryPoint())
