@@ -4,6 +4,10 @@ package chisel3.iotesters
 
 import chisel3._
 
+import scala.collection.immutable.ListMap
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 // Provides a template to define tester transactions
 trait PeekPokeTests {
   def t: Long
@@ -97,14 +101,91 @@ abstract class PeekPokeTester[+T <: Module](val dut: T,
 
   def poke(signal: Bits, value: BigInt) {
     if (!signal.isLit) backend.poke(signal, value, None)
+    // TODO: Warn if signal.isLit
+  }
+
+  /** Locate a specific bundle element, given a name path.
+    * TODO: Handle Vecs
+    * @param path - list of element names (presumably bundles) terminating in a non-bundle (i.e., Bits) element.
+    * @param bundle - bundle containing the element
+    * @return the element (as Bits)
+    */
+  private def getBundleElement(path: List[String], bundle: ListMap[String, Data]): Bits = {
+    (path, bundle(path.head)) match {
+      case (head :: Nil, element: Bits) => element
+      case (head :: tail, b: Bundle) => getBundleElement(tail, b.elements)
+      case _ => throw new Exception(s"peek/poke bundle element mismatch $path")
+    }
+  }
+
+  /** Poke a Bundle given a map of elements and values.
+    *
+    * @param signal the bundle to be poked
+    * @param map a map from names (using '.' to delimit bundle elements), to BigInt values
+    */
+  def poke(signal: Bundle, map: Map[String, BigInt]): Unit =  {
+    val circuitElements = signal.elements
+    for ( (key, value) <- map) {
+      val subKeys = key.split('.').toList
+      val element = getBundleElement(subKeys, circuitElements)
+      poke(element, value)
+    }
+  }
+
+  def poke(signal: Aggregate, value: IndexedSeq[BigInt]): Unit =  {
+    (signal.flatten zip value.reverse).foreach(x => poke(x._1, x._2))
   }
 
   def pokeAt[T <: Bits](data: Mem[T], value: BigInt, off: Int): Unit = {
     backend.poke(data, value, Some(off))
   }
 
-  def peek(signal: Bits) = {
+  def peek(signal: Bits):BigInt = {
     if (!signal.isLit) backend.peek(signal, None) else signal.litValue()
+  }
+
+  def peek(signal: Aggregate): IndexedSeq[BigInt] =  {
+    signal.flatten map (x => backend.peek(x, None))
+  }
+
+  /** Populate a map of names ("dotted Bundles) to Bits.
+    * TODO: Deal with Vecs
+    * @param map the map to be constructed
+    * @param indexPrefix an array of Bundle name prefixes
+    * @param signalName the signal to be added to the map
+    * @param signalData the signal object to be added to the map
+    */
+  private def setBundleElement(map: mutable.LinkedHashMap[String, Bits], indexPrefix: ArrayBuffer[String], signalName: String, signalData: Data): Unit = {
+    indexPrefix += signalName
+    signalData match {
+      case bundle: Bundle =>
+        for ((name, value) <- bundle.elements) {
+          setBundleElement(map, indexPrefix, name, value)
+        }
+      case bits: Bits =>
+        val index = indexPrefix.mkString(".")
+        map(index) = bits
+    }
+    indexPrefix.remove(indexPrefix.size - 1)
+  }
+
+  /** Peek an aggregate (Bundle) signal.
+    *
+    * @param signal the signal to peek
+    * @return a map of signal names ("dotted" Bundle) to BigInt values.
+    */
+  def peek(signal: Bundle): mutable.LinkedHashMap[String, BigInt] = {
+    val bitsMap = mutable.LinkedHashMap[String, Bits]()
+    val index = ArrayBuffer[String]()
+    // Populate the Bits map.
+    for ((elementName, elementValue) <- signal.elements) {
+      setBundleElement(bitsMap, index, elementName, elementValue)
+    }
+    val bigIntMap = mutable.LinkedHashMap[String, BigInt]()
+    for ((name, bits) <- bitsMap) {
+      bigIntMap(name) = peek(bits)
+    }
+    bigIntMap
   }
 
   def peekAt[T <: Bits](data: Mem[T], off: Int): BigInt = {
@@ -123,6 +204,25 @@ abstract class PeekPokeTester[+T <: Module](val dut: T,
       if (!good) fail
       good
     } else expect(signal.litValue() == expected, s"${signal.litValue()} == $expected")
+  }
+
+  def expect (signal: Aggregate, expected: IndexedSeq[BigInt]): Boolean = {
+    (signal.flatten, expected.reverse).zipped.foldLeft(true) { (result, x) => result && expect(x._1, x._2)}
+  }
+
+  /** Return true or false if an aggregate signal (Bundle) matches the expected map of values.
+    * TODO: deal with Vecs
+    * @param signal the Bundle to "expect"
+    * @param expected a map of signal names ("dotted" Bundle notation) to BigInt values
+    * @return true if the specified values match, false otherwise.
+    */
+  def expect (signal: Bundle, expected: Map[String, BigInt]): Boolean = {
+    val bitsMap = mutable.LinkedHashMap[String, Bits]()
+    val index = ArrayBuffer[String]()
+    for ((elementName, elementValue) <- signal.elements) {
+      setBundleElement(bitsMap, index, elementName, elementValue)
+    }
+    expected.forall{ case ((name, value)) => expect(bitsMap(name), value) }
   }
 
   def finish: Boolean = {
