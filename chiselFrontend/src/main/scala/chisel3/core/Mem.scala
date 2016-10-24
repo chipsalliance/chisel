@@ -147,7 +147,11 @@ sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
     implicit val sourceInfo = UnlocatableSourceInfo
     val a = Wire(UInt())
-    when (enable) { a := addr }
-    read(a)
+    var port: Option[T] = None
+    when (enable) {
+      a := addr
+      port = Some(read(a))
+    }
+    port.get
   }
 }
