@@ -152,6 +152,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
@@ -165,28 +166,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val OUTPUT = chisel3.core.Direction.Output
   val NODIR = chisel3.core.Direction.Unspecified
   type ChiselException = chisel3.internal.ChiselException
-
-  class EnqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
-    def init(): Unit = {
-      this.noenq()
-    }
-    override def cloneType: this.type = EnqIO(gen).asInstanceOf[this.type]
-  }
-  class DeqIO[+T <: Data](gen: T) extends DecoupledIO(gen) {
-    val Data = chisel3.core.Data
-    Data.setFirrtlDirection(this, Data.getFirrtlDirection(this).flip)
-    Binding.bind(this, FlippedBinder, "Error: Cannot flip ")
-    def init(): Unit = {
-      this.nodeq()
-    }
-    override def cloneType: this.type = DeqIO(gen).asInstanceOf[this.type]
-  }
-  object EnqIO {
-    def apply[T<:Data](gen: T): EnqIO[T] = new EnqIO(gen)
-  }
-  object DeqIO {
-    def apply[T<:Data](gen: T): DeqIO[T] = new DeqIO(gen)
-  }
 
   // Debugger/Tester access to internal Chisel data structures and methods.
   def getDataElements(a: Aggregate): Seq[Element] = {

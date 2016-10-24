@@ -40,7 +40,7 @@ private class Emitter(circuit: Circuit) {
         s"skip"
     }
     e.sourceInfo match {
-      case SourceLine(filename, line, col) => s"${firrtlLine} @[${filename} ${line}:${col}] "
+      case SourceLine(filename, line, col) => s"${firrtlLine} @[${filename} ${line}:${col}]"
       case _: NoSourceInfo => firrtlLine
     }
   }
@@ -102,7 +102,9 @@ private class Emitter(circuit: Circuit) {
   private def unindent() { require(indentLevel > 0); indentLevel -= 1 }
   private def withIndent(f: => Unit) { indent(); f; unindent() }
 
-  private val res = new StringBuilder(s"circuit ${circuit.name} : ")
+  private val res = new StringBuilder()
+  res ++= s";${Driver.chiselVersionString}\n"
+  res ++= s"circuit ${circuit.name} : "
   withIndent { circuit.components.foreach(c => res ++= emit(c)) }
   res ++= newline
 }

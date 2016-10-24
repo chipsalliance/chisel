@@ -21,8 +21,10 @@ lazy val commonSettings = Seq (
   scalaVersion := "2.11.7"
 )
 
+val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
+
 lazy val chiselSettings = Seq (
-  name := "Chisel3",
+  name := "chisel3",
 
   publishMavenStyle := true,
   publishArtifact in Test := false,
@@ -62,19 +64,24 @@ lazy val chiselSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
 
-  /* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
-   *  in subtly disturbing ways on Linux (but not on Mac):
-   *  - some fields in the generated .h file are re-named,
-   *  - an additional field is added
-   *  - the generated .cpp file has additional differences:
-   *    - different temps in clock_lo
-   *    - missing assignments
-   *    - change of assignment order
-   *    - use of "Tx" vs. "Tx.values"
-   */
+  libraryDependencies ++= (Seq("firrtl").map {
+    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+
+
+/* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
+ *  in subtly disturbing ways on Linux (but not on Mac):
+ *  - some fields in the generated .h file are re-named,
+ *  - an additional field is added
+ *  - the generated .cpp file has additional differences:
+ *    - different temps in clock_lo
+ *    - missing assignments
+ *    - change of assignment order
+ *    - use of "Tx" vs. "Tx.values"
+ */
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
+  libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
@@ -101,6 +108,13 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   dependsOn(coreMacros)
 
 lazy val chisel = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    // We should really be using name.value, but currently, the package is "Chisel" (uppercase first letter)
+    buildInfoPackage := /* name.value */ "chisel3",
+    buildInfoOptions += BuildInfoOption.BuildTime,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  ).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).

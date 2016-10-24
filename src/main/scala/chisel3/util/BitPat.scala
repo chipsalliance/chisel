@@ -82,6 +82,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
   def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = value.asUInt === (that & mask.asUInt)    // scalastyle:ignore method.name
