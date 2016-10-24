@@ -109,7 +109,8 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
   def defaultConnects(wrapperPort: WRef, bbPort: WSubField): Seq[Connect] =
     Seq("clk", "en", "addr") map (f => connectFields(bbPort, f, wrapperPort, f))
 
-  // Connects the clk, en, and addr fields from the wrapperPort to the bbPort
+  // Generates mask bits (concatenates an aggregate to ground type) 
+  // depending on mask granularity (# bits = data width / mask granularity)
   def maskBits(mask: WSubField, dataType: Type, fillMask: Boolean): Expression =
     if (fillMask) toBitMask(mask, dataType) else toBits(mask)
 
