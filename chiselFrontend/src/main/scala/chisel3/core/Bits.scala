@@ -282,9 +282,6 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
   }
 
-  @deprecated("Use asUInt, which does the same thing but makes the reinterpret cast more explicit", "chisel3")
-  override def toBits: UInt = do_asUInt(DeprecatedSourceInfo)
-
   override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
     val res = Wire(this, null).asInstanceOf[this.type]
     res := that
