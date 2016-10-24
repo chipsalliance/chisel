@@ -110,8 +110,8 @@ object fromBits {
                       rhs: Expression,
                       offset: BigInt): (BigInt, Seq[Statement]) =
     lhst match {
-      case t: VectorType => (0 until t.size foldRight (offset, Seq[Statement]())) {
-        case (i, (curOffset, stmts)) =>
+      case t: VectorType => (0 until t.size foldLeft (offset, Seq[Statement]())) {
+        case ((curOffset, stmts), i) =>
           val subidx = WSubIndex(lhs, i, t.tpe, UNKNOWNGENDER)
           val (tmpOffset, substmts) = getPart(subidx, t.tpe, rhs, curOffset)
           (tmpOffset, stmts ++ substmts)
