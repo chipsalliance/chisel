@@ -108,6 +108,7 @@ abstract class PeekPokeTester[+T <: Module](
 
   /** Locate a specific bundle element, given a name path.
     * TODO: Handle Vecs
+    *
     * @param path - list of element names (presumably bundles) terminating in a non-bundle (i.e., Bits) element.
     * @param bundle - bundle containing the element
     * @return the element (as Bits)
@@ -146,13 +147,13 @@ abstract class PeekPokeTester[+T <: Module](
     if (!signal.isLit) backend.peek(signal, None) else signal.litValue()
   }
 
-  def peekAt[TT <: Bits](data: Mem[TT], off: Int): BigInt = {
   def peek(signal: Aggregate): IndexedSeq[BigInt] =  {
     signal.flatten map (x => backend.peek(x, None))
   }
 
   /** Populate a map of names ("dotted Bundles) to Bits.
     * TODO: Deal with Vecs
+    *
     * @param map the map to be constructed
     * @param indexPrefix an array of Bundle name prefixes
     * @param signalName the signal to be added to the map
@@ -215,6 +216,7 @@ abstract class PeekPokeTester[+T <: Module](
 
   /** Return true or false if an aggregate signal (Bundle) matches the expected map of values.
     * TODO: deal with Vecs
+    *
     * @param signal the Bundle to "expect"
     * @param expected a map of signal names ("dotted" Bundle notation) to BigInt values
     * @return true if the specified values match, false otherwise.
