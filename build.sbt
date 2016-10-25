@@ -15,7 +15,7 @@ lazy val customUnidocSettings = unidocSettings ++ Seq (
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0-BETA-SNAPSHOT",
+  version := "3.0-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   scalaVersion := "2.11.7",
   autoAPIMappings := true,
@@ -61,7 +61,7 @@ lazy val publishSettings = Seq (
   }
 )
 
-val defaultVersions = Map("firrtl" -> "0.2-BETA-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.0-SNAPSHOT")
 
 lazy val chiselSettings = Seq (
   name := "chisel3",
@@ -70,19 +70,24 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= (Seq("firrtl").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
 
-  /* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
-   *  in subtly disturbing ways on Linux (but not on Mac):
-   *  - some fields in the generated .h file are re-named,
-   *  - an additional field is added
-   *  - the generated .cpp file has additional differences:
-   *    - different temps in clock_lo
-   *    - missing assignments
-   *    - change of assignment order
-   *    - use of "Tx" vs. "Tx.values"
-   */
+  libraryDependencies ++= (Seq("firrtl").map {
+    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+
+
+/* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
+ *  in subtly disturbing ways on Linux (but not on Mac):
+ *  - some fields in the generated .h file are re-named,
+ *  - an additional field is added
+ *  - the generated .cpp file has additional differences:
+ *    - different temps in clock_lo
+ *    - missing assignments
+ *    - change of assignment order
+ *    - use of "Tx" vs. "Tx.values"
+ */
   libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
+  libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,

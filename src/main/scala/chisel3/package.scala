@@ -37,6 +37,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val UInt = chisel3.core.UInt
   type SInt = chisel3.core.SInt
   val SInt = chisel3.core.SInt
+  type FixedPoint = chisel3.core.FixedPoint
+  val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
   val Bool = chisel3.core.Bool
   val Mux = chisel3.core.Mux
@@ -150,8 +152,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def B: Bool = Bool(x)    // scalastyle:ignore method.name
   }
 
+  implicit class fromDoubleToLiteral(val x: Double) extends AnyVal {
+    def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(x, binaryPoint = binaryPoint)
+  }
+
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
+    @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 

@@ -254,7 +254,7 @@ abstract class Data extends HasId {
     *
     * This performs the inverse operation of fromBits(Bits).
     */
-  @deprecated("Use asUInt, which does the same thing but makes the reinterpret cast more explicit", "chisel3")
+  @deprecated("Best alternative, .toUInt() or if Bits really needed, .toUInt().toBits()", "chisel3")
   def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
 
   /** Reinterpret cast to UInt.

@@ -19,6 +19,8 @@ sealed abstract class Aggregate extends Data {
   private[core] def width: Width = flatten.map(_.width).reduce(_ + _)
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = SeqUtils.do_asUInt(this.flatten)
 }
 
 object Vec {
