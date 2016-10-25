@@ -250,10 +250,11 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
 
   def do_asSInt(implicit sourceInfo: SourceInfo): SInt
 
-  /** Reinterpret cast to a SInt.
+  /** Reinterpret cast as a FixedPoint.
     *
     * @note value not guaranteed to be preserved: for example, an UInt of width
-    * 3 and value 7 (0b111) would become a SInt with value -1
+    * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
+    * of the number is also affected by the specified binary point.  Caution advised
     */
   final def asFixedPoint(that: BinaryPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
