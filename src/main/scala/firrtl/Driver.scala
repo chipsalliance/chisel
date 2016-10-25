@@ -4,6 +4,8 @@ package firrtl
 
 import java.io.FileNotFoundException
 
+import logger.Logger
+
 import scala.io.Source
 import Annotations._
 
@@ -73,6 +75,8 @@ object Driver {
     */
   def execute(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): FirrtlExecutionResult = {
     val firrtlConfig = optionsManager.firrtlOptions
+
+    Logger.setOptions(optionsManager)
 
     val firrtlSource = firrtlConfig.firrtlSource match {
       case Some(text) => text.split("\n").toIterator

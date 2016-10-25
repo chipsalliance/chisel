@@ -27,11 +27,11 @@ MODIFICATIONS.
 
 package firrtl
 
-import com.typesafe.scalalogging.LazyLogging
 import java.io.Writer
 import firrtl.passes.Pass
 import firrtl.ir.Circuit
 import Annotations._
+import logger.LazyLogging
 
 // ===========================================
 //              Utility Traits

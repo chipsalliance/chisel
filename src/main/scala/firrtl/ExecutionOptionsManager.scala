@@ -5,6 +5,7 @@ package firrtl
 import firrtl.Annotations._
 import firrtl.Parser._
 import firrtl.passes.memlib.ReplSeqMemAnnotation
+import logger.LogLevel
 import scopt.OptionParser
 
 import scala.collection.Seq
@@ -15,6 +16,10 @@ import scala.collection.Seq
   */
 trait ComposableOptions
 
+abstract class HasParser(applicationName: String) {
+  final val parser: OptionParser[Unit] = new OptionParser[Unit](applicationName) {}
+}
+
 /**
   * Most of the chisel toolchain components require a topName which defines a circuit or a device under test.
   * Much of the work that is done takes place in a directory.
@@ -22,10 +27,22 @@ trait ComposableOptions
   * For example, in chisel, by deferring this it is possible for the execute there to first elaborate the
   * circuit and then set the topName from that if it has not already been set.
   */
-case class CommonOptions(topName: String = "", targetDirName: String = "test_run_dir") extends ComposableOptions
+case class CommonOptions(
+    topName:        String         = "",
+    targetDirName:  String         = "test_run_dir",
+    globalLogLevel: LogLevel.Value = LogLevel.Error,
+    logToFile:      Boolean        = false,
+    logClassNames:  Boolean        = false,
+    classLogLevels: Map[String, LogLevel.Value] = Map.empty) extends ComposableOptions {
 
-abstract class HasParser(applicationName: String) {
-  final val parser: OptionParser[Unit] = new OptionParser[Unit](applicationName) {}
+  def getLogFileName(optionsManager: ExecutionOptionsManager): String = {
+    if(topName.isEmpty) {
+      optionsManager.getBuildFileName("log", "firrtl")
+    }
+    else {
+      optionsManager.getBuildFileName("log")
+    }
+  }
 }
 
 trait HasCommonOptions {
@@ -48,6 +65,61 @@ trait HasCommonOptions {
       commonOptions = commonOptions.copy(targetDirName = x)
     }
     .text(s"This options defines a work directory for intermediate files, default is ${commonOptions.targetDirName}")
+
+  parser.opt[String]("log-level")
+    .abbr("ll").valueName("<Error|Warn|Info|Debug|Trace>")
+    .foreach { x =>
+      val level = x.toLowerCase match {
+        case "error" => LogLevel.Error
+        case "warn"  => LogLevel.Warn
+        case "info"  => LogLevel.Info
+        case "debug" => LogLevel.Debug
+        case "trace" => LogLevel.Trace
+      }
+      commonOptions = commonOptions.copy(globalLogLevel = level)
+    }
+    .validate { x =>
+      if (Array("error", "warn", "info", "debug", "trace").contains(x.toLowerCase)) parser.success
+      else parser.failure(s"$x bad value must be one of ignore|use|gen|append")
+    }
+    .text(s"This options defines a work directory for intermediate files, default is ${commonOptions.targetDirName}")
+
+  parser.opt[Seq[String]]("class-log-level")
+    .abbr("cll").valueName("<FullClassName:[Error|Warn|Info|Debug|Trace]>[,...]")
+    .foreach { x =>
+      val logAssignments = x.map { y =>
+        val className :: levelName :: _ = y.split(":").toList
+
+        val level = levelName.toLowerCase match {
+          case "error" => LogLevel.Error
+          case "warn" => LogLevel.Warn
+          case "info" => LogLevel.Info
+          case "debug" => LogLevel.Debug
+          case "trace" => LogLevel.Trace
+          case _ =>
+            throw new Exception(s"Error: bad command line arguments for --class-log-level $x")
+        }
+        className -> level
+      }
+
+      commonOptions = commonOptions.copy(classLogLevels = commonOptions.classLogLevels ++ logAssignments)
+
+    }
+    .text(s"This options defines a work directory for intermediate files, default is ${commonOptions.targetDirName}")
+
+  parser.opt[Unit]("log-to-file")
+    .abbr("ltf")
+    .foreach { _ =>
+      commonOptions = commonOptions.copy(logToFile = true)
+    }
+    .text(s"default logs to stdout, this flags writes to topName.log or firrtl.log if no topName")
+
+  parser.opt[Unit]("log-class-names")
+    .abbr("lcn")
+    .foreach { _ =>
+      commonOptions = commonOptions.copy(logClassNames = true)
+    }
+    .text(s"shows class names and log level in logging output, useful for target --class-log-level")
 
   parser.help("help").text("prints this usage text")
 }
