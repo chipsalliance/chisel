@@ -31,7 +31,7 @@ class RangeTransform(val c: Context) {
       currString = currString.dropWhile(_ == ' ')  // allow whitespace
       if (currString.isEmpty()) {
         if (nextArgIndex >= args.length) {
-          c.abort(c.enclosingPosition, s"Incomplete range specifier, expected interpolated value")
+          c.abort(c.enclosingPosition, s"Incomplete range specifier")
         }
         val nextArg = args(nextArgIndex)
         nextArgIndex += 1
@@ -47,11 +47,7 @@ class RangeTransform(val c: Context) {
         val nextStringVal = currString.takeWhile(!Set('[', '(', ' ', ',', ')', ']').contains(_))
         currString = currString.substring(nextStringVal.length)
         if (currString.isEmpty()) {
-          if (nextStringIndex >= strings.length) {
-            c.abort(c.enclosingPosition, s"Incomplete range specifier")
-          }
-          currString = strings(nextStringIndex)
-          nextStringIndex += 1
+          c.abort(c.enclosingPosition, s"Incomplete range specifier")
         }
         c.parse(nextStringVal)
       }
@@ -62,7 +58,7 @@ class RangeTransform(val c: Context) {
     val startInclusive = currString(0) match {
       case '[' => true
       case '(' => false
-      case _ => c.abort(c.enclosingPosition, s"Unknown start inclusive/exclusive specifier, got: '${currString(0)}'")
+      case other => c.abort(c.enclosingPosition, s"Unknown start inclusive/exclusive specifier, got: '$other'")
     }
     currString = currString.substring(1)  // eat the inclusive/exclusive specifier
     val minArg = getNextValue()
@@ -76,7 +72,7 @@ class RangeTransform(val c: Context) {
     val endInclusive = currString(0) match {
       case ']' => true
       case ')' => false
-      case _ => c.abort(c.enclosingPosition, s"Unknown end inclusive/exclusive specifier, got: '${currString(0)}'")
+      case other => c.abort(c.enclosingPosition, s"Unknown end inclusive/exclusive specifier, got: '$other'")
     }
     currString = currString.substring(1)  // eat the inclusive/exclusive specifier
     currString = currString.dropWhile(_ == ' ')
@@ -89,6 +85,8 @@ class RangeTransform(val c: Context) {
       val unused = currString + strings.slice(nextStringIndex, strings.length).mkString(", ")
       c.abort(c.enclosingPosition, s"Unused characters in range specifier: '$unused'")
     }
+
+    // TODO: FINISH THIS!
 
     c.warning(c.enclosingPosition, s"$startInclusive ${showRaw(minArg)} ${showRaw(maxArg)} $endInclusive")
 
