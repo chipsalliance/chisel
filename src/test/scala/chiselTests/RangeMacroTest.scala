@@ -25,7 +25,7 @@ import rangeMacroTest._
 @dump
 class RangeMacroTest extends ChiselPropSpec {
   property("Range macros should work") {
-    def ducks() = {2}
-    range"  (0, ${ducks}]   "
+    range"(0,${1+1}]"
+    range"  (  0  ,  ${1+1}  ]  "
   }
 }
