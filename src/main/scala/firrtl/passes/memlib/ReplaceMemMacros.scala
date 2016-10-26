@@ -148,7 +148,23 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     }
   }
 
+  /** Mapping from (module, memory name) pairs to blackbox names */
+  private type NameMap = collection.mutable.HashMap[(String, String), String]
+  /** Construct NameMap by assigning unique names for each memory blackbox */
+  def constructNameMap(namespace: Namespace, nameMap: NameMap, mname: String)(s: Statement): Statement = {
+    s match {
+      case m: DefAnnotatedMemory => m.memRef match {
+        case None => nameMap(mname -> m.name) = namespace newName m.name
+        case Some(_) =>
+      }
+      case _ =>
+    }
+    s map constructNameMap(namespace, nameMap, mname)
+  }
+
   def updateMemStmts(namespace: Namespace,
+                     nameMap: NameMap,
+                     mname: String,
                      memPortMap: MemPortMap,
                      memMods: Modules)
                      (s: Statement): Statement = s match {
@@ -160,28 +176,30 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
       m.memRef match {
         case None =>
           // prototype mem
-          val newWrapperName = namespace newName m.name
-          val newMemBBName = namespace newName s"${m.name}_ext"
+          val newWrapperName = nameMap(mname -> m.name)
+          val newMemBBName = namespace newName s"${newWrapperName}_ext"
           val newMem = m copy (name = newMemBBName)
           memMods ++= createMemModule(newMem, newWrapperName)
-          WDefInstance(m.info, m.name, newWrapperName, UnknownType) 
-        case Some(ref: String) =>
-          WDefInstance(m.info, m.name, ref, UnknownType) 
+          WDefInstance(m.info, m.name, newWrapperName, UnknownType)
+        case Some((module, mem)) =>
+          WDefInstance(m.info, m.name, nameMap(module -> mem), UnknownType)
       }
-    case sx => sx map updateMemStmts(namespace, memPortMap, memMods)
+    case sx => sx map updateMemStmts(namespace, nameMap, mname, memPortMap, memMods)
   }
 
-  def updateMemMods(namespace: Namespace, memMods: Modules)(m: DefModule) = {
+  def updateMemMods(namespace: Namespace, nameMap: NameMap, memMods: Modules)(m: DefModule) = {
     val memPortMap = new MemPortMap
 
-    (m map updateMemStmts(namespace, memPortMap, memMods)
+    (m map updateMemStmts(namespace, nameMap, m.name, memPortMap, memMods)
        map updateStmtRefs(memPortMap))
   }
 
   def run(c: Circuit) = {
     val namespace = Namespace(c)
     val memMods = new Modules
-    val modules = c.modules map updateMemMods(namespace, memMods)
+    val nameMap = new NameMap
+    c.modules map (m => m map constructNameMap(namespace, nameMap, m.name))
+    val modules = c.modules map updateMemMods(namespace, nameMap, memMods)
     // print conf
     writer.serialize()
     c copy (modules = modules ++ memMods)

@@ -35,8 +35,7 @@ object RenameAnnotatedMemoryPorts extends Pass {
    *  E.g.:
    *    - ("m.read.addr") becomes (m.R0.addr)
    */
-  def getMemPortMap(m: DefAnnotatedMemory): MemPortMap = {
-    val memPortMap = new MemPortMap
+  def getMemPortMap(m: DefAnnotatedMemory, memPortMap: MemPortMap) {
     val defaultFields = Seq("addr", "en", "clk")
     val rFields = defaultFields :+ "data"
     val wFields = rFields :+ "mask"
@@ -51,7 +50,6 @@ object RenameAnnotatedMemoryPorts extends Pass {
     updateMemPortMap(m.readers, rFields, "R")
     updateMemPortMap(m.writers, wFields, "W")
     updateMemPortMap(m.readwriters, rwFields, "RW")
-    memPortMap
   }
 
   /** Replaces candidate memories with memories with standard port names
@@ -60,7 +58,7 @@ object RenameAnnotatedMemoryPorts extends Pass {
   def updateMemStmts(memPortMap: MemPortMap)(s: Statement): Statement = s match {
     case m: DefAnnotatedMemory =>
       val updatedMem = createMemProto(m)
-      memPortMap ++= getMemPortMap(m)
+      getMemPortMap(m, memPortMap)
       updatedMem
     case s => s map updateMemStmts(memPortMap)
   }

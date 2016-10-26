@@ -13,24 +13,24 @@ object ResolveMemoryReference extends Pass {
 
   def name = "Resolve Memory Reference"
 
-  type AnnotatedMemories = collection.mutable.ArrayBuffer[DefAnnotatedMemory]
+  type AnnotatedMemories = collection.mutable.ArrayBuffer[(String, DefAnnotatedMemory)]
 
   /** If a candidate memory is identical except for name to another, add an
     *   annotation that references the name of the other memory.
     */
-  def updateMemStmts(uniqueMems: AnnotatedMemories)(s: Statement): Statement = s match {
+  def updateMemStmts(mname: String, uniqueMems: AnnotatedMemories)(s: Statement): Statement = s match {
     case m: DefAnnotatedMemory =>
-      uniqueMems find (x => eqMems(x, m)) match {
+      uniqueMems find (x => eqMems(x._2, m)) match {
         case None =>
-          uniqueMems += m
+          uniqueMems += (mname -> m)
           m
-        case Some(proto) => m copy (memRef = Some(proto.name))
+        case Some((module, proto)) => m copy (memRef = Some(module -> proto.name))
       }
-    case s => s map updateMemStmts(uniqueMems)
+    case s => s map updateMemStmts(mname, uniqueMems)
   }
 
   def run(c: Circuit) = {
     val uniqueMems = new AnnotatedMemories
-    c copy (modules = c.modules map (_ map updateMemStmts(uniqueMems)))
+    c copy (modules = c.modules map (m => m map updateMemStmts(m.name, uniqueMems)))
   }
 }
