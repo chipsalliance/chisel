@@ -22,8 +22,7 @@ import rangeMacroTest._
   * Note: negative (failure) conditions can't be tested because they will fail at compile time,
   * before the testing environment is entered.
   */
-@dump
-class RangeMacroTest extends ChiselPropSpec {
+class RangeMacroSpec extends ChiselPropSpec {
   property("Range macros should work") {
     range"(0,${1+1}]"
     range"  (  0  ,  ${1+1}  ]  "
