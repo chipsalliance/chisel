@@ -37,21 +37,21 @@ object DataMirror {
 * Thus, an error will be thrown if these are used on bound Data
 */
 object Input {
-  def apply[T<:Data](source: T): T = {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
     val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Direction.Input)
     Binding.bind(target, InputBinder, "Error: Cannot set as input ")
   }
 }
 object Output {
-  def apply[T<:Data](source: T): T = {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
     val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Direction.Output)
     Binding.bind(target, OutputBinder, "Error: Cannot set as output ")
   }
 }
 object Flipped {
-  def apply[T<:Data](source: T): T = {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
     val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Data.getFirrtlDirection(source).flip)
     Binding.bind(target, FlippedBinder, "Error: Cannot flip ")
@@ -186,14 +186,18 @@ abstract class Data extends HasId {
     * then performs any fixups required to reconstruct the appropriate core state of the cloned object.
     * @return a copy of the object with appropriate core state.
     */
-  def chiselCloneType: this.type = {
+  def chiselCloneType(implicit compileOptions: CompileOptions): this.type = {
     // Call the user-supplied cloneType method
     val clone = this.cloneType
-    Data.setFirrtlDirection(clone, Data.getFirrtlDirection(this))
-    //TODO(twigg): Do recursively for better error messages
-    for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
-      clone_elem.binding = UnboundBinding(source_elem.binding.direction)
-      Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
+    // In compatibility mode, simply return cloneType; otherwise, propagate
+    // direction and flippedness.
+    if (compileOptions.checkSynthesizable) {
+      Data.setFirrtlDirection(clone, Data.getFirrtlDirection(this))
+      //TODO(twigg): Do recursively for better error messages
+      for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
+        clone_elem.binding = UnboundBinding(source_elem.binding.direction)
+        Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
+      }
     }
     clone
   }
