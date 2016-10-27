@@ -128,10 +128,10 @@ private[chisel3] trait HasId extends InstanceId {
     case None => throwException(s"$instanceName doesn't have a parent")
   }
 
-  private[chisel3] def getPublicFields(myClass: Class[_]): Seq[java.lang.reflect.Method] = {
+  private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
     def getValNames(c: Class[_]): Set[String] = {
-      if (c == myClass) Set()
+      if (c == rootClass) Set()
       else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
     }
     val valNames = getValNames(this.getClass)

@@ -354,11 +354,8 @@ class Bundle extends Aggregate {
     * be one, otherwise returns None.
     */
   private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
-    case d: Data =>
-      Some(d)
-    case o: Option[_] => o.collect {
-      case d: Data => d
-    }
+    case d: Data => Some(d)
+    case Some(d: Data) => Some(d)
     case _ => None
   }
 
@@ -387,8 +384,6 @@ class Bundle extends Aggregate {
     s"{${namedElts.reverse.map(e => eltPort(e._2)).mkString(", ")}}"
   }
   private[chisel3] lazy val flatten = namedElts.flatMap(_._2.flatten)
-  private[core] def addElt(name: String, elt: Data): Unit =
-    namedElts += name -> elt
   private[chisel3] override def _onModuleClose: Unit = // scalastyle:ignore method.name
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
     
