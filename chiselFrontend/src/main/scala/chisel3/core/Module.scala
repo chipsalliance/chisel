@@ -162,15 +162,6 @@ extends HasId {
       port.setRef(ModuleIO(this, _namespace.name(name)))
     }
 
-    // Suggest names to nodes using runtime reflection
-    def getValNames(c: Class[_]): Set[String] = {
-      if (c == classOf[Module]) Set()
-      else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
-    }
-    val valNames = getValNames(this.getClass)
-    def isPublicVal(m: java.lang.reflect.Method) =
-      m.getParameterTypes.isEmpty && valNames.contains(m.getName)
-
     /** Recursively suggests names to supported "container" classes
       * Arbitrary nestings of supported classes are allowed so long as the
       * innermost element is of type HasId
@@ -189,8 +180,7 @@ extends HasId {
           }
         case _ => // Do nothing
       }
-    val methods = getClass.getMethods.sortWith(_.getName > _.getName)
-    for (m <- methods if isPublicVal(m)) {
+    for (m <- getPublicFields(classOf[Module])) {
       nameRecursively(m.getName, m.invoke(this))
     }
 

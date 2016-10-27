@@ -353,24 +353,10 @@ class Bundle extends Aggregate {
   /** Returns a field's contained user-defined Bundle element if it appears to
     * be one, otherwise returns None.
     */
-  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = {
-    if (isBundleField(m) &&
-        (classOf[Data].isAssignableFrom(m.getReturnType) ||
-         classOf[Option[_]].isAssignableFrom(m.getReturnType))) {
-      m.invoke(this) match {
-        case d: Data =>
-          Some(d)
-        case o: Option[_] =>
-          o.getOrElse(None) match {
-            case d: Data =>
-              Some(d)
-            case _ => None
-          }
-        case _ => None
-      }
-    } else {
-      None
-    }
+  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
+    case d: Data => Some(d)
+    case Some(d: Data) => Some(d)
+    case _ => None
   }
 
   /** Returns a list of elements in this Bundle.
@@ -378,15 +364,14 @@ class Bundle extends Aggregate {
   private[core] lazy val namedElts = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
-    for (m <- getClass.getMethods.sortWith(_.getName < _.getName)) {
-      getBundleField(m) match {
-        case Some(d) =>
-          if (nameMap contains m.getName) {
-            require(nameMap(m.getName) eq d)
-          } else if (!seen(d)) {
-            nameMap(m.getName) = d; seen += d
-          }
-        case None =>
+    for (m <- getPublicFields(classOf[Bundle])) {
+      getBundleField(m) foreach { d =>
+        if (nameMap contains m.getName) {
+          require(nameMap(m.getName) eq d)
+        } else if (!seen(d)) {
+          nameMap(m.getName) = d
+          seen += d
+        }
       }
     }
     ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
@@ -399,8 +384,6 @@ class Bundle extends Aggregate {
     s"{${namedElts.reverse.map(e => eltPort(e._2)).mkString(", ")}}"
   }
   private[chisel3] lazy val flatten = namedElts.flatMap(_._2.flatten)
-  private[core] def addElt(name: String, elt: Data): Unit =
-    namedElts += name -> elt
   private[chisel3] override def _onModuleClose: Unit = // scalastyle:ignore method.name
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
     
