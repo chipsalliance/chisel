@@ -1,0 +1,9 @@
+--- 
+pin:
+  name: mypin
+source:
+  name: cmd
+  module: Htif
+top:
+  name: Top
+--- 

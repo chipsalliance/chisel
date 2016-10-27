@@ -10,12 +10,24 @@ import firrtl.Mappers._
 import MemPortUtils.{MemPortMap, Modules}
 import MemTransformUtils._
 import AnalysisUtils._
+import Annotations._
+import wiring._
+
+
+/** Annotates the name of the pin to add for WiringTransform
+  */
+case class PinAnnotation(target: CircuitName, tID: TransID, pin: String) extends Annotation with Loose with Unstable {
+  def duplicate(n: Named) = n match {
+    case n: CircuitName => this.copy(target = n)
+    case _ => throwInternalError
+  }
+}
 
 /** Replace DefAnnotatedMemory with memory blackbox + wrapper + conf file.
   * This will not generate wmask ports if not needed.
   * Creates the minimum # of black boxes needed by the design.
   */
-class ReplaceMemMacros(writer: ConfWriter) extends Pass {
+class ReplaceMemMacros(writer: ConfWriter, myID: TransID, wiringID: TransID) extends Transform {
   def name = "Replace Memory Macros"
 
   /** Return true if mask granularity is per bit, false if per byte or unspecified
@@ -194,7 +206,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
        map updateStmtRefs(memPortMap))
   }
 
-  def run(c: Circuit) = {
+  def execute(c: Circuit, map: AnnotationMap): TransformResult = {
     val namespace = Namespace(c)
     val memMods = new Modules
     val nameMap = new NameMap
@@ -202,6 +214,15 @@ class ReplaceMemMacros(writer: ConfWriter) extends Pass {
     val modules = c.modules map updateMemMods(namespace, nameMap, memMods)
     // print conf
     writer.serialize()
-    c copy (modules = modules ++ memMods)
+    val pin = map get myID match {
+      case Some(p) => 
+        p.values.head match {
+          case PinAnnotation(c, _, pin) => pin
+          case _ => error(s"Bad Annotations: ${p.values}")
+        }
+      case None => "pin"
+    }
+    val annos = memMods.collect { case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), wiringID, pin) }
+    TransformResult(c.copy(modules = modules ++ memMods), None, Some(AnnotationMap(annos)))
   }  
 }

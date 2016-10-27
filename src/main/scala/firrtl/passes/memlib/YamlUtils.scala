@@ -5,7 +5,17 @@ import java.io.{File, CharArrayWriter, PrintWriter}
 
 object CustomYAMLProtocol extends DefaultYamlProtocol {
   // bottom depends on top
+  implicit val _pin = yamlFormat1(Pin)
+  implicit val _source = yamlFormat2(Source)
+  implicit val _top = yamlFormat1(Top)
+  implicit val _configs = yamlFormat3(Config)
 }
+
+case class Pin(name: String)
+case class Source(name: String, module: String)
+case class Top(name: String)
+case class Config(pin: Pin, source: Source, top: Top)
+
 
 class YamlFileReader(file: String) {
   import CustomYAMLProtocol._
