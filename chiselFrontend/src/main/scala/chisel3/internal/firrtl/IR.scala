@@ -219,4 +219,4 @@ case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[C
 case class Port(id: Data, dir: Direction)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
 
-case class Circuit(name: String, components: Seq[Component])
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation] = Seq.empty)

@@ -146,6 +146,7 @@ private[chisel3] class DynamicContext() {
   val globalNamespace = new Namespace(None, Set())
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
+  val annotations = new ArrayBuffer[Annotation]()
   val errors = new ErrorLog
 }
 
@@ -170,6 +171,7 @@ private[chisel3] object Builder {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
+  def annotations: ArrayBuffer[Annotation] = dynamicContext.annotations
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
@@ -191,12 +193,13 @@ private[chisel3] object Builder {
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
       errors.info("Elaborating design...")
+      val d = dynamicContext
+      val a = d.annotations
       val mod = f
       mod.forceName(mod.name, globalNamespace)
       errors.checkpoint()
       errors.info("Done elaborating.")
-
-      Circuit(components.last.name, components)
+      Circuit(components.last.name, components, dynamicContext.annotations)
     }
   }
 }

@@ -68,7 +68,8 @@ lazy val chiselSettings = Seq (
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.4.0"
+    "com.github.scopt" %% "scopt" % "3.4.0",
+    "net.jcazevedo" %% "moultingyaml" % "0.2"
   ),
 
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
