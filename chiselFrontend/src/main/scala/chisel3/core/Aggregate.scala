@@ -9,7 +9,7 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, VecTransform, SourceInfoTransform, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo._
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -28,10 +28,12 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen, n)
+  def apply[T <: Data](n: Int, gen: T)(implicit compileOptions: CompileOptions): Vec[T] =
+    new Vec(gen.chiselCloneType, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int): Vec[T] = new Vec(gen, n)
+  def apply[T <: Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
+    apply(n, gen)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -44,7 +46,7 @@ object Vec {
     */
   def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
 
-  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo): Vec[T] = {
+  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
     // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
     // varargs constructor, which is more in line with the style of the Scala
     // collection API. However, a deprecation phase isn't possible, since
@@ -64,7 +66,7 @@ object Vec {
       require(eltsCompatible(t, e), s"can't create Vec of heterogeneous types ${t.getClass} and ${e.getClass}")
 
     val maxWidth = elts.map(_.width).reduce(_ max _)
-    val vec = Wire(new Vec(t.cloneTypeWidth(maxWidth), elts.length))
+    val vec = Wire(new Vec(t.cloneTypeWidth(maxWidth).chiselCloneType, elts.length))
     def doConnect(sink: T, source: T) = {
       if (elts.head.flatten.exists(_.dir != Direction.Unspecified)) {
         sink bulkConnect source
@@ -88,7 +90,7 @@ object Vec {
     */
   def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
 
-  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo): Vec[T] =
+  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply(elt0 +: elts.toSeq)
 
   /** Creates a new [[Vec]] of length `n` composed of the results of the given
@@ -101,7 +103,7 @@ object Vec {
     */
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
 
-  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo): Vec[T] =
+  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply((0 until n).map(i => gen(i)))
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
@@ -115,7 +117,7 @@ object Vec {
   @deprecated("Vec.fill(n)(gen) is deprecated. Please use Vec(Seq.fill(n)(gen))", "chisel3")
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
 
-  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo): Vec[T] =
+  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply(Seq.fill(n)(gen))
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
@@ -124,7 +126,7 @@ object Vec {
     if (n <= 1) UInt(0)
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
-    else Wire(UInt(width = w), init = idx)
+    else (idx | UInt(0, w))(w-1,0)
   }
 }
 
@@ -137,12 +139,12 @@ object Vec {
   * @note Vecs, unlike classes in Scala's collection library, are propagated
   * intact to FIRRTL as a vector type, which may make debugging easier
   */
-sealed class Vec[T <: Data] private (gen: T, val length: Int)
+sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
-  private val self: Seq[T] = Vector.fill(length)(gen.chiselCloneType)
+  private val self: Seq[T] = Vector.fill(length)(gen)
 
   /**
   * sample_element 'tracks' all changes to the elements of self.
@@ -151,7 +153,7 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
   *
   * Needed specifically for the case when the Vec is length 0.
   */
-  private[core] val sample_element: T = gen.chiselCloneType
+  private[core] val sample_element: T = gen
 
   // allElements current includes sample_element
   // This is somewhat weird although I think the best course of action here is
@@ -190,7 +192,7 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
     */
   def apply(idx: UInt): T = {
     Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
-    val port = sample_element.chiselCloneType
+    val port = gen
     val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo)
     port.setRef(this, i)
 
@@ -216,7 +218,7 @@ sealed class Vec[T <: Data] private (gen: T, val length: Int)
   }
 
   override def cloneType: this.type = {
-    Vec(length, gen).asInstanceOf[this.type]
+    new Vec(gen, length).asInstanceOf[this.type]
   }
 
   private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
@@ -312,9 +314,9 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     * true is NOT checked (useful in cases where the condition doesn't always
     * hold, but the results are not used in those cases)
     */
-  def onlyIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def onlyIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
 
-  def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))
 }
 

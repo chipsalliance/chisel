@@ -294,7 +294,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     pushOp(DefPrim(sourceInfo, UInt(w), ConcatOp, this.ref, that.ref))
   }
 
-  override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
+  override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     val res = Wire(this, null).asInstanceOf[this.type]
     res := that
     res
