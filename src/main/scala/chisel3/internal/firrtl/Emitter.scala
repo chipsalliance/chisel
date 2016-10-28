@@ -80,9 +80,10 @@ private class Emitter(circuit: Circuit) {
     */
   private def emit(m: Component): String = {
     // Generate the body.
-    val defn = moduleDefn(m)
-    m.id setModName m.name
-    moduleDecl(m) + defn
+    val sb = new StringBuilder
+    sb append moduleDecl(m)
+    sb append moduleDefn(m)
+    sb.result
   }
 
   private var indentLevel = 0
