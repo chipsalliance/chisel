@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl.PrimOp.AsUIntOp
 
 sealed abstract class Direction(name: String) {
@@ -236,9 +236,9 @@ abstract class Data extends HasId {
     * @note does NOT check bit widths, may drop bits during assignment
     * @note what fromBits assigs to must have known widths
     */
-  def fromBits(that: Bits): this.type = macro SourceInfoTransform.thatArg
+  def fromBits(that: Bits): this.type = macro CompileOptionsTransform.thatArg
 
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     var i = 0
     val wire = Wire(this.chiselCloneType)
     val bits =
@@ -286,14 +286,14 @@ object Wire {
   def apply[T <: Data](t: T): T = macro WireTransform.apply[T]
 
   // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](dummy: Int = 0, init: T): T =
-    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo)
+  def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
+    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo, compileOptions)
 
   // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](t: T, init: T): T =
-    do_apply(t, init)(UnlocatableSourceInfo)
+  def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
+    do_apply(t, init)(UnlocatableSourceInfo, compileOptions)
 
-  def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+  def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val x = Reg.makeType(chisel3.core.ExplicitCompileOptions.NotStrict, t, null.asInstanceOf[T], init)
 
     // Bind each element of x to being a Wire
@@ -311,7 +311,7 @@ object Wire {
 
 object Clock {
   def apply(): Clock = new Clock
-  def apply(dir: Direction): Clock = {
+  def apply(dir: Direction)(implicit compileOptions: CompileOptions): Clock = {
     val result = apply()
     dir match {
       case Direction.Input => Input(result)
