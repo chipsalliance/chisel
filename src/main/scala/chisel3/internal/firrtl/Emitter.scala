@@ -45,9 +45,6 @@ private class Emitter(circuit: Circuit) {
     }
   }
 
-  // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
-  private val defnMap = collection.mutable.HashMap[(String, String), Component]()
-
   /** Generates the FIRRTL module declaration.
     */
   private def moduleDecl(m: Component): String = m.id match {
@@ -84,16 +81,8 @@ private class Emitter(circuit: Circuit) {
   private def emit(m: Component): String = {
     // Generate the body.
     val defn = moduleDefn(m)
-
-    defnMap get (m.id.desiredName, defn) match {
-      case Some(duplicate) =>
-        m.id setModName duplicate.name
-        ""
-      case None =>
-        defnMap((m.id.desiredName, defn)) = m
-        m.id setModName m.name
-        moduleDecl(m) + defn
-    }
+    m.id setModName m.name
+    moduleDecl(m) + defn
   }
 
   private var indentLevel = 0
