@@ -2,13 +2,10 @@
 
 package chisel3.iotesters
 
-import chisel3.Module
-import scala.util.DynamicVariable
+import chisel3._
 import java.io.File
-
-import chisel3.{HasChiselExecutionOptions, Module}
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
-import firrtl_interpreter.HasInterpreterOptions
+import firrtl_interpreter.{FirrtlRepl, ReplConfig, HasReplConfig, HasInterpreterOptions}
 
 import scala.util.DynamicVariable
 
@@ -74,6 +71,44 @@ object Driver {
         false
     }
   }
+
+  /**
+    * Start up the interpreter repl with the given circuit
+    * To test a `class X extends Module {}`, add the following code to the end
+    * of the file that defines
+    * @example {{{
+    *           object XRepl {
+    *             def main(args: Array[String]) {
+    *               val optionsManager = new ReplOptionsManager
+    *               if(optionsManager.parse(args)) {
+    *                 iotesters.Driver.executeFirrtlRepl(() => new X, optionsManager)
+    *               }
+    *             }
+    * }}}
+    * running main will place users in the repl with the circuit X loaded into the repl
+    *
+    * @param dutGenerator   Module to run in interpreter
+    * @param optionsManager options
+    * @return
+    */
+  def executeFirrtlRepl[T <: Module](
+                                      dutGenerator: () => T,
+                                      optionsManager: ReplOptionsManager = new ReplOptionsManager): Boolean = {
+
+    optionsManager.chiselOptions = optionsManager.chiselOptions.copy(runFirrtlCompiler = false)
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
+
+    val chiselResult: ChiselExecutionResult = chisel3.Driver.execute(optionsManager, dutGenerator)
+    chiselResult match {
+      case ChiselExecutionSucccess(_, emitted, _) =>
+        optionsManager.replConfig = ReplConfig(firrtlSource = emitted)
+        FirrtlRepl.execute(optionsManager)
+        true
+      case ChiselExecutionFailure(message) =>
+        println("Failed to compile circuit")
+        false
+    }
+  }
   /**
     * This is just here as command line way to see what the options are
     * It will not successfully run
@@ -103,7 +138,7 @@ object Driver {
       try {
         testerGen(dut).finish
       } catch { case e: Throwable =>
-        e.printStackTrace
+        e.printStackTrace()
         backend match {
           case b: VCSBackend => TesterProcess.kill(b)
           case b: VerilatorBackend => TesterProcess.kill(b)
@@ -126,7 +161,7 @@ object Driver {
       try {
         testerGen(dut).finish
       } catch { case e: Throwable =>
-        e.printStackTrace
+        e.printStackTrace()
         backend match {
           case Some(b: VCSBackend) =>
             TesterProcess kill b
@@ -152,3 +187,11 @@ object Driver {
     run(dutGen, binary.toString +: args.toSeq)(testerGen)
   }
 }
+
+class ReplOptionsManager
+  extends ExecutionOptionsManager("chisel-testers")
+    with HasInterpreterOptions
+    with HasChiselExecutionOptions
+    with HasFirrtlOptions
+    with HasReplConfig
+
