@@ -124,7 +124,7 @@ private[chisel3] trait HasId extends InstanceId {
     case None => throwException(s"$instanceName doesn't have a parent")
   }
   def parentModName = _parent match {
-    case Some(p) => p.modName
+    case Some(p) => p.name
     case None => throwException(s"$instanceName doesn't have a parent")
   }
 

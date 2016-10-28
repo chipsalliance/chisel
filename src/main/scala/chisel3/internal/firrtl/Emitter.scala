@@ -32,7 +32,7 @@ private class Emitter(circuit: Circuit) {
           "\"" + printf.format(fmt) + "\"") ++ args
         printfArgs mkString ("printf(", ", ", ")")
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
-      case e: DefInstance => s"inst ${e.name} of ${e.id.modName}"
+      case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
       case w: WhenBegin =>
         indent()
         s"when ${w.pred.fullName(ctx)} :"
@@ -52,9 +52,6 @@ private class Emitter(circuit: Circuit) {
     }
     s"parameter $name = $str"
   }
-
-  // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
-  private val defnMap = collection.mutable.HashMap[(String, String), Component]()
 
   /** Generates the FIRRTL module declaration.
     */
@@ -92,17 +89,10 @@ private class Emitter(circuit: Circuit) {
     */
   private def emit(m: Component): String = {
     // Generate the body.
-    val defn = moduleDefn(m)
-
-    defnMap get (m.id.desiredName, defn) match {
-      case Some(duplicate) =>
-        m.id setModName duplicate.name
-        ""
-      case None =>
-        defnMap((m.id.desiredName, defn)) = m
-        m.id setModName m.name
-        moduleDecl(m) + defn
-    }
+    val sb = new StringBuilder
+    sb.append(moduleDecl(m))
+    sb.append(moduleDefn(m))
+    sb.result
   }
 
   private var indentLevel = 0
