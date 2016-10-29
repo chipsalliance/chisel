@@ -68,10 +68,21 @@ lazy val chiselSettings = Seq (
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.4.0",
-    "net.jcazevedo" %% "moultingyaml" % "0.2"
+    "com.github.scopt" %% "scopt" % "3.4.0"
   ),
 
+  // Tests from other projects may still run concurrently.
+  parallelExecution in Test := true,
+
+  javacOptions ++= Seq("-target", "1.7")
+  //  Hopefully we get these options back in Chisel3
+  //  scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject("chisel"), version) map { (bd, v) =>
+  //    Seq("-diagrams", "-diagrams-max-classes", "25", "-sourcepath", bd.getAbsolutePath, "-doc-source-url",
+  //        "https://github.com/ucb-bar/chisel/tree/master/€{FILE_PATH}.scala")
+  //  }
+)
+
+lazy val firrtlSettings = Seq (
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
@@ -82,17 +93,7 @@ lazy val chiselSettings = Seq (
         //  otherwise let sbt fetch the appropriate version.
         "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
     }
-  },
-  
-  // Tests from other projects may still run concurrently.
-  parallelExecution in Test := true,
-
-  javacOptions ++= Seq("-target", "1.7")
-  //  Hopefully we get these options back in Chisel3
-  //  scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject("chisel"), version) map { (bd, v) =>
-  //    Seq("-diagrams", "-diagrams-max-classes", "25", "-sourcepath", bd.getAbsolutePath, "-doc-source-url",
-  //        "https://github.com/ucb-bar/chisel/tree/master/€{FILE_PATH}.scala")
-  //  }
+  }
 )
 
 lazy val coreMacros = (project in file("coreMacros")).
@@ -106,6 +107,7 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   ).
+  settings(firrtlSettings: _*).
   dependsOn(coreMacros)
 
 lazy val chisel = (project in file(".")).
@@ -119,6 +121,7 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
+  settings(firrtlSettings: _*).
   dependsOn(coreMacros).
   dependsOn(chiselFrontend).
   settings(

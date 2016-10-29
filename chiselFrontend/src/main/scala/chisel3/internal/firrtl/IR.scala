@@ -4,8 +4,11 @@ package chisel3.internal.firrtl
 
 import chisel3._
 import core._
-import chisel3.internal._
+import chisel3.internal.{firrtl => chiselfirrtl, HasId}
 import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
+import firrtl.Annotations.Annotation
+
+//import _root_.firrtl.Ann
 
 case class PrimOp(val name: String) {
   override def toString: String = name

@@ -10,12 +10,12 @@ import chisel3.internal.firrtl._
 import chisel3.internal.firrtl.{Command => _, _}
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 
+
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
-    * @param m the Module being created
-    *
+    * @param bc the Module being created
     * @return the input module `m` with Chisel metadata properly set
     */
   def apply[T <: Module](bc: => T): T = macro InstTransform.apply[T]
@@ -93,6 +93,10 @@ extends HasId {
   private[chisel3] val _commands = ArrayBuffer[Command]()
   private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
+
+  def annotate(annotation: ChiselAnnotation): Unit = {
+    Builder.annotations += annotation
+  }
 
   /** Desired name of this module. */
   def desiredName = this.getClass.getName.split('.').last
