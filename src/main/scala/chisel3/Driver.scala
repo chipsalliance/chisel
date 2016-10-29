@@ -6,6 +6,8 @@ import chisel3.internal.firrtl.Emitter
 
 import scala.sys.process._
 import java.io._
+import net.jcazevedo.moultingyaml._
+import net.jcazevedo.moultingyaml.DefaultYamlProtocol
 
 import internal.firrtl._
 import firrtl._
@@ -238,6 +240,13 @@ object Driver extends BackendCompilationUtilities {
     val w = new FileWriter(firrtlFile)
     w.write(firrtlString)
     w.close()
+
+    import firrtl.AnnotationYAMLProtocol._
+
+    val annotationFile = new File(optionsManager.getBuildFileName("anno"))
+    val af = new FileWriter(annotationFile)
+    af.write(circuit.annotations.toArray.toYaml.prettyPrint)
+    af.close()
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))

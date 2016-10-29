@@ -78,9 +78,15 @@ class TopOfDiamond extends Module with DiamondAnnotationLibrary {
   y := modA.io.out + modB.io.out
   io.out := y
 
-  annotateGeneric(this, s"TopOfDiamond Relative")
+  annotateGeneric(this, s"TopOfDiamond\nWith\nSome new lines")
 
   annotateGeneric(modB.io.in, s"TopOfDiamond.moduleB.io.in")
+}
+
+object TopOfDiamond {
+  def main(args: Array[String]) {
+    Driver.execute(args, () => new TopOfDiamond)
+  }
 }
 
 class DiamondTester extends BasicTester {
