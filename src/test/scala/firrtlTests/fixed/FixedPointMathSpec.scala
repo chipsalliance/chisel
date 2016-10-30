@@ -10,23 +10,24 @@ import firrtl.Parser.IgnoreInfo
 import firrtlTests.FirrtlFlatSpec
 
 class FixedPointMathSpec extends FirrtlFlatSpec {
-  def parse (input:String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
+  def parse(input: String) = Parser.parse(input.split("\n").toIterator, IgnoreInfo)
 
-  "Fixed types" should "parse" in {
-    val SumPattern        = """.*output sum.*<(\d+)>.*.*""".r
-    val ProductPattern    = """.*output product.*<(\d+)>.*""".r
-    val DifferencePattern = """.*output difference.*<(\d+)>.*""".r
+  val SumPattern        = """.*output sum.*<(\d+)>.*.*""".r
+  val ProductPattern    = """.*output product.*<(\d+)>.*""".r
+  val DifferencePattern = """.*output difference.*<(\d+)>.*""".r
 
-    val AssignPattern     = """\s*(\w+) <= (\w+)\((.*)\)\s*""".r
+  val AssignPattern     = """\s*(\w+) <= (\w+)\((.*)\)\s*""".r
 
-    for {
-      bits1        <- 1 to 4
-//      binaryPoint1 <- -4 to 4
-      binaryPoint1 <- 1 to 4
-      bits2        <- 1 to 4
-//      binaryPoint2 <- -4 to 4
-      binaryPoint2 <- 1 to 4
-    } {
+  for {
+    bits1        <- 1 to 4
+    binaryPoint1 <- 1 to 4
+    bits2        <- 1 to 4
+    binaryPoint2 <- 1 to 4
+  } {
+    def config = s"($bits1,$binaryPoint1)($bits2,$binaryPoint2)"
+
+    s"Configuration $config" should "pass" in {
+
       val input =
         s"""circuit Unit :
         |  module Unit :
@@ -38,8 +39,7 @@ class FixedPointMathSpec extends FirrtlFlatSpec {
         |    sum        <= add(a, b)
         |    product    <= mul(a, b)
         |    difference <= sub(a, b)
-        |    """.
-          stripMargin
+        |    """.stripMargin
 
       val lowerer = new LowFirrtlCompiler
 
@@ -48,8 +48,6 @@ class FixedPointMathSpec extends FirrtlFlatSpec {
       lowerer.compile(parse(input), new AnnotationMap(Seq.empty), writer)
 
       val output = writer.toString.split("\n")
-
-      def config = s"($bits1,$binaryPoint1)($bits2,$binaryPoint2)"
 
       def inferredAddWidth: Int = {
         val binaryDifference = binaryPoint1 - binaryPoint2
@@ -61,10 +59,8 @@ class FixedPointMathSpec extends FirrtlFlatSpec {
         newW1.max(newW2) + 1
       }
 
-      println(s"Test for configuratio $config")
-
-      for(line <- output) {
-        line  match {
+      for (line <- output) {
+        line match {
           case SumPattern(varWidth)     =>
             assert(varWidth.toInt === inferredAddWidth, s"$config sum sint bits wrong for $line")
           case ProductPattern(varWidth) =>
@@ -108,11 +104,9 @@ class FixedPointMathSpec extends FirrtlFlatSpec {
               case _ =>
             }
           case _ =>
-//            println(s"No pattern found for ${line}")
         }
       }
-
-      println(writer.toString)
     }
   }
 }
+

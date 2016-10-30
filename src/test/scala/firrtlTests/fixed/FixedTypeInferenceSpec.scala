@@ -41,9 +41,6 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
     }
     val lines = c.serialize.split("\n") map normalized
 
-    for(l <- lines) {
-      println(l)
-    }
     expected foreach { e =>
       lines should contain(e)
     }
@@ -318,4 +315,3 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
   }
 }
 
-// vim: set ts=4 sw=4 et:

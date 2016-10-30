@@ -42,9 +42,6 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
     }
     val lines = c.serialize.split("\n") map normalized
 
-    for(l <- lines) {
-      println(l)
-    }
     expected foreach { e =>
       lines should contain(e)
     }
@@ -218,4 +215,3 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
   }
 }
 
-// vim: set ts=4 sw=4 et:
