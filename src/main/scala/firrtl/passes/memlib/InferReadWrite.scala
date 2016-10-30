@@ -26,6 +26,7 @@ MODIFICATIONS.
 */
 
 package firrtl.passes
+package memlib
 
 import firrtl._
 import firrtl.ir._

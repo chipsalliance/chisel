@@ -71,7 +71,7 @@ class InferReadWriteSpec extends SimpleTransformSpec {
      new IRToWorkingIR(),
      new ResolveAndCheck(),
      new HighFirrtlToMiddleFirrtl(),
-     new InferReadWrite(TransID(-1)),
+     new memlib.InferReadWrite(TransID(-1)),
      InferReadWriteCheck,
      new EmitFirrtl(writer)
   )
@@ -100,7 +100,7 @@ circuit sram6t :
       T_5 <= io.wdata
 """.stripMargin
 
-    val annotationMap = AnnotationMap(Seq(InferReadWriteAnnotation("sram6t", TransID(-1))))
+    val annotationMap = AnnotationMap(Seq(memlib.InferReadWriteAnnotation("sram6t", TransID(-1))))
     val writer = new java.io.StringWriter
     compile(parse(input), annotationMap, writer)
     // Check correctness of firrtl
@@ -132,7 +132,7 @@ circuit sram6t :
       T_5 <= io.wdata
 """.stripMargin
 
-    val annotationMap = AnnotationMap(Seq(InferReadWriteAnnotation("sram6t", TransID(-1))))
+    val annotationMap = AnnotationMap(Seq(memlib.InferReadWriteAnnotation("sram6t", TransID(-1))))
     val writer = new java.io.StringWriter
     intercept[InferReadWriteCheckException] {
       compile(parse(input), annotationMap, writer)

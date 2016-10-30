@@ -4,7 +4,7 @@ package firrtl
 
 import firrtl.Annotations._
 import firrtl.Parser._
-import firrtl.passes.memlib.ReplSeqMemAnnotation
+import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
 import logger.LogLevel
 import scopt.OptionParser
 
@@ -267,7 +267,7 @@ trait HasFirrtlOptions {
     .valueName ("<circuit>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations :+ passes.InferReadWriteAnnotation(x, TransID(-1))
+        annotations = firrtlOptions.annotations :+ InferReadWriteAnnotation(x, TransID(-1))
       )
     }.text {
       "Enable readwrite port inference for the target circuit"
