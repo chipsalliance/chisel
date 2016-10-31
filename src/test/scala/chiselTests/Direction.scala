@@ -13,14 +13,15 @@ class DirectionHaver extends Module {
 }
 
 class GoodDirection extends DirectionHaver {
-  io.out := UInt(0)
+  io.out := UInt.Lit(0)
 }
 
 class BadDirection extends DirectionHaver {
-  io.in := UInt(0)
+  io.in := UInt.Lit(0)
 }
 
 class DeprecatedDirection extends Module {
+  import chisel3.core.ExplicitCompileOptions.Strict
   val io = IO(new Bundle {
     val in = UInt(INPUT, 32)
     val out = UInt(OUTPUT, 32)
@@ -42,6 +43,11 @@ class DirectionSpec extends ChiselPropSpec with ShouldMatchers {
   }
 
   property("Chisel2 directions should be deprecated") {
-    elaborate(new DeprecatedDirection)
+    val output = new java.io.ByteArrayOutputStream()
+    Console.withOut(output) {
+      elaborate(new DeprecatedDirection)
+    }
+    println(output)
+    assert(output.toString.contains("Direction(UInt(...)) should be used over UInt(DIRECTION, ...)"))
   }
 }

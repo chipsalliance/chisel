@@ -568,10 +568,8 @@ private[core] sealed trait UIntFactory {
   // NOTE: This resolves UInt(width = 32)
   def apply(dir: Option[Direction] = None, width: Int): UInt = apply(Width(width))
   /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-  def apply(value: BigInt)(implicit opts: CompileOptions): UInt = {
-    if (opts.deprecateSingleArgumentFactoryMethods) {
-      Builder.deprecated("UInt.Lit(val) or val.U should be used over UInt(val)")
-    }
+  @deprecated("UInt.Lit(val) or val.U should be used over UInt(val)", "chisel3")
+  def apply(value: BigInt): UInt = {
     apply(value, Width())
   }
   /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
@@ -611,6 +609,9 @@ private[core] sealed trait UIntFactory {
       Width()
     }
 }
+
+// For Chisel2 compatibility layer.
+trait UIntChisel2CompatibleFactory extends UIntFactory
 
 object UInt extends UIntFactory
 
@@ -729,10 +730,8 @@ object SInt {
   def width(width: Width): SInt = new SInt(width)
 
   /** Create an SInt literal with inferred width. */
-  def apply(value: BigInt)(implicit opts: CompileOptions): SInt = {
-    if (opts.deprecateSingleArgumentFactoryMethods) {
-      Builder.deprecated("SInt.Lit(val) or val.S should be used over SInt(val)")
-    }
+  @deprecated("SInt.Lit(val) or val.S should be used over SInt(val)", "chisel3")
+  def apply(value: BigInt): SInt = {
     Lit(value)
   }
   /** Create an SInt literal with fixed width. */
