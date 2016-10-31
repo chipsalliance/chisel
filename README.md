@@ -2,7 +2,8 @@
 Chisel3 is a new FIRRTL based chisel.
 It is currently in ALPHA VERSION, so many Chisel features may change in the coming months.
 
-*TODO: A better description, perhaps lifted off Chisel2's README*
+Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
+detailed description.
 
 ## Chisel2 Migration
 For those moving from Chisel2, there were some backwards incompatible changes

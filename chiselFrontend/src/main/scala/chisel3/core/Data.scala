@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, WireTransform, SourceInfoTransform}
+import chisel3.internal.sourceinfo._
 import chisel3.internal.firrtl.PrimOp.AsUIntOp
 
 sealed abstract class Direction(name: String) {
@@ -37,21 +37,21 @@ object DataMirror {
 * Thus, an error will be thrown if these are used on bound Data
 */
 object Input {
-  def apply[T<:Data](source: T): T = {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
     val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Direction.Input)
     Binding.bind(target, InputBinder, "Error: Cannot set as input ")
   }
 }
 object Output {
-  def apply[T<:Data](source: T): T = {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
     val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Direction.Output)
     Binding.bind(target, OutputBinder, "Error: Cannot set as output ")
   }
 }
 object Flipped {
-  def apply[T<:Data](source: T): T = {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
     val target = source.chiselCloneType
     Data.setFirrtlDirection(target, Data.getFirrtlDirection(source).flip)
     Binding.bind(target, FlippedBinder, "Error: Cannot flip ")
@@ -186,14 +186,18 @@ abstract class Data extends HasId {
     * then performs any fixups required to reconstruct the appropriate core state of the cloned object.
     * @return a copy of the object with appropriate core state.
     */
-  def chiselCloneType: this.type = {
+  def chiselCloneType(implicit compileOptions: CompileOptions): this.type = {
     // Call the user-supplied cloneType method
     val clone = this.cloneType
-    Data.setFirrtlDirection(clone, Data.getFirrtlDirection(this))
-    //TODO(twigg): Do recursively for better error messages
-    for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
-      clone_elem.binding = UnboundBinding(source_elem.binding.direction)
-      Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
+    // In compatibility mode, simply return cloneType; otherwise, propagate
+    // direction and flippedness.
+    if (compileOptions.checkSynthesizable) {
+      Data.setFirrtlDirection(clone, Data.getFirrtlDirection(this))
+      //TODO(twigg): Do recursively for better error messages
+      for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
+        clone_elem.binding = UnboundBinding(source_elem.binding.direction)
+        Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
+      }
     }
     clone
   }
@@ -232,9 +236,9 @@ abstract class Data extends HasId {
     * @note does NOT check bit widths, may drop bits during assignment
     * @note what fromBits assigs to must have known widths
     */
-  def fromBits(that: Bits): this.type = macro SourceInfoTransform.thatArg
+  def fromBits(that: Bits): this.type = macro CompileOptionsTransform.thatArg
 
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo): this.type = {
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     var i = 0
     val wire = Wire(this.chiselCloneType)
     val bits =
@@ -254,7 +258,7 @@ abstract class Data extends HasId {
     *
     * This performs the inverse operation of fromBits(Bits).
     */
-  @deprecated("Use asUInt, which does the same thing but makes the reinterpret cast more explicit", "chisel3")
+  @deprecated("Best alternative, .toUInt() or if Bits really needed, .toUInt().toBits()", "chisel3")
   def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
 
   /** Reinterpret cast to UInt.
@@ -282,14 +286,14 @@ object Wire {
   def apply[T <: Data](t: T): T = macro WireTransform.apply[T]
 
   // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](dummy: Int = 0, init: T): T =
-    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo)
+  def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
+    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo, compileOptions)
 
   // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](t: T, init: T): T =
-    do_apply(t, init)(UnlocatableSourceInfo)
+  def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
+    do_apply(t, init)(UnlocatableSourceInfo, compileOptions)
 
-  def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo): T = {
+  def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val x = Reg.makeType(chisel3.core.ExplicitCompileOptions.NotStrict, t, null.asInstanceOf[T], init)
 
     // Bind each element of x to being a Wire
@@ -307,7 +311,7 @@ object Wire {
 
 object Clock {
   def apply(): Clock = new Clock
-  def apply(dir: Direction): Clock = {
+  def apply(dir: Direction)(implicit compileOptions: CompileOptions): Clock = {
     val result = apply()
     dir match {
       case Direction.Input => Input(result)

@@ -145,6 +145,8 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   val deq = EnqIO(gen)
   /** The current amount of data in the queue */
   val count = Output(UInt.width(log2Up(entries + 1)))
+
+  override def cloneType = new QueueIO(gen, entries).asInstanceOf[this.type]
 }
 
 /** A hardware module implementing a Queue

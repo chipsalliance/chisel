@@ -24,13 +24,14 @@ trait SourceInfoTransformMacro {
   import c.universe._
   def thisObj = c.prefix.tree
   def implicitSourceInfo = q"implicitly[_root_.chisel3.internal.sourceinfo.SourceInfo]"
+  def implicitCompileOptions = q"implicitly[_root_.chisel3.core.CompileOptions]"
 }
 
 class WireTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](t: c.Tree): c.Tree = {
     val tpe = weakTypeOf[T]
-    q"$thisObj.do_apply($t, null.asInstanceOf[$tpe])($implicitSourceInfo)"
+    q"$thisObj.do_apply($t, null.asInstanceOf[$tpe])($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
 
@@ -75,16 +76,16 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply_elts(elts: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($elts)($implicitSourceInfo)"
+    q"$thisObj.do_apply($elts)($implicitSourceInfo, $implicitCompileOptions)"
   }
   def apply_elt0(elt0: c.Tree, elts: c.Tree*): c.Tree = {
-    q"$thisObj.do_apply($elt0, ..$elts)($implicitSourceInfo)"
+    q"$thisObj.do_apply($elt0, ..$elts)($implicitSourceInfo, $implicitCompileOptions)"
   }
   def tabulate(n: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_tabulate($n)($gen)($implicitSourceInfo)"
+    q"$thisObj.do_tabulate($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
   }
   def fill(n: c.Tree)(gen: c.Tree): c.Tree = {
-    q"$thisObj.do_fill($n)($gen)($implicitSourceInfo)"
+    q"$thisObj.do_fill($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
   }
   def contains(x: c.Tree)(ev: c.Tree): c.Tree = {
     q"$thisObj.do_contains($x)($implicitSourceInfo, $ev)"
@@ -137,6 +138,22 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
 
   def xyArg(x: c.Tree, y: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($x, $y)($implicitSourceInfo)"
+  }
+}
+
+class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
+  import c.universe._
+
+  def thatArg(that: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def inArg(in: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($in)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  def pArg(p: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($p)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
 

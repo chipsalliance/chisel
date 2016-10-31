@@ -127,6 +127,18 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p.modName
     case None => throwException(s"$instanceName doesn't have a parent")
   }
+
+  private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
+    // Suggest names to nodes using runtime reflection
+    def getValNames(c: Class[_]): Set[String] = {
+      if (c == rootClass) Set()
+      else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+    }
+    val valNames = getValNames(this.getClass)
+    def isPublicVal(m: java.lang.reflect.Method) =
+      m.getParameterTypes.isEmpty && valNames.contains(m.getName)
+    this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
+  }
 }
 
 private[chisel3] class DynamicContext() {

@@ -42,6 +42,8 @@ object PrimOp {
   val ConvertOp = PrimOp("cvt")
   val AsUIntOp = PrimOp("asUInt")
   val AsSIntOp = PrimOp("asSInt")
+  val AsFixedPointOp = PrimOp("asFixedPoint")
+  val SetBinaryPoint = PrimOp("bpset")
   val AsClockOp = PrimOp("asClock")
 }
 
@@ -81,6 +83,14 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
+  }
+  def minWidth: Int = 1 + n.bitLength
+}
+
+case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
+  def name: String = {
+    val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
+    s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
 }
@@ -135,6 +145,43 @@ sealed case class KnownWidth(value: Int) extends Width {
   }
   override def toString: String = s"<${value.toString}>"
 }
+
+object BinaryPoint {
+  def apply(x: Int): BinaryPoint = KnownBinaryPoint(x)
+  def apply(): BinaryPoint = UnknownBinaryPoint
+}
+
+sealed abstract class BinaryPoint {
+  type W = Int
+  def max(that: BinaryPoint): BinaryPoint = this.op(that, _ max _)
+  def + (that: BinaryPoint): BinaryPoint = this.op(that, _ + _)
+  def + (that: Int): BinaryPoint = this.op(this, (a, b) => a + that)
+  def shiftRight(that: Int): BinaryPoint = this.op(this, (a, b) => 0 max (a - that))
+  def dynamicShiftLeft(that: BinaryPoint): BinaryPoint =
+    this.op(that, (a, b) => a + (1 << b) - 1)
+
+  def known: Boolean
+  def get: W
+  protected def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint
+}
+
+case object UnknownBinaryPoint extends BinaryPoint {
+  def known: Boolean = false
+  def get: Int = None.get
+  def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = this
+  override def toString: String = ""
+}
+
+sealed case class KnownBinaryPoint(value: Int) extends BinaryPoint {
+  def known: Boolean = true
+  def get: Int = value
+  def op(that: BinaryPoint, f: (W, W) => W): BinaryPoint = that match {
+    case KnownBinaryPoint(x) => KnownBinaryPoint(f(value, x))
+    case _ => that
+  }
+  override def toString: String = s"<<${value.toString}>>"
+}
+
 
 sealed abstract class MemPortDirection(name: String) {
   override def toString: String = name
