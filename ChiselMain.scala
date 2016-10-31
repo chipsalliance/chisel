@@ -109,7 +109,7 @@ object chiselMain {
         writer.close
       case _ if (context.isGenVerilog) =>
         val annotation = new firrtl.Annotations.AnnotationMap(Seq(
-          new firrtl.passes.InferReadWriteAnnotation(name, firrtl.Annotations.TransID(-1))))
+          new firrtl.passes.memlib.InferReadWriteAnnotation(name, firrtl.Annotations.TransID(-1))))
         val writer = new FileWriter(verilogFile)
         new firrtl.VerilogCompiler compile (chirrtl, annotation, writer)
         writer.close

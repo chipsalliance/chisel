@@ -279,7 +279,7 @@ private[iotesters] object setupVerilatorBackend {
     val verilogFile = new File(dir, s"${circuit.name}.v")
     val verilogWriter = new FileWriter(verilogFile)
     val annotation = new firrtl.Annotations.AnnotationMap(Seq(
-      new firrtl.passes.InferReadWriteAnnotation(circuit.name, firrtl.Annotations.TransID(-1))))
+      new firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name, firrtl.Annotations.TransID(-1))))
     (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
     verilogWriter.close
 
