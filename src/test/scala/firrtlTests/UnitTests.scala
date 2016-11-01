@@ -290,4 +290,25 @@ class UnitTests extends FirrtlFlatSpec {
       }
     }
   }
+
+  "Partial connecting incompatable types" should "throw an exception" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    input foo : { bar : UInt<32> }
+        |    output bar : UInt<32>
+        |    bar <- foo
+        |""".stripMargin
+    intercept[PassException] {
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+
+  }
 }

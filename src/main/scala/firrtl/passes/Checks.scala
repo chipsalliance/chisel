@@ -428,6 +428,7 @@ object CheckTypes extends Pass {
           )
         case (t1: VectorType, t2: VectorType) =>
           bulk_equals(t1.tpe, t2.tpe, flip1, flip2)
+        case (t1, t2) => false
       }
     }
 
