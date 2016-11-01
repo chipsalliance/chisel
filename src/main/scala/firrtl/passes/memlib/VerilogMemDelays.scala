@@ -94,7 +94,6 @@ object VerilogMemDelays extends Pass {
               val condn = namespace newName s"${LowerTypes.loweredName(e)}_en"
               val condx = WRef(condn, BoolType, NodeKind, FEMALE)
               Seq(DefNode(NoInfo, condn, cond),
-                  Connect(NoInfo, condx, cond),
                   Connect(NoInfo, exx, Mux(condx, ex, exx, e.tpe)))
             })
           )
