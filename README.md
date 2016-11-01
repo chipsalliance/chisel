@@ -1,6 +1,6 @@
 # Chisel3
 Chisel3 is a new FIRRTL based chisel.
-It is currently in ALPHA VERSION, so many Chisel features may change in the coming months.
+It is currently in BETA VERSION, so some Chisel features may change in the coming months.
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
 detailed description.
@@ -52,7 +52,7 @@ This will walk you through installing Chisel and its dependencies:
 - [sbt](http://www.scala-sbt.org/), which is the preferred Scala build system
   and what Chisel uses.
 - [FIRRTL](https://github.com/ucb-bar/firrtl), which compile Chisel's IR down
-  to Verilog. A alpha version of FIRRTL written in Scala is available.
+  to Verilog. A beta version of FIRRTL written in Scala is available.
   - FIRRTL is currently a separate repository but may eventually be made
     available as a standalone program through system package managers and/or
     included in the Chisel source tree.
