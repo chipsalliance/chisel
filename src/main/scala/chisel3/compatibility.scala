@@ -47,23 +47,11 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Num[T <: Data] = chisel3.core.Num[T]
 
   type UInt = chisel3.core.UInt
-  // Duplicate much of chisel3.core.UInt so we can override deprecation warnings.
+  // Create a chisel2 compatible object so we can override deprecation warnings.
   object UInt extends chisel3.core.UIntChisel2CompatibleFactory {
-
-    /** Create a UInt with a specified width - compatibility with Chisel2. */
-    // NOTE: This resolves UInt(width = 32)
-    override def apply(dir: Option[Direction] = None, width: Int): UInt = apply(Width(width))
-    /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-    override def apply(dir: Direction, width: Int)(implicit opts: CompileOptions): UInt = apply(dir, Width(width))(opts)
-    /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-    override def apply(dir: Direction)(implicit opts: CompileOptions): UInt = apply(dir, Width())(opts)
-    override def apply(dir: Direction, wWidth: Width)(implicit opts: CompileOptions): UInt = {
-      val result = apply(wWidth)
-      dir match {
-        case CoreDirection.Input => Input(result)
-        case CoreDirection.Output => Output(result)
-        case CoreDirection.Unspecified => result
-      }
+    /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
+    override def apply(value: BigInt): UInt = {
+      apply(value, Width())
     }
   }
 
@@ -93,18 +81,12 @@ package object Chisel {     // scalastyle:ignore package.object.name
     /** Create a SInt with a specified width - compatibility with Chisel2. */
     def apply(dir: Option[Direction] = None, width: Int): SInt = apply(Width(width))
     /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
-    def apply(dir: Direction, width: Int)(implicit opts: CompileOptions): SInt = apply(dir, Width(width))(opts)
+    def apply(dir: Direction, width: Int)(implicit opts: CompileOptions): SInt = chisel3.core.SInt(dir, Width(width))(opts)
     /** Create a SInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-    def apply(dir: Direction)(implicit opts: CompileOptions): SInt = apply(dir, Width())(opts)
-    def apply(dir: Direction, wWidth: Width)(implicit opts: CompileOptions): SInt = {
-      val result = apply(wWidth)
-      dir match {
-        case CoreDirection.Input => Input(result)
-        case CoreDirection.Output => Output(result)
-        case CoreDirection.Unspecified => result
-      }
-    }
+    def apply(dir: Direction)(implicit opts: CompileOptions): SInt = chisel3.core.SInt(dir, Width())(opts)
+    def apply(dir: Direction, wWidth: Width)(implicit opts: CompileOptions): SInt = chisel3.core.SInt(dir, wWidth)(opts)
   }
+
   type Bool = chisel3.core.Bool
   val Bool = chisel3.core.Bool
   val Mux = chisel3.core.Mux
