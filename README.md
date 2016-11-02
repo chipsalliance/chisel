@@ -161,6 +161,9 @@ This will walk you through installing Chisel and its dependencies:
   ```
 
 ## Getting Started
+If you are migrating to Chisel3 from Chisel3, please visit
+[Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
+
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
@@ -168,15 +171,14 @@ may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
 
-### Chisel Tutorial
-*TODO: quick howto for running chisel-tutorial, once chisel-tutorial exists*
+### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL
 design from scratch.
 
-### Project Setup
-*TODO: recommended sbt style, project structure*
+### [Project Setup](https://github.com/ucb-bar/chisel-template)
+
 
 ### RTL
 *TODO: toy example*
