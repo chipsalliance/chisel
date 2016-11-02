@@ -191,7 +191,7 @@ extends HasId {
     }
 
     // All suggestions are in, force names to every node.
-    _ids.foreach(_.forceName(default="T", _namespace))
+    _ids.foreach(_.forceName(default="_T", _namespace))
     _ids.foreach(_._onModuleClose)
     this
   }
