@@ -34,7 +34,6 @@ trait PeekPokeTests {
 
 abstract class PeekPokeTester[+T <: Module](
     val dut: T,
-    verbose: Boolean = true,
     base: Int = 16,
     logFile: Option[File] = None) {
 
@@ -92,7 +91,7 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def step(n: Int) {
-    if (verbose) logger println s"STEP $simTime -> ${simTime+n}"
+    if (_verbose) logger println s"STEP $simTime -> ${simTime+n}"
     backend.step(n)
     incTime(n)
   }
@@ -197,7 +196,7 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def expect (good: Boolean, msg: => String): Boolean = {
-    if (verbose) logger println s"""EXPECT $msg ${if (good) "PASS" else "FAIL"}"""
+    if (_verbose) logger println s"""EXPECT $msg ${if (good) "PASS" else "FAIL"}"""
     if (!good) fail
     good
   }
