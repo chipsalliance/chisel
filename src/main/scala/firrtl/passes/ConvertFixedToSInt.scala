@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtl.passes
 
 import scala.collection.mutable

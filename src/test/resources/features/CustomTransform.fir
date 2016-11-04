@@ -1,3 +1,4 @@
+; See LICENSE for license details.
 circuit CustomTransform :
   ; Replaced in custom transform by an implementation
   extmodule Delay :

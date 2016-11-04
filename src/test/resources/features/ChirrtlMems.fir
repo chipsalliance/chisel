@@ -1,4 +1,4 @@
-
+; See LICENSE for license details.
 circuit ChirrtlMems :
   module ChirrtlMems :
     input clk : Clock

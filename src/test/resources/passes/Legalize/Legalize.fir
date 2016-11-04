@@ -1,4 +1,4 @@
-
+; See LICENSE for license details.
 circuit Legalize :
   module Legalize :
     input clk : Clock

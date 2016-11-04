@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtlTests
 
 import com.typesafe.scalalogging.LazyLogging

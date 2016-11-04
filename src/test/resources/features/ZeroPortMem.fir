@@ -1,4 +1,4 @@
-
+; See LICENSE for license details.
 circuit ZeroPortMem :
   module ZeroPortMem :
     input clk : Clock

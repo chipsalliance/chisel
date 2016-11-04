@@ -1,3 +1,4 @@
+; See LICENSE for license details.
 circuit RenamedExtModuleTester :
   extmodule ThisIsJustTheFirrtlName :
     input foo : UInt<16>

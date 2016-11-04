@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtl
 
 import org.antlr.v4.runtime.{CommonToken, Token}

@@ -1,3 +1,4 @@
+; See LICENSE for license details.
 circuit SimpleExtModuleTester :
   extmodule SimpleExtModule :
     input foo : UInt<16>

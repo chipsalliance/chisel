@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtl.passes
 package memlib
 import net.jcazevedo.moultingyaml._

@@ -1,4 +1,4 @@
-
+; See LICENSE for license details.
 circuit ExpandWhens :
   module ExpandWhens :
     input clk : Clock

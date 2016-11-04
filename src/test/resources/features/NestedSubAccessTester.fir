@@ -1,3 +1,4 @@
+; See LICENSE for license details.
 circuit NestedSubAccessTester :
   module NestedSubAccess :
     input foo : UInt<1>[4]

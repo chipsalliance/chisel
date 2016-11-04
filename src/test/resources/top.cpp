@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include <verilated.h>
 #include <iostream>
 
