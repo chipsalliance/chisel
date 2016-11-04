@@ -4,3 +4,4 @@ Change tail -> drop
 Add ranges as a 'width' instead of actually declaring width.
   proposed syntax: wire x: UInt{0,10}
 Add Analog type, and 'attach' statement (see #87)
+Add constraints to low firrtl that assignments are same width, etc.
