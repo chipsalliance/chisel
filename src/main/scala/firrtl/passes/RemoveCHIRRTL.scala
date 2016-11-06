@@ -52,6 +52,7 @@ object RemoveCHIRRTL extends Pass {
           case MRead => p.readers += MPort(sx.name, sx.exps(1))
           case MWrite => p.writers += MPort(sx.name, sx.exps(1))
           case MReadWrite => p.readwriters += MPort(sx.name, sx.exps(1))
+          case MInfer => // direction may not be inferred if it's not being used
         }
         mports(sx.mem) = p
       case _ =>
@@ -119,6 +120,7 @@ object RemoveCHIRRTL extends Pass {
               raddrs(e.name) = SubField(SubField(Reference(sx.mem, ut), sx.name, ut), "en", ut)
             case _ => ens += "en"
           }
+        case MInfer => // do nothing if it's not being used
       }
       Block(
         (addrs map (x => Connect(sx.info, SubField(SubField(Reference(sx.mem, ut), sx.name, ut), x, ut), sx.exps.head))) ++

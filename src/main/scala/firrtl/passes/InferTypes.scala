@@ -90,7 +90,7 @@ object CInferTypes extends Pass {
          case (e: SubIndex) => e copy (tpe = sub_type(e.expr.tpe))
          case (e: SubAccess) => e copy (tpe = sub_type(e.expr.tpe))
          case (e: DoPrim) => PrimOps.set_primop_type(e)
-         case (e: Mux) => e copy (tpe = mux_type(e.tval,e.tval))
+         case (e: Mux) => e copy (tpe = mux_type(e.tval, e.fval))
          case (e: ValidIf) => e copy (tpe = e.value.tpe)
          case e @ (_: UIntLiteral | _: SIntLiteral) => e
       }
@@ -103,8 +103,9 @@ object CInferTypes extends Pass {
         types(sx.name) = sx.tpe
         sx
       case sx: DefNode =>
-        types(sx.name) = sx.value.tpe
-        sx
+        val sxx = (sx map infer_types_e(types)).asInstanceOf[DefNode]
+        types(sxx.name) = sxx.value.tpe
+        sxx
       case sx: DefMemory =>
         types(sx.name) = MemPortUtils.memType(sx)
         sx
