@@ -142,8 +142,8 @@ class UnitTests extends FirrtlFlatSpec {
          |    output c : UInt<1>
          |    c <= geq(add(a, b),d)""".stripMargin
     val check = Seq(
-      "node GEN_0 = add(a, b)",
-      "c <= geq(GEN_0, d)"
+      "node _GEN_0 = add(a, b)",
+      "c <= geq(_GEN_0, d)"
     )
     executeTest(input, check, passes)
   }
@@ -194,16 +194,16 @@ class UnitTests extends FirrtlFlatSpec {
      //TODO(azidar): I realize this is brittle, but unfortunately there
      //  isn't a better way to test this pass
      val check = Seq(
-       """wire GEN_0 : { a : UInt<8>}""",
-       """GEN_0.a <= table[0].a""",
+       """wire _GEN_0 : { a : UInt<8>}""",
+       """_GEN_0.a <= table[0].a""",
        """when UInt<1>("h1") :""",
-       """GEN_0.a <= table[1].a""",
-       """wire GEN_1 : UInt<8>""",
-       """when eq(UInt<1>("h0"), GEN_0.a) :""",
-       """otherTable[0].a <= GEN_1""",
-       """when eq(UInt<1>("h1"), GEN_0.a) :""",
-       """otherTable[1].a <= GEN_1""",
-       """GEN_1 <= UInt<1>("h0")"""
+       """_GEN_0.a <= table[1].a""",
+       """wire _GEN_1 : UInt<8>""",
+       """when eq(UInt<1>("h0"), _GEN_0.a) :""",
+       """otherTable[0].a <= _GEN_1""",
+       """when eq(UInt<1>("h1"), _GEN_0.a) :""",
+       """otherTable[1].a <= _GEN_1""",
+       """_GEN_1 <= UInt<1>("h0")"""
      )
      executeTest(input, check, passes)
   }
