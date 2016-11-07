@@ -9,7 +9,7 @@ class ExecutionOptionManagerSpec extends FreeSpec with Matchers {
   "ExecutionOptionManager is a container for one more more ComposableOptions Block" - {
     "It has a default CommonOptionsBlock" in {
       val manager = new ExecutionOptionsManager("test")
-      manager.commonOptions.targetDirName should be ("test_run_dir")
+      manager.commonOptions.targetDirName should be (".")
     }
     "But can override defaults like this" in {
       val manager = new ExecutionOptionsManager("test") { commonOptions = CommonOptions(topName = "dog") }

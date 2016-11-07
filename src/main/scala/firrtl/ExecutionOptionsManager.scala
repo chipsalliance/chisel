@@ -29,7 +29,7 @@ abstract class HasParser(applicationName: String) {
   */
 case class CommonOptions(
     topName:        String         = "",
-    targetDirName:  String         = "test_run_dir",
+    targetDirName:  String         = ".",
     globalLogLevel: LogLevel.Value = LogLevel.Error,
     logToFile:      Boolean        = false,
     logClassNames:  Boolean        = false,

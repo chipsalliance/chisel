@@ -19,7 +19,7 @@ class DriverSpec extends FreeSpec with Matchers {
 
           val commonOptions = optionsManager.commonOptions
           commonOptions.topName should be("")
-          commonOptions.targetDirName should be("test_run_dir")
+          commonOptions.targetDirName should be(".")
         }
         "top name and target can be set" in {
           val optionsManager = new ExecutionOptionsManager("test")
@@ -55,7 +55,7 @@ class DriverSpec extends FreeSpec with Matchers {
   "FirrtlOptions holds option information for the firrtl compiler" - {
     "It includes a CommonOptions" in {
       val optionsManager = new ExecutionOptionsManager("test")
-      optionsManager.commonOptions.targetDirName should be ("test_run_dir")
+      optionsManager.commonOptions.targetDirName should be (".")
     }
     "It provides input and output file names based on target" in {
       val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions
@@ -64,9 +64,9 @@ class DriverSpec extends FreeSpec with Matchers {
 
       val firrtlOptions = optionsManager.firrtlOptions
       val inputFileName = optionsManager.getBuildFileName("fir", firrtlOptions.inputFileNameOverride)
-      inputFileName should be ("test_run_dir/cat.fir")
+      inputFileName should be ("./cat.fir")
       val outputFileName = optionsManager.getBuildFileName("v", firrtlOptions.outputFileNameOverride)
-      outputFileName should be ("test_run_dir/cat.v")
+      outputFileName should be ("./cat.v")
     }
     "input and output file names can be overridden, overrides do not use targetDir" in {
       val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions
@@ -138,9 +138,9 @@ class DriverSpec extends FreeSpec with Matchers {
     "compiler changes the default name of the output file" in {
 
       Seq(
-        "low" -> "test_run_dir/Dummy.lo.fir",
-        "high" -> "test_run_dir/Dummy.hi.fir",
-        "verilog" -> "test_run_dir/Dummy.v"
+        "low" -> "./Dummy.lo.fir",
+        "high" -> "./Dummy.hi.fir",
+        "verilog" -> "./Dummy.v"
       ).foreach { case (compilerName, expectedOutputFileName) =>
         val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
           commonOptions = CommonOptions(topName = "Dummy")
