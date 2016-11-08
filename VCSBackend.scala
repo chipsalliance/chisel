@@ -126,10 +126,14 @@ private[iotesters] object setupVCSBackend {
     // Generate Verilog
     val verilogFile = new File(dir, s"${circuit.name}.v")
     val verilogWriter = new FileWriter(verilogFile)
-    val annotation = new firrtl.Annotations.AnnotationMap(Seq(
-      new firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name, firrtl.Annotations.TransID(-1))))
-    (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
-    verilogWriter.close
+    val annotations = firrtl.Annotations.AnnotationMap(Seq(
+      firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name)))
+    (new firrtl.VerilogCompiler).compile(
+      firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
+      verilogWriter,
+      List(new firrtl.passes.memlib.InferReadWrite)
+    )
+    verilogWriter.close()
 
     // Generate Harness
     val vcsHarnessFileName = s"${circuit.name}-harness.v"

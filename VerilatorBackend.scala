@@ -35,8 +35,10 @@ object copyVerilatorHeaderFiles {
 /**
   * Generates the Module specific verilator harness cpp file for verilator compilation
   */
-class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
-    nodes: Seq[InstanceId], vcdFilePath: String) extends firrtl.Transform {
+class GenVerilatorCppHarness(
+    dut: Chisel.Module,
+    nodes: Seq[InstanceId],
+    vcdFilePath: String) extends firrtl.Emitter {
   import firrtl._
   import firrtl.ir._
   import firrtl.Mappers._
@@ -81,7 +83,7 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     widthMap.toSeq
   }
 
-  private def pushBack(vector: String, pathName: String, width: BigInt) {
+  private def pushBack(writer: Writer, vector: String, pathName: String, width: BigInt) {
     if (width <= 8) {
       writer.write(s"        sim_data.$vector.push_back(new VerilatorCData(&(${pathName})));\n")
     } else if (width <= 16) {
@@ -96,7 +98,8 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     }
   }
 
-  def execute(circuit: Circuit, annotationMap: AnnotationMap): TransformResult = {
+  def emit(state: CircuitState, writer: Writer): Unit = {
+    val circuit = state.circuit
     val (inputs, outputs) = getPorts(dut, "->")
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
@@ -124,12 +127,12 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("        sim_data.outputs.clear();\n")
     writer.write("        sim_data.signals.clear();\n")
     inputs.toList foreach { case (node, name) =>
-      pushBack("inputs", name replace (dutName, "dut"), node.getWidth)
+      pushBack(writer, "inputs", name replace (dutName, "dut"), node.getWidth)
     }
     outputs.toList foreach { case (node, name) =>
-      pushBack("outputs", name replace (dutName, "dut"), node.getWidth)
+      pushBack(writer, "outputs", name replace (dutName, "dut"), node.getWidth)
     }
-    pushBack("signals", "dut->reset", 1)
+    pushBack(writer, "signals", "dut->reset", 1)
     writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
     (nodes foldLeft 1){ (id, node) =>
       val instanceName = s"%s.%s".format(node.parentPathName, validName(node.instanceName))
@@ -138,14 +141,14 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
         node match {
           case mem: Chisel.MemBase[_] =>
             writer.write(s"        for (size_t i = 0 ; i < ${mem.length} ; i++) {\n")
-            pushBack("signals", s"dut->${pathName}[i]", widthMap(node))
+            pushBack(writer, "signals", s"dut->${pathName}[i]", widthMap(node))
             writer.write(s"          ostringstream oss;\n")
             writer.write(s"""          oss << "${instanceName}" << "[" << i << "]";\n""")
             writer.write(s"          sim_data.signal_map[oss.str()] = $id + i;\n")
             writer.write(s"        }\n")
             id + mem.length
           case _ =>
-//            pushBack("signals", s"dut->$pathName", widthMap(node))
+//            pushBack(writer, "signals", s"dut->$pathName", widthMap(node))
 //            writer.write(s"""        sim_data.signal_map["${instanceName}"] = $id;\n""")
             id + 1
         }
@@ -250,22 +253,23 @@ class GenVerilatorCppHarness(writer: Writer, dut: Chisel.Module,
     writer.write("    exit(0);\n")
     writer.write("}\n")
     writer.close()
-    TransformResult(circuit)
   }
 }
 
 class VerilatorCppHarnessCompiler(dut: Chisel.Module,
     nodes: Seq[InstanceId], vcdFilePath: String) extends firrtl.Compiler {
-  def transforms(w: Writer) = Seq(
-    new firrtl.Chisel3ToHighFirrtl,
+  def emitter = new GenVerilatorCppHarness(dut, nodes, vcdFilePath)
+  def transforms = Seq(
+    new firrtl.ChirrtlToHighFirrtl,
     new firrtl.IRToWorkingIR,
-    new firrtl.ResolveAndCheck,
-    new GenVerilatorCppHarness(w, dut, nodes, vcdFilePath)
+    new firrtl.ResolveAndCheck
   )
 }
 
 private[iotesters] object setupVerilatorBackend {
   def apply[T <: chisel3.Module](dutGen: () => T, optionsManager: TesterOptionsManager): (T, Backend) = {
+    import firrtl.{CircuitState, ChirrtlForm}
+
     optionsManager.makeTargetDir()
     val dir = new File(optionsManager.targetDirName)
 
@@ -278,10 +282,15 @@ private[iotesters] object setupVerilatorBackend {
     // Generate Verilog
     val verilogFile = new File(dir, s"${circuit.name}.v")
     val verilogWriter = new FileWriter(verilogFile)
-    val annotation = new firrtl.Annotations.AnnotationMap(Seq(
-      new firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name, firrtl.Annotations.TransID(-1))))
-    (new firrtl.VerilogCompiler).compile(chirrtl, annotation, verilogWriter)
-    verilogWriter.close
+
+    // TODO why do we need to infer readwrite?
+    val annotations = firrtl.Annotations.AnnotationMap(Seq(
+      new firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name)))
+    (new firrtl.VerilogCompiler).compile(
+      CircuitState(chirrtl, ChirrtlForm, Some(annotations)),
+      verilogWriter,
+      List(new firrtl.passes.memlib.InferReadWrite))
+    verilogWriter.close()
 
     val cppHarnessFileName = s"${circuit.name}-harness.cpp"
     val cppHarnessFile = new File(dir, cppHarnessFileName)
@@ -289,8 +298,10 @@ private[iotesters] object setupVerilatorBackend {
     val vcdFile = new File(dir, s"${circuit.name}.vcd")
     val harnessCompiler = new VerilatorCppHarnessCompiler(dut, nodes, vcdFile.toString)
     copyVerilatorHeaderFiles(dir.toString)
-    harnessCompiler.compile(chirrtl, annotation, cppHarnessWriter)
-    cppHarnessWriter.close
+    harnessCompiler.compile(
+      CircuitState(chirrtl, ChirrtlForm, Some(annotations)), // TODO do we actually need this annotation?
+      cppHarnessWriter)
+    cppHarnessWriter.close()
     assert(chisel3.Driver.verilogToCpp(circuit.name, circuit.name, dir, Seq(), new File(cppHarnessFileName)).! == 0)
     assert(chisel3.Driver.cppToExe(circuit.name, dir).! == 0)
 

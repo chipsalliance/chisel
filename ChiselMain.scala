@@ -47,15 +47,15 @@ object chiselMain {
   }
 
   private def genHarness[T <: Module](dut: Module, nodes: Seq[internal.InstanceId], chirrtl: firrtl.ir.Circuit) {
+    import firrtl.{ChirrtlForm, CircuitState}
     val dir = context.targetDir
     context.backendType match {
       case "firrtl" => // skip
       case "verilator" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.cpp"))
         val waveform = (new File(dir, s"${chirrtl.main}.vcd")).toString
-        val annotation = new firrtl.Annotations.AnnotationMap(Nil)
-        (new VerilatorCppHarnessCompiler(dut, nodes, waveform)).compile(chirrtl, annotation, harness)
-        harness.close
+        (new VerilatorCppHarnessCompiler(dut, nodes, waveform)).compile(CircuitState(chirrtl, ChirrtlForm), harness)
+        harness.close()
       case "vcs" | "glsim" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.v"))
         val waveform = (new File(dir, s"${chirrtl.main}.vpd")).toString
@@ -105,13 +105,17 @@ object chiselMain {
     context.backendType match {
       case "firrtl" =>
         val writer = new FileWriter(chirrtlFile)
-        firrtl.FIRRTLEmitter run (chirrtl, writer)
-        writer.close
+        (new firrtl.FirrtlEmitter).emit(firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm), writer)
+        writer.close()
       case _ if (context.isGenVerilog) =>
-        val annotation = new firrtl.Annotations.AnnotationMap(Seq(
-          new firrtl.passes.memlib.InferReadWriteAnnotation(name, firrtl.Annotations.TransID(-1))))
+        val annotations = firrtl.Annotations.AnnotationMap(Seq(
+          firrtl.passes.memlib.InferReadWriteAnnotation(name)))
         val writer = new FileWriter(verilogFile)
-        new firrtl.VerilogCompiler compile (chirrtl, annotation, writer)
+        (new firrtl.VerilogCompiler).compile(
+          firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
+          writer,
+          List(new firrtl.passes.memlib.InferReadWrite)
+        )
         writer.close
       case _ =>
     } 
