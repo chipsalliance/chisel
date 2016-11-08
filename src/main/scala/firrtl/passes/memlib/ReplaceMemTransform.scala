@@ -15,6 +15,7 @@ sealed trait PassOption
 case object InputConfigFileName extends PassOption
 case object OutputConfigFileName extends PassOption
 case object PassCircuitName extends PassOption
+case object PassModuleName extends PassOption
 
 object PassConfigUtil {
   type PassOptionMap = Map[PassOption, String]
@@ -32,6 +33,8 @@ object PassConfigUtil {
           nextPassOption(map + (OutputConfigFileName -> value), tail)
         case "-c" :: value :: tail =>
           nextPassOption(map + (PassCircuitName -> value), tail)
+        case "-m" :: value :: tail =>
+          nextPassOption(map + (PassModuleName -> value), tail)
         case option :: tail =>
           error("Unknown option " + option + usage)
       }

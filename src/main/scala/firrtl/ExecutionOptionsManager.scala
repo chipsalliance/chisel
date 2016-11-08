@@ -5,6 +5,7 @@ package firrtl
 import firrtl.Annotations._
 import firrtl.Parser._
 import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
+import firrtl.passes.clocklist.ClockListAnnotation
 import logger.LogLevel
 import scopt.OptionParser
 
@@ -289,6 +290,19 @@ trait HasFirrtlOptions {
     }
     .text {
       "Replace sequential memories with blackboxes + configuration file"
+    }
+
+  parser.opt[String]("list-clocks")
+    .abbr("clks")
+    .valueName ("-c:<circuit>:-m:<module>:-o:<filename>")
+    .foreach { x =>
+      firrtlOptions = firrtlOptions.copy(
+        annotations = firrtlOptions.annotations :+ ClockListAnnotation(x),
+        customTransforms = firrtlOptions.customTransforms :+ new passes.clocklist.ClockListTransform
+      )
+    }
+    .text {
+      "List which signal drives each clock of every descendent of specified module"
     }
 
   parser.note("")
