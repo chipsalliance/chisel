@@ -58,7 +58,8 @@ object ShiftRegister
     if (n == 1) {
       RegEnable(in, en)
     } else if (n != 0) {
-      RegNext(apply(in, n-1, en))
+      val next = apply(in, n-1, en)
+      Reg[T](next.cloneType, next, null.asInstanceOf[T])
     } else {
       in
     }
