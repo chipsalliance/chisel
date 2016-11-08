@@ -219,12 +219,12 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     // print conf
     writer.serialize()
     val pin = getMyAnnotations(state) match {
-      case Some(p) =>
-        p.values.head match {
-          case PinAnnotation(c, pin) => pin
-          case _ => error(s"Bad Annotations: ${p.values}")
-        }
-      case None => "pin"
+      case Nil => "pin"
+      case Seq(p) => p match {
+        case PinAnnotation(c, pin) => pin
+        case _ => error(s"Bad Annotation: ${p}")
+      }
+      case _ => throwInternalError
     }
     val annos = memMods.collect { case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin) }
     CircuitState(c.copy(modules = modules ++ memMods), inputForm, Some(AnnotationMap(annos)))

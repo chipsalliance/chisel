@@ -23,7 +23,7 @@ case class DedupAnnotation(target: Named) extends Annotation with Loose with Uns
 class DedupModules extends Transform {
   def inputForm = HighForm
   def outputForm = HighForm
-  def execute(state: CircuitState): CircuitState = state.copy(circuit = run(state.circuit))
+  def execute(state: CircuitState): CircuitState = CircuitState(run(state.circuit), state.form)
   def run(c: Circuit): Circuit = {
     val moduleOrder = mutable.ArrayBuffer.empty[String]
     val moduleMap = c.modules.map(m => m.name -> m).toMap

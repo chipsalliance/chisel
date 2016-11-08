@@ -95,11 +95,10 @@ abstract class Transform {
     * @param state The [[CircuitState]] form which to extract annotations
     * @return A collection of annotations
     */
-  final def getMyAnnotations(state: CircuitState): Option[Map[Named, Annotation]] =
-    for {
-      annotations <- state.annotations
-      myAnnotations <- annotations.get(this.getClass)
-    } yield myAnnotations
+  final def getMyAnnotations(state: CircuitState): Seq[Annotation] = state.annotations match {
+    case Some(annotations) => annotations.get(this.getClass)
+    case None => Nil
+  }
 }
 
 trait SimpleRun extends LazyLogging {
@@ -254,8 +253,7 @@ trait Compiler {
           // annotations with the names in rmap's value.
           for {
             (oldName, newNames) <- rmap.toSeq
-            transform2OldAnnos <- inAnnotationMap.get(oldName).toSeq
-            oldAnno <- transform2OldAnnos.values
+            oldAnno <- inAnnotationMap.get(oldName)
             newAnno <- oldAnno.update(newNames)
           } yield newAnno
         case _ => inAnnotationMap.annotations

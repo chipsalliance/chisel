@@ -37,11 +37,12 @@ class InlineInstances extends Transform {
    def execute(state: CircuitState): CircuitState = {
      // TODO Add error check for more than one annotation for inlining
      // TODO Propagate other annotations
-     val result = for {
-       myAnnotations <- getMyAnnotations(state)
-       (modNames, instNames) = collectAnns(myAnnotations.values)
-     } yield run(state.circuit, modNames, instNames)
-     result getOrElse state // Return state if nothing to do
+     getMyAnnotations(state) match {
+       case Nil => CircuitState(state.circuit, state.form)
+       case myAnnotations =>
+         val (modNames, instNames) = collectAnns(myAnnotations)
+         run(state.circuit, modNames, instNames)
+     }
    }
 
    // Checks the following properties:

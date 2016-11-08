@@ -96,8 +96,9 @@ Optional Arguments:
 class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
   def inputForm = form
   def outputForm = form
-  def execute(state: CircuitState): CircuitState = state.copy(circuit = p.run(state.circuit))
+  def execute(state: CircuitState): CircuitState = CircuitState(p.run(state.circuit), state.form)
 }
+
 class SimpleMidTransform(p: Pass) extends SimpleTransform(p, MidForm)
 
 // SimpleRun instead of PassBased because of the arguments to passSeq
@@ -120,19 +121,21 @@ class ReplSeqMem extends Transform with SimpleRun {
         new SimpleMidTransform(ResolveKinds),
         new SimpleMidTransform(ResolveGenders))
   def run(state: CircuitState, xForms: Seq[Transform]): CircuitState = {
-    xForms.foldLeft(state) { case (curState: CircuitState, xForm: Transform) =>
-      val res = xForm.execute(state)
-      res.annotations match {
-        case None => CircuitState(res.circuit, res.form, state.annotations)
-        case Some(ann) => CircuitState(res.circuit, res.form, Some(
-          AnnotationMap(ann.annotations ++ curState.annotations.get.annotations)))
+    (xForms.foldLeft(state) { case (curState: CircuitState, xForm: Transform) =>
+      val res = xForm.execute(curState)
+      val newAnnotations = res.annotations match {
+        case None => curState.annotations
+        case Some(ann) => 
+          Some(AnnotationMap(ann.annotations ++ curState.annotations.get.annotations))
       }
-    }
+      CircuitState(res.circuit, res.form, newAnnotations)
+    }).copy(annotations = None)
   }
 
   def execute(state: CircuitState): CircuitState =
     getMyAnnotations(state) match {
-      case Some(p) => p get CircuitName(state.circuit.main) match {
+      case Nil => state.copy(annotations = None) // Do nothing if there are no annotations
+      case p => (p.collectFirst { case a if (a.target == CircuitName(state.circuit.main)) => a }) match {
         case Some(ReplSeqMemAnnotation(t)) =>
           val inputFileName = PassConfigUtil.getPassOptions(t).getOrElse(InputConfigFileName, "")
           val inConfigFile = {
@@ -144,6 +147,5 @@ class ReplSeqMem extends Transform with SimpleRun {
           run(state, passSeq(inConfigFile, outConfigFile))
         case _ => error("Unexpected transform annotation")
       }
-      case None => state // Do nothing if there are no annotations
     }
 }

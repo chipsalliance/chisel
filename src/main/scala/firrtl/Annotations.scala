@@ -232,23 +232,8 @@ object Annotations {
    * Container of all annotations for a Firrtl compiler.
    */
   case class AnnotationMap(annotations: Seq[Annotation]) {
-    type NamedMap = Map[Named, Map[Class[_], Annotation]]
-    type IDMap = Map[Class[_], Map[Named, Annotation]]
-
-    val (namedMap: NamedMap, idMap:IDMap) =
-      //annotations.foldLeft(Tuple2[NamedMap, IDMap](Map.empty, Map.empty)){
-      annotations.foldLeft((Map.empty: NamedMap, Map.empty: IDMap)){
-        (partialMaps: (NamedMap, IDMap), annotation: Annotation) => {
-          val transformToAnn = partialMaps._1.getOrElse(annotation.target, Map.empty)
-          val pNMap = partialMaps._1 + (annotation.target -> (transformToAnn + (annotation.transform -> annotation)))
-
-          val nToAnn = partialMaps._2.getOrElse(annotation.transform, Map.empty)
-          val ptransformMap = partialMaps._2 + (annotation.transform -> (nToAnn + (annotation.target -> annotation)))
-          Tuple2(pNMap, ptransformMap)
-        }
-      }
-    def get(id: Class[_]): Option[Map[Named, Annotation]] = idMap.get(id)
-    def get(named: Named): Option[Map[Class[_], Annotation]] = namedMap.get(named)
+    def get(id: Class[_]): Seq[Annotation] = annotations.filter(a => a.transform == id)
+    def get(named: Named): Seq[Annotation] = annotations.filter(n => n == named)
   }
 }
 
