@@ -563,6 +563,10 @@ private[core] sealed trait UIntFactory {
     result.binding = LitBinding()
     result
   }
+   /** Create a UInt with the specified range */
+  def apply(range: Range): UInt = {
+    width(range.getWidth)
+  }
 
   /** Create a UInt with a specified width - compatibility with Chisel2. */
   // NOTE: This resolves UInt(width = 32)
@@ -727,6 +731,11 @@ object SInt {
 
   /** Create an SInt literal with specified width. */
   def apply(value: BigInt, width: Width): SInt = Lit(value, width)
+
+  /** Create a SInt with the specified range */
+  def apply(range: Range): SInt = {
+    width(range.getWidth)
+  }
 
   def Lit(value: BigInt): SInt = Lit(value, Width())
   def Lit(value: BigInt, width: Int): SInt = Lit(value, Width(width))

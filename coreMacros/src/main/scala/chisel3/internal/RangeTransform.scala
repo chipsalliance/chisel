@@ -90,6 +90,7 @@ class RangeTransform(val c: Context) {
 
     c.warning(c.enclosingPosition, s"$startInclusive ${showRaw(minArg)} ${showRaw(maxArg)} $endInclusive")
 
-    q""
+    q"_root_.chisel3.internal.firrtl"
+
   }
 }
