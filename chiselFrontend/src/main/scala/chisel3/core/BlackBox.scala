@@ -42,7 +42,7 @@ abstract class BlackBox extends Module {
     // Doing so would cause the wrong names to be assigned, since their parent
     // is now the module itself instead of the io bundle.
     for (id <- _ids; if id ne io) {
-      id.forceName(default="T", _namespace)
+      id.forceName(default="_T", _namespace)
       id._onModuleClose
     }
     this

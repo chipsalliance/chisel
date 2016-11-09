@@ -64,25 +64,25 @@ lazy val chiselSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
 
-  libraryDependencies ++= (Seq("firrtl").map {
-    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
+    "com.github.scopt" %% "scopt" % "3.4.0"
+  ),
 
-
-/* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
- *  in subtly disturbing ways on Linux (but not on Mac):
- *  - some fields in the generated .h file are re-named,
- *  - an additional field is added
- *  - the generated .cpp file has additional differences:
- *    - different temps in clock_lo
- *    - missing assignments
- *    - change of assignment order
- *    - use of "Tx" vs. "Tx.values"
- */
-  libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
-
+  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
+  //  this has to be a Task setting.
+  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
+  allDependencies := {
+    allDependencies.value ++ Seq("firrtl").collect {
+      // If we have an unmanaged jar file on the classpath, assume we're to use that,
+      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
+        //  otherwise let sbt fetch the appropriate version.
+        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+    }
+  },
+  
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
 

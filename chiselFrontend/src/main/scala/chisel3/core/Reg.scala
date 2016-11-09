@@ -9,6 +9,7 @@ import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 object Reg {
   private[core] def makeType[T <: Data](compileOptions: CompileOptions, t: T = null, next: T = null, init: T = null): T = {
+    implicit val myCompileOptions = compileOptions
     if (t ne null) {
       if (compileOptions.declaredTypeMustBeUnbound) {
         Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
