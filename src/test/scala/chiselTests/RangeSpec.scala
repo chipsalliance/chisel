@@ -30,6 +30,14 @@ class RangeSpec extends FreeSpec with Matchers {
         hi should be (Open(1))
       }
     }
+    "range macros should work with interpolated variables" in {
+      val a = 10
+      val b = -3
+
+      range"[$b, $a)" should be( (Closed(b), Open(a)) )
+
+      range"[${a + b}, $a)" should be( (Closed(a + b), Open(a)) )
+    }
     "UInt should get the correct width from a range" in {
       UInt(range"[0, 8)").getWidth should be (3)
 
