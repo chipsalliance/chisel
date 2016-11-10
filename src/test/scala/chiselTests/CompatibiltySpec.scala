@@ -2,99 +2,113 @@
 
 package chiselTests
 
-class CompatibiltySpec extends ChiselFlatSpec  {
+import org.scalacheck.Gen
+import org.scalatest.prop.GeneratorDrivenPropertyChecks
+
+class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks {
   import Chisel._
 
   behavior of "Chisel compatibility layer"
 
-  it should "contain the following definitions" in {
-    INPUT == chisel3.core.Direction.Input should be(true)
-    OUTPUT == chisel3.core.Direction.Output should be(true)
-    NODIR == chisel3.core.Direction.Unspecified should be(true)
-    Wire == chisel3.core.Wire should be(true)
-    Clock == chisel3.core.Clock should be(true)
-    Vec == chisel3.core.Vec should be(true)
-    Chisel.assert == chisel3.core.assert should be(true)
-    stop == chisel3.core.stop should be(true)
-
-    Bits == chisel3.core.Bits should be(true)
-    UInt == chisel3.core.UInt should be(true)
-    SInt == chisel3.core.SInt should be(true)
-    Bool == chisel3.core.Bool should be(true)
-    Mux == chisel3.core.Mux should be(true)
-
-    Mem == chisel3.core.Mem should be(true)
-    SeqMem == chisel3.core.SeqMem should be(true)
-
-    Module == chisel3.core.Module should be(true)
-
-    printf == chisel3.core.printf should be(true)
-
-    Reg == chisel3.core.Reg should be(true)
-
-    when == chisel3.core.when should be(true)
-
-    Driver == chisel3.Driver should be(true)
-    ImplicitConversions == chisel3.util.ImplicitConversions should be(true)
-    chiselMain == chisel3.compatibility.chiselMain should be(true)
-    throwException == chisel3.compatibility.throwException should be(true)
-    debug == chisel3.compatibility.debug should be(true)
-
-    testers.TesterDriver == chisel3.testers.TesterDriver should be(true)
-    log2Up == chisel3.util.log2Up should be(true)
-    log2Ceil == chisel3.util.log2Ceil should be(true)
-    log2Down == chisel3.util.log2Down should be(true)
-    log2Floor == chisel3.util.log2Floor should be(true)
-    isPow2 == chisel3.util.isPow2 should be(true)
-
-    BitPat == chisel3.util.BitPat should be(true)
-
-    FillInterleaved == chisel3.util.FillInterleaved should be(true)
-    PopCount == chisel3.util.PopCount should be(true)
-    Fill == chisel3.util.Fill should be(true)
-    Reverse == chisel3.util.Reverse should be(true)
-
-    Cat == chisel3.util.Cat should be(true)
-
-    Log2 == chisel3.util.Log2 should be(true)
-
-    unless == chisel3.util.unless should be(true)
-    is == chisel3.util.is should be(true)
-    switch == chisel3.util.switch should be(true)
-
-    Counter == chisel3.util.Counter should be(true)
-
-    DecoupledIO == chisel3.util.Decoupled should be(true)
-    Decoupled == chisel3.util.Decoupled should be(true)
-    Queue == chisel3.util.Queue should be(true)
-
-    Enum == chisel3.util.Enum should be(true)
-
-    LFSR16 == chisel3.util.LFSR16 should be(true)
-
-    ListLookup == chisel3.util.ListLookup should be(true)
-    Lookup == chisel3.util.Lookup should be(true)
-
-    Mux1H == chisel3.util.Mux1H should be(true)
-    PriorityMux == chisel3.util.PriorityMux should be(true)
-    MuxLookup == chisel3.util.MuxLookup should be(true)
-    MuxCase == chisel3.util.MuxCase should be(true)
-
-    OHToUInt == chisel3.util.OHToUInt should be(true)
-    PriorityEncoder == chisel3.util.PriorityEncoder should be(true)
-    UIntToOH == chisel3.util.UIntToOH should be(true)
-    PriorityEncoderOH == chisel3.util.PriorityEncoderOH should be(true)
-
-    RegNext == chisel3.util.RegNext should be(true)
-    RegInit == chisel3.util.RegInit should be(true)
-    RegEnable == chisel3.util.RegEnable should be(true)
-    ShiftRegister == chisel3.util.ShiftRegister should be(true)
-
-    Valid == chisel3.util.Valid should be(true)
-    Pipe == chisel3.util.Pipe should be(true)
-
+  it should "accept direction arguments" in {
+    val directionArgument: Direction = Gen.oneOf(INPUT, OUTPUT, NODIR).sample.get
+    val b = Bool(directionArgument)
+    b shouldBe a [Bool]
+    b.getWidth shouldEqual 1
+    b.dir shouldEqual(directionArgument)
+    // Choose a random width
+    val width = Gen.choose(1, 2048).sample.get
+    val u = UInt(directionArgument, width)
+    u shouldBe a [UInt]
+    u.getWidth shouldEqual width
+    u.dir shouldEqual(directionArgument)
   }
 
+  it should "accept single argument U/SInt factory methods" in {
+    // Choose a random value
+    val value: Int = Gen.choose(0, Int.MaxValue).sample.get
+    val l = UInt(value)
+    l shouldBe a [UInt]
+    l shouldBe 'lit
+    l.getWidth shouldEqual BigInt(value).bitLength
+    l.litValue() shouldEqual value
+  }
+
+  it should "map utility objects into the package object" in {
+    {
+      val value: Int = Gen.choose(0, 2048).sample.get
+      log2Up(value) shouldBe (1 max BigInt(value-1).bitLength)
+      log2Ceil(value) shouldBe (BigInt(value-1).bitLength)
+      log2Down(value) shouldBe ((1 max BigInt(value-1).bitLength) - (if (value > 0 && ((value & (value-1)) == 0)) 0 else 1))
+      log2Floor(value) shouldBe (BigInt(value-1).bitLength - (if (value > 0 && ((value & (value-1)) == 0)) 0 else 1))
+      if (value > 0) {
+        isPow2(1 << value) shouldBe true
+        isPow2((1 << value) - 1) shouldBe false
+      }
+    }
+    {
+      val value: Int = Gen.choose(1, Int.MaxValue).sample.get
+      val binaryString = value.toBinaryString
+      val maskPosition = Gen.choose(0, binaryString.length - 1).sample.get
+      val bs = new StringBuilder(binaryString)
+      bs(maskPosition) = '?'
+      val bitPatString = bs.toString
+      val bp = BitPat("b" + bitPatString)
+      bp shouldBe a [BitPat]
+      bp.getWidth shouldEqual binaryString.length
+
+    }
+
+    class Dummy extends Module {
+      // The following just checks that we can create objects with nothing more than the Chisel compatibility package.
+      val io = new Bundle
+      val data = UInt(width = 3)
+      new ArbiterIO(data, 2) shouldBe a [ArbiterIO[_]]
+      new LockingRRArbiter(data, 2, 2, None) shouldBe a [LockingRRArbiter[_]]
+      new RRArbiter(data, 2) shouldBe a [RRArbiter[_]]
+      new Arbiter(data, 2) shouldBe a [Arbiter[_]]
+      new Counter(2) shouldBe a [Counter]
+      new ValidIO(data) shouldBe a [ValidIO[_]]
+      new DecoupledIO(data) shouldBe a [DecoupledIO[_]]
+      new QueueIO(data, 2) shouldBe a [QueueIO[_]]
+      new Pipe(data, 2) shouldBe a [Pipe[_]]
+
+      FillInterleaved(2, data) shouldBe a [UInt]
+      PopCount(data) shouldBe a [UInt]
+      Fill(2, data) shouldBe a [UInt]
+      Reverse(data) shouldBe a [UInt]
+      Cat(data, data) shouldBe a [UInt]
+      Log2(data) shouldBe a [UInt]
+      unless(Bool(false)) {}
+      // 'switch' and 'is' are tested below in Risc
+      Counter(2) shouldBe a [Counter]
+      DecoupledIO(data) shouldBe a [DecoupledIO[_]]
+      val dcd = Decoupled(data)
+      dcd shouldBe a [DecoupledIO[_]]
+      Queue(dcd) shouldBe a [Queue[_]]
+      Enum(data, 2) shouldBe a [List[_]]
+      val lfsr16 = LFSR16()
+      lfsr16 shouldBe a [UInt]
+      lfsr16.getWidth shouldBe (16)
+      ListLookup(data, List(data), Array((BitPat("b1"), List(data)))) shouldBe a [List[_]]
+      Lookup(data, data, Seq((BitPat("b1"), data))) shouldBe a [List[_]]
+      Mux1H(data, Seq(data)) shouldBe a [UInt]
+      PriorityMux(Seq(Bool(false)), Seq(data)) shouldBe a [UInt]
+      MuxLookup(data, data, Seq((data, data))) shouldBe a [UInt]
+      MuxCase(data, Seq((Bool(), data))) shouldBe a [UInt]
+      OHToUInt(data) shouldBe a [UInt]
+      PriorityEncoder(data) shouldBe a [UInt]
+      UIntToOH(data) shouldBe a [UInt]
+      PriorityEncoderOH(data) shouldBe a [UInt]
+      RegNext(data) shouldBe a [UInt]
+      RegInit(data) shouldBe a [UInt]
+      RegEnable(data, Bool()) shouldBe a [UInt]
+      ShiftRegister(data, 2) shouldBe a [UInt]
+      Valid(data) shouldBe a [ValidIO[_]]
+      Pipe(Valid(data), 2) shouldBe a [ValidIO[_]]
+    }
+
+  }
   // Verify we can elaborate a design expressed in Chisel2
   class Chisel2CompatibleRisc extends Module {
     val io = new Bundle {
