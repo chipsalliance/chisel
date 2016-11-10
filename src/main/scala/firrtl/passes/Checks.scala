@@ -600,6 +600,12 @@ object CheckWidths extends Pass {
       w
     }
 
+    def hasWidth(tpe: Type): Boolean = tpe match {
+      case GroundType(IntWidth(w)) => true
+      case GroundType(_) => false
+      case _ => println(tpe); throwInternalError
+    }
+
     def check_width_t(info: Info, mname: String)(t: Type): Type =
       t map check_width_t(info, mname) map check_width_w(info, mname)
 
@@ -615,13 +621,13 @@ object CheckWidths extends Pass {
             errors append new WidthTooSmall(info, mname, e.value)
           case _ =>
         }
-        case DoPrim(Bits, Seq(a), Seq(hi, lo), _) if bitWidth(a.tpe) <= hi =>
+        case DoPrim(Bits, Seq(a), Seq(hi, lo), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) <= hi) =>
           errors append new BitsWidthException(info, mname, hi, bitWidth(a.tpe))
-        case DoPrim(Head, Seq(a), Seq(n), _) if bitWidth(a.tpe) < n =>
+        case DoPrim(Head, Seq(a), Seq(n), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) < n) =>
           errors append new HeadWidthException(info, mname, n, bitWidth(a.tpe))
-        case DoPrim(Tail, Seq(a), Seq(n), _) if bitWidth(a.tpe) <= n =>
+        case DoPrim(Tail, Seq(a), Seq(n), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) <= n) =>
           errors append new TailWidthException(info, mname, n, bitWidth(a.tpe))
-        case DoPrim(Dshl, Seq(a, b), _, _) if bitWidth(b.tpe) >= BigInt(32) =>
+        case DoPrim(Dshl, Seq(a, b), _, _) if (hasWidth(a.tpe) && bitWidth(b.tpe) >= BigInt(32)) =>
           errors append new WidthTooBig(info, mname)
         case _ =>
       }

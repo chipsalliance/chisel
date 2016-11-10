@@ -37,11 +37,23 @@ object InferWidths extends Pass {
         case (res, wxx) => res :+ wxx
       }))
       case wx: PlusWidth => (wx.arg1, wx.arg2) match {
-        case (w1: IntWidth, w2 :IntWidth) => IntWidth(w1.width + w2.width)
+        case (w1: IntWidth, w2: IntWidth) => IntWidth(w1.width + w2.width)
+        case (w1, IntWidth(x)) if x == 0 => w1
+        case (IntWidth(x), w1) if x == 0 => w1
+        case (PlusWidth(IntWidth(x), w1), IntWidth(y)) =>  PlusWidth(IntWidth(x + y), w1)
+        case (PlusWidth(w1, IntWidth(x)), IntWidth(y)) =>  PlusWidth(IntWidth(x + y), w1)
+        case (IntWidth(y), PlusWidth(w1, IntWidth(x))) =>  PlusWidth(IntWidth(x + y), w1)
+        case (IntWidth(y), PlusWidth(IntWidth(x), w1)) =>  PlusWidth(IntWidth(x + y), w1)
+        case (MinusWidth(w1, IntWidth(x)), IntWidth(y)) => simplify(PlusWidth(IntWidth(y - x), w1)) // call simplify in case y = x
+        case (IntWidth(y), MinusWidth(w1, IntWidth(x))) => simplify(PlusWidth(IntWidth(y - x), w1)) // call simplify in case y = x
         case _ => wx
       }
       case wx: MinusWidth => (wx.arg1, wx.arg2) match {
         case (w1: IntWidth, w2: IntWidth) => IntWidth(w1.width - w2.width)
+        case (w1, IntWidth(x)) if x == 0 => w1
+        case (PlusWidth(IntWidth(x), w1), IntWidth(y)) =>  simplify(PlusWidth(IntWidth(x - y), w1)) // call simplify in case y = x
+        case (PlusWidth(w1, IntWidth(x)), IntWidth(y)) =>  simplify(PlusWidth(IntWidth(x - y), w1)) // call simplify in case y = x
+        case (MinusWidth(w1, IntWidth(x)), IntWidth(y)) => simplify(PlusWidth(IntWidth(x - y), w1)) // call simplify in case y = x
         case _ => wx
       }
       case wx: ExpWidth => wx.arg1 match {
@@ -126,7 +138,7 @@ object InferWidths extends Pass {
       //for (x <- f) println(x)
       //println("=========================")
 
-      val e_sub = substitute(f)(e)
+      val e_sub = simplify(substitute(f)(e))
 
       //println("Solving " + n + " => " + e)
       //println("After Substitute: " + n + " => " + e_sub)
