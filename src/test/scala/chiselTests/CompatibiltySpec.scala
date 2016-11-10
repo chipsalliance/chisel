@@ -162,4 +162,84 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate { new Chisel2CompatibleRisc }
   }
 
+
+  class SmallBundle extends Bundle {
+    val f1 = UInt(width = 4)
+    val f2 = UInt(width = 5)
+    override def cloneType: this.type = (new SmallBundle).asInstanceOf[this.type]
+  }
+  class BigBundle extends SmallBundle {
+    val f3 = UInt(width = 6)
+    override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
+  }
+
+  "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {
+
+    class ConnectFieldMismatchModule extends Module {
+      val io = new Bundle {
+        val in = (new SmallBundle).asInput
+        val out = (new BigBundle).asOutput
+      }
+      io.out := io.in
+    }
+    elaborate { new ConnectFieldMismatchModule() }
+  }
+
+  "A Module in which a Reg is created with a bound type when compiled with the Chisel compatibility package" should "not throw an exception" in {
+
+    class CreateRegFromBoundTypeModule extends Module {
+      val io = new Bundle {
+        val in = (new SmallBundle).asInput
+        val out = (new BigBundle).asOutput
+      }
+      val badReg = Reg(UInt(7, width=4))
+    }
+    elaborate { new CreateRegFromBoundTypeModule() }
+  }
+
+  "A Module with unwrapped IO when compiled with the Chisel compatibility package" should "not throw an exception" in {
+
+    class RequireIOWrapModule extends Module {
+      val io = new Bundle {
+        val in = UInt(width = 32).asInput
+        val out = Bool().asOutput
+      }
+      io.out := io.in(1)
+    }
+    elaborate { new RequireIOWrapModule() }
+  }
+
+  "A Module connecting output as source to input as sink when compiled with the Chisel compatibility package" should "not throw an exception" in {
+
+    class SimpleModule extends Module {
+      val io = new Bundle {
+        val in = (UInt(width = 3)).asInput
+        val out = (UInt(width = 4)).asOutput
+      }
+    }
+    class SwappedConnectionModule extends SimpleModule {
+      val child = Module(new SimpleModule)
+      io.in := child.io.out
+    }
+    elaborate { new SwappedConnectionModule() }
+  }
+
+  "A Module with directionless connections when compiled with the Chisel compatibility package" should "not throw an exception" in {
+
+    class SimpleModule extends Module {
+      val io = new Bundle {
+        val in = (UInt(width = 3)).asInput
+        val out = (UInt(width = 4)).asOutput
+      }
+      val noDir = Wire(UInt(width = 3))
+    }
+
+    class DirectionLessConnectionModule extends SimpleModule {
+      val a = UInt(0, width = 3)
+      val b = Wire(UInt(width = 3))
+      val child = Module(new SimpleModule)
+      b := child.noDir
+    }
+    elaborate { new DirectionLessConnectionModule() }
+  }
 }
