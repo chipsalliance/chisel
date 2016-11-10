@@ -30,7 +30,7 @@ class RangeSpec extends FreeSpec with Matchers {
         hi should be (Open(1))
       }
     }
-    "to specify a UInt" in {
+    "UInt should get the correct width from a range" in {
       UInt(range"[0, 8)").getWidth should be (3)
 
       UInt(range"[0, 8]").getWidth should be (4)
@@ -38,7 +38,7 @@ class RangeSpec extends FreeSpec with Matchers {
       UInt(range"[0, 0]").getWidth should be (1)
     }
 
-    "to specify an SInt" in {
+    "SInt should get the correct width from a range" in {
       SInt(range"[0, 8)").getWidth should be (4)
 
       SInt(range"[0, 8]").getWidth should be (5)
@@ -48,7 +48,7 @@ class RangeSpec extends FreeSpec with Matchers {
       SInt(range"[0, 0]").getWidth should be (1)
     }
 
-    "it should check that the range is valid for UInt" in {
+    "UInt should check that the range is valid" in {
       an [IllegalArgumentException] should be thrownBy {
         UInt(range"[1, 0]")
       }
@@ -70,7 +70,7 @@ class RangeSpec extends FreeSpec with Matchers {
       }
     }
 
-    "it should check that the range is valid for SInt" in {
+    "SInt should check that the range is valid" in {
       an [IllegalArgumentException] should be thrownBy {
         SInt(range"[1, 0]")
       }
