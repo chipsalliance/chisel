@@ -3,10 +3,33 @@
 package chiselTests
 
 import chisel3._
+import chisel3.internal.firrtl.{Open, Closed}
 import org.scalatest.{Matchers, FreeSpec}
 
 class RangeSpec extends FreeSpec with Matchers {
   "Ranges can be specified for UInt, SInt, and FixedPoint" - {
+    "range macros should allow open and closed bounds" in {
+      {
+        val (lo, hi) = range"[-1, 1)"
+        lo should be (Closed(-1))
+        hi should be (Open(1))
+      }
+      {
+        val (lo, hi) = range"[-1, 1]"
+        lo should be (Closed(-1))
+        hi should be (Closed(1))
+      }
+      {
+        val (lo, hi) = range"(-1, 1]"
+        lo should be (Open(-1))
+        hi should be (Closed(1))
+      }
+      {
+        val (lo, hi) = range"(-1, 1)"
+        lo should be (Open(-1))
+        hi should be (Open(1))
+      }
+    }
     "to specify a UInt" in {
       UInt(range"[0, 8)").getWidth should be (3)
 
