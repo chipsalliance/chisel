@@ -86,11 +86,17 @@ class RangeTransform(val c: Context) {
       c.abort(c.enclosingPosition, s"Unused characters in range specifier: '$unused'")
     }
 
-    // TODO: FINISH THIS!
-
-    c.warning(c.enclosingPosition, s"$startInclusive ${showRaw(minArg)} ${showRaw(maxArg)} $endInclusive")
-
-    q"_root_.chisel3.internal.firrtl"
-
+    val startBound = if (startInclusive) {
+      q"_root_.chisel3.internal.firrtl.Closed($minArg)"
+    } else {
+      q"_root_.chisel3.internal.firrtl.Open($minArg)"
+    }
+    val endBound = if (endInclusive) {
+      q"_root_.chisel3.internal.firrtl.Closed($maxArg)"
+    } else {
+      q"_root_.chisel3.internal.firrtl.Open($maxArg)"
+    }
+    
+    q"($startBound, $endBound)"
   }
 }
