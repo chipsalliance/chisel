@@ -1,3 +1,4 @@
+
 // See LICENSE for license details.
 
 package object chisel3 {    // scalastyle:ignore package.object.name
@@ -10,6 +11,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   import chisel3.core.{Binding, FlippedBinder}
   import chisel3.util._
   import chisel3.internal.firrtl.Port
+
+  import chisel3.internal.firrtl.NumericBound
 
   type Direction = chisel3.core.Direction
   val Input   = chisel3.core.Input
@@ -154,6 +157,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit class fromDoubleToLiteral(val x: Double) extends AnyVal {
     def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(x, binaryPoint = binaryPoint)
+  }
+
+  implicit class ChiselRange(val sc: StringContext) extends AnyVal {
+    def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
   }
 
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
