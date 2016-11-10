@@ -81,7 +81,7 @@ object InferWidths extends Pass {
 
     def remove_cycle(n: String)(w: Width): Width = {
       //;println-all-debug(["Removing cycle for " n " inside " w])
-      w map remove_cycle(n) match {
+      w match {
         case wx: MaxWidth => MaxWidth(wx.args filter {
           case wxx: VarWidth => !(n equals wxx.name)
           case _ => true
