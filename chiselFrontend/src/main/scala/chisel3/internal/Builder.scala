@@ -188,6 +188,16 @@ private[chisel3] object Builder {
   def warning(m: => String): Unit = errors.warning(m)
   def deprecated(m: => String): Unit = errors.deprecated(m)
 
+  /** Record an exception as an error, and throw it.
+    *
+    * @param m exception message
+    */
+  @throws(classOf[ChiselException])
+  def exception(m: => String): Unit = {
+    error(m)
+    throwException(m)
+  }
+
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
       errors.info("Elaborating design...")
