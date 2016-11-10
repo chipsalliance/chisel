@@ -9,26 +9,13 @@ import org.scalatest.{Matchers, FreeSpec}
 class RangeSpec extends FreeSpec with Matchers {
   "Ranges can be specified for UInt, SInt, and FixedPoint" - {
     "range macros should allow open and closed bounds" in {
-      {
-        val (lo, hi) = range"[-1, 1)"
-        lo should be (Closed(-1))
-        hi should be (Open(1))
-      }
-      {
-        val (lo, hi) = range"[-1, 1]"
-        lo should be (Closed(-1))
-        hi should be (Closed(1))
-      }
-      {
-        val (lo, hi) = range"(-1, 1]"
-        lo should be (Open(-1))
-        hi should be (Closed(1))
-      }
-      {
-        val (lo, hi) = range"(-1, 1)"
-        lo should be (Open(-1))
-        hi should be (Open(1))
-      }
+      range"[-1, 1)" should be( (Closed(-1), Open(1)) )
+
+      range"[-1, 1]" should be( (Closed(-1), Closed(1)) )
+
+      range"(-1, 1]" should be( (Open(-1), Closed(1)) )
+
+      range"(-1, 1)" should be( (Open(-1), Open(1)) )
     }
     "range macros should work with interpolated variables" in {
       val a = 10
