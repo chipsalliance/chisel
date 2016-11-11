@@ -146,6 +146,9 @@ private[chisel3] class DynamicContext() {
   val globalNamespace = new Namespace(None, Set())
   val components = ArrayBuffer[Component]()
   var currentModule: Option[Module] = None
+  // Set by object Module.apply before calling class Module constructor
+  // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
+  var readyForModuleConstr: Boolean = false
   val errors = new ErrorLog
 }
 
@@ -169,6 +172,10 @@ private[chisel3] object Builder {
       "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
+  }
+  def readyForModuleConstr: Boolean = dynamicContext.readyForModuleConstr
+  def readyForModuleConstr_=(target: Boolean): Unit = {
+    dynamicContext.readyForModuleConstr = target
   }
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here

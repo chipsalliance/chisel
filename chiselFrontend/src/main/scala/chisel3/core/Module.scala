@@ -25,9 +25,21 @@ object Module {
     // module de-duplication in FIRRTL emission.
     val childSourceInfo = UnlocatableSourceInfo
 
+    if (Builder.readyForModuleConstr) {
+      throwException("Error: Called Module() twice without instantiating a Module." +
+                     sourceInfo.makeMessage(" See " + _))
+    }
+    Builder.readyForModuleConstr = true
     val parent: Option[Module] = Builder.currentModule
-    val m = bc.setRefs() // This will set currentModule!
+
+    val m = bc.setRefs() // This will set currentModule and unset readyForModuleConstr!!!
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
+
+    if (Builder.readyForModuleConstr) {
+      throwException("Error: attempted to instantiate a Module, but nothing happened. " +
+                     "This is probably due to rewrapping a Module instance with Module()." +
+                     sourceInfo.makeMessage(" See " + _))
+    }
     Builder.currentModule = parent // Back to parent!
     val ports = m.computePorts
     val component = Component(m, m.name, ports, m._commands)
@@ -93,6 +105,10 @@ extends HasId {
   private[chisel3] val _commands = ArrayBuffer[Command]()
   private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
+  if (!Builder.readyForModuleConstr) {
+    throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+  }
+  readyForModuleConstr = false
 
   /** Desired name of this module. */
   def desiredName = this.getClass.getName.split('.').last

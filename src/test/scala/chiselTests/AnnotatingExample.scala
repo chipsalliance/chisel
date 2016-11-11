@@ -141,5 +141,5 @@ object MyDriver extends BackendCompilationUtilities {
   /**
     * illustrates a chisel3 style driver that, annotations can only processed within this structure
     */
-  def buildAnnotatedCircuit[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(Module(gen()))
+  def buildAnnotatedCircuit[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(gen())
 }
