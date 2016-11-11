@@ -39,10 +39,7 @@ private class Emitter(circuit: Circuit) {
         unindent()
         s"skip"
     }
-    e.sourceInfo match {
-      case SourceLine(filename, line, col) => s"${firrtlLine} @[${filename} ${line}:${col}]"
-      case _: NoSourceInfo => firrtlLine
-    }
+    firrtlLine + e.sourceInfo.makeMessage(" " + _)
   }
 
   // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
