@@ -78,4 +78,27 @@ class WidthSpec extends FirrtlFlatSpec {
       executeTest(input, Nil, passes)
     }
   }
+  "Circular reg depending on reg + 1" should "error" in {
+    val passes = Seq(
+      ToWorkingIR,
+      CheckHighForm,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes,
+      InferWidths,
+      CheckWidths)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    input clock: Clock
+        |    input reset: UInt<1>
+        |    reg r : UInt, clock with :
+        |      reset => (reset, UInt(3))
+        |    node T_7 = add(r, r)
+        |    r <= T_7
+        |""".stripMargin
+    intercept[CheckWidths.UninferredWidth] {
+      executeTest(input, Nil, passes)
+    }
+  }
 }
