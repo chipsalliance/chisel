@@ -48,12 +48,14 @@ object ClockListUtils {
       case Module(i, n, ports, b) => ports.collectFirst { case p if p.name == "clock" => me + sep + "clock" }
       case ExtModule(i, n, ports, dn, p) => None
     }
-    // Return new origins with children removed, if they match my clock
+    // Return new origins with direct children removed, if they match my clock
     clockOpt match {
       case Some(clock) =>
         val myOrigin = getOrigin(connects, clock).serialize
         childrenOrigins.foldLeft(Map(me -> myOrigin)) { case (o, (childInstance, childOrigin)) =>
-          if(childOrigin == myOrigin) o else o + (childInstance -> childOrigin)
+          val childrenInstances = lin.children.map { case (instance, _) => me + sep + instance }
+          // If direct child shares my origin, omit it
+          if(childOrigin == myOrigin && childrenInstances.contains(childInstance)) o else o + (childInstance -> childOrigin)
         }
       case None => childrenOrigins
     }
