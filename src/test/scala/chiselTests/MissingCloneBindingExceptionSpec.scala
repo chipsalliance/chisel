@@ -4,7 +4,7 @@ package chiselTests
 import Chisel.ChiselException
 import org.scalatest._
 
-class MissingCloneBindingExceptionSpec extends FlatSpec with Matchers {
+class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
   behavior of "missing cloneType in Chisel3"
   ( the[ChiselException] thrownBy {
     import chisel3._
@@ -27,7 +27,7 @@ class MissingCloneBindingExceptionSpec extends FlatSpec with Matchers {
       }
     }
 
-    val dummy = new TestTop
+    elaborate(new TestTop)
   }).getMessage should include("needs cloneType method")
 
   behavior of "missing cloneType in Chisel2"
@@ -52,6 +52,6 @@ class MissingCloneBindingExceptionSpec extends FlatSpec with Matchers {
       }
     }
 
-    val dummy = new TestTop
+    elaborate(new TestTop)
   }).getMessage should include("needs cloneType method")
 }
