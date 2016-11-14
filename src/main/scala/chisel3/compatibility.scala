@@ -4,6 +4,9 @@
 // moving to the more standard package naming convention chisel3 (lowercase c).
 
 package object Chisel {     // scalastyle:ignore package.object.name
+  import chisel3.core.{CompileOptions, Direction => CoreDirection, Input, Output}
+  import chisel3.internal.firrtl.Width
+
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
   type Direction = chisel3.core.Direction
   val INPUT = chisel3.core.Direction.Input
@@ -42,10 +45,48 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Bits = chisel3.core.Bits
   val Bits = chisel3.core.Bits
   type Num[T <: Data] = chisel3.core.Num[T]
+
   type UInt = chisel3.core.UInt
-  val UInt = chisel3.core.UInt
+  // Create a chisel2 compatible object so we can override deprecation warnings.
+  object UInt extends chisel3.core.UIntChisel2CompatibleFactory {
+    /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
+    override def apply(value: BigInt): UInt = {
+      apply(value, Width())
+    }
+  }
+
   type SInt = chisel3.core.SInt
-  val SInt = chisel3.core.SInt
+  // Duplicate much of chisel3.core.SInt so we can override deprecation warnings.
+  object SInt {
+
+    /** Create an SInt type with inferred width. */
+    def apply(): SInt = apply(Width())
+    /** Create a SInt type or port with fixed width. */
+    def apply(width: Width): SInt = chisel3.core.SInt(width)
+    /** Create a SInt type or port with fixed width. */
+    def width(width: Int): SInt = apply(Width(width))
+    /** Create an SInt type with specified width. */
+    def width(width: Width): SInt = chisel3.core.SInt(width)
+
+    /** Create an SInt literal with inferred width. */
+    def apply(value: BigInt): SInt = {
+      chisel3.core.SInt.Lit(value)
+    }
+    /** Create an SInt literal with fixed width. */
+    def apply(value: BigInt, width: Int): SInt = chisel3.core.SInt.Lit(value, width)
+
+    /** Create an SInt literal with specified width. */
+    def apply(value: BigInt, width: Width): SInt = chisel3.core.SInt.Lit(value, width)
+
+    /** Create a SInt with a specified width - compatibility with Chisel2. */
+    def apply(dir: Option[Direction] = None, width: Int): SInt = apply(Width(width))
+    /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
+    def apply(dir: Direction, width: Int)(implicit opts: CompileOptions): SInt = chisel3.core.SInt(dir, Width(width))(opts)
+    /** Create a SInt with a specified direction, but unspecified width - compatibility with Chisel2. */
+    def apply(dir: Direction)(implicit opts: CompileOptions): SInt = chisel3.core.SInt(dir, Width())(opts)
+    def apply(dir: Direction, wWidth: Width)(implicit opts: CompileOptions): SInt = chisel3.core.SInt(dir, wWidth)(opts)
+  }
+
   type Bool = chisel3.core.Bool
   val Bool = chisel3.core.Bool
   val Mux = chisel3.core.Mux
