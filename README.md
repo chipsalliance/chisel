@@ -47,3 +47,6 @@ sbt
 utils/bin/firrtl -i regress/rocket.fir -o regress/rocket.v -X verilog // Compiles rocket-chip to Verilog
 utils/bin/firrtl --help // Returns usage string
 ```
+
+##### Other Tools
+Firrtl syntax highlighting for Vim users: https://github.com/azidar/firrtl-syntax
