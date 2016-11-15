@@ -66,7 +66,7 @@ object Data {
   * Note that the current scheme only applies Flip to Elements or Vec chains of
   * Elements.
   *
-  * A Bundle is never marked flip, instead preferring its root fields to be marked
+  * A Record is never marked flip, instead preferring its root fields to be marked
   *
   * The Vec check is due to the fact that flip must be factored out of the vec, ie:
   * must have flip field: Vec(UInt) instead of field: Vec(flip UInt)
@@ -74,7 +74,7 @@ object Data {
   private[chisel3] def isFlipped(target: Data): Boolean = target match {
     case (element: Element) => element.binding.direction == Some(Direction.Input)
     case (vec: Vec[Data @unchecked]) => isFlipped(vec.sample_element)
-    case (bundle: Bundle) => false
+    case (record: Record) => false
   }
 
   /** This function returns the "firrtl" flipped-ness for the specified object.

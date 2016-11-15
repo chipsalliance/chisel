@@ -5,7 +5,7 @@ package chisel3.core
 import scala.language.experimental.macros
 
 trait CompileOptions {
-  // Should Bundle connections require a strict match of fields.
+  // Should Record connections require a strict match of fields.
   // If true and the same fields aren't present in both source and sink, a MissingFieldException,
   // MissingLeftFieldException, or MissingRightFieldException will be thrown.
   val connectFieldsMustMatch: Boolean

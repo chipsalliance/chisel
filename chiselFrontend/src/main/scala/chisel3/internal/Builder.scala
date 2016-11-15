@@ -92,7 +92,7 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
-  // (e.g. tried to suggest a name to part of a Bundle)
+  // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
       val candidate_name = suggested_name.getOrElse(default)

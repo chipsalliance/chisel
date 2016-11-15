@@ -335,50 +335,93 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     SeqUtils.oneHotMux(indexWhereHelper(p))
 }
 
+/** Base class for Aggregates based on key values pairs of String and Data
+  *
+  * Record should only be extended by libraries and fairly sophisticated generators.
+  * RTL writers should use [[Bundle]].
+  */
+abstract class Record extends Aggregate {
+
+  /** The collection of [[Data]]
+    *
+    * This underlying datastructure is a ListMap because the elements must
+    * remain ordered for serialization/deserialization. Elements added later
+    * are higher order when serialized (this is similar to [[Vec]]). For example:
+    * {{{
+    *   // Assume we have some type MyRecord that creates a Record from the ListMap
+    *   val record = MyRecord(ListMap("fizz" -> UInt(16.W), "buzz" -> UInt(16.W)))
+    *   // "buzz" is higher order because it was added later than "fizz"
+    *   record("fizz") := "hdead".U
+    *   record("buzz") := "hbeef".U
+    *   val uint = record.asUInt
+    *   assert(uint === "hbeefdead".U) // This will pass
+    * }}}
+    */
+  val elements: ListMap[String, Data]
+
+  /** Name for Pretty Printing */
+  def className: String = this.getClass.getSimpleName
+
+  private[chisel3] def toType = {
+    def eltPort(elt: Data): String = {
+      val flipStr: String = if(Data.isFirrtlFlipped(elt)) "flip " else ""
+      s"${flipStr}${elt.getRef.name} : ${elt.toType}"
+    }
+    elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
+  }
+
+  private[chisel3] lazy val flatten = elements.toIndexedSeq.flatMap(_._2.flatten)
+
+  // NOTE: This sets up dependent references, it can be done before closing the Module
+  private[chisel3] override def _onModuleClose: Unit = { // scalastyle:ignore method.name
+    val _namespace = Builder.globalNamespace.child
+    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name)) }
+  }
+
+  private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
+
+  // Helper because Bundle elements are reversed before printing
+  private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
+    val xs =
+      if (elts.isEmpty) List.empty[Printable] // special case because of dropRight below
+      else elts flatMap { case (name, data) =>
+             List(PString(s"$name -> "), data.toPrintable, PString(", "))
+           } dropRight 1 // Remove trailing ", "
+    PString(s"$className(") + Printables(xs) + PString(")")
+  }
+  /** Default "pretty-print" implementation
+    * Analogous to printing a Map
+    * Results in "$className(elt0.name -> elt0.value, ...)"
+    */
+  def toPrintable: Printable = toPrintableHelper(elements.toList)
+}
+
 /** Base class for data types defined as a bundle of other data types.
   *
   * Usage: extend this class (either as an anonymous or named class) and define
   * members variables of [[Data]] subtypes to be elements in the Bundle.
   */
-class Bundle extends Aggregate {
-  private val _namespace = Builder.globalNamespace.child
+class Bundle extends Record {
+  override def className = "Bundle"
 
-  // TODO: replace with better defined FIRRTL weak-connect operator
-  /** Connect elements in this Bundle to elements in `that` on a best-effort
-    * (weak) basis, matching by type, orientation, and name.
+  /** The collection of [[Data]]
     *
-    * @note unconnected elements will NOT generate errors or warnings
-    *
-    * @example
+    * Elements defined earlier in the Bundle are higher order upon
+    * serialization. For example:
     * {{{
-    * // Pass through wires in this module's io to those mySubModule's io,
-    * // matching by type, orientation, and name, and ignoring extra wires.
-    * mySubModule.io <> io
+    *   class MyBundle extends Bundle {
+    *     val foo = UInt(16.W)
+    *     val bar = UInt(16.W)
+    *   }
+    *   // Note that foo is higher order because its defined earlier in the Bundle
+    *   val bundle = Wire(new MyBundle)
+    *   bundle.foo := 0x1234.U
+    *   bundle.bar := 0x5678.U
+    *   val uint = bundle.asUInt
+    *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-
-  lazy val elements: ListMap[String, Data] = ListMap(namedElts:_*)
-
-  /** Returns a best guess at whether a field in this Bundle is a user-defined
-    * Bundle element without looking at type signatures.
-    */
-  private def isBundleField(m: java.lang.reflect.Method) =
-    m.getParameterTypes.isEmpty &&
-    !java.lang.reflect.Modifier.isStatic(m.getModifiers) &&
-    !(Bundle.keywords contains m.getName) && !(m.getName contains '$')
-
-  /** Returns a field's contained user-defined Bundle element if it appears to
-    * be one, otherwise returns None.
-    */
-  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
-    case d: Data => Some(d)
-    case Some(d: Data) => Some(d)
-    case _ => None
-  }
-
-  /** Returns a list of elements in this Bundle.
-    */
-  private[core] lazy val namedElts = {
+  final lazy val elements: ListMap[String, Data] = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
@@ -391,20 +434,17 @@ class Bundle extends Aggregate {
         }
       }
     }
-    ArrayBuffer(nameMap.toSeq:_*) sortWith {case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn))}
+    ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
-  private[chisel3] def toType = {
-    def eltPort(elt: Data): String = {
-      val flipStr: String = if(Data.isFirrtlFlipped(elt)) "flip " else ""
-      s"${flipStr}${elt.getRef.name} : ${elt.toType}"
-    }
-    s"{${namedElts.reverse.map(e => eltPort(e._2)).mkString(", ")}}"
-  }
-  private[chisel3] lazy val flatten = namedElts.flatMap(_._2.flatten)
-  private[chisel3] override def _onModuleClose: Unit = // scalastyle:ignore method.name
-    for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
 
-  private[chisel3] final def allElements: Seq[Element] = namedElts.flatMap(_._2.allElements)
+  /** Returns a field's contained user-defined Bundle element if it appears to
+    * be one, otherwise returns None.
+    */
+  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
+    case d: Data => Some(d)
+    case Some(d: Data) => Some(d)
+    case _ => None
+  }
 
   override def cloneType : this.type = {
     // If the user did not provide a cloneType method, try invoking one of
@@ -436,20 +476,14 @@ class Bundle extends Aggregate {
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
     * Results in "Bundle(elt0.name -> elt0.value, ...)"
+    * @note The order is reversed from the order of elements in order to print
+    *   the fields in the order they were defined
     */
-  def toPrintable: Printable = {
-    val elts =
-      if (elements.isEmpty) List.empty[Printable]
-      else {
-        elements.toList.reverse flatMap { case (name, data) =>
-          List(PString(s"$name -> "), data.toPrintable, PString(", "))
-        } dropRight 1 // Remove trailing ", "
-      }
-    PString("Bundle(") + Printables(elts) + PString(")")
-  }
+  override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
 
 private[core] object Bundle {
   val keywords = List("flip", "asInput", "asOutput", "cloneType", "chiselCloneType", "toBits",
     "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
 }
+
