@@ -15,15 +15,13 @@ class CreateMemoryAnnotations(reader: Option[YamlFileReader]) extends Transform 
     case None => state
     case Some(r) =>
       import CustomYAMLProtocol._
-      r.parse[Config] match {
-        case Seq(config) =>
-          val cN = CircuitName(state.circuit.main)
-          val top = TopAnnotation(ModuleName(config.top.name, cN))
-          val source = SourceAnnotation(ComponentName(config.source.name, ModuleName(config.source.module, cN)))
-          val pin = PinAnnotation(cN, config.pin.name)
-          state.copy(annotations = Some(AnnotationMap(Seq(top, source, pin))))
-        case Nil => state
-        case _ => error("Can only have one config in yaml file")
+      val configs = r.parse[Config]
+      val cN = CircuitName(state.circuit.main)
+      val (as, pins) = configs.foldLeft((Seq.empty[Annotation], Seq.empty[String])) { case ((annos, pins), config) =>
+        val top = TopAnnotation(ModuleName(config.top.name, cN), config.pin.name)
+        val source = SourceAnnotation(ComponentName(config.source.name, ModuleName(config.source.module, cN)), config.pin.name)
+        (annos ++ Seq(top, source), pins :+ config.pin.name)
       }
+      state.copy(annotations = Some(AnnotationMap(as :+ PinAnnotation(cN, pins.toSeq))))
   }
 }

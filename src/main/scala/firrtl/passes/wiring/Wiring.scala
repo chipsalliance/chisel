@@ -13,10 +13,13 @@ import WiringUtils._
 
 case class WiringException(msg: String) extends PassException(msg)
 
-case class WiringInfo(source: String, comp: String, sinks: Map[String, String], top: String)
+case class WiringInfo(source: String, comp: String, sinks: Set[String], pin: String, top: String)
 
-class Wiring(wi: WiringInfo) extends Pass {
+class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
   def name = this.getClass.getSimpleName
+  def run(c: Circuit): Circuit = {
+    wiSeq.foldLeft(c) { (circuit, wi) => wire(circuit, wi) }
+  }
 
   /** Add pins to modules and wires a signal to them, under the scope of a specified top module
     * Description:
@@ -30,11 +33,12 @@ class Wiring(wi: WiringInfo) extends Pass {
     * Notes:
     *   - No module uniquification occurs (due to imposed restrictions)
     */
-  def run(c: Circuit): Circuit = {
+  def wire(c: Circuit, wi: WiringInfo): Circuit = {
     // Split out WiringInfo
     val source = wi.source
-    val sinks = wi.sinks.keys.toSet
+    val sinks = wi.sinks
     val compName = wi.comp
+    val pin = wi.pin
 
     // Maps modules to children instances, i.e. (instance, module)
     val childrenMap = getChildrenMap(c)
@@ -55,10 +59,8 @@ class Wiring(wi: WiringInfo) extends Pass {
     val portNames = c.modules.foldLeft(Map.empty[String, String]) { (map, m) =>
       map + (m.name -> {
         val ns = Namespace(m)
-        wi.sinks.get(m.name) match {
-          case Some(pin) => ns.newName(pin)
-          case None => ns.newName(tokenize(compName) filterNot ("[]." contains _) mkString "_")
-        }
+        if(sinks.contains(m.name)) ns.newName(pin)
+        else ns.newName(tokenize(compName) filterNot ("[]." contains _) mkString "_")
       })
     }
 

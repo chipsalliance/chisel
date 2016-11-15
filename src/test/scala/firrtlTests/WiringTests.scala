@@ -34,8 +34,8 @@ class WiringTests extends FirrtlFlatSpec {
   )
 
   "Wiring from r to X" should "work" in {
-    val sinks = Map(("X"-> "pin"))
-    val sas = WiringInfo("C", "r", sinks, "A")
+    val sinks = Set("X")
+    val sas = WiringInfo("C", "r", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
@@ -116,14 +116,14 @@ class WiringTests extends FirrtlFlatSpec {
     val c = passes.foldLeft(parse(input)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
-    val wiringPass = new Wiring(sas)
+    val wiringPass = new Wiring(Seq(sas))
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }
 
   "Wiring from r.x to X" should "work" in {
-    val sinks = Map(("X"-> "pin"))
-    val sas = WiringInfo("A", "r.x", sinks, "A")
+    val sinks = Set("X")
+    val sas = WiringInfo("A", "r.x", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
@@ -159,13 +159,13 @@ class WiringTests extends FirrtlFlatSpec {
     val c = passes.foldLeft(parse(input)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
-    val wiringPass = new Wiring(sas)
+    val wiringPass = new Wiring(Seq(sas))
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }
   "Wiring from clk to X" should "work" in {
-    val sinks = Map(("X"-> "pin"))
-    val sas = WiringInfo("A", "clk", sinks, "A")
+    val sinks = Set("X")
+    val sas = WiringInfo("A", "clk", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
@@ -199,13 +199,13 @@ class WiringTests extends FirrtlFlatSpec {
     val c = passes.foldLeft(parse(input)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
-    val wiringPass = new Wiring(sas)
+    val wiringPass = new Wiring(Seq(sas))
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }
   "Two sources" should "fail" in {
-    val sinks = Map(("X"-> "pin"))
-    val sas = WiringInfo("A", "clk", sinks, "Top")
+    val sinks = Set("X")
+    val sas = WiringInfo("A", "clk", sinks, "pin", "Top")
     val input =
       """circuit Top :
         |  module Top :
@@ -225,13 +225,13 @@ class WiringTests extends FirrtlFlatSpec {
       val c = passes.foldLeft(parse(input)) {
         (c: Circuit, p: Pass) => p.run(c)
       }
-      val wiringPass = new Wiring(sas)
+      val wiringPass = new Wiring(Seq(sas))
       val retC = wiringPass.run(c)
     }
   }
   "Wiring from A.clk to X, with 2 A's, and A as top" should "work" in {
-    val sinks = Map(("X"-> "pin"))
-    val sas = WiringInfo("A", "clk", sinks, "A")
+    val sinks = Set("X")
+    val sas = WiringInfo("A", "clk", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
@@ -269,13 +269,13 @@ class WiringTests extends FirrtlFlatSpec {
     val c = passes.foldLeft(parse(input)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
-    val wiringPass = new Wiring(sas)
+    val wiringPass = new Wiring(Seq(sas))
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }
   "Wiring from A.clk to X, with 2 A's, and A as top, but Top instantiates X" should "error" in {
-    val sinks = Map(("X"-> "pin"))
-    val sas = WiringInfo("A", "clk", sinks, "A")
+    val sinks = Set("X")
+    val sas = WiringInfo("A", "clk", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
@@ -297,13 +297,13 @@ class WiringTests extends FirrtlFlatSpec {
       val c = passes.foldLeft(parse(input)) {
         (c: Circuit, p: Pass) => p.run(c)
       }
-      val wiringPass = new Wiring(sas)
+      val wiringPass = new Wiring(Seq(sas))
       val retC = wiringPass.run(c)
     }
   }
   "Wiring from A.r[a] to X" should "work" in {
-    val sinks = Map(("X"-> "pin"))
-    val sas = WiringInfo("A", "r[a]", sinks, "A")
+    val sinks = Set("X")
+    val sas = WiringInfo("A", "r[a]", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
@@ -341,7 +341,7 @@ class WiringTests extends FirrtlFlatSpec {
     val c = passes.foldLeft(parse(input)) {
       (c: Circuit, p: Pass) => p.run(c)
     }
-    val wiringPass = new Wiring(sas)
+    val wiringPass = new Wiring(Seq(sas))
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }

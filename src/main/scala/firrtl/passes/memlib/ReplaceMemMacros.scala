@@ -16,7 +16,7 @@ import wiring._
 
 /** Annotates the name of the pin to add for WiringTransform
   */
-case class PinAnnotation(target: CircuitName, pin: String) extends Annotation with Loose with Unstable {
+case class PinAnnotation(target: CircuitName, pins: Seq[String]) extends Annotation with Loose with Unstable {
   def transform = classOf[ReplaceMemMacros]
   def duplicate(n: Named) = n match {
     case n: CircuitName => this.copy(target = n)
@@ -218,15 +218,19 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     val modules = c.modules map updateMemMods(namespace, nameMap, memMods)
     // print conf
     writer.serialize()
-    val pin = getMyAnnotations(state) match {
-      case Nil => "pin"
+    val pins = getMyAnnotations(state) match {
+      case Nil => Nil
       case Seq(p) => p match {
-        case PinAnnotation(c, pin) => pin
+        case PinAnnotation(c, pins) => pins
         case _ => error(s"Bad Annotation: ${p}")
       }
       case _ => throwInternalError
     }
-    val annos = memMods.collect { case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin) }
+    val annos = pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
+      seq ++ memMods.collect { 
+        case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin) 
+      }
+    }
     CircuitState(c.copy(modules = modules ++ memMods), inputForm, Some(AnnotationMap(annos)))
   }
 }
