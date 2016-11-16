@@ -84,5 +84,18 @@ class RangeSpec extends FreeSpec with Matchers {
         SInt(range"(0,0)")
       }
     }
+
+    "Invalid range specifiers should fail at compile time" in {
+      assertDoesNotCompile(""" range"" """)
+      assertDoesNotCompile(""" range"[]" """)
+      assertDoesNotCompile(""" range"0" """)
+      assertDoesNotCompile(""" range"[0]" """)
+      assertDoesNotCompile(""" range"[0, 1" """)
+      assertDoesNotCompile(""" range"0, 1]" """)
+      assertDoesNotCompile(""" range"[0, 1, 2]" """)
+      assertDoesNotCompile(""" range"[a]" """)
+      assertDoesNotCompile(""" range"[a, b]" """)
+      assertCompiles(""" range"[0, 1]" """)  // syntax sanity check
+    }
   }
 }
