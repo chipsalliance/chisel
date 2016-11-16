@@ -1,18 +1,15 @@
-
 // See LICENSE for license details.
 
 package object chisel3 {    // scalastyle:ignore package.object.name
   import scala.language.experimental.macros
 
-  import internal.firrtl.Width
+  import internal.firrtl.{Width, NumericBound}
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
   import util.BitPat
 
   import chisel3.core.{Binding, FlippedBinder}
   import chisel3.util._
   import chisel3.internal.firrtl.Port
-
-  import chisel3.internal.firrtl.NumericBound
 
   type Direction = chisel3.core.Direction
   val Input   = chisel3.core.Input

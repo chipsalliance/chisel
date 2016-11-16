@@ -109,16 +109,6 @@ case class Index(imm: Arg, value: Arg) extends Arg {
   override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[${value.fullName(ctx)}]"
 }
 
-object Range {
-  def log2Up(value: BigInt): Int = {
-    require(value >= 0)
-    1 max (value-1).bitLength
-  }
-}
-
-/*sealed abstract class Range {
-
-}*/
 sealed trait Bound
 sealed trait NumericBound[T] extends Bound {
   val value: T
@@ -137,8 +127,9 @@ sealed trait KnownIntRange extends Range {
   val max: NumericBound[Int]
 
   require( (min, max) match {
-    case (low, Open(high_val)) => low.value < high_val
-    case (Open(low_val), high) => low_val < high.value
+    case (Open(low_val), Open(high_val)) => low_val < high_val - 1
+    case (Closed(low_val), Open(high_val)) => low_val < high_val
+    case (Open(low_val), Closed(high_val)) => low_val < high_val
     case (Closed(low_val), Closed(high_val)) => low_val <= high_val
   })
 }
