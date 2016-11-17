@@ -40,6 +40,8 @@ object Module {
                      "This is probably due to rewrapping a Module instance with Module()." +
                      sourceInfo.makeMessage(" See " + _))
     }
+    if (m.io != m.io) throwException("Concrete implementations of Module must make io a val or lazy val")
+
     Builder.currentModule = parent // Back to parent!
 
     val ports = m.computePorts
@@ -139,8 +141,12 @@ extends HasId {
       case Some(c) => getRef fullName c
     }
 
-  /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
+  /** IO for this Module.
+    *
+    * At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.
+    *
+    * @note While this is a def, concrete implementations *must* make it a val or lazy val
     */
   def io: Record
   val clock = Port(Input(Clock()))
