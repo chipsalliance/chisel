@@ -180,7 +180,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromStringToLiteral(override val x: String) extends chisel3.core.fromStringToLiteral(x)
   implicit class fromBooleanToLiteral(override val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
   implicit class fromDoubleToLiteral(override val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
-
+  implicit class fromIntToWidth(override val x: Int) extends chisel3.core.fromIntToWidth(x)
 
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg

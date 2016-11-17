@@ -18,7 +18,8 @@ lazy val commonSettings = Seq (
   version := "3.1-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   autoAPIMappings := true,
-  scalaVersion := "2.11.7"
+  scalaVersion := "2.11.7",
+  scalacOptions := Seq("-deprecation")
 )
 
 val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
@@ -82,7 +83,7 @@ lazy val chiselSettings = Seq (
         "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
     }
   },
-  
+
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
 

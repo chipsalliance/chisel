@@ -134,7 +134,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     }
     val w = x - y + 1
     if (isLit()) {
-      ((litValue >> y) & ((BigInt(1) << w) - 1)).asUInt(w)
+      ((litValue >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
     } else {
       Binding.checkSynthesizable(this, s"'this' ($this)")
       pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
@@ -403,7 +403,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   private[chisel3] def toType = s"UInt$width"
 
   override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
-    value.asUInt(width).asInstanceOf[this.type]
+    value.asUInt(width.W).asInstanceOf[this.type]
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
@@ -563,13 +563,13 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
   private[chisel3] def toType = s"SInt$width"
 
   override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
-    SInt(value, width).asInstanceOf[this.type]
+    value.asSInt(width.W).asInstanceOf[this.type]
 
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
   final def unary_-% (): SInt = macro SourceInfoTransform.noArg
 
-  def unary_- (implicit sourceInfo: SourceInfo): SInt = SInt(0) - this
-  def unary_-% (implicit sourceInfo: SourceInfo): SInt = SInt(0) -% this
+  def unary_- (implicit sourceInfo: SourceInfo): SInt = 0.S - this
+  def unary_-% (implicit sourceInfo: SourceInfo): SInt = 0.S -% this
 
   /** add (default - no growth) operator */
   override def do_+ (that: SInt)(implicit sourceInfo: SourceInfo): SInt =
@@ -637,7 +637,7 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
 
   final def abs(): UInt = macro SourceInfoTransform.noArg
 
-  def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < SInt(0), (-this).asUInt, this.asUInt)
+  def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < 0.S, (-this).asUInt, this.asUInt)
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, that)
@@ -675,8 +675,7 @@ trait SIntFactory {
   }
 
    /** Create an SInt literal with specified width. */
-  protected def Lit(value: BigInt, width: Width): SInt = {
-
+  protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
     val result = new SInt(lit.width, Some(lit))
     // Bind result to being an Literal
@@ -684,6 +683,8 @@ trait SIntFactory {
     result
   }
 }
+
+object SInt extends SIntFactory
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
 // operations on a Bool make sense?

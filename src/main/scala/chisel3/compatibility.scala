@@ -147,6 +147,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   implicit class fromBigIntToLiteral(override val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
   implicit class fromStringToLiteral(override val x: String) extends chisel3.core.fromStringToLiteral(x)
   implicit class fromBooleanToLiteral(override val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+  implicit class fromIntToWidth(override val x: Int) extends chisel3.core.fromIntToWidth(x)
 
   type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   val Driver = chisel3.Driver
