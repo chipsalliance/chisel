@@ -93,6 +93,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def Lit(value: BigInt, width: Int): SInt = Lit(value, Width(width))
   }
 
+  trait BoolFactory extends chisel3.core.BoolFactory {
+    /** Creates Bool literal.
+     */
+    @deprecated("chisel3, will be removed by end of 2016, use x.B")
+    def apply(x: Boolean): Bool = Lit(x)
+  }
+
   object Bits extends UIntFactory
   type Num[T <: Data] = chisel3.core.Num[T]
   type UInt = chisel3.core.UInt
@@ -102,7 +109,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type FixedPoint = chisel3.core.FixedPoint
   val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
-  val Bool = chisel3.core.Bool
+  object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
   type BlackBox = chisel3.core.BlackBox

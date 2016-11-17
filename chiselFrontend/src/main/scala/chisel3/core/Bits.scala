@@ -92,7 +92,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
       Builder.error(s"Negative bit indices are illegal (got $x)")
     }
     if (isLit()) {
-      Bool(((litValue() >> x.toInt) & 1) == 1)
+      (((litValue() >> x.toInt) & 1) == 1).asBool
     } else {
       Binding.checkSynthesizable(this, s"'this' ($this)")
       pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
@@ -698,7 +698,7 @@ sealed class Bool(lit: Option[ULit] = None) extends UInt(Width(1), lit) {
 
   override private[chisel3] def fromInt(value: BigInt, width: Int): this.type = {
     require((value == 0 || value == 1) && width == 1)
-    Bool(value == 1).asInstanceOf[this.type]
+    (value == 1).asBool.asInstanceOf[this.type]
   }
 
   // REVIEW TODO: Why does this need to exist and have different conventions
@@ -736,30 +736,22 @@ sealed class Bool(lit: Option[ULit] = None) extends UInt(Width(1), lit) {
   def do_asClock(implicit sourceInfo: SourceInfo): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
 }
 
-object Bool {
+trait BoolFactory {
   /** Creates an empty Bool.
    */
   def apply(): Bool = new Bool()
 
   /** Creates Bool literal.
    */
-  def apply(x: Boolean): Bool = Lit(x)
-  def Lit(x: Boolean): Bool = {
+  protected[chisel3] def Lit(x: Boolean): Bool = {
     val result = new Bool(Some(ULit(if (x) 1 else 0, Width(1))))
     // Bind result to being an Literal
     result.binding = LitBinding()
     result
   }
-  /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-  def apply(dir: Direction): Bool = {
-    val result = apply()
-    dir match {
-      case Direction.Input => Input(result)
-      case Direction.Output => Output(result)
-      case Direction.Unspecified => result
-    }
-  }
 }
+
+object Bool extends BoolFactory
 
 object Mux {
   /** Creates a mux, whose output is one of the inputs depending on the

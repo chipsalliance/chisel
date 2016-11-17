@@ -113,6 +113,22 @@ package object Chisel {     // scalastyle:ignore package.object.name
     }
   }
 
+  trait BoolFactory extends chisel3.core.BoolFactory {
+    /** Creates Bool literal.
+     */
+    def apply(x: Boolean): Bool = Lit(x)
+
+    /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
+    def apply(dir: Direction): Bool = {
+      val result = apply()
+      dir match {
+        case chisel3.core.Direction.Input => chisel3.core.Input(result)
+        case chisel3.core.Direction.Output => chisel3.core.Output(result)
+        case chisel3.core.Direction.Unspecified => result
+      }
+    }
+  }
+
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
   object Bits extends UIntFactory
@@ -122,7 +138,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type SInt = chisel3.core.SInt
   object SInt extends SIntFactory
   type Bool = chisel3.core.Bool
-  val Bool = chisel3.core.Bool
+  object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
   type BlackBox = chisel3.core.BlackBox
@@ -152,9 +168,33 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   val Driver = chisel3.Driver
   val ImplicitConversions = chisel3.util.ImplicitConversions
-  val chiselMain = chisel3.compatibility.chiselMain
-  val throwException = chisel3.compatibility.throwException
-  val debug = chisel3.compatibility.debug
+
+  object chiselMain {
+    import java.io.File
+
+    def apply[T <: Module](args: Array[String], gen: () => T): Unit =
+      Predef.assert(false, "No more chiselMain in Chisel3")
+
+    def run[T <: Module] (args: Array[String], gen: () => T): Unit = {
+      val circuit = Driver.elaborate(gen)
+      Driver.parseArgs(args)
+      val output_file = new File(Driver.targetDir + "/" + circuit.name + ".fir")
+      Driver.dumpFirrtl(circuit, Option(output_file))
+    }
+  }
+
+  @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
+  object debug {  // scalastyle:ignore object.name
+    def apply (arg: Data): Data = arg
+  }
+
+  @throws(classOf[Exception])
+  object throwException {
+    def apply(s: String, t: Throwable = null) = {
+      val xcpt = new Exception(s, t)
+      throw xcpt
+    }
+  }
 
   object testers {    // scalastyle:ignore object.name
     type BasicTester = chisel3.testers.BasicTester

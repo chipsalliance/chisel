@@ -261,14 +261,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
   def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
-    (this map p).fold(Bool(true))(_ && _)
+    (this map p).fold(true.B)(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
     */
   def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
   def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
-    (this map p).fold(Bool(false))(_ || _)
+    (this map p).fold(false.B)(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
     * the === operator).

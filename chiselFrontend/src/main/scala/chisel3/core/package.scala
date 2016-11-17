@@ -104,7 +104,13 @@ package chisel3 {
     }
 
     implicit class fromBooleanToLiteral(val x: Boolean) {
-      def B: Bool = Bool(x)  // scalastyle:ignore method.name
+      /** Boolean to Bool conversion, recommended style for constants.
+        */
+      def B: Bool = Bool.Lit(x)  // scalastyle:ignore method.name
+
+      /** Boolean to Bool conversion, recommended style for variables.
+        */
+      def asBool: Bool = Bool.Lit(x)
     }
 
     implicit class fromDoubleToLiteral(val x: Double) {
