@@ -58,7 +58,7 @@ object ShiftRegister
     if (n == 1) {
       RegEnable(in, en)
     } else if (n != 0) {
-      RegNext(apply(in, n-1, en))
+      RegEnable(apply(in, n-1, en), en)
     } else {
       in
     }
