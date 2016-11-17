@@ -555,7 +555,7 @@ trait UIntFactory {
 object UInt extends UIntFactory
 object Bits extends UIntFactory
 
-sealed class SInt private (width: Width, lit: Option[SLit] = None)
+sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
     extends Bits(width, lit) with Num[SInt] {
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
@@ -659,57 +659,29 @@ sealed class SInt private (width: Width, lit: Option[SLit] = None)
   }
 }
 
-object SInt {
+trait SIntFactory {
   /** Create an SInt type with inferred width. */
   def apply(): SInt = apply(Width())
   /** Create a SInt type or port with fixed width. */
   def apply(width: Width): SInt = new SInt(width)
-  /** Create a SInt type or port with fixed width. */
-  def width(width: Int): SInt = apply(Width(width))
-  /** Create an SInt type with specified width. */
-  def width(width: Width): SInt = new SInt(width)
-
-  /** Create an SInt literal with inferred width. */
-  def apply(value: BigInt): SInt = Lit(value)
-  /** Create an SInt literal with fixed width. */
-  def apply(value: BigInt, width: Int): SInt = Lit(value, width)
-
-  /** Create an SInt literal with specified width. */
-  def apply(value: BigInt, width: Width): SInt = Lit(value, width)
 
   /** Create a SInt with the specified range */
   def apply(range: Range): SInt = {
-    width(range.getWidth)
+    apply(range.getWidth)
   }
   /** Create a SInt with the specified range */
   def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
     apply(KnownSIntRange(range._1, range._2))
   }
 
-  def Lit(value: BigInt): SInt = Lit(value, Width())
-  def Lit(value: BigInt, width: Int): SInt = Lit(value, Width(width))
    /** Create an SInt literal with specified width. */
-  def Lit(value: BigInt, width: Width): SInt = {
+  protected def Lit(value: BigInt, width: Width): SInt = {
 
     val lit = SLit(value, width)
     val result = new SInt(lit.width, Some(lit))
     // Bind result to being an Literal
     result.binding = LitBinding()
     result
-  }
-  /** Create a SInt with a specified width - compatibility with Chisel2. */
-  def apply(dir: Option[Direction] = None, width: Int): SInt = apply(Width(width))
-  /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
-  def apply(dir: Direction, width: Int): SInt = apply(dir, Width(width))
-  /** Create a SInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-  def apply(dir: Direction): SInt = apply(dir, Width())
-  def apply(dir: Direction, wWidth: Width): SInt = {
-    val result = apply(wWidth)
-    dir match {
-      case Direction.Input => Input(result)
-      case Direction.Output => Output(result)
-      case Direction.Unspecified => result
-    }
   }
 }
 
