@@ -26,8 +26,8 @@ class OptionBundleModule(hasIn: Boolean) extends Module {
 
 class SomeOptionBundleTester(expected: Boolean) extends BasicTester {
   val mod = Module(new OptionBundleModule(true))
-  mod.io.in.get := Bool(expected)
-  assert(mod.io.out === Bool(expected))
+  mod.io.in.get := expected.asBool
+  assert(mod.io.out === expected.asBool)
   stop()
 }
 

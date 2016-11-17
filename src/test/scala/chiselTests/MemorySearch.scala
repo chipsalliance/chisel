@@ -14,7 +14,7 @@ class MemorySearch extends Module {
   })
   val vals  = Array(0, 4, 15, 14, 2, 5, 13)
   val index = Reg(init = 0.U(3.W))
-  val elts  = Vec(vals.map(UInt(_,4)))
+  val elts  = Vec(vals.map(_.asUInt(4.W)))
   // val elts  = Mem(UInt(32.W), 8) TODO ????
   val elt  = elts(index)
   val end  = !io.en && ((elt === io.target) || (index === 7.U))

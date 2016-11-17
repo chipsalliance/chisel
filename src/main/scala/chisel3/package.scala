@@ -41,8 +41,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     * UInt\(width\s*=\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\) => UInt($1.W)
     * (UInt|SInt|Bits).width\((\d+|[_a-zA-Z][_0-9a-zA-Z]*)\) => $1($2.W)
     * (U|S)Int\((-?\d+|0[xX][0-9a-fA-F]+)\) => $2.$1
-    * UInt\((\d+|0[xX][0-9a-fA-F]+),\s*(?:width)?\s*=\s*(\d+)\) => $1.U($2.W)
-    * (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*)\) => $2.as$1
+    * UInt\((\d+|0[xX][0-9a-fA-F]+),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\) => $1.U($2.W)
+    * (UInt|SInt|Bool)\(([_a-zA-Z][_0-9a-zA-Z]*)\) => $2.as$1
+    * (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\) => $2.as$1($3.W)
     */
   trait UIntFactory extends chisel3.core.UIntFactory {
     /** Create a UInt literal with inferred width. */

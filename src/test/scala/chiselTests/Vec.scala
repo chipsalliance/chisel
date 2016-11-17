@@ -11,7 +11,7 @@ import chisel3.util._
 //import chisel3.core.ExplicitCompileOptions.Strict
 
 class ValueTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = Vec(values.map(UInt(_, width = w))) // TODO: does this need a Wire? Why no error?
+  val v = Vec(values.map(_.asUInt(w.W))) // TODO: does this need a Wire? Why no error?
   for ((a,b) <- v.zip(values)) {
     assert(a === b.asUInt)
   }

@@ -36,7 +36,7 @@ class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Basic
   val dut = Module(new ComplexAssign(32))
   dut.io.in.re := re.asUInt
   dut.io.in.im := im.asUInt
-  dut.io.e := Vec(enList.map(Bool(_)))(cnt)
+  dut.io.e := Vec(enList.map(_.asBool))(cnt)
   val re_correct = dut.io.out.re === Mux(dut.io.e, dut.io.in.re, 0.U)
   val im_correct = dut.io.out.im === Mux(dut.io.e, dut.io.in.im, 0.U)
   assert(re_correct && im_correct)

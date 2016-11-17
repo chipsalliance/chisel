@@ -73,7 +73,7 @@ class RiscTester(c: Risc) extends Tester(c) {
     step(1)
   }
   def I (op: UInt, rc: Int, ra: Int, rb: Int) = {
-    // val cr = Cat(op, UInt(rc, 8), UInt(ra, 8), UInt(rb, 8)).litValue()
+    // val cr = Cat(op, rc.asUInt(8.W), ra.asUInt(8.W), rb.asUInt(8.W)).litValue()
     val cr = op.litValue() << 24 | rc << 16 | ra << 8 | rb
     println("I = " + cr)    // scalastyle:ignore regex
     cr
