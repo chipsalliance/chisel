@@ -32,7 +32,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
-  // Bool((true|false))
+  // Bool\((true|false)\)
   //  => $1.B
   // UInt\(width\s*=\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
   //  => UInt($1.W)
