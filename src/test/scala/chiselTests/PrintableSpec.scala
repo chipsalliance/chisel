@@ -67,7 +67,7 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "generate proper printf for simple Decimal printing" in {
     class MyModule extends BasicTester {
-      val myWire = Wire(init = UInt(1234))
+      val myWire = Wire(init = 1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -78,7 +78,7 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "handle printing literals" in {
     class MyModule extends BasicTester {
-      printf(Decimal(UInt(10, 32)))
+      printf(Decimal(10.U(32.W)))
     }
     val firrtl = Driver.emit(() => new MyModule)
     getPrintfs(firrtl) match {
@@ -102,11 +102,11 @@ class PrintableSpec extends FlatSpec with Matchers {
     // parent module
     class MySubModule extends Module {
       val io = new Bundle {
-        val fizz = UInt(width = 32)
+        val fizz = UInt(32.W)
       }
     }
     class MyBundle extends Bundle {
-      val foo = UInt(width = 32)
+      val foo = UInt(32.W)
       override def cloneType = (new MyBundle).asInstanceOf[this.type]
     }
     class MyModule extends BasicTester {
@@ -129,7 +129,7 @@ class PrintableSpec extends FlatSpec with Matchers {
   it should "handle printing ports of submodules" in {
     class MySubModule extends Module {
       val io = new Bundle {
-        val fizz = UInt(width = 32)
+        val fizz = UInt(32.W)
       }
     }
     class MyModule extends BasicTester {
@@ -144,8 +144,8 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "print UInts and SInts as Decimal by default" in {
     class MyModule extends BasicTester {
-      val myUInt = Wire(init = UInt(0))
-      val mySInt = Wire(init = SInt(-1))
+      val myUInt = Wire(init = 0.U)
+      val mySInt = Wire(init = -1.S)
       printf(p"$myUInt & $mySInt")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -156,8 +156,8 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "print Vecs like Scala Seqs by default" in {
     class MyModule extends BasicTester {
-      val myVec = Wire(Vec(4, UInt(width = 32)))
-      myVec foreach (_ := UInt(0))
+      val myVec = Wire(Vec(4, UInt(32.W)))
+      myVec foreach (_ := 0.U)
       printf(p"$myVec")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -170,11 +170,11 @@ class PrintableSpec extends FlatSpec with Matchers {
   it should "print Bundles like Scala Maps by default" in {
     class MyModule extends BasicTester {
       val myBun = Wire(new Bundle {
-        val foo = UInt(width = 32)
-        val bar = UInt(width = 32)
+        val foo = UInt(32.W)
+        val bar = UInt(32.W)
       })
-      myBun.foo := UInt(0)
-      myBun.bar := UInt(0)
+      myBun.foo := 0.U
+      myBun.bar := 0.U
       printf(p"$myBun")
     }
     val firrtl = Driver.emit(() => new MyModule)

@@ -17,28 +17,28 @@ class Complex[T <: Data](val re: T, val im: T) extends Bundle {
 class ComplexAssign(w: Int) extends Module {
   val io = IO(new Bundle {
     val e   = Input(Bool())
-    val in  = Input(new Complex(UInt.width(w), UInt.width(w)))
-    val out = Output(new Complex(UInt.width(w), UInt.width(w)))
+    val in  = Input(new Complex(UInt(w.W), UInt(w.W)))
+    val out = Output(new Complex(UInt(w.W), UInt(w.W)))
   })
   when (io.e) {
-    val tmp = Wire(new Complex(UInt.width(w), UInt.width(w)))
+    val tmp = Wire(new Complex(UInt(w.W), UInt(w.W)))
     tmp := io.in
     io.out.re := tmp.re
     io.out.im := tmp.im
   } .otherwise {
-    io.out.re := UInt(0)
-    io.out.im := UInt(0)
+    io.out.re := 0.U
+    io.out.im := 0.U
   }
 }
 
 class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends BasicTester {
-  val (cnt, wrap) = Counter(Bool(true), enList.size)
+  val (cnt, wrap) = Counter(true.B, enList.size)
   val dut = Module(new ComplexAssign(32))
-  dut.io.in.re := UInt(re)
-  dut.io.in.im := UInt(im)
+  dut.io.in.re := re.asUInt
+  dut.io.in.im := im.asUInt
   dut.io.e := Vec(enList.map(Bool(_)))(cnt)
-  val re_correct = dut.io.out.re === Mux(dut.io.e, dut.io.in.re, UInt(0))
-  val im_correct = dut.io.out.im === Mux(dut.io.e, dut.io.in.im, UInt(0))
+  val re_correct = dut.io.out.re === Mux(dut.io.e, dut.io.in.re, 0.U)
+  val im_correct = dut.io.out.im === Mux(dut.io.e, dut.io.in.im, 0.U)
   assert(re_correct && im_correct)
   when(wrap) {
     stop()

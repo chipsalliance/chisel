@@ -41,6 +41,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val assert = chisel3.core.assert
   val stop = chisel3.core.stop
 
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    */
   trait UIntFactory extends chisel3.core.UIntFactory {
     /** Create a UInt literal with inferred width. */
     def apply(n: String): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
@@ -80,6 +82,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def width(width: Width): UInt = apply(width)
   }
 
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    */
   trait SIntFactory extends chisel3.core.SIntFactory {
     /** Create a SInt type or port with fixed width. */
     def width(width: Int): SInt = apply(Width(width))
@@ -113,6 +117,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
     }
   }
 
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    */
   trait BoolFactory extends chisel3.core.BoolFactory {
     /** Creates Bool literal.
      */

@@ -18,9 +18,9 @@ object when {  // scalastyle:ignore object.name
     *
     * @example
     * {{{
-    * when ( myData === UInt(3) ) {
+    * when ( myData === 3.U ) {
     *   // Some logic to run when myData equals 3.
-    * } .elsewhen ( myData === UInt(1) ) {
+    * } .elsewhen ( myData === 1.U ) {
     *   // Some logic to run when myData equals 1.
     * } .otherwise {
     *   // Some logic to run when myData is neither 3 nor 1.

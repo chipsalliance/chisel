@@ -57,7 +57,7 @@ object BitPat {
     */
   def bitPatToUInt(x: BitPat): UInt = {
     require(x.mask == (BigInt(1) << x.getWidth) - 1)
-    UInt(x.value, x.getWidth)
+    x.value.asUInt(x.getWidth.W)
   }
 
   /** Allows UInts to be used where a BitPat is expected, useful for when an

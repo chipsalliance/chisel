@@ -9,8 +9,8 @@ import chisel3.testers.BasicTester
 
 class MulLookup(val w: Int) extends Module {
   val io = IO(new Bundle {
-    val x   = Input(UInt.width(w))
-    val y   = Input(UInt.width(w))
+    val x   = Input(UInt(w.W))
+    val y   = Input(UInt(w.W))
     val z   = Output(UInt.width(2 * w))
   })
   val tbl = Vec(
@@ -24,8 +24,8 @@ class MulLookup(val w: Int) extends Module {
 
 class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new MulLookup(w))
-  dut.io.x := UInt(x)
-  dut.io.y := UInt(y)
+  dut.io.x := x.asUInt
+  dut.io.y := y.asUInt
   assert(dut.io.z === UInt(x * y))
   stop()
 }

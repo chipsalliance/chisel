@@ -11,18 +11,18 @@ import chisel3.util._
 
 class CountTester(max: Int) extends BasicTester {
   val cnt = Counter(max)
-  when(Bool(true)) { cnt.inc() }
+  when(true.B) { cnt.inc() }
   when(cnt.value === UInt(max-1)) {
     stop()
   }
 }
 
 class EnableTester(seed: Int) extends BasicTester {
-  val ens = Reg(init = UInt(seed))
+  val ens = Reg(init = seed.asUInt)
   ens := ens >> 1
 
   val (cntEnVal, _) = Counter(ens(0), 32)
-  val (_, done) = Counter(Bool(true), 33)
+  val (_, done) = Counter(true.B, 33)
 
   when(done) {
     assert(cntEnVal === UInt(popCount(seed)))
@@ -31,7 +31,7 @@ class EnableTester(seed: Int) extends BasicTester {
 }
 
 class WrapTester(max: Int) extends BasicTester {
-  val (cnt, wrap) = Counter(Bool(true), max)
+  val (cnt, wrap) = Counter(true.B, max)
   when(wrap) {
     assert(cnt === UInt(max - 1))
     stop()

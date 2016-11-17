@@ -10,7 +10,7 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 
 class ClockAsUIntTester extends BasicTester {
-  assert(Bool(true).asClock.asUInt === UInt(1))
+  assert(true.B.asClock.asUInt === 1.U)
   stop()
 }
 

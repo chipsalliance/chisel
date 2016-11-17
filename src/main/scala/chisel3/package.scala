@@ -32,71 +32,89 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
 
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    * These will be removed very soon. It's recommended you move your code soon.
+    *
+    * Some recommended regex replacements:
+    * (note: these are not guaranteed to handle all edge cases! check all replacements!)
+    * Bool((true|false)) => $1.B
+    * UInt\(width\s*=\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\) => UInt($1.W)
+    * (UInt|SInt|Bits).width\((\d+|[_a-zA-Z][_0-9a-zA-Z]*)\) => $1($2.W)
+    * (U|S)Int\((-?\d+|0[xX][0-9a-fA-F]+)\) => $2.$1
+    * UInt\((\d+|0[xX][0-9a-fA-F]+),\s*(?:width)?\s*=\s*(\d+)\) => $1.U($2.W)
+    * (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*)\) => $2.as$1
+    */
   trait UIntFactory extends chisel3.core.UIntFactory {
     /** Create a UInt literal with inferred width. */
-    @deprecated("chisel3, will be removed by end of 2016, use n.U")
+    @deprecated("use n.U", "chisel3, will be removed by end of 2016")
     def apply(n: String): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
         chisel3.core.fromStringToLiteral.parsedWidth(n))
     /** Create a UInt literal with fixed width. */
-    @deprecated("chisel3, will be removed by end of 2016, use n.U(width.W)")
+    @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2016")
     def apply(n: String, width: Int): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
         Width(width))
 
     /** Create a UInt literal with specified width. */
-    @deprecated("chisel3, will be removed by end of 2016, use value.U(width)")
+    @deprecated("use value.U(width)", "chisel3, will be removed by end of 2016")
     def apply(value: BigInt, width: Width): UInt = Lit(value, width)
 
     /** Create a UInt literal with fixed width. */
-    @deprecated("chisel3, will be removed by end of 2016, use value.U(width.W)")
+    @deprecated("use value.U(width.W)", "chisel3, will be removed by end of 2016")
     def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
 
     /** Create a UInt with a specified width - compatibility with Chisel2. */
-    @deprecated("chisel3, will be removed by end of 2016, use UInt(width.W)")
+    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
     def apply(dir: Option[Direction] = None, width: Int): UInt = apply(Width(width))
 
     /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-    @deprecated("chisel3, will be removed by end of 2016, use value.U")
+    @deprecated("use value.U", "chisel3, will be removed by end of 2016")
     def apply(value: BigInt): UInt = apply(value, Width())
 
     /** Create a UInt with a specified width */
-    @deprecated("chisel3, will be removed by end of 2016, use UInt(width.W)")
+    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
     def width(width: Int): UInt = apply(Width(width))
 
     /** Create a UInt port with specified width. */
-    @deprecated("chisel3, will be removed by end of 2016, use UInt(width)")
+    @deprecated("use UInt(width)", "chisel3, will be removed by end of 2016")
     def width(width: Width): UInt = apply(width)
   }
 
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    * These will be removed very soon. It's recommended you move your code soon.
+    */
   trait SIntFactory extends chisel3.core.SIntFactory {
     /** Create a SInt type or port with fixed width. */
-    @deprecated("chisel3, will be removed by end of 2016, use SInt(width.W)")
+    @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2016")
     def width(width: Int): SInt = apply(Width(width))
     /** Create an SInt type with specified width. */
-    @deprecated("chisel3, will be removed by end of 2016, use SInt(width)")
+    @deprecated("use SInt(width)", "chisel3, will be removed by end of 2016")
     def width(width: Width): SInt = apply(width)
 
     /** Create an SInt literal with inferred width. */
-    @deprecated("chisel3, will be removed by end of 2016, use value.S")
+    @deprecated("use value.S", "chisel3, will be removed by end of 2016")
     def apply(value: BigInt): SInt = Lit(value)
     /** Create an SInt literal with fixed width. */
-    @deprecated("chisel3, will be removed by end of 2016, use value.S(width.W)")
+    @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2016")
     def apply(value: BigInt, width: Int): SInt = Lit(value, width)
 
     /** Create an SInt literal with specified width. */
-    @deprecated("chisel3, will be removed by end of 2016, use value.S(width)")
+    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
     def apply(value: BigInt, width: Width): SInt = Lit(value, width)
 
-    @deprecated("chisel3, will be removed by end of 2016, use value.S")
+    @deprecated("use value.S", "chisel3, will be removed by end of 2016")
     def Lit(value: BigInt): SInt = Lit(value, Width())
 
-    @deprecated("chisel3, will be removed by end of 2016, use value.S(width)")
+    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
     def Lit(value: BigInt, width: Int): SInt = Lit(value, Width(width))
   }
 
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    * These will be removed very soon. It's recommended you move your code soon.
+    */
   trait BoolFactory extends chisel3.core.BoolFactory {
     /** Creates Bool literal.
      */
-    @deprecated("chisel3, will be removed by end of 2016, use x.B")
+    @deprecated("use x.B", "chisel3, will be removed by end of 2016")
     def apply(x: Boolean): Bool = Lit(x)
   }
 

@@ -25,7 +25,7 @@ private[chisel3] object SeqUtils {
     }
   }
 
-  /** Outputs the number of elements that === Bool(true).
+  /** Outputs the number of elements that === true.B.
     */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 

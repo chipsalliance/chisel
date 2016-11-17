@@ -690,7 +690,7 @@ object SInt extends SIntFactory
 // operations on a Bool make sense?
 /** A data type for booleans, defined as a single bit indicating true or false.
   */
-sealed class Bool(lit: Option[ULit] = None) extends UInt(Width(1), lit) {
+sealed class Bool(lit: Option[ULit] = None) extends UInt(1.W, lit) {
   private[core] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool().asInstanceOf[this.type]
@@ -762,7 +762,7 @@ object Mux {
     * @param alt the value chosen when `cond` is false
     * @example
     * {{{
-    * val muxOut = Mux(data_in === UInt(3), UInt(3, 4), UInt(0, 4))
+    * val muxOut = Mux(data_in === 3.U, 3.U(4.W), 0.U(4.W))
     * }}}
     */
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = macro MuxTransform.apply[T]
