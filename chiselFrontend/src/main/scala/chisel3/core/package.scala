@@ -33,24 +33,16 @@ package chisel3 {
 
       /** Int to UInt conversion, recommended style for variables.
         */
-      def asUInt(): UInt = UInt.Lit(x, Width())
+      def asUInt: UInt = UInt.Lit(x, Width())
       /** Int to SInt conversion, recommended style for variables.
         */
-      def asSInt(): SInt = SInt.Lit(x, Width())
+      def asSInt: SInt = SInt.Lit(x, Width())
       /** Int to UInt conversion with specified width, recommended style for variables.
         */
       def asUInt(width: Width): UInt = UInt.Lit(x, width)
       /** Int to SInt conversion with specified width, recommended style for variables.
         */
       def asSInt(width: Width): SInt = SInt.Lit(x, width)
-
-      /** Int to UInt conversion with specified width, recommended style for variables.
-        */
-      //def asUInt(width: Int): UInt = UInt.Lit(x, Width(width))
-      /** Int to SInt conversion with specified width, recommended style for variables.
-        */
-      //def asSInt(width: Int): SInt = SInt(x, Width(width))
-
     }
 
     implicit class fromBigIntToLiteral(val x: BigInt) {
@@ -69,33 +61,32 @@ package chisel3 {
 
       /** Int to UInt conversion, recommended style for variables.
         */
-      def asUInt(): UInt = UInt.Lit(x, Width())
+      def asUInt: UInt = UInt.Lit(x, Width())
       /** Int to SInt conversion, recommended style for variables.
         */
-      def asSInt(): SInt = SInt.Lit(x, Width())
+      def asSInt: SInt = SInt.Lit(x, Width())
       /** Int to UInt conversion with specified width, recommended style for variables.
         */
       def asUInt(width: Width): UInt = UInt.Lit(x, width)
       /** Int to SInt conversion with specified width, recommended style for variables.
         */
       def asSInt(width: Width): SInt = SInt.Lit(x, width)
-
-      /** Int to UInt conversion with specified width, recommended style for variables.
-        */
-      // def asUInt(width: Int): UInt = UInt.Lit(x, Width(width))
-      /** Int to SInt conversion with specified width, recommended style for variables.
-        */
-      // def asSInt(width: Int): SInt = SInt(x, width)
     }
 
     implicit class fromStringToLiteral(val x: String) {
       /** String to UInt parse, recommended style for constants.
         */
-      def U: UInt = UInt.Lit(fromStringToLiteral.parse(x), fromStringToLiteral.parsedWidth(x))       // scalastyle:ignore method.name
+      def U: UInt = UInt.Lit(fromStringToLiteral.parse(x), fromStringToLiteral.parsedWidth(x))  // scalastyle:ignore method.name
+      /** String to UInt parse with specified width, recommended style for constants.
+        */
+      def U(width: Width): UInt = UInt.Lit(fromStringToLiteral.parse(x), width)  // scalastyle:ignore method.name
 
       /** String to UInt parse, recommended style for variables.
         */
       def asUInt: UInt = UInt.Lit(fromStringToLiteral.parse(x), fromStringToLiteral.parsedWidth(x))
+      /** String to UInt parse with specified width, recommended style for variables.
+        */
+      def asUInt(width: Width): UInt = UInt.Lit(fromStringToLiteral.parse(x), width)
     }
 
     object fromStringToLiteral {
