@@ -90,15 +90,15 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def width(width: Width): SInt = apply(width)
 
     /** Create an SInt literal with inferred width. */
-    def apply(value: BigInt): SInt = value.S
+    def apply(value: BigInt): SInt = value.asSInt
     /** Create an SInt literal with fixed width. */
-    def apply(value: BigInt, width: Int): SInt = value.S(width.W)
+    def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
     /** Create an SInt literal with specified width. */
-    def apply(value: BigInt, width: Width): SInt = value.S(width)
+    def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
 
-    def Lit(value: BigInt): SInt = value.S
-    def Lit(value: BigInt, width: Int): SInt = value.S(width.W)
+    def Lit(value: BigInt): SInt = value.asSInt
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
     /** Create a SInt with a specified width - compatibility with Chisel2. */
     def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
