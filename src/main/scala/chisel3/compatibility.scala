@@ -42,13 +42,12 @@ package object Chisel {     // scalastyle:ignore package.object.name
   trait UIntFactory extends chisel3.core.UIntFactory {
     import chisel3.internal.firrtl.Width
 
-    /** Create a UInt with a specified width */
-    def width(width: Int): UInt = apply(Width(width))
-
     /** Create a UInt literal with inferred width. */
-    def apply(n: String): UInt = Lit(n)
+    def apply(n: String): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
+        chisel3.core.fromStringToLiteral.parsedWidth(n))
     /** Create a UInt literal with fixed width. */
-    def apply(n: String, width: Int): UInt = Lit(parse(n), width)
+    def apply(n: String, width: Int): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
+        Width(width))
 
     /** Create a UInt literal with specified width. */
     def apply(value: BigInt, width: Width): UInt = Lit(value, width)
@@ -73,6 +72,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
         case chisel3.core.Direction.Unspecified => result
       }
     }
+
+    /** Create a UInt with a specified width */
+    def width(width: Int): UInt = apply(Width(width))
 
     /** Create a UInt port with specified width. */
     def width(width: Width): UInt = apply(width)

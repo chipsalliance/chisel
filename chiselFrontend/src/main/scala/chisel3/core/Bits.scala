@@ -533,12 +533,6 @@ trait UIntFactory {
   /** Create a UInt port with specified width. */
   def apply(width: Width): UInt = new UInt(width)
 
-  protected[chisel3] def Lit(value: BigInt, width: Int): UInt = Lit(value, Width(width))
-   /** Create a UInt literal with inferred width. */
-  protected[chisel3] def Lit(value: BigInt): UInt = Lit(value, Width())
-  protected[chisel3] def Lit(n: String): UInt = Lit(parse(n), parsedWidth(n))
-   /** Create a UInt literal with fixed width. */
-  protected[chisel3] def Lit(n: String, width: Int): UInt = Lit(parse(n), width)
    /** Create a UInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
     val lit = ULit(value, width)
@@ -547,35 +541,15 @@ trait UIntFactory {
     result.binding = LitBinding()
     result
   }
+
   /** Create a UInt with the specified range */
   def apply(range: Range): UInt = {
-    width(range.getWidth)
+    apply(range.getWidth)
   }
   /** Create a UInt with the specified range */
   def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
     apply(KnownUIntRange(range._1, range._2))
   }
-
-  protected def parse(n: String) = {
-    val (base, num) = n.splitAt(1)
-    val radix = base match {
-      case "x" | "h" => 16
-      case "d" => 10
-      case "o" => 8
-      case "b" => 2
-      case _ => Builder.error(s"Invalid base $base"); 2
-    }
-    BigInt(num.filterNot(_ == '_'), radix)
-  }
-
-  protected def parsedWidth(n: String) =
-    if (n(0) == 'b') {
-      Width(n.length-1)
-    } else if (n(0) == 'h') {
-      Width((n.length-1) * 4)
-    } else {
-      Width()
-    }
 }
 
 object UInt extends UIntFactory

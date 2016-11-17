@@ -33,39 +33,37 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Bits = chisel3.core.Bits
 
   trait UIntFactory extends chisel3.core.UIntFactory {
-    /** Create a UInt with a specified width */
-    def width(width: Int): UInt = apply(Width(width))
-
     /** Create a UInt literal with inferred width. */
-    def apply(n: String): UInt = Lit(n)
+    @deprecated("chisel3, will be removed by end of 2016, use n.U")
+    def apply(n: String): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
+        chisel3.core.fromStringToLiteral.parsedWidth(n))
     /** Create a UInt literal with fixed width. */
-    def apply(n: String, width: Int): UInt = Lit(parse(n), width)
+    @deprecated("chisel3, will be removed by end of 2016, use n.U(width: Width)")
+    def apply(n: String, width: Int): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
+        Width(width))
 
     /** Create a UInt literal with specified width. */
+    @deprecated("chisel3, will be removed by end of 2016, use value.U(width: Width)")
     def apply(value: BigInt, width: Width): UInt = Lit(value, width)
 
     /** Create a UInt literal with fixed width. */
+    @deprecated("chisel3, will be removed by end of 2016, use value.U(width: Width)")
     def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
 
     /** Create a UInt with a specified width - compatibility with Chisel2. */
-    // NOTE: This resolves UInt(width = 32)
+    @deprecated("chisel3, will be removed by end of 2016, use UInt(width: Width)")
     def apply(dir: Option[Direction] = None, width: Int): UInt = apply(Width(width))
+
     /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
+    @deprecated("chisel3, will be removed by end of 2016, use value.U")
     def apply(value: BigInt): UInt = apply(value, Width())
-    /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-    def apply(dir: Direction, width: Int): UInt = apply(dir, Width(width))
-    /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-    def apply(dir: Direction): UInt = apply(dir, Width())
-    def apply(dir: Direction, wWidth: Width): UInt = {
-      val result = apply(wWidth)
-      dir match {
-        case chisel3.core.Direction.Input => Input(result)
-        case chisel3.core.Direction.Output => Output(result)
-        case chisel3.core.Direction.Unspecified => result
-      }
-    }
+
+    /** Create a UInt with a specified width */
+    @deprecated("chisel3, will be removed by end of 2016, use UInt(width: Width)")
+    def width(width: Int): UInt = apply(Width(width))
 
     /** Create a UInt port with specified width. */
+    @deprecated("chisel3, will be removed by end of 2016, use UInt(width: Width)")
     def width(width: Width): UInt = apply(width)
   }
 
