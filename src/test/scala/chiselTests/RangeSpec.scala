@@ -3,6 +3,8 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.ChiselRange
+
 import chisel3.internal.firrtl.{Open, Closed}
 import org.scalatest.{Matchers, FreeSpec}
 

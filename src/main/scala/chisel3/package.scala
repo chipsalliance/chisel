@@ -156,10 +156,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(x, binaryPoint = binaryPoint)
   }
 
-  implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-    def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
-  }
-
   implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
@@ -206,5 +202,17 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
     implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
     implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+
+    implicit class ChiselRange(val sc: StringContext) extends AnyVal {
+      /** Specifies a range using mathematical range notation. Variables can be interpolated using
+       *  standard string interpolation syntax.
+        * @example {{{
+        * UInt(range"[0, 2)")
+        * UInt(range"[0, $myInt)")
+        * UInt(range"[0, ${myInt + 2})")
+        * }}}
+        */
+      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+    }
   }
 }
