@@ -1,10 +1,8 @@
 // See LICENSE for license details.
 
 package object chisel3 {    // scalastyle:ignore package.object.name
-  import scala.language.experimental.macros
+  import internal.firrtl.Width
 
-  import internal.firrtl.{Width, NumericBound}
-  import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
   import util.BitPat
 
   import chisel3.core.{Binding, FlippedBinder}
@@ -206,7 +204,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromDoubleToLiteral(override val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
   implicit class fromIntToWidth(override val x: Int) extends chisel3.core.fromIntToWidth(x)
 
-  implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
+  implicit class fromUIntToBitPatComparable(val x: UInt) {
+    import scala.language.experimental.macros
+    import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
@@ -254,6 +255,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
+      import scala.language.experimental.macros
+      import internal.firrtl.NumericBound
+
       /** Specifies a range using mathematical range notation. Variables can be interpolated using
        *  standard string interpolation syntax.
         * @example {{{
