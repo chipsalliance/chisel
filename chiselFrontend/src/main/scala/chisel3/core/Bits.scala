@@ -134,7 +134,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     }
     val w = x - y + 1
     if (isLit()) {
-      UInt((litValue >> y) & ((BigInt(1) << w) - 1), w)
+      ((litValue >> y) & ((BigInt(1) << w) - 1)).asUInt(w)
     } else {
       Binding.checkSynthesizable(this, s"'this' ($this)")
       pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
@@ -304,11 +304,6 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   final def toPrintable: Printable = Decimal(this)
 }
 
-/** Provides a set of operations to create UInt types and literals.
-  * Identical in functionality to the UInt companion object.
-  */
-object Bits extends UIntFactory
-
 // REVIEW TODO: Further discussion needed on what Num actually is.
 /** Abstract trait defining operations available on numeric-like wire data
   * types.
@@ -408,14 +403,14 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   private[chisel3] def toType = s"UInt$width"
 
   override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
-    UInt(value, width).asInstanceOf[this.type]
+    value.asUInt(width).asInstanceOf[this.type]
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
   final def unary_-% (): UInt = macro SourceInfoTransform.noArg
 
-  def do_unary_- (implicit sourceInfo: SourceInfo) : UInt = UInt(0) - this
-  def do_unary_-% (implicit sourceInfo: SourceInfo): UInt = UInt(0) -% this
+  def do_unary_- (implicit sourceInfo: SourceInfo) : UInt = 0.U - this
+  def do_unary_-% (implicit sourceInfo: SourceInfo): UInt = 0.U -% this
 
   override def do_+ (that: UInt)(implicit sourceInfo: SourceInfo): UInt = this +% that
   override def do_- (that: UInt)(implicit sourceInfo: SourceInfo): UInt = this -% that
@@ -463,8 +458,8 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def andR(): Bool = macro SourceInfoTransform.noArg
   final def xorR(): Bool = macro SourceInfoTransform.noArg
 
-  def do_orR(implicit sourceInfo: SourceInfo): Bool = this != UInt(0)
-  def do_andR(implicit sourceInfo: SourceInfo): Bool = ~this === UInt(0)
+  def do_orR(implicit sourceInfo: SourceInfo): Bool = this != 0.U
+  def do_andR(implicit sourceInfo: SourceInfo): Bool = ~this === 0.U
   def do_xorR(implicit sourceInfo: SourceInfo): Bool = redop(sourceInfo, XorReduceOp)
 
   override def do_< (that: UInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessOp, that)
@@ -483,7 +478,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 
   final def unary_! () : Bool = macro SourceInfoTransform.noArg
 
-  def do_unary_! (implicit sourceInfo: SourceInfo) : Bool = this === UInt(0, 1)
+  def do_unary_! (implicit sourceInfo: SourceInfo) : Bool = this === 0.U(1)
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, that)
@@ -501,7 +496,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def bitSet(off: UInt, dat: Bool): UInt = macro UIntTransform.bitset
 
   def do_bitSet(off: UInt, dat: Bool)(implicit sourceInfo: SourceInfo): UInt = {
-    val bit = UInt(1, 1) << off
+    val bit = 1.U(1) << off
     Mux(dat, this | bit, ~(~this | bit))
   }
 
@@ -532,31 +527,20 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
-private[core] sealed trait UIntFactory {
+trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(Width())
   /** Create a UInt port with specified width. */
   def apply(width: Width): UInt = new UInt(width)
-  /** Create a UInt with a specified width - compatibility with Chisel2. */
-  def width(width: Int): UInt = apply(Width(width))
-  /** Create a UInt port with specified width. */
-  def width(width: Width): UInt = new UInt(width)
-  /** Create a UInt literal with fixed width. */
-  def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
-  /** Create a UInt literal with inferred width. */
-  def apply(n: String): UInt = Lit(n)
-   /** Create a UInt literal with fixed width. */
-  def apply(n: String, width: Int): UInt = Lit(parse(n), width)
-  /** Create a UInt literal with specified width. */
-  def apply(value: BigInt, width: Width): UInt = Lit(value, width)
-  def Lit(value: BigInt, width: Int): UInt = Lit(value, Width(width))
+
+  protected[chisel3] def Lit(value: BigInt, width: Int): UInt = Lit(value, Width(width))
    /** Create a UInt literal with inferred width. */
-  def Lit(value: BigInt): UInt = Lit(value, Width())
-  def Lit(n: String): UInt = Lit(parse(n), parsedWidth(n))
+  protected[chisel3] def Lit(value: BigInt): UInt = Lit(value, Width())
+  protected[chisel3] def Lit(n: String): UInt = Lit(parse(n), parsedWidth(n))
    /** Create a UInt literal with fixed width. */
-  def Lit(n: String, width: Int): UInt = Lit(parse(n), width)
+  protected[chisel3] def Lit(n: String, width: Int): UInt = Lit(parse(n), width)
    /** Create a UInt literal with specified width. */
-  def Lit(value: BigInt, width: Width): UInt = {
+  protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
     val lit = ULit(value, width)
     val result = new UInt(lit.width, Some(lit))
     // Bind result to being an Literal
@@ -572,25 +556,7 @@ private[core] sealed trait UIntFactory {
     apply(KnownUIntRange(range._1, range._2))
   }
 
-  /** Create a UInt with a specified width - compatibility with Chisel2. */
-  // NOTE: This resolves UInt(width = 32)
-  def apply(dir: Option[Direction] = None, width: Int): UInt = apply(Width(width))
-  /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-  def apply(value: BigInt): UInt = apply(value, Width())
-  /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-  def apply(dir: Direction, width: Int): UInt = apply(dir, Width(width))
-  /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-  def apply(dir: Direction): UInt = apply(dir, Width())
-  def apply(dir: Direction, wWidth: Width): UInt = {
-    val result = apply(wWidth)
-    dir match {
-      case Direction.Input => Input(result)
-      case Direction.Output => Output(result)
-      case Direction.Unspecified => result
-    }
-  }
-
-  private def parse(n: String) = {
+  protected def parse(n: String) = {
     val (base, num) = n.splitAt(1)
     val radix = base match {
       case "x" | "h" => 16
@@ -602,7 +568,7 @@ private[core] sealed trait UIntFactory {
     BigInt(num.filterNot(_ == '_'), radix)
   }
 
-  private def parsedWidth(n: String) =
+  protected def parsedWidth(n: String) =
     if (n(0) == 'b') {
       Width(n.length-1)
     } else if (n(0) == 'h') {
@@ -613,6 +579,7 @@ private[core] sealed trait UIntFactory {
 }
 
 object UInt extends UIntFactory
+object Bits extends UIntFactory
 
 sealed class SInt private (width: Width, lit: Option[SLit] = None)
     extends Bits(width, lit) with Num[SInt] {
