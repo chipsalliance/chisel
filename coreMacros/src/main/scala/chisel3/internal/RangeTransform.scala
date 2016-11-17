@@ -29,7 +29,7 @@ class RangeTransform(val c: Context) {
       */
     def getNextValue(): c.Tree = {
       currString = currString.dropWhile(_ == ' ')  // allow whitespace
-      if (currString.isEmpty()) {
+      if (currString.isEmpty) {
         if (nextArgIndex >= args.length) {
           c.abort(c.enclosingPosition, s"Incomplete range specifier")
         }
@@ -46,7 +46,7 @@ class RangeTransform(val c: Context) {
       } else {
         val nextStringVal = currString.takeWhile(!Set('[', '(', ' ', ',', ')', ']').contains(_))
         currString = currString.substring(nextStringVal.length)
-        if (currString.isEmpty()) {
+        if (currString.isEmpty) {
           c.abort(c.enclosingPosition, s"Incomplete range specifier")
         }
         c.parse(nextStringVal)
@@ -96,7 +96,7 @@ class RangeTransform(val c: Context) {
     } else {
       q"_root_.chisel3.internal.firrtl.Open($maxArg)"
     }
-    
+
     q"($startBound, $endBound)"
   }
 }

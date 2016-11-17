@@ -42,6 +42,9 @@ class RangeSpec extends FreeSpec with Matchers {
       range"[$b, $a)" should be( (Closed(b), Open(a)) )
       range"[${a + b}, $a)" should be( (Closed(a + b), Open(a)) )
       range"[${-3 - 7}, ${-3 + a})" should be( (Closed(-10), Open(-3 + a)) )
+
+      def number(n: Int): Int = n
+      range"[${number(1)}, ${number(3)})" should be( (Closed(1), Open(3)) )
     }
 
     "UInt should get the correct width from a range" in {
