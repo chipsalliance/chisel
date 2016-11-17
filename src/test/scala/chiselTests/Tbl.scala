@@ -11,8 +11,8 @@ import chisel3.util._
 
 class Tbl(w: Int, n: Int) extends Module {
   val io = IO(new Bundle {
-    val wi  = Input(UInt.width(log2Up(n)))
-    val ri  = Input(UInt.width(log2Up(n)))
+    val wi  = Input(UInt(log2Up(n).W))
+    val ri  = Input(UInt(log2Up(n).W))
     val we  = Input(Bool())
     val  d  = Input(UInt(w.W))
     val  o  = Output(UInt(w.W))

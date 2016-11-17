@@ -11,10 +11,10 @@ class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   val mask = (1 << w) - 1
   val a = _a.asUInt(w.W)
   val b = _b.asUInt(w.W)
-  assert(~a === UInt(mask & ~_a))
-  assert((a & b) === UInt(_a & _b))
-  assert((a | b) === UInt(_a | _b))
-  assert((a ^ b) === UInt(_a ^ _b))
+  assert(~a === (mask & ~_a).asUInt)
+  assert((a & b) === (_a & _b).asUInt)
+  assert((a | b) === (_a | _b).asUInt)
+  assert((a ^ b) === (_a ^ _b).asUInt)
   stop()
 }
 
