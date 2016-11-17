@@ -48,9 +48,10 @@ private[iotesters] class FirrtlTerpBackend(
         val name = portNames(port)
         val got = interpretiveTester.peek(name)
         val good = got == expected
-        if (verbose) logger println
-           s"""$msg  EXPECT $name -> ${bigIntToStr(got, base)} == ${bigIntToStr(expected, base)}""" +
+        if (verbose || !good) logger println
+           s"""EXPECT AT $stepNumber $msg  $name -> ${bigIntToStr(got, base)} == ${bigIntToStr(expected, base)}""" +
            s""" ${if (good) "PASS" else "FAIL"}"""
+        if(good) interpretiveTester.expectationsMet += 1
         good
       case _ => false
     }
@@ -73,7 +74,10 @@ private[iotesters] class FirrtlTerpBackend(
     false
   }
 
+  private var stepNumber: Long = 0L
+
   def step(n: Int)(implicit logger: PrintStream): Unit = {
+    stepNumber += n
     interpretiveTester.step(n)
   }
 

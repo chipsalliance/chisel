@@ -16,7 +16,15 @@ object Driver {
   private val optionsManagerVar = new DynamicVariable[Option[TesterOptionsManager]](None)
   private[iotesters] def optionsManager = optionsManagerVar.value.getOrElse(new TesterOptionsManager)
 
-
+  /**
+    * This executes a test harness that extends peek-poke tester upon a device under test
+    * with an optionsManager to control all the options of the toolchain components
+    *
+    * @param dutGenerator    The device under test, a subclass of a Chisel3 module
+    * @param optionsManager  Use this to control options like which backend to use
+    * @param testerGen       A peek poke tester with tests for the dut
+    * @return                Returns true if all tests in testerGen pass
+    */
   def execute[T <: Module](
                             dutGenerator: () => T,
                             optionsManager: TesterOptionsManager
@@ -58,6 +66,15 @@ object Driver {
     }
   }
 
+  /**
+    * This executes the test with options provide from an array of string -- typically provided from the
+    * command line
+    *
+    * @param args       A *main* style array of string options
+    * @param dut        The device to be tested, (device-under-test)
+    * @param testerGen  A peek-poke tester with test for the dey
+    * @return           Returns true if all tests in testerGen pass
+    */
   def execute[T <: Module](args: Array[String], dut: () => T)(
     testerGen: T => PeekPokeTester[T]
   ): Boolean = {
@@ -75,6 +92,7 @@ object Driver {
     * Start up the interpreter repl with the given circuit
     * To test a `class X extends Module {}`, add the following code to the end
     * of the file that defines
+    *
     * @example {{{
     *           object XRepl {
     *             def main(args: Array[String]) {
@@ -85,7 +103,6 @@ object Driver {
     *             }
     * }}}
     * running main will place users in the repl with the circuit X loaded into the repl
-    *
     * @param dutGenerator   Module to run in interpreter
     * @param optionsManager options
     * @return
@@ -120,32 +137,45 @@ object Driver {
   }
   /**
     * Runs the ClassicTester and returns a Boolean indicating test success or failure
-    * @@backendType determines whether the ClassicTester uses verilator or the firrtl interpreter to simulate the circuit
-    * Will do intermediate compliation steps to setup the backend specified, including cpp compilation for the verilator backend and firrtl IR compilation for the firrlt backend
-    */
-  def apply[T <: Module](dutGen: () => T, backendType: String = "firrtl")(
-      testerGen: T => PeekPokeTester[T]): Boolean = {
-    val optionsManager = new TesterOptionsManager
+    * @@backendType determines whether the ClassicTester uses verilator or the firrtl interpreter to simulate
+    * the circuit.
+    * Will do intermediate compliation steps to setup the backend specified, including cpp compilation for the
+    * verilator backend and firrtl IR compilation for the firrlt backend
+    *
+    * This apply method is a convenient short form of the [[Driver.execute()]] which has many more options
+    *
+    * The following tests a chisel CircuitX with a CircuitXTester setting the random number seed to a fixed value and
+    * turning on verbose tester output.  The result of the overall test is put in testsPassed
+    *
+    * @example {{{
+    *           val testsPassed = iotesters.Driver(() => new CircuitX, testerSeed = 0L, verbose = true) { circuitX =>
+    *             CircuitXTester(circuitX)
+    *           }
+    * }}}
+    *
 
-    val (dut, backend) = backendType match {
-      case "firrtl"    => setupFirrtlTerpBackend(dutGen, optionsManager)
-      case "verilator" => setupVerilatorBackend(dutGen, optionsManager)
-      case "vcs"       => setupVCSBackend(dutGen, optionsManager)
-      case _ => throw new Exception("Unrecongnized backend type $backendType")
+    * @param dutGen      This is the device under test.
+    * @param backendType The default backend is "firrtl" which uses the firrtl interperter. Other options
+    *                    "verilator" will use the verilator c++ simulation generator
+    *                    "vcs" will use the VCS simulation
+    * @param verbose     Setting this to true will make the tester display information on peeks,
+    *                    pokes, steps, and expects.  By default only failed expects will be printed
+    * @param testerSeed  Set the random number generator seed
+    * @param testerGen   This is a test harness subclassing PeekPokeTester for dutGen,
+    * @return            This will be true if all tests in the testerGen pass
+    */
+  def apply[T <: Module](
+      dutGen: () => T,
+      backendType: String = "firrtl",
+      verbose: Boolean = false,
+      testerSeed: Long = System.currentTimeMillis())(
+      testerGen: T => PeekPokeTester[T]): Boolean = {
+
+    val optionsManager = new TesterOptionsManager {
+      testerOptions = testerOptions.copy(backendName = backendType, isVerbose = verbose, testerSeed = testerSeed)
     }
-    backendVar.withValue(Some(backend)) {
-      try {
-        testerGen(dut).finish
-      } catch { case e: Throwable =>
-        e.printStackTrace()
-        backend match {
-          case b: VCSBackend => TesterProcess.kill(b)
-          case b: VerilatorBackend => TesterProcess.kill(b)
-          case _ =>
-        }
-        throw e
-      }
-    }
+
+    execute(dutGen, optionsManager)(testerGen)
   }
 
   /**

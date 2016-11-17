@@ -191,12 +191,12 @@ abstract class PeekPokeTester[+T <: Module](
     bigIntMap
   }
 
-  def peekAt[T <: Bits](data: Mem[T], off: Int): BigInt = {
+  def peekAt[TT <: Bits](data: Mem[TT], off: Int): BigInt = {
     backend.peek(data, Some(off))
   }
 
   def expect (good: Boolean, msg: => String): Boolean = {
-    if (_verbose) logger println s"""EXPECT $msg ${if (good) "PASS" else "FAIL"}"""
+    if (_verbose || ! good) logger println s"""EXPECT AT $simTime $msg ${if (good) "PASS" else "FAIL"}"""
     if (!good) fail
     good
   }
