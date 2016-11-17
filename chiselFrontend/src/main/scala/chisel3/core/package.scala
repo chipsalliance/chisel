@@ -76,21 +76,19 @@ package chisel3 {
     implicit class fromStringToLiteral(val x: String) {
       /** String to UInt parse, recommended style for constants.
         */
-      def U: UInt = UInt.Lit(fromStringToLiteral.parse(x), fromStringToLiteral.parsedWidth(x))  // scalastyle:ignore method.name
+      def U: UInt = UInt.Lit(parse(x), parsedWidth(x))  // scalastyle:ignore method.name
       /** String to UInt parse with specified width, recommended style for constants.
         */
-      def U(width: Width): UInt = UInt.Lit(fromStringToLiteral.parse(x), width)  // scalastyle:ignore method.name
+      def U(width: Width): UInt = UInt.Lit(parse(x), width)  // scalastyle:ignore method.name
 
       /** String to UInt parse, recommended style for variables.
         */
-      def asUInt: UInt = UInt.Lit(fromStringToLiteral.parse(x), fromStringToLiteral.parsedWidth(x))
+      def asUInt: UInt = UInt.Lit(parse(x), parsedWidth(x))
       /** String to UInt parse with specified width, recommended style for variables.
         */
-      def asUInt(width: Width): UInt = UInt.Lit(fromStringToLiteral.parse(x), width)
-    }
+      def asUInt(width: Width): UInt = UInt.Lit(parse(x), width)
 
-    object fromStringToLiteral {
-      def parse(n: String) = {
+      protected def parse(n: String) = {
         val (base, num) = n.splitAt(1)
         val radix = base match {
           case "x" | "h" => 16
@@ -102,7 +100,7 @@ package chisel3 {
         BigInt(num.filterNot(_ == '_'), radix)
       }
 
-      def parsedWidth(n: String) =
+      protected def parsedWidth(n: String) =
         if (n(0) == 'b') {
           Width(n.length-1)
         } else if (n(0) == 'h') {

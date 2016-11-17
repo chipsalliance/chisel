@@ -33,7 +33,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Bits = chisel3.core.Bits
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
-    * These will be removed very soon. It's recommended you move your code soon.
+    * These will be removed very soon. It's recommended you port your code ASAP.
     *
     * Some recommended regex replacements:
     * (note: these are not guaranteed to handle all edge cases! check all replacements!)
@@ -48,32 +48,30 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   trait UIntFactory extends chisel3.core.UIntFactory {
     /** Create a UInt literal with inferred width. */
     @deprecated("use n.U", "chisel3, will be removed by end of 2016")
-    def apply(n: String): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
-        chisel3.core.fromStringToLiteral.parsedWidth(n))
+    def apply(n: String): UInt = n.asUInt
     /** Create a UInt literal with fixed width. */
     @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2016")
-    def apply(n: String, width: Int): UInt = Lit(chisel3.core.fromStringToLiteral.parse(n),
-        Width(width))
+    def apply(n: String, width: Int): UInt = n.asUInt(width.W)
 
     /** Create a UInt literal with specified width. */
     @deprecated("use value.U(width)", "chisel3, will be removed by end of 2016")
-    def apply(value: BigInt, width: Width): UInt = Lit(value, width)
+    def apply(value: BigInt, width: Width): UInt = value.asUInt(width)
 
     /** Create a UInt literal with fixed width. */
     @deprecated("use value.U(width.W)", "chisel3, will be removed by end of 2016")
-    def apply(value: BigInt, width: Int): UInt = Lit(value, Width(width))
+    def apply(value: BigInt, width: Int): UInt = value.asUInt(width.W)
 
     /** Create a UInt with a specified width - compatibility with Chisel2. */
     @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
-    def apply(dir: Option[Direction] = None, width: Int): UInt = apply(Width(width))
+    def apply(dir: Option[Direction] = None, width: Int): UInt = apply(width.W)
 
     /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
     @deprecated("use value.U", "chisel3, will be removed by end of 2016")
-    def apply(value: BigInt): UInt = apply(value, Width())
+    def apply(value: BigInt): UInt = value.asUInt
 
     /** Create a UInt with a specified width */
     @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
-    def width(width: Int): UInt = apply(Width(width))
+    def width(width: Int): UInt = apply(width.W)
 
     /** Create a UInt port with specified width. */
     @deprecated("use UInt(width)", "chisel3, will be removed by end of 2016")
@@ -86,27 +84,27 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   trait SIntFactory extends chisel3.core.SIntFactory {
     /** Create a SInt type or port with fixed width. */
     @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2016")
-    def width(width: Int): SInt = apply(Width(width))
+    def width(width: Int): SInt = apply(width.W)
     /** Create an SInt type with specified width. */
     @deprecated("use SInt(width)", "chisel3, will be removed by end of 2016")
     def width(width: Width): SInt = apply(width)
 
     /** Create an SInt literal with inferred width. */
     @deprecated("use value.S", "chisel3, will be removed by end of 2016")
-    def apply(value: BigInt): SInt = Lit(value)
+    def apply(value: BigInt): SInt = value.asSInt
     /** Create an SInt literal with fixed width. */
     @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2016")
-    def apply(value: BigInt, width: Int): SInt = Lit(value, width)
+    def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
     /** Create an SInt literal with specified width. */
     @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
-    def apply(value: BigInt, width: Width): SInt = Lit(value, width)
+    def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
 
     @deprecated("use value.S", "chisel3, will be removed by end of 2016")
-    def Lit(value: BigInt): SInt = Lit(value, Width())
+    def Lit(value: BigInt): SInt = value.asSInt
 
     @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
-    def Lit(value: BigInt, width: Int): SInt = Lit(value, Width(width))
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
   }
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
@@ -116,7 +114,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     /** Creates Bool literal.
      */
     @deprecated("use x.B", "chisel3, will be removed by end of 2016")
-    def apply(x: Boolean): Bool = Lit(x)
+    def apply(x: Boolean): Bool = x.B
   }
 
   object Bits extends UIntFactory
