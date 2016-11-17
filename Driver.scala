@@ -66,7 +66,6 @@ object Driver {
     optionsManager.parse(args) match {
       case true =>
         execute(dut, optionsManager)(testerGen)
-        true
       case _ =>
         false
     }

@@ -107,7 +107,7 @@ private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage
 
 private[iotesters] object TesterProcess {
   def apply(cmd: Seq[String], logs: ArrayBuffer[String]) = {
-    require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exists")
+    require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exist")
     val processBuilder = Process(cmd mkString " ")
     val processLogger = ProcessLogger(println, logs += _) // don't log stdout
     processBuilder run processLogger
