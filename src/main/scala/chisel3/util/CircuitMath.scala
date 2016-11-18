@@ -18,7 +18,7 @@ object Log2 {
     } else if (width == 2) {
       x(1)
     } else if (width <= divideAndConquerThreshold) {
-      Mux(x(width-1), UInt((width-1).W), apply(x, width-1))
+      Mux(x(width-1), (width-1).asUInt, apply(x, width-1))
     } else {
       val mid = 1 << (log2Ceil(width) - 1)
       val hi = x(width-1, mid)
