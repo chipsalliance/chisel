@@ -89,25 +89,25 @@ class BlackBoxConstant(value: Int) extends BlackBox(
     Map("VALUE" -> value, "WIDTH" -> log2Up(value + 1))) {
   require(value >= 0, "value must be a UInt!")
   val io = IO(new Bundle {
-    val out = UInt(width = log2Up(value + 1)).asOutput
+    val out = UInt(log2Up(value + 1).W).asOutput
   })
 }
 
 class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) {
   val io = IO(new Bundle {
-    val out = UInt(width = 32)
+    val out = UInt(32.W)
   })
 }
 
 class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) {
   val io = IO(new Bundle {
-    val out = UInt(width = 64)
+    val out = UInt(64.W)
   })
 }
 
 class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw))) {
   val io = IO(new Bundle {
-    val out = UInt(width = w)
+    val out = UInt(w.W)
   })
 }
 
@@ -127,7 +127,7 @@ class BlackBoxWithParamsTester extends BasicTester {
   assert(blackBoxFour.io.out === 4.U)
   assert(blackBoxStringParamOne.io.out === 1.U)
   assert(blackBoxStringParamTwo.io.out === 2.U)
-  assert(blackBoxRealParamOne.io.out === 0x3ff0000000000000L.U)
+  assert(blackBoxRealParamOne.io.out === BigInt(0x3ff0000000000000L).U)
   assert(blackBoxRealParamNeg.io.out === BigInt("bff0000000000000", 16).U)
   assert(blackBoxTypeParamBit.io.out === 1.U)
   assert(blackBoxTypeParamWord.io.out === "hdeadbeef".U(32.W))
