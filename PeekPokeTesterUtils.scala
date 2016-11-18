@@ -47,19 +47,25 @@ private[iotesters] object getTopModule {
 private[iotesters] object getChiselNodes {
   import chisel3.internal.firrtl._
   def apply(circuit: Circuit): Seq[InstanceId] = {
-    circuit.components flatMap (_.commands flatMap {
-      case x: DefReg => flatten(x.id)
-      case x: DefRegInit => flatten(x.id)
-      case mem: DefMemory => mem.t match {
-        case _: Element => Seq(mem.id)
-        case _ => Nil // Do not supoort aggregate type memories
-      }
-      case mem: DefSeqMemory => mem.t match {
-        case _: Element => Seq(mem.id)
-        case _ => Nil // Do not supoort aggregate type memories
-      }
+    circuit.components flatMap (_ match {
+      case m: DefModule =>
+        m.commands flatMap {
+          case x: DefReg => flatten(x.id)
+          case x: DefRegInit => flatten(x.id)
+          case mem: DefMemory => mem.t match {
+            case _: Element => Seq(mem.id)
+            case _ => Nil // Do not supoort aggregate type memories
+          }
+          case mem: DefSeqMemory => mem.t match {
+            case _: Element => Seq(mem.id)
+            case _ => Nil // Do not supoort aggregate type memories
+          }
+          case _ => Nil
+        }
+        // If it's anything else (i.e., a DefBlackBox), we don't know what to do with it.
       case _ => Nil
-    }) filterNot (x => (x.instanceName slice (0, 2)) == "T_") 
+    }
+    ) filterNot (x => (x.instanceName slice (0, 2)) == "T_")
   }
 }
 
