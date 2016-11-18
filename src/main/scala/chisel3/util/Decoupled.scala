@@ -230,7 +230,7 @@ extends Module(override_reset=override_reset) {
   * @param enq input (enqueue) interface to the queue, also determines width of queue elements
   * @param entries depth (number of elements) of the queue
   *
-  * @returns output (dequeue) interface from the queue
+  * @return output (dequeue) interface from the queue
   *
   * @example {{{
   * consumer.io.in <> Queue(producer.io.out, 16)
