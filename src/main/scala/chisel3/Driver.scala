@@ -95,7 +95,7 @@ trait BackendCompilationUtilities {
   /** Generates a Verilator invocation to convert Verilog sources to C++
     * simulation sources.
     *
-    * The Verilator prefix will be V$dutFile, and running this will generate
+    * The Verilator prefix will be V\$dutFile, and running this will generate
     * C++ sources and headers as well as a makefile to compile them.
     *
     * @param dutFile name of the DUT .v without the .v extension
