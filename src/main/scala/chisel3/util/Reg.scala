@@ -55,9 +55,7 @@ object ShiftRegister
     */
   def apply[T <: Data](in: T, n: Int, en: Bool = Bool(true)): T = {
     // The order of tests reflects the expected use cases.
-    if (n == 1) {
-      RegEnable(in, en)
-    } else if (n != 0) {
+    if (n != 0) {
       RegEnable(apply(in, n-1, en), en)
     } else {
       in
