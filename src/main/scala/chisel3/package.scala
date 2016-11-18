@@ -204,12 +204,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit def string2Printable(str: String): Printable = PString(str)
 
-  implicit class fromtIntToLiteral(override val x: Int) extends chisel3.core.fromIntToLiteral(x)
-  implicit class fromBigIntToLiteral(override val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
-  implicit class fromStringToLiteral(override val x: String) extends chisel3.core.fromStringToLiteral(x)
-  implicit class fromBooleanToLiteral(override val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
-  implicit class fromDoubleToLiteral(override val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
-  implicit class fromIntToWidth(override val x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromBigIntToLiteral(val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
+  implicit class fromtIntToLiteral(val x: Int) extends chisel3.core.fromIntToLiteral(x)
+  implicit class fromtLongToLiteral(val x: Long) extends chisel3.core.fromLongToLiteral(x)
+  implicit class fromStringToLiteral(val x: String) extends chisel3.core.fromStringToLiteral(x)
+  implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+  implicit class fromDoubleToLiteral(val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
+  implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
 
   implicit class fromUIntToBitPatComparable(val x: UInt) {
     import scala.language.experimental.macros

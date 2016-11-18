@@ -127,7 +127,7 @@ class BlackBoxWithParamsTester extends BasicTester {
   assert(blackBoxFour.io.out === 4.U)
   assert(blackBoxStringParamOne.io.out === 1.U)
   assert(blackBoxStringParamTwo.io.out === 2.U)
-  assert(blackBoxRealParamOne.io.out === BigInt(0x3ff0000000000000L).U)
+  assert(blackBoxRealParamOne.io.out === 0x3ff0000000000000L.U)
   assert(blackBoxRealParamNeg.io.out === BigInt("bff0000000000000", 16).U)
   assert(blackBoxTypeParamBit.io.out === 1.U)
   assert(blackBoxTypeParamWord.io.out === "hdeadbeef".U(32.W))
