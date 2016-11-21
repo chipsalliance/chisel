@@ -8,18 +8,18 @@ import chisel3.util._
 class Risc extends Module {
   val io = IO(new Bundle {
     val isWr   = Input(Bool())
-    val wrAddr = Input(UInt.width(8))
-    val wrData = Input(Bits.width(32))
+    val wrAddr = Input(UInt(8.W))
+    val wrData = Input(Bits(32.W))
     val boot   = Input(Bool())
     val valid  = Output(Bool())
-    val out    = Output(Bits.width(32))
+    val out    = Output(Bits(32.W))
   })
   val memSize = 256
-  val file = Mem(memSize, Bits.width(32))
-  val code = Mem(memSize, Bits.width(32))
-  val pc   = Reg(init=UInt(0, 8))
+  val file = Mem(memSize, Bits(32.W))
+  val code = Mem(memSize, Bits(32.W))
+  val pc   = Reg(init=0.U(8.W))
 
-  val add_op :: imm_op :: Nil = Enum(Bits.width(8), 2)
+  val add_op :: imm_op :: Nil = Enum(Bits(8.W), 2)
 
   val inst = code(pc)
   val op   = inst(31,24)
@@ -27,30 +27,30 @@ class Risc extends Module {
   val rai  = inst(15, 8)
   val rbi  = inst( 7, 0)
 
-  val ra = Mux(rai === 0.asUInt(), 0.asUInt(), file(rai))
-  val rb = Mux(rbi === 0.asUInt(), 0.asUInt(), file(rbi))
-  val rc = Wire(Bits.width(32))
+  val ra = Mux(rai === 0.U, 0.U, file(rai))
+  val rb = Mux(rbi === 0.U, 0.U, file(rbi))
+  val rc = Wire(Bits(32.W))
 
-  io.valid := Bool(false)
-  io.out   := 0.asUInt()
-  rc       := 0.asUInt()
+  io.valid := false.B
+  io.out   := 0.U
+  rc       := 0.U
 
   when (io.isWr) {
     code(io.wrAddr) := io.wrData
   } .elsewhen (io.boot) {
-    pc := UInt(0)
+    pc := 0.U
   } .otherwise {
     switch(op) {
       is(add_op) { rc := ra +% rb }
       is(imm_op) { rc := (rai << 8) | rbi }
     }
     io.out := rc
-    when (rci === 255.asUInt()) {
-      io.valid := Bool(true)
+    when (rci === 255.U) {
+      io.valid := true.B
     } .otherwise {
       file(rci) := rc
     }
-    pc := pc +% 1.asUInt()
+    pc := pc +% 1.U
   }
 }
 
@@ -73,7 +73,7 @@ class RiscTester(c: Risc) extends Tester(c) {
     step(1)
   }
   def I (op: UInt, rc: Int, ra: Int, rb: Int) = {
-    // val cr = Cat(op, UInt(rc, 8), UInt(ra, 8), UInt(rb, 8)).litValue()
+    // val cr = Cat(op, rc.asUInt(8.W), ra.asUInt(8.W), rb.asUInt(8.W)).litValue()
     val cr = op.litValue() << 24 | rc << 16 | ra << 8 | rb
     println("I = " + cr)    // scalastyle:ignore regex
     cr

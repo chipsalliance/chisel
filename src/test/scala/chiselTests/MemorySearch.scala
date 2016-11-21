@@ -7,21 +7,21 @@ import chisel3.testers.BasicTester
 
 class MemorySearch extends Module {
   val io = IO(new Bundle {
-    val target  = Input(UInt.width(4))
+    val target  = Input(UInt(4.W))
     val en      = Input(Bool())
     val done    = Output(Bool())
-    val address = Output(UInt.width(3))
+    val address = Output(UInt(3.W))
   })
   val vals  = Array(0, 4, 15, 14, 2, 5, 13)
-  val index = Reg(init = UInt(0, width = 3))
-  val elts  = Vec(vals.map(UInt(_,4)))
-  // val elts  = Mem(UInt(width = 32), 8) TODO ????
+  val index = Reg(init = 0.U(3.W))
+  val elts  = Vec(vals.map(_.asUInt(4.W)))
+  // val elts  = Mem(UInt(32.W), 8) TODO ????
   val elt  = elts(index)
-  val end  = !io.en && ((elt === io.target) || (index === UInt(7)))
+  val end  = !io.en && ((elt === io.target) || (index === 7.U))
   when (io.en) {
-    index := UInt(0)
+    index := 0.U
   } .elsewhen (!end) {
-    index := index +% UInt(1)
+    index := index +% 1.U
   }
   io.done    := end
   io.address := index
