@@ -22,6 +22,25 @@ class UnitTests extends FirrtlFlatSpec {
     }
   }
 
+  "Pull muxes" should "not be exponential in runtime" in {
+    val passes = Seq(
+      ToWorkingIR,
+      CheckHighForm,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes,
+      PullMuxes)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    input _2: UInt<1>
+        |    output x: UInt<32>
+        |    x <= cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(   _2, cat(_2, cat(_2, cat(_2, _2)))))))))))))))))))))))))))))))""".stripMargin
+    passes.foldLeft(parse(input)) {
+      (c: Circuit, p: Pass) => p.run(c)
+    }
+  }
+
   "Connecting bundles of different types" should "throw an exception" in {
     val passes = Seq(
       ToWorkingIR,
