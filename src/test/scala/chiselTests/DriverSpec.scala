@@ -8,8 +8,8 @@ import org.scalatest.{Matchers, FreeSpec}
 
 class DummyModule extends Module {
   val io = IO(new Bundle {
-    val in = UInt(INPUT, 1)
-    val out = UInt(OUTPUT, 1)
+    val in = Input(UInt(1.W))
+    val out = Output(UInt(1.W))
   })
   io.out := io.in
 }

@@ -123,10 +123,10 @@ object Vec {
   /** Truncate an index to implement modulo-power-of-2 addressing. */
   private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo): UInt = {
     val w = BigInt(n-1).bitLength
-    if (n <= 1) UInt(0)
+    if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
-    else (idx | UInt(0, w))(w-1,0)
+    else (idx | 0.U(w))(w-1,0)
   }
 }
 
@@ -249,7 +249,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
-  
+
   @deprecated("Use Vec.apply instead", "chisel3")
   def read(idx: UInt): T
 
@@ -261,14 +261,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
   def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
-    (this map p).fold(Bool(true))(_ && _)
+    (this map p).fold(true.B)(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
     */
   def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
   def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
-    (this map p).fold(Bool(false))(_ || _)
+    (this map p).fold(false.B)(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
     * the === operator).
@@ -288,7 +288,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   /** Helper function that appends an index (literal value) to each element,
     * useful for hardware generators which output an index.
     */
-  private def indexWhereHelper(p: T => Bool) = this map p zip (0 until length).map(i => UInt(i))
+  private def indexWhereHelper(p: T => Bool) = this map p zip (0 until length).map(i => i.asUInt)
 
   /** Outputs the index of the first element for which p outputs true.
     */
@@ -388,7 +388,7 @@ class Bundle extends Aggregate {
   private[chisel3] lazy val flatten = namedElts.flatMap(_._2.flatten)
   private[chisel3] override def _onModuleClose: Unit = // scalastyle:ignore method.name
     for ((name, elt) <- namedElts) { elt.setRef(this, _namespace.name(name)) }
-    
+
   private[chisel3] final def allElements: Seq[Element] = namedElts.flatMap(_._2.allElements)
 
   override def cloneType : this.type = {

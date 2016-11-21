@@ -8,8 +8,8 @@ import chisel3.testers.BasicTester
 //import chisel3.core.ExplicitCompileOptions.Strict
 
 class Coord extends Bundle {
-  val x = UInt.width( 32)
-  val y = UInt.width( 32)
+  val x = UInt(32.W)
+  val y = UInt(32.W)
 }
 
 class BundleWire(n: Int) extends Module {
@@ -26,12 +26,12 @@ class BundleWire(n: Int) extends Module {
 
 class BundleToUnitTester extends BasicTester {
   val bundle1 = Wire(new Bundle {
-    val a = UInt(width = 4)
-    val b = UInt(width = 4)
+    val a = UInt(4.W)
+    val b = UInt(4.W)
   })
   val bundle2 = Wire(new Bundle {
-    val a = UInt(width = 2)
-    val b = UInt(width = 6)
+    val a = UInt(2.W)
+    val b = UInt(6.W)
   })
 
   // 0b00011011 split as 0001 1011 and as 00 011011
@@ -47,11 +47,11 @@ class BundleToUnitTester extends BasicTester {
 
 class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   val dut = Module(new BundleWire(n))
-  dut.io.in.x := UInt(x)
-  dut.io.in.y := UInt(y)
+  dut.io.in.x := x.asUInt
+  dut.io.in.y := y.asUInt
   for (elt <- dut.io.outs) {
-    assert(elt.x === UInt(x))
-    assert(elt.y === UInt(y))
+    assert(elt.x === x.asUInt)
+    assert(elt.y === y.asUInt)
   }
   stop()
 }

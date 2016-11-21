@@ -26,10 +26,10 @@ class ParameterizedModuleTester() extends BasicTester {
   val invert = Module(new ParameterizedModule(true))
   val noninvert = Module(new ParameterizedModule(false))
 
-  invert.io.in := Bool(true)
-  noninvert.io.in := Bool(true)
-  assert(invert.io.out === Bool(false))
-  assert(noninvert.io.out === Bool(true))
+  invert.io.in := true.B
+  noninvert.io.in := true.B
+  assert(invert.io.out === false.B)
+  assert(noninvert.io.out === true.B)
 
   stop()
 }
