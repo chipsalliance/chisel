@@ -109,6 +109,54 @@ case class Index(imm: Arg, value: Arg) extends Arg {
   override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[${value.fullName(ctx)}]"
 }
 
+sealed trait Bound
+sealed trait NumericBound[T] extends Bound {
+  val value: T
+}
+sealed case class Open[T](value: T) extends NumericBound[T]
+sealed case class Closed[T](value: T) extends NumericBound[T]
+
+sealed trait Range {
+  val min: Bound
+  val max: Bound
+  def getWidth: Width
+}
+
+sealed trait KnownIntRange extends Range {
+  val min: NumericBound[Int]
+  val max: NumericBound[Int]
+
+  require( (min, max) match {
+    case (Open(low_val), Open(high_val)) => low_val < high_val - 1
+    case (Closed(low_val), Open(high_val)) => low_val < high_val
+    case (Open(low_val), Closed(high_val)) => low_val < high_val
+    case (Closed(low_val), Closed(high_val)) => low_val <= high_val
+  })
+}
+
+sealed case class KnownUIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange {
+  require (min.value >= 0)
+
+  def getWidth: Width = max match {
+    case Open(v) => Width(BigInt(v - 1).bitLength.max(1))
+    case Closed(v) => Width(BigInt(v).bitLength.max(1))
+  }
+}
+
+sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange {
+
+  val maxWidth = max match {
+    case Open(v) => Width(BigInt(v - 1).bitLength + 1)
+    case Closed(v) => Width(BigInt(v).bitLength + 1)
+  }
+  val minWidth = min match {
+    case Open(v) => Width(BigInt(v + 1).bitLength + 1)
+    case Closed(v) => Width(BigInt(v).bitLength + 1)
+  }
+  def getWidth: Width = maxWidth.max(minWidth)
+
+}
+
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
   def apply(): Width = UnknownWidth()

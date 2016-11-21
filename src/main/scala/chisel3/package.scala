@@ -3,7 +3,7 @@
 package object chisel3 {    // scalastyle:ignore package.object.name
   import scala.language.experimental.macros
 
-  import internal.firrtl.Width
+  import internal.firrtl.{Width, NumericBound}
   import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
   import util.BitPat
 
@@ -202,5 +202,17 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
     implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
     implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+
+    implicit class ChiselRange(val sc: StringContext) extends AnyVal {
+      /** Specifies a range using mathematical range notation. Variables can be interpolated using
+       *  standard string interpolation syntax.
+        * @example {{{
+        * UInt(range"[0, 2)")
+        * UInt(range"[0, $myInt)")
+        * UInt(range"[0, ${myInt + 2})")
+        * }}}
+        */
+      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+    }
   }
 }
