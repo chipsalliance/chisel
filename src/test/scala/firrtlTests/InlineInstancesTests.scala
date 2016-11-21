@@ -49,11 +49,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    wire i$b : UInt<32>
            |    i$b <= i$a
            |    b <= i$b
-           |    i$a <= a
-           |  module Inline :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
+           |    i$a <= a""".stripMargin
       val writer = new StringWriter()
       val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Inline", CircuitName("Top")))))
       execute(writer, aMap, input, check)
@@ -87,11 +83,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    i1$b <= i1$a
            |    b <= i1$b
            |    i0$a <= a
-           |    i1$a <= i0$b
-           |  module Simple :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
+           |    i1$a <= i0$b""".stripMargin
       val writer = new StringWriter()
       val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Simple", CircuitName("Top")))))
       execute(writer, aMap, input, check)
@@ -166,10 +158,6 @@ class InlineInstancesTests extends LowTransformSpec {
            |    b <= i1.b
            |    i0$a <= a
            |    i1.a <= i0$b
-           |  module A :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a
            |  module B :
            |    input a : UInt<32>
            |    output b : UInt<32>
@@ -182,7 +170,6 @@ class InlineInstancesTests extends LowTransformSpec {
       val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
       execute(writer, aMap, input, check)
    }
-
 
    // ---- Errors ----
    // 1) ext module
