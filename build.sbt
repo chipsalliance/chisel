@@ -98,15 +98,18 @@ lazy val chiselSettings = Seq (
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
   settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    publishArtifact := false
   )
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    publishArtifact := false
   ).
   dependsOn(coreMacros)
+
 
 lazy val chisel = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
@@ -119,8 +122,8 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
-  dependsOn(coreMacros).
-  dependsOn(chiselFrontend).
+  dependsOn(coreMacros % "compile-internal;test-internal").
+  dependsOn(chiselFrontend % "compile-internal;test-internal").
   settings(
     aggregate in doc := false,
     // Include macro classes, resources, and sources main jar.
@@ -128,5 +131,4 @@ lazy val chisel = (project in file(".")).
     mappings in (Compile, packageSrc) <++= mappings in (coreMacros, Compile, packageSrc),
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
-  ).
-  aggregate(coreMacros, chiselFrontend)
+  )
