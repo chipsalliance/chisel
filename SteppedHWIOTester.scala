@@ -142,16 +142,16 @@ abstract class SteppedHWIOTester extends HWIOTester {
     )
 
     when(ok_to_test_output_values(counter.value)) {
-      when(output_port.asUInt() === output_values(counter.value).asUInt()) {
+      when(output_port.asUInt === output_values(counter.value).asUInt) {
                   logPrintfDebug("    passed step %d -- " + name(output_port) + ":  %d\n",
                     counter.value,
-                    output_port.asUInt()
+                    output_port.asUInt
                   )
       }.otherwise {
         printf("    failed on step %d -- port " + name(output_port) + ":  %d expected %d\n",
           counter.value,
-          output_port.asUInt(),
-          output_values(counter.value).asUInt()
+          output_port.asUInt,
+          output_values(counter.value).asUInt
         )
         // TODO: Use the following line instead of the unadorned assert when firrtl parsing error issue #111 is fixed
         // assert(false.B, "Failed test")

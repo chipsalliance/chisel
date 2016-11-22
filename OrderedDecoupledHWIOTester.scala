@@ -320,7 +320,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
           )
           when(port.asInstanceOf[UInt] != port_vector_events(port)(counter_for_this_decoupled.value)) {
             printf(s"Error: event %d ${name(port)} was %d should be %d\n",
-              event_counter.value, port.asUInt(), port_vector_events(port)(counter_for_this_decoupled.value))
+              event_counter.value, port.asUInt, port_vector_events(port)(counter_for_this_decoupled.value))
             assert(false.B)
             stop()
           }
@@ -359,7 +359,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
             )
             when(port.asInstanceOf[UInt] =/= port_vector_events(port)(counter_for_this_valid.value)) {
               printf(s"Error: event %d ${name(port)} was %x should be %x",
-                event_counter.value, port.asUInt(), port_vector_events(port)(counter_for_this_valid.value))
+                event_counter.value, port.asUInt, port_vector_events(port)(counter_for_this_valid.value))
               assert(false.B)
             }
           }
