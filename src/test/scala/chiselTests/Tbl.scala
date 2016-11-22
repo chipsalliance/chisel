@@ -11,13 +11,13 @@ import chisel3.util._
 
 class Tbl(w: Int, n: Int) extends Module {
   val io = IO(new Bundle {
-    val wi  = Input(UInt.width(log2Up(n)))
-    val ri  = Input(UInt.width(log2Up(n)))
+    val wi  = Input(UInt(log2Up(n).W))
+    val ri  = Input(UInt(log2Up(n).W))
     val we  = Input(Bool())
-    val  d  = Input(UInt.width(w))
-    val  o  = Output(UInt.width(w))
+    val  d  = Input(UInt(w.W))
+    val  o  = Output(UInt(w.W))
   })
-  val m = Mem(n, UInt.width(w))
+  val m = Mem(n, UInt(w.W))
   io.o := m(io.ri)
   when (io.we) {
     m(io.wi) := io.d
@@ -28,17 +28,17 @@ class Tbl(w: Int, n: Int) extends Module {
 }
 
 class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends BasicTester {
-  val (cnt, wrap) = Counter(Bool(true), idxs.size)
+  val (cnt, wrap) = Counter(true.B, idxs.size)
   val dut = Module(new Tbl(w, n))
-  val vvalues = Vec(values.map(UInt(_)))
-  val vidxs = Vec(idxs.map(UInt(_)))
-  val prev_idx = vidxs(cnt - UInt(1))
-  val prev_value = vvalues(cnt - UInt(1))
+  val vvalues = Vec(values.map(_.asUInt))
+  val vidxs = Vec(idxs.map(_.asUInt))
+  val prev_idx = vidxs(cnt - 1.U)
+  val prev_value = vvalues(cnt - 1.U)
   dut.io.wi := vidxs(cnt)
   dut.io.ri := prev_idx
-  dut.io.we := Bool(true) //TODO enSequence
+  dut.io.we := true.B //TODO enSequence
   dut.io.d := vvalues(cnt)
-  when (cnt > UInt(0)) {
+  when (cnt > 0.U) {
     when (prev_idx === vidxs(cnt)) {
       assert(dut.io.o === vvalues(cnt))
     } .otherwise {

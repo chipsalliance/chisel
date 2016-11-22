@@ -38,10 +38,10 @@ object Fill {
     */
   def apply(n: Int, x: UInt): UInt = {
     n match {
-      case 0 => UInt.width(0)
+      case 0 => UInt(0.W)
       case 1 => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
-        Mux(x.toBool, UInt((BigInt(1) << n) - 1, n), UInt(0, n))
+        Mux(x.toBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
       case _ if n > 1 =>
         val p2 = Array.ofDim[UInt](log2Up(n + 1))
         p2(0) = x
@@ -61,7 +61,7 @@ object Reverse {
       // This esoterica improves simulation performance
       var res = in
       var shift = length >> 1
-      var mask = UInt((BigInt(1) << length) - 1, length)
+      var mask = ((BigInt(1) << length) - 1).asUInt(length.W)
       do {
         mask = mask ^ (mask(length-shift-1,0) << shift)
         res = ((res >> shift) & mask) | ((res(length-shift-1,0) << shift) & ~mask)

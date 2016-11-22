@@ -7,19 +7,19 @@ import chisel3.core.Binding.BindingException
 import org.scalatest._
 
 class IOCSimpleIO extends Bundle {
-  val in  = Input(UInt(width=32))
-  val out = Output(UInt(width=32))
+  val in  = Input(UInt(32.W))
+  val out = Output(UInt(32.W))
 }
 
 class IOCPlusOne extends Module {
   val io = IO(new IOCSimpleIO)
-  io.out := io.in + UInt(1)
+  io.out := io.in + 1.U
 }
 
 class IOCModuleVec(val n: Int) extends Module {
   val io = IO(new Bundle {
-    val ins  = Vec(n, Input(UInt(width=32)))
-    val outs = Vec(n, Output(UInt(width=32)))
+    val ins  = Vec(n, Input(UInt(32.W)))
+    val outs = Vec(n, Output(UInt(32.W)))
   })
   val pluses = Vec.fill(n){ Module(new IOCPlusOne).io }
   for (i <- 0 until n) {

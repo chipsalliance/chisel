@@ -6,14 +6,14 @@ import chisel3.testers.BasicTester
 
 class EnableShiftRegister extends Module {
   val io = IO(new Bundle {
-    val in    = Input(UInt.width(4))
+    val in    = Input(UInt(4.W))
     val shift = Input(Bool())
-    val out   = Output(UInt.width(4))
+    val out   = Output(UInt(4.W))
   })
-  val r0 = Reg(init = UInt(0, 4))
-  val r1 = Reg(init = UInt(0, 4))
-  val r2 = Reg(init = UInt(0, 4))
-  val r3 = Reg(init = UInt(0, 4))
+  val r0 = Reg(init = 0.U(4.W))
+  val r1 = Reg(init = 0.U(4.W))
+  val r2 = Reg(init = 0.U(4.W))
+  val r3 = Reg(init = 0.U(4.W))
   when(io.shift) {
     r0 := io.in
     r1 := r0

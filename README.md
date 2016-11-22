@@ -5,39 +5,6 @@ It is currently in BETA VERSION, so some Chisel features may change in the comin
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
 detailed description.
 
-## Chisel2 Migration
-For those moving from Chisel2, there were some backwards incompatible changes
-and your RTL needs to be modified to work with Chisel3. The required
-modifications are:
-
- - Wire declaration style:
-   ```
-   val wire = Bits(width = 15)
-   ```
-   becomes (in Chisel3):
-   ```
-   val wire = Wire(Bits(width = 15))
-   ```
-
- - Sequential memories:
-   ```
-   val addr = Reg(UInt())
-   val mem = Mem(UInt(width=8), 1024, seqRead = true)
-   val dout = when(enable) { mem(addr) }
-   ```
-   becomes (in Chisel3):
-   ```
-   val addr = UInt()
-   val mem = SeqMem(1024, UInt(width=8))
-   val dout = mem.read(addr, enable)
-   ```
-
-   Notice the address register is now internal to the SeqMem(), but the data
-   will still return on the subsequent cycle.
-
-Please refer to the [Chisel3 compatibility section](https://github.com/ucb-bar/chisel#chisel3)
-for instructions on preparing your Chisel2 designs for Chisel3.
-
 ## Overview
 Chisel3 is much more modular than Chisel2, and the compilation pipeline looks
 like:
@@ -194,6 +161,9 @@ This will walk you through installing Chisel and its dependencies:
   ```
 
 ## Getting Started
+If you are migrating to Chisel3 from Chisel3, please visit
+[Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
+
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
@@ -201,15 +171,14 @@ may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
 
-### Chisel Tutorial
-*TODO: quick howto for running chisel-tutorial, once chisel-tutorial exists*
+### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL
 design from scratch.
 
-### Project Setup
-*TODO: recommended sbt style, project structure*
+### [Project Setup](https://github.com/ucb-bar/chisel-template)
+
 
 ### RTL
 *TODO: toy example*

@@ -5,8 +5,8 @@ package chiselTests
 import chisel3._
 
 class SimpleIO extends Bundle {
-  val in  = Input(UInt.width(32))
-  val out = Output(UInt.width(32))
+  val in  = Input(UInt(32.W))
+  val out = Output(UInt(32.W))
 }
 
 class PlusOne extends Module {
@@ -16,8 +16,8 @@ class PlusOne extends Module {
 
 class ModuleVec(val n: Int) extends Module {
   val io = IO(new Bundle {
-    val ins  = Input(Vec(n, UInt(32)))
-    val outs = Output(Vec(n, UInt(32)))
+    val ins  = Input(Vec(n, 32.U))
+    val outs = Output(Vec(n, 32.U))
   })
   val pluses = Vec.fill(n){ Module(new PlusOne).io }
   for (i <- 0 until n) {
@@ -69,6 +69,22 @@ class ModuleWhen extends Module {
   } otherwise { io.s.out := io.s.in }
 }
 
+class ModuleForgetWrapper extends Module {
+  val io = IO(new SimpleIO)
+  val inst = new PlusOne
+}
+
+class ModuleDoubleWrap extends Module {
+  val io = IO(new SimpleIO)
+  val inst = Module(Module(new PlusOne))
+}
+
+class ModuleRewrap extends Module {
+  val io = IO(new SimpleIO)
+  val inst = Module(new PlusOne)
+  val inst2 = Module(inst)
+}
+
 class ModuleSpec extends ChiselPropSpec {
 
   property("ModuleVec should elaborate") {
@@ -88,4 +104,22 @@ class ModuleSpec extends ChiselPropSpec {
   }
 
   ignore("ModuleWhenTester should return the correct result") { }
+
+  property("Forgetting a Module() wrapper should result in an error") {
+    (the [ChiselException] thrownBy {
+      elaborate { new ModuleForgetWrapper }
+    }).getMessage should include("attempted to instantiate a Module without wrapping it")
+  }
+
+  property("Double wrapping a Module should result in an error") {
+    (the [ChiselException] thrownBy {
+      elaborate { new ModuleDoubleWrap }
+    }).getMessage should include("Called Module() twice without instantiating a Module")
+  }
+
+  property("Rewrapping an already instantiated Module should result in an error") {
+    (the [ChiselException] thrownBy {
+      elaborate { new ModuleRewrap }
+    }).getMessage should include("This is probably due to rewrapping a Module instance")
+  }
 }
