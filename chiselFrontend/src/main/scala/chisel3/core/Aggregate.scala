@@ -126,7 +126,7 @@ object Vec {
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
-    else (idx | 0.U(w))(w-1,0)
+    else (idx | 0.U(w.W))(w-1,0)
   }
 }
 

@@ -16,14 +16,18 @@ package chisel3 {
     * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
     * confusion (the 1 is a bit length and the 0 is a bit extraction position).
     * Prefer storing the result and then extracting from it.
+    *
+    * Implementation note: the empty parameter list (like `U()`) is necessary to prevent
+    * interpreting calls that have a non-Width parameter as a chained apply, otherwise things like
+    * `0.asUInt(16)` (instead of `16.W`) compile without error and produce undesired results.
     */
     implicit class fromBigIntToLiteral(val bigint: BigInt) {
       /** Int to UInt conversion, recommended style for constants.
         */
-      def U: UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+      def U(): UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
       /** Int to SInt conversion, recommended style for constants.
         */
-      def S: SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+      def S(): SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
       /** Int to UInt conversion with specified width, recommended style for constants.
         */
       def U(width: Width): UInt = UInt.Lit(bigint, width)  // scalastyle:ignore method.name
@@ -33,10 +37,10 @@ package chisel3 {
 
       /** Int to UInt conversion, recommended style for variables.
         */
-      def asUInt: UInt = UInt.Lit(bigint, Width())
+      def asUInt(): UInt = UInt.Lit(bigint, Width())
       /** Int to SInt conversion, recommended style for variables.
         */
-      def asSInt: SInt = SInt.Lit(bigint, Width())
+      def asSInt(): SInt = SInt.Lit(bigint, Width())
       /** Int to UInt conversion with specified width, recommended style for variables.
         */
       def asUInt(width: Width): UInt = UInt.Lit(bigint, width)
@@ -51,14 +55,14 @@ package chisel3 {
     implicit class fromStringToLiteral(val str: String) {
       /** String to UInt parse, recommended style for constants.
         */
-      def U: UInt = UInt.Lit(parse(str), parsedWidth(str))  // scalastyle:ignore method.name
+      def U(): UInt = UInt.Lit(parse(str), parsedWidth(str))  // scalastyle:ignore method.name
       /** String to UInt parse with specified width, recommended style for constants.
         */
       def U(width: Width): UInt = UInt.Lit(parse(str), width)  // scalastyle:ignore method.name
 
       /** String to UInt parse, recommended style for variables.
         */
-      def asUInt: UInt = UInt.Lit(parse(str), parsedWidth(str))
+      def asUInt(): UInt = UInt.Lit(parse(str), parsedWidth(str))
       /** String to UInt parse with specified width, recommended style for variables.
         */
       def asUInt(width: Width): UInt = UInt.Lit(parse(str), width)
@@ -88,11 +92,11 @@ package chisel3 {
     implicit class fromBooleanToLiteral(val boolean: Boolean) {
       /** Boolean to Bool conversion, recommended style for constants.
         */
-      def B: Bool = Bool.Lit(boolean)  // scalastyle:ignore method.name
+      def B(): Bool = Bool.Lit(boolean)  // scalastyle:ignore method.name
 
       /** Boolean to Bool conversion, recommended style for variables.
         */
-      def asBool: Bool = Bool.Lit(boolean)
+      def asBool(): Bool = Bool.Lit(boolean)
     }
 
     implicit class fromDoubleToLiteral(val double: Double) {

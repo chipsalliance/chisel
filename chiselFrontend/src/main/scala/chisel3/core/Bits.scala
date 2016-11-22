@@ -478,7 +478,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 
   final def unary_! () : Bool = macro SourceInfoTransform.noArg
 
-  def do_unary_! (implicit sourceInfo: SourceInfo) : Bool = this === 0.U(1)
+  def do_unary_! (implicit sourceInfo: SourceInfo) : Bool = this === 0.U(1.W)
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, that)
@@ -496,7 +496,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def bitSet(off: UInt, dat: Bool): UInt = macro UIntTransform.bitset
 
   def do_bitSet(off: UInt, dat: Bool)(implicit sourceInfo: SourceInfo): UInt = {
-    val bit = 1.U(1) << off
+    val bit = 1.U(1.W) << off
     Mux(dat, this | bit, ~(~this | bit))
   }
 
