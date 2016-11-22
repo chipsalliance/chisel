@@ -123,7 +123,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
     val input_values = Vec(
       test_actions.map { step =>
         default_value = step.input_map.getOrElse(input_port, default_value)
-        UInt(default_value, input_port.getWidth)
+        (default_value).asUInt(input_port.getWidth.W)
       }
     )
     input_port := input_values(counter.value)
@@ -132,30 +132,30 @@ abstract class SteppedHWIOTester extends HWIOTester {
   private def createVectorsAndTestsForOutput(output_port: Data, counter: Counter): Unit = {
     val output_values = Vec(
       test_actions.map { step =>
-        output_port.cloneType.fromBits(UInt(step.output_map.getOrElse(output_port, BigInt(0))))
+        output_port.cloneType.fromBits((step.output_map.getOrElse(output_port, BigInt(0))).asUInt)
       }
     )
     val ok_to_test_output_values = Vec(
       test_actions.map { step =>
-        Bool(step.output_map.contains(output_port))
+        (step.output_map.contains(output_port)).asBool
       }
     )
 
     when(ok_to_test_output_values(counter.value)) {
-      when(output_port.toBits() === output_values(counter.value).toBits()) {
+      when(output_port.asUInt() === output_values(counter.value).asUInt()) {
                   logPrintfDebug("    passed step %d -- " + name(output_port) + ":  %d\n",
                     counter.value,
-                    output_port.toBits()
+                    output_port.asUInt()
                   )
       }.otherwise {
         printf("    failed on step %d -- port " + name(output_port) + ":  %d expected %d\n",
           counter.value,
-          output_port.toBits(),
-          output_values(counter.value).toBits()
+          output_port.asUInt(),
+          output_values(counter.value).asUInt()
         )
         // TODO: Use the following line instead of the unadorned assert when firrtl parsing error issue #111 is fixed
-        // assert(Bool(false), "Failed test")
-        assert(Bool(false))
+        // assert(false.B, "Failed test")
+        assert(false.B)
         stop()
       }
     }
@@ -174,7 +174,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
     processEvents()
 
     val pc             = Counter(test_actions.length)
-    val done           = Reg(init = Bool(false))
+    val done           = Reg(init = false.B)
 
     when(!done) {
       io_info.dut_inputs.filter(io_info.ports_referenced.contains).foreach { port => createVectorsForInput(port, pc) }
@@ -182,7 +182,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
 
       when(pc.inc()) {
         printf(s"Stopping, end of tests, ${test_actions.length} steps\n")
-        done := Bool(true)
+        done := true.B
         stop()
       }
     }

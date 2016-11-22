@@ -17,32 +17,32 @@ abstract class Exerciser extends BasicTester {
 
   case class StopCondition(condition: Bool, max_ticks: Option[Int] = None)
 
-  val ticker              = Reg(init=UInt(0, width = internal_counter_width))
-  val max_ticks_for_state = Reg(init=UInt(0, width = internal_counter_width))
-  val state_number        = Reg(init=UInt(0, width = internal_counter_width))
-  val state_locked        = Reg(init=Bool(true))
+  val ticker              = Reg(init=0.U(internal_counter_width.W))
+  val max_ticks_for_state = Reg(init=0.U(internal_counter_width.W))
+  val state_number        = Reg(init=0.U(internal_counter_width.W))
+  val state_locked        = Reg(init=true.B)
 
   var current_states = internal_counter_width + 1
 
-  ticker := ticker + UInt(1)
+  ticker := ticker + 1.U
   when(!state_locked) {
-    ticker       := UInt(0)
-    state_number := state_number + UInt(1)
+    ticker       := 0.U
+    state_number := state_number + 1.U
   }
   .elsewhen(ticker > max_ticks_for_state) {
     printf("current state %d has run too many cycles, ticks %d max %d",
       state_number, ticker, max_ticks_for_state)
-    state_locked := Bool(false)
-    state_number := state_number + UInt(1)
+    state_locked := false.B
+    state_number := state_number + 1.U
   }
-  when(ticker > UInt(max_ticker)) {
+  when(ticker > (max_ticker).asUInt) {
     printf("Too many cycles ticker %d current_state %d state_locked %x",
           ticker, state_number, state_locked)
     stop()
   }
 
   override def finish() {
-    when(state_number > UInt(current_states)) {
+    when(state_number > (current_states).asUInt) {
       printf("All states processed")
       stop()
     }
@@ -50,20 +50,20 @@ abstract class Exerciser extends BasicTester {
   def buildState(name: String = s"$current_states")(stop_condition : StopCondition)(generator: () => Unit): Unit = {
     //noinspection ScalaStyle
     println(s"building state $current_states $name")
-    when(state_number === UInt(current_states)) {
+    when(state_number === (current_states).asUInt) {
       when(! state_locked) {
         printf(s"Entering state $name state_number %d ticker %d", state_number, ticker)
-        state_locked        := Bool(true)
-        ticker              := UInt(0)
-        max_ticks_for_state := UInt(stop_condition.max_ticks.getOrElse(max_ticker))
-        state_number := UInt(current_states)
+        state_locked        := true.B
+        ticker              := 0.U
+        max_ticks_for_state := (stop_condition.max_ticks.getOrElse(max_ticker)).asUInt
+        state_number := (current_states).asUInt
       }
       generator()
 
       when(stop_condition.condition) {
         printf(s"Leaving state  $name state_number %d ticker %d", state_number, ticker)
-        state_locked := Bool(false)
-        state_number := state_number + UInt(1)
+        state_locked := false.B
+        state_number := state_number + 1.U
       }
     }
     current_states += 1

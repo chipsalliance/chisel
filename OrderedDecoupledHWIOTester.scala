@@ -223,8 +223,8 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
     logScalaDebug(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
     Vec(
-      input_event_list.indices.map { event_number => Bool(associated_event_numbers.contains(event_number)) } ++
-        List(Bool(false)) // We append a false at the end so no-one tries to go when counter done
+      input_event_list.indices.map { event_number => (associated_event_numbers.contains(event_number)).asBool } ++
+        List(false.B) // We append a false at the end so no-one tries to go when counter done
     )
   }
 
@@ -249,7 +249,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
                                             events           : ArrayBuffer[TestingEvent]
                                           ): Map[Data, Vec[UInt]] = {
     val port_vector_events = referenced_ports.map { port =>
-      port -> Vec(events.map { event => UInt(event.port_values.getOrElse(port, BigInt(0))) } ++ List(UInt(0))) //0 added to end
+      port -> Vec(events.map { event => (event.port_values.getOrElse(port, BigInt(0))).asUInt } ++ List(0.U)) //0 added to end
     }.toMap
 
     logScalaDebug(s"Input controller ${io_info.port_to_name(io_interface)} : ports " +
@@ -320,8 +320,8 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
           )
           when(port.asInstanceOf[UInt] != port_vector_events(port)(counter_for_this_decoupled.value)) {
             printf(s"Error: event %d ${name(port)} was %d should be %d\n",
-              event_counter.value, port.toBits(), port_vector_events(port)(counter_for_this_decoupled.value))
-            assert(Bool(false))
+              event_counter.value, port.asUInt(), port_vector_events(port)(counter_for_this_decoupled.value))
+            assert(false.B)
             stop()
           }
         }
@@ -359,8 +359,8 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
             )
             when(port.asInstanceOf[UInt] =/= port_vector_events(port)(counter_for_this_valid.value)) {
               printf(s"Error: event %d ${name(port)} was %x should be %x",
-                event_counter.value, port.toBits(), port_vector_events(port)(counter_for_this_valid.value))
-              assert(Bool(false))
+                event_counter.value, port.asUInt(), port_vector_events(port)(counter_for_this_valid.value))
+              assert(false.B)
             }
           }
           counter_for_this_valid.inc()
@@ -371,17 +371,17 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
   }
 
   class GlobalEventCounter(val max_count: Int) {
-    val counter     = Reg(init = UInt(0, width = log2Up(max_count) + 2))
-    val reached_end = Reg(init = Bool(false))
+    val counter     = Reg(init = 0.U((log2Up(max_count) + 2).W))
+    val reached_end = Reg(init = false.B)
 
     def value: UInt = counter
 
     def inc(): Unit = {
       when(! reached_end ) {
-        when(counter === UInt(max_count-1)) {
-          reached_end := Bool(true)
+        when(counter === (max_count-1).asUInt) {
+          reached_end := true.B
         }
-        counter := counter + UInt(1)
+        counter := counter + 1.U
       }
     }
   }
@@ -404,15 +404,14 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
       stop()
     }
 
-
-    val ti = Reg(init= UInt(0, width = log2Up(OrderedDecoupledHWIOTester.max_tick_count)))
-    ti := ti + UInt(1)
-    when(ti > UInt(OrderedDecoupledHWIOTester.max_tick_count)) {
+    val ti = Reg(init= 0.U(log2Up(OrderedDecoupledHWIOTester.max_tick_count).W))
+    ti := ti + 1.U
+    when(ti > (OrderedDecoupledHWIOTester.max_tick_count).asUInt) {
       printf(
         "Exceeded maximum allowed %d ticks in OrderedDecoupledHWIOTester, If you think code is correct use:\n" +
         "DecoupleTester.max_tick_count = <some-higher-value>\n" +
         "in the OrderedDecoupledHWIOTester subclass\n",
-        UInt(OrderedDecoupledHWIOTester.max_tick_count)
+        (OrderedDecoupledHWIOTester.max_tick_count).asUInt
       )
       stop()
     }
