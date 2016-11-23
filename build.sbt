@@ -122,13 +122,17 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
+  // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
   settings(
     aggregate in doc := false,
-    // Include macro classes, resources, and sources main jar.
+    // Include macro classes, resources, and sources main JAR.
     mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (coreMacros, Compile, packageSrc),
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
-    mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
+    mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc),
+    // Export the packaged JAR so projects that depend directly on Chisel project (rather than the
+    // published artifact) also see the stuff in coreMacros and chiselFrontend.
+    exportJars := true
   )
