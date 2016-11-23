@@ -253,6 +253,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
   object Enum extends chisel3.util.Enum {
     /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
       *
+      * nodeType must be of UInt type (note that Bits() creates a UInt) with unspecified width.
+      *
       * @example {{{
       * val state_on :: state_off :: Nil = Enum(UInt(), 2)
       * val current_state = UInt()
