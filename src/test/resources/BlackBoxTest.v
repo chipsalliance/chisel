@@ -32,3 +32,28 @@ module BlackBoxConstant #(
 );
   assign out = VALUE;
 endmodule
+
+module BlackBoxStringParam #(
+  parameter string STRING = "zero"
+) (
+  output [31:0] out
+);
+  assign out = (STRING == "one" )? 1 :
+               (STRING == "two" )? 2 : 0;
+endmodule
+
+module BlackBoxRealParam #(
+  parameter real REAL = 0.0
+) (
+  output [63:0] out
+);
+  assign out = $realtobits(REAL);
+endmodule
+
+module BlackBoxTypeParam #(
+  parameter type T = bit
+) (
+  output T out
+);
+  assign out = 32'hdeadbeef;
+endmodule

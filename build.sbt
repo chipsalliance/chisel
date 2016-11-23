@@ -18,7 +18,8 @@ lazy val commonSettings = Seq (
   version := "3.1-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   autoAPIMappings := true,
-  scalaVersion := "2.11.7"
+  scalaVersion := "2.11.7",
+  scalacOptions := Seq("-deprecation")
 )
 
 val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
@@ -64,24 +65,24 @@ lazy val chiselSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
 
-  libraryDependencies ++= (Seq("firrtl").map {
-    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
+    "com.github.scopt" %% "scopt" % "3.4.0"
+  ),
 
-
-/* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
- *  in subtly disturbing ways on Linux (but not on Mac):
- *  - some fields in the generated .h file are re-named,
- *  - an additional field is added
- *  - the generated .cpp file has additional differences:
- *    - different temps in clock_lo
- *    - missing assignments
- *    - change of assignment order
- *    - use of "Tx" vs. "Tx.values"
- */
-  libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
+  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
+  //  this has to be a Task setting.
+  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
+  allDependencies := {
+    allDependencies.value ++ Seq("firrtl").collect {
+      // If we have an unmanaged jar file on the classpath, assume we're to use that,
+      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
+        //  otherwise let sbt fetch the appropriate version.
+        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+    }
+  },
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
@@ -97,15 +98,18 @@ lazy val chiselSettings = Seq (
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
   settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    publishArtifact := false
   )
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    publishArtifact := false
   ).
   dependsOn(coreMacros)
+
 
 lazy val chisel = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
@@ -118,8 +122,8 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
-  dependsOn(coreMacros).
-  dependsOn(chiselFrontend).
+  dependsOn(coreMacros % "compile-internal;test-internal").
+  dependsOn(chiselFrontend % "compile-internal;test-internal").
   settings(
     aggregate in doc := false,
     // Include macro classes, resources, and sources main jar.
@@ -127,5 +131,4 @@ lazy val chisel = (project in file(".")).
     mappings in (Compile, packageSrc) <++= mappings in (coreMacros, Compile, packageSrc),
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
-  ).
-  aggregate(coreMacros, chiselFrontend)
+  )

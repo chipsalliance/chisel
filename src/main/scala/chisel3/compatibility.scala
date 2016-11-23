@@ -4,8 +4,11 @@
 // moving to the more standard package naming convention chisel3 (lowercase c).
 
 package object Chisel {     // scalastyle:ignore package.object.name
+  import chisel3.internal.firrtl.Width
+
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
   type Direction = chisel3.core.Direction
+
   val INPUT = chisel3.core.Direction.Input
   val OUTPUT = chisel3.core.Direction.Output
   val NODIR = chisel3.core.Direction.Unspecified
@@ -38,16 +41,109 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val assert = chisel3.core.assert
   val stop = chisel3.core.stop
 
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    */
+  trait UIntFactory extends chisel3.core.UIntFactory {
+    /** Create a UInt literal with inferred width. */
+    def apply(n: String): UInt = n.asUInt
+    /** Create a UInt literal with fixed width. */
+    def apply(n: String, width: Int): UInt = n.asUInt(width.W)
+
+    /** Create a UInt literal with specified width. */
+    def apply(value: BigInt, width: Width): UInt = value.asUInt(width)
+
+    /** Create a UInt literal with fixed width. */
+    def apply(value: BigInt, width: Int): UInt = value.asUInt(width.W)
+
+    /** Create a UInt with a specified width - compatibility with Chisel2. */
+    // NOTE: This resolves UInt(width = 32)
+    def apply(dir: Option[Direction] = None, width: Int): UInt = apply(width.W)
+    /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
+    def apply(value: BigInt): UInt = value.asUInt
+
+    /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
+    def apply(dir: Direction, width: Int): UInt = apply(dir, width.W)
+    /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
+    def apply(dir: Direction): UInt = apply(dir, Width())
+    def apply(dir: Direction, width: Width): UInt = {
+      val result = apply(width)
+      dir match {
+        case chisel3.core.Direction.Input => chisel3.core.Input(result)
+        case chisel3.core.Direction.Output => chisel3.core.Output(result)
+        case chisel3.core.Direction.Unspecified => result
+      }
+    }
+
+    /** Create a UInt with a specified width */
+    def width(width: Int): UInt = apply(width.W)
+
+    /** Create a UInt port with specified width. */
+    def width(width: Width): UInt = apply(width)
+  }
+
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    */
+  trait SIntFactory extends chisel3.core.SIntFactory {
+    /** Create a SInt type or port with fixed width. */
+    def width(width: Int): SInt = apply(width.W)
+    /** Create an SInt type with specified width. */
+    def width(width: Width): SInt = apply(width)
+
+    /** Create an SInt literal with inferred width. */
+    def apply(value: BigInt): SInt = value.asSInt
+    /** Create an SInt literal with fixed width. */
+    def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
+
+    /** Create an SInt literal with specified width. */
+    def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
+
+    def Lit(value: BigInt): SInt = value.asSInt
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
+
+    /** Create a SInt with a specified width - compatibility with Chisel2. */
+    def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
+    /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
+    def apply(dir: Direction, width: Int): SInt = apply(dir, width.W)
+    /** Create a SInt with a specified direction, but unspecified width - compatibility with Chisel2. */
+    def apply(dir: Direction): SInt = apply(dir, Width())
+    def apply(dir: Direction, width: Width): SInt = {
+      val result = apply(width)
+      dir match {
+        case chisel3.core.Direction.Input => chisel3.core.Input(result)
+        case chisel3.core.Direction.Output => chisel3.core.Output(result)
+        case chisel3.core.Direction.Unspecified => result
+      }
+    }
+  }
+
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    */
+  trait BoolFactory extends chisel3.core.BoolFactory {
+    /** Creates Bool literal.
+     */
+    def apply(x: Boolean): Bool = x.B
+
+    /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
+    def apply(dir: Direction): Bool = {
+      val result = apply()
+      dir match {
+        case chisel3.core.Direction.Input => chisel3.core.Input(result)
+        case chisel3.core.Direction.Output => chisel3.core.Output(result)
+        case chisel3.core.Direction.Unspecified => result
+      }
+    }
+  }
+
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
-  val Bits = chisel3.core.Bits
+  object Bits extends UIntFactory
   type Num[T <: Data] = chisel3.core.Num[T]
   type UInt = chisel3.core.UInt
-  val UInt = chisel3.core.UInt
+  object UInt extends UIntFactory
   type SInt = chisel3.core.SInt
-  val SInt = chisel3.core.SInt
+  object SInt extends SIntFactory
   type Bool = chisel3.core.Bool
-  val Bool = chisel3.core.Bool
+  object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
   type BlackBox = chisel3.core.BlackBox
@@ -68,53 +164,45 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
-  import chisel3.internal.firrtl.Width
-  /**
-  * These implicit classes allow one to convert scala.Int|scala.BigInt to
-  * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.
-  * The versions .asUInt(width)|.asSInt(width) are also available to explicitly
-  * mark a width for the new literal.
-  *
-  * Also provides .asBool to scala.Boolean and .asUInt to String
-  *
-  * Note that, for stylistic reasons, one should avoid extracting immediately
-  * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
-  * confusion (the 1 is a bit length and the 0 is a bit extraction position).
-  * Prefer storing the result and then extracting from it.
-  */
-  implicit class fromIntToLiteral(val x: Int) extends AnyVal {
-    def U: UInt = UInt(BigInt(x), Width())    // scalastyle:ignore method.name
-    def S: SInt = SInt(BigInt(x), Width())    // scalastyle:ignore method.name
-
-    def asUInt(): UInt = UInt(x, Width())
-    def asSInt(): SInt = SInt(x, Width())
-    def asUInt(width: Int): UInt = UInt(x, width)
-    def asSInt(width: Int): SInt = SInt(x, width)
-  }
-
-  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
-    def U: UInt = UInt(x, Width())       // scalastyle:ignore method.name
-    def S: SInt = SInt(x, Width())       // scalastyle:ignore method.name
-
-    def asUInt(): UInt = UInt(x, Width())
-    def asSInt(): SInt = SInt(x, Width())
-    def asUInt(width: Int): UInt = UInt(x, width)
-    def asSInt(width: Int): SInt = SInt(x, width)
-  }
-  implicit class fromStringToLiteral(val x: String) extends AnyVal {
-    def U: UInt = UInt(x)       // scalastyle:ignore method.name
-  }
-  implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
-    def B: Bool = Bool(x)       // scalastyle:ignore method.name
-  }
-
+  implicit class fromBigIntToLiteral(val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
+  implicit class fromtIntToLiteral(val x: Int) extends chisel3.core.fromIntToLiteral(x)
+  implicit class fromtLongToLiteral(val x: Long) extends chisel3.core.fromLongToLiteral(x)
+  implicit class fromStringToLiteral(val x: String) extends chisel3.core.fromStringToLiteral(x)
+  implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+  implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
 
   type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
   val Driver = chisel3.Driver
   val ImplicitConversions = chisel3.util.ImplicitConversions
-  val chiselMain = chisel3.compatibility.chiselMain
-  val throwException = chisel3.compatibility.throwException
-  val debug = chisel3.compatibility.debug
+
+  // Deprecated as of Chisel3
+  object chiselMain {
+    import java.io.File
+
+    def apply[T <: Module](args: Array[String], gen: () => T): Unit =
+      Predef.assert(false, "No more chiselMain in Chisel3")
+
+    def run[T <: Module] (args: Array[String], gen: () => T): Unit = {
+      val circuit = Driver.elaborate(gen)
+      Driver.parseArgs(args)
+      val output_file = new File(Driver.targetDir + "/" + circuit.name + ".fir")
+      Driver.dumpFirrtl(circuit, Option(output_file))
+    }
+  }
+
+  @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
+  object debug {  // scalastyle:ignore object.name
+    def apply (arg: Data): Data = arg
+  }
+
+  // Deprecated as of Chsiel3
+  @throws(classOf[Exception])
+  object throwException {
+    def apply(s: String, t: Throwable = null) = {
+      val xcpt = new Exception(s, t)
+      throw xcpt
+    }
+  }
 
   object testers {    // scalastyle:ignore object.name
     type BasicTester = chisel3.testers.BasicTester

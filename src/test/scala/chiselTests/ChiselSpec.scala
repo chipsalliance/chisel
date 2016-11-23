@@ -28,7 +28,7 @@ trait ChiselRunners extends Assertions {
 class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
-class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks {
+class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
   implicit override val generatorDrivenConfig =

@@ -27,12 +27,12 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   }
 
   class SmallBundle extends Bundle {
-    val f1 = UInt(width = 4)
-    val f2 = UInt(width = 5)
+    val f1 = UInt(4.W)
+    val f2 = UInt(5.W)
     override def cloneType: this.type = (new SmallBundle).asInstanceOf[this.type]
   }
   class BigBundle extends SmallBundle {
-    val f3 = UInt(width = 6)
+    val f3 = UInt(6.W)
     override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
@@ -73,7 +73,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
           val in = Input(new SmallBundle)
           val out = Output(new BigBundle)
         })
-        val badReg = Reg(UInt(7, width=4))
+        val badReg = Reg(7.U(4.W))
       }
       elaborate { new CreateRegFromBoundTypeModule() }
     }
@@ -87,7 +87,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
         val in = Input(new SmallBundle)
         val out = Output(new BigBundle)
       })
-      val badReg = Reg(UInt(7, width=4))
+      val badReg = Reg(7.U(4.W))
     }
     elaborate { new CreateRegFromBoundTypeModule() }
   }
@@ -97,7 +97,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
     class RequireIOWrapModule extends Module {
       val io = IO(new Bundle {
-        val in = UInt(width = 32).asInput
+        val in = UInt(32.W).asInput
         val out = Bool().asOutput
       })
       io.out := io.in(1)
@@ -110,7 +110,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
     class RequireIOWrapModule extends Module {
       val io = new Bundle {
-        val in = UInt(width = 32).asInput
+        val in = UInt(32.W).asInput
         val out = Bool().asOutput
       }
       io.out := io.in(1)
@@ -124,7 +124,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
       class RequireIOWrapModule extends Module {
         val io = new Bundle {
-          val in = UInt(width = 32).asInput
+          val in = UInt(32.W).asInput
           val out = Bool().asOutput
         }
         io.out := io.in(1)
@@ -141,8 +141,8 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
       class SimpleModule extends Module {
         val io = IO(new Bundle {
-          val in = Input(UInt(width = 3))
-          val out = Output(UInt(width = 4))
+          val in = Input(UInt(3.W))
+          val out = Output(UInt(4.W))
         })
       }
       class SwappedConnectionModule extends SimpleModule {
@@ -158,8 +158,8 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
     class SimpleModule extends Module {
       val io = IO(new Bundle {
-        val in = Input(UInt(width = 3))
-        val out = Output(UInt(width = 4))
+        val in = Input(UInt(3.W))
+        val out = Output(UInt(4.W))
       })
     }
     class SwappedConnectionModule extends SimpleModule {
@@ -177,15 +177,15 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
       class SimpleModule extends Module {
         val io = IO(new Bundle {
-          val in = Input(UInt(width = 3))
-          val out = Output(UInt(width = 4))
+          val in = Input(UInt(3.W))
+          val out = Output(UInt(4.W))
         })
-        val noDir = Wire(UInt(width = 3))
+        val noDir = Wire(UInt(3.W))
       }
 
       class DirectionLessConnectionModule extends SimpleModule {
-        val a = UInt(0, width = 3)
-        val b = Wire(UInt(width = 3))
+        val a = 0.U(3.W)
+        val b = Wire(UInt(3.W))
         val child = Module(new SimpleModule)
         b := child.noDir
       }
@@ -198,15 +198,15 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
     class SimpleModule extends Module {
       val io = IO(new Bundle {
-        val in = Input(UInt(width = 3))
-        val out = Output(UInt(width = 4))
+        val in = Input(UInt(3.W))
+        val out = Output(UInt(4.W))
       })
-      val noDir = Wire(UInt(width = 3))
+      val noDir = Wire(UInt(3.W))
     }
 
     class DirectionLessConnectionModule extends SimpleModule {
-      val a = UInt(0, width = 3)
-      val b = Wire(UInt(width = 3))
+      val a = 0.U(3.W)
+      val b = Wire(UInt(3.W))
       val child = Module(new SimpleModule)
       b := child.noDir
     }
@@ -217,7 +217,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
     implicit val strictWithoutIOWrap = StrictWithoutIOWrap
     class RequireIOWrapModule extends StrictModule {
       val io = IO(new Bundle {
-        val in = UInt(width = 32).asInput
+        val in = UInt(32.W).asInput
         val out = Bool().asOutput
       })
       io.out := io.in(1)
@@ -231,7 +231,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
     implicit val strictWithoutIOWrap = StrictWithoutIOWrap
     class RequireIOWrapModule extends NotStrictModule {
       val io = new Bundle {
-        val in = UInt(width = 32).asInput
+        val in = UInt(32.W).asInput
         val out = Bool().asOutput
       }
       io.out := io.in(1)
@@ -246,7 +246,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
       implicit val strictWithoutIOWrap = StrictWithoutIOWrap
       class RequireIOWrapModule extends StrictModule {
         val io = new Bundle {
-          val in = UInt(width = 32).asInput
+          val in = UInt(32.W).asInput
           val out = Bool().asOutput
         }
         io.out := io.in(1)
@@ -274,7 +274,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
     }
     class NotIOWrapModule extends Module()(StrictNotIOWrap.CompileOptions) {
       val io = new Bundle {
-        val in = UInt(width = 32).asInput
+        val in = UInt(32.W).asInput
         val out = Bool().asOutput
       }
     }

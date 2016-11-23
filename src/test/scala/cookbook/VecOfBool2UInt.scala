@@ -10,7 +10,7 @@ import chisel3._
  */
 class VecOfBool2UInt extends CookbookTester(0) {
   // Example
-  val vec = Vec(Bool(true), Bool(false), Bool(true), Bool(true))
+  val vec = Vec(true.B, false.B, true.B, true.B)
   val uint = vec.asUInt
   printf(p"$uint") // 13
   
@@ -18,7 +18,7 @@ class VecOfBool2UInt extends CookbookTester(0) {
    *
    * (remember leftmost Bool in Vec is low order bit)
    */
-  assert(UInt(0xd) === uint)
+  assert(0xd.U === uint)
 }
 
 class VecOfBool2UIntSpec  extends CookbookSpec {
