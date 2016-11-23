@@ -32,6 +32,14 @@ object Driver {
                           (
                             testerGen: T => PeekPokeTester[T]
                           ): Boolean = {
+    if(optionsManager.topName.isEmpty) {
+      if(optionsManager.targetDirName == ".") {
+        optionsManager.setTargetDirName("test_run_dir")
+      }
+      val genClassName = testerGen.getClass.getName
+      val testerName = genClassName.split("""\$\$""").headOption.getOrElse("") + genClassName.hashCode.abs
+      optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/$testerName")
+    }
     val testerOptions = optionsManager.testerOptions
 
     val (dut, backend) = testerOptions.backendName match {
@@ -45,23 +53,17 @@ object Driver {
         throw new Exception(s"Unrecognized backend name ${testerOptions.backendName}")
     }
 
-    if(optionsManager.topName.isEmpty) {
-      optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/${testerGen.getClass.getName}")
-    }
-    optionsManagerVar.withValue(Some(optionsManager)) {
-      backendVar.withValue(Some(backend)) {
-        try {
-          testerGen(dut).finish
-        } catch {
-          case e: Throwable =>
-            e.printStackTrace()
-            backend match {
-              case b: VCSBackend => TesterProcess.kill(b)
-              case b: VerilatorBackend => TesterProcess.kill(b)
-              case _ =>
-            }
-            throw e
+    backendVar.withValue(Some(backend)) {
+      try {
+        testerGen(dut).finish
+      } catch { case e: Throwable =>
+        e.printStackTrace()
+        backend match {
+          case b: VCSBackend => TesterProcess.kill(b)
+          case b: VerilatorBackend => TesterProcess.kill(b)
+          case _ =>
         }
+        throw e
       }
     }
   }
@@ -123,6 +125,36 @@ object Driver {
       case ChiselExecutionFailure(message) =>
         println("Failed to compile circuit")
         false
+    }
+  }
+  /**
+    * Start up the interpreter repl with the given circuit
+    * To test a `class X extends Module {}`, add the following code to the end
+    * of the file that defines
+    * @example {{{
+    *           object XRepl {
+    *             def main(args: Array[String]) {
+    *               iotesters.Driver.executeFirrtlRepl(args, () => new X)
+    *             }
+    *           }
+    * }}}
+    * running main will place users in the repl with the circuit X loaded into the repl
+    *
+    * @param dutGenerator   Module to run in interpreter
+    * @param args           options from the command line
+    * @return
+    */
+  def executeFirrtlRepl[T <: Module](
+                                    args: Array[String],
+                                      dutGenerator: () => T
+                                      ): Boolean = {
+    val optionsManager = new ReplOptionsManager
+
+    if(optionsManager.parse(args)) {
+      executeFirrtlRepl(dutGenerator, optionsManager)
+    }
+    else {
+      false
     }
   }
   /**
