@@ -54,8 +54,6 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
-  private[chisel3] def fromInt(x: BigInt, w: Int): this.type
-
   private[chisel3] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
 
   def cloneType: this.type = cloneTypeWidth(width)
@@ -402,9 +400,6 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
     new UInt(w).asInstanceOf[this.type]
   private[chisel3] def toType = s"UInt$width"
 
-  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
-    value.asUInt(width.W).asInstanceOf[this.type]
-
   // TODO: refactor to share documentation with Num or add independent scaladoc
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
   final def unary_-% (): UInt = macro SourceInfoTransform.noArg
@@ -562,9 +557,6 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
     new SInt(w).asInstanceOf[this.type]
   private[chisel3] def toType = s"SInt$width"
 
-  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type =
-    value.asSInt(width.W).asInstanceOf[this.type]
-
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
   final def unary_-% (): SInt = macro SourceInfoTransform.noArg
 
@@ -696,11 +688,6 @@ sealed class Bool(lit: Option[ULit] = None) extends UInt(1.W, lit) {
     new Bool().asInstanceOf[this.type]
   }
 
-  override private[chisel3] def fromInt(value: BigInt, width: Int): this.type = {
-    require((value == 0 || value == 1) && width == 1)
-    (value == 1).asBool.asInstanceOf[this.type]
-  }
-
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
   final def & (that: Bool): Bool = macro SourceInfoTransform.thatArg
@@ -821,10 +808,6 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
   def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
     case _: FixedPoint => this connect that
     case _ => this badConnect that
-  }
-
-  private[chisel3] def fromInt(value: BigInt, width: Int): this.type = {
-    throwException(s"Don't use $this.fromInt($value, $width): Use literal constructors instead")
   }
 
   final def unary_- (): FixedPoint = macro SourceInfoTransform.noArg

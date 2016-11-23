@@ -250,7 +250,42 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Queue[T <: Data] = chisel3.util.Queue[T]
   val Queue = chisel3.util.Queue
 
-  val Enum = chisel3.util.Enum
+  object Enum extends chisel3.util.Enum {
+    /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
+      *
+      * @example {{{
+      * val state_on :: state_off :: Nil = Enum(UInt(), 2)
+      * val current_state = UInt()
+      * switch (current_state) {
+      *   is (state_on) {
+      *      ...
+      *   }
+      *   if (state_off) {
+      *      ...
+      *   }
+      * }
+      * }}}
+      */
+    def apply[T <: Bits](nodeType: T, n: Int): List[T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      apply(n).asInstanceOf[List[T]]
+    }
+
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+    }
+
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+    }
+  }
 
   val LFSR16 = chisel3.util.LFSR16
 
