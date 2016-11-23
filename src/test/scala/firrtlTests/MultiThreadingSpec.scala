@@ -2,7 +2,7 @@
 
 package firrtlTests
 
-import firrtl.{ChirrtlForm, CircuitState, Compiler, Annotations}
+import firrtl.{ChirrtlForm, CircuitState, Compiler, annotations}
 
 import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.concurrent.duration.Duration

@@ -6,7 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.Mappers._
-import Annotations._
+import annotations._
 
 class ChirrtlMemSpec extends LowTransformSpec {
   object MemEnableCheckPass extends Pass {

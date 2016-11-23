@@ -10,18 +10,17 @@ import firrtl.Mappers._
 import MemPortUtils.{MemPortMap, Modules}
 import MemTransformUtils._
 import AnalysisUtils._
-import Annotations._
+import firrtl.annotations._
 import wiring._
 
 
 /** Annotates the name of the pin to add for WiringTransform
   */
-case class PinAnnotation(target: CircuitName, pins: Seq[String]) extends Annotation with Loose with Unstable {
-  def transform = classOf[ReplaceMemMacros]
-  def duplicate(n: Named) = n match {
-    case n: CircuitName => this.copy(target = n)
-    case _ => throwInternalError
+object PinAnnotation {
+  def apply(target: CircuitName, pins: Seq[String]): Annotation = {
+    Annotation(target, classOf[ReplaceMemMacros], pins.foldLeft("") { (str, p) => str + "pin:" + p + " " } )
   }
+  val matcher = "pin:([^ ]+)".r
 }
 
 /** Replace DefAnnotatedMemory with memory blackbox + wrapper + conf file.
@@ -220,10 +219,11 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     writer.serialize()
     val pins = getMyAnnotations(state) match {
       case Nil => Nil
-      case Seq(p) => p match {
-        case PinAnnotation(c, pins) => pins
-        case _ => error(s"Bad Annotation: ${p}")
-      }
+      case Seq(Annotation(c, t, string)) =>
+        PinAnnotation.matcher.findAllIn(string).toSeq match {
+          case Nil => error(s"Bad Annotation: ${Annotation(c, t, string)}")
+          case seq => seq
+        }
       case _ => throwInternalError
     }
     val annos = pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>

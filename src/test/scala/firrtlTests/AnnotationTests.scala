@@ -9,7 +9,7 @@ import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 
 import firrtl.ir.Circuit
-import firrtl.Parser
+import firrtl.{Parser, AnnotationMap}
 import firrtl.{
    CircuitState,
    ResolveAndCheck,
@@ -20,22 +20,13 @@ import firrtl.{
    VerilogCompiler,
    Transform
 }
-import firrtl.Annotations.{
+import firrtl.annotations.{
    Named,
    CircuitName,
    ModuleName,
    ComponentName,
    AnnotationException,
-   Annotation,
-   Strict,
-   Rigid,
-   Firm,
-   Loose,
-   Sticky,
-   Insistent,
-   Fickle,
-   Unstable,
-   AnnotationMap
+   Annotation
 }
 
 /**
@@ -79,12 +70,8 @@ class AnnotationTests extends AnnotationSpec with Matchers {
   val cName = ComponentName("c", mName)
 
   "Loose and Sticky annotation on a node" should "pass through" in {
-    case class TestAnnotation(target: Named) extends Annotation with Loose with Sticky {
-      def duplicate(to: Named) = this.copy(target=to)
-      def transform = classOf[Transform]
-    }
     val w = new StringWriter()
-    val ta = TestAnnotation(cName)
+    val ta = Annotation(cName, classOf[Transform], "")
     execute(w, getAMap(ta), input, ta)
   }
 }

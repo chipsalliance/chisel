@@ -3,7 +3,6 @@
 package firrtlTests
 package fixed
 
-import firrtl.Annotations.AnnotationMap
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.passes._

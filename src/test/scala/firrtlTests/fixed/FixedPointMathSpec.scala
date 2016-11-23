@@ -4,8 +4,7 @@ package firrtlTests.fixed
 
 import java.io.StringWriter
 
-import firrtl.Annotations.AnnotationMap
-import firrtl.{CircuitState, ChirrtlForm, LowFirrtlCompiler, Parser}
+import firrtl.{CircuitState, ChirrtlForm, LowFirrtlCompiler, Parser, AnnotationMap}
 import firrtl.Parser.IgnoreInfo
 import firrtlTests.FirrtlFlatSpec
 

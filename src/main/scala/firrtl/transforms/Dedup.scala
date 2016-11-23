@@ -5,17 +5,11 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.Annotations._
+import firrtl.annotations._
 import firrtl.passes.PassException
 
 // Datastructures
 import scala.collection.mutable
-
-// Tags an annotation to be consumed by this pass
-case class DedupAnnotation(target: Named) extends Annotation with Loose with Unstable {
-  def duplicate(n: Named) = this.copy(target=n)
-  def transform = classOf[DedupModules]
-}
 
 // Only use on legal Firrtl. Specifically, the restriction of
 //  instance loops must have been checked, or else this pass can

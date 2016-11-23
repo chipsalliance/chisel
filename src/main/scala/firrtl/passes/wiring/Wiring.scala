@@ -8,7 +8,8 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import scala.collection.mutable
-import firrtl.Annotations._
+import firrtl.annotations._
+import firrtl.annotations.AnnotationUtils._
 import WiringUtils._
 
 case class WiringException(msg: String) extends PassException(msg)

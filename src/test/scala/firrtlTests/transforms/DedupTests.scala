@@ -10,15 +10,14 @@ import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 
 import firrtl.ir.Circuit
-import firrtl.Parser
+import firrtl.{Parser, AnnotationMap}
 import firrtl.passes.PassExceptions
-import firrtl.Annotations.{
+import firrtl.annotations.{
    Named,
    CircuitName,
-   Annotation,
-   AnnotationMap
+   Annotation
 }
-import firrtl.transforms.{DedupModules, DedupAnnotation}
+import firrtl.transforms.DedupModules
 
 
 /**

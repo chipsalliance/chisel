@@ -5,7 +5,7 @@ package memlib
 
 import firrtl._
 import firrtl.ir._
-import Annotations._
+import firrtl.annotations._
 import AnalysisUtils._
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter}
@@ -64,9 +64,9 @@ class ConfWriter(filename: String) {
   }
 }
 
-case class ReplSeqMemAnnotation(t: String) extends Annotation with Loose with Unstable {
-
-  val usage = """
+object ReplSeqMemAnnotation {
+  def apply(t: String): Annotation = {
+    val usage = """
 [Optional] ReplSeqMem
   Pass to replace sequential memories with blackboxes + configuration file
 
@@ -82,18 +82,29 @@ Optional Arguments:
   -i<filename>         Specify the input configuration file (for additional optimizations)
 """    
 
-  val passOptions = PassConfigUtil.getPassOptions(t, usage)
-  val outputConfig = passOptions.getOrElse(
-    OutputConfigFileName, 
-    error("No output config file provided for ReplSeqMem!" + usage)
-  )
-  val passCircuit = passOptions.getOrElse(
-    PassCircuitName, 
-    error("No circuit name specified for ReplSeqMem!" + usage)
-  )
-  val target = CircuitName(passCircuit)
-  def duplicate(n: Named) = this copy (t = t.replace(s"-c:$passCircuit", s"-c:${n.name}"))
-  def transform = classOf[ReplSeqMem]
+    val passOptions = PassConfigUtil.getPassOptions(t, usage)
+    val outputConfig = passOptions.getOrElse(
+      OutputConfigFileName, 
+      error("No output config file provided for ReplSeqMem!" + usage)
+    )
+    val inputFileName = PassConfigUtil.getPassOptions(t).getOrElse(InputConfigFileName, "")
+    val passCircuit = passOptions.getOrElse(
+      PassCircuitName, 
+      error("No circuit name specified for ReplSeqMem!" + usage)
+    )
+    val target = CircuitName(passCircuit)
+    Annotation(target, classOf[ReplSeqMem], s"$inputFileName $outputConfig")
+  }
+
+  def apply(target: CircuitName, inputFileName: String, outputConfig: String): Annotation =
+    Annotation(target, classOf[ReplSeqMem], s"$inputFileName $outputConfig")
+
+  private val matcher = "([^ ]*) ([^ ]+)".r
+  def unapply(a: Annotation): Option[(CircuitName, String, String)] = a match {
+    case Annotation(CircuitName(c), t, matcher(inputFileName, outputConfig)) if t == classOf[ReplSeqMem] =>
+      Some((CircuitName(c), inputFileName, outputConfig))
+    case _ => None
+  }
 }
 
 class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
@@ -139,14 +150,13 @@ class ReplSeqMem extends Transform with SimpleRun {
     getMyAnnotations(state) match {
       case Nil => state.copy(annotations = None) // Do nothing if there are no annotations
       case p => (p.collectFirst { case a if (a.target == CircuitName(state.circuit.main)) => a }) match {
-        case Some(ReplSeqMemAnnotation(t)) =>
-          val inputFileName = PassConfigUtil.getPassOptions(t).getOrElse(InputConfigFileName, "")
+        case Some(ReplSeqMemAnnotation(target, inputFileName, outputConfig)) =>
           val inConfigFile = {
             if (inputFileName.isEmpty) None 
             else if (new File(inputFileName).exists) Some(new YamlFileReader(inputFileName))
             else error("Input configuration file does not exist!")
           }
-          val outConfigFile = new ConfWriter(PassConfigUtil.getPassOptions(t)(OutputConfigFileName))
+          val outConfigFile = new ConfWriter(outputConfig)
           run(state, passSeq(inConfigFile, outConfigFile))
         case _ => error("Unexpected transform annotation")
       }

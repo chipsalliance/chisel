@@ -4,7 +4,7 @@ package firrtl
 
 import logger.LazyLogging
 import java.io.Writer
-import Annotations._
+import annotations._
 
 import firrtl.ir.Circuit
 import passes.Pass
@@ -14,6 +14,14 @@ import passes.Pass
  * that modify names
  */
 case class RenameMap(map: Map[Named, Seq[Named]])
+
+/**
+ * Container of all annotations for a Firrtl compiler.
+ */
+case class AnnotationMap(annotations: Seq[Annotation]) {
+  def get(id: Class[_]): Seq[Annotation] = annotations.filter(a => a.transform == id)
+  def get(named: Named): Seq[Annotation] = annotations.filter(n => n == named)
+}
 
 /** Current State of the Circuit
   *

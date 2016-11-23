@@ -2,15 +2,15 @@
 
 package firrtl
 
-import java.io.FileNotFoundException
-
-import logger.Logger
-
-import scala.io.Source
-import Annotations._
-
-import Parser.{InfoMode, IgnoreInfo}
 import scala.collection._
+import scala.io.Source
+import java.io.{File, FileNotFoundException}
+import net.jcazevedo.moultingyaml._
+import logger.Logger
+import Parser.{InfoMode, IgnoreInfo}
+import annotations._
+import firrtl.annotations.AnnotationYamlProtocol._
+
 
 /**
   * The driver provides methods to access the firrtl compiler.
@@ -72,6 +72,28 @@ object Driver {
   }
 
   /**
+    * Load annotation file based on options
+    * @param optionsManager use optionsManager config to load annotation file if it exists
+    *                       update the firrtlOptions with new annotations if it does
+    */
+  def loadAnnotations(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): Unit = {
+    /*
+     Right now annotations will be looked for always based on the
+     s"$targetDirName/$topName.anno" or s"$annotationFileNameOverride.anno"
+     If found they will be added to the annotations already in the
+     optionsManager.firrtlOptions, duplicates may be created, but this should be ok
+    */
+    val firrtlConfig = optionsManager.firrtlOptions
+    val annotationFileName = firrtlConfig.getAnnotationFileName(optionsManager)
+    val annotationFile = new File(annotationFileName)
+    if(annotationFile.exists) {
+      val annotationsYaml = io.Source.fromFile(annotationFile).getLines().mkString("\n").parseYaml
+      val annotationArray = annotationsYaml.convertTo[Array[Annotation]]
+      optionsManager.firrtlOptions = firrtlConfig.copy(annotations = firrtlConfig.annotations ++ annotationArray)
+    }
+  }
+
+  /**
     * Run the firrtl compiler using the provided option
     *
     * @param optionsManager the desired flags to the compiler
@@ -110,6 +132,8 @@ object Driver {
             return FirrtlExecutionFailure(message)
           }
         }
+
+    loadAnnotations(optionsManager)
 
     val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
     val outputBuffer = new java.io.CharArrayWriter

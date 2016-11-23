@@ -4,7 +4,12 @@ package firrtlTests
 
 import java.io.File
 
-import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
+import firrtl.annotations.Annotation
+import org.scalatest.{Matchers, FreeSpec}
+
+import firrtl._
+import firrtl.passes.InlineInstances
+import firrtl.passes.memlib.{ReplSeqMem, InferReadWrite}
 import org.scalatest.{Matchers, FreeSpec}
 
 import firrtl._
@@ -92,7 +97,7 @@ class DriverSpec extends FreeSpec with Matchers {
         val firrtlOptions = optionsManager.firrtlOptions
         firrtlOptions.annotations.length should be (3)
         firrtlOptions.annotations.foreach { annotation =>
-          annotation shouldBe a [passes.InlineAnnotation]
+          annotation.transform shouldBe classOf[InlineInstances]
         }
       }
       "infer-rw annotation" in {
@@ -105,7 +110,7 @@ class DriverSpec extends FreeSpec with Matchers {
         val firrtlOptions = optionsManager.firrtlOptions
         firrtlOptions.annotations.length should be (1)
         firrtlOptions.annotations.foreach { annotation =>
-          annotation shouldBe a [InferReadWriteAnnotation]
+          annotation.transform shouldBe classOf[InferReadWrite]
         }
       }
       "repl-seq-mem annotation" in {
@@ -116,13 +121,26 @@ class DriverSpec extends FreeSpec with Matchers {
         ) should be (true)
 
         val firrtlOptions = optionsManager.firrtlOptions
-
         firrtlOptions.annotations.length should be (1)
         firrtlOptions.annotations.foreach { annotation =>
-          annotation shouldBe a [ReplSeqMemAnnotation]
+          annotation.transform shouldBe classOf[ReplSeqMem]
         }
       }
     }
+  }
+
+  "Annotations can be read from a file" in {
+    val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+      commonOptions = commonOptions.copy(topName = "a.fir")
+      firrtlOptions = firrtlOptions.copy(
+        annotationFileNameOverride = "src/test/resources/annotations/SampleAnnotations"
+      )
+    }
+    optionsManager.firrtlOptions.annotations.length should be (0)
+    Driver.loadAnnotations(optionsManager)
+    optionsManager.firrtlOptions.annotations.length should be (9)
+
+    optionsManager.firrtlOptions.annotations.head.transformClass should be ("firrtl.passes.InlineInstances")
   }
 
   val input =

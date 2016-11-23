@@ -1,0 +1,30 @@
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModC
+  value: ModC.this params 16 32
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModC.io.out
+  value: ModuleC(16,32) width < 32
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModA
+  value: ModA.this
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModA.io.out
+  value: inside ModA.io.out params 64,64
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModC_1
+  value: ModC.this params 42 77
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModC_1.io.out
+  value: ModuleC(42,77) width < 77
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModB.io.out
+  value: inside ModB.io.out params 32,48
+- transformClass: firrtl.passes.InlineInstances
+  targetString: TopOfDiamond
+  value: |-
+    TopOfDiamond
+    With
+    Some new lines
+- transformClass: firrtl.passes.InlineInstances
+  targetString: ModB.io.in
+  value: TopOfDiamond.moduleB.io.in

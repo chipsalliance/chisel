@@ -8,37 +8,43 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import scala.collection.mutable
-import firrtl.Annotations._
+import firrtl.annotations._
 import WiringUtils._
 
 /** A component, e.g. register etc. Must be declared only once under the TopAnnotation
   */
-case class SourceAnnotation(target: ComponentName, pin: String) extends Annotation with Loose with Unstable {
-  def transform = classOf[WiringTransform]
-  def duplicate(n: Named) = n match {
-    case n: ComponentName => this.copy(target = n)
-    case _ => throwInternalError
+object SourceAnnotation {
+  def apply(target: ComponentName, pin: String): Annotation = Annotation(target, classOf[WiringTransform], s"source $pin")
+
+  private val matcher = "source (.+)".r
+  def unapply(a: Annotation): Option[(ComponentName, String)] = a match {
+    case Annotation(ComponentName(n, m), _, matcher(pin)) => Some((ComponentName(n, m), pin))
+    case _ => None
   }
 }
 
 /** A module, e.g. ExtModule etc., that should add the input pin
   */
-case class SinkAnnotation(target: ModuleName, pin: String) extends Annotation with Loose with Unstable {
-  def transform = classOf[WiringTransform]
-  def duplicate(n: Named) = n match {
-    case n: ModuleName => this.copy(target = n)
-    case _ => throwInternalError
+object SinkAnnotation {
+  def apply(target: ModuleName, pin: String): Annotation = Annotation(target, classOf[WiringTransform], s"sink $pin")
+
+  private val matcher = "sink (.+)".r
+  def unapply(a: Annotation): Option[(ModuleName, String)] = a match {
+    case Annotation(ModuleName(n, c), _, matcher(pin)) => Some((ModuleName(n, c), pin))
+    case _ => None
   }
 }
 
 /** A module under which all sink module must be declared, and there is only
   * one source component
   */
-case class TopAnnotation(target: ModuleName, pin: String) extends Annotation with Loose with Unstable {
-  def transform = classOf[WiringTransform]
-  def duplicate(n: Named) = n match {
-    case n: ModuleName => this.copy(target = n)
-    case _ => throwInternalError
+object TopAnnotation {
+  def apply(target: ModuleName, pin: String): Annotation = Annotation(target, classOf[WiringTransform], s"top $pin")
+
+  private val matcher = "top (.+)".r
+  def unapply(a: Annotation): Option[(ModuleName, String)] = a match {
+    case Annotation(ModuleName(n, c), _, matcher(pin)) => Some((ModuleName(n, c), pin))
+    case _ => None
   }
 }
 
@@ -64,20 +70,18 @@ class WiringTransform extends Transform with SimpleRun {
         ResolveGenders)
   def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
     case Nil => CircuitState(state.circuit, state.form)
-    case p =>
-      // Pin to value
+    case p => 
       val sinks = mutable.HashMap[String, Set[String]]()
       val sources = mutable.HashMap[String, String]()
       val tops = mutable.HashMap[String, String]()
       val comp = mutable.HashMap[String, String]()
-      p.foreach { a =>
-        a match {
-          case SinkAnnotation(m, pin) => sinks(pin) = sinks.getOrElse(pin, Set.empty) + m.name
-          case SourceAnnotation(c, pin) =>
-            sources(pin) = c.module.name
-            comp(pin) = c.name
-          case TopAnnotation(m, pin) => tops(pin) = m.name
-        }
+      p.foreach { 
+        case SinkAnnotation(m, pin) =>
+          sinks(pin) = sinks.getOrElse(pin, Set.empty) + m.name
+        case SourceAnnotation(c, pin) =>
+          sources(pin) = c.module.name
+          comp(pin) = c.name
+        case TopAnnotation(m, pin) => tops(pin) = m.name
       }
       (sources.size, tops.size, sinks.size, comp.size) match {
         case (0, 0, p, 0) => state.copy(annotations = None)

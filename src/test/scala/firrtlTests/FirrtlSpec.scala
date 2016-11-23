@@ -12,7 +12,7 @@ import scala.io.Source
 
 import firrtl._
 import firrtl.Parser.IgnoreInfo
-import firrtl.Annotations.AnnotationMap
+import firrtl.annotations
 
 // This trait is borrowed from Chisel3, ideally this code should only exist in one location
 trait BackendCompilationUtilities {

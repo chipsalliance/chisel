@@ -4,7 +4,7 @@ package firrtl
 package passes
 package memlib
 import ir._
-import Annotations._
+import annotations._
 import wiring._
 
 class CreateMemoryAnnotations(reader: Option[YamlFileReader]) extends Transform {

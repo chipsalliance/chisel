@@ -11,6 +11,7 @@ import firrtl.Parser.IgnoreInfo
 import firrtl.passes.{Pass, PassExceptions, RemoveEmpty}
 import firrtl.{
    Transform,
+   AnnotationMap,
    PassBasedTransform,
    CircuitState,
    CircuitForm,
@@ -28,7 +29,6 @@ import firrtl.{
    Compiler,
    Parser
 }
-import firrtl.Annotations.AnnotationMap
 
 
 // An example methodology for testing Firrtl Passes

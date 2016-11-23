@@ -5,15 +5,19 @@ package passes
 
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.Annotations._
+import firrtl.annotations._
 
 // Datastructures
 import scala.collection.mutable
 
 // Tags an annotation to be consumed by this pass
-case class InlineAnnotation(target: Named) extends Annotation with Loose with Unstable {
-  def duplicate(n: Named) = this.copy(target=n)
-  def transform = classOf[InlineInstances]
+object InlineAnnotation {
+  def apply(target: Named): Annotation = Annotation(target, classOf[InlineInstances], "")
+
+  def unapply(a: Annotation): Option[Named] = a match {
+    case Annotation(named, t, _) if t == classOf[InlineInstances] => Some(named)
+    case _ => None
+  }
 }
 
 // Only use on legal Firrtl. Specifically, the restriction of

@@ -5,7 +5,7 @@ package clocklist
 
 import firrtl._
 import firrtl.ir._
-import Annotations._
+import annotations._
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter, Writer}
 import wiring.WiringUtils.{getChildrenMap, countInstances, ChildrenMap, getLineage}
@@ -16,17 +16,8 @@ import memlib.AnalysisUtils._
 import memlib._
 import Mappers._
 
-case class ClockListAnnotation(target: ModuleName, outputConfig: String)
-    extends Annotation with Loose with Unstable {
-  def transform = classOf[ClockListTransform]
-  def duplicate(n: Named) = n match {
-    case m: ModuleName => this.copy(target = m, outputConfig = outputConfig)
-    case _ => error("Clocklist can only annotate a module.")
-  }
-}
-
 object ClockListAnnotation {
-  def apply(t: String) = {
+  def apply(t: String): Annotation = {
     val usage = """
 [Optional] ClockList
   List which signal drives each clock of every descendent of specified module
@@ -55,7 +46,16 @@ Usage:
       case None =>
     }
     val target = ModuleName(passModule, CircuitName(passCircuit))
-    new ClockListAnnotation(target, outputConfig)
+    Annotation(target, classOf[ClockListTransform], outputConfig)
+  }
+
+  def apply(target: ModuleName, outputConfig: String): Annotation =
+    Annotation(target, classOf[ClockListTransform], outputConfig)
+
+  def unapply(a: Annotation): Option[(ModuleName, String)] = a match {
+    case Annotation(ModuleName(m, c), t, outputConfig) if t == classOf[ClockListTransform] =>
+      Some((ModuleName(m, c), outputConfig))
+    case _ => None
   }
 }
 

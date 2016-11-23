@@ -5,7 +5,7 @@ package firrtlTests
 import firrtl._
 import firrtl.passes._
 import firrtl.passes.memlib._
-import Annotations._
+import annotations._
 
 class ReplSeqMemSpec extends SimpleTransformSpec {
   def transforms = Seq(

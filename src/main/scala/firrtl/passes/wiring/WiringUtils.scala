@@ -8,7 +8,7 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import scala.collection.mutable
-import firrtl.Annotations._
+import firrtl.annotations._
 import WiringUtils._
 
 /** Declaration kind in lineage (e.g. input port, output port, wire)

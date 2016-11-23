@@ -9,7 +9,7 @@ import firrtl._
 import firrtl.ir.Circuit
 import firrtl.passes._
 import firrtl.Parser.IgnoreInfo
-import Annotations._
+import annotations._
 import wiring.WiringUtils._
 import wiring._
 
