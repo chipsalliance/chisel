@@ -272,6 +272,15 @@ package object Chisel {     // scalastyle:ignore package.object.name
       apply(n).asInstanceOf[List[T]]
     }
 
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
     @deprecated("Use list-based Enum", "not soon enough")
     def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = {
       require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
@@ -279,6 +288,15 @@ package object Chisel {     // scalastyle:ignore package.object.name
       (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
     }
 
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
     @deprecated("Use list-based Enum", "not soon enough")
     def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
       require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
