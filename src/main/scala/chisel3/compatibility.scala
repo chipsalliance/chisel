@@ -250,7 +250,62 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Queue[T <: Data] = chisel3.util.Queue[T]
   val Queue = chisel3.util.Queue
 
-  val Enum = chisel3.util.Enum
+  object Enum extends chisel3.util.Enum {
+    /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
+      *
+      * nodeType must be of UInt type (note that Bits() creates a UInt) with unspecified width.
+      *
+      * @example {{{
+      * val state_on :: state_off :: Nil = Enum(UInt(), 2)
+      * val current_state = UInt()
+      * switch (current_state) {
+      *   is (state_on) {
+      *      ...
+      *   }
+      *   if (state_off) {
+      *      ...
+      *   }
+      * }
+      * }}}
+      */
+    def apply[T <: Bits](nodeType: T, n: Int): List[T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      apply(n).asInstanceOf[List[T]]
+    }
+
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+    }
+
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+    }
+  }
 
   val LFSR16 = chisel3.util.LFSR16
 
