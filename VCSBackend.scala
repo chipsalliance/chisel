@@ -126,7 +126,7 @@ private[iotesters] object setupVCSBackend {
     // Generate Verilog
     val verilogFile = new File(dir, s"${circuit.name}.v")
     val verilogWriter = new FileWriter(verilogFile)
-    val annotations = firrtl.Annotations.AnnotationMap(Seq(
+    val annotations = firrtl.AnnotationMap(Seq(
       firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name)))
     (new firrtl.VerilogCompiler).compile(
       firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),

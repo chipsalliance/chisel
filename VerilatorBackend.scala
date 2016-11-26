@@ -42,7 +42,7 @@ class GenVerilatorCppHarness(
   import firrtl._
   import firrtl.ir._
   import firrtl.Mappers._
-  import firrtl.Annotations.AnnotationMap
+  import firrtl.AnnotationMap
   import firrtl.Utils.create_exps
   import firrtl.passes.bitWidth
 
@@ -284,8 +284,8 @@ private[iotesters] object setupVerilatorBackend {
     val verilogWriter = new FileWriter(verilogFile)
 
     // TODO why do we need to infer readwrite?
-    val annotations = firrtl.Annotations.AnnotationMap(Seq(
-      new firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name)))
+    val annotations = firrtl.AnnotationMap(Seq(
+      firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name)))
     (new firrtl.VerilogCompiler).compile(
       CircuitState(chirrtl, ChirrtlForm, Some(annotations)),
       verilogWriter,
