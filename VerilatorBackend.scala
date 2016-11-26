@@ -322,6 +322,11 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
     poke(path, value)
   }
 
+  def poke(signal: InstanceId, value: Int, off: Option[Int])
+          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
+    poke(signal, BigInt(value), off)
+  }
+
   def peek(signal: InstanceId, off: Option[Int])
           (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
     val idx = off map (x => s"[$x]") getOrElse ""
@@ -335,10 +340,20 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
     expect(path, expected, msg)
   }
 
+  def expect(signal: InstanceId, expected: Int, msg: => String)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
+    expect(signal, BigInt(expected), msg)
+  }
+
   def poke(path: String, value: BigInt)
           (implicit logger: PrintStream, verbose: Boolean, base: Int) {
     if (verbose) logger println s"  POKE ${path} <- ${bigIntToStr(value, base)}"
     simApiInterface.poke(path, value)
+  }
+
+  def poke(path: String, value: Int)
+          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
+    poke(path, BigInt(value))
   }
 
   def peek(path: String)
@@ -354,8 +369,13 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
     val good = got == expected
     if (verbose) logger println (
       s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, base)} == """ +
-      s"""${bigIntToStr(expected, base)} ${if (good) "PASS" else "FAIL"}""")
+        s"""${bigIntToStr(expected, base)} ${if (good) "PASS" else "FAIL"}""")
     good
+  }
+
+  def expect(path: String, expected: Int, msg: => String)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
+    expect(path, BigInt(expected), msg)
   }
 
   def step(n: Int)(implicit logger: PrintStream): Unit = {

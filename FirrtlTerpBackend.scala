@@ -29,6 +29,11 @@ private[iotesters] class FirrtlTerpBackend(
     }
   }
 
+  def poke(signal: InstanceId, value: Int, off: Option[Int])
+          (implicit logger: PrintStream, verbose: Boolean, base: Int): Unit = {
+    poke(signal, BigInt(value), off)
+  }
+
   def peek(signal: InstanceId, off: Option[Int])
           (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
     signal match {
@@ -55,6 +60,11 @@ private[iotesters] class FirrtlTerpBackend(
         good
       case _ => false
     }
+  }
+
+  def expect(signal: InstanceId, expected: Int, msg: => String)
+            (implicit logger: PrintStream, verbose: Boolean, base: Int) : Boolean = {
+    expect(signal,BigInt(expected), msg)
   }
 
   def poke(path: String, value: BigInt)
