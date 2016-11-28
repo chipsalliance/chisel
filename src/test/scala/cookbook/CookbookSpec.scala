@@ -18,7 +18,7 @@ abstract class CookbookTester(length: Int) extends BasicTester {
   // No IO allowed, cookbook tests must be self-contained
   override final val io = new Bundle { }
 
-  val (cycle, done) = Counter(Bool(true), length)
+  val (cycle, done) = Counter(true.B, length)
   when (done) { stop() }
 }
 

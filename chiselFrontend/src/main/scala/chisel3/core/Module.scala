@@ -41,8 +41,16 @@ object Module {
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.currentModule = parent // Back to parent!
+
     val ports = m.computePorts
-    val component = Component(m, m.name, ports, m._commands)
+    // Blackbox inherits from Module so we have to match on it first TODO fix
+    val component = m match {
+      case bb: BlackBox =>
+        DefBlackBox(bb, bb.name, ports, bb.params)
+      case mod: Module =>
+        mod._commands.prepend(DefInvalid(childSourceInfo, mod.io.ref)) // init module outputs
+        DefModule(mod, mod.name, ports, mod._commands)
+    }
     m._component = Some(component)
     Builder.components += component
     // Avoid referencing 'parent' in top module
@@ -116,17 +124,8 @@ extends HasId {
   /** Legalized name of this module. */
   final val name = Builder.globalNamespace.name(desiredName)
 
-  /** FIRRTL Module name */
-  private var _modName: Option[String] = None
-  private[chisel3] def setModName(name: String) = _modName = Some(name)
-  def modName = _modName match {
-    case Some(name) => name
-    case None => throwException("modName should be called after circuit elaboration")
-  }
-
   /** Keep component for signal names */
   private[chisel3] var _component: Option[Component] = None
-
 
   /** Signal name (for simulation). */
   override def instanceName =

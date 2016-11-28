@@ -124,7 +124,7 @@ private[chisel3] trait HasId extends InstanceId {
     case None => throwException(s"$instanceName doesn't have a parent")
   }
   def parentModName = _parent match {
-    case Some(p) => p.modName
+    case Some(p) => p.name
     case None => throwException(s"$instanceName doesn't have a parent")
   }
 
@@ -181,7 +181,10 @@ private[chisel3] object Builder {
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
   def pushCommand[T <: Command](c: T): T = {
-    forcedModule._commands += c
+    forcedModule match {
+      case _: BlackBox => throwException("Cannot add hardware to a BlackBox")
+      case m => m._commands += c
+    }
     c
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {

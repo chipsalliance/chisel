@@ -40,7 +40,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     */
   def apply(idx: Int): T = {
     require(idx >= 0 && idx < length)
-    apply(UInt(idx))
+    apply(idx.asUInt)
   }
 
   /** Creates a read/write accessor into the memory with dynamic addressing.

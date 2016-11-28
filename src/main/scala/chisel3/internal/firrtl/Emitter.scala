@@ -2,6 +2,7 @@
 
 package chisel3.internal.firrtl
 import chisel3._
+import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
 private[chisel3] object Emitter {
@@ -31,7 +32,7 @@ private class Emitter(circuit: Circuit) {
           "\"" + printf.format(fmt) + "\"") ++ args
         printfArgs mkString ("printf(", ", ", ")")
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
-      case e: DefInstance => s"inst ${e.name} of ${e.id.modName}"
+      case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
       case w: WhenBegin =>
         indent()
         s"when ${w.pred.fullName(ctx)} :"
@@ -42,8 +43,15 @@ private class Emitter(circuit: Circuit) {
     firrtlLine + e.sourceInfo.makeMessage(" " + _)
   }
 
-  // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
-  private val defnMap = collection.mutable.HashMap[(String, String), Component]()
+  private def emitParam(name: String, p: Param): String = {
+    val str = p match {
+      case IntParam(value) => value.toString
+      case DoubleParam(value) => value.toString
+      case StringParam(str) => "\"" + str + "\""
+      case RawParam(str) => "'" + str + "'"
+    }
+    s"parameter $name = $str"
+  }
 
   /** Generates the FIRRTL module declaration.
     */
@@ -61,12 +69,13 @@ private class Emitter(circuit: Circuit) {
         body ++= newline + emitPort(p)
       body ++= newline
 
-      m.id match {
-        case _: BlackBox =>
-          // TODO: BlackBoxes should be empty, but funkiness in Module() means
-          // it's not for now. Eventually, this should assert out.
-        case _: Module => for (cmd <- m.commands) {
-          body ++= newline + emit(cmd, m)
+      m match {
+        case bb: DefBlackBox =>
+          // Firrtl extmodule can overrule name
+          body ++= newline + s"defname = ${bb.id.desiredName}"
+          body ++= newline + (bb.params map { case (n, p) => emitParam(n, p) } mkString newline)
+        case mod: DefModule => for (cmd <- mod.commands) {
+          body ++= newline + emit(cmd, mod)
         }
       }
       body ++= newline
@@ -80,17 +89,10 @@ private class Emitter(circuit: Circuit) {
     */
   private def emit(m: Component): String = {
     // Generate the body.
-    val defn = moduleDefn(m)
-
-    defnMap get (m.id.desiredName, defn) match {
-      case Some(duplicate) =>
-        m.id setModName duplicate.name
-        ""
-      case None =>
-        defnMap((m.id.desiredName, defn)) = m
-        m.id setModName m.name
-        moduleDecl(m) + defn
-    }
+    val sb = new StringBuilder
+    sb.append(moduleDecl(m))
+    sb.append(moduleDefn(m))
+    sb.result
   }
 
   private var indentLevel = 0
