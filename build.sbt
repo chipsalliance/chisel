@@ -19,7 +19,7 @@ lazy val commonSettings = Seq (
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.7",
-  scalacOptions := Seq("-deprecation")
+  scalacOptions := Seq("-deprecation", "-feature")
 )
 
 val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
