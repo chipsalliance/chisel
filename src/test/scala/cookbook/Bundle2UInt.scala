@@ -8,7 +8,7 @@ import chisel3._
  *
  * Call asUInt on the Bundle instance
  */
-class Bundle2UInt extends CookbookTester(0) {
+class Bundle2UInt extends CookbookTester(1) {
   // Example
   class MyBundle extends Bundle {
     val foo = UInt(4.W)
