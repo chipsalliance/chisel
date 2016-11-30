@@ -225,7 +225,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   private[chisel3] lazy val flatten: IndexedSeq[Bits] =
     (0 until length).flatMap(i => this.apply(i).flatten)
 
-  for ((elt, i) <- self zipWithIndex)
+  for ((elt, i) <- self.zipWithIndex)
     elt.setRef(this, i)
 
   /** Default "pretty-print" implementation
