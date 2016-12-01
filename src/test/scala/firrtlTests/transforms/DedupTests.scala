@@ -89,6 +89,44 @@ class DedupModuleTests extends HighTransformSpec {
       val aMap = new AnnotationMap(Nil)
       execute(writer, aMap, input, check)
    }
+   "The module A and B with comments" should "be deduped" in {
+      val input =
+         """circuit Top :
+           |  module Top :
+           |    inst a1 of A
+           |    inst a2 of A_
+           |  module A : @[yy 2:2]
+           |    output x: UInt<1> @[yy 2:2]
+           |    inst b of B @[yy 2:2]
+           |    x <= b.x @[yy 2:2]
+           |  module A_ : @[xx 1:1]
+           |    output x: UInt<1> @[xx 1:1]
+           |    inst b of B_ @[xx 1:1]
+           |    x <= b.x @[xx 1:1]
+           |  module B :
+           |    output x: UInt<1>
+           |    x <= UInt(1)
+           |  module B_ :
+           |    output x: UInt<1>
+           |    x <= UInt(1)
+           """.stripMargin
+      val check =
+         """circuit Top :
+           |  module Top :
+           |    inst a1 of A
+           |    inst a2 of A
+           |  module A : @[yy 2:2 xx 1:1]
+           |    output x: UInt<1> @[yy 2:2 xx 1:1]
+           |    inst b of B @[yy 2:2 xx 1:1]
+           |    x <= b.x @[yy 2:2 xx 1:1]
+           |  module B :
+           |    output x: UInt<1>
+           |    x <= UInt(1)
+           """.stripMargin
+      val writer = new StringWriter()
+      val aMap = new AnnotationMap(Nil)
+      execute(writer, aMap, input, check)
+   }
 }
 
 // Execution driven tests for inlining modules

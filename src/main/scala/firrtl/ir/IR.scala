@@ -13,12 +13,18 @@ abstract class FirrtlNode {
 abstract class Info extends FirrtlNode {
   // default implementation
   def serialize: String = this.toString
+  def ++(that: Info): Info
 }
 case object NoInfo extends Info {
   override def toString: String = ""
+  def ++(that: Info): Info = that
 }
 case class FileInfo(info: StringLit) extends Info {
   override def toString: String = " @[" + info.serialize + "]"
+  def ++(that: Info): Info = that match {
+    case NoInfo => this
+    case FileInfo(otherInfo) => FileInfo(FIRRTLStringLitHandler.unescape(info.serialize + " " + otherInfo.serialize))
+  }
 }
 
 trait HasName {

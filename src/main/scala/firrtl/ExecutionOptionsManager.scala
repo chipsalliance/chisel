@@ -260,7 +260,7 @@ trait HasFirrtlOptions {
       else parser.failure(s"$x bad value must be one of ignore|use|gen|append")
     }
     .text {
-      s"specifies the source info handling, default is ${firrtlOptions.infoMode}"
+      s"specifies the source info handling, default is ${firrtlOptions.infoModeName}"
     }
 
   parser.opt[Seq[String]]("inline")

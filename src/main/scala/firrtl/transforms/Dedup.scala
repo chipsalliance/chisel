@@ -53,15 +53,39 @@ class DedupModules extends Transform {
     val dedupModules = mutable.HashMap.empty[String, String]
     // Old module name -> dup module name
     val dedupMap = mutable.HashMap.empty[String, String]
-    def onModule(m: DefModule): Option[DefModule] = {
+    // Dup module name -> all old module names
+    val oldModuleMap = mutable.HashMap.empty[String, Seq[DefModule]]
+
+    def onModule(m: DefModule): Unit = {
       def fixInstance(s: Statement): Statement = s map fixInstance match {
         case DefInstance(i, n, m) => DefInstance(i, n, dedupMap.getOrElse(m, m))
         case WDefInstance(i, n, m, t) => WDefInstance(i, n, dedupMap.getOrElse(m, m), t)
         case x => x
       }
+      def removeInfo(stmt: Statement): Statement = stmt map removeInfo match {
+        case sx: HasInfo => sx match {
+          case s: DefWire => s.copy(info = NoInfo)
+          case s: DefNode => s.copy(info = NoInfo)
+          case s: DefRegister => s.copy(info = NoInfo)
+          case s: DefInstance => s.copy(info = NoInfo)
+          case s: WDefInstance => s.copy(info = NoInfo)
+          case s: DefMemory => s.copy(info = NoInfo)
+          case s: Connect => s.copy(info = NoInfo)
+          case s: PartialConnect => s.copy(info = NoInfo)
+          case s: IsInvalid => s.copy(info = NoInfo)
+          case s: Attach => s.copy(info = NoInfo)
+          case s: Stop => s.copy(info = NoInfo)
+          case s: Print => s.copy(info = NoInfo)
+          case s: Conditionally => s.copy(info = NoInfo)
+        }
+        case sx => sx
+      }
+      def removePortInfo(p: Port): Port = p.copy(info = NoInfo)
+
 
       val mx = m map fixInstance
-      val string = mx match {
+      val mxx = (mx map removeInfo) map removePortInfo
+      val string = mxx match {
         case Module(i, n, ps, b) =>
           ps.map(_.serialize).mkString + b.serialize
         case ExtModule(i, n, ps, dn, p) =>
@@ -70,14 +94,70 @@ class DedupModules extends Transform {
       dedupModules.get(string) match {
         case Some(dupname) =>
           dedupMap(mx.name) = dupname
-          None
+          oldModuleMap(dupname) = oldModuleMap(dupname) :+ mx
         case None =>
           dedupModules(string) = mx.name
-          Some(mx)
+          oldModuleMap(mx.name) = Seq(mx)
       }
     }
-    val modulesx = moduleOrder.flatMap(n => onModule(moduleMap(n)))
-    val modulesxMap = modulesx.map(m => m.name -> m).toMap
-    c.copy(modules = c.modules.flatMap(m => modulesxMap.get(m.name)))
+    def mergeModules(ms: Seq[DefModule]) = {
+      def mergeStatements(ss: Seq[Statement]): Statement = ss.head match {
+        case Block(stmts) =>
+          val inverted = invertSeqs(ss.map { case Block(s) => s })
+          val finalStmts = inverted.map { jStmts => mergeStatements(jStmts) }
+          Block(finalStmts.toSeq)
+        case Conditionally(info, pred, conseq, alt) =>
+          val finalConseq = mergeStatements(ss.map { case Conditionally(_, _, c, _) => c })
+          val finalAlt = mergeStatements(ss.map { case Conditionally(_, _, _, a) => a })
+          val finalInfo = ss.map { case Conditionally(i, _, _, _) => i }.reduce (_ ++ _)
+          Conditionally(finalInfo, pred, finalConseq, finalAlt)
+        case sx: HasInfo => sx match {
+          case s: DefWire => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: DefNode => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: DefRegister => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: DefInstance => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: WDefInstance => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: DefMemory => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: Connect => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: PartialConnect => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: IsInvalid => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: Attach => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: Stop => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+          case s: Print => s.copy(info = ss.map(getInfo).reduce(_ ++ _))
+        }
+        case s => s
+      }
+      def getInfo(s: Any): Info = s match {
+        case sx: HasInfo => sx.info
+        case _ => NoInfo
+      }
+      def invertSeqs[A](seq: Seq[Seq[A]]): Seq[Seq[A]] = {
+        val finalSeq = collection.mutable.ArrayBuffer[Seq[A]]()
+        for(j <- 0 until seq.head.size) {
+          finalSeq += seq.map(s => s(j))
+        }
+        finalSeq.toSeq
+      }
+      val finalPorts = invertSeqs(ms.map(_.ports)).map { jPorts => 
+        jPorts.tail.foldLeft(jPorts.head) { (p1, p2) =>
+          Port(p1.info ++ p2.info, p1.name, p1.direction, p1.tpe)
+        }
+      }
+      val finalInfo = ms.map(getInfo).reduce(_ ++ _)
+      ms.head match {
+        case e: ExtModule => ExtModule(finalInfo, e.name, finalPorts, e.defname, e.params)
+        case e: Module => Module(finalInfo, e.name, finalPorts, mergeStatements(ms.collect { case m: Module => m.body}))
+      }
+    }
+    moduleOrder.foreach(n => onModule(moduleMap(n)))
+
+    // Use old module list to preserve ordering
+    val dedupedModules = c.modules.flatMap { m => 
+      oldModuleMap.get(m.name) match {
+        case Some(modules) => Some(mergeModules(modules))
+        case None => None
+      }
+    }
+    c.copy(modules = dedupedModules)
   }
 }

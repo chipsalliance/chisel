@@ -7,7 +7,7 @@ import java.io.{StringWriter,Writer}
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.junit.JUnitRunner
 import firrtl.ir.Circuit
-import firrtl.Parser.IgnoreInfo
+import firrtl.Parser.UseInfo
 import firrtl.passes.{Pass, PassExceptions, RemoveEmpty}
 import firrtl.{
    Transform,
@@ -37,7 +37,7 @@ abstract class SimpleTransformSpec extends FlatSpec with Matchers with Compiler 
    def emitter = new FirrtlEmitter
 
    // Utility function
-   def parse(s: String): Circuit = Parser.parse(s.split("\n").toIterator, infoMode = IgnoreInfo)
+   def parse(s: String): Circuit = Parser.parse(s.split("\n").toIterator, infoMode = UseInfo)
    def squash(c: Circuit): Circuit = RemoveEmpty.run(c)
 
    // Executes the test. Call in tests.
