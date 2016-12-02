@@ -302,3 +302,5 @@ Also included is:
  - **Driver utilities**, `chisel.Driver`, which contains compilation and test
  functions that are invoked in the standard Verilog generation and simulation
  testing infrastructure. These can also be used as part of custom flows.
+
+The ScalaDoc for Chisel3 is available at the [API tab on the Chisel web site.](https://chisel.eecs.berkeley.edu/api/)
