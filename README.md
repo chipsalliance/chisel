@@ -73,6 +73,7 @@ This will walk you through installing Chisel and its dependencies:
         sudo update-alternatives --config java
         ```
   1. Locally publish this version of firrtl so it is available to satisfy the chisel3 library dependency:
+
         ```
         sbt publish-local
         ```
