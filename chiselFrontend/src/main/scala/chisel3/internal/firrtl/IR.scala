@@ -7,6 +7,8 @@ import core._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
 
+import _root_.firrtl.annotations.Annotation
+
 case class PrimOp(val name: String) {
   override def toString: String = name
 }
@@ -273,4 +275,4 @@ abstract class Component extends Arg {
 case class DefModule(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 case class DefBlackBox(id: Module, name: String, ports: Seq[Port], params: Map[String, Param]) extends Component
 
-case class Circuit(name: String, components: Seq[Component])
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation] = Seq.empty)
