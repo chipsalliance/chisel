@@ -9,17 +9,17 @@ import chisel3.testers.BasicTester
 
 class DirectionHaver extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt.width(32))
-    val out = Output(UInt.width(32))
+    val in = Input(UInt(32.W))
+    val out = Output(UInt(32.W))
   })
 }
 
 class GoodDirection extends DirectionHaver {
-  io.out := UInt(0)
+  io.out := 0.U
 }
 
 class BadDirection extends DirectionHaver {
-  io.in := UInt(0)
+  io.in := 0.U
 }
 
 class DirectionSpec extends ChiselPropSpec with ShouldMatchers {

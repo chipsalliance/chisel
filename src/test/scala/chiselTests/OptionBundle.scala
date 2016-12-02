@@ -20,27 +20,27 @@ class OptionBundleModule(hasIn: Boolean) extends Module {
   if (hasIn) {
     io.out := io.in.get
   } else {
-    io.out := Bool(false)
+    io.out := false.B
   }
 }
 
 class SomeOptionBundleTester(expected: Boolean) extends BasicTester {
   val mod = Module(new OptionBundleModule(true))
-  mod.io.in.get := Bool(expected)
-  assert(mod.io.out === Bool(expected))
+  mod.io.in.get := expected.asBool
+  assert(mod.io.out === expected.asBool)
   stop()
 }
 
 class NoneOptionBundleTester() extends BasicTester {
   val mod = Module(new OptionBundleModule(false))
-  assert(mod.io.out === Bool(false))
+  assert(mod.io.out === false.B)
   stop()
 }
 
 class InvalidOptionBundleTester() extends BasicTester {
   val mod = Module(new OptionBundleModule(false))
-  mod.io.in.get := Bool(true)
-  assert(Bool(false))
+  mod.io.in.get := true.B
+  assert(false.B)
   stop()
 }
 

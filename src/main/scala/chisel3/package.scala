@@ -1,10 +1,10 @@
 // See LICENSE for license details.
 
 package object chisel3 {    // scalastyle:ignore package.object.name
-  import scala.language.experimental.macros
+  import scala.language.implicitConversions
 
   import internal.firrtl.Width
-  import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+
   import util.BitPat
 
   import chisel3.core.{Binding, FlippedBinder}
@@ -31,16 +31,109 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
-  val Bits = chisel3.core.Bits
+
+  // Some possible regex replacements for the literal specifier deprecation:
+  // (note: these are not guaranteed to handle all edge cases! check all replacements!)
+  // Bool\((true|false)\)
+  //  => $1.B
+  // UInt\(width\s*=\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
+  //  => UInt($1.W)
+  // (UInt|SInt|Bits).width\((\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
+  //  => $1($2.W)
+  // (U|S)Int\((-?\d+|0[xX][0-9a-fA-F]+)\)
+  //  => $2.$1
+  // UInt\((\d+|0[xX][0-9a-fA-F]+),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
+  //  => $1.U($2.W)
+  // (UInt|SInt|Bool)\(([_a-zA-Z][_0-9a-zA-Z]*)\)
+  //  => $2.as$1
+  // (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
+  //  => $2.as$1($3.W)
+
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    * These will be removed very soon. It's recommended you port your code ASAP.
+    */
+  trait UIntFactory extends chisel3.core.UIntFactory {
+    /** Create a UInt literal with inferred width. */
+    @deprecated("use n.U", "chisel3, will be removed by end of 2016")
+    def apply(n: String): UInt = n.asUInt
+    /** Create a UInt literal with fixed width. */
+    @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2016")
+    def apply(n: String, width: Int): UInt = n.asUInt(width.W)
+
+    /** Create a UInt literal with specified width. */
+    @deprecated("use value.U(width)", "chisel3, will be removed by end of 2016")
+    def apply(value: BigInt, width: Width): UInt = value.asUInt(width)
+
+    /** Create a UInt literal with fixed width. */
+    @deprecated("use value.U(width.W)", "chisel3, will be removed by end of 2016")
+    def apply(value: BigInt, width: Int): UInt = value.asUInt(width.W)
+
+    /** Create a UInt with a specified width - compatibility with Chisel2. */
+    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
+    def apply(dir: Option[Direction] = None, width: Int): UInt = apply(width.W)
+
+    /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
+    @deprecated("use value.U", "chisel3, will be removed by end of 2016")
+    def apply(value: BigInt): UInt = value.asUInt
+
+    /** Create a UInt with a specified width */
+    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
+    def width(width: Int): UInt = apply(width.W)
+
+    /** Create a UInt port with specified width. */
+    @deprecated("use UInt(width)", "chisel3, will be removed by end of 2016")
+    def width(width: Width): UInt = apply(width)
+  }
+
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    * These will be removed very soon. It's recommended you move your code soon.
+    */
+  trait SIntFactory extends chisel3.core.SIntFactory {
+    /** Create a SInt type or port with fixed width. */
+    @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2016")
+    def width(width: Int): SInt = apply(width.W)
+    /** Create an SInt type with specified width. */
+    @deprecated("use SInt(width)", "chisel3, will be removed by end of 2016")
+    def width(width: Width): SInt = apply(width)
+
+    /** Create an SInt literal with inferred width. */
+    @deprecated("use value.S", "chisel3, will be removed by end of 2016")
+    def apply(value: BigInt): SInt = value.asSInt
+    /** Create an SInt literal with fixed width. */
+    @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2016")
+    def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
+
+    /** Create an SInt literal with specified width. */
+    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
+    def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
+
+    @deprecated("use value.S", "chisel3, will be removed by end of 2016")
+    def Lit(value: BigInt): SInt = value.asSInt
+
+    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
+  }
+
+  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
+    * These will be removed very soon. It's recommended you move your code soon.
+    */
+  trait BoolFactory extends chisel3.core.BoolFactory {
+    /** Creates Bool literal.
+     */
+    @deprecated("use x.B", "chisel3, will be removed by end of 2016")
+    def apply(x: Boolean): Bool = x.B
+  }
+
+  object Bits extends UIntFactory
   type Num[T <: Data] = chisel3.core.Num[T]
   type UInt = chisel3.core.UInt
-  val UInt = chisel3.core.UInt
+  object UInt extends UIntFactory
   type SInt = chisel3.core.SInt
-  val SInt = chisel3.core.SInt
+  object SInt extends SIntFactory
   type FixedPoint = chisel3.core.FixedPoint
   val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
-  val Bool = chisel3.core.Bool
+  object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
   type BlackBox = chisel3.core.BlackBox
@@ -113,50 +206,18 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit def string2Printable(str: String): Printable = PString(str)
 
-  /**
-  * These implicit classes allow one to convert scala.Int|scala.BigInt to
-  * Chisel.UInt|Chisel.SInt by calling .asUInt|.asSInt on them, respectively.
-  * The versions .asUInt(width)|.asSInt(width) are also available to explicitly
-  * mark a width for the new literal.
-  *
-  * Also provides .asBool to scala.Boolean and .asUInt to String
-  *
-  * Note that, for stylistic reasons, one should avoid extracting immediately
-  * after this call using apply, ie. 0.asUInt(1)(0) due to potential for
-  * confusion (the 1 is a bit length and the 0 is a bit extraction position).
-  * Prefer storing the result and then extracting from it.
-  */
-  implicit class fromIntToLiteral(val x: Int) extends AnyVal {
-    def U: UInt = UInt(BigInt(x), Width())    // scalastyle:ignore method.name
-    def S: SInt = SInt(BigInt(x), Width())    // scalastyle:ignore method.name
+  implicit class fromBigIntToLiteral(val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
+  implicit class fromtIntToLiteral(val x: Int) extends chisel3.core.fromIntToLiteral(x)
+  implicit class fromtLongToLiteral(val x: Long) extends chisel3.core.fromLongToLiteral(x)
+  implicit class fromStringToLiteral(val x: String) extends chisel3.core.fromStringToLiteral(x)
+  implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+  implicit class fromDoubleToLiteral(val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
+  implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
 
-    def asUInt(): UInt = UInt(x, Width())
-    def asSInt(): SInt = SInt(x, Width())
-    def asUInt(width: Int): UInt = UInt(x, width)
-    def asSInt(width: Int): SInt = SInt(x, width)
-  }
+  implicit class fromUIntToBitPatComparable(val x: UInt) {
+    import scala.language.experimental.macros
+    import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-  implicit class fromBigIntToLiteral(val x: BigInt) extends AnyVal {
-    def U: UInt = UInt(x, Width())    // scalastyle:ignore method.name
-    def S: SInt = SInt(x, Width())    // scalastyle:ignore method.name
-
-    def asUInt(): UInt = UInt(x, Width())
-    def asSInt(): SInt = SInt(x, Width())
-    def asUInt(width: Int): UInt = UInt(x, width)
-    def asSInt(width: Int): SInt = SInt(x, width)
-  }
-  implicit class fromStringToLiteral(val x: String) extends AnyVal {
-    def U: UInt = UInt(x)    // scalastyle:ignore method.name
-  }
-  implicit class fromBooleanToLiteral(val x: Boolean) extends AnyVal {
-    def B: Bool = Bool(x)    // scalastyle:ignore method.name
-  }
-
-  implicit class fromDoubleToLiteral(val x: Double) extends AnyVal {
-    def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(x, binaryPoint = binaryPoint)
-  }
-
-  implicit class fromUIntToBitPatComparable(val x: UInt) extends AnyVal {
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
@@ -179,4 +240,43 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
   def getFirrtlDirection(d: Data): Direction = chisel3.core.Data.getFirrtlDirection(d)
+
+  /** Package for experimental features, which may have their API changed, be removed, etc.
+    *
+    * Because its contents won't necessarily have the same level of stability and support as
+    * non-experimental, you must explicitly import this package to use its contents.
+    */
+  object experimental {
+    type Param = chisel3.core.Param
+    type IntParam = chisel3.core.IntParam
+    val IntParam = chisel3.core.IntParam
+    type DoubleParam = chisel3.core.DoubleParam
+    val DoubleParam = chisel3.core.DoubleParam
+    type StringParam = chisel3.core.StringParam
+    val StringParam = chisel3.core.StringParam
+    type RawParam = chisel3.core.RawParam
+    val RawParam = chisel3.core.RawParam
+
+    // Implicit conversions for BlackBox Parameters
+    implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
+    implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
+    implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
+    implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
+    implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+
+    implicit class ChiselRange(val sc: StringContext) extends AnyVal {
+      import scala.language.experimental.macros
+      import internal.firrtl.NumericBound
+
+      /** Specifies a range using mathematical range notation. Variables can be interpolated using
+        * standard string interpolation syntax.
+        * @example {{{
+        * UInt(range"[0, 2)")
+        * UInt(range"[0, \$myInt)")
+        * UInt(range"[0, \${myInt + 2})")
+        * }}}
+        */
+      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+    }
+  }
 }

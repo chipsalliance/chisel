@@ -41,7 +41,7 @@ object Pipe
       out.bits <> enqBits
       out
     } else {
-      val v = Reg(Bool(), next=enqValid, init=Bool(false))
+      val v = Reg(Bool(), next=enqValid, init=false.B)
       val b = RegEnable(enqBits, enqValid)
       apply(v, b, latency-1)
     }
@@ -52,10 +52,12 @@ object Pipe
 
 class Pipe[T <: Data](gen: T, latency: Int = 1) extends Module
 {
-  val io = IO(new Bundle {
+  class PipeIO extends Bundle {
     val enq = Input(Valid(gen))
     val deq = Output(Valid(gen))
-  })
+  }
+
+  val io = IO(new PipeIO)
 
   io.deq <> Pipe(io.enq, latency)
 }

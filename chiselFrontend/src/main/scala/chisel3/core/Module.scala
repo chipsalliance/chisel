@@ -25,12 +25,32 @@ object Module {
     // module de-duplication in FIRRTL emission.
     val childSourceInfo = UnlocatableSourceInfo
 
+    if (Builder.readyForModuleConstr) {
+      throwException("Error: Called Module() twice without instantiating a Module." +
+                     sourceInfo.makeMessage(" See " + _))
+    }
+    Builder.readyForModuleConstr = true
     val parent: Option[Module] = Builder.currentModule
-    val m = bc.setRefs() // This will set currentModule!
+
+    val m = bc.setRefs() // This will set currentModule and unset readyForModuleConstr!!!
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
+
+    if (Builder.readyForModuleConstr) {
+      throwException("Error: attempted to instantiate a Module, but nothing happened. " +
+                     "This is probably due to rewrapping a Module instance with Module()." +
+                     sourceInfo.makeMessage(" See " + _))
+    }
     Builder.currentModule = parent // Back to parent!
+
     val ports = m.computePorts
-    val component = Component(m, m.name, ports, m._commands)
+    // Blackbox inherits from Module so we have to match on it first TODO fix
+    val component = m match {
+      case bb: BlackBox =>
+        DefBlackBox(bb, bb.name, ports, bb.params)
+      case mod: Module =>
+        mod._commands.prepend(DefInvalid(childSourceInfo, mod.io.ref)) // init module outputs
+        DefModule(mod, mod.name, ports, mod._commands)
+    }
     m._component = Some(component)
     Builder.components += component
     // Avoid referencing 'parent' in top module
@@ -93,6 +113,10 @@ extends HasId {
   private[chisel3] val _commands = ArrayBuffer[Command]()
   private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
+  if (!Builder.readyForModuleConstr) {
+    throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+  }
+  readyForModuleConstr = false
 
   /** Desired name of this module. */
   def desiredName = this.getClass.getName.split('.').last
@@ -100,17 +124,8 @@ extends HasId {
   /** Legalized name of this module. */
   final val name = Builder.globalNamespace.name(desiredName)
 
-  /** FIRRTL Module name */
-  private var _modName: Option[String] = None
-  private[chisel3] def setModName(name: String) = _modName = Some(name)
-  def modName = _modName match {
-    case Some(name) => name
-    case None => throwException("modName should be called after circuit elaboration")
-  }
-
   /** Keep component for signal names */
   private[chisel3] var _component: Option[Component] = None
-
 
   /** Signal name (for simulation). */
   override def instanceName =

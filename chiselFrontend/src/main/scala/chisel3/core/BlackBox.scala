@@ -3,10 +3,19 @@
 package chisel3.core
 
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{ModuleIO, DefInvalid}
+import chisel3.internal.firrtl._
+import chisel3.internal.throwException
 import chisel3.internal.sourceinfo.SourceInfo
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
+
+/** Parameters for BlackBoxes */
+sealed abstract class Param
+case class IntParam(value: BigInt) extends Param
+case class DoubleParam(value: Double) extends Param
+case class StringParam(value: String) extends Param
+/** Unquoted String */
+case class RawParam(value: String) extends Param
 
 /** Defines a black box, which is a module that can be referenced from within
   * Chisel, but is not defined in the emitted Verilog. Useful for connecting
@@ -16,12 +25,9 @@ import chisel3.core.ExplicitCompileOptions.NotStrict
   * {{{
   * ... to be written once a spec is finalized ...
   * }}}
+  * @note The parameters API is experimental and may change
   */
-// REVIEW TODO: make Verilog parameters part of the constructor interface?
-abstract class BlackBox extends Module {
-  // Don't bother taking override_clock|reset, clock/reset locked out anyway
-  // TODO: actually implement this.
-  def setVerilogParameters(s: String): Unit = {}
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends Module {
 
   // The body of a BlackBox is empty, the real logic happens in firrtl/Emitter.scala
   // Bypass standard clock, reset, io port declaration by flattening io

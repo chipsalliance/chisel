@@ -24,8 +24,8 @@ import scala.util.DynamicVariable
 
 class SomeSubMod(param1: Int, param2: Int) extends Module {
   val io = new Bundle {
-    val in = UInt(INPUT, 16)
-    val out = SInt(OUTPUT, 32)
+    val in = Input(UInt(16.W))
+    val out = Output(SInt(32.W))
   }
   val annotate = MyBuilder.myDynamicContext.annotationMap
 
@@ -36,18 +36,18 @@ class SomeSubMod(param1: Int, param2: Int) extends Module {
 
 class AnnotatingExample extends Module {
   val io = new Bundle {
-    val a  = UInt(INPUT, 32)
-    val b  = UInt(INPUT, 32)
-    val e  = Bool(INPUT)
-    val z  = UInt(OUTPUT, 32)
-    val v  = Bool(OUTPUT)
+    val a  = Input(UInt(32.W))
+    val b  = Input(UInt(32.W))
+    val e  = Input(Bool())
+    val z  = Output(UInt(32.W))
+    val v  = Output(Bool())
     val bun = new Bundle {
-      val nested_1 = UInt(INPUT, 12)
-      val nested_2 = Bool(OUTPUT)
+      val nested_1 = Input(UInt(12.W))
+      val nested_2 = Output(Bool())
     }
   }
-  val x = Reg(UInt(width = 32))
-  val y = Reg(UInt(width = 32))
+  val x = Reg(UInt(32.W))
+  val y = Reg(UInt(32.W))
 
   val subModule1 = Module(new SomeSubMod(1, 2))
   val subModule2 = Module(new SomeSubMod(3, 4))
@@ -141,5 +141,5 @@ object MyDriver extends BackendCompilationUtilities {
   /**
     * illustrates a chisel3 style driver that, annotations can only processed within this structure
     */
-  def buildAnnotatedCircuit[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(Module(gen()))
+  def buildAnnotatedCircuit[T <: Module](gen: () => T): Map[String, String] = MyBuilder.build(gen())
 }
