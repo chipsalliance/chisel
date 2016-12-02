@@ -7,6 +7,11 @@ import chisel3.core.SeqUtils
 
 object Cat {
   /** Concatenates the argument data elements, in argument order, together.
+    *
+    * @example {{{
+    * Cat("b101".U, "b11".U)  // equivalent to "b101 11".U
+    * Cat(myUIntWire0, myUIntWire1)
+    * }}}  
     */
   def apply[T <: Bits](a: T, r: T*): UInt = apply(a :: r.toList)
 
@@ -15,6 +20,11 @@ object Cat {
     * in the sequence forms the least significant bits.
     *
     * Equivalent to r(0) ## r(1) ## ... ## r(n-1).
+    * 
+    * @example {{{
+    * Cat(Seq("b101".U, "b11".U))  // equivalent to "b101 11".U
+    * Cat(mySeqOfBits)
+    * }}}
     */
   def apply[T <: Bits](r: Seq[T]): UInt = SeqUtils.asUInt(r.reverse)
 }

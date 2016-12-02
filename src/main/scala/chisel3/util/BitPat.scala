@@ -39,13 +39,24 @@ object BitPat {
     * @param n the literal value as a string, in binary, prefixed with 'b'
     * @note legal characters are '0', '1', and '?', as well as '_' and white
     * space (which are ignored)
+    * 
+    * @example {{{
+    * "0b00101".U === BitPat("b001??") // dynamically evaluates to true.B
+    * "0b00111".U === BitPat("b001??") // dynamically evaluates to true.B
+    * "0b00001".U === BitPat("b001??") // dynamically evaluates to false.B
+    * }}}
     */
   def apply(n: String): BitPat = {
     val (bits, mask, width) = parse(n)
     new BitPat(bits, mask, width)
   }
 
-  /** Creates a [[BitPat]] of all don't cares of the specified bitwidth. */
+  /** Creates a [[BitPat]] of all don't cares of the specified bitwidth.
+    * 
+    * @example {{{
+    * val myDontCare = BitPat.dontCare(4)  // equivalent to BitPat("b????")
+    * }}}  
+    */
   def dontCare(width: Int): BitPat = BitPat("b" + ("?" * width))
 
   @deprecated("Use BitPat.dontCare", "chisel3")
@@ -73,7 +84,6 @@ object BitPat {
   }
 }
 
-// TODO: Break out of Core? (this doesn't involve FIRRTL generation)
 /** Bit patterns are literals with masks, used to represent values with don't
   * cares. Equality comparisons will ignore don't care bits (for example,
   * BitPat(0b10?1) === 0b1001.asUInt and 0b1011.asUInt.
