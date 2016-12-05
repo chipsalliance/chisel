@@ -250,6 +250,8 @@ object CheckTypes extends Pass {
     s"$info: [module $mname]  Must mux between passive types.")
   class MuxCondUInt(info: Info, mname: String) extends PassException(
     s"$info: [module $mname]  A mux condition must be of type UInt.")
+  class MuxClock(info: Info, mname: String) extends PassException(
+    s"$info: [module $mname]  Firrtl does not support muxing clocks.")
   class ValidIfPassiveTypes(info: Info, mname: String) extends PassException(
     s"$info: [module $mname]  Must validif a passive type.")
   class ValidIfCondUInt(info: Info, mname: String) extends PassException(
@@ -371,6 +373,8 @@ object CheckTypes extends Pass {
             case _: UIntType =>
             case _ => errors append new MuxCondUInt(info, mname)
           }
+          if ((e.tval.tpe == ClockType) || (e.fval.tpe == ClockType))
+            errors.append(new MuxClock(info, mname))
         case (e: ValidIf) =>
           if (!passive(e.tpe))
             errors append new ValidIfPassiveTypes(info, mname)

@@ -109,6 +109,14 @@ trait BackendCompilationUtilities {
 trait FirrtlRunners extends BackendCompilationUtilities {
   def parse(str: String) = Parser.parse(str.split("\n").toIterator, IgnoreInfo)
   lazy val cppHarness = new File(s"/top.cpp")
+  /** Compiles input Firrtl to Verilog */
+  def compileToVerilog(input: String, annotations: AnnotationMap = AnnotationMap(Seq.empty)): String = {
+    val circuit = Parser.parse(input.split("\n").toIterator)
+    val compiler = new VerilogCompiler
+    val writer = new java.io.StringWriter
+    compiler.compile(CircuitState(circuit, HighForm, Some(annotations)), writer)
+    writer.toString
+  }
   /** Compile a Firrtl file
     *
     * @param prefix is the name of the Firrtl file without path or file extension

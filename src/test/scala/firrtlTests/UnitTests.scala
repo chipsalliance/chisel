@@ -304,4 +304,21 @@ class UnitTests extends FirrtlFlatSpec {
     }
 
   }
+
+  "Conditional conection of clocks" should "throw an exception" in {
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    input clock1 : Clock
+        |    input clock2 : Clock
+        |    input sel : UInt<1>
+        |    output clock3 : Clock
+        |    clock3 <= clock1
+        |    when sel :
+        |      clock3 <= clock2
+        |""".stripMargin
+    intercept[PassExceptions] { // Both MuxClock and InvalidConnect are thrown
+      compileToVerilog(input)
+    }
+  }
 }
