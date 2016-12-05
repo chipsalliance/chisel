@@ -78,6 +78,9 @@ object ExpandWhens extends Pass {
         case w: DefWire =>
           netlist ++= (getFemaleRefs(w.name, w.tpe, BIGENDER) map (ref => we(ref) -> WVoid))
           w
+        case w: DefMemory =>
+          netlist ++= (getFemaleRefs(w.name, MemPortUtils.memType(w), MALE) map (ref => we(ref) -> WVoid))
+          w
         case r: DefRegister =>
           netlist ++= (getFemaleRefs(r.name, r.tpe, BIGENDER) map (ref => we(ref) -> ref))
           r
