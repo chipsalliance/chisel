@@ -239,6 +239,8 @@ object Driver extends BackendCompilationUtilities {
     w.write(firrtlString)
     w.close()
 
+    optionsManager.firrtlOptions = firrtlOptions.copy(firrtlSource = Some(firrtlString))
+
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))
     }
