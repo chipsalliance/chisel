@@ -345,4 +345,38 @@ class WiringTests extends FirrtlFlatSpec {
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }
+
+  "Wiring annotations" should "work" in {
+    val source = SourceAnnotation(ComponentName("r", ModuleName("Top", CircuitName("Top"))), "pin")
+    val sink = SinkAnnotation(ModuleName("X", CircuitName("Top")), "pin")
+    val top = TopAnnotation(ModuleName("Top", CircuitName("Top")), "pin")
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input clk: Clock
+        |    inst x of X
+        |    reg r: UInt<5>, clk
+        |  extmodule X :
+        |    input clk: Clock
+        |""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input clk: Clock
+        |    inst x of X
+        |    reg r: UInt<5>, clk
+        |    wire r_0 : UInt<5>
+        |    r_0 <= r
+        |    x.pin <= r_0
+        |  extmodule X :
+        |    input clk: Clock
+        |    input pin: UInt<5>
+        |""".stripMargin
+    val c = passes.foldLeft(parse(input)) {
+      (c: Circuit, p: Pass) => p.run(c)
+    }
+    val wiringXForm = new WiringTransform()
+    val retC = wiringXForm.execute(CircuitState(c, LowForm, Some(AnnotationMap(Seq(source, sink, top))), None)).circuit
+    (parse(retC.serialize).serialize) should be (parse(check).serialize)
+  }
 }

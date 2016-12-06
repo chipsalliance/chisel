@@ -115,4 +115,37 @@ class ClockListTests extends FirrtlFlatSpec {
     val retC = new ClockList("A", writer).run(c)
     (writer.toString) should be (check)
   }
+  "Have not circuit main be top of clocklist pass" should "still work" in {
+    val input =
+      """circuit A :
+        |  module A :
+        |    input clock: Clock
+        |    input clkB: Clock
+        |    inst b of B
+        |    inst d of D
+        |    b.clock <= clkB
+        |    b.clkC <= clock
+        |  module B :
+        |    input clock: Clock
+        |    input clkC: Clock
+        |    inst c of C
+        |    c.clock <= clkC
+        |  module C :
+        |    input clock: Clock
+        |    reg r: UInt<5>, clock
+        |  extmodule D :
+        |    input clock: Clock
+        |""".stripMargin
+    val check =
+  """Sourcelist: List(clock, clkC)
+    |Good Origin of clock is clock
+    |Good Origin of c.clock is clkC
+    |""".stripMargin
+    val c = passes.foldLeft(parse(input)) {
+      (c: Circuit, p: Pass) => p.run(c)
+    }
+    val writer = new StringWriter()
+    val retC = new ClockList("B", writer).run(c)
+    (writer.toString) should be (check)
+  }
 }
