@@ -143,9 +143,9 @@ case class FirrtlExecutionOptions(
     firrtlSource:           Option[String] = None,
     customTransforms:       Seq[Transform] = List.empty,
     annotations:            List[Annotation] = List.empty,
-    annotationFileNameOverride: String = "")
+    annotationFileNameOverride: String = "",
+    forceAppendAnnoFile:    Boolean = false)
   extends ComposableOptions {
-
 
   def infoMode: InfoMode = {
     infoModeName match {
@@ -236,6 +236,14 @@ trait HasFirrtlOptions {
     }.text {
     "use this to override the default annotation file name, default is empty"
   }
+
+  parser.opt[Unit]("force-append-anno-file")
+    .abbr("ffaaf")
+    .foreach { _ =>
+      firrtlOptions = firrtlOptions.copy(forceAppendAnnoFile = true)
+    }.text {
+      "use this to force appending annotation file to annotations being passed in through optionsManager"
+    }
 
   parser.opt[String]("compiler")
     .abbr("X")

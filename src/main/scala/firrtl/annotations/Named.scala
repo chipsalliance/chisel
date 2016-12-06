@@ -21,11 +21,11 @@ final case class CircuitName(name: String) extends Named {
 
 final case class ModuleName(name: String, circuit: CircuitName) extends Named {
   if(!validModuleName(name)) throw AnnotationException(s"Illegal module name: $name")
-  def serialize: String = name + "." + circuit.serialize
+  def serialize: String = circuit.serialize + "." + name
 }
 
 final case class ComponentName(name: String, module: ModuleName) extends Named {
   if(!validComponentName(name)) throw AnnotationException(s"Illegal component name: $name")
   def expr: Expression = toExp(name)
-  def serialize: String = name + "." + module.serialize
+  def serialize: String = module.serialize + "." + name
 }
