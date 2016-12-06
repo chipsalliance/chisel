@@ -39,11 +39,11 @@ object BitPat {
     * @param n the literal value as a string, in binary, prefixed with 'b'
     * @note legal characters are '0', '1', and '?', as well as '_' and white
     * space (which are ignored)
-    * 
+    *
     * @example {{{
-    * "0b00101".U === BitPat("b001??") // dynamically evaluates to true.B
-    * "0b00111".U === BitPat("b001??") // dynamically evaluates to true.B
-    * "0b00001".U === BitPat("b001??") // dynamically evaluates to false.B
+    * "0b10101".U === BitPat("b101??") // dynamically evaluates to true.B
+    * "0b10111".U === BitPat("b101??") // dynamically evaluates to true.B
+    * "0b10001".U === BitPat("b101??") // dynamically evaluates to false.B
     * }}}
     */
   def apply(n: String): BitPat = {
@@ -52,10 +52,10 @@ object BitPat {
   }
 
   /** Creates a [[BitPat]] of all don't cares of the specified bitwidth.
-    * 
+    *
     * @example {{{
     * val myDontCare = BitPat.dontCare(4)  // equivalent to BitPat("b????")
-    * }}}  
+    * }}}
     */
   def dontCare(width: Int): BitPat = BitPat("b" + ("?" * width))
 
