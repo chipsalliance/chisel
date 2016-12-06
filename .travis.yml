@@ -29,8 +29,9 @@ script:
   # FIRRTL Tests
   - verilator --version
   - cd $TRAVIS_BUILD_DIR
-  - sbt clean test publish-local
-  - make clean build-scala regress
+  - sbt clean test assembly publish-local
+  - mkdir -p chisel3/lib
+  - cp utils/bin/firrtl.jar chisel3/lib
   # Chisel 3 Tests
   - cd chisel3
   - sbt clean test
