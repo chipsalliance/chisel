@@ -41,9 +41,9 @@ object BitPat {
     * space (which are ignored)
     *
     * @example {{{
-    * "0b10101".U === BitPat("b101??") // dynamically evaluates to true.B
-    * "0b10111".U === BitPat("b101??") // dynamically evaluates to true.B
-    * "0b10001".U === BitPat("b101??") // dynamically evaluates to false.B
+    * "b10101".U === BitPat("b101??") // dynamically evaluates to true.B
+    * "b10111".U === BitPat("b101??") // dynamically evaluates to true.B
+    * "b10001".U === BitPat("b101??") // dynamically evaluates to false.B
     * }}}
     */
   def apply(n: String): BitPat = {
