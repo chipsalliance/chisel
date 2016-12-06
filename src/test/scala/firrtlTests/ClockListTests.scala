@@ -137,7 +137,7 @@ class ClockListTests extends FirrtlFlatSpec {
         |    input clock: Clock
         |""".stripMargin
     val check =
-  """Sourcelist: List(clock, clkC)
+  """Sourcelist: List(clock, clkC) 
     |Good Origin of clock is clock
     |Good Origin of c.clock is clkC
     |""".stripMargin
