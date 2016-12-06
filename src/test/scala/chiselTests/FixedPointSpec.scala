@@ -17,6 +17,22 @@ class FixedPointSpec extends FlatSpec with Matchers {
 
     initialDouble should be(finalDouble)
   }
+
+  behavior of "fixed point"
+
+  they should "allow fromBits from now fixed point types" in {
+    val uint = 3.U
+    val sint = -3.S
+    val fp_tpe = FixedPoint(width = 4, binaryPoint = 1)
+    val uint_result = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
+    val sint_result = FixedPoint.fromDouble(-1.5, width = 4, binaryPoint = 1)
+
+    val uint2fp = fp_tpe.fromBits(uint)
+    val sint2fp = fp_tpe.fromBits(sint)
+
+    uint2fp should be (uint_result)
+    sint2fp should be (sint_result)
+  }
 }
 
 class SBP extends Module {
