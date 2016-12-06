@@ -1,4 +1,5 @@
-# firrtl
+# Firrtl
+[![Build Status](https://travis-ci.org/ucb-bar/firrtl.svg?branch=master)](https://travis-ci.org/ucb-bar/firrtl)
 #### Flexible Internal Representation for RTL
 
  Firrtl is an intermediate representation (IR) for digital circuits designed as a platform for writing circuit-level transformations.
