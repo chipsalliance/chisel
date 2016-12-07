@@ -13,16 +13,27 @@ lazy val customUnidocSettings = unidocSettings ++ Seq (
   target in unidoc in ScalaUnidoc := crossTarget.value / "api"
 )
 
+val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
+
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.1-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.7",
-  scalacOptions := Seq("-deprecation", "-feature")
+  scalacOptions := Seq("-deprecation", "-feature"),
+  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
+  //  this has to be a Task setting.
+  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
+  allDependencies := {
+    allDependencies.value ++ Seq("firrtl").collect {
+      // If we have an unmanaged jar file on the classpath, assume we're to use that,
+      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
+        //  otherwise let sbt fetch the appropriate version.
+        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+    }
+  }
 )
-
-val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
 
 lazy val chiselSettings = Seq (
   name := "chisel3",
@@ -71,18 +82,6 @@ lazy val chiselSettings = Seq (
     "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
     "com.github.scopt" %% "scopt" % "3.4.0"
   ),
-
-  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
-  //  this has to be a Task setting.
-  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := {
-    allDependencies.value ++ Seq("firrtl").collect {
-      // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
-        //  otherwise let sbt fetch the appropriate version.
-        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
-    }
-  },
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,

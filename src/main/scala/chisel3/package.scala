@@ -32,6 +32,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
 
+  type ChiselAnnotation = chisel3.core.ChiselAnnotation
+  val ChiselAnnotation = chisel3.core.ChiselAnnotation
+
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
   // Bool\((true|false)\)
