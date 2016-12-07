@@ -79,7 +79,7 @@ object CheckHighForm extends Pass {
           correctNum(Option(1), 1)
         case Bits =>
           correctNum(Option(1), 2)
-        case Andr | Orr | Xorr =>
+        case Andr | Orr | Xorr | Neg =>
           correctNum(None,0)
       }
     }
