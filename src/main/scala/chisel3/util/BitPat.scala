@@ -35,16 +35,10 @@ object BitPat {
   }
 
   /** Creates a [[BitPat]] literal from a string.
-   *
+    *
     * @param n the literal value as a string, in binary, prefixed with 'b'
     * @note legal characters are '0', '1', and '?', as well as '_' and white
     * space (which are ignored)
-    *
-    * @example {{{
-    * "b10101".U === BitPat("b101??") // dynamically evaluates to true.B
-    * "b10111".U === BitPat("b101??") // dynamically evaluates to true.B
-    * "b10001".U === BitPat("b101??") // dynamically evaluates to false.B
-    * }}}
     */
   def apply(n: String): BitPat = {
     val (bits, mask, width) = parse(n)
@@ -85,8 +79,13 @@ object BitPat {
 }
 
 /** Bit patterns are literals with masks, used to represent values with don't
-  * cares. Equality comparisons will ignore don't care bits (for example,
-  * BitPat(0b10?1) === 0b1001.asUInt and 0b1011.asUInt.
+  * care bits. Equality comparisons will ignore don't care bits.
+  *
+  * @example {{{
+  * "b10101".U === BitPat("b101??") // dynamically evaluates to true.B
+  * "b10111".U === BitPat("b101??") // dynamically evaluates to true.B
+  * "b10001".U === BitPat("b101??") // dynamically evaluates to false.B
+  * }}}
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
