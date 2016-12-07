@@ -12,8 +12,8 @@ import chisel3._
   * @note The result is truncated, so e.g. Log2(13.U) === 3.U
   *
   * @example {{{
-  * Log2(8.U)  // equivalent to 3.U
-  * Log2(13.U)  // equivalent to 3.U (truncation)
+  * Log2(8.U)  // evaluates to 3.U
+  * Log2(13.U)  // evaluates to 3.U (truncation)
   * Log2(myUIntWire)
   * }}}
   *

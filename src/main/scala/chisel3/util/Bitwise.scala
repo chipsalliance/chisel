@@ -36,11 +36,11 @@ object FillInterleaved {
 /** Returns the number of bits set (value is 1 or true) in the input signal.
   *
   * @example {{{
-  * PopCount(Seq(true.B, false.B, true.B, true.B))  // dynamically evaluates to 3.U
-  * PopCount(Seq(false.B, false.B, true.B, false.B))  // dynamically evaluates to 1.U
+  * PopCount(Seq(true.B, false.B, true.B, true.B))  // evaluates to 3.U
+  * PopCount(Seq(false.B, false.B, true.B, false.B))  // evaluates to 1.U
   *
-  * PopCount("b1011".U)  // dynamically evaluates to 3.U
-  * PopCount("b0010".U)  // dynamically evaluates to 1.U
+  * PopCount("b1011".U)  // evaluates to 3.U
+  * PopCount("b0010".U)  // evaluates to 1.U
   * PopCount(myUIntWire)  // dynamic count
   * }}}
   */
