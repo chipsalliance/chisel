@@ -7,10 +7,19 @@ package chisel3.util
 
 import chisel3._
 
+/** Returns the base-2 integer logarithm of an UInt.
+  *
+  * @note The result is truncated, so e.g. Log2(13.U) === 3.U
+  *
+  * @example {{{
+  * Log2(8.U)  // evaluates to 3.U
+  * Log2(13.U)  // evaluates to 3.U (truncation)
+  * Log2(myUIntWire)
+  * }}}
+  *
+  */
 object Log2 {
   /** Returns the base-2 integer logarithm of the least-significant `width` bits of an UInt.
-    *
-    * @note The result is truncated, so e.g. Log2(13.U) === 3.U
     */
   def apply(x: Bits, width: Int): UInt = {
     if (width < 2) {
@@ -28,10 +37,6 @@ object Log2 {
     }
   }
 
-  /** Returns the base-2 integer logarithm of an UInt.
-    *
-    * @note The result is truncated, so e.g. Log2(13.U) === 3.U
-    */
   def apply(x: Bits): UInt = apply(x, x.getWidth)
 
   private def divideAndConquerThreshold = 4
