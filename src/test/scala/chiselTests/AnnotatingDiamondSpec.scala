@@ -10,7 +10,10 @@ import firrtl.annotations.{Annotation, ModuleName, Named}
 import org.scalatest._
 
 //scalastyle:off magic.number
-// Tags an annotation to be consumed by this pass
+/**
+  * This and the Identity transform class are a highly schematic implementation of a
+  * library implementation of   (i.e. code outside of firrtl itself)
+  */
 object IdentityAnnotation {
   def apply(target: Named, value: String): Annotation = Annotation(target, classOf[IdentityTransform], value)
 
@@ -29,7 +32,7 @@ class IdentityTransform extends Transform {
     getMyAnnotations(state) match {
       case Nil => state
       case myAnnotations =>
-        println(s"${myAnnotations.mkString("\n")}") //scalastyle:off regex
+        /* Do something useful with annotations here */
         state
     }
   }
@@ -38,7 +41,7 @@ class IdentityTransform extends Transform {
 trait IdentityAnnotator {
   self: Module =>
   def identify(component: InstanceId, value: String): Unit = {
-    annotate(ChiselAnnotation(classOf[IdentityTransform], component, value))
+    annotate(ChiselAnnotation(component, classOf[IdentityTransform], value))
   }
 }
 /** A diamond circuit Top instantiates A and B and both A and B instantiate C
@@ -100,8 +103,8 @@ class TopOfDiamond extends Module with IdentityAnnotator {
     val in   = Input(UInt(32.W))
     val out  = Output(UInt(32.W))
   })
-  val x = Reg(UInt(width = 32.W))
-  val y = Reg(UInt(width = 32.W))
+  val x = Reg(UInt(32.W))
+  val y = Reg(UInt(32.W))
 
   val modA = Module(new ModA(64))
   val modB = Module(new ModB(32))
@@ -130,7 +133,7 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
   }
 
   """
-    |Diamond is an example of a module that has two submoduesl A and B who both instantiate their
+    |Diamond is an example of a module that has two sub-modules A and B who both instantiate their
     |own instances of module C.  This highlights the difference between specific and general
     |annotation scopes
   """.stripMargin - {
@@ -153,8 +156,6 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
             case Annotation(ModuleName(name, _), _, annoValue) => name == "ModC_1" && annoValue == "ModC(32)"
             case _ => false
           } should be (1)
-          println(s"Emmiteed\n$emitted")
-          println(s"Annotations\n${circuit.annotations.mkString("\n")}")
         case _ =>
           assert(false)
       }
