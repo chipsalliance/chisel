@@ -46,10 +46,10 @@ int main(int argc, char** argv) {
       top->reset = 0;   // Deassert reset
     }
     if ((main_time % 10) == 1) {
-      top->clk = 1;       // Toggle clock
+      top->clock = 1;       // Toggle clock
     }
     if ((main_time % 10) == 6) {
-      top->clk = 0;
+      top->clock = 0;
     }
     top->eval();               // Evaluate model
 #if VM_TRACE
@@ -70,10 +70,10 @@ int main(int argc, char** argv) {
   vluint64_t end_time = main_time + 100;
   while (main_time < end_time) {
     if ((main_time % 10) == 1) {
-      top->clk = 1;       // Toggle clock
+      top->clock = 1;       // Toggle clock
     }
     if ((main_time % 10) == 6) {
-      top->clk = 0;
+      top->clock = 0;
     }
     top->eval();               // Evaluate model
 #if VM_TRACE

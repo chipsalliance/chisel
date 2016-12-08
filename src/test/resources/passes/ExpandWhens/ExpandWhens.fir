@@ -1,12 +1,12 @@
 ; See LICENSE for license details.
 circuit ExpandWhens :
   module ExpandWhens :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
 
     node done = UInt(6)
 
-    reg x : UInt<16>, clk with :
+    reg x : UInt<16>, clock with :
       reset => (reset, UInt(0))
     x <= x
 
@@ -30,18 +30,18 @@ circuit ExpandWhens :
         when lt(x, UInt(5)) :
           x <= UInt(5)
 
-    reg count : UInt<16>, clk with :
+    reg count : UInt<16>, clock with :
       reset => (reset, UInt(0))
     when neq(count, done) :
       count <= add(count, UInt(1))
 
-    printf(clk, UInt(1), "count = %d, x = %d\n", count, x)
+    printf(clock, UInt(1), "count = %d, x = %d\n", count, x)
 
     when not(reset) :
       when neq(x, count) : 
-        printf(clk, UInt(1), "Assertion failed! x =/= count!\n")
-        stop(clk, UInt(1), 1)
+        printf(clock, UInt(1), "Assertion failed! x =/= count!\n")
+        stop(clock, UInt(1), 1)
       when eq(x, done) :
-        stop(clk, UInt(1), 0)
+        stop(clock, UInt(1), 0)
 
      

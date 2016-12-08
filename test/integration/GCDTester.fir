@@ -1,16 +1,16 @@
 circuit GCDTester : 
   module DecoupledGCD : 
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : { flip in : { flip ready : UInt<1>, valid : UInt<1>, bits : { a : UInt<32>, b : UInt<32>}}, out : { flip ready : UInt<1>, valid : UInt<1>, bits : UInt<32>}}
     io is invalid
-    reg busy : UInt<1>, clk with : 
+    reg busy : UInt<1>, clock with :
       reset => (reset, UInt<1>("h0"))
-    reg done : UInt<1>, clk with : 
+    reg done : UInt<1>, clock with :
       reset => (reset, UInt<1>("h0"))
-    reg x : UInt<32>, clk with : 
+    reg x : UInt<32>, clock with :
       reset => (UInt<1>("h0"), x)
-    reg y : UInt<32>, clk with : 
+    reg y : UInt<32>, clock with :
       reset => (UInt<1>("h0"), y)
     node T_40 = eq(busy, UInt<1>("h0"))
     io.in.ready <= T_40
@@ -48,15 +48,15 @@ circuit GCDTester :
     io.out.bits <= x
   
   module GCDTester : 
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : { }
     io is invalid
     inst dut of DecoupledGCD
     dut.io is invalid
-    dut.clk <= clk
+    dut.clock <= clock
     dut.reset <= reset
-    reg count : UInt<4>, clk with : 
+    reg count : UInt<4>, clock with :
       reset => (reset, UInt<4>("h9"))
     wire a : UInt<7>[10]
     a[0] <= UInt<6>("h2e")
@@ -92,7 +92,7 @@ circuit GCDTester :
     z[8] <= UInt<1>("h1")
     z[9] <= UInt<1>("h1")
     dut.io.out.ready <= UInt<1>("h0")
-    reg en : UInt<1>, clk with : 
+    reg en : UInt<1>, clock with :
       reset => (reset, UInt<1>("h1"))
     dut.io.in.bits.a <= a[count]
     dut.io.in.bits.b <= b[count]
@@ -112,16 +112,16 @@ circuit GCDTester :
         when T_91 : 
           node T_93 = eq(reset, UInt<1>("h0"))
           when T_93 : 
-            printf(clk, UInt<1>("h1"), "Assertion failed\n    at GCDTester.scala:38 assert( dut.io.out.bits === z(count) )\n")
+            printf(clock, UInt<1>("h1"), "Assertion failed\n    at GCDTester.scala:38 assert( dut.io.out.bits === z(count) )\n")
             skip
-          stop(clk, UInt<1>("h1"), 1)
+          stop(clock, UInt<1>("h1"), 1)
           skip
         skip
       node T_95 = eq(count, UInt<1>("h0"))
       when T_95 : 
         node T_97 = eq(reset, UInt<1>("h0"))
         when T_97 : 
-          stop(clk, UInt<1>("h1"), 0)
+          stop(clock, UInt<1>("h1"), 0)
           skip
         skip
       node T_99 = eq(T_95, UInt<1>("h0"))

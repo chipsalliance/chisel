@@ -12,7 +12,7 @@ circuit NestedSubAccessTester :
     out <= vec[foo[index]]
 
   module NestedSubAccessTester :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
 
     inst dut of NestedSubAccess
@@ -22,9 +22,9 @@ circuit NestedSubAccessTester :
     dut.foo[2] <= UInt(1)
 
     when neq(dut.out, UInt(4)) :
-      printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
-      stop(clk, not(reset), 1)
+      printf(clock, not(reset), "Assertion failed\nTest Failed!\n")
+      stop(clock, not(reset), 1)
     else :
-      stop(clk, not(reset), 0)
+      stop(clock, not(reset), 0)
 
 

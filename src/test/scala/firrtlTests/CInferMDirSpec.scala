@@ -48,7 +48,7 @@ class CInferMDir extends LowTransformSpec {
     val input = """
 circuit foo :
   module foo :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : {flip wen : UInt<1>, flip in : UInt<1>, flip counter : UInt<2>, ren: UInt<1>[4], out : UInt<1>[4]}
 
@@ -56,7 +56,7 @@ circuit foo :
     cmem indices : UInt<2>[4]
     node T_0 = add(io.counter, UInt<1>("h01"))
     node temp = tail(T_0, 1)
-    infer mport index = indices[temp], clk
+    infer mport index = indices[temp], clock
     io.out[0] <= UInt<1>("h0")
     io.out[1] <= UInt<1>("h0")
     io.out[2] <= UInt<1>("h0")
@@ -65,7 +65,7 @@ circuit foo :
       io.out[index] <= io.in
     else :
       when io.wen :
-        infer mport bar = indices[temp], clk
+        infer mport bar = indices[temp], clock
         bar <= io.in
 """.stripMargin
 

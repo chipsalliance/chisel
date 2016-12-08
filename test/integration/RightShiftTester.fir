@@ -1,6 +1,6 @@
 circuit RightShiftTester : 
   module RightShift : 
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : {flip i : UInt<1>, flip j : SInt<1>, i_shifted : UInt, j_shifted : SInt, k_shifted : UInt, l_shifted : UInt, m_shifted : SInt, n_shifted : SInt, o_shifted : UInt}
     
@@ -27,16 +27,16 @@ circuit RightShiftTester :
     io.o_shifted <= T_28
     
   module RightShiftTester : 
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : {}
     
     io is invalid
     inst dut of RightShift
     dut.io is invalid
-    dut.clk <= clk
+    dut.clock <= clock
     dut.reset <= reset
-    reg T_6 : UInt<2>, clk with : (reset => (reset, UInt<2>("h00")))
+    reg T_6 : UInt<2>, clock with : (reset => (reset, UInt<2>("h00")))
     when UInt<1>("h01") :
       node T_8 = eq(T_6, UInt<2>("h03"))
       node T_10 = and(UInt<1>("h00"), T_8)
@@ -49,7 +49,7 @@ circuit RightShiftTester :
     when done :
       node T_18 = eq(reset, UInt<1>("h00"))
       when T_18 :
-        stop(clk, UInt<1>(1), 0)
+        stop(clock, UInt<1>(1), 0)
         skip
       skip
     dut.io.i <= UInt<1>("h01")
@@ -61,9 +61,9 @@ circuit RightShiftTester :
       when T_26 :
         node T_28 = eq(reset, UInt<1>("h00"))
         when T_28 :
-          printf(clk, UInt<1>(1), "Assertion failed\n    at RightShift.scala:47 assert(dut.io.i_shifted === UInt(0))\n")
+          printf(clock, UInt<1>(1), "Assertion failed\n    at RightShift.scala:47 assert(dut.io.i_shifted === UInt(0))\n")
           skip
-        stop(clk, UInt<1>(1), 1)
+        stop(clock, UInt<1>(1), 1)
         skip
       skip
     node T_30 = eq(dut.io.j_shifted, asSInt(UInt<1>("h01")))
@@ -73,9 +73,9 @@ circuit RightShiftTester :
       when T_34 :
         node T_36 = eq(reset, UInt<1>("h00"))
         when T_36 :
-          printf(clk, UInt<1>(1), "Assertion failed\n    at RightShift.scala:48 assert(dut.io.j_shifted === SInt(-1))\n")
+          printf(clock, UInt<1>(1), "Assertion failed\n    at RightShift.scala:48 assert(dut.io.j_shifted === SInt(-1))\n")
           skip
-        stop(clk, UInt<1>(1), 1)
+        stop(clock, UInt<1>(1), 1)
         skip
       skip
     node T_38 = eq(dut.io.k_shifted, UInt<1>("h00"))
@@ -85,9 +85,9 @@ circuit RightShiftTester :
       when T_42 :
         node T_44 = eq(reset, UInt<1>("h00"))
         when T_44 :
-          printf(clk, UInt<1>(1), "Assertion failed\n    at RightShift.scala:49 assert(dut.io.k_shifted === UInt(0))\n")
+          printf(clock, UInt<1>(1), "Assertion failed\n    at RightShift.scala:49 assert(dut.io.k_shifted === UInt(0))\n")
           skip
-        stop(clk, UInt<1>(1), 1)
+        stop(clock, UInt<1>(1), 1)
         skip
       skip
     node T_46 = eq(dut.io.l_shifted, UInt<1>("h00"))
@@ -97,9 +97,9 @@ circuit RightShiftTester :
       when T_50 :
         node T_52 = eq(reset, UInt<1>("h00"))
         when T_52 :
-          printf(clk, UInt<1>(1), "Assertion failed\n    at RightShift.scala:50 assert(dut.io.l_shifted === UInt(0))\n")
+          printf(clock, UInt<1>(1), "Assertion failed\n    at RightShift.scala:50 assert(dut.io.l_shifted === UInt(0))\n")
           skip
-        stop(clk, UInt<1>(1), 1)
+        stop(clock, UInt<1>(1), 1)
         skip
       skip
     node T_54 = eq(dut.io.m_shifted, asSInt(UInt<1>("h01")))
@@ -109,9 +109,9 @@ circuit RightShiftTester :
       when T_58 :
         node T_60 = eq(reset, UInt<1>("h00"))
         when T_60 :
-          printf(clk, UInt<1>(1), "Assertion failed\n    at RightShift.scala:51 assert(dut.io.m_shifted === SInt(-1))\n")
+          printf(clock, UInt<1>(1), "Assertion failed\n    at RightShift.scala:51 assert(dut.io.m_shifted === SInt(-1))\n")
           skip
-        stop(clk, UInt<1>(1), 1)
+        stop(clock, UInt<1>(1), 1)
         skip
       skip
     node T_62 = eq(dut.io.n_shifted, asSInt(UInt<1>("h00")))
@@ -121,9 +121,9 @@ circuit RightShiftTester :
       when T_66 :
         node T_68 = eq(reset, UInt<1>("h00"))
         when T_68 :
-          printf(clk, UInt<1>(1), "Assertion failed\n    at RightShift.scala:52 assert(dut.io.n_shifted === SInt(0))\n")
+          printf(clock, UInt<1>(1), "Assertion failed\n    at RightShift.scala:52 assert(dut.io.n_shifted === SInt(0))\n")
           skip
-        stop(clk, UInt<1>(1), 1)
+        stop(clock, UInt<1>(1), 1)
         skip
       skip
     node T_70 = eq(dut.io.o_shifted, UInt<5>("h012"))
@@ -133,9 +133,9 @@ circuit RightShiftTester :
       when T_74 :
         node T_76 = eq(reset, UInt<1>("h00"))
         when T_76 :
-          printf(clk, UInt<1>(1), "Assertion failed\n    at RightShift.scala:53 assert(dut.io.o_shifted === UInt(18))\n")
+          printf(clock, UInt<1>(1), "Assertion failed\n    at RightShift.scala:53 assert(dut.io.o_shifted === UInt(18))\n")
           skip
-        stop(clk, UInt<1>(1), 1)
+        stop(clock, UInt<1>(1), 1)
         skip
       skip
     

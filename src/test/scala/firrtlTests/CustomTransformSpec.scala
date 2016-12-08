@@ -15,13 +15,13 @@ class CustomTransformSpec extends FirrtlFlatSpec {
     val delayModuleString = """
       |circuit Delay :
       |  module Delay :
-      |    input clk : Clock
+      |    input clock : Clock
       |    input reset : UInt<1>
       |    input a : UInt<32>
       |    input en : UInt<1>
       |    output b : UInt<32>
       |
-      |    reg r : UInt<32>, clk
+      |    reg r : UInt<32>, clock
       |    r <= r
       |    when en :
       |      r <= a

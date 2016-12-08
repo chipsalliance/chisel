@@ -7,7 +7,7 @@ circuit RenamedExtModuleTester :
     defname = SimpleExtModule
 
   module RenamedExtModuleTester :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
 
     inst dut of ThisIsJustTheFirrtlName
@@ -16,8 +16,8 @@ circuit RenamedExtModuleTester :
 
     when not(reset) :
       when neq(dut.bar, UInt(1234)) :
-        printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
-        stop(clk, not(reset), 1)
+        printf(clock, not(reset), "Assertion failed\nTest Failed!\n")
+        stop(clock, not(reset), 1)
       else :
-        stop(clk, not(reset), 0)
+        stop(clock, not(reset), 0)
 

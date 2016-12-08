@@ -39,78 +39,78 @@ class WiringTests extends FirrtlFlatSpec {
     val input =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst b of B
-        |    b.clk <= clk
+        |    b.clock <= clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |    inst d of D
-        |    d.clk <= clk
+        |    d.clock <= clock
         |  module B :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst c of C
-        |    c.clk <= clk
+        |    c.clock <= clock
         |    inst d of D
-        |    d.clk <= clk
+        |    d.clock <= clock
         |  module C :
-        |    input clk: Clock
-        |    reg r: UInt<5>, clk
+        |    input clock: Clock
+        |    reg r: UInt<5>, clock
         |  module D :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst x1 of X
-        |    x1.clk <= clk
+        |    x1.clock <= clock
         |    inst x2 of X
-        |    x2.clk <= clk
+        |    x2.clock <= clock
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |""".stripMargin
     val check =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst b of B
-        |    b.clk <= clk
+        |    b.clock <= clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |    inst d of D
-        |    d.clk <= clk
+        |    d.clock <= clock
         |    wire r: UInt<5>
         |    r <= b.r
         |    x.pin <= r
         |    d.r <= r
         |  module B :
-        |    input clk: Clock
+        |    input clock: Clock
         |    output r: UInt<5>
         |    inst c of C
-        |    c.clk <= clk
+        |    c.clock <= clock
         |    inst d of D
-        |    d.clk <= clk
+        |    d.clock <= clock
         |    r <= c.r_0
         |    d.r <= r
         |  module C :
-        |    input clk: Clock
+        |    input clock: Clock
         |    output r_0: UInt<5>
-        |    reg r: UInt<5>, clk
+        |    reg r: UInt<5>, clock
         |    r_0 <= r
         |  module D :
-        |    input clk: Clock
+        |    input clock: Clock
         |    input r: UInt<5>
         |    inst x1 of X
-        |    x1.clk <= clk
+        |    x1.clock <= clock
         |    inst x2 of X
-        |    x2.clk <= clk
+        |    x2.clock <= clock
         |    x1.pin <= r
         |    x2.pin <= r
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |    input pin: UInt<5>
         |""".stripMargin
     val c = passes.foldLeft(parse(input)) {
@@ -127,33 +127,33 @@ class WiringTests extends FirrtlFlatSpec {
     val input =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
-        |    reg r : {x: UInt<5>}, clk
+        |    input clock: Clock
+        |    reg r : {x: UInt<5>}, clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |""".stripMargin
     val check =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
-        |    reg r: {x: UInt<5>}, clk
+        |    input clock: Clock
+        |    reg r: {x: UInt<5>}, clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |    wire r_x: UInt<5>
         |    r_x <= r.x
         |    x.pin <= r_x
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |    input pin: UInt<5>
         |""".stripMargin
     val c = passes.foldLeft(parse(input)) {
@@ -163,37 +163,37 @@ class WiringTests extends FirrtlFlatSpec {
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }
-  "Wiring from clk to X" should "work" in {
+  "Wiring from clock to X" should "work" in {
     val sinks = Set("X")
-    val sas = WiringInfo("A", "clk", sinks, "pin", "A")
+    val sas = WiringInfo("A", "clock", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |""".stripMargin
     val check =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst x of X
-        |    x.clk <= clk
-        |    wire clk_0: Clock
-        |    clk_0 <= clk
-        |    x.pin <= clk_0
+        |    x.clock <= clock
+        |    wire clock_0: Clock
+        |    clock_0 <= clock
+        |    x.pin <= clock_0
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |    input pin: Clock
         |""".stripMargin
     val c = passes.foldLeft(parse(input)) {
@@ -205,21 +205,21 @@ class WiringTests extends FirrtlFlatSpec {
   }
   "Two sources" should "fail" in {
     val sinks = Set("X")
-    val sas = WiringInfo("A", "clk", sinks, "pin", "Top")
+    val sas = WiringInfo("A", "clock", sinks, "pin", "Top")
     val input =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a1 of A
-        |    a1.clk <= clk
+        |    a1.clock <= clock
         |    inst a2 of A
-        |    a2.clk <= clk
+        |    a2.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |""".stripMargin
     intercept[WiringException] {
       val c = passes.foldLeft(parse(input)) {
@@ -229,41 +229,41 @@ class WiringTests extends FirrtlFlatSpec {
       val retC = wiringPass.run(c)
     }
   }
-  "Wiring from A.clk to X, with 2 A's, and A as top" should "work" in {
+  "Wiring from A.clock to X, with 2 A's, and A as top" should "work" in {
     val sinks = Set("X")
-    val sas = WiringInfo("A", "clk", sinks, "pin", "A")
+    val sas = WiringInfo("A", "clock", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a1 of A
-        |    a1.clk <= clk
+        |    a1.clock <= clock
         |    inst a2 of A
-        |    a2.clk <= clk
+        |    a2.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |""".stripMargin
     val check =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a1 of A
-        |    a1.clk <= clk
+        |    a1.clock <= clock
         |    inst a2 of A
-        |    a2.clk <= clk
+        |    a2.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst x of X
-        |    x.clk <= clk
-        |    wire clk_0: Clock
-        |    clk_0 <= clk
-        |    x.pin <= clk_0
+        |    x.clock <= clock
+        |    wire clock_0: Clock
+        |    clock_0 <= clock
+        |    x.pin <= clock_0
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |    input pin: Clock
         |""".stripMargin
     val c = passes.foldLeft(parse(input)) {
@@ -273,25 +273,25 @@ class WiringTests extends FirrtlFlatSpec {
     val retC = wiringPass.run(c)
     (parse(retC.serialize).serialize) should be (parse(check).serialize)
   }
-  "Wiring from A.clk to X, with 2 A's, and A as top, but Top instantiates X" should "error" in {
+  "Wiring from A.clock to X, with 2 A's, and A as top, but Top instantiates X" should "error" in {
     val sinks = Set("X")
-    val sas = WiringInfo("A", "clk", sinks, "pin", "A")
+    val sas = WiringInfo("A", "clock", sinks, "pin", "A")
     val input =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a1 of A
-        |    a1.clk <= clk
+        |    a1.clock <= clock
         |    inst a2 of A
-        |    a2.clk <= clk
+        |    a2.clock <= clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |  module A :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |""".stripMargin
     intercept[WiringException] {
       val c = passes.foldLeft(parse(input)) {
@@ -307,35 +307,35 @@ class WiringTests extends FirrtlFlatSpec {
     val input =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
-        |    reg r: UInt<2>[5], clk
+        |    input clock: Clock
+        |    reg r: UInt<2>[5], clock
         |    node a = UInt(5)
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |""".stripMargin
     val check =
       """circuit Top :
         |  module Top :
-        |    input clk: Clock
+        |    input clock: Clock
         |    inst a of A
-        |    a.clk <= clk
+        |    a.clock <= clock
         |  module A :
-        |    input clk: Clock
-        |    reg r: UInt<2>[5], clk
+        |    input clock: Clock
+        |    reg r: UInt<2>[5], clock
         |    node a = UInt(5)
         |    inst x of X
-        |    x.clk <= clk
+        |    x.clock <= clock
         |    wire r_a: UInt<2>
         |    r_a <= r[a]
         |    x.pin <= r_a
         |  extmodule X :
-        |    input clk: Clock
+        |    input clock: Clock
         |    input pin: UInt<2>
         |""".stripMargin
     val c = passes.foldLeft(parse(input)) {

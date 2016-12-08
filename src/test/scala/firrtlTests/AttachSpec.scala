@@ -210,7 +210,7 @@ class AttachAnalogSpec extends FirrtlFlatSpec {
     val input =
       """circuit Unit :
         |  module Unit :
-        |    input clk: Clock
+        |    input clock: Clock
         |    mem m: 
         |      data-type => Analog<2>
         |      depth => 4

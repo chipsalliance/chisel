@@ -27,7 +27,7 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     val input = """
 circuit Top : 
   module Top : 
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     input head_ptr : UInt<5>
     input tail_ptr : UInt<5>
@@ -40,15 +40,15 @@ circuit Top :
 
     smem entries_info : {takens : UInt<2>, history : UInt<14>, info : UInt<14>}[24]
     when io.backend.allocate.valid :
-      write mport W = entries_info[tail_ptr], clk
+      write mport W = entries_info[tail_ptr], clock
       W <- io.backend.allocate.bits.info
 
-    read mport R = entries_info[head_ptr], clk
+    read mport R = entries_info[head_ptr], clock
     io.commit_entry.bits.info <- R
 
     smem entries_info2 : {takens : UInt<2>, history : UInt<14>, info : UInt<14>}[24]
     when io2.backend.allocate.valid :
-      write mport W1 = entries_info2[tail_ptr], clk
+      write mport W1 = entries_info2[tail_ptr], clock
       when wmask.takens :
         W1.takens <- io.backend.allocate.bits.info.takens
       when wmask.history :
@@ -56,7 +56,7 @@ circuit Top :
       when wmask.info :
         W1.info <- io.backend.allocate.bits.info.history
       
-    read mport R1 = entries_info2[head_ptr], clk
+    read mport R1 = entries_info2[head_ptr], clock
     io2.commit_entry.bits.info <- R1
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
@@ -72,15 +72,15 @@ circuit Top :
     val input = """
 circuit Top :
   module Top :
-    input clk : Clock
+    input clock : Clock
     input hsel : UInt<1>
 
-    reg p_valid : UInt<1>, clk
-    reg p_address : UInt<5>, clk
+    reg p_valid : UInt<1>, clock
+    reg p_address : UInt<5>, clock
     smem mem : UInt<8>[8][32] 
     when hsel : 
       when p_valid : 
-        write mport T_155 = mem[p_address], clk
+        write mport T_155 = mem[p_address], clock
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
     val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc)))

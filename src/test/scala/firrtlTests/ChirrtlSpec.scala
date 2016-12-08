@@ -35,9 +35,9 @@ class ChirrtlSpec extends FirrtlFlatSpec {
     val input =
      """circuit Unit :
        |  module Unit :
-       |    input clk : Clock
+       |    input clock : Clock
        |    smem ram : UInt<32>[128]
-       |    node newClock = clk
+       |    node newClock = clock
        |    infer mport x = ram[UInt(2)], newClock
        |    x <= UInt(3)
        |    when UInt(1) :
@@ -53,9 +53,9 @@ class ChirrtlSpec extends FirrtlFlatSpec {
     val input =
      """circuit Unit :
        |  module Unit :
-       |    input clk : Clock
+       |    input clock : Clock
        |    smem ram : UInt<32>[128]
-       |    node newClock = clk
+       |    node newClock = clock
        |    infer mport x = ram[UInt(2)], newClock
        |    x <= UInt(3)
        |    when UInt(1) :

@@ -61,7 +61,7 @@ class ChirrtlMemSpec extends LowTransformSpec {
     val input = """
 circuit foo :
   module foo :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : {flip wen : UInt<1>, flip in : UInt<1>, flip counter : UInt<2>, out : UInt<1>}
 
@@ -69,9 +69,9 @@ circuit foo :
     smem mem : UInt<1>[4]
     node T_0 = add(io.counter, UInt<1>("h01"))
     node temp = tail(T_0, 1)
-    read mport bar = mem[temp], clk
+    read mport bar = mem[temp], clock
     when io.wen :
-      write mport T_1 = mem[io.counter], clk
+      write mport T_1 = mem[io.counter], clock
       T_1 <= io.in
     io.out <= bar
 """.stripMargin
@@ -87,18 +87,18 @@ circuit foo :
     val input = """
 circuit foo :
   module foo :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : {flip ren: UInt<1>, flip wen : UInt<1>, flip in : UInt<1>, flip counter : UInt<2>, out : UInt<1>}
 
     io is invalid
     cmem mem : UInt<1>[4]
-    reg counter : UInt<1>, clk with : (reset => (reset, UInt<1>("h0")))
-    read mport bar = mem[counter], clk
+    reg counter : UInt<1>, clock with : (reset => (reset, UInt<1>("h0")))
+    read mport bar = mem[counter], clock
     when io.ren:
       counter <= add(counter, UInt<1>("h1"))
     when io.wen :
-      write mport T_1 = mem[io.counter], clk
+      write mport T_1 = mem[io.counter], clock
       T_1 <= io.in
     io.out <= bar
 """.stripMargin

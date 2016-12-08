@@ -9,7 +9,7 @@ circuit MultiExtModuleTester :
     output bar : UInt<16>
 
   module MultiExtModuleTester :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
 
     inst dut1 of SimpleExtModule
@@ -22,16 +22,16 @@ circuit MultiExtModuleTester :
 
     when not(reset) :
       when neq(dut1.bar, UInt(1234)) :
-        printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
-        stop(clk, not(reset), 1)
+        printf(clock, not(reset), "Assertion failed\nTest Failed!\n")
+        stop(clock, not(reset), 1)
       else :
         when neq(dut2.bar, UInt(5678)) :
-          printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
-          stop(clk, not(reset), 1)
+          printf(clock, not(reset), "Assertion failed\nTest Failed!\n")
+          stop(clock, not(reset), 1)
         else :
           when neq(dut3.bar, UInt(101)) :
-            printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
-            stop(clk, not(reset), 1)
+            printf(clock, not(reset), "Assertion failed\nTest Failed!\n")
+            stop(clock, not(reset), 1)
           else :
-            stop(clk, not(reset), 0)
+            stop(clock, not(reset), 0)
 

@@ -1,7 +1,7 @@
 ; See LICENSE for license details.
 circuit ZeroPortMem :
   module ZeroPortMem :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
 
     mem mymem :
@@ -16,8 +16,8 @@ circuit ZeroPortMem :
 
     when not(reset) :
       when eq(foo, UInt<32>("hdeadbeef")) :
-        stop(clk, UInt(1), 0) ; Success !
+        stop(clock, UInt(1), 0) ; Success !
       else :
-        printf(clk, UInt(1), "Assertion failed!\n")
-        stop(clk, UInt(1), 1) ; Failure!
+        printf(clock, UInt(1), "Assertion failed!\n")
+        stop(clock, UInt(1), 1) ; Failure!
 

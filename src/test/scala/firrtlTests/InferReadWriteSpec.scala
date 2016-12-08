@@ -55,7 +55,7 @@ class InferReadWriteSpec extends SimpleTransformSpec {
     val input = """
 circuit sram6t :
   module sram6t :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
     output io : {flip en : UInt<1>, flip wen : UInt<1>, flip waddr : UInt<8>, flip wdata : UInt<32>, flip raddr : UInt<8>, rdata : UInt<32>}
 
@@ -67,11 +67,11 @@ circuit sram6t :
     T_2 is invalid
     when T_1 :
       T_2 <= io.raddr
-    read mport T_3 = mem[T_2], clk
+    read mport T_3 = mem[T_2], clock
     io.rdata <= T_3
     node T_4 = and(io.en, io.wen)
     when T_4 :
-      write mport T_5 = mem[io.waddr], clk
+      write mport T_5 = mem[io.waddr], clock
       T_5 <= io.wdata
 """.stripMargin
 

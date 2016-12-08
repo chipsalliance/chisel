@@ -52,15 +52,15 @@ class UniquifySpec extends FirrtlFlatSpec {
     val input =
       """circuit Test :
         |  module Test :
-        |    input clk : Clock
-        |    reg a : { b : UInt<1>, c : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clk
-        |    reg a_0_c_ : UInt<5>, clk
-        |    reg a__0 : UInt<6>, clk
+        |    input clock : Clock
+        |    reg a : { b : UInt<1>, c : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clock
+        |    reg a_0_c_ : UInt<5>, clock
+        |    reg a__0 : UInt<6>, clock
       """.stripMargin
     val expected = Seq(
-      "reg a__ : { b : UInt<1>, c_ : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clk with :",
-      "reg a_0_c_ : UInt<5>, clk with :",
-      "reg a__0 : UInt<6>, clk with :") map normalized
+      "reg a__ : { b : UInt<1>, c_ : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clock with :",
+      "reg a_0_c_ : UInt<5>, clock with :",
+      "reg a__0 : UInt<6>, clock with :") map normalized
 
     executeTest(input, expected)
   }
@@ -69,8 +69,8 @@ class UniquifySpec extends FirrtlFlatSpec {
     val input =
       """circuit Test :
         |  module Test :
-        |    input clk : Clock
-        |    reg x : { b : UInt<1>, c : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clk
+        |    input clock : Clock
+        |    reg x : { b : UInt<1>, c : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clock
         |    node a = x
         |    node a_0_c_ = a[0].b
         |    node a__0  = a[1].c[0].d
@@ -81,21 +81,21 @@ class UniquifySpec extends FirrtlFlatSpec {
   }
 
 
-  it should "rename DefRegister expressions: clk, reset, and init" in {
+  it should "rename DefRegister expressions: clock, reset, and init" in {
     val input =
       """circuit Test :
         |  module Test :
-        |    input clk : Clock[2]
-        |    input clk_0 : Clock
+        |    input clock : Clock[2]
+        |    input clock_0 : Clock
         |    input reset : { a : UInt<1>, b : UInt<1>}
         |    input reset_a : UInt<1>
         |    input init : { a : UInt<4>, b : { c : UInt<4>, d : UInt<4>}[2], b_1_c : UInt<4>}[4]
         |    input init_0_a : UInt<4>
-        |    reg foo : UInt<4>, clk[1], with :
+        |    reg foo : UInt<4>, clock[1], with :
         |      reset => (reset.a, init[3].b[1].d)
       """.stripMargin
     val expected = Seq(
-      "reg foo : UInt<4>, clk_[1] with :",
+      "reg foo : UInt<4>, clock_[1] with :",
       "reset => (reset_.a, init_[3].b_[1].d)"
     ) map normalized
 
@@ -187,7 +187,7 @@ class UniquifySpec extends FirrtlFlatSpec {
     val input =
       """circuit Test :
         |  module Test :
-        |    input clk : Clock
+        |    input clock : Clock
         |    mem mem :
         |      data-type => { a : UInt<8>, b : UInt<8>[2]}[2]
         |      depth => 32
@@ -199,12 +199,12 @@ class UniquifySpec extends FirrtlFlatSpec {
         |
         |    mem.read.addr is invalid
         |    mem.read.en <= UInt(1)
-        |    mem.read.clk <= clk
+        |    mem.read.clk <= clock
         |    mem.write.data is invalid
         |    mem.write.mask is invalid
         |    mem.write.addr is invalid
         |    mem.write.en <= UInt(0)
-        |    mem.write.clk <= clk
+        |    mem.write.clk <= clock
       """.stripMargin
     val expected = Seq(
       "mem mem_ :",
@@ -218,7 +218,7 @@ class UniquifySpec extends FirrtlFlatSpec {
     val input =
       """circuit Test :
         |  module Test :
-        |    input clk : Clock
+        |    input clock : Clock
         |    mem mem :
         |      data-type => { a : UInt<8>, b : UInt<8>[2], b_0 : UInt<8> }
         |      depth => 32
@@ -230,12 +230,12 @@ class UniquifySpec extends FirrtlFlatSpec {
         |
         |    mem.read.addr is invalid
         |    mem.read.en <= UInt(1)
-        |    mem.read.clk <= clk
+        |    mem.read.clk <= clock
         |    mem.write.data is invalid
         |    mem.write.mask is invalid
         |    mem.write.addr is invalid
         |    mem.write.en <= UInt(0)
-        |    mem.write.clk <= clk
+        |    mem.write.clk <= clock
       """.stripMargin
     val expected = Seq(
       "data-type => { a : UInt<8>, b_ : UInt<8>[2], b_0 : UInt<8>}",

@@ -167,7 +167,7 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
       """
         |circuit Unit :
         |  module Unit :
-        |    input clk : Clock
+        |    input clock : Clock
         |    input reset : UInt<1>
         |    input io_in : Fixed<6><<0>>
         |    output io_out : Fixed

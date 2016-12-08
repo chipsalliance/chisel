@@ -21,7 +21,7 @@ circuit ParameterizedExtModuleTester :
     parameter TYP = 'bit [1:0]'
 
   module ParameterizedExtModuleTester  :
-    input clk : Clock
+    input clock : Clock
     input reset : UInt<1>
 
     inst dut1 of ParameterizedExtModule_1
@@ -32,12 +32,12 @@ circuit ParameterizedExtModuleTester :
 
     when not(reset) :
       when neq(dut1.bar, UInt(1003)) :
-        printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
-        stop(clk, not(reset), 1)
+        printf(clock, not(reset), "Assertion failed\nTest Failed!\n")
+        stop(clock, not(reset), 1)
       else :
         when neq(dut2.bar, UInt(1008)) :
-          printf(clk, not(reset), "Assertion failed\nTest Failed!\n")
-          stop(clk, not(reset), 1)
+          printf(clock, not(reset), "Assertion failed\nTest Failed!\n")
+          stop(clock, not(reset), 1)
         else :
-          stop(clk, not(reset), 0)
+          stop(clock, not(reset), 0)
 

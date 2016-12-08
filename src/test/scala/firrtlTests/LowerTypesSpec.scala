@@ -66,16 +66,16 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     val input =
       """circuit Test :
         |  module Test :
-        |    input clk : Clock
+        |    input clock : Clock
         |    input reset : UInt<1>
-        |    reg w : UInt<1>, clk
-        |    reg x : {a : UInt<1>, b : UInt<1>}, clk
-        |    reg y : UInt<1>[4], clk
-        |    reg z : { c : { d : UInt<1>, e : UInt<1>}, f : UInt<1>[2] }[2], clk
+        |    reg w : UInt<1>, clock
+        |    reg x : {a : UInt<1>, b : UInt<1>}, clock
+        |    reg y : UInt<1>[4], clock
+        |    reg z : { c : { d : UInt<1>, e : UInt<1>}, f : UInt<1>[2] }[2], clock
       """.stripMargin
     val expected = Seq("w", "x_a", "x_b", "y_0", "y_1", "y_2", "y_3", "z_0_c_d",
       "z_0_c_e", "z_0_f_0", "z_0_f_1", "z_1_c_d", "z_1_c_e", "z_1_f_0",
-      "z_1_f_1") map (x => s"reg $x : UInt<1>, clk with :") map normalized
+      "z_1_f_1") map (x => s"reg $x : UInt<1>, clock with :") map normalized
 
     executeTest(input, expected)
   }
@@ -84,34 +84,34 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     val input =
      """circuit Test :
        |  module Test :
-       |    input clk : Clock
+       |    input clock : Clock
        |    input reset : UInt<1>
        |    input init : { a : UInt<1>, b : UInt<1>}[2]
-       |    reg x : { a : UInt<1>, b : UInt<1>}[2], clk with :
+       |    reg x : { a : UInt<1>, b : UInt<1>}[2], clock with :
        |      reset => (reset, init)
      """.stripMargin
     val expected = Seq(
-      "reg x_0_a : UInt<1>, clk with :", "reset => (reset, init_0_a)",
-      "reg x_0_b : UInt<1>, clk with :", "reset => (reset, init_0_b)",
-      "reg x_1_a : UInt<1>, clk with :", "reset => (reset, init_1_a)",
-      "reg x_1_b : UInt<1>, clk with :", "reset => (reset, init_1_b)"
+      "reg x_0_a : UInt<1>, clock with :", "reset => (reset, init_0_a)",
+      "reg x_0_b : UInt<1>, clock with :", "reset => (reset, init_0_b)",
+      "reg x_1_a : UInt<1>, clock with :", "reset => (reset, init_1_a)",
+      "reg x_1_b : UInt<1>, clock with :", "reset => (reset, init_1_b)"
     ) map normalized
 
     executeTest(input, expected)
   }
 
-  it should "lower DefRegister expressions: clk, reset, and init" in {
+  it should "lower DefRegister expressions: clock, reset, and init" in {
     val input =
       """circuit Test :
         |  module Test :
-        |    input clk : Clock[2]
+        |    input clock : Clock[2]
         |    input reset : { a : UInt<1>, b : UInt<1>}
         |    input init : { a : UInt<4>, b : { c : UInt<4>, d : UInt<4>}[2]}[4]
-        |    reg foo : UInt<4>, clk[1], with :
+        |    reg foo : UInt<4>, clock[1], with :
         |      reset => (reset.a, init[3].b[1].d)
       """.stripMargin
     val expected = Seq(
-      "reg foo : UInt<4>, clk_1 with :",
+      "reg foo : UInt<4>, clock_1 with :",
       "reset => (reset_a, init_3_b_1_d)"
     ) map normalized
 
@@ -145,7 +145,7 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     val input =
      """circuit Test :
        |  module Test :
-       |    input clk : Clock
+       |    input clock : Clock
        |    mem m :
        |      data-type => { a : UInt<8>, b : UInt<8>}[2]
        |      depth => 32
@@ -153,13 +153,13 @@ class LowerTypesSpec extends FirrtlFlatSpec {
        |      write-latency => 1
        |      reader => read
        |      writer => write
-       |    m.read.clk <= clk
+       |    m.read.clk <= clock
        |    m.read.en <= UInt<1>(1)
        |    m.read.addr is invalid
        |    node x = m.read.data
        |    node y = m.read.data[0].b
        |
-       |    m.write.clk <= clk
+       |    m.write.clk <= clock
        |    m.write.en <= UInt<1>(0)
        |    m.write.mask is invalid
        |    m.write.addr is invalid
@@ -173,8 +173,8 @@ class LowerTypesSpec extends FirrtlFlatSpec {
      """.stripMargin
     val expected = Seq(
       "mem m_0_a :", "mem m_0_b :", "mem m_1_a :", "mem m_1_b :",
-      "m_0_a.read.clk <= clk", "m_0_b.read.clk <= clk",
-      "m_1_a.read.clk <= clk", "m_1_b.read.clk <= clk",
+      "m_0_a.read.clk <= clock", "m_0_b.read.clk <= clock",
+      "m_1_a.read.clk <= clock", "m_1_b.read.clk <= clock",
       "m_0_a.read.addr is invalid", "m_0_b.read.addr is invalid",
       "m_1_a.read.addr is invalid", "m_1_b.read.addr is invalid",
       "node x_0_a = m_0_a.read.data", "node x_0_b = m_0_b.read.data",
