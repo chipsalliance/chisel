@@ -9,7 +9,7 @@ import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl._
-import _root_.util.BackendCompilationUtilities
+import firrtl.util.BackendCompilationUtilities
 
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
 

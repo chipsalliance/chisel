@@ -6,7 +6,7 @@ import chisel3._
 import java.io._
 
 import firrtl.{Driver => _, _}
-import _root_.util.BackendCompilationUtilities
+import firrtl.util.BackendCompilationUtilities
 
 object TesterDriver extends BackendCompilationUtilities {
 
