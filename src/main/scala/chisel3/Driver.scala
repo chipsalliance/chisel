@@ -38,6 +38,18 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
 import BuildInfo._
 
 trait BackendCompilationUtilities {
+  /** Copy the contents of a resource to a destination file.
+    */
+  def copyResourceToFile(name: String, file: File) {
+    val in = getClass.getResourceAsStream(name)
+    if (in == null) {
+      throw new FileNotFoundException(s"Resource '$name'")
+    }
+    val out = new FileOutputStream(file)
+    Iterator.continually(in.read).takeWhile(-1 != _).foreach(out.write)
+    out.close()
+  }
+
   /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.
     */
   def createTempDirectory(prefix: String): File = {
