@@ -6,9 +6,10 @@ import chisel3.testers.BasicTester
 import org.scalatest._
 import org.scalatest.prop._
 import java.io.File
+import _root_.util.BackendCompilationUtilities
 
 class HarnessSpec extends ChiselPropSpec
-  with chisel3.BackendCompilationUtilities {
+  with BackendCompilationUtilities {
 
   def makeTrivialVerilog: (File => File) = makeHarness((prefix: String) => s"""
 module ${prefix};
@@ -56,7 +57,7 @@ int main(int argc, char **argv, char **env) {
     val cppHarness = makeCppHarness(fname)
 
     make(fname)
-    verilogToCpp(target, target, path, Seq(), cppHarness).!
+    verilogToCpp(target, path, Seq(), cppHarness).!
     cppToExe(target, path).!
     (path, target)
   }
