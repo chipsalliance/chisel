@@ -126,7 +126,7 @@ object Vec {
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
-    else (idx | 0.U(w))(w-1,0)
+    else (idx | 0.U(w.W))(w-1,0)
   }
 }
 
@@ -225,7 +225,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   private[chisel3] lazy val flatten: IndexedSeq[Bits] =
     (0 until length).flatMap(i => this.apply(i).flatten)
 
-  for ((elt, i) <- self zipWithIndex)
+  for ((elt, i) <- self.zipWithIndex)
     elt.setRef(this, i)
 
   /** Default "pretty-print" implementation

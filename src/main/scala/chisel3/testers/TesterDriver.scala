@@ -14,7 +14,7 @@ object TesterDriver extends BackendCompilationUtilities {
       throw new FileNotFoundException(s"Resource '$name'")
     }
     val out = new FileOutputStream(file)
-    Iterator.continually(in.read).takeWhile(-1 !=).foreach(out.write)
+    Iterator.continually(in.read).takeWhile(-1 != _).foreach(out.write)
     out.close()
   }
 
