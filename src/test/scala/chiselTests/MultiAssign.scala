@@ -9,10 +9,10 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 
 class LastAssignTester() extends BasicTester {
-  val countOnClockCycles = Bool(true)
+  val countOnClockCycles = true.B
   val (cnt, wrap) = Counter(countOnClockCycles,2)
 
-  val test = Wire(UInt.width(4))
+  val test = Wire(UInt(4.W))
   assert(test === 7.U)  // allow read references before assign references
 
   test := 13.U

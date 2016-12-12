@@ -6,9 +6,12 @@ import chisel3.internal.firrtl.Emitter
 
 import scala.sys.process._
 import java.io._
+import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl._
+
+import _root_.firrtl.annotations.AnnotationYamlProtocol._
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -95,7 +98,7 @@ trait BackendCompilationUtilities {
   /** Generates a Verilator invocation to convert Verilog sources to C++
     * simulation sources.
     *
-    * The Verilator prefix will be V$dutFile, and running this will generate
+    * The Verilator prefix will be V\$dutFile, and running this will generate
     * C++ sources and headers as well as a makefile to compile them.
     *
     * @param dutFile name of the DUT .v without the .v extension
@@ -119,13 +122,13 @@ trait BackendCompilationUtilities {
         "-Wno-WIDTH",
         "-Wno-STMTDLY",
         "--trace",
-        "-O0",
+        "-O1",
         "--top-module", topModule,
         "+define+TOP_TYPE=V" + dutFile,
         s"+define+PRINTF_COND=!$topModule.reset",
         s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
-        s"""-Wno-undefined-bool-conversion -O0 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
+        s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
         "-Mdir", dir.toString,
         "--exe", cppHarness.toString)
     System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
@@ -238,6 +241,15 @@ object Driver extends BackendCompilationUtilities {
     val w = new FileWriter(firrtlFile)
     w.write(firrtlString)
     w.close()
+
+    val annotationFile = new File(optionsManager.getBuildFileName("anno"))
+    val af = new FileWriter(annotationFile)
+    af.write(circuit.annotations.toArray.toYaml.prettyPrint)
+    af.close()
+
+    /* This passes the firrtl source and annotations directly to firrtl */
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+      firrtlSource = Some(firrtlString), annotations = circuit.annotations.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))

@@ -11,15 +11,15 @@ import chisel3._
  */
 class UInt2VecOfBool extends CookbookTester(0) {
   // Example
-  val uint = UInt(0xc)
+  val uint = 0xc.U
   val vec = Vec(uint.toBools)
   printf(p"$vec") // Vec(0, 0, 1, 1)
 
   // Test
-  assert(vec(0) === Bool(false))
-  assert(vec(1) === Bool(false))
-  assert(vec(2) === Bool(true))
-  assert(vec(3) === Bool(true))
+  assert(vec(0) === false.B)
+  assert(vec(1) === false.B)
+  assert(vec(2) === true.B)
+  assert(vec(3) === true.B)
 }
 
 class UInt2VecOfBoolSpec extends CookbookSpec {

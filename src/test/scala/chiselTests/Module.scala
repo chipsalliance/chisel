@@ -5,8 +5,8 @@ package chiselTests
 import chisel3._
 
 class SimpleIO extends Bundle {
-  val in  = Input(UInt.width(32))
-  val out = Output(UInt.width(32))
+  val in  = Input(UInt(32.W))
+  val out = Output(UInt(32.W))
 }
 
 class PlusOne extends Module {
@@ -16,8 +16,8 @@ class PlusOne extends Module {
 
 class ModuleVec(val n: Int) extends Module {
   val io = IO(new Bundle {
-    val ins  = Input(Vec(n, UInt(32)))
-    val outs = Output(Vec(n, UInt(32)))
+    val ins  = Input(Vec(n, 32.U))
+    val outs = Output(Vec(n, 32.U))
   })
   val pluses = Vec.fill(n){ Module(new PlusOne).io }
   for (i <- 0 until n) {
