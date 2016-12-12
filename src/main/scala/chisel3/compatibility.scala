@@ -120,7 +120,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     */
   trait BoolFactory extends chisel3.core.BoolFactory {
     /** Creates Bool literal.
-     */
+      */
     def apply(x: Boolean): Bool = x.B
 
     /** Create a UInt with a specified direction and width - compatibility with Chisel2. */

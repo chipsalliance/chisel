@@ -4,6 +4,8 @@ package chisel3.util
 
 import chisel3._
 
+import scala.language.implicitConversions
+
 object ImplicitConversions {
   // The explicit fromIntToLiteral resolves an ambiguous conversion between fromIntToLiteral and
   // UInt.asUInt.
