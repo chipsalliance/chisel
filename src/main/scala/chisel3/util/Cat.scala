@@ -5,8 +5,19 @@ package chisel3.util
 import chisel3._
 import chisel3.core.SeqUtils
 
+/** Concatenates elements of the input, in order, together.
+  *
+  * @example {{{
+  * Cat("b101".U, "b11".U)  // equivalent to "b101 11".U
+  * Cat(myUIntWire0, myUIntWire1)
+  *
+  * Cat(Seq("b101".U, "b11".U))  // equivalent to "b101 11".U
+  * Cat(mySeqOfBits)
+  * }}}
+  */
 object Cat {
-  /** Concatenates the argument data elements, in argument order, together.
+  /** Concatenates the argument data elements, in argument order, together. The first argument
+    * forms the most significant bits, while the last argument forms the least significant bits.
     */
   def apply[T <: Bits](a: T, r: T*): UInt = apply(a :: r.toList)
 

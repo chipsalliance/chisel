@@ -40,7 +40,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     */
   def apply(idx: Int): T = {
     require(idx >= 0 && idx < length)
-    apply(UInt(idx))
+    apply(idx.asUInt)
   }
 
   /** Creates a read/write accessor into the memory with dynamic addressing.
@@ -147,7 +147,11 @@ sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
     implicit val sourceInfo = UnlocatableSourceInfo
     val a = Wire(UInt())
-    when (enable) { a := addr }
-    read(a)
+    var port: Option[T] = None
+    when (enable) {
+      a := addr
+      port = Some(read(a))
+    }
+    port.get
   }
 }

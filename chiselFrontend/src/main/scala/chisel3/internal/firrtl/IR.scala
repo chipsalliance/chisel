@@ -7,6 +7,8 @@ import core._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
 
+import _root_.firrtl.annotations.Annotation
+
 case class PrimOp(val name: String) {
   override def toString: String = name
 }
@@ -64,7 +66,7 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   protected def minWidth: Int
   if (forcedWidth) {
     require(widthArg.get >= minWidth,
-      s"The literal value ${num} was elaborated with a specificed width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
+      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
   }
 }
 
@@ -107,6 +109,54 @@ case class Slot(imm: Node, name: String) extends Arg {
 case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
   override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[${value.fullName(ctx)}]"
+}
+
+sealed trait Bound
+sealed trait NumericBound[T] extends Bound {
+  val value: T
+}
+sealed case class Open[T](value: T) extends NumericBound[T]
+sealed case class Closed[T](value: T) extends NumericBound[T]
+
+sealed trait Range {
+  val min: Bound
+  val max: Bound
+  def getWidth: Width
+}
+
+sealed trait KnownIntRange extends Range {
+  val min: NumericBound[Int]
+  val max: NumericBound[Int]
+
+  require( (min, max) match {
+    case (Open(low_val), Open(high_val)) => low_val < high_val - 1
+    case (Closed(low_val), Open(high_val)) => low_val < high_val
+    case (Open(low_val), Closed(high_val)) => low_val < high_val
+    case (Closed(low_val), Closed(high_val)) => low_val <= high_val
+  })
+}
+
+sealed case class KnownUIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange {
+  require (min.value >= 0)
+
+  def getWidth: Width = max match {
+    case Open(v) => Width(BigInt(v - 1).bitLength.max(1))
+    case Closed(v) => Width(BigInt(v).bitLength.max(1))
+  }
+}
+
+sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange {
+
+  val maxWidth = max match {
+    case Open(v) => Width(BigInt(v - 1).bitLength + 1)
+    case Closed(v) => Width(BigInt(v).bitLength + 1)
+  }
+  val minWidth = min match {
+    case Open(v) => Width(BigInt(v + 1).bitLength + 1)
+    case Closed(v) => Width(BigInt(v).bitLength + 1)
+  }
+  def getWidth: Width = maxWidth.max(minWidth)
+
 }
 
 object Width {
@@ -215,8 +265,14 @@ case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
-case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
+abstract class Component extends Arg {
+  def id: Module
+  def name: String
+  def ports: Seq[Port]
+}
+case class DefModule(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefBlackBox(id: Module, name: String, ports: Seq[Port], params: Map[String, Param]) extends Component
 
-case class Circuit(name: String, components: Seq[Component])
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation] = Seq.empty)

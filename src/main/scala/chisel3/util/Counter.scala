@@ -12,7 +12,7 @@ import chisel3._
   */
 class Counter(val n: Int) {
   require(n >= 0)
-  val value = if (n > 1) Reg(init=UInt(0, log2Up(n))) else UInt(0)
+  val value = if (n > 1) Reg(init=0.U(log2Up(n).W)) else 0.U
 
   /** Increment the counter, returning whether the counter currently is at the
     * maximum and will wrap. The incremented value is registered and will be
@@ -20,14 +20,14 @@ class Counter(val n: Int) {
     */
   def inc(): Bool = {
     if (n > 1) {
-      val wrap = value === UInt(n-1)
-      value := value + UInt(1)
+      val wrap = value === (n-1).asUInt
+      value := value + 1.U
       if (!isPow2(n)) {
-        when (wrap) { value := UInt(0) }
+        when (wrap) { value := 0.U }
       }
       wrap
     } else {
-      Bool(true)
+      true.B
     }
   }
 }
@@ -46,9 +46,9 @@ object Counter
     * maximum and the condition is true).
     *
     * @example {{{
-    * val countOn = Bool(true) // increment counter every clock cycle
+    * val countOn = true.B // increment counter every clock cycle
     * val (counterValue, counterWrap) = Counter(countOn, 4)
-    * when (counterValue === UInt(3)) {
+    * when (counterValue === 3.U) {
     *   ...
     * }
     * }}}

@@ -32,7 +32,7 @@ object ReadyValidIO {
       * @return    dat.
       */
     def enq(dat: T): T = {
-      target.valid := Bool(true)
+      target.valid := true.B
       target.bits := dat
       dat
     }
@@ -40,7 +40,7 @@ object ReadyValidIO {
     /** Indicate no enqueue occurs.  Valid is set to false, and all bits are set to zero.
       */
     def noenq(): Unit = {
-      target.valid := Bool(false)
+      target.valid := false.B
       // We want the type from the following, not any existing binding.
       target.bits := target.bits.cloneType.fromBits(0.asUInt)
     }
@@ -51,14 +51,14 @@ object ReadyValidIO {
       * @return the data for this device,
       */
     def deq(): T = {
-      target.ready := Bool(true)
+      target.ready := true.B
       target.bits
     }
 
     /** Indicate no dequeue occurs. Ready is set to false
       */
     def nodeq(): Unit = {
-      target.ready := Bool(false)
+      target.ready := false.B
     }
   }
 }
@@ -144,7 +144,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq = EnqIO(gen)
   /** The current amount of data in the queue */
-  val count = Output(UInt.width(log2Up(entries + 1)))
+  val count = Output(UInt(log2Up(entries + 1).W))
 
   override def cloneType = new QueueIO(gen, entries).asInstanceOf[this.type]
 }
@@ -177,7 +177,7 @@ extends Module(override_reset=override_reset) {
   val ram = Mem(entries, gen)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
-  val maybe_full = Reg(init=Bool(false))
+  val maybe_full = Reg(init=false.B)
 
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
@@ -201,16 +201,16 @@ extends Module(override_reset=override_reset) {
   io.deq.bits := ram(deq_ptr.value)
 
   if (flow) {
-    when (io.enq.valid) { io.deq.valid := Bool(true) }
+    when (io.enq.valid) { io.deq.valid := true.B }
     when (empty) {
       io.deq.bits := io.enq.bits
-      do_deq := Bool(false)
-      when (io.deq.ready) { do_enq := Bool(false) }
+      do_deq := false.B
+      when (io.deq.ready) { do_enq := false.B }
     }
   }
 
   if (pipe) {
-    when (io.deq.ready) { io.enq.ready := Bool(true) }
+    when (io.deq.ready) { io.enq.ready := true.B }
   }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
@@ -219,9 +219,9 @@ extends Module(override_reset=override_reset) {
   } else {
     io.count := Mux(ptr_match,
                     Mux(maybe_full,
-                      UInt(entries), UInt(0)),
+                      entries.asUInt, 0.U),
                     Mux(deq_ptr.value > enq_ptr.value,
-                      UInt(entries) + ptr_diff, ptr_diff))
+                      entries.asUInt + ptr_diff, ptr_diff))
   }
 }
 
@@ -230,7 +230,7 @@ extends Module(override_reset=override_reset) {
   * @param enq input (enqueue) interface to the queue, also determines width of queue elements
   * @param entries depth (number of elements) of the queue
   *
-  * @returns output (dequeue) interface from the queue
+  * @return output (dequeue) interface from the queue
   *
   * @example {{{
   * consumer.io.in <> Queue(producer.io.out, 16)

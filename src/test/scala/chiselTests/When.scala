@@ -11,44 +11,44 @@ import chisel3.util._
 
 class WhenTester() extends BasicTester {
   val cnt = Counter(4)
-  when(Bool(true)) { cnt.inc() }
+  when(true.B) { cnt.inc() }
 
-  val out = Wire(UInt.width(3))
-  when(cnt.value === UInt(0)) {
-    out := UInt(1)
-  } .elsewhen (cnt.value === UInt(1)) {
-    out := UInt(2)
-  } .elsewhen (cnt.value === UInt(2)) {
-    out := UInt(3)
+  val out = Wire(UInt(3.W))
+  when(cnt.value === 0.U) {
+    out := 1.U
+  } .elsewhen (cnt.value === 1.U) {
+    out := 2.U
+  } .elsewhen (cnt.value === 2.U) {
+    out := 3.U
   } .otherwise {
-    out := UInt(0)
+    out := 0.U
   }
 
-  assert(out === cnt.value + UInt(1))
+  assert(out === cnt.value + 1.U)
 
-  when(cnt.value === UInt(3)) {
+  when(cnt.value === 3.U) {
     stop()
   }
 }
 
 class OverlappedWhenTester() extends BasicTester {
   val cnt = Counter(4)
-  when(Bool(true)) { cnt.inc() }
+  when(true.B) { cnt.inc() }
 
-  val out = Wire(UInt.width(3))
-  when(cnt.value <= UInt(0)) {
-    out := UInt(1)
-  } .elsewhen (cnt.value <= UInt(1)) {
-    out := UInt(2)
-  } .elsewhen (cnt.value <= UInt(2)) {
-    out := UInt(3)
+  val out = Wire(UInt(3.W))
+  when(cnt.value <= 0.U) {
+    out := 1.U
+  } .elsewhen (cnt.value <= 1.U) {
+    out := 2.U
+  } .elsewhen (cnt.value <= 2.U) {
+    out := 3.U
   } .otherwise {
-    out := UInt(0)
+    out := 0.U
   }
 
-  assert(out === cnt.value + UInt(1))
+  assert(out === cnt.value + 1.U)
 
-  when(cnt.value === UInt(3)) {
+  when(cnt.value === 3.U) {
     stop()
   }
 }

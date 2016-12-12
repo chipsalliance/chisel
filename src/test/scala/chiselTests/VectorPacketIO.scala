@@ -19,7 +19,7 @@ import chisel3.util._
   * IMPORTANT:  The canonical way to initialize a decoupled inteface is still being debated.
   */
 class Packet extends Bundle {
-  val header = UInt.width(1)
+  val header = UInt(1.W)
 }
 
 /**

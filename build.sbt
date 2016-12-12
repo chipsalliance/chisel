@@ -19,11 +19,22 @@ lazy val commonSettings = Seq (
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   scalaVersion := "2.11.7",
   autoAPIMappings := true,
-
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
     Resolver.sonatypeRepo("releases")
-  )
+  ),
+  scalacOptions := Seq("-deprecation", "-feature"),
+  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
+  //  this has to be a Task setting.
+  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
+  allDependencies := {
+    allDependencies.value ++ Seq("firrtl").collect {
+      // If we have an unmanaged jar file on the classpath, assume we're to use that,
+      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
+        //  otherwise let sbt fetch the appropriate version.
+        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+    }
+  }
 )
 
 lazy val publishSettings = Seq (
@@ -70,24 +81,12 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= (Seq("firrtl").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
 
-  libraryDependencies ++= (Seq("firrtl").map {
-    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
-
-
-/* Bumping "com.novocode" % "junit-interface" % "0.11", causes DelayTest testSeqReadBundle to fail
- *  in subtly disturbing ways on Linux (but not on Mac):
- *  - some fields in the generated .h file are re-named,
- *  - an additional field is added
- *  - the generated .cpp file has additional differences:
- *    - different temps in clock_lo
- *    - missing assignments
- *    - change of assignment order
- *    - use of "Tx" vs. "Tx.values"
- */
-  libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-  libraryDependencies += "com.github.scopt" %% "scopt" % "3.4.0",
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
+    "com.github.scopt" %% "scopt" % "3.4.0"
+  ),
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
@@ -104,16 +103,19 @@ lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
   settings(publishSettings: _*).
   settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    publishArtifact := false
   )
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(publishSettings: _*).
   settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    publishArtifact := false
   ).
   dependsOn(coreMacros)
+
 
 lazy val chisel = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
@@ -127,20 +129,21 @@ lazy val chisel = (project in file(".")).
   settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).
-  dependsOn(coreMacros).
-  dependsOn(chiselFrontend).
+  // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
+  dependsOn(coreMacros % "compile-internal;test-internal").
+  dependsOn(chiselFrontend % "compile-internal;test-internal").
   settings(
     aggregate in doc := false,
-    // Include macro classes, resources, and sources main jar.
+    // Include macro classes, resources, and sources main JAR.
     mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),
     mappings in (Compile, packageSrc) <++= mappings in (coreMacros, Compile, packageSrc),
     mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
-    mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc)
-  ).
-  aggregate(coreMacros, chiselFrontend)
-
+    mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc),
+    // Export the packaged JAR so projects that depend directly on Chisel project (rather than the
+    // published artifact) also see the stuff in coreMacros and chiselFrontend.
+    exportJars := true
+  )
 // We need the following for the release version that uses sbt to invoke firrtl.
 // sbt doesn't deal well with multiple simulataneous invocations for the same user
 
   parallelExecution in Test := false
-

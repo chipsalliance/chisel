@@ -11,16 +11,16 @@ import chisel3._
 class UInt2Bundle extends CookbookTester(0) {
   // Example
   class MyBundle extends Bundle {
-    val foo = UInt(width = 4)
-    val bar = UInt(width = 4)
+    val foo = UInt(4.W)
+    val bar = UInt(4.W)
   }
-  val uint = UInt(0xb4)
+  val uint = 0xb4.U
   val bundle = (new MyBundle).fromBits(uint)
   printf(p"$bundle") // Bundle(foo -> 11, bar -> 4)
 
   // Test
-  assert(bundle.foo === UInt(0xb))
-  assert(bundle.bar === UInt(0x4))
+  assert(bundle.foo === 0xb.U)
+  assert(bundle.bar === 0x4.U)
 }
 
 class UInt2BundleSpec extends CookbookSpec {

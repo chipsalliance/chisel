@@ -4,7 +4,7 @@ package chisel3.core
 
 import scala.language.experimental.macros
 
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.internal.sourceinfo._
 
 private[chisel3] object SeqUtils {
   /** Concatenates the data elements of the input sequence, in sequence order, together.
@@ -25,12 +25,12 @@ private[chisel3] object SeqUtils {
     }
   }
 
-  /** Outputs the number of elements that === Bool(true).
+  /** Outputs the number of elements that === true.B.
     */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
   def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = in.size match {
-    case 0 => UInt(0)
+    case 0 => 0.U
     case 1 => in.head
     case n => count(in take n/2) +& count(in drop n/2)
   }
@@ -51,13 +51,13 @@ private[chisel3] object SeqUtils {
     *
     * @note assumes exactly one true predicate, results undefined otherwise
     */
-  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
+  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro CompileOptionsTransform.inArg
 
-  def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
+  def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (in.tail.isEmpty) {
       in.head._2
     } else {
-      val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, UInt(0))
+      val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, 0.U)
       val width = in.map(_._2.width).reduce(_ max _)
       in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
     }

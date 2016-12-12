@@ -140,10 +140,9 @@ object Binding {
       }
     }
 
-    /** Diagnose a binding error caused by a missing IO() wrapper.
-      * @param element the element triggering the binding error.
-      * @return true if the element is a member of the module's io but ioDefined is false.
-      */
+    // Diagnose a binding error caused by a missing IO() wrapper.
+    // element is the element triggering the binding error.
+    // Returns true if the element is a member of the module's io but ioDefined is false.
     def isMissingIOWrapper(element: Element): Boolean = {
       element._parent match {
         case None => false

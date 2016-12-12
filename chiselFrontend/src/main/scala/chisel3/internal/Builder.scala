@@ -108,24 +108,36 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getRef: Arg = _ref.get
 
   // Implementation of public methods.
-  def instanceName = _parent match {
+  def instanceName: String = _parent match {
     case Some(p) => p._component match {
       case Some(c) => getRef fullName c
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
     case None => throwException("this cannot happen")
   }
-  def pathName = _parent match {
+  def pathName: String = _parent match {
     case None => instanceName
     case Some(p) => s"${p.pathName}.$instanceName"
   }
-  def parentPathName = _parent match {
+  def parentPathName: String = _parent match {
     case Some(p) => p.pathName
     case None => throwException(s"$instanceName doesn't have a parent")
   }
-  def parentModName = _parent match {
-    case Some(p) => p.modName
+  def parentModName: String = _parent match {
+    case Some(p) => p.name
     case None => throwException(s"$instanceName doesn't have a parent")
+  }
+
+  private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
+    // Suggest names to nodes using runtime reflection
+    def getValNames(c: Class[_]): Set[String] = {
+      if (c == rootClass) Set()
+      else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+    }
+    val valNames = getValNames(this.getClass)
+    def isPublicVal(m: java.lang.reflect.Method) =
+      m.getParameterTypes.isEmpty && valNames.contains(m.getName)
+    this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
   }
 }
 
@@ -133,7 +145,11 @@ private[chisel3] class DynamicContext() {
   val idGen = new IdGen
   val globalNamespace = new Namespace(None, Set())
   val components = ArrayBuffer[Component]()
+  val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[Module] = None
+  // Set by object Module.apply before calling class Module constructor
+  // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
+  var readyForModuleConstr: Boolean = false
   val errors = new ErrorLog
 }
 
@@ -146,6 +162,7 @@ private[chisel3] object Builder {
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
+  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
 
   def currentModule: Option[Module] = dynamicContext.currentModule
   def currentModule_=(target: Option[Module]): Unit = {
@@ -158,11 +175,18 @@ private[chisel3] object Builder {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
+  def readyForModuleConstr: Boolean = dynamicContext.readyForModuleConstr
+  def readyForModuleConstr_=(target: Boolean): Unit = {
+    dynamicContext.readyForModuleConstr = target
+  }
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
   def pushCommand[T <: Command](c: T): T = {
-    forcedModule._commands += c
+    forcedModule match {
+      case _: BlackBox => throwException("Cannot add hardware to a BlackBox")
+      case m => m._commands += c
+    }
     c
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
@@ -184,7 +208,7 @@ private[chisel3] object Builder {
       errors.checkpoint()
       errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components)
+      Circuit(components.last.name, components, annotations.map(_.toFirrtl))
     }
   }
 }

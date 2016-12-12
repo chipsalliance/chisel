@@ -8,15 +8,15 @@ import chisel3.testers.BasicTester
 
 class UIntOps extends Module {
   val io = IO(new Bundle {
-    val a = Input(UInt.width(16))
-    val b = Input(UInt.width(16))
-    val addout = Output(UInt.width(16))
-    val subout = Output(UInt.width(16))
-    val timesout = Output(UInt.width(16))
-    val divout = Output(UInt.width(16))
-    val modout = Output(UInt.width(16))
-    val lshiftout = Output(UInt.width(16))
-    val rshiftout = Output(UInt.width(16))
+    val a = Input(UInt(16.W))
+    val b = Input(UInt(16.W))
+    val addout = Output(UInt(16.W))
+    val subout = Output(UInt(16.W))
+    val timesout = Output(UInt(16.W))
+    val divout = Output(UInt(16.W))
+    val modout = Output(UInt(16.W))
+    val lshiftout = Output(UInt(16.W))
+    val rshiftout = Output(UInt(16.W))
     val lessout = Output(Bool())
     val greatout = Output(Bool())
     val eqout = Output(Bool())
@@ -31,10 +31,10 @@ class UIntOps extends Module {
   io.addout := a +% b
   io.subout := a -% b
   io.timesout := (a * b)(15, 0)
-  io.divout := a / Mux(b === UInt(0), UInt(1), b)
+  io.divout := a / Mux(b === 0.U, 1.U, b)
   // io.modout := a % b
   // TODO:
-  io.modout := UInt(0)
+  io.modout := 0.U
   io.lshiftout := (a << b(3, 0))(15, 0)
   io.rshiftout := a >> b
   io.lessout := a < b
@@ -78,7 +78,7 @@ class UIntOpsTester(c: UIntOps) extends Tester(c) {
 
 class GoodBoolConversion extends Module {
   val io = IO(new Bundle {
-    val u = Input(UInt.width(1))
+    val u = Input(UInt(1.W))
     val b = Output(Bool())
   })
   io.b := io.u.toBool
@@ -86,7 +86,7 @@ class GoodBoolConversion extends Module {
 
 class BadBoolConversion extends Module {
   val io = IO(new Bundle {
-    val u = Input(UInt.width( 5))
+    val u = Input(UInt(5.W))
     val b = Output(Bool())
   })
   io.b := io.u.toBool
