@@ -216,6 +216,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
   implicit class fromDoubleToLiteral(val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
   implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromIntToBinaryPoint(val x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
 
   implicit class fromUIntToBitPatComparable(val x: UInt) {
     import scala.language.experimental.macros
