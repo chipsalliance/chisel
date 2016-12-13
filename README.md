@@ -21,14 +21,13 @@
 ##### Installation
  1. Clone the repository:
     ```git clone https://github.com/ucb-bar/firrtl; cd firrtl```
- 2. Compile firrtl:```sbt compile```
- 3. Run tests: ```sbt test```
- 4. Build executable (`utils/bin/firrtl`): ```sbt assembly```
-    * **Note:** You can add `utils/bin/firrtl` to your path to call firrtl from other processes
- 5. Run regression:
+ 1. Compile firrtl: ```sbt compile```
+ 1. Run tests: ```sbt test```
+ 1. Build executable (`utils/bin/firrtl`): ```sbt assembly```
+    * **Note:** You can add `utils/bin` to your path to call firrtl from other processes
+ 1. Publish this version locally in order to satisfy other tool chain library dependencies:
 ```
-mkdir -p build
-./utils/bin/firrtl -i regress/rocket.fir -o build/rocket.v -X verilog
+sbt publish-local
 ```
 
 ##### Useful sbt Tips
