@@ -647,7 +647,13 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = this
   override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo): FixedPoint = {
-    pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref))
+    binaryPoint match {
+      case KnownBinaryPoint(value) =>
+        val iLit = ILit(value)
+        pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
+      case _ =>
+        throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+    }
   }
 }
 

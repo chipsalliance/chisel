@@ -20,7 +20,7 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
 }
 
 class FixedPointFromBitsTester extends BasicTester {
-    val uint = 3.U
+    val uint = 3.U(4.W)
     val sint = -3.S
     val fp_tpe = FixedPoint(4.W, 1.BP)
     val uint_result = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
