@@ -11,14 +11,34 @@ import firrtl.passes.PassException
 // Datastructures
 import scala.collection.mutable
 
+
+/** A component, e.g. register etc. Must be declared only once under the TopAnnotation
+  */
+object NoDedupAnnotation {
+  def apply(target: ModuleName): Annotation = Annotation(target, classOf[DedupModules], s"nodedup!")
+
+  def unapply(a: Annotation): Option[ModuleName] = a match {
+    case Annotation(ModuleName(n, c), _, "nodedup!") => Some(ModuleName(n, c))
+    case _ => None
+  }
+}
+
+
 // Only use on legal Firrtl. Specifically, the restriction of
 //  instance loops must have been checked, or else this pass can
 //  infinitely recurse
 class DedupModules extends Transform {
   def inputForm = HighForm
   def outputForm = HighForm
-  def execute(state: CircuitState): CircuitState = CircuitState(run(state.circuit), state.form)
-  def run(c: Circuit): Circuit = {
+  def execute(state: CircuitState): CircuitState = {
+    getMyAnnotations(state) match {
+      case Nil => CircuitState(run(state.circuit, Seq.empty), state.form)
+      case annos =>
+        val noDedups = annos.collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
+        CircuitState(run(state.circuit, noDedups), state.form)
+    }
+  }
+  def run(c: Circuit, noDedups: Seq[String]): Circuit = {
     val moduleOrder = mutable.ArrayBuffer.empty[String]
     val moduleMap = c.modules.map(m => m.name -> m).toMap
     def hasInstance(b: Statement): Boolean = {
@@ -85,11 +105,15 @@ class DedupModules extends Transform {
 
       val mx = m map fixInstance
       val mxx = (mx map removeInfo) map removePortInfo
+
+      // If shouldn't dedup, just make it fail to be the same to any other modules
+      val unique = if (!noDedups.contains(mxx.name)) "" else mxx.name
+
       val string = mxx match {
         case Module(i, n, ps, b) =>
-          ps.map(_.serialize).mkString + b.serialize
+          ps.map(_.serialize).mkString + b.serialize + unique
         case ExtModule(i, n, ps, dn, p) =>
-          ps.map(_.serialize).mkString + dn + p.map(_.serialize).mkString
+          ps.map(_.serialize).mkString + dn + p.map(_.serialize).mkString + unique
       }
       dedupModules.get(string) match {
         case Some(dupname) =>

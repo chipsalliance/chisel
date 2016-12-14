@@ -15,9 +15,10 @@ import firrtl.passes.PassExceptions
 import firrtl.annotations.{
    Named,
    CircuitName,
+   ModuleName,
    Annotation
 }
-import firrtl.transforms.DedupModules
+import firrtl.transforms.{DedupModules, NoDedupAnnotation}
 
 
 /**
@@ -125,6 +126,35 @@ class DedupModuleTests extends HighTransformSpec {
            """.stripMargin
       val writer = new StringWriter()
       val aMap = new AnnotationMap(Nil)
+      execute(writer, aMap, input, check)
+   }
+   "The module B, but not A, with comments" should "be deduped if not annotated" in {
+      val input =
+         """circuit Top :
+           |  module Top :
+           |    inst a1 of A
+           |    inst a2 of A_
+           |  module A : @[yy 2:2]
+           |    output x: UInt<1> @[yy 2:2]
+           |    x <= UInt(1)
+           |  module A_ : @[xx 1:1]
+           |    output x: UInt<1> @[xx 1:1]
+           |    x <= UInt(1)
+           """.stripMargin
+      val check =
+         """circuit Top :
+           |  module Top :
+           |    inst a1 of A
+           |    inst a2 of A_
+           |  module A : @[yy 2:2]
+           |    output x: UInt<1> @[yy 2:2]
+           |    x <= UInt(1)
+           |  module A_ : @[xx 1:1]
+           |    output x: UInt<1> @[xx 1:1]
+           |    x <= UInt(1)
+           """.stripMargin
+      val writer = new StringWriter()
+      val aMap = new AnnotationMap(Seq(NoDedupAnnotation(ModuleName("A", CircuitName("Top")))))
       execute(writer, aMap, input, check)
    }
 }
