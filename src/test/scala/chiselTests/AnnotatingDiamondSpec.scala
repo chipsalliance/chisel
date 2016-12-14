@@ -32,7 +32,7 @@ class IdentityTransform extends Transform {
     getMyAnnotations(state) match {
       case Nil => state
       case myAnnotations =>
-        /* Do something useful with annotations here */
+        println(s"In Identity transform, annotations:\n${myAnnotations.mkString("\n")}") //scalastyle:off regex
         state
     }
   }
