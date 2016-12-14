@@ -14,7 +14,7 @@ object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
-    * @param m the Module being created
+    * @param bc the Module being created
     *
     * @return the input module `m` with Chisel metadata properly set
     */
@@ -83,6 +83,10 @@ extends HasId {
     // Bind each element of the iodef to being a Port
     Binding.bind(iodef, PortBinder(this), "Error: iodef")
     iodef
+  }
+
+  def annotate(annotation: ChiselAnnotation): Unit = {
+    Builder.annotations += annotation
   }
 
   private[core] var ioDefined: Boolean = false

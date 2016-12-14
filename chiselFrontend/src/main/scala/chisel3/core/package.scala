@@ -55,14 +55,17 @@ package chisel3 {
     implicit class fromStringToLiteral(val str: String) {
       /** String to UInt parse, recommended style for constants.
         */
-      def U(): UInt = UInt.Lit(parse(str), parsedWidth(str))  // scalastyle:ignore method.name
+      def U(): UInt = str.asUInt() // scalastyle:ignore method.name
       /** String to UInt parse with specified width, recommended style for constants.
         */
-      def U(width: Width): UInt = UInt.Lit(parse(str), width)  // scalastyle:ignore method.name
+      def U(width: Width): UInt = str.asUInt(width) // scalastyle:ignore method.name
 
       /** String to UInt parse, recommended style for variables.
         */
-      def asUInt(): UInt = UInt.Lit(parse(str), parsedWidth(str))
+      def asUInt(): UInt = {
+        val bigInt = parse(str)
+        UInt.Lit(bigInt, Width(bigInt.bitLength max 1))
+      }
       /** String to UInt parse with specified width, recommended style for variables.
         */
       def asUInt(width: Width): UInt = UInt.Lit(parse(str), width)
@@ -78,15 +81,6 @@ package chisel3 {
         }
         BigInt(num.filterNot(_ == '_'), radix)
       }
-
-      protected def parsedWidth(n: String) =
-        if (n(0) == 'b') {
-          Width(n.length-1)
-        } else if (n(0) == 'h') {
-          Width((n.length-1) * 4)
-        } else {
-          Width()
-        }
     }
 
     implicit class fromBooleanToLiteral(val boolean: Boolean) {
