@@ -6,9 +6,12 @@ import chisel3.internal.firrtl.Emitter
 
 import scala.sys.process._
 import java.io._
+import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl._
+
+import _root_.firrtl.annotations.AnnotationYamlProtocol._
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -238,6 +241,15 @@ object Driver extends BackendCompilationUtilities {
     val w = new FileWriter(firrtlFile)
     w.write(firrtlString)
     w.close()
+
+    val annotationFile = new File(optionsManager.getBuildFileName("anno"))
+    val af = new FileWriter(annotationFile)
+    af.write(circuit.annotations.toArray.toYaml.prettyPrint)
+    af.close()
+
+    /* This passes the firrtl source and annotations directly to firrtl */
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+      firrtlSource = Some(firrtlString), annotations = circuit.annotations.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))
