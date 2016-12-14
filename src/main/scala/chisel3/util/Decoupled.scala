@@ -37,12 +37,13 @@ object ReadyValidIO {
       dat
     }
 
-    /** Indicate no enqueue occurs.  Valid is set to false, and all bits are set to zero.
+    /** Indicate no enqueue occurs. Valid is set to false, and bits are
+      * connected to an uninitialized wire
       */
     def noenq(): Unit = {
       target.valid := false.B
       // We want the type from the following, not any existing binding.
-      target.bits := target.bits.cloneType.fromBits(0.asUInt)
+      target.bits := Wire(target.bits.cloneType)
     }
 
     /** Assert ready on this port and return the associated data bits.
