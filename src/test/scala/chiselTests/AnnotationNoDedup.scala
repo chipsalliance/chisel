@@ -7,8 +7,6 @@ import firrtl.FirrtlExecutionSuccess
 import firrtl.transforms.DedupModules
 import org.scalatest.{FreeSpec, Matchers}
 
-//import scala.language.reflectiveCalls
-
 trait NoDedupAnnotator {
   self: Module =>
 
