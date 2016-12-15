@@ -93,8 +93,6 @@ circuit Top :
       "    b <= _GEN_0\n\n"
    ).reduce(_ + "\n" + _)
    "A circuit" should "match exactly to its MidForm state" in {
-      val parsedOutput = parse(getOutput)
-      val checkedOutput = parse(check)
       (parse(getOutput)) should be (parse(check))
    }
 }
