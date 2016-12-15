@@ -155,6 +155,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
       Seq(
         "low" -> "./Dummy.lo.fir",
         "high" -> "./Dummy.hi.fir",
+        "middle" -> "./Dummy.mid.fir",
         "verilog" -> "./Dummy.v"
       ).foreach { case (compilerName, expectedOutputFileName) =>
         val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
