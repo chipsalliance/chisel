@@ -123,7 +123,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     val code = Mem(Bits(width = 32), 256)
     val pc   = Reg(init=UInt(0, 8))
 
-    val add_op :: imm_op :: Nil = Enum(Bits(width = 8), 2)
+    val add_op :: imm_op :: Nil = Enum(2)
 
     val inst = code(pc)
     val op   = inst(31,24)
