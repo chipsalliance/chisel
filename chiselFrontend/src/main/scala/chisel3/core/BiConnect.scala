@@ -2,8 +2,10 @@
 
 package chisel3.core
 
+import chisel3.internal.Builder
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.Connect
+import chisel3.internal.firrtl.{Attach, Connect}
+import chisel3.internal.throwException
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
@@ -42,6 +44,9 @@ object BiConnect {
     BiConnectException(s": Right Record missing field ($field).")
   def MismatchedException(left: String, right: String) =
     BiConnectException(s": Left ($left) and Right ($right) have different types.")
+  def AttachAlreadyBulkConnectedException(sourceInfo: SourceInfo) =
+    BiConnectException(sourceInfo.makeMessage(": Analog previously bulk connected at " + _))
+
 
   /** This function is what recursively tries to connect a left and right together
   *
@@ -52,6 +57,13 @@ object BiConnect {
   def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: Module): Unit =
     (left, right) match {
       // Handle element case (root case)
+      case (left_a: Analog, right_a: Analog) =>
+        try {
+          analogAttach(sourceInfo, left_a, right_a, context_mod)
+        } catch {
+          // If attach fails, convert to BiConnectException
+          case attach.AttachException(message) => throw BiConnectException(message)
+        }
       case (left_e: Element, right_e: Element) => {
         elemConnect(sourceInfo, connectCompileOptions, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
@@ -234,5 +246,23 @@ object BiConnect {
     // Not quite sure where left and right are compared to current module
     // so just error out
     else throw UnknownRelationException
+  }
+
+  // This function checks if analog element-level attaching is allowed
+  // Then it either issues it or throws the appropriate exception.
+  def analogAttach(implicit sourceInfo: SourceInfo, left: Analog, right: Analog, contextModule: Module): Unit = {
+    // Error if left or right is BICONNECTED in the current module already
+    for (elt <- left :: right :: Nil) {
+      elt.biConnectLocs.get(contextModule) match {
+        case Some(sl) => throw AttachAlreadyBulkConnectedException(sl)
+        case None => // Do nothing
+      }
+    }
+
+    // Do the attachment
+    attach.impl(Seq(left, right), contextModule)
+    // Mark bulk connected
+    left.biConnectLocs(contextModule) = sourceInfo
+    right.biConnectLocs(contextModule) = sourceInfo
   }
 }
