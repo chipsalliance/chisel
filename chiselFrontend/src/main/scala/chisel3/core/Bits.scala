@@ -3,6 +3,7 @@
 package chisel3.core
 
 import scala.language.experimental.macros
+import collection.mutable
 
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
@@ -1019,4 +1020,52 @@ object FixedPoint {
     result
   }
 
+}
+
+/** Data type for representing bidirectional bitvectors of a given width
+  *
+  * Analog support is limited to allowing wiring up of Verilog BlackBoxes with bidirectional (inout)
+  * pins. There is currently no support for reading or writing of Analog types within Chisel code.
+  *
+  * Given that Analog is bidirectional, it is illegal to assign a direction to any Analog type. It
+  * is legal to "flip" the direction (since Analog can be a member of aggregate types) which has no
+  * effect.
+  *
+  * Analog types are generally connected using the bidirectional [[attach]] mechanism, but also
+  * support limited bulkconnect `<>`. Analog types are only allowed to be bulk connected *once* in a
+  * given module. This is to prevent any surprising consequences of last connect semantics.
+  *
+  * @note This API is experimental and subject to change
+  */
+final class Analog private (width: Width) extends Element(width) {
+  require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
+
+  // Used to enforce single bulk connect of Analog types, multi-attach is still okay
+  // Note that this really means 1 bulk connect per Module because a port can
+  //   be connected in the parent module as well
+  private[core] val biConnectLocs = mutable.Map.empty[Module, SourceInfo]
+
+  // Define setter/getter pairing
+  // Analog can only be bound to Ports and Wires (and Unbound)
+  private[core] override def binding_=(target: Binding): Unit = target match {
+    case (_: UnboundBinding | _: WireBinding | PortBinding(_, None)) => super.binding_=(target)
+    case _ => throwException("Only Wires and Ports can be of type Analog")
+  }
+  private[core] override def cloneTypeWidth(w: Width): this.type =
+    new Analog(w).asInstanceOf[this.type]
+  private[chisel3] def toType = s"Analog$width"
+  def cloneType: this.type = cloneTypeWidth(width)
+  // What do flatten and fromBits mean?
+  private[chisel3] def flatten: IndexedSeq[Bits] =
+    throwException("Chisel Internal Error: Analog cannot be flattened into Bits")
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type =
+    throwException("Analog does not support fromBits")
+  final def toPrintable: Printable = PString("Analog")
+}
+/** Object that provides factory methods for [[Analog]] objects
+  *
+  * @note This API is experimental and subject to change
+  */
+object Analog {
+  def apply(width: Width): Analog = new Analog(width)
 }
