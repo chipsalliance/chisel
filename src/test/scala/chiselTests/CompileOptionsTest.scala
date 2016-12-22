@@ -24,6 +24,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
     val dontAssumeDirectionality = true
     val deprecateOldDirectionMethods = true
     val checkSynthesizable = true
+    val explicitInvalidate = true
   }
 
   class SmallBundle extends Bundle {
@@ -269,6 +270,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
         val dontAssumeDirectionality = true
         val deprecateOldDirectionMethods = false
         val checkSynthesizable = true
+        val explicitInvalidate = true
       }
 
     }

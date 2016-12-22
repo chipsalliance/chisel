@@ -58,8 +58,10 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   // Cann't invalide io in one bunch, must invalidate each part separately
   override private[core] def setupInParent(implicit sourceInfo: SourceInfo): this.type = _parent match {
     case Some(p) => {
-      // Just init instance inputs
-      for((_,port) <- ports) pushCommand(DefInvalid(sourceInfo, port.ref))
+      if (!p.compileOptions.explicitInvalidate) {
+        // Just init instance inputs
+        for ((_, port) <- ports) pushCommand(DefInvalid(sourceInfo, port.ref))
+      }
       this
     }
     case None => this

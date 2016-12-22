@@ -135,33 +135,55 @@ abstract class Data extends HasId {
   private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
+    if (this == DontCare) {
+      Builder.error("DontCare cannot be a connection sink (LHS)")
+    } else if (connectCompileOptions.checkSynthesizable) {
       Binding.checkSynthesizable(this, s"'this' ($this)")
-      Binding.checkSynthesizable(that, s"'that' ($that)")
-      try {
-        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
-      } catch {
-        case MonoConnect.MonoConnectException(message) =>
-          throwException(
-            s"Connection between sink ($this) and source ($that) failed @$message"
-          )
+      // Handle Invalidate API
+      if (connectCompileOptions.explicitInvalidate && that == DontCare) {
+        // Not a real connection. Emit firrtl "... is invalid"
+        pushCommand(DefInvalid(sourceInfo, this.ref))
+      } else {
+        Binding.checkSynthesizable(that, s"'that' ($that)")
+        try {
+          MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+        } catch {
+          case MonoConnect.MonoConnectException(message) =>
+            throwException(
+              s"Connection between sink ($this) and source ($that) failed @$message"
+            )
+        }
       }
+    } else if (connectCompileOptions.explicitInvalidate && that == DontCare) {
+      // Not a real connection. Emit firrtl "... is invalid"
+      pushCommand(DefInvalid(sourceInfo, this.ref))
     } else {
       this legacyConnect that
     }
   }
   private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    if (connectCompileOptions.checkSynthesizable) {
+    if (this == DontCare) {
+      Builder.error("DontCare cannot be a connection sink (LHS)")
+    } else if (connectCompileOptions.checkSynthesizable) {
       Binding.checkSynthesizable(this, s"'this' ($this)")
-      Binding.checkSynthesizable(that, s"'that' ($that)")
-      try {
-        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
-      } catch {
-        case BiConnect.BiConnectException(message) =>
-          throwException(
-            s"Connection between left ($this) and source ($that) failed @$message"
-          )
+      // Handle Invalidate API
+      if (connectCompileOptions.explicitInvalidate && that == DontCare) {
+        // Not a real connection. Emit firrtl "... is invalid"
+        pushCommand(DefInvalid(sourceInfo, this.ref))
+      } else {
+        Binding.checkSynthesizable(that, s"'that' ($that)")
+        try {
+          BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+        } catch {
+          case BiConnect.BiConnectException(message) =>
+            throwException(
+              s"Connection between left ($this) and source ($that) failed @$message"
+            )
+        }
       }
+    } else if (connectCompileOptions.explicitInvalidate && that == DontCare) {
+      // Not a real connection. Emit firrtl "... is invalid"
+      pushCommand(DefInvalid(sourceInfo, this.ref))
     } else {
       this legacyConnect that
     }
@@ -300,7 +322,8 @@ object Wire {
     Binding.bind(x, WireBinder(Builder.forcedModule), "Error: t")
 
     pushCommand(DefWire(sourceInfo, x))
-    pushCommand(DefInvalid(sourceInfo, x.ref))
+    if (!compileOptions.explicitInvalidate)
+      pushCommand(DefInvalid(sourceInfo, x.ref))
     if (init != null) {
       Binding.checkSynthesizable(init, s"'init' ($init)")
       x := init
@@ -337,4 +360,21 @@ sealed class Clock extends Element(Width(1)) {
   def toPrintable: Printable = PString("CLOCK")
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+}
+
+/** RHS (source) for Invalidate API.
+  * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
+  */
+object DontCare extends Data {
+  def flatten : IndexedSeq[Bits] = IndexedSeq.empty[Bits]
+  def cloneType = DontCare
+  private[chisel3] def toType = "DontCare"
+  private[chisel3] def allElements: Seq[Element] = Seq.empty[Element]
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    Builder.error("DontCare cannot be a connection sink (LHS)")
+  }
+  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
+  /** Not really supported */
+  def toPrintable: Printable = PString("DONTCARE")
+  private[core] def width = UnknownWidth()
 }

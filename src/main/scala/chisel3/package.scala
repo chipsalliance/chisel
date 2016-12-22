@@ -20,6 +20,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Wire = chisel3.core.Wire
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
+  val DontCare = chisel3.core.DontCare
 
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec

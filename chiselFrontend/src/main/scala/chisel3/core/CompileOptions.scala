@@ -22,6 +22,8 @@ trait CompileOptions {
   val deprecateOldDirectionMethods: Boolean
   // Check that referenced Data have actually been declared.
   val checkSynthesizable: Boolean
+  // Require explict assignment of DontCare to generate "x is invalid"
+  val explicitInvalidate: Boolean
 }
 
 object CompileOptions {
@@ -41,6 +43,7 @@ object ExplicitCompileOptions {
     val dontAssumeDirectionality = false
     val deprecateOldDirectionMethods = false
     val checkSynthesizable = false
+    val explicitInvalidate = false
   }
 
   // Collection of "strict" connection compile options, preferred for new code.
@@ -53,5 +56,6 @@ object ExplicitCompileOptions {
     val dontAssumeDirectionality = true
     val deprecateOldDirectionMethods = true
     val checkSynthesizable = true
+    val explicitInvalidate = true
   }
 }

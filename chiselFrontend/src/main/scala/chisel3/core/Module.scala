@@ -33,7 +33,6 @@ object Module {
     val parent: Option[Module] = Builder.currentModule
 
     val m = bc.setRefs() // This will set currentModule and unset readyForModuleConstr!!!
-    m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
 
     if (Builder.readyForModuleConstr) {
       throwException("Error: attempted to instantiate a Module, but nothing happened. " +
@@ -48,7 +47,8 @@ object Module {
       case bb: BlackBox =>
         DefBlackBox(bb, bb.name, ports, bb.params)
       case mod: Module =>
-        mod._commands.prepend(DefInvalid(childSourceInfo, mod.io.ref)) // init module outputs
+        if (!mod.compileOptions.explicitInvalidate)
+          mod._commands.prepend(DefInvalid(childSourceInfo, mod.io.ref)) // init module outputs
         DefModule(mod, mod.name, ports, mod._commands)
     }
     m._component = Some(component)
@@ -167,7 +167,8 @@ extends HasId {
   private[core] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
     _parent match {
       case Some(p) => {
-        pushCommand(DefInvalid(sourceInfo, io.ref)) // init instance inputs
+        if (!p.compileOptions.explicitInvalidate)
+          pushCommand(DefInvalid(sourceInfo, io.ref)) // init instance inputs
         clock := override_clock.getOrElse(p.clock)
         reset := override_reset.getOrElse(p.reset)
         this
