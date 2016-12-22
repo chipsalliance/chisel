@@ -22,6 +22,12 @@ trait ChiselRunners extends Assertions {
   }
   def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
 
+  /** Given a generator, return the Firrtl that it generates.
+    *
+    * @param t Module generator
+    * @return Firrtl representation as a String
+    */
+  def generateFirrtl(t: => Module): String = Driver.emit(() => t)
 }
 
 /** Spec base class for BDD-style testers. */
