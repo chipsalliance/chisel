@@ -25,7 +25,6 @@ class UInt2Bundle extends CookbookTester(0) {
 
 class UInt2BundleSpec extends CookbookSpec {
   "UInt2Bundle" should "work" in {
-    println (Driver.emit( () => new UInt2Bundle ))
     assertTesterPasses { new UInt2Bundle }
   }
 }
