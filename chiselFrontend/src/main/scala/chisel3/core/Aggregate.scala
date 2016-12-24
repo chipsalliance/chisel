@@ -21,6 +21,21 @@ sealed abstract class Aggregate extends Data {
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = SeqUtils.do_asUInt(this.flatten)
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+    var i = 0
+    val wire = Wire(this.chiselCloneType)
+    val bits =
+      if (that.width.known && that.width.get >= wire.width.get) {
+        that
+      } else {
+        Wire(that.cloneTypeWidth(wire.width), init = that)
+      }
+    for (x <- wire.flatten) {
+      x := x.fromBits(bits(i + x.getWidth-1, i))
+      i += x.getWidth
+    }
+    wire.asInstanceOf[this.type]
+  }
 }
 
 object Vec {
