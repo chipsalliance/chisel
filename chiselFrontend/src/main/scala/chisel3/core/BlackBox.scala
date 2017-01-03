@@ -23,7 +23,19 @@ case class RawParam(value: String) extends Param
   *
   * @example
   * {{{
-  * ... to be written once a spec is finalized ...
+  * import chisel3._
+  * import chisel3.experimental._
+  *
+  * // Example with Xilinx differential buffer IBUFDS
+  * class IBUFDS extends BlackBox(Map("DIFF_TERM" -> "TRUE", // Verilog parameters
+  *                                   "IOSTANDARD" -> "DEFAULT"
+  *                      )) {
+  *   val io = IO(new Bundle {
+  *     val O = Output(Clock()) // IO names will be the same
+  *     val I = Input(Clock())  // (without 'io_' in prefix)
+  *     val IB = Input(Clock()) //
+  *   })
+  * }
   * }}}
   * @note The parameters API is experimental and may change
   */
