@@ -113,6 +113,10 @@ abstract class PeekPokeTester[+T <: Module](
     poke(path, BigInt(value))
   }
 
+  def poke(path: String, value: Long): Unit = {
+    poke(path, BigInt(value))
+  }
+
   def peek(path: String) = backend.peek(path)
 
   def poke(signal: Bits, value: BigInt): Unit = {
@@ -121,6 +125,10 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def poke(signal: Bits, value: Int) {
+    poke(signal, BigInt(value))
+  }
+
+  def poke(signal: Bits, value: Long) {
     poke(signal, BigInt(value))
   }
 
