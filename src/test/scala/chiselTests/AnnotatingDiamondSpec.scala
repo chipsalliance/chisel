@@ -32,7 +32,6 @@ class IdentityTransform extends Transform {
     getMyAnnotations(state) match {
       case Nil => state
       case myAnnotations =>
-        /* Do something useful with annotations here */
         state
     }
   }

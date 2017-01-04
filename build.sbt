@@ -126,6 +126,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
   settings(
+    scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     aggregate in doc := false,
     // Include macro classes, resources, and sources main JAR.
     mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),

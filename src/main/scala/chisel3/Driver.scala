@@ -247,9 +247,17 @@ object Driver extends BackendCompilationUtilities {
     af.write(circuit.annotations.toArray.toYaml.prettyPrint)
     af.close()
 
+    /* create custom transforms by finding the set of transform classes associated with annotations
+     * then instantiate them into actual transforms
+     */
+    val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
+      transformClass.newInstance()
+    }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlSource = Some(firrtlString), annotations = circuit.annotations.toList)
+      firrtlSource = Some(firrtlString),
+      annotations = circuit.annotations.toList,
+      customTransforms = transforms.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))

@@ -170,7 +170,7 @@ private[chisel3] object Builder {
   }
   def forcedModule: Module = currentModule match {
     case Some(module) => module
-    case None => throw new Exception(
+    case None => throwException(
       "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
@@ -199,6 +199,16 @@ private[chisel3] object Builder {
   def error(m: => String): Unit = errors.error(m)
   def warning(m: => String): Unit = errors.warning(m)
   def deprecated(m: => String): Unit = errors.deprecated(m)
+
+  /** Record an exception as an error, and throw it.
+    *
+    * @param m exception message
+    */
+  @throws(classOf[ChiselException])
+  def exception(m: => String): Unit = {
+    error(m)
+    throwException(m)
+  }
 
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
