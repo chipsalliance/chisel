@@ -3,11 +3,16 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Counter
+import firrtl.passes.CheckInitialization.RefNotInitializedException
 import org.scalatest._
 
 class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
 
   def generateFirrtl(t: => Module): String = Driver.emit(() => t)
+  def compileFirrtl(t: => Module): Unit = {
+    Driver.execute(Array[String]("--compiler", "verilog"), () => t)
+  }
 
   class HardIP extends Bundle {
     val in  = Input(Bool())
@@ -91,5 +96,59 @@ class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
       elaborate(new ModuleWithDontCareSink)
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
+  }
+
+  property("FIRRTL should complain about partial initialization with Strict CompileOptions and conditional connect") {
+    import chisel3.core.ExplicitCompileOptions.Strict
+    class ModuleWithIncompleteAssignment extends Module {
+
+      val io = IO(new Bundle {
+        val out = Bool()
+      })
+      val counter = Counter(8)
+      when (counter.inc()) {
+        io.out := true.B
+      }
+    }
+
+    val exception = intercept[RefNotInitializedException] {
+      compileFirrtl(new ModuleWithIncompleteAssignment)
+    }
+    exception.getMessage should include("is not fully initialized")
+ }
+
+  property("FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect after unconditional connect") {
+    import chisel3.core.ExplicitCompileOptions.Strict
+    class ModuleWithUnconditionalAssignment extends Module {
+
+      val io = IO(new Bundle {
+        val out = Bool()
+      })
+      val counter = Counter(8)
+      io.out := false.B
+      when (counter.inc()) {
+        io.out := true.B
+      }
+    }
+
+    compileFirrtl(new ModuleWithUnconditionalAssignment)
+  }
+
+  property("FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect with otherwise clause") {
+    import chisel3.core.ExplicitCompileOptions.Strict
+    class ModuleWithConditionalAndOtherwiseAssignment extends Module {
+
+      val io = IO(new Bundle {
+        val out = Bool()
+      })
+      val counter = Counter(8)
+      when (counter.inc()) {
+        io.out := true.B
+      } otherwise {
+        io.out := false.B
+      }
+    }
+
+    compileFirrtl(new ModuleWithConditionalAndOtherwiseAssignment)
   }
 }
