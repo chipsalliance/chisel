@@ -22,6 +22,19 @@ case class RawParam(value: String) extends Param
   * to RTL modules defined outside Chisel.
   *
   * @example
+  * Some design require a differential input clock to clock the all design.
+  * With xilinx FPGA for example, a verilog template named IBUFDS must be
+  * integrated to use differential input:
+  * {{{
+  *  IBUFDS #(.DIFF_TERM("TRUE"),
+  *           .IOSTANDARD("DEFAULT")) ibufds (
+  *   .IB(ibufds_IB),
+  *   .I(ibufds_I),
+  *   .O(ibufds_O)
+  *  );
+  * }}}
+  *
+  * To instanciate it, a BlackBox can be used like following:
   * {{{
   * import chisel3._
   * import chisel3.experimental._
