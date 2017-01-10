@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.internal.firrtl.KnownBinaryPoint
+import chisel3.core.DataMirror
 
 class FromBitsBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
@@ -38,12 +39,30 @@ class FromBitsVecTester extends BasicTester {
   stop()
 }
 
+class FromBitsTruncationTester extends BasicTester {
+  val truncate = UInt(3.W).fromBits( (64 + 3).U )
+  val expand   = UInt(3.W).fromBits( 1.U )
+
+  assert( DataMirror.widthOf(truncate).get == 3 )
+  assert( truncate === 3.U )
+  assert( DataMirror.widthOf(expand).get == 3 )
+  assert( expand === 1.U )
+
+  stop()
+}
+
 class FromBitsSpec extends ChiselFlatSpec {
-  "fromBits" should "work with Bundles containing Bits Types" in {
+  behavior of "fromBits"
+
+  it should "work with Bundles containing Bits Types" in {
     assertTesterPasses{ new FromBitsBundleTester }
   }
 
-  "fromBits" should "work with Vecs containing Bits Types" in {
+  it should "work with Vecs containing Bits Types" in {
     assertTesterPasses{ new FromBitsVecTester }
+  }
+
+  it should "expand and truncate UInts of different width" in {
+    assertTesterPasses{ new FromBitsTruncationTester }
   }
 }
