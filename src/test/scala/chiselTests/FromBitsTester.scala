@@ -7,14 +7,13 @@ import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import chisel3.internal.firrtl.KnownBinaryPoint
 import chisel3.core.DataMirror
 
 class FromBitsBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
     val u  = UInt(4.W)
     val s  = SInt(4.W)
-    val fp = FixedPoint(4.W, KnownBinaryPoint(3))
+    val fp = FixedPoint(4.W, 3.BP)
   }
 
   val bun = new MultiTypeBundle
