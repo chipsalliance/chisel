@@ -103,7 +103,7 @@ object Decoupled
   * Additionally, once 'valid' is raised it will never be lowered until after
   * 'ready' has also been raised.
   */
-class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
+class IrrevocableIO[+T <: Data](gen: T) extends DecoupledIO[T](gen)
 {
   override def cloneType: this.type = new IrrevocableIO(gen).asInstanceOf[this.type]
 }
@@ -129,7 +129,7 @@ object Irrevocable
 }
 
 object EnqIO {
-  def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
+  def apply[T<:Data](gen: T): IrrevocableIO[T] = Irrevocable(gen)
 }
 object DeqIO {
   def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
