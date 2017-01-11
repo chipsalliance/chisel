@@ -7,7 +7,7 @@ import chisel3.testers.BasicTester
 import org.scalatest._
 
 //scalastyle:off magic.number
-class FixedPointSpec extends FlatSpec with Matchers {
+class FixedPointLiteralSpec extends FlatSpec with Matchers {
   behavior of "fixed point utilities"
 
   they should "allow conversion between doubles and the bigints needed to represent them" in {
@@ -17,6 +17,22 @@ class FixedPointSpec extends FlatSpec with Matchers {
 
     initialDouble should be(finalDouble)
   }
+}
+
+class FixedPointFromBitsTester extends BasicTester {
+    val uint = 3.U(4.W)
+    val sint = -3.S
+    val fp_tpe = FixedPoint(4.W, 1.BP)
+    val uint_result = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
+    val sint_result = FixedPoint.fromDouble(-1.5, width = 4, binaryPoint = 1)
+
+    val uint2fp = fp_tpe.fromBits(uint)
+    val sint2fp = fp_tpe.fromBits(sint)
+
+    assert(uint2fp === uint_result)
+    assert(sint2fp === sint_result)
+
+    stop()
 }
 
 class SBP extends Module {
@@ -34,8 +50,12 @@ class SBPTester extends BasicTester {
 
   stop()
 }
-class SBPSpec extends ChiselPropSpec {
+
+class FixedPointSpec extends ChiselPropSpec {
   property("should allow set binary point") {
     assertTesterPasses { new SBPTester }
+  }
+  property("should allow fromBits") {
+    assertTesterPasses { new FixedPointFromBitsTester }
   }
 }
