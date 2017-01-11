@@ -5,6 +5,13 @@
 # include <verilated_vcd_c.h>	// Trace file format header
 #endif
 
+// Override Verilator definition so first $finish ends simulation
+// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
+void vl_finish(const char* filename, int linenum, const char* hier) {
+  Verilated::flushCall();
+  exit(0);
+}
+
 using namespace std;
 
 //VGCDTester *top;
