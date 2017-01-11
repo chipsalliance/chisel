@@ -31,16 +31,25 @@ object Module {
     }
     Builder.readyForModuleConstr = true
     val parent: Option[Module] = Builder.currentModule
+    val whenDepth: Int = Builder.whenDepth
 
-    val m = bc.setRefs() // This will set currentModule and unset readyForModuleConstr!!!
+    // Execute the module, this has the following side effects:
+    //   - set currentModule
+    //   - unset readyForModuleConstr
+    //   - reset whenDepth to 0
+    val m = bc.setRefs()
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
 
+    if (Builder.whenDepth != 0) {
+      throwException("Internal Error! When depth is != 0, this should not be possible")
+    }
     if (Builder.readyForModuleConstr) {
       throwException("Error: attempted to instantiate a Module, but nothing happened. " +
                      "This is probably due to rewrapping a Module instance with Module()." +
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.currentModule = parent // Back to parent!
+    Builder.whenDepth = whenDepth
 
     val ports = m.computePorts
     // Blackbox inherits from Module so we have to match on it first TODO fix
@@ -118,6 +127,7 @@ extends HasId {
   private[chisel3] val _commands = ArrayBuffer[Command]()
   private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
+  Builder.whenDepth = 0
   if (!Builder.readyForModuleConstr) {
     throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
   }
