@@ -935,12 +935,6 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     res
   }
   //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
-
-  override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    val res = Wire(this, null).asInstanceOf[this.type]
-    res := that.asFixedPoint(this.binaryPoint)
-    res
-  }
 }
 
 /** Use PrivateObject to force users to specify width and binaryPoint by name
