@@ -43,6 +43,11 @@ int main(int argc, char **argv, char **env) {
     delete top;
     exit(0);
 }
+
+void vl_finish(const char* filename, int linenum, const char* hier) {
+  Verilated::flushCall();
+  exit(0);
+}
 """, ".cpp") _
 
   /** Compiles a C++ emulator from Verilog and returns the path to the
