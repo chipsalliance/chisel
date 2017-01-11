@@ -128,7 +128,7 @@ trait BackendCompilationUtilities {
         s"+define+PRINTF_COND=!$topModule.reset",
         s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
-        s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
+        s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
         "-Mdir", dir.toString,
         "--exe", cppHarness.toString)
     System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
