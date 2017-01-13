@@ -22,15 +22,19 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
 class FixedPointFromBitsTester extends BasicTester {
     val uint = 3.U(4.W)
     val sint = -3.S
+    val fp   = FixedPoint.fromDouble(3.0, width = 4, binaryPoint = 0)
     val fp_tpe = FixedPoint(4.W, 1.BP)
     val uint_result = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
     val sint_result = FixedPoint.fromDouble(-1.5, width = 4, binaryPoint = 1)
+    val fp_result   = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
 
     val uint2fp = fp_tpe.fromBits(uint)
     val sint2fp = fp_tpe.fromBits(sint)
+    val fp2fp   = fp_tpe.fromBits(fp)
 
     assert(uint2fp === uint_result)
     assert(sint2fp === sint_result)
+    assert(fp2fp   === fp_result)
 
     stop()
 }
