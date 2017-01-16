@@ -66,7 +66,7 @@ object ShiftRegister
     *
     * @param in input to delay
     * @param n number of cycles to delay
-    * @param reset reset value
+    * @param resetData reset value for each register in the shift
     * @param en enable the shift
     */
   def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool = true.B): T = {
