@@ -14,7 +14,7 @@ object Driver {
   private[iotesters] def backend = backendVar.value
 
   private val optionsManagerVar = new DynamicVariable[Option[TesterOptionsManager]](None)
-  private[iotesters] def optionsManager = optionsManagerVar.value.getOrElse(new TesterOptionsManager)
+  def optionsManager = optionsManagerVar.value.getOrElse(new TesterOptionsManager)
 
   /**
     * This executes a test harness that extends peek-poke tester upon a device under test
@@ -32,38 +32,40 @@ object Driver {
                           (
                             testerGen: T => PeekPokeTester[T]
                           ): Boolean = {
-    if(optionsManager.topName.isEmpty) {
-      if(optionsManager.targetDirName == ".") {
-        optionsManager.setTargetDirName("test_run_dir")
-      }
-      val genClassName = testerGen.getClass.getName
-      val testerName = genClassName.split("""\$\$""").headOption.getOrElse("") + genClassName.hashCode.abs
-      optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/$testerName")
-    }
-    val testerOptions = optionsManager.testerOptions
-
-    val (dut, backend) = testerOptions.backendName match {
-      case "firrtl"    =>
-        setupFirrtlTerpBackend(dutGenerator, optionsManager)
-      case "verilator" =>
-        setupVerilatorBackend(dutGenerator, optionsManager)
-      case "vcs"       =>
-        setupVCSBackend(dutGenerator, optionsManager)
-      case _ =>
-        throw new Exception(s"Unrecognized backend name ${testerOptions.backendName}")
-    }
-
-    backendVar.withValue(Some(backend)) {
-      try {
-        testerGen(dut).finish
-      } catch { case e: Throwable =>
-        e.printStackTrace()
-        backend match {
-          case b: VCSBackend => TesterProcess.kill(b)
-          case b: VerilatorBackend => TesterProcess.kill(b)
-          case _ =>
+    optionsManagerVar.withValue(Some(optionsManager)) {
+      if(optionsManager.topName.isEmpty) {
+        if(optionsManager.targetDirName == ".") {
+          optionsManager.setTargetDirName("test_run_dir")
         }
-        throw e
+        val genClassName = testerGen.getClass.getName
+        val testerName = genClassName.split("""\$\$""").headOption.getOrElse("") + genClassName.hashCode.abs
+        optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/$testerName")
+      }
+      val testerOptions = optionsManager.testerOptions
+
+      val (dut, backend) = testerOptions.backendName match {
+        case "firrtl"    =>
+          setupFirrtlTerpBackend(dutGenerator, optionsManager)
+        case "verilator" =>
+          setupVerilatorBackend(dutGenerator, optionsManager)
+        case "vcs"       =>
+          setupVCSBackend(dutGenerator, optionsManager)
+        case _ =>
+          throw new Exception(s"Unrecognized backend name ${testerOptions.backendName}")
+      }
+
+      backendVar.withValue(Some(backend)) {
+        try {
+          testerGen(dut).finish
+        } catch { case e: Throwable =>
+          e.printStackTrace()
+          backend match {
+            case b: VCSBackend => TesterProcess.kill(b)
+            case b: VerilatorBackend => TesterProcess.kill(b)
+            case _ =>
+          }
+          throw e
+        }
       }
     }
   }
