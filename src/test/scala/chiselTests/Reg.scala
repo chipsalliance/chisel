@@ -4,7 +4,9 @@ package chiselTests
 
 import firrtl.ir.Input
 import org.scalatest._
+import org.scalatest.prop._
 import chisel3._
+import chisel3.util._
 import chisel3.core.DataMirror
 import chisel3.testers.BasicTester
 
@@ -44,5 +46,35 @@ class RegSpec extends ChiselFlatSpec {
       reg2.getWidth should be (7)
     }
     elaborate{ new RegForcedWidthTester }
+  }
+}
+
+class ShiftTester(n: Int) extends BasicTester {
+  val (cntVal, done) = Counter(true.B, n)
+  val start = 23.U
+  val sr = ShiftRegister(cntVal + start, n)
+  when(done) {
+    assert(sr === start)
+    stop()
+  }
+}
+
+class ShiftResetTester(n: Int) extends BasicTester {
+  val (cntVal, done) = Counter(true.B, n-1)
+  val start = 23.U
+  val sr = ShiftRegister(cntVal + 23.U, n, 1.U, true.B)
+  when(done) {
+    assert(sr === 1.U)
+    stop()
+  }
+}
+
+class ShiftRegisterSpec extends ChiselPropSpec {
+  property("ShiftRegister should shift") {
+    forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftTester(shift) } }
+  }
+
+  property("ShiftRegister should reset all values inside") {
+    forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftResetTester(shift) } }
   }
 }

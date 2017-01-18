@@ -69,7 +69,7 @@ object ShiftRegister
     * @param resetData reset value for each register in the shift
     * @param en enable the shift
     */
-  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool = true.B): T = {
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = {
     // The order of tests reflects the expected use cases.
     if (n != 0) {
       RegEnable(apply(in, n-1, resetData, en), resetData, en)
