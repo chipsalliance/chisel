@@ -4,9 +4,11 @@ package chisel3.iotesters
 import chisel3.internal.InstanceId
 
 import scala.util.Random
-import java.io.{File, Writer, FileWriter, PrintStream, IOException}
+import java.io.{File, FileWriter, IOException, PrintStream, Writer}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+
+import chisel3.{SInt, FixedPoint}
 
 /**
   * Copies the necessary header files used for verilator compilation to the specified destination folder
@@ -331,13 +333,28 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
           (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
     val idx = off map (x => s"[$x]") getOrElse ""
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
-    peek(path)
+    val bigIntU = peek(path)
+    def signConvert(bigInt: BigInt, width: Int): BigInt = {
+      if(bigInt.bitLength >= width) - ((BigInt(1) << width) - bigInt)
+      else bigInt
+    }
+    signal match {
+      case s: SInt => signConvert(bigIntU, s.getWidth)
+      case f: FixedPoint => signConvert(bigIntU, f.getWidth)
+      case _ => bigIntU
+    }
   }
 
   def expect(signal: InstanceId, expected: BigInt, msg: => String)
             (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}"
-    expect(path, expected, msg)
+
+    val got = peek(signal, None)
+    val good = got == expected
+    if (verbose) logger println (
+      s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, base)} == """ +
+        s"""${bigIntToStr(expected, base)} ${if (good) "PASS" else "FAIL"}""")
+    good
   }
 
   def expect(signal: InstanceId, expected: Int, msg: => String)
