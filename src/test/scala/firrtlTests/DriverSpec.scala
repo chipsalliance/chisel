@@ -138,6 +138,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     optionsManager.firrtlOptions.annotations.length should be (9)
 
     optionsManager.firrtlOptions.annotations.head.transformClass should be ("firrtl.passes.InlineInstances")
+    annotationsTestFile.delete()
   }
 
   val input =
