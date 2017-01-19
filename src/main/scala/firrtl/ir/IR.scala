@@ -21,10 +21,17 @@ case object NoInfo extends Info {
 }
 case class FileInfo(info: StringLit) extends Info {
   override def toString: String = " @[" + info.serialize + "]"
-  def ++(that: Info): Info = that match {
-    case NoInfo => this
-    case FileInfo(otherInfo) => FileInfo(FIRRTLStringLitHandler.unescape(info.serialize + " " + otherInfo.serialize))
+  def ++(that: Info): Info = MultiInfo(Seq(this, that))
+}
+case class MultiInfo(infos: Seq[Info]) extends Info {
+  private def collectStringLits(info: Info): Seq[StringLit] = info match {
+    case FileInfo(lit) => Seq(lit)
+    case MultiInfo(seq) => seq flatMap collectStringLits
+    case NoInfo => Seq.empty
   }
+  override def toString: String =
+    collectStringLits(this).map(_.serialize).mkString(" @[", " ", "]")
+  def ++(that: Info): Info = MultiInfo(Seq(this, that))
 }
 
 trait HasName {
