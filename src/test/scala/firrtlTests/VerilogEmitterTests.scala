@@ -74,4 +74,25 @@ class DoPrimVerilog extends FirrtlFlatSpec {
         |""".stripMargin.split("\n") map normalized
     executeTest(input, check, compiler)
   }
+  "Rem" should "emit correctly" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input in : UInt<8>
+        |    output out : UInt<1>
+        |    out <= rem(in, UInt<1>("h1"))
+        |""".stripMargin
+    val check =
+      """module Test(
+        |  input  [7:0] in, 
+        |  output  out 
+        |);
+        |  wire [7:0] _GEN_0;
+        |  assign out = _GEN_0[0];
+        |  assign _GEN_0 = in % 8'h1;
+        |endmodule
+        |""".stripMargin.split("\n") map normalized
+    executeTest(input, check, compiler)
+  }
 }
