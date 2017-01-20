@@ -128,7 +128,7 @@ trait BackendCompilationUtilities {
         s"+define+PRINTF_COND=!$topModule.reset",
         s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
-        s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
+        s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
         "-Mdir", dir.toString,
         "--exe", cppHarness.toString)
     System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
@@ -247,9 +247,17 @@ object Driver extends BackendCompilationUtilities {
     af.write(circuit.annotations.toArray.toYaml.prettyPrint)
     af.close()
 
+    /* create custom transforms by finding the set of transform classes associated with annotations
+     * then instantiate them into actual transforms
+     */
+    val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
+      transformClass.newInstance()
+    }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlSource = Some(firrtlString), annotations = circuit.annotations.toList)
+      firrtlSource = Some(firrtlString),
+      annotations = circuit.annotations.toList,
+      customTransforms = transforms.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))

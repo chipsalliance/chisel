@@ -116,6 +116,7 @@ lazy val chisel = (project in file(".")).
     // We should really be using name.value, but currently, the package is "Chisel" (uppercase first letter)
     buildInfoPackage := /* name.value */ "chisel3",
     buildInfoOptions += BuildInfoOption.BuildTime,
+    buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(commonSettings: _*).
@@ -125,6 +126,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
   settings(
+    scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     aggregate in doc := false,
     // Include macro classes, resources, and sources main JAR.
     mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),
