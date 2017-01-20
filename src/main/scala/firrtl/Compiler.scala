@@ -28,8 +28,8 @@ case class AnnotationMap(annotations: Seq[Annotation]) {
   * @constructor Creates a CircuitState object
   * @param circuit The current state of the Firrtl AST
   * @param form The current form of the circuit
-  * @param annotations The current collection of [[Annotation]]
-  * @param renames A map of [[Named]] things that have been renamed.
+  * @param annotations The current collection of [[firrtl.annotations.Annotation Annotation]]
+  * @param renames A map of [[firrtl.annotations.Named Named]] things that have been renamed.
   *   Generally only a return value from [[Transform]]s
   */
 case class CircuitState(

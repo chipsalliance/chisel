@@ -28,7 +28,7 @@ object Utils extends LazyLogging {
     result
   }
 
-  /** Removes all [[firrtl.ir.Empty]] statements and condenses
+  /** Removes all [[firrtl.ir.EmptyStmt]] statements and condenses
    * [[firrtl.ir.Block]] statements.
     */
   def squashEmpty(s: Statement): Statement = s map squashEmpty match {
