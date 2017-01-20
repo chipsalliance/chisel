@@ -60,6 +60,7 @@ object assert { // scalastyle:ignore object.name
     }
   }
 
+
   /** An elaboration-time assertion, otherwise the same as the above run-time
     * assertion. */
   def apply(cond: Boolean, message: => String) {
