@@ -37,9 +37,9 @@ object BiConnect {
   def MismatchedVecException =
     BiConnectException(": Left and Right are different length Vecs.")
   def MissingLeftFieldException(field: String) =
-    BiConnectException(s".$field: Left Bundle missing field ($field).")
+    BiConnectException(s".$field: Left Record missing field ($field).")
   def MissingRightFieldException(field: String) =
-    BiConnectException(s": Right Bundle missing field ($field).")
+    BiConnectException(s": Right Record missing field ($field).")
   def MismatchedException(left: String, right: String) =
     BiConnectException(s": Left ($left) and Right ($right) have different types.")
 
@@ -67,20 +67,20 @@ object BiConnect {
           }
         }
       }
-      // Handle Bundle case
-      case (left_b: Bundle, right_b: Bundle) => {
+      // Handle Record case
+      case (left_r: Record, right_r: Record) => {
         // Verify right has no extra fields that left doesn't have
-        for((field, right_sub) <- right_b.elements) {
-          if(!left_b.elements.isDefinedAt(field)) {
+        for((field, right_sub) <- right_r.elements) {
+          if(!left_r.elements.isDefinedAt(field)) {
             if (connectCompileOptions.connectFieldsMustMatch) {
               throw MissingLeftFieldException(field)
             }
           }
         }
         // For each field in left, descend with right
-        for((field, left_sub) <- left_b.elements) {
+        for((field, left_sub) <- left_r.elements) {
           try {
-            right_b.elements.get(field) match {
+            right_r.elements.get(field) match {
               case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
               case None => {
                 if (connectCompileOptions.connectFieldsMustMatch) {
