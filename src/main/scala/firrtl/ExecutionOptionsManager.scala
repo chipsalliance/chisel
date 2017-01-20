@@ -161,6 +161,7 @@ case class FirrtlExecutionOptions(
     compilerName match {
       case "high"      => new HighFirrtlCompiler()
       case "low"       => new LowFirrtlCompiler()
+      case "middle"    => new MiddleFirrtlCompiler()
       case "verilog"   => new VerilogCompiler()
     }
   }
@@ -170,6 +171,7 @@ case class FirrtlExecutionOptions(
       case "verilog"   => "v"
       case "low"       => "lo.fir"
       case "high"      => "hi.fir"
+      case "middle"    => "mid.fir"
       case _ =>
         throw new Exception(s"Illegal compiler name $compilerName")
     }
@@ -247,12 +249,12 @@ trait HasFirrtlOptions {
 
   parser.opt[String]("compiler")
     .abbr("X")
-    .valueName ("<high|low|verilog>")
+    .valueName ("<high|middle|low|verilog>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(compilerName = x)
     }
     .validate { x =>
-      if (Array("high", "low", "verilog").contains(x.toLowerCase)) parser.success
+      if (Array("high", "middle", "low", "verilog").contains(x.toLowerCase)) parser.success
       else parser.failure(s"$x not a legal compiler")
     }.text {
       s"compiler to use, default is ${firrtlOptions.compilerName}"
@@ -342,7 +344,7 @@ sealed trait FirrtlExecutionResult
   * Indicates a successful execution of the firrtl compiler, returning the compiled result and
   * the type of compile
   *
-  * @param emitType  The name of the compiler used, currently "high", "low", or "verilog"
+  * @param emitType  The name of the compiler used, currently "high", "middle", "low", or "verilog"
   * @param emitted   The text result of the compilation, could be verilog or firrtl text.
   */
 case class FirrtlExecutionSuccess(emitType: String, emitted: String) extends FirrtlExecutionResult
