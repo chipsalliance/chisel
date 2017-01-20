@@ -21,6 +21,7 @@ class MultiThreadingSpec extends FirrtlPropSpec {
     // The parameters we're testing with
     val compilers = Seq(
       new firrtl.HighFirrtlCompiler,
+      new firrtl.MiddleFirrtlCompiler,
       new firrtl.LowFirrtlCompiler,
       new firrtl.VerilogCompiler)
     val inputFilePath = s"/integration/GCDTester.fir" // arbitrary

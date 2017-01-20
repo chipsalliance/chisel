@@ -119,6 +119,12 @@ class HighFirrtlCompiler extends Compiler {
   def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, HighForm)
 }
 
+/** Emits middle Firrtl input circuit */
+class MiddleFirrtlCompiler extends Compiler {
+  def emitter = new FirrtlEmitter
+  def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, MidForm)
+}
+
 /** Emits lowered input circuit */
 class LowFirrtlCompiler extends Compiler {
   def emitter = new FirrtlEmitter
