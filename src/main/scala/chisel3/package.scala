@@ -32,9 +32,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
 
-  type ChiselAnnotation = chisel3.core.ChiselAnnotation
-  val ChiselAnnotation = chisel3.core.ChiselAnnotation
-
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
   // Bool\((true|false)\)
@@ -133,8 +130,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   object UInt extends UIntFactory
   type SInt = chisel3.core.SInt
   object SInt extends SIntFactory
-  type FixedPoint = chisel3.core.FixedPoint
-  val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
@@ -267,6 +262,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
     implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
     implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+
+    // Fixed Point is experimental for now
+    type FixedPoint = chisel3.core.FixedPoint
+    val FixedPoint = chisel3.core.FixedPoint
+
+    type ChiselAnnotation = chisel3.core.ChiselAnnotation
+    val ChiselAnnotation = chisel3.core.ChiselAnnotation
 
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros
