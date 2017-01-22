@@ -87,7 +87,7 @@ class WiringTransform extends Transform with SimpleRun {
         case (0, 0, p, 0) => state.copy(annotations = None)
         case (s, t, p, c) if (p > 0) & (s == t) & (t == c) =>
           val wis = tops.foldLeft(Seq[WiringInfo]()) { case (seq, (pin, top)) =>
-            seq :+ WiringInfo(sources(pin), comp(pin), sinks(pin), pin, top)
+            seq :+ WiringInfo(sources(pin), comp(pin), sinks("pin:" + pin), pin, top)
           }
           state.copy(circuit = runPasses(state.circuit, passSeq(wis)), annotations = None)
         case _ => error("Wrong number of sources, tops, or sinks!")
