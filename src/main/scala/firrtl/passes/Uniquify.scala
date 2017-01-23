@@ -203,7 +203,7 @@ object Uniquify extends Pass {
       case sx: DefRegister => Seq(Field(sx.name, Default, sx.tpe))
       case sx: WDefInstance => Seq(Field(sx.name, Default, sx.tpe))
       case sx: DefMemory => sx.dataType match {
-        case (_: UIntType | _: SIntType) =>
+        case (_: UIntType | _: SIntType | _: FixedType) =>
           Seq(Field(sx.name, Default, memType(sx)))
         case tpe: BundleType =>
           val newFields = tpe.fields map ( f =>

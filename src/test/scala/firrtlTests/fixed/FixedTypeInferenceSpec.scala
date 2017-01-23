@@ -3,6 +3,7 @@
 package firrtlTests
 package fixed
 
+import java.io._
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.passes._
@@ -15,6 +16,14 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
     }
     val lines = c.serialize.split("\n") map normalized
 
+    expected foreach { e =>
+      lines should contain(e)
+    }
+  }
+  private def executeTest(input: String, expected: Seq[String], compiler: Compiler) = {
+    val writer = new StringWriter()
+    compiler.compile(CircuitState(parse(input), ChirrtlForm), writer)
+    val lines = writer.toString().split("\n") map normalized
     expected foreach { e =>
       lines should contain(e)
     }
@@ -286,6 +295,53 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
         |
       """.stripMargin
     executeTest(input, check.split("\n") map normalized, passes)
+  }
+  "Fixed types" should "work with mems" in {
+    def input(memType: String): String =
+      s"""
+        |circuit Unit :
+        |  module Unit :
+        |    input clock : Clock
+        |    input in : Fixed<16><<8>>
+        |    input ridx : UInt<3>
+        |    output out : Fixed<16><<8>>
+        |    input widx : UInt<3>
+        |    $memType mem : Fixed<16><<8>>[8]
+        |    infer mport min = mem[ridx], clock
+        |    min <= in
+        |    infer mport mout = mem[widx], clock
+        |    out <= mout
+      """.stripMargin
+    def check(readLatency: Int, moutEn: Int, minEn: Int): String =
+      s"""
+        |circuit Unit :
+        |  module Unit :
+        |    input clock : Clock
+        |    input in : SInt<16>
+        |    input ridx : UInt<3>
+        |    output out : SInt<16>
+        |    input widx : UInt<3>
+        |
+        |    mem mem :
+        |      data-type => SInt<16>
+        |      depth => 8
+        |      read-latency => $readLatency
+        |      write-latency => 1
+        |      reader => mout
+        |      writer => min
+        |      read-under-write => undefined
+        |    out <= mem.mout.data
+        |    mem.mout.addr <= widx
+        |    mem.mout.en <= UInt<1>("h$moutEn")
+        |    mem.mout.clk <= clock
+        |    mem.min.addr <= ridx
+        |    mem.min.en <= UInt<1>("h$minEn")
+        |    mem.min.clk <= clock
+        |    mem.min.data <= in
+        |    mem.min.mask <= UInt<1>("h1")
+      """.stripMargin
+    executeTest(input("smem"), check(1, 0, 1).split("\n") map normalized, new LowFirrtlCompiler)
+    executeTest(input("cmem"), check(0, 1, 1).split("\n") map normalized, new LowFirrtlCompiler)
   }
 }
 
