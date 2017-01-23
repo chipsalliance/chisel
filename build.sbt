@@ -24,6 +24,8 @@ lazy val commonSettings = Seq (
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  // Use the root project's unmanaged base for all sub-projects.
+  unmanagedBase := (unmanagedBase in root).value,
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
@@ -104,6 +106,8 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(publishArtifact := false).
   dependsOn(coreMacros)
 
+// Hack to avoid circular dependency on chisel.
+val root = Project("chisel", file("."))
 
 lazy val chisel = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
