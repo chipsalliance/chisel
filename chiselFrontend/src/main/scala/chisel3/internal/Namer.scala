@@ -42,7 +42,7 @@ import java.util.IdentityHashMap
   * ability to take descendant naming contexts.
   */
 class NamingContext {
-  val descendants = new IdentityHashMap[AnyRef, NamingContext]()
+  val descendants = new IdentityHashMap[AnyRef, ListBuffer[NamingContext]]()
   val anonymousDescendants = ListBuffer[NamingContext]()
   val items = ListBuffer[(AnyRef, String)]()
   var closed = false  // a sanity check to ensure no more name() calls are done after name_prefix
@@ -52,11 +52,10 @@ class NamingContext {
     * scope of this context.
     */
   def add_descendant(ref: AnyRef, descendant: NamingContext) {
-    // First set takes effect, subsequent ones are discarded
-    // TODO: is this the expected behavior?
     if (!descendants.containsKey(ref)) {
-      descendants.put(ref, descendant)
+      descendants.put(ref, ListBuffer[NamingContext]())
     }
+    descendants.get(ref) += descendant
   }
 
   def add_anonymous_descendant(descendant: NamingContext) {
@@ -92,12 +91,14 @@ class NamingContext {
 
       // Then recurse into descendant contexts
       if (descendants.containsKey(ref)) {
-        descendants.get(ref).name_prefix(prefix + suffix + "_")
+        for (descendant <- descendants.get(ref)) {
+          descendant.name_prefix(prefix + suffix + "_")
+        }
         descendants.remove(ref)
       }
     }
 
-    for (descendant <- descendants.values()) {
+    for (descendant <- descendants.values().flatten) {
       // Where we have a broken naming link, just ignore the missing parts
       descendant.name_prefix(prefix)
     }
