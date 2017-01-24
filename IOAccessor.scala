@@ -12,7 +12,7 @@ import scala.util.matching.Regex
  * named access and type information about the IO bundle of a module
  * used for building testing harnesses
  */
-class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
+class IOAccessor(val device_io: Record, verbose: Boolean = true) {
   val ports_referenced = new mutable.HashSet[Data]
 
   val dut_inputs                 = new mutable.HashSet[Data]()
@@ -46,14 +46,14 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
       }
     }
 
-    def parseBundle(b: Bundle, name: String = ""): Unit = {
+    def parseBundle(b: Record, name: String = ""): Unit = {
       for ((n, e) <- b.elements) {
         val new_name = name + (if(name.length > 0 ) "." else "" ) + n
         port_to_name_accumulator(e) = new_name
         add_to_ports_by_direction(e)
 
         e match {
-          case bb: Bundle     => parseBundle(bb, new_name)
+          case bb: Record     => parseBundle(bb, new_name)
           case vv: Vec[_]  => parseVecs(vv, new_name)
           case ee: Element    =>
           case _              =>
@@ -69,7 +69,7 @@ class IOAccessor(val device_io: Bundle, verbose: Boolean = true) {
         add_to_ports_by_direction(e)
 
         e match {
-          case bb: Bundle     => parseBundle(bb, new_name)
+          case bb: Record     => parseBundle(bb, new_name)
           case vv: Vec[_]  => parseVecs(vv, new_name)
           case ee: Element    =>
           case _              =>
