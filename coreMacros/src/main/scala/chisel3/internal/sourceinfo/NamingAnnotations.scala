@@ -72,20 +72,24 @@ class NamingTransforms(val c: Context) {
   }
 
   /** Module-specific val name transform, containing logic to prevent from recursing into inner
-    * classes and applies the local name method transform on inner functions.
+    * classes and applies the naming transform on inner functions.
     */
   class ModuleTransformer(val contextVar: TermName) extends ValNameTransformer {
     override def transform(tree: Tree) = tree match {
       case q"(..$params) => $expr" => tree
-      case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => tree
-      case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => tree
+      case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
+        tree  // don't recurse into inner classes
+      case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
+        tree  // don't recurse into inner classes
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => {
         val Modifiers(_, _, annotations) = mods
         val containsChiselName = annotations.map({q"new chiselName()" equalsStructure _}).fold(false)({_||_})
         if (containsChiselName) {
-          tree
+          tree  // don't apply the transform multiple times
         } else {
-          super.transform(tree)
+          // apply chiselName transform by default
+          val transformedExpr = transformHierarchicalMethod(expr)
+          q"$mods def $tname[..$tparams](...$paramss): $tpt = $transformedExpr"
         }
       }
       case other => super.transform(other)
@@ -98,15 +102,6 @@ class NamingTransforms(val c: Context) {
     override def transform(tree: Tree) = tree match {
       // TODO: better error messages when returning nothing
       case q"return $expr" => q"return $globalNamingStack.pop_return_context($expr, $contextVar)"
-      case other => super.transform(other)
-    }
-  }
-
-  /** Method-specific val name transform, containing logic to prevent from recursing into inner
-    * methods.
-    */
-  class NonRecursiveMethodTransformer(contextVar: TermName) extends MethodTransformer(contextVar) {
-    override def transform(tree: Tree) = tree match {
       // Do not recurse into functions and subclasses
       case q"(..$params) => $expr" => tree
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => tree
@@ -134,30 +129,11 @@ class NamingTransforms(val c: Context) {
     */
   def transformHierarchicalMethod(expr: c.Tree) = {
     val contextVar = TermName(c.freshName("namingContext"))
-    val transformedBody = (new NonRecursiveMethodTransformer(contextVar)).transform(expr)
-
-    q"""{
-      val $contextVar = $globalNamingStack.push_context()
-      $globalNamingStack.pop_return_context($transformedBody, $contextVar)
-    }
-    """
-  }
-
-
-  /** Applies the val name transform to a method body in a local manner, applying no prefix to val
-    * names that are directly dropped into the top-level Module.
-    */
-  def transformLocalMethod(expr: c.Tree) = {
-    val contextVar = TermName(c.freshName("namingContext"))
-    val returnVar = TermName(c.freshName("returnVal"))
     val transformedBody = (new MethodTransformer(contextVar)).transform(expr)
 
     q"""{
       val $contextVar = $globalNamingStack.push_context()
-      val $returnVar = $transformedBody
-      $contextVar.name_prefix("")
-      $globalNamingStack.pop_context($contextVar)
-      $returnVar
+      $globalNamingStack.pop_return_context($transformedBody, $contextVar)
     }
     """
   }
@@ -169,8 +145,7 @@ class NamingTransforms(val c: Context) {
     * a non-AnyVal object. Does not recurse into inner functions.
     *
     * For modules, this serves as the root of the call stack hierarchy for naming purposes. Methods
-    * which are not otherwise annotated will have the localName annotation applied by default, on
-    * the assumption that they are one-shot utilities. Does not recurse into inner classes.
+    * will have chiselName annotations (non-recursively), but this does NOT affect inner classes.
     *
     * Basically rewrites all instances of:
     * val name = expr
@@ -200,33 +175,6 @@ class NamingTransforms(val c: Context) {
 
     if (namedElts != 1) {
       c.abort(c.enclosingPosition, s"@chiselName annotation did not match exactly one valid tree, got:\r\n${annottees.map(tree => showCode(tree)).mkString("\r\n\r\n")}")
-    }
-
-    q"..$transformed"
-  }
-
-  /** Applies naming transforms to vals in the annotated method. Non-hierarchical, applies recursively.
-    *
-    * Basically rewrites all instances of:
-    * val name = expr
-    * to:
-    * val name = context.name(expr, name)
-    */
-  def localName(annottees: c.Tree*): c.Tree = {
-    var namedElts: Int = 0
-
-    val transformed = annottees.map(_ match {
-      // Currently disallow on traits, this won't work well with inheritance.
-      case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => {
-        val transformedExpr = transformLocalMethod(expr)
-        namedElts += 1
-        q"$mods def $tname[..$tparams](...$paramss): $tpt = $transformedExpr"
-      }
-      case other => c.abort(c.enclosingPosition, s"@localName annotion may only be used on methods, got ${showCode(other)}")
-    })
-
-    if (namedElts != 1) {
-      c.abort(c.enclosingPosition, s"@localName annotation did not match exactly one valid tree, got:\r\n${annottees.map(tree => showCode(tree)).mkString("\r\n\r\n")}")
     }
 
     q"..$transformed"

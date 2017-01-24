@@ -7,6 +7,8 @@ package chisel3.internal.naming
 import scala.collection.mutable.Stack
 import scala.collection.mutable.ListBuffer
 
+import scala.collection.JavaConversions._
+
 import java.util.IdentityHashMap
 
 /** Recursive Function Namer overview
@@ -41,6 +43,7 @@ import java.util.IdentityHashMap
   */
 class NamingContext {
   val descendants = new IdentityHashMap[AnyRef, NamingContext]()
+  val anonymousDescendants = ListBuffer[NamingContext]()
   val items = ListBuffer[(AnyRef, String)]()
   var closed = false  // a sanity check to ensure no more name() calls are done after name_prefix
 
@@ -54,6 +57,10 @@ class NamingContext {
     if (!descendants.containsKey(ref)) {
       descendants.put(ref, descendant)
     }
+  }
+
+  def add_anonymous_descendant(descendant: NamingContext) {
+    anonymousDescendants += descendant
   }
 
   /** Suggest a name (that will be propagated to FIRRTL) for an object, then returns the object
@@ -86,7 +93,16 @@ class NamingContext {
       // Then recurse into descendant contexts
       if (descendants.containsKey(ref)) {
         descendants.get(ref).name_prefix(prefix + suffix + "_")
+        descendants.remove(ref)
       }
+    }
+
+    for (descendant <- descendants.values()) {
+      // Where we have a broken naming link, just ignore the missing parts
+      descendant.name_prefix(prefix)
+    }
+    for (descendant <- anonymousDescendants) {
+      descendant.name_prefix(prefix)
     }
   }
 }
@@ -112,11 +128,15 @@ class NamingStack {
     *
     * Will assert out if the context being popped isn't the topmost on the stack.
     */
-  def pop_return_context[T <: AnyRef](prefix_ref: T, until: NamingContext): T = {
+  def pop_return_context[T <: Any](prefix_ref: T, until: NamingContext): T = {
     assert(naming_stack.top == until)
     naming_stack.pop()
     if (!naming_stack.isEmpty) {
-      naming_stack.top.add_descendant(prefix_ref, until)
+      prefix_ref match {
+        case prefix_ref: AnyRef => naming_stack.top.add_descendant(prefix_ref, until)
+        case _ => naming_stack.top.add_anonymous_descendant(until)
+      }
+
     }
     prefix_ref
   }

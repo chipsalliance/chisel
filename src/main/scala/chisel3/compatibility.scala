@@ -359,9 +359,5 @@ package object Chisel {     // scalastyle:ignore package.object.name
     class chiselName extends StaticAnnotation {
       def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
     }
-    @compileTimeOnly("enable macro paradise to expand macro annotations")
-    class localName extends StaticAnnotation {
-      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.localName
-    }
   }
 }

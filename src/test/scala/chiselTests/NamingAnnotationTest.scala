@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{chiselName, localName, dump}
+import chisel3.experimental.{chiselName, dump}
 import org.scalatest._
 import org.scalatest.prop._
 import chisel3.testers.BasicTester
@@ -41,7 +41,7 @@ trait NamedModuleTester extends Module {
 @chiselName
 class NamedModule extends NamedModuleTester {
   @chiselName
-  def FunctionMockup2(): UInt = {
+  def FunctionMockupInner(): UInt = {
     val my2A = 1.U
     val my2B = expectName(my2A +& 2.U, "test_myNested_my2B")
     val my2C = my2B +& 3.U  // should get named at enclosing scope
@@ -50,54 +50,53 @@ class NamedModule extends NamedModuleTester {
 
   @chiselName
   def FunctionMockup(): UInt = {
-    val myNested = expectName(FunctionMockup2(), "test_myNested")
+    val myNested = expectName(FunctionMockupInner(), "test_myNested")
     val myA = expectName(1.U + myNested, "test_myA")
     val myB = expectName(myA +& 2.U, "test_myB")
     val myC = expectName(myB +& 3.U, "test_myC")
     myC +& 4.U  // named at enclosing scope
   }
 
-  // implicit local naming for module methods
-  def LocalDefault(): UInt = {
-    val localA = expectName(1.U + 2.U, "localA")
-    val localB = expectName(localA + 3.U, "localB")
-    localB + 2.U  // named at enclosing scope
+  // chiselName "implicitly" applied
+  def ImplicitlyNamed(): UInt = {
+    val implicitA = expectName(1.U + 2.U, "test3_implicitA")
+    val implicitB = expectName(implicitA + 3.U, "test3_implicitB")
+    implicitB + 2.U  // named at enclosing scope
   }
+
+  // Ensure this applies a partial name if there is no return value
+  def NoReturnFunction() {
+    val noreturn = expectName(1.U + 2.U, "noreturn")
+  }
+
 
   val test = expectName(FunctionMockup(), "test")
   val test2 = expectName(test +& 2.U, "test2")
-  val test3 = expectName(LocalDefault(), "test3")
-}
-
-class LocalNamedFunction extends NamedModuleTester {
-  @localName
-  def myInnerFunction(): UInt = {
-    def myInnerNested(): UInt = {
-      // Should automatically recurse into inner scope
-      val my1 = expectName(3.U + 4.U, "my1")
-      val my2 = expectName(my1 + 1.U, "my2")
-      my2 + 2.U  // named at enclosing scope
-    }
-
-    val myA = expectName(1.U + 2.U, "myA")
-    val myB = expectName(myA + myInnerNested(), "myB")
-    myB
-  }
-
-  val test = myInnerFunction()  // not named at this scope, since Module not annotated
+  val test3 = expectName(ImplicitlyNamed(), "test3")
+  NoReturnFunction()
 }
 
 @chiselName
 class NameCollisionModule extends NamedModuleTester {
-  // implicit local naming for module methods
+  @chiselName
   def repeatedCalls(id: Int): UInt = {
-    val test = expectName(1.U + 3.U, s"test_$id")  // should disambiguate by invocation order
-    test + 2.U
+     val test = expectName(1.U + 3.U, s"test_$id")  // should disambiguate by invocation order
+     test + 2.U
+  }
+
+  // chiselName applied by default to this
+  def innerNamedFunction() {
+    // ... but not this inner function
+    def innerUnnamedFunction() {
+      val a = repeatedCalls(1)
+      val b = repeatedCalls(2)
+    }
+
+    innerUnnamedFunction()
   }
 
   val test = expectName(1.U + 2.U, "test")
-  val a = repeatedCalls(1)
-  val b = repeatedCalls(2)
+  innerNamedFunction()
 }
 
 /** Ensure no crash happens if a named function is enclosed in a non-named module
@@ -115,8 +114,7 @@ class NonNamedModule extends NamedModuleTester {
 /** Ensure no crash happens if a named function is enclosed in a non-named function in a named
   * module.
   */
-@chiselName
-class NonNamedFunction extends NamedModuleTester {
+object NonNamedHelper {
   @chiselName
   def NamedFunction(): UInt = {
     val myVal = 1.U + 2.U
@@ -127,9 +125,34 @@ class NonNamedFunction extends NamedModuleTester {
     val myVal = NamedFunction()
     myVal
   }
-
-  val test = NamedFunction()
 }
+
+@chiselName
+class NonNamedFunction extends NamedModuleTester {
+  val test = NonNamedHelper.NamedFunction()
+}
+
+/** Ensure broken links in the chain are simply dropped
+  */
+@chiselName
+class PartialNamedModule extends NamedModuleTester {
+  // Create an inner function that is the extent of the implicit naming
+  def innerNamedFunction(): UInt = {
+    def innerUnnamedFunction(): UInt = {
+      @chiselName
+      def disconnectedNamedFunction(): UInt = {
+        val a = expectName(1.U + 2.U, "test_a")
+        val b = expectName(a + 2.U, "test_b")
+        b
+      }
+      disconnectedNamedFunction()
+    }
+    innerUnnamedFunction() + 1.U
+  }
+
+  val test = innerNamedFunction()
+}
+
 
 /** A simple test that checks the recursive function val naming annotation both compiles and
   * generates the expected names.
@@ -142,17 +165,17 @@ class NamingAnnotationSpec extends ChiselPropSpec {
     assert(module.getNameFailures() == Nil)
   }
 
-  property("LocalNamedFunction should have names") {
-    // TODO: clean up test style
-    var module: LocalNamedFunction = null
-    elaborate { module = new LocalNamedFunction; module }
-    assert(module.getNameFailures() == Nil)
-  }
-
   property("NameCollisionModule should disambiguate collisions") {
     // TODO: clean up test style
     var module: NameCollisionModule = null
     elaborate { module = new NameCollisionModule; module }
+    assert(module.getNameFailures() == Nil)
+  }
+
+  property("PartialNamedModule should have partial names") {
+    // TODO: clean up test style
+    var module: PartialNamedModule = null
+    elaborate { module = new PartialNamedModule; module }
     assert(module.getNameFailures() == Nil)
   }
 
