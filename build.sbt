@@ -106,8 +106,8 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(publishArtifact := false).
   dependsOn(coreMacros)
 
-// Hack to avoid circular dependency on chisel.
-val root = Project("chisel", file("."))
+// This will always be the root project, even if we are a sub-project.
+lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
