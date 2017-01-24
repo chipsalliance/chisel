@@ -334,16 +334,20 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
           (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
     val idx = off map (x => s"[$x]") getOrElse ""
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
-    val bigIntU = peek(path)
+    val bigIntU = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
+  
     def signConvert(bigInt: BigInt, width: Int): BigInt = {
       if(bigInt.bitLength >= width) - ((BigInt(1) << width) - bigInt)
       else bigInt
     }
-    signal match {
+
+    val result = signal match {
       case s: SInt => signConvert(bigIntU, s.getWidth)
       case f: FixedPoint => signConvert(bigIntU, f.getWidth)
       case _ => bigIntU
     }
+    if (verbose) logger println s"  PEEK ${path} -> ${bigIntToStr(result, base)}"
+    result
   }
 
   def expect(signal: InstanceId, expected: BigInt, msg: => String)
