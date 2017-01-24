@@ -8,7 +8,8 @@ import java.io.{File, FileWriter, IOException, PrintStream, Writer}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
-import chisel3.{SInt, FixedPoint}
+import chisel3.SInt
+import chisel3.experimental.FixedPoint
 
 /**
   * Copies the necessary header files used for verilator compilation to the specified destination folder
