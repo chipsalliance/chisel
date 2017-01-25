@@ -27,14 +27,6 @@ trait SourceInfoTransformMacro {
   def implicitCompileOptions = q"implicitly[_root_.chisel3.core.CompileOptions]"
 }
 
-class WireTransform(val c: Context) extends SourceInfoTransformMacro {
-  import c.universe._
-  def apply[T: c.WeakTypeTag](t: c.Tree): c.Tree = {
-    val tpe = weakTypeOf[T]
-    q"$thisObj.do_apply($t, null.asInstanceOf[$tpe])($implicitSourceInfo, $implicitCompileOptions)"
-  }
-}
-
 class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def bitset(off: c.Tree, dat: c.Tree): c.Tree = {
@@ -54,14 +46,6 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](size: c.Tree, t: c.Tree): c.Tree = {
     q"$thisObj.do_apply($size, $t)($implicitSourceInfo)"
-  }
-}
-
-class RegTransform(val c: Context) extends SourceInfoTransformMacro {
-  import c.universe._
-  def apply[T: c.WeakTypeTag](t: c.Tree): c.Tree = {
-    val tpe = weakTypeOf[T]
-    q"$thisObj.do_apply($t, null.asInstanceOf[$tpe], null.asInstanceOf[$tpe])($implicitSourceInfo)"
   }
 }
 

@@ -19,7 +19,7 @@ class RegOfVec extends CookbookTester(2) {
   //   Note that Seq.fill constructs 4 32-bit UInt literals with the value 0
   //   Vec(...) then constructs a Wire of these literals
   //   The Reg is then initialized to the value of the Wire (which gives it the same type)
-  val initRegOfVec = Reg(init = Vec(Seq.fill(4)(0.asUInt(32.W))))
+  val initRegOfVec = RegInit(Vec(Seq.fill(4)(0.asUInt(32.W))))
 
   // Simple test (cycle comes from superclass)
   when (cycle === 2.U) { assert(regOfVec(2) === 123.U) }

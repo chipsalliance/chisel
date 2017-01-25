@@ -334,28 +334,37 @@ abstract class Data extends HasId {
 }
 
 object Wire {
-  def apply[T <: Data](t: T): T = macro WireTransform.apply[T]
+  // No source info since Scala macros don't yet support named / default arguments.
+  def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T = {
+    val model = (init.litArg match {
+      // For e.g. Wire(init=UInt(0, k)), fix the Reg's width to k
+      case Some(lit) if lit.forcedWidth => init.chiselCloneType
+      case _ => init match {
+        case init: Bits => init.cloneTypeWidth(Width())
+        case init => init.chiselCloneType
+      }
+    }).asInstanceOf[T]
+    apply(model, init)
+  }
 
   // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo, compileOptions)
+  def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T = {
+    implicit val noSourceInfo = UnlocatableSourceInfo
+    val x = apply(t)
+    Binding.checkSynthesizable(init, s"'init' ($init)")
+    x := init
+    x
+  }
 
-  // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-    do_apply(t, init)(UnlocatableSourceInfo, compileOptions)
-
-  def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val x = Reg.makeType(chisel3.core.ExplicitCompileOptions.NotStrict, t, null.asInstanceOf[T], init)
+  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val x = t.chiselCloneType
 
     // Bind each element of x to being a Wire
     Binding.bind(x, WireBinder(Builder.forcedModule), "Error: t")
 
     pushCommand(DefWire(sourceInfo, x))
     pushCommand(DefInvalid(sourceInfo, x.ref))
-    if (init != null) {
-      Binding.checkSynthesizable(init, s"'init' ($init)")
-      x := init
-    }
+
     x
   }
 }

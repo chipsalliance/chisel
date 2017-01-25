@@ -22,7 +22,7 @@ abstract class SimpleVendingMachine extends Module {
 // Vending machine implemented with a Finite State Machine
 class FSMVendingMachine extends SimpleVendingMachine {
   val sIdle :: s5 :: s10 :: s15 :: sOk :: Nil = Enum(5)
-  val state = Reg(init = sIdle)
+  val state = RegInit(sIdle)
 
   switch (state) {
     is (sIdle) {

@@ -6,41 +6,21 @@ import chisel3._
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
-object RegNext {
-  /** Returns a register with the specified next and no reset initialization.
-    *
-    * Essentially a 1-cycle delayed version of the input signal.
-    */
-  def apply[T <: Data](next: T): T = Reg[T](null.asInstanceOf[T], next, null.asInstanceOf[T])
-
-  /** Returns a register with the specified next and reset initialization.
-    *
-    * Essentially a 1-cycle delayed version of the input signal.
-    */
-  def apply[T <: Data](next: T, init: T): T = Reg[T](null.asInstanceOf[T], next, init)
-}
-
-object RegInit {
-  /** Returns a register pre-initialized (on reset) to the specified value.
-    */
-  def apply[T <: Data](init: T): T = Reg[T](null.asInstanceOf[T], null.asInstanceOf[T], init)
-}
-
 object RegEnable {
   /** Returns a register with the specified next, update enable gate, and no reset initialization.
     */
-  def apply[T <: Data](updateData: T, enable: Bool): T = {
-    val clonedUpdateData = updateData.chiselCloneType
-    val r = Reg(clonedUpdateData)
-    when (enable) { r := updateData }
+  def apply[T <: Data](next: T, enable: Bool): T = {
+    val clonedNext = next.chiselCloneType
+    val r = Reg(clonedNext)
+    when (enable) { r := next }
     r
   }
 
   /** Returns a register with the specified next, update enable gate, and reset initialization.
     */
-  def apply[T <: Data](updateData: T, resetData: T, enable: Bool): T = {
-    val r = RegInit(resetData)
-    when (enable) { r := updateData }
+  def apply[T <: Data](next: T, init: T, enable: Bool): T = {
+    val r = RegInit(init)
+    when (enable) { r := next }
     r
   }
 }
