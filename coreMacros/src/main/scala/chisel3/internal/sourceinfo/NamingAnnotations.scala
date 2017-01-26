@@ -76,7 +76,6 @@ class NamingTransforms(val c: Context) {
     */
   class ModuleTransformer(val contextVar: TermName) extends ValNameTransformer {
     override def transform(tree: Tree) = tree match {
-      case q"(..$params) => $expr" => tree
       case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
         tree  // don't recurse into inner classes
       case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
@@ -102,8 +101,7 @@ class NamingTransforms(val c: Context) {
     override def transform(tree: Tree) = tree match {
       // TODO: better error messages when returning nothing
       case q"return $expr" => q"return $globalNamingStack.pop_return_context($expr, $contextVar)"
-      // Do not recurse into functions and subclasses
-      case q"(..$params) => $expr" => tree
+      // Do not recurse into methods
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => tree
       case other => super.transform(other)
     }
