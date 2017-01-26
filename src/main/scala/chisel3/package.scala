@@ -285,5 +285,22 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         */
       def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
     }
+
+    import scala.language.experimental.macros
+    import scala.annotation.StaticAnnotation
+    import scala.annotation.compileTimeOnly
+
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class dump extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
+    }
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class treedump extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
+    }
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class chiselName extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
+    }
   }
 }

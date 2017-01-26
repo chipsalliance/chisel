@@ -22,6 +22,8 @@ lazy val commonSettings = Seq (
   autoAPIMappings := true,
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-deprecation", "-feature"),
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
@@ -78,7 +80,6 @@ lazy val chiselSettings = Seq (
 
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
     "com.github.scopt" %% "scopt" % "3.4.0"
   ),
@@ -96,17 +97,11 @@ lazy val chiselSettings = Seq (
 
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
-  settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    publishArtifact := false
-  )
+  settings(publishArtifact := false)
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
-  settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    publishArtifact := false
-  ).
+  settings(publishArtifact := false).
   dependsOn(coreMacros)
 
 
