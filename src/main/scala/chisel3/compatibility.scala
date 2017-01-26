@@ -6,6 +6,10 @@
 package object Chisel {     // scalastyle:ignore package.object.name
   import chisel3.internal.firrtl.Width
 
+  import scala.language.experimental.macros
+  import scala.annotation.StaticAnnotation
+  import scala.annotation.compileTimeOnly
+
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
   type Direction = chisel3.core.Direction
 
@@ -333,4 +337,27 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Pipe = chisel3.util.Pipe
   type Pipe[T <: Data] = chisel3.util.Pipe[T]
 
+
+  /** Package for experimental features, which may have their API changed, be removed, etc.
+    *
+    * Because its contents won't necessarily have the same level of stability and support as
+    * non-experimental, you must explicitly import this package to use its contents.
+    */
+  object experimental {
+    import scala.annotation.StaticAnnotation
+    import scala.annotation.compileTimeOnly
+
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class dump extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
+    }
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class treedump extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
+    }
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class chiselName extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
+    }
+  }
 }
