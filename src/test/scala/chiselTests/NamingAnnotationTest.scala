@@ -73,6 +73,17 @@ class NamedModule extends NamedModuleTester {
   val test = expectName(FunctionMockup(), "test")
   val test2 = expectName(test +& 2.U, "test2")
   val test3 = expectName(ImplicitlyNamed(), "test3")
+
+  // Test that contents of for loops are named
+  for (i <- 0 until 1) {
+    val forInner = expectName(test3 + i.U, "forInner")
+  }
+
+  // Test that contents of anonymous functions are named
+  Seq((0, "anonInner"), (1, "anonInner_1"), (2, "anonInner_2")).foreach { case (in, name) =>
+    val anonInner = expectName(test3 + in.U, name)
+  }
+
   NoReturnFunction()
 }
 
