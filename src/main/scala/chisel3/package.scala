@@ -1,5 +1,8 @@
 // See LICENSE for license details.
 
+/** The chisel3 package contains the chisel3 API.
+  * It maps core components into the public chisel3 namespace.
+  */
 package object chisel3 {    // scalastyle:ignore package.object.name
   import scala.language.implicitConversions
 
