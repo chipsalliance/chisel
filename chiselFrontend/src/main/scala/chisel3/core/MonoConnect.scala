@@ -15,7 +15,7 @@ import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfo
 *
 * The connect operation will recurse down the left Data (with the right Data).
 * An exception will be thrown if a movement through the left cannot be matched
-* in the right. The right side is allowed to have extra Bundle fields.
+* in the right. The right side is allowed to have extra Record fields.
 * Vecs must still be exactly the same size.
 *
 * See elemConnect for details on how the root connections are issued.
@@ -45,7 +45,7 @@ object MonoConnect {
   def MismatchedVecException =
     MonoConnectException(": Sink and Source are different length Vecs.")
   def MissingFieldException(field: String) =
-    MonoConnectException(s": Source Bundle missing field ($field).")
+    MonoConnectException(s": Source Record missing field ($field).")
   def MismatchedException(sink: String, source: String) =
     MonoConnectException(s": Sink ($sink) and Source ($source) have different types.")
 
@@ -73,12 +73,12 @@ object MonoConnect {
           }
         }
       }
-      // Handle Bundle case
-      case (sink_b: Bundle, source_b: Bundle) => {
+      // Handle Record case
+      case (sink_r: Record, source_r: Record) => {
         // For each field, descend with right
-        for((field, sink_sub) <- sink_b.elements) {
+        for((field, sink_sub) <- sink_r.elements) {
           try {
-            source_b.elements.get(field) match {
+            source_r.elements.get(field) match {
               case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
               case None => {
                 if (connectCompileOptions.connectFieldsMustMatch) {

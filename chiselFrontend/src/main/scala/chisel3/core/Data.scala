@@ -66,7 +66,7 @@ object Data {
   * Note that the current scheme only applies Flip to Elements or Vec chains of
   * Elements.
   *
-  * A Bundle is never marked flip, instead preferring its root fields to be marked
+  * A Record is never marked flip, instead preferring its root fields to be marked
   *
   * The Vec check is due to the fact that flip must be factored out of the vec, ie:
   * must have flip field: Vec(UInt) instead of field: Vec(flip UInt)
@@ -74,7 +74,7 @@ object Data {
   private[chisel3] def isFlipped(target: Data): Boolean = target match {
     case (element: Element) => element.binding.direction == Some(Direction.Input)
     case (vec: Vec[Data @unchecked]) => isFlipped(vec.sample_element)
-    case (bundle: Bundle) => false
+    case (record: Record) => false
   }
 
   /** This function returns the "firrtl" flipped-ness for the specified object.
@@ -238,21 +238,7 @@ abstract class Data extends HasId {
     */
   def fromBits(that: Bits): this.type = macro CompileOptionsTransform.thatArg
 
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    var i = 0
-    val wire = Wire(this.chiselCloneType)
-    val bits =
-      if (that.width.known && that.width.get >= wire.width.get) {
-        that
-      } else {
-        Wire(that.cloneTypeWidth(wire.width), init = that)
-      }
-    for (x <- wire.flatten) {
-      x := bits(i + x.getWidth-1, i)
-      i += x.getWidth
-    }
-    wire.asInstanceOf[this.type]
-  }
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type
 
   /** Packs the value of this object as plain Bits.
     *
@@ -337,4 +323,9 @@ sealed class Clock extends Element(Width(1)) {
   def toPrintable: Printable = PString("CLOCK")
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+    val ret = Wire(this.cloneType)
+    ret := that
+    ret.asInstanceOf[this.type]
+  }
 }
