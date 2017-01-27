@@ -18,7 +18,7 @@ case class ChiselAnnotation(component: InstanceId, transformClass: Class[_ <: Tr
   def toFirrtl: Annotation = {
     val circuitName = CircuitName(component.pathName.split("""\.""").head)
     component match {
-      case m: Module =>
+      case m: BaseModule =>
         Annotation(
           ModuleName(m.name, circuitName), transformClass, value)
       case _ =>
