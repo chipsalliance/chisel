@@ -26,14 +26,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
   type Bundle = chisel3.core.Bundle
+  type Record = chisel3.core.Record
 
   val assert = chisel3.core.assert
 
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
-
-  type ChiselAnnotation = chisel3.core.ChiselAnnotation
-  val ChiselAnnotation = chisel3.core.ChiselAnnotation
 
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
@@ -133,8 +131,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   object UInt extends UIntFactory
   type SInt = chisel3.core.SInt
   object SInt extends SIntFactory
-  type FixedPoint = chisel3.core.FixedPoint
-  val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
@@ -268,6 +264,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
     implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
+    // Fixed Point is experimental for now
+    type FixedPoint = chisel3.core.FixedPoint
+    val FixedPoint = chisel3.core.FixedPoint
+
+    type ChiselAnnotation = chisel3.core.ChiselAnnotation
+    val ChiselAnnotation = chisel3.core.ChiselAnnotation
+
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros
       import internal.firrtl.NumericBound
@@ -281,6 +284,23 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         * }}}
         */
       def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+    }
+
+    import scala.language.experimental.macros
+    import scala.annotation.StaticAnnotation
+    import scala.annotation.compileTimeOnly
+
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class dump extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
+    }
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class treedump extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
+    }
+    @compileTimeOnly("enable macro paradise to expand macro annotations")
+    class chiselName extends StaticAnnotation {
+      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
     }
   }
 }
