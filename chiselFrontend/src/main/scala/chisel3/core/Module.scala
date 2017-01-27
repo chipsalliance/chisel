@@ -141,7 +141,7 @@ extends HasId {
   /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.
     */
-  def io: Bundle
+  def io: Record
   val clock = Port(Input(Clock()))
   val reset = Port(Input(Bool()))
 
