@@ -1,5 +1,5 @@
 # Chisel3
-Chisel3 is a new FIRRTL based chisel.
+Chisel3 is a new Firrtl based chisel.
 It is currently in BETA VERSION, so some Chisel features may change in the coming months.
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
@@ -8,8 +8,8 @@ detailed description.
 ## Overview
 Chisel3 is much more modular than Chisel2, and the compilation pipeline looks
 like:
- - Chisel3 (Scala) to FIRRTL (this is your "Chisel RTL").
- - [FIRRTL](https://github.com/ucb-bar/firrtl) to Verilog (which then be passed
+ - Chisel3 (Scala) to Firrtl (this is your "Chisel RTL").
+ - [Firrtl](https://github.com/ucb-bar/firrtl) to Verilog (which then be passed
  into FPGA or ASIC tools).
  - Verilog to C++ for simulation and testing using
  [Verilator](http://www.veripool.org/wiki/verilator).
@@ -18,14 +18,8 @@ like:
 This will walk you through installing Chisel and its dependencies:
 - [sbt](http://www.scala-sbt.org/), which is the preferred Scala build system
   and what Chisel uses.
-- [FIRRTL](https://github.com/ucb-bar/firrtl), which compile Chisel's IR down
-  to Verilog. A beta version of FIRRTL written in Scala is available.
-  - FIRRTL is currently a separate repository but may eventually be made
-    available as a standalone program through system package managers and/or
-    included in the Chisel source tree.
-  - FIRRTL has known issues compiling under JDK 8, which manifests as an
-    infinite recursion / stack overflow exception. Instructions for selecting
-    JDK 7 are included.
+- [Firrtl](https://github.com/ucb-bar/firrtl), which compiles Chisel's IR down
+  to Verilog. Separate installation of Firrtl is no longer required.
 - [Verilator](http://www.veripool.org/wiki/verilator), which compiles Verilog
   down to C++ for simulation. The included unit testing infrastructure uses
   this.
@@ -41,51 +35,8 @@ This will walk you through installing Chisel and its dependencies:
   sudo apt-get update
   sudo apt-get install sbt
   ```
-1. Install FIRRTL.
-  1. Clone the FIRRTL repository:
-
-    ```
-    git clone https://github.com/ucb-bar/firrtl.git
-    ```
-  1. Build Scala-FIRRTL. In the cloned FIRRTL repository:
-
-    ```
-    make build-scala
-    ```
-    * This compiles FIRRTL into a JAR and creates a wrapper script `firrtl` to
-      make the JAR executable. The generated files are in `firrtl/utils/bin`.
-    * If this fails with an infinite recursion / stack overflow exception, this
-      is a known bug with JDK 8. You can either increase the stack size by
-      invoking:
-
-      ```
-      JAVA_OPTS=-Xss256m make build-scala
-      ```
-    * Or, revert to JDK 7:
-      1. Install JDK 7 (if not installed already):
-
-        ```
-        sudo apt-get install openjdk-7-jdk
-        ```
-      2. Select JDK 7 as the default JDK:
-
-        ```
-        sudo update-alternatives --config java
-        ```
-  1. Locally publish this version of firrtl so it is available to satisfy the chisel3 library dependency:
-
-        ```
-        sbt publish-local
-        ```
-  1. Add the FIRRTL executable to your PATH. One way is to add this line to your
-    `.bashrc`:
-
-    ```
-    export PATH=$PATH:<path-to-your-firrtl-repository>/utils/bin
-    ```
-  Please see the [FIRRTL repo](https://github.com/ucb-bar/firrtl) for details on installing FIRRTL.
-1. Install Verilator. As of February 2016, the version of Verilator included by
-  in Ubuntu's default package repositories are too out of date, so it must be
+1. Install Verilator. As of November 2016, the version of Verilator included by
+  in Ubuntu's default package repositories is too out of date, so it must be
   compiled from source.
   1. Install prerequisites (if not installed already):
 
@@ -129,37 +80,6 @@ This will walk you through installing Chisel and its dependencies:
   ```
   brew cask install sbt
   ```
-1. Install FIRRTL:
-  1. Clone the FIRRTL repository:
-
-    ```
-    git clone git@github.com:ucb-bar/firrtl.git
-    ```
-  1. Build Scala-FIRRTL. In the cloned FIRRTL repository:
-
-    ```
-    make build-scala
-    ```
-    * This compiles FIRRTL into a JAR and creates a wrapper script `firrtl` to
-      make the JAR executable. The generated files are in `firrtl/utils/bin`.
-    * If this fails with an infinite recursion / stack overflow exception, this
-      is a known bug with JDK 8. You can either increase the stack size by
-      invoking
-
-      ```
-      JAVA_OPTS=-Xss256m make build-scala`
-      ```
-    * Or, revert to JDK 7:
-
-      ```
-      brew install caskroom/versions/java7
-      ```
-  1. Add the FIRRTL executable to your PATH. One way is to add this line to your
-    `.bashrc`:
-
-    ```
-    export PATH=$PATH:<path-to-your-firrtl-repository>/utils/bin
-    ```
 1. Install Verilator:
 
   ```
@@ -243,12 +163,13 @@ sbt test
 ```
 
 ### Running Projects Against Local Chisel
-Chisel3 is still undergoing rapid development and we haven't pusblished a stable version to the Nexus repository.
+Chisel3 is still undergoing rapid development and we haven't pusblished a
+stable version to the Nexus repository.
 You will need to build from source and `publish-local`.
 The repo version can be found in the build.sbt file.
 At last check it was:
 
-      version := "3.0",
+      version := "3.1-SNAPSHOT",
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager)
 repository, run:
@@ -262,22 +183,21 @@ becomes `sbt ~publish-local`.
 
 [sbt's manual](http://www.scala-sbt.org/0.13/docs/Publishing.html#Publishing+Locally)
 recommends that you use a `SNAPSHOT` version suffix to ensure that the local
-repository is checked for updates.
-Change the version string in build.sbt to:
-```
-  version := "3.0-SNAPSHOT"
-```
-and re-execute `sbt publish-local` to accomplish this.
+repository is checked for updates. Since the current default is a `SNAPSHOT`,
+and the version number is already incremented compared to the currently
+published snapshot, you dont need to change version.
 
 The compiled version gets placed in `~/.ivy2/local/`. You can nuke the relevant
 subfolder to un-publish your local copy of Chisel.
 
-In order to have your projects use this version of Chisel, you should update the libraryDependencies setting in your project's build.sbt file to:
+In order to have your projects use this version of Chisel, you should update
+the libraryDependencies setting in your project's build.sbt file to:
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel" % "3.0-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel" % "3.1-SNAPSHOT"
 ```
 
-The version specifier in libraryDependencies in the project's build.sbt should match the version string in your local copy of Chisel's build.sbt.
+The version specifier in libraryDependencies in the project's build.sbt should
+match the version string in your local copy of Chisel's build.sbt.
 
 ## Technical Documentation
 
@@ -289,11 +209,11 @@ The Chisel3 compiler consists of these main parts:
  - **The Builder**, `chisel.internal.Builder`, which maintains global state
  (like the currently open Module) and contains commands, generating...
  - **The intermediate data structures**, `chisel.firrtl.*`, which are
- syntactically very similar to FIRRTL. Once the entire circuit has been
+ syntactically very similar to Firrtl. Once the entire circuit has been
  elaborated, the top-level object (a `Circuit`) is then passed to...
- - **The FIRRTL emitter**, `chisel.firrtl.Emitter`, which turns the
+ - **The Firrtl emitter**, `chisel.firrtl.Emitter`, which turns the
  intermediate data structures into a string that can be written out into a
- FIRRTL file for further processing.
+ Firrtl file for further processing.
 
 Also included is:
  - **The standard library** of circuit generators, `chisel.util.*`. These
