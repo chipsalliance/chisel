@@ -91,6 +91,58 @@ circuit Top :
     (new java.io.File(confLoc)).delete()
   }
 
+  "ReplSeqMem" should "not fail with FixedPoint types " in {
+    val input = """
+circuit CustomMemory : 
+  module CustomMemory : 
+    input clock : Clock
+    input reset : UInt<1>
+    output io : {flip rClk : Clock, flip rAddr : UInt<3>, dO : Fixed<16><<8>>, flip wClk : Clock, flip wAddr : UInt<3>, flip wEn : UInt<1>, flip dI : Fixed<16><<8>>}
+    
+    io is invalid
+    smem mem : Fixed<16><<8>>[7] 
+    read mport _T_17 = mem[io.rAddr], clock
+    io.dO <= _T_17 
+    when io.wEn : 
+      write mport _T_18 = mem[io.wAddr], clock
+      _T_18 <= io.dI
+      skip 
+""".stripMargin
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:CustomMemory:-o:"+confLoc)))
+    val writer = new java.io.StringWriter
+    compile(CircuitState(parse(input), ChirrtlForm, Some(aMap)), writer)
+    // Check correctness of firrtl
+    parse(writer.toString)
+    (new java.io.File(confLoc)).delete()
+  }
+
+  "ReplSeqMem" should "not fail with Signed types " in {
+    val input = """
+circuit CustomMemory : 
+  module CustomMemory : 
+    input clock : Clock
+    input reset : UInt<1>
+    output io : {flip rClk : Clock, flip rAddr : UInt<3>, dO : SInt<16>, flip wClk : Clock, flip wAddr : UInt<3>, flip wEn : UInt<1>, flip dI : SInt<16>}
+    
+    io is invalid
+    smem mem : SInt<16>[7] 
+    read mport _T_17 = mem[io.rAddr], clock
+    io.dO <= _T_17 
+    when io.wEn : 
+      write mport _T_18 = mem[io.wAddr], clock
+      _T_18 <= io.dI
+      skip 
+""".stripMargin
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:CustomMemory:-o:"+confLoc)))
+    val writer = new java.io.StringWriter
+    compile(CircuitState(parse(input), ChirrtlForm, Some(aMap)), writer)
+    // Check correctness of firrtl
+    parse(writer.toString)
+    (new java.io.File(confLoc)).delete()
+  }
+
   "ReplSeqMem Utility -- getConnectOrigin" should 
       "determine connect origin across nodes/PrimOps even if ConstProp isn't performed" in {
     def checkConnectOrigin(hurdle: String, origin: String) = {

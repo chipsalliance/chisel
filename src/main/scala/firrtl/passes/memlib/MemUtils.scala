@@ -31,7 +31,7 @@ object toBits {
       hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER))))
     case t: BundleType => seqCat(t.fields map (f =>
       hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER))))
-    case t: GroundType => e
+    case t: GroundType => DoPrim(AsUInt, Seq(e), Seq.empty, UnknownType)
     case t => error("Unknown type encountered in toBits!")
   }
 }
@@ -89,6 +89,16 @@ object bitWidth {
   }
 }
 
+object castRhs {
+  def apply(lhst: Type, rhs: Expression) = {
+    lhst match {
+      case _: SIntType => DoPrim(AsSInt, Seq(rhs), Seq.empty, lhst)
+      case FixedType(_, IntWidth(p)) => DoPrim(AsFixedPoint, Seq(rhs), Seq(p), lhst)
+      case _: UIntType => rhs
+    }  
+  }
+}
+
 object fromBits {
   def apply(lhs: Expression, rhs: Expression): Statement = {
     val fbits = lhs match {
@@ -103,7 +113,8 @@ object fromBits {
                             offset: BigInt): (BigInt, Seq[Statement]) = {
     val intWidth = bitWidth(lhst)
     val sel = DoPrim(PrimOps.Bits, Seq(rhs), Seq(offset + intWidth - 1, offset), UnknownType)
-    (offset + intWidth, Seq(Connect(NoInfo, lhs, sel)))
+    val rhsConnect = castRhs(lhst, sel)
+    (offset + intWidth, Seq(Connect(NoInfo, lhs, rhsConnect)))
   }
   private def getPart(lhs: Expression,
                       lhst: Type,
