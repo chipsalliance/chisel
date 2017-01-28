@@ -5,6 +5,8 @@ It is currently in BETA VERSION, so some Chisel features may change in the comin
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
 detailed description.
 
+The ScalaDoc for Chisel3 is available at the [API tab on the Chisel web site.](https://chisel.eecs.berkeley.edu/api/)
+
 ## Overview
 Chisel3 is much more modular than Chisel2, and the compilation pipeline looks
 like:
