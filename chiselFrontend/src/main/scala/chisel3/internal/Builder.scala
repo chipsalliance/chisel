@@ -92,7 +92,7 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
-  // (e.g. tried to suggest a name to part of a Bundle)
+  // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
       val candidate_name = suggested_name.getOrElse(default)
@@ -151,6 +151,7 @@ private[chisel3] class DynamicContext() {
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   val errors = new ErrorLog
+  val namingStack = new internal.naming.NamingStack
 }
 
 private[chisel3] object Builder {
@@ -163,6 +164,7 @@ private[chisel3] object Builder {
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
 
   def currentModule: Option[Module] = dynamicContext.currentModule
   def currentModule_=(target: Option[Module]): Unit = {
@@ -170,7 +172,7 @@ private[chisel3] object Builder {
   }
   def forcedModule: Module = currentModule match {
     case Some(module) => module
-    case None => throw new Exception(
+    case None => throwException(
       "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
@@ -200,6 +202,16 @@ private[chisel3] object Builder {
   def warning(m: => String): Unit = errors.warning(m)
   def deprecated(m: => String): Unit = errors.deprecated(m)
 
+  /** Record an exception as an error, and throw it.
+    *
+    * @param m exception message
+    */
+  @throws(classOf[ChiselException])
+  def exception(m: => String): Unit = {
+    error(m)
+    throwException(m)
+  }
+
   def build[T <: Module](f: => T): Circuit = {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
       errors.info("Elaborating design...")
@@ -211,4 +223,12 @@ private[chisel3] object Builder {
       Circuit(components.last.name, components, annotations.map(_.toFirrtl))
     }
   }
+}
+
+/** Allows public access to the naming stack in Builder / DynamicContext.
+  * Necessary because naming macros expand in user code and don't have access into private[chisel3]
+  * objects.
+  */
+object DynamicNamingStack {
+  def apply() = Builder.namingStack
 }

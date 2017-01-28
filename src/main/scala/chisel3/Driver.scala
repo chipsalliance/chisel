@@ -9,7 +9,7 @@ import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl._
-import firrtl.util.BackendCompilationUtilities
+import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
 
@@ -18,7 +18,7 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
   * By default firrtl is automatically run after chisel.  an [[ExecutionOptionsManager]]
   * is needed to manage options.  It can parser command line arguments or coordinate
   * multiple chisel toolchain tools options.
- *
+  *
   * @example
   *          {{{
   *          val optionsManager = new ExecutionOptionsManager("chisel3")
@@ -36,6 +36,27 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
   *          }}}
   */
 import BuildInfo._
+
+trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
+  /**
+    * like 'firrtlToVerilog' except it runs the process inside the same JVM
+    *
+    * @param prefix basename of the file
+    * @param dir    directory where file lives
+    * @return       true if compiler completed successfully
+    */
+  def compileFirrtlToVerilog(prefix: String, dir: File): Boolean = {
+    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
+      commonOptions = CommonOptions(topName = prefix, targetDirName = dir.getAbsolutePath)
+      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog")
+    }
+
+    firrtl.Driver.execute(optionsManager) match {
+      case _: FirrtlExecutionSuccess => true
+      case _: FirrtlExecutionFailure => false
+    }
+  }
+}
 
 /**
   * This family provides return values from the chisel3 and possibly firrtl compile steps
@@ -125,9 +146,17 @@ object Driver extends BackendCompilationUtilities {
     af.write(circuit.annotations.toArray.toYaml.prettyPrint)
     af.close()
 
+    /* create custom transforms by finding the set of transform classes associated with annotations
+     * then instantiate them into actual transforms
+     */
+    val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
+      transformClass.newInstance()
+    }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlSource = Some(firrtlString), annotations = circuit.annotations.toList)
+      firrtlSource = Some(firrtlString),
+      annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList,
+      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))

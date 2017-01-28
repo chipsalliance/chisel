@@ -45,7 +45,7 @@ This will walk you through installing Chisel and its dependencies:
   1. Clone the FIRRTL repository:
 
     ```
-    git clone git@github.com:ucb-bar/firrtl.git
+    git clone https://github.com/ucb-bar/firrtl.git
     ```
   1. Build Scala-FIRRTL. In the cloned FIRRTL repository:
 
@@ -83,6 +83,7 @@ This will walk you through installing Chisel and its dependencies:
     ```
     export PATH=$PATH:<path-to-your-firrtl-repository>/utils/bin
     ```
+  Please see the [FIRRTL repo](https://github.com/ucb-bar/firrtl) for details on installing FIRRTL.
 1. Install Verilator. As of February 2016, the version of Verilator included by
   in Ubuntu's default package repositories are too out of date, so it must be
   compiled from source.
