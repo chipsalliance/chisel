@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.ChiselAnnotation
 import firrtl.FirrtlExecutionSuccess
 import firrtl.transforms.DedupModules
 import org.scalatest.{FreeSpec, Matchers}

@@ -141,7 +141,7 @@ extends HasId {
   /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.
     */
-  def io: Bundle
+  def io: Record
   val clock = Port(Input(Clock()))
   val reset = Port(Input(Bool()))
 
@@ -199,8 +199,13 @@ extends HasId {
           }
         case _ => // Do nothing
       }
+    /** Scala generates names like chisel3$util$Queue$$ram for private vals
+      * This extracts the part after $$ for names like this and leaves names
+      * without $$ unchanged
+      */
+    def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
     for (m <- getPublicFields(classOf[Module])) {
-      nameRecursively(m.getName, m.invoke(this))
+      nameRecursively(cleanName(m.getName), m.invoke(this))
     }
 
     // For Module instances we haven't named, suggest the name of the Module

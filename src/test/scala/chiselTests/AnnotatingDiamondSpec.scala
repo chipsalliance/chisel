@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.ChiselAnnotation
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
