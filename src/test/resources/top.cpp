@@ -7,6 +7,13 @@
 # include <verilated_vcd_c.h>	// Trace file format header
 #endif
 
+// Override Verilator definition so first $finish ends simulation
+// Note: VL_USER_FINISH needs to be defined when compiling Verilator code
+void vl_finish(const char* filename, int linenum, const char* hier) {
+  Verilated::flushCall();
+  exit(0);
+}
+
 using namespace std;
 
 //VGCDTester *top;
@@ -61,6 +68,7 @@ int main(int argc, char** argv) {
   if (main_time >= timeout) {
       cout << "Assertion failed! Simulation terminated by timeout at time " << main_time <<
               " (cycle " << main_time / 10 << ")"<< endl;
+      return -1;
   } else {
       cout << "Simulation completed at time " << main_time <<
               " (cycle " << main_time / 10 << ")"<< endl;
