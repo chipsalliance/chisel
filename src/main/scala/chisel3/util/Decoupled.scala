@@ -175,16 +175,16 @@ extends Module(override_reset=override_reset) {
 
   val io = IO(new QueueIO(gen, entries))
 
-  val ram = Mem(entries, gen)
-  val enq_ptr = Counter(entries)
-  val deq_ptr = Counter(entries)
-  val maybe_full = Reg(init=false.B)
+  private val ram = Mem(entries, gen)
+  private val enq_ptr = Counter(entries)
+  private val deq_ptr = Counter(entries)
+  private val maybe_full = Reg(init=false.B)
 
-  val ptr_match = enq_ptr.value === deq_ptr.value
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val do_enq = Wire(init=io.enq.fire())
-  val do_deq = Wire(init=io.deq.fire())
+  private val ptr_match = enq_ptr.value === deq_ptr.value
+  private val empty = ptr_match && !maybe_full
+  private val full = ptr_match && maybe_full
+  private val do_enq = Wire(init=io.enq.fire())
+  private val do_deq = Wire(init=io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -214,7 +214,7 @@ extends Module(override_reset=override_reset) {
     when (io.deq.ready) { io.enq.ready := true.B }
   }
 
-  val ptr_diff = enq_ptr.value - deq_ptr.value
+  private val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
     io.count := Cat(maybe_full && ptr_match, ptr_diff)
   } else {

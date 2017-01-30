@@ -38,8 +38,7 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
 import BuildInfo._
 
 trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
-  /**
-    * like 'firrtlToVerilog' except it runs the process inside the same JVM
+  /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
     *
     * @param prefix basename of the file
     * @param dir    directory where file lives
