@@ -68,8 +68,7 @@ site:
 # and we don't want code with those dependencies published.
 # We need to run the coverage tests last, since Jenkins will fail the build if it can't find their results.
 jenkins-build: clean
-	$(SBT) $(SBT_FLAGS) test
-	$(SBT) $(SBT_FLAGS) clean publish-local
+	$(SBT) $(SBT_FLAGS) +clean +test +publish-local
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
 
