@@ -6,7 +6,6 @@ import chisel3._
 import java.io._
 
 import firrtl.{Driver => _, _}
-import firrtl.util.BackendCompilationUtilities
 
 object TesterDriver extends BackendCompilationUtilities {
 
@@ -21,7 +20,7 @@ object TesterDriver extends BackendCompilationUtilities {
     // plus the quirks of Verilator's naming conventions
     val target = circuit.name
 
-    val path = createTempDirectory(target)
+    val path = createTestDirectory(target)
     val fname = new File(path, target)
 
     // For now, dump the IR out to a file

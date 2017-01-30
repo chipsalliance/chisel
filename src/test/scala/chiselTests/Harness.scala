@@ -56,7 +56,7 @@ void vl_finish(const char* filename, int linenum, const char* hier) {
     */
   def simpleHarnessBackend(make: File => File): (File, String) = {
     val target = "test"
-    val path = createTempDirectory(target)
+    val path = createTestDirectory(target)
     val fname = new File(path, target)
 
     val cppHarness = makeCppHarness(fname)
