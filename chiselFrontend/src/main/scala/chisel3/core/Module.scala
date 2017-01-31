@@ -113,7 +113,8 @@ extends HasId {
     Port(iodef)
   }
 
-  private[core] val _namespace = Builder.globalNamespace.child
+  // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
+  private[core] val _namespace = Namespace.empty
   private[chisel3] val _commands = ArrayBuffer[Command]()
   private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
@@ -210,7 +211,7 @@ extends HasId {
 
     // For Module instances we haven't named, suggest the name of the Module
     _ids foreach {
-      case m: Module => m.suggestName(m.name)
+      case m: Module => m.suggestName(m.desiredName)
       case _ =>
     }
 
