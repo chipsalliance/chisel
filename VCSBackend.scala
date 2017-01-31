@@ -3,9 +3,13 @@ package chisel3.iotesters
 
 import scala.collection.mutable.HashMap
 import scala.util.Random
-import java.io.{File, Writer, FileWriter, PrintStream, IOException}
+import java.io.{File, FileWriter, IOException, PrintStream, Writer}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+
+import chisel3.{ChiselExecutionFailure, ChiselExecutionSucccess}
+import firrtl.annotations.CircuitName
+import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDir}
 
 /**
   * Copies the necessary header files used for verilator compilation to the specified destination folder
@@ -115,35 +119,50 @@ object genVCSVerilogHarness {
 private[iotesters] object setupVCSBackend {
   def apply[T <: chisel3.Module](dutGen: () => T, optionsManager: TesterOptionsManager): (T, Backend) = {
     optionsManager.makeTargetDir()
+    optionsManager.chiselOptions = optionsManager.chiselOptions.copy(
+      runFirrtlCompiler = false
+    )
     val dir = new File(optionsManager.targetDirName)
 
-    val circuit = chisel3.Driver.elaborate(dutGen)
-    val dut = getTopModule(circuit).asInstanceOf[T]
-
     // Generate CHIRRTL
-    val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(dutGen))
+    chisel3.Driver.execute(optionsManager, dutGen) match {
+      case ChiselExecutionSucccess(Some(circuit), emitted, _) =>
 
-    // Generate Verilog
-    val verilogFile = new File(dir, s"${circuit.name}.v")
-    val verilogWriter = new FileWriter(verilogFile)
-    val annotations = firrtl.AnnotationMap(Seq(
-      firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name)))
-    (new firrtl.VerilogCompiler).compile(
-      firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
-      verilogWriter,
-      List(new firrtl.passes.memlib.InferReadWrite)
-    )
-    verilogWriter.close()
+        val chirrtl = firrtl.Parser.parse(emitted)
+        val dut = getTopModule(circuit).asInstanceOf[T]
+        val nodes = getChiselNodes(circuit)
+        val annotations = firrtl.AnnotationMap(optionsManager.firrtlOptions.annotations ++ List(
+          firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name),
+          firrtl.annotations.Annotation(
+            CircuitName(circuit.name),
+            classOf[BlackBoxSourceHelper],
+            BlackBoxTargetDir(optionsManager.targetDirName).serialize
+          )
+        ))
 
-    // Generate Harness
-    val vcsHarnessFileName = s"${circuit.name}-harness.v"
-    val vcsHarnessFile = new File(dir, vcsHarnessFileName)
-    val vpdFile = new File(dir, s"${circuit.name}.vpd")
-    copyVpiFiles(dir.toString)
-    genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
-    assert(verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).! == 0)
+        // Generate Verilog
+        val verilogFile = new File(dir, s"${circuit.name}.v")
+        val verilogWriter = new FileWriter(verilogFile)
+        val verilogCompiler = new firrtl.VerilogCompiler
+        verilogCompiler.compile(
+          firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
+          verilogWriter,
+          List(new firrtl.passes.memlib.InferReadWrite)
+        )
+        verilogWriter.close()
 
-    (dut, new VCSBackend(dut, Seq((new File(dir, circuit.name)).toString)))
+        // Generate Harness
+        val vcsHarnessFileName = s"${circuit.name}-harness.v"
+        val vcsHarnessFile = new File(dir, vcsHarnessFileName)
+        val vpdFile = new File(dir, s"${circuit.name}.vpd")
+        copyVpiFiles(dir.toString)
+        genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
+        assert(verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).! == 0)
+
+        (dut, new VCSBackend(dut, Seq((new File(dir, circuit.name)).toString)))
+      case ChiselExecutionFailure(message) =>
+        throw new Exception(message)
+    }
   }
 }
 

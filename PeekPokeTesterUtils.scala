@@ -2,9 +2,12 @@
 
 package chisel3.iotesters
 
-import chisel3.{Module, Data, Element, Bundle, Vec}
+import java.io.File
+
+import chisel3.{Bundle, Data, Element, Module, Vec}
 import chisel3.internal.InstanceId
 import chisel3.internal.firrtl.Circuit
+
 import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
@@ -86,6 +89,17 @@ private[iotesters] object verilogToVCS {
     vcsHarness: java.io.File
                 ): ProcessBuilder = {
     val ccFlags = Seq("-I$VCS_HOME/include", "-I$dir", "-fPIC", "-std=c++11")
+
+    val blackBoxVerilogList = {
+      val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.FileListName)
+      if(list_file.exists()) {
+        Seq("-f", list_file.getAbsolutePath)
+      }
+      else {
+        Seq.empty[String]
+      }
+    }
+
     val vcsFlags = Seq("-full64",
       "-quiet",
       "-timescale=1ns/1ps",
@@ -97,7 +111,9 @@ private[iotesters] object verilogToVCS {
       "+define+CLOCK_PERIOD=1",
       "-P", "vpi.tab",
       "-cpp", "g++", "-O2", "-LDFLAGS", "-lstdc++",
-      "-CFLAGS", "\"%s\"".format(ccFlags mkString " "))
+      "-CFLAGS", "\"%s\"".format(ccFlags mkString " ")) ++
+      blackBoxVerilogList
+
     val cmd = Seq("cd", dir.toString, "&&", "vcs") ++ vcsFlags ++ Seq(
       "-o", topModule, s"${topModule}.v", vcsHarness.toString, "vpi.cpp") mkString " "
     println(s"$cmd")
