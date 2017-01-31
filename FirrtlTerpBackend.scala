@@ -108,7 +108,7 @@ private[iotesters] object setupFirrtlTerpBackend {
       optionsManager: TesterOptionsManager = new TesterOptionsManager): (T, Backend) = {
 
     chisel3.Driver.execute(optionsManager, dutGen) match {
-      case ChiselExecutionSucccess(Some(circuit), firrtlText, Some(firrtlExecutionResult)) =>
+      case ChiselExecutionSuccess(Some(circuit), firrtlText, Some(firrtlExecutionResult)) =>
         val dut = getTopModule(circuit).asInstanceOf[T]
         (dut, new FirrtlTerpBackend(dut, chisel3.Driver.emit(dutGen), optionsManager = optionsManager))
       case _ =>
