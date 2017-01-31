@@ -12,6 +12,14 @@ module BlackBoxPassthrough(
   assign out = in;
 endmodule
 
+module BlackBoxMinus(
+    input  [15:0] in1,
+    input  [15:0] in2,
+    output [15:0] out
+);
+  assign out = in1 + in2;
+endmodule
+
 module BlackBoxRegister(
     input  [0:0] clock,
     input  [0:0] in,

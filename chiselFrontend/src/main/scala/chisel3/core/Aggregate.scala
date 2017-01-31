@@ -374,7 +374,10 @@ abstract class Record extends Aggregate {
 
   // NOTE: This sets up dependent references, it can be done before closing the Module
   private[chisel3] override def _onModuleClose: Unit = { // scalastyle:ignore method.name
-    val _namespace = Builder.globalNamespace.child
+    // Since Bundle names this via reflection, it is impossible for two elements to have the same
+    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
+    // which can cause collisions
+    val _namespace = Namespace.empty
     for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name)) }
   }
 

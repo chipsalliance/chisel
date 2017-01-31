@@ -25,8 +25,8 @@ class DriverSpec extends FreeSpec with Matchers {
     "execute returns a chisel execution result" in {
       val args = Array("--compiler", "low")
       val result = Driver.execute(Array.empty[String], () => new DummyModule)
-      result shouldBe a[ChiselExecutionSucccess]
-      val successResult = result.asInstanceOf[ChiselExecutionSucccess]
+      result shouldBe a[ChiselExecutionSuccess]
+      val successResult = result.asInstanceOf[ChiselExecutionSuccess]
       successResult.emitted should include ("circuit DummyModule")
     }
   }

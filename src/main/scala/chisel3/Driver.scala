@@ -60,9 +60,8 @@ trait BackendCompilationUtilities {
     vf
   }
 
-  /**
-    * like 'firrtlToVerilog' except it runs the process inside the same JVM
- *
+  /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
+    *
     * @param prefix basename of the file
     * @param dir    directory where file lives
     * @return       true if compiler completed successfully
@@ -79,13 +78,13 @@ trait BackendCompilationUtilities {
     }
   }
 
-  /**
-    * compule chirrtl to verilog by using a separate process
- *
+  /** Compile Chirrtl to Verilog by invoking Firrtl on the command line
+    *
     * @param prefix basename of the file
     * @param dir    directory where file lives
-    * @return       true if compiler completed successfully
+    * @return       external process that can invoke Firrtl
     */
+  @deprecated("Use compileFirrtlToVerilog instead", "chisel3")
   def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = {
     Process(
       Seq("firrtl",
@@ -114,10 +113,23 @@ trait BackendCompilationUtilities {
       vSources: Seq[File],
       cppHarness: File
                   ): ProcessBuilder = {
-    val command = Seq("verilator",
-      "--cc", s"$dutFile.v") ++
+    val blackBoxVerilogList = {
+      val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.FileListName)
+      if(list_file.exists()) {
+        Seq("-f", list_file.getAbsolutePath)
+      }
+      else {
+        Seq.empty[String]
+      }
+    }
+    val command = Seq(
+        "verilator",
+        "--cc", s"$dutFile.v"
+      ) ++
+      blackBoxVerilogList ++
       vSources.map(file => Seq("-v", file.toString)).flatten ++
-      Seq("--assert",
+      Seq(
+        "--assert",
         "-Wno-fatal",
         "-Wno-WIDTH",
         "-Wno-STMTDLY",
@@ -170,7 +182,7 @@ trait ChiselExecutionResult
   * @param emitted            The emitted Chirrrl text
   * @param firrtlResultOption Optional Firrtl result, @see ucb-bar/firrtl for details
   */
-case class ChiselExecutionSucccess(
+case class ChiselExecutionSuccess(
                                   circuitOption: Option[Circuit],
                                   emitted: String,
                                   firrtlResultOption: Option[FirrtlExecutionResult]
@@ -265,7 +277,7 @@ object Driver extends BackendCompilationUtilities {
     else {
       None
     }
-    ChiselExecutionSucccess(Some(circuit), firrtlString, firrtlExecutionResult)
+    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
   /**
