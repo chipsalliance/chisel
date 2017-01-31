@@ -37,7 +37,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       srcDir: String,
       customTransforms: Seq[Transform] = Seq.empty,
       annotations: AnnotationMap = new AnnotationMap(Seq.empty)): File = {
-    val testDir = createTempDirectory(prefix)
+    val testDir = createTestDirectory(prefix)
     copyResourceToFile(s"${srcDir}/${prefix}.fir", new File(testDir, s"${prefix}.fir"))
 
     Driver.compile(

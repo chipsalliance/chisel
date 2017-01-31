@@ -4,14 +4,25 @@ package firrtl.util
 
 import scala.sys.process._
 import java.io._
+import java.nio.file.Files
+import java.text.SimpleDateFormat
+import java.util.Calendar
 
 import firrtl._
 import firrtl.{Driver, ExecutionOptionsManager}
 
 import scala.sys.process.{ProcessBuilder, ProcessLogger}
-
-
+ 
 trait BackendCompilationUtilities {
+  /** Parent directory for tests */
+  lazy val TestDirectory = new File("test_run_dir")
+
+  def timeStamp: String = {
+    val format = new SimpleDateFormat("yyyyMMddHHmmss")
+    val now = Calendar.getInstance.getTime
+    format.format(now)
+  }
+
   /** Copy the contents of a resource to a destination file.
     */
   def copyResourceToFile(name: String, file: File) {
@@ -24,17 +35,15 @@ trait BackendCompilationUtilities {
     out.close()
   }
 
-  /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.
+  /** Create a test directory
+    *
+    * Will create outer directory called testName then inner directory based on
+    * the current time
     */
-  def createTempDirectory(prefix: String): File = {
-    val temp = File.createTempFile(prefix, "")
-    if (!temp.delete()) {
-      throw new IOException(s"Unable to delete temp file '$temp'")
-    }
-    if (!temp.mkdir()) {
-      throw new IOException(s"Unable to create temp directory '$temp'")
-    }
-    temp
+  def createTestDirectory(testName: String): File = {
+    val outer = new File(TestDirectory, testName)
+    outer.mkdirs()
+    Files.createTempDirectory(outer.toPath, timeStamp).toFile
   }
 
   def makeHarness(template: String => String, post: String)(f: File): File = {
@@ -86,7 +95,7 @@ trait BackendCompilationUtilities {
     val topModule = dutFile
     val command = Seq("verilator",
       "--cc", s"$dutFile.v") ++
-      vSources.map(file => Seq("-v", file.toString)).flatten ++
+      vSources.flatMap(file => Seq("-v", file.getAbsolutePath)) ++
       Seq("--assert",
         "-Wno-fatal",
         "-Wno-WIDTH",
@@ -99,8 +108,8 @@ trait BackendCompilationUtilities {
         s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
         s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
-        "-Mdir", dir.toString,
-        "--exe", cppHarness.toString)
+        "-Mdir", dir.getAbsolutePath,
+        "--exe", cppHarness.getAbsolutePath)
     System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
     command
   }

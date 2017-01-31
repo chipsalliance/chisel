@@ -38,6 +38,7 @@ spec/spec.toc
 spec/spec.out
 spec/spec.synctex.gz
 notes/*.docx
+test_run_dir
 
 .project
 
