@@ -8,7 +8,7 @@ import java.io.{File, FileWriter, IOException, PrintStream, Writer}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
-import chisel3.{ChiselExecutionFailure, ChiselExecutionSucccess, SInt}
+import chisel3.{ChiselExecutionFailure, ChiselExecutionSuccess, SInt}
 import chisel3.experimental.FixedPoint
 import firrtl.annotations.{Annotation, CircuitName}
 import firrtl.transforms.{BlackBoxResource, BlackBoxInline, BlackBoxSource, BlackBoxSourceHelper, BlackBoxTargetDir}
@@ -285,7 +285,7 @@ private[iotesters] object setupVerilatorBackend {
 
     // Generate CHIRRTL
     chisel3.Driver.execute(optionsManager, dutGen) match {
-      case ChiselExecutionSucccess(Some(circuit), emitted, _) =>
+      case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
 
         //      val circuit = chisel3.Driver.elaborate(dutGen)
         //      val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
@@ -367,12 +367,17 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
     val bigIntU = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
   
     def signConvert(bigInt: BigInt, width: Int): BigInt = {
-      if(bigInt.bitLength >= width) - ((BigInt(1) << width) - bigInt)
-      else bigInt
+      // Necessary b/c Verilator returns bigInts with whatever # of bits it feels like (?)
+      // Inconsistent with getWidth -- note also that since the bigInt is always unsigned,
+      // bitLength always gets the max # of bits required to represent bigInt
+      val w = bigInt.bitLength.max(width)
+      // Negative if MSB is set or in this case, ex: 3 bit wide: negative if >= 4
+      if (bigInt >= (BigInt(1) << (w - 1))) (bigInt - (BigInt(1) << w)) else bigInt
     }
 
     val result = signal match {
-      case s: SInt => signConvert(bigIntU, s.getWidth)
+      case s: SInt => 
+        signConvert(bigIntU, s.getWidth)
       case f: FixedPoint => signConvert(bigIntU, f.getWidth)
       case _ => bigIntU
     }

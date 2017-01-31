@@ -7,7 +7,7 @@ import java.io.{File, FileWriter, IOException, PrintStream, Writer}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
-import chisel3.{ChiselExecutionFailure, ChiselExecutionSucccess}
+import chisel3.{ChiselExecutionFailure, ChiselExecutionSuccess}
 import firrtl.annotations.CircuitName
 import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDir}
 
@@ -126,7 +126,7 @@ private[iotesters] object setupVCSBackend {
 
     // Generate CHIRRTL
     chisel3.Driver.execute(optionsManager, dutGen) match {
-      case ChiselExecutionSucccess(Some(circuit), emitted, _) =>
+      case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
 
         val chirrtl = firrtl.Parser.parse(emitted)
         val dut = getTopModule(circuit).asInstanceOf[T]
