@@ -113,10 +113,23 @@ trait BackendCompilationUtilities {
       vSources: Seq[File],
       cppHarness: File
                   ): ProcessBuilder = {
-    val command = Seq("verilator",
-      "--cc", s"$dutFile.v") ++
+    val blackBoxVerilogList = {
+      val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.FileListName)
+      if(list_file.exists()) {
+        Seq("-f", list_file.getAbsolutePath)
+      }
+      else {
+        Seq.empty[String]
+      }
+    }
+    val command = Seq(
+        "verilator",
+        "--cc", s"$dutFile.v"
+      ) ++
+      blackBoxVerilogList ++
       vSources.map(file => Seq("-v", file.toString)).flatten ++
-      Seq("--assert",
+      Seq(
+        "--assert",
         "-Wno-fatal",
         "-Wno-WIDTH",
         "-Wno-STMTDLY",
