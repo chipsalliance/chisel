@@ -5,11 +5,13 @@ package firrtl
 import scala.collection._
 import scala.io.Source
 import java.io.{File, FileNotFoundException}
+
 import net.jcazevedo.moultingyaml._
 import logger.Logger
-import Parser.{InfoMode, IgnoreInfo}
+import Parser.{IgnoreInfo, InfoMode}
 import annotations._
 import firrtl.annotations.AnnotationYamlProtocol._
+import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDir}
 
 
 /**
@@ -90,7 +92,20 @@ object Driver {
       val annotationFile = new File(annotationFileName)
       if (annotationFile.exists) {
         val annotationsYaml = io.Source.fromFile(annotationFile).getLines().mkString("\n").parseYaml
-        val annotationArray = annotationsYaml.convertTo[Array[Annotation]]
+        val annotationArray = {
+          val annos = annotationsYaml.convertTo[Array[Annotation]]
+
+          if (annos.nonEmpty) {
+            annos ++ List(Annotation(
+              CircuitName("All"),
+              classOf[BlackBoxSourceHelper],
+              BlackBoxTargetDir(optionsManager.targetDirName).serialize
+            ))
+          }
+          else {
+            annos
+          }
+        }
         optionsManager.firrtlOptions = firrtlConfig.copy(annotations = firrtlConfig.annotations ++ annotationArray)
       }
     }

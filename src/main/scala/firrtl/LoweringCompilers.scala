@@ -110,6 +110,7 @@ class LowFirrtlOptimization extends CoreTransform {
 
 
 import CompilerUtils.getLoweringTransforms
+import firrtl.transforms.BlackBoxSourceHelper
 
 /** Emits input circuit
   * Will replace Chirrtl constructs with Firrtl
@@ -135,5 +136,5 @@ class LowFirrtlCompiler extends Compiler {
 class VerilogCompiler extends Compiler {
   def emitter = new VerilogEmitter
   def transforms: Seq[Transform] =
-    getLoweringTransforms(ChirrtlForm, LowForm) :+ (new LowFirrtlOptimization)
+    getLoweringTransforms(ChirrtlForm, LowForm) ++ Seq(new LowFirrtlOptimization, new BlackBoxSourceHelper)
 }

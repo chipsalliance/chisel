@@ -136,7 +136,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     copyResourceToFile("/annotations/SampleAnnotations.anno", annotationsTestFile)
     optionsManager.firrtlOptions.annotations.length should be (0)
     Driver.loadAnnotations(optionsManager)
-    optionsManager.firrtlOptions.annotations.length should be (9)
+    optionsManager.firrtlOptions.annotations.length should be (10) // 9 from circuit plus 1 for targetDir
 
     optionsManager.firrtlOptions.annotations.head.transformClass should be ("firrtl.passes.InlineInstances")
     annotationsTestFile.delete()
