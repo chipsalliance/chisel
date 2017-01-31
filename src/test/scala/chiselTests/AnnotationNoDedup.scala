@@ -51,7 +51,7 @@ class AnnotationNoDedup extends FreeSpec with Matchers {
   "Firrtl provides transform that reduces identical modules to a single instance" - {
     "Annotations can be added which will defeat this deduplication for specific modules instances" in {
       Driver.execute(Array("-X", "low"), () => new UsesMuchUsedModule(addAnnos = true)) match {
-        case ChiselExecutionSucccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
+        case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
           val lowFirrtl = firrtlResult.emitted
 
           lowFirrtl should include ("module MuchUsedModule :")
@@ -64,7 +64,7 @@ class AnnotationNoDedup extends FreeSpec with Matchers {
     }
     "Turning off these nnotations dedup all the occurrences" in {
       Driver.execute(Array("-X", "low"), () => new UsesMuchUsedModule(addAnnos = false)) match {
-        case ChiselExecutionSucccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
+        case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
           val lowFirrtl = firrtlResult.emitted
 
           lowFirrtl should include ("module MuchUsedModule :")
