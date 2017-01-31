@@ -60,9 +60,8 @@ trait BackendCompilationUtilities {
     vf
   }
 
-  /**
-    * like 'firrtlToVerilog' except it runs the process inside the same JVM
- *
+  /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
+    *
     * @param prefix basename of the file
     * @param dir    directory where file lives
     * @return       true if compiler completed successfully
@@ -79,13 +78,13 @@ trait BackendCompilationUtilities {
     }
   }
 
-  /**
-    * compule chirrtl to verilog by using a separate process
- *
+  /** Compile Chirrtl to Verilog by invoking Firrtl on the command line
+    *
     * @param prefix basename of the file
     * @param dir    directory where file lives
-    * @return       true if compiler completed successfully
+    * @return       external process that can invoke Firrtl
     */
+  @deprecated("Use compileFirrtlToVerilog instead", "chisel3")
   def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = {
     Process(
       Seq("firrtl",
@@ -269,8 +268,8 @@ object Driver extends BackendCompilationUtilities {
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
       firrtlSource = Some(firrtlString),
-      annotations = circuit.annotations.toList,
-      customTransforms = transforms.toList)
+      annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList,
+      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))
