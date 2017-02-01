@@ -54,7 +54,7 @@ private[iotesters] class FirrtlTerpBackend(
         val got = interpretiveTester.peek(name)
         val good = got == expected
         if (verbose || !good) logger println
-           s"""EXPECT AT $stepNumber $msg  $name -> ${bigIntToStr(got, base)} == ${bigIntToStr(expected, base)}""" +
+           s"""EXPECT AT $stepNumber $msg  $name got ${bigIntToStr(got, base)} expected ${bigIntToStr(expected, base)}""" +
            s""" ${if (good) "PASS" else "FAIL"}"""
         if(good) interpretiveTester.expectationsMet += 1
         good

@@ -431,7 +431,7 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
     val got = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
     val good = got == expected
     if (verbose) logger println (
-      s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, base)} == """ +
+      s"""${msg}  EXPECT ${path} got ${bigIntToStr(got, base)} expected""" +
         s"""${bigIntToStr(expected, base)} ${if (good) "PASS" else "FAIL"}""")
     good
   }
