@@ -59,8 +59,8 @@ class AnnotationTests extends AnnotationSpec with Matchers {
   }
 
   "Annotations" should "be readable from file" in {
-    val annotationFile = new File("src/test/resources/annotations/SampleAnnotations.anno")
-    val annotationsYaml = io.Source.fromFile(annotationFile).getLines().mkString("\n").parseYaml
+    val annotationStream = getClass.getResourceAsStream("/annotations/SampleAnnotations.anno")
+    val annotationsYaml = scala.io.Source.fromInputStream(annotationStream).getLines().mkString("\n").parseYaml
     val annotationArray = annotationsYaml.convertTo[Array[Annotation]]
     annotationArray.length should be (9)
     annotationArray(0).targetString should be ("ModC")
