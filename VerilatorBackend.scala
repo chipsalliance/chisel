@@ -327,10 +327,9 @@ private[iotesters] object setupVerilatorBackend {
         assert(
           chisel3.Driver.verilogToCpp(
             circuit.name,
-            circuit.name,
             dir,
             vSources = Seq(),
-            new File(cppHarnessFileName)
+            cppHarnessFile
           ).! == 0
         )
         assert(chisel3.Driver.cppToExe(circuit.name, dir).! == 0)

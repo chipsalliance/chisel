@@ -72,7 +72,7 @@ object chiselMain {
         // Copy API files
         copyVerilatorHeaderFiles(context.targetDir.toString)
         // Generate Verilator
-        assert(chisel3.Driver.verilogToCpp(dutName, dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).! == 0)
+        assert(chisel3.Driver.verilogToCpp(dutName, dir, Seq(), new File(s"$dutName-harness.cpp")).! == 0)
         // Compile Verilator
         assert(chisel3.Driver.cppToExe(dutName, dir).! == 0)
       case "vcs" | "glsim" =>
