@@ -9,7 +9,7 @@ import chisel3._
 import core._
 import firrtl._
 
-private[chisel3] class Namespace(parent: Option[Namespace], keywords: Set[String]) {
+private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
   for (keyword <- keywords)
     names(keyword) = 1
@@ -29,9 +29,7 @@ private[chisel3] class Namespace(parent: Option[Namespace], keywords: Set[String
     if (res.isEmpty || !legalStart(res.head)) s"_$res" else res
   }
 
-  def contains(elem: String): Boolean = {
-    names.contains(elem) || parent.map(_ contains elem).getOrElse(false)
-  }
+  def contains(elem: String): Boolean = names.contains(elem)
 
   def name(elem: String): String = {
     val sanitized = sanitize(elem)
@@ -42,9 +40,11 @@ private[chisel3] class Namespace(parent: Option[Namespace], keywords: Set[String
       sanitized
     }
   }
+}
 
-  def child(kws: Set[String]): Namespace = new Namespace(Some(this), kws)
-  def child: Namespace = child(Set())
+private[chisel3] object Namespace {
+  /** Constructs an empty Namespace */
+  def empty: Namespace = new Namespace(Set.empty[String])
 }
 
 private[chisel3] class IdGen {
@@ -143,7 +143,7 @@ private[chisel3] trait HasId extends InstanceId {
 
 private[chisel3] class DynamicContext() {
   val idGen = new IdGen
-  val globalNamespace = new Namespace(None, Set())
+  val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[Module] = None

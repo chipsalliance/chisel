@@ -68,7 +68,7 @@ trait ChiselExecutionResult
   * @param emitted            The emitted Chirrrl text
   * @param firrtlResultOption Optional Firrtl result, @see ucb-bar/firrtl for details
   */
-case class ChiselExecutionSucccess(
+case class ChiselExecutionSuccess(
                                   circuitOption: Option[Circuit],
                                   emitted: String,
                                   firrtlResultOption: Option[FirrtlExecutionResult]
@@ -163,7 +163,7 @@ object Driver extends BackendCompilationUtilities {
     else {
       None
     }
-    ChiselExecutionSucccess(Some(circuit), firrtlString, firrtlExecutionResult)
+    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
   /**
