@@ -19,7 +19,7 @@ case class TesterOptions(
                           isVerbose:       Boolean = false,
                           displayBase:     Int     = 10,
                           testerSeed:      Long    = System.currentTimeMillis,
-                          testCmd:         mutable.ArrayBuffer[String]= mutable.ArrayBuffer[String](),
+                          testCmd:         Seq[String] = Seq.empty,
                           backendName:     String  = "firrtl",
                           logFileName:     String  = "",
                           waveform:        Option[File] = None) extends ComposableOptions
@@ -65,10 +65,10 @@ trait HasTesterOptions {
     .foreach { x => testerOptions = testerOptions.copy(displayBase = x) }
     .text(s"provides a seed for random number generator, default is ${testerOptions.displayBase}")
 
-  parser.opt[Seq[String]]("test-command")
+  parser.opt[String]("test-command")
     .abbr("ttc")
-    .foreach { x => testerOptions = testerOptions.copy(testCmd = testerOptions.testCmd ++ x) }
-    .text("run this as test command")
+    .foreach { x => testerOptions = testerOptions.copy(testCmd = x.split("""\s""")) }
+    .text("Change the command run as the backend. Quote this if it contains spaces")
 
   parser.opt[String]("log-file-name")
     .abbr("tlfn")

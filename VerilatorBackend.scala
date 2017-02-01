@@ -335,7 +335,13 @@ private[iotesters] object setupVerilatorBackend {
         )
         assert(chisel3.Driver.cppToExe(circuit.name, dir).! == 0)
 
-        (dut, new VerilatorBackend(dut, Seq((new File(dir, s"V${circuit.name}")).toString)))
+        val command = if(optionsManager.testerOptions.testCmd.nonEmpty) {
+          optionsManager.testerOptions.testCmd
+        } else {
+          Seq((new File(dir, s"V${circuit.name}")).toString)
+        }
+
+        (dut, new VerilatorBackend(dut, command))
       case ChiselExecutionFailure(message) =>
         throw new Exception(message)
     }
@@ -376,7 +382,7 @@ private[iotesters] class VerilatorBackend(dut: Chisel.Module,
     }
 
     val result = signal match {
-      case s: SInt => 
+      case s: SInt =>
         signConvert(bigIntU, s.getWidth)
       case f: FixedPoint => signConvert(bigIntU, f.getWidth)
       case _ => bigIntU
