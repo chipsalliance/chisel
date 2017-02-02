@@ -116,9 +116,11 @@ class BlackBoxSourceHelper extends firrtl.Transform {
         }
         state
     }
-    val writer = new PrintWriter(new File(targetDir, BlackBoxSourceHelper.FileListName))
-    writer.write(fileList.map { fileName => s"-v $fileName" }.mkString("\n"))
-    writer.close()
+    if(fileList.nonEmpty) {
+      val writer = new PrintWriter(new File(targetDir, BlackBoxSourceHelper.FileListName))
+      writer.write(fileList.map { fileName => s"-v $fileName" }.mkString("\n"))
+      writer.close()
+    }
 
     resultState
   }

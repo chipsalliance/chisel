@@ -2,16 +2,12 @@
 
 package firrtl.util
 
-import scala.sys.process._
 import java.io._
 import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
-import firrtl._
-import firrtl.{Driver, ExecutionOptionsManager}
-
-import scala.sys.process.{ProcessBuilder, ProcessLogger}
+import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
  
 trait BackendCompilationUtilities {
   /** Parent directory for tests */
@@ -93,8 +89,22 @@ trait BackendCompilationUtilities {
                     cppHarness: File
                   ): ProcessBuilder = {
     val topModule = dutFile
-    val command = Seq("verilator",
-      "--cc", s"$dutFile.v") ++
+
+    val blackBoxVerilogList = {
+      val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.FileListName)
+      if(list_file.exists()) {
+        Seq("-f", list_file.getAbsolutePath)
+      }
+      else {
+        Seq.empty[String]
+      }
+    }
+
+    val command = Seq(
+      "verilator",
+      "--cc", s"$dutFile.v"
+    ) ++
+      blackBoxVerilogList ++
       vSources.flatMap(file => Seq("-v", file.getAbsolutePath)) ++
       Seq("--assert",
         "-Wno-fatal",
@@ -115,7 +125,7 @@ trait BackendCompilationUtilities {
   }
 
   def cppToExe(prefix: String, dir: File): ProcessBuilder =
-    Seq("make", "-C", dir.toString, "-j", "-f", s"V${prefix}.mk", s"V${prefix}")
+    Seq("make", "-C", dir.toString, "-j", "-f", s"V$prefix.mk", s"V$prefix")
 
   def executeExpectingFailure(
                                prefix: String,
@@ -123,7 +133,7 @@ trait BackendCompilationUtilities {
                                assertionMsg: String = ""): Boolean = {
     var triggered = false
     val assertionMessageSupplied = assertionMsg != ""
-    val e = Process(s"./V${prefix}", dir) !
+    val e = Process(s"./V$prefix", dir) !
       ProcessLogger(line => {
         triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
         System.out.println(line) // scalastyle:ignore regex

@@ -67,6 +67,7 @@ object Driver {
     *
     * @param message error message
     */
+  //scalastyle:off regex
   def dramaticError(message: String): Unit = {
     println(Console.RED + "-"*78)
     println(s"Error: $message")
@@ -86,28 +87,27 @@ object Driver {
      The annotation file if needed is found via
      s"$targetDirName/$topName.anno" or s"$annotationFileNameOverride.anno"
     */
-    val firrtlConfig = optionsManager.firrtlOptions
+    def firrtlConfig = optionsManager.firrtlOptions
+
     if(firrtlConfig.annotations.isEmpty) {
       val annotationFileName = firrtlConfig.getAnnotationFileName(optionsManager)
       val annotationFile = new File(annotationFileName)
       if (annotationFile.exists) {
         val annotationsYaml = io.Source.fromFile(annotationFile).getLines().mkString("\n").parseYaml
-        val annotationArray = {
-          val annos = annotationsYaml.convertTo[Array[Annotation]]
-
-          if (annos.nonEmpty) {
-            annos ++ List(Annotation(
-              CircuitName("All"),
-              classOf[BlackBoxSourceHelper],
-              BlackBoxTargetDir(optionsManager.targetDirName).serialize
-            ))
-          }
-          else {
-            annos
-          }
-        }
+        val annotationArray = annotationsYaml.convertTo[Array[Annotation]]
         optionsManager.firrtlOptions = firrtlConfig.copy(annotations = firrtlConfig.annotations ++ annotationArray)
       }
+    }
+
+    if(firrtlConfig.annotations.nonEmpty) {
+      val targetDirAnno = List(Annotation(
+        CircuitName("All"),
+        classOf[BlackBoxSourceHelper],
+        BlackBoxTargetDir(optionsManager.targetDirName).serialize
+      ))
+
+      optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+        annotations = firrtlConfig.annotations ++ targetDirAnno)
     }
   }
 
@@ -119,7 +119,7 @@ object Driver {
     *         for downstream tools as desired
     */
   def execute(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): FirrtlExecutionResult = {
-    val firrtlConfig = optionsManager.firrtlOptions
+    def firrtlConfig = optionsManager.firrtlOptions
 
     Logger.setOptions(optionsManager)
 
@@ -229,19 +229,32 @@ object FileUtils {
     *
     * @param directoryPathName a directory hierarchy to delete
     */
-  def deleteDirectoryHierarchy(directoryPathName: String): Unit = {
-    if(directoryPathName.isEmpty || directoryPathName.startsWith("/")) {
-      // don't delete absolute path
+  def deleteDirectoryHierarchy(directoryPathName: String): Boolean = {
+    deleteDirectoryHierarchy(new File(directoryPathName))
+  }
+  /**
+    * recursively delete all directories in a relative path
+    * DO NOT DELETE absolute paths
+    *
+    * @param file: a directory hierarchy to delete
+    */
+  def deleteDirectoryHierarchy(file: File, atTop: Boolean = true): Boolean = {
+    if(file.getPath.split("/").last.isEmpty ||
+      file.getAbsolutePath == "/" ||
+      file.getPath.startsWith("/")) {
+      Driver.dramaticError(s"delete directory ${file.getPath} will not delete absolute paths")
+      false
     }
     else {
-      val directory = new java.io.File(directoryPathName)
-      if(directory.isDirectory) {
-        directory.delete()
-        val directories = directoryPathName.split("/+").reverse.tail
-        if (directories.nonEmpty) {
-          deleteDirectoryHierarchy(directories.reverse.mkString("/"))
+      val result = {
+        if(file.isDirectory) {
+          file.listFiles().forall( f => deleteDirectoryHierarchy(f)) && file.delete()
+        }
+        else {
+          file.delete()
         }
       }
+      result
     }
   }
 }

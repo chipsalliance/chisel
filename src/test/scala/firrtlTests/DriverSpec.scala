@@ -49,7 +49,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
         optionsManager.makeTargetDir() should be (true)
         dir = new java.io.File("a/b/c")
         dir.exists() should be (true)
-        FileUtils.deleteDirectoryHierarchy(commonOptions.targetDirName)
+        FileUtils.deleteDirectoryHierarchy("a") should be (true)
       }
     }
   }
@@ -171,6 +171,19 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
         file.exists() should be (true)
         file.delete()
       }
+    }
+  }
+
+  "Directory deleter is handy for cleaning up after tests" - {
+    "for example making a directory tree, and deleting it looks like" in {
+      FileUtils.makeDirectory("dog/fox/wolf")
+      val dir = new File("dog/fox/wolf")
+      dir.exists() should be (true)
+      dir.isDirectory should be (true)
+
+      FileUtils.deleteDirectoryHierarchy("wolf") should be (false)
+      FileUtils.deleteDirectoryHierarchy("dog") should be (true)
+      dir.exists() should be (false)
     }
   }
 }
