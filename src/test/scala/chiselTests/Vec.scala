@@ -40,7 +40,7 @@ class LitTester(w: Int, values: List[Int] ) extends BasicTester {
 }
 
 class RegTester(w: Int, values: List[Int] ) extends BasicTester {
-  val v = Vec(values.map(UInt(_, w.W)))
+  val v = Vec(values.map(_.U(w.W)))
   val dut = Module( new RegTesterMod( values.length ) )
   val doneReg = RegInit( false.B )
   dut.io.in := v
