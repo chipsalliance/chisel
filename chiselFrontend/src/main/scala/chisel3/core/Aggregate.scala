@@ -137,7 +137,7 @@ object Vec {
   def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
 
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    do_apply(n, gen)
+    apply(Seq.fill(n)(gen))
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
   private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo): UInt = {
