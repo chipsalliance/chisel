@@ -345,20 +345,10 @@ package object Chisel {     // scalastyle:ignore package.object.name
     * non-experimental, you must explicitly import this package to use its contents.
     */
   object experimental {
-    import scala.annotation.StaticAnnotation
     import scala.annotation.compileTimeOnly
 
-    @compileTimeOnly("enable macro paradise to expand macro annotations")
-    class dump extends StaticAnnotation {
-      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
-    }
-    @compileTimeOnly("enable macro paradise to expand macro annotations")
-    class treedump extends StaticAnnotation {
-      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
-    }
-    @compileTimeOnly("enable macro paradise to expand macro annotations")
-    class chiselName extends StaticAnnotation {
-      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
-    }
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
   }
 }
