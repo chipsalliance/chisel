@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 
 /* ### How do I create a finite state machine?
-
+ *
  * Use Chisel Enum to construct the states and switch & is to construct the FSM
  * control logic
  */
