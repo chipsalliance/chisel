@@ -9,7 +9,7 @@ import chisel3._
  * Use the builtin function [[chisel3.core.Bits.toBools]] to create a Scala Seq of Bool,
  * then wrap the resulting Seq in Vec(...)
  */
-class UInt2VecOfBool extends CookbookTester(0) {
+class UInt2VecOfBool extends CookbookTester(1) {
   // Example
   val uint = 0xc.U
   val vec = Vec(uint.toBools)

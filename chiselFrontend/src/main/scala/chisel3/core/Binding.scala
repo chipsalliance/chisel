@@ -155,7 +155,9 @@ object Binding {
             //  we know the wrapper is missing, whether or not the element is a member of io.
             //  But if it's not an io element, we want to issue the complementary "unbound" error.
             //  Revisit this when we collect error messages instead of throwing exceptions.
-            x.io.flatten.contains(element)
+            // The null test below is due to the fact that we may be evaluating the arguments
+            //  of the IO() wrapper itself.
+            (x.io != null) && x.io.flatten.contains(element)
           }
         }
       }
