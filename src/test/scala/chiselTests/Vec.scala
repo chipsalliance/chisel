@@ -8,14 +8,14 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
 
-class LitTesterMod(vecSize : Int) extends Module {
+class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
     val out = Output(Vec(vecSize, UInt()))
   })
   io.out := Vec(vecSize, 0.U)
 }
 
-class RegTesterMod(vecSize : Int) extends Module {
+class RegTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(Vec(vecSize, UInt()))
     val out = Output(Vec(vecSize, UInt()))
@@ -24,7 +24,7 @@ class RegTesterMod(vecSize : Int) extends Module {
   io.out := vecReg
 }
 
-class IOTesterMod(vecSize : Int) extends Module {
+class IOTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(Vec(vecSize, UInt()))
     val out = Output(Vec(vecSize, UInt()))
@@ -65,12 +65,12 @@ class IOTester(w: Int, values: List[Int]) extends BasicTester {
   stop()
 }
 
-class IOTesterModFill(vecSize : Int) extends Module {
+class IOTesterModFill(vecSize: Int) extends Module {
   // This should generate a BindingException when we attempt to wire up the Vec.fill elements
   //  since they're pure types and hence unsynthesizeable.
   val io = IO(new Bundle {
-    val in = Input(Vec.fill(vecSize) {UInt() })
-    val out = Output(Vec.fill(vecSize) { UInt() })
+    val in = Input(Vec.fill(vecSize) {UInt()})
+    val out = Output(Vec.fill(vecSize) {UInt()})
   })
   io.out := io.in
 }
