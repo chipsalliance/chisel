@@ -46,8 +46,11 @@ object Vec {
   def apply[T <: Data](n: Int, gen: T): Vec[T] = macro VecTransform.apply_ngen;
 
   def do_apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    if ( gen.isLit ) Vec( Seq.fill(n)(gen) )
-    else new Vec(gen.chiselCloneType, n)
+    if ( gen.isLit ) {
+      Vec(Seq.fill(n)(gen))
+    } else {
+      new Vec(gen.chiselCloneType, n)
+    }
   }
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")

@@ -8,56 +8,56 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
 
-class LitTesterMod( vecSize : Int ) extends Module {
+class LitTesterMod(vecSize : Int) extends Module {
   val io = IO(new Bundle {
-    val out = Output(Vec( vecSize, UInt() ))
+    val out = Output(Vec(vecSize, UInt()))
   })
-  io.out := Vec( vecSize, 0.U )
+  io.out := Vec(vecSize, 0.U)
 }
 
-class RegTesterMod( vecSize : Int ) extends Module {
+class RegTesterMod(vecSize : Int) extends Module {
   val io = IO(new Bundle {
-    val in = Input(Vec( vecSize, UInt() ))
-    val out = Output(Vec( vecSize, UInt() ))
+    val in = Input(Vec(vecSize, UInt()))
+    val out = Output(Vec(vecSize, UInt()))
   })
-  val vecReg = Reg( init = Vec( vecSize, 0.U ), next = io.in )
+  val vecReg = Reg(init = Vec(vecSize, 0.U), next = io.in)
   io.out := vecReg
 }
 
-class IOTesterMod( vecSize : Int ) extends Module {
+class IOTesterMod(vecSize : Int) extends Module {
   val io = IO(new Bundle {
-    val in = Input(Vec( vecSize, UInt() ))
-    val out = Output(Vec( vecSize, UInt() ))
+    val in = Input(Vec(vecSize, UInt()))
+    val out = Output(Vec(vecSize, UInt()))
   })
   io.out := io.in
 }
 
-class LitTester(w: Int, values: List[Int] ) extends BasicTester {
-  val dut = Module( new LitTesterMod( values.length ) )
-  for ( a <- dut.io.out)
+class LitTester(w: Int, values: List[Int]) extends BasicTester {
+  val dut = Module(new LitTesterMod(values.length))
+  for (a <- dut.io.out)
     assert(a === 0.U)
   stop()
 }
 
-class RegTester(w: Int, values: List[Int] ) extends BasicTester {
+class RegTester(w: Int, values: List[Int]) extends BasicTester {
   val v = Vec(values.map(_.U(w.W)))
-  val dut = Module( new RegTesterMod( values.length ) )
-  val doneReg = RegInit( false.B )
+  val dut = Module(new RegTesterMod(values.length))
+  val doneReg = RegInit(false.B)
   dut.io.in := v
-  when ( doneReg ) {
+  when (doneReg) {
     for ((a,b) <- dut.io.out.zip(values))
       assert(a === b.U)
     stop()
   } .otherwise {
     doneReg := true.B
-    for ( a <- dut.io.out)
+    for (a <- dut.io.out)
       assert(a === 0.U)
   }
 }
 
-class IOTester(w: Int, values: List[Int] ) extends BasicTester {
+class IOTester(w: Int, values: List[Int]) extends BasicTester {
   val v = Vec(values.map(_.U(w.W))) // Does this need a Wire? No. It's a Vec of Lits and hence synthesizeable.
-  val dut = Module( new IOTesterMod( values.length ) )
+  val dut = Module(new IOTesterMod(values.length))
   dut.io.in := v
   for ((a,b) <- dut.io.out.zip(values)) {
     assert(a === b.U)
@@ -65,12 +65,12 @@ class IOTester(w: Int, values: List[Int] ) extends BasicTester {
   stop()
 }
 
-class IOTesterModFill( vecSize : Int ) extends Module {
+class IOTesterModFill(vecSize : Int) extends Module {
   // This should generate a BindingException when we attempt to wire up the Vec.fill elements
   //  since they're pure types and hence unsynthesizeable.
   val io = IO(new Bundle {
-    val in = Input(Vec.fill( vecSize ) {UInt() })
-    val out = Output(Vec.fill( vecSize ) { UInt() })
+    val in = Input(Vec.fill(vecSize) {UInt() })
+    val out = Output(Vec.fill(vecSize) { UInt() })
   })
   io.out := io.in
 }
