@@ -93,6 +93,12 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   def contains(x: c.Tree)(ev: c.Tree): c.Tree = {
     q"$thisObj.do_contains($x)($implicitSourceInfo, $ev)"
   }
+  def reduceTree(redOp: c.Tree, layerOp: c.Tree): c.Tree = {
+    q"$thisObj.do_reduceTree($redOp,$layerOp)($implicitSourceInfo)"
+  }
+  def reduceTreeDefault(redOp: c.Tree ): c.Tree = {
+    q"$thisObj.do_reduceTree($redOp)($implicitSourceInfo)"
+  }
 }
 
 /** "Automatic" source information transform / insertion macros, which generate the function name
