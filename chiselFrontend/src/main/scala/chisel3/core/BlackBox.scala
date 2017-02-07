@@ -6,8 +6,6 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.throwException
 import chisel3.internal.sourceinfo.SourceInfo
-// TODO: remove this once we have CompileOptions threaded through the macro system.
-import chisel3.core.ExplicitCompileOptions.NotStrict
 
 /** Parameters for BlackBoxes */
 sealed abstract class Param
