@@ -18,13 +18,16 @@ object InferWidths extends Pass {
   def solve_constraints(l: Seq[WGeq]): ConstraintMap = {
     def unique(ls: Seq[Width]) : Seq[Width] =
       (ls map (new WrappedWidth(_))).distinct map (_.w)
+    // Combines constraints on the same VarWidth into the same constraint
     def make_unique(ls: Seq[WGeq]): ListMap[String,Width] = {
-      (ls foldLeft ListMap[String, Width]())((h, g) => g.loc match {
-        case w: VarWidth => h get w.name match {
-          case None => h + (w.name -> g.exp)
-          case Some(p) => h + (w.name -> MaxWidth(Seq(g.exp, p)))
+      ls.foldLeft(ListMap.empty[String, Width])((acc, wgeq) => wgeq.loc match {
+        case VarWidth(name) => acc.get(name) match {
+          case None => acc + (name -> wgeq.exp)
+          // Avoid constructing massive MaxWidth chains
+          case Some(MaxWidth(args)) => acc + (name -> MaxWidth(wgeq.exp +: args))
+          case Some(width) => acc + (name -> MaxWidth(Seq(wgeq.exp, width)))
         }
-        case _ => h
+        case _ => acc
       })
     }
     def pullMinMax(w: Width): Width = w map pullMinMax match {
