@@ -917,7 +917,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
   def do_=== (that: FixedPoint)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
 
   def do_abs(implicit sourceInfo: SourceInfo): FixedPoint = {
-    Mux(this < FixedPoint.fromBigInt(0), (FixedPoint.fromBigInt(0)-this), this)
+    Mux(this < 0.F(0), 0.F(0) - this, this)
   }
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): FixedPoint =

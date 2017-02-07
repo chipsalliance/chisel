@@ -23,8 +23,6 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
 class FixedPointFromBitsTester extends BasicTester {
   val uint = 3.U(4.W)
   val sint = -3.S
-  val sintpos = 3.S
-  val wrongSIntPos = 4.S
 
   val fp   = FixedPoint.fromDouble(3.0, width = 4, binaryPoint = 0)
   val fp_tpe = FixedPoint(4.W, 1.BP)
@@ -43,9 +41,7 @@ class FixedPointFromBitsTester extends BasicTester {
   assert(sint2fp === sint_result)
   assert(fp2fp   === fp_result)
 
-  assert(uint.abs() === uint)
-  assert(sint.abs() === sintpos)
-  assert(sint.abs() =/= wrongSIntPos)
+  assert(positivefp.abs() === positivefp)
   assert(negativefp.abs() === positivefp)
   assert(negativefp.abs() =/= negativefp)
 
