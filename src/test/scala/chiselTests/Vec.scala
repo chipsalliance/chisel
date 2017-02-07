@@ -109,6 +109,16 @@ class ShiftRegisterTester(n: Int) extends BasicTester {
   }
 }
 
+class HugeVecTester(n: Int) extends BasicTester {
+  require(n > 0)
+  val myVec = Wire(Vec(n, UInt()))
+  myVec.foreach { x =>
+    x := 123.U
+    assert(x === 123.U)
+  }
+  stop()
+}
+
 class VecSpec extends ChiselPropSpec {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
@@ -153,5 +163,9 @@ class VecSpec extends ChiselPropSpec {
 
   property("Regs of vecs should be usable as shift registers") {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new ShiftRegisterTester(n) } }
+  }
+
+  property("Infering widths on huge Vecs should not cause a stack overflow") {
+    assertTesterPasses { new HugeVecTester(10000) }
   }
 }
