@@ -15,7 +15,7 @@ object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: Int): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo)
 
-  /** Creates a combinational-read, sequential-write [[Mem]].
+  /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
@@ -100,7 +100,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   }
 }
 
-/** A combinational-read, sequential-write memory.
+/** A combinational/asynchronous-read, sequential/synchronous-write memory.
   *
   * Writes take effect on the rising clock edge after the request. Reads are
   * combinational (requests will return data on the same cycle).
@@ -111,29 +111,29 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   */
 sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
 
-object SeqMem {
-  @deprecated("SeqMem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: Int): SeqMem[T] = do_apply(size, t)(DeprecatedSourceInfo)
+object SyncReadMem {
+  @deprecated("SeqMem/SyncReadMem argument order should be size, t; this will be removed by the official release", "chisel3")
+  def apply[T <: Data](t: T, size: Int): SyncReadMem[T] = do_apply(size, t)(DeprecatedSourceInfo)
 
-  /** Creates a sequential-read, sequential-write [[SeqMem]].
+  /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
-  def apply[T <: Data](size: Int, t: T): SeqMem[T] = macro MemTransform.apply[T]
+  def apply[T <: Data](size: Int, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
 
-  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): SeqMem[T] = {
+  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo): SyncReadMem[T] = {
     val mt  = t.chiselCloneType
     Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
     // TODO(twigg): Remove need for this Binding
 
-    val mem = new SeqMem(mt, size)
+    val mem = new SyncReadMem(mt, size)
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size)) // TODO multi-clock
     mem
   }
 }
 
-/** A sequential-read, sequential-write memory.
+/** A sequential/synchronous-read, sequential/synchronous-write memory.
   *
   * Writes take effect on the rising clock edge after the request. Reads return
   * data on the rising edge after the request. Read-after-write behavior (when
@@ -143,7 +143,7 @@ object SeqMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SeqMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
+sealed class SyncReadMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
   def read(addr: UInt, enable: Bool): T = {
     implicit val sourceInfo = UnlocatableSourceInfo
     val a = Wire(UInt())

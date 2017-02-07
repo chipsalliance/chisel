@@ -143,8 +143,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SeqMem
-  type SeqMem[T <: Data] = chisel3.core.SeqMem[T]
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  val SeqMem = chisel3.core.SyncReadMem
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
+  val SyncReadMem = chisel3.core.SyncReadMem
+  type SyncReadMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   val Module = chisel3.core.Module
   type Module = chisel3.core.Module
