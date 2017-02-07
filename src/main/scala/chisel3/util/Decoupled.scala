@@ -10,9 +10,10 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
-  * The base protocol implied by the directionality is that the consumer
-  * uses the flipped interface. Actual semantics of ready/valid are
-  * enforced via use of concrete subclasses.
+  * The base protocol implied by the directionality is that the producer uses
+  * the interface as-is (outputs bits) while the consumer
+  * uses the flipped interface (inputs bits).
+  * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
@@ -47,7 +48,6 @@ object ReadyValidIO {
 
     /** Assert ready on this port and return the associated data bits.
       * This is typically used when valid has been asserted by the producer side.
-      * @param b ignored
       * @return the data for this device,
       */
     def deq(): T = {
@@ -128,21 +128,36 @@ object Irrevocable
   }
 }
 
+/** Producer - drives (outputs) valid and bits, inputs ready.
+  * @param gen The type of data to enqueue
+  */
 object EnqIO {
   def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
 }
+/** Consumer - drives (outputs) ready, inputs valid and bits.
+  * @param gen The type of data to dequeue
+  */
 object DeqIO {
   def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
 }
 
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
-  * @param entries The max number of entries in the queue */
+  * @param entries The max number of entries in the queue.
+  */
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
+  /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
+   *  but internally, the queue implementation itself sits on the other side
+   *  of the interface so uses the flipped instance.
+   * These could be replaced with:
+   *   val enq = Flipped(EnqIO(gen))
+   *   val deq = Flipped(DeqIO(gen))
+   *  once issue #492 is resolved.
+   */
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. */
   val enq = DeqIO(gen)
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]*/
   val deq = EnqIO(gen)
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
