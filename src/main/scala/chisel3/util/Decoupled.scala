@@ -10,10 +10,11 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
-  * The base protocol implied by the directionality is that the producer uses
-  * the interface as-is (outputs bits) while the consumer
-  * uses the flipped interface (inputs bits).
+  * The base protocol implied by the directionality is that
+  * the producer uses the interface as-is (outputs bits)
+  * while the consumer uses the flipped interface (inputs bits).
   * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
+  * @param gen the type of data to be wrapped in Ready/Valid
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
@@ -68,6 +69,7 @@ object ReadyValidIO {
   * put valid data in 'bits', and 'ready' indicates that the consumer is ready
   * to accept the data this cycle. No requirements are placed on the signaling
   * of ready or valid.
+  * @param gen the type of data to be wrapped in DecoupledIO
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
@@ -102,6 +104,7 @@ object Decoupled
   * the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.
   * Additionally, once 'valid' is raised it will never be lowered until after
   * 'ready' has also been raised.
+  * @param gen the type of data to be wrapped in IrrevocableIO
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
