@@ -55,9 +55,22 @@ object MonoConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Data, source: Data, context_mod: Module): Unit =
+  //scalastyle:off cyclomatic.complexity
+  def connect(
+      sourceInfo: SourceInfo,
+      connectCompileOptions: CompileOptions,
+      sink: Data,
+      source: Data,
+      context_mod: Module): Unit =
     (sink, source) match {
       // Handle element case (root case)
+      case (sink_e: UInt, source_e: SInt)       => throw MismatchedException(sink.toString, source.toString)
+      case (sink_e: UInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
+      case (sink_e: SInt, source_e: UInt)       => throw MismatchedException(sink.toString, source.toString)
+      case (sink_e: SInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
+      case (sink_e: FixedPoint, source_e: UInt) => throw MismatchedException(sink.toString, source.toString)
+      case (sink_e: FixedPoint, source_e: SInt) => throw MismatchedException(sink.toString, source.toString)
+
       case (sink_e: Element, source_e: Element) => {
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
