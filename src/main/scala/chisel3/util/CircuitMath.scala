@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 /** Returns the base-2 integer logarithm of an UInt.
   *
@@ -21,6 +22,7 @@ import chisel3._
 object Log2 {
   /** Returns the base-2 integer logarithm of the least-significant `width` bits of an UInt.
     */
+  @chiselName
   def apply(x: Bits, width: Int): UInt = {
     if (width < 2) {
       0.U
