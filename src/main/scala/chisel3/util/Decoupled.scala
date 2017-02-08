@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
+
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
@@ -85,6 +87,7 @@ object Decoupled
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
+  @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
@@ -164,6 +167,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   * consumer.io.in <> q.io.deq
   * }}}
   */
+@chiselName
 class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
@@ -240,6 +244,7 @@ extends Module(override_reset=override_reset) {
 object Queue
 {
   /** Create a queue and supply a DecoupledIO containing the product. */
+  @chiselName
   def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
@@ -257,6 +262,7 @@ object Queue
     * Irrevocable semantics; we didn't want to change the return type of
     * apply() for backwards compatibility reasons.
     */
+  @chiselName
   def irrevocable[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
