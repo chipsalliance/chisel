@@ -240,6 +240,8 @@ class VerilogEmitter extends Emitter with PassBased {
       val declares = ArrayBuffer[Seq[Any]]()
       val instdeclares = ArrayBuffer[Seq[Any]]()
       val assigns = ArrayBuffer[Seq[Any]]()
+      val attachSynAssigns = ArrayBuffer.empty[Seq[Any]]
+      val attachAliases = ArrayBuffer.empty[Seq[Any]]
       val at_clock = mutable.LinkedHashMap[Expression,ArrayBuffer[Seq[Any]]]()
       val initials = ArrayBuffer[Seq[Any]]()
       val simulates = ArrayBuffer[Seq[Any]]()
@@ -424,18 +426,30 @@ class VerilogEmitter extends Emitter with PassBased {
         case sx: Print =>
           simulate(sx.clk, sx.en, printf(sx.string, sx.args), Some("PRINTF_COND"))
           sx
+        // If we are emitting an Attach, it must not have been removable in VerilogPrep
+        case sx: Attach =>
+          // For Synthesis
+          // Note that this is quadratic in the number of things attached
+          for (set <- sx.exprs.toSet.subsets(2)) {
+            val (a, b) = set.toSeq match { case Seq(x, y) => (x, y) }
+            // Synthesizable ones as well
+            attachSynAssigns += Seq("assign ", a, " = ", b, ";")
+            attachSynAssigns += Seq("assign ", b, " = ", a, ";")
+          }
+          // alias implementation for everything else
+          attachAliases += Seq("alias ", sx.exprs.flatMap(e => Seq(e, " = ")).init, ";")
+          sx
         case sx: WDefInstanceConnector =>
           val (module, params) = moduleMap(sx.module) match {
             case ExtModule(_, _, _, extname, params) => (extname, params)
             case Module(_, name, _, _) => (name, Seq.empty)
           }
-          val es = create_exps(WRef(sx.name, sx.tpe, InstanceKind, MALE))
           val ps = if (params.nonEmpty) params map stringify mkString ("#(", ", ", ") ") else ""
           instdeclares += Seq(module, " ", ps, sx.name ," (")
-          (es zip sx.exprs).zipWithIndex foreach {case ((l, r), i) =>
-            val s = Seq(tab, ".", remove_root(l), "(", r, ")")
-            if (i != es.size - 1) instdeclares += Seq(s, ",")
-            else instdeclares += s
+          for (((port, ref), i) <- sx.portCons.zipWithIndex) {
+            val line = Seq(tab, ".", remove_root(port), "(", ref, ")")
+            if (i != sx.portCons.size - 1) instdeclares += Seq(line, ",")
+            else instdeclares += line
           }
           instdeclares += Seq(");")
           sx
@@ -515,6 +529,15 @@ class VerilogEmitter extends Emitter with PassBased {
         for (x <- declares) emit(Seq(tab, x))
         for (x <- instdeclares) emit(Seq(tab, x))
         for (x <- assigns) emit(Seq(tab, x))
+        if (attachAliases.nonEmpty) {
+          emit(Seq("`ifdef SYNTHESIS"))
+          for (x <- attachSynAssigns) emit(Seq(tab, x))
+          emit(Seq("`elseif verilator"))
+          emit(Seq(tab, "`error \"Verilator does not support alias and thus cannot arbirarily connect bidirectional wires and ports\""))
+          emit(Seq("`else"))
+          for (x <- attachAliases) emit(Seq(tab, x))
+          emit(Seq("`endif"))
+        }
         if (initials.nonEmpty) {
           emit(Seq("`ifdef RANDOMIZE"))
           emit(Seq("  integer initvar;"))

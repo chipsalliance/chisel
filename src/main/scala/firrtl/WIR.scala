@@ -30,6 +30,12 @@ case class WRef(name: String, tpe: Type, kind: Kind, gender: Gender) extends Exp
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
 }
+object WRef {
+  /** Creates a WRef from a Wire */
+  def apply(wire: DefWire): WRef = new WRef(wire.name, wire.tpe, WireKind, UNKNOWNGENDER)
+  /** Creates a WRef from a Register */
+  def apply(reg: DefRegister): WRef = new WRef(reg.name, reg.tpe, RegKind, UNKNOWNGENDER)
+}
 case class WSubField(exp: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
   def serialize: String = s"${exp.serialize}.$name"
   def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp))
@@ -77,14 +83,20 @@ case class WDefInstance(info: Info, name: String, module: String, tpe: Type) ext
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
 }
-case class WDefInstanceConnector(info: Info, name: String, module: String, tpe: Type, exprs: Seq[Expression]) extends Statement with IsDeclaration {
-  def serialize: String = s"inst $name of $module with ${tpe.serialize} connected to (" + exprs.map(_.serialize).mkString(", ") + ")" + info.serialize
-  def mapExpr(f: Expression => Expression): Statement = this.copy(exprs = exprs map f)
+case class WDefInstanceConnector(
+    info: Info,
+    name: String,
+    module: String,
+    tpe: Type,
+    portCons: Seq[(Expression, Expression)]) extends Statement with IsDeclaration {
+  def serialize: String = s"inst $name of $module with ${tpe.serialize} connected to " +
+                          portCons.map(_._2.serialize).mkString("(", ", ", ")") + info.serialize
+  def mapExpr(f: Expression => Expression): Statement =
+    this.copy(portCons = portCons map { case (e1, e2) => (f(e1), f(e2)) })
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
 }
-
 
 // Resultant width is the same as the maximum input width
 case object Addw extends PrimOp { override def toString = "addw" }

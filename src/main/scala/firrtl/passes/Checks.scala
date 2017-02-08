@@ -258,10 +258,8 @@ object CheckTypes extends Pass {
     s"$info: [module $mname]  A validif condition must be of type UInt.")
   class IllegalAnalogDeclaration(info: Info, mname: String, decName: String) extends PassException(
     s"$info: [module $mname]  Cannot declare a reg, node, or memory with an Analog type: $decName.")
-  class IllegalAttachSource(info: Info, mname: String, sourceName: String) extends PassException(
-    s"$info: [module $mname]  Attach source must be a wire or port with an analog type: $sourceName.")
   class IllegalAttachExp(info: Info, mname: String, expName: String) extends PassException(
-    s"$info: [module $mname]  Attach expression must be an instance: $expName.")
+    s"$info: [module $mname]  Attach expression must be an port, wire, or port of instance: $expName.")
 
   //;---------------- Helper Functions --------------
   def ut: UIntType = UIntType(UnknownWidth)
@@ -431,18 +429,14 @@ object CheckTypes extends Pass {
           case t =>
         }
         case sx: Attach =>
-          (sx.source.tpe, kind(sx.source)) match {
-            case (AnalogType(w), PortKind | WireKind)  =>
-            case _ => errors append new IllegalAttachSource(info, mname, sx.source.serialize)
-          }
-          sx.exprs foreach { e =>
+          for (e <- sx.exprs) {
             e.tpe match {
               case _: AnalogType =>
-              case _ => errors append new OpNotAnalog(info, mname, e.serialize)
+              case _ => errors.append(new OpNotAnalog(info, mname, e.serialize))
             }
             kind(e) match {
-              case InstanceKind =>
-              case _ =>  errors append new IllegalAttachExp(info, mname, e.serialize)
+              case (InstanceKind | PortKind | WireKind) =>
+              case _ =>  errors.append(new IllegalAttachExp(info, mname, e.serialize))
             }
           }
         case sx: Stop =>
