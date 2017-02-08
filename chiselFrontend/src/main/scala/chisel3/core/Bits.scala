@@ -13,6 +13,8 @@ import chisel3.internal.firrtl.PrimOp._
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
+//scalastyle:off method.name
+
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
   */
@@ -48,6 +50,7 @@ abstract class Element(private[core] val width: Width) extends Data {
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.
   */
+//scalastyle:off number.of.methods
 sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     extends Element(width) {
   // TODO: perhaps make this concrete?
@@ -301,6 +304,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   * types.
   */
 abstract trait Num[T <: Data] {
+  self: Num[T] =>
   // def << (b: T): T
   // def >> (b: T): T
   //def unary_-(): T
@@ -367,6 +371,10 @@ abstract trait Num[T <: Data] {
 
   def do_>= (that: T)(implicit sourceInfo: SourceInfo): Bool
 
+  /** Outputs the absolute value of `this`. The resulting width is the unchanged */
+  final def abs(): T = macro SourceInfoTransform.noArg
+  def do_abs(implicit sourceInfo: SourceInfo): T
+
   /** Outputs the minimum of `this` and `b`. The resulting width is the max of
     * the operands.
     */
@@ -430,6 +438,9 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def & (that: UInt): UInt = macro SourceInfoTransform.thatArg
   final def | (that: UInt): UInt = macro SourceInfoTransform.thatArg
   final def ^ (that: UInt): UInt = macro SourceInfoTransform.thatArg
+
+//  override def abs: UInt = macro SourceInfoTransform.noArg
+  def do_abs(implicit sourceInfo: SourceInfo): UInt = this
 
   def do_& (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     binop(sourceInfo, UInt(this.width max that.width), BitAndOp, that)
@@ -629,9 +640,9 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
   def do_=/= (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=== (that: SInt)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
 
-  final def abs(): UInt = macro SourceInfoTransform.noArg
+//  final def abs(): UInt = macro SourceInfoTransform.noArg
 
-  def do_abs(implicit sourceInfo: SourceInfo): UInt = Mux(this < 0.S, (-this).asUInt, this.asUInt)
+  def do_abs(implicit sourceInfo: SourceInfo): SInt = Mux(this < 0.S, (-this), this)
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): SInt =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, that)
@@ -905,10 +916,8 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
   def do_=/= (that: FixedPoint)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=== (that: FixedPoint)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
 
-  final def abs(): UInt = macro SourceInfoTransform.noArg
-
-  def do_abs(implicit sourceInfo: SourceInfo): UInt = {
-    Mux(this < FixedPoint.fromBigInt(0), (FixedPoint.fromBigInt(0)-this).asUInt, this.asUInt)
+  def do_abs(implicit sourceInfo: SourceInfo): FixedPoint = {
+    Mux(this < 0.F(0), 0.F(0) - this, this)
   }
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): FixedPoint =

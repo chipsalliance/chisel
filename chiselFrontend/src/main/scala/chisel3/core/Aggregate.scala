@@ -43,12 +43,19 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T)(implicit compileOptions: CompileOptions): Vec[T] =
-    new Vec(gen.chiselCloneType, n)
+  def apply[T <: Data](n: Int, gen: T): Vec[T] = macro VecTransform.apply_ngen;
+
+  def do_apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+    if ( gen.isLit ) {
+      Vec(Seq.fill(n)(gen))
+    } else {
+      new Vec(gen.chiselCloneType, n)
+    }
+  }
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
-    apply(n, gen)
+  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    do_apply(n, gen)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -233,7 +240,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   }
 
   override def cloneType: this.type = {
-    new Vec(gen, length).asInstanceOf[this.type]
+    new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 
   private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
@@ -374,7 +381,10 @@ abstract class Record extends Aggregate {
 
   // NOTE: This sets up dependent references, it can be done before closing the Module
   private[chisel3] override def _onModuleClose: Unit = { // scalastyle:ignore method.name
-    val _namespace = Builder.globalNamespace.child
+    // Since Bundle names this via reflection, it is impossible for two elements to have the same
+    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
+    // which can cause collisions
+    val _namespace = Namespace.empty
     for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name)) }
   }
 

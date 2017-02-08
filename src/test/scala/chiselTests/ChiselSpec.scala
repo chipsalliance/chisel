@@ -8,6 +8,12 @@ import org.scalatest.prop._
 import org.scalacheck._
 import chisel3._
 import chisel3.testers._
+import firrtl.{
+  ExecutionOptionsManager,
+  HasFirrtlOptions,
+  FirrtlExecutionSuccess,
+  FirrtlExecutionFailure
+}
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions {
@@ -22,6 +28,27 @@ trait ChiselRunners extends Assertions {
   }
   def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
 
+  /** Given a generator, return the Firrtl that it generates.
+    *
+    * @param t Module generator
+    * @return Firrtl representation as a String
+    */
+  def generateFirrtl(t: => Module): String = Driver.emit(() => t)
+
+  /** Compiles a Chisel Module to Verilog */
+  def compile(t: => Module): String = {
+    val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
+                                                         with HasChiselExecutionOptions
+    Driver.execute(manager, () => t) match {
+      case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
+        firrtlExecRes match {
+          case FirrtlExecutionSuccess(_, verilog) => verilog
+          case FirrtlExecutionFailure(msg) => fail(msg)
+        }
+      case ChiselExecutionSuccess(_, _, None) => fail() // This shouldn't happen
+      case ChiselExecutionFailure(msg) => fail(msg)
+    }
+  }
 }
 
 /** Spec base class for BDD-style testers. */
