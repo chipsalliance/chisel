@@ -92,8 +92,17 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
 case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-    s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+    s"asFixedPoint(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
+  def minWidth: Int = 1 + n.bitLength
+}
+
+case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
+  def name: String = {
+    val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
+    s"asInterval(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+  }
+  val range: Range = new KnownIntervalRange(K)
   def minWidth: Int = 1 + n.bitLength
 }
 
@@ -157,6 +166,19 @@ sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int])
   }
   def getWidth: Width = maxWidth.max(minWidth)
 
+}
+
+sealed case class KnownIntervalRange(min: NumericBound[BigInt], max: NumericBound[BigInt], binaryPoint: BinaryPoint) {
+  val maxWidth = max match {
+    case Open(v) => Width(BigInt(v - 1).bitLength + 1)
+    case Closed(v) => Width(BigInt(v).bitLength + 1)
+  }
+  val minWidth = min match {
+    case Open(v) => Width(BigInt(v + 1).bitLength + 1)
+    case Closed(v) => Width(BigInt(v).bitLength + 1)
+  }
+
+  def getWidth: Width = maxWidth.max(minWidth)
 }
 
 object Width {

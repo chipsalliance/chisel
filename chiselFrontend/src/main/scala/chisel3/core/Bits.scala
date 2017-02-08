@@ -1011,3 +1011,212 @@ object FixedPoint {
   }
 
 }
+
+//scalastyle:off number.of.methods
+/**
+  * A sealed class representing a fixed point number that has a bit width and a binary point
+  * The width and binary point may be inferred.
+  *
+  * IMPORTANT: The API provided here is experimental and may change in the future.
+  *
+  * @param width       bit width of the fixed point number
+  * @param binaryPoint the position of the binary point with respect to the right most bit of the width
+  *                    currently this should be positive but it is hoped to soon support negative points
+  *                    and thus use this field as a simple exponent
+  * @param lit
+  */
+sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val range: Range, lit: Option[FPLit] = None)
+  extends Bits(width, lit) with Num[Interval] {
+  private[core] override def cloneTypeWidth(w: Width): this.type =
+    new Interval(w, binaryPoint, range).asInstanceOf[this.type]
+  private[chisel3] def toType = s"Fixed$width$binaryPoint"
+
+  def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
+    case _: Interval => this connect that
+    case _ => this badConnect that
+  }
+
+  final def unary_- (): Interval = macro SourceInfoTransform.noArg
+  final def unary_-% (): Interval = macro SourceInfoTransform.noArg
+
+  def unary_- (implicit sourceInfo: SourceInfo): Interval = Interval.fromBigInt(0) - this
+  def unary_-% (implicit sourceInfo: SourceInfo): Interval = Interval.fromBigInt(0) -% this
+
+  /** add (default - no growth) operator */
+  override def do_+ (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    this +% that
+  /** subtract (default - no growth) operator */
+  override def do_- (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    this -% that
+  override def do_* (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width + that.width, this.binaryPoint + that.binaryPoint), TimesOp, that)
+  override def do_/ (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    throwException(s"division is illegal on Interval types")
+  override def do_% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    throwException(s"mod is illegal on Interval types")
+
+  final def * (that: UInt): Interval = macro SourceInfoTransform.thatArg
+  def do_* (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width + that.width, binaryPoint), TimesOp, that)
+
+  final def * (that: SInt): Interval = macro SourceInfoTransform.thatArg
+  def do_* (that: SInt)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width + that.width, binaryPoint), TimesOp, that)
+
+  /** add (width +1) operator */
+  final def +& (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  /** add (no growth) operator */
+  final def +% (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  /** subtract (width +1) operator */
+  final def -& (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  /** subtract (no growth) operator */
+  final def -% (that: Interval): Interval = macro SourceInfoTransform.thatArg
+
+  def do_+& (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint), AddOp, that)
+  def do_+% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    (this +& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
+  def do_-& (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint), SubOp, that)
+  def do_-% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    (this -& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
+
+  final def & (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def | (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def ^ (that: Interval): Interval = macro SourceInfoTransform.thatArg
+
+  def do_& (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    throwException(s"And is illegal between $this and $that")
+  def do_| (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    throwException(s"Or is illegal between $this and $that")
+  def do_^ (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
+    throwException(s"Xor is illegal between $this and $that")
+
+  final def setBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
+
+  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width, KnownBinaryPoint(that)), SetBinaryPoint, that)
+
+  /** Returns this wire bitwise-inverted. */
+  def do_unary_~ (implicit sourceInfo: SourceInfo): Interval =
+    throwException(s"Not is illegal on $this")
+
+  // TODO(chick): Consider comparison with UInt and SInt
+  override def do_< (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessOp, that)
+  override def do_> (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterOp, that)
+  override def do_<= (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, LessEqOp, that)
+  override def do_>= (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, GreaterEqOp, that)
+
+  final def != (that: Interval): Bool = macro SourceInfoTransform.thatArg
+  final def =/= (that: Interval): Bool = macro SourceInfoTransform.thatArg
+  final def === (that: Interval): Bool = macro SourceInfoTransform.thatArg
+
+  def do_!= (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
+  def do_=/= (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
+  def do_=== (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
+
+  final def abs(): UInt = macro SourceInfoTransform.noArg
+
+  def do_abs(implicit sourceInfo: SourceInfo): UInt = {
+    Mux(this < Interval.fromBigInt(0), (Interval.fromBigInt(0)-this).asUInt, this.asUInt)
+  }
+
+  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width + that, this.binaryPoint), ShiftLeftOp, that)
+  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Interval =
+    this << that.toInt
+  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width.dynamicShiftLeft(that.width), this.binaryPoint), DynamicShiftLeftOp, that)
+  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width.shiftRight(that), this.binaryPoint), ShiftRightOp, that)
+  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Interval =
+    this >> that.toInt
+  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
+    binop(sourceInfo, Interval(this.width, this.binaryPoint), DynamicShiftRightOp, that)
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+    val res = Wire(this, null).asInstanceOf[this.type]
+    res := (that match {
+      case fp: Interval => fp.asSInt.asFixedPoint(this.binaryPoint)
+      case _ => that.asFixedPoint(this.binaryPoint)
+    })
+    res
+  }
+  //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
+}
+
+/**
+  * Factory and convenience methods for the Interval class
+  * IMPORTANT: The API provided here is experimental and may change in the future.
+  */
+object Interval {
+  /** Create an Interval type with inferred width. */
+  def apply(): Interval = apply(Width(), BinaryPoint(), )
+
+  /** Create an Interval type or port with fixed width. */
+  def apply(width: Int, binaryPoint: Int): Interval = apply(Width(width), BinaryPoint(binaryPoint))
+  /** Create an Interval port with inferred width. */
+  def apply(dir: Direction): Interval = apply(dir, Width(), BinaryPoint())
+
+  /** Create an Interval literal with inferred width from BigInt.
+    * Use PrivateObject to force users to specify width and binaryPoint by name
+    */
+  def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): Interval =
+    if(width == -1) {
+      apply(value, Width(), BinaryPoint(binaryPoint))
+    }
+    else {
+      apply(value, Width(width), BinaryPoint(binaryPoint))
+    }
+  /** Create an Interval literal with inferred width from Double.
+    * Use PrivateObject to force users to specify width and binaryPoint by name
+    */
+  def fromDouble(value: Double, dummy: PrivateType = PrivateObject,
+                 width: Int = -1, binaryPoint: Int = 0): Interval = {
+    fromBigInt(
+      toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
+    )
+  }
+
+  /** Create an Interval type with specified width and binary position. */
+  def apply(width: Width, binaryPoint: BinaryPoint, range: Range): Interval = {
+    new Interval(width, binaryPoint, range)
+  }
+  /** Create an Interval port with specified width and binary position. */
+  def apply(dir: Direction, width: Width, binaryPoint: BinaryPoint, range: Range): Interval = {
+    new Interval(width, binaryPoint, range)
+  }
+  def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
+    val lit = IntervalLit(value, width, binaryPoint)
+    val newLiteral = new Interval(lit.width, lit.binaryPoint, lit.range, Some(lit))
+    newLiteral.binding = LitBinding()
+    newLiteral
+  }
+
+  /**
+    * How to create a bigint from a double with a specific binaryPoint
+    * @param x               a double value
+    * @param binaryPoint     a binaryPoint that you would like to use
+    * @return
+    */
+  def toBigInt(x: Double, binaryPoint    : Int): BigInt = {
+    val multiplier = math.pow(2,binaryPoint    )
+    val result = BigInt(math.round(x * multiplier))
+    result
+  }
+
+  /**
+    * converts a bigInt with the given binaryPoint into the double representation
+    * @param i            a bigint
+    * @param binaryPoint  the implied binaryPoint of @i
+    * @return
+    */
+  def toDouble(i: BigInt, binaryPoint    : Int): Double = {
+    val multiplier = math.pow(2,binaryPoint    )
+    val result = i.toDouble / multiplier
+    result
+  }
+
+}
