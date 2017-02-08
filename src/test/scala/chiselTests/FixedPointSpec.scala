@@ -21,23 +21,31 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
 }
 
 class FixedPointFromBitsTester extends BasicTester {
-    val uint = 3.U(4.W)
-    val sint = -3.S
-    val fp   = FixedPoint.fromDouble(3.0, width = 4, binaryPoint = 0)
-    val fp_tpe = FixedPoint(4.W, 1.BP)
-    val uint_result = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
-    val sint_result = FixedPoint.fromDouble(-1.5, width = 4, binaryPoint = 1)
-    val fp_result   = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
+  val uint = 3.U(4.W)
+  val sint = -3.S
 
-    val uint2fp = fp_tpe.fromBits(uint)
-    val sint2fp = fp_tpe.fromBits(sint)
-    val fp2fp   = fp_tpe.fromBits(fp)
+  val fp   = FixedPoint.fromDouble(3.0, width = 4, binaryPoint = 0)
+  val fp_tpe = FixedPoint(4.W, 1.BP)
+  val uint_result = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
+  val sint_result = FixedPoint.fromDouble(-1.5, width = 4, binaryPoint = 1)
+  val fp_result   = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
 
-    assert(uint2fp === uint_result)
-    assert(sint2fp === sint_result)
-    assert(fp2fp   === fp_result)
+  val uint2fp = fp_tpe.fromBits(uint)
+  val sint2fp = fp_tpe.fromBits(sint)
+  val fp2fp   = fp_tpe.fromBits(fp)
 
-    stop()
+  val negativefp = -3.5.F(binaryPoint = 4)
+  val positivefp = 3.5.F(binaryPoint = 4)
+
+  assert(uint2fp === uint_result)
+  assert(sint2fp === sint_result)
+  assert(fp2fp   === fp_result)
+
+  assert(positivefp.abs() === positivefp)
+  assert(negativefp.abs() === positivefp)
+  assert(negativefp.abs() =/= negativefp)
+
+  stop()
 }
 
 class SBP extends Module {

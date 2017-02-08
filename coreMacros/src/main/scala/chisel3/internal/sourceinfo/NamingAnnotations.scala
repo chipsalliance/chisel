@@ -82,9 +82,12 @@ class NamingTransforms(val c: Context) {
         tree  // don't recurse into inner classes
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => {
         val Modifiers(_, _, annotations) = mods
+        // don't apply naming transform twice
         val containsChiselName = annotations.map({q"new chiselName()" equalsStructure _}).fold(false)({_||_})
-        if (containsChiselName) {
-          tree  // don't apply the transform multiple times
+        // transforming overloaded initializers causes errors, and the transform isn't helpful
+        val isInitializer = tname == TermName("<init>")
+        if (containsChiselName || isInitializer) {
+          tree
         } else {
           // apply chiselName transform by default
           val transformedExpr = transformHierarchicalMethod(expr)
@@ -177,4 +180,17 @@ class NamingTransforms(val c: Context) {
 
     q"..$transformed"
   }
+}
+
+@compileTimeOnly("enable macro paradise to expand macro annotations")
+class dump extends StaticAnnotation {
+  def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
+}
+@compileTimeOnly("enable macro paradise to expand macro annotations")
+class treedump extends StaticAnnotation {
+  def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
+}
+@compileTimeOnly("enable macro paradise to expand macro annotations")
+class chiselName extends StaticAnnotation {
+  def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
 }
