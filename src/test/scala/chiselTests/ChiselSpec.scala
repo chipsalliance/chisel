@@ -27,6 +27,14 @@ trait ChiselRunners extends Assertions {
     assert(!runTester(t, additionalVResources))
   }
   def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
+
+  /** Given a generator, return the Firrtl that it generates.
+    *
+    * @param t Module generator
+    * @return Firrtl representation as a String
+    */
+  def generateFirrtl(t: => Module): String = Driver.emit(() => t)
+
   /** Compiles a Chisel Module to Verilog */
   def compile(t: => Module): String = {
     val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
