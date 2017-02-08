@@ -51,8 +51,7 @@ class ConnectSpec extends ChiselPropSpec {
     assertTesterPasses{ new CrossConnectTester(UInt(16.W), UInt(16.W)) }
   }
   property("uint := sint should fail") {
-//    intercept[ChiselException]{ new CrossConnectTester(SInt(16.W), UInt(16.W)) }
-    assertTesterPasses{ new CrossConnectTester(SInt(16.W), UInt(16.W)) }
+    intercept[ChiselException]{ new CrossConnectTester(SInt(16.W), UInt(16.W)) }
   }
   property("uint := fixedpoint should fail") {
     intercept[ChiselException]{ new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
