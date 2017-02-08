@@ -15,10 +15,7 @@ import chiselTests.ChiselFlatSpec
 abstract class CookbookTester(length: Int) extends BasicTester {
   require(length >= 0, "Simulation length must be non-negative!")
 
-  // No IO allowed, cookbook tests must be self-contained
-  override final val io = new Bundle { }
-
-  val (cycle, done) = Counter(true.B, length)
+  val (cycle, done) = Counter(true.B, length + 1) // + 1 cycle because done is actually wrap
   when (done) { stop() }
 }
 
