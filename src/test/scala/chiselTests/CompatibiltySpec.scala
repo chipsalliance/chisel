@@ -37,28 +37,31 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   it should "map utility objects into the package object" in {
     {
       val value: Int = Gen.choose(0, 2048).sample.get
-      log2Up(value) shouldBe (1 max BigInt(value-1).bitLength)
-      log2Ceil(value) shouldBe (BigInt(value-1).bitLength)
-      log2Down(value) shouldBe ((1 max BigInt(value-1).bitLength) - (if (value > 0 && ((value & (value-1)) == 0)) 0 else 1))
-      log2Floor(value) shouldBe (BigInt(value-1).bitLength - (if (value > 0 && ((value & (value-1)) == 0)) 0 else 1))
+      log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
+      log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
+      log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
+      log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
       if (value > 0) {
         isPow2(1 << value) shouldBe true
         isPow2((1 << value) - 1) shouldBe false
       }
     }
-    {
-      val value: Int = Gen.choose(1, Int.MaxValue).sample.get
-      val binaryString = value.toBinaryString
-      val maskPosition = Gen.choose(0, binaryString.length - 1).sample.get
-      val bs = new StringBuilder(binaryString)
-      bs(maskPosition) = '?'
-      val bitPatString = bs.toString
-      val bp = BitPat("b" + bitPatString)
-      bp shouldBe a [BitPat]
-      bp.getWidth shouldEqual binaryString.length
+  }
 
-    }
+  it should "make BitPats available" in {
+    val value: Int = Gen.choose(1, Int.MaxValue).sample.get
+    val binaryString = value.toBinaryString
+    val maskPosition = Gen.choose(0, binaryString.length - 1).sample.get
+    val bs = new StringBuilder(binaryString)
+    bs(maskPosition) = '?'
+    val bitPatString = bs.toString
+    val bp = BitPat("b" + bitPatString)
+    bp shouldBe a [BitPat]
+    bp.getWidth shouldEqual binaryString.length
 
+  }
+
+  it should "successfully compile a complete module" in {
     class Dummy extends Module {
       // The following just checks that we can create objects with nothing more than the Chisel compatibility package.
       val io = new Bundle
@@ -119,8 +122,8 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       val valid  = Bool(OUTPUT)
       val out    = Bits(OUTPUT, 32)
     }
-    val file = Mem(Bits(width = 32), 256)
-    val code = Mem(Bits(width = 32), 256)
+    val file = Mem(256, Bits(width = 32))
+    val code = Mem(256, Bits(width = 32))
     val pc   = Reg(init=UInt(0, 8))
 
     val add_op :: imm_op :: Nil = Enum(2)
