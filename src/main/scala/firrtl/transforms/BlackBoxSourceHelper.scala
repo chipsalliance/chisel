@@ -122,7 +122,7 @@ class BlackBoxSourceHelper extends firrtl.Transform {
       writer.close()
     }
 
-    resultState
+    CircuitState(resultState.circuit, resultState.form)
   }
 }
 
