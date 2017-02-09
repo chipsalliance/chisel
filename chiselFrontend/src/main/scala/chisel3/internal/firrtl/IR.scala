@@ -124,6 +124,7 @@ sealed trait Bound
 sealed trait NumericBound[T] extends Bound {
   val value: T
 }
+
 sealed case class Open[T](value: T) extends NumericBound[T]
 sealed case class Closed[T](value: T) extends NumericBound[T]
 
@@ -131,11 +132,21 @@ sealed trait Range {
   val min: Bound
   val max: Bound
   def getWidth: Width
+
+  def * (that: Range) = this
+  def +& (that: Range) = this
+  def +% (that: Range) = this
+  def -% (that: Range) = this
+  def -& (that: Range) = this
+  def << (that: Int) = this
+  def >> (that: Int) = this
+  def << (that: UInt) = this
+  def >> (that: UInt) = this
 }
 
-sealed trait KnownIntRange extends Range {
-  val min: NumericBound[Int]
-  val max: NumericBound[Int]
+sealed trait KnownBigIntRange extends Range {
+  val min: NumericBound[BigInt]
+  val max: NumericBound[BigInt]
 
   require( (min, max) match {
     case (Open(low_val), Open(high_val)) => low_val < high_val - 1
@@ -145,27 +156,26 @@ sealed trait KnownIntRange extends Range {
   })
 }
 
-sealed case class KnownUIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange {
+sealed case class KnownUIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
   require (min.value >= 0)
 
   def getWidth: Width = max match {
-    case Open(v) => Width(BigInt(v - 1).bitLength.max(1))
-    case Closed(v) => Width(BigInt(v).bitLength.max(1))
+    case Open(v) => Width((v - BigInt(1)).bitLength.max(1))
+    case Closed(v) => Width(v.bitLength.max(1))
   }
 }
 
-sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange {
+sealed case class KnownSIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
 
   val maxWidth = max match {
-    case Open(v) => Width(BigInt(v - 1).bitLength + 1)
-    case Closed(v) => Width(BigInt(v).bitLength + 1)
+    case Open(v) => Width((v - 1).bitLength + 1)
+    case Closed(v) => Width(v.bitLength + 1)
   }
   val minWidth = min match {
-    case Open(v) => Width(BigInt(v + 1).bitLength + 1)
-    case Closed(v) => Width(BigInt(v).bitLength + 1)
+    case Open(v) => Width((v + 1).bitLength + 1)
+    case Closed(v) => Width(v.bitLength + 1)
   }
   def getWidth: Width = maxWidth.max(minWidth)
-
 }
 
 sealed case class KnownIntervalRange(min: NumericBound[BigInt], max: NumericBound[BigInt], binaryPoint: BinaryPoint) {

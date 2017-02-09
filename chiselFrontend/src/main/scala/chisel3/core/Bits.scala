@@ -259,6 +259,17 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   def do_asFixedPoint(that: BinaryPoint)(implicit sourceInfo: SourceInfo): FixedPoint = {
     throwException(s"Cannot call .asFixedPoint on $this")
   }
+  /** Reinterpret cast as a Interval.
+    *
+    * @note value not guaranteed to be preserved: for example, an UInt of width
+    * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
+    * of the number is also affected by the specified binary point.  Caution advised
+    */
+  final def asInterval(that: BinaryPoint): Interval = macro SourceInfoTransform.thatArg
+
+  def do_asInterval(that: BinaryPoint)(implicit sourceInfo: SourceInfo): Interval = {
+    throwException(s"Cannot call .asInterval on $this")
+  }
 
   /** Reinterpret cast to Bits. */
   @deprecated("Use asUInt, which does the same thing but returns a more concrete type", "chisel3")
@@ -511,6 +522,16 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
         pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
       case _ =>
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+    }
+  }
+  def do_asInterval(binaryPoint: BinaryPoint, range: Range)(implicit sourceInfo: SourceInfo): Interval = {
+    binaryPoint match {
+      case KnownBinaryPoint(value) =>
+        val iLit = ILit(value)
+        pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint, range), AsFixedPointOp, ref, iLit))
+      case _ =>
+        throwException(
+          s"cannot call $this.asInterval(binaryPoint=$binaryPoint, $range), you must specify a known binaryPoint")
     }
   }
   def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
@@ -1049,19 +1070,11 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   override def do_- (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
     this -% that
   override def do_* (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width + that.width, this.binaryPoint + that.binaryPoint), TimesOp, that)
+    binop(sourceInfo, Interval(this.width + that.width, this.binaryPoint + that.binaryPoint, this.range * that.range), TimesOp, that)
   override def do_/ (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
     throwException(s"division is illegal on Interval types")
   override def do_% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
     throwException(s"mod is illegal on Interval types")
-
-  final def * (that: UInt): Interval = macro SourceInfoTransform.thatArg
-  def do_* (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width + that.width, binaryPoint), TimesOp, that)
-
-  final def * (that: SInt): Interval = macro SourceInfoTransform.thatArg
-  def do_* (that: SInt)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width + that.width, binaryPoint), TimesOp, that)
 
   /** add (width +1) operator */
   final def +& (that: Interval): Interval = macro SourceInfoTransform.thatArg
@@ -1073,13 +1086,18 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   final def -% (that: Interval): Interval = macro SourceInfoTransform.thatArg
 
   def do_+& (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint), AddOp, that)
+    binop(
+      sourceInfo,
+      Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint, this.range +& that.range),
+      AddOp, that)
   def do_+% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    (this +& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
+    (this +& that).tail(1).asInterval(this.binaryPoint max that.binaryPoint, this.range +% that.range)
   def do_-& (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint), SubOp, that)
+    binop(sourceInfo,
+      Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint, this.range -& that.range),
+      SubOp, that)
   def do_-% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    (this -& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
+    (this -& that).tail(1).asInterval(this.binaryPoint max that.binaryPoint, this.range -% that.range)
 
   final def & (that: Interval): Interval = macro SourceInfoTransform.thatArg
   final def | (that: Interval): Interval = macro SourceInfoTransform.thatArg
@@ -1095,7 +1113,7 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   final def setBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
 
   def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width, KnownBinaryPoint(that)), SetBinaryPoint, that)
+    binop(sourceInfo, Interval(this.width, KnownBinaryPoint(that), this.range), SetBinaryPoint, that)
 
   /** Returns this wire bitwise-inverted. */
   def do_unary_~ (implicit sourceInfo: SourceInfo): Interval =
@@ -1122,17 +1140,20 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   }
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width + that, this.binaryPoint), ShiftLeftOp, that)
+    binop(sourceInfo, Interval(this.width + that, this.binaryPoint, this.range << that), ShiftLeftOp, that)
   override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Interval =
-    this << that.toInt
+    do_<<(that.toInt)
   override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width.dynamicShiftLeft(that.width), this.binaryPoint), DynamicShiftLeftOp, that)
+    binop(sourceInfo,
+      Interval(this.width.dynamicShiftLeft(that.width), this.binaryPoint, this.range << that),
+      DynamicShiftLeftOp, that)
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width.shiftRight(that), this.binaryPoint), ShiftRightOp, that)
+    binop(sourceInfo,
+      Interval(this.width.shiftRight(that), this.binaryPoint, this.range >> that), ShiftRightOp, that)
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Interval =
-    this >> that.toInt
+    do_>>(that.toInt)
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width, this.binaryPoint), DynamicShiftRightOp, that)
+    binop(sourceInfo, Interval(this.width, this.binaryPoint, this.range >> that), DynamicShiftRightOp, that)
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
