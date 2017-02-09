@@ -52,10 +52,11 @@ object assert { // scalastyle:ignore object.name
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo) {
     when (!(cond || Builder.forcedReset)) {
-      message match {
-        case Some(str) => printf.printfWithoutReset(s"Assertion failed: $str\n    at $line\n", data:_*)
-        case None => printf.printfWithoutReset(s"Assertion failed\n    at $line\n", data:_*)
+      val fmt = message match {
+        case Some(str) => s"Assertion failed: $str\n    at $line\n"
+        case None => s"Assertion failed\n    at $line\n"
       }
+      printf.printfWithoutReset(fmt.replaceAll("%", "%%"), data:_*)
       pushCommand(Stop(sourceInfo, Node(Builder.forcedClock), 1))
     }
   }
