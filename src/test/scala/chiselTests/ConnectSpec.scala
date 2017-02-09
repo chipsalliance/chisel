@@ -2,26 +2,13 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3._
-import chisel3.core.FixedPoint
+import chisel3.experimental.FixedPoint
 import chisel3.testers.BasicTester
-import chisel3.util._
 
 abstract class CrossCheck extends Bundle {
   val in: Data
   val out: Data
-}
-
-class CheckUIntToSInt extends CrossCheck {
-  val in  = Input(UInt(16.W))
-  val out = Output(SInt(16.W))
-}
-
-class CheckSIntToUInt extends CrossCheck {
-  val in  = Input(UInt(16.W))
-  val out = Output(SInt(16.W))
 }
 
 class CrossConnects(inType: Data, outType: Data) extends Module {
