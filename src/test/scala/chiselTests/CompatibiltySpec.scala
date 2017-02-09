@@ -35,17 +35,13 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   }
 
   it should "map utility objects into the package object" in {
-    {
-      val value: Int = Gen.choose(0, 2048).sample.get
-      log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
-      log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
-      log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
-      log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
-      if (value > 0) {
-        isPow2(1 << value) shouldBe true
-        isPow2((1 << value) - 1) shouldBe false
-      }
-    }
+    val value: Int = Gen.choose(2, 2048).sample.get
+    log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
+    log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
+    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
+    log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
+    isPow2(BigInt(1) << value) shouldBe true
+    isPow2((BigInt(1) << value) - 1) shouldBe false
   }
 
   it should "make BitPats available" in {
