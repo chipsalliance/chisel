@@ -55,7 +55,7 @@ object MonoConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  //scalastyle:off cyclomatic.complexity
+  //scalastyle:off cyclomatic.complexity method.length
   def connect(
       sourceInfo: SourceInfo,
       connectCompileOptions: CompileOptions,
@@ -63,18 +63,34 @@ object MonoConnect {
       source: Data,
       context_mod: Module): Unit =
     (sink, source) match {
-      // Handle element case (root case)
-      case (sink_e: UInt, source_e: SInt)       => throw MismatchedException(sink.toString, source.toString)
-      case (sink_e: UInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
-      case (sink_e: SInt, source_e: UInt)       => throw MismatchedException(sink.toString, source.toString)
-      case (sink_e: SInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
-      case (sink_e: FixedPoint, source_e: UInt) => throw MismatchedException(sink.toString, source.toString)
-      case (sink_e: FixedPoint, source_e: SInt) => throw MismatchedException(sink.toString, source.toString)
-
-      case (sink_e: Element, source_e: Element) => {
+      // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
+      case (sink_e: Bool, source_e: UInt) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
-        // TODO(twigg): Verify the element-level classes are connectable
-      }
+      case (sink_e: UInt, source_e: Bool) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: UInt, source_e: UInt) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: SInt, source_e: SInt) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: FixedPoint, source_e: FixedPoint) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: Analog, source_e: Analog) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: Clock, source_e: Clock) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+
+//
+//      case (sink_e: UInt, source_e: SInt)       => throw MismatchedException(sink.toString, source.toString)
+//      case (sink_e: UInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
+//      case (sink_e: SInt, source_e: UInt)       => throw MismatchedException(sink.toString, source.toString)
+//      case (sink_e: SInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
+//      case (sink_e: FixedPoint, source_e: UInt) => throw MismatchedException(sink.toString, source.toString)
+//      case (sink_e: FixedPoint, source_e: SInt) => throw MismatchedException(sink.toString, source.toString)
+//
+//      case (sink_e: Element, source_e: Element) => {
+//        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+//        // TODO(twigg): Verify the element-level classes are connectable
+//      }
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) => {
         if(sink_v.length != source_v.length) { throw MismatchedVecException }

@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.FixedPoint
+import chisel3.experimental.{FixedPoint, Analog}
 import chisel3.testers.BasicTester
 
 abstract class CrossCheck extends Bundle {
@@ -52,5 +52,33 @@ class ConnectSpec extends ChiselPropSpec {
   }
   property("fixedpoint := uint should fail") {
     intercept[ChiselException]{ new CrossConnectTester(UInt(16.W), FixedPoint(16.W, 8.BP)) }
+  }
+}
+
+class FigureCrossCheckSpec extends ChiselPropSpec {
+  val typesToCheck = List(
+    ("uint",  UInt(16.W)),
+    ("sint",  SInt(16.W)),
+    ("fp",    FixedPoint(16.W, 8.BP)),
+    ("ana",   Analog(16.W)),
+    ("bool",  Bool())
+  )
+
+  for {
+    (k1, f1) <- typesToCheck
+    (k2, f2) <- typesToCheck
+  } {
+    property(s"checking connect for $k1 := $k2") {
+      try {
+        assertTesterPasses(new CrossConnectTester(f1, f2))
+        println(s"Can connect $k1 := $k2")
+      }
+      catch {
+        case c: ChiselException =>
+          println(s"Got a chisel exception for $k1 := $k2")
+        case c: Throwable =>
+          println(s"Got a ${c.getClass.getName} for $k1 := $k2")
+      }
+    }
   }
 }
