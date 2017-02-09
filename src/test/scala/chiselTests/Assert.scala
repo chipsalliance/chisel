@@ -44,6 +44,12 @@ class PipelinedResetTester extends BasicTester {
   }
 }
 
+class ModuloAssertTester extends BasicTester {
+  assert((4.U % 2.U) === 0.U)
+  assert(1.U === 1.U, "I'm 110% sure this will succeed")
+  stop()
+}
+
 class AssertSpec extends ChiselFlatSpec {
   "A failing assertion" should "fail the testbench" in {
     assert(!runTester{ new FailingAssertTester })
@@ -53,5 +59,8 @@ class AssertSpec extends ChiselFlatSpec {
   }
   "An assertion" should "not assert until we come out of reset" in {
     assertTesterPasses{ new PipelinedResetTester }
+  }
+  "Assertions" should "allow the modulo operator % in the message" in {
+    assertTesterPasses{ new ModuloAssertTester }
   }
 }
