@@ -23,20 +23,7 @@ lazy val commonSettings = Seq (
   scalaVersion := "2.11.7",
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-  // Use the root project's unmanaged base for all sub-projects.
-  unmanagedBase := (unmanagedBase in root).value,
-  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
-  //  this has to be a Task setting.
-  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := {
-    allDependencies.value ++ Seq("firrtl").collect {
-      // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
-        //  otherwise let sbt fetch the appropriate version.
-        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
-    }
-  }
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 
 lazy val chiselSettings = Seq (
@@ -97,6 +84,8 @@ lazy val chiselSettings = Seq (
   //  }
 )
 
+lazy val firrtl = RootProject(file("firrtl"))
+
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
   settings(publishArtifact := false)
@@ -104,7 +93,8 @@ lazy val coreMacros = (project in file("coreMacros")).
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(publishArtifact := false).
-  dependsOn(coreMacros)
+  dependsOn(coreMacros).
+  dependsOn(firrtl)
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))

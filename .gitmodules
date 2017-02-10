@@ -1,0 +1,3 @@
+[submodule "firrtl"]
+	path = firrtl
+	url = git@github.com:ucb-bar/firrtl.git
