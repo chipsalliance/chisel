@@ -80,35 +80,50 @@ object BiConnect {
           }
         }
       }
-      // Handle Record case
-      case (left_r: Record, right_r: Record) => {
-        // Verify right has no extra fields that left doesn't have
-        for((field, right_sub) <- right_r.elements) {
-          if(!left_r.elements.isDefinedAt(field)) {
-            if (connectCompileOptions.connectFieldsMustMatch) {
-              throw MissingLeftFieldException(field)
-            }
-          }
-        }
-        // For each field in left, descend with right
-        for((field, left_sub) <- left_r.elements) {
-          try {
-            right_r.elements.get(field) match {
-              case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
-              case None => {
-                if (connectCompileOptions.connectFieldsMustMatch) {
-                  throw MissingRightFieldException(field)
-                }
-              }
-            }
-          } catch {
-            case BiConnectException(message) => throw BiConnectException(s".$field$message")
-          }
-        }
+      // Handle Records defined in Chisel._ code (change to NotStrict)
+      case (left_r: Record, right_r: Record) => (left_r.compileOptions, right_r.compileOptions) match {
+        case (ExplicitCompileOptions.NotStrict, _) =>
+          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        case (_, ExplicitCompileOptions.NotStrict) =>
+          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
       }
+
       // Left and right are different subtypes of Data so fail
       case (left, right) => throw MismatchedException(left.toString, right.toString)
     }
+
+  // Do connection of two Records
+  def recordConnect(sourceInfo: SourceInfo,
+                    connectCompileOptions: CompileOptions,
+                    left_r: Record,
+                    right_r: Record,
+                    context_mod: UserModule): Unit = {
+    // Verify right has no extra fields that left doesn't have
+    for((field, right_sub) <- right_r.elements) {
+      if(!left_r.elements.isDefinedAt(field)) {
+        if (connectCompileOptions.connectFieldsMustMatch) {
+          throw MissingLeftFieldException(field)
+        }
+      }
+    }
+    // For each field in left, descend with right
+    for((field, left_sub) <- left_r.elements) {
+      try {
+        right_r.elements.get(field) match {
+          case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
+          case None => {
+            if (connectCompileOptions.connectFieldsMustMatch) {
+              throw MissingRightFieldException(field)
+            }
+          }
+        }
+      } catch {
+        case BiConnectException(message) => throw BiConnectException(s".$field$message")
+      }
+    }
+  }
+
 
   // These functions (finally) issue the connection operation
   // Issue with right as sink, left as source
