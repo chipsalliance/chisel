@@ -63,6 +63,7 @@ object MonoConnect {
       source: Data,
       context_mod: Module): Unit =
     (sink, source) match {
+
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
       case (sink_e: Bool, source_e: UInt) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
@@ -74,23 +75,9 @@ object MonoConnect {
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: FixedPoint, source_e: FixedPoint) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
-      case (sink_e: Analog, source_e: Analog) =>
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: Clock, source_e: Clock) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
 
-//
-//      case (sink_e: UInt, source_e: SInt)       => throw MismatchedException(sink.toString, source.toString)
-//      case (sink_e: UInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
-//      case (sink_e: SInt, source_e: UInt)       => throw MismatchedException(sink.toString, source.toString)
-//      case (sink_e: SInt, source_e: FixedPoint) => throw MismatchedException(sink.toString, source.toString)
-//      case (sink_e: FixedPoint, source_e: UInt) => throw MismatchedException(sink.toString, source.toString)
-//      case (sink_e: FixedPoint, source_e: SInt) => throw MismatchedException(sink.toString, source.toString)
-//
-//      case (sink_e: Element, source_e: Element) => {
-//        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
-//        // TODO(twigg): Verify the element-level classes are connectable
-//      }
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) => {
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
@@ -102,6 +89,7 @@ object MonoConnect {
           }
         }
       }
+
       // Handle Record case
       case (sink_r: Record, source_r: Record) => {
         // For each field, descend with right
@@ -120,6 +108,7 @@ object MonoConnect {
           }
         }
       }
+
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }

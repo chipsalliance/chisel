@@ -25,60 +25,61 @@ class CrossConnectTester(inType: Data, outType: Data) extends BasicTester {
 }
 
 class ConnectSpec extends ChiselPropSpec {
-  property("sint := sint should succceed") {
+  property("SInt := SInt should succeed") {
     assertTesterPasses{ new CrossConnectTester(SInt(16.W), SInt(16.W)) }
   }
-  property("sint := uint should fail") {
+  property("SInt := UInt should fail") {
     intercept[ChiselException]{ new CrossConnectTester(UInt(16.W), SInt(16.W)) }
   }
-  property("sint := fixedpoint should fail") {
+  property("SInt := FixedPoint should fail") {
     intercept[ChiselException]{ new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
   }
-  property("uint := uint should succceed") {
+  property("UInt := UInt should succeed") {
     assertTesterPasses{ new CrossConnectTester(UInt(16.W), UInt(16.W)) }
   }
-  property("uint := sint should fail") {
+  property("UInt := SInt should fail") {
     intercept[ChiselException]{ new CrossConnectTester(SInt(16.W), UInt(16.W)) }
   }
-  property("uint := fixedpoint should fail") {
+  property("UInt := FixedPoint should fail") {
     intercept[ChiselException]{ new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
   }
 
-  property("fixedpoint := fixedpoint should succceed") {
+  property("Clock := Clock should succeed") {
+    assertTesterPasses{ new CrossConnectTester(Clock(), Clock()) }
+  }
+  property("Clock := UInt should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(Clock(), UInt(16.W)) }
+  }
+
+  property("FixedPoint := FixedPoint should succeed") {
     assertTesterPasses{ new CrossConnectTester(FixedPoint(16.W, 8.BP), FixedPoint(16.W, 8.BP)) }
   }
-  property("fixedpoint := sint should fail") {
+  property("FixedPoint := SInt should fail") {
     intercept[ChiselException]{ new CrossConnectTester(SInt(16.W), FixedPoint(16.W, 8.BP)) }
   }
-  property("fixedpoint := uint should fail") {
+  property("FixedPoint := UInt should fail") {
     intercept[ChiselException]{ new CrossConnectTester(UInt(16.W), FixedPoint(16.W, 8.BP)) }
   }
-}
 
-class FigureCrossCheckSpec extends ChiselPropSpec {
-  val typesToCheck = List(
-    ("uint",  UInt(16.W)),
-    ("sint",  SInt(16.W)),
-    ("fp",    FixedPoint(16.W, 8.BP)),
-    ("ana",   Analog(16.W)),
-    ("bool",  Bool())
-  )
-
-  for {
-    (k1, f1) <- typesToCheck
-    (k2, f2) <- typesToCheck
-  } {
-    property(s"checking connect for $k1 := $k2") {
-      try {
-        assertTesterPasses(new CrossConnectTester(f1, f2))
-        println(s"Can connect $k1 := $k2")
-      }
-      catch {
-        case c: ChiselException =>
-          println(s"Got a chisel exception for $k1 := $k2")
-        case c: Throwable =>
-          println(s"Got a ${c.getClass.getName} for $k1 := $k2")
-      }
-    }
+  property("Analog := Analog should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(Analog(16.W), Analog(16.W)) }
+  }
+  property("Analog := FixedPoint should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(Analog(16.W), FixedPoint(16.W, 8.BP)) }
+  }
+  property("FixedPoint := Analog should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(FixedPoint(16.W, 8.BP), Analog(16.W)) }
+  }
+  property("Analog := UInt should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(Analog(16.W), UInt(16.W)) }
+  }
+  property("Analog := SInt should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(Analog(16.W), SInt(16.W)) }
+  }
+  property("UInt := Analog should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(UInt(16.W), Analog(16.W)) }
+  }
+  property("SInt := Analog should fail") {
+    intercept[ChiselException]{ new CrossConnectTester(SInt(16.W), Analog(16.W)) }
   }
 }
