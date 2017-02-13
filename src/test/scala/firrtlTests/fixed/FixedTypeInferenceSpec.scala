@@ -206,7 +206,7 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
         |    input a : Fixed<10><<2>>
         |    input b : Fixed<7><<3>>
         |    input c : UInt<2>
-        |    output cat : Fixed
+        |    output cat : UInt
         |    output head : UInt
         |    output tail : UInt
         |    output bits : UInt
@@ -220,7 +220,7 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
         |    input a : Fixed<10><<2>>
         |    input b : Fixed<7><<3>>
         |    input c : UInt<2>
-        |    output cat : Fixed<12><<4>>
+        |    output cat : UInt<12>
         |    output head : UInt<3>
         |    output tail : UInt<7>
         |    output bits : UInt<4>
