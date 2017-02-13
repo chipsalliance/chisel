@@ -21,9 +21,10 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
   }
 }
 
+//noinspection TypeAnnotation,EmptyParenMethodAccessedAsParameterless
 class FixedPointFromBitsTester extends BasicTester {
   val uint = 3.U(4.W)
-  val sint = -3.S
+  val sint = (-3).S
 
   val fp   = FixedPoint.fromDouble(3.0, 4.W, 0.BP)
   val fp_tpe = FixedPoint(4.W, 1.BP)
@@ -46,23 +47,24 @@ class FixedPointFromBitsTester extends BasicTester {
   assert(negativefp.abs() === positivefp)
   assert(negativefp.abs() =/= negativefp)
 
-  val f1p5 = 1.5.F(1.BP)
-  val f6p0 = 6.0.F(0.BP)
-  val f6p2 = 6.0.F(2.BP)
+  val f1bp5 = 1.5.F(1.BP)
+  val f6bp0 = 6.0.F(0.BP)
+  val f6bp2 = 6.0.F(2.BP)
 
-  val f1p5shiftleft2 = Wire(FixedPoint(Width(), BinaryPoint()))
-  val f6p0shiftright2 = Wire(FixedPoint(Width(), BinaryPoint()))
-  val f6p2shiftright2 = Wire(FixedPoint(Width(), BinaryPoint()))
+  val f1bp5shiftleft2 = Wire(FixedPoint(Width(), BinaryPoint()))
+  val f6bp0shiftright2 = Wire(FixedPoint(Width(), BinaryPoint()))
+  val f6bp2shiftright2 = Wire(FixedPoint(Width(), BinaryPoint()))
 
-  f1p5shiftleft2 := f1p5 << 2
-  f6p0shiftright2 := f6p0 >> 2
-  f6p2shiftright2 := f6p2 >> 2
+  f1bp5shiftleft2 := f1bp5 << 2
+  f6bp0shiftright2 := f6bp0 >> 2
+  f6bp2shiftright2 := f6bp2 >> 2
 
-  assert(f1p5shiftleft2 === f6p0)
-  assert(f1p5shiftleft2 === 6.0.F(8.BP))
+  assert(f1bp5shiftleft2 === f6bp0)
+  assert(f1bp5shiftleft2 === 6.0.F(8.BP))
 
-  printf("f6p2 %x f6p2shiftright2 %x\n", f6p2.asSInt(), f6p2shiftright2.asSInt())
-  assert(f6p0shiftright2 === 1.0.F(0.BP))
+  // shifting does not move binary point, so in first case below one bit is lost in shift
+  assert(f6bp0shiftright2 === 1.0.F(0.BP))
+  assert(f6bp2shiftright2 === 1.5.F(2.BP))
 
 
   stop()
