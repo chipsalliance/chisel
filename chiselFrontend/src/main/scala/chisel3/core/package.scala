@@ -102,6 +102,9 @@ package chisel3 {
       def F(binaryPoint: BinaryPoint): FixedPoint = {
         FixedPoint.fromDouble(double, Width(), binaryPoint)
       }
+      def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
+        FixedPoint.fromDouble(double, width, binaryPoint)
+      }
     }
 
     implicit class fromIntToWidth(val int: Int) {
