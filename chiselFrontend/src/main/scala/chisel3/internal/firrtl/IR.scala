@@ -45,6 +45,7 @@ object PrimOp {
   val AsUIntOp = PrimOp("asUInt")
   val AsSIntOp = PrimOp("asSInt")
   val AsFixedPointOp = PrimOp("asFixedPoint")
+  val AsIntervalOp = PrimOp("asInterval")
   val SetBinaryPoint = PrimOp("bpset")
   val AsClockOp = PrimOp("asClock")
 }
@@ -102,7 +103,7 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asInterval(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
-  val range: Range = new KnownIntervalRange(K)
+  val range: Range = new KnownIntervalRange(Closed(n), Closed(n), binaryPoint)
   def minWidth: Int = 1 + n.bitLength
 }
 
@@ -121,6 +122,7 @@ case class Index(imm: Arg, value: Arg) extends Arg {
 }
 
 sealed trait Bound
+sealed trait Unbound extends Bound
 sealed trait NumericBound[T] extends Bound {
   val value: T
 }
@@ -178,14 +180,15 @@ sealed case class KnownSIntRange(min: NumericBound[BigInt], max: NumericBound[Bi
   def getWidth: Width = maxWidth.max(minWidth)
 }
 
-sealed case class KnownIntervalRange(min: NumericBound[BigInt], max: NumericBound[BigInt], binaryPoint: BinaryPoint) {
+sealed case class KnownIntervalRange(min: NumericBound[BigInt], max: NumericBound[BigInt], binaryPoint: BinaryPoint)
+  extends KnownBigIntRange{
   val maxWidth = max match {
-    case Open(v) => Width(BigInt(v - 1).bitLength + 1)
-    case Closed(v) => Width(BigInt(v).bitLength + 1)
+    case Open(v) => Width((v - 1).bitLength + 1)
+    case Closed(v) => Width(v.bitLength + 1)
   }
   val minWidth = min match {
-    case Open(v) => Width(BigInt(v + 1).bitLength + 1)
-    case Closed(v) => Width(BigInt(v).bitLength + 1)
+    case Open(v) => Width((v + 1).bitLength + 1)
+    case Closed(v) => Width(v.bitLength + 1)
   }
 
   def getWidth: Width = maxWidth.max(minWidth)

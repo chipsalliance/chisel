@@ -265,9 +265,9 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
     * of the number is also affected by the specified binary point.  Caution advised
     */
-  final def asInterval(that: BinaryPoint): Interval = macro SourceInfoTransform.thatArg
+  final def asInterval(x: BinaryPoint, y: Range): Interval = macro SourceInfoTransform.xyArg
 
-  def do_asInterval(that: BinaryPoint)(implicit sourceInfo: SourceInfo): Interval = {
+  def do_asInterval(binaryPoint: BinaryPoint, range: Range)(implicit sourceInfo: SourceInfo): Interval = {
     throwException(s"Cannot call .asInterval on $this")
   }
 
@@ -524,11 +524,11 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
-  def do_asInterval(binaryPoint: BinaryPoint, range: Range)(implicit sourceInfo: SourceInfo): Interval = {
+  override def do_asInterval(binaryPoint: BinaryPoint, range: Range)(implicit sourceInfo: SourceInfo): Interval = {
     binaryPoint match {
       case KnownBinaryPoint(value) =>
         val iLit = ILit(value)
-        pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint, range), AsFixedPointOp, ref, iLit))
+        pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint, range), AsIntervalOp, ref, iLit))
       case _ =>
         throwException(
           s"cannot call $this.asInterval(binaryPoint=$binaryPoint, $range), you must specify a known binaryPoint")
@@ -564,10 +564,11 @@ trait UIntFactory {
   def apply(range: Range): UInt = {
     apply(range.getWidth)
   }
-  /** Create a UInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
-    apply(KnownUIntRange(range._1, range._2))
-  }
+//TODO: Fix this later
+//  /** Create a UInt with the specified range */
+//  def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
+//    apply(KnownUIntRange(range._1, range._2))
+//  }
 }
 
 object UInt extends UIntFactory
@@ -698,10 +699,11 @@ trait SIntFactory {
   def apply(range: Range): SInt = {
     apply(range.getWidth)
   }
-  /** Create a SInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
-    apply(KnownSIntRange(range._1, range._2))
-  }
+//TODO: fix this later
+//  /** Create a SInt with the specified range */
+//  def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
+//    apply(KnownSIntRange(range._1, range._2))
+//  }
 
    /** Create an SInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
@@ -1046,7 +1048,7 @@ object FixedPoint {
   *                    and thus use this field as a simple exponent
   * @param lit
   */
-sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val range: Range, lit: Option[FPLit] = None)
+sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val range: Range, lit: Option[IntervalLit] = None)
   extends Bits(width, lit) with Num[Interval] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Interval(w, binaryPoint, range).asInstanceOf[this.type]
@@ -1174,12 +1176,7 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   */
 object Interval {
   /** Create an Interval type with inferred width. */
-  def apply(): Interval = apply(Width(), BinaryPoint(), )
-
-  /** Create an Interval type or port with fixed width. */
-  def apply(width: Int, binaryPoint: Int): Interval = apply(Width(width), BinaryPoint(binaryPoint))
-  /** Create an Interval port with inferred width. */
-  def apply(dir: Direction): Interval = apply(dir, Width(), BinaryPoint())
+  def apply(range: Range): Interval = apply(Width(), BinaryPoint(), range)
 
   /** Create an Interval literal with inferred width from BigInt.
     * Use PrivateObject to force users to specify width and binaryPoint by name
