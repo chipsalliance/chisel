@@ -102,7 +102,7 @@ class VerilogEmitter extends Emitter with PassBased {
       case (s: Seq[Any]) =>
         s foreach (emit(_, top + 1))
         if (top == 0) w write "\n"
-      case _ => error("Shouldn't be here")
+      case x => println(x); throwInternalError;
     }
   }
 
