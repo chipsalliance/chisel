@@ -150,6 +150,7 @@ private[chisel3] class DynamicContext() {
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
+  var whenDepth: Int = 0 // Depth of when nesting
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
 }
@@ -180,6 +181,10 @@ private[chisel3] object Builder {
   def readyForModuleConstr: Boolean = dynamicContext.readyForModuleConstr
   def readyForModuleConstr_=(target: Boolean): Unit = {
     dynamicContext.readyForModuleConstr = target
+  }
+  def whenDepth: Int = dynamicContext.whenDepth
+  def whenDepth_=(target: Int): Unit = {
+    dynamicContext.whenDepth = target
   }
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
