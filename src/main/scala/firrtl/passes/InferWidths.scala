@@ -229,6 +229,7 @@ object InferWidths extends Pass {
       case (t1: SIntType, t2: SIntType) => Seq(WGeq(t1.width, t2.width))
       case (ClockType, ClockType) => Nil
       case (FixedType(w1, p1), FixedType(w2, p2)) => Seq(WGeq(w1,w2), WGeq(p1,p2))
+      case (AnalogType(w1), AnalogType(w2)) => Seq(WGeq(w1,w2), WGeq(w2,w1))
       case (t1: BundleType, t2: BundleType) =>
         (t1.fields zip t2.fields foldLeft Seq[WGeq]()){case (res, (f1, f2)) =>
           res ++ (f1.flip match {

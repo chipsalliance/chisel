@@ -140,12 +140,17 @@ object ExpandConnects extends Pass {
             val ls = get_valid_points(sx.loc.tpe, sx.expr.tpe, Default, Default)
             val locs = create_exps(sx.loc)
             val exps = create_exps(sx.expr)
-            Block(ls map {case (x, y) =>
-              get_flip(sx.loc.tpe, x, Default) match {
-                 case Default => Connect(sx.info, locs(x), exps(y))
-                 case Flip => Connect(sx.info, exps(y), locs(x))
+            val stmts = ls map { case (x, y) =>
+              locs(x).tpe match {
+                case AnalogType(_) => Attach(sx.info, Seq(locs(x), exps(y)))
+                case _ =>
+                  get_flip(sx.loc.tpe, x, Default) match {
+                    case Default => Connect(sx.info, locs(x), exps(y))
+                    case Flip => Connect(sx.info, exps(y), locs(x))
+                  }
               }
-            })
+            }
+            Block(stmts)
           case sx => sx map expand_s
         }
       }
