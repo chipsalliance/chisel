@@ -15,26 +15,25 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
-  private[core] def width: Width = flatten.map(_.width).reduce(_ + _)
+  /** Returns a Seq of the immediate contents of this Aggregate, in order.
+    */
+  def getElements: Seq[Data]
+
+  private[core] def width: Width = getElements.map(_.width).reduce(_ + _)
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = SeqUtils.do_asUInt(this.flatten)
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
+    SeqUtils.do_asUInt(getElements.map(_.asUInt()))
+  }
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
     var i = 0
-    val wire = Wire(this.chiselCloneType)
-    val bits =
-      if (that.width.known && that.width.get >= wire.width.get) {
-        that
-      } else {
-        Wire(that.cloneTypeWidth(wire.width), init = that)
-      }
-    for (x <- wire.flatten) {
-      x := x.fromBits(bits(i + x.getWidth-1, i))
+    val bits = Wire(UInt(this.width), init=that)  // handles width padding
+    for (x <- getElements) {
+      x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth
     }
-    wire.asInstanceOf[this.type]
   }
 }
 
@@ -78,19 +77,16 @@ object Vec {
 
     // Check that types are homogeneous.  Width mismatch for Elements is safe.
     require(!elts.isEmpty)
-    def eltsCompatible(a: Data, b: Data) = a match {
-      case _: Element => a.getClass == b.getClass
-      case _: Aggregate => Mux.typesCompatible(a, b)
-    }
 
-    val t = elts.head
-    for (e <- elts.tail)
-      require(eltsCompatible(t, e), s"can't create Vec of heterogeneous types ${t.getClass} and ${e.getClass}")
+    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
 
-    val maxWidth = elts.map(_.width).reduce(_ max _)
-    val vec = Wire(new Vec(t.cloneTypeWidth(maxWidth).chiselCloneType, elts.length))
     def doConnect(sink: T, source: T) = {
-      if (elts.head.flatten.exists(_.dir != Direction.Unspecified)) {
+      // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
+      val hasDirectioned = vec.sample_element match {
+        case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
+        case t: Element => t.dir != Direction.Unspecified
+      }
+      if (hasDirectioned) {
         sink bulkConnect source
       } else {
         sink connect source
@@ -163,13 +159,20 @@ object Vec {
   */
 sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
+  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+    case that: Vec[T] =>
+      this.length == that.length &&
+      (this.sample_element typeEquivalent that.sample_element)
+    case _ => false
+  }
+
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
   private val self: Seq[T] = Vector.fill(length)(gen)
 
   /**
-  * sample_element 'tracks' all changes to the elements of self.
+  * sample_element 'tracks' all changes to the elements.
   * For consistency, sample_element is always used for creating dynamically
   * indexed ports and outputing the FIRRTL type.
   *
@@ -181,7 +184,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   // This is somewhat weird although I think the best course of action here is
   // to deprecate allElements in favor of dispatched functions to Data or
   // a pattern matched recursive descent
-  private[chisel3] final def allElements: Seq[Element] =
+  private[chisel3] final override def allElements: Seq[Element] =
     (sample_element +: self).flatMap(_.allElements)
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
@@ -244,8 +247,8 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   }
 
   private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
-  private[chisel3] lazy val flatten: IndexedSeq[Bits] =
-    (0 until length).flatMap(i => this.apply(i).flatten)
+  override def getElements: Seq[Data] =
+    (0 until length).map(apply(_))
 
   for ((elt, i) <- self.zipWithIndex)
     elt.setRef(this, i)
@@ -316,14 +319,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
-  def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
     */
   def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
-  def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
 
   /** Outputs the index of the element for which p outputs true, assuming that
@@ -377,7 +380,15 @@ abstract class Record extends Aggregate {
     elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
   }
 
-  private[chisel3] lazy val flatten = elements.toIndexedSeq.flatMap(_._2.flatten)
+  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+    case that: Record =>
+      this.getClass == that.getClass &&
+      this.elements.size == that.elements.size &&
+      this.elements.forall{case (name, model) =>
+        that.elements.contains(name) &&
+        (that.elements(name) typeEquivalent model)}
+    case _ => false
+  }
 
   // NOTE: This sets up dependent references, it can be done before closing the Module
   private[chisel3] override def _onModuleClose: Unit = { // scalastyle:ignore method.name
@@ -389,6 +400,8 @@ abstract class Record extends Aggregate {
   }
 
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
+
+  override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {

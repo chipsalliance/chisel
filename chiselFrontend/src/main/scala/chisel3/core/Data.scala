@@ -29,6 +29,42 @@ object DataMirror {
   def widthOf(target: Data): Width = target.width
 }
 
+/** Creates a clone of the super-type of the input elements. Super-type is defined as:
+  * - for Bits type of the same class: the cloned type of the largest width
+  * - Bools are treated as UInts
+  * - For other types of the same class are are the same: clone of any of the elements
+  * - Otherwise: fail
+  */
+private[core] object cloneSupertype {
+  def apply[T <: Data](elts: Seq[T], createdType: String)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): T = {
+    require(!elts.isEmpty, s"can't create $createdType with no inputs")
+
+    if (elts forall {_.isInstanceOf[Bits]}) {
+      val model: T = elts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
+        case (elt1: Bool, elt2: Bool) => elt1
+        case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
+        case (elt1: UInt, elt2: Bool) => elt1  // TODO: what happens with zero width UInts?
+        case (elt1: UInt, elt2: UInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2  // TODO: perhaps redefine Widths to allow >= op?
+        case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
+        case (elt1: FixedPoint, elt2: FixedPoint) => {
+          require(elt1.binaryPoint == elt2.binaryPoint, s"can't create $createdType with FixedPoint with differing binaryPoints")
+          if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
+        }
+        case (elt1, elt2) =>
+          throw new AssertionError(s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
+      }).asInstanceOf[T] }
+      model.chiselCloneType
+    } else {
+      for (elt <- elts.tail) {
+        require(elt.getClass == elts.head.getClass, s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
+        require(elt typeEquivalent elts.head, s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
+      }
+      elts.head.chiselCloneType
+    }
+  }
+}
+
 /**
 * Input, Output, and Flipped are used to define the directions of Module IOs.
 *
@@ -128,8 +164,19 @@ object Data {
   * from bits.
   */
 abstract class Data extends HasId {
+  // This is a bad API that punches through object boundaries.
+  @deprecated("pending removal once all instances replaced", "chisel3")
+  private[chisel3] def flatten: IndexedSeq[Element] = {
+    this match {
+      case elt: Aggregate => elt.getElements.toIndexedSeq flatMap {_.flatten}
+      case elt: Element => IndexedSeq(elt)
+      case elt => throwException(s"Cannot flatten type ${elt.getClass}")
+    }
+  }
+
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
+  // TODO: refactor away this, this is outside the scope of Data
   private[chisel3] def allElements: Seq[Element]
 
   private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
@@ -166,9 +213,14 @@ abstract class Data extends HasId {
       this legacyConnect that
     }
   }
+
+  /** Whether this Data has the same model ("data type") as that Data.
+    * Data subtypes should overload this with checks against their own type.
+    */
+  private[core] def typeEquivalent(that: Data): Boolean
+
   private[chisel3] def lref: Node = Node(this)
   private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
-  private[core] def cloneTypeWidth(width: Width): this.type
   private[chisel3] def toType: String
   private[core] def width: Width
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
@@ -187,6 +239,8 @@ abstract class Data extends HasId {
     * @return a copy of the object with appropriate core state.
     */
   def chiselCloneType(implicit compileOptions: CompileOptions): this.type = {
+    // TODO: refactor away allElements, handle this with Aggregate/Element match inside Bindings
+
     // Call the user-supplied cloneType method
     val clone = this.cloneType
     // In compatibility mode, simply return cloneType; otherwise, propagate
@@ -215,17 +269,6 @@ abstract class Data extends HasId {
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
-  // While this being in the Data API doesn't really make sense (should be in
-  // Aggregate, right?) this is because of an implementation limitation:
-  // cloneWithDirection, which is private and defined here, needs flatten to
-  // set element directionality.
-  // Related: directionality is mutable state. A possible solution for both is
-  // to define directionality relative to the container, but these parent links
-  // currently don't exist (while this information may be available during
-  // FIRRTL emission, it would break directionality querying from Chisel, which
-  // does get used).
-  private[chisel3] def flatten: IndexedSeq[Bits]
-
   /** Creates an new instance of this type, unpacking the input Bits into
     * structured data.
     *
@@ -236,16 +279,39 @@ abstract class Data extends HasId {
     * @note does NOT check bit widths, may drop bits during assignment
     * @note what fromBits assigs to must have known widths
     */
-  def fromBits(that: Bits): this.type = macro CompileOptionsTransform.thatArg
-
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type
+  def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+    val output = Wire(chiselCloneType).asInstanceOf[this.type]
+    output.connectFromBits(that)
+    output
+  }
 
   /** Packs the value of this object as plain Bits.
     *
     * This performs the inverse operation of fromBits(Bits).
     */
   @deprecated("Best alternative, .asUInt()", "chisel3")
-  def toBits(): UInt = SeqUtils.do_asUInt(this.flatten)(DeprecatedSourceInfo)
+  def toBits(): UInt = do_asUInt(DeprecatedSourceInfo)
+
+  /** Does a reinterpret cast of the bits in this node into the format that provides.
+    * Returns a new Wire of that type. Does not modify existing nodes.
+    *
+    * x.asTypeOf(that) performs the inverse operation of x = that.toBits.
+    *
+    * @note bit widths are NOT checked, may pad or drop bits from input
+    * @note that should have known widths
+    */
+  def asTypeOf[T <: Data](that: T): T = macro CompileOptionsTransform.thatArg
+
+  def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val thatCloned = Wire(that.chiselCloneType)
+    thatCloned.connectFromBits(this.asUInt())
+    thatCloned
+  }
+
+  /** Assigns this node from Bits type. Internal implementation for asTypeOf.
+    */
+  private[core] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit
 
   /** Reinterpret cast to UInt.
     *
@@ -256,8 +322,7 @@ abstract class Data extends HasId {
     */
   final def asUInt(): UInt = macro SourceInfoTransform.noArg
 
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt =
-    SeqUtils.do_asUInt(this.flatten)(sourceInfo)
+  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
 
   // firrtlDirection is the direction we report to firrtl.
   // It maintains the user-specified value (as opposed to the "actual" or applied/propagated value).
@@ -310,9 +375,10 @@ object Clock {
 // TODO: Document this.
 sealed class Clock extends Element(Width(1)) {
   def cloneType: this.type = Clock().asInstanceOf[this.type]
-  private[chisel3] override def flatten: IndexedSeq[Bits] = IndexedSeq()
-  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   private[chisel3] def toType = "Clock"
+
+  private[core] def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass
 
   override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
     case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
@@ -323,9 +389,8 @@ sealed class Clock extends Element(Width(1)) {
   def toPrintable: Printable = PString("CLOCK")
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
-  override def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    val ret = Wire(this.cloneType)
-    ret := that
-    ret.asInstanceOf[this.type]
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    this := that
   }
 }

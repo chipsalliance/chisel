@@ -9,7 +9,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
-  UIntTransform, MuxTransform}
+  UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
@@ -58,7 +58,8 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
-  private[chisel3] def flatten: IndexedSeq[Bits] = IndexedSeq(this)
+  // Only used for in a few cases, hopefully to be removed
+  private[core] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
 
@@ -399,6 +400,9 @@ abstract trait Num[T <: Data] {
 sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
     extends Bits(width, lit) with Num[UInt] {
 
+  private[core] override def typeEquivalent(that: Data): Boolean =
+    that.isInstanceOf[UInt] && this.width == that.width
+
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
   private[chisel3] def toType = s"UInt$width"
@@ -525,13 +529,9 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    val res = Wire(this, null).asInstanceOf[this.type]
-    res := (that match {
-      case u: UInt => u
-      case _ => that.asUInt
-    })
-    res
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    this := that.asUInt
   }
 }
 
@@ -566,6 +566,9 @@ object Bits extends UIntFactory
 
 sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
     extends Bits(width, lit) with Num[SInt] {
+
+  private[core] override def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
@@ -669,13 +672,8 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    val res = Wire(this, null).asInstanceOf[this.type]
-    res := (that match {
-      case s: SInt => s
-      case _ => that.asSInt
-    })
-    res
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    this := that.asSInt
   }
 }
 
@@ -768,52 +766,6 @@ trait BoolFactory {
 
 object Bool extends BoolFactory
 
-object Mux {
-  /** Creates a mux, whose output is one of the inputs depending on the
-    * value of the condition.
-    *
-    * @param cond condition determining the input to choose
-    * @param con the value chosen when `cond` is true
-    * @param alt the value chosen when `cond` is false
-    * @example
-    * {{{
-    * val muxOut = Mux(data_in === 3.U, 3.U(4.W), 0.U(4.W))
-    * }}}
-    */
-  def apply[T <: Data](cond: Bool, con: T, alt: T): T = macro MuxTransform.apply[T]
-
-  def do_apply[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo): T =
-    (con, alt) match {
-    // Handle Mux(cond, UInt, Bool) carefully so that the concrete type is UInt
-    case (c: Bool, a: Bool) => doMux(cond, c, a).asInstanceOf[T]
-    case (c: UInt, a: Bool) => doMux(cond, c, a << 0).asInstanceOf[T]
-    case (c: Bool, a: UInt) => doMux(cond, c << 0, a).asInstanceOf[T]
-    case (c: Bits, a: Bits) => doMux(cond, c, a).asInstanceOf[T]
-    case _ => doAggregateMux(cond, con, alt)
-  }
-
-  private def doMux[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo): T = {
-    require(con.getClass == alt.getClass, s"can't Mux between ${con.getClass} and ${alt.getClass}")
-    Binding.checkSynthesizable(cond, s"'cond' ($cond)")
-    Binding.checkSynthesizable(con, s"'con' ($con)")
-    Binding.checkSynthesizable(alt, s"'alt' ($alt)")
-    val d = alt.cloneTypeWidth(con.width max alt.width)
-    pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, con.ref, alt.ref))
-  }
-
-  private[core] def typesCompatible[T <: Data](x: T, y: T): Boolean = {
-    val sameTypes = x.getClass == y.getClass
-    val sameElements = x.flatten zip y.flatten forall { case (a, b) => a.getClass == b.getClass && a.width == b.width }
-    val sameNumElements = x.flatten.size == y.flatten.size
-    sameTypes && sameElements && sameNumElements
-  }
-
-  private def doAggregateMux[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo): T = {
-    require(typesCompatible(con, alt), s"can't Mux between heterogeneous types ${con.getClass} and ${alt.getClass}")
-    doMux(cond, con, alt)
-  }
-}
-
 //scalastyle:off number.of.methods
 /**
   * A sealed class representing a fixed point number that has a bit width and a binary point
@@ -829,6 +781,11 @@ object Mux {
   */
 sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit: Option[FPLit] = None)
     extends Bits(width, lit) with Num[FixedPoint] {
+  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+    case that: FixedPoint => this.width == that.width && this.binaryPoint == that.binaryPoint  // TODO: should this be true for unspecified widths?
+    case _ => false
+  }
+
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
   private[chisel3] def toType = s"Fixed$width$binaryPoint"
@@ -945,13 +902,13 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    val res = Wire(this, null).asInstanceOf[this.type]
-    res := (that match {
+
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
+    this := (that match {
       case fp: FixedPoint => fp.asSInt.asFixedPoint(this.binaryPoint)
       case _ => that.asFixedPoint(this.binaryPoint)
     })
-    res
   }
   //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
 }
@@ -1073,6 +1030,13 @@ object FixedPoint {
 final class Analog private (width: Width) extends Element(width) {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
+  private[chisel3] def toType = s"Analog$width"
+
+  private[core] override def typeEquivalent(that: Data): Boolean =
+    that.isInstanceOf[Analog] && this.width == that.width
+
+  def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
+
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can
   //   be connected in the parent module as well
@@ -1084,15 +1048,15 @@ final class Analog private (width: Width) extends Element(width) {
     case (_: UnboundBinding | _: WireBinding | PortBinding(_, None)) => super.binding_=(target)
     case _ => throwException("Only Wires and Ports can be of type Analog")
   }
-  private[core] override def cloneTypeWidth(w: Width): this.type =
-    new Analog(w).asInstanceOf[this.type]
-  private[chisel3] def toType = s"Analog$width"
-  def cloneType: this.type = cloneTypeWidth(width)
-  // What do flatten and fromBits mean?
-  private[chisel3] def flatten: IndexedSeq[Bits] =
-    throwException("Chisel Internal Error: Analog cannot be flattened into Bits")
-  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type =
-    throwException("Analog does not support fromBits")
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt =
+    throwException("Analog does not support asUInt")
+
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    throwException("Analog does not support connectFromBits")
+  }
+
   final def toPrintable: Printable = PString("Analog")
 }
 /** Object that provides factory methods for [[Analog]] objects
