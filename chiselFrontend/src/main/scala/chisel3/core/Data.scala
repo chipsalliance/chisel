@@ -36,7 +36,8 @@ object DataMirror {
   * - Otherwise: fail
   */
 private[core] object cloneSupertype {
-  def apply[T <: Data](elts: Seq[T], createdType: String)(implicit sourceInfo: SourceInfo): T = {
+  def apply[T <: Data](elts: Seq[T], createdType: String)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
     if (elts forall {_.isInstanceOf[Bits]}) {

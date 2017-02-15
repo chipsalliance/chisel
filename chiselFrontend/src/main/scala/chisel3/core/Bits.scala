@@ -58,12 +58,11 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
-  // Only used for Mux, which needs to return a value of the same type with width the larger of the
-  // inputs.
+  // Only used for in a few cases, hopefully to be removed
   private[core] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
-
+  
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
   final def head(n: Int): UInt = macro SourceInfoTransform.nArg
 
@@ -1031,6 +1030,11 @@ object FixedPoint {
 final class Analog private (width: Width) extends Element(width) {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
+  private[core] override def typeEquivalent(that: Data): Boolean =
+    that.isInstanceOf[Analog] && this.width == that.width
+
+  def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
+
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can
   //   be connected in the parent module as well
@@ -1042,12 +1046,16 @@ final class Analog private (width: Width) extends Element(width) {
     case (_: UnboundBinding | _: WireBinding | PortBinding(_, None)) => super.binding_=(target)
     case _ => throwException("Only Wires and Ports can be of type Analog")
   }
-  private[core] override def cloneTypeWidth(w: Width): this.type =
-    new Analog(w).asInstanceOf[this.type]
+
   private[chisel3] def toType = s"Analog$width"
-  def cloneType: this.type = cloneTypeWidth(width)
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = 
+    throwException("Analog does not support asUInt")
+  
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
     throwException("Analog does not support connectFromBits")
+  }
   final def toPrintable: Printable = PString("Analog")
 }
 /** Object that provides factory methods for [[Analog]] objects
