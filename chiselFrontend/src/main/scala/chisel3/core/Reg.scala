@@ -16,12 +16,19 @@ object Reg {
       }
       t.chiselCloneType
     } else if (next ne null) {
-      next.cloneTypeWidth(Width())
+      (next match {
+        case next: Bits => next.cloneTypeWidth(Width())
+        case _ => next.chiselCloneType
+      }).asInstanceOf[T]
+
     } else if (init ne null) {
       init.litArg match {
         // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
         case Some(lit) if lit.forcedWidth => init.chiselCloneType
-        case _ => init.cloneTypeWidth(Width())
+        case _ => (init match {
+          case init: Bits => init.cloneTypeWidth(Width())
+          case _ => init.chiselCloneType
+        }).asInstanceOf[T]
       }
     } else {
       throwException("cannot infer type")
