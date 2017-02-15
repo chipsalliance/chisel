@@ -918,24 +918,33 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
   def do_=== (that: FixedPoint)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
 
   def do_abs(implicit sourceInfo: SourceInfo): FixedPoint = {
-    Mux(this < 0.F(0), 0.F(0) - this, this)
+    Mux(this < 0.F(0.BP), 0.F(0.BP) - this, this)
   }
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width + that, this.binaryPoint), ShiftLeftOp, that)
   override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): FixedPoint =
-    this << that.toInt
+    (this << that.toInt).asFixedPoint(this.binaryPoint)
   override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width.dynamicShiftLeft(that.width), this.binaryPoint), DynamicShiftLeftOp, that)
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width.shiftRight(that), this.binaryPoint), ShiftRightOp, that)
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): FixedPoint =
-    this >> that.toInt
+    (this >> that.toInt).asFixedPoint(this.binaryPoint)
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width, this.binaryPoint), DynamicShiftRightOp, that)
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+  override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo): FixedPoint = {
+    binaryPoint match {
+      case KnownBinaryPoint(value) =>
+        val iLit = ILit(value)
+        pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
+      case _ =>
+        throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+    }
+  }
   def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     val res = Wire(this, null).asInstanceOf[this.type]
     res := (that match {
@@ -961,14 +970,31 @@ object FixedPoint {
   def apply(): FixedPoint = apply(Width(), BinaryPoint())
 
   /** Create an FixedPoint type or port with fixed width. */
+  @deprecated("Use FixedPoint(width: Width, binaryPoint: BinaryPoint) example FixedPoint(16.W, 8.BP)", "chisel3")
   def apply(width: Int, binaryPoint: Int): FixedPoint = apply(Width(width), BinaryPoint(binaryPoint))
+
+  /** Create an FixedPoint type or port with fixed width. */
+  def apply(width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
+
   /** Create an FixedPoint port with inferred width. */
   def apply(dir: Direction): FixedPoint = apply(dir, Width(), BinaryPoint())
 
   /** Create an FixedPoint literal with inferred width from BigInt.
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
-  def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): FixedPoint =
+  def fromBigInt(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
+    apply(value, Width(), binaryPoint)
+  }
+  /** Create an FixedPoint literal with inferred width from BigInt.
+    * Use PrivateObject to force users to specify width and binaryPoint by name
+    */
+  def fromBigInt(value: BigInt, binaryPoint: BinaryPoint = 0.BP): FixedPoint = {
+    apply(value, Width(), binaryPoint)
+  }
+  /** Create an FixedPoint literal with inferred width from BigInt.
+    * Use PrivateObject to force users to specify width and binaryPoint by name
+    */
+  def fromBigInt(value: BigInt, width: Int, binaryPoint: Int): FixedPoint =
     if(width == -1) {
       apply(value, Width(), BinaryPoint(binaryPoint))
     }
@@ -978,15 +1004,22 @@ object FixedPoint {
   /** Create an FixedPoint literal with inferred width from Double.
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
+  @deprecated("use fromDouble(value: Double, width: Width, binaryPoint: BinaryPoint)", "chisel3")
   def fromDouble(value: Double, dummy: PrivateType = PrivateObject,
                  width: Int = -1, binaryPoint: Int = 0): FixedPoint = {
     fromBigInt(
       toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
     )
   }
+  /** Create an FixedPoint literal with inferred width from Double.
+    * Use PrivateObject to force users to specify width and binaryPoint by name
+    */
+  def fromDouble(value: Double, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
+    fromBigInt(
+      toBigInt(value, binaryPoint.get), width = width, binaryPoint = binaryPoint
+    )
+  }
 
-  /** Create an FixedPoint type with specified width and binary position. */
-  def apply(width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
   /** Create an FixedPoint port with specified width and binary position. */
   def apply(dir: Direction, width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
   def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
@@ -1015,7 +1048,7 @@ object FixedPoint {
     * @return
     */
   def toDouble(i: BigInt, binaryPoint    : Int): Double = {
-    val multiplier = math.pow(2,binaryPoint    )
+    val multiplier = math.pow(2,binaryPoint)
     val result = i.toDouble / multiplier
     result
   }
