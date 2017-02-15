@@ -23,7 +23,7 @@ case class RawParam(value: String) extends Param
   *
   * @example
   * Some design require a differential input clock to clock the all design.
-  * With xilinx FPGA for example, a verilog template named IBUFDS must be
+  * With the xilinx FPGA for example, a Verilog template named IBUFDS must be
   * integrated to use differential input:
   * {{{
   *  IBUFDS #(.DIFF_TERM("TRUE"),
@@ -34,7 +34,7 @@ case class RawParam(value: String) extends Param
   *  );
   * }}}
   *
-  * To instanciate it, a BlackBox can be used like following:
+  * To instantiate it, a BlackBox can be used like following:
   * {{{
   * import chisel3._
   * import chisel3.experimental._
