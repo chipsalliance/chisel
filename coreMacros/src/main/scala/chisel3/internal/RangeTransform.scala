@@ -11,6 +11,8 @@ import scala.reflect.macros.whitebox
 
 class RangeTransform(val c: Context) {
   import c.universe._
+
+  //scalastyle:off cyclomatic.complexity,method.length
   def apply(args: c.Tree*): c.Tree = {
     val stringTrees = c.prefix.tree match {
       case q"$_(scala.StringContext.apply(..$strings))" => strings
@@ -97,6 +99,6 @@ class RangeTransform(val c: Context) {
       q"_root_.chisel3.internal.firrtl.Open($maxArg)"
     }
 
-    q"($startBound, $endBound)"
+    q"KnownSIntRange($startBound, $endBound)"
   }
 }

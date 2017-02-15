@@ -1,3 +1,4 @@
+import chisel3.internal.firrtl.KnownSIntRange
 // See LICENSE for license details.
 
 /** The chisel3 package contains the chisel3 API.
@@ -290,7 +291,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         * UInt(range"[0, \${myInt + 2})")
         * }}}
         */
-      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+//      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+      def range(args: Any*): KnownSIntRange = macro chisel3.internal.RangeTransform.apply
     }
 
     import scala.language.experimental.macros
