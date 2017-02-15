@@ -165,15 +165,14 @@ object Vec {
   * general [[Vec]] only needs to be used when there is a need to express the hardware collection in a [[Reg]]
   * or IO [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
   * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in an IO [[Bundle]]
+  * @example
   *  {{{
-  *    class Selector extends Module {
-  *      val io = IO(new Bundle {
-  *        val in = Input(Vec(20, UInt(16.W)))
-  *        val addr = UInt(5.W)
-  *        val out = Output(UInt(16.W))
-  *      })
-  *      io.out := io.in(io.addr)
-  *    }
+  *    val io = IO(new Bundle {
+  *      val in = Input(Vec(20, UInt(16.W)))
+  *      val addr = UInt(5.W)
+  *      val out = Output(UInt(16.W))
+  *    })
+  *    io.out := io.in(io.addr)
   *  }}}
   */
 sealed class Vec[T <: Data] private (gen: => T, val length: Int)
@@ -461,6 +460,7 @@ class Bundle extends Record {
     *
     * Elements defined earlier in the Bundle are higher order upon
     * serialization. For example:
+    * @example
     * {{{
     *   class MyBundle extends Bundle {
     *     val foo = UInt(16.W)
