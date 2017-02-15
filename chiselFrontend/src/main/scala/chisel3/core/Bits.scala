@@ -62,7 +62,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   private[core] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
-  
+
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
   final def head(n: Int): UInt = macro SourceInfoTransform.nArg
 
@@ -1030,6 +1030,8 @@ object FixedPoint {
 final class Analog private (width: Width) extends Element(width) {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
+  private[chisel3] def toType = s"Analog$width"
+
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
 
@@ -1047,15 +1049,14 @@ final class Analog private (width: Width) extends Element(width) {
     case _ => throwException("Only Wires and Ports can be of type Analog")
   }
 
-  private[chisel3] def toType = s"Analog$width"
-  
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = 
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt =
     throwException("Analog does not support asUInt")
-  
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     throwException("Analog does not support connectFromBits")
   }
+
   final def toPrintable: Printable = PString("Analog")
 }
 /** Object that provides factory methods for [[Analog]] objects
