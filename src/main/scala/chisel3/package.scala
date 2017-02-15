@@ -160,6 +160,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
+  val withClockAndReset = chisel3.core.withClockAndReset
+
   type Printable = chisel3.core.Printable
   val Printable = chisel3.core.Printable
   type Printables = chisel3.core.Printables

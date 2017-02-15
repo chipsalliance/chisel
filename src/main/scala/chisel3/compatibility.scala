@@ -170,6 +170,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
+  val withClockAndReset = chisel3.core.withClockAndReset
+
   implicit class fromBigIntToLiteral(val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
   implicit class fromtIntToLiteral(val x: Int) extends chisel3.core.fromIntToLiteral(x)
   implicit class fromtLongToLiteral(val x: Long) extends chisel3.core.fromLongToLiteral(x)
