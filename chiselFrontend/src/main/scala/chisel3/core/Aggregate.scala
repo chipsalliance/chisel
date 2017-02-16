@@ -155,17 +155,12 @@ object Vec {
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
   *
-  * @tparam T type of elements
-  * @note when multiple conflicting assignments are performed on a Vec element,
-  * the last one takes effect (unlike Mem, where the result is undefined)
-  * @note Vecs, unlike classes in Scala's collection library, are propagated
-  * intact to FIRRTL as a vector type, which may make debugging easier
-  *
   * Careful consideration should be given over the use of [[Vec]] vs [[Seq]] or some other scala collection. In
   * general [[Vec]] only needs to be used when there is a need to express the hardware collection in a [[Reg]]
   * or IO [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
+  *
   * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in an IO [[Bundle]]
-  * @example
+  *
   *  {{{
   *    val io = IO(new Bundle {
   *      val in = Input(Vec(20, UInt(16.W)))
@@ -174,6 +169,12 @@ object Vec {
   *    })
   *    io.out := io.in(io.addr)
   *  }}}
+  *
+  * @tparam T type of elements
+  *
+  * @note
+  *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
+  *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
 sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
@@ -436,7 +437,6 @@ abstract class Record extends Aggregate {
   * }}}
   *
   * Or as a named class
-  * @example
   * {{{
   *   class Packet extends Bundle {
   *     val header = UInt(16.W)
