@@ -436,6 +436,7 @@ abstract class Record extends Aggregate {
   * }}}
   *
   * Or as a named class
+  * @example
   * {{{
   *   class Packet extends Bundle {
   *     val header = UInt(16.W)
