@@ -20,8 +20,6 @@ env:
     PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
 
 install:
-  # Grab Chisel 3
-  - git clone https://github.com/ucb-bar/chisel3.git
   # Install Verilator (if not found in cache)
   - bash .install_verilator.sh
 
@@ -30,8 +28,5 @@ script:
   - verilator --version
   - cd $TRAVIS_BUILD_DIR
   - sbt clean test assembly publish-local
-  - mkdir -p chisel3/lib
-  - cp utils/bin/firrtl.jar chisel3/lib
   # Chisel 3 Tests
-  - cd chisel3
-  - sbt clean test
+  - bash .run_chisel_tests.sh
