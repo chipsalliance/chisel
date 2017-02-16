@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3 {
   import internal.Builder
 
@@ -93,8 +95,16 @@ package chisel3 {
       def asBool(): Bool = Bool.Lit(boolean)
     }
 
+    //scalastyle:off method.name
     implicit class fromDoubleToLiteral(val double: Double) {
+      @deprecated("Use notation <double>.F(<binary_point>.BP) instead", "chisel3")
       def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(double, binaryPoint = binaryPoint)
+      def F(binaryPoint: BinaryPoint): FixedPoint = {
+        FixedPoint.fromDouble(double, Width(), binaryPoint)
+      }
+      def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
+        FixedPoint.fromDouble(double, width, binaryPoint)
+      }
     }
 
     implicit class fromIntToWidth(val int: Int) {

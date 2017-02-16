@@ -32,11 +32,13 @@ object Module {
     Builder.readyForModuleConstr = true
     val parent: Option[Module] = Builder.currentModule
     val whenDepth: Int = Builder.whenDepth
+    val clockAndReset: Option[ClockAndReset] = Builder.currentClockAndReset
 
     // Execute the module, this has the following side effects:
     //   - set currentModule
     //   - unset readyForModuleConstr
     //   - reset whenDepth to 0
+    //   - set currentClockAndReset
     val m = bc.setRefs()
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
 
@@ -50,6 +52,7 @@ object Module {
     }
     Builder.currentModule = parent // Back to parent!
     Builder.whenDepth = whenDepth
+    Builder.currentClockAndReset = clockAndReset // Back to clock and reset scope
 
     val ports = m.computePorts
     // Blackbox inherits from Module so we have to match on it first TODO fix
@@ -69,6 +72,11 @@ object Module {
     }
     m
   }
+
+  /** Returns the implicit Clock */
+  def clock: Clock = Builder.forcedClock
+  /** Returns the implicit Reset */
+  def reset: Bool = Builder.forcedReset
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -155,6 +163,9 @@ extends HasId {
   def io: Record
   val clock = Port(Input(Clock()))
   val reset = Port(Input(Bool()))
+
+  // Setup ClockAndReset
+  Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
 
   private[chisel3] def addId(d: HasId) { _ids += d }
 
