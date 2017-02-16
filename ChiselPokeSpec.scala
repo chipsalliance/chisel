@@ -89,11 +89,10 @@ trait ChiselPokeTesterUtils extends Assertions {
 
   /** Instantiates a tester from a module generator, using default Tester options.
     */
-  protected def runTester[T <: Module](dutGen: => T, testerBackend: TesterBackend=FirrtlInterpreterBackend)(block: (InnerTester, T) => Unit) {
-    val optionsManager = new TesterOptionsManager
+  protected def runTester[T <: Module](dutGen: => T, testerBackend: TesterBackend, options: TesterOptionsManager)(block: (InnerTester, T) => Unit) {
     val dutGenShim: () => T = () => dutGen
-    val (dut, backend) = testerBackend.create(dutGenShim, optionsManager)
-    val innerTester = new InnerTester(backend, optionsManager)
+    val (dut, backend) = testerBackend.create(dutGenShim, options)
+    val innerTester = new InnerTester(backend, options)
     block(innerTester, dut)
     innerTester.finish
   }
@@ -102,8 +101,13 @@ trait ChiselPokeTesterUtils extends Assertions {
 /** Basic peek-poke test system where failures are handled and reported within ScalaTest.
   */
 trait PokeTester extends ChiselPokeTesterUtils {
+  def test[T <: Module](dutGen: => T, testerBackend: TesterBackend, options: TesterOptionsManager)(block: (InnerTester, T) => Unit) {
+    runTester(dutGen, testerBackend, options) { (tester, dut) => block(tester, dut) }
+  }
+
   def test[T <: Module](dutGen: => T, testerBackend: TesterBackend=FirrtlInterpreterBackend)(block: (InnerTester, T) => Unit) {
-    runTester(dutGen, testerBackend) { (tester, dut) => block(tester, dut) }
+    val options = new TesterOptionsManager
+    test(dutGen, FirrtlInterpreterBackend, options)(block)
   }
 }
 
@@ -162,8 +166,17 @@ trait ImplicitPokeTester extends ChiselPokeTesterUtils {
     t.reset(cycles)
   }
 
+  /** The advanced version of test, allowing custom options and requiring a custom backend.
+   */
+  def test[T <: Module](dutGen: => T, testerBackend: TesterBackend, options: TesterOptionsManager)(block: InnerTester => (T => Unit)) {
+    runTester(dutGen, testerBackend, options) { (tester, dut) => block(tester)(dut) }
+  }
+
   /** Runs a test: runs the DUT generator, compiles it down to the requested backend, and runs the
     * test sequence.
+    *
+    * This is the simple version, which uses default options.
+    *
     * @example {{{
     * test(new MyDut) {implicit t => c =>
     *   poke(c.io.in, 0x41)
@@ -173,6 +186,7 @@ trait ImplicitPokeTester extends ChiselPokeTesterUtils {
     * }}}
     */
   def test[T <: Module](dutGen: => T, testerBackend: TesterBackend=FirrtlInterpreterBackend)(block: InnerTester => (T => Unit)) {
-    runTester(dutGen, testerBackend) { (tester, dut) => block(tester)(dut) }
+    val options = new TesterOptionsManager
+    test(dutGen, testerBackend, options)(block)
   }
 }
