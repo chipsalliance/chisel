@@ -151,6 +151,7 @@ private[chisel3] class DynamicContext() {
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenDepth: Int = 0 // Depth of when nesting
+  var currentClockAndReset: Option[ClockAndReset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
 }
@@ -186,6 +187,16 @@ private[chisel3] object Builder {
   def whenDepth_=(target: Int): Unit = {
     dynamicContext.whenDepth = target
   }
+  def currentClockAndReset: Option[ClockAndReset] = dynamicContext.currentClockAndReset
+  def currentClockAndReset_=(target: Option[ClockAndReset]): Unit = {
+    dynamicContext.currentClockAndReset = target
+  }
+  def forcedClockAndReset: ClockAndReset = currentClockAndReset match {
+    case Some(clockAndReset) => clockAndReset
+    case None => throwException("Error: No implicit clock and reset.")
+  }
+  def forcedClock: Clock = forcedClockAndReset.clock
+  def forcedReset: Bool = forcedClockAndReset.reset
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.

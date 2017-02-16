@@ -68,7 +68,8 @@ object Reg {
     // to resolve all use cases. If the type inferencer / implicit resolution
     // system improves, this may be changed.
     val x = makeType(compileOptions, t, next, init)
-    val clock = Node(x._parent.get.clock) // TODO multi-clock
+    val clock = Node(Builder.forcedClock)
+    val reset = Node(Builder.forcedReset)
 
     // Bind each element of x to being a Reg
     Binding.bind(x, RegBinder(Builder.forcedModule), "Error: t")
@@ -77,7 +78,7 @@ object Reg {
       pushCommand(DefReg(sourceInfo, x, clock))
     } else {
       Binding.checkSynthesizable(init, s"'init' ($init)")
-      pushCommand(DefRegInit(sourceInfo, x, clock, Node(x._parent.get.reset), init.ref))
+      pushCommand(DefRegInit(sourceInfo, x, clock, reset, init.ref))
     }
     if (next != null) {
       Binding.checkSynthesizable(next, s"'next' ($next)")

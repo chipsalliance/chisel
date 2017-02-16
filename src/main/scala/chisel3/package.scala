@@ -268,6 +268,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val Analog = chisel3.core.Analog
     val attach = chisel3.core.attach
 
+    val withClockAndReset = chisel3.core.withClockAndReset
+    val withClock = chisel3.core.withClock
+    val withReset = chisel3.core.withReset
+
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
     implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
