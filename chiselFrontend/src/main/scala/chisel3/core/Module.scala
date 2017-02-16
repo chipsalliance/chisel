@@ -72,6 +72,11 @@ object Module {
     }
     m
   }
+
+  /** Returns the implicit Clock */
+  def clock: Clock = Builder.forcedClock
+  /** Returns the implicit Reset */
+  def reset: Bool = Builder.forcedReset
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.

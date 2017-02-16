@@ -3,18 +3,19 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.{withClockAndReset, withClock, withReset}
 import chisel3.util.{Counter, RegInit}
 import chisel3.testers.BasicTester
 
+/** Multi-clock test of a Reg using a different clock via withClock */
 class ClockDividerTest extends BasicTester {
   val cDiv = RegInit(true.B) // start with falling edge to simplify clock relationship assert
   cDiv := !cDiv
   val clock2 = cDiv.asClock
-  val reset2 = Wire(init = reset)
 
   val reg1 = RegInit(0.U(8.W))
   reg1 := reg1 + 1.U
-  val reg2 = withClockAndReset(clock2, reset2) { RegInit(0.U(8.W)) }
+  val reg2 = withClock(clock2) { RegInit(0.U(8.W)) }
   reg2 := reg2 + 1.U
 
   when (reg1 < 10.U) {
@@ -22,14 +23,28 @@ class ClockDividerTest extends BasicTester {
   }
 
   when (reg1 === 10.U) {
-    reset2 := true.B
-  }
-  when (reg1 === 11.U) {
-    assert(reg2 === 0.U)
     stop()
   }
 }
 
+/** Test withReset changing the reset of a Reg */
+class WithResetTest extends BasicTester {
+  val reset2 = Wire(init = false.B)
+  val reg = withReset(reset2 || reset) { RegInit(0.U(8.W)) }
+  reg := reg + 1.U
+
+  val (cycle, done) = Counter(true.B, 10)
+  when (cycle < 7.U) {
+    assert(reg === cycle)
+  } .elsewhen (cycle === 7.U) {
+    reset2 := true.B
+  } .elsewhen (cycle === 8.U) {
+    assert(reg === 0.U)
+  }
+  when (done) { stop() }
+}
+
+/** Test Mem ports with different clocks */
 class MultiClockMemTest extends BasicTester {
   val cDiv = RegInit(true.B)
   cDiv := !cDiv
@@ -55,7 +70,7 @@ class MultiClockMemTest extends BasicTester {
   }
 
   // Write port 2 walks through writing 456 on 2nd time through
-  withClockAndReset(clock2, reset) {
+  withClock(clock2) {
     when (cycle >= 8.U && cycle < 16.U) {
       mem(waddr) := 456.U // write 456 to different address
     }
@@ -74,22 +89,35 @@ class MultiClockMemTest extends BasicTester {
 }
 
 class MultiClockSpec extends ChiselFlatSpec {
-  behavior of "withClockAndReset"
 
-  it should "return like a normal Scala block" in {
-    Driver.emit(() => new Module {
-      val io = IO(new Bundle {})
-      val res = withClockAndReset(this.clock, this.reset) { 5 }
-      assert(res === 5)
-    })
-  }
-
-  it should "scope the clock and reset of registers" in {
+  "withClock" should "scope the clock of registers" in {
     assertTesterPasses(new ClockDividerTest)
   }
 
   it should "scope ports of memories" in {
     assertTesterPasses(new MultiClockMemTest)
+  }
+
+  it should "return like a normal Scala block" in {
+    elaborate(new BasicTester {
+      assert(withClock(this.clock) { 5 } == 5)
+    })
+  }
+
+  "withReset" should "scope the reset of registers" in {
+    assertTesterPasses(new WithResetTest)
+  }
+
+  it should "return like a normal Scala block" in {
+    elaborate(new BasicTester {
+      assert(withReset(this.reset) { 5 } == 5)
+    })
+  }
+
+  "withClockAndReset" should "return like a normal Scala block" in {
+    elaborate(new BasicTester {
+      assert(withClockAndReset(this.clock, this.reset) { 5 } == 5)
+    })
   }
 
   it should "scope the clocks and resets of asserts" in {
