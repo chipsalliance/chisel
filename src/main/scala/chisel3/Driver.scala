@@ -250,7 +250,9 @@ object Driver extends BackendCompilationUtilities {
 
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlSource = Some(firrtlString), annotations = circuit.annotations.toList)
+      firrtlSource = Some(firrtlString),
+      annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList
+    )
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))
