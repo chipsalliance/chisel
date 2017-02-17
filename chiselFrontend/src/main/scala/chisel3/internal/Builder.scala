@@ -136,7 +136,7 @@ private[chisel3] trait HasId extends InstanceId {
     }
     val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
-      m.getParameterTypes.isEmpty && valNames.contains(m.getName)
+      m.getParameterTypes.isEmpty && valNames.contains(m.getName) && !m.getDeclaringClass.isAssignableFrom(rootClass)
     this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
   }
 }
