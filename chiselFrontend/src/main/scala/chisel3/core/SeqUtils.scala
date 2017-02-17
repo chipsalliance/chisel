@@ -15,7 +15,7 @@ private[chisel3] object SeqUtils {
     */
   def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
 
-  def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo): UInt = {
+  def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
@@ -29,7 +29,7 @@ private[chisel3] object SeqUtils {
     */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
-  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = in.size match {
+  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = in.size match {
     case 0 => 0.U
     case 1 => in.head
     case n => count(in take n/2) +& count(in drop n/2)
@@ -37,9 +37,9 @@ private[chisel3] object SeqUtils {
 
   /** Returns the data value corresponding to the first true predicate.
     */
-  def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
+  def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro CompileOptionsTransform.inArg
 
-  def do_priorityMux[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo): T = {
+  def do_priorityMux[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (in.size == 1) {
       in.head._2
     } else {
@@ -58,8 +58,8 @@ private[chisel3] object SeqUtils {
       in.head._2
     } else {
       val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, 0.U)
-      val width = in.map(_._2.width).reduce(_ max _)
-      in.head._2.cloneTypeWidth(width).fromBits(masked.reduceLeft(_|_))
+      val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
+      output.fromBits(masked.reduceLeft(_|_))
     }
   }
 }

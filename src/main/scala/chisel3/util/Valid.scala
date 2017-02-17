@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 /** An Bundle containing data and a signal determining if it is valid */
 class Valid[+T <: Data](gen: T) extends Bundle
@@ -32,6 +33,7 @@ object Valid {
   */
 object Pipe
 {
+  @chiselName
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): Valid[T] = {
     if (latency == 0) {
       val out = Wire(Valid(enqBits))

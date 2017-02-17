@@ -20,12 +20,37 @@ case class RawParam(value: String) extends Param
   * to RTL modules defined outside Chisel.
   *
   * @example
+  * Some design require a differential input clock to clock the all design.
+  * With the xilinx FPGA for example, a Verilog template named IBUFDS must be
+  * integrated to use differential input:
   * {{{
-  * ... to be written once a spec is finalized ...
+  *  IBUFDS #(.DIFF_TERM("TRUE"),
+  *           .IOSTANDARD("DEFAULT")) ibufds (
+  *   .IB(ibufds_IB),
+  *   .I(ibufds_I),
+  *   .O(ibufds_O)
+  *  );
+  * }}}
+  *
+  * To instantiate it, a BlackBox can be used like following:
+  * {{{
+  * import chisel3._
+  * import chisel3.experimental._
+  *
+  * // Example with Xilinx differential buffer IBUFDS
+  * class IBUFDS extends BlackBox(Map("DIFF_TERM" -> "TRUE", // Verilog parameters
+  *                                   "IOSTANDARD" -> "DEFAULT"
+  *                      )) {
+  *   val io = IO(new Bundle {
+  *     val O = Output(Clock()) // IO names will be the same
+  *     val I = Input(Clock())  // (without 'io_' in prefix)
+  *     val IB = Input(Clock()) //
+  *   })
+  * }
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends Module {
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends Module {
 
   // The body of a BlackBox is empty, the real logic happens in firrtl/Emitter.scala
   // Bypass standard clock, reset, io port declaration by flattening io
