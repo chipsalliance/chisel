@@ -5,6 +5,8 @@ package chisel3.iotesters
 import java.io.File
 
 import chisel3._
+import chisel3.core.{Aggregate, Element}
+import PeekPokeTester.extractElementBits
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
@@ -30,6 +32,21 @@ trait PeekPokeTests {
   def expect(good: Boolean, msg: => String): Boolean
   def expect(signal: Bits, expected: BigInt, msg: => String = ""): Boolean
   def finish: Boolean
+}
+
+object PeekPokeTester {
+  /** Old "flatten" functionality.
+    *
+    * @param signal - Chisel type for which individual elements are required.
+    * @return [[IndexedSeq[Element]]]
+    */
+  private def extractElementBits(signal: Data): IndexedSeq[Element] = {
+    signal match {
+      case elt: Aggregate => elt.getElements.toIndexedSeq flatMap {extractElementBits(_)}
+      case elt: Element => IndexedSeq(elt)
+      case elt => throw new Exception(s"Cannot extractElementBits for type ${elt.getClass}")
+    }
+  }
 }
 
 abstract class PeekPokeTester[+T <: Module](
@@ -162,7 +179,7 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def poke(signal: Aggregate, value: IndexedSeq[BigInt]): Unit =  {
-    (signal.flatten zip value.reverse).foreach(x => poke(x._1, x._2))
+    (extractElementBits(signal) zip value.reverse).foreach(x => poke(x._1.asInstanceOf[Bits], x._2))
   }
 
   def pokeAt[TT <: Bits](data: Mem[TT], value: BigInt, off: Int): Unit = {
@@ -173,8 +190,8 @@ abstract class PeekPokeTester[+T <: Module](
     if (!signal.isLit) backend.peek(signal, None) else signal.litValue()
   }
 
-  def peek(signal: Aggregate): IndexedSeq[BigInt] =  {
-    signal.flatten map (x => backend.peek(x, None))
+  def peek(signal: Aggregate): Seq[BigInt] =  {
+    extractElementBits(signal) map (x => backend.peek(x.asInstanceOf[Bits], None))
   }
 
   /** Populate a map of names ("dotted Bundles) to Bits.
@@ -241,7 +258,7 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def expect (signal: Aggregate, expected: IndexedSeq[BigInt]): Boolean = {
-    (signal.flatten, expected.reverse).zipped.foldLeft(true) { (result, x) => result && expect(x._1, x._2)}
+    (extractElementBits(signal), expected.reverse).zipped.foldLeft(true) { (result, x) => result && expect(x._1.asInstanceOf[Bits], x._2)}
   }
 
   /** Return true or false if an aggregate signal (Bundle) matches the expected map of values.
