@@ -124,7 +124,7 @@ class ReplSeqMem extends Transform with SimpleRun {
         new SimpleMidTransform(ToMemIR),
         new SimpleMidTransform(ResolveMaskGranularity),
         new SimpleMidTransform(RenameAnnotatedMemoryPorts),
-        new SimpleMidTransform(ResolveMemoryReference),
+        new ResolveMemoryReference,
         new CreateMemoryAnnotations(inConfigFile),
         new ReplaceMemMacros(outConfigFile),
         new WiringTransform,
