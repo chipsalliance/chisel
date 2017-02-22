@@ -195,7 +195,7 @@ subfolder to un-publish your local copy of Chisel.
 In order to have your projects use this version of Chisel, you should update
 the libraryDependencies setting in your project's build.sbt file to:
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel" % "3.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.1-SNAPSHOT"
 ```
 
 The version specifier in libraryDependencies in the project's build.sbt should

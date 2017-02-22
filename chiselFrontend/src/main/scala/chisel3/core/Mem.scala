@@ -27,7 +27,7 @@ object Mem {
     // TODO(twigg): Remove need for this Binding
 
     val mem = new Mem(mt, size)
-    pushCommand(DefMemory(sourceInfo, mem, mt, size)) // TODO multi-clock
+    pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
   }
 }
@@ -92,7 +92,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
 
     val port = pushCommand(
       DefMemPort(sourceInfo,
-       t.chiselCloneType, Node(this), dir, i.ref, Node(i._parent.get.clock))
+       t.chiselCloneType, Node(this), dir, i.ref, Node(Builder.forcedClock))
     ).id
     // Bind each element of port to being a MemoryPort
     Binding.bind(port, MemoryPortBinder(Builder.forcedModule), "Error: Fresh t")
@@ -128,7 +128,7 @@ object SyncReadMem {
     // TODO(twigg): Remove need for this Binding
 
     val mem = new SyncReadMem(mt, size)
-    pushCommand(DefSeqMemory(sourceInfo, mem, mt, size)) // TODO multi-clock
+    pushCommand(DefSeqMemory(sourceInfo, mem, mt, size))
     mem
   }
 }

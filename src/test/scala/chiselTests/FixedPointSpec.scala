@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.FixedPoint
+import chisel3.internal.firrtl.{BinaryPoint, Width}
 import chisel3.testers.BasicTester
 import org.scalatest._
 
@@ -20,46 +21,75 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
   }
 }
 
+//noinspection TypeAnnotation,EmptyParenMethodAccessedAsParameterless
 class FixedPointFromBitsTester extends BasicTester {
   val uint = 3.U(4.W)
-  val sint = -3.S
+  val sint = (-3).S
 
-  val fp   = FixedPoint.fromDouble(3.0, width = 4, binaryPoint = 0)
+  val fp   = FixedPoint.fromDouble(3.0, 4.W, 0.BP)
   val fp_tpe = FixedPoint(4.W, 1.BP)
-  val uint_result = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
-  val sint_result = FixedPoint.fromDouble(-1.5, width = 4, binaryPoint = 1)
-  val fp_result   = FixedPoint.fromDouble(1.5, width = 4, binaryPoint = 1)
+  val uint_result = FixedPoint.fromDouble(1.5, 4.W, 1.BP)
+  val sint_result = FixedPoint.fromDouble(-1.5, 4.W, 1.BP)
+  val fp_result   = FixedPoint.fromDouble(1.5, 4.W, 1.BP)
 
   val uint2fp = fp_tpe.fromBits(uint)
   val sint2fp = fp_tpe.fromBits(sint)
   val fp2fp   = fp_tpe.fromBits(fp)
 
-  val negativefp = -3.5.F(binaryPoint = 4)
-  val positivefp = 3.5.F(binaryPoint = 4)
+  val uintToFp = uint.asFixedPoint(1.BP)
+  val sintToFp = sint.asFixedPoint(1.BP)
+  val fpToFp   = fp.asFixedPoint(1.BP)
+
+  val negativefp = (-3.5).F(4.BP)
+  val positivefp = 3.5.F(4.BP)
 
   assert(uint2fp === uint_result)
   assert(sint2fp === sint_result)
   assert(fp2fp   === fp_result)
 
+  assert(uintToFp === uint_result)
+  assert(sintToFp === sint_result)
+  assert(fpToFp   === fp_result)
+
   assert(positivefp.abs() === positivefp)
   assert(negativefp.abs() === positivefp)
   assert(negativefp.abs() =/= negativefp)
+
+  val f1bp5 = 1.5.F(1.BP)
+  val f6bp0 = 6.0.F(0.BP)
+  val f6bp2 = 6.0.F(2.BP)
+
+  val f1bp5shiftleft2 = Wire(FixedPoint(Width(), BinaryPoint()))
+  val f6bp0shiftright2 = Wire(FixedPoint(Width(), BinaryPoint()))
+  val f6bp2shiftright2 = Wire(FixedPoint(Width(), BinaryPoint()))
+
+  f1bp5shiftleft2 := f1bp5 << 2
+  f6bp0shiftright2 := f6bp0 >> 2
+  f6bp2shiftright2 := f6bp2 >> 2
+
+  assert(f1bp5shiftleft2 === f6bp0)
+  assert(f1bp5shiftleft2 === 6.0.F(8.BP))
+
+  // shifting does not move binary point, so in first case below one bit is lost in shift
+  assert(f6bp0shiftright2 === 1.0.F(0.BP))
+  assert(f6bp2shiftright2 === 1.5.F(2.BP))
+
 
   stop()
 }
 
 class SBP extends Module {
   val io = IO(new Bundle {
-    val in =  Input(FixedPoint(6, 2))
-    val out = Output(FixedPoint(4, 0))
+    val in =  Input(FixedPoint(6.W, 2.BP))
+    val out = Output(FixedPoint(4.W, 0.BP))
   })
   io.out := io.in.setBinaryPoint(0)
 }
 class SBPTester extends BasicTester {
   val dut = Module(new SBP)
-  dut.io.in := FixedPoint.fromDouble(3.75, binaryPoint = 2)
+  dut.io.in := 3.75.F(2.BP)
 
-  assert(dut.io.out === FixedPoint.fromDouble(3.0, binaryPoint = 0))
+  assert(dut.io.out === 3.0.F(0.BP))
 
   stop()
 }
