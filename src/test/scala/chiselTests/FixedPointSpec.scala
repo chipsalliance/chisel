@@ -80,16 +80,22 @@ class FixedPointFromBitsTester extends BasicTester {
 
 class SBP extends Module {
   val io = IO(new Bundle {
-    val in =  Input(FixedPoint(6.W, 2.BP))
-    val out = Output(FixedPoint(4.W, 0.BP))
+    val in1 =  Input(FixedPoint(6.W, 2.BP))
+    val in2 =  Input(FixedPoint())
+    val out1 = Output(FixedPoint(4.W, 0.BP))
+    val out2 = Output(FixedPoint(4.W, 0.BP))
   })
-  io.out := io.in.setBinaryPoint(0)
+  io.out1 := io.in1.setBinaryPoint(0)
+  io.out2 := io.in2.setBinaryPoint(0)
 }
+
 class SBPTester extends BasicTester {
   val dut = Module(new SBP)
-  dut.io.in := 3.75.F(2.BP)
+  dut.io.in1 := 3.75.F(2.BP)
+  dut.io.in2 := 3.75.F(2.BP)
 
-  assert(dut.io.out === 3.0.F(0.BP))
+  assert(dut.io.out1 === 3.0.F(0.BP))
+  assert(dut.io.out2 === 3.0.F(0.BP))
 
   stop()
 }
