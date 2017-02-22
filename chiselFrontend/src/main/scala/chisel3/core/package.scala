@@ -2,7 +2,7 @@ package chisel3 {
   import internal.Builder
 
   package object core {
-    import internal.firrtl.Width
+    import internal.firrtl.{Width, BinaryPoint}
 
     /**
     * These implicit classes allow one to convert scala.Int|scala.BigInt to
@@ -99,6 +99,10 @@ package chisel3 {
 
     implicit class fromIntToWidth(val int: Int) {
       def W: Width = Width(int)  // scalastyle:ignore method.name
+    }
+
+    implicit class fromIntToBinaryPoint(val int: Int) {
+      def BP: BinaryPoint = BinaryPoint(int)  // scalastyle:ignore method.name
     }
   }
 }

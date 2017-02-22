@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
+
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
@@ -37,12 +39,13 @@ object ReadyValidIO {
       dat
     }
 
-    /** Indicate no enqueue occurs.  Valid is set to false, and all bits are set to zero.
+    /** Indicate no enqueue occurs. Valid is set to false, and bits are
+      * connected to an uninitialized wire
       */
     def noenq(): Unit = {
       target.valid := false.B
       // We want the type from the following, not any existing binding.
-      target.bits := target.bits.cloneType.fromBits(0.asUInt)
+      target.bits := Wire(target.bits.cloneType)
     }
 
     /** Assert ready on this port and return the associated data bits.
@@ -84,6 +87,7 @@ object Decoupled
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
+  @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
@@ -163,6 +167,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   * consumer.io.in <> q.io.deq
   * }}}
   */
+@chiselName
 class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
@@ -174,16 +179,16 @@ extends Module(override_reset=override_reset) {
 
   val io = IO(new QueueIO(gen, entries))
 
-  val ram = Mem(entries, gen)
-  val enq_ptr = Counter(entries)
-  val deq_ptr = Counter(entries)
-  val maybe_full = Reg(init=false.B)
+  private val ram = Mem(entries, gen)
+  private val enq_ptr = Counter(entries)
+  private val deq_ptr = Counter(entries)
+  private val maybe_full = Reg(init=false.B)
 
-  val ptr_match = enq_ptr.value === deq_ptr.value
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val do_enq = Wire(init=io.enq.fire())
-  val do_deq = Wire(init=io.deq.fire())
+  private val ptr_match = enq_ptr.value === deq_ptr.value
+  private val empty = ptr_match && !maybe_full
+  private val full = ptr_match && maybe_full
+  private val do_enq = Wire(init=io.enq.fire())
+  private val do_deq = Wire(init=io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -213,7 +218,7 @@ extends Module(override_reset=override_reset) {
     when (io.deq.ready) { io.enq.ready := true.B }
   }
 
-  val ptr_diff = enq_ptr.value - deq_ptr.value
+  private val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
     io.count := Cat(maybe_full && ptr_match, ptr_diff)
   } else {
@@ -239,6 +244,7 @@ extends Module(override_reset=override_reset) {
 object Queue
 {
   /** Create a queue and supply a DecoupledIO containing the product. */
+  @chiselName
   def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
@@ -256,6 +262,7 @@ object Queue
     * Irrevocable semantics; we didn't want to change the return type of
     * apply() for backwards compatibility reasons.
     */
+  @chiselName
   def irrevocable[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,

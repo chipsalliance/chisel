@@ -24,6 +24,10 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   scalacOptions := Seq("-deprecation", "-feature"),
+  libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  // Use the root project's unmanaged base for all sub-projects.
+  unmanagedBase := (unmanagedBase in root).value,
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
@@ -83,7 +87,6 @@ lazy val chiselSettings = Seq (
 
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
     "com.github.scopt" %% "scopt" % "3.4.0"
   ),
@@ -101,28 +104,22 @@ lazy val chiselSettings = Seq (
 
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
-  settings(publishSettings: _*).
-  settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    publishArtifact := false
-  )
+  settings(publishArtifact := false)
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
-  settings(publishSettings: _*).
-  settings(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    publishArtifact := false
-  ).
+  settings(publishArtifact := false).
   dependsOn(coreMacros)
 
+// This will always be the root project, even if we are a sub-project.
+lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
   settings(
-    // We should really be using name.value, but currently, the package is "Chisel" (uppercase first letter)
-    buildInfoPackage := /* name.value */ "chisel3",
+    buildInfoPackage := name.value,
     buildInfoOptions += BuildInfoOption.BuildTime,
+    buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(commonSettings: _*).
@@ -133,6 +130,14 @@ lazy val chisel = (project in file(".")).
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
   settings(
+    scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
+    scalacOptions in Compile in doc ++= Seq(
+      "-diagrams",
+      "-diagrams-max-classes", "25",
+      "-doc-version", version.value,
+      "-doc-title", name.value,
+      "-doc-root-content", baseDirectory.value+"/root-doc.txt"
+    ),
     aggregate in doc := false,
     // Include macro classes, resources, and sources main JAR.
     mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),

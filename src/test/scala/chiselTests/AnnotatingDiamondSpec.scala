@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.ChiselAnnotation
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
@@ -32,7 +33,6 @@ class IdentityTransform extends Transform {
     getMyAnnotations(state) match {
       case Nil => state
       case myAnnotations =>
-        /* Do something useful with annotations here */
         state
     }
   }
@@ -143,7 +143,7 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
       |that happens only after emit has been called on circuit""".stripMargin in {
 
       Driver.execute(Array.empty[String], () => new TopOfDiamond) match {
-        case ChiselExecutionSucccess(Some(circuit), emitted, _) =>
+        case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
           val annos = circuit.annotations
           annos.length should be (10)
 

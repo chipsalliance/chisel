@@ -1,10 +1,15 @@
 // See LICENSE for license details.
 
-// Allows legacy users to continue using Chisel (capital C) package name while
-// moving to the more standard package naming convention chisel3 (lowercase c).
+/** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
+  *  while moving to the more standard package naming convention `chisel3` (lowercase c).
+  */
 
 package object Chisel {     // scalastyle:ignore package.object.name
   import chisel3.internal.firrtl.Width
+
+  import scala.language.experimental.macros
+  import scala.annotation.StaticAnnotation
+  import scala.annotation.compileTimeOnly
 
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
   type Direction = chisel3.core.Direction
@@ -36,6 +41,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
+  type Record = chisel3.core.Record
   type Bundle = chisel3.core.Bundle
 
   val assert = chisel3.core.assert
@@ -151,8 +157,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SeqMem
-  type SeqMem[T <: Data] = chisel3.core.SeqMem[T]
+  val SeqMem = chisel3.core.SyncReadMem
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   val Module = chisel3.core.Module
   type Module = chisel3.core.Module
@@ -171,7 +177,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
   implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
 
-  type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
+  type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
   val Driver = chisel3.Driver
   val ImplicitConversions = chisel3.util.ImplicitConversions
 
@@ -332,4 +338,17 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Pipe = chisel3.util.Pipe
   type Pipe[T <: Data] = chisel3.util.Pipe[T]
 
+
+  /** Package for experimental features, which may have their API changed, be removed, etc.
+    *
+    * Because its contents won't necessarily have the same level of stability and support as
+    * non-experimental, you must explicitly import this package to use its contents.
+    */
+  object experimental {
+    import scala.annotation.compileTimeOnly
+
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
+  }
 }
