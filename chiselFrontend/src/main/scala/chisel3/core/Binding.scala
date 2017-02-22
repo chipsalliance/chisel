@@ -33,7 +33,7 @@ import chisel3.internal.Builder.{forcedModule}
  * Aggregate is considered bound via its elements. May be appropriate to allow
  * Aggregates to be bound along with the Elements. However, certain literal and
  * port direction information doesn't quite make sense in aggregates. This would
- * elegantly handle the empty Vec or Bundle problem though.
+ * elegantly handle the empty Vec or Record problem though.
  *
  * TODO(twigg): Binding is currently done via allElements. It may be more
  * elegant if this was instead done as a more explicit tree walk as that allows
@@ -73,8 +73,8 @@ object Binding {
         }
       }
     }
-    case (bundle: Bundle) => {
-      for((field, subelem) <- bundle.elements) {
+    case (record: Record) => {
+      for((field, subelem) <- record.elements) {
         try walkToBinding(subelem, checker)
         catch {
           case BindingException(message) => throw BindingException(s".$field$message")
@@ -155,7 +155,9 @@ object Binding {
             //  we know the wrapper is missing, whether or not the element is a member of io.
             //  But if it's not an io element, we want to issue the complementary "unbound" error.
             //  Revisit this when we collect error messages instead of throwing exceptions.
-            x.io.flatten.contains(element)
+            // The null test below is due to the fact that we may be evaluating the arguments
+            //  of the IO() wrapper itself.
+            (x.io != null) && x.io.flatten.contains(element)
           }
         }
       }

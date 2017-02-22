@@ -7,6 +7,8 @@ import core._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
 
+import _root_.firrtl.annotations.Annotation
+
 case class PrimOp(val name: String) {
   override def toString: String = name
 }
@@ -64,7 +66,7 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   protected def minWidth: Int
   if (forcedWidth) {
     require(widthArg.get >= minWidth,
-      s"The literal value ${num} was elaborated with a specificed width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
+      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
   }
 }
 
@@ -261,6 +263,7 @@ case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 case class WhenEnd(sourceInfo: SourceInfo) extends Command
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
+case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Port(id: Data, dir: Direction)
@@ -273,4 +276,4 @@ abstract class Component extends Arg {
 case class DefModule(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 case class DefBlackBox(id: Module, name: String, ports: Seq[Port], params: Map[String, Param]) extends Component
 
-case class Circuit(name: String, components: Seq[Component])
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation] = Seq.empty)

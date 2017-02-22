@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
+
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
@@ -34,6 +36,7 @@ object Valid {
   */
 object Pipe
 {
+  @chiselName
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): Valid[T] = {
     if (latency == 0) {
       val out = Wire(Valid(enqBits))
@@ -52,10 +55,12 @@ object Pipe
 
 class Pipe[T <: Data](gen: T, latency: Int = 1) extends Module
 {
-  val io = IO(new Bundle {
+  class PipeIO extends Bundle {
     val enq = Input(Valid(gen))
     val deq = Output(Valid(gen))
-  })
+  }
+
+  val io = IO(new PipeIO)
 
   io.deq <> Pipe(io.enq, latency)
 }

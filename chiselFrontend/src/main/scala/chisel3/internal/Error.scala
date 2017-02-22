@@ -37,13 +37,19 @@ private[chisel3] class ErrorLog {
   def report(): Unit = errors foreach println  // scalastyle:ignore regex
 
   /** Throw an exception if any errors have yet occurred. */
-  def checkpoint(): Unit = if(hasErrors) {
-    import Console._
-    throwException(errors.map(_ + "\n").reduce(_ + _) +
-      UNDERLINED + "CODE HAS " + errors.filter(_.isFatal).length + RESET +
-      UNDERLINED + " " + RED + "ERRORS" + RESET +
-      UNDERLINED + " and " + errors.filterNot(_.isFatal).length + RESET +
-      UNDERLINED + " " + YELLOW + "WARNINGS" + RESET)
+  def checkpoint(): Unit = {
+    if(hasErrors) {
+      import Console._
+      throwException(errors.map(_ + "\n").reduce(_ + _) +
+        UNDERLINED + "CODE HAS " + errors.filter(_.isFatal).length + RESET +
+        UNDERLINED + " " + RED + "ERRORS" + RESET +
+        UNDERLINED + " and " + errors.filterNot(_.isFatal).length + RESET +
+        UNDERLINED + " " + YELLOW + "WARNINGS" + RESET)
+    } else {
+      // No fatal errors. Report accumulated warnings and clear them.
+      report()
+      errors.clear()
+    }
   }
 
   private def findFirstUserFrame(stack: Array[StackTraceElement]): Option[StackTraceElement] = {

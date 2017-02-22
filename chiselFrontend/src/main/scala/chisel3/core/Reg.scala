@@ -16,12 +16,19 @@ object Reg {
       }
       t.chiselCloneType
     } else if (next ne null) {
-      next.cloneTypeWidth(Width())
+      (next match {
+        case next: Bits => next.cloneTypeWidth(Width())
+        case _ => next.chiselCloneType
+      }).asInstanceOf[T]
+
     } else if (init ne null) {
       init.litArg match {
         // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
         case Some(lit) if lit.forcedWidth => init.chiselCloneType
-        case _ => init.cloneTypeWidth(Width())
+        case _ => (init match {
+          case init: Bits => init.cloneTypeWidth(Width())
+          case _ => init.chiselCloneType
+        }).asInstanceOf[T]
       }
     } else {
       throwException("cannot infer type")
@@ -61,7 +68,8 @@ object Reg {
     // to resolve all use cases. If the type inferencer / implicit resolution
     // system improves, this may be changed.
     val x = makeType(compileOptions, t, next, init)
-    val clock = Node(x._parent.get.clock) // TODO multi-clock
+    val clock = Node(Builder.forcedClock)
+    val reset = Node(Builder.forcedReset)
 
     // Bind each element of x to being a Reg
     Binding.bind(x, RegBinder(Builder.forcedModule), "Error: t")
@@ -70,7 +78,7 @@ object Reg {
       pushCommand(DefReg(sourceInfo, x, clock))
     } else {
       Binding.checkSynthesizable(init, s"'init' ($init)")
-      pushCommand(DefRegInit(sourceInfo, x, clock, Node(x._parent.get.reset), init.ref))
+      pushCommand(DefRegInit(sourceInfo, x, clock, reset, init.ref))
     }
     if (next != null) {
       Binding.checkSynthesizable(next, s"'next' ($next)")

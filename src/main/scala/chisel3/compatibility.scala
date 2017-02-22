@@ -1,10 +1,15 @@
 // See LICENSE for license details.
 
-// Allows legacy users to continue using Chisel (capital C) package name while
-// moving to the more standard package naming convention chisel3 (lowercase c).
+/** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
+  *  while moving to the more standard package naming convention `chisel3` (lowercase c).
+  */
 
 package object Chisel {     // scalastyle:ignore package.object.name
   import chisel3.internal.firrtl.Width
+
+  import scala.language.experimental.macros
+  import scala.annotation.StaticAnnotation
+  import scala.annotation.compileTimeOnly
 
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
   type Direction = chisel3.core.Direction
@@ -36,6 +41,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
+  type Record = chisel3.core.Record
   type Bundle = chisel3.core.Bundle
 
   val assert = chisel3.core.assert
@@ -120,7 +126,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     */
   trait BoolFactory extends chisel3.core.BoolFactory {
     /** Creates Bool literal.
-     */
+      */
     def apply(x: Boolean): Bool = x.B
 
     /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
@@ -151,8 +157,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SeqMem
-  type SeqMem[T <: Data] = chisel3.core.SeqMem[T]
+  val SeqMem = chisel3.core.SyncReadMem
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   val Module = chisel3.core.Module
   type Module = chisel3.core.Module
@@ -171,7 +177,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
   implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
 
-  type BackendCompilationUtilities = chisel3.BackendCompilationUtilities
+  type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
   val Driver = chisel3.Driver
   val ImplicitConversions = chisel3.util.ImplicitConversions
 
@@ -250,7 +256,62 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Queue[T <: Data] = chisel3.util.Queue[T]
   val Queue = chisel3.util.Queue
 
-  val Enum = chisel3.util.Enum
+  object Enum extends chisel3.util.Enum {
+    /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
+      *
+      * nodeType must be of UInt type (note that Bits() creates a UInt) with unspecified width.
+      *
+      * @example {{{
+      * val state_on :: state_off :: Nil = Enum(UInt(), 2)
+      * val current_state = UInt()
+      * switch (current_state) {
+      *   is (state_on) {
+      *      ...
+      *   }
+      *   if (state_off) {
+      *      ...
+      *   }
+      * }
+      * }}}
+      */
+    def apply[T <: Bits](nodeType: T, n: Int): List[T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      apply(n).asInstanceOf[List[T]]
+    }
+
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+    }
+
+    /** An old Enum API that returns a map of symbols to UInts.
+      *
+      * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+      * understands and can check, map accesses can't be compile-time checked and typos may not be
+      * caught until runtime.
+      *
+      * Despite being deprecated, this is not to be removed from the compatibility layer API.
+      * Deprecation is only to nag users to do something safer.
+      */
+    @deprecated("Use list-based Enum", "not soon enough")
+    def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+      require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
+      (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
+    }
+  }
 
   val LFSR16 = chisel3.util.LFSR16
 
@@ -277,4 +338,17 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Pipe = chisel3.util.Pipe
   type Pipe[T <: Data] = chisel3.util.Pipe[T]
 
+
+  /** Package for experimental features, which may have their API changed, be removed, etc.
+    *
+    * Because its contents won't necessarily have the same level of stability and support as
+    * non-experimental, you must explicitly import this package to use its contents.
+    */
+  object experimental {
+    import scala.annotation.compileTimeOnly
+
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
+  }
 }

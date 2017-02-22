@@ -1,6 +1,11 @@
 // See LICENSE for license details.
 
+/** The chisel3 package contains the chisel3 API.
+  * It maps core components into the public chisel3 namespace.
+  */
 package object chisel3 {    // scalastyle:ignore package.object.name
+  import scala.language.implicitConversions
+
   import internal.firrtl.Width
 
   import util.BitPat
@@ -24,6 +29,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
   type Bundle = chisel3.core.Bundle
+  type Record = chisel3.core.Record
 
   val assert = chisel3.core.assert
 
@@ -128,8 +134,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   object UInt extends UIntFactory
   type SInt = chisel3.core.SInt
   object SInt extends SIntFactory
-  type FixedPoint = chisel3.core.FixedPoint
-  val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
@@ -139,8 +143,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SeqMem
-  type SeqMem[T <: Data] = chisel3.core.SeqMem[T]
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  val SeqMem = chisel3.core.SyncReadMem
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
+  val SyncReadMem = chisel3.core.SyncReadMem
+  type SyncReadMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   val Module = chisel3.core.Module
   type Module = chisel3.core.Module
@@ -211,6 +219,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
   implicit class fromDoubleToLiteral(val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
   implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromIntToBinaryPoint(val x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
 
   implicit class fromUIntToBitPatComparable(val x: UInt) {
     import scala.language.experimental.macros
@@ -255,6 +264,14 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type RawParam = chisel3.core.RawParam
     val RawParam = chisel3.core.RawParam
 
+    type Analog = chisel3.core.Analog
+    val Analog = chisel3.core.Analog
+    val attach = chisel3.core.attach
+
+    val withClockAndReset = chisel3.core.withClockAndReset
+    val withClock = chisel3.core.withClock
+    val withReset = chisel3.core.withReset
+
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
     implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
@@ -262,19 +279,32 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
     implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
+    // Fixed Point is experimental for now
+    type FixedPoint = chisel3.core.FixedPoint
+    val FixedPoint = chisel3.core.FixedPoint
+
+    type ChiselAnnotation = chisel3.core.ChiselAnnotation
+    val ChiselAnnotation = chisel3.core.ChiselAnnotation
+
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros
       import internal.firrtl.NumericBound
 
       /** Specifies a range using mathematical range notation. Variables can be interpolated using
-       *  standard string interpolation syntax.
+        * standard string interpolation syntax.
         * @example {{{
         * UInt(range"[0, 2)")
-        * UInt(range"[0, $myInt)")
-        * UInt(range"[0, ${myInt + 2})")
+        * UInt(range"[0, \$myInt)")
+        * UInt(range"[0, \${myInt + 2})")
         * }}}
         */
       def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
     }
+
+    import scala.annotation.compileTimeOnly
+
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
   }
 }

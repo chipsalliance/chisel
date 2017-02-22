@@ -69,12 +69,15 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](cond: c.Tree, con: c.Tree, alt: c.Tree): c.Tree = {
     val tpe = weakTypeOf[T]
-    q"$thisObj.do_apply[$tpe]($cond, $con, $alt)($implicitSourceInfo)"
+    q"$thisObj.do_apply[$tpe]($cond, $con, $alt)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
 
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
+  def apply_ngen(n: c.Tree, gen: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($n,$gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
   def apply_elts(elts: c.Tree): c.Tree = {
     q"$thisObj.do_apply($elts)($implicitSourceInfo, $implicitCompileOptions)"
   }
