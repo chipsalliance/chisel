@@ -5,24 +5,14 @@ package chisel3.testers
 import chisel3._
 import java.io._
 
+import firrtl.{Driver => _, _}
+
 object TesterDriver extends BackendCompilationUtilities {
-  /** Copy the contents of a resource to a destination file.
-    */
-  def copyResourceToFile(name: String, file: File) {
-    val in = getClass.getResourceAsStream(name)
-    if (in == null) {
-      throw new FileNotFoundException(s"Resource '$name'")
-    }
-    val out = new FileOutputStream(file)
-    Iterator.continually(in.read).takeWhile(-1 != _).foreach(out.write)
-    out.close()
-  }
 
   /** For use with modules that should successfully be elaborated by the
     * frontend, and which can be turned into executables with assertions. */
   def execute(t: () => BasicTester,
-              additionalVResources: Seq[String] = Seq(),
-              runFirrtlasProcess: Boolean = false): Boolean = {
+              additionalVResources: Seq[String] = Seq()): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(finishWrapper(t))
 
@@ -30,7 +20,7 @@ object TesterDriver extends BackendCompilationUtilities {
     // plus the quirks of Verilator's naming conventions
     val target = circuit.name
 
-    val path = createTempDirectory(target)
+    val path = createTestDirectory(target)
     val fname = new File(path, target)
 
     // For now, dump the IR out to a file
@@ -46,28 +36,16 @@ object TesterDriver extends BackendCompilationUtilities {
       out
     })
 
-    if(runFirrtlasProcess) {
-      // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
-      if ((firrtlToVerilog(target, path) #&&
-        verilogToCpp(target, target, path, additionalVFiles, cppHarness) #&&
-          cppToExe(target, path)).! == 0) {
-        executeExpectingSuccess(target, path)
-      } else {
-        false
-      }
+    // Compile firrtl
+    if (!compileFirrtlToVerilog(target, path)) {
+      return false
     }
-    else {
-      // Compile firrtl
-      if (!compileFirrtlToVerilog(target, path)) {
-        return false
-      }
-      // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
-      if ((verilogToCpp(target, target, path, additionalVFiles, cppHarness) #&&
-          cppToExe(target, path)).! == 0) {
-        executeExpectingSuccess(target, path)
-      } else {
-        false
-      }
+    // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
+    if ((verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
+        cppToExe(target, path)).! == 0) {
+      executeExpectingSuccess(target, path)
+    } else {
+      false
     }
   }
   /**

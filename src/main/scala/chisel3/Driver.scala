@@ -4,12 +4,12 @@ package chisel3
 
 import chisel3.internal.firrtl.Emitter
 
-import scala.sys.process._
 import java.io._
 import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl._
+import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
 
@@ -18,7 +18,7 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
   * By default firrtl is automatically run after chisel.  an [[ExecutionOptionsManager]]
   * is needed to manage options.  It can parser command line arguments or coordinate
   * multiple chisel toolchain tools options.
- *
+  *
   * @example
   *          {{{
   *          val optionsManager = new ExecutionOptionsManager("chisel3")
@@ -37,32 +37,9 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
   */
 import BuildInfo._
 
-trait BackendCompilationUtilities {
-  /** Create a temporary directory with the prefix name. Exists here because it doesn't in Java 6.
-    */
-  def createTempDirectory(prefix: String): File = {
-    val temp = File.createTempFile(prefix, "")
-    if (!temp.delete()) {
-      throw new IOException(s"Unable to delete temp file '$temp'")
-    }
-    if (!temp.mkdir()) {
-      throw new IOException(s"Unable to create temp directory '$temp'")
-    }
-    temp
-  }
-
-  def makeHarness(template: String => String, post: String)(f: File): File = {
-    val prefix = f.toString.split("/").last
-    val vf = new File(f.toString + post)
-    val w = new FileWriter(vf)
-    w.write(template(prefix))
-    w.close()
-    vf
-  }
-
-  /**
-    * like 'firrtlToVerilog' except it runs the process inside the same JVM
- *
+trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
+  /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
+    *
     * @param prefix basename of the file
     * @param dir    directory where file lives
     * @return       true if compiler completed successfully
@@ -78,86 +55,6 @@ trait BackendCompilationUtilities {
       case _: FirrtlExecutionFailure => false
     }
   }
-
-  /**
-    * compule chirrtl to verilog by using a separate process
- *
-    * @param prefix basename of the file
-    * @param dir    directory where file lives
-    * @return       true if compiler completed successfully
-    */
-  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = {
-    val fullPrefix = dir.getAbsolutePath + "/" + prefix
-    Process(
-      Seq("sbt",
-          s"run-main firrtl.Driver -i $fullPrefix.fir -o $fullPrefix.v -X verilog"
-          ),
-          new File(".")
-    )
-  }
-
-  /** Generates a Verilator invocation to convert Verilog sources to C++
-    * simulation sources.
-    *
-    * The Verilator prefix will be V\$dutFile, and running this will generate
-    * C++ sources and headers as well as a makefile to compile them.
-    *
-    * @param dutFile name of the DUT .v without the .v extension
-    * @param topModule of the top-level module in the design
-    * @param dir output directory
-    * @param vSources list of additional Verilog sources to compile
-    * @param cppHarness C++ testharness to compile/link against
-    */
-  def verilogToCpp(
-      dutFile: String,
-      topModule: String,
-      dir: File,
-      vSources: Seq[File],
-      cppHarness: File
-                  ): ProcessBuilder = {
-    val command = Seq("verilator",
-      "--cc", s"$dutFile.v") ++
-      vSources.map(file => Seq("-v", file.toString)).flatten ++
-      Seq("--assert",
-        "-Wno-fatal",
-        "-Wno-WIDTH",
-        "-Wno-STMTDLY",
-        "--trace",
-        "-O1",
-        "--top-module", topModule,
-        "+define+TOP_TYPE=V" + dutFile,
-        s"+define+PRINTF_COND=!$topModule.reset",
-        s"+define+STOP_COND=!$topModule.reset",
-        "-CFLAGS",
-        s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -include V$dutFile.h""",
-        "-Mdir", dir.toString,
-        "--exe", cppHarness.toString)
-    System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
-    command
-  }
-
-  def cppToExe(prefix: String, dir: File): ProcessBuilder =
-    Seq("make", "-C", dir.toString, "-j", "-f", s"V${prefix}.mk", s"V${prefix}")
-
-  def executeExpectingFailure(
-      prefix: String,
-      dir: File,
-      assertionMsg: String = ""): Boolean = {
-    var triggered = false
-    val assertionMessageSupplied = assertionMsg != ""
-    val e = Process(s"./V${prefix}", dir) !
-      ProcessLogger(line => {
-        triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
-        System.out.println(line) // scalastyle:ignore regex
-      })
-    // Fail if a line contained an assertion or if we get a non-zero exit code
-    //  or, we get a SIGABRT (assertion failure) and we didn't provide a specific assertion message
-    triggered || (e != 0 && (e != 134 || !assertionMessageSupplied))
-  }
-
-  def executeExpectingSuccess(prefix: String, dir: File): Boolean = {
-    !executeExpectingFailure(prefix, dir)
-  }
 }
 
 /**
@@ -171,7 +68,7 @@ trait ChiselExecutionResult
   * @param emitted            The emitted Chirrrl text
   * @param firrtlResultOption Optional Firrtl result, @see ucb-bar/firrtl for details
   */
-case class ChiselExecutionSucccess(
+case class ChiselExecutionSuccess(
                                   circuitOption: Option[Circuit],
                                   emitted: String,
                                   firrtlResultOption: Option[FirrtlExecutionResult]
@@ -248,11 +145,17 @@ object Driver extends BackendCompilationUtilities {
     af.write(circuit.annotations.toArray.toYaml.prettyPrint)
     af.close()
 
+    /* create custom transforms by finding the set of transform classes associated with annotations
+     * then instantiate them into actual transforms
+     */
+    val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
+      transformClass.newInstance()
+    }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
       firrtlSource = Some(firrtlString),
-      annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList
-    )
+      annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList,
+      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))
@@ -260,7 +163,7 @@ object Driver extends BackendCompilationUtilities {
     else {
       None
     }
-    ChiselExecutionSucccess(Some(circuit), firrtlString, firrtlExecutionResult)
+    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
   /**

@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
@@ -32,8 +33,8 @@ private object ArbiterCtrl {
 }
 
 abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module {
-  def grant: Seq[Bool]
-  def choice: UInt
+  protected def grant: Seq[Bool]
+  protected def choice: UInt
   val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := choice
@@ -62,16 +63,16 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
 
 class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  lazy val lastGrant = RegEnable(io.chosen, io.out.fire())
-  lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
-  lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
+  private lazy val lastGrant = RegEnable(io.chosen, io.out.fire())
+  private lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
+  private lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
 
-  override def grant: Seq[Bool] = {
+  override protected def grant: Seq[Bool] = {
     val ctrl = ArbiterCtrl((0 until n).map(i => validMask(i)) ++ io.in.map(_.valid))
     (0 until n).map(i => ctrl(i) && grantMask(i) || ctrl(i + n))
   }
 
-  override lazy val choice = Wire(init=(n-1).asUInt)
+  override protected lazy val choice = Wire(init=(n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
   for (i <- n-1 to 1 by -1)
@@ -80,9 +81,9 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
 
 class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
+  protected def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
 
-  override lazy val choice = Wire(init=(n-1).asUInt)
+  override protected lazy val choice = Wire(init=(n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
 }
@@ -97,6 +98,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * consumer.io.in <> arb.io.out
   * }}}
   */
+@chiselName
 class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
@@ -109,6 +111,7 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
   * consumer.io.in <> arb.io.out
   * }}}
   */
+@chiselName
 class Arbiter[T <: Data](gen: T, n: Int) extends Module {
   val io = IO(new ArbiterIO(gen, n))
 
@@ -121,7 +124,7 @@ class Arbiter[T <: Data](gen: T, n: Int) extends Module {
     }
   }
 
-  val grant = ArbiterCtrl(io.in.map(_.valid))
+  private val grant = ArbiterCtrl(io.in.map(_.valid))
   for ((in, g) <- io.in zip grant)
     in.ready := g && io.out.ready
   io.out.valid := !grant.last || io.in.last.valid

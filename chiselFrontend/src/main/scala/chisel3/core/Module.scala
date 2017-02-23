@@ -31,16 +31,25 @@ object Module {
     }
     Builder.readyForModuleConstr = true
     val parent: Option[Module] = Builder.currentModule
+    val whenDepth: Int = Builder.whenDepth
 
-    val m = bc.setRefs() // This will set currentModule and unset readyForModuleConstr!!!
+    // Execute the module, this has the following side effects:
+    //   - set currentModule
+    //   - unset readyForModuleConstr
+    //   - reset whenDepth to 0
+    val m = bc.setRefs()
     m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
 
+    if (Builder.whenDepth != 0) {
+      throwException("Internal Error! When depth is != 0, this should not be possible")
+    }
     if (Builder.readyForModuleConstr) {
       throwException("Error: attempted to instantiate a Module, but nothing happened. " +
                      "This is probably due to rewrapping a Module instance with Module()." +
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.currentModule = parent // Back to parent!
+    Builder.whenDepth = whenDepth
 
     val ports = m.computePorts
     // Blackbox inherits from Module so we have to match on it first TODO fix
@@ -113,10 +122,12 @@ extends HasId {
     Port(iodef)
   }
 
-  private[core] val _namespace = Builder.globalNamespace.child
+  // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
+  private[core] val _namespace = Namespace.empty
   private[chisel3] val _commands = ArrayBuffer[Command]()
   private[core] val _ids = ArrayBuffer[HasId]()
   Builder.currentModule = Some(this)
+  Builder.whenDepth = 0
   if (!Builder.readyForModuleConstr) {
     throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
   }
@@ -141,7 +152,7 @@ extends HasId {
   /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
     * connections in and out of a Module may only go through `io` elements.
     */
-  def io: Bundle
+  def io: Record
   val clock = Port(Input(Clock()))
   val reset = Port(Input(Bool()))
 
@@ -199,13 +210,18 @@ extends HasId {
           }
         case _ => // Do nothing
       }
+    /** Scala generates names like chisel3$util$Queue$$ram for private vals
+      * This extracts the part after $$ for names like this and leaves names
+      * without $$ unchanged
+      */
+    def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
     for (m <- getPublicFields(classOf[Module])) {
-      nameRecursively(m.getName, m.invoke(this))
+      nameRecursively(cleanName(m.getName), m.invoke(this))
     }
 
     // For Module instances we haven't named, suggest the name of the Module
     _ids foreach {
-      case m: Module => m.suggestName(m.name)
+      case m: Module => m.suggestName(m.desiredName)
       case _ =>
     }
 

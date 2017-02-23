@@ -6,6 +6,8 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
+
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
@@ -34,6 +36,7 @@ object Valid {
   */
 object Pipe
 {
+  @chiselName
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): Valid[T] = {
     if (latency == 0) {
       val out = Wire(Valid(enqBits))
