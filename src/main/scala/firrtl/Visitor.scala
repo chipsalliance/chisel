@@ -89,7 +89,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
   private def visitParameter[FirrtlNode](ctx: FIRRTLParser.ParameterContext): Param = {
     val name = ctx.id.getText
-    (ctx.IntLit, ctx.StringLit, ctx.DoubleLit, ctx.RawString) match {
+    (ctx.intLit, ctx.StringLit, ctx.DoubleLit, ctx.RawString) match {
       case (int, null, null, null) => IntParam(name, string2BigInt(int.getText))
       case (null, str, null, null) => StringParam(name, visitStringLit(str))
       case (null, null, dbl, null) => DoubleParam(name, dbl.getText.toDouble)
@@ -114,34 +114,34 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
   // Match on a type instead of on strings?
   private def visitType[FirrtlNode](ctx: FIRRTLParser.TypeContext): Type = {
-    def getWidth(n: TerminalNode): Width = IntWidth(string2BigInt(n.getText))
+    def getWidth(n: IntLitContext): Width = IntWidth(string2BigInt(n.getText))
     ctx.getChild(0) match {
       case term: TerminalNode =>
         term.getText match {
-          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.IntLit(0).getText)))
+          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
           else UIntType(UnknownWidth)
-          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.IntLit(0).getText)))
+          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
           else SIntType(UnknownWidth)
-          case "Fixed" => ctx.IntLit.size match {
+          case "Fixed" => ctx.intLit.size match {
             case 0 => FixedType(UnknownWidth, UnknownWidth)
             case 1 => ctx.getChild(2).getText match {
-              case "<" => FixedType(UnknownWidth, getWidth(ctx.IntLit(0)))
-              case _ => FixedType(getWidth(ctx.IntLit(0)), UnknownWidth)
+              case "<" => FixedType(UnknownWidth, getWidth(ctx.intLit(0)))
+              case _ => FixedType(getWidth(ctx.intLit(0)), UnknownWidth)
             }
-            case 2 => FixedType(getWidth(ctx.IntLit(0)), getWidth(ctx.IntLit(1)))
+            case 2 => FixedType(getWidth(ctx.intLit(0)), getWidth(ctx.intLit(1)))
           }
           case "Clock" => ClockType
-          case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.IntLit(0).getText)))
+          case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
           else AnalogType(UnknownWidth)
           case "{" => BundleType(ctx.field.map(visitField))
         }
-      case typeContext: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.IntLit(0).getText))
+      case typeContext: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.intLit(0).getText))
     }
   }
 
   private def visitField[FirrtlNode](ctx: FIRRTLParser.FieldContext): Field = {
     val flip = if (ctx.getChild(0).getText == "flip") Flip else Default
-    Field(ctx.id.getText, flip, visitType(ctx.`type`))
+    Field(ctx.fieldId.getText, flip, visitType(ctx.`type`))
   }
 
   private def visitBlock[FirrtlNode](ctx: FIRRTLParser.ModuleBlockContext): Statement =
@@ -171,7 +171,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
             val paramDef = fieldName match {
               case "data-type" => ParamValue(typ = Some(visitType(field.`type`())))
               case "read-under-write" => ParamValue(ruw = Some(field.ruw().getText)) // TODO
-              case _ => ParamValue(lit = Some(field.IntLit().getText.toInt))
+              case _ => ParamValue(lit = Some(field.intLit().getText.toInt))
             }
             if (fieldMap.contains(fieldName))
               throw new ParameterRedefinedException(s"Redefinition of $fieldName in FIRRTL line:${field.start.getLine}")
@@ -267,7 +267,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
         case "inst" => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
         case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx.exp(0)))
 
-        case "stop(" => Stop(info, string2Int(ctx.IntLit().getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+        case "stop(" => Stop(info, string2Int(ctx.intLit().getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
         case "attach" => Attach(info, ctx.exp map visitExp)
         case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
           visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
@@ -296,18 +296,18 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
           // This could be better
           val (width, value) =
             if (ctx.getChildCount > 4)
-              (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
+              (IntWidth(string2BigInt(ctx.intLit(0).getText)), string2BigInt(ctx.intLit(1).getText))
             else {
-              val bigint = string2BigInt(ctx.IntLit(0).getText)
+              val bigint = string2BigInt(ctx.intLit(0).getText)
               (IntWidth(BigInt(scala.math.max(bigint.bitLength, 1))), bigint)
             }
           UIntLiteral(value, width)
         case "SInt" =>
           val (width, value) =
             if (ctx.getChildCount > 4)
-              (IntWidth(string2BigInt(ctx.IntLit(0).getText)), string2BigInt(ctx.IntLit(1).getText))
+              (IntWidth(string2BigInt(ctx.intLit(0).getText)), string2BigInt(ctx.intLit(1).getText))
             else {
-              val bigint = string2BigInt(ctx.IntLit(0).getText)
+              val bigint = string2BigInt(ctx.intLit(0).getText)
               (IntWidth(BigInt(bigint.bitLength + 1)), bigint)
             }
           SIntLiteral(value, width)
@@ -315,13 +315,13 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
         case "mux(" => Mux(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), visitExp(ctx.exp(2)), UnknownType)
         case _ =>
           ctx.getChild(1).getText match {
-            case "." => new SubField(visitExp(ctx.exp(0)), ctx.id.getText, UnknownType)
+            case "." => new SubField(visitExp(ctx.exp(0)), ctx.fieldId.getText, UnknownType)
             case "[" => if (ctx.exp(1) == null)
-              new SubIndex(visitExp(ctx.exp(0)), string2Int(ctx.IntLit(0).getText), UnknownType)
+              new SubIndex(visitExp(ctx.exp(0)), string2Int(ctx.intLit(0).getText), UnknownType)
             else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
             // Assume primop
             case _ => DoPrim(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
-              ctx.IntLit.map(x => string2BigInt(x.getText)), UnknownType)
+              ctx.intLit.map(x => string2BigInt(x.getText)), UnknownType)
           }
       }
 

@@ -52,17 +52,17 @@ dir
   ;
 
 type 
-  : 'UInt' ('<' IntLit '>')?
-  | 'SInt' ('<' IntLit '>')?
-  | 'Fixed' ('<' IntLit '>')? ('<' '<' IntLit '>' '>')?
+  : 'UInt' ('<' intLit '>')?
+  | 'SInt' ('<' intLit '>')?
+  | 'Fixed' ('<' intLit '>')? ('<' '<' intLit '>' '>')?
   | 'Clock'
-  | 'Analog' ('<' IntLit '>')?
+  | 'Analog' ('<' intLit '>')?
   | '{' field* '}'        // Bundle
-  | type '[' IntLit ']'   // Vector
+  | type '[' intLit ']'   // Vector
   ;
 
 field
-  : 'flip'? id ':' type
+  : 'flip'? fieldId ':' type
   ;
 
 defname
@@ -70,7 +70,7 @@ defname
   ;
 
 parameter
-  : 'parameter' id '=' IntLit NEWLINE
+  : 'parameter' id '=' intLit NEWLINE
   | 'parameter' id '=' StringLit NEWLINE
   | 'parameter' id '=' DoubleLit NEWLINE
   | 'parameter' id '=' RawString NEWLINE
@@ -105,7 +105,7 @@ stmt
   | exp '<-' exp info?
   | exp 'is' 'invalid' info?
   | when
-  | 'stop(' exp exp IntLit ')' info?
+  | 'stop(' exp exp intLit ')' info?
   | 'printf(' exp exp StringLit ( exp)* ')' info?
   | 'skip' info?
   | 'attach' '(' exp+ ')' info?
@@ -113,9 +113,9 @@ stmt
 
 memField
 	:  'data-type' '=>' type NEWLINE
-	| 'depth' '=>' IntLit NEWLINE
-	| 'read-latency' '=>' IntLit NEWLINE
-	| 'write-latency' '=>' IntLit NEWLINE
+	| 'depth' '=>' intLit NEWLINE
+	| 'read-latency' '=>' intLit NEWLINE
+	| 'write-latency' '=>' intLit NEWLINE
 	| 'read-under-write' '=>' ruw NEWLINE
 	| 'reader' '=>' id+ NEWLINE
 	| 'writer' '=>' id+ NEWLINE
@@ -160,46 +160,55 @@ ruw
   ;
 
 exp
-  : 'UInt' ('<' IntLit '>')? '(' IntLit ')' 
-  | 'SInt' ('<' IntLit '>')? '(' IntLit ')' 
-  | 'UBits' ('<' IntLit '>')? '(' StringLit ')'
-  | 'SBits' ('<' IntLit '>')? '(' StringLit ')'
+  : 'UInt' ('<' intLit '>')? '(' intLit ')'
+  | 'SInt' ('<' intLit '>')? '(' intLit ')'
   | id    // Ref
-  | exp '.' id 
-  | exp '[' IntLit ']'
+  | exp '.' fieldId
+  | exp '[' intLit ']'
   | exp '[' exp ']'
   | 'mux(' exp exp exp ')'
   | 'validif(' exp exp ')'
-  | primop exp* IntLit*  ')' 
+  | primop exp* intLit*  ')'
   ;
 
 id
   : Id
-  | keyword
+  | keywordAsId
   ;
 
-keyword
+fieldId
+  : Id
+  | RelaxedId
+  | UnsignedInt
+  | keywordAsId
+  ;
+
+intLit
+  : UnsignedInt
+  | SignedInt
+  | HexLit
+  ;
+
+// Keywords that are also legal ids
+keywordAsId
   : 'circuit'
   | 'module'
   | 'extmodule'
+  | 'parameter'
   | 'input'
   | 'output'
   | 'UInt'
   | 'SInt'
-  | 'UBits'
-  | 'SBits'
   | 'Clock'
+  | 'Analog'
+  | 'Fixed'
   | 'flip'
   | 'wire'
   | 'reg'
   | 'with'
   | 'reset'
   | 'mem'
-  | 'data-type'
   | 'depth'
-  | 'read-latency'
-  | 'write-latency'
-  | 'read-under-write'
   | 'reader'
   | 'writer'
   | 'readwriter'
@@ -272,19 +281,26 @@ primop
  * LEXER RULES
  *------------------------------------------------------------------*/
 
-IntLit
+UnsignedInt
   : '0'
-  | ( '+' | '-' )? [1-9] ( Digit )*
-  | '"' 'h' ( HexDigit )+ '"'
+  | PosInt
+  ;
+
+SignedInt
+  : ( '+' | '-' ) PosInt
+  ;
+
+fragment
+PosInt
+  : [1-9] ( Digit )*
+  ;
+
+HexLit
+  : '"' 'h' ( HexDigit )+ '"'
   ;
 
 DoubleLit
   : ( '+' | '-' )? Digit+ '.' Digit+ ( 'E' Digit+ )?
-  ;
-
-fragment
-Nondigit
-  : [a-zA-Z_]
   ;
 
 fragment
@@ -315,16 +331,23 @@ FileInfo
   ;
 
 Id
-  : IdNondigit
-    ( IdNondigit
-    | Digit
-    )*
+  : LegalStartChar (LegalIdChar)*
+  ;
+
+RelaxedId
+  : (LegalIdChar)+
   ;
 
 fragment
-IdNondigit
-  : Nondigit
-  | [~!@#$%^*\-+=?/]
+LegalIdChar
+  : LegalStartChar
+  | Digit
+  | '$'
+  ;
+
+fragment
+LegalStartChar
+  : [a-zA-Z_]
   ;
 
 fragment COMMENT
