@@ -85,11 +85,16 @@ class SBP extends Module {
   })
   io.out := io.in.setBinaryPoint(0)
 }
+
 class SBPTester extends BasicTester {
   val dut = Module(new SBP)
   dut.io.in := 3.75.F(2.BP)
 
   assert(dut.io.out === 3.0.F(0.BP))
+
+  val test = Wire(FixedPoint(10.W, 5.BP))
+  val q = test.setBinaryPoint(18)
+  assert(q.getWidth.U === 23.U)
 
   stop()
 }
