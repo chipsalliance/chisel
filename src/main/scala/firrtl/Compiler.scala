@@ -132,6 +132,7 @@ trait SimpleRun extends LazyLogging {
   def runPasses(circuit: Circuit, passSeq: Seq[Pass]): Circuit =
     passSeq.foldLeft(circuit) { (c: Circuit, pass: Pass) =>
       val x = Utils.time(pass.name) { pass.run(c) }
+      logger.debug(s"** Pass ${pass.name} **")
       logger.debug(x.serialize)
       x
     }
