@@ -101,24 +101,24 @@ object InferReadWritePass extends Pass {
         val rclk = getOrigin(connects)(memPortField(mem, r, "clk"))
         if (weq(wclk, rclk) && (wp exists (a => rp exists (b => checkComplement(a, b))))) {
           val rw = namespace newName "rw"
-          val rwExp = createSubField(createRef(mem.name), rw)
+          val rwExp = WSubField(WRef(mem.name), rw)
           readwriters += rw
           readers += r
           writers += w
           repl(memPortField(mem, r, "clk"))  = EmptyExpression
           repl(memPortField(mem, r, "en"))   = EmptyExpression
           repl(memPortField(mem, r, "addr")) = EmptyExpression
-          repl(memPortField(mem, r, "data")) = createSubField(rwExp, "rdata")
+          repl(memPortField(mem, r, "data")) = WSubField(rwExp, "rdata")
           repl(memPortField(mem, w, "clk"))  = EmptyExpression
-          repl(memPortField(mem, w, "en"))   = createSubField(rwExp, "wmode")
+          repl(memPortField(mem, w, "en"))   = WSubField(rwExp, "wmode")
           repl(memPortField(mem, w, "addr")) = EmptyExpression
-          repl(memPortField(mem, w, "data")) = createSubField(rwExp, "wdata")
-          repl(memPortField(mem, w, "mask")) = createSubField(rwExp, "wmask")
-          stmts += Connect(NoInfo, createSubField(rwExp, "clk"), wclk)
-          stmts += Connect(NoInfo, createSubField(rwExp, "en"),
+          repl(memPortField(mem, w, "data")) = WSubField(rwExp, "wdata")
+          repl(memPortField(mem, w, "mask")) = WSubField(rwExp, "wmask")
+          stmts += Connect(NoInfo, WSubField(rwExp, "clk"), wclk)
+          stmts += Connect(NoInfo, WSubField(rwExp, "en"),
              DoPrim(Or, Seq(connects(memPortField(mem, r, "en")),
                             connects(memPortField(mem, w, "en"))), Nil, BoolType))
-          stmts += Connect(NoInfo, createSubField(rwExp, "addr"),
+          stmts += Connect(NoInfo, WSubField(rwExp, "addr"),
                         Mux(connects(memPortField(mem, w, "en")),
                             connects(memPortField(mem, w, "addr")),
                             connects(memPortField(mem, r, "addr")), UnknownType))

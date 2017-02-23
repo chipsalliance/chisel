@@ -12,6 +12,112 @@ import scala.collection.mutable.{StringBuilder, ArrayBuffer, LinkedHashMap, Hash
 import java.io.PrintWriter
 import logger.LazyLogging
 
+object seqCat {
+  def apply(args: Seq[Expression]): Expression = args.length match {
+    case 0 => error("Empty Seq passed to seqcat")
+    case 1 => args.head
+    case 2 => DoPrim(PrimOps.Cat, args, Nil, UIntType(UnknownWidth))
+    case _ =>
+      val (high, low) = args splitAt (args.length / 2)
+      DoPrim(PrimOps.Cat, Seq(seqCat(high), seqCat(low)), Nil, UIntType(UnknownWidth))
+  }
+}
+
+/** Given an expression, return an expression consisting of all sub-expressions
+ * concatenated (or flattened).
+ */
+object toBits {
+  def apply(e: Expression): Expression = e match {
+    case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiercat(ex)
+    case t => error("Invalid operand expression for toBits!")
+  }
+  private def hiercat(e: Expression): Expression = e.tpe match {
+    case t: VectorType => seqCat((0 until t.size).reverse map (i =>
+      hiercat(WSubIndex(e, i, t.tpe, UNKNOWNGENDER))))
+    case t: BundleType => seqCat(t.fields map (f =>
+      hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER))))
+    case t: GroundType => DoPrim(AsUInt, Seq(e), Seq.empty, UnknownType)
+    case t => error("Unknown type encountered in toBits!")
+  }
+}
+
+object getWidth {
+  def apply(t: Type): Width = t match {
+    case t: GroundType => t.width
+    case _ => error("No width!")
+  }
+  def apply(e: Expression): Width = apply(e.tpe)
+}
+
+object bitWidth {
+  def apply(dt: Type): BigInt = widthOf(dt)
+  private def widthOf(dt: Type): BigInt = dt match {
+    case t: VectorType => t.size * bitWidth(t.tpe)
+    case t: BundleType => t.fields.map(f => bitWidth(f.tpe)).foldLeft(BigInt(0))(_+_)
+    case GroundType(IntWidth(width)) => width
+    case t => error("Unknown type encountered in bitWidth!")
+  }
+}
+
+object castRhs {
+  def apply(lhst: Type, rhs: Expression) = {
+    lhst match {
+      case _: SIntType => DoPrim(AsSInt, Seq(rhs), Seq.empty, lhst)
+      case FixedType(_, IntWidth(p)) => DoPrim(AsFixedPoint, Seq(rhs), Seq(p), lhst)
+      case ClockType => DoPrim(AsClock, Seq(rhs), Seq.empty, lhst)
+      case _: UIntType => rhs
+    }  
+  }
+}
+
+object fromBits {
+  def apply(lhs: Expression, rhs: Expression): Statement = {
+    val fbits = lhs match {
+      case ex @ (_: WRef | _: WSubField | _: WSubIndex) => getPart(ex, ex.tpe, rhs, 0)
+      case _ => error("Invalid LHS expression for fromBits!")
+    }
+    Block(fbits._2)
+  }
+  private def getPartGround(lhs: Expression,
+                            lhst: Type,
+                            rhs: Expression,
+                            offset: BigInt): (BigInt, Seq[Statement]) = {
+    val intWidth = bitWidth(lhst)
+    val sel = DoPrim(PrimOps.Bits, Seq(rhs), Seq(offset + intWidth - 1, offset), UnknownType)
+    val rhsConnect = castRhs(lhst, sel)
+    (offset + intWidth, Seq(Connect(NoInfo, lhs, rhsConnect)))
+  }
+  private def getPart(lhs: Expression,
+                      lhst: Type,
+                      rhs: Expression,
+                      offset: BigInt): (BigInt, Seq[Statement]) =
+    lhst match {
+      case t: VectorType => (0 until t.size foldLeft (offset, Seq[Statement]())) {
+        case ((curOffset, stmts), i) =>
+          val subidx = WSubIndex(lhs, i, t.tpe, UNKNOWNGENDER)
+          val (tmpOffset, substmts) = getPart(subidx, t.tpe, rhs, curOffset)
+          (tmpOffset, stmts ++ substmts)
+      }
+      case t: BundleType => (t.fields foldRight (offset, Seq[Statement]())) {
+        case (f, (curOffset, stmts)) =>
+          val subfield = WSubField(lhs, f.name, f.tpe, UNKNOWNGENDER)
+          val (tmpOffset, substmts) = getPart(subfield, f.tpe, rhs, curOffset)
+          (tmpOffset, stmts ++ substmts)
+      }
+      case t: GroundType => getPartGround(lhs, t, rhs, offset)
+      case t => error("Unknown type encountered in fromBits!")
+    }
+}
+
+object connectFields {
+  def apply(lref: Expression, lname: String, rref: Expression, rname: String): Connect =
+    Connect(NoInfo, WSubField(lref, lname), WSubField(rref, rname))
+}
+
+object flattenType {
+  def apply(t: Type) = UIntType(IntWidth(bitWidth(t)))
+}
+
 class FIRRTLException(str: String) extends Exception(str)
 
 object Utils extends LazyLogging {

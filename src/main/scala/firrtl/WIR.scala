@@ -35,12 +35,16 @@ object WRef {
   def apply(wire: DefWire): WRef = new WRef(wire.name, wire.tpe, WireKind, UNKNOWNGENDER)
   /** Creates a WRef from a Register */
   def apply(reg: DefRegister): WRef = new WRef(reg.name, reg.tpe, RegKind, UNKNOWNGENDER)
+  def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = new WRef(n, t, k, UNKNOWNGENDER)
 }
 case class WSubField(exp: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
   def serialize: String = s"${exp.serialize}.$name"
   def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
+}
+object WSubField {
+  def apply(exp: Expression, n: String): WSubField = new WSubField(exp, n, field_type(exp.tpe, n), UNKNOWNGENDER)
 }
 case class WSubIndex(exp: Expression, value: Int, tpe: Type, gender: Gender) extends Expression {
   def serialize: String = s"${exp.serialize}[$value]"
@@ -82,6 +86,9 @@ case class WDefInstance(info: Info, name: String, module: String, tpe: Type) ext
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
+}
+object WDefInstance {
+  def apply(name: String, module: String): WDefInstance = new WDefInstance(NoInfo, name, module, UnknownType)
 }
 case class WDefInstanceConnector(
     info: Info,

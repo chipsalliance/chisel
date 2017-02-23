@@ -43,8 +43,8 @@ object RenameAnnotatedMemoryPorts extends Pass {
 
     def updateMemPortMap(ports: Seq[String], fields: Seq[String], newPortKind: String): Unit =
       for ((p, i) <- ports.zipWithIndex; f <- fields) {
-        val newPort = createSubField(createRef(m.name), newPortKind + i)
-        val field = createSubField(newPort, f)
+        val newPort = WSubField(WRef(m.name), newPortKind + i)
+        val field = WSubField(newPort, f)
         memPortMap(s"${m.name}.$p.$f") = field
       }
     updateMemPortMap(m.readers, rFields, "R")
