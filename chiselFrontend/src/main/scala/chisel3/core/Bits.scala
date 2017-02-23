@@ -790,8 +790,8 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
   private[chisel3] def toType = s"Fixed$width$binaryPoint"
 
-  def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
-    case _: FixedPoint => this connect that
+  override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: FixedPoint => super.connect(that)
     case _ => this badConnect that
   }
 
