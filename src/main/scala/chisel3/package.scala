@@ -143,8 +143,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SeqMem
-  type SeqMem[T <: Data] = chisel3.core.SeqMem[T]
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  val SeqMem = chisel3.core.SyncReadMem
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
+  val SyncReadMem = chisel3.core.SyncReadMem
+  type SyncReadMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   val Module = chisel3.core.Module
   type Module = chisel3.core.Module
@@ -260,6 +264,14 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type RawParam = chisel3.core.RawParam
     val RawParam = chisel3.core.RawParam
 
+    type Analog = chisel3.core.Analog
+    val Analog = chisel3.core.Analog
+    val attach = chisel3.core.attach
+
+    val withClockAndReset = chisel3.core.withClockAndReset
+    val withClock = chisel3.core.withClock
+    val withReset = chisel3.core.withReset
+
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
     implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
@@ -289,21 +301,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
       def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
     }
 
-    import scala.language.experimental.macros
-    import scala.annotation.StaticAnnotation
     import scala.annotation.compileTimeOnly
 
-    @compileTimeOnly("enable macro paradise to expand macro annotations")
-    class dump extends StaticAnnotation {
-      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
-    }
-    @compileTimeOnly("enable macro paradise to expand macro annotations")
-    class treedump extends StaticAnnotation {
-      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
-    }
-    @compileTimeOnly("enable macro paradise to expand macro annotations")
-    class chiselName extends StaticAnnotation {
-      def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
-    }
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
   }
 }
