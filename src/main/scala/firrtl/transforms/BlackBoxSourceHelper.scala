@@ -45,7 +45,7 @@ case class BlackBoxInline(name: String, text: String) extends BlackBoxSource {
 object BlackBoxSourceAnnotation {
   def apply(targetDir: ModuleName, value: String): Annotation = {
     assert(BlackBoxSource.parse(value).isDefined)
-    Annotation(targetDir, classOf[DedupModules], value)
+    Annotation(targetDir, classOf[BlackBoxSourceHelper], value)
   }
 
   def unapply(a: Annotation): Option[(ModuleName, BlackBoxSource)] = a match {
