@@ -17,6 +17,8 @@ import firrtl.annotations.{
    Annotation
 }
 import firrtl.passes.{InlineInstances, InlineAnnotation}
+import logger.Logger
+import logger.LogLevel.Debug
 
 
 /**
@@ -24,6 +26,8 @@ import firrtl.passes.{InlineInstances, InlineAnnotation}
  */
 class InlineInstancesTests extends LowTransformSpec {
    def transform = new InlineInstances
+   // Set this to debug
+   // Logger.setClassLogLevels(Map(this.getClass.getName -> Debug))
    "The module Inline" should "be inlined" in {
       val input =
          """circuit Top :

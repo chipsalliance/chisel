@@ -3,6 +3,9 @@
 package firrtl
 package annotations
 
+import net.jcazevedo.moultingyaml._
+import firrtl.annotations.AnnotationYamlProtocol._
+
 case class AnnotationException(message: String) extends Exception(message)
 
 final case class Annotation(target: Named, transform: Class[_ <: Transform], value: String) {
@@ -25,4 +28,16 @@ final case class Annotation(target: Named, transform: Class[_ <: Transform], val
   def propagate(from: Named, tos: Seq[Named], dup: Named=>Annotation): Seq[Annotation] = tos.map(dup(_))
   def check(from: Named, tos: Seq[Named], which: Annotation): Unit = {}
   def duplicate(n: Named) = Annotation(n, transform, value)
+}
+
+object DeletedAnnotation {
+  def apply(xFormName: String, anno: Annotation): Annotation =
+    Annotation(anno.target, classOf[Transform], s"""DELETED by $xFormName\n${AnnotationUtils.toYaml(anno)}""")
+
+  private val deletedRegex = """(?s)DELETED by ([^\n]*)\n(.*)""".r
+  def unapply(a: Annotation): Option[Tuple2[String, Annotation]] = a match {
+    case Annotation(named, t, deletedRegex(xFormName, annoString)) if t == classOf[Transform] =>
+      Some((xFormName, AnnotationUtils.fromYaml(annoString)))
+    case _ => None
+  }
 }

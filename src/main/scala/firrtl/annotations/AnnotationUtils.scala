@@ -3,9 +3,15 @@
 package firrtl
 package annotations
 
+import net.jcazevedo.moultingyaml._
+import firrtl.annotations.AnnotationYamlProtocol._
+
 import firrtl.ir._
 
 object AnnotationUtils {
+  def toYaml(a: Annotation): String = a.toYaml.prettyPrint
+  def fromYaml(s: String): Annotation = s.parseYaml.convertTo[Annotation]
+
   /** Returns true if a valid Module name */
   val SerializedModuleName = """([a-zA-Z_][a-zA-Z_0-9~!@#$%^*\-+=?/]*)""".r
   def validModuleName(s: String): Boolean = s match {
@@ -32,6 +38,13 @@ object AnnotationUtils {
       }
     case None if s == "" => Nil
     case None => Seq(s)
+  }
+
+  def toNamed(s: String): Named = tokenize(s) match {
+    case Seq(n) => CircuitName(n)
+    case Seq(c, m) => ModuleName(m, CircuitName(c))
+    case Seq(c, m) => ModuleName(m, CircuitName(c))
+    case Seq(c, m, x) => ComponentName(x, ModuleName(m, CircuitName(c)))
   }
 
   /** Given a serialized component/subcomponent reference, subindex, subaccess,

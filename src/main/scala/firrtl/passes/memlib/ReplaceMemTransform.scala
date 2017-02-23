@@ -110,7 +110,7 @@ Optional Arguments:
 class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
   def inputForm = form
   def outputForm = form
-  def execute(state: CircuitState): CircuitState = CircuitState(p.run(state.circuit), state.form)
+  def execute(state: CircuitState): CircuitState = CircuitState(p.run(state.circuit), state.form, state.annotations)
 }
 
 class SimpleMidTransform(p: Pass) extends SimpleTransform(p, MidForm)
@@ -143,12 +143,12 @@ class ReplSeqMem extends Transform with SimpleRun {
           Some(AnnotationMap(ann.annotations ++ curState.annotations.get.annotations))
       }
       CircuitState(res.circuit, res.form, newAnnotations)
-    }).copy(annotations = None)
+    })
   }
 
   def execute(state: CircuitState): CircuitState =
     getMyAnnotations(state) match {
-      case Nil => state.copy(annotations = None) // Do nothing if there are no annotations
+      case Nil => state // Do nothing if there are no annotations
       case p => (p.collectFirst { case a if (a.target == CircuitName(state.circuit.main)) => a }) match {
         case Some(ReplSeqMemAnnotation(target, inputFileName, outputConfig)) =>
           val inConfigFile = {

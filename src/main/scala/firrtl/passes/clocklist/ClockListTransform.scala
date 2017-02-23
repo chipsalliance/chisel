@@ -69,8 +69,8 @@ class ClockListTransform extends Transform {
       val outputFile = new PrintWriter(out)
       val newC = (new ClockList(top, outputFile)).run(state.circuit)
       outputFile.close()
-      CircuitState(newC, state.form)
-    case Nil => CircuitState(state.circuit, state.form)
+      CircuitState(newC, state.form, state.annotations)
+    case Nil => state
     case seq => error(s"Found illegal clock list annotation(s): $seq")
   }
 }

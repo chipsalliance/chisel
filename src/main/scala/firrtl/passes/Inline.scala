@@ -49,7 +49,7 @@ class InlineInstances extends Transform {
        case Nil => CircuitState(state.circuit, state.form)
        case myAnnotations =>
          val (modNames, instNames) = collectAnns(state.circuit, myAnnotations)
-         run(state.circuit, modNames, instNames)
+         run(state.circuit, modNames, instNames, state.annotations)
      }
    }
 
@@ -93,7 +93,7 @@ class InlineInstances extends Transform {
    }
 
 
-  def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName]): CircuitState = {
+  def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName], annos: Option[AnnotationMap]): CircuitState = {
     def getInstancesOf(c: Circuit, modules: Set[String]): Set[String] =
       c.modules.foldLeft(Set[String]()) { (set, d) =>
         d match {
@@ -146,6 +146,6 @@ class InlineInstances extends Transform {
       case m => 
         Some(m map onStmt("", m.name))
     })
-    CircuitState(flatCircuit, LowForm, None, None)
+    CircuitState(flatCircuit, LowForm, annos, None)
   }
 }

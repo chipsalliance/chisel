@@ -121,4 +121,25 @@ class AnnotationTests extends AnnotationSpec with Matchers {
       beforeAnno should be (afterAnno)
     }
   }
+
+  "Deleting annotations" should "create a DeletedAnnotation" in {
+    val compiler = new VerilogCompiler
+    val input =
+     """circuit Top :
+        |  module Top :
+        |    input in: UInt<3>
+        |""".stripMargin
+    class DeletingTransform extends Transform {
+      val inputForm = LowForm
+      val outputForm = LowForm
+      def execute(state: CircuitState) = state.copy(annotations = None)
+    }
+    val anno = InlineAnnotation(CircuitName("Top"))
+    val annoOpt = Some(AnnotationMap(Seq(anno)))
+    val writer = new StringWriter()
+    val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annoOpt), writer, Seq(new DeletingTransform))
+    result.annotations.get.annotations.head should matchPattern {
+      case DeletedAnnotation(x, anno) =>
+    }
+  }
 }

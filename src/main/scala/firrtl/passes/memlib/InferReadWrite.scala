@@ -158,8 +158,8 @@ class InferReadWrite extends Transform with PassBased {
     ResolveGenders
   )
   def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
-    case Nil => CircuitState(state.circuit, state.form)
+    case Nil => state
     case Seq(InferReadWriteAnnotation(CircuitName(state.circuit.main))) =>
-      CircuitState(runPasses(state.circuit), state.form)
+      state.copy(circuit = runPasses(state.circuit))
   }
 }

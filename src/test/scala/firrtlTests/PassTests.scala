@@ -2,7 +2,6 @@
 
 package firrtlTests
 
-import com.typesafe.scalalogging.LazyLogging
 import java.io.{StringWriter,Writer}
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.junit.JUnitRunner

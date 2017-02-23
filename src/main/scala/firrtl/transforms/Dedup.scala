@@ -32,10 +32,10 @@ class DedupModules extends Transform {
   def outputForm = HighForm
   def execute(state: CircuitState): CircuitState = {
     getMyAnnotations(state) match {
-      case Nil => CircuitState(run(state.circuit, Seq.empty), state.form)
+      case Nil => state.copy(circuit = run(state.circuit, Seq.empty))
       case annos =>
         val noDedups = annos.collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
-        CircuitState(run(state.circuit, noDedups), state.form)
+        state.copy(circuit = run(state.circuit, noDedups))
     }
   }
   // Orders the modules of a circuit from leaves to root
