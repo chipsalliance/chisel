@@ -94,6 +94,7 @@ object castRhs {
     lhst match {
       case _: SIntType => DoPrim(AsSInt, Seq(rhs), Seq.empty, lhst)
       case FixedType(_, IntWidth(p)) => DoPrim(AsFixedPoint, Seq(rhs), Seq(p), lhst)
+      case _: ClockType => DoPrim(AsClock, Seq(rhs), Seq.empty, lhst)
       case _: UIntType => rhs
     }  
   }
@@ -152,6 +153,10 @@ object createRef {
 
 object createSubField {
   def apply(exp: Expression, n: String) = WSubField(exp, n, field_type(exp.tpe, n), UNKNOWNGENDER)
+}
+
+object createInstance {
+  def apply(name: String, module: String) = WDefInstance(NoInfo, name, module, UnknownType)
 }
 
 object connectFields {

@@ -14,13 +14,13 @@ class Namespace private {
   private var n = 0L
 
   def tryName(value: String): Boolean = {
-    if (!namespace.contains(value)) {
-      namespace += value
-      true
-    } else {
-      false
-    }
+    val unused = !contains(value)
+    if (unused) namespace += value
+    unused
   }
+
+  def contains(value: String): Boolean = namespace.contains(value)
+
   def newName(value: String): String = {
     var str = value
     while (!tryName(str)) {
