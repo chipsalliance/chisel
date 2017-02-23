@@ -31,7 +31,7 @@ object ConvertFixedToSInt extends Pass {
   def toSIntType(t: Type): Type = t match {
     case FixedType(IntWidth(w), IntWidth(p)) => SIntType(IntWidth(w))
     case FixedType(w, p) => error("Shouldn't be here")
-    case _ => t
+    case _ => t map toSIntType
   }
   def run(c: Circuit): Circuit = {
     val moduleTypes = mutable.HashMap[String,Type]()
