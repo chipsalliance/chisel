@@ -42,7 +42,7 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = new Vec(gen.chiselCloneType, n)
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
