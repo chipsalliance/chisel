@@ -215,12 +215,24 @@ package object Chisel {     // scalastyle:ignore package.object.name
     val TesterDriver = chisel3.testers.TesterDriver
   }
 
-
-  val log2Up = chisel3.util.log2Up
   val log2Ceil = chisel3.util.log2Ceil
-  val log2Down = chisel3.util.log2Down
   val log2Floor = chisel3.util.log2Floor
   val isPow2 = chisel3.util.isPow2
+
+  /** Compute the log2 rounded up with min value of 1 */
+  object log2Up {
+    def apply(in: BigInt): Int = {
+      require(in >= 0)
+      1 max (in-1).bitLength
+    }
+    def apply(in: Int): Int = apply(BigInt(in))
+  }
+
+  /** Compute the log2 rounded down with min value of 1 */
+  object log2Down {
+    def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
+    def apply(in: Int): Int = apply(BigInt(in))
+  }
 
   val BitPat = chisel3.util.BitPat
   type BitPat = chisel3.util.BitPat
