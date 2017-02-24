@@ -22,7 +22,7 @@ object OHToUInt {
     if (width <= 2) {
       Log2(in, width)
     } else {
-      val mid = 1 << (log2Up(width)-1)
+      val mid = 1 << (log2Ceil(width)-1)
       val hi = in(width-1, mid)
       val lo = in(mid-1, 0)
       Cat(hi.orR, apply(hi | lo, mid))
