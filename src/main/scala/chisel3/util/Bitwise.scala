@@ -90,10 +90,10 @@ object Fill {
   * }}}
   */
 object Reverse {
-  private def doit(in: UInt, length: Int): UInt = {
-    if (length == 1) {
-      in
-    } else if (isPow2(length) && length >= 8 && length <= 64) {
+  private def doit(in: UInt, length: Int): UInt = length match {
+    case _ if length < 0 => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
+    case _ if length <= 1 => in
+    case _ if isPow2(length) && length >= 8 && length <= 64 =>
       // This esoterica improves simulation performance
       var res = in
       var shift = length >> 1
@@ -104,10 +104,9 @@ object Reverse {
         shift = shift >> 1
       } while (shift > 0)
       res
-    } else {
-      val half = (1 << log2Up(length))/2
+    case _ =>
+      val half = (1 << log2Ceil(length))/2
       Cat(doit(in(half-1,0), half), doit(in(length-1,half), length-half))
-    }
   }
 
   def apply(in: UInt): UInt = doit(in, in.getWidth)
