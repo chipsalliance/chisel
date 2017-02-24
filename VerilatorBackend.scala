@@ -50,7 +50,7 @@ class GenVerilatorCppHarness(
   import firrtl.Mappers._
   import firrtl.AnnotationMap
   import firrtl.Utils.create_exps
-  import firrtl.passes.bitWidth
+  import firrtl.bitWidth
 
   private def findWidths(m: DefModule) = {
     type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, BigInt)]
