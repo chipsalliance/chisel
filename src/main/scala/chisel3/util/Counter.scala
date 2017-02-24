@@ -14,7 +14,7 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 @chiselName
 class Counter(val n: Int) {
   require(n >= 0)
-  val value = if (n > 1) Reg(init=0.U(log2Up(n).W)) else 0.U
+  val value = if (n > 1) Reg(init=0.U(log2Ceil(n).W)) else 0.U
 
   /** Increment the counter, returning whether the counter currently is at the
     * maximum and will wrap. The incremented value is registered and will be
