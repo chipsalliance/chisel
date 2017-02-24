@@ -42,12 +42,13 @@ object PriorityEncoder {
 /** Returns the one hot encoding of the input UInt.
   */
 object UIntToOH {
-  def apply(in: UInt, width: Int = -1): UInt =
-    if (width == -1) {
-      1.U << in
-    } else {
-      (1.U << in(log2Up(width)-1,0))(width-1,0)
-    }
+  def apply(in: UInt): UInt = 1.U << in
+  def apply(in: UInt, width: Int): UInt = width match {
+    case 0 => 0.U(0.W)
+    case _ =>
+      val shiftAmount = in((log2Ceil(width) - 1) max 0, 0)
+      (1.U << shiftAmount)(width - 1, 0)
+  }
 }
 
 /** Returns a bit vector in which only the least-significant 1 bit in the input vector, if any,
