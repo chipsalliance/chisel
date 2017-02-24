@@ -148,7 +148,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq = EnqIO(gen)
   /** The current amount of data in the queue */
-  val count = Output(UInt(log2Up(entries + 1).W))
+  val count = Output(UInt(log2Ceil(entries + 1).W))
 
   override def cloneType = new QueueIO(gen, entries).asInstanceOf[this.type]
 }

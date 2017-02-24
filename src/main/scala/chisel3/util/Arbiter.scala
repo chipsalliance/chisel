@@ -19,7 +19,7 @@ import chisel3.core.ExplicitCompileOptions.NotStrict
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
   val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
-  val chosen = Output(UInt(log2Up(n).W))
+  val chosen = Output(UInt(log2Ceil(n).W))
 }
 
 /** Arbiter Control determining which producer has access
