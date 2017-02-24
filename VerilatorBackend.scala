@@ -110,7 +110,6 @@ class GenVerilatorCppHarness(
     val dutName = dut.name
     val dutApiClassName = dutName + "_api_t"
     val dutVerilatorClassName = "V" + dutName
-    // val widthMap = (circuit.modules flatMap findWidths).toMap
     writer.write("#include \"%s.h\"\n".format(dutVerilatorClassName))
     writer.write("#include \"verilated.h\"\n")
     writer.write("#include \"veri_api.h\"\n")
@@ -142,16 +141,9 @@ class GenVerilatorCppHarness(
     writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
     (nodes foldLeft 1){ (id, node) =>
       val instanceName = s"%s.%s".format(node.parentPathName, validName(node.instanceName))
-//      val pathName = instanceName replace (".", "__DOT__") replace ("$", "__024")
       try {
         node match {
           case mem: Chisel.MemBase[_] =>
-//            writer.write(s"        for (size_t i = 0 ; i < ${mem.length} ; i++) {\n")
-//            pushBack(writer, "signals", s"dut->${pathName}[i]", widthMap(node))
-//            writer.write(s"          ostringstream oss;\n")
-//            writer.write(s"""          oss << "${instanceName}" << "[" << i << "]";\n""")
-//            writer.write(s"          sim_data.signal_map[oss.str()] = $id + i;\n")
-//            writer.write(s"        }\n")
             id + mem.length
           case _ =>
 //            pushBack(writer, "signals", s"dut->$pathName", widthMap(node))
