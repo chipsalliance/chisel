@@ -65,17 +65,18 @@ object Fill {
     */
   def apply(n: Int, x: UInt): UInt = {
     n match {
+      case _ if n < 0 => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
       case 0 => UInt(0.W)
       case 1 => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
         Mux(x.toBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
-      case _ if n > 1 =>
-        val p2 = Array.ofDim[UInt](log2Up(n + 1))
+      case _ =>
+        val nBits = log2Ceil(n + 1)
+        val p2 = Array.ofDim[UInt](nBits)
         p2(0) = x
         for (i <- 1 until p2.length)
           p2(i) = Cat(p2(i-1), p2(i-1))
-        Cat((0 until log2Up(n + 1)).filter(i => (n & (1 << i)) != 0).map(p2(_)))
-      case _ => throw new IllegalArgumentException(s"n (=$n) must be nonnegative integer.")
+        Cat((0 until nBits).filter(i => (n & (1 << i)) != 0).map(p2(_)))
     }
   }
 }
