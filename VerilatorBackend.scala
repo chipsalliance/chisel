@@ -48,46 +48,6 @@ class GenVerilatorCppHarness(
   import firrtl._
   import firrtl.ir._
   import firrtl.Mappers._
-  import firrtl.AnnotationMap
-  import firrtl.Utils.create_exps
-  import firrtl.bitWidth
-
-  private def findWidths(m: DefModule) = {
-    type WidthMap = collection.mutable.ArrayBuffer[(InstanceId, BigInt)]
-    val modNodes = nodes filter (_.parentModName == m.name)
-    val widthMap = new WidthMap
-
-    /* Sadly, ports disappear in verilator ...
-    def loop_port(port: Port) = {
-      widthMap ++= (create_exps(port.name, port.tpe) flatMap (exp =>
-        modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe)))
-      port
-    }
-    */
-
-    def loop(s: Statement): Statement = {
-      s match {
-        /* Sadly, wires disappear in verilator...
-        case s: DefWire if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
-          widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe)))
-        */
-        case s: DefRegister if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
-          widthMap ++= (create_exps(s.name, s.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe))))
-        case s: DefNode if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
-          widthMap ++= (create_exps(s.name, s.value.tpe) flatMap (exp =>
-            modNodes filter (_.instanceName == exp.serialize) map (_ -> bitWidth(exp.tpe))))
-        case s: DefMemory if s.name.slice(0, 2) != "T_" && s.name.slice(0, 4) != "GEN_" =>
-          widthMap ++= (modNodes filter (_.instanceName == s.name) map (_ -> bitWidth(s.dataType)))
-        case _ =>
-      }
-      s map loop
-    }
-
-    m map loop
-    widthMap.toSeq
-  }
 
   private def pushBack(writer: Writer, vector: String, pathName: String, width: BigInt) {
     if (width <= 8) {
@@ -139,24 +99,6 @@ class GenVerilatorCppHarness(
     }
     pushBack(writer, "signals", "dut->reset", 1)
     writer.write(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
-    (nodes foldLeft 1){ (id, node) =>
-      val instanceName = s"%s.%s".format(node.parentPathName, validName(node.instanceName))
-      try {
-        node match {
-          case mem: Chisel.MemBase[_] =>
-            id + mem.length
-          case _ =>
-//            pushBack(writer, "signals", s"dut->$pathName", widthMap(node))
-//            writer.write(s"""        sim_data.signal_map["${instanceName}"] = $id;\n""")
-            id + 1
-        }
-      } catch {
-        // For debugging
-        case e: java.util.NoSuchElementException =>
-          println(s"error with $id: $instanceName")
-          throw e
-      }
-    }
     writer.write("    }\n")
     writer.write("#if VM_TRACE\n")
     writer.write("     void init_dump(VerilatedVcdC* _tfp) { tfp = _tfp; }\n")
