@@ -44,6 +44,12 @@ class IterableNaming extends NamedModuleTester {
   val list = stream.take(8).toList
 }
 
+class DigitFieldNamesInRecord extends NamedModuleTester {
+  val wire = Wire(new CustomBundle("0" -> UInt(32.W), "1" -> UInt(32.W)))
+  expectName(wire("0"), "wire.0")
+  expectName(wire("1"), "wire.1")
+}
+
 /* Better Naming Tests
  *
  * These tests are intended to validate that Chisel picks better names
@@ -61,6 +67,12 @@ class BetterNamingTests extends ChiselFlatSpec {
   it should "provide names for things defined in Iterable[HasId] and Option[HasId]" in {
     var module: IterableNaming = null
     elaborate { module = new IterableNaming; module }
+    assert(module.getNameFailures() == Nil)
+  }
+
+  it should "allow digits to be field names in Records" in {
+    var module: DigitFieldNamesInRecord  = null
+    elaborate { module = new DigitFieldNamesInRecord; module }
     assert(module.getNameFailures() == Nil)
   }
 }
