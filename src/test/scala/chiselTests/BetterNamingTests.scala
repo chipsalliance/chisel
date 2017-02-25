@@ -1,6 +1,5 @@
 package chiselTests
 
-import org.scalatest.{FlatSpec, Matchers}
 import collection.mutable
 
 import chisel3._
@@ -12,32 +11,35 @@ class Other(w: Int) extends Module {
     val a = UInt(w.W)
   }
 }
-class PerNameIndexing(count: Int) extends Module {
-  val io = new Bundle { }
-
-  val wires = Seq.tabulate(count) { i => Module(new Other(i)) }
-  val queues = Seq.tabulate(count) { i => Module(new Queue(UInt(i.W), 16)) }
+// Check the names of the Modules (not instances)
+class PerNameIndexing(count: Int) extends NamedModuleTester {
+  def genModName(prefix: String, idx: Int): String = if (idx == 0) prefix else s"${prefix}_$idx"
+  val wires = Seq.tabulate(count) { i =>
+    expectModuleName(Module(new Other(i)), genModName("Other", i))
+  }
+  val queues = Seq.tabulate(count) { i =>
+    expectModuleName(Module(new Queue(UInt(i.W), 16)), genModName("Queue", i))
+  }
 }
 
 // Note this only checks Iterable[Chisel.Data] which excludes Maps
-class IterableNaming extends Module {
-  val io = new Bundle { }
-
+class IterableNaming extends NamedModuleTester {
   val seq = Seq.tabulate(3) { i =>
-    Seq.tabulate(2) { j => Wire(init = (i * j).U) }
+    Seq.tabulate(2) { j => expectName(Wire(init = (i * j).U), s"seq_${i}_${j}") }
   }
-  val optSet = Some(Set(Wire(init = 0.U),
-                        Wire(init = 1.U),
-                        Wire(init = 2.U),
-                        Wire(init = 3.U)))
+  val optSet = Some(Set(expectName(Wire(init = 0.U), "optSet_0"),
+                        expectName(Wire(init = 1.U), "optSet_1"),
+                        expectName(Wire(init = 2.U), "optSet_2"),
+                        expectName(Wire(init = 3.U), "optSet_3")))
 
   val stack = mutable.Stack[Module]()
   for (i <- 0 until 4) {
-    stack push Module(new Other(i))
+    val j = 3 - i
+    stack.push(expectName(Module(new Other(i)), s"stack_$j"))
   }
 
   def streamFrom(x: Int): Stream[Module] =
-    Module(new Other(x)) #:: streamFrom(x + 1)
+    expectName(Module(new Other(x)), s"list_$x") #:: streamFrom(x + 1)
   val stream = streamFrom(0) // Check that we don't get into infinite loop
   val list = stream.take(8).toList
 }
@@ -46,56 +48,19 @@ class IterableNaming extends Module {
  *
  * These tests are intended to validate that Chisel picks better names
  */
-class BetterNamingTests extends FlatSpec {
+class BetterNamingTests extends ChiselFlatSpec {
 
   behavior of "Better Naming"
 
   it should "provide unique counters for each name" in {
-    val verilog = Driver.emit(() => new PerNameIndexing(4))
-    val ModuleDef = """\s*module\s+(\S+)\s+:\s*""".r
-    val expectedModules = Set("PerNameIndexing",
-      "Queue", "Queue_1", "Queue_2", "Queue_3",
-      "Other", "Other_1", "Other_2", "Other_3")
-    val foundModules = for {
-      ModuleDef(name) <- verilog.split("\n").toSeq
-    } yield name
-    assert(foundModules.toSet === expectedModules)
+    var module: PerNameIndexing = null
+    elaborate { module = new PerNameIndexing(4); module }
+    assert(module.getNameFailures() == Nil)
   }
 
   it should "provide names for things defined in Iterable[HasId] and Option[HasId]" in {
-    val verilog = Driver.emit(() => new IterableNaming)
-
-    val lines = verilog.split("\n").toSeq
-
-    val SeqDef = """\s*wire\s+seq_(\d+)_(\d+)\s+:\s+UInt\s*""".r
-    val seqs = for {
-      i <- (0 until 3)
-      j <- (0 until 2)
-    } yield (i.toString, j.toString)
-    val foundSeqs = for {
-      SeqDef(i, j) <- lines
-    } yield (i, j)
-    assert(foundSeqs.toSet === seqs.toSet)
-
-    val OptSetDef = """\s*wire\s+optSet_(\d+)\s+:\s+UInt\s*""".r
-    val optSets = (0 until 4) map (_.toString)
-    val foundOptSets = for {
-      OptSetDef(i) <- lines
-    } yield i
-    assert(foundOptSets.toSet === optSets.toSet)
-
-    val StackDef = """\s*inst\s+stack_(\d+)\s+of\s+Other.*""".r
-    val stacks = (0 until 4) map (_.toString)
-    val foundStacks = for {
-      StackDef(i) <- lines
-    } yield i
-    assert(foundStacks.toSet === stacks.toSet)
-
-    val ListDef = """\s*inst\s+list_(\d+)\s+of\s+Other.*""".r
-    val lists = (0 until 8) map (_.toString)
-    val foundLists = for {
-      ListDef(i) <- lines
-    } yield i
-    assert(foundLists.toSet === lists.toSet)
+    var module: IterableNaming = null
+    elaborate { module = new IterableNaming; module }
+    assert(module.getNameFailures() == Nil)
   }
 }
