@@ -229,7 +229,6 @@ private[iotesters] object setupVerilatorBackend {
         val nodes = getChiselNodes(circuit)
 
         val annotationMap = firrtl.AnnotationMap(optionsManager.firrtlOptions.annotations ++ List(
-          firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name),
           firrtl.annotations.Annotation(
             CircuitName(circuit.name),
             classOf[BlackBoxSourceHelper],
@@ -244,7 +243,7 @@ private[iotesters] object setupVerilatorBackend {
         (new firrtl.VerilogCompiler).compile(
           CircuitState(chirrtl, ChirrtlForm, Some(annotationMap)),
           verilogWriter,
-          List(new firrtl.passes.memlib.InferReadWrite))
+          optionsManager.firrtlOptions.customTransforms)
         verilogWriter.close()
 
         val cppHarnessFileName = s"${circuit.name}-harness.cpp"

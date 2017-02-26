@@ -132,7 +132,6 @@ private[iotesters] object setupVCSBackend {
         val dut = getTopModule(circuit).asInstanceOf[T]
         val nodes = getChiselNodes(circuit)
         val annotations = firrtl.AnnotationMap(optionsManager.firrtlOptions.annotations ++ List(
-          firrtl.passes.memlib.InferReadWriteAnnotation(circuit.name),
           firrtl.annotations.Annotation(
             CircuitName(circuit.name),
             classOf[BlackBoxSourceHelper],
@@ -147,7 +146,7 @@ private[iotesters] object setupVCSBackend {
         verilogCompiler.compile(
           firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
           verilogWriter,
-          List(new firrtl.passes.memlib.InferReadWrite)
+          optionsManager.firrtlOptions.customTransforms
         )
         verilogWriter.close()
 
