@@ -67,7 +67,7 @@ class UsesBlackBoxMinusViaResource extends Module {
 class BlackBoxImplSpec extends FreeSpec with Matchers {
   "BlackBox can have verilator source implementation" - {
     "Implementations can be contained in-line" in {
-      Driver.execute(Array("-X", "verilog"), () => new UsesBlackBoxAddViaInline) match {
+      Driver.execute(Array("-X", "verilog", "--targetDir", "test_run_dir"), () => new UsesBlackBoxAddViaInline) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
           val verilogOutput = new File("./BlackBoxAdd.v")
           verilogOutput.exists() should be (true)
@@ -78,7 +78,7 @@ class BlackBoxImplSpec extends FreeSpec with Matchers {
       }
     }
     "Implementations can be contained in resource files" in {
-      Driver.execute(Array("-X", "low"), () => new UsesBlackBoxMinusViaResource) match {
+      Driver.execute(Array("-X", "low", "--targetDir", "test_run_dir"), () => new UsesBlackBoxMinusViaResource) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
           val verilogOutput = new File("./BlackBoxTest.v")
           verilogOutput.exists() should be (true)
