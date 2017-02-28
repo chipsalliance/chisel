@@ -92,6 +92,29 @@ class ParserSpec extends FirrtlFlatSpec {
                                           s"      ${keyword} <= ${keyword}")))
     }
   }
+
+  // ********** Doubles as parameters **********
+  "Doubles" should "be legal parameters for extmodules" in {
+    val nums = Seq("1.0", "7.6", "3.00004", "1.0E10", "1.0023E-17")
+    val signs = Seq("", "+", "-")
+    val tests = "0.0" +: (signs flatMap (s => nums map (n => s + n)))
+    for (test <- tests) {
+      println(s"Trying $test")
+      val input = s"""
+        |circuit Test :
+        |  extmodule Ext :
+        |    input foo : UInt<32>
+        |
+        |    defname = MyExtModule
+        |    parameter REAL = $test
+        |
+        |  module Test :
+        |    input foo : UInt<32>
+        |    output bar : UInt<32>
+        """.stripMargin
+      firrtl.Parser.parse(input split "\n")
+    }
+  }
 }
 
 class ParserPropSpec extends FirrtlPropSpec {

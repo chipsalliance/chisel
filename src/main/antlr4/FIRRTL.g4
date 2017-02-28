@@ -300,7 +300,7 @@ HexLit
   ;
 
 DoubleLit
-  : ( '+' | '-' )? Digit+ '.' Digit+ ( 'E' Digit+ )?
+  : ( '+' | '-' )? Digit+ '.' Digit+ ( 'E' ( '+' | '-' )? Digit+ )?
   ;
 
 fragment
