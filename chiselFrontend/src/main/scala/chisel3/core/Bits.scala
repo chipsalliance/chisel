@@ -436,7 +436,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   def do_+% (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     (this +& that).tail(1)
   def do_-& (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt((this.width max that.width) + 1), SubOp, that)
+    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that).asUInt
   def do_-% (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     (this -& that).tail(1)
 

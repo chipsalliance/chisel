@@ -5,18 +5,21 @@ package chiselTests
 import chisel3._
 import org.scalatest._
 import chisel3.testers.BasicTester
+import org.scalacheck.Shrink
 
 class UIntOps extends Module {
   val io = IO(new Bundle {
-    val a = Input(UInt(16.W))
-    val b = Input(UInt(16.W))
-    val addout = Output(UInt(16.W))
-    val subout = Output(UInt(16.W))
-    val timesout = Output(UInt(16.W))
-    val divout = Output(UInt(16.W))
-    val modout = Output(UInt(16.W))
-    val lshiftout = Output(UInt(16.W))
-    val rshiftout = Output(UInt(16.W))
+    val a = Input(UInt(32.W))
+    val b = Input(UInt(32.W))
+    val addout = Output(UInt(32.W))
+    val subout = Output(UInt(32.W))
+    val addampout = Output(UInt(33.W))
+    val subampout = Output(UInt(33.W))
+    val timesout = Output(UInt(32.W))
+    val divout = Output(UInt(32.W))
+    val modout = Output(UInt(32.W))
+    val lshiftout = Output(UInt(32.W))
+    val rshiftout = Output(UInt(32.W))
     val lessout = Output(Bool())
     val greatout = Output(Bool())
     val eqout = Output(Bool())
@@ -30,51 +33,47 @@ class UIntOps extends Module {
 
   io.addout := a +% b
   io.subout := a -% b
-  io.timesout := (a * b)(15, 0)
+  io.addampout := a +& b
+  io.subampout := a -& b
+  io.timesout := (a * b)(31, 0)
   io.divout := a / Mux(b === 0.U, 1.U, b)
-  // io.modout := a % b
-  // TODO:
-  io.modout := 0.U
-  io.lshiftout := (a << b(3, 0))(15, 0)
+  io.modout := a % b
+  io.lshiftout := (a << b(3, 0))(31, 0)
   io.rshiftout := a >> b
   io.lessout := a < b
   io.greatout := a > b
   io.eqout := a === b
-  io.noteqout := (a != b)
+  io.noteqout := (a =/= b)
   io.lesseqout := a <= b
   io.greateqout := a >= b
 }
 
-/*
-class UIntOpsTester(c: UIntOps) extends Tester(c) {
-  def uintExpect(d: Bits, x: BigInt) {
-    val mask = (1 << 16) - 1
-    println(" E = " + x + " X&M = " + (x & mask))
-    expect(d, x & mask)
-  }
-  for (t <- 0 until 16) {
-    val test_a = rnd.nextInt(1 << 16)
-    val test_b = rnd.nextInt(1 << 16)
-    println("A = " + test_a + " B = " + test_b)
-    poke(c.io.a, test_a)
-    poke(c.io.b, test_b)
-    step(1)
-    uintExpect(c.io.addout, test_a + test_b)
-    uintExpect(c.io.subout, test_a - test_b)
-    uintExpect(c.io.divout, if (test_b == 0) 0 else test_a / test_b)
-    uintExpect(c.io.timesout, test_a * test_b)
-    // uintExpect(c.io.modout, test_a % test_b)
-    uintExpect(c.io.lshiftout, test_a << (test_b&15))
-    uintExpect(c.io.rshiftout, test_a >> test_b)
-    expect(c.io.lessout, int(test_a < test_b))
-    expect(c.io.greatout, int(test_a > test_b))
-    expect(c.io.eqout, int(test_a == test_b))
-    expect(c.io.noteqout, int(test_a != test_b))
-    expect(c.io.lessout, int(test_a <= test_b))
-    expect(c.io.greateqout, int(test_a >= test_b))
-  }
+// Note a and b need to be "safe"
+class UIntOpsTester(a: Long, b: Long) extends BasicTester {
+  require(a >= 0 && b >= 0)
+
+  val dut = Module(new UIntOps)
+  dut.io.a := a.asUInt(32.W)
+  dut.io.b := b.asUInt(32.W)
+
+  assert(dut.io.addout === (a + b).U(32.W))
+  assert(dut.io.subout === (a - b).S(32.W).asUInt)
+  assert(dut.io.addampout === (a + b).U(33.W))
+  assert(dut.io.subampout === (a - b).S(33.W).asUInt)
+  assert(dut.io.timesout === (a * b).U(32.W))
+  assert(dut.io.divout === (a / (b max 1)).U(32.W))
+  assert(dut.io.modout === (a % (b max 1)).U(32.W))
+  assert(dut.io.lshiftout === (a << (b % 16)).U(32.W))
+  assert(dut.io.rshiftout === (a >> b).U(32.W))
+  assert(dut.io.lessout === (a < b).B)
+  assert(dut.io.greatout === (a > b).B)
+  assert(dut.io.eqout === (a == b).B)
+  assert(dut.io.noteqout === (a != b).B)
+  assert(dut.io.lesseqout === (a <= b).B)
+  assert(dut.io.greateqout === (a >= b).B)
+
+  stop()
 }
-*/
 
 class GoodBoolConversion extends Module {
   val io = IO(new Bundle {
@@ -93,6 +92,10 @@ class BadBoolConversion extends Module {
 }
 
 class UIntOpsSpec extends ChiselPropSpec with Matchers {
+  // Disable shrinking on error.
+  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
+  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
+
   property("Bools can be created from 1 bit UInts") {
     elaborate(new GoodBoolConversion)
   }
@@ -105,6 +108,8 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
     elaborate { new UIntOps }
   }
 
-  ignore("UIntOpsTester should return the correct result") { }
+  property("UIntOpsTester should return the correct result") {
+    assertTesterPasses { new UIntOpsTester(123, 7) }
+  }
 }
 

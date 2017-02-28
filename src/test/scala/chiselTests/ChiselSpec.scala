@@ -9,6 +9,7 @@ import org.scalacheck._
 import chisel3._
 import chisel3.testers._
 import firrtl.{
+  CommonOptions,
   ExecutionOptionsManager,
   HasFirrtlOptions,
   FirrtlExecutionSuccess,
@@ -35,10 +36,17 @@ trait ChiselRunners extends Assertions {
     */
   def generateFirrtl(t: => Module): String = Driver.emit(() => t)
 
-  /** Compiles a Chisel Module to Verilog */
+  /** Compiles a Chisel Module to Verilog
+    * NOTE: This uses the "test_run_dir" as the default directory for generated code.
+    * @param t the generator for the module
+    * @return the Verilog code as a string.
+    */
   def compile(t: => Module): String = {
     val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
-                                                         with HasChiselExecutionOptions
+                                                         with HasChiselExecutionOptions {
+      commonOptions = CommonOptions(targetDirName = "test_run_dir")
+    }
+
     Driver.execute(manager, () => t) match {
       case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
         firrtlExecRes match {
