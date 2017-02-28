@@ -323,14 +323,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def indexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
 
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def lastIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
 
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
