@@ -81,7 +81,7 @@ trait HasCommonOptions {
     }
     .validate { x =>
       if (Array("error", "warn", "info", "debug", "trace").contains(x.toLowerCase)) parser.success
-      else parser.failure(s"$x bad value must be one of ignore|use|gen|append")
+      else parser.failure(s"$x bad value must be one of error|warn|info|debug|trace")
     }
     .text(s"This options defines a work directory for intermediate files, default is ${commonOptions.targetDirName}")
 
