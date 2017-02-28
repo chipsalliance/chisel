@@ -164,6 +164,7 @@ exp
   | 'SInt' ('<' intLit '>')? '(' intLit ')'
   | id    // Ref
   | exp '.' fieldId
+  | exp '.' DoubleLit // TODO Workaround for #470
   | exp '[' intLit ']'
   | exp '[' exp ']'
   | 'mux(' exp exp exp ')'

@@ -17,6 +17,12 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   // Strip file path
   private def stripPath(filename: String) = filename.drop(filename.lastIndexOf("/") + 1)
 
+  // Check if identifier is made of legal characters
+  private def legalId(id: String) = {
+    val legalChars = ('A' to 'Z').toSet ++ ('a' to 'z').toSet ++ ('0' to '9').toSet ++ Set('_', '$')
+    id forall legalChars
+  }
+
   def visit[FirrtlNode](ctx: FIRRTLParser.CircuitContext): Circuit = visitCircuit(ctx)
 
   //  These regex have to change if grammar changes
@@ -315,7 +321,19 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
         case "mux(" => Mux(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), visitExp(ctx.exp(2)), UnknownType)
         case _ =>
           ctx.getChild(1).getText match {
-            case "." => new SubField(visitExp(ctx.exp(0)), ctx.fieldId.getText, UnknownType)
+            case "." =>
+              val expr1 = visitExp(ctx.exp(0))
+              // TODO Workaround for #470
+              if (ctx.fieldId == null) {
+                ctx.DoubleLit.getText.split('.') match {
+                  case Array(a, b) if legalId(a) && legalId(b) =>
+                    val inner = new SubField(expr1, a, UnknownType)
+                    new SubField(inner, b, UnknownType)
+                  case Array() => throw new ParserException(s"Illegal Expression at ${ctx.getText}")
+                }
+              } else {
+                new SubField(expr1, ctx.fieldId.getText, UnknownType)
+              }
             case "[" => if (ctx.exp(1) == null)
               new SubIndex(visitExp(ctx.exp(0)), string2Int(ctx.intLit(0).getText), UnknownType)
             else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
