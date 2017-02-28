@@ -411,7 +411,7 @@ abstract class Record extends Aggregate {
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name)) }
+    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
   }
 
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)

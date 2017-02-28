@@ -7,16 +7,17 @@ import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import scala.collection.immutable.ListMap
 
+// An example of how Record might be extended
+// In this case, CustomBundle is a Record constructed from a Tuple of (String, Data)
+//   it is a possible implementation of a programmatic "Bundle"
+//   (and can by connected to MyBundle below)
+final class CustomBundle(elts: (String, Data)*) extends Record {
+  val elements = ListMap(elts map { case (field, elt) => field -> elt.chiselCloneType }: _*)
+  def apply(elt: String): Data = elements(elt)
+  override def cloneType = (new CustomBundle(elements.toList: _*)).asInstanceOf[this.type]
+}
+
 trait RecordSpecUtils {
-  // An example of how Record might be extended
-  // In this case, CustomBundle is a Record constructed from a Tuple of (String, Data)
-  //   it is a possible implementation of a programmatic "Bundle"
-  //   (and can by connected to MyBundle below)
-  final class CustomBundle(elts: (String, Data)*) extends Record {
-    val elements = ListMap(elts map { case (field, elt) => field -> elt.chiselCloneType }: _*)
-    def apply(elt: String): Data = elements(elt)
-    override def cloneType = (new CustomBundle(elements.toList: _*)).asInstanceOf[this.type]
-  }
   class MyBundle extends Bundle {
     val foo = UInt(32.W)
     val bar = UInt(32.W)
@@ -82,6 +83,13 @@ trait RecordSpecUtils {
     assert(mod.io("out").asUInt === 1234.U)
     stop()
   }
+
+  class RecordDigitTester extends BasicTester {
+    val wire = Wire(new CustomBundle("0" -> UInt(32.W)))
+    wire("0") := 123.U
+    assert(wire("0").asUInt === 123.U)
+    stop()
+  }
 }
 
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
@@ -105,6 +113,10 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
 
   they should "work as the type of a Module's io" in {
     assertTesterPasses { new RecordIOTester }
+  }
+
+  they should "support digits as names of fields" in {
+    assertTesterPasses { new RecordDigitTester }
   }
 
   "Bulk connect on Record" should "check that the fields match" in {
