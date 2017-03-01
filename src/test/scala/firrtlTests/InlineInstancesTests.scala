@@ -170,6 +170,46 @@ class InlineInstancesTests extends LowTransformSpec {
       execute(writer, aMap, input, check)
    }
 
+   "Non-inlined instances" should "still prepend prefix" in {
+      val input =
+         """circuit Top :
+           |  module Top :
+           |    input a : UInt<32>
+           |    output b : UInt<32>
+           |    inst i of A
+           |    i.a <= a
+           |    b <= i.b
+           |  module A :
+           |    input a : UInt<32>
+           |    output b : UInt<32>
+           |    inst i of B
+           |    i.a <= a
+           |    b <= i.b
+           |  module B :
+           |    input a : UInt<32>
+           |    output b : UInt<32>
+           |    b <= a""".stripMargin
+      val check =
+         """circuit Top :
+           |  module Top :
+           |    input a : UInt<32>
+           |    output b : UInt<32>
+           |    wire i$a : UInt<32>
+           |    wire i$b : UInt<32>
+           |    inst i$i of B
+           |    i$b <= i$i.b
+           |    i$i.a <= i$a
+           |    b <= i$b
+           |    i$a <= a
+           |  module B :
+           |    input a : UInt<32>
+           |    output b : UInt<32>
+           |    b <= a""".stripMargin
+      val writer = new StringWriter()
+      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
+      execute(writer, aMap, input, check)
+   }
+
    // ---- Errors ----
    // 1) ext module
    "External module" should "not be inlined" in {

@@ -137,7 +137,7 @@ class InlineInstances extends Transform {
           }
           val stmts = toInline.ports.map(p => DefWire(p.info, p.name, p.tpe)) :+ toInline.body
           onStmt(prefix + instName + inlineDelim, moduleName)(Block(stmts))
-        } else s
+        } else WDefInstance(info, prefix + instName, moduleName, instTpe)
       case sx => sx map appendRefPrefix(prefix, currentModule) map onStmt(prefix, currentModule) map appendNamePrefix(prefix)
     }
 
