@@ -11,13 +11,13 @@ object RegNext {
     *
     * Essentially a 1-cycle delayed version of the input signal.
     */
-  def apply[T <: Data](next: T): T = Reg[T](null.asInstanceOf[T], next, null.asInstanceOf[T])
+  def apply[T <: Data](next: T): T = Reg[T](next.cloneType, next, null.asInstanceOf[T])
 
   /** Returns a register with the specified next and reset initialization.
     *
     * Essentially a 1-cycle delayed version of the input signal.
     */
-  def apply[T <: Data](next: T, init: T): T = Reg[T](null.asInstanceOf[T], next, init)
+  def apply[T <: Data](next: T, init: T): T = Reg[T](next.cloneType, next, init)
 }
 
 object RegInit {
