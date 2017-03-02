@@ -50,6 +50,13 @@ class ModuloAssertTester extends BasicTester {
   stop()
 }
 
+class FormattedAssertTester extends BasicTester {
+  val foobar = Wire(UInt(32.W))
+  foobar := 123.U
+  assert(foobar === 123.U, "Error! Wire foobar === %x! This is 100%% wrong.\n", foobar)
+  stop()
+}
+
 class AssertSpec extends ChiselFlatSpec {
   "A failing assertion" should "fail the testbench" in {
     assert(!runTester{ new FailingAssertTester })
@@ -62,5 +69,8 @@ class AssertSpec extends ChiselFlatSpec {
   }
   "Assertions" should "allow the modulo operator % in the message" in {
     assertTesterPasses{ new ModuloAssertTester }
+  }
+  "Assertions" should "allow printf-style format strings with arguments" in {
+    assertTesterPasses{ new FormattedAssertTester }
   }
 }
