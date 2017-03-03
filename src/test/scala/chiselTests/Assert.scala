@@ -53,7 +53,7 @@ class ModuloAssertTester extends BasicTester {
 class FormattedAssertTester extends BasicTester {
   val foobar = Wire(UInt(32.W))
   foobar := 123.U
-  assert(foobar === 123.U, "Error! Wire foobar === %x! This is 100%% wrong.\n", foobar)
+  assert(foobar === 123.U, "Error! Wire foobar =/= %x! This is 100%% wrong.\n", foobar)
   stop()
 }
 

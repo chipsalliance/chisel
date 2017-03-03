@@ -51,10 +51,13 @@ object assert { // scalastyle:ignore object.name
   }
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    val escLine = line.replaceAll("%", "%%")
     when (!(cond || Builder.forcedReset)) {
       val fmt = message match {
-        case Some(str) => s"Assertion failed: $str\n    at " + line.replaceAll("%", "%%") + "\n"
-        case None => s"Assertion failed\n    at $line\n"
+        case Some(str) =>
+          val msg = if (data.isEmpty) str.replaceAll("%", "%%") else str
+          s"Assertion failed: $msg\n    at $escLine\n"
+        case None => s"Assertion failed\n    at $escLine\n"
       }
       printf.printfWithoutReset(fmt, data:_*)
       pushCommand(Stop(sourceInfo, Node(Builder.forcedClock), 1))
