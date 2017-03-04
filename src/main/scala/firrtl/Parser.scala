@@ -26,7 +26,7 @@ object Parser extends LazyLogging {
   /** Takes Iterator over lines of FIRRTL, returns FirrtlNode (root node is Circuit) */
   def parse(lines: Iterator[String], infoMode: InfoMode = UseInfo): Circuit = {
 
-    val cst = time("ANTLR Parser") {
+    val (parseTimeMillis, cst) = time {
       val parser = {
         import scala.collection.JavaConverters._
         val inStream = new SequenceInputStream(
@@ -47,9 +47,10 @@ object Parser extends LazyLogging {
     }
 
     val visitor = new Visitor(infoMode)
-    val ast = time("Visitor") {
+    val (visitTimeMillis, visit) = time {
       visitor.visit(cst)
-    } match {
+    }
+    val ast = visit match {
       case c: Circuit => c
       case x => throw new ClassCastException("Error! AST not rooted with Circuit node!")
     }

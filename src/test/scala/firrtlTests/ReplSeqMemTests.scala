@@ -7,11 +7,8 @@ import firrtl.ir._
 import firrtl.passes._
 import firrtl.passes.memlib._
 import annotations._
-import logger.Logger
-import logger.LogLevel.Debug
 
 class ReplSeqMemSpec extends SimpleTransformSpec {
-  def emitter = new LowFirrtlEmitter
   def transforms = Seq(
     new ChirrtlToHighFirrtl(),
     new IRToWorkingIR(),

@@ -85,17 +85,21 @@ object Logger {
 class Logger(containerClass: String) {
   def error(message: => String): Unit = {
     Logger.showMessage(LogLevel.Error, containerClass, message)
+    Logger.showMessage(LogLevel.Debug, containerClass, message)
   }
   def warn(message: => String): Unit = {
     Logger.showMessage(LogLevel.Warn, containerClass, message)
+    Logger.showMessage(LogLevel.Debug, containerClass, message)
   }
   def info(message: => String): Unit = {
     Logger.showMessage(LogLevel.Info, containerClass, message)
+    Logger.showMessage(LogLevel.Debug, containerClass, message)
   }
   def debug(message: => String): Unit = {
     Logger.showMessage(LogLevel.Debug, containerClass, message)
   }
   def trace(message: => String): Unit = {
     Logger.showMessage(LogLevel.Trace, containerClass, message)
+    Logger.showMessage(LogLevel.Debug, containerClass, message)
   }
 }

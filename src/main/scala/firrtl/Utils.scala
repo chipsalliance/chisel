@@ -130,15 +130,12 @@ class FIRRTLException(str: String) extends Exception(str)
 object Utils extends LazyLogging {
   def throwInternalError =
     error("Internal Error! Please file an issue at https://github.com/ucb-bar/firrtl/issues")
-  private[firrtl] def time[R](name: String)(block: => R): R = {
-    logger.info(s"Starting $name")
+  private[firrtl] def time[R](block: => R): (Double, R) = {
     val t0 = System.nanoTime()
     val result = block
     val t1 = System.nanoTime()
-    logger.info(s"Finished $name")
     val timeMillis = (t1 - t0) / 1000000.0
-    logger.info(f"$name took $timeMillis%.1f ms\n")
-    result
+    (timeMillis, result)
   }
 
   /** Removes all [[firrtl.ir.EmptyStmt]] statements and condenses

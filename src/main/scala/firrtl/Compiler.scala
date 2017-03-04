@@ -131,9 +131,12 @@ abstract class Transform {
 trait SimpleRun extends LazyLogging {
   def runPasses(circuit: Circuit, passSeq: Seq[Pass]): Circuit =
     passSeq.foldLeft(circuit) { (c: Circuit, pass: Pass) =>
-      val x = Utils.time(pass.name) { pass.run(c) }
-      logger.debug(s"** Pass ${pass.name} **")
-      logger.debug(x.serialize)
+      val name = pass.name
+      logger.info(s"-------- Starting Pass $name --------")
+      val (timeMillis, x) = Utils.time { pass.run(c) }
+      logger.info(f"Time: $timeMillis%.1f ms")
+      logger.debug(s"Circuit:\n${c.serialize}")
+      logger.info(s"-------- Finished Pass $name --------")
       x
     }
 }
@@ -311,7 +314,10 @@ trait Compiler extends LazyLogging {
     val allTransforms = CompilerUtils.mergeTransforms(transforms, customTransforms) :+ emitter
 
     val finalState = allTransforms.foldLeft(state) { (in, xform) =>
-      val result = Utils.time(s"***${xform.name}***") { xform.execute(in) }
+      logger.info(s"======== Starting Transform ${xform.name} ========")
+      val (timeMillis, result) = Utils.time { xform.execute(in) }
+
+      logger.info(f"Time: $timeMillis%.1f ms")
 
       val newAnnotations = {
         val inSet = in.annotations.getOrElse(AnnotationMap(Seq.empty)).annotations.toSet
@@ -331,12 +337,15 @@ trait Compiler extends LazyLogging {
         anno <- newAnnotations.toSeq
         newAnno <- anno.update(renames.getOrElse(anno.target, Seq(anno.target)))
       } yield newAnno
-      logger.debug(s"*** ${xform.name} ***")
-      logger.debug(s"Form: ${result.form}")
-      logger.debug(result.circuit.serialize)
+
+      logger.info(s"Form: ${result.form}")
+      logger.debug(s"Annotations:")
       remappedAnnotations.foreach { a =>
         logger.debug(a.serialize)
       }
+      logger.debug(s"Circuit:\n${result.circuit.serialize}")
+      logger.info(s"======== Finished Transform ${xform.name} ========\n")
+
       CircuitState(result.circuit, result.form, Some(AnnotationMap(remappedAnnotations)))
     }
     finalState

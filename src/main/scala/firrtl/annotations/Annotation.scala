@@ -35,7 +35,7 @@ object DeletedAnnotation {
     Annotation(anno.target, classOf[Transform], s"""DELETED by $xFormName\n${AnnotationUtils.toYaml(anno)}""")
 
   private val deletedRegex = """(?s)DELETED by ([^\n]*)\n(.*)""".r
-  def unapply(a: Annotation): Option[Tuple2[String, Annotation]] = a match {
+  def unapply(a: Annotation): Option[(String, Annotation)] = a match {
     case Annotation(named, t, deletedRegex(xFormName, annoString)) if t == classOf[Transform] =>
       Some((xFormName, AnnotationUtils.fromYaml(annoString)))
     case _ => None
