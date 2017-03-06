@@ -12,14 +12,6 @@ import firrtl.passes._
 import firrtl.Parser.IgnoreInfo
 
 class InoutVerilogSpec extends FirrtlFlatSpec {
-  private def executeTest(input: String, expected: Seq[String], compiler: Compiler) = {
-    val writer = new StringWriter()
-    compiler.compile(CircuitState(parse(input), ChirrtlForm), writer)
-    val lines = writer.toString().split("\n") map normalized
-    expected foreach { e =>
-      lines should contain(e)
-    }
-  }
 
   behavior of "Analog"
 

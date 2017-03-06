@@ -2,8 +2,6 @@
 
 package firrtlTests
 
-import java.io.StringWriter
-
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
@@ -29,13 +27,12 @@ import firrtl.{
  */
 abstract class CompilerSpec extends FlatSpec {
    def parse (s: String): Circuit = Parser.parse(s.split("\n").toIterator)
-   val writer = new StringWriter()
    def compiler: Compiler
    def input: String
    def check: String
    def getOutput: String = {
-      compiler.compile(CircuitState(parse(input), ChirrtlForm), writer)
-      writer.toString()
+     val res = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm))
+     res.getEmittedCircuit.value
    }
 }
 
@@ -170,6 +167,6 @@ circuit Top :
       "endmodule\n"
    ).reduce(_ + "\n" + _)
    "A circuit's verilog output" should "match the given string" in {
-      (getOutput) should be (check)
+      getOutput should be (check)
    }
 }

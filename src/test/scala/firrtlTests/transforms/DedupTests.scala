@@ -3,8 +3,6 @@
 package firrtlTests
 package transform
 
-import java.io.StringWriter
-
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
@@ -48,9 +46,8 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1>
            |    x <= UInt(1)
            """.stripMargin
-      val writer = new StringWriter()
       val aMap = new AnnotationMap(Nil)
-      execute(writer, aMap, input, check)
+      execute(aMap, input, check)
    }
    "The module A and B" should "be deduped" in {
       val input =
@@ -86,9 +83,8 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1>
            |    x <= UInt(1)
            """.stripMargin
-      val writer = new StringWriter()
       val aMap = new AnnotationMap(Nil)
-      execute(writer, aMap, input, check)
+      execute(aMap, input, check)
    }
    "The module A and B with comments" should "be deduped" in {
       val input =
@@ -124,9 +120,8 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1>
            |    x <= UInt(1)
            """.stripMargin
-      val writer = new StringWriter()
       val aMap = new AnnotationMap(Nil)
-      execute(writer, aMap, input, check)
+      execute(aMap, input, check)
    }
    "The module B, but not A, with comments" should "be deduped if not annotated" in {
       val input =
@@ -153,9 +148,8 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1> @[xx 1:1]
            |    x <= UInt(1)
            """.stripMargin
-      val writer = new StringWriter()
       val aMap = new AnnotationMap(Seq(NoDedupAnnotation(ModuleName("A", CircuitName("Top")))))
-      execute(writer, aMap, input, check)
+      execute(aMap, input, check)
    }
 }
 

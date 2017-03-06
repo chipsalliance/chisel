@@ -125,6 +125,15 @@ trait HasCommonOptions {
   parser.help("help").text("prints this usage text")
 }
 
+/** Firrtl output configuration specified by [[FirrtlExecutionOptions]]
+  *
+  * Derived from the fields of the execution options
+  * @see [[FirrtlExecutionOptions.getOutputConfig]]
+  */
+sealed abstract class OutputConfig
+final case class SingleFile(targetFile: String) extends OutputConfig
+final case class OneFilePerModule(targetDir: String) extends OutputConfig
+
 /**
   * The options that firrtl supports in callable component sense
   *
@@ -133,7 +142,6 @@ trait HasCommonOptions {
   * @param compilerName           which compiler to use
   * @param annotations            annotations to pass to compiler
   */
-
 case class FirrtlExecutionOptions(
     inputFileNameOverride:  String = "",
     outputFileNameOverride: String = "",
@@ -144,8 +152,12 @@ case class FirrtlExecutionOptions(
     customTransforms:       Seq[Transform] = List.empty,
     annotations:            List[Annotation] = List.empty,
     annotationFileNameOverride: String = "",
-    forceAppendAnnoFile:    Boolean = false)
+    forceAppendAnnoFile:    Boolean = false,
+    emitOneFilePerModule:   Boolean = false)
   extends ComposableOptions {
+
+  require(!(emitOneFilePerModule && outputFileNameOverride.nonEmpty),
+    "Cannot both specify the output filename and emit one file per module!!!")
 
   def infoMode: InfoMode = {
     infoModeName match {
@@ -186,14 +198,43 @@ case class FirrtlExecutionOptions(
   def getInputFileName(optionsManager: ExecutionOptionsManager): String = {
     optionsManager.getBuildFileName("fir", inputFileNameOverride)
   }
-  /**
-    * build the output file name, taking overriding parameters
+  /** Get the user-specified [[OutputConfig]]
     *
     * @param optionsManager this is needed to access build function and its common options
-    * @return
+    * @return the output configuration
     */
-  def getOutputFileName(optionsManager: ExecutionOptionsManager): String = {
-    optionsManager.getBuildFileName(outputSuffix, outputFileNameOverride)
+  def getOutputConfig(optionsManager: ExecutionOptionsManager): OutputConfig = {
+    if (emitOneFilePerModule) OneFilePerModule(optionsManager.targetDirName)
+    else SingleFile(optionsManager.getBuildFileName(outputSuffix, outputFileNameOverride))
+  }
+  /** Get the user-specified targetFile assuming [[OutputConfig]] is [[SingleFile]]
+    *
+    * @param optionsManager this is needed to access build function and its common options
+    * @return the targetFile as a String
+    */
+  def getTargetFile(optionsManager: ExecutionOptionsManager): String = {
+    getOutputConfig(optionsManager) match {
+      case SingleFile(targetFile) => targetFile
+      case other => throw new Exception("OutputConfig is not SingleFile!")
+    }
+  }
+  /** Gives annotations based on the output configuration
+    *
+    * @param optionsManager this is needed to access build function and its common options
+    * @return Annotations that will be consumed by emitter Transforms
+    */
+  def getEmitterAnnos(optionsManager: ExecutionOptionsManager): Seq[Annotation] = {
+    // TODO should this be a public function?
+    val emitter = compilerName match {
+      case "high" => classOf[HighFirrtlEmitter]
+      case "middle" => classOf[MiddleFirrtlEmitter]
+      case "low" => classOf[LowFirrtlEmitter]
+      case "verilog" => classOf[VerilogEmitter]
+    }
+    getOutputConfig(optionsManager) match {
+      case SingleFile(_) => Seq(EmitCircuitAnnotation(emitter))
+      case OneFilePerModule(_) => Seq(EmitAllModulesAnnotation(emitter))
+    }
   }
   /**
     * build the annotation file name, taking overriding parameters
@@ -223,8 +264,13 @@ trait HasFirrtlOptions {
 
   parser.opt[String]("output-file")
     .abbr("o")
-    .valueName ("<output>").
-    foreach { x =>
+    .valueName("<output>")
+    .validate { x =>
+      if (firrtlOptions.emitOneFilePerModule)
+        parser.failure("Cannot override output-file if split-modules is specified")
+      else parser.success
+    }
+    .foreach { x =>
       firrtlOptions = firrtlOptions.copy(outputFileNameOverride = x)
     }.text {
     "use this to override the default output file name, default is empty"
@@ -234,7 +280,7 @@ trait HasFirrtlOptions {
     .abbr("faf")
     .valueName ("<output>").
     foreach { x =>
-      firrtlOptions = firrtlOptions.copy(outputFileNameOverride = x)
+      firrtlOptions = firrtlOptions.copy(annotationFileNameOverride = x)
     }.text {
     "use this to override the default annotation file name, default is empty"
   }
@@ -334,8 +380,20 @@ trait HasFirrtlOptions {
       "List which signal drives each clock of every descendent of specified module"
     }
 
-  parser.note("")
+  parser.opt[Unit]("split-modules")
+    .abbr("fsm")
+    .validate { x =>
+      if (firrtlOptions.outputFileNameOverride.nonEmpty)
+        parser.failure("Cannot split-modules if output-file is specified")
+      else parser.success
+    }
+    .foreach { _ =>
+      firrtlOptions = firrtlOptions.copy(emitOneFilePerModule = true)
+    }.text {
+      "Emit each module to its own file in the target directory."
+    }
 
+  parser.note("")
 }
 
 sealed trait FirrtlExecutionResult
@@ -345,7 +403,7 @@ sealed trait FirrtlExecutionResult
   * the type of compile
   *
   * @param emitType  The name of the compiler used, currently "high", "middle", "low", or "verilog"
-  * @param emitted   The text result of the compilation, could be verilog or firrtl text.
+  * @param emitted   The emitted result of compilation
   */
 case class FirrtlExecutionSuccess(emitType: String, emitted: String) extends FirrtlExecutionResult
 

@@ -2,8 +2,6 @@
 
 package firrtlTests.fixed
 
-import java.io.StringWriter
-
 import firrtl.{CircuitState, ChirrtlForm, LowFirrtlCompiler, Parser, AnnotationMap}
 import firrtl.Parser.IgnoreInfo
 import firrtlTests.FirrtlFlatSpec
@@ -41,11 +39,9 @@ class FixedPointMathSpec extends FirrtlFlatSpec {
 
       val lowerer = new LowFirrtlCompiler
 
-      val writer = new StringWriter()
+      val res = lowerer.compileAndEmit(CircuitState(parse(input), ChirrtlForm))
 
-      lowerer.compile(CircuitState(parse(input), ChirrtlForm), writer)
-
-      val output = writer.toString.split("\n")
+      val output = res.getEmittedCircuit.value split "\n"
 
       def inferredAddWidth: Int = {
         val binaryDifference = binaryPoint1 - binaryPoint2

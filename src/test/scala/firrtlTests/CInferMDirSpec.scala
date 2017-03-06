@@ -70,9 +70,8 @@ circuit foo :
 """.stripMargin
 
     val annotationMap = AnnotationMap(Nil)
-    val writer = new java.io.StringWriter
-    compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), writer)
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)))
     // Check correctness of firrtl
-    parse(writer.toString)
+    parse(res.getEmittedCircuit.value)
   }
 }

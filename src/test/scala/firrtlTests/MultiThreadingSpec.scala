@@ -13,10 +13,9 @@ class MultiThreadingSpec extends FirrtlPropSpec {
   property("The FIRRTL compiler should be thread safe") {
     // Run the compiler we're testing
     def runCompiler(input: Seq[String], compiler: firrtl.Compiler): String = {
-      val writer = new java.io.StringWriter
       val parsedInput = firrtl.Parser.parse(input)
-      compiler.compile(CircuitState(parsedInput, ChirrtlForm), writer)
-      writer.toString
+      val res = compiler.compileAndEmit(CircuitState(parsedInput, ChirrtlForm))
+      res.getEmittedCircuit.value
     }
     // The parameters we're testing with
     val compilers = Seq(

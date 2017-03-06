@@ -16,15 +16,13 @@ import firrtl.annotations
 import firrtl.util.BackendCompilationUtilities
 
 trait FirrtlRunners extends BackendCompilationUtilities {
-  def parse(str: String) = Parser.parse(str.split("\n").toIterator, IgnoreInfo)
   lazy val cppHarness = new File(s"/top.cpp")
   /** Compiles input Firrtl to Verilog */
   def compileToVerilog(input: String, annotations: AnnotationMap = AnnotationMap(Seq.empty)): String = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val compiler = new VerilogCompiler
-    val writer = new java.io.StringWriter
-    compiler.compile(CircuitState(circuit, HighForm, Some(annotations)), writer)
-    writer.toString
+    val res = compiler.compileAndEmit(CircuitState(circuit, HighForm, Some(annotations)))
+    res.getEmittedCircuit.value
   }
   /** Compile a Firrtl file
     *
@@ -40,13 +38,15 @@ trait FirrtlRunners extends BackendCompilationUtilities {
     val testDir = createTestDirectory(prefix)
     copyResourceToFile(s"${srcDir}/${prefix}.fir", new File(testDir, s"${prefix}.fir"))
 
-    Driver.compile(
-      s"$testDir/$prefix.fir",
-      s"$testDir/$prefix.v",
-      new VerilogCompiler(),
-      Parser.IgnoreInfo,
-      customTransforms,
-      annotations)
+    val optionsManager = new ExecutionOptionsManager(prefix) with HasFirrtlOptions {
+      commonOptions = CommonOptions(topName = prefix, targetDirName = testDir.getPath)
+      firrtlOptions = FirrtlExecutionOptions(
+                        infoModeName = "ignore",
+                        customTransforms = customTransforms,
+                        annotations = annotations.annotations.toList)
+    }
+    firrtl.Driver.execute(optionsManager)
+
     testDir
   }
   /** Execute a Firrtl Test
@@ -79,7 +79,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   }
 }
 
-trait FirrtlMatchers {
+trait FirrtlMatchers extends Matchers {
   // Replace all whitespace with a single space and remove leading and
   //   trailing whitespace
   // Note this is intended for single-line strings, no newlines
@@ -87,11 +87,23 @@ trait FirrtlMatchers {
     require(!s.contains("\n"))
     s.replaceAll("\\s+", " ").trim
   }
+  def parse(str: String) = Parser.parse(str.split("\n").toIterator, IgnoreInfo)
+  /** Helper for executing tests
+    * compiler will be run on input then emitted result will each be split into
+    * lines and normalized.
+    */
+  def executeTest(input: String, expected: Seq[String], compiler: Compiler) = {
+    val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm))
+    val lines = finalState.getEmittedCircuit.value split "\n" map normalized
+    for (e <- expected) {
+      lines should contain (e)
+    }
+  }
 }
 
 abstract class FirrtlPropSpec extends PropSpec with PropertyChecks with FirrtlRunners with LazyLogging
 
-abstract class FirrtlFlatSpec extends FlatSpec with Matchers with FirrtlRunners with FirrtlMatchers with LazyLogging
+abstract class FirrtlFlatSpec extends FlatSpec with FirrtlRunners with FirrtlMatchers with LazyLogging
 
 /** Super class for execution driven Firrtl tests */
 abstract class ExecutionTest(name: String, dir: String, vFiles: Seq[String] = Seq.empty) extends FirrtlPropSpec {

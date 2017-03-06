@@ -20,14 +20,6 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       lines should contain(e)
     }
   }
-  private def executeTest(input: String, expected: Seq[String], compiler: Compiler) = {
-    val writer = new StringWriter()
-    compiler.compile(CircuitState(parse(input), ChirrtlForm), writer)
-    val lines = writer.toString().split("\n") map normalized
-    expected foreach { e =>
-      lines should contain(e)
-    }
-  }
 
   "Fixed types" should "infer add correctly" in {
     val passes = Seq(

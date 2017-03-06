@@ -2,8 +2,6 @@
 
 package firrtlTests.transforms
 
-import java.io.StringWriter
-
 import firrtl.annotations.{Annotation, CircuitName, ModuleName}
 import firrtl.transforms._
 import firrtl.{AnnotationMap, FIRRTLException, Transform, VerilogCompiler}
@@ -80,13 +78,12 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
 
   "annotated external modules" should "appear in output directory" in {
 
-    val writer = new StringWriter()
     val aMap = AnnotationMap(Seq(
       Annotation(moduleName, classOf[BlackBoxSourceHelper], BlackBoxTargetDir("test_run_dir").serialize),
       Annotation(moduleName, classOf[BlackBoxSourceHelper], BlackBoxResource("/blackboxes/AdderExtModule.v").serialize)
     ))
 
-    execute(writer, aMap, input, output)
+    execute(aMap, input, output)
 
     new java.io.File("test_run_dir/AdderExtModule.v").exists should be (true)
     new java.io.File(s"test_run_dir/${BlackBoxSourceHelper.FileListName}").exists should be (true)
