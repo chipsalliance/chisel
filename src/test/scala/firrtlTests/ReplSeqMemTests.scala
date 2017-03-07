@@ -9,6 +9,7 @@ import firrtl.passes.memlib._
 import annotations._
 
 class ReplSeqMemSpec extends SimpleTransformSpec {
+  def emitter = new LowFirrtlEmitter
   def transforms = Seq(
     new ChirrtlToHighFirrtl(),
     new IRToWorkingIR(),
