@@ -148,7 +148,11 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
         emitAllModules(state.circuit) map (EmittedFirrtlModuleAnnotation(_))
       case _ => Seq()
     }
-    state.copy(annotations = Some(AnnotationMap(newAnnos)))
+    val annos = newAnnos ++ (state.annotations match {
+      case None => Seq.empty
+      case Some(a) => a.annotations
+    })
+    state.copy(annotations = Some(AnnotationMap(annos)))
   }
 
   // Old style, deprecated
@@ -775,6 +779,10 @@ class VerilogEmitter extends Transform with PassBased with Emitter {
         }
       case _ => Seq()
     }
-    state.copy(annotations = Some(AnnotationMap(newAnnos)))
+    val annos = newAnnos ++ (state.annotations match {
+      case None => Seq.empty
+      case Some(a) => a.annotations
+    })
+    state.copy(annotations = Some(AnnotationMap(annos)))
   }
 }

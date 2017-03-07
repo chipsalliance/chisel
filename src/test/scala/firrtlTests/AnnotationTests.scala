@@ -136,8 +136,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     }
     val anno = InlineAnnotation(CircuitName("Top"))
     val annoOpt = Some(AnnotationMap(Seq(anno)))
-    val writer = new StringWriter()
-    val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annoOpt), writer, Seq(new DeletingTransform))
+    val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annoOpt), Seq(new DeletingTransform))
     result.annotations.get.annotations.head should matchPattern {
       case DeletedAnnotation(x, anno) =>
     }

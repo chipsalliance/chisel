@@ -9,6 +9,7 @@ import firrtl.ir.Circuit
 import firrtl.Parser.UseInfo
 import firrtl.passes.{Pass, PassExceptions, RemoveEmpty}
 import firrtl._
+import logger._
 
 // An example methodology for testing Firrtl Passes
 // Spec class should extend this class
