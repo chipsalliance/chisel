@@ -436,7 +436,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   def do_+% (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     (this +& that).tail(1)
   def do_-& (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
-    binop(sourceInfo, UInt((this.width max that.width) + 1), SubOp, that)
+    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that).asUInt
   def do_-% (that: UInt)(implicit sourceInfo: SourceInfo): UInt =
     (this -& that).tail(1)
 
@@ -790,8 +790,8 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
   private[chisel3] def toType = s"Fixed$width$binaryPoint"
 
-  def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
-    case _: FixedPoint => this connect that
+  override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: FixedPoint => super.connect(that)
     case _ => this badConnect that
   }
 
@@ -853,8 +853,12 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 
   final def setBinaryPoint(that: Int): FixedPoint = macro SourceInfoTransform.thatArg
 
-  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): FixedPoint =
-    binop(sourceInfo, FixedPoint(this.width, KnownBinaryPoint(that)), SetBinaryPoint, that)
+  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): FixedPoint = this.binaryPoint match {
+    case KnownBinaryPoint(value) =>
+      binop(sourceInfo, FixedPoint(this.width + (that - value), KnownBinaryPoint(that)), SetBinaryPoint, that)
+    case _ =>
+      binop(sourceInfo, FixedPoint(UnknownWidth(), KnownBinaryPoint(that)), SetBinaryPoint, that)
+  }
 
   /** Returns this wire bitwise-inverted. */
   def do_unary_~ (implicit sourceInfo: SourceInfo): FixedPoint =

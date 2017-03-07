@@ -89,7 +89,7 @@ This will walk you through installing Chisel and its dependencies:
   ```
 
 ## Getting Started
-If you are migrating to Chisel3 from Chisel3, please visit
+If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
 
 
@@ -195,7 +195,7 @@ subfolder to un-publish your local copy of Chisel.
 In order to have your projects use this version of Chisel, you should update
 the libraryDependencies setting in your project's build.sbt file to:
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel" % "3.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.1-SNAPSHOT"
 ```
 
 The version specifier in libraryDependencies in the project's build.sbt should
