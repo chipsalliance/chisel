@@ -65,6 +65,21 @@ object RegNext {
 }
 
 object RegInit {
+  /** Returns a register pre-initialized (on reset) to the specified value.
+    * Register type is inferred from the initializer.
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init.litArg match {
+      // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
+      case Some(lit) if lit.forcedWidth => init.chiselCloneType
+      case _ => init match {
+        case init: Bits => init.cloneTypeWidth(Width())
+        case init => init.chiselCloneType
+      }
+    }).asInstanceOf[T]
+    RegInit(model, init)
+  }
+
   /** Creates a register given an explicit type and an initialization (reset) value.
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
@@ -79,20 +94,5 @@ object RegInit {
     Binding.checkSynthesizable(init, s"'init' ($init)")
     pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
     reg
-  }
-
-  /** Returns a register pre-initialized (on reset) to the specified value.
-    * Register type is inferred from the initializer.
-    */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init.litArg match {
-      // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-      case Some(lit) if lit.forcedWidth => init.chiselCloneType
-      case _ => init match {
-        case init: Bits => init.cloneTypeWidth(Width())
-        case init => init.chiselCloneType
-      }
-    }).asInstanceOf[T]
-    RegInit(model, init)
   }
 }

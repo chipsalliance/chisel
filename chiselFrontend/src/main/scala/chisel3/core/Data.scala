@@ -337,7 +337,7 @@ object Wire {
   // No source info since Scala macros don't yet support named / default arguments.
   def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T = {
     val model = (init.litArg match {
-      // For e.g. Wire(init=UInt(0, k)), fix the Reg's width to k
+      // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
       case Some(lit) if lit.forcedWidth => init.chiselCloneType
       case _ => init match {
         case init: Bits => init.cloneTypeWidth(Width())
