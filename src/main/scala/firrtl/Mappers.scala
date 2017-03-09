@@ -98,6 +98,21 @@ object Mappers {
   }
   implicit class ModuleMap(val module: DefModule) extends AnyVal {
     def map[T](f: T => T)(implicit magnet: (T => T) => ModuleMagnet): DefModule = magnet(f).map(module)
-  }
+  } 
 
+  // ********** Circuit Mappers **********
+  private trait CircuitMagnet {
+    def map(module: Circuit): Circuit
+  }
+  private object CircuitMagnet {
+    implicit def forModules(f: DefModule => DefModule): CircuitMagnet = new CircuitMagnet {
+      override def map(circuit: Circuit): Circuit = circuit mapModule f
+    }
+    implicit def forString(f: String => String): CircuitMagnet = new CircuitMagnet {
+      override def map(circuit: Circuit): Circuit = circuit mapString f
+    }
+  }
+  implicit class CircuitMap(val circuit: Circuit) extends AnyVal {
+    def map[T](f: T => T)(implicit magnet: (T => T) => CircuitMagnet): Circuit = magnet(f).map(circuit)
+  } 
 }

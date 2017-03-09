@@ -496,4 +496,6 @@ case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends Fi
   def serialize: String =
     s"circuit $main :" + info.serialize +
     (modules map ("\n" + _.serialize) map indent mkString "\n") + "\n"
+  def mapModule(f: DefModule => DefModule): Circuit = this.copy(modules = modules map f)
+  def mapString(f: String => String): Circuit = this.copy(main = f(main))
 }
