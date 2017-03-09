@@ -319,6 +319,22 @@ trait HasFirrtlOptions {
       s"specifies the source info handling, default is ${firrtlOptions.infoModeName}"
     }
 
+  parser.opt[Seq[String]]("custom")
+    .abbr("fct")
+    .valueName ("<package>.<class>")
+    .foreach { customTransforms: Seq[String] =>
+      firrtlOptions = firrtlOptions.copy(
+        customTransforms = firrtlOptions.customTransforms ++
+          (customTransforms map { x: String =>
+            Class.forName(x).asInstanceOf[Class[_ <: Transform]].newInstance()
+          })
+      )
+    }
+    .text {
+      """Inline one or more module (comma separated, no spaces) module looks like "MyModule" or "MyModule.myinstance"""
+    }
+
+
   parser.opt[Seq[String]]("inline")
     .abbr("fil")
     .valueName ("<circuit>[.<module>[.<instance>]][,..],")
