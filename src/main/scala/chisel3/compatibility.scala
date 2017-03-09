@@ -165,7 +165,51 @@ package object Chisel {     // scalastyle:ignore package.object.name
 
   val printf = chisel3.core.printf
 
-  val Reg = chisel3.core.Reg
+  val RegNext = chisel3.core.RegNext
+  val RegInit = chisel3.core.RegInit
+  object Reg {
+    import chisel3.core.{Binding, CompileOptions}
+    import chisel3.internal.sourceinfo.SourceInfo
+
+    /** Creates a register with optional next and initialization values.
+      *
+      * @param t: data type for the register
+      * @param next: new value register is to be updated with every cycle (or
+      * empty to not update unless assigned to using the := operator)
+      * @param init: initialization value on reset (or empty for uninitialized,
+      * where the register value persists across a reset)
+      *
+      * @note this may result in a type error if called from a type parameterized
+      * function, since the Scala compiler isn't smart enough to know that null
+      * is a valid value. In those cases, you can either use the outType only Reg
+      * constructor or pass in `null.asInstanceOf[T]`.
+      */
+    def apply[T <: Data](t: T = null, next: T = null, init: T = null)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      if (t ne null) {
+        val reg = if (init ne null) {
+          RegInit(t, init)
+        } else {
+          chisel3.core.Reg(t)
+        }
+        if (next ne null) {
+          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+          reg := next
+        }
+        reg
+      } else if (next ne null) {
+        if (init ne null) {
+          RegNext(next, init)
+        } else {
+          RegNext(next)
+        }
+      } else if (init ne null) {
+        RegInit(init)
+      } else {
+        throwException("cannot infer type")
+      }
+    }
+  }
 
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
@@ -340,8 +384,6 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val UIntToOH = chisel3.util.UIntToOH
   val PriorityEncoderOH = chisel3.util.PriorityEncoderOH
 
-  val RegNext = chisel3.util.RegNext
-  val RegInit = chisel3.util.RegInit
   val RegEnable = chisel3.util.RegEnable
   val ShiftRegister = chisel3.util.ShiftRegister
 

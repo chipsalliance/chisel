@@ -529,6 +529,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that.asUInt
@@ -672,6 +673,7 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     this := that.asSInt
   }
@@ -897,6 +899,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+
   override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo): FixedPoint = {
     binaryPoint match {
       case KnownBinaryPoint(value) =>

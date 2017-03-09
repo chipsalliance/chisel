@@ -182,7 +182,7 @@ extends Module(override_reset=override_reset) {
   private val ram = Mem(entries, gen)
   private val enq_ptr = Counter(entries)
   private val deq_ptr = Counter(entries)
-  private val maybe_full = Reg(init=false.B)
+  private val maybe_full = RegInit(false.B)
 
   private val ptr_match = enq_ptr.value === deq_ptr.value
   private val empty = ptr_match && !maybe_full

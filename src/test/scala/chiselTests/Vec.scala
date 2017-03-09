@@ -20,7 +20,7 @@ class RegTesterMod(vecSize: Int) extends Module {
     val in = Input(Vec(vecSize, UInt()))
     val out = Output(Vec(vecSize, UInt()))
   })
-  val vecReg = Reg(init = Vec(vecSize, 0.U), next = io.in)
+  val vecReg = RegNext(io.in, Vec(vecSize, 0.U))
   io.out := vecReg
 }
 

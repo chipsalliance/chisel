@@ -2,88 +2,97 @@
 
 package chisel3.core
 
+import scala.language.experimental.macros
+
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.{SourceInfo}
 
 object Reg {
-  private[core] def makeType[T <: Data](compileOptions: CompileOptions, t: T = null, next: T = null, init: T = null): T = {
-    implicit val myCompileOptions = compileOptions
-    if (t ne null) {
-      if (compileOptions.declaredTypeMustBeUnbound) {
-        Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
-      }
-      t.chiselCloneType
-    } else if (next ne null) {
-      (next match {
-        case next: Bits => next.cloneTypeWidth(Width())
-        case _ => next.chiselCloneType
-      }).asInstanceOf[T]
-
-    } else if (init ne null) {
-      init.litArg match {
-        // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-        case Some(lit) if lit.forcedWidth => init.chiselCloneType
-        case _ => (init match {
-          case init: Bits => init.cloneTypeWidth(Width())
-          case _ => init.chiselCloneType
-        }).asInstanceOf[T]
-      }
-    } else {
-      throwException("cannot infer type")
-    }
-  }
-
-  /** Creates a register with optional next and initialization values.
-    *
-    * @param t: data type for the register
-    * @param next: new value register is to be updated with every cycle (or
-    * empty to not update unless assigned to using the := operator)
-    * @param init: initialization value on reset (or empty for uninitialized,
-    * where the register value persists across a reset)
-    *
-    * @note this may result in a type error if called from a type parameterized
-    * function, since the Scala compiler isn't smart enough to know that null
-    * is a valid value. In those cases, you can either use the outType only Reg
-    * constructor or pass in `null.asInstanceOf[T]`.
-    */
-  def apply[T <: Data](t: T = null, next: T = null, init: T = null)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    // Scala macros can't (yet) handle named or default arguments.
-    do_apply(t, next, init)(sourceInfo, compileOptions)
-
   /** Creates a register without initialization (reset is ignored). Value does
     * not change unless assigned to (using the := operator).
     *
-    * @param outType: data type for the register
+    * @param t: data type for the register
     */
-  def apply[T <: Data](outType: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = Reg[T](outType, null.asInstanceOf[T], null.asInstanceOf[T])(sourceInfo, compileOptions)
+  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    if (compileOptions.declaredTypeMustBeUnbound) {
+      Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
+    }
+    val reg = t.chiselCloneType
+    val clock = Node(Builder.forcedClock)
 
-  def do_apply[T <: Data](t: T, next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict): T = {
-    // TODO: write this in a way that doesn't need nulls (bad Scala style),
-    // null.asInstanceOf[T], and two constructors. Using Option types are an
-    // option, but introduces cumbersome syntax (wrap everything in a Some()).
-    // Implicit conversions to Option (or similar) types were also considered,
-    // but Scala's type inferencer and implicit insertion isn't smart enough
-    // to resolve all use cases. If the type inferencer / implicit resolution
-    // system improves, this may be changed.
-    val x = makeType(compileOptions, t, next, init)
+    Binding.bind(reg, RegBinder(Builder.forcedModule), "Error: t")
+    pushCommand(DefReg(sourceInfo, reg, clock))
+    reg
+  }
+}
+
+object RegNext {
+  /** Returns a register with the specified next and no reset initialization.
+    *
+    * Essentially a 1-cycle delayed version of the input signal.
+    */
+  def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (next match {
+      case next: Bits => next.cloneTypeWidth(Width())
+      case next => next.chiselCloneType
+    }).asInstanceOf[T]
+    val reg = Reg(model)
+
+    Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+    reg := next
+
+    reg
+  }
+
+  /** Returns a register with the specified next and reset initialization.
+    *
+    * Essentially a 1-cycle delayed version of the input signal.
+    */
+  def apply[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (next match {
+      case next: Bits => next.cloneTypeWidth(Width())
+      case next => next.chiselCloneType
+    }).asInstanceOf[T]
+    val reg = RegInit(model, init)  // TODO: this makes NO sense
+
+    Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+    reg := next
+
+    reg
+  }
+}
+
+object RegInit {
+  /** Returns a register pre-initialized (on reset) to the specified value.
+    * Register type is inferred from the initializer.
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init.litArg match {
+      // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
+      case Some(lit) if lit.forcedWidth => init.chiselCloneType
+      case _ => init match {
+        case init: Bits => init.cloneTypeWidth(Width())
+        case init => init.chiselCloneType
+      }
+    }).asInstanceOf[T]
+    RegInit(model, init)
+  }
+
+  /** Creates a register given an explicit type and an initialization (reset) value.
+    */
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    if (compileOptions.declaredTypeMustBeUnbound) {
+      Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
+    }
+    val reg = t.chiselCloneType
     val clock = Node(Builder.forcedClock)
     val reset = Node(Builder.forcedReset)
 
-    // Bind each element of x to being a Reg
-    Binding.bind(x, RegBinder(Builder.forcedModule), "Error: t")
-
-    if (init == null) {
-      pushCommand(DefReg(sourceInfo, x, clock))
-    } else {
-      Binding.checkSynthesizable(init, s"'init' ($init)")
-      pushCommand(DefRegInit(sourceInfo, x, clock, reset, init.ref))
-    }
-    if (next != null) {
-      Binding.checkSynthesizable(next, s"'next' ($next)")
-      x := next
-    }
-    x
+    Binding.bind(reg, RegBinder(Builder.forcedModule), "Error: t")
+    Binding.checkSynthesizable(init, s"'init' ($init)")
+    pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
+    reg
   }
 }
