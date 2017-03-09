@@ -55,7 +55,9 @@ private[chisel3] object SeqUtils {
 
   def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (in.tail.isEmpty) {
-      in.head._2
+      val result = Mux(in.head._1, in.head._2.asUInt, UInt(0))
+      val width = in.head._2.width
+      in.head._2.cloneTypeWidth(width).fromBits(result)
     } else {
       val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, 0.U)
       val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
