@@ -1,4 +1,4 @@
-% See LICENSE for license details.
+
 %Useful Macros
 \newcommand{\id}{\text{id }}
 \newcommand{\idst}{\text{id*}}
@@ -911,24 +911,24 @@ A literal unsigned integer can alternatively be created given a string represent
 
 The following radices are supported:
 \begin{enumerate}
-\item \verb|0b| : For representing binary numbers.
-\item \verb|0o| : For representing octal numbers.
-\item \verb|0x| : For representing hexadecimal numbers.
+\item \verb|b| : For representing binary numbers.
+\item \verb|o| : For representing octal numbers.
+\item \verb|h| : For representing hexadecimal numbers.
 \end{enumerate}
 
 If a bit width is not given, the number of bits in the bit representation is directly represented by the string. The following examples create a 8-bit integer representing the number 13.
 \begin{verbatim}
-UBits("0b00001101")
-UBits("0x0D")
+UInt("b00001101")
+UInt("h0D")
 \end{verbatim}
 
-If the provided bit width is larger than the number of bits represented by the string, then the resulting value is equivalent to the string zero-extended up to the provided bit width. If the provided bit width is smaller than the number of bits represented by the string, then the resulting value is equivalent to the string truncated down to the provided bit width. All truncated bits must be zero.
+If the provided bit width is larger than the number of bits required to represent the string's value, then the resulting value is equivalent to the string zero-extended up to the provided bit width. If the provided bit width is smaller than the number of bits represented by the string, then the resulting value is equivalent to the string truncated down to the provided bit width. All truncated bits must be zero.
 
 The following examples create a 7-bit integer representing the number 13.
 \begin{verbatim}
-UBits<7>("0b00001101")
-UBits<7>("0o015")
-UBits<7>("0xD")
+UInt<7>("b00001101")
+UInt<7>("o015")
+UInt<7>("hD")
 \end{verbatim}
 
 \subsection{Signed Integers}
@@ -945,22 +945,18 @@ SInt(-42)
 
 \subsection{Signed Integers from Literal Bits}
 
-Similar to unsigned integers, a literal signed integer can alternatively be created given a string representing its bit representation and an optional bit width. 
+Similar to unsigned integers, a literal signed integer can alternatively be created given a string representing its bit representation and an optional bit width.
 
-If a bit width is not given, the number of bits in the bit representation is directly represented by the string. The following examples create a 8-bit integer representing the number -13.
+The bit representation contains a binary, octal or hex indicator, followed by an optional sign, followed by the value.
+
+If a bit width is not given, the number of bits in the bit representation is the minimal bitwidth to represent the value represented by the string. The following examples create a 8-bit integer representing the number -13.
 \begin{verbatim}
-SBits("0b11110011")
-SBits("0xF3")
+SInt("b-1101")
+SInt("h-d")
 \end{verbatim}
 
-If the provided bit width is larger than the number of bits represented by the string, then the resulting value is equivalent to the string sign-extended up to the provided bit width. If the provided bit width is smaller than the number of bits represented by the string, then the resulting value is equivalent to the string truncated down to the provided bit width. All truncated bits must match the sign bit of the final truncated number.
-
-The following examples create a 7-bit integer representing the number -13.
-\begin{verbatim}
-SBits<7>("0b10011")
-SBits<7>("0o763")
-SBits<7>("0xF3")
-\end{verbatim}
+If the provided bit width is larger than the number of bits represented by the string, then the resulting value is unchanged.
+It is an error to provide a bit width smaller than the number of bits required to represent the string's value.
 
 \subsection{References}
 A reference is simply a name that refers to a previously declared circuit component. It may refer to a module port, node, wire, register, instance, or memory.
@@ -1719,20 +1715,22 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 \subsection{Concrete Syntax Tree} \label{syntax_tree}
 
 \begin{tabular}{rrll}
-\pd{circuit}    &=     &\opt{\pd{info}} \vv{circuit} \pd{id} \vv{:} \vv{(}\rpt{\pd{module}}\vv{)}              &\text{Circuit}\\
-\pd{module}     &=     &\opt{\pd{info}} \vv{module} \pd{id} \vv{:} \vv{(}\rpt{\pd{port}} \pd{stmt}\vv{)}       &\text{Module}\\
-                &\pipe &\opt{\pd{info}} \vv{extmodule} \pd{id} \vv{:} \vv{(}\rpt{\pd{port}}\vv{)}              &\text{External Module}\\
-\pd{port}       &=     &\opt{\pd{info}} \pd{dir} \pd{id} \vv{:} \pd{type}                                      &\text{Port}\\
+\pd{circuit}    &=     &\vv{circuit} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}\rpt{\pd{module}}\vv{)}              &\text{Circuit}\\
+\pd{module}     &=     &\vv{module} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}\rpt{\pd{port}} \pd{stmt}\vv{)}       &\text{Module}\\
+                &\pipe &\vv{extmodule} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}\rpt{\pd{port}}\vv{)}              &\text{External Module}\\
+\pd{port}       &=     &\pd{dir} \pd{id} \vv{:} \pd{type} \opt{\pd{info}}                                      &\text{Port}\\
 \pd{dir}        &=     &\vv{input} \pipe \vv{ output}                                                          &\text{Port Direction}\\
 \pd{type}       &=     &\vv{UInt}\opt{\vv{<}\pd{int}\vv{>}}                                                    &\text{Unsigned Integer}\\
                 &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}                                                    &\text{Signed Integer}\\
+                &\pipe &\vv{Fixed}\opt{\vv{<}\pd{int}\vv{>}}\opt{\vv{<<}\pd{int}\vv{>>}}                       &\text{Fixed Point}\\
                 &\pipe &\vv{Clock}                                                                             &\text{Clock}\\
+                &\pipe &\vv{Analog}\opt{\vv{<}\pd{int}\vv{>}}                                                  &\text{Analog}\\
                 &\pipe &\verb|{|\rpt{\pd{field}}\verb|}|                                                       &\text{Bundle}\\
                 &\pipe &\pd{type}\vv{[}\pd{int}\vv{]}                                                          &\text{Vector}\\
 \pd{field}      &=     &\opt{\vv{flip}} \pd{id} \vv{:} \pd{type}                                               &\text{Bundle Field}\\
-\pd{stmt}       &=     &\opt{\pd{info}} \vv{wire} \pd{id} \vv{:} \pd{type}                                     &\text{Wire}\\
-                &\pipe &\opt{\pd{info}} \vv{reg} \pd{id} \vv{:} \pd{type} \pd{exp} \opt{\vv{(with:} \vv{\{reset => (}\pd{exp}, \pd{exp}\vv{)\})}}   &\text{Register}\\
-                &\pipe &\opt{\pd{info}} \vv{mem} \pd{id} \vv{:} \vv{(}                                         &\text{Memory}\\
+\pd{stmt}       &=     &\vv{wire} \pd{id} \vv{:} \pd{type} \opt{\pd{info}}                                     &\text{Wire}\\
+                &\pipe &\vv{reg} \pd{id} \vv{:} \pd{type} \pd{exp} \opt{\vv{(with:} \vv{\{reset => (}\pd{exp}, \pd{exp}\vv{)\})}} \opt{\pd{info}}   &\text{Register}\\
+                &\pipe &\vv{mem} \pd{id} \vv{:} \opt{\pd{info}} \vv{(}                                         &\text{Memory}\\
                 && \verb|       |\vv{data-type =>} \pd{type}\\
                 && \verb|       |\vv{depth =>} \pd{int}\\                
                 && \verb|       |\vv{read-latency =>} \pd{int}\\                
@@ -1741,16 +1739,17 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
                 && \verb|       |\rpt{\vv{reader =>} \pd{id}}\\             
                 && \verb|       |\rpt{\vv{writer =>} \pd{id}}\\    
                 && \verb|       |\rpt{\vv{readwriter =>} \pd{id}}\vv{)}                                \\
-                &\pipe &\opt{\pd{info}} \vv{inst} \pd{id} \vv{of} \pd{id}                                      &\text{Instance}\\
-                &\pipe &\opt{\pd{info}} \vv{node} \pd{id} \vv{=} \pd{exp}                                      &\text{Node}\\
-                &\pipe &\opt{\pd{info}} \pd{exp} \vv{<=} \pd{exp}                                              &\text{Connect}\\
-                &\pipe &\opt{\pd{info}} \pd{exp} \vv{<-} \pd{exp}                                              &\text{Partial Connect}\\
-                &\pipe &\opt{\pd{info}} \pd{exp} \vv{is invalid}                                               &\text{Invalidate}\\
-                &\pipe &\opt{\pd{info}} \vv{when} \pd{exp} \vv{:} \pd{stmt} \opt{\vv{else} \vv{:} \pd{stmt}}   &\text{Conditional}\\
-                &\pipe &\opt{\pd{info}} \vv{stop(}\pd{exp}, \pd{exp}, \pd{int})                                &\text{Stop}\\
-                &\pipe &\opt{\pd{info}} \vv{printf(}\pd{exp}, \pd{exp}, \pd{string}, \rpt{\pd{exp}}\vv{)}      &\text{Printf}\\
-                &\pipe &\opt{\pd{info}} \vv{skip}                                                              &\text{Empty}\\
-                &\pipe &\opt{\pd{info}} \vv{(}\rpt{\pd{stmt}}\vv{)}                                            &\text{Statement Group}\\
+                &\pipe &\vv{inst} \pd{id} \vv{of} \pd{id} \opt{\pd{info}}                                      &\text{Instance}\\
+                &\pipe &\vv{node} \pd{id} \vv{=} \pd{exp} \opt{\pd{info}}                                      &\text{Node}\\
+                &\pipe &\pd{exp} \vv{<=} \pd{exp} \opt{\pd{info}}                                              &\text{Connect}\\
+                &\pipe &\pd{exp} \vv{<-} \pd{exp} \opt{\pd{info}}                                              &\text{Partial Connect}\\
+                &\pipe &\pd{exp} \vv{is invalid} \opt{\pd{info}}                                               &\text{Invalidate}\\
+                &\pipe &\vv{attach}\vv{(}\rpt{\pd{exp}}\vv{)} \opt{\pd{info}}                                  &\text{Attach}\\
+                &\pipe &\vv{when} \pd{exp} \vv{:} \opt{\pd{info}} \pd{stmt} \opt{\vv{else} \vv{:} \pd{stmt}}   &\text{Conditional}\\
+                &\pipe &\vv{stop(}\pd{exp}, \pd{exp}, \pd{int})\opt{\pd{info}}                                 &\text{Stop}\\
+                &\pipe &\vv{printf(}\pd{exp}, \pd{exp}, \pd{string}, \rpt{\pd{exp}}\vv{)} \opt{\pd{info}}      &\text{Printf}\\
+                &\pipe &\vv{skip} \opt{\pd{info}}                                                              &\text{Empty}\\
+                &\pipe &\vv{(}\rpt{\pd{stmt}}\vv{)}                                                            &\text{Statement Group}\\
 \pd{ruw}        &=     &\vv{old} \pipe \vv{ new} \pipe \vv{ undefined}                                         &\text{Read Under Write Flag}\\
 \pd{info}       &=     &\vv{@[}\pd{string}\vv{]}                                                               &\text{File Information Token}\\
 \end{tabular}
@@ -1807,18 +1806,9 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 %\section{TODO}
 %
 %- FIRRTL implementation
-%   - Add UBits                         ; andrew doesn't care, favors overloading UInt
-%   - Add SBits
 %   - Add partial connect algorithm     ; 
 %   - Add oriented types to type checker
 %   - Add memory read-under-write flag  ; probably overengineering, but could be a wash
-%   - *FINISHED* Make register reset/init optional ; good
-%   - *FINISHED* removed addw, added head and tail ; great!
-%   - *FINISHED* Rework readwrite port types       ; limits optimizations but probably ok
-%   - *FINISHED* Add Mux expression                ; that's lovely, need glitch-free mux for clock types
-%   - *FINISHED* add rename pass for verilog
-%   - *FINISHED* Add is invalid                    ; good
-%   - *FINISHED* Add validif                       ; good
 
 \end{document}
 

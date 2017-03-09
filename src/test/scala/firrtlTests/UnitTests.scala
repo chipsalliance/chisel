@@ -304,7 +304,6 @@ class UnitTests extends FirrtlFlatSpec {
         (c: Circuit, p: Pass) => p.run(c)
       }
     }
-
   }
 
   "Conditional conection of clocks" should "throw an exception" in {
@@ -321,6 +320,57 @@ class UnitTests extends FirrtlFlatSpec {
         |""".stripMargin
     intercept[PassExceptions] { // Both MuxClock and InvalidConnect are thrown
       compileToVerilog(input)
+    }
+  }
+
+  "Parsing SInts" should "work" in {
+    val passes = Seq()
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    node posSInt = SInt(13)
+        |    node negSInt = SInt(-13)
+        |    node posSIntString = SInt("h0d")
+        |    node posSIntString2 = SInt("h+d")
+        |    node posSIntString3 = SInt("hd")
+        |    node negSIntString = SInt("h-d")
+        |    node negSIntStringWidth = SInt<5>("h-d")
+        |    node neg2 = SInt("h-2")
+        |    node pos2 = SInt("h2")
+        |    node neg1 = SInt("h-1")
+        |""".stripMargin
+    val expected = Seq(
+      """node posSInt = SInt<5>("hd")""",
+      """node negSInt = SInt<5>("h-d")""",
+      """node posSIntString = SInt<5>("hd")""",
+      """node posSIntString2 = SInt<5>("hd")""",
+      """node posSIntString3 = SInt<5>("hd")""",
+      """node negSIntString = SInt<5>("h-d")""",
+      """node negSIntStringWidth = SInt<5>("h-d")""",
+      """node neg2 = SInt<2>("h-2")""",
+      """node pos2 = SInt<3>("h2")""",
+      """node neg1 = SInt<1>("h-1")"""
+    )
+    executeTest(input, expected, passes)
+  }
+  "Verilog SInts" should "work" in {
+    val passes = Seq()
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    output posSInt : SInt
+        |    output negSInt : SInt
+        |    posSInt <= SInt(13)
+        |    negSInt <= SInt(-13)
+        |""".stripMargin
+    val expected = Seq(
+      """assign posSInt = 5'shd;""",
+      """assign negSInt = -5'shd;"""
+    )
+    val out = compileToVerilog(input)
+    val lines = out.split("\n") map normalized
+    expected foreach { e =>
+      lines should contain(e)
     }
   }
 }

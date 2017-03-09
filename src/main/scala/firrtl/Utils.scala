@@ -154,9 +154,6 @@ object Utils extends LazyLogging {
 
   /** Indent the results of [[ir.FirrtlNode.serialize]] */
   def indent(str: String) = str replaceAllLiterally ("\n", "\n  ")
-  def serialize(bi: BigInt): String =
-    if (bi < BigInt(0)) "\"h" + bi.toString(16).substring(1) + "\""
-    else "\"h" + bi.toString(16) + "\""
 
   implicit def toWrappedExpression (x:Expression): WrappedExpression = new WrappedExpression(x)
   def ceilLog2(x: BigInt): Int = (x-1).bitLength

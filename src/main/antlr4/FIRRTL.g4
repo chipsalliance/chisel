@@ -297,7 +297,7 @@ PosInt
   ;
 
 HexLit
-  : '"' 'h' ( HexDigit )+ '"'
+  : '"' 'h' ( '+' | '-' )? ( HexDigit )+ '"'
   ;
 
 DoubleLit

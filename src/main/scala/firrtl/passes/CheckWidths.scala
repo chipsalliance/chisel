@@ -16,7 +16,7 @@ object CheckWidths extends Pass {
   class UninferredWidth (info: Info, mname: String) extends PassException(
     s"$info : [module $mname]  Uninferred width.")
   class WidthTooSmall(info: Info, mname: String, b: BigInt) extends PassException(
-    s"$info : [module $mname]  Width too small for constant ${serialize(b)}.")
+    s"$info : [module $mname]  Width too small for constant $b.")
   class WidthTooBig(info: Info, mname: String, b: BigInt) extends PassException(
     s"$info : [module $mname]  Width $b greater than max allowed width of $MaxWidth bits")
   class DshlTooBig(info: Info, mname: String) extends PassException(
