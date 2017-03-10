@@ -319,7 +319,7 @@ trait HasFirrtlOptions {
       s"specifies the source info handling, default is ${firrtlOptions.infoModeName}"
     }
 
-  parser.opt[Seq[String]]("custom")
+  parser.opt[Seq[String]]("custom-transforms")
     .abbr("fct")
     .valueName ("<package>.<class>")
     .foreach { customTransforms: Seq[String] =>
@@ -331,7 +331,7 @@ trait HasFirrtlOptions {
       )
     }
     .text {
-      """Inline one or more module (comma separated, no spaces) module looks like "MyModule" or "MyModule.myinstance"""
+      """runs these custom transforms during compilation."""
     }
 
 

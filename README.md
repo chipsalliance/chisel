@@ -36,7 +36,7 @@ To write a Firrtl transform, start with [src/main/scala/tutorial/AnalyzeCircuit.
 To run this example:
 ```
 sbt assembly
-./utils/bin/firrtl -td regress -tn rocket --custom tutorial.AnalyzeCircuit
+./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.AnalyzeCircuit
 ```
 
 ##### Useful sbt Tips
