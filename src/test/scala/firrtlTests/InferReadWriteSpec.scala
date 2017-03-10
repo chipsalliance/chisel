@@ -82,6 +82,37 @@ circuit sram6t :
     parse(res.getEmittedCircuit.value)
   }
 
+  "Infer ReadWrite Ports" should "infer readwrite ports from exclusive when statements" in {
+    val input = """
+circuit sram6t :
+  module sram6t :
+    input clock : Clock
+    input reset : UInt<1>
+    output io : { flip addr : UInt<11>, flip ren : UInt<1>, flip wen : UInt<1>, flip dataIn : UInt<32>, dataOut : UInt<32>}
+
+    io is invalid
+    smem mem : UInt<32> [2048]
+    when io.wen :
+      write mport _T_14 = mem[io.addr], clock
+      _T_14 <= io.dataIn
+    node _T_16 = eq(io.wen, UInt<1>("h0"))
+    when _T_16 :
+      wire _T_18 : UInt
+      _T_18 is invalid
+      when io.ren :
+        _T_18 <= io.addr
+        node _T_20 = or(_T_18, UInt<11>("h0"))
+        node _T_21 = bits(_T_20, 10, 0)
+        read mport _T_22 = mem[_T_21], clock
+      io.dataOut <= _T_22
+""".stripMargin
+
+    val annotationMap = AnnotationMap(Seq(memlib.InferReadWriteAnnotation("sram6t")))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)))
+    // Check correctness of firrtl
+    parse(res.getEmittedCircuit.value)
+  }
+
   "Infer ReadWrite Ports" should "not infer readwrite ports for the difference clocks" in {
     val input = """
 circuit sram6t :
