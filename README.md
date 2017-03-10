@@ -32,11 +32,12 @@ sbt publish-local
 
 ##### Transform Writing Tutorial
 
-To write a Firrtl transform, start with [src/main/scala/tutorial/AnalyzeCircuit.scala](https://github.com/ucb-bar/firrtl/blob/master/src/main/tutorial/AnalyzeCircuit.scala).
+To write a Firrtl transform, please start with the tutorial here: [src/main/scala/tutorial](https://github.com/ucb-bar/firrtl/blob/master/src/main/tutorial).
 To run this example:
 ```
 sbt assembly
-./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.AnalyzeCircuit
+./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson1.AnalyzeCircuit
+./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson2.AnalyzeCircuit
 ```
 
 ##### Useful sbt Tips
