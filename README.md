@@ -20,7 +20,7 @@
 
 ##### Installation
  1. Clone the repository:
-    ```git clone https://github.com/ucb-bar/firrtl; cd firrtl```
+    ```git clone https://github.com/ucb-bar/firrtl.git && cd firrtl```
  1. Compile firrtl: ```sbt compile```
  1. Run tests: ```sbt test```
  1. Build executable (`utils/bin/firrtl`): ```sbt assembly```
