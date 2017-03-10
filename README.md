@@ -30,6 +30,15 @@
 sbt publish-local
 ```
 
+##### Transform Writing Tutorial
+
+To write a Firrtl transform, start with [src/main/scala/tutorial/AnalyzeCircuit.scala](https://github.com/ucb-bar/firrtl/blob/master/src/main/tutorial/AnalyzeCircuit.scala).
+To run this example:
+```
+sbt assembly
+./utils/bin/firrtl -td regress -tn rocket --custom tutorial.AnalyzeCircuit
+```
+
 ##### Useful sbt Tips
  1. Run a single test suite:
  `sbt "testOnly firrtlTests.UnitTests"`
