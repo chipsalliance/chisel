@@ -32,7 +32,7 @@ sbt publish-local
 
 ##### Transform Writing Tutorial
 
-To write a Firrtl transform, please start with the tutorial here: [src/main/scala/tutorial](https://github.com/ucb-bar/firrtl/blob/master/src/main/tutorial).
+To write a Firrtl transform, please start with the tutorial here: [src/main/scala/tutorial](https://github.com/ucb-bar/firrtl/blob/master/src/main/scala/tutorial).
 To run this example:
 ```
 sbt assembly
