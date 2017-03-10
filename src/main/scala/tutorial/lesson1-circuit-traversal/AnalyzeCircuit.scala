@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package tutorial
 package lesson1
 
@@ -24,8 +26,8 @@ class Ledger {
   private var moduleName: Option[String] = None
   private val modules = mutable.Set[String]()
   private val moduleMuxMap = mutable.Map[String, Int]()
-  def foundMux: Unit = moduleName match {
-    case None => error("Module name not defined in Ledger!")
+  def foundMux(): Unit = moduleName match {
+    case None => sys.error("Module name not defined in Ledger!")
     case Some(name) => moduleMuxMap(name) = moduleMuxMap.getOrElse(name, 0) + 1
   }
   def getModuleName: String = moduleName match {
@@ -134,7 +136,7 @@ class AnalyzeCircuit extends Transform {
         ledger.foundMux
         e
       // If e is not a [[Mux]], return e.
-      case e => e
+      case notmux => notmux
     }
   }
 }

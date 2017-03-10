@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package tutorial
 package lesson2
 
@@ -28,14 +30,14 @@ class Ledger {
   private val moduleMuxMap = mutable.Map[String, Int]()
   private val moduleInstanceMap = mutable.Map[String, Seq[String]]()
   def getModuleName: String = moduleName match {
-    case None => error("Module name not defined in Ledger!")
+    case None => sys.error("Module name not defined in Ledger!")
     case Some(name) => name
   }
   def setModuleName(myName: String): Unit = {
     modules += myName
     moduleName = Some(myName)
   }
-  def foundMux: Unit = {
+  def foundMux(): Unit = {
     val myName = getModuleName
     moduleMuxMap(myName) = moduleMuxMap.getOrElse(myName, 0) + 1
   }
