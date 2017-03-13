@@ -151,7 +151,7 @@ class AnalyzeCircuit extends Transform {
       case Mux(cond, tval, fval, tpe) =>
         ledger.foundMux
         e
-      case e => e
+      case notmux => notmux
     }
   }
 }
