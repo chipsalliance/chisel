@@ -42,19 +42,10 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = macro VecTransform.apply_ngen;
-
-  def do_apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    if ( gen.isLit ) {
-      Vec(Seq.fill(n)(gen))
-    } else {
-      new Vec(gen.chiselCloneType, n)
-    }
-  }
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    do_apply(n, gen)
+  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -332,14 +323,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def indexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
 
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def lastIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
 
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
