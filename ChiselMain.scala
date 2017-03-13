@@ -2,20 +2,20 @@
 
 package chisel3.iotesters
 
-import chisel3._
-
-import scala.collection.mutable.{ArrayBuffer}
-import scala.util.{DynamicVariable}
-import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.io.{File, FileWriter, IOException}
+import java.nio.file.{FileAlreadyExistsException, Files, Paths}
+import scala.collection.mutable.ArrayBuffer
+import scala.util.DynamicVariable
+
+import chisel3._
 
 private[iotesters] class TesterContext {
   var isGenVerilog = false
   var isGenHarness = false
   var isCompiling = false
   var isRunTest = false
-  var testerSeed = System.currentTimeMillis
-  val testCmd = ArrayBuffer[String]()
+  var testerSeed: Long = System.currentTimeMillis
+  val testCmd: ArrayBuffer[String] = ArrayBuffer[String]()
   var backendType = "verilator"
   var backend: Option[Backend] = None
   var targetDir = new File("test_run_dir")
@@ -25,7 +25,7 @@ private[iotesters] class TesterContext {
 
 object chiselMain {
   private val contextVar = new DynamicVariable[Option[TesterContext]](None)
-  private[iotesters] def context = contextVar.value getOrElse (new TesterContext)
+  private[iotesters] def context = contextVar.value.getOrElse(new TesterContext)
 
   private def parseArgs(args: List[String]): Unit = args match {
     case "--firrtl" :: tail => context.backendType = "firrtl" ; parseArgs(tail)
@@ -42,7 +42,7 @@ object chiselMain {
     case "--targetDir" :: value :: tail => context.targetDir = new File(value) ; parseArgs(tail)
     case "--logFile" :: value :: tail => context.logFile = Some(new File(value)) ; parseArgs(tail)
     case "--waveform" :: value :: tail => context.waveform = Some(new File(value)) ; parseArgs(tail)
-    case flag :: tail => parseArgs(tail) // skip unknown flag
+    case _ :: tail => parseArgs(tail) // skip unknown flag
     case Nil => // finish
   }
 
@@ -53,12 +53,12 @@ object chiselMain {
       case "firrtl" => // skip
       case "verilator" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.cpp"))
-        val waveform = (new File(dir, s"${chirrtl.main}.vcd")).toString
-        (new VerilatorCppHarnessCompiler(dut, nodes, waveform)).compile(CircuitState(chirrtl, ChirrtlForm), harness)
+        val waveform = new File(dir, s"${chirrtl.main}.vcd").toString
+        harness.write(VerilatorCppHarnessGenerator.codeGen(dut, CircuitState(chirrtl, ChirrtlForm), waveform))
         harness.close()
       case "vcs" | "glsim" =>
         val harness = new FileWriter(new File(dir, s"${chirrtl.main}-harness.v"))
-        val waveform = (new File(dir, s"${chirrtl.main}.vpd")).toString
+        val waveform = new File(dir, s"${chirrtl.main}.vpd").toString
         genVCSVerilogHarness(dut, harness, waveform.toString, context.backendType == "glsim")
       case b => throw BackendException(b)
     }
@@ -93,7 +93,7 @@ object chiselMain {
     try {
       Files.createDirectory(Paths.get(context.targetDir.toString))
     } catch {
-      case x: FileAlreadyExistsException =>
+      case _: FileAlreadyExistsException =>
       case x: IOException =>
         System.err.format("createFile error: %s%n", x)
     }
@@ -104,23 +104,23 @@ object chiselMain {
     val name = circuit.name
 
     val chirrtl = firrtl.Parser.parse(chisel3.Driver.emit(circuit))
-    val chirrtlFile = new File(dir, s"${name}.ir")
-    val verilogFile = new File(dir, s"${name}.v")
+    val chirrtlFile = new File(dir, s"$name.ir")
+    val verilogFile = new File(dir, s"$name.v")
     context.backendType match {
       case "firrtl" =>
         val writer = new FileWriter(chirrtlFile)
-        (new firrtl.FirrtlEmitter).emit(firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm), writer)
+        (new firrtl.LowFirrtlEmitter).emit(firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm), writer)
         writer.close()
-      case _ if (context.isGenVerilog) =>
+      case _ if context.isGenVerilog =>
         val annotations = firrtl.AnnotationMap(Seq(
           firrtl.passes.memlib.InferReadWriteAnnotation(name)))
         val writer = new FileWriter(verilogFile)
-        (new firrtl.VerilogCompiler).compile(
+        val compileResult = (new firrtl.VerilogCompiler).compileAndEmit(
           firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
-          writer,
           List(new firrtl.passes.memlib.InferReadWrite)
         )
-        writer.close
+        writer.write(compileResult.getEmittedCircuit.value)
+        writer.close()
       case _ =>
     } 
 
@@ -138,9 +138,9 @@ object chiselMain {
       context.backendType match {
         case "firrtl" => // skip
         case "verilator" =>
-          context.testCmd += (new File(context.targetDir, s"V$name")).toString
+          context.testCmd += new File(context.targetDir, s"V$name").toString
         case "vcs" | "glsim" =>
-          context.testCmd += (new File(context.targetDir, name)).toString
+          context.testCmd += new File(context.targetDir, name).toString
         case b => throw BackendException(b)
       }
     }
@@ -168,11 +168,10 @@ object chiselMain {
     val dut = contextVar.withValue(ctx) {
       elaborate(args, dutGen)
     }
-    contextVar.value = ctx // TODO: is it ok?
     dut
   }
 
-  def apply[T <: Module](args: Array[String], dutGen: () => T, testerGen: T => PeekPokeTester[T]) = {
+  def apply[T <: Module](args: Array[String], dutGen: () => T, testerGen: T => PeekPokeTester[T]): Unit = {
     contextVar.withValue(Some(new TesterContext)) {
       val dut = elaborate(args, dutGen)
       if (context.isRunTest) {
@@ -180,7 +179,7 @@ object chiselMain {
         assert(try {
           testerGen(dut).finish
         } catch { case e: Throwable =>
-          e.printStackTrace
+          e.printStackTrace()
           context.backend match {
             case Some(b: VCSBackend) =>
               TesterProcess kill b
@@ -197,7 +196,7 @@ object chiselMain {
 }
 
 object chiselMainTest {
-  def apply[T <: Module](args: Array[String], dutGen: () => T)(testerGen: T => PeekPokeTester[T]) = {
+  def apply[T <: Module](args: Array[String], dutGen: () => T)(testerGen: T => PeekPokeTester[T]): Unit = {
     chiselMain(args, dutGen, testerGen)
   }
 }

@@ -4,12 +4,12 @@ package chisel3.iotesters
 
 import java.io.File
 
-import chisel3.{Bundle, Data, Element, Module, Vec}
+import chisel3._
 import chisel3.internal.InstanceId
 import chisel3.internal.firrtl.Circuit
 
 import scala.sys.process._
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.ArrayBuffer
 
 // TODO: FIRRTL will eventually return valid names
 private[iotesters] object validName {
@@ -20,7 +20,7 @@ private[iotesters] object validName {
 private[iotesters] object getDataNames {
   def apply(name: String, data: Data): Seq[(Element, String)] = data match {
     case e: Element => Seq(e -> name)
-    case b: Bundle => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
+    case b: Record => b.elements.toSeq flatMap {case (n, e) => apply(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => apply(s"${name}_$i", e)}
   }
   def apply(dut: Module, separator: String = "."): Seq[(Element, String)] =
@@ -35,7 +35,7 @@ private[iotesters] object getPorts {
 private[iotesters] object flatten {
   def apply(data: Data): Seq[Element] = data match {
     case b: Element => Seq(b)
-    case b: Bundle => b.elements.toSeq flatMap (x => apply(x._2))
+    case b: Record => b.elements.toSeq flatMap (x => apply(x._2))
     case v: Vec[_] => v.toSeq flatMap apply
   }
 }
