@@ -174,7 +174,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
     processEvents()
 
     val pc             = Counter(test_actions.length)
-    val done           = Reg(init = false.B)
+    val done           = RegInit(false.B)
 
     when(!done) {
       io_info.dut_inputs.filter(io_info.ports_referenced.contains).foreach { port => createVectorsForInput(port, pc) }

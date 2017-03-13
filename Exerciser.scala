@@ -17,10 +17,10 @@ abstract class Exerciser extends BasicTester {
 
   case class StopCondition(condition: Bool, max_ticks: Option[Int] = None)
 
-  val ticker              = Reg(init=0.U(internal_counter_width.W))
-  val max_ticks_for_state = Reg(init=0.U(internal_counter_width.W))
-  val state_number        = Reg(init=0.U(internal_counter_width.W))
-  val state_locked        = Reg(init=true.B)
+  val ticker              = RegInit(0.U(internal_counter_width.W))
+  val max_ticks_for_state = RegInit(0.U(internal_counter_width.W))
+  val state_number        = RegInit(0.U(internal_counter_width.W))
+  val state_locked        = RegInit(true.B)
 
   var current_states = internal_counter_width + 1
 
