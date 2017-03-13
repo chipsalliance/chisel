@@ -10,10 +10,10 @@ class EnableShiftRegister extends Module {
     val shift = Input(Bool())
     val out   = Output(UInt(4.W))
   })
-  val r0 = Reg(init = 0.U(4.W))
-  val r1 = Reg(init = 0.U(4.W))
-  val r2 = Reg(init = 0.U(4.W))
-  val r3 = Reg(init = 0.U(4.W))
+  val r0 = RegInit(0.U(4.W))
+  val r1 = RegInit(0.U(4.W))
+  val r2 = RegInit(0.U(4.W))
+  val r3 = RegInit(0.U(4.W))
   when(io.shift) {
     r0 := io.in
     r1 := r0

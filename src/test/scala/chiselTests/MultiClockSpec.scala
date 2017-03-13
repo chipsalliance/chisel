@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{withClockAndReset, withClock, withReset}
-import chisel3.util.{Counter, RegInit}
+import chisel3.util.Counter
 import chisel3.testers.BasicTester
 
 /** Multi-clock test of a Reg using a different clock via withClock */
