@@ -148,9 +148,9 @@ class AnalyzeCircuit extends Transform {
     // Execute the function walkExpression(ledger) on every [[Expression]] in e,
     //  then handle if a [[Mux]].
     e map walkExpression(ledger) match {
-      case Mux(cond, tval, fval, tpe) =>
-        ledger.foundMux
-        e
+      case mux: Mux =>
+        ledger.foundMux()
+        mux
       case notmux => notmux
     }
   }
