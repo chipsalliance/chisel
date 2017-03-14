@@ -3,15 +3,14 @@
 package chisel3
 
 import chisel3.internal.firrtl.Emitter
-
 import java.io._
-import net.jcazevedo.moultingyaml._
 
+import net.jcazevedo.moultingyaml._
 import internal.firrtl._
 import firrtl._
-import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-
+import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
+import logger.Logger
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -123,47 +122,49 @@ object Driver extends BackendCompilationUtilities {
   def execute(
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => Module): ChiselExecutionResult = {
-    val circuit = elaborate(dut)
+    Logger.invoke(optionsManager) {
+      val circuit = elaborate(dut)
 
-    // this little hack let's us set the topName with the circuit name if it has not been set from args
-    optionsManager.setTopNameIfNotSet(circuit.name)
+      // this little hack let's us set the topName with the circuit name if it has not been set from args
+      optionsManager.setTopNameIfNotSet(circuit.name)
 
-    val firrtlOptions = optionsManager.firrtlOptions
-    val chiselOptions = optionsManager.chiselOptions
+      val firrtlOptions = optionsManager.firrtlOptions
+      val chiselOptions = optionsManager.chiselOptions
 
-    // use input because firrtl will be reading this
-    val firrtlString = Emitter.emit(circuit)
-    val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
-    val firrtlFile = new File(firrtlFileName)
+      // use input because firrtl will be reading this
+      val firrtlString = Emitter.emit(circuit)
+      val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
+      val firrtlFile = new File(firrtlFileName)
 
-    val w = new FileWriter(firrtlFile)
-    w.write(firrtlString)
-    w.close()
+      val w = new FileWriter(firrtlFile)
+      w.write(firrtlString)
+      w.close()
 
-    val annotationFile = new File(optionsManager.getBuildFileName("anno"))
-    val af = new FileWriter(annotationFile)
-    af.write(circuit.annotations.toArray.toYaml.prettyPrint)
-    af.close()
+      val annotationFile = new File(optionsManager.getBuildFileName("anno"))
+      val af = new FileWriter(annotationFile)
+      af.write(circuit.annotations.toArray.toYaml.prettyPrint)
+      af.close()
 
-    /* create custom transforms by finding the set of transform classes associated with annotations
+      /* create custom transforms by finding the set of transform classes associated with annotations
      * then instantiate them into actual transforms
      */
-    val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
-      transformClass.newInstance()
-    }
-    /* This passes the firrtl source and annotations directly to firrtl */
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlSource = Some(firrtlString),
-      annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList,
-      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
+      val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
+        transformClass.newInstance()
+      }
+      /* This passes the firrtl source and annotations directly to firrtl */
+      optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+        firrtlSource = Some(firrtlString),
+        annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList,
+        customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
 
-    val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
-      Some(firrtl.Driver.execute(optionsManager))
+      val firrtlExecutionResult = if (chiselOptions.runFirrtlCompiler) {
+        Some(firrtl.Driver.execute(optionsManager))
+      }
+      else {
+        None
+      }
+      ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
     }
-    else {
-      None
-    }
-    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
   /**

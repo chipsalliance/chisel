@@ -41,13 +41,13 @@ class AnalyzeModuleTester extends FreeSpec with Matchers {
   "Can run tutorial to print mux count" - {
     "Can turn on Analyze on MyModule" in {
       val captor = new OutputCaptor
-      logger.Logger.setLevel(logger.LogLevel.Info)
       logger.Logger.log2StringBuffer()
-      //logger.Logger.setClassLogLevels(Map("chisel3.tutorial.lesson1.AnalyzeCircuit" -> logger.LogLevel.Info))
+      logger.Logger.setLevel(classOf[chisel3.tutorial.lesson1.AnalyzeCircuit], LogLevel.Info)
+      // logger.Logger.setLevel(LogLevel.Info)
       Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new MyModule(true)) match {
         case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
-          val messagesLogged = logger.Logger.getStringBuffer.get
-          println(messagesLogged)
+          val messagesLogged = logger.Logger.getStringBuffer.get.toString()
+          println(s"messages logged\n$messagesLogged")
           messagesLogged.contains("muxes!") should be(true)
       }
     }
