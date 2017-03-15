@@ -11,6 +11,31 @@
 
  This repository is in ALPHA VERSION, so many things may change in the coming months.
 
+#### Wiki's and Tutorials
+
+Useful information is on our wiki, located here:
+* https://github.com/ucb-bar/firrtl/wiki
+
+Some important pages to read, before writing your own transform:
+* [Submitting Pull Requests](https://github.com/ucb-bar/firrtl/wiki/submitting-a-pull-request)
+* [Understanding Firrtl's IR](https://github.com/ucb-bar/firrtl/wiki/Understanding-Firrtl-Intermediate-Representation)
+* [Traversing a Circuit](https://github.com/ucb-bar/firrtl/wiki/traversing-a-circuit)
+* [Common Pass Idioms](https://github.com/ucb-bar/firrtl/wiki/Common-Pass-Idioms)
+
+To write a Firrtl transform, please start with the tutorial here: [src/main/scala/tutorial](https://github.com/ucb-bar/firrtl/blob/master/src/main/scala/tutorial).
+To run these examples:
+```
+sbt assembly
+./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson1.AnalyzeCircuit
+./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson2.AnalyzeCircuit
+```
+
+#### Other Tools
+* Firrtl syntax highlighting for Vim users: https://github.com/azidar/firrtl-syntax
+* Chisel3, an embedded hardware DSL that generates Firrtl: https://github.com/ucb-bar/chisel3
+* Firrtl Interpreter: https://github.com/ucb-bar/firrtl-interpreter
+* Yosys Verilog-to-Firrtl Front-end: https://github.com/cliffordwolf/yosys
+
 #### Installation Instructions
 *Disclaimer*: This project is in alpha, so there is no guarantee anything works. The installation instructions should work for OSX/Linux machines.
 
@@ -28,16 +53,6 @@
  1. Publish this version locally in order to satisfy other tool chain library dependencies:
 ```
 sbt publish-local
-```
-
-##### Transform Writing Tutorial
-
-To write a Firrtl transform, please start with the tutorial here: [src/main/scala/tutorial](https://github.com/ucb-bar/firrtl/blob/master/src/main/scala/tutorial).
-To run this example:
-```
-sbt assembly
-./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson1.AnalyzeCircuit
-./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson2.AnalyzeCircuit
 ```
 
 ##### Useful sbt Tips
@@ -58,5 +73,3 @@ utils/bin/firrtl -i regress/rocket.fir -o regress/rocket.v -X verilog // Compile
 utils/bin/firrtl --help // Returns usage string
 ```
 
-##### Other Tools
-Firrtl syntax highlighting for Vim users: https://github.com/azidar/firrtl-syntax
