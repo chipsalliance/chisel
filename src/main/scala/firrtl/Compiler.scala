@@ -279,10 +279,7 @@ trait Compiler extends LazyLogging {
               writer: Writer,
               customTransforms: Seq[Transform] = Seq.empty): CircuitState = {
     val finalState = compileAndEmit(state, customTransforms)
-    finalState.emittedCircuitOption match {
-      case Some(emitted) => writer.write(emitted.value)
-      case _ => throwInternalError
-    }
+    writer.write(finalState.getEmittedCircuit.value)
     finalState
   }
 
