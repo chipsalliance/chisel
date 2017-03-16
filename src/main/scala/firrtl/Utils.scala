@@ -125,7 +125,7 @@ object flattenType {
   def apply(t: Type) = UIntType(IntWidth(bitWidth(t)))
 }
 
-class FIRRTLException(str: String) extends Exception(str)
+class FIRRTLException(val str: String) extends Exception(str)
 
 object Utils extends LazyLogging {
   def throwInternalError =

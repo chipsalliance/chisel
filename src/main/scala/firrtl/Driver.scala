@@ -174,14 +174,11 @@ object Driver {
     // Note: FirrtlExecutionSuccess emitted is only used if we're emitting the whole Circuit
     val emittedRes = firrtlConfig.getOutputConfig(optionsManager) match {
       case SingleFile(filename) =>
-        finalState.emittedCircuitOption match {
-          case Some(emitted: EmittedCircuit) =>
-            val outputFile = new java.io.PrintWriter(filename)
-            outputFile.write(emitted.value)
-            outputFile.close()
-            emitted.value
-          case _ => throwInternalError
-        }
+        val emitted = finalState.getEmittedCircuit
+        val outputFile = new java.io.PrintWriter(filename)
+        outputFile.write(emitted.value)
+        outputFile.close()
+        emitted.value
       case OneFilePerModule(dirName) =>
         val emittedModules = finalState.emittedComponents collect { case x: EmittedModule => x }
         if (emittedModules.isEmpty) throwInternalError // There should be something

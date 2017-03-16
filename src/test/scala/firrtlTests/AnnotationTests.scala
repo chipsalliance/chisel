@@ -140,5 +140,10 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     result.annotations.get.annotations.head should matchPattern {
       case DeletedAnnotation(x, anno) =>
     }
+    val exception = (intercept[FIRRTLException] {
+      result.getEmittedCircuit
+    })
+    val deleted = result.deletedAnnotations
+    exception.str should be (s"No EmittedCircuit found! Did you delete any annotations?\n$deleted")
   }
 }
