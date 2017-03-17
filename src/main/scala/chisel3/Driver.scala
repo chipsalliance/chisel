@@ -122,7 +122,6 @@ object Driver extends BackendCompilationUtilities {
   def execute(
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => Module): ChiselExecutionResult = {
-    Logger.invoke(optionsManager) {
       val circuit = elaborate(dut)
 
       // this little hack let's us set the topName with the circuit name if it has not been set from args
@@ -164,7 +163,6 @@ object Driver extends BackendCompilationUtilities {
         None
       }
       ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
-    }
   }
 
   /**

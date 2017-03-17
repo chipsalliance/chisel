@@ -3,13 +3,9 @@
 package chiselTests
 
 import chisel3.tutorial.lesson1.AnalyzeModule
-
 import chisel3._
-
-import logger.LogLevel
-
+import logger.{LogLevel, Logger}
 import firrtl.FirrtlExecutionSuccess
-
 import org.scalatest.{FreeSpec, Matchers}
 
 class MyModule(analyze: Boolean) extends Module
@@ -30,22 +26,21 @@ class MyModule(analyze: Boolean) extends Module
 class AnalyzeModuleTester extends FreeSpec with Matchers {
   "Can run tutorial to print mux count" - {
     "Can turn on Analyze on MyModule" in {
-//      logger.Logger.log2StringBuffer()
-//      logger.Logger.setLevel(classOf[chisel3.tutorial.lesson1.AnalyzeCircuit], LogLevel.Info)
-      // logger.Logger.setLevel(LogLevel.Info)
-      Driver.execute(
-        Array(
-          "-X", "low",
-          "--target-dir", "test_run_dir",
-          "--log-to-string", "dog",
-          "--class-log-level", "chisel3.tutorial.lesson1.AnalyzeCircuit:Info"
-        ),
-        () => new MyModule(true)
-      ) match {
-        case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
-          val messagesLogged = logger.Logger.getNamedStringBuffer("dog").get.toString()
-          println(s"messages logged----\n$messagesLogged\n-----")
-          messagesLogged.contains("muxes!") should be(true)
+      Logger.makeScope() {
+        val captor = new Logger.OutputCaptor
+        Logger.setOutput(captor.printStream)
+        // logger.Logger.setLevel(LogLevel.Info)
+        Logger.setLevel(classOf[chisel3.tutorial.lesson1.AnalyzeCircuit], LogLevel.Info)
+
+        Driver.execute(
+          Array("-X", "low", "--target-dir", "test_run_dir"),
+          () => new MyModule(true)
+        ) match {
+          case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
+            val messagesLogged = captor.getOutputAsString
+            println(s"messages logged----\n$messagesLogged\n-----")
+            messagesLogged.contains("muxes!") should be(true)
+        }
       }
     }
   }
