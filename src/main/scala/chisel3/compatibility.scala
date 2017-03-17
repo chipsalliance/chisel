@@ -171,6 +171,12 @@ package object Chisel {     // scalastyle:ignore package.object.name
     import chisel3.core.{Binding, CompileOptions}
     import chisel3.internal.sourceinfo.SourceInfo
 
+    // Passthrough for chisel3.core.Reg
+    // Single-element constructor to avoid issues caused by null default args in a type
+    // parameterized scope.
+    def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+      chisel3.core.Reg(t)
+    
     /** Creates a register with optional next and initialization values.
       *
       * @param t: data type for the register
