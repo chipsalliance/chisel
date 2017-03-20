@@ -3,6 +3,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 //import chisel3.core.ExplicitCompileOptions.Strict
 
 /** A counter module
@@ -10,9 +11,10 @@ import chisel3._
   * @param n number of counts before the counter resets (or one more than the
   * maximum output value of the counter), need not be a power of two
   */
+@chiselName
 class Counter(val n: Int) {
   require(n >= 0)
-  val value = if (n > 1) Reg(init=0.U(log2Up(n).W)) else 0.U
+  val value = if (n > 1) RegInit(0.U(log2Ceil(n).W)) else 0.U
 
   /** Increment the counter, returning whether the counter currently is at the
     * maximum and will wrap. The incremented value is registered and will be
@@ -53,6 +55,7 @@ object Counter
     * }
     * }}}
     */
+  @chiselName
   def apply(cond: Bool, n: Int): (UInt, Bool) = {
     val c = new Counter(n)
     var wrap: Bool = null

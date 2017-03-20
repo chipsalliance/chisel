@@ -25,6 +25,7 @@ private class Emitter(circuit: Circuit) {
       case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}"
       case e: Connect => s"${e.loc.fullName(ctx)} <= ${e.exp.fullName(ctx)}"
       case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"
+      case e: Attach => e.locs.map(_.fullName(ctx)).mkString("attach (", ", ", ")")
       case e: Stop => s"stop(${e.clock.fullName(ctx)}, UInt<1>(1), ${e.ret})"
       case e: Printf =>
         val (fmt, args) = e.pable.unpack(ctx)

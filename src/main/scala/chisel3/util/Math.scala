@@ -8,12 +8,9 @@ package chisel3.util
 import chisel3._
 
 /** Compute the log2 rounded up with min value of 1 */
+@deprecated("Use log2Ceil instead", "chisel3")
 object log2Up {
-  def apply(in: BigInt): Int = {
-    require(in >= 0)
-    1 max (in-1).bitLength
-  }
-  def apply(in: Int): Int = apply(BigInt(in))
+  def apply(in: BigInt): Int = Chisel.log2Up(in)
 }
 
 /** Compute the log2 rounded up */
@@ -26,9 +23,9 @@ object log2Ceil {
 }
 
 /** Compute the log2 rounded down with min value of 1 */
+@deprecated("Use log2Floor instead", "chisel3")
 object log2Down {
-  def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
-  def apply(in: Int): Int = apply(BigInt(in))
+  def apply(in: BigInt): Int = Chisel.log2Down(in)
 }
 
 /** Compute the log2 rounded down */

@@ -11,39 +11,32 @@ import chisel3.core.DataMirror
 import chisel3.testers.BasicTester
 
 class RegSpec extends ChiselFlatSpec {
-  "A Reg" should "throw an exception if not given any parameters" in {
-    a [Exception] should be thrownBy {
-      val reg = Reg()
-    }
-  }
-
-  "A Reg" should "be of the same type and width as outType, if specified" in {
+  "Reg" should "be of the same type and width as t" in {
     class RegOutTypeWidthTester extends BasicTester {
-      val reg = Reg(t=UInt(2.W), next=Wire(UInt(3.W)), init=20.U)
-      reg.getWidth should be (2)
+      val reg = Reg(UInt(2.W))
+      DataMirror.widthOf(reg) should be (2.W)
     }
     elaborate{ new RegOutTypeWidthTester }
   }
 
-  "A Reg" should "be of unknown width if outType is not specified and width is not forced" in {
+  "RegNext" should "be of unknown width" in {
     class RegUnknownWidthTester extends BasicTester {
-      val reg1 = Reg(next=Wire(UInt(3.W)), init=20.U)
-      reg1.isWidthKnown should be (false)
+      val reg1 = RegNext(2.U(3.W))
       DataMirror.widthOf(reg1).known should be (false)
-      val reg2 = Reg(init=20.U)
-      reg2.isWidthKnown should be (false)
+      val reg2 = RegNext(2.U(3.W), 4.U)
       DataMirror.widthOf(reg2).known should be (false)
-      val reg3 = Reg(next=Wire(UInt(3.W)), init=5.U)
-      reg3.isWidthKnown should be (false)
+      val reg3 = RegNext(2.U(3.W), 4.U(5.W))
       DataMirror.widthOf(reg3).known should be (false)
     }
     elaborate { new RegUnknownWidthTester }
   }
 
-  "A Reg" should "be of width of init if outType and next are missing and init is a literal of forced width" in {
+  "RegInit" should "have width only if specified in the literal" in {
     class RegForcedWidthTester extends BasicTester {
-      val reg2 = Reg(init=20.U(7.W))
-      reg2.getWidth should be (7)
+      val reg1 = RegInit(20.U)
+      DataMirror.widthOf(reg1).known should be (false)
+      val reg2 = RegInit(20.U(7.W))
+      DataMirror.widthOf(reg2) should be (7.W)
     }
     elaborate{ new RegForcedWidthTester }
   }

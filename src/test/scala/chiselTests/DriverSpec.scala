@@ -2,9 +2,12 @@
 
 package chiselTests
 
-import chisel3._
+import java.io.File
 
-import org.scalatest.{Matchers, FreeSpec}
+import chisel3._
+import firrtl.FirrtlExecutionSuccess
+import org.scalacheck.Test.Failed
+import org.scalatest.{FreeSpec, Matchers, Succeeded}
 
 class DummyModule extends Module {
   val io = IO(new Bundle {
@@ -17,17 +20,49 @@ class DummyModule extends Module {
 class DriverSpec extends FreeSpec with Matchers {
   "Driver's execute methods are used to run chisel and firrtl" - {
     "options can be picked up from comand line with no args" in {
-      Driver.execute(Array.empty[String], () => new DummyModule)
+      // NOTE: Since we don't provide any arguments (notably, "--target-dir"),
+      //  the generated files will be created in the current directory.
+      val  targetDir = "."
+      Driver.execute(Array.empty[String], () => new DummyModule) match {
+        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
+          val exts = List("anno", "fir", "v")
+          for (ext <- exts) {
+            val dummyOutput = new File(targetDir, "DummyModule" + "." + ext)
+            dummyOutput.exists() should be(true)
+            dummyOutput.delete()
+          }
+          Succeeded
+        case _ =>
+          Failed
+      }
     }
+
     "options can be picked up from comand line setting top name" in {
-      Driver.execute(Array("-tn", "dm", "-td", "local-build"), () => new DummyModule)
+      val  targetDir = "local-build"
+      Driver.execute(Array("-tn", "dm", "-td", targetDir), () => new DummyModule) match {
+        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
+          val exts = List("anno", "fir", "v")
+          for (ext <- exts) {
+            val dummyOutput = new File(targetDir, "dm" + "." + ext)
+            dummyOutput.exists() should be(true)
+            dummyOutput.delete()
+          }
+          Succeeded
+        case _ =>
+          Failed
+      }
+
     }
     "execute returns a chisel execution result" in {
-      val args = Array("--compiler", "low")
-      val result = Driver.execute(Array.empty[String], () => new DummyModule)
+      val targetDir = "test_run_dir"
+      val args = Array("--compiler", "low", "--target-dir", targetDir)
+      val result = Driver.execute(args, () => new DummyModule)
       result shouldBe a[ChiselExecutionSuccess]
       val successResult = result.asInstanceOf[ChiselExecutionSuccess]
       successResult.emitted should include ("circuit DummyModule")
+      val dummyOutput = new File(targetDir, "DummyModule.lo.fir")
+      dummyOutput.exists() should be(true)
+      dummyOutput.delete()
     }
   }
 }

@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 // TODO: remove this once we have CompileOptions threaded through the macro system.
 import chisel3.core.ExplicitCompileOptions.NotStrict
 
@@ -18,7 +19,7 @@ import chisel3.core.ExplicitCompileOptions.NotStrict
 class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
   val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
-  val chosen = Output(UInt(log2Up(n).W))
+  val chosen = Output(UInt(log2Ceil(n).W))
 }
 
 /** Arbiter Control determining which producer has access
@@ -97,6 +98,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * consumer.io.in <> arb.io.out
   * }}}
   */
+@chiselName
 class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
@@ -109,6 +111,7 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
   * consumer.io.in <> arb.io.out
   * }}}
   */
+@chiselName
 class Arbiter[T <: Data](gen: T, n: Int) extends Module {
   val io = IO(new ArbiterIO(gen, n))
 
