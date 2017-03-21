@@ -1068,6 +1068,9 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
     new Interval(w, binaryPoint, range).asInstanceOf[this.type]
   private[chisel3] def toType = s"Fixed$width$binaryPoint"
 
+  private[core] override def typeEquivalent(that: Data): Boolean =
+    that.isInstanceOf[Interval] && this.width == that.width
+
   def := (that: Data)(implicit sourceInfo: SourceInfo): Unit = that match {
     case _: Interval => this connect that
     case _ => this badConnect that
@@ -1149,10 +1152,10 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   def do_=/= (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=== (that: Interval)(implicit sourceInfo: SourceInfo): Bool = compop(sourceInfo, EqualOp, that)
 
-  final def abs(): UInt = macro SourceInfoTransform.noArg
+//  final def abs(): UInt = macro SourceInfoTransform.noArg
 
-  def do_abs(implicit sourceInfo: SourceInfo): UInt = {
-    Mux(this < Interval.fromBigInt(0), (Interval.fromBigInt(0)-this).asUInt, this.asUInt)
+  def do_abs(implicit sourceInfo: SourceInfo): Interval = {
+    Mux(this < Interval.fromBigInt(0), (Interval.fromBigInt(0)-this), this)
   }
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo): Interval =
@@ -1171,8 +1174,15 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
     binop(sourceInfo, Interval(this.width, this.binaryPoint, this.range >> that), DynamicShiftRightOp, that)
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
-  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
+    pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  }
+  override def do_asSInt(implicit sourceInfo: SourceInfo): SInt = {
+    pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+  }
+  def do_asInterval(implicit sourceInfo: SourceInfo): Interval = {
+    pushOp(DefPrim(sourceInfo, Interval(this.width, this.binaryPoint, this.range), AsIntervalOp, ref))
+  }
   def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     val res = Wire(this, null).asInstanceOf[this.type]
     res := (that match {
@@ -1180,6 +1190,10 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
       case _ => that.asFixedPoint(this.binaryPoint)
     })
     res
+  }
+
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    this := that.asInterval(this.binaryPoint, this.range)
   }
   //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
 }
