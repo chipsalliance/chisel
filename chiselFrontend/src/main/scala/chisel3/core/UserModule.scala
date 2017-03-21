@@ -78,6 +78,9 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     _component = Some(component)
     component
   }
+  
+  // There is no initialization to be done by default.
+  private[core] def initializeInParent() {}
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -95,7 +98,7 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   // Setup ClockAndReset
   Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
 
-  private[core] def initializeInParent() {
+  private[core] override def initializeInParent() {
     implicit val sourceInfo = UnlocatableSourceInfo
         
     for (port <- getModulePorts) {
