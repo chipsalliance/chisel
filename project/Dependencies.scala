@@ -48,7 +48,7 @@ object Dependencies {
   // The optional argument is a classpath to check.
   // Libraries appearing on that classpath will be skipped.
   def chiselLibraryDependencies(name: String, optionClasspath: Option[String] = None): Seq[ModuleID] = {
-    if (true) {
+    if (false) {
       Seq()
     } else {
       optionClasspath match {
