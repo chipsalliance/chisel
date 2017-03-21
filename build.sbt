@@ -29,7 +29,14 @@ lazy val commonSettings = Seq (
   // Use the root project's classpath for all sub-projects.
   fullClasspath := (fullClasspath in Compile in root).value,
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  // Use the root project's unmanaged base for all sub-projects.
+  unmanagedBase := (unmanagedBase in root).value,
+  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
+  //  this has to be a Task setting.
+  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
+  allDependencies := allDependencies.value ++ chiselLibraryDependencies("chisel", Some((unmanagedClasspath in Compile).value.toString))
+
 )
 
 lazy val chiselSettings = Seq (
