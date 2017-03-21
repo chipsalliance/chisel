@@ -11,8 +11,7 @@ import java.util.IdentityHashMap
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.firrtl.{Command => _, _}
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -31,7 +30,7 @@ object Module {
     }
     Builder.readyForModuleConstr = true
 
-    val parent: Option[BaseModule] = Builder.currentModule
+    val parent = Builder.currentModule
     val whenDepth: Int = Builder.whenDepth
     val clockAndReset: Option[ClockAndReset] = Builder.currentClockAndReset
 
@@ -40,7 +39,7 @@ object Module {
     //   - unset readyForModuleConstr
     //   - reset whenDepth to 0
     //   - set currentClockAndReset
-    val module: T = bc  // Module is actually invoked here
+    val module: T = bc  // bc is actually evaluated here
 
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! When depth is != 0, this should not be possible")
@@ -93,13 +92,27 @@ abstract class BaseModule extends HasId {
 
   // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
   private[core] val _namespace = Namespace.empty
-  protected val _ids = ArrayBuffer[HasId]()
+  private val _ids = ArrayBuffer[HasId]()
   private[chisel3] def addId(d: HasId) {
     require(!_closed, "Can't write to module after module close")
     _ids += d
   }
+  protected def getIds = {
+    require(_closed, "Can't get ids before module close")
+    _ids.toSeq
+  }
 
-  protected val _ports = new ArrayBuffer[Data]()
+  private val _ports = new ArrayBuffer[Data]()
+  // getPorts unfortunately already used for tester compatibility
+  protected def getModulePorts = {
+    require(_closed, "Can't get ports before module close")
+    _ports.toSeq
+  }
+  
+  // These methods allow checking some properties of ports before the module is closed,
+  // mainly for compatibility purposes.
+  protected def portsContains(elem: Data): Boolean = _ports contains elem
+  protected def portsSize: Int = _ports.size
 
   /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
     * Also closes the module so no more construction can happen inside.
@@ -163,12 +176,6 @@ abstract class BaseModule extends HasId {
       nameRecursively(cleanName(m.getName), m.invoke(this))
     }
 
-    // For Module instances we haven't named, suggest the name of the Module
-    _ids foreach {
-      case m: BaseModule => name(m, m.desiredName)
-      case _ =>
-    }
-
     names
   }
 
@@ -230,159 +237,3 @@ abstract class BaseModule extends HasId {
     }
 
 }
-
-/** Abstract base class for Modules that contain Chisel RTL.
-  */
-abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
-    extends BaseModule {
-  //
-  // RTL construction internals
-  //
-  protected val _commands = ArrayBuffer[Command]()
-  private[chisel3] def addCommand(c: Command) {
-    require(!_closed, "Can't write to module after module close")
-    _commands += c
-   }
-
-  //
-  // Other Internal Functions
-  //
-  // For debuggers/testers, TODO: refactor out into proper public API
-  private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
-  lazy val getPorts = _firrtlPorts.get
-
-  val compileOptions = moduleCompileOptions
-
-  private[core] override def generateComponent(): Component = {
-    require(!_closed, "Can't generate module more than once")
-    _closed = true
-
-    val names = nameIds(classOf[UserModule])
-
-    // Ports get first naming priority, since they are part of a Module's IO spec
-    for (port <- _ports) {
-      require(names.contains(port), s"Unable to name port $port in $this")
-      port.setRef(ModuleIO(this, _namespace.name(names(port))))
-      // Initialize output as unused
-      _commands.prepend(DefInvalid(UnlocatableSourceInfo, port.ref))
-    }
-
-    // Then everything else gets named
-    for ((node, name) <- names) {
-      node.suggestName(name)
-    }
-
-    // All suggestions are in, force names to every node.
-    for (id <- _ids) {
-      id.forceName(default="_T", _namespace)
-      id._onModuleClose
-    }
-
-    val firrtlPorts = for (port <- _ports) yield {
-      // Port definitions need to know input or output at top-level. 'flipped' means Input.
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      firrtl.Port(port, direction)
-    }
-    _firrtlPorts = Some(firrtlPorts)
-
-    val component = DefModule(this, name, firrtlPorts, _commands)
-    _component = Some(component)
-    component
-  }
-}
-
-/** Abstract base class for Modules, which behave much like Verilog modules.
-  * These may contain both logic and state which are written in the Module
-  * body (constructor).
-  *
-  * @note Module instantiations must be wrapped in a Module() call.
-  */
-abstract class ImplicitModule()(implicit moduleCompileOptions: CompileOptions)
-    extends UserModule {
-  // Implicit clock and reset pins
-  val clock = IO(Input(Clock()))
-  val reset = IO(Input(Bool()))
-
-  // Setup ClockAndReset
-  Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
-
-  private[core] def initializeInParent() {
-    // Don't generate source info referencing parents inside a module, since this interferes with
-    // module de-duplication in FIRRTL emission.
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    for (port <- _ports) {
-      pushCommand(DefInvalid(sourceInfo, port.ref))
-    }
-
-    clock := Builder.forcedClock
-    reset := Builder.forcedReset
-  }
-}
-
-/** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
-  * for threading through explicit clock and reset.
-  *
-  * While this class isn't planned to be removed anytime soon (there are benefits to restricting
-  * IO), the clock and reset constructors will be phased out. Recommendation is to wrap the module
-  * in a withClock/withReset/withClockAndReset block, or directly hook up clock or reset IO pins.
-  */
-abstract class LegacyModule(
-    override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-    (implicit moduleCompileOptions: CompileOptions)
-    extends ImplicitModule {
-  // _clock and _reset can be clock and reset in these 2ary constructors
-  // once chisel2 compatibility issues are resolved
-  def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
-  def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
-  def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
-
-  // IO for this Module. At the Scala level (pre-FIRRTL transformations),
-  // connections in and out of a Module may only go through `io` elements.
-  def io: Record
-
-  // Allow access to bindings from the compatibility package
-  protected def _ioPortBound() = _ports contains io
-
-  protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
-    val names = super.nameIds(rootClass)
-
-    // Allow IO naming without reflection
-    names.put(io, "io")
-    names.put(clock, "clock")
-    names.put(reset, "reset")
-
-    names
-  }
-
-  private[core] override def generateComponent(): Component = {
-    _autoWrapPorts()  // pre-IO(...) compatibility hack
-
-    // Restrict IO to just io, clock, and reset
-    require(io != null, "Module must have io")
-    require(_ports contains io, "Module must have io wrapped in IO(...)")
-    require((_ports contains clock) && (_ports contains reset), "Internal error, module did not have clock or reset as IO")
-    require(_ports.size == 3, "Module must only have io, clock, and reset as IO")
-
-    super.generateComponent()
-  }
-
-  private[core] override def initializeInParent() {
-    // Don't generate source info referencing parents inside a module, since this interferes with
-    // module de-duplication in FIRRTL emission.
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    pushCommand(DefInvalid(sourceInfo, io.ref))
-
-    override_clock match {
-      case Some(override_clock) => clock := override_clock
-      case _ => clock := Builder.forcedClock
-    }
-
-    override_reset match {
-      case Some(override_reset) => reset := override_reset
-      case _ => reset := Builder.forcedReset
-    }
-  }
-}
-

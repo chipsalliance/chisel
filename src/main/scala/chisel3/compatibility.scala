@@ -154,14 +154,10 @@ package object Chisel {     // scalastyle:ignore package.object.name
 
   import chisel3.core.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
-    var _ioDefined = false
-    override protected def IO[T<:Data](iodef: T): iodef.type = {
-      _ioDefined = true
-      super.IO(iodef)
-    }
-
+    // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
+    // required) to build. 
     override def _autoWrapPorts() = {
-      if (!_ioDefined) {
+      if (!_ioPortBound()) {
         IO(io)
       }
     }
@@ -177,6 +173,10 @@ package object Chisel {     // scalastyle:ignore package.object.name
       override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
       (implicit moduleCompileOptions: CompileOptions)
       extends chisel3.core.LegacyModule(override_clock, override_reset) {
+    // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
+    // required) to build.
+    // Also provides the clock / reset constructors, which were used before withClock happened.
+    
     def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
     def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)

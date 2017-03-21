@@ -63,18 +63,20 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
     val names = nameIds(classOf[ExtModule])
 
     // Name ports based on reflection
-    for (port <- _ports) {
+    for (port <- getModulePorts) {
       require(names.contains(port), s"Unable to name port $port in $this")
       port.setRef(ModuleIO(this, _namespace.name(names(port))))
     }
 
     // All suggestions are in, force names to every node.
-    for (id <- _ids) {
+    // While BlackBoxes are not supposed to have an implementation, we still need to call
+    // _onModuleClose on all nodes (for example, Aggregates use it for recursive naming).
+    for (id <- getIds) {
       id.forceName(default="_T", _namespace)
       id._onModuleClose
     }
 
-    val firrtlPorts = for (port <- _ports) yield {
+    val firrtlPorts = for (port <- getModulePorts) yield {
       // Port definitions need to know input or output at top-level.
       // By FIRRTL semantics, 'flipped' becomes an Input
       val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
@@ -89,7 +91,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
   private[core] def initializeInParent() {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    _ports.foreach { x: Data =>
+    for (x <- getModulePorts) {
       pushCommand(DefInvalid(sourceInfo, x.ref))
     }
   }
@@ -132,14 +134,17 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
   */
 abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
   def io: Record
+  
+  // Allow access to bindings from the compatibility package
+  protected def _ioPortBound() = portsContains(io)
 
   private[core] override def generateComponent(): Component = {
     _autoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(io != null, "BlackBox must have io")
-    require(_ports contains io, "BlackBox must have io wrapped in IO(...)")
-    require(_ports.size == 1, "BlackBox must only have io as IO")
+    require(portsContains(io), "BlackBox must have io wrapped in IO(...)")
+    require(portsSize == 1, "BlackBox must only have io as IO")
 
     require(!_closed, "Can't generate module more than once")
     _closed = true
@@ -157,7 +162,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     // of the io bundle, but NOT on the io bundle itself.
     // Doing so would cause the wrong names to be assigned, since their parent
     // is now the module itself instead of the io bundle.
-    for (id <- _ids; if id ne io) {
+    for (id <- getIds; if id ne io) {
       id.forceName(default="_T", _namespace)
       id._onModuleClose
     }
@@ -174,12 +179,9 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     component
   }
 
-  private[core] def initializeInParent() {
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    val namedPorts = io.elements.toSeq
-    for ((_, port) <- namedPorts) {
-      pushCommand(DefInvalid(sourceInfo, port.ref))
+  private[core] def initializeInParent() { 
+    for ((_, port) <- io.elements) {
+      pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }
   }
 }
