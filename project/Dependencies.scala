@@ -21,6 +21,8 @@ object Dependencies {
 
   // For a given chisel project, return a sequence of project references,
   //  suitable for use as an argument to dependsOn().
+  // By default, we assume we're fetching the dependencies as libraries,
+  //  not as dependent sbt projects, so this returns an empty sequence.
   def chiselProjectDependencies(name: String): Seq[ClasspathDep[ProjectReference]] = {
 //    (chiselDependencies(name) map {p: String => classpathDependency(subProjects(p))})
     Seq()
@@ -42,9 +44,7 @@ object Dependencies {
     "edu.berkeley.cs" %% name % sys.props.getOrElse(name + "Version", chiselDefaultVersions(name))
   }
 
-  // Since we include the libraries as subprojects,
-  //  there aren't any library dependencies, but if there were,
-  //  they would be these:
+  // Chisel projects as library dependencies.
   def chiselLibraryDependencies(name: String): Seq[ModuleID] = {
     chiselDependencies(name) map { nameToModuleID(_) }
   }
