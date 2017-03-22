@@ -20,8 +20,39 @@ class MultiIOTester extends BasicTester {
   stop()
 }
 
+// Demonstrate multiple IOs with inheritance where the IO is assigned to internally
+trait LiteralOutputTrait extends MultiIOModule {
+  val myLiteralIO = IO(Output(UInt(32.W)))
+  myLiteralIO := 2.U
+}
+
+// Demonstrate multiple IOs with inheritance where the IO is not assigned
+// (and must be assigned by what extends this trait).
+trait MultiIOTrait extends MultiIOModule {
+  val myTraitIO = IO(Output(UInt(32.W)))
+}
+
+// Composition of the two above traits, example of IO composition directly using multiple top-level
+// IOs rather than indirectly by constraining the type of the single .io field.
+class ComposedMultiIOModule extends MultiIOModule 
+    with LiteralOutputTrait with MultiIOTrait {
+  val topModuleIO = IO(Input(UInt(32.W)))
+  myTraitIO := topModuleIO
+}
+
+class ComposedMultiIOTester extends BasicTester {
+  val composedModule = Module(new ComposedMultiIOModule)
+  composedModule.topModuleIO := 42.U
+  assert(composedModule.myTraitIO === 42.U)
+  assert(composedModule.myLiteralIO === 2.U)
+  stop()
+}
+
 class MultiIOSpec extends ChiselFlatSpec {
   "Multiple IOs in MultiIOModule" should "work" in {
     assertTesterPasses({ new MultiIOTester })
+  }
+  "Composed MultiIO Modules" should "work" in {
+    assertTesterPasses({ new ComposedMultiIOTester })
   }
 }
