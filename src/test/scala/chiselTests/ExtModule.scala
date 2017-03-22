@@ -9,7 +9,6 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
 import chisel3.util._
-//import chisel3.core.ExplicitCompileOptions.Strict
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
