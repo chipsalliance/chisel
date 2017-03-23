@@ -17,7 +17,7 @@ class Risc extends Module {
   val memSize = 256
   val file = Mem(memSize, Bits(32.W))
   val code = Mem(memSize, Bits(32.W))
-  val pc   = Reg(init=0.U(8.W))
+  val pc   = RegInit(0.U(8.W))
 
   val add_op :: imm_op :: Nil = Enum(2)
 

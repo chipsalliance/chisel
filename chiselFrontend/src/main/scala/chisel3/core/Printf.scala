@@ -34,9 +34,8 @@ object printf { // scalastyle:ignore object.name
     * reset). If your definition of reset is not the encapsulating Module's
     * reset, you will need to gate this externally.
     *
-    * May be called outside of a Module (like defined in a function), so
-    * functions using printf make the standard Module assumptions (single clock
-    * and single reset).
+    * May be called outside of a Module (like defined in a function), uses
+    * whatever clock and reset are in scope.
     *
     * @param fmt printf format string
     * @param data format string varargs containing data to print
@@ -56,13 +55,13 @@ object printf { // scalastyle:ignore object.name
     * @param pable [[Printable]] to print
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo): Unit = {
-    when (!Builder.forcedModule.reset) {
+    when (!Builder.forcedReset) {
       printfWithoutReset(pable)
     }
   }
 
   private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo): Unit = {
-    val clock = Builder.forcedModule.clock
+    val clock = Builder.forcedClock
     pushCommand(Printf(sourceInfo, Node(clock), pable))
   }
   private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Unit =

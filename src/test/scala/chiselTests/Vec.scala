@@ -12,7 +12,7 @@ class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
     val out = Output(Vec(vecSize, UInt()))
   })
-  io.out := Vec(vecSize, 0.U)
+  io.out := Vec(Seq.fill(vecSize){0.U})
 }
 
 class RegTesterMod(vecSize: Int) extends Module {
@@ -20,7 +20,7 @@ class RegTesterMod(vecSize: Int) extends Module {
     val in = Input(Vec(vecSize, UInt()))
     val out = Output(Vec(vecSize, UInt()))
   })
-  val vecReg = Reg(init = Vec(vecSize, 0.U), next = io.in)
+  val vecReg = RegNext(io.in, Vec(Seq.fill(vecSize){0.U}))
   io.out := vecReg
 }
 
@@ -30,6 +30,15 @@ class IOTesterMod(vecSize: Int) extends Module {
     val out = Output(Vec(vecSize, UInt()))
   })
   io.out := io.in
+}
+
+class OneBitUnitRegVec extends Module {
+  val io = IO(new Bundle {
+    val out = Output(UInt(1.W))
+  })
+  val oneBitUnitRegVec = Reg(Vec(1, 1.U))
+  oneBitUnitRegVec(0) := 1.U(1.W)
+  io.out := oneBitUnitRegVec(0)
 }
 
 class LitTester(w: Int, values: List[Int]) extends BasicTester {
@@ -97,7 +106,7 @@ class TabulateTester(n: Int) extends BasicTester {
 
 class ShiftRegisterTester(n: Int) extends BasicTester {
   val (cnt, wrap) = Counter(true.B, n*2)
-  val shifter = Reg(Vec(n, UInt(log2Up(n).W)))
+  val shifter = Reg(Vec(n, UInt((log2Ceil(n) max 1).W)))
   (shifter, shifter drop 1).zipped.foreach(_ := _)
   shifter(n-1) := cnt
   when (cnt >= n.asUInt) {
@@ -107,6 +116,22 @@ class ShiftRegisterTester(n: Int) extends BasicTester {
   when (wrap) {
     stop()
   }
+}
+
+class HugeVecTester(n: Int) extends BasicTester {
+  require(n > 0)
+  val myVec = Wire(Vec(n, UInt()))
+  myVec.foreach { x =>
+    x := 123.U
+    assert(x === 123.U)
+  }
+  stop()
+}
+
+class OneBitUnitRegVecTester extends BasicTester {
+  val dut = Module(new OneBitUnitRegVec)
+  assert(dut.io.out === 1.U)
+  stop()
 }
 
 class VecSpec extends ChiselPropSpec {
@@ -153,5 +178,13 @@ class VecSpec extends ChiselPropSpec {
 
   property("Regs of vecs should be usable as shift registers") {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new ShiftRegisterTester(n) } }
+  }
+
+  property("Infering widths on huge Vecs should not cause a stack overflow") {
+    assertTesterPasses { new HugeVecTester(10000) }
+  }
+
+  property("A Reg of a Vec of a single 1 bit element should compile and work") {
+    assertTesterPasses{ new OneBitUnitRegVecTester }
   }
 }

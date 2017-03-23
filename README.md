@@ -89,7 +89,7 @@ This will walk you through installing Chisel and its dependencies:
   ```
 
 ## Getting Started
-If you are migrating to Chisel3 from Chisel3, please visit
+If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
 
 

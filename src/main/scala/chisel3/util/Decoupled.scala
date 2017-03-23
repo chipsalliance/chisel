@@ -148,7 +148,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
   val deq = EnqIO(gen)
   /** The current amount of data in the queue */
-  val count = Output(UInt(log2Up(entries + 1).W))
+  val count = Output(UInt(log2Ceil(entries + 1).W))
 
   override def cloneType = new QueueIO(gen, entries).asInstanceOf[this.type]
 }
@@ -182,7 +182,7 @@ extends Module(override_reset=override_reset) {
   private val ram = Mem(entries, gen)
   private val enq_ptr = Counter(entries)
   private val deq_ptr = Counter(entries)
-  private val maybe_full = Reg(init=false.B)
+  private val maybe_full = RegInit(false.B)
 
   private val ptr_match = enq_ptr.value === deq_ptr.value
   private val empty = ptr_match && !maybe_full

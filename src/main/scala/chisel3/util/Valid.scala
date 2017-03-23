@@ -44,7 +44,7 @@ object Pipe
       out.bits <> enqBits
       out
     } else {
-      val v = Reg(Bool(), next=enqValid, init=false.B)
+      val v = RegNext(enqValid, false.B)
       val b = RegEnable(enqBits, enqValid)
       apply(v, b, latency-1)
     }
