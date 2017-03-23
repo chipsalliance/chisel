@@ -30,8 +30,12 @@ package chisel3 {
       /** Int to SInt conversion, recommended style for constants.
         */
       def S(): SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+      /** Int to Interval conversion with specified width, recommended style for constants.
+        */
+      def I(): Interval = Interval.Lit(bigint, Width())
       /** Int to UInt conversion with specified width, recommended style for constants.
         */
+
       def U(width: Width): UInt = UInt.Lit(bigint, width)  // scalastyle:ignore method.name
       /** Int to SInt conversion with specified width, recommended style for constants.
         */

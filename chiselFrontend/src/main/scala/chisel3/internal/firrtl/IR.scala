@@ -127,6 +127,7 @@ sealed trait NumericBound[T] extends Bound {
   val value: T
 }
 
+case object UnknownBound extends Unbound
 sealed case class Open[T](value: T) extends NumericBound[T]
 sealed case class Closed[T](value: T) extends NumericBound[T]
 
@@ -135,15 +136,20 @@ sealed trait Range {
   val max: Bound
   def getWidth: Width
 
-  def * (that: Range) = this
-  def +& (that: Range) = this
-  def +% (that: Range) = this
-  def -% (that: Range) = this
-  def -& (that: Range) = this
-  def << (that: Int) = this
-  def >> (that: Int) = this
-  def << (that: UInt) = this
-  def >> (that: UInt) = this
+  def * (that: Range): Range = this
+  def +& (that: Range): Range = this
+  def +% (that: Range): Range = this
+  def -% (that: Range): Range = this
+  def -& (that: Range): Range = this
+  def << (that: Int): Range = this
+  def >> (that: Int): Range = this
+  def << (that: UInt): Range = this
+  def >> (that: UInt): Range = this
+}
+
+sealed trait UnknownRange extends Range {
+  val min = UnknownBound
+  val max = UnknownBound
 }
 
 sealed trait KnownBigIntRange extends Range {

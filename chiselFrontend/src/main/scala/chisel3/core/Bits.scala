@@ -1062,7 +1062,11 @@ object FixedPoint {
   *                    and thus use this field as a simple exponent
   * @param lit
   */
-sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val range: Range, lit: Option[IntervalLit] = None)
+sealed class Interval private (
+    width: Width,
+    val binaryPoint: BinaryPoint,
+    val range: Range,
+    lit: Option[IntervalLit] = None)
   extends Bits(width, lit) with Num[Interval] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Interval(w, binaryPoint, range).asInstanceOf[this.type]
@@ -1198,17 +1202,30 @@ sealed class Interval private (width: Width, val binaryPoint: BinaryPoint, val r
   //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
 }
 
-/**
-  * Factory and convenience methods for the Interval class
-  * IMPORTANT: The API provided here is experimental and may change in the future.
-  */
-object Interval {
-  /** Create an Interval type with inferred width. */
-  def apply(range: Range): Interval = apply(Width(), BinaryPoint(), range)
+trait IntervalFactory {
+  /** Create a Interval type with inferred width. */
+  def apply(): Interval = apply(Width())
+  /** Create a Interval type with specified width. */
+  def apply(width: Width): Interval = new Interval(width)
+  /** Create a Interval type with specified width. */
+  def apply(width: Width, binaryPoint: BinaryPoint): Interval = new Interval(width)
+  /** Create a Interval type with specified width. */
+  def apply(width: Width, binaryPoint: BinaryPoint, range: Range): Interval = new Interval(width)
 
-  /** Create an Interval literal with inferred width from BigInt.
-    * Use PrivateObject to force users to specify width and binaryPoint by name
-    */
+  /** Create a Interval literal with specified width. */
+  protected[chisel3] def Lit(value: BigInt, width: Width): Interval = {
+    val lit = ULit(value, width)
+    val result = new Interval(lit.width, Some(lit))
+    // Bind result to being an Literal
+    result.binding = LitBinding()
+    result
+  }
+
+  /** Create a Interval with the specified range */
+  def apply(range: Range): Interval = {
+    apply(range.getWidth)
+  }
+
   def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): Interval =
     if(width == -1) {
       apply(value, Width(), BinaryPoint(binaryPoint))
@@ -1226,14 +1243,6 @@ object Interval {
     )
   }
 
-  /** Create an Interval type with specified width and binary position. */
-  def apply(width: Width, binaryPoint: BinaryPoint, range: Range): Interval = {
-    new Interval(width, binaryPoint, range)
-  }
-  /** Create an Interval port with specified width and binary position. */
-  def apply(dir: Direction, width: Width, binaryPoint: BinaryPoint, range: Range): Interval = {
-    new Interval(width, binaryPoint, range)
-  }
   def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
     val lit = IntervalLit(value, width, binaryPoint)
     val newLiteral = new Interval(lit.width, lit.binaryPoint, lit.range, Some(lit))
@@ -1264,7 +1273,12 @@ object Interval {
     val result = i.toDouble / multiplier
     result
   }
-
+}
+/**
+  * Factory and convenience methods for the Interval class
+  * IMPORTANT: The API provided here is experimental and may change in the future.
+  */
+object Interval extends IntervalFactory {
 }
 
 /** Data type for representing bidirectional bitvectors of a given width
