@@ -178,10 +178,10 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
         |    io_out <= io_in
       """.stripMargin
 
-    class CheckChirrtlTransform extends PassBasedTransform {
+    class CheckChirrtlTransform extends SeqTransform {
       def inputForm = ChirrtlForm
       def outputForm = ChirrtlForm
-      val passSeq = Seq(passes.CheckChirrtl)
+      val transforms = Seq(passes.CheckChirrtl)
     }
 
     val chirrtlTransform = new CheckChirrtlTransform

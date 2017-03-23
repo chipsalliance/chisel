@@ -27,7 +27,6 @@ class InlineInstances extends Transform {
    def inputForm = LowForm
    def outputForm = LowForm
    val inlineDelim = "$"
-   override def name = "Inline Instances"
 
    private def collectAnns(circuit: Circuit, anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
      anns.foldLeft(Set.empty[ModuleName], Set.empty[ComponentName]) {

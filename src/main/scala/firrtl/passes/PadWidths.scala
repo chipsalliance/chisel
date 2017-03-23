@@ -9,7 +9,6 @@ import firrtl.Mappers._
 
 // Makes all implicit width extensions and truncations explicit
 object PadWidths extends Pass {
-  def name = "Pad Widths"
   private def width(t: Type): Int = bitWidth(t).toInt
   private def width(e: Expression): Int = width(e.tpe)
   // Returns an expression with the correct integer width

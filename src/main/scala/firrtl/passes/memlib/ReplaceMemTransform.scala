@@ -116,10 +116,10 @@ class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
 class SimpleMidTransform(p: Pass) extends SimpleTransform(p, MidForm)
 
 // SimpleRun instead of PassBased because of the arguments to passSeq
-class ReplSeqMem extends Transform with SimpleRun {
+class ReplSeqMem extends Transform {
   def inputForm = MidForm
   def outputForm = MidForm
-  def passSeq(inConfigFile: Option[YamlFileReader], outConfigFile: ConfWriter): Seq[Transform] =
+  def transforms(inConfigFile: Option[YamlFileReader], outConfigFile: ConfWriter): Seq[Transform] =
     Seq(new SimpleMidTransform(Legalize),
         new SimpleMidTransform(ToMemIR),
         new SimpleMidTransform(ResolveMaskGranularity),
@@ -134,31 +134,19 @@ class ReplSeqMem extends Transform with SimpleRun {
         new SimpleMidTransform(Uniquify),
         new SimpleMidTransform(ResolveKinds),
         new SimpleMidTransform(ResolveGenders))
-  def run(state: CircuitState, xForms: Seq[Transform]): CircuitState = {
-    (xForms.foldLeft(state) { case (curState: CircuitState, xForm: Transform) =>
-      val res = xForm.execute(curState)
-      val newAnnotations = res.annotations match {
-        case None => curState.annotations
-        case Some(ann) => 
-          Some(AnnotationMap(ann.annotations ++ curState.annotations.get.annotations))
-      }
-      CircuitState(res.circuit, res.form, newAnnotations)
-    })
-  }
 
-  def execute(state: CircuitState): CircuitState =
-    getMyAnnotations(state) match {
-      case Nil => state // Do nothing if there are no annotations
-      case p => (p.collectFirst { case a if (a.target == CircuitName(state.circuit.main)) => a }) match {
-        case Some(ReplSeqMemAnnotation(target, inputFileName, outputConfig)) =>
-          val inConfigFile = {
-            if (inputFileName.isEmpty) None 
-            else if (new File(inputFileName).exists) Some(new YamlFileReader(inputFileName))
-            else error("Input configuration file does not exist!")
-          }
-          val outConfigFile = new ConfWriter(outputConfig)
-          run(state, passSeq(inConfigFile, outConfigFile))
-        case _ => error("Unexpected transform annotation")
-      }
+  def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
+    case Nil => state // Do nothing if there are no annotations
+    case p => (p.collectFirst { case a if (a.target == CircuitName(state.circuit.main)) => a }) match {
+      case Some(ReplSeqMemAnnotation(target, inputFileName, outputConfig)) =>
+        val inConfigFile = {
+          if (inputFileName.isEmpty) None 
+          else if (new File(inputFileName).exists) Some(new YamlFileReader(inputFileName))
+          else error("Input configuration file does not exist!")
+        }
+        val outConfigFile = new ConfWriter(outputConfig)
+        transforms(inConfigFile, outConfigFile).foldLeft(state) { (in, xform) => xform.runTransform(in) }
+      case _ => error("Unexpected transform annotation")
     }
+  }
 }

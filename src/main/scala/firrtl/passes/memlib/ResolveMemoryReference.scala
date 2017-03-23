@@ -51,6 +51,6 @@ class ResolveMemoryReference extends Transform {
       case annos =>
         annos.collect { case NoDedupMemAnnotation(ComponentName(cn, _)) => cn }
     }
-    CircuitState(run(state.circuit, noDedups), state.form)
+    state.copy(circuit=run(state.circuit, noDedups))
   }
 }

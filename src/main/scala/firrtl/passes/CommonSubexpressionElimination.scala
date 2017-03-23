@@ -10,8 +10,6 @@ import firrtl.Mappers._
 import annotation.tailrec
 
 object CommonSubexpressionElimination extends Pass {
-  def name = "Common Subexpression Elimination"
-
   private def cseOnce(s: Statement): (Statement, Long) = {
     var nEliminated = 0L
     val expressions = collection.mutable.HashMap[MemoizedHash[Expression], String]()

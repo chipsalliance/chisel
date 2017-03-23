@@ -14,8 +14,6 @@ import scala.collection.mutable
 /** Removes all [[firrtl.WSubAccess]] from circuit
   */
 object RemoveAccesses extends Pass {
-  def name = "Remove Accesses"
-
   private def AND(e1: Expression, e2: Expression) =
     DoPrim(And, Seq(e1, e2), Nil, BoolType)
 

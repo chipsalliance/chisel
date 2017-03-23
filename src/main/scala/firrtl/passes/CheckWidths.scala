@@ -9,7 +9,6 @@ import firrtl.Mappers._
 import firrtl.Utils._
 
 object CheckWidths extends Pass {
-  def name = "Width Check"
   /** The maximum allowed width for any circuit element */
   val MaxWidth = 1000000
   val DshlMaxWidth = ceilLog2(MaxWidth + 1)

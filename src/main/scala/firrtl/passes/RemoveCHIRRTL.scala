@@ -15,8 +15,6 @@ case class MPorts(readers: ArrayBuffer[MPort], writers: ArrayBuffer[MPort], read
 case class DataRef(exp: Expression, male: String, female: String, mask: String, rdwrite: Boolean)
 
 object RemoveCHIRRTL extends Pass {
-  def name = "Remove CHIRRTL"
-
   val ut = UnknownType
   type MPortMap = collection.mutable.LinkedHashMap[String, MPorts]
   type SeqMemSet = collection.mutable.HashSet[String]

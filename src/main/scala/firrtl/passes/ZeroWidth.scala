@@ -11,7 +11,6 @@ import firrtl.Utils.throwInternalError
 
 
 object ZeroWidth extends Pass {
-  def name = this.getClass.getName
   private val ZERO = BigInt(0)
   private def removeZero(t: Type): Option[Type] = t match {
     case GroundType(IntWidth(ZERO)) => None

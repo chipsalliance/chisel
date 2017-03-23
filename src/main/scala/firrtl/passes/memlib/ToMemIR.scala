@@ -13,8 +13,6 @@ import firrtl.ir._
   *   - zero or one read port
   */
 object ToMemIR extends Pass {
-  def name = "To Memory IR"
-
   /** Only annotate memories that are candidates for memory macro replacements
     * i.e. rw, w + r (read, write 1 cycle delay)
     */

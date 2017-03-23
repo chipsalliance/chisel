@@ -139,7 +139,7 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
     }
   }
 
-  def execute(state: CircuitState): CircuitState = {
+  override def execute(state: CircuitState): CircuitState = {
     val newAnnos = getMyAnnotations(state).flatMap {
       case EmitCircuitAnnotation() =>
         Seq(EmittedFirrtlCircuitAnnotation.apply(
@@ -161,8 +161,8 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
 
 // ***** Start actual Emitters *****
 class HighFirrtlEmitter extends FirrtlEmitter(HighForm)
-class MiddleFirrtlEmitter extends FirrtlEmitter(HighForm)
-class LowFirrtlEmitter extends FirrtlEmitter(HighForm)
+class MiddleFirrtlEmitter extends FirrtlEmitter(MidForm)
+class LowFirrtlEmitter extends FirrtlEmitter(LowForm)
 
 case class VRandom(width: BigInt) extends Expression {
   def tpe = UIntType(IntWidth(width))
@@ -174,10 +174,9 @@ case class VRandom(width: BigInt) extends Expression {
   def mapWidth(f: Width => Width): Expression = this
 }
 
-class VerilogEmitter extends Transform with PassBased with Emitter {
+class VerilogEmitter extends SeqTransform with Emitter {
   def inputForm = LowForm
   def outputForm = LowForm
-
   val tab = "  "
   def AND(e1: WrappedExpression, e2: WrappedExpression): Expression = {
     if (e1 == e2) e1.e1
@@ -744,7 +743,7 @@ class VerilogEmitter extends Transform with PassBased with Emitter {
        |
        |""".stripMargin
 
-  def passSeq = Seq(
+  def transforms = Seq(
     passes.VerilogModulusCleanup,
     passes.VerilogWrap,
     passes.VerilogRename,
@@ -753,7 +752,7 @@ class VerilogEmitter extends Transform with PassBased with Emitter {
   def emit(state: CircuitState, writer: Writer): Unit = {
     writer.write(preamble)
 
-    val circuit = runPasses(state.circuit)
+    val circuit = runTransforms(state).circuit
     val moduleMap = circuit.modules.map(m => m.name -> m).toMap
     circuit.modules.foreach {
       case m: Module => emit_verilog(m, moduleMap)(writer)
@@ -761,7 +760,7 @@ class VerilogEmitter extends Transform with PassBased with Emitter {
     }
   }
 
-  def execute(state: CircuitState): CircuitState = {
+  override def execute(state: CircuitState): CircuitState = {
     val newAnnos = getMyAnnotations(state).flatMap {
       case EmitCircuitAnnotation() =>
         val writer = new java.io.StringWriter
@@ -769,7 +768,7 @@ class VerilogEmitter extends Transform with PassBased with Emitter {
         Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(state.circuit.main, writer.toString)))
 
       case EmitAllModulesAnnotation() =>
-        val circuit = runPasses(state.circuit)
+        val circuit = runTransforms(state).circuit
         val moduleMap = circuit.modules.map(m => m.name -> m).toMap
 
         circuit.modules flatMap {

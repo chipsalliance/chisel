@@ -35,17 +35,16 @@ abstract class SimpleTransformSpec extends FlatSpec with Matchers with Compiler 
    }
 }
 
-class CustomResolveAndCheck(form: CircuitForm) extends PassBasedTransform {
-  private val wrappedTransform = new ResolveAndCheck
+class CustomResolveAndCheck(form: CircuitForm) extends SeqTransform {
   def inputForm = form
   def outputForm = form
-  def passSeq = wrappedTransform.passSeq
+  def transforms: Seq[Transform] = Seq[Transform](new ResolveAndCheck)
 }
 
 trait LowTransformSpec extends SimpleTransformSpec {
    def emitter = new LowFirrtlEmitter
    def transform: Transform
-   def transforms = Seq(
+   def transforms: Seq[Transform] = Seq(
       new ChirrtlToHighFirrtl(),
       new IRToWorkingIR(),
       new ResolveAndCheck(),
@@ -59,7 +58,7 @@ trait LowTransformSpec extends SimpleTransformSpec {
 trait MiddleTransformSpec extends SimpleTransformSpec {
    def emitter = new MiddleFirrtlEmitter
    def transform: Transform
-   def transforms = Seq(
+   def transforms: Seq[Transform] = Seq(
       new ChirrtlToHighFirrtl(),
       new IRToWorkingIR(),
       new ResolveAndCheck(),
@@ -75,7 +74,7 @@ trait HighTransformSpec extends SimpleTransformSpec {
    def transforms = Seq(
       new ChirrtlToHighFirrtl(),
       new IRToWorkingIR(),
-      new ResolveAndCheck(),
+      new CustomResolveAndCheck(HighForm),
       transform
    )
 }

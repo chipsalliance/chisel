@@ -15,8 +15,6 @@ import annotation.tailrec
   * @note Assumes single connection (ie. no last connect semantics)
   */
 object CheckInitialization extends Pass {
-  def name = "Check Initialization"
-
   private case class VoidExpr(stmt: Statement, voidDeps: Seq[Expression])
 
   class RefNotInitializedException(info: Info, mname: String, name: String, trace: Seq[Statement]) extends PassException(

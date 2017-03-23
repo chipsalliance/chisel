@@ -10,8 +10,6 @@ import firrtl.Mappers._
 import annotation.tailrec
 
 object DeadCodeElimination extends Pass {
-  def name = "Dead Code Elimination"
-
   private def dceOnce(s: Statement): (Statement, Long) = {
     val referenced = collection.mutable.HashSet[String]()
     var nEliminated = 0L

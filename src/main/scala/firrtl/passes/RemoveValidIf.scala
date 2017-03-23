@@ -7,7 +7,6 @@ import firrtl.ir._
 
 // Removes ValidIf as an optimization
 object RemoveValidIf extends Pass {
-   def name = "Remove ValidIfs"
    // Recursive. Removes ValidIf's
    private def onExp(e: Expression): Expression = {
       e map onExp match {

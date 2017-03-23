@@ -21,8 +21,6 @@ import firrtl.Mappers._
   * }}}
   */
 object LowerTypes extends Pass {
-  def name = "Lower Types"
-
   /** Delimiter used in lowering names */
   val delim = "_"
   /** Expands a chain of referential [[firrtl.ir.Expression]]s into the equivalent lowered name

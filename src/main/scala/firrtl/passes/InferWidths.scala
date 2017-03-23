@@ -12,7 +12,6 @@ import firrtl.Utils._
 import firrtl.Mappers._
 
 object InferWidths extends Pass {
-  def name = "Infer Widths"
   type ConstraintMap = collection.mutable.LinkedHashMap[String, Width]
 
   def solve_constraints(l: Seq[WGeq]): ConstraintMap = {

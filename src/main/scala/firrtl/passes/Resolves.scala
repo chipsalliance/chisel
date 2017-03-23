@@ -7,7 +7,6 @@ import firrtl.ir._
 import firrtl.Mappers._
 
 object ResolveKinds extends Pass {
-  def name = "Resolve Kinds"
   type KindMap = collection.mutable.LinkedHashMap[String, Kind]
 
   def find_port(kinds: KindMap)(p: Port): Port = {
@@ -46,7 +45,6 @@ object ResolveKinds extends Pass {
 }
 
 object ResolveGenders extends Pass {
-  def name = "Resolve Genders"
   def resolve_e(g: Gender)(e: Expression): Expression = e match {
     case ex: WRef => ex copy (gender = g)
     case WSubField(exp, name, tpe, _) => WSubField(
@@ -79,7 +77,6 @@ object ResolveGenders extends Pass {
 }
 
 object CInferMDir extends Pass {
-  def name = "CInfer MDir"
   type MPortDirMap = collection.mutable.LinkedHashMap[String, MPortDir]
 
   def infer_mdir_e(mports: MPortDirMap, dir: MPortDir)(e: Expression): Expression = e match {

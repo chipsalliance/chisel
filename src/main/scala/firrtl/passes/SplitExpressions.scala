@@ -13,7 +13,6 @@ import scala.collection.mutable
 // Splits compound expressions into simple expressions
 //  and named intermediate nodes
 object SplitExpressions extends Pass {
-   def name = "Split Expressions"
    private def onModule(m: Module): Module = {
       val namespace = Namespace(m)
       def onStmt(s: Statement): Statement = {

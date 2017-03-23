@@ -33,7 +33,6 @@ object PinAnnotation {
   * Creates the minimum # of black boxes needed by the design.
   */
 class ReplaceMemMacros(writer: ConfWriter) extends Transform {
-  override def name = "Replace Memory Macros"
   def inputForm = MidForm
   def outputForm = MidForm
 
@@ -227,11 +226,14 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
       case Seq(PinAnnotation(CircuitName(c), pins)) => pins
       case _ => throwInternalError
     }
-    val annos = pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
+    val annos = (pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
       seq ++ memMods.collect { 
         case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin) 
       }
-    }
+    }) ++ (state.annotations match {
+      case None => Seq.empty
+      case Some(a) => a.annotations
+    })
     CircuitState(c.copy(modules = modules ++ memMods), inputForm, Some(AnnotationMap(annos)))
   }
 }

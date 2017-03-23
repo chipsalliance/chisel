@@ -90,7 +90,6 @@ object AnalysisUtils {
   * TODO(shunshou): Add floorplan info?
   */
 object ResolveMaskGranularity extends Pass {
-  def name = "Resolve Mask Granularity"
 
   /** Returns the number of mask bits, if used
     */

@@ -18,10 +18,10 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     new InferReadWrite(),
     new ReplSeqMem(),
     new MiddleFirrtlToLowFirrtl(),
-    new PassBasedTransform {
+    new SeqTransform {
       def inputForm = LowForm
       def outputForm = LowForm
-      def passSeq = Seq(ConstProp, CommonSubexpressionElimination, DeadCodeElimination, RemoveEmpty)
+      def transforms = Seq(ConstProp, CommonSubexpressionElimination, DeadCodeElimination, RemoveEmpty)
     }
   )
 

@@ -24,7 +24,6 @@ import scala.collection.mutable
  *  to emit correct verilog without needing to add temporary nodes
  */
 object VerilogModulusCleanup extends Pass {
-  def name = "Add temporary nodes with verilog widths for modulus"
 
   private def onModule(m: Module): Module = {
     val namespace = Namespace(m)

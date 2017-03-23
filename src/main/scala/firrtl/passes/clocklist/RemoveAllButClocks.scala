@@ -20,7 +20,6 @@ import Mappers._
  *  expressions do not relate to ground types.
  */
 object RemoveAllButClocks extends Pass {
-  def name = this.getClass.getSimpleName
   def onStmt(s: Statement): Statement = (s map onStmt) match {
     case DefWire(i, n, ClockType) => s
     case DefNode(i, n, value) if value.tpe == ClockType => s

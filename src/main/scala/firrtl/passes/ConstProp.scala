@@ -11,8 +11,6 @@ import firrtl.PrimOps._
 import annotation.tailrec
 
 object ConstProp extends Pass {
-  def name = "Constant Propagation"
-
   private def pad(e: Expression, t: Type) = (bitWidth(e.tpe), bitWidth(t)) match {
     case (we, wt) if we < wt => DoPrim(Pad, Seq(e), Seq(wt), t)
     case (we, wt) if we == wt => e

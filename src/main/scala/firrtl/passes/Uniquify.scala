@@ -32,8 +32,6 @@ import MemPortUtils.memType
   *      to rename a
   */
 object Uniquify extends Pass {
-  def name = "Uniquify Identifiers"
-
   private case class UniquifyException(msg: String) extends FIRRTLException(msg)
   private def error(msg: String)(implicit sinfo: Info, mname: String) =
     throw new UniquifyException(s"$sinfo: [module $mname] $msg")

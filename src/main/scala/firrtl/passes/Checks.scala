@@ -10,7 +10,6 @@ import firrtl.Mappers._
 import firrtl.WrappedType._
 
 object CheckHighForm extends Pass {
-  def name = "High Form Check"
   type NameSet = collection.mutable.HashSet[String]
 
   // Custom Exceptions
@@ -202,7 +201,6 @@ object CheckHighForm extends Pass {
 }
 
 object CheckTypes extends Pass {
-  def name = "Check Types"
 
   // Custom Exceptions
   class SubfieldNotInBundle(info: Info, mname: String, name: String) extends PassException(
@@ -463,7 +461,6 @@ object CheckTypes extends Pass {
 }
 
 object CheckGenders extends Pass {
-  def name = "Check Genders"
   type GenderMap = collection.mutable.HashMap[String, Gender]
 
   implicit def toStr(g: Gender): String = g match {

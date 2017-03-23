@@ -29,7 +29,6 @@ object InferReadWriteAnnotation {
 // of any product term of the enable signal of the write port, then the readwrite
 // port is inferred.
 object InferReadWritePass extends Pass {
-  def name = "Infer ReadWrite Ports"
 
   type Netlist = collection.mutable.HashMap[String, Expression]
   type Statements = collection.mutable.ArrayBuffer[Statement]
@@ -150,10 +149,10 @@ object InferReadWritePass extends Pass {
 
 // Transform input: Middle Firrtl. Called after "HighFirrtlToMidleFirrtl"
 // To use this transform, circuit name should be annotated with its TransId.
-class InferReadWrite extends Transform with PassBased {
+class InferReadWrite extends Transform with SeqTransformBased {
   def inputForm = MidForm
   def outputForm = MidForm
-  def passSeq = Seq(
+  def transforms = Seq(
     InferReadWritePass,
     CheckInitialization,
     InferTypes,
@@ -163,6 +162,7 @@ class InferReadWrite extends Transform with PassBased {
   def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
     case Nil => state
     case Seq(InferReadWriteAnnotation(CircuitName(state.circuit.main))) =>
-      state.copy(circuit = runPasses(state.circuit))
+      val ret = runTransforms(state)
+      CircuitState(ret.circuit, outputForm, ret.annotations, ret.renames)
   }
 }

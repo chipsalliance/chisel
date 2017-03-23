@@ -12,8 +12,9 @@ class InferReadWriteSpec extends SimpleTransformSpec {
   class InferReadWriteCheckException extends PassException(
     "Readwrite ports are not found!")
 
-  object InferReadWriteCheckPass extends Pass {
-    val name = "Check Infer ReadWrite Ports"
+  object InferReadWriteCheck extends Pass {
+    override def inputForm = MidForm
+    override def outputForm = MidForm
     def findReadWrite(s: Statement): Boolean = s match {
       case s: DefMemory if s.readLatency > 0 && s.readwriters.size == 1 =>
         s.name == "mem" && s.readwriters.head == "rw"
@@ -36,12 +37,6 @@ class InferReadWriteSpec extends SimpleTransformSpec {
     }
   }
 
-  class InferReadWriteCheck extends PassBasedTransform {
-    def inputForm = MidForm
-    def outputForm = MidForm
-    def passSeq = Seq(InferReadWriteCheckPass)
-  }
-
   def emitter = new MiddleFirrtlEmitter
   def transforms = Seq(
     new ChirrtlToHighFirrtl,
@@ -49,7 +44,7 @@ class InferReadWriteSpec extends SimpleTransformSpec {
     new ResolveAndCheck,
     new HighFirrtlToMiddleFirrtl,
     new memlib.InferReadWrite,
-    new InferReadWriteCheck
+    InferReadWriteCheck
   )
 
   "Infer ReadWrite Ports" should "infer readwrite ports for the same clock" in {

@@ -12,7 +12,6 @@ import MemPortUtils._
 
 /** This pass generates delay reigsters for memories for verilog */
 object VerilogMemDelays extends Pass {
-  def name = "Verilog Memory Delays"
   val ug = UNKNOWNGENDER
   type Netlist = collection.mutable.HashMap[String, Expression]
   implicit def expToString(e: Expression): String = e.serialize

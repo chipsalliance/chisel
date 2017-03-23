@@ -8,7 +8,6 @@ import firrtl.Utils._
 import firrtl.Mappers._
 
 object InferTypes extends Pass {
-  def name = "Infer Types"
   type TypeMap = collection.mutable.LinkedHashMap[String, Type]
 
   def run(c: Circuit): Circuit = {
@@ -76,7 +75,6 @@ object InferTypes extends Pass {
 }
 
 object CInferTypes extends Pass {
-  def name = "CInfer Types"
   type TypeMap = collection.mutable.LinkedHashMap[String, Type]
 
   def run(c: Circuit): Circuit = {

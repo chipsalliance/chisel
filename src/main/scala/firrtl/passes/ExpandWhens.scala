@@ -25,7 +25,6 @@ import collection.immutable.ListSet
 * @note Assumes all references are declared
 */
 object ExpandWhens extends Pass {
-  def name = "Expand Whens"
   type NodeMap = mutable.HashMap[MemoizedHash[Expression], String]
   type Netlist = mutable.LinkedHashMap[WrappedExpression, Expression]
   type Simlist = mutable.ArrayBuffer[Statement]

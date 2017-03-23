@@ -8,7 +8,6 @@ import firrtl.Utils._
 import firrtl.Mappers._
 
 object CheckChirrtl extends Pass {
-  def name = "Chirrtl Check"
   type NameSet = collection.mutable.HashSet[String]
 
   class NotUniqueException(info: Info, mname: String, name: String) extends PassException(

@@ -30,9 +30,8 @@ class CustomTransformSpec extends FirrtlFlatSpec {
     val delayModuleCircuit = parse(delayModuleString)
     val delayModule = delayModuleCircuit.modules.find(_.name == delayModuleCircuit.main).get
 
-    class ReplaceExtModuleTransform extends PassBasedTransform {
+    class ReplaceExtModuleTransform extends SeqTransform {
       class ReplaceExtModule extends Pass {
-        def name = "Replace External Module"
         def run(c: Circuit): Circuit = c.copy(
           modules = c.modules map {
             case ExtModule(_, "Delay", _, _, _) => delayModule
@@ -40,7 +39,7 @@ class CustomTransformSpec extends FirrtlFlatSpec {
           }
         )
       }
-      def passSeq = Seq(new ReplaceExtModule)
+      def transforms = Seq(new ReplaceExtModule)
       def inputForm = LowForm
       def outputForm = HighForm
     }

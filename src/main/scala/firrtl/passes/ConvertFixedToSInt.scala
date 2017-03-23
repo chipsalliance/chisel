@@ -12,7 +12,6 @@ import firrtl.Utils.{sub_type, module_type, field_type, BoolType, max, min, pow_
 /** Replaces FixedType with SIntType, and correctly aligns all binary points
   */
 object ConvertFixedToSInt extends Pass {
-  def name = "Convert Fixed Types to SInt Types"
   def alignArg(e: Expression, point: BigInt): Expression = e.tpe match {
     case FixedType(IntWidth(w), IntWidth(p)) => // assert(point >= p)
       if((point - p) > 0) {

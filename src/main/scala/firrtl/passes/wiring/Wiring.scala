@@ -17,7 +17,6 @@ case class WiringException(msg: String) extends PassException(msg)
 case class WiringInfo(source: String, comp: String, sinks: Set[String], pin: String, top: String)
 
 class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
-  def name = this.getClass.getSimpleName
   def run(c: Circuit): Circuit = {
     wiSeq.foldLeft(c) { (circuit, wi) => wire(circuit, wi) }
   }

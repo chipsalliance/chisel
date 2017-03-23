@@ -10,7 +10,6 @@ import wiring._
 class CreateMemoryAnnotations(reader: Option[YamlFileReader]) extends Transform {
   def inputForm = MidForm
   def outputForm = MidForm
-  override def name = "Create Memory Annotations"
   def execute(state: CircuitState): CircuitState = reader match {
     case None => state
     case Some(r) =>

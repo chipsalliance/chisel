@@ -60,10 +60,10 @@ object TopAnnotation {
   * Notes:
   *   - No module uniquification occurs (due to imposed restrictions)
   */
-class WiringTransform extends Transform with SimpleRun {
+class WiringTransform extends Transform {
   def inputForm = MidForm
   def outputForm = MidForm
-  def passSeq(wis: Seq[WiringInfo]) =
+  def transforms(wis: Seq[WiringInfo]) =
     Seq(new Wiring(wis),
         InferTypes,
         ResolveKinds,
@@ -89,7 +89,7 @@ class WiringTransform extends Transform with SimpleRun {
           val wis = tops.foldLeft(Seq[WiringInfo]()) { case (seq, (pin, top)) =>
             seq :+ WiringInfo(sources(pin), comp(pin), sinks(pin), pin, top)
           }
-          state.copy(circuit = runPasses(state.circuit, passSeq(wis)))
+          transforms(wis).foldLeft(state) { (in, xform) => xform.runTransform(in) }
         case _ => error("Wrong number of sources, tops, or sinks!")
       }
   }

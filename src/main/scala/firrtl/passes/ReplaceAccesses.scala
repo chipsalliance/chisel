@@ -15,8 +15,6 @@ import scala.collection.mutable
   * TODO Fold in to High Firrtl Const Prop
   */
 object ReplaceAccesses extends Pass {
-  def name = "Replace Accesses"
-
   def run(c: Circuit): Circuit = {
     def onStmt(s: Statement): Statement = s map onStmt map onExp
     def onExp(e: Expression): Expression = e match {

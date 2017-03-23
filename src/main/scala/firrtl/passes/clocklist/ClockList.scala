@@ -20,7 +20,6 @@ import Mappers._
  *  Write the result to writer.
  */
 class ClockList(top: String, writer: Writer) extends Pass {
-  def name = this.getClass.getSimpleName
   def run(c: Circuit): Circuit = {
     // Build useful datastructures
     val childrenMap = getChildrenMap(c)
