@@ -46,6 +46,9 @@ case class CommonOptions(
   }
 }
 
+/** [[annotations.GlobalCircuitAnnotation]] that contains the [[CommonOptions]] target directory */
+object TargetDirAnnotation extends GlobalCircuitAnnotation
+
 trait HasCommonOptions {
   self: ExecutionOptionsManager =>
   var commonOptions = CommonOptions()

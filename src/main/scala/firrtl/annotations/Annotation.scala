@@ -41,3 +41,20 @@ object DeletedAnnotation {
     case _ => None
   }
 }
+
+/** Parent class to create global annotations
+  *
+  * These annotations are Circuit-level and available to every transform
+  */
+abstract class GlobalCircuitAnnotation {
+  private lazy val marker = this.getClass.getName
+  def apply(value: String): Annotation =
+    Annotation(CircuitTopName, classOf[Transform], s"$marker:$value")
+  def unapply(a: Annotation): Option[String] = a match {
+    // Assumes transform is already filtered appropriately
+    case Annotation(CircuitTopName, _, str) if str.startsWith(marker) =>
+      Some(str.stripPrefix(s"$marker:"))
+    case _ => None
+  }
+}
+

@@ -164,8 +164,13 @@ object Driver {
     // Output Annotations
     val outputAnnos = firrtlConfig.getEmitterAnnos(optionsManager)
 
+    // Should these and outputAnnos be moved to loadAnnotations?
+    val globalAnnos = Seq(TargetDirAnnotation(optionsManager.targetDirName))
+
     val finalState = firrtlConfig.compiler.compile(
-      CircuitState(parsedInput, ChirrtlForm, Some(AnnotationMap(firrtlConfig.annotations ++ outputAnnos))),
+      CircuitState(parsedInput,
+                   ChirrtlForm,
+                   Some(AnnotationMap(firrtlConfig.annotations ++ outputAnnos ++ globalAnnos))),
       firrtlConfig.customTransforms
     )
 
