@@ -147,9 +147,11 @@ sealed trait Range {
   def >> (that: UInt): Range = this
 }
 
-sealed trait UnknownRange extends Range {
+case object UnknownRange extends Range {
   val min = UnknownBound
   val max = UnknownBound
+
+  override def getWidth = ???
 }
 
 sealed trait KnownBigIntRange extends Range {

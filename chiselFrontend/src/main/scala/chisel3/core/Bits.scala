@@ -1062,7 +1062,7 @@ object FixedPoint {
   *                    and thus use this field as a simple exponent
   * @param lit
   */
-sealed class Interval private (
+sealed class Interval private[core] (
     width: Width,
     val binaryPoint: BinaryPoint,
     val range: Range,
@@ -1206,16 +1206,18 @@ trait IntervalFactory {
   /** Create a Interval type with inferred width. */
   def apply(): Interval = apply(Width())
   /** Create a Interval type with specified width. */
-  def apply(width: Width): Interval = new Interval(width)
+  def apply(width: Width): Interval = Interval(width, 0.BP)
   /** Create a Interval type with specified width. */
-  def apply(width: Width, binaryPoint: BinaryPoint): Interval = new Interval(width)
+  def apply(width: Width, binaryPoint: BinaryPoint): Interval = Interval(width, binaryPoint, UnknownRange)
   /** Create a Interval type with specified width. */
-  def apply(width: Width, binaryPoint: BinaryPoint, range: Range): Interval = new Interval(width)
+  def apply(width: Width, binaryPoint: BinaryPoint, range: Range): Interval = {
+    new Interval(width, binaryPoint, range)
+  }
 
   /** Create a Interval literal with specified width. */
-  protected[chisel3] def Lit(value: BigInt, width: Width): Interval = {
-    val lit = ULit(value, width)
-    val result = new Interval(lit.width, Some(lit))
+  protected[chisel3] def Lit(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
+    val lit = IntervalLit(value, width, binaryPoint)
+    val result = new Interval(width, binaryPoint, KnownSIntRange(Closed(value), Closed(value)), Some(lit))
     // Bind result to being an Literal
     result.binding = LitBinding()
     result
@@ -1278,8 +1280,7 @@ trait IntervalFactory {
   * Factory and convenience methods for the Interval class
   * IMPORTANT: The API provided here is experimental and may change in the future.
   */
-object Interval extends IntervalFactory {
-}
+object Interval extends IntervalFactory
 
 /** Data type for representing bidirectional bitvectors of a given width
   *
