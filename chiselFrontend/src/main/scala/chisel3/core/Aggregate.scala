@@ -498,10 +498,15 @@ class Bundle extends Record {
   /** Returns a field's contained user-defined Bundle element if it appears to
     * be one, otherwise returns None.
     */
-  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
-    case d: Data => Some(d)
-    case Some(d: Data) => Some(d)
-    case _ => None
+  private def getBundleField(m: java.lang.reflect.Method): Option[Data] = {
+    if (m.getDeclaringClass.isAssignableFrom(classOf[Bundle])) None
+    else {
+      m.invoke(this) match {
+        case d: Data => Some(d)
+        case Some(d: Data) => Some(d)
+        case _ => None
+      }
+    }
   }
 
   override def cloneType : this.type = {
