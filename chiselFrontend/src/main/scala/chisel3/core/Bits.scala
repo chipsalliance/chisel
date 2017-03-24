@@ -940,6 +940,16 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     }
   }
 
+  def do_asInterval(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo): Interval = {
+    binaryPoint match {
+      case KnownBinaryPoint(value) =>
+        val iLit = ILit(value)
+        pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint), AsIntervalOp, ref, iLit))
+      case _ =>
+        throwException(s"cannot call $this.asInterval(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+    }
+  }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
     this := (that match {
@@ -1070,7 +1080,9 @@ sealed class Interval private[core] (
   extends Bits(width, lit) with Num[Interval] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Interval(w, binaryPoint, range).asInstanceOf[this.type]
-  private[chisel3] def toType = s"Fixed$width$binaryPoint"
+//  private[chisel3] def toType = s"Interval$width$binaryPoint"
+
+  private[chisel3] def toType = s"Interval${range.toString}"
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Interval] && this.width == that.width
@@ -1190,7 +1202,7 @@ sealed class Interval private[core] (
   def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     val res = Wire(this, null).asInstanceOf[this.type]
     res := (that match {
-      case fp: Interval => fp.asSInt.asFixedPoint(this.binaryPoint)
+      case fp: FixedPoint => fp.asSInt.asFixedPoint(this.binaryPoint)
       case _ => that.asFixedPoint(this.binaryPoint)
     })
     res

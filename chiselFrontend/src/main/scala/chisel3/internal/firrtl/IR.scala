@@ -128,7 +128,9 @@ sealed trait NumericBound[T] extends Bound {
 }
 
 case object UnknownBound extends Unbound
-sealed case class Open[T](value: T) extends NumericBound[T]
+sealed case class Open[T](value: T) extends NumericBound[T] {
+  override def toString
+}
 sealed case class Closed[T](value: T) extends NumericBound[T]
 
 sealed trait Range {
@@ -164,6 +166,10 @@ sealed trait KnownBigIntRange extends Range {
     case (Open(low_val), Closed(high_val)) => low_val < high_val
     case (Closed(low_val), Closed(high_val)) => low_val <= high_val
   })
+
+  override def toString: String = {
+    s"$min, $max"
+  }
 }
 
 sealed case class KnownUIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {

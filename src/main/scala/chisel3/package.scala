@@ -292,7 +292,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     * Because its contents won't necessarily have the same level of stability and support as
     * non-experimental, you must explicitly import this package to use its contents.
     */
-  //scalastyle:off method.name
+  //scalastyle:off object.name
   object experimental {
     type Param = chisel3.core.Param
     type IntParam = chisel3.core.IntParam
