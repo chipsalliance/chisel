@@ -134,6 +134,11 @@ class OneBitUnitRegVecTester extends BasicTester {
   stop()
 }
 
+class ZeroEntryVecTester extends BasicTester {
+  require(Vec(0, Bool()).getWidth == 0)
+  stop()
+}
+
 class VecSpec extends ChiselPropSpec {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
@@ -186,5 +191,9 @@ class VecSpec extends ChiselPropSpec {
 
   property("A Reg of a Vec of a single 1 bit element should compile and work") {
     assertTesterPasses{ new OneBitUnitRegVecTester }
+  }
+
+  property("A Vec with zero entries should compile and have zero width") {
+    assertTesterPasses{ new ZeroEntryVecTester }
   }
 }
