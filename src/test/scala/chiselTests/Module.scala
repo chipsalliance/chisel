@@ -85,6 +85,17 @@ class ModuleRewrap extends Module {
   val inst2 = Module(inst)
 }
 
+class ModuleLazyIO extends Module {
+  val param = 32
+  lazy val io = IO(new Bundle {
+    val foo = Input(UInt(width = param))
+    val bar = Output(UInt(width = param))
+  })
+  io.bar := io.foo
+  // Check that we got correct width (elaboration-time assertion)
+  assert(io.foo.getWidth == param && io.bar.getWidth == param)
+}
+
 class ModuleSpec extends ChiselPropSpec {
 
   property("ModuleVec should elaborate") {
@@ -121,5 +132,39 @@ class ModuleSpec extends ChiselPropSpec {
     (the [ChiselException] thrownBy {
       elaborate { new ModuleRewrap }
     }).getMessage should include("This is probably due to rewrapping a Module instance")
+  }
+
+  property("Modules should be able to rely upon lazy evaluation of io") {
+    //elaborate { new ModuleLazyIO }
+    println(chisel3.Driver.emit { () => new ModuleLazyIO })
+  }
+
+  property("Creating io as a def should cause a useful error in both Chisel._ and chisel3._") {
+    (the [ChiselException] thrownBy elaborate {
+      import chisel3.core.ExplicitCompileOptions.NotStrict
+      class MyIO extends Bundle {
+        val foo = UInt(width = 32)
+        val bar = UInt(width = 32).asOutput
+      }
+      class ModuleDefIO extends Module {
+        def io = new MyIO
+        io.bar := io.foo
+      }
+      new ModuleDefIO
+    }).getMessage should include ("must make io a val")
+
+    // Less useful
+    an [java.lang.IllegalArgumentException] should be thrownBy elaborate {
+      import chisel3.core.ExplicitCompileOptions.Strict
+      class MyIO extends Bundle {
+        val foo = Input(UInt(width = 32))
+        val bar = Output(UInt(width = 32))
+      }
+      class ModuleDefIO extends Module {
+        def io = IO(new MyIO)
+        io.bar := io.foo
+      }
+      new ModuleDefIO
+    }
   }
 }
