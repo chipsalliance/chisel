@@ -136,6 +136,14 @@ class OneBitUnitRegVecTester extends BasicTester {
 
 class ZeroEntryVecTester extends BasicTester {
   require(Vec(0, Bool()).getWidth == 0)
+
+  val bundleWithZeroEntryVec = new Bundle {
+    val foo = Bool()
+    val bar = Vec(0, Bool())
+  }
+  require(0.U.asTypeOf(bundleWithZeroEntryVec).getWidth == 1)
+  require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
+
   stop()
 }
 

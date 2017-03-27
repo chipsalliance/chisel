@@ -499,6 +499,7 @@ class Bundle extends Record {
     * be one, otherwise returns None.
     */
   private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
+    case v: Vec[_] if v.isEmpty => None
     case d: Data => Some(d)
     case Some(d: Data) => Some(d)
     case _ => None
