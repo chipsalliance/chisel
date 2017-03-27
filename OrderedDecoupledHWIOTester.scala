@@ -371,8 +371,8 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
   }
 
   class GlobalEventCounter(val max_count: Int) {
-    val counter     = Reg(init = 0.U((log2Up(max_count) + 2).W))
-    val reached_end = Reg(init = false.B)
+    val counter     = RegInit(0.U((log2Ceil(max_count) + 2).W))
+    val reached_end = RegInit(false.B)
 
     def value: UInt = counter
 
@@ -404,7 +404,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
       stop()
     }
 
-    val ti = Reg(init= 0.U(log2Up(OrderedDecoupledHWIOTester.max_tick_count).W))
+    val ti = RegInit(0.U(log2Ceil(OrderedDecoupledHWIOTester.max_tick_count).W))
     ti := ti + 1.U
     when(ti > (OrderedDecoupledHWIOTester.max_tick_count).asUInt) {
       printf(
