@@ -93,7 +93,12 @@ trait ChiselPokeTesterUtils extends Assertions {
     val dutGenShim: () => T = () => dutGen
     val (dut, backend) = testerBackend.create(dutGenShim, options)
     val innerTester = new InnerTester(backend, options)
-    block(innerTester, dut)
+    try {
+      block(innerTester, dut)
+    } catch { case e: Throwable =>
+      innerTester.finish
+      throw e
+    }
     innerTester.finish
   }
 }
