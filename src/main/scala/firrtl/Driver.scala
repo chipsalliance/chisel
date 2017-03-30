@@ -92,7 +92,7 @@ object Driver {
     */
     def firrtlConfig = optionsManager.firrtlOptions
 
-    if(firrtlConfig.annotations.isEmpty) {
+    if (firrtlConfig.annotations.isEmpty || firrtlConfig.forceAppendAnnoFile) {
       val annotationFileName = firrtlConfig.getAnnotationFileName(optionsManager)
       val annotationFile = new File(annotationFileName)
       if (annotationFile.exists) {

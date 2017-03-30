@@ -7,6 +7,7 @@ import org.scalatest.{FreeSpec, Matchers}
 
 import firrtl.passes.InlineInstances
 import firrtl.passes.memlib.{InferReadWrite, ReplSeqMem}
+import firrtl.transforms.BlackBoxSourceHelper
 import firrtl._
 import firrtl.util.BackendCompilationUtilities
 
@@ -140,6 +141,30 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
 
     optionsManager.firrtlOptions.annotations.head.transformClass should be ("firrtl.passes.InlineInstances")
     annotationsTestFile.delete()
+  }
+
+  "Annotations can be created from the command line and read from a file at the same time" in {
+    val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions
+    val targetDir = new File(optionsManager.commonOptions.targetDirName)
+    val annoFile = new File(targetDir, "annotations.anno")
+
+    optionsManager.parse(
+      Array("--infer-rw", "circuit", "-faf", annoFile.toString, "-ffaaf")
+    ) should be (true)
+
+    copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)
+
+    val firrtlOptions = optionsManager.firrtlOptions
+    firrtlOptions.annotations.length should be (1) // infer-rw
+
+    Driver.loadAnnotations(optionsManager)
+
+    val anns = optionsManager.firrtlOptions.annotations.groupBy(_.transform)
+    anns(classOf[BlackBoxSourceHelper]).length should be (1) // built in to loadAnnotations
+    anns(classOf[InferReadWrite]).length should be (1) // --infer-rw
+    anns(classOf[InlineInstances]).length should be (9) // annotations file
+
+    annoFile.delete()
   }
 
   "Circuits are emitted on properly" - {
