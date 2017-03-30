@@ -57,9 +57,18 @@ private[chisel3] object SeqUtils {
     if (in.tail.isEmpty) {
       in.head._2
     } else {
-      val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, 0.U)
-      val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
-      output.fromBits(masked.reduceLeft(_|_))
+      in.head._2 match {
+        case _: FixedPoint =>
+          val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
+          val masked = for ((s, i) <- in)
+            yield Mux(
+              s, i.asTypeOf(output).asInstanceOf[FixedPoint], 0.U.asTypeOf(output).asInstanceOf[FixedPoint])
+          output.fromBits(masked.reduceLeft(_|_))
+        case _ =>
+          val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
+          val masked = for ((s, i) <- in) yield Mux(s, i.asUInt(), 0.U)
+          output.fromBits(masked.reduceLeft(_|_))
+      }
     }
   }
 }
