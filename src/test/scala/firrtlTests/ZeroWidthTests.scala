@@ -105,6 +105,20 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    skip""".stripMargin
       (parse(exec(input)).serialize) should be (parse(check).serialize)
   }
+  "Expression in node with type <0>" should "be replaced by UInt<1>(0)" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x: UInt<1>
+        |    input y: UInt<0>
+        |    node z = add(x, y)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x: UInt<1>
+        |    node z = add(x, UInt<1>(0))""".stripMargin
+      (parse(exec(input)).serialize) should be (parse(check).serialize)
+  }
 }
 
 class ZeroWidthVerilog extends FirrtlFlatSpec {
