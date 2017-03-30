@@ -51,6 +51,10 @@ class ImplicitModuleInRawModuleTester extends BasicTester {
 }
 
 class RawModuleSpec extends ChiselFlatSpec {
+  "RawModule" should "elaborate" in {
+    elaborate { new RawModuleWithImpliitModule }
+  }
+  
   "RawModule" should "work" in {
     assertTesterPasses({ new RawModuleTester })
   }
