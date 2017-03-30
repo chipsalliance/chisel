@@ -203,34 +203,57 @@ class DiGraph[T] (val edges: Map[T, Set[T]]) extends DiGraphLike[T] {
     val lowlinks = new mutable.HashMap[T, BigInt]
     val sccs = new mutable.ArrayBuffer[Seq[T]]
 
-    def strongConnect(v: T): Unit = {
-      indices(v) = counter
-      lowlinks(v) = counter
-      counter = counter + 1
-      stack.push(v)
-      onstack += v
-      for (w <- getEdges(v)) {
-        if (!indices.contains(w)) {
-          strongConnect(w)
-          lowlinks(v) = lowlinks(v).min(lowlinks(w))
-        } else if (onstack.contains(w)) {
-          lowlinks(v) = lowlinks(v).min(indices(w))
-        }
-      }
-      if (lowlinks(v) == indices(v)) {
-        val scc = new mutable.ArrayBuffer[T]
-        do {
-          val w = stack.pop
-          onstack -= w
-          scc += w
-        }
-        while (scc.last != v);
-        sccs.append(scc.toSeq)
-      }
-    }
+    /*
+     * Recursive code is transformed to iterative code by representing
+     * call stack info in an explicit structure. Here, the stack data
+     * consists of the current vertex, its currently active edge, and
+     * the position in the function. Because there is only one
+     * recursive call site, remembering whether a child call was
+     * created on the last iteration where the current frame was
+     * active is sufficient to track the position.
+     */
+    class StrongConnectFrame[T](val v: T, val edgeIter: Iterator[T], var childCall: Option[T] = None)
+    val callStack = new mutable.Stack[StrongConnectFrame[T]]
 
-    for (v <- getVertices) {
-      strongConnect(v)
+    for (node <- getVertices) {
+      callStack.push(new StrongConnectFrame(node,getEdges(node).iterator))
+      while (!callStack.isEmpty) {
+        val frame = callStack.top
+        val v = frame.v
+        frame.childCall match {
+          case None =>
+            indices(v) = counter
+            lowlinks(v) = counter
+            counter = counter + 1
+            stack.push(v)
+            onstack += v
+          case Some(w) =>
+            lowlinks(v) = lowlinks(v).min(lowlinks(w))
+        }
+        frame.childCall = None
+        while (frame.edgeIter.hasNext && frame.childCall.isEmpty) {
+          val w = frame.edgeIter.next
+          if (!indices.contains(w)) {
+            frame.childCall = Some(w)
+            callStack.push(new StrongConnectFrame(w,getEdges(w).iterator))
+          } else if (onstack.contains(w)) {
+            lowlinks(v) = lowlinks(v).min(indices(w))
+          }
+        }
+        if (frame.childCall.isEmpty) {
+          if (lowlinks(v) == indices(v)) {
+            val scc = new mutable.ArrayBuffer[T]
+            do {
+              val w = stack.pop
+              onstack -= w
+              scc += w
+            }
+            while (scc.last != v);
+            sccs.append(scc.toSeq)
+          }
+          callStack.pop
+        }
+      }
     }
 
     sccs.toSeq
