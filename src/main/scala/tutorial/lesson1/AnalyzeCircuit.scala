@@ -24,9 +24,9 @@ trait AnalyzeModule {
 }
 
 object AnalyzeAnnotation {
-  def apply(target: ModuleName): Annotation = Annotation(target, classOf[AnalyzeCircuit], "")
+  def apply(target: ModuleName): Annotation = Annotation(target, classOf[tutorial.lesson2.AnalyzeCircuit], "")
   def unapply(a: Annotation): Option[ModuleName] = a match {
-    case Annotation(ModuleName(n, c), x, "") if x == classOf[AnalyzeCircuit] =>
+    case Annotation(ModuleName(n, c), x, "") if x == classOf[tutorial.lesson2.AnalyzeCircuit] =>
       Some(ModuleName(n, c))
     case _ =>
       None

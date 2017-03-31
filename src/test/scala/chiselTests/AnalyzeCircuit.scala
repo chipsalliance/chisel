@@ -44,7 +44,8 @@ class AnalyzeModuleTester extends FreeSpec with Matchers {
       logger.Logger.setLevel(logger.LogLevel.Info)
       logger.Logger.log2StringBuffer()
       //logger.Logger.setClassLogLevels(Map("chisel3.tutorial.lesson1.AnalyzeCircuit" -> logger.LogLevel.Info))
-      Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new MyModule(true)) match {
+      val opts = Array("-X", "low", "--target-dir", "test_run_dir")
+      Driver.execute(opts, () => new MyModule(true)) match {
         case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
           val messagesLogged = logger.Logger.getStringBuffer.get
           println(messagesLogged)
