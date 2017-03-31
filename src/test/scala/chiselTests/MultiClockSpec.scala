@@ -27,6 +27,31 @@ class ClockDividerTest extends BasicTester {
   }
 }
 
+class MultiClockSubModuleTest extends BasicTester {
+  class SubModule extends Module {
+    val io = IO(new Bundle {
+      val out = Output(UInt())
+    })
+    val (cycle, _) = Counter(true.B, 10)
+    io.out := cycle
+  }
+
+  val (cycle, done) = Counter(true.B, 10)
+  val cDiv = RegInit(true.B) // start with falling edge to simplify clock relationship assert
+  cDiv := !cDiv
+
+  val otherClock = cDiv.asClock
+  val otherReset = cycle < 3.U
+
+  val inst = withClockAndReset(otherClock, otherReset) { Module(new SubModule) }
+
+  when (done) {
+    // The counter in inst should come out of reset later and increment at half speed
+    assert(inst.io.out === 3.U)
+    stop()
+  }
+}
+
 /** Test withReset changing the reset of a Reg */
 class WithResetTest extends BasicTester {
   val reset2 = Wire(init = false.B)
@@ -106,6 +131,10 @@ class MultiClockSpec extends ChiselFlatSpec {
 
   "withReset" should "scope the reset of registers" in {
     assertTesterPasses(new WithResetTest)
+  }
+
+  it should "scope the clock and reset of Modules" in {
+    assertTesterPasses(new MultiClockSubModuleTest)
   }
 
   it should "return like a normal Scala block" in {
