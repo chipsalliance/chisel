@@ -104,29 +104,50 @@ object CheckCombLoops extends Pass {
   }
 
   /*
-   * Recover the full path of the cycle. Since cycles may pass through
-   * simplified instances, the hierarchy that the path passes through
-   * must be recursively recovered.
+   * Recover the full path from a path passing through simplified
+   * instances. Since edges may pass through simplified instances, the
+   * hierarchy that the path passes through must be recursively
+   * recovered.
    */
-  private def recoverCycle(
+  private def expandInstancePaths(
     m: String,
     moduleGraphs: mutable.Map[String,DiGraph[LogicNode]],
     moduleDeps: Map[String, Map[String,String]], 
     prefix: Seq[String],
-    cycle: Seq[LogicNode]): Seq[String] = {
+    path: Seq[LogicNode]): Seq[String] = {
     def absNodeName(prefix: Seq[String], n: LogicNode) =
       (prefix ++ n.inst ++ n.memport :+ n.name).mkString(".")
-    val cycNodes = (cycle zip cycle.tail) map { case (a, b) =>
+    val pathNodes = (path zip path.tail) map { case (a, b) =>
       if (a.inst.isDefined && !a.memport.isDefined && a.inst == b.inst) {
         val child = moduleDeps(m)(a.inst.get)
         val newprefix = prefix :+ a.inst.get
         val subpath = moduleGraphs(child).path(b.copy(inst=None),a.copy(inst=None)).tail.reverse
-        recoverCycle(child,moduleGraphs,moduleDeps,newprefix,subpath)
+        expandInstancePaths(child,moduleGraphs,moduleDeps,newprefix,subpath)
       } else {
         Seq(absNodeName(prefix,a))
       }
     }
-    cycNodes.flatten :+ absNodeName(prefix, cycle.last)
+    pathNodes.flatten :+ absNodeName(prefix, path.last)
+  }
+
+  /*
+   * An SCC may contain more than one loop. In this case, the sequence
+   * of nodes forming the SCC cannot be interpreted as a simple
+   * cycle. However, it is desirable to print an error consisting of a
+   * loop rather than an arbitrary ordering of the SCC. This function
+   * operates on a pruned subgraph composed only of the SCC and finds
+   * a simple cycle by performing an arbitrary walk.
+   */
+  private def findCycleInSCC[T](sccGraph: DiGraph[T]): Seq[T] = {
+    val walk = new mutable.ArrayBuffer[T]
+    val visited = new mutable.HashSet[T]
+    var current = sccGraph.getVertices.head
+    while (!visited.contains(current)) {
+      walk += current
+      visited += current
+      current = sccGraph.getEdges(current).head
+    }
+    walk.drop(walk.indexOf(current)).toSeq :+ current
   }
 
   /*
@@ -164,13 +185,17 @@ object CheckCombLoops extends Pass {
     val simplifiedModuleGraphs = new mutable.HashMap[String,DiGraph[LogicNode]]
     for (m <- topoSortedModules) {
       val internalDeps = new MutableDiGraph[LogicNode]
-      m.ports foreach { p => internalDeps.addVertex(LogicNode(p.name)) }
+      m.ports.foreach({ p => internalDeps.addVertex(LogicNode(p.name)) })
       m map getStmtDeps(simplifiedModuleGraphs, internalDeps)
-      moduleGraphs(m.name) = DiGraph(internalDeps)
+      val moduleGraph = DiGraph(internalDeps)
+      moduleGraphs(m.name) = moduleGraph
       simplifiedModuleGraphs(m.name) = moduleGraphs(m.name).simplify((m.ports map { p => LogicNode(p.name) }).toSet)
       for (scc <- moduleGraphs(m.name).findSCCs.filter(_.length > 1)) {
-        val cycle = recoverCycle(m.name,moduleGraphs,moduleDeps,Seq(m.name),scc :+ scc.head)
-        errors.append(new CombLoopException(m.info, m.name, cycle))
+        val sccSubgraph = moduleGraphs(m.name).subgraph(scc.toSet)
+        val cycle = findCycleInSCC(sccSubgraph)
+        (cycle zip cycle.tail).foreach({ case (a,b) => require(moduleGraph.getEdges(a).contains(b)) })
+        val expandedCycle = expandInstancePaths(m.name,moduleGraphs,moduleDeps,Seq(m.name),cycle.reverse)
+        errors.append(new CombLoopException(m.info, m.name, expandedCycle))
       }
     }
     errors.trigger()

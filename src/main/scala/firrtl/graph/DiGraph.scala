@@ -300,7 +300,21 @@ class DiGraph[T] (val edges: Map[T, Set[T]]) extends DiGraphLike[T] {
   }
 
   /** Return a graph with only a subset of the nodes
+    *
+    * Any edge including a deleted node will be deleted
     * 
+    * @param vprime the Set[T] of desired vertices
+    * @throws IllegalArgumentException if vprime is not a subset of V
+    * @return the subgraph
+    */
+  def subgraph(vprime: Set[T]): DiGraph[T] = {
+    require(vprime.subsetOf(edges.keySet))
+    val eprime = vprime.map(v => (v,getEdges(v) & vprime)).toMap
+    new DiGraph(eprime)
+  }
+
+  /** Return a graph with only a subset of the nodes
+    *
     * Any path between two non-deleted nodes (u,v) that traverses only
     * deleted nodes will be transformed into an edge (u,v).
     * 
@@ -310,7 +324,7 @@ class DiGraph[T] (val edges: Map[T, Set[T]]) extends DiGraphLike[T] {
     */
   def simplify(vprime: Set[T]): DiGraph[T] = {
     require(vprime.subsetOf(edges.keySet))
-    val eprime = vprime.map( v => (v,reachableFrom(v) & vprime) ).toMap
+    val eprime = vprime.map( v => (v,reachableFrom(v) & (vprime-v)) ).toMap
     new DiGraph(eprime)
   }
 

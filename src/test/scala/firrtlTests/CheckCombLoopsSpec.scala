@@ -123,5 +123,28 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
     }
   }
 
+  "Multiple simple loops in one SCC" should "throw an exception" in {
+    val input = """circuit hasloops :
+                   |  module hasloops :
+                   |    input i : UInt<1>
+                   |    output o : UInt<1>
+                   |    wire a : UInt<1>
+                   |    wire b : UInt<1>
+                   |    wire c : UInt<1>
+                   |    wire d : UInt<1>
+                   |    wire e : UInt<1>
+                   |    a <= and(c,i)
+                   |    b <= and(a,d)
+                   |    c <= b
+                   |    d <= and(c,e)
+                   |    e <= b
+                   |    o <= e
+                   |""".stripMargin
+
+    val writer = new java.io.StringWriter
+    intercept[CheckCombLoops.CombLoopException] {
+      compile(CircuitState(parse(input), ChirrtlForm, None), writer)
+    }
+  }
 
 }
