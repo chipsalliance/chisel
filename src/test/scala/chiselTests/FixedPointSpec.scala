@@ -79,7 +79,7 @@ class FixedPointFromBitsTester extends BasicTester {
 }
 
 class FixedPointMuxTester extends BasicTester {
-  val largeWidthLowPrecision = 6.0.F(3.W, 0.BP)
+  val largeWidthLowPrecision = 6.0.F(4.W, 0.BP)
   val smallWidthHighPrecision = 0.25.F(2.W, 2.BP)
   val unknownWidthLowPrecision = 6.0.F(0.BP)
   val unknownFixed = Wire(FixedPoint())
