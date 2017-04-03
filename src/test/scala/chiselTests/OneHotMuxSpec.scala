@@ -15,40 +15,30 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
     assertTesterPasses(new SimpleOneHotTester)
   }
   "simple one hot mux with sint should work" in {
-    Driver.execute(Array.empty[String], () => new SIntOneHot) match {
-      case result: ChiselExecutionSuccess =>
-        println(s"SIntOneHot\n${result.emitted}")
-    }
     assertTesterPasses(new SIntOneHotTester)
   }
   "simple one hot mux with fixed point should work" in {
-    Driver.execute(Array.empty[String], () => new FixedPointOneHot) match {
-      case result: ChiselExecutionSuccess =>
-        println(s"FixedPointOneHot\n${result.emitted}")
-    }
     assertTesterPasses(new FixedPointOneHotTester)
   }
   "simple one hot mux with all same fixed point should work" in {
-    Driver.execute(Array.empty[String], () => new AllSameFixedPointOneHot) match {
-      case result: ChiselExecutionSuccess =>
-        println(s"AllSameFixedPointOneHot\n${result.emitted}")
-    }
     assertTesterPasses(new AllSameFixedPointOneHotTester)
   }
   "simple one hot mux with all same parameterized sint values should work" in {
     val values: Seq[SInt] = Seq((-3).S, (-5).S, (-7).S, (-11).S)
-    Driver.execute(Array.empty[String], () => new ParameterizedOneHot(values, SInt(8.W))) match {
-      case result: ChiselExecutionSuccess =>
-        println(s"ParameterizedOneHot\n${result.emitted}")
-    }
-    assertTesterPasses(new ParameterizedOneHotTester(values, SInt(8.W)))
+    assertTesterPasses(new ParameterizedOneHotTester(values, SInt(8.W), -5.S(8.W)))
   }
   "simple one hot mux with all same parameterized aggregates containing fixed values should work" in {
-    Driver.execute(Array("--no-run-firrtl"), () => new ParameterizedAggregateOneHotTester) match {
-      case result: ChiselExecutionSuccess =>
-        println(s"ParameterizedOneHot\n${result.emitted}")
-    }
     assertTesterPasses(new ParameterizedAggregateOneHotTester)
+  }
+  "simple one hot mux with all aggregates containing inferred width fixed values should NOT work" in {
+    intercept[ChiselException] {
+      assertTesterPasses(new InferredWidthAggregateOneHotTester)
+    }
+  }
+  "simple one hot mux with all fixed width bundles but with different bundles should Not work" in {
+    intercept[IllegalArgumentException] {
+      assertTesterPasses(new DifferentBundleOneHotTester)
+    }
   }
 }
 
@@ -164,7 +154,7 @@ class AllSameFixedPointOneHot extends Module {
   ))
 }
 
-class ParameterizedOneHotTester[T <: Data](values: Seq[T], outGen: T) extends BasicTester {
+class ParameterizedOneHotTester[T <: Data](values: Seq[T], outGen: T, expected: T) extends BasicTester {
   val dut = Module(new ParameterizedOneHot(values, outGen))
   dut.io.selectors(0) := false.B
   dut.io.selectors(1) := true.B
@@ -173,7 +163,9 @@ class ParameterizedOneHotTester[T <: Data](values: Seq[T], outGen: T) extends Ba
 
   // printf(s"out is %d\n", dut.io.out)
 
-  assert(dut.io.out.asUInt() === values(1).asUInt())
+  printf("dut.io.out.asUInt %d expected %d\n", dut.io.out.asUInt(), values(1).asUInt())
+
+  assert(dut.io.out.asUInt() === expected.asUInt())
 
   stop()
 }
@@ -192,6 +184,27 @@ object Agg1 extends HasMakeLit[Agg1] {
     val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
 
     val w = Wire(new Agg1)
+    w.v(0) := Wire(d.F(4.BP))
+    w.v(1) := Wire(e.F(4.BP))
+    w.a.f1 := Wire(f.F(3.BP))
+    w.a.f2 := Wire(g.F(5.BP))
+    w
+  }
+}
+class Agg2 extends Bundle {
+  val v = Vec(2, FixedPoint(8.W, 4.BP))
+  val a = new Bundle {
+    val f1 = FixedPoint(7.W, 3.BP)
+    val f2 = FixedPoint(9.W, 5.BP)
+  }
+}
+
+object Agg2 extends HasMakeLit[Agg2] {
+  def makeLit(n: Int): Agg2 = {
+    val x = n.toDouble / 4.0
+    val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
+
+    val w = Wire(new Agg2)
     w.v(0) := Wire(d.F(4.BP))
     w.v(1) := Wire(e.F(4.BP))
     w.a.f1 := Wire(f.F(3.BP))
@@ -226,6 +239,7 @@ class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends Module {
 
   val terms = io.selectors.zip(values)
   io.out := Mux1H(terms)
+  printf("------------- io.out %d\n", io.out.asUInt())
 }
 
 class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) extends Module {
@@ -238,6 +252,94 @@ class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) 
   val values = (0 until 4).map { n => valGen.makeLit(n) }
   val terms = io.selectors.zip(values)
   io.out := Mux1H(terms)
+}
+
+class Bundle1 extends Bundle {
+  val a = FixedPoint()
+  val b = new Bundle {
+    val c = FixedPoint()
+  }
+}
+
+class InferredWidthAggregateOneHotTester extends BasicTester {
+  val b0 = Wire(new Bundle1)
+  b0.a := -0.25.F(2.BP)
+  b0.b.c := -0.125.F(3.BP)
+
+  val b1 = Wire(new Bundle1)
+  b1.a := -0.0625.F(3.BP)
+  b1.b.c := -0.03125.F(4.BP)
+
+  val b2 = Wire(new Bundle1)
+  b2.a := -0.015625.F(5.BP)
+  b2.b.c := -0.0078125.F(6.BP)
+
+  val b3 = Wire(new Bundle1)
+  b3.a := -0.0078125.F(7.BP)
+  b3.b.c := -0.00390625.F(8.BP)
+
+  val o1 = Mux1H(Seq(
+    false.B -> b0,
+    false.B -> b1,
+    true.B -> b2,
+    false.B -> b3
+  ))
+
+  assert(o1.a === -0.015625.F(5.BP))
+  assert(o1.b.c === -0.0078125.F(6.BP))
+
+  val o2 = Mux1H(Seq(
+    false.B -> b0,
+    true.B -> b1,
+    false.B -> b2,
+    false.B -> b3
+  ))
+
+  assert(o2.a === -0.0625.F(3.BP))
+  assert(o2.b.c === -0.03125.F(4.BP))
+
+  stop()
+}
+
+class Bundle2 extends Bundle {
+  val a = FixedPoint(10.W, 4.BP)
+  val b = new Bundle {
+    val c = FixedPoint(10.W, 4.BP)
+  }
+}
+
+class Bundle3 extends Bundle {
+  val a = FixedPoint(10.W, 4.BP)
+  val b = new Bundle {
+    val c = FixedPoint(10.W, 4.BP)
+  }
+}
+
+class DifferentBundleOneHotTester extends BasicTester {
+  val b0 = Wire(new Bundle2)
+  b0.a := -0.25.F(2.BP)
+  b0.b.c := -0.125.F(3.BP)
+
+  val b1 = Wire(new Bundle2)
+  b1.a := -0.0625.F(3.BP)
+  b1.b.c := -0.03125.F(4.BP)
+
+  val b2 = Wire(new Bundle3)
+  b2.a := -0.015625.F(5.BP)
+  b2.b.c := -0.0078125.F(6.BP)
+
+  val b3 = Wire(new Bundle3)
+  b3.a := -0.0078125.F(7.BP)
+  b3.b.c := -0.00390625.F(8.BP)
+
+  val o1 = Mux1H(Seq(
+    false.B -> b0,
+    false.B -> b1,
+    true.B -> b2,
+    false.B -> b3
+  ))
+
+  stop()
 }
 
 

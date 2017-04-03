@@ -2,8 +2,9 @@
 
 package chisel3.core
 
-import scala.language.experimental.macros
+import chisel3.internal.{ChiselException, throwException}
 
+import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
 //scalastyle:off method.name
@@ -65,17 +66,11 @@ private[chisel3] object SeqUtils {
       in.head._2
     }
     else {
-      val compares = in.map { case (_, element) => in.head._2.typeEquivalent(element) }
-      val allSame = in.forall { case (_, element) => in.head._2.typeEquivalent(element) }
-      if(allSame) {
-        val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
-        val masked = for ((s, i) <- in) yield Mux(s, i.asUInt(), 0.U)
-        output.fromBits(masked.reduceLeft(_|_))
-      }
+      val output = cloneSupertype(in.toSeq map { _._2}, "oneHotMux")
+
       in.head._2 match {
         case _: SInt =>
           // SInt's have to be managed carefully so sign extension works
-          val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
 
           val sInts: Iterable[(Bool, SInt)] = in.collect { case (s: Bool, f: SInt) =>
             (s, f.asTypeOf(output).asInstanceOf[SInt])
@@ -83,38 +78,41 @@ private[chisel3] object SeqUtils {
 
           val masked = for ((s, i) <- sInts) yield Mux(s, i, 0.S)
 
-          output.fromBits(masked.reduceLeft(_|_))
+          output.fromBits(masked.reduceLeft(_ | _))
 
         case _: FixedPoint =>
-          // Fixed point cannot use the standard methodology here
-          val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
-
-          //          val masked = in.collect { case (s: Bool, f: FixedPoint) => (s, f) }.map { case (s, f) =>
-          //            Mux(
-          //              s, f, 0.U.asTypeOf(output).asInstanceOf[FixedPoint])
-          //          }
-
+          // FixedPoint doesn't support *or* so use Muxes
+          val output = cloneSupertype(in.toSeq map { _._2 }, "oneHotMux")
           val fixedPoints = in.collect { case (s: Bool, f: FixedPoint) => (s, f) }
+
           def makeMux(inputs: List[(Bool, FixedPoint)]): FixedPoint = {
             inputs match {
               case Nil => 0.U.asTypeOf(output).asInstanceOf[FixedPoint]
-              case (select, value) :: tail  =>
+              case (select, value) :: tail =>
                 Mux(select, value, makeMux(tail))
             }
           }
 
           makeMux(fixedPoints.toList).asTypeOf(output)
-        //          val masked = for ((s, i) <- in)
-        //            yield Mux(
-        //              s, i.asTypeOf(output).asInstanceOf[FixedPoint], 0.U.asTypeOf(output).asInstanceOf[FixedPoint])
+
         case aggregate: Aggregate =>
-          val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
-          val masked = for ((s, i) <- in) yield Mux(s, i.asUInt(), 0.U)
-          output.fromBits(masked.reduceLeft(_|_))
+          val allSameType = in.forall { case (_, element) => in.head._2.typeEquivalent(element) }
+          if (allSameType) {
+            val allDefineWidth = in.forall { case (_, element) => element.widthOption.isDefined }
+            if(allDefineWidth) {
+              val masked = for ((s, i) <- in) yield Mux(s, i.asUInt(), 0.U)
+              output.fromBits(masked.reduceLeft(_ | _))
+            }
+            else {
+              throwException(s"Cannot Mux1H with aggregates with inferred widths")
+            }
+          }
+          else {
+            throwException(s"Cannot Mux1H with aggregates of different types")
+          }
         case _ =>
-          val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
           val masked = for ((s, i) <- in) yield Mux(s, i.asUInt(), 0.U)
-          output.fromBits(masked.reduceLeft(_|_))
+          output.fromBits(masked.reduceLeft(_ | _))
       }
     }
   }
