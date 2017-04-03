@@ -189,10 +189,11 @@ extends HasId {
   private[core] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
     _parent match {
       case Some(p) => {
-        if (!p.compileOptions.explicitInvalidate)
+        if (!p.compileOptions.explicitInvalidate) {
           pushCommand(DefInvalid(sourceInfo, io.ref)) // init instance inputs
-        clock := override_clock.getOrElse(p.clock)
-        reset := override_reset.getOrElse(p.reset)
+        }
+        clock := override_clock.getOrElse(Builder.forcedClock)
+        reset := override_reset.getOrElse(Builder.forcedReset)
         this
       }
       case None => this
