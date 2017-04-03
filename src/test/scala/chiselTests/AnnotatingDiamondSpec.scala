@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.ChiselAnnotation
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
@@ -141,8 +142,8 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
       |annotations are not resolved at after circuit elaboration,
       |that happens only after emit has been called on circuit""".stripMargin in {
 
-      Driver.execute(Array.empty[String], () => new TopOfDiamond) match {
-        case ChiselExecutionSucccess(Some(circuit), emitted, _) =>
+      Driver.execute(Array("--target-dir", "test_run_dir"), () => new TopOfDiamond) match {
+        case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
           val annos = circuit.annotations
           annos.length should be (10)
 

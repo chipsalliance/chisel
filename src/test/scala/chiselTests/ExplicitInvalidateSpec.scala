@@ -9,7 +9,7 @@ import org.scalatest._
 
 class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
 
-  def generateFirrtl(t: => Module): String = Driver.emit(() => t)
+  override def generateFirrtl(t: => Module): String = Driver.emit(() => t)
   def compileFirrtl(t: => Module): Unit = {
     Driver.execute(Array[String]("--compiler", "verilog"), () => t)
   }

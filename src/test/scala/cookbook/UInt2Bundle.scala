@@ -8,7 +8,7 @@ import chisel3._
  *
  * On an instance of the Bundle, call the method fromBits with the UInt as the argument
  */
-class UInt2Bundle extends CookbookTester(0) {
+class UInt2Bundle extends CookbookTester(1) {
   // Example
   class MyBundle extends Bundle {
     val foo = UInt(4.W)

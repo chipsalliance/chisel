@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.ChiselAnnotation
 import firrtl.FirrtlExecutionSuccess
 import firrtl.transforms.DedupModules
 import org.scalatest.{FreeSpec, Matchers}
@@ -49,8 +50,8 @@ class UsesMuchUsedModule(addAnnos: Boolean) extends Module with NoDedupAnnotator
 class AnnotationNoDedup extends FreeSpec with Matchers {
   "Firrtl provides transform that reduces identical modules to a single instance" - {
     "Annotations can be added which will defeat this deduplication for specific modules instances" in {
-      Driver.execute(Array("-X", "low"), () => new UsesMuchUsedModule(addAnnos = true)) match {
-        case ChiselExecutionSucccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
+      Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new UsesMuchUsedModule(addAnnos = true)) match {
+        case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
           val lowFirrtl = firrtlResult.emitted
 
           lowFirrtl should include ("module MuchUsedModule :")
@@ -62,8 +63,8 @@ class AnnotationNoDedup extends FreeSpec with Matchers {
       }
     }
     "Turning off these nnotations dedup all the occurrences" in {
-      Driver.execute(Array("-X", "low"), () => new UsesMuchUsedModule(addAnnos = false)) match {
-        case ChiselExecutionSucccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
+      Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new UsesMuchUsedModule(addAnnos = false)) match {
+        case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
           val lowFirrtl = firrtlResult.emitted
 
           lowFirrtl should include ("module MuchUsedModule :")

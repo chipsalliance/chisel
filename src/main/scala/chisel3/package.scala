@@ -1,5 +1,8 @@
 // See LICENSE for license details.
 
+/** The chisel3 package contains the chisel3 API.
+  * It maps core components into the public chisel3 namespace.
+  */
 package object chisel3 {    // scalastyle:ignore package.object.name
   import scala.language.implicitConversions
 
@@ -27,14 +30,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
   type Bundle = chisel3.core.Bundle
+  type Record = chisel3.core.Record
 
   val assert = chisel3.core.assert
 
   type Element = chisel3.core.Element
   type Bits = chisel3.core.Bits
-
-  type ChiselAnnotation = chisel3.core.ChiselAnnotation
-  val ChiselAnnotation = chisel3.core.ChiselAnnotation
 
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
@@ -134,8 +135,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   object UInt extends UIntFactory
   type SInt = chisel3.core.SInt
   object SInt extends SIntFactory
-  type FixedPoint = chisel3.core.FixedPoint
-  val FixedPoint = chisel3.core.FixedPoint
   type Bool = chisel3.core.Bool
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
@@ -145,15 +144,57 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SeqMem
-  type SeqMem[T <: Data] = chisel3.core.SeqMem[T]
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  val SeqMem = chisel3.core.SyncReadMem
+  @deprecated("Use 'SyncReadMem'", "chisel3")
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
+  val SyncReadMem = chisel3.core.SyncReadMem
+  type SyncReadMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   val Module = chisel3.core.Module
   type Module = chisel3.core.Module
 
   val printf = chisel3.core.printf
 
-  val Reg = chisel3.core.Reg
+  val RegNext = chisel3.core.RegNext
+  val RegInit = chisel3.core.RegInit
+  object Reg {
+    import chisel3.core.{Binding, CompileOptions}
+    import chisel3.internal.sourceinfo.SourceInfo
+    import chisel3.internal.throwException
+
+    // Passthrough for chisel3.core.Reg
+    // TODO: make val Reg = chisel3.core.Reg once we eliminate the legacy Reg constructor
+    def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+      chisel3.core.Reg(t)
+
+    @deprecated("Use Reg(t), RegNext(next, [init]) or RegInit([t], init) instead", "chisel3")
+    def apply[T <: Data](t: T = null, next: T = null, init: T = null)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      if (t ne null) {
+        val reg = if (init ne null) {
+          RegInit(t, init)
+        } else {
+          chisel3.core.Reg(t)
+        }
+        if (next ne null) {
+          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+          reg := next
+        }
+        reg
+      } else if (next ne null) {
+        if (init ne null) {
+          RegNext(next, init)
+        } else {
+          RegNext(next)
+        }
+      } else if (init ne null) {
+        RegInit(init)
+      } else {
+        throwException("cannot infer type")
+      }
+    }
+  }
 
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
@@ -217,6 +258,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
   implicit class fromDoubleToLiteral(val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
   implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromIntToBinaryPoint(val x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
 
   implicit class fromUIntToBitPatComparable(val x: UInt) {
     import scala.language.experimental.macros
@@ -261,12 +303,27 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type RawParam = chisel3.core.RawParam
     val RawParam = chisel3.core.RawParam
 
+    type Analog = chisel3.core.Analog
+    val Analog = chisel3.core.Analog
+    val attach = chisel3.core.attach
+
+    val withClockAndReset = chisel3.core.withClockAndReset
+    val withClock = chisel3.core.withClock
+    val withReset = chisel3.core.withReset
+
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
     implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
     implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
     implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
     implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+
+    // Fixed Point is experimental for now
+    type FixedPoint = chisel3.core.FixedPoint
+    val FixedPoint = chisel3.core.FixedPoint
+
+    type ChiselAnnotation = chisel3.core.ChiselAnnotation
+    val ChiselAnnotation = chisel3.core.ChiselAnnotation
 
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros
@@ -282,5 +339,11 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         */
       def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
     }
+
+    import scala.annotation.compileTimeOnly
+
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
   }
 }

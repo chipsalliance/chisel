@@ -3,8 +3,8 @@
 package chiselTests
 
 import java.io.File
-import org.scalatest._
 
+import org.scalatest._
 import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
@@ -86,10 +86,10 @@ class BlackBoxWithClockTester extends BasicTester {
 }
 
 class BlackBoxConstant(value: Int) extends BlackBox(
-    Map("VALUE" -> value, "WIDTH" -> log2Up(value + 1))) {
+    Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1))) {
   require(value >= 0, "value must be a UInt!")
   val io = IO(new Bundle {
-    val out = UInt(log2Up(value + 1).W).asOutput
+    val out = UInt(log2Ceil(value + 1).W).asOutput
   })
 }
 

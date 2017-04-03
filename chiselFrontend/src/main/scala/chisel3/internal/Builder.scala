@@ -9,7 +9,7 @@ import chisel3._
 import core._
 import firrtl._
 
-private[chisel3] class Namespace(parent: Option[Namespace], keywords: Set[String]) {
+private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
   for (keyword <- keywords)
     names(keyword) = 1
@@ -21,20 +21,20 @@ private[chisel3] class Namespace(parent: Option[Namespace], keywords: Set[String
     if (this contains tryName) rename(n) else tryName
   }
 
-  private def sanitize(s: String): String = {
+  private def sanitize(s: String, leadingDigitOk: Boolean = false): String = {
     // TODO what character set does FIRRTL truly support? using ANSI C for now
     def legalStart(c: Char) = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
     def legal(c: Char) = legalStart(c) || (c >= '0' && c <= '9')
     val res = s filter legal
-    if (res.isEmpty || !legalStart(res.head)) s"_$res" else res
+    val headOk = (!res.isEmpty) && (leadingDigitOk || legalStart(res.head))
+    if (headOk) res else s"_$res"
   }
 
-  def contains(elem: String): Boolean = {
-    names.contains(elem) || parent.map(_ contains elem).getOrElse(false)
-  }
+  def contains(elem: String): Boolean = names.contains(elem)
 
-  def name(elem: String): String = {
-    val sanitized = sanitize(elem)
+  // leadingDigitOk is for use in fields of Records
+  def name(elem: String, leadingDigitOk: Boolean = false): String = {
+    val sanitized = sanitize(elem, leadingDigitOk)
     if (this contains sanitized) {
       name(rename(sanitized))
     } else {
@@ -42,9 +42,11 @@ private[chisel3] class Namespace(parent: Option[Namespace], keywords: Set[String
       sanitized
     }
   }
+}
 
-  def child(kws: Set[String]): Namespace = new Namespace(Some(this), kws)
-  def child: Namespace = child(Set())
+private[chisel3] object Namespace {
+  /** Constructs an empty Namespace */
+  def empty: Namespace = new Namespace(Set.empty[String])
 }
 
 private[chisel3] class IdGen {
@@ -92,7 +94,7 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
-  // (e.g. tried to suggest a name to part of a Bundle)
+  // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
       val candidate_name = suggested_name.getOrElse(default)
@@ -136,21 +138,24 @@ private[chisel3] trait HasId extends InstanceId {
     }
     val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
-      m.getParameterTypes.isEmpty && valNames.contains(m.getName)
+      m.getParameterTypes.isEmpty && valNames.contains(m.getName) && !m.getDeclaringClass.isAssignableFrom(rootClass)
     this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
   }
 }
 
 private[chisel3] class DynamicContext() {
   val idGen = new IdGen
-  val globalNamespace = new Namespace(None, Set())
+  val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[Module] = None
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
+  var whenDepth: Int = 0 // Depth of when nesting
+  var currentClockAndReset: Option[ClockAndReset] = None
   val errors = new ErrorLog
+  val namingStack = new internal.naming.NamingStack
 }
 
 private[chisel3] object Builder {
@@ -163,6 +168,7 @@ private[chisel3] object Builder {
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
 
   def currentModule: Option[Module] = dynamicContext.currentModule
   def currentModule_=(target: Option[Module]): Unit = {
@@ -179,6 +185,20 @@ private[chisel3] object Builder {
   def readyForModuleConstr_=(target: Boolean): Unit = {
     dynamicContext.readyForModuleConstr = target
   }
+  def whenDepth: Int = dynamicContext.whenDepth
+  def whenDepth_=(target: Int): Unit = {
+    dynamicContext.whenDepth = target
+  }
+  def currentClockAndReset: Option[ClockAndReset] = dynamicContext.currentClockAndReset
+  def currentClockAndReset_=(target: Option[ClockAndReset]): Unit = {
+    dynamicContext.currentClockAndReset = target
+  }
+  def forcedClockAndReset: ClockAndReset = currentClockAndReset match {
+    case Some(clockAndReset) => clockAndReset
+    case None => throwException("Error: No implicit clock and reset.")
+  }
+  def forcedClock: Clock = forcedClockAndReset.clock
+  def forcedReset: Bool = forcedClockAndReset.reset
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
@@ -221,4 +241,12 @@ private[chisel3] object Builder {
       Circuit(components.last.name, components, annotations.map(_.toFirrtl))
     }
   }
+}
+
+/** Allows public access to the naming stack in Builder / DynamicContext.
+  * Necessary because naming macros expand in user code and don't have access into private[chisel3]
+  * objects.
+  */
+object DynamicNamingStack {
+  def apply() = Builder.namingStack
 }

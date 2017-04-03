@@ -54,6 +54,8 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Bool, prevCond: => Bool, b
     new WhenContext(sourceInfo, prevCond, null, block)
 
   pushCommand(WhenBegin(sourceInfo, cond.ref))
+  Builder.whenDepth += 1
   block
+  Builder.whenDepth -= 1
   pushCommand(WhenEnd(sourceInfo))
 }
