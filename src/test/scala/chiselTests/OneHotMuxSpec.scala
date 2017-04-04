@@ -43,115 +43,61 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
 }
 
 class SimpleOneHotTester extends BasicTester {
-  val dut = Module(new SimpleOneHot)
-  dut.io.selectors(0) := false.B
-  dut.io.selectors(1) := false.B
-  dut.io.selectors(2) := true.B
-  dut.io.selectors(3) := false.B
+  val out = Wire(UInt())
+  out := Mux1H(Seq(
+    false.B -> 2.U,
+    false.B -> 4.U,
+    true.B  -> 8.U,
+    false.B -> 11.U
+  ))
 
-  assert(dut.io.out === 8.U)
+  assert(out === 8.U)
 
   stop()
 }
 
-class SimpleOneHot extends Module {
-  val io = IO(new Bundle {
-    val selectors = Input(Vec(4, Bool()))
-    val out = Output(UInt(8.W))
-  })
-
-  io.out := Mux1H(Seq(
-    io.selectors(0) -> 2.U,
-    io.selectors(1) -> 4.U,
-    io.selectors(2) -> 8.U,
-    io.selectors(3) -> 11.U
-  ))
-}
 class SIntOneHotTester extends BasicTester {
-  val dut = Module(new SIntOneHot)
-  dut.io.selectors(0) := false.B
-  dut.io.selectors(1) := true.B
-  dut.io.selectors(2) := false.B
-  dut.io.selectors(3) := false.B
+  val out = Wire(SInt())
+  out := Mux1H(Seq(
+    false.B -> (-3).S,
+    true.B  -> (-5).S,
+    false.B -> (-7).S,
+    false.B -> (-11).S
+  ))
 
-  printf("out is %d\n", dut.io.out)
-
-  assert(dut.io.out === (-5).S)
+  assert(out === (-5).S)
 
   stop()
-}
-
-
-class SIntOneHot extends Module {
-  val io = IO(new Bundle {
-    val selectors = Input(Vec(4, Bool()))
-    val out = Output(SInt(8.W))
-  })
-
-  io.out := Mux1H(Seq(
-    io.selectors(0) -> (-3).S,
-    io.selectors(1) -> (-5).S,
-    io.selectors(2) -> (-7).S,
-    io.selectors(3) -> (-11).S
-//      io.selectors(0) -> (-1).S,
-//    io.selectors(1) -> (-2).S,
-//    io.selectors(2) -> (-4).S,
-//    io.selectors(3) -> (-11).S
-  ))
 }
 
 class FixedPointOneHotTester extends BasicTester {
-  val dut = Module(new FixedPointOneHot)
-  dut.io.selectors(0) := false.B
-  dut.io.selectors(1) := true.B
-  dut.io.selectors(2) := false.B
-  dut.io.selectors(3) := false.B
+  val out = Wire(FixedPoint(8.W, 4.BP))
 
-  assert(dut.io.out === (-2.25).F(4.BP))
+  out := Mux1H(Seq(
+    false.B -> (-1.5).F(1.BP),
+    true.B  -> (-2.25).F(2.BP),
+    false.B -> (-4.125).F(3.BP),
+    false.B -> (-11.625).F(3.BP)
+  ))
+
+  assert(out === (-2.25).F(4.BP))
 
   stop()
-}
-
-
-class FixedPointOneHot extends Module {
-  val io = IO(new Bundle {
-    val selectors = Input(Vec(4, Bool()))
-    val out = Output(FixedPoint(8.W, 4.BP))
-  })
-
-  io.out := Mux1H(Seq(
-    io.selectors(0) -> (-1.5).F(1.BP),
-    io.selectors(1) -> (-2.25).F(2.BP),
-    io.selectors(2) -> (-4.125).F(3.BP),
-    io.selectors(3) -> (-11.625).F(3.BP)
-  ))
 }
 
 class AllSameFixedPointOneHotTester extends BasicTester {
-  val dut = Module(new AllSameFixedPointOneHot)
-  dut.io.selectors(0) := false.B
-  dut.io.selectors(1) := true.B
-  dut.io.selectors(2) := false.B
-  dut.io.selectors(3) := false.B
+  val out = Wire(FixedPoint(12.W, 3.BP))
 
-  assert(dut.io.out === (-2.25).F(4.BP))
+  out := Mux1H(Seq(
+    false.B -> (-1.5).F(12.W, 3.BP),
+    true.B  -> (-2.25).F(12.W, 3.BP),
+    false.B -> (-4.125).F(12.W, 3.BP),
+    false.B -> (-11.625).F(12.W, 3.BP)
+  ))
+
+  assert(out === (-2.25).F(14.W, 4.BP))
 
   stop()
-}
-
-
-class AllSameFixedPointOneHot extends Module {
-  val io = IO(new Bundle {
-    val selectors = Input(Vec(4, Bool()))
-    val out = Output(FixedPoint(12.W, 4.BP))
-  })
-
-  io.out := Mux1H(Seq(
-    io.selectors(0) -> (-1.5).F(12.W, 4.BP),
-    io.selectors(1) -> (-2.25).F(12.W, 4.BP),
-    io.selectors(2) -> (-4.125).F(12.W, 4.BP),
-    io.selectors(3) -> (-11.625).F(12.W, 4.BP)
-  ))
 }
 
 class ParameterizedOneHotTester[T <: Data](values: Seq[T], outGen: T, expected: T) extends BasicTester {
@@ -160,10 +106,6 @@ class ParameterizedOneHotTester[T <: Data](values: Seq[T], outGen: T, expected: 
   dut.io.selectors(1) := true.B
   dut.io.selectors(2) := false.B
   dut.io.selectors(3) := false.B
-
-  // printf(s"out is %d\n", dut.io.out)
-
-  printf("dut.io.out.asUInt %d expected %d\n", dut.io.out.asUInt(), values(1).asUInt())
 
   assert(dut.io.out.asUInt() === expected.asUInt())
 
@@ -239,7 +181,6 @@ class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends Module {
 
   val terms = io.selectors.zip(values)
   io.out := Mux1H(terms)
-  printf("------------- io.out %d\n", io.out.asUInt())
 }
 
 class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) extends Module {
