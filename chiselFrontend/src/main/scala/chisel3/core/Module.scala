@@ -190,8 +190,8 @@ extends HasId {
     _parent match {
       case Some(p) => {
         pushCommand(DefInvalid(sourceInfo, io.ref)) // init instance inputs
-        clock := override_clock.getOrElse(p.clock)
-        reset := override_reset.getOrElse(p.reset)
+        clock := override_clock.getOrElse(Builder.forcedClock)
+        reset := override_reset.getOrElse(Builder.forcedReset)
         this
       }
       case None => this

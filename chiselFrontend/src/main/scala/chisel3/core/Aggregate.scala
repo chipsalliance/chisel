@@ -19,7 +19,7 @@ sealed abstract class Aggregate extends Data {
     */
   def getElements: Seq[Data]
 
-  private[core] def width: Width = getElements.map(_.width).reduce(_ + _)
+  private[core] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
@@ -499,6 +499,7 @@ class Bundle extends Record {
     * be one, otherwise returns None.
     */
   private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
+    case v: Vec[_] if v.isEmpty => None
     case d: Data => Some(d)
     case Some(d: Data) => Some(d)
     case _ => None
