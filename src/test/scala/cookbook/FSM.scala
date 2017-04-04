@@ -17,7 +17,7 @@ class DetectTwoOnes extends Module {
   })
 
   val sNone :: sOne1 :: sTwo1s :: Nil = Enum(3)
-  val state = Reg(init = sNone)
+  val state = RegInit(sNone)
 
   io.out := (state === sTwo1s)
 

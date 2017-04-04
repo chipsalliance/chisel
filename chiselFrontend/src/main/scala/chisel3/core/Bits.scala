@@ -435,7 +435,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   def do_+% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     (this +& that).tail(1)
   def do_-& (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt((this.width max that.width) + 1), SubOp, that)
+    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that).asUInt
   def do_-% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     (this -& that).tail(1)
 
@@ -528,6 +528,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that.asUInt
@@ -673,6 +674,7 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
         throwException(s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
     }
   }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     this := that.asSInt
   }
@@ -791,7 +793,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
   private[chisel3] def toType = s"Fixed$width$binaryPoint"
 
-  override def connect (that: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = that match {
+  override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
     case _: FixedPoint => super.connect(that)
     case _ => this badConnect that
   }
@@ -854,8 +856,12 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 
   final def setBinaryPoint(that: Int): FixedPoint = macro SourceInfoTransform.thatArg
 
-  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-    binop(sourceInfo, FixedPoint(this.width, KnownBinaryPoint(that)), SetBinaryPoint, that)
+  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = this.binaryPoint match {
+    case KnownBinaryPoint(value) =>
+      binop(sourceInfo, FixedPoint(this.width + (that - value), KnownBinaryPoint(that)), SetBinaryPoint, that)
+    case _ =>
+      binop(sourceInfo, FixedPoint(UnknownWidth(), KnownBinaryPoint(that)), SetBinaryPoint, that)
+  }
 
   /** Returns this wire bitwise-inverted. */
   def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
@@ -896,6 +902,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+
   override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
     binaryPoint match {
       case KnownBinaryPoint(value) =>
@@ -943,7 +950,7 @@ object FixedPoint {
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
   def fromBigInt(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
-    apply(value, Width(), binaryPoint)
+    apply(value, width, binaryPoint)
   }
   /** Create an FixedPoint literal with inferred width from BigInt.
     * Use PrivateObject to force users to specify width and binaryPoint by name

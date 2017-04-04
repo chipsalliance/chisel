@@ -48,8 +48,15 @@ private[core] object cloneSupertype {
         case (elt1: UInt, elt2: UInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2  // TODO: perhaps redefine Widths to allow >= op?
         case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
         case (elt1: FixedPoint, elt2: FixedPoint) => {
-          require(elt1.binaryPoint == elt2.binaryPoint, s"can't create $createdType with FixedPoint with differing binaryPoints")
-          if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
+          (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
+            case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), KnownWidth(w1), KnownWidth(w2)) =>
+              val maxBinaryPoint = bp1 max bp2
+              val maxIntegerWidth = (w1 - bp1) max (w2 - bp2)
+              FixedPoint((maxIntegerWidth + maxBinaryPoint).W, (maxBinaryPoint).BP)
+            case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), _, _) =>
+              FixedPoint(Width(), (bp1 max bp2).BP)
+            case _ => FixedPoint()
+          }
         }
         case (elt1, elt2) =>
           throw new AssertionError(s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
@@ -334,28 +341,37 @@ abstract class Data extends HasId {
 }
 
 object Wire {
-  def apply[T <: Data](t: T): T = macro WireTransform.apply[T]
+  // No source info since Scala macros don't yet support named / default arguments.
+  def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T = {
+    val model = (init.litArg match {
+      // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
+      case Some(lit) if lit.forcedWidth => init.chiselCloneType
+      case _ => init match {
+        case init: Bits => init.cloneTypeWidth(Width())
+        case init => init.chiselCloneType
+      }
+    }).asInstanceOf[T]
+    apply(model, init)
+  }
 
   // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-    do_apply(null.asInstanceOf[T], init)(UnlocatableSourceInfo, compileOptions)
+  def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T = {
+    implicit val noSourceInfo = UnlocatableSourceInfo
+    val x = apply(t)
+    Binding.checkSynthesizable(init, s"'init' ($init)")
+    x := init
+    x
+  }
 
-  // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-    do_apply(t, init)(UnlocatableSourceInfo, compileOptions)
-
-  def do_apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val x = Reg.makeType(chisel3.core.ExplicitCompileOptions.NotStrict, t, null.asInstanceOf[T], init)
+  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val x = t.chiselCloneType
 
     // Bind each element of x to being a Wire
     Binding.bind(x, WireBinder(Builder.forcedModule), "Error: t")
 
     pushCommand(DefWire(sourceInfo, x))
     pushCommand(DefInvalid(sourceInfo, x.ref))
-    if (init != null) {
-      Binding.checkSynthesizable(init, s"'init' ($init)")
-      x := init
-    }
+
     x
   }
 }

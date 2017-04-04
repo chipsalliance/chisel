@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.internal.InstanceId
 import chisel3.experimental.{chiselName, dump}
 import org.scalatest._
 import org.scalatest.prop._
@@ -13,13 +14,22 @@ import scala.collection.mutable.ListBuffer
 trait NamedModuleTester extends Module {
   val io = IO(new Bundle())  // Named module testers don't need IO
 
-  val expectedNameMap = ListBuffer[(Data, String)]()
+  val expectedNameMap = ListBuffer[(InstanceId, String)]()
+  val expectedModuleNameMap = ListBuffer[(Module, String)]()
 
   /** Expects some name for a node that is propagated to FIRRTL.
     * The node is returned allowing this to be called inline.
     */
-  def expectName[T <: Data](node: T, fullName: String): T = {
+  def expectName[T <: InstanceId](node: T, fullName: String): T = {
     expectedNameMap += ((node, fullName))
+    node
+  }
+
+  /** Expects some name for a module declaration that is propagated to FIRRTL.
+    * The node is returned allowing this to be called inline.
+    */
+  def expectModuleName[T <: Module](node: T, fullName: String): T = {
+    expectedModuleNameMap += ((node, fullName))
     node
   }
 
@@ -27,11 +37,16 @@ trait NamedModuleTester extends Module {
     * that did not match expectations.
     * Returns an empty list if everything was fine.
     */
-  def getNameFailures(): List[(Data, String, String)] = {
-    val failures = ListBuffer[(Data, String, String)]()
+  def getNameFailures(): List[(InstanceId, String, String)] = {
+    val failures = ListBuffer[(InstanceId, String, String)]()
     for ((ref, expectedName) <- expectedNameMap) {
       if (ref.instanceName != expectedName) {
         failures += ((ref, expectedName, ref.instanceName))
+      }
+    }
+    for ((mod, expectedModuleName) <- expectedModuleNameMap) {
+      if (mod.name != expectedModuleName) {
+        failures += ((mod, expectedModuleName, mod.name))
       }
     }
     failures.toList

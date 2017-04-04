@@ -78,6 +78,21 @@ class FixedPointFromBitsTester extends BasicTester {
   stop()
 }
 
+class FixedPointMuxTester extends BasicTester {
+  val largeWidthLowPrecision = 6.0.F(4.W, 0.BP)
+  val smallWidthHighPrecision = 0.25.F(2.W, 2.BP)
+  val unknownWidthLowPrecision = 6.0.F(0.BP)
+  val unknownFixed = Wire(FixedPoint())
+  unknownFixed := smallWidthHighPrecision
+  
+  assert(Mux(true.B, largeWidthLowPrecision, smallWidthHighPrecision) === 6.0.F(0.BP))
+  assert(Mux(false.B, largeWidthLowPrecision, smallWidthHighPrecision) === 0.25.F(2.BP))
+  assert(Mux(false.B, largeWidthLowPrecision, unknownFixed) === 0.25.F(2.BP))
+  assert(Mux(true.B, unknownWidthLowPrecision, smallWidthHighPrecision) === 6.0.F(0.BP))
+  
+  stop()
+}
+
 class SBP extends Module {
   val io = IO(new Bundle {
     val in =  Input(FixedPoint(6.W, 2.BP))
@@ -85,11 +100,16 @@ class SBP extends Module {
   })
   io.out := io.in.setBinaryPoint(0)
 }
+
 class SBPTester extends BasicTester {
   val dut = Module(new SBP)
   dut.io.in := 3.75.F(2.BP)
 
   assert(dut.io.out === 3.0.F(0.BP))
+
+  val test = Wire(FixedPoint(10.W, 5.BP))
+  val q = test.setBinaryPoint(18)
+  assert(q.getWidth.U === 23.U)
 
   stop()
 }
@@ -100,5 +120,8 @@ class FixedPointSpec extends ChiselPropSpec {
   }
   property("should allow fromBits") {
     assertTesterPasses { new FixedPointFromBitsTester }
+  }
+  property("should mux different widths and binary points") {
+    assertTesterPasses { new FixedPointMuxTester }
   }
 }
