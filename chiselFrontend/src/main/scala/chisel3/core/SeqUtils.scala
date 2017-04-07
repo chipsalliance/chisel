@@ -53,13 +53,15 @@ private[chisel3] object SeqUtils {
     */
   def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro CompileOptionsTransform.inArg
 
+  //scalastyle:off method.name
   def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (in.tail.isEmpty) {
       in.head._2
     } else {
-      val masked = for ((s, i) <- in) yield Mux(s, i.asUInt, 0.U)
       val output = cloneSupertype(in.toSeq map {_._2}, "oneHotMux")
+      val masked = for ((s, i) <- in) yield Mux(s, Wire(t = output, init = i).asUInt, 0.U)
       output.fromBits(masked.reduceLeft(_|_))
     }
   }
+
 }
