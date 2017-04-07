@@ -73,7 +73,9 @@ object Vec {
 
     def doConnect(sink: T, source: T) = {
       // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
-      val hasDirectioned = vec.sample_element match {
+      // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
+      //       WireBinding which does not have a direction
+      val hasDirectioned = elts.head match {
         case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
         case t: Element => t.dir != Direction.Unspecified
       }
