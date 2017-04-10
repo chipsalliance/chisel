@@ -2,8 +2,7 @@
 
 package chisel3.core
 
-import chisel3.internal.firrtl.KnownBinaryPoint
-import chisel3.internal.{ChiselException, throwException}
+import chisel3.internal.throwException
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
@@ -88,14 +87,12 @@ private[chisel3] object SeqUtils {
         case _: FixedPoint =>
           val (sels, possibleOuts) = in.toSeq.unzip
 
-          val (intWidths, binaryPoints) = in.toSeq.map { case (s, o) =>
+          val (intWidths, binaryPoints) = in.toSeq.map { case (_, o) =>
             val fo = o.asInstanceOf[FixedPoint]
-            require(fo.widthKnown && fo.binaryPoint.known, "Mux1H requires width/binary points to be defined")
+            require(fo.binaryPoint.known, "Mux1H requires width/binary points to be defined")
             (fo.getWidth - fo.binaryPoint.get, fo.binaryPoint.get)
           }.unzip
 
-          // All the same
-          // TODO: Don't unzip?
           if (intWidths.distinct.length == 1 && binaryPoints.distinct.length == 1) {
             buildAndOrMultiplexor(in)
           }
@@ -107,11 +104,9 @@ private[chisel3] object SeqUtils {
             buildAndOrMultiplexor(sels.zip(inWidthMatched))
           }
 
-        case aggregate: Aggregate =>
+        case _: Aggregate =>
           val allDefineWidth = in.forall { case (_, element) => element.widthOption.isDefined }
           if(allDefineWidth) {
-//            val masked = for ((s, i) <- in) yield Mux(s, i.asUInt(), 0.U)
-//            output.fromBits(masked.reduceLeft(_ | _))
             buildAndOrMultiplexor(in)
           }
           else {
