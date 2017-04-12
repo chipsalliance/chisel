@@ -19,7 +19,7 @@ sealed abstract class Aggregate extends Data {
     */
   def getElements: Seq[Data]
 
-  private[core] def width: Width = getElements.map(_.width).reduce(_ + _)
+  private[core] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
@@ -73,7 +73,9 @@ object Vec {
 
     def doConnect(sink: T, source: T) = {
       // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
-      val hasDirectioned = vec.sample_element match {
+      // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
+      //       WireBinding which does not have a direction
+      val hasDirectioned = elts.head match {
         case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
         case t: Element => t.dir != Direction.Unspecified
       }
@@ -499,6 +501,7 @@ class Bundle extends Record {
     * be one, otherwise returns None.
     */
   private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
+    case v: Vec[_] if v.isEmpty => None
     case d: Data => Some(d)
     case Some(d: Data) => Some(d)
     case _ => None

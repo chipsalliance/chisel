@@ -947,7 +947,7 @@ object FixedPoint {
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
   def fromBigInt(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
-    apply(value, Width(), binaryPoint)
+    apply(value, width, binaryPoint)
   }
   /** Create an FixedPoint literal with inferred width from BigInt.
     * Use PrivateObject to force users to specify width and binaryPoint by name

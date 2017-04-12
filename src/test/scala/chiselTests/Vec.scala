@@ -134,6 +134,55 @@ class OneBitUnitRegVecTester extends BasicTester {
   stop()
 }
 
+class ZeroEntryVecTester extends BasicTester {
+  require(Vec(0, Bool()).getWidth == 0)
+
+  val bundleWithZeroEntryVec = new Bundle {
+    val foo = Bool()
+    val bar = Vec(0, Bool())
+  }
+  require(0.U.asTypeOf(bundleWithZeroEntryVec).getWidth == 1)
+  require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
+
+  stop()
+}
+
+class PassthroughModuleIO extends Bundle {
+  val in = Input(UInt(32.W))
+  val out = Output(UInt(32.W))
+}
+
+class PassthroughModule extends Module {
+  val io = IO(new PassthroughModuleIO)
+  io.out := io.in
+}
+
+class PassthroughModuleTester extends Module {
+  val io = IO(Flipped(new PassthroughModuleIO))
+  // This drives the input of a PassthroughModule
+  io.in := 123.U
+  assert(io.out === 123.U)
+}
+
+
+class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
+  val duts = Vec.fill(n)(Module(new PassthroughModule).io)
+  val tester = Module(new PassthroughModuleTester)
+
+  val (cycle, done) = Counter(true.B, n)
+  for ((m, i) <- duts.zipWithIndex) {
+    when (cycle =/= i.U) {
+      m.in := 0.U  // default
+      assert(m.out === 0.U)
+    }
+  }
+  // only connect one dut per cycle
+  duts(cycle) <> tester.io
+  assert(duts(cycle).out === 123.U)
+
+  when (done) { stop() }
+}
+
 class VecSpec extends ChiselPropSpec {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
@@ -186,5 +235,13 @@ class VecSpec extends ChiselPropSpec {
 
   property("A Reg of a Vec of a single 1 bit element should compile and work") {
     assertTesterPasses{ new OneBitUnitRegVecTester }
+  }
+
+  property("A Vec with zero entries should compile and have zero width") {
+    assertTesterPasses{ new ZeroEntryVecTester }
+  }
+
+  property("Dynamic indexing of a Vec of Module IOs should work") {
+    assertTesterPasses{ new ModuleIODynamicIndexTester(4) }
   }
 }
