@@ -35,9 +35,10 @@ object DataMirror {
   * - For other types of the same class are are the same: clone of any of the elements
   * - Otherwise: fail
   */
+//scalastyle:off cyclomatic.complexity
 private[core] object cloneSupertype {
   def apply[T <: Data](elts: Seq[T], createdType: String)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): T = {
+                                                          compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
     if (elts forall {_.isInstanceOf[Bits]}) {
@@ -45,7 +46,9 @@ private[core] object cloneSupertype {
         case (elt1: Bool, elt2: Bool) => elt1
         case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
         case (elt1: UInt, elt2: Bool) => elt1  // TODO: what happens with zero width UInts?
-        case (elt1: UInt, elt2: UInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2  // TODO: perhaps redefine Widths to allow >= op?
+        case (elt1: UInt, elt2: UInt) =>
+          // TODO: perhaps redefine Widths to allow >= op?
+          if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
         case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
         case (elt1: FixedPoint, elt2: FixedPoint) => {
           (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
@@ -59,13 +62,17 @@ private[core] object cloneSupertype {
           }
         }
         case (elt1, elt2) =>
-          throw new AssertionError(s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
+          throw new AssertionError(
+            s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
       }).asInstanceOf[T] }
       model.chiselCloneType
-    } else {
+    }
+    else {
       for (elt <- elts.tail) {
-        require(elt.getClass == elts.head.getClass, s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
-        require(elt typeEquivalent elts.head, s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
+        require(elt.getClass == elts.head.getClass,
+          s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
+        require(elt typeEquivalent elts.head,
+          s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
       }
       elts.head.chiselCloneType
     }
