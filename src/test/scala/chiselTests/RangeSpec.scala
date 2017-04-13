@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselRange
-import chisel3.internal.firrtl.{Closed, KnownSIntRange, Open}
+import chisel3.internal.firrtl.{Closed, KnownIntervalRange, Open}
 import org.scalatest.{FreeSpec, Matchers}
 
 class RangeSpec extends FreeSpec with Matchers {
@@ -23,29 +23,29 @@ class RangeSpec extends FreeSpec with Matchers {
     }
 
     "range macros should allow open and closed bounds" in {
-      range"[-1, 1)" should be( KnownSIntRange(Closed(-1), Open(1)) )
-      range"[-1, 1]" should be( KnownSIntRange(Closed(-1), Closed(1)) )
-      range"(-1, 1]" should be( KnownSIntRange(Open(-1), Closed(1)) )
-      range"(-1, 1)" should be( KnownSIntRange(Open(-1), Open(1)) )
+      range"[-1, 1)" should be( KnownIntervalRange(Closed(-1), Open(1)) )
+      range"[-1, 1]" should be( KnownIntervalRange(Closed(-1), Closed(1)) )
+      range"(-1, 1]" should be( KnownIntervalRange(Open(-1), Closed(1)) )
+      range"(-1, 1)" should be( KnownIntervalRange(Open(-1), Open(1)) )
     }
 
     "range specifiers should be whitespace tolerant" in {
-      range"[-1,1)" should be( KnownSIntRange(Closed(-1), Open(1)) )
-      range" [-1,1) " should be( KnownSIntRange(Closed(-1), Open(1)) )
-      range" [ -1 , 1 ) " should be( KnownSIntRange(Closed(-1), Open(1)) )
-      range"   [   -1   ,   1   )   " should be( KnownSIntRange(Closed(-1), Open(1)) )
+      range"[-1,1)" should be( KnownIntervalRange(Closed(-1), Open(1)) )
+      range" [-1,1) " should be( KnownIntervalRange(Closed(-1), Open(1)) )
+      range" [ -1 , 1 ) " should be( KnownIntervalRange(Closed(-1), Open(1)) )
+      range"   [   -1   ,   1   )   " should be( KnownIntervalRange(Closed(-1), Open(1)) )
     }
 
     "range macros should work with interpolated variables" in {
       val a = 10
       val b = -3
 
-      range"[$b, $a)" should be( KnownSIntRange(Closed(b), Open(a)) )
-      range"[${a + b}, $a)" should be( KnownSIntRange(Closed(a + b), Open(a)) )
-      range"[${-3 - 7}, ${-3 + a})" should be( KnownSIntRange(Closed(-10), Open(-3 + a)) )
+      range"[$b, $a)" should be( KnownIntervalRange(Closed(b), Open(a)) )
+      range"[${a + b}, $a)" should be( KnownIntervalRange(Closed(a + b), Open(a)) )
+      range"[${-3 - 7}, ${-3 + a})" should be( KnownIntervalRange(Closed(-10), Open(-3 + a)) )
 
       def number(n: Int): Int = n
-      range"[${number(1)}, ${number(3)})" should be( KnownSIntRange(Closed(1), Open(3)) )
+      range"[${number(1)}, ${number(3)})" should be( KnownIntervalRange(Closed(1), Open(3)) )
     }
 
 //    "UInt should get the correct width from a range" in {

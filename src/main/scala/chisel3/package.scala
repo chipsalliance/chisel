@@ -1,4 +1,4 @@
-import chisel3.internal.firrtl.KnownSIntRange
+import chisel3.internal.firrtl.KnownIntervalRange
 // See LICENSE for license details.
 
 /** The chisel3 package contains the chisel3 API.
@@ -343,7 +343,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         * }}}
         */
 //      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
-      def range(args: Any*): KnownSIntRange = macro chisel3.internal.RangeTransform.apply
+      def range(args: Any*): KnownIntervalRange = macro chisel3.internal.RangeTransform.apply
     }
 
     import scala.annotation.compileTimeOnly

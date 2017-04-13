@@ -101,7 +101,8 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-    s"asInterval(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+//    s"asInterval(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+    s"asInterval(${SLit(unsigned, width).name}, $n, $n)"
   }
   val range: Range = new KnownIntervalRange(Closed(n), Closed(n), binaryPoint)
   def minWidth: Int = 1 + n.bitLength
@@ -129,7 +130,6 @@ sealed trait NumericBound[T] extends Bound {
 
 case object UnknownBound extends Unbound
 sealed case class Open[T](value: T) extends NumericBound[T] {
-  override def toString
 }
 sealed case class Closed[T](value: T) extends NumericBound[T]
 
@@ -168,33 +168,42 @@ sealed trait KnownBigIntRange extends Range {
   })
 
   override def toString: String = {
+    (min, max) match {
+      case (Open(low_val), Open(high_val)) => s"($min, $max)"
+      case (Closed(low_val), Open(high_val)) => s"[$min, $max"
+      case (Open(low_val), Closed(high_val)) => s"$min, $max"
+      case (Closed(low_val), Closed(high_val)) => s"$min, $max"
+    }
     s"$min, $max"
   }
 }
 
-sealed case class KnownUIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
-  require (min.value >= 0)
+//sealed case class KnownUIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
+//  require (min.value >= 0)
+//
+//  def getWidth: Width = max match {
+//    case Open(v) => Width((v - BigInt(1)).bitLength.max(1))
+//    case Closed(v) => Width(v.bitLength.max(1))
+//  }
+//}
+//
+//sealed case class KnownSIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
+//
+//  val maxWidth = max match {
+//    case Open(v) => Width((v - 1).bitLength + 1)
+//    case Closed(v) => Width(v.bitLength + 1)
+//  }
+//  val minWidth = min match {
+//    case Open(v) => Width((v + 1).bitLength + 1)
+//    case Closed(v) => Width(v.bitLength + 1)
+//  }
+//  def getWidth: Width = maxWidth.max(minWidth)
+//}
 
-  def getWidth: Width = max match {
-    case Open(v) => Width((v - BigInt(1)).bitLength.max(1))
-    case Closed(v) => Width(v.bitLength.max(1))
-  }
-}
-
-sealed case class KnownSIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
-
-  val maxWidth = max match {
-    case Open(v) => Width((v - 1).bitLength + 1)
-    case Closed(v) => Width(v.bitLength + 1)
-  }
-  val minWidth = min match {
-    case Open(v) => Width((v + 1).bitLength + 1)
-    case Closed(v) => Width(v.bitLength + 1)
-  }
-  def getWidth: Width = maxWidth.max(minWidth)
-}
-
-sealed case class KnownIntervalRange(min: NumericBound[BigInt], max: NumericBound[BigInt], binaryPoint: BinaryPoint)
+sealed case class KnownIntervalRange(
+                                      min: NumericBound[BigInt],
+                                      max: NumericBound[BigInt],
+                                      binaryPoint: BinaryPoint = KnownBinaryPoint(0))
   extends KnownBigIntRange{
   val maxWidth = max match {
     case Open(v) => Width((v - 1).bitLength + 1)
@@ -206,6 +215,15 @@ sealed case class KnownIntervalRange(min: NumericBound[BigInt], max: NumericBoun
   }
 
   def getWidth: Width = maxWidth.max(minWidth)
+
+  override def toString: String = {
+    (min, max) match {
+      case (Open(low_val), Open(high_val)) => s"[${min.value + 1}, ${max.value - 1})]"
+      case (Closed(low_val), Open(high_val)) => s"[[${min.value} ${max.value - 1}]"
+      case (Open(low_val), Closed(high_val)) => s"[${min.value + 1} ${max .value}]"
+      case (Closed(low_val), Closed(high_val)) => s"[${min.value} ${max .value}]"
+    }
+  }
 }
 
 object Width {

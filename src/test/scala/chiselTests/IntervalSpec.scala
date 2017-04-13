@@ -4,15 +4,15 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{ChiselRange, Interval}
-import chisel3.internal.firrtl.KnownSIntRange
+import chisel3.internal.firrtl.KnownIntervalRange
 import cookbook.CookbookTester
 import org.scalatest.{FreeSpec, Matchers}
 
 class IntervalTest1 extends Module {
   val io = IO(new Bundle {
-    val in1 = Interval(6.W, 3.BP, range"[0,4]")
-    val in2 = Interval(6.W, 3.BP, range"[0,4]")
-    val out = Interval(8.W, 3.BP, range"[0,8]")
+    val in1 = Input(Interval(6.W, 3.BP, range"[0,4]"))
+    val in2 = Input(Interval(6.W, 3.BP, range"[0,4]"))
+    val out = Output(Interval(8.W, 3.BP, range"[0,8]"))
   })
 
   io.out := io.in1 + io.in2
@@ -28,9 +28,32 @@ class IntervalTester extends CookbookTester(10) {
   stop()
 }
 
+class SIntTest1 extends Module {
+  val io = IO(new Bundle {
+    val in1 = Input(SInt(6.W))
+    val in2 = Input(SInt(6.W))
+    val out = Output(SInt(8.W))
+  })
+
+  io.out := io.in1 + io.in2
+}
+class SIntTest1Tester extends CookbookTester(10) {
+  val dut = Module(new SIntTest1)
+
+  dut.io.in1 := 4.S
+  dut.io.in2 := 4.S
+  assert(dut.io.out === 8.S)
+
+  val i = SInt(range"[0,10)")
+  stop()
+}
+
 class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "Intervals can be created" in {
     assertTesterPasses{ new IntervalTester }
+  }
+  "SInt for use comparing to Interval" in {
+    assertTesterPasses{ new SIntTest1Tester }
   }
   "show the firrtl" in {
     Driver.execute(Array("--no-run-firrtl"), () => new IntervalTest1) match {

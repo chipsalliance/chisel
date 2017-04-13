@@ -98,7 +98,8 @@ class RangeTransform(val c: Context) {
     } else {
       q"_root_.chisel3.internal.firrtl.Open($maxArg)"
     }
+    val binaryPoint = q"_root_.chisel3.internal.firrtl.KnownBinaryPoint(0)"
 
-    q"KnownSIntRange($startBound, $endBound)"
+    q"KnownIntervalRange($startBound, $endBound, $binaryPoint)"
   }
 }

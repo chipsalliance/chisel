@@ -543,8 +543,11 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   override def do_asInterval(binaryPoint: BinaryPoint, range: Range)(implicit sourceInfo: SourceInfo): Interval = {
     binaryPoint match {
       case KnownBinaryPoint(value) =>
-        val iLit = ILit(value)
-        pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint, range), AsIntervalOp, ref, iLit))
+        //TODO: (chick) Need to determine, what asInterval needs
+//        val iLit = ILit(value)
+        val min = ILit(range.asInstanceOf[KnownIntervalRange].min.value)
+        val max = ILit(range.asInstanceOf[KnownIntervalRange].max.value)
+        pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint, range), AsIntervalOp, ref, min, max))
       case _ =>
         throwException(
           s"cannot call $this.asInterval(binaryPoint=$binaryPoint, $range), you must specify a known binaryPoint")
@@ -1082,7 +1085,9 @@ sealed class Interval private[core] (
     new Interval(w, binaryPoint, range).asInstanceOf[this.type]
 //  private[chisel3] def toType = s"Interval$width$binaryPoint"
 
-  private[chisel3] def toType = s"Interval${range.toString}"
+  private[chisel3] def toType = {
+    s"Interval${range.toString}"
+  }
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Interval] && this.width == that.width
@@ -1208,7 +1213,8 @@ sealed class Interval private[core] (
     res
   }
 
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  private[core] override def connectFromBits(that: Bits)
+      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     this := that.asInterval(this.binaryPoint, this.range)
   }
   //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
@@ -1229,7 +1235,7 @@ trait IntervalFactory {
   /** Create a Interval literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
     val lit = IntervalLit(value, width, binaryPoint)
-    val result = new Interval(width, binaryPoint, KnownSIntRange(Closed(value), Closed(value)), Some(lit))
+    val result = new Interval(width, binaryPoint, KnownIntervalRange(Closed(value), Closed(value)), Some(lit))
     // Bind result to being an Literal
     result.binding = LitBinding()
     result
