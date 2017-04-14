@@ -10,7 +10,7 @@ import chiselTests.ChiselFlatSpec
 
 /** Tester for concise cookbook tests
   *
-  * Provides a length of test after which the test will pass 
+  * Provides a length of test after which the test will pass
   */
 abstract class CookbookTester(length: Int) extends BasicTester {
   require(length >= 0, "Simulation length must be non-negative!")

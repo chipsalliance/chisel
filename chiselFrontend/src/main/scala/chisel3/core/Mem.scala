@@ -95,7 +95,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
        t.chiselCloneType, Node(this), dir, i.ref, Node(Builder.forcedClock))
     ).id
     // Bind each element of port to being a MemoryPort
-    Binding.bind(port, MemoryPortBinder(Builder.forcedModule), "Error: Fresh t")
+    Binding.bind(port, MemoryPortBinder(Builder.forcedUserModule), "Error: Fresh t")
     port
   }
 }
