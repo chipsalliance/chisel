@@ -30,22 +30,7 @@ object Mem {
   }
 }
 
-/* The following definition of ChiselVecLike is to work around the issue that you cannot
- *  define/override an abstract method with a macro:
- *    http://stackoverflow.com/questions/30152852/override-method-from-macro
- * We want to use a macro for MemBase's apply() method so we can provide the appropriate
- *  CompileOptions to the asUInt method, but the apply() is an abstract method inherited
- *  from the VecLike trait. We provide a trait that extends VecLike and in turn provides
- *  a concrete apply() (that whill never be used), just so we can override it.
- */
-trait ChiselVecLike[T <: Data] extends VecLike[T] {
-  override def apply(x: Int): T = {
-    require(false, "ChiselVecLike.apply() should never be instantiated.")
-    this.asInstanceOf[T]
-  }
-}
-
-sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with ChiselVecLike[T] {
+sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
