@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, UnlocatableSourceInfo, MemTransform}
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
 
 object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
@@ -30,16 +30,30 @@ object Mem {
   }
 }
 
-sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
+/* The following definition of ChiselVecLike is to work around the issue that you cannot
+ *  define/override an abstract method with a macro:
+ *    http://stackoverflow.com/questions/30152852/override-method-from-macro
+ * We want to use a macro for MemBase's apply() method so we can provide the appropriate
+ *  CompileOptions to the asUInt method, but the apply() is an abstract method inherited
+ *  from the VecLike trait. We provide a trait that extends VecLike and in turn provides
+ *  a concrete apply() (that whill never be used), just so we can override it.
+ */
+trait ChiselVecLike[T <: Data] extends VecLike[T] {
+  override def apply(x: Int): T = {
+    require(false, "ChiselVecLike.apply() should never be instantiated.")
+    this.asInstanceOf[T]
+  }
+}
+
+sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with ChiselVecLike[T] {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def apply(idx: Int)/*(implicit compileOptions: CompileOptions)*/: T = {
-    // We can't force this method to take an implicit parameter, since its signature comes from collection.IndexedSeq
-    // How do we thread the caller's CompileOptions through here?
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+  override def apply(x: Int): T = macro SourceInfoTransform.xArg
+
+  def do_apply(idx: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     require(idx >= 0 && idx < length)
     apply(idx.asUInt)
   }
