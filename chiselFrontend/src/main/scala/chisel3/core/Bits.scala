@@ -990,7 +990,7 @@ object FixedPoint {
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
   def fromBigInt(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
-    apply(value, Width(), binaryPoint)
+    apply(value, width, binaryPoint)
   }
   /** Create an FixedPoint literal with inferred width from BigInt.
     * Use PrivateObject to force users to specify width and binaryPoint by name
@@ -1328,7 +1328,7 @@ final class Analog private (width: Width) extends Element(width) {
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can
   //   be connected in the parent module as well
-  private[core] val biConnectLocs = mutable.Map.empty[Module, SourceInfo]
+  private[core] val biConnectLocs = mutable.Map.empty[UserModule, SourceInfo]
 
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
