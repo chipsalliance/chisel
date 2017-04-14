@@ -1,0 +1,65 @@
+// See LICENSE for license details.
+
+package chiselTests
+
+import chisel3._
+import chisel3.experimental.{RawModule, withClockAndReset}
+import chisel3.testers.BasicTester
+
+class UnclockedPlusOne extends RawModule {
+  val in  = IO(Input(UInt(32.W)))
+  val out = IO(Output(UInt(32.W)))
+
+  out := in + 1.asUInt
+}
+
+class RawModuleTester extends BasicTester {
+  val plusModule = Module(new UnclockedPlusOne)
+  plusModule.in := 42.U
+  assert(plusModule.out === 43.U)
+  stop()
+}
+
+class PlusOneModule extends Module {
+  val io = IO(new Bundle {
+    val in  = Input(UInt(32.W))
+    val out = Output(UInt(32.W))
+  })
+  io.out := io.in + 1.asUInt
+}
+
+class RawModuleWithImpliitModule extends RawModule {
+  val in  = IO(Input(UInt(32.W)))
+  val out = IO(Output(UInt(32.W)))
+  val clk = IO(Input(Clock()))
+  val rst = IO(Input(Bool()))
+  
+  withClockAndReset(clk, rst) {
+    val plusModule = Module(new PlusOneModule)
+    plusModule.io.in := in
+    out := plusModule.io.out
+  }
+}
+
+class ImplicitModuleInRawModuleTester extends BasicTester {
+  val plusModule = Module(new RawModuleWithImpliitModule)
+  plusModule.clk := clock
+  plusModule.rst := reset
+  plusModule.in := 42.U
+  assert(plusModule.out === 43.U)
+  stop()
+}
+
+class RawModuleSpec extends ChiselFlatSpec {
+  "RawModule" should "elaborate" in {
+    elaborate { new RawModuleWithImpliitModule }
+  }
+  
+  "RawModule" should "work" in {
+    assertTesterPasses({ new RawModuleTester })
+  }
+  
+  "ImplicitModule in a withClock block in a RawModule" should "work" in {
+    assertTesterPasses({ new ImplicitModuleInRawModuleTester })
+  }
+}
