@@ -241,4 +241,33 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     }
     elaborate { new DirectionLessConnectionModule() }
   }
+
+  "Module and Blackbox" should "share a common ancestor with io" in {
+    import Chisel.testers.BasicTester
+    class PassthroughModule extends Module {
+      val io = new Bundle {
+        val in = UInt(width = 1).flip
+        val out = UInt(width = 1)
+      }
+      io.out := io.in
+    }
+    class BlackBoxPassthrough extends BlackBox {
+      val io = new Bundle {
+        val in = UInt(width = 1).flip
+        val out = UInt(width = 1)
+      }
+      override def desiredName = "BlackBoxPassthrough"
+    }
+    class ModuleBlackboxIOTester(useBlackBox: Boolean) extends BasicTester {
+      val mod = if (useBlackBox) Module(new BlackBoxPassthrough)
+                else Module(new PassthroughModule)
+      mod.io.in := UInt(1)
+      Chisel.assert(mod.io.out === UInt(1))
+      stop()
+    }
+
+    assertTesterPasses { new ModuleBlackboxIOTester(false) }
+    assertTesterPasses({ new ModuleBlackboxIOTester(true) },
+                       Seq("/BlackBoxTest.v"))
+  }
 }
