@@ -24,13 +24,13 @@ sealed abstract class Aggregate extends Data {
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
-    SeqUtils.do_asUInt(getElements.map(_.asUInt()))
+    SeqUtils.do_asUInt(flatten.map(_.asUInt()))
   }
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
     val bits = Wire(UInt(this.width), init=that)  // handles width padding
-    for (x <- getElements) {
+    for (x <- flatten) {
       x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth
     }
@@ -501,7 +501,6 @@ class Bundle extends Record {
     * be one, otherwise returns None.
     */
   private def getBundleField(m: java.lang.reflect.Method): Option[Data] = m.invoke(this) match {
-    case v: Vec[_] if v.isEmpty => None
     case d: Data => Some(d)
     case Some(d: Data) => Some(d)
     case _ => None
