@@ -55,7 +55,7 @@ private[chisel3] class ErrorLog {
   private def findFirstUserFrame(stack: Array[StackTraceElement]): Option[StackTraceElement] = {
     def isUserCode(ste: StackTraceElement): Boolean = {
       def isUserModule(c: Class[_]): Boolean =
-        c != null && (c == classOf[Module] || isUserModule(c.getSuperclass))
+        c != null && (c == classOf[UserModule] || isUserModule(c.getSuperclass))
       isUserModule(Class.forName(ste.getClassName))
     }
 

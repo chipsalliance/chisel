@@ -64,6 +64,7 @@ object printf { // scalastyle:ignore object.name
     val clock = Builder.forcedClock
     pushCommand(Printf(sourceInfo, Node(clock), pable))
   }
+
   private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Unit =
     printfWithoutReset(Printable.pack(fmt, data:_*))
 }

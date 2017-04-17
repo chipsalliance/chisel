@@ -7,6 +7,7 @@ import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
 import chisel3._
+import chisel3.experimental.RawModule
 import chisel3.testers._
 import firrtl.{
   CommonOptions,
@@ -27,21 +28,21 @@ trait ChiselRunners extends Assertions {
   def assertTesterFails(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
     assert(!runTester(t, additionalVResources))
   }
-  def elaborate(t: => Module): Unit = Driver.elaborate(() => t)
+  def elaborate(t: => RawModule): Unit = Driver.elaborate(() => t)
 
   /** Given a generator, return the Firrtl that it generates.
     *
     * @param t Module generator
     * @return Firrtl representation as a String
     */
-  def generateFirrtl(t: => Module): String = Driver.emit(() => t)
+  def generateFirrtl(t: => RawModule): String = Driver.emit(() => t)
 
   /** Compiles a Chisel Module to Verilog
     * NOTE: This uses the "test_run_dir" as the default directory for generated code.
     * @param t the generator for the module
     * @return the Verilog code as a string.
     */
-  def compile(t: => Module): String = {
+  def compile(t: => RawModule): String = {
     val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
                                                          with HasChiselExecutionOptions {
       commonOptions = CommonOptions(targetDirName = "test_run_dir")

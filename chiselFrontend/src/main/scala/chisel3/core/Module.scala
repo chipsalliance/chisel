@@ -2,13 +2,16 @@
 
 package chisel3.core
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.JavaConversions._
 import scala.language.experimental.macros
+
+import java.util.IdentityHashMap
+
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.firrtl.{Command => _, _}
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -18,19 +21,16 @@ object Module {
     *
     * @return the input module `m` with Chisel metadata properly set
     */
-  def apply[T <: Module](bc: => T): T = macro InstTransform.apply[T]
+  def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
-  def do_apply[T <: Module](bc: => T)(implicit sourceInfo: SourceInfo): T = {
-    // Don't generate source info referencing parents inside a module, sincce this interferes with
-    // module de-duplication in FIRRTL emission.
-    val childSourceInfo = UnlocatableSourceInfo
-
+  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
     if (Builder.readyForModuleConstr) {
       throwException("Error: Called Module() twice without instantiating a Module." +
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.readyForModuleConstr = true
-    val parent: Option[Module] = Builder.currentModule
+
+    val parent = Builder.currentModule
     val whenDepth: Int = Builder.whenDepth
     val clockAndReset: Option[ClockAndReset] = Builder.currentClockAndReset
 
@@ -39,8 +39,7 @@ object Module {
     //   - unset readyForModuleConstr
     //   - reset whenDepth to 0
     //   - set currentClockAndReset
-    val m = bc.setRefs()
-    m._commands.prepend(DefInvalid(childSourceInfo, m.io.ref)) // init module outputs
+    val module: T = bc  // bc is actually evaluated here
 
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! When depth is != 0, this should not be possible")
@@ -54,23 +53,15 @@ object Module {
     Builder.whenDepth = whenDepth
     Builder.currentClockAndReset = clockAndReset // Back to clock and reset scope
 
-    val ports = m.computePorts
-    // Blackbox inherits from Module so we have to match on it first TODO fix
-    val component = m match {
-      case bb: BlackBox =>
-        DefBlackBox(bb, bb.name, ports, bb.params)
-      case mod: Module =>
-        mod._commands.prepend(DefInvalid(childSourceInfo, mod.io.ref)) // init module outputs
-        DefModule(mod, mod.name, ports, mod._commands)
-    }
-    m._component = Some(component)
+    val component = module.generateComponent()
     Builder.components += component
-    // Avoid referencing 'parent' in top module
+
+    // Handle connections at enclosing scope
     if(!Builder.currentModule.isEmpty) {
-      pushCommand(DefInstance(sourceInfo, m, ports))
-      m.setupInParent(childSourceInfo)
+      pushCommand(DefInstance(sourceInfo, module, component.ports))
+      module.initializeInParent()
     }
-    m
+    module
   }
 
   /** Returns the implicit Clock */
@@ -79,34 +70,130 @@ object Module {
   def reset: Bool = Builder.forcedReset
 }
 
-/** Abstract base class for Modules, which behave much like Verilog modules.
-  * These may contain both logic and state which are written in the Module
-  * body (constructor).
-  *
-  * @note Module instantiations must be wrapped in a Module() call.
+/** Abstract base class for Modules, an instantiable organizational unit for RTL.
   */
-abstract class Module(
-  override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-                     (implicit moduleCompileOptions: CompileOptions)
-extends HasId {
-  // _clock and _reset can be clock and reset in these 2ary constructors
-  // once chisel2 compatibility issues are resolved
-  def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
-  def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
-  def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
+// TODO: seal this?
+abstract class BaseModule extends HasId {
+  //
+  // Builder Internals - this tracks which Module RTL construction belongs to.
+  //
+  if (!Builder.readyForModuleConstr) {
+    throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+  }
+  readyForModuleConstr = false
 
-  // This function binds the iodef as a port in the hardware graph
-  private[chisel3] def Port[T<:Data](iodef: T): iodef.type = {
-    // Bind each element of the iodef to being a Port
-    Binding.bind(iodef, PortBinder(this), "Error: iodef")
-    iodef
+  Builder.currentModule = Some(this)
+  Builder.whenDepth = 0
+
+  //
+  // Module Construction Internals
+  //
+  protected var _closed = false
+
+  // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
+  private[core] val _namespace = Namespace.empty
+  private val _ids = ArrayBuffer[HasId]()
+  private[chisel3] def addId(d: HasId) {
+    require(!_closed, "Can't write to module after module close")
+    _ids += d
+  }
+  protected def getIds = {
+    require(_closed, "Can't get ids before module close")
+    _ids.toSeq
   }
 
-  def annotate(annotation: ChiselAnnotation): Unit = {
+  private val _ports = new ArrayBuffer[Data]()
+  // getPorts unfortunately already used for tester compatibility
+  protected def getModulePorts = {
+    require(_closed, "Can't get ports before module close")
+    _ports.toSeq
+  }
+  
+  // These methods allow checking some properties of ports before the module is closed,
+  // mainly for compatibility purposes.
+  protected def portsContains(elem: Data): Boolean = _ports contains elem
+  protected def portsSize: Int = _ports.size
+
+  /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
+    * Also closes the module so no more construction can happen inside.
+    */
+  private[core] def generateComponent(): Component
+
+  /** Sets up this module in the parent context
+    */
+  private[core] def initializeInParent()
+
+  //
+  // Chisel Internals
+  //
+  /** Desired name of this module. Override this to give this module a custom, perhaps parametric,
+    * name.
+    */
+  def desiredName = this.getClass.getName.split('.').last
+
+  /** Legalized name of this module. */
+  final val name = Builder.globalNamespace.name(desiredName)
+
+  /** Called at the Module.apply(...) level after this Module has finished elaborating.
+    * Returns a map of nodes -> names, for named nodes.
+    *
+    * Helper method.
+    */
+  protected def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
+    val names = new HashMap[HasId, String]()
+
+    def name(node: HasId, name: String) {
+      // First name takes priority, like suggestName
+      // TODO: DRYify with suggestName
+      if (!names.contains(node)) {
+        names.put(node, name)
+      }
+    }
+
+    /** Recursively suggests names to supported "container" classes
+      * Arbitrary nestings of supported classes are allowed so long as the
+      * innermost element is of type HasId
+      * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
+      */
+    def nameRecursively(prefix: String, nameMe: Any): Unit =
+      nameMe match {
+        case (id: HasId) => name(id, prefix)
+        case Some(elt) => nameRecursively(prefix, elt)
+        case (iter: Iterable[_]) if iter.hasDefiniteSize =>
+          for ((elt, i) <- iter.zipWithIndex) {
+            nameRecursively(s"${prefix}_${i}", elt)
+          }
+        case _ => // Do nothing
+      }
+
+    /** Scala generates names like chisel3$util$Queue$$ram for private vals
+      * This extracts the part after $$ for names like this and leaves names
+      * without $$ unchanged
+      */
+    def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
+
+    for (m <- getPublicFields(rootClass)) {
+      nameRecursively(cleanName(m.getName), m.invoke(this))
+    }
+
+    names
+  }
+
+  /** Compatibility function. Allows Chisel2 code which had ports without the IO wrapper to
+    * compile under Bindings checks. Does nothing in non-compatibility mode.
+    *
+    * Should NOT be used elsewhere. This API will NOT last.
+    *
+    * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
+    */
+  def _autoWrapPorts() {}
+
+  //
+  // BaseModule User API functions
+  //
+  protected def annotate(annotation: ChiselAnnotation): Unit = {
     Builder.annotations += annotation
   }
-
-  private[core] var ioDefined: Boolean = false
 
   /**
    * This must wrap the datatype used to set the io field of any Module.
@@ -120,32 +207,24 @@ extends HasId {
    * This will error if any node is bound (e.g. due to logic in a Bundle
    * constructor, which is considered improper).
    *
+   * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
+   * requested (so that all calls to ports will return the same information).
+   * Internal API.
+   *
    * TODO(twigg): Specifically walk the Data definition to call out which nodes
    * are problematic.
    */
-  def IO[T<:Data](iodef: T): iodef.type = {
-    require(!ioDefined, "Another IO definition for this module was already declared!")
-    ioDefined = true
-
-    Port(iodef)
+  protected def IO[T<:Data](iodef: T): iodef.type = {
+    require(!_closed, "Can't add more ports after module close")
+    // Bind each element of the iodef to being a Port
+    Binding.bind(iodef, PortBinder(this), "Error: iodef")
+    _ports += iodef
+    iodef
   }
 
-  // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
-  private[core] val _namespace = Namespace.empty
-  private[chisel3] val _commands = ArrayBuffer[Command]()
-  private[core] val _ids = ArrayBuffer[HasId]()
-  Builder.currentModule = Some(this)
-  Builder.whenDepth = 0
-  if (!Builder.readyForModuleConstr) {
-    throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
-  }
-  readyForModuleConstr = false
-
-  /** Desired name of this module. */
-  def desiredName = this.getClass.getName.split('.').last
-
-  /** Legalized name of this module. */
-  final val name = Builder.globalNamespace.name(desiredName)
+  //
+  // Internal Functions
+  //
 
   /** Keep component for signal names */
   private[chisel3] var _component: Option[Component] = None
@@ -157,91 +236,4 @@ extends HasId {
       case Some(c) => getRef fullName c
     }
 
-  /** IO for this Module. At the Scala level (pre-FIRRTL transformations),
-    * connections in and out of a Module may only go through `io` elements.
-    */
-  def io: Record
-  val clock = Port(Input(Clock()))
-  val reset = Port(Input(Bool()))
-
-  // Setup ClockAndReset
-  Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
-
-  private[chisel3] def addId(d: HasId) { _ids += d }
-
-  private[core] def ports: Seq[(String,Data)] = Vector(
-    ("clock", clock), ("reset", reset), ("io", io)
-  )
-
-  private[core] def computePorts: Seq[firrtl.Port] = {
-    // If we're auto-wrapping IO definitions, do so now.
-    if (!(compileOptions.requireIOWrap || ioDefined)) {
-      IO(io)
-    }
-    for ((name, port) <- ports) yield {
-      // Port definitions need to know input or output at top-level.
-      // By FIRRTL semantics, 'flipped' becomes an Input
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      firrtl.Port(port, direction)
-    }
-  }
-
-  private[core] def setupInParent(implicit sourceInfo: SourceInfo): this.type = {
-    _parent match {
-      case Some(p) => {
-        pushCommand(DefInvalid(sourceInfo, io.ref)) // init instance inputs
-        clock := override_clock.getOrElse(Builder.forcedClock)
-        reset := override_reset.getOrElse(Builder.forcedReset)
-        this
-      }
-      case None => this
-    }
-  }
-
-  private[core] def setRefs(): this.type = {
-    for ((name, port) <- ports) {
-      port.setRef(ModuleIO(this, _namespace.name(name)))
-    }
-
-    /** Recursively suggests names to supported "container" classes
-      * Arbitrary nestings of supported classes are allowed so long as the
-      * innermost element is of type HasId
-      * Currently supported:
-      *   - Iterable
-      *   - Option
-      * (Note that Map is Iterable[Tuple2[_,_]] and thus excluded)
-      */
-    def nameRecursively(prefix: String, nameMe: Any): Unit =
-      nameMe match {
-        case (id: HasId) => id.suggestName(prefix)
-        case Some(elt) => nameRecursively(prefix, elt)
-        case (iter: Iterable[_]) if iter.hasDefiniteSize =>
-          for ((elt, i) <- iter.zipWithIndex) {
-            nameRecursively(s"${prefix}_${i}", elt)
-          }
-        case _ => // Do nothing
-      }
-    /** Scala generates names like chisel3$util$Queue$$ram for private vals
-      * This extracts the part after $$ for names like this and leaves names
-      * without $$ unchanged
-      */
-    def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
-    for (m <- getPublicFields(classOf[Module])) {
-      nameRecursively(cleanName(m.getName), m.invoke(this))
-    }
-
-    // For Module instances we haven't named, suggest the name of the Module
-    _ids foreach {
-      case m: Module => m.suggestName(m.desiredName)
-      case _ =>
-    }
-
-    // All suggestions are in, force names to every node.
-    _ids.foreach(_.forceName(default="_T", _namespace))
-    _ids.foreach(_._onModuleClose)
-    this
-  }
-  // For debuggers/testers
-  lazy val getPorts = computePorts
-  val compileOptions = moduleCompileOptions
 }

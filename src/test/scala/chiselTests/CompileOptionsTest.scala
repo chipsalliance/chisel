@@ -14,10 +14,6 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   abstract class StrictModule extends Module()(chisel3.core.ExplicitCompileOptions.Strict)
   abstract class NotStrictModule extends Module()(chisel3.core.ExplicitCompileOptions.NotStrict)
 
-  // Generate a set of options that do not have requireIOWrap enabled, in order to
-  // ensure its definition comes from the implicit options passed to the Module constructor.
-  val strictWithoutIOWrapVal = chisel3.core.ExplicitCompileOptions.Strict.copy(requireIOWrap = false)
-
   class SmallBundle extends Bundle {
     val f1 = UInt(4.W)
     val f2 = UInt(5.W)
@@ -95,19 +91,6 @@ class CompileOptionsSpec extends ChiselFlatSpec {
       io.out := io.in(1)
     }
     elaborate { new RequireIOWrapModule() }
-}
-
-  "A Module with unwrapped IO when compiled with implicit NotStrict.CompileOption " should "not throw an exception" in {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
-
-    class RequireIOWrapModule extends Module {
-      val io = new Bundle {
-        val in = UInt(32.W).asInput
-        val out = Bool().asOutput
-      }
-      io.out := io.in(1)
-    }
-      elaborate { new RequireIOWrapModule() }
   }
 
   "A Module with unwrapped IO when compiled with implicit Strict.CompileOption " should "throw an exception" in {
@@ -203,64 +186,5 @@ class CompileOptionsSpec extends ChiselFlatSpec {
       b := child.noDir
     }
     elaborate { new DirectionLessConnectionModule() }
-  }
-
-  "A Module with wrapped IO when compiled with explicit Strict.CompileOption " should "not throw an exception" in {
-    implicit val strictWithoutIOWrap = strictWithoutIOWrapVal
-    class RequireIOWrapModule extends StrictModule {
-      val io = IO(new Bundle {
-        val in = UInt(32.W).asInput
-        val out = Bool().asOutput
-      })
-      io.out := io.in(1)
-    }
-    elaborate {
-      new RequireIOWrapModule()
-    }
-  }
-
-  "A Module with unwrapped IO when compiled with explicit NotStrict.CompileOption " should "not throw an exception" in {
-    implicit val strictWithoutIOWrap = strictWithoutIOWrapVal
-    class RequireIOWrapModule extends NotStrictModule {
-      val io = new Bundle {
-        val in = UInt(32.W).asInput
-        val out = Bool().asOutput
-      }
-      io.out := io.in(1)
-    }
-    elaborate {
-      new RequireIOWrapModule()
-    }
-  }
-
-  "A Module with unwrapped IO when compiled with explicit Strict.CompileOption " should "throw an exception" in {
-    a [BindingException] should be thrownBy {
-      implicit val strictWithoutIOWrap = strictWithoutIOWrapVal
-      class RequireIOWrapModule extends StrictModule {
-        val io = new Bundle {
-          val in = UInt(32.W).asInput
-          val out = Bool().asOutput
-        }
-        io.out := io.in(1)
-      }
-      elaborate {
-        new RequireIOWrapModule()
-      }
-    }
-  }
-
-  "A Module with unwrapped IO when compiled with an explicit requireIOWrap false " should "not throw an exception" in {
-
-    val strictNotIOWrap = chisel3.core.ExplicitCompileOptions.Strict.copy(requireIOWrap = false, deprecateOldDirectionMethods = false)
-
-    class NotIOWrapModule extends Module()(strictNotIOWrap) {
-      val io = new Bundle {
-        val in = UInt(32.W).asInput
-        val out = Bool().asOutput
-      }
-    }
-    elaborate {
-      new NotIOWrapModule()
-    }
   }
 }
