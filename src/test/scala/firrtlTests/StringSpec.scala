@@ -18,7 +18,7 @@ class PrintfSpec extends FirrtlPropSpec {
     val prefix = "Printf"
     val testDir = compileFirrtlTest(prefix, "/features")
     val harness = new File(testDir, s"top.cpp")
-    copyResourceToFile(cppHarness.toString, harness)
+    copyResourceToFile(cppHarnessResourceName, harness)
 
     verilogToCpp(prefix, testDir, Seq(), harness).!
     cppToExe(prefix, testDir).!

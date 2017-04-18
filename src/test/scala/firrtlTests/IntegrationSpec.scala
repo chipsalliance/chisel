@@ -37,8 +37,8 @@ class GCDSplitEmissionExecutionTest extends FirrtlFlatSpec {
     topFile should exist
 
     // Copy harness over
-    val harness = new File(testDir, s"top.cpp")
-    copyResourceToFile(cppHarness.toString, harness)
+    val harness = new File(testDir, s"testTop.cpp")
+    copyResourceToFile(cppHarnessResourceName, harness)
 
     // topFile will be compiled by Verilator command by default but we need to also include dutFile
     verilogToCpp(top, testDir, Seq(dutFile), harness).!

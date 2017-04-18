@@ -16,7 +16,9 @@ import firrtl.annotations
 import firrtl.util.BackendCompilationUtilities
 
 trait FirrtlRunners extends BackendCompilationUtilities {
-  lazy val cppHarness = new File(s"/top.cpp")
+
+  val cppHarnessResourceName: String = "/firrtl/testTop.cpp"
+
   /** Compiles input Firrtl to Verilog */
   def compileToVerilog(input: String, annotations: AnnotationMap = AnnotationMap(Seq.empty)): String = {
     val circuit = Parser.parse(input.split("\n").toIterator)
@@ -64,7 +66,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       annotations: AnnotationMap = new AnnotationMap(Seq.empty)) = {
     val testDir = compileFirrtlTest(prefix, srcDir, customTransforms, annotations)
     val harness = new File(testDir, s"top.cpp")
-    copyResourceToFile(cppHarness.toString, harness)
+    copyResourceToFile(cppHarnessResourceName, harness)
 
     // Note file copying side effect
     val verilogFiles = verilogPrefixes map { vprefix =>
