@@ -19,20 +19,4 @@ class ModuleExplicitResetSpec extends ChiselFlatSpec  {
       new ModuleExplicitReset(myReset)
     }
   }
-
-  "A Module with an explicit reset in non-compatibility mode" should "elaborate" in {
-    import chisel3._
-    val myReset = true.B
-    class ModuleExplicitReset(reset: Bool) extends Module(_reset = reset) {
-      val io = IO(new Bundle {
-        val done = Output(Bool())
-      })
-
-      io.done := false.B
-    }
-
-    elaborate {
-      new ModuleExplicitReset(myReset)
-    }
-  }
 }

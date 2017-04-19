@@ -70,7 +70,7 @@ private[chisel3] object SeqUtils {
 
       def buildAndOrMultiplexor[TT <: Data](inputs: Iterable[(Bool, TT)]): T = {
         val masked = for ((s, i) <- inputs) yield Mux(s, i.asUInt(), 0.U)
-        output.fromBits(masked.reduceLeft(_ | _))
+        masked.reduceLeft(_ | _).asTypeOf(output)
       }
 
       output match {
@@ -82,7 +82,7 @@ private[chisel3] object SeqUtils {
           }
 
           val masked = for ((s, i) <- sInts) yield Mux(s, i, 0.S)
-          output.fromBits(masked.reduceLeft(_ | _))
+          masked.reduceLeft(_ | _).asTypeOf(output)
 
         case _: FixedPoint =>
           val (sels, possibleOuts) = in.toSeq.unzip

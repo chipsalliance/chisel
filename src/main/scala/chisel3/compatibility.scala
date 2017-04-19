@@ -37,6 +37,26 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
+  // Implicit conversion to allow fromBits because it's being deprecated in chisel3
+  implicit class fromBitsable[T <: Data](val data: T) {
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo.SourceInfo
+    
+    /** Creates an new instance of this type, unpacking the input Bits into
+      * structured data.
+      *
+      * This performs the inverse operation of toBits.
+      *
+      * @note does NOT assign to the object this is called on, instead creates
+      * and returns a NEW object (useful in a clone-and-assign scenario)
+      * @note does NOT check bit widths, may drop bits during assignment
+      * @note what fromBits assigs to must have known widths
+      */
+    def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      that.asTypeOf(data)
+    }
+  }
+  
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]

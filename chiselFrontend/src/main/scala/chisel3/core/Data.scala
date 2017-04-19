@@ -283,22 +283,6 @@ abstract class Data extends HasId {
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
-  /** Creates an new instance of this type, unpacking the input Bits into
-    * structured data.
-    *
-    * This performs the inverse operation of toBits.
-    *
-    * @note does NOT assign to the object this is called on, instead creates
-    * and returns a NEW object (useful in a clone-and-assign scenario)
-    * @note does NOT check bit widths, may drop bits during assignment
-    * @note what fromBits assigs to must have known widths
-    */
-  def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    val output = Wire(chiselCloneType).asInstanceOf[this.type]
-    output.connectFromBits(that)
-    output
-  }
-
   /** Packs the value of this object as plain Bits.
     *
     * This performs the inverse operation of fromBits(Bits).
