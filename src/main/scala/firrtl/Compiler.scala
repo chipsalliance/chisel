@@ -170,7 +170,7 @@ abstract class Transform extends LazyLogging {
     remappedAnnotations.foreach { a =>
       logger.debug(a.serialize)
     }
-    logger.debug(s"Circuit:\n${result.circuit.serialize}")
+    logger.trace(s"Circuit:\n${result.circuit.serialize}")
     logger.info(s"======== Finished Transform $name ========\n")
 
     CircuitState(result.circuit, result.form, Some(AnnotationMap(remappedAnnotations)), None)
