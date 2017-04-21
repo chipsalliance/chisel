@@ -56,7 +56,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
     assertTesterPasses{ new SIntTest1Tester }
   }
   "show the firrtl" in {
-    Driver.execute(Array("--no-run-firrtl"), () => new IntervalTest1) match {
+    Driver.execute(Array("--no-run-firrtl"), () => new IntervalTester) match {
       case result: ChiselExecutionSuccess =>
         println(result.emitted)
       case _ =>
