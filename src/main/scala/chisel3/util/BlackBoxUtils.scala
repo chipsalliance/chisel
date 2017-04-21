@@ -22,3 +22,8 @@ trait HasBlackBoxInline extends BlackBox {
       self, classOf[BlackBoxSourceHelper], BlackBoxInline(blackBoxName, blackBoxInline).serialize))
   }
 }
+
+trait HasInterpreterImpl extends BlackBox {
+  self: BlackBox =>
+
+}
