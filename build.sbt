@@ -35,7 +35,7 @@ lazy val commonSettings = Seq (
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := allDependencies.value ++ chiselLibraryDependencies("chisel", Some((unmanagedClasspath in Compile).value.toString))
+  allDependencies := allDependencies.value ++ chiselLibraryDependencies("chisel3")
 
 )
 
@@ -105,13 +105,13 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(publishArtifact := false).
   dependsOn(coreMacros).
-  dependsOn((Dependencies.chiselProjectDependencies("chisel")):_*)
+  dependsOn((Dependencies.chiselProjectDependencies("chisel3")):_*)
 
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
 
-lazy val chisel = (project in file(".")).
+lazy val chisel3 = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
   settings(
     buildInfoPackage := name.value,
@@ -144,5 +144,5 @@ lazy val chisel = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   ).
-  dependsOn((Dependencies.chiselProjectDependencies("chisel")):_*)
+  dependsOn((Dependencies.chiselProjectDependencies("chisel3")):_*)
 
