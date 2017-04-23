@@ -32,7 +32,7 @@ object Mem {
   }
 }
 
-sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with VecLike[T] {
+sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
