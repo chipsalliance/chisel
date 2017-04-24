@@ -36,7 +36,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
   /** Creates a read accessor into the memory with static addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  override def apply(x: Int): T = macro SourceInfoTransform.xArg
+  def apply(x: Int): T = macro SourceInfoTransform.xArg
 
   def do_apply(idx: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     require(idx >= 0 && idx < length)

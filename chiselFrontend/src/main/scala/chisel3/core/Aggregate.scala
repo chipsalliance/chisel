@@ -240,7 +240,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   /** Creates a statically indexed read or write accessor into the array.
     */
-  override def apply(idx: Int): T = self(idx)
+  def apply(idx: Int): T = self(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
   def read(idx: UInt)(implicit compileOptions: CompileOptions): T = apply(idx)
@@ -255,7 +255,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   }
 
   private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
-  def getElements: Seq[Data] =
+  override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
 
   for ((elt, i) <- self.zipWithIndex)
@@ -278,19 +278,6 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   */
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   def apply(idx: UInt)(implicit compileOptions: CompileOptions): T
-
-  /* The following definition of apply() is to work around the issue that you cannot
-   *  define/override an abstract method with a macro:
-   *    http://stackoverflow.com/questions/30152852/override-method-from-macro
-   * We want to use a macro for MemBase's apply() method so we can provide the appropriate
-   *  CompileOptions to the asUInt method, but the apply() is an abstract method inherited
-   *  from the VecLike trait. We provide a trait that extends VecLike and in turn provides
-   *  a concrete apply() (that whill never be used), just so we can override it.
-   */
-  override def apply(x: Int): T = {
-    require(false, "VecLike.apply() should never be directly instantiated.")
-    this.asInstanceOf[T]
-  }
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
