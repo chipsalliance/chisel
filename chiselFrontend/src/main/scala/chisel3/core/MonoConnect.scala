@@ -67,6 +67,7 @@ object MonoConnect {
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
         for(idx <- 0 until sink_v.length) {
           try {
+            implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
           } catch {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")

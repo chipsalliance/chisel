@@ -18,7 +18,7 @@ private[chisel3] object SeqUtils {
     */
   def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
 
-  def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo): UInt = {
+  def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
@@ -32,7 +32,7 @@ private[chisel3] object SeqUtils {
     */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
-  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = in.size match {
+  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = in.size match {
     case 0 => 0.U
     case 1 => in.head
     case n => count(in take n/2) +& count(in drop n/2)

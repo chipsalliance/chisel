@@ -23,7 +23,7 @@ sealed abstract class Aggregate extends Data {
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
+  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
   }
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
@@ -132,7 +132,7 @@ object Vec {
     apply(Seq.fill(n)(gen))
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo): UInt = {
+  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     val w = BigInt(n-1).bitLength
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
@@ -223,10 +223,10 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  def apply(idx: UInt): T = {
+  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T = {
     Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
     val port = gen
-    val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo)
+    val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
 
     // Bind each element of port to being whatever the base type is
@@ -243,11 +243,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def apply(idx: Int): T = self(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt): T = apply(idx)
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = apply(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T): Unit = {
-    apply(idx).:=(data)(DeprecatedSourceInfo, chisel3.core.ExplicitCompileOptions.NotStrict)
+  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
+    apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
   }
 
   override def cloneType: this.type = {
@@ -277,30 +277,30 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   * operations.
   */
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
-  def apply(idx: UInt): T
+  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt): T
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T): Unit
+  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit
 
   /** Outputs true if p outputs true for every element.
     */
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
-  def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
+  def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(true.B)(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
     */
   def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
-  def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
+  def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(false.B)(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
@@ -308,14 +308,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def contains(x: T)(implicit ev: T <:< UInt): Bool = macro VecTransform.contains
 
-  def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt): Bool =
+  def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt, compileOptions: CompileOptions): Bool =
     this.exists(_ === x)
 
   /** Outputs the number of elements for which p is true.
     */
   def count(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
-  def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.count(this map p)
 
   /** Helper function that appends an index (literal value) to each element,
