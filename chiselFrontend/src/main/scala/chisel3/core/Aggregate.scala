@@ -223,7 +223,10 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T = {
+  override def apply(x: UInt): T = macro SourceInfoTransform.xArg
+
+  def do_apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val idx = x
     Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
     val port = gen
     val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo, compileOptions)
@@ -243,11 +246,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def apply(idx: Int): T = self(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = apply(idx)
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(DeprecatedSourceInfo, compileOptions)
 
   @deprecated("Use Vec.apply instead", "chisel3")
   def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
-    apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
+    do_apply(idx)(DeprecatedSourceInfo, compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
   }
 
   override def cloneType: this.type = {
@@ -277,7 +280,9 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   * operations.
   */
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
-  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T
+  def apply(x: UInt): T = macro SourceInfoTransform.xArg
+
+  def do_apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
