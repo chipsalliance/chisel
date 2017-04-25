@@ -40,7 +40,7 @@ object printf { // scalastyle:ignore object.name
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Unit =
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     apply(Printable.pack(fmt, data:_*))
   /** Prints a message in simulation.
     *
@@ -54,17 +54,16 @@ object printf { // scalastyle:ignore object.name
     *
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo): Unit = {
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
     when (!Builder.forcedReset) {
       printfWithoutReset(pable)
     }
   }
 
-  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
     val clock = Builder.forcedClock
     pushCommand(Printf(sourceInfo, Node(clock), pable))
   }
-
-  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo): Unit =
+  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     printfWithoutReset(Printable.pack(fmt, data:_*))
 }

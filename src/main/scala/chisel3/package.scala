@@ -1,3 +1,4 @@
+import chisel3.core.CompileOptions
 // See LICENSE for license details.
 
 /** The chisel3 package contains the chisel3 API.
@@ -268,9 +269,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
-    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x    // scalastyle:ignore method.name
-    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x      // scalastyle:ignore method.name
-    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x    // scalastyle:ignore method.name
+    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x    // scalastyle:ignore method.name
+    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x      // scalastyle:ignore method.name
+    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x    // scalastyle:ignore method.name
   }
 
   // Compatibility with existing code.
