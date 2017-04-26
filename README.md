@@ -80,7 +80,7 @@ This will walk you through installing Chisel and its dependencies:
 1. Install sbt:
 
   ```
-  brew cask install sbt
+  brew install sbt
   ```
 1. Install Verilator:
 

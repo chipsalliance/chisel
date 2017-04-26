@@ -3,8 +3,6 @@
 package chisel3.util
 
 import chisel3._
-// TODO: remove this once we have CompileOptions threaded through the macro system.
-import chisel3.core.ExplicitCompileOptions.NotStrict
 
 object RegEnable {
   /** Returns a register with the specified next, update enable gate, and no reset initialization.

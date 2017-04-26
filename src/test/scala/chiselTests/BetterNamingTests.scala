@@ -7,10 +7,11 @@ import chisel3.util._
 
 // Defined outside of the class so we don't get $ in name
 class Other(w: Int) extends Module {
-  val io = new Bundle {
+  val io = IO(new Bundle {
     val a = UInt(w.W)
-  }
+  })
 }
+
 // Check the names of the Modules (not instances)
 class PerNameIndexing(count: Int) extends NamedModuleTester {
   def genModName(prefix: String, idx: Int): String = if (idx == 0) prefix else s"${prefix}_$idx"

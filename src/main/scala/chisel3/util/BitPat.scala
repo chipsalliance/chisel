@@ -3,8 +3,8 @@
 package chisel3.util
 
 import scala.language.experimental.macros
-
 import chisel3._
+import chisel3.core.CompileOptions
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 object BitPat {
@@ -94,7 +94,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
-  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo): Bool = value.asUInt === (that & mask.asUInt)    // scalastyle:ignore method.name
-  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = !(this === that)    // scalastyle:ignore method.name
-  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo): Bool = this =/= that        // scalastyle:ignore method.name
+  def do_=== (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = value.asUInt === (that & mask.asUInt)    // scalastyle:ignore method.name
+  def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = !(this === that)    // scalastyle:ignore method.name
+  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that        // scalastyle:ignore method.name
 }

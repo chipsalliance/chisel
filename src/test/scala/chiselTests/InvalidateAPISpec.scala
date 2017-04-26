@@ -7,9 +7,9 @@ import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
 import org.scalatest._
 
-class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
+class InvalidateAPISpec extends ChiselPropSpec with Matchers {
 
-  override def generateFirrtl(t: => Module): String = Driver.emit(() => t)
+  def myGenerateFirrtl(t: => Module): String = Driver.emit(() => t)
   def compileFirrtl(t: => Module): Unit = {
     Driver.execute(Array[String]("--compiler", "verilog"), () => t)
   }
@@ -30,7 +30,7 @@ class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
       io.out := io.in
     }
 
-    val firrtlOutput = generateFirrtl(new ModuleWithDontCare)
+    val firrtlOutput = myGenerateFirrtl(new ModuleWithDontCare)
     firrtlOutput should include("io.out is invalid")
   }
 
@@ -42,7 +42,7 @@ class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
       io.out := io.in
     }
 
-    val firrtlOutput = generateFirrtl(new ModuleWithoutDontCare)
+    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     firrtlOutput should not include("is invalid")
   }
 
@@ -54,7 +54,7 @@ class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
       io.out := io.in
     }
 
-    val firrtlOutput = generateFirrtl(new ModuleWithoutDontCare)
+    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     firrtlOutput should include("io is invalid")
   }
 
@@ -66,7 +66,7 @@ class ExplicitInvalidateSpec extends ChiselPropSpec with Matchers {
       io <> DontCare
     }
 
-    val firrtlOutput = generateFirrtl(new ModuleWithoutDontCare)
+    val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     firrtlOutput should include("io is invalid")
   }
 

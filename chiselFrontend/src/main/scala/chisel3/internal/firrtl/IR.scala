@@ -98,7 +98,7 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
 }
 
 case class Ref(name: String) extends Arg
-case class ModuleIO(mod: Module, name: String) extends Arg {
+case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   override def fullName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
@@ -258,7 +258,7 @@ case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, 
 case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
 case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
 case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
-case class DefInstance(sourceInfo: SourceInfo, id: Module, ports: Seq[Port]) extends Definition
+case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 case class WhenEnd(sourceInfo: SourceInfo) extends Command
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
@@ -269,11 +269,11 @@ case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Port(id: Data, dir: Direction)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
 abstract class Component extends Arg {
-  def id: Module
+  def id: BaseModule
   def name: String
   def ports: Seq[Port]
 }
-case class DefModule(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
-case class DefBlackBox(id: Module, name: String, ports: Seq[Port], params: Map[String, Param]) extends Component
+case class DefModule(id: UserModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], params: Map[String, Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation] = Seq.empty)

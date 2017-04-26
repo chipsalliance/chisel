@@ -35,9 +35,10 @@ object DataMirror {
   * - For other types of the same class are are the same: clone of any of the elements
   * - Otherwise: fail
   */
+//scalastyle:off cyclomatic.complexity
 private[core] object cloneSupertype {
   def apply[T <: Data](elts: Seq[T], createdType: String)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): T = {
+                                                          compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
     if (elts forall {_.isInstanceOf[Bits]}) {
@@ -45,7 +46,9 @@ private[core] object cloneSupertype {
         case (elt1: Bool, elt2: Bool) => elt1
         case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
         case (elt1: UInt, elt2: Bool) => elt1  // TODO: what happens with zero width UInts?
-        case (elt1: UInt, elt2: UInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2  // TODO: perhaps redefine Widths to allow >= op?
+        case (elt1: UInt, elt2: UInt) =>
+          // TODO: perhaps redefine Widths to allow >= op?
+          if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
         case (elt1: SInt, elt2: SInt) => if (elt1.width == (elt1.width max elt2.width)) elt1 else elt2
         case (elt1: FixedPoint, elt2: FixedPoint) => {
           (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
@@ -59,13 +62,17 @@ private[core] object cloneSupertype {
           }
         }
         case (elt1, elt2) =>
-          throw new AssertionError(s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
+          throw new AssertionError(
+            s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
       }).asInstanceOf[T] }
       model.chiselCloneType
-    } else {
+    }
+    else {
       for (elt <- elts.tail) {
-        require(elt.getClass == elts.head.getClass, s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
-        require(elt typeEquivalent elts.head, s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
+        require(elt.getClass == elts.head.getClass,
+          s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
+        require(elt typeEquivalent elts.head,
+          s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
       }
       elts.head.chiselCloneType
     }
@@ -200,7 +207,7 @@ abstract class Data extends HasId {
       } else {
         Binding.checkSynthesizable(that, s"'that' ($that)")
         try {
-          MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+          MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
         } catch {
           case MonoConnect.MonoConnectException(message) =>
             throwException(
@@ -227,7 +234,7 @@ abstract class Data extends HasId {
       } else {
         Binding.checkSynthesizable(that, s"'that' ($that)")
         try {
-          BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedModule)
+          BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
         } catch {
           case BiConnect.BiConnectException(message) =>
             throwException(
@@ -319,7 +326,7 @@ abstract class Data extends HasId {
     * This performs the inverse operation of fromBits(Bits).
     */
   @deprecated("Best alternative, .asUInt()", "chisel3")
-  def toBits(): UInt = do_asUInt(DeprecatedSourceInfo)
+  def toBits(implicit compileOptions: CompileOptions): UInt = do_asUInt(DeprecatedSourceInfo, compileOptions)
 
   /** Does a reinterpret cast of the bits in this node into the format that provides.
     * Returns a new Wire of that type. Does not modify existing nodes.
@@ -351,7 +358,7 @@ abstract class Data extends HasId {
     */
   final def asUInt(): UInt = macro SourceInfoTransform.noArg
 
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
+  def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
 
   // firrtlDirection is the direction we report to firrtl.
   // It maintains the user-specified value (as opposed to the "actual" or applied/propagated value).
@@ -389,7 +396,7 @@ object Wire {
     val x = t.chiselCloneType
 
     // Bind each element of x to being a Wire
-    Binding.bind(x, WireBinder(Builder.forcedModule), "Error: t")
+    Binding.bind(x, WireBinder(Builder.forcedUserModule), "Error: t")
 
     pushCommand(DefWire(sourceInfo, x))
     if (!compileOptions.explicitInvalidate) {
@@ -427,7 +434,7 @@ sealed class Clock extends Element(Width(1)) {
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that
@@ -453,7 +460,7 @@ object DontCare extends Data {
     Builder.error("DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo): chisel3.core.UInt = {
+  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): chisel3.core.UInt = {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }
