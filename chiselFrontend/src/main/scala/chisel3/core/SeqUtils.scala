@@ -18,7 +18,7 @@ private[chisel3] object SeqUtils {
     */
   def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
 
-  def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo): UInt = {
+  def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
@@ -32,7 +32,7 @@ private[chisel3] object SeqUtils {
     */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
-  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo): UInt = in.size match {
+  def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = in.size match {
     case 0 => 0.U
     case 1 => in.head
     case n => count(in take n/2) +& count(in drop n/2)
@@ -40,7 +40,7 @@ private[chisel3] object SeqUtils {
 
   /** Returns the data value corresponding to the first true predicate.
     */
-  def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro CompileOptionsTransform.inArg
+  def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   def do_priorityMux[T <: Data](in: Seq[(Bool, T)])
                                (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
@@ -57,7 +57,7 @@ private[chisel3] object SeqUtils {
     * @note assumes exactly one true predicate, results undefined otherwise
     *       FixedPoint values or aggregates containing FixedPoint values cause this optimized structure to be lost
     */
-  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro CompileOptionsTransform.inArg
+  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   //scalastyle:off method.length cyclomatic.complexity
   def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])

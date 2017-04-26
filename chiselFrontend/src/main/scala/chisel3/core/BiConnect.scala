@@ -73,6 +73,7 @@ object BiConnect {
         if(left_v.length != right_v.length) { throw MismatchedVecException }
         for(idx <- 0 until left_v.length) {
           try {
+            implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
           } catch {
             case BiConnectException(message) => throw BiConnectException(s"($idx)$message")

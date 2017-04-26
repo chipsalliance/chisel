@@ -8,9 +8,6 @@ package chisel3.util
 import chisel3._
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
-// TODO: remove this once we have CompileOptions threaded through the macro system.
-import chisel3.core.ExplicitCompileOptions.NotStrict
-
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
   * The base protocol implied by the directionality is that the consumer
