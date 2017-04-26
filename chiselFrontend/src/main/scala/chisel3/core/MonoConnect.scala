@@ -79,7 +79,7 @@ object MonoConnect {
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
 
       // Handle Vec case
-      case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) => {
+      case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
         for(idx <- 0 until sink_v.length) {
           try {
@@ -89,10 +89,9 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
           }
         }
-      }
 
       // Handle Record case
-      case (sink_r: Record, source_r: Record) => {
+      case (sink_r: Record, source_r: Record) =>
         // For each field, descend with right
         for((field, sink_sub) <- sink_r.elements) {
           try {
@@ -108,7 +107,6 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
         }
-      }
 
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
