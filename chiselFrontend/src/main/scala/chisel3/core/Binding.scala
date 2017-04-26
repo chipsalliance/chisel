@@ -91,8 +91,6 @@ object Binding {
         case unbound @ UnboundBinding(_) => {
           element.binding = binder(unbound)
         }
-          // If autoIOWrap is enabled and we're rebinding a PortBinding, just ignore the rebinding.
-        case portBound @ PortBinding(_, _) if (!(forcedModule.compileOptions.requireIOWrap) && binder.isInstanceOf[PortBinder]) =>
         case binding => throw AlreadyBoundException(binding.toString)
       }
     )
@@ -118,68 +116,32 @@ object Binding {
 
   // Excepts if any root element is unbound and thus not on the hardware graph
   def checkSynthesizable(target: Data, error_prelude: String): Unit = {
-    // This is called if we support autoIOWrap
-    def elementOfIO(element: Element): Boolean = {
-      element._parent match {
-        case None => false
-        case Some(x: Module) => {
-          // Have we defined the IO ports for this module? If not, do so now.
-          if (!x.ioDefined) {
-            x.computePorts
-            element.binding match {
-              case SynthesizableBinding() => true
-              case _ => false
-            }
-          } else {
-            // io.flatten eliminates Clock elements, so we need to use io.allElements
-            val ports = x.io.allElements
-            val isIOElement = ports.contains(element) || element == x.clock || element == x.reset
-            isIOElement
-          }
-        }
-      }
-    }
-
-    // Diagnose a binding error caused by a missing IO() wrapper.
-    // element is the element triggering the binding error.
-    // Returns true if the element is a member of the module's io but ioDefined is false.
-    def isMissingIOWrapper(element: Element): Boolean = {
-      element._parent match {
-        case None => false
-        case Some(x: Module) => {
-          // If the IO() wrapper has been executed, it isn't missing.
-          if (x.ioDefined) {
-            false
-          } else {
-            // TODO: We should issue the message only once, and if we get here,
-            //  we know the wrapper is missing, whether or not the element is a member of io.
-            //  But if it's not an io element, we want to issue the complementary "unbound" error.
-            //  Revisit this when we collect error messages instead of throwing exceptions.
-            // The null test below is due to the fact that we may be evaluating the arguments
-            //  of the IO() wrapper itself.
-            (x.io != null) && x.io.flatten.contains(element)
-          }
-        }
-      }
-    }
-
     try walkToBinding(
       target,
-      element => element.binding match {
-        case SynthesizableBinding() => {} // OK
-        case binding =>
-          // The following kludge is an attempt to provide backward compatibility
-          // It should be done at at higher level.
-          if ((forcedModule.compileOptions.requireIOWrap || !elementOfIO(element))) {
-            // Generate a better error message if this is a result of a missing IO() wrapper.
-            if (isMissingIOWrapper(element)) {
-              throw MissingIOWrapperException
-            } else {
-              throw NotSynthesizableException
+      element => {
+        // Compatibility mode to automatically wrap ports in IO
+        // TODO: remove me, perhaps by removing Bindings checks from compatibility mode
+        element._parent match {
+          case Some(x: BaseModule) => x._autoWrapPorts
+          case _ =>
+        }
+        // Actual binding check
+        element.binding match {
+          case SynthesizableBinding() => // OK
+          case binding => {
+            // Attempt to diagnose common bindings issues, like forgot to wrap IO(...)
+            element._parent match {
+              case Some(x: LegacyModule) =>
+                // null check in case we try to access io before it is defined
+                if ((x.io != null) && (x.io.flatten contains element)) {
+                  throw MissingIOWrapperException
+                }
+              case _ =>
             }
-          } else {
-            Binding.bind(element, PortBinder(element._parent.get), "Error: IO")
+            // Fallback generic exception
+            throw NotSynthesizableException
           }
+        }
       }
     )
     catch {
@@ -190,7 +152,7 @@ object Binding {
 
 // Location refers to 'where' in the Module hierarchy this lives
 sealed trait Binding {
-  def location: Option[Module]
+  def location: Option[BaseModule]
   def direction: Option[Direction]
 }
 
@@ -202,7 +164,7 @@ sealed trait UnconstrainedBinding extends Binding {
 // A constrained binding can only be read/written by specific modules
 // Location will track where this Module is
 sealed trait ConstrainedBinding extends Binding {
-  def enclosure: Module
+  def enclosure: BaseModule
   def location = Some(enclosure)
 }
 
@@ -224,19 +186,19 @@ sealed trait SynthesizableBinding extends Binding
 case class LitBinding() // will eventually have literal info
     extends SynthesizableBinding with UnconstrainedBinding with UndirectionedBinding
 
-case class MemoryPortBinding(enclosure: Module)
+case class MemoryPortBinding(enclosure: UserModule)
     extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding
 
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: Module)
+case class OpBinding(enclosure: UserModule)
     extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding
 
-case class PortBinding(enclosure: Module, direction: Option[Direction])
+case class PortBinding(enclosure: BaseModule, direction: Option[Direction])
     extends SynthesizableBinding with ConstrainedBinding
 
-case class RegBinding(enclosure: Module)
+case class RegBinding(enclosure: UserModule)
     extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding
 
-case class WireBinding(enclosure: Module)
+case class WireBinding(enclosure: UserModule)
     extends SynthesizableBinding with ConstrainedBinding with UndirectionedBinding

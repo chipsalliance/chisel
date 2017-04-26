@@ -152,20 +152,97 @@ package object Chisel {     // scalastyle:ignore package.object.name
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
-  type BlackBox = chisel3.core.BlackBox
-
+  import chisel3.core.Param
+  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
+    // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
+    // required) to build. 
+    override def _autoWrapPorts() = {
+      if (!_ioPortBound()) {
+        IO(io)
+      }
+    }
+  }
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
   val SeqMem = chisel3.core.SyncReadMem
   type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
+  import chisel3.core.CompileOptions
+  abstract class CompatibilityModule(
+      override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+      (implicit moduleCompileOptions: CompileOptions)
+      extends chisel3.core.LegacyModule(override_clock, override_reset) {
+    // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
+    // required) to build.
+    // Also provides the clock / reset constructors, which were used before withClock happened.
+    
+    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
+    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
+    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
+
+    override def _autoWrapPorts() = {
+      if (!_ioPortBound()) {
+        IO(io)
+      }
+    }
+  }
   val Module = chisel3.core.Module
-  type Module = chisel3.core.Module
+  type Module = CompatibilityModule
 
   val printf = chisel3.core.printf
 
-  val Reg = chisel3.core.Reg
+  val RegNext = chisel3.core.RegNext
+  val RegInit = chisel3.core.RegInit
+  object Reg {
+    import chisel3.core.{Binding, CompileOptions}
+    import chisel3.internal.sourceinfo.SourceInfo
+
+    // Passthrough for chisel3.core.Reg
+    // Single-element constructor to avoid issues caused by null default args in a type
+    // parameterized scope.
+    def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+      chisel3.core.Reg(t)
+    
+    /** Creates a register with optional next and initialization values.
+      *
+      * @param t: data type for the register
+      * @param next: new value register is to be updated with every cycle (or
+      * empty to not update unless assigned to using the := operator)
+      * @param init: initialization value on reset (or empty for uninitialized,
+      * where the register value persists across a reset)
+      *
+      * @note this may result in a type error if called from a type parameterized
+      * function, since the Scala compiler isn't smart enough to know that null
+      * is a valid value. In those cases, you can either use the outType only Reg
+      * constructor or pass in `null.asInstanceOf[T]`.
+      */
+    def apply[T <: Data](t: T = null, next: T = null, init: T = null)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      if (t ne null) {
+        val reg = if (init ne null) {
+          RegInit(t, init)
+        } else {
+          chisel3.core.Reg(t)
+        }
+        if (next ne null) {
+          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+          reg := next
+        }
+        reg
+      } else if (next ne null) {
+        if (init ne null) {
+          RegNext(next, init)
+        } else {
+          RegNext(next)
+        }
+      } else if (init ne null) {
+        RegInit(init)
+      } else {
+        throwException("cannot infer type")
+      }
+    }
+  }
 
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
@@ -215,12 +292,24 @@ package object Chisel {     // scalastyle:ignore package.object.name
     val TesterDriver = chisel3.testers.TesterDriver
   }
 
-
-  val log2Up = chisel3.util.log2Up
   val log2Ceil = chisel3.util.log2Ceil
-  val log2Down = chisel3.util.log2Down
   val log2Floor = chisel3.util.log2Floor
   val isPow2 = chisel3.util.isPow2
+
+  /** Compute the log2 rounded up with min value of 1 */
+  object log2Up {
+    def apply(in: BigInt): Int = {
+      require(in >= 0)
+      1 max (in-1).bitLength
+    }
+    def apply(in: Int): Int = apply(BigInt(in))
+  }
+
+  /** Compute the log2 rounded down with min value of 1 */
+  object log2Down {
+    def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
+    def apply(in: Int): Int = apply(BigInt(in))
+  }
 
   val BitPat = chisel3.util.BitPat
   type BitPat = chisel3.util.BitPat
@@ -328,8 +417,6 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val UIntToOH = chisel3.util.UIntToOH
   val PriorityEncoderOH = chisel3.util.PriorityEncoderOH
 
-  val RegNext = chisel3.util.RegNext
-  val RegInit = chisel3.util.RegInit
   val RegEnable = chisel3.util.RegEnable
   val ShiftRegister = chisel3.util.ShiftRegister
 

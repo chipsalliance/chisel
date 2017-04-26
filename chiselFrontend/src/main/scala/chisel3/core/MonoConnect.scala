@@ -5,7 +5,7 @@ package chisel3.core
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.Connect
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, WireTransform}
+import chisel3.internal.sourceinfo.SourceInfo
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.
@@ -61,7 +61,7 @@ object MonoConnect {
       connectCompileOptions: CompileOptions,
       sink: Data,
       source: Data,
-      context_mod: Module): Unit =
+      context_mod: UserModule): Unit =
     (sink, source) match {
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -83,6 +83,7 @@ object MonoConnect {
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
         for(idx <- 0 until sink_v.length) {
           try {
+            implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
           } catch {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
@@ -120,12 +121,12 @@ object MonoConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: Module): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: UserModule): Unit = {
     import Direction.{Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod: Module   = sink.binding.location.getOrElse(throw UnwritableSinkException)
-    val source_mod: Module = source.binding.location.getOrElse(context_mod)
+    val sink_mod: BaseModule   = sink.binding.location.getOrElse(throw UnwritableSinkException)
+    val source_mod: BaseModule = source.binding.location.getOrElse(context_mod)
 
     val sink_direction: Option[Direction] = sink.binding.direction
     val source_direction: Option[Direction] = source.binding.direction

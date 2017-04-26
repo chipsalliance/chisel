@@ -19,7 +19,7 @@ object LFSR16 {
   @chiselName
   def apply(increment: Bool = true.B): UInt = {
     val width = 16
-    val lfsr = Reg(init=1.U(width.W))
+    val lfsr = RegInit(1.U(width.W))
     when (increment) { lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1,1)) }
     lfsr
   }

@@ -31,11 +31,18 @@ class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index)) {
   val io = IO(new AnalogBlackBoxIO(1))
 }
 
+// AnalogBlackBox wrapper, which extends Module to present the common io._ interface
+class AnalogBlackBoxModule(index: Int) extends Module {
+  val io = IO(new AnalogBlackBoxIO(1))
+  val impl = Module(new AnalogBlackBox(index))
+  io <> impl.io
+}
+
 // Wraps up n blackboxes, connecing their buses and simply forwarding their ports up
 class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends Module {
   require(n > 0)
   val io = IO(new AnalogBlackBoxIO(n))
-  val bbs = idxs.map(i => Module(new AnalogBlackBox(i)))
+  val bbs = idxs.map(i => Module(new AnalogBlackBoxModule(i)))
   io.bus <> bbs.head.io.bus // Always bulk connect io.bus to first bus
   io.port <> bbs.flatMap(_.io.port) // Connect ports
   attach(bbs.map(_.io.bus):_*) // Attach all the buses
@@ -58,9 +65,9 @@ abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module {
 class AnalogDUT extends AnalogDUTModule(5) { // 5 BlackBoxes
   val mods = Seq(
     Module(new AnalogBlackBoxWrapper(1, Seq(0))),
-    Module(new AnalogBlackBox(1)),
+    Module(new AnalogBlackBoxModule(1)),
     Module(new AnalogBlackBoxWrapper(2, Seq(2, 3))), // 2 blackboxes
-    Module(new AnalogBlackBox(4))
+    Module(new AnalogBlackBoxModule(4))
   )
   // Connect all ports to top
   io.ports <> mods.flatMap(_.io.port)
@@ -79,7 +86,7 @@ class AnalogDUT extends AnalogDUTModule(5) { // 5 BlackBoxes
 class AnalogSmallDUT extends AnalogDUTModule(4) { // 4 BlackBoxes
   val mods = Seq(
     Module(new AnalogBlackBoxWrapper(1, Seq(0))),
-    Module(new AnalogBlackBox(1)),
+    Module(new AnalogBlackBoxModule(1)),
     Module(new AnalogBlackBoxWrapper(2, Seq(2, 3))) // 2 BlackBoxes
   )
   // Connect all ports to top

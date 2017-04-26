@@ -27,7 +27,7 @@ object when {  // scalastyle:ignore object.name
     * }
     * }}}
     */
-  def apply(cond: Bool)(block: => Unit)(implicit sourceInfo: SourceInfo): WhenContext = {
+  def apply(cond: Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
     new WhenContext(sourceInfo, cond, !cond, block)
   }
 }
@@ -43,14 +43,14 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Bool, prevCond: => Bool, b
   /** This block of logic gets executed if above conditions have been false
     * and this condition is true.
     */
-  def elsewhen (elseCond: Bool)(block: => Unit)(implicit sourceInfo: SourceInfo): WhenContext = {
+  def elsewhen (elseCond: Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
     new WhenContext(sourceInfo, prevCond && elseCond, prevCond && !elseCond, block)
   }
 
   /** This block of logic gets executed only if the above conditions were all
     * false. No additional logic blocks may be appended past the `otherwise`.
     */
-  def otherwise(block: => Unit)(implicit sourceInfo: SourceInfo): Unit =
+  def otherwise(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     new WhenContext(sourceInfo, prevCond, null, block)
 
   pushCommand(WhenBegin(sourceInfo, cond.ref))
