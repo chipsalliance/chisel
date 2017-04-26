@@ -314,7 +314,7 @@ abstract class Data extends HasId {
     * @note bit widths are NOT checked, may pad or drop bits from input
     * @note that should have known widths
     */
-  def asTypeOf[T <: Data](that: T): T = macro CompileOptionsTransform.thatArg
+  def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val thatCloned = Wire(that.chiselCloneType)
