@@ -12,36 +12,36 @@ private[iotesters] abstract class Backend(private[iotesters] val _seed: Long = S
   val rnd = new scala.util.Random(_seed)
 
   def poke(signal: InstanceId, value: BigInt, off: Option[Int])
-          (implicit logger: PrintStream, verbose: Boolean, base: Int): Unit
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Unit
 
   def peek(signal: InstanceId, off: Option[Int])
-          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int): BigInt
 
   def poke(path: String, value: BigInt)
-          (implicit logger: PrintStream, verbose: Boolean, base: Int): Unit
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Unit
 
   def peek(path: String)
-          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int): BigInt
 
   def expect(signal: InstanceId, expected: BigInt)
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean =
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean =
     expect(signal, expected, "")
 
   def expect(signal: InstanceId, expected: BigInt, msg: => String)
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean
 
   def expect(path: String, expected: BigInt)
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean =
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean =
     expect(path, expected, "")
 
   def expect(path: String, expected: BigInt, msg: => String)
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean
 
-  def step(n: Int)(implicit logger: PrintStream): Unit
+  def step(n: Int)(implicit logger: TestErrorLog): Unit
 
   def reset(n: Int): Unit
 
-  def finish(implicit logger: PrintStream): Unit
+  def finish(implicit logger: TestErrorLog): Unit
 }
 
 

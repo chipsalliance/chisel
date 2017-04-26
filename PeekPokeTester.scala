@@ -54,19 +54,16 @@ abstract class PeekPokeTester[+T <: Module](
     base: Int = 16,
     logFile: Option[File] = None) {
 
+  implicit val logger = new TestErrorLog
+
   implicit def longToInt(x: Long) = x.toInt
   val optionsManager = Driver.optionsManager
 
-  implicit val logger = (logFile, optionsManager.testerOptions.logFileName) match {
-    case (None, "")        => System.out
-    case (Some(f), _)      => new java.io.PrintStream(f)
-    case (_, logFileName)  => new java.io.PrintStream(new File(logFileName))
-  }
   implicit val _verbose = optionsManager.testerOptions.isVerbose
   implicit val _base    = optionsManager.testerOptions.displayBase
 
   def println(msg: String = "") {
-    logger.println(msg)
+    logger.info(msg)
   }
 
   /****************************/
@@ -92,7 +89,7 @@ abstract class PeekPokeTester[+T <: Module](
 
   val rnd = backend.rnd
   rnd.setSeed(optionsManager.testerOptions.testerSeed)
-  logger.println(s"SEED ${optionsManager.testerOptions.testerSeed}")
+  println(s"SEED ${optionsManager.testerOptions.testerSeed}")
 
   /** Convert a Boolean to BigInt */
   implicit def int(x: Boolean): BigInt = if (x) 1 else 0
@@ -118,7 +115,7 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def step(n: Int) {
-    if (_verbose) logger println s"STEP $simTime -> ${simTime+n}"
+    if (_verbose) println(s"STEP $simTime -> ${simTime+n}")
     backend.step(n)
     incTime(n)
   }
@@ -240,7 +237,7 @@ abstract class PeekPokeTester[+T <: Module](
   }
 
   def expect (good: Boolean, msg: => String): Boolean = {
-    if (_verbose || ! good) logger println s"""EXPECT AT $simTime $msg ${if (good) "PASS" else "FAIL"}"""
+    if (_verbose || ! good) println(s"""EXPECT AT $simTime $msg ${if (good) "PASS" else "FAIL"}""")
     if (!good) fail
     good
   }
@@ -287,7 +284,8 @@ abstract class PeekPokeTester[+T <: Module](
       //  Anything other than 0 is an error.
       case e: TestApplicationException => if (e.exitVal != 0) fail
     }
-    logger println s"""RAN $simTime CYCLES ${if (ok) "PASSED" else s"FAILED FIRST AT CYCLE $failureTime"}"""
+    println(s"""RAN $simTime CYCLES ${if (ok) "PASSED" else s"FAILED FIRST AT CYCLE $failureTime"}""")
+    logger.report()
     ok
   }
 }

@@ -73,12 +73,13 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     (in_channel, out_channel, cmd_channel)
   }
 
-  private def dumpLogs(implicit logger: PrintStream) {
-    _logs foreach logger.println
+  private def dumpLogs(implicit logger: TestErrorLog) {
+    _logs foreach logger.info
     _logs.clear
   }
 
   private def throwExceptionIfDead(exitValue: Future[Int]) {
+    implicit val logger = new TestErrorLog
     if (exitValue.isCompleted) {
       val exitCode = Await.result(exitValue, Duration(-1, SECONDS))
       // We assume the error string is the last log entry.
@@ -87,7 +88,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
       } else {
         "test application exit"
       } + " - exit code %d".format(exitCode)
-      dumpLogs(System.out)
+      dumpLogs(logger)
       throw new TestApplicationException(exitCode, errorString)
     }
   }
@@ -195,7 +196,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     isStale = false
   }
 
-  private def takeStep(implicit logger: PrintStream) {
+  private def takeStep(implicit logger: TestErrorLog) {
     mwhile(!sendCmd(SIM_CMD.STEP)) { }
     mwhile(!sendInputs) { }
     mwhile(!recvOutputs) { }
@@ -252,7 +253,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
   }
 
   private def start {
-    implicit val logger = System.out // Start dumps to screen
+    implicit val logger = new TestErrorLog // Start dumps to screen
     println(s"""STARTING ${cmd mkString " "}""")
     mwhile(!recvOutputs) { }
     // reset(5)
@@ -262,7 +263,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     }
   }
 
-  def poke(signal: String, value: BigInt)(implicit logger: PrintStream) {
+  def poke(signal: String, value: BigInt)(implicit logger: TestErrorLog) {
     if (inputsNameToChunkSizeMap contains signal) {
       _pokeMap(signal) = value
       isStale = true
@@ -272,12 +273,12 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
         poke(id, _chunks getOrElseUpdate (signal, getChunk(id)), value)
         isStale = true
       } else {
-        logger println s"Can't find $signal in the emulator..."
+        logger info s"Can't find $signal in the emulator..."
       }
     }
   }
 
-  def peek(signal: String)(implicit logger: PrintStream): Option[BigInt] = {
+  def peek(signal: String)(implicit logger: TestErrorLog): Option[BigInt] = {
     if (isStale) update
     if (outputsNameToChunkSizeMap contains signal) _peekMap get signal
     else if (inputsNameToChunkSizeMap contains signal) _pokeMap get signal
@@ -286,13 +287,13 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
       if (id >= 0) {
         Some(peek(id, _chunks getOrElse (signal, getChunk(id))))
       } else {
-        logger println s"Can't find $signal in the emulator..."
+        logger info s"Can't find $signal in the emulator..."
         None
       }
     }
   }
 
-  def step(n: Int)(implicit logger: PrintStream) {
+  def step(n: Int)(implicit logger: TestErrorLog) {
     update
     (0 until n) foreach (_ => takeStep)
   }
@@ -304,7 +305,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     }
   }
 
-  def finish(implicit logger: PrintStream) {
+  def finish(implicit logger: TestErrorLog) {
     mwhile(!sendCmd(SIM_CMD.FIN)) { }
     println("Exit Code: %d".format(
       Await.result(exitValue, Duration.Inf)))

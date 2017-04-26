@@ -29,7 +29,7 @@ case object VcsBackend extends TesterBackend {
 trait ChiselPokeTesterUtils extends Assertions {
   class InnerTester(val backend: Backend, val options: TesterOptionsManager) {
     // Implicit configuration options for backend
-    implicit val logger = System.out  // TODO: this should be parsed in OptionsManager
+    implicit val logger = new TestErrorLog
     implicit val verbose = options.testerOptions.isVerbose
     implicit val displayBase = options.testerOptions.displayBase
 

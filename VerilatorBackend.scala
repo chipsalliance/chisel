@@ -274,19 +274,19 @@ private[iotesters] class VerilatorBackend(dut: Module,
   private[iotesters] val simApiInterface = new SimApiInterface(dut, cmd)
 
   def poke(signal: InstanceId, value: BigInt, off: Option[Int])
-          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int) {
     val idx = off map (x => s"[$x]") getOrElse ""
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     poke(path, value)
   }
 
   def poke(signal: InstanceId, value: Int, off: Option[Int])
-          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int) {
     poke(signal, BigInt(value), off)
   }
 
   def peek(signal: InstanceId, off: Option[Int])
-          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int): BigInt = {
     val idx = off map (x => s"[$x]") getOrElse ""
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}$idx"
     val bigIntU = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
@@ -306,61 +306,61 @@ private[iotesters] class VerilatorBackend(dut: Module,
       case f: FixedPoint => signConvert(bigIntU, f.getWidth)
       case _ => bigIntU
     }
-    if (verbose) logger println s"  PEEK $path -> ${bigIntToStr(result, base)}"
+    if (verbose) logger info s"  PEEK ${path} -> ${bigIntToStr(result, base)}"
     result
   }
 
   def expect(signal: InstanceId, expected: BigInt, msg: => String)
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean = {
     val path = s"${signal.parentPathName}.${validName(signal.instanceName)}"
 
     val got = peek(signal, None)
     val good = got == expected
-    if (verbose) logger println (
-      s"""$msg  EXPECT $path -> ${bigIntToStr(got, base)} == """ +
+    if (verbose) logger info (
+      s"""${msg}  EXPECT ${path} -> ${bigIntToStr(got, base)} == """ +
         s"""${bigIntToStr(expected, base)} ${if (good) "PASS" else "FAIL"}""")
     good
   }
 
   def expect(signal: InstanceId, expected: Int, msg: => String)
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean = {
     expect(signal, BigInt(expected), msg)
   }
 
   def poke(path: String, value: BigInt)
-          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
-    if (verbose) logger println s"  POKE $path <- ${bigIntToStr(value, base)}"
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int) {
+    if (verbose) logger info s"  POKE ${path} <- ${bigIntToStr(value, base)}"
     simApiInterface.poke(path, value)
   }
 
   def poke(path: String, value: Int)
-          (implicit logger: PrintStream, verbose: Boolean, base: Int) {
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int) {
     poke(path, BigInt(value))
   }
 
   def peek(path: String)
-          (implicit logger: PrintStream, verbose: Boolean, base: Int): BigInt = {
+          (implicit logger: TestErrorLog, verbose: Boolean, base: Int): BigInt = {
     val result = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
-    if (verbose) logger println s"  PEEK $path -> ${bigIntToStr(result, base)}"
+    if (verbose) logger info s"  PEEK ${path} -> ${bigIntToStr(result, base)}"
     result
   }
 
   def expect(path: String, expected: BigInt, msg: => String = "")
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean = {
     val got = simApiInterface.peek(path) getOrElse BigInt(rnd.nextInt)
     val good = got == expected
-    if (verbose) logger println (
-      s"""$msg  EXPECT $path got ${bigIntToStr(got, base)} expected""" +
+    if (verbose) logger info (
+      s"""${msg}  EXPECT ${path} got ${bigIntToStr(got, base)} expected""" +
         s"""${bigIntToStr(expected, base)} ${if (good) "PASS" else "FAIL"}""")
     good
   }
 
   def expect(path: String, expected: Int, msg: => String)
-            (implicit logger: PrintStream, verbose: Boolean, base: Int): Boolean = {
+            (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Boolean = {
     expect(path, BigInt(expected), msg)
   }
 
-  def step(n: Int)(implicit logger: PrintStream): Unit = {
+  def step(n: Int)(implicit logger: TestErrorLog): Unit = {
     simApiInterface.step(n)
   }
 
@@ -368,7 +368,7 @@ private[iotesters] class VerilatorBackend(dut: Module,
     simApiInterface.reset(n)
   }
 
-  def finish(implicit logger: PrintStream): Unit = {
+  def finish(implicit logger: TestErrorLog): Unit = {
     simApiInterface.finish
   }
 }

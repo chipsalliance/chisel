@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.util._
 
 import scala.collection.mutable.ArrayBuffer
-
+import java.io.{PrintWriter, StringWriter}
 // Provides a template to define advanced tester transactions
 trait AdvTests extends PeekPokeTests {
   def cycles: Long
@@ -67,7 +67,10 @@ abstract class AdvTester[+T <: Module](dut: T,
     } catch {
       case e: Throwable =>
         fail
-        e printStackTrace logger
+        val sw = new StringWriter
+        val pw = new PrintWriter(sw)
+        e.printStackTrace(pw)
+        logger.info(pw.toString)
         assert(finish, "test fail")
     }
   }
@@ -98,9 +101,19 @@ abstract class AdvTester[+T <: Module](dut: T,
     expr
   }
 
-  class DecoupledSink[T <: Data, R]( socket: DecoupledIO[T], cvt: T=>R, 
+  class IrrevocableSink[T <: Data, R]( socket: ReadyValidIO[T], cvt: T=>R, 
     max_count: Option[Int] = None ) extends Processable
   {
+    socket match {
+      case s: IrrevocableIO[T] =>
+      case s: DecoupledIO[T] => {
+        logger.warning("Potentially unsafe conversion of DecoupledIO output to IrrevocableIO")
+      }
+      case _ => {
+        logger.warning("Potentially unsafe conversion of ReadyValidIO output to IrrevocableIO")
+      }
+    }
+
     val outputs = new scala.collection.mutable.Queue[R]()
     private var amReady = true
     private def isValid = peek(socket.valid) == 1
@@ -119,8 +132,20 @@ abstract class AdvTester[+T <: Module](dut: T,
     wire_poke(socket.ready, 1)
     preprocessors += this
   }
+
+  object IrrevocableSink {
+    def apply[T<:Bits](socket: ReadyValidIO[T]) = 
+      new IrrevocableSink(socket, (socket_bits: T) => peek(socket_bits))
+  }
+
+  class DecoupledSink[T <: Data, R]( socket: ReadyValidIO[T], cvt: T=>R,
+    max_count: Option[Int] = None ) extends IrrevocableSink(socket,cvt,max_count)
+  {
+    logger.warning("DecoupledSink is deprecated. Use IrrevocableSink")
+  }
+
   object DecoupledSink {
-    def apply[T<:Bits](socket: DecoupledIO[T]) =
+    def apply[T<:Bits](socket: ReadyValidIO[T]) = 
       new DecoupledSink(socket, (socket_bits: T) => peek(socket_bits))
   }
 
