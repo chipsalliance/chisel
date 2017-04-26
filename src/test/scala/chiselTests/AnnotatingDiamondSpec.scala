@@ -142,7 +142,7 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
       |annotations are not resolved at after circuit elaboration,
       |that happens only after emit has been called on circuit""".stripMargin in {
 
-      Driver.execute(Array.empty[String], () => new TopOfDiamond) match {
+      Driver.execute(Array("--target-dir", "test_run_dir"), () => new TopOfDiamond) match {
         case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
           val annos = circuit.annotations
           annos.length should be (10)

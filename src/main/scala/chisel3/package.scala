@@ -1,3 +1,4 @@
+import chisel3.core.CompileOptions
 // See LICENSE for license details.
 
 /** The chisel3 package contains the chisel3 API.
@@ -151,11 +152,49 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type SyncReadMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   val Module = chisel3.core.Module
-  type Module = chisel3.core.Module
+  type Module = chisel3.core.LegacyModule
 
   val printf = chisel3.core.printf
 
-  val Reg = chisel3.core.Reg
+  val RegNext = chisel3.core.RegNext
+  val RegInit = chisel3.core.RegInit
+  object Reg {
+    import chisel3.core.{Binding, CompileOptions}
+    import chisel3.internal.sourceinfo.SourceInfo
+    import chisel3.internal.throwException
+
+    // Passthrough for chisel3.core.Reg
+    // TODO: make val Reg = chisel3.core.Reg once we eliminate the legacy Reg constructor
+    def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+      chisel3.core.Reg(t)
+
+    @deprecated("Use Reg(t), RegNext(next, [init]) or RegInit([t], init) instead", "chisel3")
+    def apply[T <: Data](t: T = null, next: T = null, init: T = null)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      if (t ne null) {
+        val reg = if (init ne null) {
+          RegInit(t, init)
+        } else {
+          chisel3.core.Reg(t)
+        }
+        if (next ne null) {
+          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+          reg := next
+        }
+        reg
+      } else if (next ne null) {
+        if (init ne null) {
+          RegNext(next, init)
+        } else {
+          RegNext(next)
+        }
+      } else if (init ne null) {
+        RegInit(init)
+      } else {
+        throwException("cannot infer type")
+      }
+    }
+  }
 
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
@@ -230,9 +269,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
-    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x    // scalastyle:ignore method.name
-    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x      // scalastyle:ignore method.name
-    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x    // scalastyle:ignore method.name
+    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x    // scalastyle:ignore method.name
+    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x      // scalastyle:ignore method.name
+    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x    // scalastyle:ignore method.name
   }
 
   // Compatibility with existing code.
@@ -271,6 +310,11 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val withClockAndReset = chisel3.core.withClockAndReset
     val withClock = chisel3.core.withClock
     val withReset = chisel3.core.withReset
+
+    type BaseModule = chisel3.core.BaseModule
+    type MultiIOModule = chisel3.core.ImplicitModule
+    type RawModule = chisel3.core.UserModule
+    type ExtModule = chisel3.core.ExtModule
 
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))

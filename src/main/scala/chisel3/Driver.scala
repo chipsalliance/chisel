@@ -3,6 +3,7 @@
 package chisel3
 
 import chisel3.internal.firrtl.Emitter
+import chisel3.experimental.RawModule
 
 import java.io._
 import net.jcazevedo.moultingyaml._
@@ -88,11 +89,11 @@ object Driver extends BackendCompilationUtilities {
     *  @param gen a function that creates a Module hierarchy
     *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
-  def elaborate[T <: Module](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
+  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
 
-  def emit[T <: Module](gen: () => T): String = Emitter.emit(elaborate(gen))
+  def emit[T <: RawModule](gen: () => T): String = Emitter.emit(elaborate(gen))
 
-  def emit[T <: Module](ir: Circuit): String = Emitter.emit(ir)
+  def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
@@ -122,7 +123,7 @@ object Driver extends BackendCompilationUtilities {
     */
   def execute(
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
-      dut: () => Module): ChiselExecutionResult = {
+      dut: () => RawModule): ChiselExecutionResult = {
     val circuit = elaborate(dut)
 
     // this little hack let's us set the topName with the circuit name if it has not been set from args
@@ -173,7 +174,7 @@ object Driver extends BackendCompilationUtilities {
     * @param dut    The device under test
     * @return       An execution result with useful stuff, or failure with message
     */
-  def execute(args: Array[String], dut: () => Module): ChiselExecutionResult = {
+  def execute(args: Array[String], dut: () => RawModule): ChiselExecutionResult = {
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions
 
     optionsManager.parse(args) match {

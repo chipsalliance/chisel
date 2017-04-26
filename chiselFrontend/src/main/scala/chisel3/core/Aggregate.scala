@@ -19,18 +19,18 @@ sealed abstract class Aggregate extends Data {
     */
   def getElements: Seq[Data]
 
-  private[core] def width: Width = getElements.map(_.width).reduce(_ + _)
+  private[core] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
-    SeqUtils.do_asUInt(getElements.map(_.asUInt()))
+  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    SeqUtils.do_asUInt(flatten.map(_.asUInt()))
   }
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
     val bits = Wire(UInt(this.width), init=that)  // handles width padding
-    for (x <- getElements) {
+    for (x <- flatten) {
       x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth
     }
@@ -42,19 +42,10 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T): Vec[T] = macro VecTransform.apply_ngen;
-
-  def do_apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    if ( gen.isLit ) {
-      Vec(Seq.fill(n)(gen))
-    } else {
-      new Vec(gen.chiselCloneType, n)
-    }
-  }
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    do_apply(n, gen)
+  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -82,7 +73,9 @@ object Vec {
 
     def doConnect(sink: T, source: T) = {
       // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
-      val hasDirectioned = vec.sample_element match {
+      // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
+      //       WireBinding which does not have a direction
+      val hasDirectioned = elts.head match {
         case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
         case t: Element => t.dir != Direction.Unspecified
       }
@@ -139,7 +132,7 @@ object Vec {
     apply(Seq.fill(n)(gen))
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo): UInt = {
+  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     val w = BigInt(n-1).bitLength
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
@@ -230,10 +223,10 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  def apply(idx: UInt): T = {
+  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T = {
     Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
     val port = gen
-    val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo)
+    val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
 
     // Bind each element of port to being whatever the base type is
@@ -250,11 +243,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def apply(idx: Int): T = self(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt): T = apply(idx)
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = apply(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T): Unit = {
-    apply(idx).:=(data)(DeprecatedSourceInfo, chisel3.core.ExplicitCompileOptions.NotStrict)
+  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
+    apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
   }
 
   override def cloneType: this.type = {
@@ -284,30 +277,30 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   * operations.
   */
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
-  def apply(idx: UInt): T
+  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt): T
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T): Unit
+  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit
 
   /** Outputs true if p outputs true for every element.
     */
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
-  def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
+  def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(true.B)(_ && _)
 
   /** Outputs true if p outputs true for at least one element.
     */
   def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
-  def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo): Bool =
+  def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(false.B)(_ || _)
 
   /** Outputs true if the vector contains at least one element equal to x (using
@@ -315,14 +308,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def contains(x: T)(implicit ev: T <:< UInt): Bool = macro VecTransform.contains
 
-  def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt): Bool =
+  def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt, compileOptions: CompileOptions): Bool =
     this.exists(_ === x)
 
   /** Outputs the number of elements for which p is true.
     */
   def count(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
-  def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo): UInt =
+  def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.count(this map p)
 
   /** Helper function that appends an index (literal value) to each element,
@@ -332,14 +325,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def indexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
 
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
+  def lastIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
 
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
@@ -411,7 +404,7 @@ abstract class Record extends Aggregate {
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name)) }
+    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
   }
 
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)

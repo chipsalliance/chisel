@@ -13,7 +13,7 @@ class MemorySearch extends Module {
     val address = Output(UInt(3.W))
   })
   val vals  = Array(0, 4, 15, 14, 2, 5, 13)
-  val index = Reg(init = 0.U(3.W))
+  val index = RegInit(0.U(3.W))
   val elts  = Vec(vals.map(_.asUInt(4.W)))
   // val elts  = Mem(UInt(32.W), 8) TODO ????
   val elt  = elts(index)
