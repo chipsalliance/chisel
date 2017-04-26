@@ -178,7 +178,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     */
   final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
 
-  def do_pad(that: Int)(implicit sourceInfo: SourceInfo): this.type =
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type =
     binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
 
   /** Returns this wire bitwise-inverted. */
@@ -509,7 +509,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   // TODO: this eventually will be renamed as toSInt, once the existing toSInt
   // completes its deprecation phase.
   final def zext(): SInt = macro SourceInfoTransform.noArg
-  def do_zext(implicit sourceInfo: SourceInfo): SInt =
+  def do_zext(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
 
   /** Returns this UInt as a [[SInt]], without changing width or bit value. The

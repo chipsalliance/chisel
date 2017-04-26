@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.core.CompileOptions
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 /** An Bundle containing data and a signal determining if it is valid */
@@ -34,7 +35,7 @@ object Valid {
 object Pipe
 {
   @chiselName
-  def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int): Valid[T] = {
+  def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] = {
     if (latency == 0) {
       val out = Wire(Valid(enqBits))
       out.valid <> enqValid
@@ -43,14 +44,14 @@ object Pipe
     } else {
       val v = RegNext(enqValid, false.B)
       val b = RegEnable(enqBits, enqValid)
-      apply(v, b, latency-1)
+      apply(v, b, latency-1)(compileOptions)
     }
   }
-  def apply[T <: Data](enqValid: Bool, enqBits: T): Valid[T] = apply(enqValid, enqBits, 1)
-  def apply[T <: Data](enq: Valid[T], latency: Int = 1): Valid[T] = apply(enq.valid, enq.bits, latency)
+  def apply[T <: Data](enqValid: Bool, enqBits: T)(implicit compileOptions: CompileOptions): Valid[T] = apply(enqValid, enqBits, 1)(compileOptions)
+  def apply[T <: Data](enq: Valid[T], latency: Int = 1)(implicit compileOptions: CompileOptions): Valid[T] = apply(enq.valid, enq.bits, latency)(compileOptions)
 }
 
-class Pipe[T <: Data](gen: T, latency: Int = 1) extends Module
+class Pipe[T <: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module
 {
   class PipeIO extends Bundle {
     val enq = Input(Valid(gen))
