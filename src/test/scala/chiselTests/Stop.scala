@@ -11,7 +11,7 @@ class StopTester() extends BasicTester {
 }
 
 class StopImmediatelyTester extends BasicTester {
-  val cycle = Reg(init = 0.asUInt(4.W))
+  val cycle = RegInit(0.asUInt(4.W))
   cycle := cycle + 1.U
   when (cycle === 4.U) {
     stop()

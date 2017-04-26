@@ -26,7 +26,7 @@ class GCD extends Module {
 
 class GCDTester(a: Int, b: Int, z: Int) extends BasicTester {
   val dut = Module(new GCD)
-  val first = Reg(init=true.B)
+  val first = RegInit(true.B)
   dut.io.a := a.U
   dut.io.b := b.U
   dut.io.e := first

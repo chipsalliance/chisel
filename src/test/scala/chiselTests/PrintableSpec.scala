@@ -101,9 +101,9 @@ class PrintableSpec extends FlatSpec with Matchers {
     // Submodule IO is a subtle issue because the Chisel element has a different
     // parent module
     class MySubModule extends Module {
-      val io = new Bundle {
+      val io = IO(new Bundle {
         val fizz = UInt(32.W)
-      }
+      })
     }
     class MyBundle extends Bundle {
       val foo = UInt(32.W)
@@ -128,9 +128,9 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "handle printing ports of submodules" in {
     class MySubModule extends Module {
-      val io = new Bundle {
+      val io = IO(new Bundle {
         val fizz = UInt(32.W)
-      }
+      })
     }
     class MyModule extends BasicTester {
       val myInst = Module(new MySubModule)
