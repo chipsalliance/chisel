@@ -223,10 +223,12 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
+  override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
+
+  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
+    Binding.checkSynthesizable(p ,s"'p' ($p)")
     val port = gen
-    val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo, compileOptions)
+    val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
 
     // Bind each element of port to being whatever the base type is
@@ -243,11 +245,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def apply(idx: Int): T = self(idx)
 
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = apply(idx)
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(compileOptions)
 
   @deprecated("Use Vec.apply instead", "chisel3")
   def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
-    apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
+    do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
   }
 
   override def cloneType: this.type = {
@@ -277,7 +279,9 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   * operations.
   */
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
-  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T
+  def apply(p: UInt): T = macro CompileOptionsTransform.pArg
+
+  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
@@ -325,14 +329,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
+  def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
+  def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
@@ -347,7 +351,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     * true is NOT checked (useful in cases where the condition doesn't always
     * hold, but the results are not used in those cases)
     */
-  def onlyIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
+  def onlyIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))

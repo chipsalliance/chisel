@@ -129,15 +129,15 @@ class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
   def thatArg(that: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($that)($implicitCompileOptions)"
   }
 
   def inArg(in: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($in)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($in)($implicitCompileOptions)"
   }
 
   def pArg(p: c.Tree): c.Tree = {
-    q"$thisObj.$doFuncTerm($p)($implicitSourceInfo, $implicitCompileOptions)"
+    q"$thisObj.$doFuncTerm($p)($implicitCompileOptions)"
   }
 }
 
