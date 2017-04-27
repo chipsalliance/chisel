@@ -45,7 +45,7 @@ trait RecordSpecUtils {
     assert(uint.getWidth == 32) // elaboration time
     assert(uint === "hbeefdead".U)
     // Back to Record
-    val record2 = recordType.fromBits(uint)
+    val record2 = uint.asTypeOf(recordType)
     assert("hdead".U === record2("fizz").asUInt)
     assert("hbeef".U === record2("buzz").asUInt)
     stop()
