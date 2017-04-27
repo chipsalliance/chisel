@@ -168,11 +168,18 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
-                       flow: Boolean = false,
-                       override_reset: Option[Bool] = None)
-extends Module(override_reset=override_reset) {
-  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) =
-    this(gen, entries, pipe, flow, Some(_reset))
+                       flow: Boolean = false)
+    extends Module() {
+  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
+  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
+    this(gen, entries, pipe, flow)
+    this.override_reset = override_reset
+  }
+  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
+  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) = {
+    this(gen, entries, pipe, flow)
+    this.override_reset = Some(_reset)
+  }
 
   val io = IO(new QueueIO(gen, entries))
 

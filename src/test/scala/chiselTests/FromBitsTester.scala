@@ -19,17 +19,17 @@ class FromBitsBundleTester extends BasicTester {
 
   val bun = new MultiTypeBundle
 
-  val bunFromBits = bun.fromBits( ((4 << 8) + (15 << 4) + (12 << 0)).U )
+  val bunFromBits = ((4 << 8) + (15 << 4) + (12 << 0)).U.asTypeOf(bun)
 
   assert(bunFromBits.u === 4.U)
   assert(bunFromBits.s === -1.S)
-  assert(bunFromBits.fp === FixedPoint.fromDouble(-0.5, width=4, binaryPoint=3))
+  assert(bunFromBits.fp === FixedPoint.fromDouble(-0.5, 4.W, 3.BP))
 
   stop()
 }
 
 class FromBitsVecTester extends BasicTester {
-  val vec = Vec(4, SInt(4.W)).fromBits( ((15 << 12) + (0 << 8) + (1 << 4) + (2 << 0)).U )
+  val vec = ((15 << 12) + (0 << 8) + (1 << 4) + (2 << 0)).U.asTypeOf(Vec(4, SInt(4.W)))
 
   assert(vec(0) === 2.S)
   assert(vec(1) === 1.S)
@@ -40,8 +40,8 @@ class FromBitsVecTester extends BasicTester {
 }
 
 class FromBitsTruncationTester extends BasicTester {
-  val truncate = UInt(3.W).fromBits( (64 + 3).U )
-  val expand   = UInt(3.W).fromBits( 1.U )
+  val truncate = (64 + 3).U.asTypeOf(UInt(3.W))
+  val expand   = 1.U.asTypeOf(UInt(3.W))
 
   assert( DataMirror.widthOf(truncate).get == 3 )
   assert( truncate === 3.U )
