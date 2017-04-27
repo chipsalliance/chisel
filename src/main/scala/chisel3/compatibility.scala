@@ -41,7 +41,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   implicit class fromBitsable[T <: Data](val data: T) {
     import chisel3.core.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
-    
+
     /** Creates an new instance of this type, unpacking the input Bits into
       * structured data.
       *
@@ -56,7 +56,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
       that.asTypeOf(data)
     }
   }
-  
+
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]
@@ -175,7 +175,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   import chisel3.core.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
-    // required) to build. 
+    // required) to build.
     override def _autoWrapPorts() = {
       if (!_ioPortBound()) {
         IO(io)
@@ -196,10 +196,13 @@ package object Chisel {     // scalastyle:ignore package.object.name
     // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     // Also provides the clock / reset constructors, which were used before withClock happened.
-    
-    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
-    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
-    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
+
+    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), None)(moduleCompileOptions)
+    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  =
+      this(None, Option(_reset))(moduleCompileOptions)
+    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
     override def _autoWrapPorts() = {
       if (!_ioPortBound()) {
@@ -223,7 +226,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     // parameterized scope.
     def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
       chisel3.core.Reg(t)
-    
+
     /** Creates a register with optional next and initialization values.
       *
       * @param t: data type for the register
