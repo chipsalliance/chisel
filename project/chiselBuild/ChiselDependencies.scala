@@ -14,15 +14,6 @@ object ChiselDependencies {
     "firrtl-interpreter" -> Seq("firrtl")
   )
 
-  // A map from name (string) to project build definition.
-  // These will be used to construct the project dependsOn() dependencies.
-//  lazy val subProjects = collection.immutable.HashMap[String, ProjectReference](
-//    "chisel" -> ChiselBuild.chisel,
-//    "chisel-testers" -> ChiselBuild.chisel_testers,
-//    "firrtl" -> ChiselBuild.firrtl,
-//    "firrtl-interpreter" -> ChiselBuild.firrtl_interpreter
-//  )
-
   // For a given chisel project, return a sequence of project references,
   //  suitable for use as an argument to dependsOn().
   // By default, we assume we're fetching the dependencies as libraries,
