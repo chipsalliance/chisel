@@ -77,17 +77,9 @@ yaourt -S firrtl-git verilator sbt
 
 ### Mac OS X
 
-1. Install sbt:
-
-    ```
-    brew install sbt
-    ```
-
-1. Install Verilator:
-
-    ```
-    brew install verilator
-    ```
+```
+brew install sbt verilator
+```
 
 ## Getting Started
 If you are migrating to Chisel3 from Chisel2, please visit
