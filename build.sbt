@@ -1,6 +1,6 @@
 // See LICENSE for license details.
-import Dependencies._
 
+import chiselBuild.ChiselDependencies._
 
 site.settings
 
@@ -105,7 +105,7 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(publishArtifact := false).
   dependsOn(coreMacros).
-  dependsOn((Dependencies.chiselProjectDependencies("chisel3")):_*)
+  dependsOn((chiselProjectDependencies("chisel3")):_*)
 
 
 // This will always be the root project, even if we are a sub-project.
@@ -144,5 +144,5 @@ lazy val chisel3 = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   ).
-  dependsOn((Dependencies.chiselProjectDependencies("chisel3")):_*)
+  dependsOn((chiselProjectDependencies("chisel3")):_*)
 

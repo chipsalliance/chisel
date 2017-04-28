@@ -1,7 +1,11 @@
+// See LICENSE for license details.
+
+package chiselBuild
+
 import sbt._
 import Keys._
 
-object Dependencies {
+object ChiselDependencies {
   // The basic chisel dependencies.
   val chiselDependencies = collection.immutable.HashMap[String, Seq[String]](
     "chisel" -> Seq("firrtl"),
