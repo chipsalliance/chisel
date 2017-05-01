@@ -1243,7 +1243,8 @@ trait IntervalFactory {
 
   /** Create a Interval with the specified range */
   def apply(range: Range): Interval = {
-    apply(range.getWidth)
+    val result = apply(range.getWidth, 0.BP, range)
+    result
   }
 
   def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): Interval =

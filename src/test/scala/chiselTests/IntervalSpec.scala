@@ -5,7 +5,9 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.{ChiselRange, Interval}
 import chisel3.internal.firrtl.KnownIntervalRange
+import chisel3.testers.BasicTester
 import cookbook.CookbookTester
+import logger.LogLevel
 import org.scalatest.{FreeSpec, Matchers}
 
 class IntervalTest1 extends Module {
@@ -48,7 +50,27 @@ class SIntTest1Tester extends CookbookTester(10) {
   stop()
 }
 
+class IntervalAddTester extends BasicTester {
+  logger.Logger.globalLevel = LogLevel.Info
+
+  val in1 = Wire(Interval(range"[0,4]"))
+  val in2 = Wire(Interval(range"[0,4]"))
+
+  in1 := 2.I
+  in2 := 2.I
+
+  val result = in1 +& in2
+
+  assert(result === 4.I)
+
+  stop()
+
+}
+
 class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
+  "Test a simple interval add" in {
+    assertTesterPasses{ new IntervalAddTester }
+  }
   "Intervals can be created" in {
     assertTesterPasses{ new IntervalTester }
   }
