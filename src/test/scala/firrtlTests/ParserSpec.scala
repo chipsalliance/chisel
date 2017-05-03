@@ -27,6 +27,7 @@ class ParserSpec extends FirrtlFlatSpec {
     val prelude = Seq("circuit top :", "  module top :")
     val reg = "    reg r : UInt<32>, clock"
     val reset = "reset => (radReset, UInt(\"hdeadbeef\"))"
+    val finfo = "@[Reg.scala:33:10]"
   }
 
   private object KeywordTests {
@@ -75,6 +76,16 @@ class ParserSpec extends FirrtlFlatSpec {
   it should "allow multi-line reset" in {
     import RegTests._
     firrtl.Parser.parse((prelude :+ s"${reg} with :\n      (${reset})"))
+  }
+
+  it should "allow source locators with same-line reset" in {
+    import RegTests._
+    firrtl.Parser.parse((prelude :+ s"${reg} with : (${reset}) $finfo" :+ "    wire a : UInt"))
+  }
+
+  it should "allow source locators with multi-line reset" in {
+    import RegTests._
+    firrtl.Parser.parse((prelude :+ s"${reg} with :\n      (${reset}) $finfo"))
   }
 
   // ********** Keywords **********
