@@ -28,12 +28,12 @@ class PlusOneModule extends Module {
   io.out := io.in + 1.asUInt
 }
 
-class RawModuleWithImpliitModule extends RawModule {
+class RawModuleWithImplicitModule extends RawModule {
   val in  = IO(Input(UInt(32.W)))
   val out = IO(Output(UInt(32.W)))
   val clk = IO(Input(Clock()))
   val rst = IO(Input(Bool()))
-  
+
   withClockAndReset(clk, rst) {
     val plusModule = Module(new PlusOneModule)
     plusModule.io.in := in
@@ -42,7 +42,7 @@ class RawModuleWithImpliitModule extends RawModule {
 }
 
 class ImplicitModuleInRawModuleTester extends BasicTester {
-  val plusModule = Module(new RawModuleWithImpliitModule)
+  val plusModule = Module(new RawModuleWithImplicitModule)
   plusModule.clk := clock
   plusModule.rst := reset
   plusModule.in := 42.U
@@ -50,16 +50,38 @@ class ImplicitModuleInRawModuleTester extends BasicTester {
   stop()
 }
 
+class RawModuleWithDirectImplicitModule extends RawModule {
+  val plusModule = Module(new PlusOneModule)
+}
+
+class ImplicitModuleDirectlyInRawModuleTester extends BasicTester {
+  val plusModule = Module(new RawModuleWithDirectImplicitModule)
+  stop()
+}
+
 class RawModuleSpec extends ChiselFlatSpec {
   "RawModule" should "elaborate" in {
-    elaborate { new RawModuleWithImpliitModule }
+    elaborate { new RawModuleWithImplicitModule }
   }
-  
+
   "RawModule" should "work" in {
     assertTesterPasses({ new RawModuleTester })
   }
-  
+
   "ImplicitModule in a withClock block in a RawModule" should "work" in {
     assertTesterPasses({ new ImplicitModuleInRawModuleTester })
+  }
+
+
+  "ImplicitModule directly in a RawModule" should "fail" in {
+    intercept[chisel3.internal.ChiselException] {
+      elaborate { new RawModuleWithDirectImplicitModule }
+    }
+  }
+
+  "ImplicitModule directly in a RawModule in an ImplicitModule" should "fail" in {
+    intercept[chisel3.internal.ChiselException] {
+      elaborate { new ImplicitModuleDirectlyInRawModuleTester }
+    }
   }
 }
