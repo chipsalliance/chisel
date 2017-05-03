@@ -37,6 +37,26 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
+  // Implicit conversion to allow fromBits because it's being deprecated in chisel3
+  implicit class fromBitsable[T <: Data](val data: T) {
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo.SourceInfo
+
+    /** Creates an new instance of this type, unpacking the input Bits into
+      * structured data.
+      *
+      * This performs the inverse operation of toBits.
+      *
+      * @note does NOT assign to the object this is called on, instead creates
+      * and returns a NEW object (useful in a clone-and-assign scenario)
+      * @note does NOT check bit widths, may drop bits during assignment
+      * @note what fromBits assigs to must have known widths
+      */
+    def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      that.asTypeOf(data)
+    }
+  }
+
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]
@@ -152,16 +172,46 @@ package object Chisel {     // scalastyle:ignore package.object.name
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
-  type BlackBox = chisel3.core.BlackBox
-
+  import chisel3.core.Param
+  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
+    // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
+    // required) to build.
+    override def _autoWrapPorts() = {
+      if (!_ioPortBound()) {
+        IO(io)
+      }
+    }
+  }
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
   val SeqMem = chisel3.core.SyncReadMem
   type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
+  import chisel3.core.CompileOptions
+  abstract class CompatibilityModule(
+      override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+      (implicit moduleCompileOptions: CompileOptions)
+      extends chisel3.core.LegacyModule(override_clock, override_reset) {
+    // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
+    // required) to build.
+    // Also provides the clock / reset constructors, which were used before withClock happened.
+
+    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), None)(moduleCompileOptions)
+    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  =
+      this(None, Option(_reset))(moduleCompileOptions)
+    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), Option(_reset))(moduleCompileOptions)
+
+    override def _autoWrapPorts() = {
+      if (!_ioPortBound()) {
+        IO(io)
+      }
+    }
+  }
   val Module = chisel3.core.Module
-  type Module = chisel3.core.Module
+  type Module = CompatibilityModule
 
   val printf = chisel3.core.printf
 
@@ -176,7 +226,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     // parameterized scope.
     def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
       chisel3.core.Reg(t)
-    
+
     /** Creates a register with optional next and initialization values.
       *
       * @param t: data type for the register

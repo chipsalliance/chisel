@@ -12,8 +12,6 @@ trait CompileOptions {
   val connectFieldsMustMatch: Boolean
   // When creating an object that takes a type argument, the argument must be unbound (a pure type).
   val declaredTypeMustBeUnbound: Boolean
-  // Module IOs should be wrapped in an IO() to define their bindings before the reset of the module is defined.
-  val requireIOWrap: Boolean
   // If a connection operator fails, don't try the connection with the operands (source and sink) reversed.
   val dontTryConnectionsSwapped: Boolean
   // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
@@ -44,8 +42,6 @@ object ExplicitCompileOptions {
                              val connectFieldsMustMatch: Boolean,
                              // When creating an object that takes a type argument, the argument must be unbound (a pure type).
                              val declaredTypeMustBeUnbound: Boolean,
-                             // Module IOs should be wrapped in an IO() to define their bindings before the reset of the module is defined.
-                             val requireIOWrap: Boolean,
                              // If a connection operator fails, don't try the connection with the operands (source and sink) reversed.
                              val dontTryConnectionsSwapped: Boolean,
                              // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
@@ -63,7 +59,6 @@ object ExplicitCompileOptions {
   implicit val NotStrict = new CompileOptionsClass (
     connectFieldsMustMatch = false,
     declaredTypeMustBeUnbound = false,
-    requireIOWrap = false,
     dontTryConnectionsSwapped = false,
     dontAssumeDirectionality = false,
     deprecateOldDirectionMethods = false,
@@ -75,7 +70,6 @@ object ExplicitCompileOptions {
   implicit val Strict = new CompileOptionsClass (
     connectFieldsMustMatch = true,
     declaredTypeMustBeUnbound = true,
-    requireIOWrap = true,
     dontTryConnectionsSwapped = true,
     dontAssumeDirectionality = true,
     deprecateOldDirectionMethods = true,

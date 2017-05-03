@@ -22,7 +22,7 @@ object Reg {
     val reg = t.chiselCloneType
     val clock = Node(Builder.forcedClock)
 
-    Binding.bind(reg, RegBinder(Builder.forcedModule), "Error: t")
+    Binding.bind(reg, RegBinder(Builder.forcedUserModule), "Error: t")
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
   }
@@ -90,7 +90,7 @@ object RegInit {
     val clock = Node(Builder.forcedClock)
     val reset = Node(Builder.forcedReset)
 
-    Binding.bind(reg, RegBinder(Builder.forcedModule), "Error: t")
+    Binding.bind(reg, RegBinder(Builder.forcedUserModule), "Error: t")
     Binding.checkSynthesizable(init, s"'init' ($init)")
     pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
     reg

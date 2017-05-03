@@ -41,24 +41,24 @@ case object LitBinder extends Binder[LitBinding] {
   def apply(in: UnboundBinding) = LitBinding()
 }
 
-case class MemoryPortBinder(enclosure: Module) extends Binder[MemoryPortBinding] {
+case class MemoryPortBinder(enclosure: UserModule) extends Binder[MemoryPortBinding] {
   def apply(in: UnboundBinding) = MemoryPortBinding(enclosure)
 }
 
-case class OpBinder(enclosure: Module) extends Binder[OpBinding] {
+case class OpBinder(enclosure: UserModule) extends Binder[OpBinding] {
   def apply(in: UnboundBinding) = OpBinding(enclosure)
 }
 
 // Notice how PortBinder uses the direction of the UnboundNode
-case class PortBinder(enclosure: Module) extends Binder[PortBinding] {
+case class PortBinder(enclosure: BaseModule) extends Binder[PortBinding] {
   def apply(in: UnboundBinding) = PortBinding(enclosure, in.direction)
 }
 
-case class RegBinder(enclosure: Module) extends Binder[RegBinding] {
+case class RegBinder(enclosure: UserModule) extends Binder[RegBinding] {
   def apply(in: UnboundBinding) = RegBinding(enclosure)
 }
 
-case class WireBinder(enclosure: Module) extends Binder[WireBinding] {
+case class WireBinder(enclosure: UserModule) extends Binder[WireBinding] {
   def apply(in: UnboundBinding) = WireBinding(enclosure)
 }
 

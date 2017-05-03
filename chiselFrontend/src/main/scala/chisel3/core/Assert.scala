@@ -31,26 +31,26 @@ object assert { // scalastyle:ignore object.name
     * that
     */
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
-  def apply(cond: Bool, message: String, data: Bits*)(implicit sourceInfo: SourceInfo): Unit = macro apply_impl_msg_data
-  def apply(cond: Bool)(implicit sourceInfo: SourceInfo): Unit = macro apply_impl
+  def apply(cond: Bool, message: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl_msg_data
+  def apply(cond: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl
 
-  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree): c.Tree = {
+  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree, compileOptions: c.Tree): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
     val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("apply_impl_do"))
-    q"$apply_impl_do($cond, $condStr, _root_.scala.Some($message), ..$data)($sourceInfo)"
+    q"$apply_impl_do($cond, $condStr, _root_.scala.Some($message), ..$data)($sourceInfo, $compileOptions)"
   }
 
-  def apply_impl(c: Context)(cond: c.Tree)(sourceInfo: c.Tree): c.Tree = {
+  def apply_impl(c: Context)(cond: c.Tree)(sourceInfo: c.Tree, compileOptions: c.Tree): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
     val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
     val apply_impl_do = symbolOf[this.type].asClass.module.info.member(TermName("apply_impl_do"))
-    q"$apply_impl_do($cond, $condStr, _root_.scala.None)($sourceInfo)"
+    q"$apply_impl_do($cond, $condStr, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
-  def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo) {
+  def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     when (!(cond || Builder.forcedReset)) {
       val fmt = message match {
         case Some(str) => s"Assertion failed: $str\n    at $line\n"
@@ -76,14 +76,14 @@ object assert { // scalastyle:ignore object.name
 
 object stop { // scalastyle:ignore object.name
   /** Terminate execution with a failure code. */
-  def apply(code: Int)(implicit sourceInfo: SourceInfo): Unit = {
+  def apply(code: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
     when (!Builder.forcedReset) {
       pushCommand(Stop(sourceInfo, Node(Builder.forcedClock), code))
     }
   }
 
   /** Terminate execution, indicating success. */
-  def apply()(implicit sourceInfo: SourceInfo): Unit = {
+  def apply()(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
     stop(0)
   }
 }
