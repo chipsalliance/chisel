@@ -54,8 +54,7 @@ object assert { // scalastyle:ignore object.name
     val escLine = line.replaceAll("%", "%%")
     when (!(cond || Builder.forcedReset)) {
       val fmt = message match {
-        case Some(str) =>
-          val msg = if (data.isEmpty) str.replaceAll("%", "%%") else str
+        case Some(msg) =>
           s"Assertion failed: $msg\n    at $escLine\n"
         case None => s"Assertion failed\n    at $escLine\n"
       }
