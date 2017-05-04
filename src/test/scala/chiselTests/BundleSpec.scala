@@ -43,7 +43,7 @@ trait BundleSpecUtils {
     assert(uint.getWidth == 32) // elaboration time
     assert(uint === "h12345678".asUInt(32.W))
     // Back to Bundle
-    val bundle2 = (new BundleFooBar).fromBits(uint)
+    val bundle2 = uint.asTypeOf(new BundleFooBar)
     assert(0x1234.U === bundle2.foo)
     assert(0x5678.U === bundle2.bar)
     stop()
