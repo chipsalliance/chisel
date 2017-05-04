@@ -185,4 +185,61 @@ class CheckSpec extends FlatSpec with Matchers {
     }
   }
 
+  "Clocks with types other than ClockType" should "throw an exception" in {
+    val passes = Seq(
+      ToWorkingIR,
+      CheckHighForm,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes)
+    val input =
+      """
+          |circuit Top : 
+          |    
+          |  module Top :
+          |    input clk : UInt<1>
+          |    input i : UInt<1>
+          |    output o : UInt<1>
+          |
+          |    reg r : UInt<1>, clk
+          |    r <= i
+          |    o <= r
+          |
+          |""".stripMargin
+    intercept[CheckTypes.RegReqClk] {
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+  }
+
+  "Illegal reset type" should "throw an exception" in {
+    val passes = Seq(
+      ToWorkingIR,
+      CheckHighForm,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes)
+    val input =
+      """
+          |circuit Top : 
+          |    
+          |  module Top :
+          |    input clk : Clock
+          |    input reset : UInt<2>
+          |    input i : UInt<1>
+          |    output o : UInt<1>
+          |
+          |    reg r : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
+          |    r <= i
+          |    o <= r
+          |
+          |""".stripMargin
+    intercept[CheckTypes.IllegalResetType] {
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+  }
+
 }

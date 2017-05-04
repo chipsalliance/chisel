@@ -92,6 +92,12 @@ object CheckWidths extends Pass {
               errors.append(new AttachWidthsNotEqual(infox, mname, e.serialize, exprs.head.serialize))
           )
           s
+        case sx: DefRegister =>
+          sx.reset.tpe match {
+            case UIntType(IntWidth(w)) if w == 1 =>
+            case _ => errors.append(new CheckTypes.IllegalResetType(info, mname, sx.name))
+          }
+          s
         case _ => s
       }
     }
