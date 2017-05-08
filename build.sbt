@@ -92,13 +92,6 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
 lazy val root = RootProject(file("."))
 
 lazy val chisel3 = (project in file(".")).
-  enablePlugins(BuildInfoPlugin).
-  settings(
-    buildInfoPackage := name.value,
-    buildInfoOptions += BuildInfoOption.BuildTime,
-    buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
-  ).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
   settings(publishSettings: _*).
