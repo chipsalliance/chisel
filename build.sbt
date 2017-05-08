@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 import chiselBuild.ChiselDependencies._
+import chiselBuild.ChiselSettings
 
 site.settings
 
@@ -15,14 +16,12 @@ lazy val customUnidocSettings = unidocSettings ++ Seq (
   target in unidoc in ScalaUnidoc := crossTarget.value / "api"
 )
 
-val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
+val internalName = "chisel3"
 
-lazy val commonSettings = Seq (
-  organization := "edu.berkeley.cs",
+lazy val commonSettings = ChiselSettings.commonSettings ++ Seq (
   version := "3.1-SNAPSHOT",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   autoAPIMappings := true,
-  scalaVersion := "2.11.7",
   scalacOptions := Seq("-deprecation", "-feature"),
   // Use the root project's unmanaged base for all sub-projects.
   unmanagedBase := (unmanagedBase in root).value,
@@ -35,16 +34,12 @@ lazy val commonSettings = Seq (
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := allDependencies.value ++ chiselLibraryDependencies("chisel3")
+  allDependencies := allDependencies.value ++ chiselLibraryDependencies(internalName)
 
 )
 
-lazy val chiselSettings = Seq (
-  name := "chisel3",
-
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { x => false },
+lazy val publishSettings = ChiselSettings.publishSettings ++ Seq (
+  name := internalName,
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -64,21 +59,6 @@ lazy val chiselSettings = Seq (
         <url>http://www.eecs.berkeley.edu/~jrb/</url>
       </developer>
     </developers>,
-
-  publishTo <<= version { v: String =>
-    val nexus = "https://oss.sonatype.org/"
-    if (v.trim.endsWith("SNAPSHOT")) {
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    }
-    else {
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-    }
-  },
-
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  ),
 
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "2.2.5" % "test",
@@ -105,7 +85,7 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(publishArtifact := false).
   dependsOn(coreMacros).
-  dependsOn((chiselProjectDependencies("chisel3")):_*)
+  dependsOn((chiselProjectDependencies(internalName)):_*)
 
 
 // This will always be the root project, even if we are a sub-project.
@@ -121,7 +101,7 @@ lazy val chisel3 = (project in file(".")).
   ).
   settings(commonSettings: _*).
   settings(customUnidocSettings: _*).
-  settings(chiselSettings: _*).
+  settings(publishSettings: _*).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
@@ -144,5 +124,5 @@ lazy val chisel3 = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   ).
-  dependsOn((chiselProjectDependencies("chisel3")):_*)
+  dependsOn((chiselProjectDependencies(internalName)):_*)
 

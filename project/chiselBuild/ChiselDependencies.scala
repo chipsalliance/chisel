@@ -2,6 +2,7 @@ package chiselBuild
 
 import sbt._
 
+// If you make changes here, you may need to update the SubprojectGenerator.
 object ChiselDependencies {
 
   // The basic chisel dependencies.
@@ -56,7 +57,9 @@ object ChiselDependencies {
 
   lazy val subProjectsSetting = settingKey[Seq[PackageProject]]("Subprojects to build")
 
-  var packageProjects = scala.collection.mutable.Map[String, ProjectReference]()
+  type PackageProjectsMap = scala.collection.immutable.Map[String, ProjectReference]
+
+  var packageProjectsMap: PackageProjectsMap = Map.empty
 
   // Chisel projects as library dependencies.
   def chiselLibraryDependencies(name: String): Seq[ModuleID] = {
@@ -66,14 +69,14 @@ object ChiselDependencies {
         case Some(classpath: String) => classpath.contains(s"$dep.jar")
       }
     }
-    val result = basicDependencies(name).filterNot(dep => packageProjects.contains(dep) || unmanaged(dep)).map(nameToModuleID(_))
+    val result = basicDependencies(name).filterNot(dep => packageProjectsMap.contains(dep) || unmanaged(dep)).map(nameToModuleID(_))
     result
   }
 
   // For a given chisel project, return a sequence of project references,
   //  suitable for use as an argument to dependsOn().
   def chiselProjectDependencies(name: String): Seq[ClasspathDep[ProjectReference]] = {
-    val result = basicDependencies(name).filter(dep => packageProjects.contains(dep)).map { dep: String => classpathDependency(packageProjects(dep)) }
+    val result = basicDependencies(name).filter(dep => packageProjectsMap.contains(dep)).map { dep: String => classpathDependency(packageProjectsMap(dep)) }
     result
   }
 }
