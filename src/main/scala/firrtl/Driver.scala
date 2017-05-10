@@ -22,7 +22,7 @@ import Utils.throwInternalError
   *
   * @example
   *          {{{
-  *          val optionsManager = ExecutionOptionsManager("firrtl")
+  *          val optionsManager = new ExecutionOptionsManager("firrtl")
   *          optionsManager.register(
   *              FirrtlExecutionOptionsKey ->
   *              new FirrtlExecutionOptions(topName = "Dummy", compilerName = "verilog"))
