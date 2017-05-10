@@ -9,8 +9,10 @@ import firrtl.Mappers._
 
 import annotation.tailrec
 
-object DeadCodeElimination extends Pass {
-  private def dceOnce(s: Statement): (Statement, Long) = {
+object DeadCodeElimination extends Transform {
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+  private def dceOnce(renames: RenameMap)(s: Statement): (Statement, Long) = {
     val referenced = collection.mutable.HashSet[String]()
     var nEliminated = 0L
 
@@ -28,6 +30,7 @@ object DeadCodeElimination extends Pass {
       if (referenced(name)) x
       else {
         nEliminated += 1
+        renames.delete(name)
         EmptyStmt
       }
 
@@ -43,16 +46,22 @@ object DeadCodeElimination extends Pass {
   }
 
   @tailrec
-  private def dce(s: Statement): Statement = {
-    val (res, n) = dceOnce(s)
-    if (n > 0) dce(res) else res
+  private def dce(renames: RenameMap)(s: Statement): Statement = {
+    val (res, n) = dceOnce(renames)(s)
+    if (n > 0) dce(renames)(res) else res
   }
 
-  def run(c: Circuit): Circuit = {
+  def execute(state: CircuitState): CircuitState = {
+    val c = state.circuit
+    val renames = RenameMap()
+    renames.setCircuit(c.main)
     val modulesx = c.modules.map {
       case m: ExtModule => m
-      case m: Module => Module(m.info, m.name, m.ports, dce(m.body))
+      case m: Module =>
+        renames.setModule(m.name)
+        Module(m.info, m.name, m.ports, dce(renames)(m.body))
     }
-    Circuit(c.info, modulesx, c.main)
+    val result = Circuit(c.info, modulesx, c.main)
+    CircuitState(result, outputForm, state.annotations, Some(renames))
   }
 }

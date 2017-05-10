@@ -11,10 +11,12 @@ import firrtl.ir._
 import firrtl.Parser.IgnoreInfo
 
 class ExpandWhensSpec extends FirrtlFlatSpec {
-  private def executeTest(input: String, check: String, passes: Seq[Pass], expected: Boolean) = {
-    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-      (c: Circuit, p: Pass) => p.run(c)
+  private def executeTest(input: String, check: String, transforms: Seq[Transform], expected: Boolean) = {
+    val circuit = Parser.parse(input.split("\n").toIterator)
+    val result = transforms.foldLeft(CircuitState(circuit, UnknownForm)) {
+      (c: CircuitState, p: Transform) => p.runTransform(c)
     }
+    val c = result.circuit
     val lines = c.serialize.split("\n") map normalized
     println(c.serialize)
 
@@ -25,7 +27,7 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     }
   }
   "Expand Whens" should "not emit INVALID" in {
-    val passes = Seq(
+    val transforms = Seq(
       ToWorkingIR,
       CheckHighForm,
       ResolveKinds,
@@ -51,10 +53,10 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
      |      a is invalid
      |      a.b <= UInt<64>("h04000000000000000")""".stripMargin
     val check = "INVALID"
-    executeTest(input, check, passes, false)
+    executeTest(input, check, transforms, false)
   }
   "Expand Whens" should "void unwritten memory fields" in {
-    val passes = Seq(
+    val transforms = Seq(
       ToWorkingIR,
       CheckHighForm,
       ResolveKinds,
@@ -92,7 +94,7 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
      |    memory.w0.clk <= clk
      |    """.stripMargin
     val check = "VOID"
-    executeTest(input, check, passes, true)
+    executeTest(input, check, transforms, true)
   }
 }
 

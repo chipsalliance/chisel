@@ -541,7 +541,7 @@ object Utils extends LazyLogging {
   }
 
   /** Adds a root reference to some SubField/SubIndex chain */
-  def mergeRef(root: WRef, body: Expression): Expression = body match {
+  def mergeRef(root: Expression, body: Expression): Expression = body match {
     case e: WRef =>
       WSubField(root, e.name, e.tpe, e.gender)
     case e: WSubIndex =>

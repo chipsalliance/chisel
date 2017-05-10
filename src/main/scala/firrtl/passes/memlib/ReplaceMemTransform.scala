@@ -131,7 +131,7 @@ class ReplSeqMem extends Transform {
         new SimpleMidTransform(RemoveEmpty),
         new SimpleMidTransform(CheckInitialization),
         new SimpleMidTransform(InferTypes),
-        new SimpleMidTransform(Uniquify),
+        Uniquify,
         new SimpleMidTransform(ResolveKinds),
         new SimpleMidTransform(ResolveGenders))
 

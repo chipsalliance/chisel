@@ -11,7 +11,7 @@ import firrtl.Parser
 import firrtl.passes._
 
 class ZeroWidthTests extends FirrtlFlatSpec {
-  val passes = Seq(
+  val transforms = Seq(
       ToWorkingIR,
       ResolveKinds,
       InferTypes,
@@ -19,9 +19,10 @@ class ZeroWidthTests extends FirrtlFlatSpec {
       InferWidths,
       ZeroWidth)
   private def exec (input: String) = {
-    passes.foldLeft(parse(input)) {
-      (c: Circuit, p: Pass) => p.run(c)
-    }.serialize
+    val circuit = parse(input)
+    transforms.foldLeft(CircuitState(circuit, UnknownForm)) {
+      (c: CircuitState, p: Transform) => p.runTransform(c)
+    }.circuit.serialize
   }
    // =============================
   "Zero width port" should " be deleted" in {
@@ -99,6 +100,18 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |  module Top :
         |    input y: UInt<0>
         |    node x = y""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    skip""".stripMargin
+      (parse(exec(input)).serialize) should be (parse(check).serialize)
+  }
+  "IsInvalid on <0>" should "be deleted" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output y: UInt<0>
+        |    y is invalid""".stripMargin
     val check =
       """circuit Top :
         |  module Top :
