@@ -33,4 +33,15 @@ object ChiselSettings {
       }
     }
   )
+
+  /**
+    * Return a string suitable for using as a Scala identifier
+    * @param id
+    * @return
+    */
+  def safeScalaIdentifier(id: String): String = {
+    val targets = "-" // We could add other candidates here, but it would be nice to come up with unique replacements.
+    val replacements = "_"
+    id.replace(targets, replacements)
+  }
 }

@@ -11,12 +11,14 @@ ghpages.settings
 
 import UnidocKeys._
 
+val internalName = "chisel3"
+
+name := internalName
+
 lazy val customUnidocSettings = unidocSettings ++ Seq (
   doc in Compile := (doc in ScalaUnidoc).value,
   target in unidoc in ScalaUnidoc := crossTarget.value / "api"
 )
-
-val internalName = "chisel3"
 
 lazy val commonSettings = ChiselSettings.commonSettings ++ Seq (
   version := "3.1-SNAPSHOT",
@@ -39,7 +41,6 @@ lazy val commonSettings = ChiselSettings.commonSettings ++ Seq (
 )
 
 lazy val publishSettings = ChiselSettings.publishSettings ++ Seq (
-  name := internalName,
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>

@@ -1,9 +1,11 @@
+import chiselBuild.ChiselSettings
+
 enablePlugins(BuildInfoPlugin)
 
-    buildInfoPackage := name.value
+buildInfoPackage := ChiselSettings.safeScalaIdentifier(name.value)
 
-    buildInfoOptions += BuildInfoOption.BuildTime
+buildInfoOptions += BuildInfoOption.BuildTime
 
-    buildInfoUsePackageAsPath := true
+buildInfoUsePackageAsPath := true
 
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
