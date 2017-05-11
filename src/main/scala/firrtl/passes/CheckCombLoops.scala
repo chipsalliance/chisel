@@ -46,11 +46,11 @@ object CheckCombLoops extends Pass {
     case r: WRef =>
       LogicNode(r.name)
     case s: WSubField =>
-      s.exp match {
+      s.expr match {
         case modref: WRef =>
           LogicNode(s.name,Some(modref.name))
         case memport: WSubField =>
-          memport.exp match {
+          memport.expr match {
             case memref: WRef =>
               LogicNode(s.name,Some(memref.name),Some(memport.name))
             case _ => throwInternalError

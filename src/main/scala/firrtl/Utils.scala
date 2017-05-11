@@ -210,12 +210,12 @@ object Utils extends LazyLogging {
   
    def get_point (e:Expression) : Int = e match {
      case (e: WRef) => 0
-     case (e: WSubField) => e.exp.tpe match {case b: BundleType =>
+     case (e: WSubField) => e.expr.tpe match {case b: BundleType =>
        (b.fields takeWhile (_.name != e.name) foldLeft 0)(
          (point, f) => point + get_size(f.tpe))
     }
     case (e: WSubIndex) => e.value * get_size(e.tpe)
-    case (e: WSubAccess) => get_point(e.exp)
+    case (e: WSubAccess) => get_point(e.expr)
   }
 
   /** Returns true if t, or any subtype, contains a flipped field
@@ -476,9 +476,9 @@ object Utils extends LazyLogging {
 // =========== ACCESSORS =========
   def kind(e: Expression): Kind = e match {
     case ex: WRef => ex.kind
-    case ex: WSubField => kind(ex.exp)
-    case ex: WSubIndex => kind(ex.exp)
-    case ex: WSubAccess => kind(ex.exp)
+    case ex: WSubField => kind(ex.expr)
+    case ex: WSubIndex => kind(ex.expr)
+    case ex: WSubAccess => kind(ex.expr)
     case ex => ExpKind
   }
   def gender(e: Expression): Gender = e match {
@@ -530,10 +530,10 @@ object Utils extends LazyLogging {
   def splitRef(e: Expression): (WRef, Expression) = e match {
     case e: WRef => (e, EmptyExpression)
     case e: WSubIndex =>
-      val (root, tail) = splitRef(e.exp)
+      val (root, tail) = splitRef(e.expr)
       (root, WSubIndex(tail, e.value, e.tpe, e.gender))
     case e: WSubField =>
-      val (root, tail) = splitRef(e.exp)
+      val (root, tail) = splitRef(e.expr)
       tail match {
         case EmptyExpression => (root, WRef(e.name, e.tpe, root.kind, e.gender))
         case exp => (root, WSubField(tail, e.name, e.tpe, e.gender))
@@ -545,9 +545,9 @@ object Utils extends LazyLogging {
     case e: WRef =>
       WSubField(root, e.name, e.tpe, e.gender)
     case e: WSubIndex =>
-      WSubIndex(mergeRef(root, e.exp), e.value, e.tpe, e.gender)
+      WSubIndex(mergeRef(root, e.expr), e.value, e.tpe, e.gender)
     case e: WSubField =>
-      WSubField(mergeRef(root, e.exp), e.name, e.tpe, e.gender)
+      WSubField(mergeRef(root, e.expr), e.name, e.tpe, e.gender)
     case EmptyExpression => root
   }
 

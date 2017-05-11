@@ -187,7 +187,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
   }
   def wref(n: String, t: Type) = WRef(n, t, ExpKind, UNKNOWNGENDER)
   def remove_root(ex: Expression): Expression = ex match {
-    case ex: WSubField => ex.exp match {
+    case ex: WSubField => ex.expr match {
       case (e: WSubField) => remove_root(e)
       case (_: WRef) => WRef(ex.name, ex.tpe, InstanceKind, UNKNOWNGENDER)
     }
@@ -223,7 +223,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       case (e: ValidIf) => emit(Seq(cast(e.value)),top + 1)
       case (e: WRef) => w write e.serialize
       case (e: WSubField) => w write LowerTypes.loweredName(e)
-      case (e: WSubAccess) => w write s"${LowerTypes.loweredName(e.exp)}[${LowerTypes.loweredName(e.index)}]"
+      case (e: WSubAccess) => w write s"${LowerTypes.loweredName(e.expr)}[${LowerTypes.loweredName(e.index)}]"
       case (e: WSubIndex) => w write e.serialize
       case (e: Literal) => v_print(e)
       case (e: VRandom) => w write s"{${e.nWords}{$$random}}"

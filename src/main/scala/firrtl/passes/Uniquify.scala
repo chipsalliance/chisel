@@ -152,7 +152,7 @@ object Uniquify extends Transform {
         }
         else (e, Map())
       case e: WSubField =>
-        val (subExp, subMap) = rec(e.exp, m)
+        val (subExp, subMap) = rec(e.expr, m)
         val (retName, retMap) =
           if (subMap.contains(e.name)) {
             val node = subMap(e.name)
@@ -162,10 +162,10 @@ object Uniquify extends Transform {
           }
         (WSubField(subExp, retName, e.tpe, e.gender), retMap)
       case e: WSubIndex =>
-        val (subExp, subMap) = rec(e.exp, m)
+        val (subExp, subMap) = rec(e.expr, m)
         (WSubIndex(subExp, e.value, e.tpe, e.gender), subMap)
       case e: WSubAccess =>
-        val (subExp, subMap) = rec(e.exp, m)
+        val (subExp, subMap) = rec(e.expr, m)
         val index = uniquifyNamesExp(e.index, map)
         (WSubAccess(subExp, index, e.tpe, e.gender), subMap)
       case (_: UIntLiteral | _: SIntLiteral) => (exp, m)

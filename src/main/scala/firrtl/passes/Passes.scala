@@ -68,7 +68,7 @@ object ToWorkingIR extends Pass {
 object PullMuxes extends Pass {
    def run(c: Circuit): Circuit = {
      def pull_muxes_e(e: Expression): Expression = e map pull_muxes_e match {
-       case ex: WSubField => ex.exp match {
+       case ex: WSubField => ex.expr match {
          case exx: Mux => Mux(exx.cond,
            WSubField(exx.tval, ex.name, ex.tpe, ex.gender),
            WSubField(exx.fval, ex.name, ex.tpe, ex.gender), ex.tpe)
@@ -76,7 +76,7 @@ object PullMuxes extends Pass {
            WSubField(exx.value, ex.name, ex.tpe, ex.gender), ex.tpe)
          case _ => ex  // case exx => exx causes failed tests
        }
-       case ex: WSubIndex => ex.exp match {
+       case ex: WSubIndex => ex.expr match {
          case exx: Mux => Mux(exx.cond,
            WSubIndex(exx.tval, ex.value, ex.tpe, ex.gender),
            WSubIndex(exx.fval, ex.value, ex.tpe, ex.gender), ex.tpe)
@@ -84,7 +84,7 @@ object PullMuxes extends Pass {
            WSubIndex(exx.value, ex.value, ex.tpe, ex.gender), ex.tpe)
          case _ => ex  // case exx => exx causes failed tests
        }
-       case ex: WSubAccess => ex.exp match {
+       case ex: WSubAccess => ex.expr match {
          case exx: Mux => Mux(exx.cond,
            WSubAccess(exx.tval, ex.index, ex.tpe, ex.gender),
            WSubAccess(exx.fval, ex.index, ex.tpe, ex.gender), ex.tpe)
@@ -111,11 +111,11 @@ object ExpandConnects extends Pass {
         def set_gender(e: Expression): Expression = e map set_gender match {
           case ex: WRef => WRef(ex.name, ex.tpe, ex.kind, genders(ex.name))
           case ex: WSubField =>
-            val f = get_field(ex.exp.tpe, ex.name)
-            val genderx = times(gender(ex.exp), f.flip)
-            WSubField(ex.exp, ex.name, ex.tpe, genderx)
-          case ex: WSubIndex => WSubIndex(ex.exp, ex.value, ex.tpe, gender(ex.exp))
-          case ex: WSubAccess => WSubAccess(ex.exp, ex.index, ex.tpe, gender(ex.exp))
+            val f = get_field(ex.expr.tpe, ex.name)
+            val genderx = times(gender(ex.expr), f.flip)
+            WSubField(ex.expr, ex.name, ex.tpe, genderx)
+          case ex: WSubIndex => WSubIndex(ex.expr, ex.value, ex.tpe, gender(ex.expr))
+          case ex: WSubAccess => WSubAccess(ex.expr, ex.index, ex.tpe, gender(ex.expr))
           case ex => ex
         }
         s match {

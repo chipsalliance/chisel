@@ -37,24 +37,24 @@ object WRef {
   def apply(reg: DefRegister): WRef = new WRef(reg.name, reg.tpe, RegKind, UNKNOWNGENDER)
   def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = new WRef(n, t, k, UNKNOWNGENDER)
 }
-case class WSubField(exp: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
-  def serialize: String = s"${exp.serialize}.$name"
-  def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp))
+case class WSubField(expr: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
+  def serialize: String = s"${expr.serialize}.$name"
+  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
 }
 object WSubField {
-  def apply(exp: Expression, n: String): WSubField = new WSubField(exp, n, field_type(exp.tpe, n), UNKNOWNGENDER)
+  def apply(expr: Expression, n: String): WSubField = new WSubField(expr, n, field_type(expr.tpe, n), UNKNOWNGENDER)
 }
-case class WSubIndex(exp: Expression, value: Int, tpe: Type, gender: Gender) extends Expression {
-  def serialize: String = s"${exp.serialize}[$value]"
-  def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp))
+case class WSubIndex(expr: Expression, value: Int, tpe: Type, gender: Gender) extends Expression {
+  def serialize: String = s"${expr.serialize}[$value]"
+  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
 }
-case class WSubAccess(exp: Expression, index: Expression, tpe: Type, gender: Gender) extends Expression {
-  def serialize: String = s"${exp.serialize}[${index.serialize}]"
-  def mapExpr(f: Expression => Expression): Expression = this.copy(exp = f(exp), index = f(index))
+case class WSubAccess(expr: Expression, index: Expression, tpe: Type, gender: Gender) extends Expression {
+  def serialize: String = s"${expr.serialize}[${index.serialize}]"
+  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr), index = f(index))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
 }
@@ -125,9 +125,9 @@ class WrappedExpression(val e1: Expression) {
       case (e1x: UIntLiteral, e2x: UIntLiteral) => e1x.value == e2x.value && eqw(e1x.width, e2x.width)
       case (e1x: SIntLiteral, e2x: SIntLiteral) => e1x.value == e2x.value && eqw(e1x.width, e2x.width)
       case (e1x: WRef, e2x: WRef) => e1x.name equals e2x.name
-      case (e1x: WSubField, e2x: WSubField) => (e1x.name equals e2x.name) && weq(e1x.exp,e2x.exp)
-      case (e1x: WSubIndex, e2x: WSubIndex) => (e1x.value == e2x.value) && weq(e1x.exp,e2x.exp)
-      case (e1x: WSubAccess, e2x: WSubAccess) => weq(e1x.index,e2x.index) && weq(e1x.exp,e2x.exp)
+      case (e1x: WSubField, e2x: WSubField) => (e1x.name equals e2x.name) && weq(e1x.expr,e2x.expr)
+      case (e1x: WSubIndex, e2x: WSubIndex) => (e1x.value == e2x.value) && weq(e1x.expr,e2x.expr)
+      case (e1x: WSubAccess, e2x: WSubAccess) => weq(e1x.index,e2x.index) && weq(e1x.expr,e2x.expr)
       case (WVoid, WVoid) => true
       case (WInvalid, WInvalid) => true
       case (e1x: DoPrim, e2x: DoPrim) => e1x.op == e2x.op &&

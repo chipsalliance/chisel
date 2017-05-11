@@ -137,7 +137,7 @@ object CheckHighForm extends Pass {
           errors.append(new NegUIntException(info, mname))
         case ex: DoPrim => checkHighFormPrimop(info, mname, ex)
         case _: WRef | _: UIntLiteral | _: Mux | _: ValidIf =>
-        case ex: WSubAccess => validSubexp(info, mname)(ex.exp)
+        case ex: WSubAccess => validSubexp(info, mname)(ex.expr)
         case ex => ex map validSubexp(info, mname)
       }
       (e map checkHighFormW(info, mname)
@@ -340,14 +340,14 @@ object CheckTypes extends Pass {
 
     def check_types_e(info:Info, mname: String)(e: Expression): Expression = {
       e match {
-        case (e: WSubField) => e.exp.tpe match {
+        case (e: WSubField) => e.expr.tpe match {
           case (t: BundleType) => t.fields find (_.name == e.name) match {
             case Some(_) =>
             case None => errors.append(new SubfieldNotInBundle(info, mname, e.name))
           }
           case _ => errors.append(new SubfieldOnNonBundle(info, mname, e.name))
         }
-        case (e: WSubIndex) => e.exp.tpe match {
+        case (e: WSubIndex) => e.expr.tpe match {
           case (t: VectorType) if e.value < t.size =>
           case (t: VectorType) =>
             errors.append(new IndexTooLarge(info, mname, e.value))
@@ -355,7 +355,7 @@ object CheckTypes extends Pass {
             errors.append(new IndexOnNonVector(info, mname))
         }
         case (e: WSubAccess) =>
-          e.exp.tpe match {
+          e.expr.tpe match {
             case _: VectorType =>
             case _ => errors.append(new IndexOnNonVector(info, mname))
           }
@@ -491,11 +491,11 @@ object CheckGenders extends Pass {
 
     def get_gender(e: Expression, genders: GenderMap): Gender = e match {
       case (e: WRef) => genders(e.name)
-      case (e: WSubIndex) => get_gender(e.exp, genders)
-      case (e: WSubAccess) => get_gender(e.exp, genders)
-      case (e: WSubField) => e.exp.tpe match {case t: BundleType =>
+      case (e: WSubIndex) => get_gender(e.expr, genders)
+      case (e: WSubAccess) => get_gender(e.expr, genders)
+      case (e: WSubField) => e.expr.tpe match {case t: BundleType =>
         val f = (t.fields find (_.name == e.name)).get
-        times(get_gender(e.exp, genders), f.flip)
+        times(get_gender(e.expr, genders), f.flip)
       }
       case _ => MALE
     }

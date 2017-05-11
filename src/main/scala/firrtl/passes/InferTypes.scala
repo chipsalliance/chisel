@@ -25,9 +25,9 @@ object InferTypes extends Pass {
     def infer_types_e(types: TypeMap)(e: Expression): Expression =
       e map infer_types_e(types) match {
         case e: WRef => e copy (tpe = types(e.name))
-        case e: WSubField => e copy (tpe = field_type(e.exp.tpe, e.name))
-        case e: WSubIndex => e copy (tpe = sub_type(e.exp.tpe))
-        case e: WSubAccess => e copy (tpe = sub_type(e.exp.tpe))
+        case e: WSubField => e copy (tpe = field_type(e.expr.tpe, e.name))
+        case e: WSubIndex => e copy (tpe = sub_type(e.expr.tpe))
+        case e: WSubAccess => e copy (tpe = sub_type(e.expr.tpe))
         case e: DoPrim => PrimOps.set_primop_type(e)
         case e: Mux => e copy (tpe = mux_type_and_widths(e.tval, e.fval))
         case e: ValidIf => e copy (tpe = e.value.tpe)

@@ -34,8 +34,8 @@ object LowerTypes extends Transform {
     */
   def loweredName(e: Expression): String = e match {
     case e: WRef => e.name
-    case e: WSubField => s"${loweredName(e.exp)}$delim${e.name}"
-    case e: WSubIndex => s"${loweredName(e.exp)}$delim${e.value}"
+    case e: WSubField => s"${loweredName(e.expr)}$delim${e.name}"
+    case e: WSubIndex => s"${loweredName(e.expr)}$delim${e.value}"
   }
   def loweredName(s: Seq[String]): String = s mkString delim
   def renameExps(renames: RenameMap, n: String, t: Type, root: String): Seq[String] =
