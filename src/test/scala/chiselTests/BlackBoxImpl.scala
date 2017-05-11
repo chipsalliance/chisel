@@ -47,7 +47,7 @@ class BlackBoxMinus extends HasBlackBoxResource {
     val in2 = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
-  setResource("/BlackBoxTest.v")
+  setResource("/chisel3/BlackBoxTest.v")
 }
 
 class UsesBlackBoxMinusViaResource extends Module {
