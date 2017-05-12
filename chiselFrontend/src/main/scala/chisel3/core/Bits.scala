@@ -594,8 +594,11 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
     binop(sourceInfo, SInt(this.width), RemOp, that)
 
   final def * (that: UInt): SInt = macro SourceInfoTransform.thatArg
-  def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt(this.width + that.width), TimesOp, that)
+  def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
+    val thatToSInt = that.zext()
+    val result = binop(sourceInfo, SInt(this.width + thatToSInt.width), TimesOp, thatToSInt)
+    result.tail(1).asSInt
+  }
 
   /** add (width +1) operator */
   final def +& (that: SInt): SInt = macro SourceInfoTransform.thatArg
