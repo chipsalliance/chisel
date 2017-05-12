@@ -7,8 +7,10 @@ import java.io.{File, FileWriter, Writer}
 import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.annotations._
 import firrtl._
+import firrtl.transforms.OptimizableExtModuleAnnotation
 import firrtl.passes.InlineAnnotation
 import firrtl.passes.memlib.PinAnnotation
+import firrtl.transforms.DontTouchAnnotation
 import net.jcazevedo.moultingyaml._
 import org.scalatest.Matchers
 import logger._
@@ -43,8 +45,17 @@ trait AnnotationSpec extends LowTransformSpec {
 class AnnotationTests extends AnnotationSpec with Matchers {
   def getAMap(a: Annotation): Option[AnnotationMap] = Some(AnnotationMap(Seq(a)))
   def getAMap(as: Seq[Annotation]): Option[AnnotationMap] = Some(AnnotationMap(as))
-  def anno(s: String, value: String ="this is a value"): Annotation =
-    Annotation(ComponentName(s, ModuleName("Top", CircuitName("Top"))), classOf[Transform], value)
+  def anno(s: String, value: String ="this is a value", mod: String = "Top"): Annotation =
+    Annotation(ComponentName(s, ModuleName(mod, CircuitName("Top"))), classOf[Transform], value)
+  def manno(mod: String): Annotation =
+    Annotation(ModuleName(mod, CircuitName("Top")), classOf[Transform], "some value")
+	// TODO unify with FirrtlMatchers, problems with multiple definitions of parse
+  def dontTouch(path: String): Annotation = {
+    val parts = path.split('.')
+    require(parts.size >= 2, "Must specify both module and component!")
+    val name = ComponentName(parts.tail.mkString("."), ModuleName(parts.head, CircuitName("Top")))
+    DontTouchAnnotation(name)
+  }
 
   "Loose and Sticky annotation on a node" should "pass through" in {
     val input: String =
@@ -145,7 +156,6 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     val deleted = result.deletedAnnotations
     exception.str should be (s"No EmittedCircuit found! Did you delete any annotations?\n$deleted")
   }
-
   "Renaming" should "propagate in Lowering of memories" in {
     val compiler = new VerilogCompiler
     // Uncomment to help debugging failing tests
@@ -165,7 +175,8 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |    m.r.en <= UInt(1)
         |    m.r.addr <= in
         |""".stripMargin
-    val annos = Seq(anno("m.r.data.b", "sub"), anno("m.r.data", "all"), anno("m", "mem"))
+    val annos = Seq(anno("m.r.data.b", "sub"), anno("m.r.data", "all"), anno("m", "mem"),
+                    dontTouch("Top.m"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
     resultAnno should contain (anno("m_a", "mem"))
@@ -179,7 +190,6 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should not contain (anno("m"))
     resultAnno should not contain (anno("r"))
   }
-
   "Renaming" should "propagate in RemoveChirrtl and Lowering of memories" in {
     val compiler = new VerilogCompiler
     Logger.setClassLogLevels(Map(compiler.getClass.getName -> LogLevel.Debug))
@@ -191,7 +201,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |    cmem m: {a: UInt<4>, b: UInt<4>[2]}[8]
         |    read mport r = m[in], clk
         |""".stripMargin
-    val annos = Seq(anno("r.b", "sub"), anno("r", "all"), anno("m", "mem"))
+    val annos = Seq(anno("r.b", "sub"), anno("r", "all"), anno("m", "mem"), dontTouch("Top.m"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
     resultAnno should contain (anno("m_a", "mem"))
@@ -220,7 +230,8 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |    x.a <= zero
         |    x.b <= zero
         |""".stripMargin
-    val annos = Seq(anno("zero"), anno("x.a"), anno("x.b"), anno("y[0]"), anno("y[1]"), anno("y[2]"))
+    val annos = Seq(anno("zero"), anno("x.a"), anno("x.b"), anno("y[0]"), anno("y[1]"),
+                    anno("y[2]"), dontTouch("Top.x"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
     resultAnno should contain (anno("x_a"))
@@ -260,7 +271,8 @@ class AnnotationTests extends AnnotationSpec with Matchers {
       anno("w.a"), anno("w.b[0]"), anno("w.b[1]"),
       anno("n.a"), anno("n.b[0]"), anno("n.b[1]"),
       anno("r.a"), anno("r.b[0]"), anno("r.b[1]"),
-      anno("write.a"), anno("write.b[0]"), anno("write.b[1]")
+      anno("write.a"), anno("write.b[0]"), anno("write.b[1]"),
+      dontTouch("Top.r")
     )
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
@@ -314,7 +326,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |    out <= n
         |    reg r: {a: UInt<3>, b: UInt<3>[2]}, clk
         |""".stripMargin
-    val annos = Seq(anno("in"), anno("out"), anno("w"), anno("n"), anno("r"))
+    val annos = Seq(anno("in"), anno("out"), anno("w"), anno("n"), anno("r"), dontTouch("Top.r"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
     resultAnno should contain (anno("in_a"))
@@ -349,7 +361,8 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |    out <= n
         |    reg r: {a: UInt<3>, b: UInt<3>[2]}, clk
         |""".stripMargin
-    val annos = Seq(anno("in.b"), anno("out.b"), anno("w.b"), anno("n.b"), anno("r.b"))
+    val annos = Seq(anno("in.b"), anno("out.b"), anno("w.b"), anno("n.b"), anno("r.b"),
+                    dontTouch("Top.r"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
     resultAnno should contain (anno("in_b_0"))
@@ -364,8 +377,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should contain (anno("r_b_1"))
   }
 
-
-  "Renaming" should "track dce" in {
+  "Renaming" should "track constprop + dce" in {
     val compiler = new VerilogCompiler
     val input =
      """circuit Top :
@@ -402,5 +414,50 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should contain (anno("out_a"))
     resultAnno should contain (anno("out_b_0"))
     resultAnno should contain (anno("out_b_1"))
+  }
+
+  ignore should "track deleted modules AND instances in dce" in {
+    val compiler = new VerilogCompiler
+    val input =
+     """circuit Top :
+        |  module Dead :
+        |    input foo : UInt<8>
+        |    output bar : UInt<8>
+        |    bar <= foo
+        |  extmodule DeadExt :
+        |    input foo : UInt<8>
+        |    output bar : UInt<8>
+        |  module Top :
+        |    input foo : UInt<8>
+        |    output bar : UInt<8>
+        |    inst d of Dead
+        |    d.foo <= foo
+        |    inst d2 of DeadExt
+        |    d2.foo <= foo
+        |    bar <= foo
+        |""".stripMargin
+    val annos = Seq(
+      OptimizableExtModuleAnnotation(ModuleName("DeadExt", CircuitName("Top"))),
+      manno("Dead"), manno("DeadExt"), manno("Top"),
+      anno("d"), anno("d2"),
+      anno("foo", mod = "Top"), anno("bar", mod = "Top"),
+      anno("foo", mod = "Dead"), anno("bar", mod = "Dead"),
+      anno("foo", mod = "DeadExt"), anno("bar", mod = "DeadExt")
+    )
+    val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
+    val resultAnno = result.annotations.get.annotations
+
+    resultAnno should contain (manno("Top"))
+    resultAnno should contain (anno("foo", mod = "Top"))
+    resultAnno should contain (anno("bar", mod = "Top"))
+
+    resultAnno should not contain (manno("Dead"))
+    resultAnno should not contain (manno("DeadExt"))
+    resultAnno should not contain (anno("d"))
+    resultAnno should not contain (anno("d2"))
+    resultAnno should not contain (anno("foo", mod = "Dead"))
+    resultAnno should not contain (anno("bar", mod = "Dead"))
+    resultAnno should not contain (anno("foo", mod = "DeadExt"))
+    resultAnno should not contain (anno("bar", mod = "DeadExt"))
   }
 }

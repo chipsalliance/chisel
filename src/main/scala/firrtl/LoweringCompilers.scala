@@ -105,7 +105,7 @@ class LowFirrtlOptimization extends CoreTransform {
     passes.ConstProp,
     passes.SplitExpressions,
     passes.CommonSubexpressionElimination,
-    passes.DeadCodeElimination)
+    new firrtl.transforms.DeadCodeElimination)
 }
 
 
