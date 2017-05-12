@@ -416,7 +416,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should contain (anno("out_b_1"))
   }
 
-  ignore should "track deleted modules AND instances in dce" in {
+  "Renaming" should "track deleted modules AND instances in dce" in {
     val compiler = new VerilogCompiler
     val input =
      """circuit Top :
@@ -445,6 +445,15 @@ class AnnotationTests extends AnnotationSpec with Matchers {
       anno("foo", mod = "DeadExt"), anno("bar", mod = "DeadExt")
     )
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
+    /* Uncomment to help debug
+    println(result.circuit.serialize)
+    result.annotations.get.annotations.foreach{ a =>
+      a match {
+        case DeletedAnnotation(xform, anno) => println(s"$xform deleted: ${a.target}")
+        case Annotation(target, _, _) => println(s"not deleted: $target")
+      }
+    }
+    */
     val resultAnno = result.annotations.get.annotations
 
     resultAnno should contain (manno("Top"))

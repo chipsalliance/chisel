@@ -45,16 +45,16 @@ object LowerTypes extends Transform {
   def renameExps(renames: RenameMap, e: Expression, root: String): Seq[String] = e.tpe match {
     case (_: GroundType) =>
       val name = root + loweredName(e)
-      renames.rename(e.serialize, name)
+      renames.rename(root + e.serialize, name)
       Seq(name)
     case (t: BundleType) => t.fields.foldLeft(Seq[String]()){(names, f) =>
       val subNames = renameExps(renames, WSubField(e, f.name, f.tpe, times(gender(e), f.flip)), root)
-      renames.rename(e.serialize, subNames)
+      renames.rename(root + e.serialize, subNames)
       names ++ subNames
     }
     case (t: VectorType) => (0 until t.size).foldLeft(Seq[String]()){(names, i) =>
       val subNames = renameExps(renames, WSubIndex(e, i, t.tpe,gender(e)), root)
-      renames.rename(e.serialize, subNames)
+      renames.rename(root + e.serialize, subNames)
       names ++ subNames
     }
   }
@@ -189,7 +189,7 @@ object LowerTypes extends Transform {
       case sx: WDefInstance => sx.tpe match {
         case t: BundleType =>
           val fieldsx = t.fields flatMap { f =>
-            renameExps(renames, f.name, sx.tpe, s"${sx.name}.")
+            renameExps(renames, f.name, f.tpe, s"${sx.name}.")
             create_exps(WRef(f.name, f.tpe, ExpKind, times(f.flip, MALE))) map { e => 
               // Flip because inst genders are reversed from Module type
               Field(loweredName(e), swap(to_flip(gender(e))), e.tpe)
