@@ -2,16 +2,15 @@
 
 package chisel3
 
+import scala.reflect.runtime.{universe => ru}
 import chisel3.internal.firrtl.Emitter
 import chisel3.experimental.RawModule
-
 import java.io._
-import net.jcazevedo.moultingyaml._
 
+import net.jcazevedo.moultingyaml._
 import internal.firrtl._
 import firrtl._
-import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-
+import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
 
 /**
@@ -196,6 +195,74 @@ object Driver extends BackendCompilationUtilities {
     execute(Array("--help"), null)
   }
 
-  val version = BuildInfo.version
-  val chiselVersionString = BuildInfo.toString
+  /** Define our own PackageBuildInfo class.
+    * This should really by a trait which the BuildInfo object extends.
+    * And, strictly speaking, we don't really need a class for this.
+    * The following should be sufficient:
+    *   type PackageBuildInfo Map[String, String]
+    * @param fieldMap the field values specified as a map, presumably with a default value for missing keys.
+    */
+  class PackageBuildInfo (fieldMap: Map[String, String]) {
+    val buildInfoPackage: String = fieldMap("buildInfoPackage")
+    val version: String = fieldMap("version")
+    val scalaVersion: String = fieldMap("scalaVersion")
+    val sbtVersion: String = fieldMap("sbtVersion")
+    val builtAtString: String = fieldMap("builtAtString")
+    val builtAtMillis: Long = fieldMap("builtAtMillis").toLong
+    override val toString: String = {
+      "buildInfoPackage: %s, version: %s, scalaVersion: %s, sbtVersion: %s, builtAtString: %s, builtAtMillis: %s" format (
+        buildInfoPackage, version, scalaVersion, sbtVersion, builtAtString, builtAtMillis
+      )
+    }
+  }
+
+  /** Extract BuildInfo information from packages containing it.
+    *
+    * @param p the package from which BuildInfo is to be extracted.
+    * @return a PackageBuildInfo if the package contains a BuildInfo.
+    */
+  def packageBuildInfo(p: Package): Option[PackageBuildInfo] = {
+    val m = ru.runtimeMirror(getClass.getClassLoader)
+    try {
+      val name = p.getName + ".BuildInfo"
+      val packageBuildInfoModule = m.staticModule(name)
+      // If we get this far, the package has a BuildInfo
+      val buildInfoObject = m.reflectModule(packageBuildInfoModule)
+      val bi = buildInfoObject.instance
+      val biReflection = m.reflect(bi)
+      // Get the `val` fields of the BuildInfo objects.
+      val valFields = packageBuildInfoModule.info.decls.filter(d => d.isTerm && d.asTerm.isVal).toList
+
+      // Generate the map of field name [String] to value [String]
+      val fields = new collection.mutable.HashMap[String, String]
+
+      for (f <- valFields) {
+        val field = f.asTerm
+        // The field names currently contain trailing whitespace.
+        // This is supposed to be resolved by
+        //  https://issues.scala-lang.org/browse/SI-5736
+        val fieldName = field.name.toString.trim
+        // Get a reflector for this field.
+        val reflector = biReflection.reflectField(field)
+        val fieldValue = reflector.get.toString
+        fields += fieldName -> fieldValue
+      }
+      new Some(new PackageBuildInfo(fields.toMap.withDefaultValue("")))
+    }
+    catch {
+      case e: Throwable => {
+        None
+      }
+    }
+  }
+
+  // Build the map of package name to BuildInfo
+  val versions: Map[String, PackageBuildInfo] = {
+    for ( p <- Package.getPackages; bi <- packageBuildInfo(p); if bi != None)
+      yield (p.getName, bi)
+  }.toMap
+
+  val combinedVersionString = versions.toSeq.sortBy(_._1).map(_._2).mkString("\n")
+  val version = versions("chisel3").version
+  val chiselVersionString = versions("chisel3").toString
 }
