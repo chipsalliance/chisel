@@ -18,26 +18,6 @@ import chisel3.internal.firrtl.PrimOp._
   * uses are for representing primitive data types, like integers and bits.
   */
 abstract class Element(private[core] val width: Width) extends Data {
-  /**
-   * Elements can actually be bound to the hardware graph and thus must store
-   * that binding information.
-   */
-  private[this] var _binding: Binding = UnboundBinding(None)
-  // Define setter/getter pairing
-  // Can only bind something that has not yet been bound.
-  private[core] def binding_=(target: Binding): Unit = _binding match {
-    case UnboundBinding(_) => {
-      _binding = target
-      _binding
-    }
-    case _ => throw Binding.AlreadyBoundException(_binding.toString)
-      // Other checks should have caught this.
-  }
-  private[core] def binding = _binding
-
-  /** Return the binding for some bits. */
-  def dir: Direction = binding.direction.getOrElse(Direction.Unspecified)
-
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
   def widthKnown: Boolean = width.known
   def name: String = getRef.name

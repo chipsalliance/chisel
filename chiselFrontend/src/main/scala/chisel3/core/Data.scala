@@ -8,16 +8,26 @@ import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.firrtl.PrimOp.AsUIntOp
 
-sealed abstract class Direction(name: String) {
-  override def toString: String = name
-  def flip: Direction
+/** User-specified directions.
+  */
+sealed abstract class UserDirection
+object UserDirection {
+  case object Input extends UserDirection  // node and its children are forced as inputs
+  case object Output extends UserDirection  // node and its children are forced as outputs
+  case object Flip extends UserDirection  // for containers only, children are flipped
 }
-object Direction {
-  object Input  extends Direction("input") { override def flip: Direction = Output }
-  object Output extends Direction("output") { override def flip: Direction = Input }
-  object Unspecified extends Direction("unspecified") { override def flip: Direction = Input }
+
+/** Resolved directions for both leaf and container nodes, only visible after
+  * a node is bound (since higher-level specifications like Input and Output
+  * can override directions).
+  */
+sealed abstract class ActualDirection
+object ActualDirection {
+  case object Unspecified extends ActualDirection  // undirectioned struct-like
+  case object Input extends ActualDirection
+  case object Output extends ActualDirection
+  case object Bidirectional extends ActualDirection  // for containers only
 }
 
 @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
@@ -88,71 +98,69 @@ private[core] object cloneSupertype {
 */
 object Input {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    val target = source.chiselCloneType
-    Data.setFirrtlDirection(target, Direction.Input)
-    Binding.bind(target, InputBinder, "Error: Cannot set as input ")
+    source.userDirection = UserDirection.Input
+    source
   }
 }
 object Output {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    val target = source.chiselCloneType
-    Data.setFirrtlDirection(target, Direction.Output)
-    Binding.bind(target, OutputBinder, "Error: Cannot set as output ")
+    source.userDirection = UserDirection.Output
+    source
   }
 }
 object Flipped {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    val target = source.chiselCloneType
-    Data.setFirrtlDirection(target, Data.getFirrtlDirection(source).flip)
-    Binding.bind(target, FlippedBinder, "Error: Cannot flip ")
+    source.userDirection = UserDirection.Flip
+    source
   }
 }
 
 object Data {
-  /**
-  * This function returns true if the FIRRTL type of this Data should be flipped
-  * relative to other nodes.
-  *
-  * Note that the current scheme only applies Flip to Elements or Vec chains of
-  * Elements.
-  *
-  * A Record is never marked flip, instead preferring its root fields to be marked
-  *
-  * The Vec check is due to the fact that flip must be factored out of the vec, ie:
-  * must have flip field: Vec(UInt) instead of field: Vec(flip UInt)
-  */
-  private[chisel3] def isFlipped(target: Data): Boolean = target match {
-    case (element: Element) => element.binding.direction == Some(Direction.Input)
-    case (vec: Vec[Data @unchecked]) => isFlipped(vec.sample_element)
-    case (record: Record) => false
-  }
+//  /**
+//  * This function returns true if the FIRRTL type of this Data should be flipped
+//  * relative to other nodes.
+//  *
+//  * Note that the current scheme only applies Flip to Elements or Vec chains of
+//  * Elements.
+//  *
+//  * A Record is never marked flip, instead preferring its root fields to be marked
+//  *
+//  * The Vec check is due to the fact that flip must be factored out of the vec, ie:
+//  * must have flip field: Vec(UInt) instead of field: Vec(flip UInt)
+//  */
+//  private[chisel3] def isFlipped(target: Data): Boolean = target match {
+//    case (element: Element) => element.binding.direction == Some(Direction.Input)
+//    case (vec: Vec[Data @unchecked]) => isFlipped(vec.sample_element)
+//    case (record: Record) => false
+//  }
+//
+//  /** This function returns the "firrtl" flipped-ness for the specified object.
+//    *
+//    * @param target the object for which we want the "firrtl" flipped-ness.
+//    */
+//  private[chisel3] def isFirrtlFlipped(target: Data): Boolean = {
+//    Data.getFirrtlDirection(target) == Direction.Input
+//  }
+//
+//  /** This function gets the "firrtl" direction for the specified object.
+//    *
+//    * @param target the object for which we want to get the "firrtl" direction.
+//    */
+//  private[chisel3] def getFirrtlDirection(target: Data): Direction = target match {
+//    case (vec: Vec[Data @unchecked]) => vec.sample_element.firrtlDirection
+//    case _ => target.firrtlDirection
+//  }
+//
+//  /** This function sets the "firrtl" direction for the specified object.
+//    *
+//    * @param target the object for which we want to set the "firrtl" direction.
+//    */
+//  private[chisel3] def setFirrtlDirection(target: Data, direction: Direction): Unit = target match {
+//    case (vec: Vec[Data @unchecked]) => vec.sample_element.firrtlDirection = direction
+//    case _ => target.firrtlDirection = direction
+//  }
 
-  /** This function returns the "firrtl" flipped-ness for the specified object.
-    *
-    * @param target the object for which we want the "firrtl" flipped-ness.
-    */
-  private[chisel3] def isFirrtlFlipped(target: Data): Boolean = {
-    Data.getFirrtlDirection(target) == Direction.Input
-  }
-
-  /** This function gets the "firrtl" direction for the specified object.
-    *
-    * @param target the object for which we want to get the "firrtl" direction.
-    */
-  private[chisel3] def getFirrtlDirection(target: Data): Direction = target match {
-    case (vec: Vec[Data @unchecked]) => vec.sample_element.firrtlDirection
-    case _ => target.firrtlDirection
-  }
-
-  /** This function sets the "firrtl" direction for the specified object.
-    *
-    * @param target the object for which we want to set the "firrtl" direction.
-    */
-  private[chisel3] def setFirrtlDirection(target: Data, direction: Direction): Unit = target match {
-    case (vec: Vec[Data @unchecked]) => vec.sample_element.firrtlDirection = direction
-    case _ => target.firrtlDirection = direction
-  }
-
+  // TODO: move this to compatibility layer package
   implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
     def asInput(implicit opts: CompileOptions): T = {
       if (opts.deprecateOldDirectionMethods)
@@ -187,6 +195,34 @@ abstract class Data extends HasId {
       case elt => throwException(s"Cannot flatten type ${elt.getClass}")
     }
   }
+
+  // User-specified direction, hierarchical at this node only.
+  // Note that the actual direction of this node can differ from child and parent userDirection,
+  private var _userDirection: Option[UserDirection] = None
+  private[core] def userDirection: Option[UserDirection] = _userDirection
+  private[core] def userDirection_=(direction: UserDirection) = {
+    require(_userDirection == None)  // TODO: better error messages
+    _userDirection = Some(direction)
+  }
+  /** Return the binding for some bits. */
+  def dir: ActualDirection = {
+    require(false)  // TODO implement me
+    return ActualDirection.Unspecified
+  }
+
+  // Binding stores information
+  private[this] var _binding: Binding = UnboundBinding(None)
+  // Define setter/getter pairing
+  // Can only bind something that has not yet been bound.
+  private[core] def binding_=(target: Binding): Unit = _binding match {
+    case UnboundBinding(_) => {
+      _binding = target
+      _binding
+    }
+    case _ => throw Binding.AlreadyBoundException(_binding.toString)
+      // Other checks should have caught this.
+  }
+  private[core] def binding = _binding
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
@@ -253,19 +289,13 @@ abstract class Data extends HasId {
     * @return a copy of the object with appropriate core state.
     */
   def chiselCloneType(implicit compileOptions: CompileOptions): this.type = {
-    // TODO: refactor away allElements, handle this with Aggregate/Element match inside Bindings
-
-    // Call the user-supplied cloneType method
+    // Call the user-supplied cloneType method, which should return a fresh object w/o bindings
     val clone = this.cloneType
-    // In compatibility mode, simply return cloneType; otherwise, propagate
-    // direction and flippedness.
-    if (compileOptions.checkSynthesizable) {
-      Data.setFirrtlDirection(clone, Data.getFirrtlDirection(this))
-      //TODO(twigg): Do recursively for better error messages
-      for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
-        clone_elem.binding = UnboundBinding(source_elem.binding.direction)
-        Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
-      }
+
+    // Propagate the top-level user direction (cloneType should handle the rest)
+    // TODO: this shouldn't happen in chisel compatibility mode (!compileOptions.checkSynthesizable)??
+    userDirection match {
+      case Some(dir) => clone.userDirection = dir
     }
     clone
   }
@@ -322,11 +352,6 @@ abstract class Data extends HasId {
 
   def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
 
-  // firrtlDirection is the direction we report to firrtl.
-  // It maintains the user-specified value (as opposed to the "actual" or applied/propagated value).
-  // NOTE: This should only be used for emitting acceptable firrtl.
-  // The Element.dir should be used for any tests involving direction.
-  private var firrtlDirection: Direction = Direction.Unspecified
   /** Default pretty printing */
   def toPrintable: Printable
 }
@@ -364,40 +389,5 @@ object Wire {
     pushCommand(DefInvalid(sourceInfo, x.ref))
 
     x
-  }
-}
-
-object Clock {
-  def apply(): Clock = new Clock
-  def apply(dir: Direction)(implicit compileOptions: CompileOptions): Clock = {
-    val result = apply()
-    dir match {
-      case Direction.Input => Input(result)
-      case Direction.Output => Output(result)
-      case Direction.Unspecified => result
-    }
-  }
-}
-
-// TODO: Document this.
-sealed class Clock extends Element(Width(1)) {
-  def cloneType: this.type = Clock().asInstanceOf[this.type]
-  private[chisel3] def toType = "Clock"
-
-  private[core] def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass
-
-  override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-    case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
-    case _ => super.badConnect(that)(sourceInfo)
-  }
-
-  /** Not really supported */
-  def toPrintable: Printable = PString("CLOCK")
-
-  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
-    this := that
   }
 }

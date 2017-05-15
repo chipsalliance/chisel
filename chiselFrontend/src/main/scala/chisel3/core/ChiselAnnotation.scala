@@ -2,6 +2,8 @@
 
 package chisel3.core
 
+import scala.language.existentials
+
 import chisel3.internal.InstanceId
 import firrtl.Transform
 import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
