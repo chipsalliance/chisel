@@ -362,7 +362,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-abstract class Record extends Aggregate {
+abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
   /** The collection of [[Data]]
     *
@@ -464,7 +464,7 @@ abstract class Record extends Aggregate {
   *   }
   * }}}
   */
-class Bundle extends Record {
+class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def className = "Bundle"
 
   /** The collection of [[Data]]
