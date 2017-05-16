@@ -241,7 +241,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 
-  private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
+  private[chisel3] def toType(clearDir: Boolean): String = {
+    // Code like Vec(Output(UInt(...))) is disallowed because FIRRTL doesn't understand it
+    require(sample_element.userDirection == None)
+    s"${sample_element.toType(clearDir)}[$length]"
+  }
   override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
 
@@ -369,10 +373,13 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
 
-  private[chisel3] def toType = {
-    def eltPort(elt: Data): String = {
-      val flipStr: String = if(Data.isFirrtlFlipped(elt)) "flip " else ""
-      s"${flipStr}${elt.getRef.name} : ${elt.toType}"
+  private[chisel3] def toType(clearDir: Boolean) = {
+    def eltPort(elt: Data): String = (clearDir, elt.userDirection) match {
+      case (true, _) => s"${elt.getRef.name} : ${elt.toType(true)}"
+      case (false, UserDirection.Unspecified) => s"${elt.getRef.name} : ${elt.toType(false)}"
+      case (false, UserDirection.Flip) => s"flip ${elt.getRef.name} : ${elt.toType(false)}"
+      case (false, UserDirection.Output) => s"${elt.getRef.name} : ${elt.toType(true)}"
+      case (false, UserDirection.Input) => s"flip ${elt.getRef.name} : ${elt.toType(true)}"
     }
     elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
   }

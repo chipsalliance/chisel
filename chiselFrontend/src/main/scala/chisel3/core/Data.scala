@@ -13,6 +13,7 @@ import chisel3.internal.sourceinfo._
   */
 sealed abstract class UserDirection
 object UserDirection {
+  case object Unspecified extends UserDirection  // default
   case object Input extends UserDirection  // node and its children are forced as inputs
   case object Output extends UserDirection  // node and its children are forced as outputs
   case object Flip extends UserDirection  // for containers only, children are flipped
@@ -198,11 +199,11 @@ abstract class Data extends HasId {
 
   // User-specified direction, hierarchical at this node only.
   // Note that the actual direction of this node can differ from child and parent userDirection,
-  private var _userDirection: Option[UserDirection] = None
-  private[core] def userDirection: Option[UserDirection] = _userDirection
+  private var _userDirection: UserDirection = UserDirection.Unspecified
+  private[core] def userDirection: UserDirection = _userDirection
   private[core] def userDirection_=(direction: UserDirection) = {
-    require(_userDirection == None)  // TODO: better error messages
-    _userDirection = Some(direction)
+    require(_userDirection == UserDirection.Unspecified)  // TODO: better error messages
+    _userDirection = direction
   }
   /** Return the binding for some bits. */
   def dir: ActualDirection = {
@@ -271,7 +272,7 @@ abstract class Data extends HasId {
 
   private[chisel3] def lref: Node = Node(this)
   private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
-  private[chisel3] def toType: String
+  private[chisel3] def toType(clearDir: Boolean): String
   private[core] def width: Width
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
@@ -294,9 +295,8 @@ abstract class Data extends HasId {
 
     // Propagate the top-level user direction (cloneType should handle the rest)
     // TODO: this shouldn't happen in chisel compatibility mode (!compileOptions.checkSynthesizable)??
-    userDirection match {
-      case Some(dir) => clone.userDirection = dir
-    }
+    clone.userDirection = userDirection
+
     clone
   }
   final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)

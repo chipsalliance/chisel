@@ -384,7 +384,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
-  private[chisel3] def toType = s"UInt$width"
+  private[chisel3] def toType(clearDir: Boolean) = s"UInt$width"
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
@@ -552,7 +552,7 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
-  private[chisel3] def toType = s"SInt$width"
+  private[chisel3] def toType(clearDir: Boolean) = s"SInt$width"
 
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
   final def unary_-% (): SInt = macro SourceInfoTransform.noArg
@@ -774,7 +774,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
-  private[chisel3] def toType = s"Fixed$width$binaryPoint"
+  private[chisel3] def toType(clearDir: Boolean) = s"Fixed$width$binaryPoint"
 
   override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
     case _: FixedPoint => super.connect(that)
@@ -926,9 +926,6 @@ object FixedPoint {
   /** Create an FixedPoint type or port with fixed width. */
   def apply(width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
 
-  /** Create an FixedPoint port with inferred width. */
-  def apply(dir: Direction): FixedPoint = apply(dir, Width(), BinaryPoint())
-
   /** Create an FixedPoint literal with inferred width from BigInt.
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
@@ -971,7 +968,6 @@ object FixedPoint {
   }
 
   /** Create an FixedPoint port with specified width and binary position. */
-  def apply(dir: Direction, width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
   def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
     val lit = FPLit(value, width, binaryPoint)
     val newLiteral = new FixedPoint(lit.width, lit.binaryPoint, Some(lit))
@@ -1023,7 +1019,7 @@ object FixedPoint {
 final class Analog private (width: Width) extends Element(width) {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
-  private[chisel3] def toType = s"Analog$width"
+  private[chisel3] def toType(clearDir: Boolean) = s"Analog$width"
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width

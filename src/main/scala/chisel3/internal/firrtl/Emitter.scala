@@ -12,8 +12,19 @@ private[chisel3] object Emitter {
 private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString
 
-  private def emitPort(e: Port): String =
-    s"${e.dir} ${e.id.getRef.name} : ${e.id.toType}"
+  private def emitPort(e: Port): String = {
+    e.dir match {
+      case UserDirection.Unspecified =>
+        s"output ${e.id.getRef.name} : ${e.id.toType(false)}"
+      case UserDirection.Flipped =>
+        s"input ${e.id.getRef.name} : ${e.id.toType(false)}"
+      case UserDirection.Input =>
+        s"input ${e.id.getRef.name} : ${e.id.toType(true)}"
+      case UserDirection.Output =>
+        s"output ${e.id.getRef.name} : ${e.id.toType(true)}"
+    }
+  }
+
   private def emit(e: Command, ctx: Component): String = {
     val firrtlLine = e match {
       case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).mkString(", ")})"
