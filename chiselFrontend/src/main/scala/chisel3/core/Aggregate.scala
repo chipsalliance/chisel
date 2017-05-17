@@ -15,6 +15,25 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
+  private[core] def setBinding(target: Binding, parentDirection: UserDirection=UserDirection.Unspecified) {
+    binding = target
+    val childParentDirection = (parentDirection, userDirection) match {
+      case (UserDirection.Output, _) => UserDirection.Output
+      case (UserDirection.Input, _) => UserDirection.Input
+      case (UserDirection.Unspecified, UserDirection.Output) => UserDirection.Output
+      case (UserDirection.Unspecified, UserDirection.Input) => UserDirection.Input
+      case (UserDirection.Flip, UserDirection.Output) => UserDirection.Input
+      case (UserDirection.Flip, UserDirection.Input) => UserDirection.Output
+      case (UserDirection.Unspecified, UserDirection.Unspecified) => UserDirection.Unspecified
+      case (UserDirection.Flip, UserDirection.Flip) => UserDirection.Unspecified
+      case (UserDirection.Flip, UserDirection.Unspecified) => UserDirection.Flip
+      case (UserDirection.Unspecified, UserDirection.Flip) => UserDirection.Flip
+    }
+    for (child <- getElements) {
+      child.setBinding(ChildBinding(this), childParentDirection)
+    }
+  }
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]

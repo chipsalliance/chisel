@@ -14,8 +14,8 @@ import chisel3.internal.sourceinfo._
 sealed abstract class UserDirection
 object UserDirection {
   case object Unspecified extends UserDirection  // default
-  case object Input extends UserDirection  // node and its children are forced as inputs
   case object Output extends UserDirection  // node and its children are forced as outputs
+  case object Input extends UserDirection  // node and its children are forced as inputs
   case object Flip extends UserDirection  // for containers only, children are flipped
 }
 
@@ -26,8 +26,8 @@ object UserDirection {
 sealed abstract class ActualDirection
 object ActualDirection {
   case object Unspecified extends ActualDirection  // undirectioned struct-like
-  case object Input extends ActualDirection
   case object Output extends ActualDirection
+  case object Input extends ActualDirection
   case object Bidirectional extends ActualDirection  // for containers only
 }
 
@@ -117,50 +117,6 @@ object Flipped {
 }
 
 object Data {
-//  /**
-//  * This function returns true if the FIRRTL type of this Data should be flipped
-//  * relative to other nodes.
-//  *
-//  * Note that the current scheme only applies Flip to Elements or Vec chains of
-//  * Elements.
-//  *
-//  * A Record is never marked flip, instead preferring its root fields to be marked
-//  *
-//  * The Vec check is due to the fact that flip must be factored out of the vec, ie:
-//  * must have flip field: Vec(UInt) instead of field: Vec(flip UInt)
-//  */
-//  private[chisel3] def isFlipped(target: Data): Boolean = target match {
-//    case (element: Element) => element.binding.direction == Some(Direction.Input)
-//    case (vec: Vec[Data @unchecked]) => isFlipped(vec.sample_element)
-//    case (record: Record) => false
-//  }
-//
-//  /** This function returns the "firrtl" flipped-ness for the specified object.
-//    *
-//    * @param target the object for which we want the "firrtl" flipped-ness.
-//    */
-//  private[chisel3] def isFirrtlFlipped(target: Data): Boolean = {
-//    Data.getFirrtlDirection(target) == Direction.Input
-//  }
-//
-//  /** This function gets the "firrtl" direction for the specified object.
-//    *
-//    * @param target the object for which we want to get the "firrtl" direction.
-//    */
-//  private[chisel3] def getFirrtlDirection(target: Data): Direction = target match {
-//    case (vec: Vec[Data @unchecked]) => vec.sample_element.firrtlDirection
-//    case _ => target.firrtlDirection
-//  }
-//
-//  /** This function sets the "firrtl" direction for the specified object.
-//    *
-//    * @param target the object for which we want to set the "firrtl" direction.
-//    */
-//  private[chisel3] def setFirrtlDirection(target: Data, direction: Direction): Unit = target match {
-//    case (vec: Vec[Data @unchecked]) => vec.sample_element.firrtlDirection = direction
-//    case _ => target.firrtlDirection = direction
-//  }
-
   // TODO: move this to compatibility layer package
   implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
     def asInput(implicit opts: CompileOptions): T = {
@@ -205,25 +161,43 @@ abstract class Data extends HasId {
     require(_userDirection == UserDirection.Unspecified)  // TODO: better error messages
     _userDirection = direction
   }
-  /** Return the binding for some bits. */
-  def dir: ActualDirection = {
-    require(false)  // TODO implement me
-    return ActualDirection.Unspecified
+
+  // Binding stores information about this node's position in the hardware graph.
+  // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
+  // perform checks in Chisel, where more informative error messages are possible.
+  private var _binding: Option[Binding] = None
+  // Only valid after node is bound (synthesizable), crashes otherwise
+  private[core] def binding = _binding.get
+  // Can only be called ONCE (re-binding disallowed). Data internal API.
+  protected def binding_=(target: Binding): Unit = _binding match {
+    case None => _binding = Some(target)
+    case Some(_) => throw Binding.AlreadyBoundException(_binding.toString)
   }
 
-  // Binding stores information
-  private[this] var _binding: Binding = UnboundBinding(None)
-  // Define setter/getter pairing
-  // Can only bind something that has not yet been bound.
-  private[core] def binding_=(target: Binding): Unit = _binding match {
-    case UnboundBinding(_) => {
-      _binding = target
-      _binding
-    }
-    case _ => throw Binding.AlreadyBoundException(_binding.toString)
-      // Other checks should have caught this.
+  /** Binds this node to the hardware graph.
+    * parentDirection is the direction of the parent node, or Unspecified (default) if the target
+    * node is the top-level.
+    *
+    * direction is valid after this call returns.
+    */
+  private[core] def setBinding(target: Binding, parentDirection: UserDirection=UserDirection.Unspecified)
+
+  // Direction of this node, accounting for parents (force Input / Output) and child direction.
+  // Should be set when (and only valid after) this node is bound.
+  private var _direction: Option[ActualDirection] = None
+  /** Returns the direction of this node.
+    * This node must be bound (synthesizable, have a fully resolved position in the hardware graph)
+    * since higher-level (parent) nodes can force the directionality of their children.
+    */
+  private[core] def direction: ActualDirection = {
+    // TODO better errors
+    return _direction.get
   }
-  private[core] def binding = _binding
+  // Should be called, ONCE, in binding_=.
+  protected def direction_=(direction: ActualDirection) {
+    require(_direction == None)
+    _direction = Some(direction)
+  }
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits

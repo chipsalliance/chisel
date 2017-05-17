@@ -18,6 +18,21 @@ import chisel3.internal.firrtl.PrimOp._
   * uses are for representing primitive data types, like integers and bits.
   */
 abstract class Element(private[core] val width: Width) extends Data {
+  private[core] def setBinding(target: Binding, parentDirection: UserDirection=UserDirection.Unspecified) {
+    binding = target
+    direction = (parentDirection, userDirection) match {
+      case (UserDirection.Output, _) => ActualDirection.Output
+      case (UserDirection.Input, _) => ActualDirection.Input
+      case (UserDirection.Unspecified, UserDirection.Output) => ActualDirection.Output
+      case (UserDirection.Unspecified, UserDirection.Input) => ActualDirection.Input
+      case (UserDirection.Flip, UserDirection.Output) => ActualDirection.Input
+      case (UserDirection.Flip, UserDirection.Input) => ActualDirection.Output
+      // Some combination of flipped or unspecified results in unspecified
+      // TODO should this be an error?
+      case (_, _) => ActualDirection.Unspecified
+    }
+  }
+
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
