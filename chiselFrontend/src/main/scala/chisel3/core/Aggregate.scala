@@ -32,6 +32,20 @@ sealed abstract class Aggregate extends Data {
     for (child <- getElements) {
       child.setBinding(ChildBinding(this), childParentDirection)
     }
+    val childDirections = getElements.map(_.direction).toSet
+    // Can't do match on Scala sets, so here's this ugly if block
+    if (childDirections == Set(ActualDirection.Input)) {
+      direction = ActualDirection.Input
+    } else if (childDirections == Set(ActualDirection.Output)) {
+      direction = ActualDirection.Output
+    } else if (childDirections subsetOf
+        Set(ActualDirection.Output, ActualDirection.Input, ActualDirection.Bidirectional)) {
+      direction = ActualDirection.Bidirectional
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      direction = ActualDirection.Unspecified
+    } else {
+      require(false)  // TODO better error message, can't mix directioned / undirectioned
+    }
   }
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
