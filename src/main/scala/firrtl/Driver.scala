@@ -39,6 +39,7 @@ import Utils.throwInternalError
   */
 
 object Driver {
+  //noinspection ScalaDeprecation
   // Compiles circuit. First parses a circuit from an input file,
   //  executes all compiler passes, and writes result to an output
   //  file.
@@ -118,51 +119,51 @@ object Driver {
     * Run the firrtl compiler using the provided option
     *
     * @param optionsManager the desired flags to the compiler
-    * @return a FirrtlExectionResult indicating success or failure, provide access to emitted data on success
+    * @return a FirrtlExecutionResult indicating success or failure, provide access to emitted data on success
     *         for downstream tools as desired
     */
+  //scalastyle:off cyclomatic.complexity method.length
   def execute(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): FirrtlExecutionResult = {
     def firrtlConfig = optionsManager.firrtlOptions
 
-    Logger.setOptions(optionsManager)
-
-    val firrtlSource = firrtlConfig.firrtlSource match {
-      case Some(text) => text.split("\n").toIterator
-      case None       =>
-        if(optionsManager.topName.isEmpty && firrtlConfig.inputFileNameOverride.isEmpty) {
-          val message = "either top-name or input-file-override must be set"
-          dramaticError(message)
-          return FirrtlExecutionFailure(message)
-        }
-        if(
-          optionsManager.topName.isEmpty &&
-            firrtlConfig.inputFileNameOverride.nonEmpty &&
-            firrtlConfig.outputFileNameOverride.isEmpty) {
-          val message = "inputFileName set but neither top-name or output-file-override is set"
-          dramaticError(message)
-          return FirrtlExecutionFailure(message)
-        }
-        val inputFileName = firrtlConfig.getInputFileName(optionsManager)
-        try {
-          io.Source.fromFile(inputFileName).getLines()
-        }
-        catch {
-          case _: FileNotFoundException =>
-            val message = s"Input file $inputFileName not found"
+    Logger.makeScope(optionsManager) {
+      val firrtlSource = firrtlConfig.firrtlSource match {
+        case Some(text) => text.split("\n").toIterator
+        case None =>
+          if (optionsManager.topName.isEmpty && firrtlConfig.inputFileNameOverride.isEmpty) {
+            val message = "either top-name or input-file-override must be set"
             dramaticError(message)
             return FirrtlExecutionFailure(message)
           }
-        }
+          if (
+            optionsManager.topName.isEmpty &&
+              firrtlConfig.inputFileNameOverride.nonEmpty &&
+              firrtlConfig.outputFileNameOverride.isEmpty) {
+            val message = "inputFileName set but neither top-name or output-file-override is set"
+            dramaticError(message)
+            return FirrtlExecutionFailure(message)
+          }
+          val inputFileName = firrtlConfig.getInputFileName(optionsManager)
+          try {
+            io.Source.fromFile(inputFileName).getLines()
+          }
+          catch {
+            case _: FileNotFoundException =>
+              val message = s"Input file $inputFileName not found"
+              dramaticError(message)
+              return FirrtlExecutionFailure(message)
+          }
+      }
 
-    loadAnnotations(optionsManager)
+      loadAnnotations(optionsManager)
 
-    val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
+      val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
 
-    // Does this need to be before calling compiler?
-    optionsManager.makeTargetDir()
+      // Does this need to be before calling compiler?
+      optionsManager.makeTargetDir()
 
-    // Output Annotations
-    val outputAnnos = firrtlConfig.getEmitterAnnos(optionsManager)
+      // Output Annotations
+      val outputAnnos = firrtlConfig.getEmitterAnnos(optionsManager)
 
     // Should these and outputAnnos be moved to loadAnnotations?
     val globalAnnos = Seq(TargetDirAnnotation(optionsManager.targetDirName))
@@ -196,7 +197,8 @@ object Driver {
         "" // Should we return something different here?
     }
 
-    FirrtlExecutionSuccess(firrtlConfig.compilerName, emittedRes)
+      FirrtlExecutionSuccess(firrtlConfig.compilerName, emittedRes)
+    }
   }
 
   /**
@@ -295,7 +297,7 @@ object FileUtils {
   def isCommandAvailable(cmd: String): Boolean = {
     // Eat any output.
     val sb = new StringBuffer
-    val ioToDevNull = BasicIO(false, sb, None)
+    val ioToDevNull = BasicIO(withIn = false, sb, None)
 
     Seq("bash", "-c", "which %s".format(cmd)).run(ioToDevNull).exitValue == 0
   }

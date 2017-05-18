@@ -29,11 +29,11 @@ abstract class HasParser(applicationName: String) {
   * circuit and then set the topName from that if it has not already been set.
   */
 case class CommonOptions(
-    topName:        String         = "",
-    targetDirName:  String         = ".",
-    globalLogLevel: LogLevel.Value = LogLevel.Error,
-    logToFile:      Boolean        = false,
-    logClassNames:  Boolean        = false,
+    topName:           String         = "",
+    targetDirName:     String         = ".",
+    globalLogLevel:    LogLevel.Value = LogLevel.None,
+    logToFile:         Boolean        = false,
+    logClassNames:     Boolean        = false,
     classLogLevels: Map[String, LogLevel.Value] = Map.empty) extends ComposableOptions {
 
   def getLogFileName(optionsManager: ExecutionOptionsManager): String = {

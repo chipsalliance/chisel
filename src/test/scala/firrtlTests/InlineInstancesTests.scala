@@ -5,19 +5,12 @@ package firrtlTests
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
-
 import firrtl.ir.Circuit
-import firrtl.{Parser, AnnotationMap}
+import firrtl.{AnnotationMap, Parser}
 import firrtl.passes.PassExceptions
-import firrtl.annotations.{
-   Named,
-   CircuitName,
-   ModuleName,
-   ComponentName,
-   Annotation
-}
-import firrtl.passes.{InlineInstances, InlineAnnotation}
-import logger.Logger
+import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName, Named}
+import firrtl.passes.{InlineAnnotation, InlineInstances}
+import logger.{LogLevel, Logger}
 import logger.LogLevel.Debug
 
 
@@ -26,8 +19,8 @@ import logger.LogLevel.Debug
  */
 class InlineInstancesTests extends LowTransformSpec {
    def transform = new InlineInstances
-   // Set this to debug
-   // Logger.setClassLogLevels(Map(this.getClass.getName -> Debug))
+   // Set this to debug, this will apply to all tests
+   // Logger.setLevel(this.getClass, Debug)
    "The module Inline" should "be inlined" in {
       val input =
          """circuit Top :

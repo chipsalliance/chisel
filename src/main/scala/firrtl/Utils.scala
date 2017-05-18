@@ -400,7 +400,6 @@ object Utils extends LazyLogging {
             ilen + get_size(t1x.tpe), jlen + get_size(t2x.tpe))
         }._1
       case (ClockType, ClockType) => if (flip1 == flip2) Seq((0, 0)) else Nil
-      case (AnalogType(w1), AnalogType(w2)) => Nil
       case _ => error("shouldn't be here")
     }
   }
