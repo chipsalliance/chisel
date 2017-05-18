@@ -254,6 +254,29 @@ class DCETests extends FirrtlFlatSpec {
         |    z <= x""".stripMargin
     exec(input, check)
   }
+  "Extmodule with only inputs" should "NOT be deleted by default" in {
+    val input =
+      """circuit Top :
+        |  extmodule InputsOnly :
+        |    input x : UInt<1>
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    inst ext of InputsOnly
+        |    ext.x <= x
+        |    z <= x""".stripMargin
+    val check =
+      """circuit Top :
+        |  extmodule InputsOnly :
+        |    input x : UInt<1>
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    inst ext of InputsOnly
+        |    ext.x <= x
+        |    z <= x""".stripMargin
+    exec(input, check)
+  }
   "Globally dead extmodule marked optimizable" should "be deleted" in {
     val input =
       """circuit Top :
