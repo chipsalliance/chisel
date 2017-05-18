@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-import chiselBuild.ChiselDependencies._
+import chiselBuild.ChiselDependencies.{basicDependencies, chiselLibraryDependencies, chiselProjectDependencies}
 import chiselBuild.ChiselSettings
 
 site.settings
@@ -14,6 +14,9 @@ import UnidocKeys._
 val internalName = "chisel3"
 
 name := internalName
+
+// The Chisel projects we're dependendent on.
+val dependentProjects: Seq[String] = basicDependencies(internalName)
 
 lazy val customUnidocSettings = unidocSettings ++ Seq (
   doc in Compile := (doc in ScalaUnidoc).value,
@@ -36,7 +39,7 @@ lazy val commonSettings = ChiselSettings.commonSettings ++ Seq (
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := allDependencies.value ++ chiselLibraryDependencies(internalName)
+  allDependencies := allDependencies.value ++ chiselLibraryDependencies(dependentProjects)
 
 )
 
@@ -86,10 +89,9 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(publishArtifact := false).
   dependsOn(coreMacros).
-  dependsOn((chiselProjectDependencies(internalName)):_*)
+  dependsOn((chiselProjectDependencies(dependentProjects)):_*)
 
-
-// This will always be the root project, even if we are a sub-project.
+// There will always be a root project.
 lazy val root = RootProject(file("."))
 
 lazy val chisel3 = (project in file(".")).
@@ -118,5 +120,4 @@ lazy val chisel3 = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   ).
-  dependsOn((chiselProjectDependencies(internalName)):_*)
-
+  dependsOn((chiselProjectDependencies(dependentProjects)):_*)
