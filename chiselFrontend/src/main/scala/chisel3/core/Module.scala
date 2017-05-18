@@ -220,7 +220,7 @@ abstract class BaseModule extends HasId {
   protected def IO[T<:Data](iodef: T): iodef.type = {
     require(!_closed, "Can't add more ports after module close")
     // Bind each element of the iodef to being a Port
-    Binding.bind(iodef, PortBinder(this), "Error: iodef")
+    iodef.bind(PortBinding(this))
     _ports += iodef
     iodef
   }

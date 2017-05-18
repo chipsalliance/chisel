@@ -173,31 +173,63 @@ abstract class Data extends HasId {
     case None => _binding = Some(target)
     case Some(_) => throw Binding.AlreadyBoundException(_binding.toString)
   }
+  private[core] def hasBinding = _binding != None
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
     * node is the top-level.
     *
     * direction is valid after this call returns.
+    *
+    * TODO: resolve core/internal
     */
-  private[core] def setBinding(target: Binding, parentDirection: UserDirection=UserDirection.Unspecified)
+  private[chisel3] def bind(target: Binding) {
+    binding = target
+  }
 
+  // Both _direction and _topDownUserDirection are saved versions of computed variables (for
+  // efficiency, avoid expensive recomputation of frequent operations).
   // Direction of this node, accounting for parents (force Input / Output) and child direction.
-  // Should be set when (and only valid after) this node is bound.
   private var _direction: Option[ActualDirection] = None
+  // UserDirection of this node, from the top, accounting higher-level Flip/Input/Output
+  private var _resolvedUserDirection: Option[UserDirection] = None
   /** Returns the direction of this node.
     * This node must be bound (synthesizable, have a fully resolved position in the hardware graph)
     * since higher-level (parent) nodes can force the directionality of their children.
     */
+  private[core] def resolvedUserDirection: UserDirection = {
+    if (!_resolvedUserDirection.isEmpty) {
+      return _resolvedUserDirection.get
+    }
+    require(hasBinding, "Can't get resolvedUserDirection on unbound (non-hardware) node")
+    _resolvedUserDirection = Some(binding match {
+      case ChildBinding(parent) => (parent.resolvedUserDirection, userDirection) match {
+        case (UserDirection.Output, _) => UserDirection.Output
+        case (UserDirection.Input, _) => UserDirection.Input
+        case (UserDirection.Unspecified, UserDirection.Output) => UserDirection.Output
+        case (UserDirection.Unspecified, UserDirection.Input) => UserDirection.Input
+        case (UserDirection.Flip, UserDirection.Output) => UserDirection.Input
+        case (UserDirection.Flip, UserDirection.Input) => UserDirection.Output
+        case (UserDirection.Unspecified, UserDirection.Unspecified) => UserDirection.Unspecified
+        case (UserDirection.Flip, UserDirection.Flip) => UserDirection.Unspecified
+        case (UserDirection.Flip, UserDirection.Unspecified) => UserDirection.Flip
+        case (UserDirection.Unspecified, UserDirection.Flip) => UserDirection.Flip
+      }
+      case _ => userDirection
+    })
+    _resolvedUserDirection.get
+  }
+
   private[core] def direction: ActualDirection = {
-    // TODO better errors
-    return _direction.get
+    if (!_direction.isEmpty) {
+      return _direction.get
+    }
+    require(hasBinding, "Can't get direction on unbound (non-hardware) node")
+    _direction = Some(computeDirection)
+    _direction.get
   }
-  // Should be called, ONCE, in binding_=.
-  protected def direction_=(direction: ActualDirection) {
-    require(_direction == None)
-    _direction = Some(direction)
-  }
+
+  protected def computeDirection: ActualDirection
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
@@ -208,8 +240,8 @@ abstract class Data extends HasId {
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
     if (connectCompileOptions.checkSynthesizable) {
-      Binding.checkSynthesizable(this, s"'this' ($this)")
-      Binding.checkSynthesizable(that, s"'that' ($that)")
+      requireIsHardware(this, s"Data to be connected this='$this' must be hardware")
+      requireIsHardware(that, s"Data to be connected that='$that' must be hardware")
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
@@ -224,8 +256,8 @@ abstract class Data extends HasId {
   }
   private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
     if (connectCompileOptions.checkSynthesizable) {
-      Binding.checkSynthesizable(this, s"'this' ($this)")
-      Binding.checkSynthesizable(that, s"'that' ($that)")
+      requireIsHardware(this, s"Data to be bulk-connected this='$this' must be hardware")
+      requireIsHardware(that, s"Data to be bulk-connected that='$that' must be hardware")
       try {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
@@ -348,7 +380,7 @@ object Wire {
   def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
     val x = apply(t)
-    Binding.checkSynthesizable(init, s"'init' ($init)")
+    requireIsHardware(init, s"Wire initializer init='$init' must be hardware")
     x := init
     x
   }
@@ -357,7 +389,7 @@ object Wire {
     val x = t.chiselCloneType
 
     // Bind each element of x to being a Wire
-    Binding.bind(x, WireBinder(Builder.forcedUserModule), "Error: t")
+    x.bind(WireBinding(Builder.forcedUserModule))
 
     pushCommand(DefWire(sourceInfo, x))
     pushCommand(DefInvalid(sourceInfo, x.ref))

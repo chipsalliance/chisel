@@ -18,19 +18,10 @@ import chisel3.internal.firrtl.PrimOp._
   * uses are for representing primitive data types, like integers and bits.
   */
 abstract class Element(private[core] val width: Width) extends Data {
-  private[core] def setBinding(target: Binding, parentDirection: UserDirection=UserDirection.Unspecified) {
-    binding = target
-    direction = (parentDirection, userDirection) match {
-      case (UserDirection.Output, _) => ActualDirection.Output
-      case (UserDirection.Input, _) => ActualDirection.Input
-      case (UserDirection.Unspecified, UserDirection.Output) => ActualDirection.Output
-      case (UserDirection.Unspecified, UserDirection.Input) => ActualDirection.Input
-      case (UserDirection.Flip, UserDirection.Output) => ActualDirection.Input
-      case (UserDirection.Flip, UserDirection.Input) => ActualDirection.Output
-      // Some combination of flipped or unspecified results in unspecified
-      // TODO should this be an error?
-      case (_, _) => ActualDirection.Unspecified
-    }
+  protected override def computeDirection = resolvedUserDirection match {
+    case UserDirection.Output => ActualDirection.Output
+    case UserDirection.Input => ActualDirection.Input
+    case _ => ActualDirection.Unspecified
   }
 
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
@@ -90,7 +81,8 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     if (isLit()) {
       (((litValue() >> x.toInt) & 1) == 1).asBool
     } else {
-      Binding.checkSynthesizable(this, s"'this' ($this)")
+
+      requireIsHardware(this, s"Bits to be indexed this='$this' must be hardware")
       pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
     }
   }
@@ -133,7 +125,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     if (isLit()) {
       ((litValue >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
     } else {
-      Binding.checkSynthesizable(this, s"'this' ($this)")
+      requireIsHardware(this, s"Bits to be sliced this='$this' must be hardware")
       pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
     }
   }
@@ -145,25 +137,25 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     apply(x.toInt, y.toInt)
 
   private[core] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
+    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref))
   }
   private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
+    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, ILit(other)))
   }
   private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
-    Binding.checkSynthesizable(other, s"'other' ($other)")
+    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
+    requireIsHardware(other, s"Bit operated on other='$other' must be hardware")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, other.ref))
   }
   private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
-    Binding.checkSynthesizable(other, s"'other' ($other)")
+    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
+    requireIsHardware(other, s"Bit operated on other='$other' must be hardware")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
   private[core] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool = {
-    Binding.checkSynthesizable(this, s"'this' ($this)")
+    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
   }
 
@@ -542,7 +534,7 @@ trait UIntFactory {
     val lit = ULit(value, width)
     val result = new UInt(lit.width, Some(lit))
     // Bind result to being an Literal
-    result.binding = LitBinding()
+    result.bind(LitBinding())
     result
   }
 
@@ -698,7 +690,7 @@ trait SIntFactory {
     val lit = SLit(value, width)
     val result = new SInt(lit.width, Some(lit))
     // Bind result to being an Literal
-    result.binding = LitBinding()
+    result.bind(LitBinding())
     result
   }
 }
@@ -760,7 +752,7 @@ trait BoolFactory {
   protected[chisel3] def Lit(x: Boolean): Bool = {
     val result = new Bool(Some(ULit(if (x) 1 else 0, Width(1))))
     // Bind result to being an Literal
-    result.binding = LitBinding()
+    result.bind(LitBinding())
     result
   }
 }
@@ -1048,8 +1040,8 @@ final class Analog private (width: Width) extends Element(width) {
 
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
-  private[core] override def binding_=(target: Binding): Unit = target match {
-    case (_: UnboundBinding | _: WireBinding | PortBinding(_, None)) => super.binding_=(target)
+  protected def binding_=(target: Binding): Unit = target match {
+    case (_: WireBinding | PortBinding(_)) => super.binding_=(target)
     case _ => throwException("Only Wires and Ports can be of type Analog")
   }
 

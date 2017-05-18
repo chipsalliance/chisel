@@ -15,36 +15,29 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[core] def setBinding(target: Binding, parentDirection: UserDirection=UserDirection.Unspecified) {
-    binding = target
-    val childParentDirection = (parentDirection, userDirection) match {
-      case (UserDirection.Output, _) => UserDirection.Output
-      case (UserDirection.Input, _) => UserDirection.Input
-      case (UserDirection.Unspecified, UserDirection.Output) => UserDirection.Output
-      case (UserDirection.Unspecified, UserDirection.Input) => UserDirection.Input
-      case (UserDirection.Flip, UserDirection.Output) => UserDirection.Input
-      case (UserDirection.Flip, UserDirection.Input) => UserDirection.Output
-      case (UserDirection.Unspecified, UserDirection.Unspecified) => UserDirection.Unspecified
-      case (UserDirection.Flip, UserDirection.Flip) => UserDirection.Unspecified
-      case (UserDirection.Flip, UserDirection.Unspecified) => UserDirection.Flip
-      case (UserDirection.Unspecified, UserDirection.Flip) => UserDirection.Flip
-    }
+  private[chisel3] override def bind(target: Binding) {
+    super.bind(target)
+
     for (child <- getElements) {
-      child.setBinding(ChildBinding(this), childParentDirection)
+      child.bind(ChildBinding(this))
     }
+  }
+
+  protected override def computeDirection = {
+    // Check that children obey the directionality rules.
     val childDirections = getElements.map(_.direction).toSet
-    // Can't do match on Scala sets, so here's this ugly if block
-    if (childDirections == Set(ActualDirection.Input)) {
-      direction = ActualDirection.Input
+    if (childDirections == Set(ActualDirection.Input)) {  // can't do set matching in Scala
+      ActualDirection.Input
     } else if (childDirections == Set(ActualDirection.Output)) {
-      direction = ActualDirection.Output
+      ActualDirection.Output
     } else if (childDirections subsetOf
         Set(ActualDirection.Output, ActualDirection.Input, ActualDirection.Bidirectional)) {
-      direction = ActualDirection.Bidirectional
+      ActualDirection.Bidirectional
     } else if (childDirections == Set(ActualDirection.Unspecified)) {
-      direction = ActualDirection.Unspecified
+      ActualDirection.Unspecified
     } else {
       require(false)  // TODO better error message, can't mix directioned / undirectioned
+      ActualDirection.Unspecified
     }
   }
 
@@ -244,16 +237,12 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(p ,s"'p' ($p)")
+    requireIsHardware(p, s"Vec index p='$p' must be hardware")
+    // TODO: this technically should be a wire / port like binding?
     val port = gen
+    port.bind(ChildBinding(this))  // TODO BINDING DIRECTION
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
-
-    // Bind each element of port to being whatever the base type is
-    // Using the head element as the sample_element
-    for((port_elem, model_elem) <- port.allElements zip sample_element.allElements) {
-      port_elem.binding = model_elem.binding
-    }
 
     port
   }
