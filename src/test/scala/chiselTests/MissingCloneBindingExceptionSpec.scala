@@ -10,7 +10,7 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
     import chisel3._
 
     class TestIO(w: Int) extends Bundle {
-      val a = Vec(4, UInt(w.W)).asInput
+      val a = Input(Vec(4, UInt(w.W)))
 
       //override def cloneType = (new TestIO(w)).asInstanceOf[this.type]
     }

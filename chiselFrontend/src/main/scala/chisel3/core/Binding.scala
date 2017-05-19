@@ -33,7 +33,7 @@ object BindingDirection {
       case PortBinding(_) => direction match {
         case ActualDirection.Output => Output
         case ActualDirection.Input => Input
-        // Elements on IOs are not expected to have any other directions
+        case _ => throw new RuntimeException("Unexpected port element direction")
       }
       case _ => Internal
     }

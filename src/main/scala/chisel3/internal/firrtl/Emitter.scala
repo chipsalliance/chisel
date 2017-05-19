@@ -2,6 +2,7 @@
 
 package chisel3.internal.firrtl
 import chisel3._
+import chisel3.core.UserDirection
 import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
@@ -14,25 +15,21 @@ private class Emitter(circuit: Circuit) {
 
   private def emitPort(e: Port): String = {
     e.dir match {
-      case UserDirection.Unspecified =>
+      case UserDirection.Unspecified | UserDirection.Output =>
         s"output ${e.id.getRef.name} : ${e.id.toType(false)}"
-      case UserDirection.Flipped =>
+      case UserDirection.Flip | UserDirection.Input =>
         s"input ${e.id.getRef.name} : ${e.id.toType(false)}"
-      case UserDirection.Input =>
-        s"input ${e.id.getRef.name} : ${e.id.toType(true)}"
-      case UserDirection.Output =>
-        s"output ${e.id.getRef.name} : ${e.id.toType(true)}"
     }
   }
 
   private def emit(e: Command, ctx: Component): String = {
     val firrtlLine = e match {
       case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).mkString(", ")})"
-      case e: DefWire => s"wire ${e.name} : ${e.id.toType}"
-      case e: DefReg => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)}"
-      case e: DefRegInit => s"reg ${e.name} : ${e.id.toType}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))"
-      case e: DefMemory => s"cmem ${e.name} : ${e.t.toType}[${e.size}]"
-      case e: DefSeqMemory => s"smem ${e.name} : ${e.t.toType}[${e.size}]"
+      case e: DefWire => s"wire ${e.name} : ${e.id.toType(false)}"
+      case e: DefReg => s"reg ${e.name} : ${e.id.toType(false)}, ${e.clock.fullName(ctx)}"
+      case e: DefRegInit => s"reg ${e.name} : ${e.id.toType(false)}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))"
+      case e: DefMemory => s"cmem ${e.name} : ${e.t.toType(false)}[${e.size}]"
+      case e: DefSeqMemory => s"smem ${e.name} : ${e.t.toType(false)}[${e.size}]"
       case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}"
       case e: Connect => s"${e.loc.fullName(ctx)} <= ${e.exp.fullName(ctx)}"
       case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"

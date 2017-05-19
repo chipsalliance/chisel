@@ -9,15 +9,6 @@ import chisel3.internal.firrtl.PrimOp.AsUIntOp
 
 object Clock {
   def apply(): Clock = new Clock
-
-  // TODO: move into compatibility package
-  def apply(dir: UserDirection)(implicit compileOptions: CompileOptions): Clock = {
-    val result = apply()
-    dir match {
-      case UserDirection.Input => Input(result)
-      case UserDirection.Output => Output(result)
-    }
-  }
 }
 
 // TODO: Document this.

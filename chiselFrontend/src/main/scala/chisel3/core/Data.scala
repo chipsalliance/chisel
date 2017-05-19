@@ -59,6 +59,10 @@ object debug {  // scalastyle:ignore object.name
 
 object DataMirror {
   def widthOf(target: Data): Width = target.width
+  def directionOf(target: Data): ActualDirection = {
+    requireIsHardware(target, "Can only get direction of hardware node")
+    target.direction
+  }
 }
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:
@@ -119,42 +123,21 @@ private[core] object cloneSupertype {
 * Thus, an error will be thrown if these are used on bound Data
 */
 object Input {
-  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T<:Data](source: T): T = {
     source.userDirection = UserDirection.Input
     source
   }
 }
 object Output {
-  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T<:Data](source: T): T = {
     source.userDirection = UserDirection.Output
     source
   }
 }
 object Flipped {
-  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T<:Data](source: T): T = {
     source.userDirection = UserDirection.Flip
     source
-  }
-}
-
-object Data {
-  // TODO: move this to compatibility layer package
-  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
-    def asInput(implicit opts: CompileOptions): T = {
-      if (opts.deprecateOldDirectionMethods)
-        Builder.deprecated("Input(Data) should be used over Data.asInput")
-      Input(target)
-    }
-    def asOutput(implicit opts: CompileOptions): T = {
-      if (opts.deprecateOldDirectionMethods)
-        Builder.deprecated("Output(Data) should be used over Data.asOutput")
-      Output(target)
-    }
-    def flip()(implicit opts: CompileOptions): T = {
-      if (opts.deprecateOldDirectionMethods)
-        Builder.deprecated("Flipped(Data) should be used over Data.flip")
-      Flipped(target)
-    }
   }
 }
 

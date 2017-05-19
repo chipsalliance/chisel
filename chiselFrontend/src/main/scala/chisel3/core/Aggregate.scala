@@ -34,7 +34,7 @@ sealed abstract class Aggregate extends Data {
       resolvedDirection match {
         case UserDirection.Unspecified => ActualDirection.Bidirectional
         case UserDirection.Flip => ActualDirection.BidirectionalFlip
-        // Input / Output invalid in this case
+        case _ => throw new RuntimeException("Unexpected forced Input / Output")
       }
     } else if (childDirections == Set(ActualDirection.Unspecified)) {
       ActualDirection.Unspecified
@@ -411,12 +411,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def className: String = this.getClass.getSimpleName
 
   private[chisel3] def toType(clearDir: Boolean) = {
-    def eltPort(elt: Data): String = (clearDir, elt.userDirection) match {
-      case (true, _) => s"${elt.getRef.name} : ${elt.toType(true)}"
-      case (false, UserDirection.Unspecified) => s"${elt.getRef.name} : ${elt.toType(false)}"
-      case (false, UserDirection.Flip) => s"flip ${elt.getRef.name} : ${elt.toType(false)}"
-      case (false, UserDirection.Output) => s"${elt.getRef.name} : ${elt.toType(true)}"
-      case (false, UserDirection.Input) => s"flip ${elt.getRef.name} : ${elt.toType(true)}"
+    val childClearDir = clearDir ||
+        userDirection == UserDirection.Input || userDirection == UserDirection.Output
+    def eltPort(elt: Data): String = (childClearDir, elt.userDirection) match {
+      case (true, _) =>
+        s"${elt.getRef.name} : ${elt.toType(true)}"
+      case (false, UserDirection.Unspecified | UserDirection.Output) =>
+        s"${elt.getRef.name} : ${elt.toType(false)}"
+      case (false, UserDirection.Flip | UserDirection.Input) =>
+        s"flip ${elt.getRef.name} : ${elt.toType(false)}"
     }
     elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
   }

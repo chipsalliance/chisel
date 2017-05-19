@@ -12,20 +12,32 @@ package object Chisel {     // scalastyle:ignore package.object.name
   import scala.annotation.compileTimeOnly
 
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
-  type Direction = chisel3.core.Direction
 
-  val INPUT = chisel3.core.Direction.Input
-  val OUTPUT = chisel3.core.Direction.Output
-  val NODIR = chisel3.core.Direction.Unspecified
+  abstract class Direction
+  case object INPUT extends Direction
+  case object OUTPUT extends Direction
+  case object NODIR extends Direction
+
   object Flipped {
     def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
   }
-  // TODO: Possibly move the AddDirectionToData class here?
+
+  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
+    def asInput: T = chisel3.core.Input(target)
+    def asOutput: T = chisel3.core.Output(target)
+    def flip(): T = chisel3.core.Flipped(target)
+  }
+
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
     def dir: Direction = {
       target match {
-        case e: Element => e.dir
-        case _ => chisel3.core.Direction.Unspecified
+        case e: Element => chisel3.core.DataMirror.directionOf(e) match {
+          case chisel3.core.ActualDirection.Input => INPUT
+          case chisel3.core.ActualDirection.Output => OUTPUT
+          case chisel3.core.ActualDirection.Unspecified => NODIR
+          case _ => throw new RuntimeException("Unexpected element direction")
+        }
+        case _ => NODIR
       }
     }
   }
@@ -94,9 +106,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def apply(dir: Direction, width: Width): UInt = {
       val result = apply(width)
       dir match {
-        case chisel3.core.Direction.Input => chisel3.core.Input(result)
-        case chisel3.core.Direction.Output => chisel3.core.Output(result)
-        case chisel3.core.Direction.Unspecified => result
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case NODIR => result
       }
     }
 
@@ -135,9 +147,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def apply(dir: Direction, width: Width): SInt = {
       val result = apply(width)
       dir match {
-        case chisel3.core.Direction.Input => chisel3.core.Input(result)
-        case chisel3.core.Direction.Output => chisel3.core.Output(result)
-        case chisel3.core.Direction.Unspecified => result
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case NODIR => result
       }
     }
   }
@@ -153,9 +165,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def apply(dir: Direction): Bool = {
       val result = apply()
       dir match {
-        case chisel3.core.Direction.Input => chisel3.core.Input(result)
-        case chisel3.core.Direction.Output => chisel3.core.Output(result)
-        case chisel3.core.Direction.Unspecified => result
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case NODIR => result
       }
     }
   }
@@ -186,7 +198,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
   val SeqMem = chisel3.core.SyncReadMem
-  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem [T]
 
   import chisel3.core.CompileOptions
   abstract class CompatibilityModule(
@@ -249,7 +261,6 @@ package object Chisel {     // scalastyle:ignore package.object.name
           chisel3.core.Reg(t)
         }
         if (next ne null) {
-          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
           reg := next
         }
         reg
