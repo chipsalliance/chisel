@@ -25,7 +25,16 @@ sealed abstract class Aggregate extends Data {
 
     // Check that children obey the directionality rules.
     val childDirections = getElements.map(_.direction).toSet
-    direction = if (childDirections == Set(ActualDirection.Input)) {  // can't do set matching
+    direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
+      // If empty, use my assigned direction
+      resolvedDirection match {
+        case UserDirection.Unspecified | UserDirection.Flip => ActualDirection.Unspecified
+        case UserDirection.Output => ActualDirection.Output
+        case UserDirection.Input => ActualDirection.Input
+      }
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      ActualDirection.Unspecified
+    } else if (childDirections == Set(ActualDirection.Input)) {
       ActualDirection.Input
     } else if (childDirections == Set(ActualDirection.Output)) {
       ActualDirection.Output
@@ -37,10 +46,9 @@ sealed abstract class Aggregate extends Data {
         case UserDirection.Flip => ActualDirection.BidirectionalFlip
         case _ => throw new RuntimeException("Unexpected forced Input / Output")
       }
-    } else if (childDirections == Set(ActualDirection.Unspecified)) {
-      ActualDirection.Unspecified
     } else {
-      throw new Binding.BindingException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childDirections")
+      val childWithDirections = getElements zip getElements.map(_.direction)
+      throw new Binding.BindingException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
     }
   }
 

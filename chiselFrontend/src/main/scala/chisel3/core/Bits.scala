@@ -1045,9 +1045,23 @@ final class Analog private (width: Width) extends Element(width) {
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
   private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
-    binding match {
-      case (_: WireBinding | PortBinding(_)) => super.bind(target, parentDirection)
-      case _ => throwException("Only Wires and Ports can be of type Analog")
+    UserDirection.resolve(parentDirection, userDirection) match {
+      case UserDirection.Unspecified | UserDirection.Flip =>
+      case x => throwException(s"Analog may not have explicit direction, got '$x'")
+    }
+    val targetTopBinding = target match {
+      case target: TopBinding => target
+      case ChildBinding(parent) => parent.topBinding
+    }
+    targetTopBinding match {
+      // Analog counts as different directions based on binding context
+      case WireBinding(_) =>
+        binding = target
+        direction = ActualDirection.Unspecified
+      case PortBinding(_) =>
+        binding = target
+        direction = ActualDirection.Bidirectional
+      case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }
   }
 

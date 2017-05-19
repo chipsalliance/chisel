@@ -159,7 +159,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
       id._onModuleClose
     }
 
-    val firrtlPorts = getModulePorts map {port => Port(port, port.userDirection)}
+    val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.userDirection)}
     val component = DefBlackBox(this, name, firrtlPorts, params)
     _component = Some(component)
     component
