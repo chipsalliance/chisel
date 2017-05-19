@@ -116,10 +116,16 @@ class BlackBoxSourceHelper extends firrtl.Transform {
         }
         state
     }
+    // If we have BlackBoxes, generate the helper file.
+    // If we don't, make sure it doesn't exist or we'll confuse downstream processing
+    //  that triggers behavior on the existence of the file
+    val helperFile = new File(targetDir, BlackBoxSourceHelper.FileListName)
     if(fileList.nonEmpty) {
-      val writer = new PrintWriter(new File(targetDir, BlackBoxSourceHelper.FileListName))
+      val writer = new PrintWriter(helperFile)
       writer.write(fileList.map { fileName => s"-v $fileName" }.mkString("\n"))
       writer.close()
+    } else {
+      helperFile.delete()
     }
 
     resultState
