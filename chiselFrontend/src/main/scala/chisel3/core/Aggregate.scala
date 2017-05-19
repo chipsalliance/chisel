@@ -15,24 +15,27 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding) {
-    super.bind(target)
+  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
+    binding = target
 
+    val resolvedDirection = UserDirection.resolve(parentDirection, userDirection)
     for (child <- getElements) {
-      child.bind(ChildBinding(this))
+      child.bind(ChildBinding(this), resolvedDirection)
     }
-  }
 
-  protected override def computeDirection = {
     // Check that children obey the directionality rules.
     val childDirections = getElements.map(_.direction).toSet
-    if (childDirections == Set(ActualDirection.Input)) {  // can't do set matching in Scala
+    direction = if (childDirections == Set(ActualDirection.Input)) {  // can't do set matching
       ActualDirection.Input
     } else if (childDirections == Set(ActualDirection.Output)) {
       ActualDirection.Output
     } else if (childDirections subsetOf
         Set(ActualDirection.Output, ActualDirection.Input, ActualDirection.Bidirectional)) {
-      ActualDirection.Bidirectional
+      resolvedDirection match {
+        case UserDirection.Unspecified => ActualDirection.Bidirectional
+        case UserDirection.Flip => ActualDirection.BidirectionalFlip
+        // Input / Output invalid in this case
+      }
     } else if (childDirections == Set(ActualDirection.Unspecified)) {
       ActualDirection.Unspecified
     } else {
@@ -239,10 +242,20 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
     requireIsHardware(p, s"Vec index p='$p' must be hardware")
     val port = gen
+
+    // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
+    // It may not be exactly equal to that value, but the results are the same.
+    val reconstructedResolvedDirection = direction match {
+      case ActualDirection.Input => UserDirection.Input
+      case ActualDirection.Output => UserDirection.Output
+      case ActualDirection.Bidirectional | ActualDirection.Unspecified => UserDirection.Unspecified
+      case ActualDirection.BidirectionalFlip => UserDirection.Flip
+    }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.
     // Perhaps there's a cleaner way of accomlpishing this...
-    port.bind(ChildBinding(this))
+    port.bind(ChildBinding(this), reconstructedResolvedDirection)
+
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
 
@@ -267,7 +280,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   private[chisel3] def toType(clearDir: Boolean): String = {
     // Code like Vec(Output(UInt(...))) is disallowed because FIRRTL doesn't understand it
-    require(sample_element.userDirection == None)
+    require(sample_element.userDirection == UserDirection.Unspecified)
     s"${sample_element.toType(clearDir)}[$length]"
   }
   override def getElements: Seq[Data] =

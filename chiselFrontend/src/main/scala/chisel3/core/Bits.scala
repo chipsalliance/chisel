@@ -18,10 +18,14 @@ import chisel3.internal.firrtl.PrimOp._
   * uses are for representing primitive data types, like integers and bits.
   */
 abstract class Element(private[core] val width: Width) extends Data {
-  protected override def computeDirection = resolvedUserDirection match {
-    case UserDirection.Output => ActualDirection.Output
-    case UserDirection.Input => ActualDirection.Input
-    case _ => ActualDirection.Unspecified
+  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
+    binding = target
+    val resolvedDirection = UserDirection.resolve(parentDirection, userDirection)
+    direction = resolvedDirection match {
+      case UserDirection.Unspecified | UserDirection.Flip => ActualDirection.Unspecified
+      case UserDirection.Output => ActualDirection.Output
+      case UserDirection.Input => ActualDirection.Input
+    }
   }
 
   private[chisel3] final def allElements: Seq[Element] = Seq(this)
@@ -1040,9 +1044,11 @@ final class Analog private (width: Width) extends Element(width) {
 
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
-  protected def binding_=(target: Binding): Unit = target match {
-    case (_: WireBinding | PortBinding(_)) => super.binding_=(target)
-    case _ => throwException("Only Wires and Ports can be of type Analog")
+  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
+    binding match {
+      case (_: WireBinding | PortBinding(_)) => super.bind(target, parentDirection)
+      case _ => throwException("Only Wires and Ports can be of type Analog")
+    }
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =

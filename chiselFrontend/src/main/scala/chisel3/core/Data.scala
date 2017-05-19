@@ -24,6 +24,17 @@ object UserDirection {
     case Output => Input
     case Input => Output
   }
+
+  /** Returns the resolved UserDirection of this node given the parent's resolved UserDirection
+    * and the user-specified UserDirection of this node.
+    */
+  def resolve(parentDirection: UserDirection, thisDirection: UserDirection) =
+    (parentDirection, thisDirection) match {
+      case (UserDirection.Output, _) => UserDirection.Output
+      case (UserDirection.Input, _) => UserDirection.Input
+      case (UserDirection.Unspecified, thisDirection) => thisDirection
+      case (UserDirection.Flip, thisDirection) => UserDirection.flip(thisDirection)
+    }
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -176,20 +187,20 @@ abstract class Data extends HasId {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
+  private[core] def hasBinding = _binding != None
   // Only valid after node is bound (synthesizable), crashes otherwise
   private[core] def binding = _binding.get
-  private[core] def topBinding = {
+  protected def binding_=(target: Binding) {
+    require(_binding == None)
+    _binding = Some(target)
+  }
+
+  private[core] def topBinding: Binding = {
     binding match {
       case ChildBinding(parent) => parent.topBinding
       case topBinding: TopBinding => topBinding
     }
   }
-  // Can only be called ONCE (re-binding disallowed). Data internal API.
-  protected def binding_=(target: Binding): Unit = _binding match {
-    case None => _binding = Some(target)
-    case Some(_) => throw Binding.AlreadyBoundException(_binding.toString)
-  }
-  private[core] def hasBinding = _binding != None
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
@@ -199,51 +210,20 @@ abstract class Data extends HasId {
     *
     * TODO: resolve core/internal
     */
-  private[chisel3] def bind(target: Binding) {
-    binding = target
-  }
+  private[chisel3] def bind(target: Binding, parentDirection: UserDirection = UserDirection.Unspecified)
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
   // Both are only valid after binding is set.
 
-  // UserDirection of this node, from the top, accounting higher-level Flip/Input/Output
-  private var _resolvedUserDirection: Option[UserDirection] = None
-
   // Direction of this node, accounting for parents (force Input / Output) and children.
   private var _direction: Option[ActualDirection] = None
 
-  /** Returns the direction of this node.
-    * This node must be bound (synthesizable, have a fully resolved position in the hardware graph)
-    * since higher-level (parent) nodes can force the directionality of their children.
-    */
-  private[core] def resolvedUserDirection: UserDirection = {
-    if (!_resolvedUserDirection.isEmpty) {
-      return _resolvedUserDirection.get
-    }
-    require(hasBinding, "Can't get resolvedUserDirection on unbound (non-hardware) node")
-    _resolvedUserDirection = Some(binding match {
-      case ChildBinding(parent) => (parent.resolvedUserDirection, userDirection) match {
-        case (UserDirection.Output, _) => UserDirection.Output
-        case (UserDirection.Input, _) => UserDirection.Input
-        case (UserDirection.Unspecified, myDir) => myDir
-        case (UserDirection.Flip, myDir) => UserDirection.flip(myDir)
-      }
-      case _ => userDirection
-    })
-    _resolvedUserDirection.get
+  private[core] def direction: ActualDirection = _direction.get
+  private[core] def direction_=(actualDirection: ActualDirection) {
+    require(_direction == None)
+    _direction = Some(actualDirection)
   }
-
-  private[core] def direction: ActualDirection = {
-    if (!_direction.isEmpty) {
-      return _direction.get
-    }
-    require(hasBinding, "Can't get direction on unbound (non-hardware) node")
-    _direction = Some(computeDirection)
-    _direction.get
-  }
-
-  protected def computeDirection: ActualDirection
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits

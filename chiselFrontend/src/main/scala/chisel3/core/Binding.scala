@@ -16,12 +16,28 @@ object requireIsChiselType {
   def apply(node: Data, msg: String) = require(!node.hasBinding, msg)
 }
 
-
 object Binding {
   case class BindingException(message: String) extends Exception(message)
-  def AlreadyBoundException(binding: String) = BindingException(s": Already bound to $binding")
-  def NotSynthesizableException = BindingException(s": Not bound to synthesizable node, currently only Type description")
   def MissingIOWrapperException = BindingException(": Missing IO() wrapper")
+}
+
+// Element only direction used for the Binding system only.
+sealed abstract class BindingDirection
+object BindingDirection {
+  case object Internal extends BindingDirection  // internal type or wire
+  case object Output extends BindingDirection  // module port
+  case object Input extends BindingDirection  // module port
+
+  def from(binding: Binding, direction: ActualDirection) = {
+    binding match {
+      case PortBinding(_) => direction match {
+        case ActualDirection.Output => Output
+        case ActualDirection.Input => Input
+        // Elements on IOs are not expected to have any other directions
+      }
+      case _ => Internal
+    }
+  }
 }
 
 // Location refers to 'where' in the Module hierarchy this lives
