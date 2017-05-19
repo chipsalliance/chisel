@@ -153,15 +153,11 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
-   * These could be replaced with:
-   *   val enq = Flipped(EnqIO(gen))
-   *   val deq = Flipped(DeqIO(gen))
-   *  once issue #492 is resolved.
    */
   /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. */
-  val enq = DeqIO(gen)
+  val enq = Flipped(EnqIO(gen))
   /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]*/
-  val deq = EnqIO(gen)
+  val deq = Flipped(DeqIO(gen))
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
 
