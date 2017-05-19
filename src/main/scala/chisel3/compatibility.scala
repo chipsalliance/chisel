@@ -46,7 +46,18 @@ package object Chisel {     // scalastyle:ignore package.object.name
 
   type Data = chisel3.core.Data
   val Wire = chisel3.core.Wire
-  val Clock = chisel3.core.Clock
+  object Clock {
+    def apply(): Clock = new Clock
+
+    def apply(dir: Direction): Clock = {
+      val result = apply()
+      dir match {
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case _ => result
+      }
+    }
+  }
   type Clock = chisel3.core.Clock
 
   // Implicit conversion to allow fromBits because it's being deprecated in chisel3
