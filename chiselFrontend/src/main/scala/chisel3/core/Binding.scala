@@ -28,40 +28,31 @@ object Binding {
 sealed trait Binding {
   def location: Option[BaseModule]
 }
+// Top-level binding representing hardware, not a pointer to another binding
+sealed trait TopBinding extends Binding
 
 // Constrained-ness refers to whether 'bound by Module boundaries'
 // An unconstrained binding, like a literal, can be read by everyone
-sealed trait UnconstrainedBinding extends Binding {
+sealed trait UnconstrainedBinding extends TopBinding {
   def location = None
 }
 // A constrained binding can only be read/written by specific modules
 // Location will track where this Module is
-sealed trait ConstrainedBinding extends Binding {
+sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
   def location = Some(enclosure)
 }
 
-case class LitBinding() // will eventually have literal info
-    extends Binding with UnconstrainedBinding
-
-case class MemoryPortBinding(enclosure: UserModule)
-    extends Binding with ConstrainedBinding
-
+// TODO literal info here
+case class LitBinding() extends UnconstrainedBinding
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: UserModule)
-    extends Binding with ConstrainedBinding
+case class OpBinding(enclosure: UserModule) extends ConstrainedBinding
+case class MemoryPortBinding(enclosure: UserModule) extends ConstrainedBinding
+case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
+case class RegBinding(enclosure: UserModule) extends ConstrainedBinding
+case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
 
-case class PortBinding(enclosure: BaseModule)
-    extends Binding with ConstrainedBinding
-
-case class RegBinding(enclosure: UserModule)
-    extends Binding with ConstrainedBinding
-
-case class WireBinding(enclosure: UserModule)
-    extends Binding with ConstrainedBinding
-
-case class ChildBinding(parent: Data)
-    extends Binding {
+case class ChildBinding(parent: Data) extends Binding {
   def location = parent.binding.location
 }

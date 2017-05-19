@@ -13,10 +13,17 @@ import chisel3.internal.sourceinfo._
   */
 sealed abstract class UserDirection
 object UserDirection {
-  case object Unspecified extends UserDirection  // default
+  case object Unspecified extends UserDirection  // default, also means 'not-flipped'
   case object Output extends UserDirection  // node and its children are forced as outputs
   case object Input extends UserDirection  // node and its children are forced as inputs
   case object Flip extends UserDirection  // for containers only, children are flipped
+
+  def flip(dir: UserDirection) = dir match {
+    case Unspecified => Flip
+    case Flip => Unspecified
+    case Output => Input
+    case Input => Output
+  }
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -26,9 +33,12 @@ object UserDirection {
 sealed abstract class ActualDirection
 object ActualDirection {
   case object Unspecified extends ActualDirection  // undirectioned struct-like
-  case object Output extends ActualDirection
-  case object Input extends ActualDirection
-  case object Bidirectional extends ActualDirection  // for containers only
+  case object Output extends ActualDirection  // forced output, or container with all outputs
+  case object Input extends ActualDirection  // forced input, or container with all inputs
+  case object Bidirectional extends ActualDirection  // for directioned containers only
+  case object BidirectionalFlip extends ActualDirection  // for directioned containers only
+  // BidirectionalFlip is similar to Bidirectional, but the additional "flip" description allows
+  // easy checking of connect legality
 }
 
 @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
@@ -153,8 +163,8 @@ abstract class Data extends HasId {
     }
   }
 
-  // User-specified direction, hierarchical at this node only.
-  // Note that the actual direction of this node can differ from child and parent userDirection,
+  // User-specified direction, local at this node only.
+  // Note that the actual direction of this node can differ from child and parent userDirection.
   private var _userDirection: UserDirection = UserDirection.Unspecified
   private[core] def userDirection: UserDirection = _userDirection
   private[core] def userDirection_=(direction: UserDirection) = {
@@ -168,6 +178,12 @@ abstract class Data extends HasId {
   private var _binding: Option[Binding] = None
   // Only valid after node is bound (synthesizable), crashes otherwise
   private[core] def binding = _binding.get
+  private[core] def topBinding = {
+    binding match {
+      case ChildBinding(parent) => parent.topBinding
+      case topBinding: TopBinding => topBinding
+    }
+  }
   // Can only be called ONCE (re-binding disallowed). Data internal API.
   protected def binding_=(target: Binding): Unit = _binding match {
     case None => _binding = Some(target)
@@ -187,12 +203,16 @@ abstract class Data extends HasId {
     binding = target
   }
 
-  // Both _direction and _topDownUserDirection are saved versions of computed variables (for
+  // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
-  // Direction of this node, accounting for parents (force Input / Output) and child direction.
-  private var _direction: Option[ActualDirection] = None
+  // Both are only valid after binding is set.
+
   // UserDirection of this node, from the top, accounting higher-level Flip/Input/Output
   private var _resolvedUserDirection: Option[UserDirection] = None
+
+  // Direction of this node, accounting for parents (force Input / Output) and children.
+  private var _direction: Option[ActualDirection] = None
+
   /** Returns the direction of this node.
     * This node must be bound (synthesizable, have a fully resolved position in the hardware graph)
     * since higher-level (parent) nodes can force the directionality of their children.
@@ -206,14 +226,8 @@ abstract class Data extends HasId {
       case ChildBinding(parent) => (parent.resolvedUserDirection, userDirection) match {
         case (UserDirection.Output, _) => UserDirection.Output
         case (UserDirection.Input, _) => UserDirection.Input
-        case (UserDirection.Unspecified, UserDirection.Output) => UserDirection.Output
-        case (UserDirection.Unspecified, UserDirection.Input) => UserDirection.Input
-        case (UserDirection.Flip, UserDirection.Output) => UserDirection.Input
-        case (UserDirection.Flip, UserDirection.Input) => UserDirection.Output
-        case (UserDirection.Unspecified, UserDirection.Unspecified) => UserDirection.Unspecified
-        case (UserDirection.Flip, UserDirection.Flip) => UserDirection.Unspecified
-        case (UserDirection.Flip, UserDirection.Unspecified) => UserDirection.Flip
-        case (UserDirection.Unspecified, UserDirection.Flip) => UserDirection.Flip
+        case (UserDirection.Unspecified, myDir) => myDir
+        case (UserDirection.Flip, myDir) => UserDirection.flip(myDir)
       }
       case _ => userDirection
     })

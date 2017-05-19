@@ -238,9 +238,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
     requireIsHardware(p, s"Vec index p='$p' must be hardware")
-    // TODO: this technically should be a wire / port like binding?
     val port = gen
-    port.bind(ChildBinding(this))  // TODO BINDING DIRECTION
+    // TODO port technically isn't directly child of this data structure, but the result of some
+    // muxes / demuxes. However, this does make access consistent with the top-level bindings.
+    // Perhaps there's a cleaner way of accomlpishing this...
+    port.bind(ChildBinding(this))
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
 
