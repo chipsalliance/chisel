@@ -57,12 +57,17 @@ object debug {  // scalastyle:ignore object.name
   def apply (arg: Data): Data = arg
 }
 
+/** Experimental hardware construction reflection API
+  */
 object DataMirror {
   def widthOf(target: Data): Width = target.width
+  def userDirectionOf(target: Data): UserDirection = target.userDirection
   def directionOf(target: Data): ActualDirection = {
     requireIsHardware(target, "node requested directionality on")
     target.direction
   }
+  // TODO: really not a reflection-style API, but a workaround for dir in the compatibility package
+  def isSynthesizable(target: Data) = target.hasBinding
 }
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:
@@ -166,6 +171,20 @@ abstract class Data extends HasId {
       throw new Binding.BindingException(s"Attempted reassignment of user direction to $this")
     }
     _userDirection = direction
+  }
+
+  /** DO NOT USE outside the compatibility layer implementation details.
+    *
+    * This overwrites a relative UserDirection with an explicit one, and is used to implement
+    * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
+    */
+  @deprecated("Not for use outside the compatibility layer implementation", "chisel3")
+  def _compatibilityExplicitUserDirection {
+    _userDirection match {
+      case UserDirection.Unspecified => _userDirection = UserDirection.Output
+      case UserDirection.Flip => _userDirection = UserDirection.Input
+      case UserDirection.Input | UserDirection.Output => // nothing to do
+    }
   }
 
   // Binding stores information about this node's position in the hardware graph.

@@ -10,22 +10,30 @@ object Binding {
 /** Requires that a node is hardware ("bound")
   */
 object requireIsHardware {
-  def apply(node: Data) = if (!node.hasBinding) {
-    throw new Binding.BindingException(s"'$node' must be hardware, not a bare Chisel type")
-  }
-  def apply(node: Data, msg: String) = if (!node.hasBinding) {
-    throw new Binding.BindingException(s"$msg '$node' must be hardware, not a bare Chisel type")
+  def apply(node: Data, msg: String = "") = {
+    node._parent match {  // Compatibility layer hack
+      case Some(x: BaseModule) => x._autoWrapPorts
+      case _ =>
+    }
+    if (!node.hasBinding) {
+      if (!msg.isEmpty()) {
+        throw new Binding.BindingException(s"$msg '$node' must be hardware, not a bare Chisel type")
+      } else {
+        throw new Binding.BindingException(s"'$node' must be hardware, not a bare Chisel type")
+      }
+    }
   }
 }
 
 /** Requires that a node is a chisel type (not hardware, "unbound")
   */
 object requireIsChiselType {
-  def apply(node: Data) = if (node.hasBinding) {
-    throw new Binding.BindingException(s"'$node' must be a Chisel type, not hardware")
-  }
-  def apply(node: Data, msg: String) = if (node.hasBinding) {
-    throw new Binding.BindingException(s"$msg '$node' must be a Chisel type, not hardware")
+  def apply(node: Data, msg: String = "") = if (node.hasBinding) {
+    if (!msg.isEmpty()) {
+      throw new Binding.BindingException(s"$msg '$node' must be a Chisel type, not hardware")
+    } else {
+      throw new Binding.BindingException(s"'$node' must be a Chisel type, not hardware")
+    }
   }
 }
 
@@ -41,7 +49,7 @@ object BindingDirection {
       case PortBinding(_) => direction match {
         case ActualDirection.Output => Output
         case ActualDirection.Input => Input
-        case _ => throw new RuntimeException("Unexpected port element direction")
+        case dir => throw new RuntimeException(s"Unexpected port element direction '$dir'")
       }
       case _ => Internal
     }

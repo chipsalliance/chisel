@@ -29,16 +29,26 @@ package object Chisel {     // scalastyle:ignore package.object.name
   }
 
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
+    import chisel3.core.{DataMirror, ActualDirection, UserDirection}
     def dir: Direction = {
-      target match {
-        case e: Element => chisel3.core.DataMirror.directionOf(e) match {
-          case chisel3.core.ActualDirection.Input => INPUT
-          case chisel3.core.ActualDirection.Output => OUTPUT
-          case chisel3.core.ActualDirection.Unspecified => NODIR
-          case _ => throw new RuntimeException("Unexpected element direction")
+      DataMirror.isSynthesizable(target) match {
+        case true => target match {
+          case e: Element => DataMirror.directionOf(e) match {
+            case ActualDirection.Unspecified => NODIR
+            case ActualDirection.Output => OUTPUT
+            case ActualDirection.Input => INPUT
+            case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
+          }
+          case _ => NODIR
         }
-        case _ => NODIR
+        case false => DataMirror.userDirectionOf(target) match {  // returns local direction only
+          case UserDirection.Unspecified => NODIR
+          case UserDirection.Input => INPUT
+          case UserDirection.Output => OUTPUT
+          case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
+        }
       }
+
     }
   }
 
@@ -231,6 +241,28 @@ package object Chisel {     // scalastyle:ignore package.object.name
       if (!_ioPortBound()) {
         IO(io)
       }
+    }
+
+    override protected def IO[T<:Data](iodef: T): iodef.type = {
+      import chisel3.core.{DataMirror, ActualDirection, UserDirection}
+      // Chisel._ did not require explicit direction on all nodes, so this sets everything to an
+      // output by unless otherwise specified
+      // Note: this relies on Input, Output altering state mutably.
+      def assignDirectionRecursive(data: Data) {
+        data match {
+          case data: Element =>
+            data._compatibilityExplicitUserDirection
+          case data: Aggregate =>
+            DataMirror.userDirectionOf(data) match {
+              case UserDirection.Unspecified | UserDirection.Flip =>
+                // Recurse into children to ensure explicit direction set somewhere
+                data.getElements foreach (assignDirectionRecursive(_))
+              case UserDirection.Input | UserDirection.Output => // forced assign, nothing to do
+            }
+        }
+      }
+      assignDirectionRecursive(iodef)
+      super.IO(iodef)
     }
   }
   val Module = chisel3.core.Module

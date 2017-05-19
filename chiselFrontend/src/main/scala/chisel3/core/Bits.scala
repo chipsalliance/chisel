@@ -982,7 +982,7 @@ object FixedPoint {
   def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
     val lit = FPLit(value, width, binaryPoint)
     val newLiteral = new FixedPoint(lit.width, lit.binaryPoint, Some(lit))
-    newLiteral.binding = LitBinding()
+    newLiteral.bind(LitBinding())
     newLiteral
   }
 
