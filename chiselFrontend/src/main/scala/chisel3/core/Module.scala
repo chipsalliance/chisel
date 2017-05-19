@@ -32,7 +32,10 @@ object Module {
 
     val parent = Builder.currentModule
     val whenDepth: Int = Builder.whenDepth
+
+    // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     val clockAndReset: Option[ClockAndReset] = Builder.currentClockAndReset
+    Builder.currentClockAndReset = None
 
     // Execute the module, this has the following side effects:
     //   - set currentModule
@@ -108,7 +111,7 @@ abstract class BaseModule extends HasId {
     require(_closed, "Can't get ports before module close")
     _ports.toSeq
   }
-  
+
   // These methods allow checking some properties of ports before the module is closed,
   // mainly for compatibility purposes.
   protected def portsContains(elem: Data): Boolean = _ports contains elem

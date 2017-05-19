@@ -55,15 +55,31 @@ object MonoConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Data, source: Data, context_mod: UserModule): Unit =
+  //scalastyle:off cyclomatic.complexity method.length
+  def connect(
+      sourceInfo: SourceInfo,
+      connectCompileOptions: CompileOptions,
+      sink: Data,
+      source: Data,
+      context_mod: UserModule): Unit =
     (sink, source) match {
-      // Handle element case (root case)
-      case (sink_e: Element, source_e: Element) => {
+
+      // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
+      case (sink_e: Bool, source_e: UInt) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
-        // TODO(twigg): Verify the element-level classes are connectable
-      }
+      case (sink_e: UInt, source_e: Bool) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: UInt, source_e: UInt) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: SInt, source_e: SInt) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: FixedPoint, source_e: FixedPoint) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: Clock, source_e: Clock) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+
       // Handle Vec case
-      case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) => {
+      case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
         for(idx <- 0 until sink_v.length) {
           try {
@@ -73,9 +89,9 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
           }
         }
-      }
+
       // Handle Record case
-      case (sink_r: Record, source_r: Record) => {
+      case (sink_r: Record, source_r: Record) =>
         // For each field, descend with right
         for((field, sink_sub) <- sink_r.elements) {
           try {
@@ -91,7 +107,7 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
         }
-      }
+
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }
