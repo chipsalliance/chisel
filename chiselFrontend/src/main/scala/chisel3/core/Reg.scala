@@ -17,7 +17,7 @@ object Reg {
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, s"Reg type t='$t' must be a Chisel type, not hardware.")
+      requireIsChiselType(t, "reg type")
     }
     val reg = t.chiselCloneType
     val clock = Node(Builder.forcedClock)
@@ -82,14 +82,14 @@ object RegInit {
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
-      requireIsChiselType(t, s"Reg type t='$t' must be a Chisel type, not hardware.")
+      requireIsChiselType(t, "reg type")
     }
     val reg = t.chiselCloneType
     val clock = Node(Builder.forcedClock)
     val reset = Node(Builder.forcedReset)
 
     reg.bind(RegBinding(Builder.forcedUserModule))
-    requireIsHardware(init, s"Reg initializer init='$init' must be hardware.")
+    requireIsHardware(init, "reg initializer")
     pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
     reg
   }

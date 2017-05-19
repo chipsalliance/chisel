@@ -24,7 +24,8 @@ trait RecordSpecUtils {
     override def cloneType = (new MyBundle).asInstanceOf[this.type]
   }
   // Useful for constructing types from CustomBundle
-  val fooBarType = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
+  // This is a def because each call to this needs to return a new instance
+  def fooBarType = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
 
   class MyModule(output: => Record, input: => Record) extends Module {
     val io = IO(new Bundle {

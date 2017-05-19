@@ -126,8 +126,8 @@ object MonoConnect {
     val sink_mod: BaseModule   = sink.binding.location.getOrElse(throw UnwritableSinkException)
     val source_mod: BaseModule = source.binding.location.getOrElse(context_mod)
 
-    val sink_direction = BindingDirection.from(sink.binding, sink.direction)
-    val source_direction = BindingDirection.from(source.binding, source.direction)
+    val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
+    val source_direction = BindingDirection.from(source.topBinding, source.direction)
 
     // CASE: Context is same module that both left node and right node are in
     if( (context_mod == sink_mod) && (context_mod == source_mod) ) {

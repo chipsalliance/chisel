@@ -2,23 +2,31 @@ package chisel3.core
 
 import chisel3.internal.Builder.{forcedModule}
 
+object Binding {
+  case class BindingException(message: String) extends Exception(message)
+  def MissingIOWrapperException = BindingException(": Missing IO() wrapper")
+}
+
 /** Requires that a node is hardware ("bound")
   */
 object requireIsHardware {
-  def apply(node: Data) = require(node.hasBinding)
-  def apply(node: Data, msg: String) = require(node.hasBinding, msg)
+  def apply(node: Data) = if (!node.hasBinding) {
+    throw new Binding.BindingException(s"'$node' must be hardware, not a bare Chisel type")
+  }
+  def apply(node: Data, msg: String) = if (!node.hasBinding) {
+    throw new Binding.BindingException(s"$msg '$node' must be hardware, not a bare Chisel type")
+  }
 }
 
 /** Requires that a node is a chisel type (not hardware, "unbound")
   */
 object requireIsChiselType {
-  def apply(node: Data) = require(!node.hasBinding)
-  def apply(node: Data, msg: String) = require(!node.hasBinding, msg)
-}
-
-object Binding {
-  case class BindingException(message: String) extends Exception(message)
-  def MissingIOWrapperException = BindingException(": Missing IO() wrapper")
+  def apply(node: Data) = if (node.hasBinding) {
+    throw new Binding.BindingException(s"'$node' must be a Chisel type, not hardware")
+  }
+  def apply(node: Data, msg: String) = if (node.hasBinding) {
+    throw new Binding.BindingException(s"$msg '$node' must be a Chisel type, not hardware")
+  }
 }
 
 // Element only direction used for the Binding system only.
@@ -28,7 +36,7 @@ object BindingDirection {
   case object Output extends BindingDirection  // module port
   case object Input extends BindingDirection  // module port
 
-  def from(binding: Binding, direction: ActualDirection) = {
+  def from(binding: TopBinding, direction: ActualDirection) = {
     binding match {
       case PortBinding(_) => direction match {
         case ActualDirection.Output => Output

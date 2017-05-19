@@ -85,7 +85,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
   }
 
   private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection)(implicit compileOptions: CompileOptions): T = {
-    requireIsHardware(idx, s"Memory port index idx='$idx' must be hardware")
+    requireIsHardware(idx, "memory port index")
     val i = Vec.truncateIndex(idx, length)(sourceInfo, compileOptions)
 
     val port = pushCommand(

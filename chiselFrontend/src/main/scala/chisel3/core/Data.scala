@@ -60,7 +60,7 @@ object debug {  // scalastyle:ignore object.name
 object DataMirror {
   def widthOf(target: Data): Width = target.width
   def directionOf(target: Data): ActualDirection = {
-    requireIsHardware(target, "Can only get direction of hardware node")
+    requireIsHardware(target, "node requested directionality on")
     target.direction
   }
 }
@@ -162,7 +162,9 @@ abstract class Data extends HasId {
   private var _userDirection: UserDirection = UserDirection.Unspecified
   private[core] def userDirection: UserDirection = _userDirection
   private[core] def userDirection_=(direction: UserDirection) = {
-    require(_userDirection == UserDirection.Unspecified)  // TODO: better error messages
+    if (_userDirection != UserDirection.Unspecified) {
+      throw new Binding.BindingException(s"Attempted reassignment of user direction to $this")
+    }
     _userDirection = direction
   }
 
@@ -174,11 +176,13 @@ abstract class Data extends HasId {
   // Only valid after node is bound (synthesizable), crashes otherwise
   private[core] def binding = _binding.get
   protected def binding_=(target: Binding) {
-    require(_binding == None)
+    if (_binding != None) {
+      throw new Binding.BindingException(s"Attempted reassignment of binding to $this")
+    }
     _binding = Some(target)
   }
 
-  private[core] def topBinding: Binding = {
+  private[core] def topBinding: TopBinding = {
     binding match {
       case ChildBinding(parent) => parent.topBinding
       case topBinding: TopBinding => topBinding
@@ -204,7 +208,9 @@ abstract class Data extends HasId {
 
   private[core] def direction: ActualDirection = _direction.get
   private[core] def direction_=(actualDirection: ActualDirection) {
-    require(_direction == None)
+    if (_direction != None) {
+      throw new Binding.BindingException(s"Attempted reassignment of resolved direction to $this")
+    }
     _direction = Some(actualDirection)
   }
 
@@ -217,8 +223,8 @@ abstract class Data extends HasId {
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
     if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, s"Data to be connected this='$this' must be hardware")
-      requireIsHardware(that, s"Data to be connected that='$that' must be hardware")
+      requireIsHardware(this, "data to be connected")
+      requireIsHardware(that, "data to be connected")
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
@@ -233,8 +239,8 @@ abstract class Data extends HasId {
   }
   private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
     if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, s"Data to be bulk-connected this='$this' must be hardware")
-      requireIsHardware(that, s"Data to be bulk-connected that='$that' must be hardware")
+      requireIsHardware(this, s"data to be bulk-connected")
+      requireIsHardware(that, s"data to be bulk-connected")
       try {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
@@ -357,7 +363,7 @@ object Wire {
   def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
     val x = apply(t)
-    requireIsHardware(init, s"Wire initializer init='$init' must be hardware")
+    requireIsHardware(init, "wire initializer")
     x := init
     x
   }

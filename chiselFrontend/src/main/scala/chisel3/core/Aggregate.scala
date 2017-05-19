@@ -30,7 +30,8 @@ sealed abstract class Aggregate extends Data {
     } else if (childDirections == Set(ActualDirection.Output)) {
       ActualDirection.Output
     } else if (childDirections subsetOf
-        Set(ActualDirection.Output, ActualDirection.Input, ActualDirection.Bidirectional)) {
+        Set(ActualDirection.Output, ActualDirection.Input,
+            ActualDirection.Bidirectional, ActualDirection.BidirectionalFlip)) {
       resolvedDirection match {
         case UserDirection.Unspecified => ActualDirection.Bidirectional
         case UserDirection.Flip => ActualDirection.BidirectionalFlip
@@ -39,8 +40,7 @@ sealed abstract class Aggregate extends Data {
     } else if (childDirections == Set(ActualDirection.Unspecified)) {
       ActualDirection.Unspecified
     } else {
-      require(false)  // TODO better error message, can't mix directioned / undirectioned
-      ActualDirection.Unspecified
+      throw new Binding.BindingException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childDirections")
     }
   }
 
@@ -240,7 +240,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
-    requireIsHardware(p, s"Vec index p='$p' must be hardware")
+    requireIsHardware(p, "vec index")
     val port = gen
 
     // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.

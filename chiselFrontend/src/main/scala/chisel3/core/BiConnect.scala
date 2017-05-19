@@ -141,11 +141,11 @@ object BiConnect {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
-    val left_mod: BaseModule  = left.binding.location.getOrElse(context_mod)
-    val right_mod: BaseModule = right.binding.location.getOrElse(context_mod)
+    val left_mod: BaseModule  = left.topBinding.location.getOrElse(context_mod)
+    val right_mod: BaseModule = right.topBinding.location.getOrElse(context_mod)
 
-    val left_direction = BindingDirection.from(left.binding, left.direction)
-    val right_direction = BindingDirection.from(right.binding, right.direction)
+    val left_direction = BindingDirection.from(left.topBinding, left.direction)
+    val right_direction = BindingDirection.from(right.topBinding, right.direction)
 
     // CASE: Context is same module as left node and right node is in a child module
     if( (left_mod == context_mod) &&

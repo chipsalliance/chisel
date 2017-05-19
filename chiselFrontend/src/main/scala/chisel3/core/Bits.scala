@@ -86,7 +86,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
       (((litValue() >> x.toInt) & 1) == 1).asBool
     } else {
 
-      requireIsHardware(this, s"Bits to be indexed this='$this' must be hardware")
+      requireIsHardware(this, "bits to be indexed")
       pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
     }
   }
@@ -129,7 +129,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     if (isLit()) {
       ((litValue >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
     } else {
-      requireIsHardware(this, s"Bits to be sliced this='$this' must be hardware")
+      requireIsHardware(this, "bits to be sliced")
       pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
     }
   }
@@ -141,25 +141,25 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     apply(x.toInt, y.toInt)
 
   private[core] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
-    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
+    requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref))
   }
   private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T = {
-    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
+    requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, ILit(other)))
   }
   private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T = {
-    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
-    requireIsHardware(other, s"Bit operated on other='$other' must be hardware")
+    requireIsHardware(this, "bits operated on")
+    requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, other.ref))
   }
   private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool = {
-    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
-    requireIsHardware(other, s"Bit operated on other='$other' must be hardware")
+    requireIsHardware(this, "bits operated on")
+    requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
   private[core] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool = {
-    requireIsHardware(this, s"Bit operated on this='$this' must be hardware")
+    requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
   }
 
