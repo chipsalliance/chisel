@@ -280,7 +280,6 @@ abstract class Data extends HasId {
 
   private[chisel3] def lref: Node = Node(this)
   private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
-  private[chisel3] def toType(clearDir: Boolean): String
   private[core] def width: Width
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 

@@ -107,8 +107,18 @@ object Vec {
     require(!elts.isEmpty)
 
     val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
-    for ((v, e) <- vec zip elts) {
-      v := e  // Vecs may not have bidirectional elements, so monoconnect is legal
+
+    // TODO: try to remove the logic for this mess
+    elts.head.direction match {
+      case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
+        // When internal wires are involved, driver / sink must be specified explicitly, otherwise
+        // the system is unable to infer which is driver / sink
+        (vec zip elts) foreach {x => x._1 := x._2}
+      case ActualDirection.Bidirectional | ActualDirection.BidirectionalFlip =>
+        // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
+        // Bulk connecting two wires may not succeed because Chisel frontend does not infer
+        // directions.
+        (vec zip elts) foreach {x => x._1 <> x._2}
     }
     vec
   }
@@ -286,9 +296,16 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 
+  /** Since FIRRTL does not allow Vecs to specify child user direction, a Vec must present the
+    * child's user direction as its own.
+    */
+  override private[core] def userDirection: UserDirection = {
+    (super.userDirection, sample_element.userDirection) match {
+
+    }
+  }
+
   private[chisel3] def toType(clearDir: Boolean): String = {
-    // Code like Vec(Output(UInt(...))) is disallowed because FIRRTL doesn't understand it
-    require(sample_element.userDirection == UserDirection.Unspecified)
     s"${sample_element.toType(clearDir)}[$length]"
   }
   override def getElements: Seq[Data] =

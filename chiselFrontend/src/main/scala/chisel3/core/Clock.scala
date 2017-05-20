@@ -14,7 +14,6 @@ object Clock {
 // TODO: Document this.
 sealed class Clock extends Element(Width(1)) {
   def cloneType: this.type = Clock().asInstanceOf[this.type]
-  private[chisel3] def toType(clearDir: Boolean) = "Clock"
 
   private[core] def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass
