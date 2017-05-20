@@ -17,7 +17,7 @@ import chisel3.internal.firrtl.PrimOp._
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
   */
-abstract class Element(private[core] val width: Width) extends Data {
+abstract class Element(private[chisel3] val width: Width) extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
     binding = target
     val resolvedDirection = UserDirection.resolve(parentDirection, userDirection)
@@ -395,7 +395,6 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
-  private[chisel3] def toType(clearDir: Boolean) = s"UInt$width"
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
@@ -563,7 +562,6 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
-  private[chisel3] def toType(clearDir: Boolean) = s"SInt$width"
 
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
   final def unary_-% (): SInt = macro SourceInfoTransform.noArg
@@ -785,7 +783,6 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
 
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
-  private[chisel3] def toType(clearDir: Boolean) = s"Fixed$width$binaryPoint"
 
   override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
     case _: FixedPoint => super.connect(that)
@@ -1029,8 +1026,6 @@ object FixedPoint {
   */
 final class Analog private (width: Width) extends Element(width) {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
-
-  private[chisel3] def toType(clearDir: Boolean) = s"Analog$width"
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width

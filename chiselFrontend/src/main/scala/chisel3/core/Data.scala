@@ -165,7 +165,7 @@ abstract class Data extends HasId {
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent userDirection.
   private var _userDirection: UserDirection = UserDirection.Unspecified
-  private[core] def userDirection: UserDirection = _userDirection
+  private[chisel3] def userDirection: UserDirection = _userDirection
   private[core] def userDirection_=(direction: UserDirection) = {
     if (_userDirection != UserDirection.Unspecified) {
       throw new Binding.BindingException(s"Attempted reassignment of user direction to $this")
@@ -225,7 +225,7 @@ abstract class Data extends HasId {
   // Direction of this node, accounting for parents (force Input / Output) and children.
   private var _direction: Option[ActualDirection] = None
 
-  private[core] def direction: ActualDirection = _direction.get
+  private[chisel3] def direction: ActualDirection = _direction.get
   private[core] def direction_=(actualDirection: ActualDirection) {
     if (_direction != None) {
       throw new Binding.BindingException(s"Attempted reassignment of resolved direction to $this")
@@ -280,7 +280,7 @@ abstract class Data extends HasId {
 
   private[chisel3] def lref: Node = Node(this)
   private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
-  private[core] def width: Width
+  private[chisel3] def width: Width
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** cloneType must be defined for any Chisel object extending Data.

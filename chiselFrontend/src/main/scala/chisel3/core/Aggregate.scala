@@ -56,7 +56,7 @@ sealed abstract class Aggregate extends Data {
     */
   def getElements: Seq[Data]
 
-  private[core] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+  private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
@@ -105,6 +105,7 @@ object Vec {
 
     // Check that types are homogeneous.  Width mismatch for Elements is safe.
     require(!elts.isEmpty)
+    elts foreach {requireIsHardware(_, "vec element")}
 
     val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
 
@@ -218,7 +219,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   *
   * Needed specifically for the case when the Vec is length 0.
   */
-  private[core] val sample_element: T = gen
+  private[chisel3] val sample_element: T = gen
 
   // allElements current includes sample_element
   // This is somewhat weird although I think the best course of action here is
@@ -296,18 +297,6 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 
-  /** Since FIRRTL does not allow Vecs to specify child user direction, a Vec must present the
-    * child's user direction as its own.
-    */
-  override private[core] def userDirection: UserDirection = {
-    (super.userDirection, sample_element.userDirection) match {
-
-    }
-  }
-
-  private[chisel3] def toType(clearDir: Boolean): String = {
-    s"${sample_element.toType(clearDir)}[$length]"
-  }
   override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
 
@@ -434,20 +423,6 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
-
-  private[chisel3] def toType(clearDir: Boolean) = {
-    val childClearDir = clearDir ||
-        userDirection == UserDirection.Input || userDirection == UserDirection.Output
-    def eltPort(elt: Data): String = (childClearDir, elt.userDirection) match {
-      case (true, _) =>
-        s"${elt.getRef.name} : ${elt.toType(true)}"
-      case (false, UserDirection.Unspecified | UserDirection.Output) =>
-        s"${elt.getRef.name} : ${elt.toType(false)}"
-      case (false, UserDirection.Flip | UserDirection.Input) =>
-        s"flip ${elt.getRef.name} : ${elt.toType(false)}"
-    }
-    elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
-  }
 
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>

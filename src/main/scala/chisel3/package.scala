@@ -24,8 +24,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
-  val DataMirror = chisel3.core.DataMirror
-
   implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
     @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
     def asInput: T = Input(target)
@@ -340,6 +338,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
     type ChiselAnnotation = chisel3.core.ChiselAnnotation
     val ChiselAnnotation = chisel3.core.ChiselAnnotation
+
+    val DataMirror = chisel3.core.DataMirror
+    val requireIsHardware = chisel3.core.requireIsHardware
+    val requireIsChiselType = chisel3.core.requireIsChiselType
+    type Direction = chisel3.core.ActualDirection
+    val Direction = chisel3.core.ActualDirection
 
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros
