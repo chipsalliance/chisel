@@ -106,7 +106,7 @@ object Decoupled
   * 'ready' has also been raised.
   * @param gen the type of data to be wrapped in IrrevocableIO
   */
-class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
+class IrrevocableIO[+T <: Data](gen: T) extends DecoupledIO[T](gen)
 {
   override def cloneType: this.type = new IrrevocableIO(gen).asInstanceOf[this.type]
 }
@@ -135,7 +135,7 @@ object Irrevocable
   * @param gen The type of data to enqueue
   */
 object EnqIO {
-  def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
+  def apply[T<:Data](gen: T): IrrevocableIO[T] = Irrevocable(gen)
 }
 /** Consumer - drives (outputs) ready, inputs valid and bits.
   * @param gen The type of data to dequeue
