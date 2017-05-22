@@ -152,11 +152,15 @@ object Driver extends BackendCompilationUtilities {
     val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
       transformClass.newInstance()
     }
+
+    val orderedTransforms = (optionsManager.firrtlOptions.customTransforms ++ transforms.toList).map(
+      x => x.getClass).distinct.map(x => x.newInstance())
+
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
       firrtlSource = Some(firrtlString),
       annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList,
-      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
+      customTransforms = orderedTransforms)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(optionsManager))
