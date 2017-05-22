@@ -272,6 +272,7 @@ object Queue
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready
+    q.io.deq.ready := false.B  // Default to no dequeue
     TransitName(q.io.deq, q)
   }
 
@@ -291,6 +292,7 @@ object Queue
     irr.bits := deq.bits
     irr.valid := deq.valid
     deq.ready := irr.ready
+    irr.ready := false.B
     irr
   }
 }
