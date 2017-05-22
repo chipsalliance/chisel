@@ -22,7 +22,13 @@ object ChiselDependencies {
     "chisel-iotesters" -> "1.2-SNAPSHOT"
   )
 
-  val versions = collection.mutable.Map[String, String](defaultVersions.toSeq: _*)
+  // Set up the versions Map, overriding the default if -DXVersion="" is supplied on the command line (via JAVA_OPTS).
+  val versions = collection.mutable.Map[String, String](
+    (
+      for ((name, version) <- defaultVersions)
+        yield (name, sys.props.getOrElse(name + "Version", version))
+    ).toSeq: _*
+  )
 
   // The unmanaged classPath - jars found here will automatically satisfy libraryDependencies.
   var unmanagedClasspath: Option[String] = None
@@ -48,9 +54,8 @@ object ChiselDependencies {
   }
 
   // Give a module/project name, return the ModuleID
-  // Provide a managed dependency on X if -DXVersion="" is supplied on the command line (via JAVA_OPTS).
   private def nameToModuleID(name: String): ModuleID = {
-    "edu.berkeley.cs" %% name % sys.props.getOrElse(name + "Version", versions(name))
+    "edu.berkeley.cs" %% name % versions(name)
   }
 
   case class PackageProject(packageName: String, base: Option[File] = None, settings: Option[Seq[Def.Setting[_]]] = None)
