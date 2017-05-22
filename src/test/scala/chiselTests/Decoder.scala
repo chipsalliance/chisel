@@ -33,6 +33,9 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
 }
 
 class DecoderSpec extends ChiselPropSpec {
+  // Inhibit shrinking for this test, otherwise, we may end up generating an empty List of pairs which is guaranteed to fail.
+  import org.scalacheck.Shrink
+  implicit val noShrink: Shrink[Int] = Shrink.shrinkAny
 
   // Use a single Int to make both a specific instruction and a BitPat that will match it
   val bitpatPair = for(seed <- Arbitrary.arbitrary[Int]) yield {
