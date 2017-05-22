@@ -66,29 +66,32 @@ object Vec {
     // with apply(Seq) after type erasure. Workarounds by either introducing a
     // DummyImplicit or additional type parameter will break some code.
 
-    // Check that types are homogeneous.  Width mismatch for Elements is safe.
-    require(!elts.isEmpty)
+    if (elts.isEmpty) {
+      // Support empty Vecs.
+      new Vec(null.asInstanceOf[T], 0)
+    } else {
+      // Check that types are homogeneous.  Width mismatch for Elements is safe.
+      val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
 
-    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
-
-    def doConnect(sink: T, source: T) = {
-      // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
-      // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
-      //       WireBinding which does not have a direction
-      val hasDirectioned = elts.head match {
-        case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
-        case t: Element => t.dir != Direction.Unspecified
+      def doConnect(sink: T, source: T) = {
+        // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
+        // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
+        //       WireBinding which does not have a direction
+        val hasDirectioned = elts.head match {
+          case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
+          case t: Element => t.dir != Direction.Unspecified
+        }
+        if (hasDirectioned) {
+          sink bulkConnect source
+        } else {
+          sink connect source
+        }
       }
-      if (hasDirectioned) {
-        sink bulkConnect source
-      } else {
-        sink connect source
+      for ((v, e) <- vec zip elts) {
+        doConnect(v, e)
       }
+      vec
     }
-    for ((v, e) <- vec zip elts) {
-      doConnect(v, e)
-    }
-    vec
   }
 
   /** Creates a new [[Vec]] composed of the input [[Data]] nodes.

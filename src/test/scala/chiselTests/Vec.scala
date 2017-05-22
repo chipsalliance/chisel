@@ -249,4 +249,15 @@ class VecSpec extends ChiselPropSpec {
   property("Dynamic indexing of a Vec of Module IOs should work") {
     assertTesterPasses{ new ModuleIODynamicIndexTester(4) }
   }
+
+  property("An empty Vec should elaborate") {
+
+    class EmptyVec extends Module {
+      val io = IO(new Bundle {
+        val out = Output(UInt(1.W))
+      })
+      val emptyVec = Vec(Seq())
+    }
+    elaborate(new EmptyVec)
+  }
 }
