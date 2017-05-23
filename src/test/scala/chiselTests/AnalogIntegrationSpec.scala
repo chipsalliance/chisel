@@ -126,10 +126,10 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
 class AnalogIntegrationSpec extends ChiselFlatSpec {
   behavior of "Verilator"
   it should "support simple bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogSmallDUT), Seq("/AnalogBlackBox.v"))
+    assertTesterPasses(new AnalogIntegrationTester(new AnalogSmallDUT), Seq("/chisel3/AnalogBlackBox.v"))
   }
   // Use this test once Verilator supports alias
   ignore should "support arbitrary bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogDUT), Seq("/AnalogBlackBox.v"))
+    assertTesterPasses(new AnalogIntegrationTester(new AnalogDUT), Seq("/chisel3/AnalogBlackBox.v"))
   }
 }

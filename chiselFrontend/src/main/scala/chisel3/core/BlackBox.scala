@@ -6,8 +6,6 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.throwException
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
-// TODO: remove this once we have CompileOptions threaded through the macro system.
-import chisel3.core.ExplicitCompileOptions.NotStrict
 
 /** Parameters for BlackBoxes */
 sealed abstract class Param
@@ -132,7 +130,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
   def io: Record
   
   // Allow access to bindings from the compatibility package

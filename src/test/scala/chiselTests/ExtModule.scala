@@ -62,10 +62,10 @@ class MultiExtModuleTester extends BasicTester {
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
     assertTesterPasses({ new ExtModuleTester },
-        Seq("/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"))
   }
   "Multiple ExtModules" should "work" in {
     assertTesterPasses({ new MultiExtModuleTester },
-        Seq("/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"))
   }
 }

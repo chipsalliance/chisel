@@ -283,28 +283,12 @@ abstract class Data extends HasId {
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
 
-  /** Creates an new instance of this type, unpacking the input Bits into
-    * structured data.
-    *
-    * This performs the inverse operation of toBits.
-    *
-    * @note does NOT assign to the object this is called on, instead creates
-    * and returns a NEW object (useful in a clone-and-assign scenario)
-    * @note does NOT check bit widths, may drop bits during assignment
-    * @note what fromBits assigs to must have known widths
-    */
-  def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    val output = Wire(chiselCloneType).asInstanceOf[this.type]
-    output.connectFromBits(that)
-    output
-  }
-
   /** Packs the value of this object as plain Bits.
     *
     * This performs the inverse operation of fromBits(Bits).
     */
   @deprecated("Best alternative, .asUInt()", "chisel3")
-  def toBits(): UInt = do_asUInt(DeprecatedSourceInfo)
+  def toBits(implicit compileOptions: CompileOptions): UInt = do_asUInt(DeprecatedSourceInfo, compileOptions)
 
   /** Does a reinterpret cast of the bits in this node into the format that provides.
     * Returns a new Wire of that type. Does not modify existing nodes.
@@ -314,7 +298,7 @@ abstract class Data extends HasId {
     * @note bit widths are NOT checked, may pad or drop bits from input
     * @note that should have known widths
     */
-  def asTypeOf[T <: Data](that: T): T = macro CompileOptionsTransform.thatArg
+  def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val thatCloned = Wire(that.chiselCloneType)
@@ -336,7 +320,7 @@ abstract class Data extends HasId {
     */
   final def asUInt(): UInt = macro SourceInfoTransform.noArg
 
-  def do_asUInt(implicit sourceInfo: SourceInfo): UInt
+  def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
 
   // firrtlDirection is the direction we report to firrtl.
   // It maintains the user-specified value (as opposed to the "actual" or applied/propagated value).
@@ -411,7 +395,7 @@ sealed class Clock extends Element(Width(1)) {
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that
