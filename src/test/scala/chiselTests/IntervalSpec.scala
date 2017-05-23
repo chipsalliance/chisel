@@ -20,10 +20,12 @@ class IntervalTest1 extends Module {
   io.out := io.in1 + io.in2
 }
 class IntervalTester extends CookbookTester(10) {
+  logger.Logger.globalLevel = LogLevel.Info
   val dut = Module(new IntervalTest1)
 
   dut.io.in1 := 4.I()
   dut.io.in2 := 4.I()
+  printf("dut.io.out: %b\n", dut.io.out.asUInt)
   assert(dut.io.out === 8.I())
 
   val i = Interval(range"[0,10)")
@@ -67,6 +69,54 @@ class IntervalAddTester extends BasicTester {
 
 }
 
+class IntervalChainedAddTester extends BasicTester {
+  logger.Logger.globalLevel = LogLevel.Info
+
+  val intervalResult = Wire(Interval())
+  val uintResult = Wire(UInt())
+
+  intervalResult := 2.I + 2.I + 2.I + 2.I + 2.I + 2.I + 2.I
+  uintResult := 2.U +& 2.U +& 2.U +& 2.U +& 2.U +& 2.U +& 2.U
+
+  printf("Interval result: %d\n", intervalResult.asUInt)
+  assert(intervalResult === 14.I)
+  printf("UInt result: %d\n", uintResult)
+  assert(uintResult === 14.U)
+  stop()
+}
+
+class IntervalChainedMulTester extends BasicTester {
+  logger.Logger.globalLevel = LogLevel.Info
+
+  val intervalResult = Wire(Interval())
+  val uintResult = Wire(UInt())
+
+  intervalResult := 2.I * 2.I * 2.I * 2.I * 2.I * 2.I * 2.I
+  uintResult := 2.U * 2.U * 2.U * 2.U * 2.U * 2.U * 2.U
+
+  printf("Interval result: %d\n", intervalResult.asUInt)
+  printf("UInt result: %d\n", uintResult)
+  assert(intervalResult === 128.I)
+  assert(uintResult === 128.U)
+  stop()
+}
+
+class IntervalChainedSubTester extends BasicTester {
+  logger.Logger.globalLevel = LogLevel.Info
+
+  val intervalResult = Wire(Interval())
+  val uintResult = Wire(UInt())
+
+  intervalResult := 17.I - 2.I - 2.I - 2.I - 2.I - 2.I - 2.I
+  uintResult := 17.U -& 2.U -& 2.U -& 2.U -& 2.U -& 2.U -& 2.U
+
+  printf("Interval result: %d\n", intervalResult.asUInt)
+  printf("UInt result: %d\n", uintResult)
+  assert(intervalResult === 5.I)
+  assert(uintResult === 5.U)
+  stop()
+}
+
 class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "Test a simple interval add" in {
     assertTesterPasses{ new IntervalAddTester }
@@ -77,8 +127,17 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "SInt for use comparing to Interval" in {
     assertTesterPasses{ new SIntTest1Tester }
   }
+  "Intervals adds same answer as UInt" in {
+    assertTesterPasses{ new IntervalChainedAddTester }
+  }
+  "Intervals muls same answer as UInt" in {
+    assertTesterPasses{ new IntervalChainedMulTester }
+  }
+  "Intervals subs same answer as UInt" in {
+    assertTesterPasses{ new IntervalChainedSubTester }
+  }
   "show the firrtl" in {
-    Driver.execute(Array("--no-run-firrtl"), () => new IntervalTester) match {
+    Driver.execute(Array("--no-run-firrtl"), () => new IntervalChainedAddTester) match {
       case result: ChiselExecutionSuccess =>
         println(result.emitted)
       case _ =>

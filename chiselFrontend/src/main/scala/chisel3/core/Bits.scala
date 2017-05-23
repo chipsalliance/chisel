@@ -547,6 +547,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
 //        val iLit = ILit(value)
         val min = ILit(range.asInstanceOf[KnownIntervalRange].min.value)
         val max = ILit(range.asInstanceOf[KnownIntervalRange].max.value)
+        println(s"HERE BLAH: $min, $max")
         pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint, range), AsIntervalOp, ref, min, max))
       case _ =>
         throwException(
@@ -1103,12 +1104,12 @@ sealed class Interval private[core] (
   def unary_- (implicit sourceInfo: SourceInfo): Interval = Interval.fromBigInt(0) - this
   def unary_-% (implicit sourceInfo: SourceInfo): Interval = Interval.fromBigInt(0) -% this
 
-  /** add (default - no growth) operator */
+  /** add (default - growing) operator */
   override def do_+ (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    this +% that
-  /** subtract (default - no growth) operator */
+    this +& that
+  /** subtract (default - growing) operator */
   override def do_- (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    this -% that
+    this -& that
   override def do_* (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
     binop(sourceInfo, Interval(this.width + that.width, this.binaryPoint + that.binaryPoint, this.range * that.range), TimesOp, that)
   override def do_/ (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
@@ -1130,14 +1131,12 @@ sealed class Interval private[core] (
       sourceInfo,
       Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint, this.range +& that.range),
       AddOp, that)
-  def do_+% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    (this +& that).tail(1).asInterval(this.binaryPoint max that.binaryPoint, this.range +% that.range)
+  def do_+% (that: Interval)(implicit sourceInfo: SourceInfo): Interval = throwException(s"Non-growing addition is not supported on Intervals")
   def do_-& (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
     binop(sourceInfo,
       Interval((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint, this.range -& that.range),
       SubOp, that)
-  def do_-% (that: Interval)(implicit sourceInfo: SourceInfo): Interval =
-    (this -& that).tail(1).asInterval(this.binaryPoint max that.binaryPoint, this.range -% that.range)
+  def do_-% (that: Interval)(implicit sourceInfo: SourceInfo): Interval = throwException(s"Non-growing subtraction is not supported on Intervals")
 
   final def & (that: Interval): Interval = macro SourceInfoTransform.thatArg
   final def | (that: Interval): Interval = macro SourceInfoTransform.thatArg
@@ -1183,17 +1182,27 @@ sealed class Interval private[core] (
     binop(sourceInfo, Interval(this.width + that, this.binaryPoint, this.range << that), ShiftLeftOp, that)
   override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo): Interval =
     do_<<(that.toInt)
-  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
+  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo): Interval = {
+    val newRange = that.width match {
+      case w: KnownWidth => this.range << w
+      case _ => UnknownRange
+    }
     binop(sourceInfo,
-      Interval(this.width.dynamicShiftLeft(that.width), this.binaryPoint, this.range << that),
+      Interval(this.width.dynamicShiftLeft(that.width), this.binaryPoint, newRange),
       DynamicShiftLeftOp, that)
+  }
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo): Interval =
     binop(sourceInfo,
       Interval(this.width.shiftRight(that), this.binaryPoint, this.range >> that), ShiftRightOp, that)
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo): Interval =
     do_>>(that.toInt)
-  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Interval =
-    binop(sourceInfo, Interval(this.width, this.binaryPoint, this.range >> that), DynamicShiftRightOp, that)
+  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo): Interval = {
+    val newRange = that.width match {
+      case w: KnownWidth => this.range >> w
+      case _ => UnknownRange
+    }
+    binop(sourceInfo, Interval(this.width, this.binaryPoint, newRange), DynamicShiftRightOp, that)
+  }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo): UInt = {
     pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))

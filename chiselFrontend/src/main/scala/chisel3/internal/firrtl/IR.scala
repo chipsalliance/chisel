@@ -138,22 +138,29 @@ sealed trait Range {
   val max: Bound
   def getWidth: Width
 
-  def * (that: Range): Range = this
-  def +& (that: Range): Range = this
-  def +% (that: Range): Range = this
-  def -% (that: Range): Range = this
-  def -& (that: Range): Range = this
-  def << (that: Int): Range = this
-  def >> (that: Int): Range = this
-  def << (that: UInt): Range = this
-  def >> (that: UInt): Range = this
+  def * (that: Range): Range
+  def +& (that: Range): Range
+  def -& (that: Range): Range
+  def << (that: Int): Range
+  def >> (that: Int): Range
+  def << (that: KnownWidth): Range
+  def >> (that: KnownWidth): Range
 }
 
 case object UnknownRange extends Range {
   val min = UnknownBound
   val max = UnknownBound
 
+  def * (that: Range): Range = this
+  def +& (that: Range): Range = this
+  def -& (that: Range): Range = this
+  def << (that: Int): Range = this
+  def >> (that: Int): Range = this
+  def << (that: KnownWidth): Range = this
+  def >> (that: KnownWidth): Range = this
+
   override def getWidth = ???
+  override def toString = ""
 }
 
 sealed trait KnownBigIntRange extends Range {
@@ -224,6 +231,36 @@ sealed case class KnownIntervalRange(
       case (Closed(low_val), Closed(high_val)) => s"[${min.value} ${max .value}]"
     }
   }
+  def getValues: (BigInt, BigInt) = (min, max) match {
+    case (Open(low_val), Open(high_val)) => (min.value + 1, max.value - 1)
+    case (Closed(low_val), Open(high_val)) => (min.value, max.value - 1)
+    case (Open(low_val), Closed(high_val)) => (min.value + 1, max.value)
+    case (Closed(low_val), Closed(high_val)) => (min.value, max.value)
+  }
+  def getValues(that: Range): Option[(BigInt, BigInt, BinaryPoint)] = that match {
+    case KnownIntervalRange(Open(l), Open(h), bP) => Some((l + 1, h - 1, bP))
+    case KnownIntervalRange(Closed(l), Open(h), bP) => Some((l, h - 1, bP))
+    case KnownIntervalRange(Open(l), Closed(h), bP) => Some((l + 1, h, bP))
+    case KnownIntervalRange(Closed(l), Closed(h), bP) => Some((l, h, bP))
+    case _ => None
+  }
+  private val (low, high) = getValues
+  def * (that: Range): Range = getValues(that) match {
+    case Some((l, h, bp)) => KnownIntervalRange(Closed(low * l), Closed(high * h), binaryPoint max bp)
+    case _ => UnknownRange
+  }
+  def +& (that: Range): Range = getValues(that) match {
+    case Some((l, h, bp)) => KnownIntervalRange(Closed(low + l), Closed(high + h), binaryPoint max bp)
+    case _ => UnknownRange
+  }
+  def -& (that: Range): Range = getValues(that) match {
+    case Some((l, h, bp)) => KnownIntervalRange(Closed(low - h), Closed(high - l), binaryPoint max bp)
+    case _ => UnknownRange
+  }
+  def << (that: Int): Range = KnownIntervalRange(Closed(low << that), Closed(high << that), binaryPoint)
+  def >> (that: Int): Range = KnownIntervalRange(Closed(low >> that), Closed(high >> that), binaryPoint)
+  def << (width: KnownWidth): Range = KnownIntervalRange(Closed(low), Closed(high << (BigInt(2) << width.value).toInt), binaryPoint)
+  def >> (width: KnownWidth): Range = KnownIntervalRange(Closed(low >> (BigInt(2) << width.value).toInt), Closed(high), binaryPoint)
 }
 
 object Width {
