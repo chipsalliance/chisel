@@ -3,8 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{FixedPoint, Analog}
+import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.testers.BasicTester
+import chisel3.util.Pipe
 
 abstract class CrossCheck extends Bundle {
   val in: Data
@@ -17,6 +18,16 @@ class CrossConnects(inType: Data, outType: Data) extends Module {
     val out = Output(outType)
   })
   io.out := io.in
+}
+
+class BulkPipe extends Module {
+  val io = IO(new Bundle {
+    val a = Input(Bool())
+    val b = Input(UInt(32.W))
+  })
+  val pipe = Module(new Pipe(UInt(32.W), 32))
+  pipe.io.enq.valid <> io.a
+  pipe.io.enq.bits <> io.b
 }
 
 class CrossConnectTester(inType: Data, outType: Data) extends BasicTester {
@@ -81,5 +92,8 @@ class ConnectSpec extends ChiselPropSpec {
   }
   property("SInt := Analog should fail") {
     intercept[ChiselException]{ new CrossConnectTester(SInt(16.W), Analog(16.W)) }
+  }
+  property("Pipe bulk connections should succeed") {
+    elaborate( new BulkPipe)
   }
 }

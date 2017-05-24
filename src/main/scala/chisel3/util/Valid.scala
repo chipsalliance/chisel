@@ -38,8 +38,8 @@ object Pipe
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] = {
     if (latency == 0) {
       val out = Wire(Valid(enqBits))
-      out.valid <> enqValid
-      out.bits <> enqBits
+      out.valid := enqValid
+      out.bits := enqBits
       out
     } else {
       val v = RegNext(enqValid, false.B)
