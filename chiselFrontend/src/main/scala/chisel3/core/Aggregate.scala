@@ -47,8 +47,17 @@ sealed abstract class Aggregate extends Data {
         case _ => throw new RuntimeException("Unexpected forced Input / Output")
       }
     } else {
-      val childWithDirections = getElements zip getElements.map(_.direction)
-      throw new Binding.BindingException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+      this match {
+        // Anything flies in compatibility mode
+        case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
+          case UserDirection.Unspecified => ActualDirection.Bidirectional
+          case UserDirection.Flip => ActualDirection.BidirectionalFlip
+          case _ => ActualDirection.Bidirectional
+        }
+        case _ =>
+          val childWithDirections = getElements zip getElements.map(_.direction)
+          throw new Binding.BindingException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+      }
     }
   }
 

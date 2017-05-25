@@ -129,20 +129,23 @@ private[core] object cloneSupertype {
 */
 object Input {
   def apply[T<:Data](source: T): T = {
-    source.userDirection = UserDirection.Input
-    source
+    val out = source.chiselCloneType
+    out.userDirection = UserDirection.Input
+    out
   }
 }
 object Output {
   def apply[T<:Data](source: T): T = {
-    source.userDirection = UserDirection.Output
-    source
+    val out = source.chiselCloneType
+    out.userDirection = UserDirection.Output
+    out
   }
 }
 object Flipped {
   def apply[T<:Data](source: T): T = {
-    source.userDirection = UserDirection.Flip
-    source
+    val out = source.chiselCloneType
+    out.userDirection = UserDirection.Flip
+    out
   }
 }
 
@@ -168,7 +171,11 @@ abstract class Data extends HasId {
   private[chisel3] def userDirection: UserDirection = _userDirection
   private[core] def userDirection_=(direction: UserDirection) = {
     if (_userDirection != UserDirection.Unspecified) {
-      throw new Binding.BindingException(s"Attempted reassignment of user direction to $this")
+      this match {
+        // Anything flies in compatibility mode
+        case t: Record if !t.compileOptions.dontAssumeDirectionality =>
+        case _ => throw new Binding.BindingException(s"Attempted reassignment of user direction to $this")
+      }
     }
     _userDirection = direction
   }
@@ -291,14 +298,10 @@ abstract class Data extends HasId {
     * then performs any fixups required to reconstruct the appropriate core state of the cloned object.
     * @return a copy of the object with appropriate core state.
     */
-  def chiselCloneType(implicit compileOptions: CompileOptions): this.type = {
-    // Call the user-supplied cloneType method, which should return a fresh object w/o bindings
-    val clone = this.cloneType
-
-    // Propagate the top-level user direction (cloneType should handle the rest)
-    // TODO: this shouldn't happen in chisel compatibility mode (!compileOptions.checkSynthesizable)??
+  def chiselCloneType: this.type = {
+    val clone = this.cloneType  // get a fresh object, without bindings
+    // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.userDirection = userDirection
-
     clone
   }
   final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
