@@ -1048,16 +1048,14 @@ final class Analog private (width: Width) extends Element(width) {
       case target: TopBinding => target
       case ChildBinding(parent) => parent.topBinding
     }
+
+    // Analog counts as different directions based on binding context
     targetTopBinding match {
-      // Analog counts as different directions based on binding context
-      case WireBinding(_) =>
-        binding = target
-        direction = ActualDirection.Unspecified
-      case PortBinding(_) =>
-        binding = target
-        direction = ActualDirection.Bidirectional
+      case WireBinding(_) => direction = ActualDirection.Unspecified  // internal wire
+      case PortBinding(_) => direction = ActualDirection.Bidirectional
       case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }
+    binding = target
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =

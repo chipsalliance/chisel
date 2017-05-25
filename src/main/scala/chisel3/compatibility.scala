@@ -219,7 +219,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
   val SeqMem = chisel3.core.SyncReadMem
-  type SeqMem[T <: Data] = chisel3.core.SyncReadMem [T]
+  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   import chisel3.core.CompileOptions
   abstract class CompatibilityModule(

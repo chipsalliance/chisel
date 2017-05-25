@@ -76,44 +76,44 @@ object Chisel3Components {
 
 class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
-//  "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
-//    import chisel3._
-//    import chisel3.testers.BasicTester
-//    import CompatibilityComponents._
-//
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselBundleModuleA)
-//      val b = Module(new ChiselBundleModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselRecordModuleA)
-//      val b = Module(new ChiselRecordModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//  }
-//
-//  "Moduless defined in the chisel3._" should "successfully bulk connect in Chisel._" in {
-//    import Chisel._
-//    import chisel3.testers.BasicTester
-//    import Chisel3Components._
-//
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new Chisel3BundleModuleA)
-//      val b = Module(new Chisel3BundleModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new Chisel3RecordModuleA)
-//      val b = Module(new Chisel3RecordModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//  }
-//
+  "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
+    import chisel3._
+    import chisel3.testers.BasicTester
+    import CompatibilityComponents._
+
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselBundleModuleA)
+      val b = Module(new ChiselBundleModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselRecordModuleA)
+      val b = Module(new ChiselRecordModuleB)
+      b.io <> a.io
+      stop()
+    })
+  }
+
+  "Moduless defined in the chisel3._" should "successfully bulk connect in Chisel._" in {
+    import Chisel._
+    import chisel3.testers.BasicTester
+    import Chisel3Components._
+
+    assertTesterPasses(new BasicTester {
+      val a = Module(new Chisel3BundleModuleA)
+      val b = Module(new Chisel3BundleModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new Chisel3RecordModuleA)
+      val b = Module(new Chisel3RecordModuleB)
+      b.io <> a.io
+      stop()
+    })
+  }
+
 
   "Bundles defined in Chisel._" should "work in chisel3._ Modules" in {
     import chisel3._
@@ -133,89 +133,89 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       stop()
     })
   }
-//
-//  "Bundles defined in chisel3._" should "work in Chisel._ Modules" in {
-//    import chisel3._
-//    import chisel3.testers.BasicTester
-//    import CompatibilityComponents._
-//
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselModuleChisel3BundleA)
-//      val b = Module(new ChiselModuleChisel3BundleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselModuleChisel3RecordA)
-//      val b = Module(new ChiselModuleChisel3RecordB)
-//      b.io <> a.io
-//      stop()
-//    })
-//  }
-//
-//
-//  "Similar Bundles defined in the chisel3._ and Chisel._" should
-//      "successfully bulk connect in chisel3._" in {
-//    import chisel3._
-//    import chisel3.testers.BasicTester
-//    import Chisel3Components._
-//    import CompatibilityComponents._
-//
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselBundleModuleA)
-//      val b = Module(new Chisel3BundleModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new Chisel3BundleModuleA)
-//      val b = Module(new ChiselBundleModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselRecordModuleA)
-//      val b = Module(new Chisel3RecordModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new Chisel3RecordModuleA)
-//      val b = Module(new ChiselRecordModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//  }
-//  they should "successfully bulk connect in Chisel._" in {
-//    import Chisel._
-//    import chisel3.testers.BasicTester
-//    import Chisel3Components._
-//    import CompatibilityComponents._
-//
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselBundleModuleA)
-//      val b = Module(new Chisel3BundleModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new Chisel3BundleModuleA)
-//      val b = Module(new ChiselBundleModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new ChiselRecordModuleA)
-//      val b = Module(new Chisel3RecordModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//    assertTesterPasses(new BasicTester {
-//      val a = Module(new Chisel3RecordModuleA)
-//      val b = Module(new ChiselRecordModuleB)
-//      b.io <> a.io
-//      stop()
-//    })
-//  }
+
+  "Bundles defined in chisel3._" should "work in Chisel._ Modules" in {
+    import chisel3._
+    import chisel3.testers.BasicTester
+    import CompatibilityComponents._
+
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselModuleChisel3BundleA)
+      val b = Module(new ChiselModuleChisel3BundleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselModuleChisel3RecordA)
+      val b = Module(new ChiselModuleChisel3RecordB)
+      b.io <> a.io
+      stop()
+    })
+  }
+
+
+  "Similar Bundles defined in the chisel3._ and Chisel._" should
+      "successfully bulk connect in chisel3._" in {
+    import chisel3._
+    import chisel3.testers.BasicTester
+    import Chisel3Components._
+    import CompatibilityComponents._
+
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselBundleModuleA)
+      val b = Module(new Chisel3BundleModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new Chisel3BundleModuleA)
+      val b = Module(new ChiselBundleModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselRecordModuleA)
+      val b = Module(new Chisel3RecordModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new Chisel3RecordModuleA)
+      val b = Module(new ChiselRecordModuleB)
+      b.io <> a.io
+      stop()
+    })
+  }
+  they should "successfully bulk connect in Chisel._" in {
+    import Chisel._
+    import chisel3.testers.BasicTester
+    import Chisel3Components._
+    import CompatibilityComponents._
+
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselBundleModuleA)
+      val b = Module(new Chisel3BundleModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new Chisel3BundleModuleA)
+      val b = Module(new ChiselBundleModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new ChiselRecordModuleA)
+      val b = Module(new Chisel3RecordModuleB)
+      b.io <> a.io
+      stop()
+    })
+    assertTesterPasses(new BasicTester {
+      val a = Module(new Chisel3RecordModuleA)
+      val b = Module(new ChiselRecordModuleB)
+      b.io <> a.io
+      stop()
+    })
+  }
 }
 

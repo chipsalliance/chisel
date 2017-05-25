@@ -46,8 +46,8 @@ object ActualDirection {
   case object Unspecified extends ActualDirection  // undirectioned struct-like
   case object Output extends ActualDirection  // forced output, or container with all outputs
   case object Input extends ActualDirection  // forced input, or container with all inputs
-  case object Bidirectional extends ActualDirection  // for directioned containers only
-  case object BidirectionalFlip extends ActualDirection  // for directioned containers only
+  case object Bidirectional extends ActualDirection
+  case object BidirectionalFlip extends ActualDirection
   // BidirectionalFlip is similar to Bidirectional, but the additional "flip" description allows
   // easy checking of connect legality
 }
@@ -209,10 +209,7 @@ abstract class Data extends HasId {
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
     * node is the top-level.
-    *
-    * direction is valid after this call returns.
-    *
-    * TODO: resolve core/internal
+    * binding and direction are valid after this call completes.
     */
   private[chisel3] def bind(target: Binding, parentDirection: UserDirection = UserDirection.Unspecified)
 
