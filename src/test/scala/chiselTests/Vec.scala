@@ -250,14 +250,39 @@ class VecSpec extends ChiselPropSpec {
     assertTesterPasses{ new ModuleIODynamicIndexTester(4) }
   }
 
-  property("An empty Vec should elaborate") {
+  property("An empty Vec should elaborate and generate firrtl") {
 
     class EmptyVec extends Module {
       val io = IO(new Bundle {
         val out = Output(UInt(1.W))
       })
-      val emptyVec = Vec(Seq())
+      val emptyVec = Wire(Vec(Seq()))
     }
-    elaborate(new EmptyVec)
+    val firrtl = generateFirrtl(new EmptyVec)
+  }
+
+  property("Accessing elements of an empty Vec should throw an exception") {
+
+    class EmptyVecWithAccess extends Module {
+      val io = IO(new Bundle {
+        val out = Output(UInt(1.W))
+      })
+      val emptyVec = Vec(Seq())
+      io.out := emptyVec(0)
+    }
+    an[IndexOutOfBoundsException] should be thrownBy {
+      elaborate(new EmptyVecWithAccess)
+    }
+  }
+
+  property("A Vec created with explicit members should elaborate and generate firrtl") {
+
+    class ExplicitVecMembers extends Module {
+      val io = IO(new Bundle {
+        val out = Output(UInt(1.W))
+      })
+      val explicitVec = Vec(0.U(8.W), 1.U(8.W))
+    }
+    elaborate(new ExplicitVecMembers)
   }
 }

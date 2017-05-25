@@ -68,7 +68,12 @@ object Vec {
 
     if (elts.isEmpty) {
       // Support empty Vecs.
-      new Vec(null.asInstanceOf[T], 0)
+      // We use a dummy element, a 0-width UInt, which we should never reference.
+      // Its sole purpose is to ensure we have a sample element that can respond to property queries.
+      // Currently, it has the additional side-effect of emitting:
+      //        wire emptyVec : UInt<0>[0]
+      // If we wrap it in a wire.
+      new Vec(UInt(0.W).asInstanceOf[T], 0)
     } else {
       // Check that types are homogeneous.  Width mismatch for Elements is safe.
       val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
@@ -195,8 +200,14 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   // This is somewhat weird although I think the best course of action here is
   // to deprecate allElements in favor of dispatched functions to Data or
   // a pattern matched recursive descent
-  private[chisel3] final override def allElements: Seq[Element] =
-    (sample_element +: self).flatMap(_.allElements)
+  private[chisel3] final override def allElements: Seq[Element] = {
+    if (length == 0) {
+      Seq.empty
+    } else {
+      (sample_element +: self).flatMap(_.allElements)
+    }
+
+  }
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
@@ -229,21 +240,30 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(p ,s"'p' ($p)")
-    val port = gen
-    val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
-    port.setRef(this, i)
+    if (length == 0) {
+      // This should throw an exception.
+      apply(0)
+    } else {
+      Binding.checkSynthesizable(p ,s"'p' ($p)")
+      val port = gen
+      val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
+      port.setRef(this, i)
 
-    // Bind each element of port to being whatever the base type is
-    // Using the head element as the sample_element
-    for((port_elem, model_elem) <- port.allElements zip sample_element.allElements) {
-      port_elem.binding = model_elem.binding
+      // Bind each element of port to being whatever the base type is
+      // Using the head element as the sample_element
+      for((port_elem, model_elem) <- port.allElements zip sample_element.allElements) {
+        port_elem.binding = model_elem.binding
+      }
+
+      port
     }
-
-    port
   }
 
   /** Creates a statically indexed read or write accessor into the array.
+    *  If the Vec is empty, this will throw an IndexOutOfBounds.
+    *
+    * @param idx the index of the element to be accessed
+    * @return the element at the specified index
     */
   def apply(idx: Int): T = self(idx)
 
