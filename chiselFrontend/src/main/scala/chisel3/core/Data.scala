@@ -173,13 +173,11 @@ abstract class Data extends HasId {
     _userDirection = direction
   }
 
-  /** DO NOT USE outside the compatibility layer implementation details.
-    *
-    * This overwrites a relative UserDirection with an explicit one, and is used to implement
+  /** This overwrites a relative UserDirection with an explicit one, and is used to implement
     * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
+    * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
-  @deprecated("Not for use outside the compatibility layer implementation", "chisel3")
-  def _compatibilityExplicitUserDirection {
+  private[core] def _assignCompatibilityExplicitDirection {
     _userDirection match {
       case UserDirection.Unspecified => _userDirection = UserDirection.Output
       case UserDirection.Flip => _userDirection = UserDirection.Input

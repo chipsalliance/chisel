@@ -242,29 +242,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
         IO(io)
       }
     }
-
-    override protected def IO[T<:Data](iodef: T): iodef.type = {
-      import chisel3.core.{DataMirror, ActualDirection, UserDirection}
-      // Chisel._ did not require explicit direction on all nodes, so this sets everything to an
-      // output by unless otherwise specified
-      // Note: this relies on Input, Output altering state mutably.
-      def assignDirectionRecursive(data: Data) {
-        data match {
-          case data: Element =>
-            data._compatibilityExplicitUserDirection
-          case data: Aggregate =>
-            DataMirror.userDirectionOf(data) match {
-              case UserDirection.Unspecified | UserDirection.Flip =>
-                // Recurse into children to ensure explicit direction set somewhere
-                data.getElements foreach (assignDirectionRecursive(_))
-              case UserDirection.Input | UserDirection.Output => // forced assign, nothing to do
-            }
-        }
-      }
-      assignDirectionRecursive(iodef)
-      super.IO(iodef)
-    }
   }
+
   val Module = chisel3.core.Module
   type Module = CompatibilityModule
 
