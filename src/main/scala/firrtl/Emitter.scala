@@ -357,6 +357,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
       val addrRegs = mutable.HashSet[WrappedExpression]()
       val namespace = Namespace(m)
+      namespace.newName("_RAND") // Start rand names at _RAND_0
       def build_netlist(s: Statement): Statement = s map build_netlist match {
         case sx: Connect =>
           netlist(sx.loc) = sx.expr
@@ -469,7 +470,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       // Declares an intermediate wire to hold a large enough random number.
       // Then, return the correct number of bits selected from the random value
       def rand_string(t: Type) : Seq[Any] = {
-         val nx = namespace.newTemp
+         val nx = namespace.newName("_RAND")
          val rand = VRandom(bitWidth(t))
          val tx = SIntType(IntWidth(rand.realWidth))
          declare("reg",nx, tx)
