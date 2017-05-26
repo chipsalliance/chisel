@@ -129,22 +129,22 @@ private[core] object cloneSupertype {
 */
 object Input {
   def apply[T<:Data](source: T): T = {
-    val out = source.chiselCloneType
+    val out = source.cloneType
     out.userDirection = UserDirection.Input
     out
   }
 }
 object Output {
   def apply[T<:Data](source: T): T = {
-    val out = source.chiselCloneType
+    val out = source.cloneType
     out.userDirection = UserDirection.Output
     out
   }
 }
 object Flipped {
   def apply[T<:Data](source: T): T = {
-    val out = source.chiselCloneType
-    out.userDirection = UserDirection.Flip
+    val out = source.cloneType
+    out.userDirection = UserDirection.flip(source.userDirection)
     out
   }
 }
