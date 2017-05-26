@@ -10,9 +10,11 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
-  * The base protocol implied by the directionality is that the consumer
-  * uses the flipped interface. Actual semantics of ready/valid are
-  * enforced via use of concrete subclasses.
+  * The base protocol implied by the directionality is that
+  * the producer uses the interface as-is (outputs bits)
+  * while the consumer uses the flipped interface (inputs bits).
+  * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
+  * @param gen the type of data to be wrapped in Ready/Valid
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
@@ -47,7 +49,6 @@ object ReadyValidIO {
 
     /** Assert ready on this port and return the associated data bits.
       * This is typically used when valid has been asserted by the producer side.
-      * @param b ignored
       * @return the data for this device,
       */
     def deq(): T = {
@@ -68,6 +69,7 @@ object ReadyValidIO {
   * put valid data in 'bits', and 'ready' indicates that the consumer is ready
   * to accept the data this cycle. No requirements are placed on the signaling
   * of ready or valid.
+  * @param gen the type of data to be wrapped in DecoupledIO
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
@@ -102,6 +104,7 @@ object Decoupled
   * the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.
   * Additionally, once 'valid' is raised it will never be lowered until after
   * 'ready' has also been raised.
+  * @param gen the type of data to be wrapped in IrrevocableIO
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
@@ -128,22 +131,33 @@ object Irrevocable
   }
 }
 
+/** Producer - drives (outputs) valid and bits, inputs ready.
+  * @param gen The type of data to enqueue
+  */
 object EnqIO {
   def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
 }
+/** Consumer - drives (outputs) ready, inputs valid and bits.
+  * @param gen The type of data to dequeue
+  */
 object DeqIO {
   def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
 }
 
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
-  * @param entries The max number of entries in the queue */
+  * @param entries The max number of entries in the queue.
+  */
 class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 {
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq = DeqIO(gen)
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq = EnqIO(gen)
+  /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
+   *  but internally, the queue implementation itself sits on the other side
+   *  of the interface so uses the flipped instance.
+   */
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. */
+  val enq = Flipped(EnqIO(gen))
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]*/
+  val deq = Flipped(DeqIO(gen))
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
 

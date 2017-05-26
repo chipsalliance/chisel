@@ -90,6 +90,6 @@ class SimpleVendingMachineSpec extends ChiselFlatSpec {
   }
   "An Verilog implementation of a vending machine" should "work" in {
     assertTesterPasses(new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
-                       List("/VerilogVendingMachine.v"))
+                       List("/chisel3/VerilogVendingMachine.v"))
   }
 }
