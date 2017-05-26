@@ -247,14 +247,19 @@ class DeadCodeElimination extends Transform {
 
     val depGraph = {
       val dGraph = createDependencyGraph(moduleDeps, doTouchExtMods, c)
-      for (dontTouch <- dontTouches) {
-        dGraph.getVertices.find(_ == dontTouch) match {
-          case Some(node) => dGraph.addEdge(circuitSink, node)
-          case None =>
-            val (root, tail) = Utils.splitRef(dontTouch.e1)
-            DontTouchAnnotation.errorNotFound(root.serialize, tail.serialize)
+
+      val vertices = dGraph.getVertices
+      dontTouches.foreach { dontTouch =>
+        // Ensure that they are actually found
+        if (vertices.contains(dontTouch)) {
+          dGraph.addEdge(circuitSink, dontTouch)
+        } else {
+          val (root, tail) = Utils.splitRef(dontTouch.e1)
+          DontTouchAnnotation.errorNotFound(root.serialize, tail.serialize)
         }
       }
+
+      // Check for dont touches that are not found
       DiGraph(dGraph)
     }
 
