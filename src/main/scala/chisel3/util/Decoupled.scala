@@ -173,7 +173,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   * The ''valid'' signals are coupled.
   *
   * @example {{{
-  * val q = new Queue(UInt(), 16)
+  * val q = Module(new Queue(UInt(), 16))
   * q.io.enq <> producer.io.out
   * consumer.io.in <> q.io.deq
   * }}}
