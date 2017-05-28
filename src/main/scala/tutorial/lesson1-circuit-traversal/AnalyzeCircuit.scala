@@ -4,7 +4,7 @@ package tutorial
 package lesson1
 
 // Compiler Infrastructure
-import firrtl.{Transform, LowForm, CircuitState}
+import firrtl.{Transform, LowForm, CircuitState, Utils}
 // Firrtl IR classes
 import firrtl.ir.{Circuit, DefModule, Statement, Expression, Mux}
 // Map functions
@@ -31,7 +31,7 @@ class Ledger {
     case Some(name) => moduleMuxMap(name) = moduleMuxMap.getOrElse(name, 0) + 1
   }
   def getModuleName: String = moduleName match {
-    case None => error("Module name not defined in Ledger!")
+    case None => Utils.error("Module name not defined in Ledger!")
     case Some(name) => name
   }
   def setModuleName(myName: String): Unit = {

@@ -4,7 +4,7 @@ package firrtl
 
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.TerminalNode
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import firrtl.antlr._
 import PrimOps._
@@ -64,19 +64,19 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   }
 
   private def visitCircuit[FirrtlNode](ctx: FIRRTLParser.CircuitContext): Circuit =
-    Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.map(visitModule), ctx.id.getText)
+    Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.asScala.map(visitModule), ctx.id.getText)
 
   private def visitModule[FirrtlNode](ctx: FIRRTLParser.ModuleContext): DefModule = {
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0).getText match {
-      case "module" => Module(info, ctx.id.getText, ctx.port.map(visitPort),
+      case "module" => Module(info, ctx.id.getText, ctx.port.asScala.map(visitPort),
         if (ctx.moduleBlock() != null)
           visitBlock(ctx.moduleBlock())
         else EmptyStmt)
       case "extmodule" =>
         val defname = if (ctx.defname != null) ctx.defname.id.getText else ctx.id.getText
-        val ports = ctx.port map visitPort
-        val params = ctx.parameter map visitParameter
+        val ports = ctx.port.asScala map visitPort
+        val params = ctx.parameter.asScala map visitParameter
         ExtModule(info, ctx.id.getText, ports, defname, params)
     }
   }
@@ -131,7 +131,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
           case "Clock" => ClockType
           case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
           else AnalogType(UnknownWidth)
-          case "{" => BundleType(ctx.field.map(visitField))
+          case "{" => BundleType(ctx.field.asScala.map(visitField))
         }
       case typeContext: TypeContext => new VectorType(visitType(ctx.`type`), string2Int(ctx.intLit(0).getText))
     }
@@ -143,10 +143,10 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   }
 
   private def visitBlock[FirrtlNode](ctx: FIRRTLParser.ModuleBlockContext): Statement =
-    Block(ctx.simple_stmt().map(_.stmt).filter(_ != null).map(visitStmt))
+    Block(ctx.simple_stmt().asScala.map(_.stmt).filter(_ != null).map(visitStmt))
 
   private def visitSuite[FirrtlNode](ctx: FIRRTLParser.SuiteContext): Statement =
-    Block(ctx.simple_stmt().map(_.stmt).filter(_ != null).map(visitStmt))
+    Block(ctx.simple_stmt().asScala.map(_.stmt).filter(_ != null).map(visitStmt))
 
 
   // Memories are fairly complicated to translate thus have a dedicated method
@@ -159,12 +159,12 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
     def parseMemFields(memFields: Seq[MemFieldContext]): Unit =
       memFields.foreach { field =>
-        val fieldName = field.children(0).getText
+        val fieldName = field.children.asScala(0).getText
 
         fieldName match {
-          case "reader" => readers ++= field.id().map(_.getText)
-          case "writer" => writers ++= field.id().map(_.getText)
-          case "readwriter" => readwriters ++= field.id().map(_.getText)
+          case "reader" => readers ++= field.id().asScala.map(_.getText)
+          case "writer" => writers ++= field.id().asScala.map(_.getText)
+          case "readwriter" => readwriters ++= field.id().asScala.map(_.getText)
           case _ =>
             val paramDef = fieldName match {
               case "data-type" => ParamValue(typ = Some(visitType(field.`type`())))
@@ -174,7 +174,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
             if (fieldMap.contains(fieldName))
               throw new ParameterRedefinedException(s"Redefinition of $fieldName in FIRRTL line:${field.start.getLine}")
             else
-              fieldMap += fieldName -> paramDef
+              fieldMap(fieldName) = paramDef
         }
       }
 
@@ -182,7 +182,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
     // Build map of different Memory fields to their values
     try {
-      parseMemFields(ctx.memField())
+      parseMemFields(ctx.memField().asScala)
     } catch {
       // attach line number
       case e: ParameterRedefinedException => throw new ParameterRedefinedException(s"[$info] ${e.message}")
@@ -217,7 +217,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     val alt: Statement =
       if (ctx.when() != null)
         visitWhen(ctx.when())
-      else if (ctx.suite().length > 1)
+      else if (ctx.suite().asScala.length > 1)
         visitSuite(ctx.suite(1))
       else
         EmptyStmt
@@ -227,6 +227,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
   // visitStmt
   private def visitStmt[FirrtlNode](ctx: FIRRTLParser.StmtContext): Statement = {
+    val ctx_exp = ctx.exp.asScala
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0) match {
       case when: WhenContext => visitWhen(when)
@@ -244,7 +245,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
             else
               (UIntLiteral(0, IntWidth(1)), Reference(name, tpe))
           }
-          DefRegister(info, name, tpe, visitExp(ctx.exp(0)), reset, init)
+          DefRegister(info, name, tpe, visitExp(ctx_exp(0)), reset, init)
         case "mem" => visitMem(ctx)
         case "cmem" =>
           val t = visitType(ctx.`type`())
@@ -263,21 +264,21 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
             }: Must provide cmem with vector type")
           }
         case "inst" => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
-        case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx.exp(0)))
+        case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx_exp(0)))
 
-        case "stop(" => Stop(info, string2Int(ctx.intLit().getText), visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-        case "attach" => Attach(info, ctx.exp map visitExp)
-        case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx.exp.drop(2).map(visitExp),
-          visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
+        case "stop(" => Stop(info, string2Int(ctx.intLit().getText), visitExp(ctx_exp(0)), visitExp(ctx_exp(1)))
+        case "attach" => Attach(info, ctx_exp map visitExp)
+        case "printf(" => Print(info, visitStringLit(ctx.StringLit), ctx_exp.drop(2).map(visitExp),
+          visitExp(ctx_exp(0)), visitExp(ctx_exp(1)))
         case "skip" => EmptyStmt
       }
       // If we don't match on the first child, try the next one
       case _ =>
         ctx.getChild(1).getText match {
-          case "<=" => Connect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-          case "<-" => PartialConnect(info, visitExp(ctx.exp(0)), visitExp(ctx.exp(1)))
-          case "is" => IsInvalid(info, visitExp(ctx.exp(0)))
-          case "mport" => CDefMPort(info, ctx.id(0).getText, UnknownType, ctx.id(1).getText, Seq(visitExp(ctx.exp(0)), visitExp(ctx.exp(1))), visitMdir(ctx.mdir))
+          case "<=" => Connect(info, visitExp(ctx_exp(0)), visitExp(ctx_exp(1)))
+          case "<-" => PartialConnect(info, visitExp(ctx_exp(0)), visitExp(ctx_exp(1)))
+          case "is" => IsInvalid(info, visitExp(ctx_exp(0)))
+          case "mport" => CDefMPort(info, ctx.id(0).getText, UnknownType, ctx.id(1).getText, Seq(visitExp(ctx_exp(0)), visitExp(ctx_exp(1))), visitMdir(ctx.mdir))
         }
     }
   }
@@ -285,7 +286,8 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   // TODO
   // - Add mux
   // - Add validif
-  private def visitExp[FirrtlNode](ctx: FIRRTLParser.ExpContext): Expression =
+  private def visitExp[FirrtlNode](ctx: FIRRTLParser.ExpContext): Expression = {
+    val ctx_exp = ctx.exp.asScala
     if (ctx.getChildCount == 1)
       Reference(ctx.getText, UnknownType)
     else
@@ -317,12 +319,12 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
               (IntWidth(BigInt(width)), value)
             }
           SIntLiteral(value, width)
-        case "validif(" => ValidIf(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
-        case "mux(" => Mux(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), visitExp(ctx.exp(2)), UnknownType)
+        case "validif(" => ValidIf(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), UnknownType)
+        case "mux(" => Mux(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), visitExp(ctx_exp(2)), UnknownType)
         case _ =>
           ctx.getChild(1).getText match {
             case "." =>
-              val expr1 = visitExp(ctx.exp(0))
+              val expr1 = visitExp(ctx_exp(0))
               // TODO Workaround for #470
               if (ctx.fieldId == null) {
                 ctx.DoubleLit.getText.split('.') match {
@@ -335,13 +337,14 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
                 new SubField(expr1, ctx.fieldId.getText, UnknownType)
               }
             case "[" => if (ctx.exp(1) == null)
-              new SubIndex(visitExp(ctx.exp(0)), string2Int(ctx.intLit(0).getText), UnknownType)
-            else new SubAccess(visitExp(ctx.exp(0)), visitExp(ctx.exp(1)), UnknownType)
+              new SubIndex(visitExp(ctx_exp(0)), string2Int(ctx.intLit(0).getText), UnknownType)
+            else new SubAccess(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), UnknownType)
             // Assume primop
-            case _ => DoPrim(visitPrimop(ctx.primop), ctx.exp.map(visitExp),
-              ctx.intLit.map(x => string2BigInt(x.getText)), UnknownType)
+            case _ => DoPrim(visitPrimop(ctx.primop), ctx_exp.map(visitExp),
+              ctx.intLit.asScala.map(x => string2BigInt(x.getText)), UnknownType)
           }
       }
+  }
 
   // stripSuffix("(") is included because in ANTLR concrete syntax we have to include open parentheses,
   //  see grammar file for more details

@@ -14,7 +14,7 @@ import logger.LazyLogging
 
 object seqCat {
   def apply(args: Seq[Expression]): Expression = args.length match {
-    case 0 => error("Empty Seq passed to seqcat")
+    case 0 => Utils.error("Empty Seq passed to seqcat")
     case 1 => args.head
     case 2 => DoPrim(PrimOps.Cat, args, Nil, UIntType(UnknownWidth))
     case _ =>
@@ -29,7 +29,7 @@ object seqCat {
 object toBits {
   def apply(e: Expression): Expression = e match {
     case ex @ (_: WRef | _: WSubField | _: WSubIndex) => hiercat(ex)
-    case t => error("Invalid operand expression for toBits!")
+    case t => Utils.error("Invalid operand expression for toBits!")
   }
   private def hiercat(e: Expression): Expression = e.tpe match {
     case t: VectorType => seqCat((0 until t.size).reverse map (i =>
@@ -37,14 +37,14 @@ object toBits {
     case t: BundleType => seqCat(t.fields map (f =>
       hiercat(WSubField(e, f.name, f.tpe, UNKNOWNGENDER))))
     case t: GroundType => DoPrim(AsUInt, Seq(e), Seq.empty, UnknownType)
-    case t => error("Unknown type encountered in toBits!")
+    case t => Utils.error("Unknown type encountered in toBits!")
   }
 }
 
 object getWidth {
   def apply(t: Type): Width = t match {
     case t: GroundType => t.width
-    case _ => error("No width!")
+    case _ => Utils.error("No width!")
   }
   def apply(e: Expression): Width = apply(e.tpe)
 }
@@ -55,7 +55,7 @@ object bitWidth {
     case t: VectorType => t.size * bitWidth(t.tpe)
     case t: BundleType => t.fields.map(f => bitWidth(f.tpe)).foldLeft(BigInt(0))(_+_)
     case GroundType(IntWidth(width)) => width
-    case t => error("Unknown type encountered in bitWidth!")
+    case t => Utils.error("Unknown type encountered in bitWidth!")
   }
 }
 
@@ -72,7 +72,7 @@ object castRhs {
         DoPrim(AsClock, Seq(rhs), Seq.empty, lhst)
       case (_: UIntType, _) => 
         DoPrim(AsUInt, Seq(rhs), Seq.empty, lhst)
-      case (_, _) => error("castRhs lhst, rhs type combination is invalid")
+      case (_, _) => Utils.error("castRhs lhst, rhs type combination is invalid")
     }  
   }
 }
@@ -81,7 +81,7 @@ object fromBits {
   def apply(lhs: Expression, rhs: Expression): Statement = {
     val fbits = lhs match {
       case ex @ (_: WRef | _: WSubField | _: WSubIndex) => getPart(ex, ex.tpe, rhs, 0)
-      case _ => error("Invalid LHS expression for fromBits!")
+      case _ => Utils.error("Invalid LHS expression for fromBits!")
     }
     Block(fbits._2)
   }
@@ -112,7 +112,7 @@ object fromBits {
           (tmpOffset, stmts ++ substmts)
       }
       case t: GroundType => getPartGround(lhs, t, rhs, offset)
-      case t => error("Unknown type encountered in fromBits!")
+      case t => Utils.error("Unknown type encountered in fromBits!")
     }
 }
 
@@ -400,7 +400,7 @@ object Utils extends LazyLogging {
             ilen + get_size(t1x.tpe), jlen + get_size(t2x.tpe))
         }._1
       case (ClockType, ClockType) => if (flip1 == flip2) Seq((0, 0)) else Nil
-      case _ => error("shouldn't be here")
+      case _ => Utils.error("shouldn't be here")
     }
   }
 
@@ -446,9 +446,9 @@ object Utils extends LazyLogging {
   def get_field(v: Type, s: String): Field = v match {
     case vx: BundleType => vx.fields find (_.name == s) match {
       case Some(ft) => ft
-      case None => error("Shouldn't be here")
+      case None => Utils.error("Shouldn't be here")
     }
-    case vx => error("Shouldn't be here")
+    case vx => Utils.error("Shouldn't be here")
   }
 
   def times(flip: Orientation, d: Direction): Direction = times(flip, d)
@@ -587,7 +587,7 @@ object Utils extends LazyLogging {
             }
         }
         rootDecl
-      case e => error(s"getDeclaration does not support Expressions of type ${e.getClass}")
+      case e => Utils.error(s"getDeclaration does not support Expressions of type ${e.getClass}")
     }
   }
 

@@ -57,8 +57,8 @@ class ParserSpec extends FirrtlFlatSpec {
       firrtl.Parser.parse((prelude ++ fieldsToSeq(fields) :+ s"      ${k} => ${v}"))
 
     Seq("data-type", "depth", "read-latency", "write-latency") foreach { field =>
-      evaluating { parseWithoutField(field) } should produce [ParameterNotSpecifiedException]
-      evaluating { parseWithDuplicate(field, fields(field)) } should produce [ParameterRedefinedException]
+      an [ParameterNotSpecifiedException] should be thrownBy { parseWithoutField(field) }
+      an [ParameterRedefinedException] should be thrownBy { parseWithDuplicate(field, fields(field)) }
     }
   }
 

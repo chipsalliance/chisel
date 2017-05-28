@@ -7,6 +7,7 @@ import net.jcazevedo.moultingyaml._
 import firrtl.annotations.AnnotationYamlProtocol._
 
 import firrtl.ir._
+import firrtl.Utils.error
 
 object AnnotationUtils {
   def toYaml(a: Annotation): String = a.toYaml.prettyPrint
