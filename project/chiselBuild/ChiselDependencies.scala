@@ -22,13 +22,8 @@ object ChiselDependencies {
     "chisel-iotesters" -> "1.2-SNAPSHOT"
   )
 
-  // Set up the versions Map, overriding the default if -DXVersion="" is supplied on the command line (via JAVA_OPTS).
-  val versions = collection.mutable.Map[String, String](
-    (
-      for ((name, version) <- defaultVersions)
-        yield (name, sys.props.getOrElse(name + "Version", version))
-    ).toSeq: _*
-  )
+  // Set up the versions Map, overriding the default if -DXVersion="" is supplied on the command line (via JAVA_OPTS or "sbt -DXVersion=xxx ...").
+  val versions = collection.mutable.Map[String, String](defaultVersions.map{ case (name, version) => (name, sys.props.getOrElse(name + "Version", version)) }.toSeq: _*)
 
   // The unmanaged classPath - jars found here will automatically satisfy libraryDependencies.
   var unmanagedClasspath: Option[String] = None
@@ -41,7 +36,7 @@ object ChiselDependencies {
 
   /** Set one or more of the BIG4 versions.
     *
-    * @param package_versions package name and version
+    * @param package_versions sequence of PackageVersion (package name and version)
     * @return map of prior name -> version.
     */
   def setVersions(package_versions: Seq[PackageVersion]): collection.immutable.Map[String, String] = {
