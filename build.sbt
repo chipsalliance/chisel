@@ -65,9 +65,9 @@ lazy val publishSettings = ChiselSettings.publishSettings ++ Seq (
     </developers>,
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.4.0"
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
+    "com.github.scopt" %% "scopt" % "3.5.0"
   ),
 
   // Tests from other projects may still run concurrently.
