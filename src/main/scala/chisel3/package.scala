@@ -321,6 +321,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val withClock = chisel3.core.withClock
     val withReset = chisel3.core.withReset
 
+    val dontTouch = chisel3.core.dontTouch
+
     type BaseModule = chisel3.core.BaseModule
     type MultiIOModule = chisel3.core.ImplicitModule
     type RawModule = chisel3.core.UserModule
