@@ -17,8 +17,8 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.0-SNAPSHOT_2017-05-25",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
-  scalaVersion := "2.11.7",
   autoAPIMappings := true,
+  scalaVersion := "2.11.11",
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
     Resolver.sonatypeRepo("releases")
@@ -86,9 +86,9 @@ lazy val chiselSettings = Seq (
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.12.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.4.0"
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
+    "com.github.scopt" %% "scopt" % "3.5.0"
   ),
 
   // Tests from other projects may still run concurrently.
