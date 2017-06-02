@@ -20,7 +20,7 @@ class IntervalTest1 extends Module {
   io.out := io.in1 + io.in2
 }
 class IntervalTester extends CookbookTester(10) {
-  logger.Logger.globalLevel = LogLevel.Info
+  logger.Logger.setLevel(LogLevel.Info)
   val dut = Module(new IntervalTest1)
 
   dut.io.in1 := 4.I()
@@ -53,7 +53,7 @@ class SIntTest1Tester extends CookbookTester(10) {
 }
 
 class IntervalAddTester extends BasicTester {
-  logger.Logger.globalLevel = LogLevel.Info
+  logger.Logger.setLevel(LogLevel.Info)
 
   val in1 = Wire(Interval(range"[0,4]"))
   val in2 = Wire(Interval(range"[0,4]"))
@@ -70,7 +70,7 @@ class IntervalAddTester extends BasicTester {
 }
 
 class IntervalChainedAddTester extends BasicTester {
-  logger.Logger.globalLevel = LogLevel.Info
+  logger.Logger.setLevel(LogLevel.Info)
 
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
@@ -86,7 +86,7 @@ class IntervalChainedAddTester extends BasicTester {
 }
 
 class IntervalChainedMulTester extends BasicTester {
-  logger.Logger.globalLevel = LogLevel.Info
+  logger.Logger.setLevel(LogLevel.Info)
 
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
@@ -102,7 +102,7 @@ class IntervalChainedMulTester extends BasicTester {
 }
 
 class IntervalChainedSubTester extends BasicTester {
-  logger.Logger.globalLevel = LogLevel.Info
+  logger.Logger.setLevel(LogLevel.Info)
 
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
