@@ -416,7 +416,12 @@ trait Compiler extends LazyLogging {
   def compile(state: CircuitState, customTransforms: Seq[Transform]): CircuitState = {
     val allTransforms = CompilerUtils.mergeTransforms(transforms, customTransforms) :+ emitter
 
-    val finalState = allTransforms.foldLeft(state) { (in, xform) => xform.runTransform(in) }
+    val (timeMillis, finalState) = Utils.time {
+      allTransforms.foldLeft(state) { (in, xform) => xform.runTransform(in) }
+    }
+
+    logger.error(f"Total FIRRTL Compile Time: $timeMillis%.1f ms")
+
     finalState
   }
 
