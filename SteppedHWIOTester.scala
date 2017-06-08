@@ -132,7 +132,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
   private def createVectorsAndTestsForOutput(output_port: Data, counter: Counter): Unit = {
     val output_values = Vec(
       test_actions.map { step =>
-        output_port.cloneType.fromBits((step.output_map.getOrElse(output_port, BigInt(0))).asUInt)
+        step.output_map.getOrElse(output_port, BigInt(0)).asUInt.asTypeOf(output_port.cloneType )
       }
     )
     val ok_to_test_output_values = Vec(
