@@ -1,10 +1,9 @@
 // See LICENSE for license details.
 package chisel3.iotesters
 
-import java.io.PrintStream
-
 import chisel3._
 import chisel3.internal.InstanceId
+import firrtl.{FirrtlExecutionFailure, FirrtlExecutionSuccess}
 import firrtl_interpreter.InterpretiveTester
 
 private[iotesters] class FirrtlTerpBackend(
@@ -15,7 +14,7 @@ private[iotesters] class FirrtlTerpBackend(
   val interpretiveTester = new InterpretiveTester(firrtlIR, optionsManager)
   reset(5) // reset firrtl interpreter on construction
 
-  val portNames = getDataNames("io", dut.io).toMap
+  private val portNames = getDataNames("io", dut.io).toMap
 
   def poke(signal: InstanceId, value: BigInt, off: Option[Int])
           (implicit logger: TestErrorLog, verbose: Boolean, base: Int): Unit = {
@@ -106,21 +105,19 @@ private[iotesters] object setupFirrtlTerpBackend {
       dutGen: () => T,
       optionsManager: TesterOptionsManager = new TesterOptionsManager): (T, Backend) = {
 
+    // the backend must be firrtl if we are here, therefore we want the firrtl compiler
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
     chisel3.Driver.execute(optionsManager, dutGen) match {
-      case ChiselExecutionSuccess(Some(circuit), firrtlText, Some(firrtlExecutionResult)) =>
+      case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
         val dut = getTopModule(circuit).asInstanceOf[T]
-        (dut, new FirrtlTerpBackend(dut, chisel3.Driver.emit(dutGen), optionsManager = optionsManager))
+        firrtlExecutionResult match {
+          case FirrtlExecutionSuccess(_, compiledFirrtl) =>
+            (dut, new FirrtlTerpBackend(dut, compiledFirrtl, optionsManager = optionsManager))
+          case FirrtlExecutionFailure(message) =>
+            throw new Exception(s"FirrtlBackend: failed firrlt compile message: $message")
+        }
       case _ =>
         throw new Exception("Problem with compilation")
     }
-//
-//
-//    val circuit = chisel3.Driver.elaborate(dutGen)
-//    val dut = getTopModule(circuit).asInstanceOf[T]
-//    val dir = new File(s"test_run_dir/${dut.getClass.getName}") ; dir.mkdirs()
-//
-//    // Dump FIRRTL for debugging
-//    chisel3.Driver.dumpFirrtl(circuit, Some(new File(dir, s"${circuit.name}.fir")))
-//    (dut, new FirrtlTerpBackend(dut, chisel3.Driver.emit(dutGen)))
   }
 }
