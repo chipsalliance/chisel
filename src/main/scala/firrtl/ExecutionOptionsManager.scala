@@ -156,7 +156,8 @@ case class FirrtlExecutionOptions(
     annotations:            List[Annotation] = List.empty,
     annotationFileNameOverride: String = "",
     forceAppendAnnoFile:    Boolean = false,
-    emitOneFilePerModule:   Boolean = false)
+    emitOneFilePerModule:   Boolean = false,
+    dontCheckCombLoops:     Boolean = false)
   extends ComposableOptions {
 
   require(!(emitOneFilePerModule && outputFileNameOverride.nonEmpty),
@@ -410,6 +411,13 @@ trait HasFirrtlOptions {
       firrtlOptions = firrtlOptions.copy(emitOneFilePerModule = true)
     }.text {
       "Emit each module to its own file in the target directory."
+    }
+
+  parser.opt[Unit]("no-check-comb-loops")
+    .foreach { _ =>
+      firrtlOptions = firrtlOptions.copy(dontCheckCombLoops = true)
+    }.text {
+      "Do NOT check for combinational loops (not recommended)"
     }
 
   parser.note("")

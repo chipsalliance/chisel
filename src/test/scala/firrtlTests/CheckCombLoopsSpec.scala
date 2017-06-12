@@ -8,6 +8,8 @@ import firrtl.passes._
 import firrtl.transforms._
 import firrtl.Mappers._
 import annotations._
+import java.io.File
+import java.nio.file.Paths
 
 class CheckCombLoopsSpec extends SimpleTransformSpec {
 
@@ -147,5 +149,22 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
       compile(CircuitState(parse(input), ChirrtlForm, None), writer)
     }
   }
+}
 
+class CheckCombLoopsCommandLineSpec extends FirrtlFlatSpec {
+
+  val testDir = createTestDirectory("CombLoopChecker")
+  val inputFile = Paths.get(getClass.getResource("/features/HasLoops.fir").toURI()).toFile()
+  val outFile = new File(testDir, "HasLoops.v")
+  val args = Array("-i", inputFile.getAbsolutePath, "-o", outFile.getAbsolutePath, "-X", "verilog")
+
+  "Combinational loops detection" should "run by default" in {
+    a [CheckCombLoops.CombLoopException] should be thrownBy {
+      firrtl.Driver.execute(args)
+    }
+  }
+
+  it should "not run when given --no-check-comb-loops option" in {
+    firrtl.Driver.execute(args :+ "--no-check-comb-loops")
+  }
 }

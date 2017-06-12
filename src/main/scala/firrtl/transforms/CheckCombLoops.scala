@@ -11,6 +11,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes.{Errors, PassException}
 import firrtl.Mappers._
+import firrtl.annotations._
 import firrtl.Utils.throwInternalError
 import firrtl.graph.{MutableDiGraph,DiGraph}
 import firrtl.analyses.InstanceGraph
@@ -19,6 +20,16 @@ object CheckCombLoops {
   class CombLoopException(info: Info, mname: String, cycle: Seq[String]) extends PassException(
     s"$info: [module $mname] Combinational loop detected:\n" + cycle.mkString("\n"))
 
+}
+
+object DontCheckCombLoopsAnnotation {
+  private val marker = "DontCheckCombLoops!"
+  private val transform = classOf[CheckCombLoops]
+  def apply(): Annotation = Annotation(CircuitTopName, transform, marker)
+  def unapply(a: Annotation): Boolean = a match {
+    case Annotation(_, targetXform, value) if targetXform == transform && value == marker => true
+    case _ => false
+  }
 }
 
 /** Finds and detects combinational logic loops in a circuit, if any
@@ -179,7 +190,7 @@ class CheckCombLoops extends Transform {
    * and only if it combinationally depends on input Y. Associate this
    * reduced graph with the module for future use.
    */
-  def run(c: Circuit): Circuit = {
+  private def run(c: Circuit): Circuit = {
     val errors = new Errors()
     /* TODO(magyar): deal with exmodules! No pass warnings currently
      *  exist. Maybe warn when iterating through modules.
@@ -210,8 +221,15 @@ class CheckCombLoops extends Transform {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val result = run(state.circuit)
-    CircuitState(result, outputForm, state.annotations, state.renames)
+    val dontRun = getMyAnnotations(state).collectFirst {
+      case DontCheckCombLoopsAnnotation() => true
+    }.getOrElse(false)
+    if (dontRun) {
+      logger.warn("Skipping Combinational Loop Detection")
+      state
+    } else {
+      val result = run(state.circuit)
+      CircuitState(result, outputForm, state.annotations, state.renames)
+    }
   }
-
 }
