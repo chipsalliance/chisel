@@ -352,7 +352,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
          Seq(a0, "[", low, ":", 0, "]")
      }
    }
-   
+
     def emit_verilog(m: Module, moduleMap: Map[String, DefModule])(implicit w: Writer): DefModule = {
       val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
       val addrRegs = mutable.HashSet[WrappedExpression]()
@@ -375,7 +375,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           sx
         case sx => sx
       }
-   
+
       val portdefs = ArrayBuffer[Seq[Any]]()
       val declares = ArrayBuffer[Seq[Any]]()
       val instdeclares = ArrayBuffer[Seq[Any]]()
@@ -642,7 +642,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
             else
               garbageAssign(data, memPort, garbageGuard)
           }
- 
+
           for (w <- sx.writers) {
             val data = memPortField(sx, w, "data")
             val addr = memPortField(sx, w, "addr")
@@ -673,7 +673,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           sx
         case sx => sx
       }
-   
+
       def emit_streams() {
         emit(Seq("module ", m.name, "("))
         for ((x, i) <- portdefs.zipWithIndex) {
@@ -691,7 +691,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
         if (attachAliases.nonEmpty) {
           emit(Seq("`ifdef SYNTHESIS"))
           for (x <- attachSynAssigns) emit(Seq(tab, x))
-          emit(Seq("`elseif verilator"))
+          emit(Seq("`elsif verilator"))
           emit(Seq(tab, "`error \"Verilator does not support alias and thus cannot arbirarily connect bidirectional wires and ports\""))
           emit(Seq("`else"))
           for (x <- attachAliases) emit(Seq(tab, x))
@@ -711,7 +711,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           emit(Seq("  end"))
           emit(Seq("`endif // RANDOMIZE"))
         }
- 
+
         for (clk_stream <- at_clock if clk_stream._2.nonEmpty) {
           emit(Seq(tab, "always @(posedge ", clk_stream._1, ") begin"))
           for (x <- clk_stream._2) emit(Seq(tab, tab, x))
