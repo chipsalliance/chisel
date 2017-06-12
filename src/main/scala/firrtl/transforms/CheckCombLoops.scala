@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package firrtl.passes
+package firrtl.transforms
 
 import scala.collection.mutable
 import scala.collection.immutable.HashSet
@@ -9,6 +9,7 @@ import annotation.tailrec
 
 import firrtl._
 import firrtl.ir._
+import firrtl.passes.{Errors, PassException}
 import firrtl.Mappers._
 import firrtl.Utils.throwInternalError
 import firrtl.graph.{MutableDiGraph,DiGraph}
