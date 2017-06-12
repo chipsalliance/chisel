@@ -14,6 +14,12 @@ import firrtl.Utils.throwInternalError
 import firrtl.graph.{MutableDiGraph,DiGraph}
 import firrtl.analyses.InstanceGraph
 
+object CheckCombLoops {
+  class CombLoopException(info: Info, mname: String, cycle: Seq[String]) extends PassException(
+    s"$info: [module $mname] Combinational loop detected:\n" + cycle.mkString("\n"))
+
+}
+
 /** Finds and detects combinational logic loops in a circuit, if any
   * exist. Returns the input circuit with no modifications.
   * 
@@ -24,11 +30,11 @@ import firrtl.analyses.InstanceGraph
   * @note The pass cannot find loops that pass through ExtModules
   * @note The pass will throw exceptions on "false paths"
   */
+class CheckCombLoops extends Transform {
+  def inputForm = LowForm
+  def outputForm = LowForm
 
-object CheckCombLoops extends Pass {
-
-  class CombLoopException(info: Info, mname: String, cycle: Seq[String]) extends PassException(
-    s"$info: [module $mname] Combinational loop detected:\n" + cycle.mkString("\n"))
+  import CheckCombLoops._
 
   /*
    * A case class that represents a net in the circuit. This is
@@ -200,6 +206,11 @@ object CheckCombLoops extends Pass {
     }
     errors.trigger()
     c
+  }
+
+  def execute(state: CircuitState): CircuitState = {
+    val result = run(state.circuit)
+    CircuitState(result, outputForm, state.annotations, state.renames)
   }
 
 }
