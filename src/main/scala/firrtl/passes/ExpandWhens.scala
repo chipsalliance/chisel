@@ -45,9 +45,10 @@ object ExpandWhens extends Pass {
       }
     }
   }
-  private def expandNetlist(netlist: Netlist) =
+  private def expandNetlist(netlist: Netlist, attached: Set[WrappedExpression]) =
     netlist map {
-      case (k, WInvalid) => IsInvalid(NoInfo, k.e1)
+      case (k, WInvalid) => // Remove IsInvalids on attached Analog types
+        if (attached.contains(k)) EmptyStmt else IsInvalid(NoInfo, k.e1)
       case (k, v) => Connect(NoInfo, k.e1, v)
     }
   /** Combines Attaches
@@ -186,7 +187,8 @@ object ExpandWhens extends Pass {
       case m: ExtModule => m
       case m: Module =>
       val (netlist, simlist, attaches, bodyx) = expandWhens(m)
-      val newBody = Block(Seq(squashEmpty(bodyx)) ++ expandNetlist(netlist) ++
+      val attachedAnalogs = attaches.flatMap(_.exprs.map(we)).toSet
+      val newBody = Block(Seq(squashEmpty(bodyx)) ++ expandNetlist(netlist, attachedAnalogs) ++
                               combineAttaches(attaches) ++ simlist)
       Module(m.info, m.name, m.ports, newBody)
     }

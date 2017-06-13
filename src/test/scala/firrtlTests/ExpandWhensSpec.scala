@@ -78,6 +78,50 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     val check = "VOID"
     executeTest(input, check, true)
   }
+  it should "replace 'is invalid' with validif for wires that have a connection" in {
+    val input =
+      """|circuit Tester :
+         |  module Tester :
+         |    input p : UInt<1>
+         |    output out : UInt
+         |    wire w : UInt<32>
+         |    w is invalid
+         |    out <= w
+         |    when p :
+         |      w <= UInt(123)
+         """.stripMargin
+    val check = "validif(p"
+    executeTest(input, check, true)
+  }
+  it should "leave 'is invalid' for wires that don't have a connection" in {
+    val input =
+      """|circuit Tester :
+         |  module Tester :
+         |    input p : UInt<1>
+         |    output out : UInt
+         |    wire w : UInt<32>
+         |    w is invalid
+         |    out <= w
+         """.stripMargin
+    val check = "w is invalid"
+    executeTest(input, check, true)
+  }
+  it should "delete 'is invalid' for attached Analog wires" in {
+    val input =
+      """|circuit Tester :
+         |  extmodule Child :
+         |    input bus : Analog<32>
+         |  module Tester :
+         |    input bus : Analog<32>
+         |    inst c of Child
+         |    wire w : Analog<32>
+         |    attach (w, bus)
+         |    attach (w, c.bus)
+         |    w is invalid
+         """.stripMargin
+    val check = "w is invalid"
+    executeTest(input, check, false)
+  }
 }
 
 class ExpandWhensExecutionTest extends ExecutionTest("ExpandWhens", "/passes/ExpandWhens")
