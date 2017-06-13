@@ -11,41 +11,40 @@ import firrtl.ir._
 import firrtl.Parser.IgnoreInfo
 
 class ExpandWhensSpec extends FirrtlFlatSpec {
-  private def executeTest(input: String, check: String, transforms: Seq[Transform], expected: Boolean) = {
+  private val transforms = Seq(
+    ToWorkingIR,
+    CheckHighForm,
+    ResolveKinds,
+    InferTypes,
+    CheckTypes,
+    Uniquify,
+    ResolveKinds,
+    InferTypes,
+    ResolveGenders,
+    CheckGenders,
+    InferWidths,
+    CheckWidths,
+    PullMuxes,
+    ExpandConnects,
+    RemoveAccesses,
+    ExpandWhens)
+  private def executeTest(input: String, check: String, expected: Boolean) = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val result = transforms.foldLeft(CircuitState(circuit, UnknownForm)) {
       (c: CircuitState, p: Transform) => p.runTransform(c)
     }
     val c = result.circuit
     val lines = c.serialize.split("\n") map normalized
-    println(c.serialize)
 
-    if(expected) {
+    if (expected) {
       c.serialize.contains(check) should be (true)
     } else {
-      lines foreach { l => l.contains(check) should be (false) }
+      lines.foreach(_.contains(check) should be (false))
     }
   }
   "Expand Whens" should "not emit INVALID" in {
-    val transforms = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes,
-      Uniquify,
-      ResolveKinds,
-      InferTypes,
-      ResolveGenders,
-      CheckGenders,
-      InferWidths,
-      CheckWidths,
-      PullMuxes,
-      ExpandConnects,
-      RemoveAccesses,
-      ExpandWhens)
     val input =
-  """|circuit Tester : 
+  """|circuit Tester :
      |  module Tester :
      |    input p : UInt<1>
      |    when p :
@@ -53,28 +52,11 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
      |      a is invalid
      |      a.b <= UInt<64>("h04000000000000000")""".stripMargin
     val check = "INVALID"
-    executeTest(input, check, transforms, false)
+    executeTest(input, check, false)
   }
-  "Expand Whens" should "void unwritten memory fields" in {
-    val transforms = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes,
-      Uniquify,
-      ResolveKinds,
-      InferTypes,
-      ResolveGenders,
-      CheckGenders,
-      InferWidths,
-      CheckWidths,
-      PullMuxes,
-      ExpandConnects,
-      RemoveAccesses,
-      ExpandWhens)
+  it should "void unwritten memory fields" in {
     val input =
-  """|circuit Tester : 
+  """|circuit Tester :
      |  module Tester :
      |    input clk : Clock
      |    mem memory:
@@ -94,7 +76,7 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
      |    memory.w0.clk <= clk
      |    """.stripMargin
     val check = "VOID"
-    executeTest(input, check, transforms, true)
+    executeTest(input, check, true)
   }
 }
 
