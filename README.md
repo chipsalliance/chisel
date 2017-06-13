@@ -21,7 +21,7 @@ This will walk you through installing Chisel and its dependencies:
 - [sbt](http://www.scala-sbt.org/), which is the preferred Scala build system
   and what Chisel uses.
 - [Firrtl](https://github.com/ucb-bar/firrtl), which compiles Chisel's IR down
-  to Verilog. If you're building from the release branch of chisel3, separate installation of Firrtl is no longer required: the required jar will be automatically downloaed by sbt. If you're building chisel3 from the master branch, you'll need to follow the directions on the [firrtl project](https://github.com/ucb-bar/firrtl) to publish a local copy of the required jar.
+  to Verilog. If you're building from the release branch of chisel3, separate installation of Firrtl is no longer required: the required jar will be automatically downloaded by sbt. If you're building chisel3 from the master branch, you'll need to follow the directions on the [firrtl project](https://github.com/ucb-bar/firrtl) to publish a local copy of the required jar.
 - [Verilator](http://www.veripool.org/wiki/verilator), which compiles Verilog
   down to C++ for simulation. The included unit testing infrastructure uses
   this.
