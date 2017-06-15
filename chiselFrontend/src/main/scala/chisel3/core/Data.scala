@@ -257,15 +257,11 @@ abstract class Data extends HasId {
 
     // Call the user-supplied cloneType method
     val clone = this.cloneType
-    // In compatibility mode, simply return cloneType; otherwise, propagate
-    // direction and flippedness.
-    if (compileOptions.checkSynthesizable) {
-      Data.setFirrtlDirection(clone, Data.getFirrtlDirection(this))
-      //TODO(twigg): Do recursively for better error messages
-      for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
-        clone_elem.binding = UnboundBinding(source_elem.binding.direction)
-        Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
-      }
+    Data.setFirrtlDirection(clone, Data.getFirrtlDirection(this))
+    //TODO(twigg): Do recursively for better error messages
+    for((clone_elem, source_elem) <- clone.allElements zip this.allElements) {
+      clone_elem.binding = UnboundBinding(source_elem.binding.direction)
+      Data.setFirrtlDirection(clone_elem, Data.getFirrtlDirection(source_elem))
     }
     clone
   }
