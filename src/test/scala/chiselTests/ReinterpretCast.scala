@@ -22,7 +22,7 @@ class AsBundleTester extends BasicTester {
 
   assert(bunFromBits.u === 4.U)
   assert(bunFromBits.s === -1.S)
-  assert(bunFromBits.fp === FixedPoint.fromDouble(-0.5, width=4, binaryPoint=3))
+  assert(bunFromBits.fp === FixedPoint.fromDouble(-0.5, 4.W, 3.BP))
 
   stop()
 }

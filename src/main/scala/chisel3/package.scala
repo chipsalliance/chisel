@@ -1,3 +1,4 @@
+import chisel3.core.CompileOptions
 // See LICENSE for license details.
 
 /** The chisel3 package contains the chisel3 API.
@@ -24,6 +25,16 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
+  implicit class fromBitsable[T <: Data](val data: T) {
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo.SourceInfo
+
+    @deprecated("fromBits is deprecated, use asTypeOf instead", "chisel3")
+    def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      that.asTypeOf(data)
+    }
+  }
+  
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]
@@ -268,9 +279,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
-    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that === x    // scalastyle:ignore method.name
-    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that != x      // scalastyle:ignore method.name
-    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo): Bool = that =/= x    // scalastyle:ignore method.name
+    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x    // scalastyle:ignore method.name
+    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x      // scalastyle:ignore method.name
+    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x    // scalastyle:ignore method.name
   }
 
   // Compatibility with existing code.
@@ -309,6 +320,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val withClockAndReset = chisel3.core.withClockAndReset
     val withClock = chisel3.core.withClock
     val withReset = chisel3.core.withReset
+
+    val dontTouch = chisel3.core.dontTouch
 
     type BaseModule = chisel3.core.BaseModule
     type MultiIOModule = chisel3.core.ImplicitModule
