@@ -18,7 +18,7 @@ sealed abstract class Aggregate extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
     binding = target
 
-    val resolvedDirection = UserDirection.resolve(parentDirection, userDirection)
+    val resolvedDirection = UserDirection.fromParent(parentDirection, userDirection)
     for (child <- getElements) {
       child.bind(ChildBinding(this), resolvedDirection)
     }
@@ -56,7 +56,7 @@ sealed abstract class Aggregate extends Data {
         }
         case _ =>
           val childWithDirections = getElements zip getElements.map(_.direction)
-          throw new Binding.BindingException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
       }
     }
   }
@@ -114,7 +114,7 @@ object Vec {
 
     // Check that types are homogeneous.  Width mismatch for Elements is safe.
     require(!elts.isEmpty)
-    elts foreach {requireIsHardware(_, "vec element")}
+    elts.foreach(requireIsHardware(_, "vec element"))
 
     val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
 
@@ -123,12 +123,12 @@ object Vec {
       case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
         // When internal wires are involved, driver / sink must be specified explicitly, otherwise
         // the system is unable to infer which is driver / sink
-        (vec zip elts) foreach {x => x._1 := x._2}
+        (vec zip elts).foreach(x => x._1 := x._2)
       case ActualDirection.Bidirectional | ActualDirection.BidirectionalFlip =>
         // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
         // Bulk connecting two wires may not succeed because Chisel frontend does not infer
         // directions.
-        (vec zip elts) foreach {x => x._1 <> x._2}
+        (vec zip elts).foreach(x => x._1 <> x._2)
     }
     vec
   }
@@ -281,7 +281,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.
-    // Perhaps there's a cleaner way of accomlpishing this...
+    // Perhaps there's a cleaner way of accomplishing this...
     port.bind(ChildBinding(this), reconstructedResolvedDirection)
 
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)

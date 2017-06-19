@@ -13,10 +13,18 @@ import chisel3.internal.sourceinfo._
   */
 sealed abstract class UserDirection
 object UserDirection {
-  case object Unspecified extends UserDirection  // default, also means 'not-flipped'
-  case object Output extends UserDirection  // node and its children are forced as outputs
-  case object Input extends UserDirection  // node and its children are forced as inputs
-  case object Flip extends UserDirection  // for containers only, children are flipped
+  /** Default user direction, also meaning 'not-flipped'
+    */
+  case object Unspecified extends UserDirection
+  /** Node and its children are forced as output
+    */
+  case object Output extends UserDirection
+  /** Node and ites children are forced as inputs
+    */
+  case object Input extends UserDirection
+  /** Mainly for containers, children are flipped.
+    */
+  case object Flip extends UserDirection
 
   def flip(dir: UserDirection) = dir match {
     case Unspecified => Flip
@@ -25,10 +33,10 @@ object UserDirection {
     case Input => Output
   }
 
-  /** Returns the resolved UserDirection of this node given the parent's resolved UserDirection
+  /** Returns the effective UserDirection of this node given the parent's effective UserDirection
     * and the user-specified UserDirection of this node.
     */
-  def resolve(parentDirection: UserDirection, thisDirection: UserDirection) =
+  def fromParent(parentDirection: UserDirection, thisDirection: UserDirection) =
     (parentDirection, thisDirection) match {
       case (UserDirection.Output, _) => UserDirection.Output
       case (UserDirection.Input, _) => UserDirection.Input
@@ -43,13 +51,22 @@ object UserDirection {
   */
 sealed abstract class ActualDirection
 object ActualDirection {
-  case object Unspecified extends ActualDirection  // undirectioned struct-like
-  case object Output extends ActualDirection  // forced output, or container with all outputs
-  case object Input extends ActualDirection  // forced input, or container with all inputs
+  /** Undirectioned, struct-like
+    */
+  case object Unspecified extends ActualDirection
+  /** Output element, or container with all outputs (even if forced)
+    */
+  case object Output extends ActualDirection
+  /** Input element, or container with all inputs (even if forced)
+    */
+  case object Input extends ActualDirection
+  /** Bidirectional container or element
+    */
   case object Bidirectional extends ActualDirection
+  /** Bidirectional container or element, flipped from its normal direction allowing easy checking
+    * of connect legality
+    */
   case object BidirectionalFlip extends ActualDirection
-  // BidirectionalFlip is similar to Bidirectional, but the additional "flip" description allows
-  // easy checking of connect legality
 }
 
 @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
@@ -174,7 +191,7 @@ abstract class Data extends HasId {
       this match {
         // Anything flies in compatibility mode
         case t: Record if !t.compileOptions.dontAssumeDirectionality =>
-        case _ => throw new Binding.BindingException(s"Attempted reassignment of user direction to $this")
+        case _ => throw Binding.RebindingException(s"Attempted reassignment of user direction to $this")
       }
     }
     _userDirection = direction
@@ -184,7 +201,7 @@ abstract class Data extends HasId {
     * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
-  private[core] def _assignCompatibilityExplicitDirection {
+  private[core] def _assignCompatibilityExplicitDirection: Unit = {
     _userDirection match {
       case UserDirection.Unspecified => _userDirection = UserDirection.Output
       case UserDirection.Flip => _userDirection = UserDirection.Input
@@ -196,12 +213,12 @@ abstract class Data extends HasId {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
-  private[core] def hasBinding = _binding != None
+  private[core] def hasBinding = _binding.isDefined
   // Only valid after node is bound (synthesizable), crashes otherwise
   private[core] def binding = _binding.get
   protected def binding_=(target: Binding) {
-    if (_binding != None) {
-      throw new Binding.BindingException(s"Attempted reassignment of binding to $this")
+    if (_binding.isDefined) {
+      throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
     }
     _binding = Some(target)
   }
@@ -229,8 +246,8 @@ abstract class Data extends HasId {
 
   private[chisel3] def direction: ActualDirection = _direction.get
   private[core] def direction_=(actualDirection: ActualDirection) {
-    if (_direction != None) {
-      throw new Binding.BindingException(s"Attempted reassignment of resolved direction to $this")
+    if (_direction.isDefined) {
+      throw Binding.RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
     _direction = Some(actualDirection)
   }

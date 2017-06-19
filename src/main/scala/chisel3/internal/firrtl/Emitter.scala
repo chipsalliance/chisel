@@ -14,12 +14,11 @@ private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString
 
   private def emitPort(e: Port): String = {
-    e.dir match {
-      case UserDirection.Unspecified | UserDirection.Output =>
-        s"output ${e.id.getRef.name} : ${emitType(e.id)}"
-      case UserDirection.Flip | UserDirection.Input =>
-        s"input ${e.id.getRef.name} : ${emitType(e.id)}"
+    val dir = e.dir match {
+      case UserDirection.Unspecified | UserDirection.Output => "output"
+      case UserDirection.Flip | UserDirection.Input => "input"
     }
+    s"$dir ${e.id.getRef.name} : ${emitType(e.id)}"
   }
 
   private def emitType(d: Data, clearDir: Boolean = false): String = d match {
@@ -46,7 +45,7 @@ private class Emitter(circuit: Circuit) {
 
   private def firrtlUserDirOf(d: Data): UserDirection = d match {
     case d: Vec[_] =>
-      UserDirection.resolve(d.userDirection, firrtlUserDirOf(d.sample_element))
+      UserDirection.fromParent(d.userDirection, firrtlUserDirOf(d.sample_element))
     case d => d.userDirection
   }
 

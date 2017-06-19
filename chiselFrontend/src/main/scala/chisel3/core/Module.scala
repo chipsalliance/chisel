@@ -228,16 +228,16 @@ abstract class BaseModule extends HasId {
     // This recursively walks the tree, and assigns directions if no explicit
     // direction given by upper-levels (override Input / Output) AND element is
     // directly inside a compatibility Bundle determined by compile options.
-    def assignCompatDir(data: Data, insideCompat: Boolean) {
+    def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
       data match {
-        case data: Element if (insideCompat) => data._assignCompatibilityExplicitDirection
+        case data: Element if insideCompat => data._assignCompatibilityExplicitDirection
         case data: Element => // Not inside a compatibility Bundle, nothing to be done
-        case data: Aggregate => DataMirror.userDirectionOf(data) match {
+        case data: Aggregate => data.userDirection match {
           // Recurse into children to ensure explicit direction set somewhere
           case UserDirection.Unspecified | UserDirection.Flip => data match {
             case data: Record if (!data.compileOptions.dontAssumeDirectionality) =>
-              data.getElements foreach (assignCompatDir(_, true))
-            case _ => data.getElements foreach (assignCompatDir(_, false))
+              data.getElements.foreach(assignCompatDir(_, true))
+            case _ => data.getElements.foreach(assignCompatDir(_, false))
           }
           case UserDirection.Input | UserDirection.Output => // forced assign, nothing to do
         }

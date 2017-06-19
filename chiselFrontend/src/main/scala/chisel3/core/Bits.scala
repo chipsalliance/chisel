@@ -20,7 +20,7 @@ import chisel3.internal.firrtl.PrimOp._
 abstract class Element(private[chisel3] val width: Width) extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
     binding = target
-    val resolvedDirection = UserDirection.resolve(parentDirection, userDirection)
+    val resolvedDirection = UserDirection.fromParent(parentDirection, userDirection)
     direction = resolvedDirection match {
       case UserDirection.Unspecified | UserDirection.Flip => ActualDirection.Unspecified
       case UserDirection.Output => ActualDirection.Output
@@ -1040,7 +1040,7 @@ final class Analog private (width: Width) extends Element(width) {
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
   private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
-    UserDirection.resolve(parentDirection, userDirection) match {
+    UserDirection.fromParent(parentDirection, userDirection) match {
       case UserDirection.Unspecified | UserDirection.Flip =>
       case x => throwException(s"Analog may not have explicit direction, got '$x'")
     }

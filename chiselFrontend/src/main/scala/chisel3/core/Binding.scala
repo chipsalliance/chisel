@@ -3,8 +3,19 @@ package chisel3.core
 import chisel3.internal.Builder.{forcedModule}
 
 object Binding {
-  case class BindingException(message: String) extends Exception(message)
-  def MissingIOWrapperException = BindingException(": Missing IO() wrapper")
+  class BindingException(message: String) extends Exception(message)
+  /** A function expected a Chisel type but got a hardware object
+    */
+  case class ExpectedChiselTypeException(message: String) extends BindingException(message)
+  /**A function expected a hardware object but got a Chisel type
+    */
+  case class ExpectedHardwareException(message: String) extends BindingException(message)
+  /** An aggregate had a mix of specified and unspecified directionality children
+    */
+  case class MixedDirectionAggregateException(message: String) extends BindingException(message)
+  /** Attempted to re-bind an already bound (directionality or hardware) object
+    */
+  case class RebindingException(message: String) extends BindingException(message)
 }
 
 /** Requires that a node is hardware ("bound")
@@ -16,11 +27,8 @@ object requireIsHardware {
       case _ =>
     }
     if (!node.hasBinding) {
-      if (!msg.isEmpty()) {
-        throw new Binding.BindingException(s"$msg '$node' must be hardware, not a bare Chisel type")
-      } else {
-        throw new Binding.BindingException(s"'$node' must be hardware, not a bare Chisel type")
-      }
+      val prefix = if (msg.nonEmpty) s"$msg " else ""
+      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, not a bare Chisel type")
     }
   }
 }
@@ -29,21 +37,26 @@ object requireIsHardware {
   */
 object requireIsChiselType {
   def apply(node: Data, msg: String = "") = if (node.hasBinding) {
-    if (!msg.isEmpty()) {
-      throw new Binding.BindingException(s"$msg '$node' must be a Chisel type, not hardware")
-    } else {
-      throw new Binding.BindingException(s"'$node' must be a Chisel type, not hardware")
-    }
+    val prefix = if (msg.nonEmpty) s"$msg " else ""
+    throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
 }
 
 // Element only direction used for the Binding system only.
 sealed abstract class BindingDirection
 object BindingDirection {
-  case object Internal extends BindingDirection  // internal type or wire
-  case object Output extends BindingDirection  // module port
-  case object Input extends BindingDirection  // module port
+  /** Internal type or wire
+    */
+  case object Internal extends BindingDirection
+  /** Module port with output direction
+    */
+  case object Output extends BindingDirection
+  /** Module port with input direction
+    */
+  case object Input extends BindingDirection
 
+  /** Determine the BindingDirection of an Element given its top binding and resolved direction.
+    */
   def from(binding: TopBinding, direction: ActualDirection) = {
     binding match {
       case PortBinding(_) => direction match {
@@ -60,7 +73,7 @@ object BindingDirection {
 sealed trait Binding {
   def location: Option[BaseModule]
 }
-// Top-level binding representing hardware, not a pointer to another binding
+// Top-level binding representing hardware, not a pointer to another binding (like ChildBinding)
 sealed trait TopBinding extends Binding
 
 // Constrained-ness refers to whether 'bound by Module boundaries'

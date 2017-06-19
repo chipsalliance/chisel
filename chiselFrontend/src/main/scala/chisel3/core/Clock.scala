@@ -18,7 +18,7 @@ sealed class Clock extends Element(Width(1)) {
   private[core] def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass
 
-  override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
     case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
