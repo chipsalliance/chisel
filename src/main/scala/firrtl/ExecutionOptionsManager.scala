@@ -157,7 +157,8 @@ case class FirrtlExecutionOptions(
     annotationFileNameOverride: String = "",
     forceAppendAnnoFile:    Boolean = false,
     emitOneFilePerModule:   Boolean = false,
-    dontCheckCombLoops:     Boolean = false)
+    dontCheckCombLoops:     Boolean = false,
+    noDCE:                  Boolean = false)
   extends ComposableOptions {
 
   require(!(emitOneFilePerModule && outputFileNameOverride.nonEmpty),
@@ -418,6 +419,13 @@ trait HasFirrtlOptions {
       firrtlOptions = firrtlOptions.copy(dontCheckCombLoops = true)
     }.text {
       "Do NOT check for combinational loops (not recommended)"
+    }
+
+  parser.opt[Unit]("no-dce")
+    .foreach { _ =>
+      firrtlOptions = firrtlOptions.copy(noDCE = true)
+    }.text {
+      "Do NOT run dead code elimination"
     }
 
   parser.note("")

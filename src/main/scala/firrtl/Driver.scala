@@ -12,7 +12,7 @@ import logger.Logger
 import Parser.{IgnoreInfo, InfoMode}
 import annotations._
 import firrtl.annotations.AnnotationYamlProtocol._
-import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDir, DontCheckCombLoopsAnnotation}
+import firrtl.transforms._
 import Utils.throwInternalError
 
 
@@ -167,7 +167,8 @@ object Driver {
 
     // Should these and outputAnnos be moved to loadAnnotations?
     val globalAnnos = Seq(TargetDirAnnotation(optionsManager.targetDirName)) ++
-      (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation()) else Seq())
+      (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation()) else Seq()) ++
+      (if (firrtlConfig.noDCE) Seq(NoDCEAnnotation()) else Seq())
 
     val finalState = firrtlConfig.compiler.compile(
       CircuitState(parsedInput,

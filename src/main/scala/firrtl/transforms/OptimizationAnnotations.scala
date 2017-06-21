@@ -5,6 +5,17 @@ package transforms
 import firrtl.annotations._
 import firrtl.passes.PassException
 
+/** Indicate that DCE should not be run */
+object NoDCEAnnotation {
+  val marker = "noDCE!"
+  val transform = classOf[DeadCodeElimination]
+  def apply(): Annotation = Annotation(CircuitTopName, transform, marker)
+  def unapply(a: Annotation): Boolean = a match {
+    case Annotation(_, targetXform, value) if targetXform == transform && value == marker => true
+    case _ => false
+  }
+}
+
 /** A component that should be preserved
   *
   * DCE treats the component as a top-level sink of the circuit

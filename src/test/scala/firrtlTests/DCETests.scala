@@ -9,6 +9,9 @@ import firrtl.transforms._
 import firrtl.annotations._
 import firrtl.passes.memlib.SimpleTransform
 
+import java.io.File
+import java.nio.file.Paths
+
 class DCETests extends FirrtlFlatSpec {
   // Not using executeTest because it is for positive testing, we need to check that stuff got
   // deleted
@@ -385,5 +388,29 @@ class DCETests extends FirrtlFlatSpec {
         |    skip
         |    z <= foo.z""".stripMargin
     exec(input, check)
+  }
+}
+
+class DCECommandLineSpec extends FirrtlFlatSpec {
+
+  val testDir = createTestDirectory("dce")
+  val inputFile = Paths.get(getClass.getResource("/features/HasDeadCode.fir").toURI()).toFile()
+  val outFile = new File(testDir, "HasDeadCode.v")
+  val args = Array("-i", inputFile.getAbsolutePath, "-o", outFile.getAbsolutePath, "-X", "verilog")
+
+  "Dead Code Elimination" should "run by default" in {
+    firrtl.Driver.execute(args) match {
+      case FirrtlExecutionSuccess(_, verilog) =>
+        verilog should not include regex ("wire +a;")
+      case _ => fail("Unexpected compilation failure")
+    }
+  }
+
+  it should "not run when given --no-dce option" in {
+    firrtl.Driver.execute(args :+ "--no-dce") match {
+      case FirrtlExecutionSuccess(_, verilog) =>
+        verilog should include regex ("wire +a;")
+      case _ => fail("Unexpected compilation failure")
+    }
   }
 }
