@@ -253,11 +253,12 @@ object ConstProp extends Pass {
     }
 
     def constPropStmt(s: Statement): Statement = {
-      s match {
+      val stmtx = s map constPropStmt map constPropExpression
+      stmtx match {
         case x: DefNode => nodeMap(x.name) = x.value
         case _ =>
       }
-      s map constPropStmt map constPropExpression
+      stmtx
     }
 
     val res = Module(m.info, m.name, m.ports, constPropStmt(m.body))
