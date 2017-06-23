@@ -272,7 +272,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
       anno("n.a"), anno("n.b[0]"), anno("n.b[1]"),
       anno("r.a"), anno("r.b[0]"), anno("r.b[1]"),
       anno("write.a"), anno("write.b[0]"), anno("write.b[1]"),
-      dontTouch("Top.r")
+      dontTouch("Top.r"), dontTouch("Top.w")
     )
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
@@ -326,7 +326,8 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |    out <= n
         |    reg r: {a: UInt<3>, b: UInt<3>[2]}, clk
         |""".stripMargin
-    val annos = Seq(anno("in"), anno("out"), anno("w"), anno("n"), anno("r"), dontTouch("Top.r"))
+    val annos = Seq(anno("in"), anno("out"), anno("w"), anno("n"), anno("r"), dontTouch("Top.r"),
+                    dontTouch("Top.w"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
     resultAnno should contain (anno("in_a"))
@@ -362,7 +363,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |    reg r: {a: UInt<3>, b: UInt<3>[2]}, clk
         |""".stripMargin
     val annos = Seq(anno("in.b"), anno("out.b"), anno("w.b"), anno("n.b"), anno("r.b"),
-                    dontTouch("Top.r"))
+                    dontTouch("Top.r"), dontTouch("Top.w"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
     val resultAnno = result.annotations.get.annotations
     resultAnno should contain (anno("in_b_0"))
