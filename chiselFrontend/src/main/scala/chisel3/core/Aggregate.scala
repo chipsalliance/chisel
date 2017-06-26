@@ -40,9 +40,9 @@ sealed abstract class Aggregate extends Data {
       ActualDirection.Output
     } else if (childDirections subsetOf
         Set(ActualDirection.Output, ActualDirection.Input,
-            ActualDirection.Bidirectional, ActualDirection.BidirectionalFlip)) {
+            ActualDirection.BidirectionalDefault, ActualDirection.BidirectionalFlip)) {
       resolvedDirection match {
-        case UserDirection.Unspecified => ActualDirection.Bidirectional
+        case UserDirection.Unspecified => ActualDirection.BidirectionalDefault
         case UserDirection.Flip => ActualDirection.BidirectionalFlip
         case _ => throw new RuntimeException("Unexpected forced Input / Output")
       }
@@ -50,9 +50,9 @@ sealed abstract class Aggregate extends Data {
       this match {
         // Anything flies in compatibility mode
         case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
-          case UserDirection.Unspecified => ActualDirection.Bidirectional
+          case UserDirection.Unspecified => ActualDirection.BidirectionalDefault
           case UserDirection.Flip => ActualDirection.BidirectionalFlip
-          case _ => ActualDirection.Bidirectional
+          case _ => ActualDirection.BidirectionalDefault
         }
         case _ =>
           val childWithDirections = getElements zip getElements.map(_.direction)
@@ -124,7 +124,7 @@ object Vec {
         // When internal wires are involved, driver / sink must be specified explicitly, otherwise
         // the system is unable to infer which is driver / sink
         (vec zip elts).foreach(x => x._1 := x._2)
-      case ActualDirection.Bidirectional | ActualDirection.BidirectionalFlip =>
+      case ActualDirection.Bidirectional(_) =>
         // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
         // Bulk connecting two wires may not succeed because Chisel frontend does not infer
         // directions.
@@ -276,7 +276,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     val reconstructedResolvedDirection = direction match {
       case ActualDirection.Input => UserDirection.Input
       case ActualDirection.Output => UserDirection.Output
-      case ActualDirection.Bidirectional | ActualDirection.Unspecified => UserDirection.Unspecified
+      case ActualDirection.BidirectionalDefault | ActualDirection.Unspecified => UserDirection.Unspecified
       case ActualDirection.BidirectionalFlip => UserDirection.Flip
     }
     // TODO port technically isn't directly child of this data structure, but the result of some

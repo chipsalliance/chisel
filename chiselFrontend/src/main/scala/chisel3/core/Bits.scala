@@ -1052,7 +1052,7 @@ final class Analog private (width: Width) extends Element(width) {
     // Analog counts as different directions based on binding context
     targetTopBinding match {
       case WireBinding(_) => direction = ActualDirection.Unspecified  // internal wire
-      case PortBinding(_) => direction = ActualDirection.Bidirectional
+      case PortBinding(_) => direction = ActualDirection.BidirectionalDefault
       case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }
     binding = target
