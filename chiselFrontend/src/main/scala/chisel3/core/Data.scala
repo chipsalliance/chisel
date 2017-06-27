@@ -50,6 +50,7 @@ object UserDirection {
   * can override directions).
   */
 sealed abstract class ActualDirection
+
 object ActualDirection {
   /** Undirectioned, struct-like
     */
@@ -61,26 +62,11 @@ object ActualDirection {
     */
   case object Input extends ActualDirection
 
-  /** Bidirectional container or element
-    */
-  case object BidirectionalDefault extends ActualDirection
-  /** Bidirectional container or element, flipped from its normal direction allowing easy checking
-    * of connect legality
-    */
-  case object BidirectionalFlip extends ActualDirection
+  sealed abstract class BidirectionalDirection
+  case object Default extends BidirectionalDirection
+  case object Flipped extends BidirectionalDirection
 
-  // Helper allowing both bidirectional objects to be matched without flipped-ness.
-  object Bidirectional {
-    sealed abstract class Direction
-    case object Default extends Direction
-    case object Flip extends Direction
-
-    def unapply(target: ActualDirection): Option[Direction] = target match {
-      case BidirectionalDefault => Some(Default)
-      case BidirectionalFlip => Some(Flip)
-      case _ => None
-    }
-  }
+  case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
 }
 
 @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")

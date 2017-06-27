@@ -40,19 +40,20 @@ sealed abstract class Aggregate extends Data {
       ActualDirection.Output
     } else if (childDirections subsetOf
         Set(ActualDirection.Output, ActualDirection.Input,
-            ActualDirection.BidirectionalDefault, ActualDirection.BidirectionalFlip)) {
+            ActualDirection.Bidirectional(ActualDirection.Default),
+            ActualDirection.Bidirectional(ActualDirection.Flipped))) {
       resolvedDirection match {
-        case UserDirection.Unspecified => ActualDirection.BidirectionalDefault
-        case UserDirection.Flip => ActualDirection.BidirectionalFlip
+        case UserDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+        case UserDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
         case _ => throw new RuntimeException("Unexpected forced Input / Output")
       }
     } else {
       this match {
         // Anything flies in compatibility mode
         case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
-          case UserDirection.Unspecified => ActualDirection.BidirectionalDefault
-          case UserDirection.Flip => ActualDirection.BidirectionalFlip
-          case _ => ActualDirection.BidirectionalDefault
+          case UserDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case UserDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
         }
         case _ =>
           val childWithDirections = getElements zip getElements.map(_.direction)
@@ -276,8 +277,9 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     val reconstructedResolvedDirection = direction match {
       case ActualDirection.Input => UserDirection.Input
       case ActualDirection.Output => UserDirection.Output
-      case ActualDirection.BidirectionalDefault | ActualDirection.Unspecified => UserDirection.Unspecified
-      case ActualDirection.BidirectionalFlip => UserDirection.Flip
+      case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
+        UserDirection.Unspecified
+      case ActualDirection.Bidirectional(ActualDirection.Flipped) => UserDirection.Flip
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.
