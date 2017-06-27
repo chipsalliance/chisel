@@ -64,21 +64,17 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
       id._onModuleClose
     }
 
-    val firrtlPorts = for (port <- getModulePorts) yield {
-      // Port definitions need to know input or output at top-level. 'flipped' means Input.
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      firrtl.Port(port, direction)
-    }
+    val firrtlPorts = getModulePorts map {port => Port(port, port.userDirection)}
     _firrtlPorts = Some(firrtlPorts)
 
     // Generate IO invalidation commands to initialize outputs as unused
     val invalidateCommands = getModulePorts map {port => DefInvalid(UnlocatableSourceInfo, port.ref)}
-    
+
     val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
     _component = Some(component)
     component
   }
-  
+
   // There is no initialization to be done by default.
   private[core] def initializeInParent() {}
 }
@@ -100,7 +96,7 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
 
   private[core] override def initializeInParent() {
     implicit val sourceInfo = UnlocatableSourceInfo
-        
+
     for (port <- getModulePorts) {
       pushCommand(DefInvalid(sourceInfo, port.ref))
     }
@@ -122,7 +118,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   // These are to be phased out
   protected var override_clock: Option[Clock] = None
   protected var override_reset: Option[Bool] = None
-  
+
   // _clock and _reset can be clock and reset in these 2ary constructors
   // once chisel2 compatibility issues are resolved
   @deprecated("Module constructor with override_clock and override_reset deprecated, use withClockAndReset", "chisel3")
@@ -132,7 +128,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     this.override_clock = override_clock
     this.override_reset = override_reset
   }
-  
+
   @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
   def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
@@ -174,7 +170,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     // Don't generate source info referencing parents inside a module, since this interferes with
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
-    
+
     pushCommand(DefInvalid(sourceInfo, io.ref))
 
     override_clock match {

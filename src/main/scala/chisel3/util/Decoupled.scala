@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.{DataMirror, Direction}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -88,7 +89,7 @@ object Decoupled
     */
   @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
+    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
     d.valid := irr.valid
@@ -122,7 +123,7 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
-    require(dec.bits.flatten forall (_.dir == INPUT), "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.")
     val i = Wire(new IrrevocableIO(dec.bits))
     dec.bits := i.bits
     dec.valid := i.valid

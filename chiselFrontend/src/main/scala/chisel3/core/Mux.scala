@@ -26,9 +26,9 @@ object Mux {
 
   def do_apply[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(cond, s"'cond' ($cond)")
-    Binding.checkSynthesizable(con, s"'con' ($con)")
-    Binding.checkSynthesizable(alt, s"'alt' ($alt)")
+    requireIsHardware(cond, "mux condition")
+    requireIsHardware(con, "mux true value")
+    requireIsHardware(alt, "mux false value")
     val d = cloneSupertype(Seq(con, alt), "Mux")
     pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, con.ref, alt.ref))
   }
