@@ -355,16 +355,11 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
     def emit_verilog(m: Module, moduleMap: Map[String, DefModule])(implicit w: Writer): DefModule = {
       val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
-      val addrRegs = mutable.HashSet[WrappedExpression]()
       val namespace = Namespace(m)
       namespace.newName("_RAND") // Start rand names at _RAND_0
       def build_netlist(s: Statement): Statement = s map build_netlist match {
         case sx: Connect =>
           netlist(sx.loc) = sx.expr
-          (kind(sx.loc), kind(sx.expr)) match {
-            case (MemKind, RegKind) => addrRegs += sx.expr
-            case _ =>
-          }
           sx
         case sx: IsInvalid =>
           netlist(sx.expr) = wref(namespace.newTemp, sx.expr.tpe)
@@ -423,27 +418,32 @@ class VerilogEmitter extends SeqTransform with Emitter {
         }
 
         def addUpdate(e: Expression, tabs: String): Seq[Seq[Any]] = {
-          if (weq(e, r)) Nil else netlist getOrElse (e, e) match {
-            case m: Mux if canFlatten(m) =>
-              val ifStatement = Seq(tabs, "if (", m.cond, ") begin")
-              val trueCase =
-                // Don't generate mux trees for mem addr pipes
-                if (addrRegs(r)) Seq(Seq(tabs + tab, r, " <= ", m.tval, ";"))
-                else addUpdate(m.tval, tabs + tab)
-              val elseStatement = Seq(tabs, "end else begin")
-              val ifNotStatement = Seq(tabs, "if (!(", m.cond, ")) begin")
-              val falseCase = addUpdate(m.fval, tabs + tab)
-              val endStatement = Seq(tabs, "end")
+          if (weq(e, r)) Nil // Don't bother emitting connection of register to itself
+          else {
+            // Only walk netlist for nodes and wires, NOT registers or other state
+            val expr = kind(e) match {
+              case NodeKind | WireKind => netlist.getOrElse(e, e)
+              case _ => e
+            }
+            expr match {
+              case m: Mux if canFlatten(m) =>
+                val ifStatement = Seq(tabs, "if (", m.cond, ") begin")
+                val trueCase = addUpdate(m.tval, tabs + tab)
+                val elseStatement = Seq(tabs, "end else begin")
+                val ifNotStatement = Seq(tabs, "if (!(", m.cond, ")) begin")
+                val falseCase = addUpdate(m.fval, tabs + tab)
+                val endStatement = Seq(tabs, "end")
 
-              ((trueCase.nonEmpty, falseCase.nonEmpty): @ unchecked) match {
-                case (true, true) =>
-                  ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
-                case (true, false) =>
-                  ifStatement +: trueCase :+ endStatement
-                case (false, true) =>
-                  ifNotStatement +: falseCase :+ endStatement
-              }
-            case _ => Seq(Seq(tabs, r, " <= ", e, ";"))
+                ((trueCase.nonEmpty, falseCase.nonEmpty): @ unchecked) match {
+                  case (true, true) =>
+                    ifStatement +: trueCase ++: elseStatement +: falseCase :+ endStatement
+                  case (true, false) =>
+                    ifStatement +: trueCase :+ endStatement
+                  case (false, true) =>
+                    ifNotStatement +: falseCase :+ endStatement
+                }
+              case _ => Seq(Seq(tabs, r, " <= ", e, ";"))
+            }
           }
         }
 
