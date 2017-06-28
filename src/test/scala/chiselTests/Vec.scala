@@ -36,7 +36,7 @@ class OneBitUnitRegVec extends Module {
   val io = IO(new Bundle {
     val out = Output(UInt(1.W))
   })
-  val oneBitUnitRegVec = Reg(Vec(1, 1.U))
+  val oneBitUnitRegVec = Reg(Vec(1, UInt(1.W)))
   oneBitUnitRegVec(0) := 1.U(1.W)
   io.out := oneBitUnitRegVec(0)
 }

@@ -76,7 +76,7 @@ sealed abstract class Aggregate extends Data {
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = Wire(UInt(this.width), init=that)  // handles width padding
+    val bits = WireInit(UInt(this.width), that)  // handles width padding
     for (x <- flatten) {
       x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth
@@ -84,95 +84,17 @@ sealed abstract class Aggregate extends Data {
   }
 }
 
-object Vec {
+trait VecFactory {
   /** Creates a new [[Vec]] with `n` entries of the specified data type.
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
-
-  @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
-
-  /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
-    * nodes.
-    *
-    * @note input elements should be of the same type (this is checked at the
-    * FIRRTL level, but not at the Scala / Chisel level)
-    * @note the width of all output elements is the width of the largest input
-    * element
-    * @note output elements are connected from the input elements
-    */
-  def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
-
-  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
-    // varargs constructor, which is more in line with the style of the Scala
-    // collection API. However, a deprecation phase isn't possible, since
-    // changing apply(elt0, elts*) to apply(elts*) causes a function collision
-    // with apply(Seq) after type erasure. Workarounds by either introducing a
-    // DummyImplicit or additional type parameter will break some code.
-
-    // Check that types are homogeneous.  Width mismatch for Elements is safe.
-    require(!elts.isEmpty)
-    elts.foreach(requireIsHardware(_, "vec element"))
-
-    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
-
-    // TODO: try to remove the logic for this mess
-    elts.head.direction match {
-      case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
-        // When internal wires are involved, driver / sink must be specified explicitly, otherwise
-        // the system is unable to infer which is driver / sink
-        (vec zip elts).foreach(x => x._1 := x._2)
-      case ActualDirection.Bidirectional(_) =>
-        // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
-        // Bulk connecting two wires may not succeed because Chisel frontend does not infer
-        // directions.
-        (vec zip elts).foreach(x => x._1 <> x._2)
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+    if (compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(gen, "vec type")
     }
-    vec
+    new Vec(gen.chiselCloneType, n)
   }
-
-  /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
-    *
-    * @note input elements should be of the same type (this is checked at the
-    * FIRRTL level, but not at the Scala / Chisel level)
-    * @note the width of all output elements is the width of the largest input
-    * element
-    * @note output elements are connected from the input elements
-    */
-  def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
-
-  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply(elt0 +: elts.toSeq)
-
-  /** Creates a new [[Vec]] of length `n` composed of the results of the given
-    * function applied over a range of integer values starting from 0.
-    *
-    * @param n number of elements in the vector (the function is applied from
-    * 0 to `n-1`)
-    * @param gen function that takes in an Int (the index) and returns a
-    * [[Data]] that becomes the output element
-    */
-  def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
-
-  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply((0 until n).map(i => gen(i)))
-
-  /** Creates a new [[Vec]] of length `n` composed of the result of the given
-    * function repeatedly applied.
-    *
-    * @param n number of elements (amd the number of times the function is
-    * called)
-    * @param gen function that generates the [[Data]] that becomes the output
-    * element
-    */
-  @deprecated("Vec.fill(n)(gen) is deprecated. Please use Vec(Seq.fill(n)(gen))", "chisel3")
-  def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
-
-  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply(Seq.fill(n)(gen))
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
   private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -183,6 +105,8 @@ object Vec {
     else (idx | 0.U(w.W))(w-1,0)
   }
 }
+
+object Vec extends VecFactory
 
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
@@ -208,7 +132,7 @@ object Vec {
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
-sealed class Vec[T <: Data] private (gen: => T, val length: Int)
+sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
@@ -324,6 +248,74 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
       else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
     PString("Vec(") + Printables(elts) + PString(")")
   }
+}
+
+object VecInit {
+  /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
+    * nodes.
+    *
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
+    * @note the width of all output elements is the width of the largest input
+    * element
+    * @note output elements are connected from the input elements
+    */
+  def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+
+  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+    // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
+    // varargs constructor, which is more in line with the style of the Scala
+    // collection API. However, a deprecation phase isn't possible, since
+    // changing apply(elt0, elts*) to apply(elts*) causes a function collision
+    // with apply(Seq) after type erasure. Workarounds by either introducing a
+    // DummyImplicit or additional type parameter will break some code.
+
+    // Check that types are homogeneous.  Width mismatch for Elements is safe.
+    require(!elts.isEmpty)
+    elts.foreach(requireIsHardware(_, "vec element"))
+
+    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
+
+    // TODO: try to remove the logic for this mess
+    elts.head.direction match {
+      case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
+        // When internal wires are involved, driver / sink must be specified explicitly, otherwise
+        // the system is unable to infer which is driver / sink
+        (vec zip elts).foreach(x => x._1 := x._2)
+      case ActualDirection.Bidirectional(_) =>
+        // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
+        // Bulk connecting two wires may not succeed because Chisel frontend does not infer
+        // directions.
+        (vec zip elts).foreach(x => x._1 <> x._2)
+    }
+    vec
+  }
+
+  /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
+    *
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
+    * @note the width of all output elements is the width of the largest input
+    * element
+    * @note output elements are connected from the input elements
+    */
+  def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+
+  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply(elt0 +: elts.toSeq)
+
+  /** Creates a new [[Vec]] of length `n` composed of the results of the given
+    * function applied over a range of integer values starting from 0.
+    *
+    * @param n number of elements in the vector (the function is applied from
+    * 0 to `n-1`)
+    * @param gen function that takes in an Int (the index) and returns a
+    * [[Data]] that becomes the output element
+    */
+  def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+
+  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply((0 until n).map(i => gen(i)))
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection

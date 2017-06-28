@@ -378,9 +378,23 @@ abstract class Data extends HasId {
   def toPrintable: Printable
 }
 
-object Wire {
-  // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T = {
+trait WireFactory {
+  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val x = t.chiselCloneType
+
+    // Bind each element of x to being a Wire
+    x.bind(WireBinding(Builder.forcedUserModule))
+
+    pushCommand(DefWire(sourceInfo, x))
+    pushCommand(DefInvalid(sourceInfo, x.ref))
+
+    x
+  }
+}
+object Wire extends WireFactory
+
+object WireInit {
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init.litArg match {
       // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
       case Some(lit) if lit.forcedWidth => init.chiselCloneType
@@ -392,24 +406,11 @@ object Wire {
     apply(model, init)
   }
 
-  // No source info since Scala macros don't yet support named / default arguments.
-  def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T = {
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
-    val x = apply(t)
+    val x = Wire(t)
     requireIsHardware(init, "wire initializer")
     x := init
-    x
-  }
-
-  def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val x = t.chiselCloneType
-
-    // Bind each element of x to being a Wire
-    x.bind(WireBinding(Builder.forcedUserModule))
-
-    pushCommand(DefWire(sourceInfo, x))
-    pushCommand(DefInvalid(sourceInfo, x.ref))
-
     x
   }
 }

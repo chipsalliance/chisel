@@ -20,8 +20,8 @@ object Mem {
     */
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] = {
+    requireIsChiselType(t, "memory type")
     val mt  = t.chiselCloneType
-
     val mem = new Mem(mt, size)
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
@@ -121,6 +121,7 @@ object SyncReadMem {
   def apply[T <: Data](size: Int, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
 
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = {
+    requireIsChiselType(t, "memory type")
     val mt  = t.chiselCloneType
     val mem = new SyncReadMem(mt, size)
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size))
