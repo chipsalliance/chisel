@@ -380,7 +380,9 @@ abstract class Data extends HasId {
 
 trait WireFactory {
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    requireIsChiselType(t)
+    if (compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(t, "wire type")
+    }
     val x = t.chiselCloneType
 
     // Bind each element of x to being a Wire
