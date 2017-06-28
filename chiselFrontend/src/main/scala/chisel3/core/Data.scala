@@ -380,6 +380,7 @@ abstract class Data extends HasId {
 
 trait WireFactory {
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    requireIsChiselType(t)
     val x = t.chiselCloneType
 
     // Bind each element of x to being a Wire
@@ -391,6 +392,7 @@ trait WireFactory {
     x
   }
 }
+
 object Wire extends WireFactory
 
 object WireInit {
@@ -408,6 +410,7 @@ object WireInit {
 
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
+    requireIsChiselType(t)
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
     x := init
