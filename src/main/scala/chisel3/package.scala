@@ -21,6 +21,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Data = chisel3.core.Data
   object Wire extends chisel3.core.WireFactory {
     import chisel3.core.CompileOptions
+
     @deprecated("Wire(init=init) is deprecated, use WireInit(init) instead", "chisel3")
     def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
       chisel3.core.WireInit(init)
@@ -61,15 +62,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       apply(n, gen)
 
-
-    /** Creates a new [[Vec]] of length `n` composed of the result of the given
-      * function repeatedly applied.
-      *
-      * @param n number of elements (amd the number of times the function is
-      * called)
-      * @param gen function that generates the [[Data]] that becomes the output
-      * element
-      */
     @deprecated("Vec.fill(n)(gen) is deprecated, use Vec(Seq.fill(n)(gen)) instead", "chisel3")
     def fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       apply(Seq.fill(n)(gen))
@@ -79,7 +71,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit(elts)
 
-    @deprecated("Vec(elts) is deprecated, use VecInit(elts) instead", "chisel3")
+    @deprecated("Vec(elt0, ...) is deprecated, use VecInit(elt0, ...) instead", "chisel3")
     def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
     def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit(elt0 +: elts.toSeq)

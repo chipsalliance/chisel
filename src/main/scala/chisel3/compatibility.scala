@@ -57,6 +57,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Data = chisel3.core.Data
   object Wire extends chisel3.core.WireFactory {
     import chisel3.core.CompileOptions
+
     def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
       chisel3.core.WireInit(init)
 
@@ -105,7 +106,6 @@ package object Chisel {     // scalastyle:ignore package.object.name
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
     def apply[T <: Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
       apply(n, gen)
-
 
     /** Creates a new [[Vec]] of length `n` composed of the result of the given
       * function repeatedly applied.

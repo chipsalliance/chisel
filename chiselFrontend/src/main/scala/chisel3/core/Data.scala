@@ -410,7 +410,6 @@ object WireInit {
 
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
-    requireIsChiselType(t)
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
     x := init
