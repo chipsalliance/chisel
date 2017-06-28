@@ -3,6 +3,7 @@
 package chisel3.iotesters
 
 import chisel3._
+import chisel3.core.{ActualDirection, DataMirror}
 import chisel3.util._
 
 import scala.collection.mutable
@@ -47,15 +48,15 @@ abstract class SteppedHWIOTester extends HWIOTester {
 
   // Since dir is no longer a method on Data, we need some help here.
   // TODO: replace Data with Element (which has a .dir), or better yet, some internal tester object
-  def dir(target: Data): Direction = {
+  def dir(target: Data): ActualDirection = {
     target match {
-      case e: Element => e.dir
-      case _ => chisel3.NODIR
+      case e: Element => DataMirror.directionOf(e)
+      case _ => ActualDirection.Unspecified
     }
   }
 
   def poke(io_port: Data, value: BigInt): Unit = {
-    require(dir(io_port) == INPUT, s"poke error: $io_port not an input")
+    require(dir(io_port) == ActualDirection.Input, s"poke error: $io_port not an input")
     require(!test_actions.last.input_map.contains(io_port),
       s"second poke to $io_port without step\nkeys ${test_actions.last.input_map.keys.mkString(",")}")
 
@@ -64,7 +65,7 @@ abstract class SteppedHWIOTester extends HWIOTester {
 //  def poke(io_port: Data, bool_value: Boolean) = poke(io_port, if(bool_value) 1 else 0)
 
   def expect(io_port: Data, value: BigInt): Unit = {
-    require(dir(io_port) == OUTPUT, s"expect error: $io_port not an output")
+    require(dir(io_port) == ActualDirection.Output, s"expect error: $io_port not an output")
     require(!test_actions.last.output_map.contains(io_port), s"second expect to $io_port without step")
 
     test_actions.last.output_map(io_port) = value

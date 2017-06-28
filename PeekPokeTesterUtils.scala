@@ -5,6 +5,8 @@ package chisel3.iotesters
 import java.io.File
 
 import chisel3._
+import chisel3.core.ActualDirection
+import chisel3.experimental._
 import chisel3.internal.InstanceId
 import chisel3.internal.firrtl.Circuit
 
@@ -29,7 +31,7 @@ private[iotesters] object getDataNames {
 
 private[iotesters] object getPorts {
   def apply(dut: Module, separator: String = ".") =
-    getDataNames(dut, separator) partition (_._1.dir == chisel3.INPUT)
+    getDataNames(dut, separator) partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
 }
 
 private[iotesters] object flatten {

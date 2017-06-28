@@ -3,7 +3,9 @@
 package chisel3.iotesters
 
 import chisel3._
+import chisel3.core.ActualDirection
 import chisel3.util._
+import chisel3.experimental._
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -37,9 +39,9 @@ class IOAccessor(val device_io: Record, verbose: Boolean = true) {
     def add_to_ports_by_direction(port: Data): Unit = {
       port match {
         case e: Element =>
-          e.dir match {
-            case INPUT => dut_inputs += port
-            case OUTPUT => dut_outputs += port
+          DataMirror.directionOf(e) match {
+            case ActualDirection.Input => dut_inputs += port
+            case ActualDirection.Output => dut_outputs += port
             case _ =>
           }
         case _ =>
@@ -103,9 +105,9 @@ class IOAccessor(val device_io: Record, verbose: Boolean = true) {
         case _                    => findParentValidPortName(port_name).getOrElse("")
       }
     }
-    def show_dir(dir: Direction) = dir match {
-      case INPUT  => "I"
-      case OUTPUT => "O"
+    def show_dir(dir: ActualDirection) = dir match {
+      case ActualDirection.Input  => "I"
+      case ActualDirection.Output => "O"
       case _      => "-"
     }
 
@@ -118,7 +120,7 @@ class IOAccessor(val device_io: Record, verbose: Boolean = true) {
 
     for((port,index) <- port_to_name.keys.toList.sortWith(orderPorts).zipWithIndex) {
       val dir = port match {
-        case e: Element => show_dir(e.dir)
+        case e: Element => show_dir(DataMirror.directionOf(e))
         case _ => "-"
       }
       val port_name = port_to_name(port)

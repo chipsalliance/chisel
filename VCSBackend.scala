@@ -5,6 +5,7 @@ import java.io.{File, FileWriter, IOException, Writer}
 import java.nio.file.{FileAlreadyExistsException, Files, Paths}
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
+import chisel3.core.{ActualDirection, DataMirror}
 import chisel3.{ChiselExecutionFailure, ChiselExecutionSuccess}
 import firrtl.{ChirrtlForm, CircuitState, Transform}
 import firrtl.annotations.CircuitName
@@ -45,7 +46,9 @@ object copyVpiFiles {
 object genVCSVerilogHarness {
   def apply(dut: chisel3.Module, writer: Writer, vpdFilePath: String, isGateLevel: Boolean = false) {
     val dutName = dut.name
-    val (inputs, outputs) = getDataNames("io", dut.io) partition (_._1.dir == chisel3.INPUT)
+    val (inputs, outputs) = getDataNames("io", dut.io).partition {
+      case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input
+    }
 
     writer write "module test;\n"
     writer write "  reg clock = 1;\n"
