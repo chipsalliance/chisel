@@ -21,8 +21,6 @@ object Mem {
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] = {
     val mt  = t.chiselCloneType
-    Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
-    // TODO(twigg): Remove need for this Binding
 
     val mem = new Mem(mt, size)
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
@@ -87,7 +85,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
   }
 
   private def makePort(sourceInfo: SourceInfo, idx: UInt, dir: MemPortDirection)(implicit compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(idx, s"'idx' ($idx)")
+    requireIsHardware(idx, "memory port index")
     val i = Vec.truncateIndex(idx, length)(sourceInfo, compileOptions)
 
     val port = pushCommand(
@@ -95,7 +93,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
        t.chiselCloneType, Node(this), dir, i.ref, Node(Builder.forcedClock))
     ).id
     // Bind each element of port to being a MemoryPort
-    Binding.bind(port, MemoryPortBinder(Builder.forcedUserModule), "Error: Fresh t")
+    port.bind(MemoryPortBinding(Builder.forcedUserModule))
     port
   }
 }
@@ -124,9 +122,6 @@ object SyncReadMem {
 
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = {
     val mt  = t.chiselCloneType
-    Binding.bind(mt, NoDirectionBinder, "Error: fresh t")
-    // TODO(twigg): Remove need for this Binding
-
     val mem = new SyncReadMem(mt, size)
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size))
     mem
