@@ -5,6 +5,7 @@ package firrtlTests
 import firrtl._
 import firrtl.ir._
 import firrtl.passes._
+import firrtl.transforms._
 import firrtl.Mappers._
 import annotations._
 
@@ -53,7 +54,7 @@ class ChirrtlMemSpec extends LowTransformSpec {
   def transform = new SeqTransform {
     def inputForm = LowForm
     def outputForm = LowForm
-    def transforms = Seq(ConstProp, MemEnableCheckPass)
+    def transforms = Seq(new ConstantPropagation, MemEnableCheckPass)
   }
 
   "Sequential Memory" should "have correct enable signals" in {

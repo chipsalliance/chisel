@@ -8,6 +8,7 @@ import org.scalatest.prop._
 import firrtl.Parser
 import firrtl.ir.Circuit
 import firrtl.passes._
+import firrtl.transforms._
 import firrtl._
 
 class LowerTypesSpec extends FirrtlFlatSpec {
@@ -27,7 +28,7 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     ExpandWhens,
     CheckInitialization,
     Legalize,
-    ConstProp,
+    new ConstantPropagation,
     ResolveKinds,
     InferTypes,
     ResolveGenders,

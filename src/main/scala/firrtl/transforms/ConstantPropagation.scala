@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
-package firrtl.passes
+package firrtl
+package transforms
 
 import firrtl._
 import firrtl.ir._
@@ -10,7 +11,10 @@ import firrtl.PrimOps._
 
 import annotation.tailrec
 
-object ConstProp extends Pass {
+class ConstantPropagation extends Transform {
+  def inputForm = LowForm
+  def outputForm = LowForm
+
   private def pad(e: Expression, t: Type) = (bitWidth(e.tpe), bitWidth(t)) match {
     case (we, wt) if we < wt => DoPrim(Pad, Seq(e), Seq(wt), t)
     case (we, wt) if we == wt => e
@@ -291,5 +295,9 @@ object ConstProp extends Pass {
       case m: Module => constPropModule(m)
     }
     Circuit(c.info, modulesx, c.main)
+  }
+
+  def execute(state: CircuitState): CircuitState = {
+    state.copy(circuit = run(state.circuit))
   }
 }

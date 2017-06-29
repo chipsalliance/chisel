@@ -8,13 +8,15 @@ import org.scalatest.prop._
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.passes._
+import firrtl.transforms._
 import firrtl.Parser.IgnoreInfo
 
 class UnitTests extends FirrtlFlatSpec {
-  private def executeTest(input: String, expected: Seq[String], passes: Seq[Pass]) = {
-    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-      (c: Circuit, p: Pass) => p.run(c)
-    }
+  private def executeTest(input: String, expected: Seq[String], transforms: Seq[Transform]) = {
+    val c = transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {
+      (c: CircuitState, t: Transform) => t.runTransform(c)
+    }.circuit
+
     val lines = c.serialize.split("\n") map normalized
 
     expected foreach { e =>
@@ -199,7 +201,7 @@ class UnitTests extends FirrtlFlatSpec {
       PullMuxes,
       ExpandConnects,
       RemoveAccesses,
-      ConstProp
+      new ConstantPropagation
     )
     val input =
       """circuit AssignViaDeref : 
