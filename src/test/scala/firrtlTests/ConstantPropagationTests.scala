@@ -372,13 +372,92 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
 """
       (parse(exec(input))) should be (parse(check))
    }
+
+   // =============================
+   "ConstProp" should "swap named nodes with temporary nodes that drive them" in {
+      val input =
+"""circuit Top :
+  module Top :
+    input x : UInt<1>
+    input y : UInt<1>
+    output z : UInt<1>
+    node _T_1 = and(x, y)
+    node n = _T_1
+    z <= n
+"""
+      val check =
+"""circuit Top :
+  module Top :
+    input x : UInt<1>
+    input y : UInt<1>
+    output z : UInt<1>
+    node n = and(x, y)
+    node _T_1 = n
+    z <= n
+"""
+      (parse(exec(input))) should be (parse(check))
+   }
+
+   // =============================
+   "ConstProp" should "swap named nodes with temporary wires that drive them" in {
+      val input =
+"""circuit Top :
+  module Top :
+    input x : UInt<1>
+    input y : UInt<1>
+    output z : UInt<1>
+    wire _T_1 : UInt<1>
+    node n = _T_1
+    z <= n
+    _T_1 <= and(x, y)
+"""
+      val check =
+"""circuit Top :
+  module Top :
+    input x : UInt<1>
+    input y : UInt<1>
+    output z : UInt<1>
+    wire n : UInt<1>
+    node _T_1 = n
+    z <= n
+    n <= and(x, y)
+"""
+      (parse(exec(input))) should be (parse(check))
+   }
+
+   // =============================
+   "ConstProp" should "swap named nodes with temporary registers that drive them" in {
+      val input =
+"""circuit Top :
+  module Top :
+    input clock : Clock
+    input x : UInt<1>
+    output z : UInt<1>
+    reg _T_1 : UInt<1>, clock with : (reset => (UInt<1>(0), _T_1))
+    node n = _T_1
+    z <= n
+    _T_1 <= x
+"""
+      val check =
+"""circuit Top :
+  module Top :
+    input clock : Clock
+    input x : UInt<1>
+    output z : UInt<1>
+    reg n : UInt<1>, clock with : (reset => (UInt<1>(0), n))
+    node _T_1 = n
+    z <= n
+    n <= x
+"""
+      (parse(exec(input))) should be (parse(check))
+   }
 }
 
 // More sophisticated tests of the full compiler
 class ConstantPropagationIntegrationSpec extends LowTransformSpec {
   def transform = new LowFirrtlOptimization
 
-  "ConstProp" should "should not optimize across dontTouch on nodes" in {
+  "ConstProp" should "NOT optimize across dontTouch on nodes" in {
       val input =
         """circuit Top :
           |  module Top :
@@ -396,7 +475,7 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq(dontTouch("Top.z")))
   }
 
-  it should "should not optimize across dontTouch on wires" in {
+  it should "NOT optimize across dontTouch on wires" in {
       val input =
         """circuit Top :
           |  module Top :
@@ -414,5 +493,25 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    y <= z
           |    z <= x""".stripMargin
     execute(input, check, Seq(dontTouch("Top.z")))
+  }
+
+  it should "still propagate constants even when there is name swapping" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    input y : UInt<1>
+          |    output z : UInt<1>
+          |    node _T_1 = and(and(x, y), UInt<1>(0))
+          |    node n = _T_1
+          |    z <= n""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    input y : UInt<1>
+          |    output z : UInt<1>
+          |    z <= UInt<1>(0)""".stripMargin
+    execute(input, check, Seq.empty)
   }
 }
