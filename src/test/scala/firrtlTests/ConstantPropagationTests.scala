@@ -373,3 +373,46 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
       (parse(exec(input))) should be (parse(check))
    }
 }
+
+// More sophisticated tests of the full compiler
+class ConstantPropagationIntegrationSpec extends LowTransformSpec {
+  def transform = new LowFirrtlOptimization
+
+  "ConstProp" should "should not optimize across dontTouch on nodes" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    output y : UInt<1>
+          |    node z = x
+          |    y <= z""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    output y : UInt<1>
+          |    node z = x
+          |    y <= z""".stripMargin
+    execute(input, check, Seq(dontTouch("Top.z")))
+  }
+
+  it should "should not optimize across dontTouch on wires" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    output y : UInt<1>
+          |    wire z : UInt<1>
+          |    y <= z
+          |    z <= x""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    output y : UInt<1>
+          |    wire z : UInt<1>
+          |    y <= z
+          |    z <= x""".stripMargin
+    execute(input, check, Seq(dontTouch("Top.z")))
+  }
+}
