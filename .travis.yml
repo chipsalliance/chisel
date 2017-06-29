@@ -19,14 +19,20 @@ env:
     VERILATOR_ROOT=$INSTALL_DIR
     PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
 
-install:
-  # Install Verilator (if not found in cache)
-  - bash .install_verilator.sh
-
-script:
-  # FIRRTL Tests
-  - verilator --version
-  - cd $TRAVIS_BUILD_DIR
-  - sbt clean test assembly publish-local
-  # Chisel 3 Tests
-  - bash .run_chisel_tests.sh
+jobs:
+  include:
+    - stage: prepare cache-verilator
+      script:
+      - bash .install_verilator.sh
+      - verilator --version
+    - &test
+      stage: Test
+      script:
+        # FIRRTL Tests
+        - cd $TRAVIS_BUILD_DIR
+        - sbt clean test
+    - <<: *test
+      script:
+        - cd $TRAVIS_BUILD_DIR
+        - sbt clean assembly publish-local
+        - bash .run_chisel_tests.sh
