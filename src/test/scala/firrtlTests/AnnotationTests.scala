@@ -23,13 +23,13 @@ trait AnnotationSpec extends LowTransformSpec {
   def transform = new ResolveAndCheck
 
   // Check if Annotation Exception is thrown
-  override def failingexecute(annotations: AnnotationMap, input: String): Exception = {
+  override def failingexecute(input: String, annotations: Seq[Annotation]): Exception = {
     intercept[AnnotationException] {
-      compile(CircuitState(parse(input), ChirrtlForm, Some(annotations)), Seq.empty)
+      compile(CircuitState(parse(input), ChirrtlForm, Some(AnnotationMap(annotations))), Seq.empty)
     }
   }
-  def execute(aMap: Option[AnnotationMap], input: String, check: Annotation): Unit = {
-    val cr = compile(CircuitState(parse(input), ChirrtlForm, aMap), Seq.empty)
+  def execute(input: String, check: Annotation, annotations: Seq[Annotation]): Unit = {
+    val cr = compile(CircuitState(parse(input), ChirrtlForm, Some(AnnotationMap(annotations))), Seq.empty)
     cr.annotations.get.annotations should contain (check)
   }
 }
@@ -58,7 +58,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
          |    input b : UInt<1>
          |    node c = b""".stripMargin
     val ta = anno("c", "")
-    execute(getAMap(ta), input, ta)
+    execute(input, ta, Seq(ta))
   }
 
   "Annotations" should "be readable from file" in {

@@ -78,12 +78,12 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
 
   "annotated external modules" should "appear in output directory" in {
 
-    val aMap = AnnotationMap(Seq(
+    val annos = Seq(
       Annotation(moduleName, classOf[BlackBoxSourceHelper], BlackBoxTargetDir("test_run_dir").serialize),
       Annotation(moduleName, classOf[BlackBoxSourceHelper], BlackBoxResource("/blackboxes/AdderExtModule.v").serialize)
-    ))
+    )
 
-    execute(aMap, input, output)
+    execute(input, output, annos)
 
     new java.io.File("test_run_dir/AdderExtModule.v").exists should be (true)
     new java.io.File(s"test_run_dir/${BlackBoxSourceHelper.FileListName}").exists should be (true)

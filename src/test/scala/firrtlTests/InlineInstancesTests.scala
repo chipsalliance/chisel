@@ -6,7 +6,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import firrtl.ir.Circuit
-import firrtl.{AnnotationMap, Parser}
+import firrtl.Parser
 import firrtl.passes.PassExceptions
 import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName, Named}
 import firrtl.passes.{InlineAnnotation, InlineInstances}
@@ -18,7 +18,14 @@ import logger.LogLevel.Debug
  * Tests inline instances transformation
  */
 class InlineInstancesTests extends LowTransformSpec {
-   def transform = new InlineInstances
+  def transform = new InlineInstances
+	def inline(mod: String): Annotation = {
+	  val parts = mod.split('.')
+		val modName = ModuleName(parts.head, CircuitName("Top")) // If this fails, bad input
+		val name = if (parts.size == 1) modName
+							 else ComponentName(parts.tail.mkString("."), modName)
+    InlineAnnotation(name)
+  }
    // Set this to debug, this will apply to all tests
    // Logger.setLevel(this.getClass, Debug)
    "The module Inline" should "be inlined" in {
@@ -44,8 +51,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    i$b <= i$a
            |    b <= i$b
            |    i$a <= a""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Inline", CircuitName("Top")))))
-      execute(aMap, input, check)
+      execute(input, check, Seq(inline("Inline")))
    }
 
    "The all instances of Simple" should "be inlined" in {
@@ -77,8 +83,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    b <= i1$b
            |    i0$a <= a
            |    i1$a <= i0$b""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("Simple", CircuitName("Top")))))
-      execute(aMap, input, check)
+      execute(input, check, Seq(inline("Simple")))
    }
 
    "Only one instance of Simple" should "be inlined" in {
@@ -112,8 +117,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ComponentName("i0",ModuleName("Top", CircuitName("Top"))))))
-      execute(aMap, input, check)
+      execute(input, check, Seq(inline("Top.i0")))
    }
 
    "All instances of A" should "be inlined" in {
@@ -157,8 +161,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    i$b <= i$a
            |    b <= i$b
            |    i$a <= a""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
-      execute(aMap, input, check)
+      execute(input, check, Seq(inline("A")))
    }
 
    "Non-inlined instances" should "still prepend prefix" in {
@@ -196,8 +199,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
-      execute(aMap, input, check)
+      execute(input, check, Seq(inline("A")))
    }
 
    // ---- Errors ----
@@ -214,8 +216,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |  extmodule A :
            |    input a : UInt<32>
            |    output b : UInt<32>""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
-      failingexecute(aMap, input)
+      failingexecute(input, Seq(inline("A")))
    }
    // 2) ext instance
    "External instance" should "not be inlined" in {
@@ -230,8 +231,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |  extmodule A :
            |    input a : UInt<32>
            |    output b : UInt<32>""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
-      failingexecute(aMap, input)
+      failingexecute(input, Seq(inline("A")))
    }
    // 3) no module
    "Inlined module" should "exist" in {
@@ -241,8 +241,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
-      failingexecute(aMap, input)
+      failingexecute(input, Seq(inline("A")))
    }
    // 4) no inst
    "Inlined instance" should "exist" in {
@@ -252,8 +251,7 @@ class InlineInstancesTests extends LowTransformSpec {
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
-      val aMap = new AnnotationMap(Seq(InlineAnnotation(ModuleName("A", CircuitName("Top")))))
-      failingexecute(aMap, input)
+      failingexecute(input, Seq(inline("A")))
    }
 }
 

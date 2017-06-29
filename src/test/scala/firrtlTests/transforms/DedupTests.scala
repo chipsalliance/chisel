@@ -46,8 +46,7 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1>
            |    x <= UInt(1)
            """.stripMargin
-      val aMap = new AnnotationMap(Nil)
-      execute(aMap, input, check)
+      execute(input, check, Seq.empty)
    }
    "The module A and B" should "be deduped" in {
       val input =
@@ -83,8 +82,7 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1>
            |    x <= UInt(1)
            """.stripMargin
-      val aMap = new AnnotationMap(Nil)
-      execute(aMap, input, check)
+      execute(input, check, Seq.empty)
    }
    "The module A and B with comments" should "be deduped" in {
       val input =
@@ -120,8 +118,7 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1>
            |    x <= UInt(1)
            """.stripMargin
-      val aMap = new AnnotationMap(Nil)
-      execute(aMap, input, check)
+      execute(input, check, Seq.empty)
    }
    "The module B, but not A, with comments" should "be deduped if not annotated" in {
       val input =
@@ -148,8 +145,7 @@ class DedupModuleTests extends HighTransformSpec {
            |    output x: UInt<1> @[xx 1:1]
            |    x <= UInt(1)
            """.stripMargin
-      val aMap = new AnnotationMap(Seq(NoDedupAnnotation(ModuleName("A", CircuitName("Top")))))
-      execute(aMap, input, check)
+      execute(input, check, Seq(dontDedup("A")))
    }
 }
 
