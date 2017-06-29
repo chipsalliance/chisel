@@ -9,18 +9,19 @@ import firrtl.ir.Circuit
 import firrtl.Parser.UseInfo
 import firrtl.passes.{Pass, PassExceptions, RemoveEmpty}
 import firrtl._
+import firrtl.annotations._
 import logger._
 
 // An example methodology for testing Firrtl Passes
 // Spec class should extend this class
-abstract class SimpleTransformSpec extends FlatSpec with Matchers with Compiler with LazyLogging {
+abstract class SimpleTransformSpec extends FlatSpec with FirrtlMatchers with Compiler with LazyLogging {
    // Utility function
-   def parse(s: String): Circuit = Parser.parse(s.split("\n").toIterator, infoMode = UseInfo)
    def squash(c: Circuit): Circuit = RemoveEmpty.run(c)
 
    // Executes the test. Call in tests.
-   def execute(annotations: AnnotationMap, input: String, check: String): Unit = {
-      val finalState = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(annotations)))
+   // annotations cannot have default value because scalatest trait Suite has a default value
+   def execute(input: String, check: String, annotations: Seq[Annotation]): Unit = {
+      val finalState = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(AnnotationMap(annotations))))
       val actual = RemoveEmpty.run(parse(finalState.getEmittedCircuit.value)).serialize
       val expected = parse(check).serialize
       logger.debug(actual)
@@ -28,9 +29,10 @@ abstract class SimpleTransformSpec extends FlatSpec with Matchers with Compiler 
       (actual) should be (expected)
    }
    // Executes the test, should throw an error
-   def failingexecute(annotations: AnnotationMap, input: String): Exception = {
+   // No default to be consistent with execute
+   def failingexecute(input: String, annotations: Seq[Annotation]): Exception = {
       intercept[PassExceptions] {
-         compile(CircuitState(parse(input), ChirrtlForm, Some(annotations)), Seq.empty)
+         compile(CircuitState(parse(input), ChirrtlForm, Some(AnnotationMap(annotations))), Seq.empty)
       }
    }
 }

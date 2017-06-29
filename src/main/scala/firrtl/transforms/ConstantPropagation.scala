@@ -1,8 +1,10 @@
 // See LICENSE for license details.
 
-package firrtl.passes
+package firrtl
+package transforms
 
 import firrtl._
+import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
@@ -10,7 +12,10 @@ import firrtl.PrimOps._
 
 import annotation.tailrec
 
-object ConstProp extends Pass {
+class ConstantPropagation extends Transform {
+  def inputForm = LowForm
+  def outputForm = LowForm
+
   private def pad(e: Expression, t: Type) = (bitWidth(e.tpe), bitWidth(t)) match {
     case (we, wt) if we < wt => DoPrim(Pad, Seq(e), Seq(wt), t)
     case (we, wt) if we == wt => e
@@ -239,7 +244,7 @@ object ConstProp extends Pass {
   // 2. Propagate references again for backwards reference (Wires)
   // TODO Replacing all wires with nodes makes the second pass unnecessary
   @tailrec
-  private def constPropModule(m: Module): Module = {
+  private def constPropModule(m: Module, dontTouches: Set[String]): Module = {
     var nPropagated = 0L
     val nodeMap = collection.mutable.HashMap[String, Expression]()
 
@@ -272,8 +277,8 @@ object ConstProp extends Pass {
     def constPropStmt(s: Statement): Statement = {
       val stmtx = s map constPropStmt map constPropExpression
       stmtx match {
-        case x: DefNode => nodeMap(x.name) = x.value
-        case Connect(_, WRef(wname, wtpe, WireKind, _), expr) =>
+        case x: DefNode if !dontTouches.contains(x.name) => nodeMap(x.name) = x.value
+        case Connect(_, WRef(wname, wtpe, WireKind, _), expr) if !dontTouches.contains(wname) =>
           val exprx = constPropExpression(pad(expr, wtpe))
           nodeMap(wname) = exprx
         case _ =>
@@ -282,14 +287,28 @@ object ConstProp extends Pass {
     }
 
     val res = Module(m.info, m.name, m.ports, backPropStmt(constPropStmt(m.body)))
-    if (nPropagated > 0) constPropModule(res) else res
+    if (nPropagated > 0) constPropModule(res, dontTouches) else res
   }
 
-  def run(c: Circuit): Circuit = {
+  private def run(c: Circuit, dontTouchMap: Map[String, Set[String]]): Circuit = {
     val modulesx = c.modules.map {
       case m: ExtModule => m
-      case m: Module => constPropModule(m)
+      case m: Module => constPropModule(m, dontTouchMap.getOrElse(m.name, Set.empty))
     }
     Circuit(c.info, modulesx, c.main)
+  }
+
+  def execute(state: CircuitState): CircuitState = {
+    val dontTouches: Seq[(String, String)] = state.annotations match {
+      case Some(aMap) => aMap.annotations.collect {
+        case DontTouchAnnotation(ComponentName(c, ModuleName(m, _))) => m -> c
+      }
+      case None => Seq.empty
+    }
+    // Map from module name to component names
+    val dontTouchMap: Map[String, Set[String]] =
+      dontTouches.groupBy(_._1).mapValues(_.map(_._2).toSet)
+
+    state.copy(circuit = run(state.circuit, dontTouchMap))
   }
 }
