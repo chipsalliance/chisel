@@ -49,13 +49,6 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     Annotation(ComponentName(s, ModuleName(mod, CircuitName("Top"))), classOf[Transform], value)
   def manno(mod: String): Annotation =
     Annotation(ModuleName(mod, CircuitName("Top")), classOf[Transform], "some value")
-	// TODO unify with FirrtlMatchers, problems with multiple definitions of parse
-  def dontTouch(path: String): Annotation = {
-    val parts = path.split('.')
-    require(parts.size >= 2, "Must specify both module and component!")
-    val name = ComponentName(parts.tail.mkString("."), ModuleName(parts.head, CircuitName("Top")))
-    DontTouchAnnotation(name)
-  }
 
   "Loose and Sticky annotation on a node" should "pass through" in {
     val input: String =

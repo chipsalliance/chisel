@@ -13,9 +13,8 @@ import logger._
 
 // An example methodology for testing Firrtl Passes
 // Spec class should extend this class
-abstract class SimpleTransformSpec extends FlatSpec with Matchers with Compiler with LazyLogging {
+abstract class SimpleTransformSpec extends FlatSpec with FirrtlMatchers with Compiler with LazyLogging {
    // Utility function
-   def parse(s: String): Circuit = Parser.parse(s.split("\n").toIterator, infoMode = UseInfo)
    def squash(c: Circuit): Circuit = RemoveEmpty.run(c)
 
    // Executes the test. Call in tests.

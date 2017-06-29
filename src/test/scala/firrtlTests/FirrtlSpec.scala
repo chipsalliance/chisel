@@ -11,7 +11,7 @@ import org.scalatest.prop._
 import scala.io.Source
 
 import firrtl._
-import firrtl.Parser.IgnoreInfo
+import firrtl.Parser.UseInfo
 import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.util.BackendCompilationUtilities
@@ -100,7 +100,7 @@ trait FirrtlMatchers extends Matchers {
     require(!s.contains("\n"))
     s.replaceAll("\\s+", " ").trim
   }
-  def parse(str: String) = Parser.parse(str.split("\n").toIterator, IgnoreInfo)
+  def parse(str: String) = Parser.parse(str.split("\n").toIterator, UseInfo)
   /** Helper for executing tests
     * compiler will be run on input then emitted result will each be split into
     * lines and normalized.
