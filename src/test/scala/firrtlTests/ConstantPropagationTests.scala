@@ -514,4 +514,21 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    z <= UInt<1>(0)""".stripMargin
     execute(input, check, Seq.empty)
   }
+
+  it should "pad constant connections to wires when propagating" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    output z : UInt<16>
+          |    wire w : { a : UInt<8>, b : UInt<8> }
+          |    w.a <= UInt<2>("h3")
+          |    w.b <= UInt<2>("h3")
+          |    z <= cat(w.a, w.b)""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    output z : UInt<16>
+          |    z <= UInt<16>("h303")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
 }
