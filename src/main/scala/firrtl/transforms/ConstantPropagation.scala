@@ -9,6 +9,7 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.PrimOps._
+import firrtl.WrappedExpression.weq
 
 import annotation.tailrec
 import collection.mutable
@@ -317,6 +318,18 @@ class ConstantPropagation extends Transform {
         case Connect(_, WRef(wname, wtpe, WireKind, _), expr) if !dontTouches.contains(wname) =>
           val exprx = constPropExpression(pad(expr, wtpe))
           propagateRef(wname, exprx)
+        // Const prop registers that are fed only a constant or a mux between and constant and the
+        // register itself
+        // This requires that reset has been made explicit
+        case Connect(_, rref @ WRef(rname, rtpe, RegKind, _), expr) => expr match {
+          case lit: Literal =>
+            nodeMap(rname) = constPropExpression(pad(lit, rtpe))
+          case Mux(_, tval: WRef, fval: Literal, _) if weq(rref, tval) =>
+            nodeMap(rname) = constPropExpression(pad(fval, rtpe))
+          case Mux(_, tval: Literal, fval: WRef, _) if weq(rref, fval) =>
+            nodeMap(rname) = constPropExpression(pad(tval, rtpe))
+          case _ =>
+        }
         case _ =>
       }
       stmtx
