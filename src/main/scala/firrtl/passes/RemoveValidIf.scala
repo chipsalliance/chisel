@@ -4,6 +4,8 @@ package firrtl
 package passes
 import firrtl.Mappers._
 import firrtl.ir._
+import Utils.throwInternalError
+import WrappedExpression.weq
 
 /** Remove ValidIf and replace IsInvalid with a connection to zero */
 object RemoveValidIf extends Pass {
@@ -18,15 +20,24 @@ object RemoveValidIf extends Pass {
   private val SIntZero = SIntLiteral(BigInt(0), IntWidth(1))
   private val ClockZero = DoPrim(PrimOps.AsClock, Seq(UIntZero), Seq.empty, UIntZero.tpe)
 
+  private def getGroundZero(tpe: Type): Expression = tpe match {
+    case _: UIntType => UIntZero
+    case _: SIntType => SIntZero
+    case ClockType => ClockZero
+    case other => throwInternalError
+  }
+
   // Recursive. Replaces IsInvalid with connecting zero
   private def onStmt(s: Statement): Statement = s map onStmt map onExp match {
     case invalid @ IsInvalid(info, loc) => loc.tpe match {
-      case _: UIntType => Connect(info, loc, UIntZero)
-      case _: SIntType => Connect(info, loc, SIntZero)
       case _: AnalogType => invalid // Unclear what we should do, can't remove or we emit invalid Firrtl
-      case ClockType => Connect(info, loc, ClockZero)
-      case other => throw new Exception("Unexpected type ${other.serialize} on LowFirrtl")
+      case tpe => Connect(info, loc, getGroundZero(tpe))
     }
+    // Register connected to itself (since reset has been made explicit) is a register with no reset
+    // and no connections, connect it to zero (to be constant propped later)
+    case Connect(info, lref: WRef, rref: WRef) if weq(lref, rref) =>
+      // We can't have an Analog reg so just get a zero
+      Connect(info, lref, getGroundZero(lref.tpe))
     case other => other
   }
 

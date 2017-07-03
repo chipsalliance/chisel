@@ -514,4 +514,116 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    z <= UInt<1>(0)""".stripMargin
     execute(input, check, Seq.empty)
   }
+
+  it should "pad constant connections to wires when propagating" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    output z : UInt<16>
+          |    wire w : { a : UInt<8>, b : UInt<8> }
+          |    w.a <= UInt<2>("h3")
+          |    w.b <= UInt<2>("h3")
+          |    z <= cat(w.a, w.b)""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    output z : UInt<16>
+          |    z <= UInt<16>("h303")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  it should "pad constant connections to registers when propagating" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output z : UInt<16>
+          |    reg r : { a : UInt<8>, b : UInt<8> }, clock
+          |    r.a <= UInt<2>("h3")
+          |    r.b <= UInt<2>("h3")
+          |    z <= cat(r.a, r.b)""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output z : UInt<16>
+          |    z <= UInt<16>("h303")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  "Registers with no reset or connections" should "be replaced with constant zero" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output z : UInt<8>
+          |    reg r : UInt<8>, clock
+          |    z <= r""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output z : UInt<8>
+          |    z <= UInt<8>(0)""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  "Registers with ONLY constant reset" should "be replaced with that constant" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    output z : UInt<8>
+          |    reg r : UInt<8>, clock with : (reset => (reset, UInt<4>("hb")))
+          |    z <= r""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    output z : UInt<8>
+          |    z <= UInt<8>("hb")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  "Registers with ONLY constant connection" should "be replaced with that constant" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    output z : SInt<8>
+          |    reg r : SInt<8>, clock
+          |    r <= SInt<4>(-5)
+          |    z <= r""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    output z : SInt<8>
+          |    z <= SInt<8>(-5)""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  "Registers with identical constant reset and connection" should "be replaced with that constant" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    output z : UInt<8>
+          |    reg r : UInt<8>, clock with : (reset => (reset, UInt<4>("hb")))
+          |    r <= UInt<4>("hb")
+          |    z <= r""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    output z : UInt<8>
+          |    z <= UInt<8>("hb")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
 }
