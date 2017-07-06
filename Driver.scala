@@ -6,7 +6,7 @@ import chisel3._
 import java.io.File
 
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
-import firrtl_interpreter.{FirrtlRepl, HasInterpreterOptions, HasReplConfig, ReplConfig}
+import firrtl_interpreter._
 import logger.Logger
 
 import scala.util.DynamicVariable
@@ -257,9 +257,7 @@ object Driver {
 }
 
 class ReplOptionsManager
-  extends ExecutionOptionsManager("chisel-testers")
-    with HasInterpreterOptions
+  extends InterpreterOptionsManager
     with HasChiselExecutionOptions
-    with HasFirrtlOptions
     with HasReplConfig
 

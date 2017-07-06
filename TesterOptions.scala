@@ -5,8 +5,8 @@ package chisel3.iotesters
 import java.io.File
 
 import chisel3.HasChiselExecutionOptions
-import firrtl.{HasFirrtlOptions, ComposableOptions, ExecutionOptionsManager}
-import firrtl_interpreter.HasInterpreterOptions
+import firrtl.{ComposableOptions, ExecutionOptionsManager, HasFirrtlOptions}
+import firrtl_interpreter.{HasInterpreterOptions, HasInterpreterSuite}
 
 import scala.collection.mutable
 
@@ -89,7 +89,7 @@ trait HasTesterOptions {
 class TesterOptionsManager
   extends ExecutionOptionsManager("chisel-testers")
     with HasTesterOptions
-    with HasInterpreterOptions
+    with HasInterpreterSuite
     with HasChiselExecutionOptions
     with HasFirrtlOptions{
 }
