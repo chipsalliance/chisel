@@ -15,11 +15,58 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
+  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
+    binding = target
+
+    val resolvedDirection = UserDirection.fromParent(parentDirection, userDirection)
+    for (child <- getElements) {
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
+
+    // Check that children obey the directionality rules.
+    val childDirections = getElements.map(_.direction).toSet
+    direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
+      // If empty, use my assigned direction
+      resolvedDirection match {
+        case UserDirection.Unspecified | UserDirection.Flip => ActualDirection.Unspecified
+        case UserDirection.Output => ActualDirection.Output
+        case UserDirection.Input => ActualDirection.Input
+      }
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      ActualDirection.Unspecified
+    } else if (childDirections == Set(ActualDirection.Input)) {
+      ActualDirection.Input
+    } else if (childDirections == Set(ActualDirection.Output)) {
+      ActualDirection.Output
+    } else if (childDirections subsetOf
+        Set(ActualDirection.Output, ActualDirection.Input,
+            ActualDirection.Bidirectional(ActualDirection.Default),
+            ActualDirection.Bidirectional(ActualDirection.Flipped))) {
+      resolvedDirection match {
+        case UserDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+        case UserDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+        case _ => throw new RuntimeException("Unexpected forced Input / Output")
+      }
+    } else {
+      this match {
+        // Anything flies in compatibility mode
+        case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
+          case UserDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case UserDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
+        case _ =>
+          val childWithDirections = getElements zip getElements.map(_.direction)
+          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+      }
+    }
+  }
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]
 
-  private[core] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+  private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
 
@@ -68,25 +115,21 @@ object Vec {
 
     // Check that types are homogeneous.  Width mismatch for Elements is safe.
     require(!elts.isEmpty)
+    elts.foreach(requireIsHardware(_, "vec element"))
 
     val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
 
-    def doConnect(sink: T, source: T) = {
-      // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
-      // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
-      //       WireBinding which does not have a direction
-      val hasDirectioned = elts.head match {
-        case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
-        case t: Element => t.dir != Direction.Unspecified
-      }
-      if (hasDirectioned) {
-        sink bulkConnect source
-      } else {
-        sink connect source
-      }
-    }
-    for ((v, e) <- vec zip elts) {
-      doConnect(v, e)
+    // TODO: try to remove the logic for this mess
+    elts.head.direction match {
+      case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
+        // When internal wires are involved, driver / sink must be specified explicitly, otherwise
+        // the system is unable to infer which is driver / sink
+        (vec zip elts).foreach(x => x._1 := x._2)
+      case ActualDirection.Bidirectional(_) =>
+        // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
+        // Bulk connecting two wires may not succeed because Chisel frontend does not infer
+        // directions.
+        (vec zip elts).foreach(x => x._1 <> x._2)
     }
     vec
   }
@@ -186,7 +229,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   *
   * Needed specifically for the case when the Vec is length 0.
   */
-  private[core] val sample_element: T = gen
+  private[chisel3] val sample_element: T = gen
 
   // allElements current includes sample_element
   // This is somewhat weird although I think the best course of action here is
@@ -226,16 +269,25 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(p ,s"'p' ($p)")
+    requireIsHardware(p, "vec index")
     val port = gen
+
+    // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
+    // It may not be exactly equal to that value, but the results are the same.
+    val reconstructedResolvedDirection = direction match {
+      case ActualDirection.Input => UserDirection.Input
+      case ActualDirection.Output => UserDirection.Output
+      case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
+        UserDirection.Unspecified
+      case ActualDirection.Bidirectional(ActualDirection.Flipped) => UserDirection.Flip
+    }
+    // TODO port technically isn't directly child of this data structure, but the result of some
+    // muxes / demuxes. However, this does make access consistent with the top-level bindings.
+    // Perhaps there's a cleaner way of accomplishing this...
+    port.bind(ChildBinding(this), reconstructedResolvedDirection)
+
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
-
-    // Bind each element of port to being whatever the base type is
-    // Using the head element as the sample_element
-    for((port_elem, model_elem) <- port.allElements zip sample_element.allElements) {
-      port_elem.binding = model_elem.binding
-    }
 
     port
   }
@@ -256,7 +308,6 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 
-  private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
   override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
 
@@ -383,14 +434,6 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
-
-  private[chisel3] def toType = {
-    def eltPort(elt: Data): String = {
-      val flipStr: String = if(Data.isFirrtlFlipped(elt)) "flip " else ""
-      s"${flipStr}${elt.getRef.name} : ${elt.toType}"
-    }
-    elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
-  }
 
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>

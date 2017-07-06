@@ -11,11 +11,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   import util.BitPat
 
-  import chisel3.core.{Binding, FlippedBinder}
   import chisel3.util._
   import chisel3.internal.firrtl.Port
 
-  type Direction = chisel3.core.Direction
   val Input   = chisel3.core.Input
   val Output  = chisel3.core.Output
   val Flipped = chisel3.core.Flipped
@@ -24,6 +22,15 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Wire = chisel3.core.Wire
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
+
+  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
+    @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
+    def asInput: T = Input(target)
+    @deprecated("Output(Data) should be used over Data.asOutput", "chisel3")
+    def asOutput: T = Output(target)
+    @deprecated("Flipped(Data) should be used over Data.flip", "chisel3")
+    def flip(): T = Flipped(target)
+  }
 
   implicit class fromBitsable[T <: Data](val data: T) {
     import chisel3.core.CompileOptions
@@ -34,7 +41,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
       that.asTypeOf(data)
     }
   }
-  
+
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]
@@ -82,10 +89,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     /** Create a UInt literal with fixed width. */
     @deprecated("use value.U(width.W)", "chisel3, will be removed by end of 2016")
     def apply(value: BigInt, width: Int): UInt = value.asUInt(width.W)
-
-    /** Create a UInt with a specified width - compatibility with Chisel2. */
-    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
-    def apply(dir: Option[Direction] = None, width: Int): UInt = apply(width.W)
 
     /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
     @deprecated("use value.U", "chisel3, will be removed by end of 2016")
@@ -188,7 +191,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
           chisel3.core.Reg(t)
         }
         if (next ne null) {
-          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
           reg := next
         }
         reg
@@ -284,10 +286,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x    // scalastyle:ignore method.name
   }
 
-  // Compatibility with existing code.
-  val INPUT = chisel3.core.Direction.Input
-  val OUTPUT = chisel3.core.Direction.Output
-  val NODIR = chisel3.core.Direction.Unspecified
+
   type ChiselException = chisel3.internal.ChiselException
 
   // Debugger/Tester access to internal Chisel data structures and methods.
@@ -295,7 +294,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     a.allElements
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
-  def getFirrtlDirection(d: Data): Direction = chisel3.core.Data.getFirrtlDirection(d)
 
   /** Package for experimental features, which may have their API changed, be removed, etc.
     *
@@ -341,6 +339,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
     type ChiselAnnotation = chisel3.core.ChiselAnnotation
     val ChiselAnnotation = chisel3.core.ChiselAnnotation
+
+    val DataMirror = chisel3.core.DataMirror
+    val requireIsHardware = chisel3.core.requireIsHardware
+    val requireIsChiselType = chisel3.core.requireIsChiselType
+    type Direction = chisel3.core.ActualDirection
+    val Direction = chisel3.core.ActualDirection
 
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros

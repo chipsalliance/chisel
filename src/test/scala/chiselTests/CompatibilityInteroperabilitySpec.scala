@@ -64,21 +64,21 @@ object Chisel3Components {
   }
 
   class Chisel3BundleModuleA extends Chisel3DriverModule(new Chisel3Bundle)
-  class Chisel3BundleModuleB extends Chisel3PassthroughModule((new Chisel3Bundle).flip)
+  class Chisel3BundleModuleB extends Chisel3PassthroughModule(Flipped(new Chisel3Bundle))
   class Chisel3RecordModuleA extends Chisel3DriverModule(new Chisel3Record)
-  class Chisel3RecordModuleB extends Chisel3PassthroughModule((new Chisel3Record).flip)
+  class Chisel3RecordModuleB extends Chisel3PassthroughModule(Flipped(new Chisel3Record))
 
   class Chisel3ModuleChiselBundleA extends Chisel3DriverModule(new ChiselBundle)
-  class Chisel3ModuleChiselBundleB extends Chisel3PassthroughModule((new ChiselBundle).flip)
+  class Chisel3ModuleChiselBundleB extends Chisel3PassthroughModule(Flipped(new ChiselBundle))
   class Chisel3ModuleChiselRecordA extends Chisel3DriverModule(new ChiselRecord)
-  class Chisel3ModuleChiselRecordB extends Chisel3PassthroughModule((new ChiselRecord).flip)
+  class Chisel3ModuleChiselRecordB extends Chisel3PassthroughModule(Flipped(new ChiselRecord))
 }
 
 class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
   "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
-		import chisel3._
-		import chisel3.testers.BasicTester
+    import chisel3._
+    import chisel3.testers.BasicTester
     import CompatibilityComponents._
 
     assertTesterPasses(new BasicTester {
@@ -96,8 +96,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "Moduless defined in the chisel3._" should "successfully bulk connect in Chisel._" in {
-		import Chisel._
-		import chisel3.testers.BasicTester
+    import Chisel._
+    import chisel3.testers.BasicTester
     import Chisel3Components._
 
     assertTesterPasses(new BasicTester {
@@ -116,8 +116,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
 
   "Bundles defined in Chisel._" should "work in chisel3._ Modules" in {
-		import chisel3._
-		import chisel3.testers.BasicTester
+    import chisel3._
+    import chisel3.testers.BasicTester
     import Chisel3Components._
 
     assertTesterPasses(new BasicTester {
@@ -135,8 +135,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "Bundles defined in chisel3._" should "work in Chisel._ Modules" in {
-		import chisel3._
-		import chisel3.testers.BasicTester
+    import chisel3._
+    import chisel3.testers.BasicTester
     import CompatibilityComponents._
 
     assertTesterPasses(new BasicTester {
@@ -156,8 +156,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
   "Similar Bundles defined in the chisel3._ and Chisel._" should
       "successfully bulk connect in chisel3._" in {
-		import chisel3._
-		import chisel3.testers.BasicTester
+    import chisel3._
+    import chisel3.testers.BasicTester
     import Chisel3Components._
     import CompatibilityComponents._
 
@@ -187,8 +187,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     })
   }
   they should "successfully bulk connect in Chisel._" in {
-		import Chisel._
-		import chisel3.testers.BasicTester
+    import Chisel._
+    import chisel3.testers.BasicTester
     import Chisel3Components._
     import CompatibilityComponents._
 

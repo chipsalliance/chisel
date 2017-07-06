@@ -89,7 +89,7 @@ class BlackBoxConstant(value: Int) extends BlackBox(
     Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1))) {
   require(value >= 0, "value must be a UInt!")
   val io = IO(new Bundle {
-    val out = UInt(log2Ceil(value + 1).W).asOutput
+    val out = Output(UInt(log2Ceil(value + 1).W))
   })
 }
 
