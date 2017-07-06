@@ -113,6 +113,17 @@ object Driver {
       optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
         annotations = firrtlConfig.annotations ++ targetDirAnno)
     }
+
+    // Output Annotations
+    val outputAnnos = firrtlConfig.getEmitterAnnos(optionsManager)
+
+    val globalAnnos = Seq(TargetDirAnnotation(optionsManager.targetDirName)) ++
+      (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation()) else Seq()) ++
+      (if (firrtlConfig.noDCE) Seq(NoDCEAnnotation()) else Seq())
+
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+      annotations = firrtlConfig.annotations ++ outputAnnos ++ globalAnnos)
+
   }
 
   /**
@@ -162,42 +173,34 @@ object Driver {
       // Does this need to be before calling compiler?
       optionsManager.makeTargetDir()
 
-      // Output Annotations
-      val outputAnnos = firrtlConfig.getEmitterAnnos(optionsManager)
+      val finalState = firrtlConfig.compiler.compile(
+        CircuitState(parsedInput,
+                     ChirrtlForm,
+                     Some(AnnotationMap(firrtlConfig.annotations))),
+        firrtlConfig.customTransforms
+      )
 
-    // Should these and outputAnnos be moved to loadAnnotations?
-    val globalAnnos = Seq(TargetDirAnnotation(optionsManager.targetDirName)) ++
-      (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation()) else Seq()) ++
-      (if (firrtlConfig.noDCE) Seq(NoDCEAnnotation()) else Seq())
-
-    val finalState = firrtlConfig.compiler.compile(
-      CircuitState(parsedInput,
-                   ChirrtlForm,
-                   Some(AnnotationMap(firrtlConfig.annotations ++ outputAnnos ++ globalAnnos))),
-      firrtlConfig.customTransforms
-    )
-
-    // Do emission
-    // Note: Single emission target assumption is baked in here
-    // Note: FirrtlExecutionSuccess emitted is only used if we're emitting the whole Circuit
-    val emittedRes = firrtlConfig.getOutputConfig(optionsManager) match {
-      case SingleFile(filename) =>
-        val emitted = finalState.getEmittedCircuit
-        val outputFile = new java.io.PrintWriter(filename)
-        outputFile.write(emitted.value)
-        outputFile.close()
-        emitted.value
-      case OneFilePerModule(dirName) =>
-        val emittedModules = finalState.emittedComponents collect { case x: EmittedModule => x }
-        if (emittedModules.isEmpty) throwInternalError // There should be something
-        emittedModules.foreach { case module =>
-          val filename = optionsManager.getBuildFileName(firrtlConfig.outputSuffix, s"$dirName/${module.name}")
+      // Do emission
+      // Note: Single emission target assumption is baked in here
+      // Note: FirrtlExecutionSuccess emitted is only used if we're emitting the whole Circuit
+      val emittedRes = firrtlConfig.getOutputConfig(optionsManager) match {
+        case SingleFile(filename) =>
+          val emitted = finalState.getEmittedCircuit
           val outputFile = new java.io.PrintWriter(filename)
-          outputFile.write(module.value)
+          outputFile.write(emitted.value)
           outputFile.close()
-        }
-        "" // Should we return something different here?
-    }
+          emitted.value
+        case OneFilePerModule(dirName) =>
+          val emittedModules = finalState.emittedComponents collect { case x: EmittedModule => x }
+          if (emittedModules.isEmpty) throwInternalError // There should be something
+          emittedModules.foreach { case module =>
+            val filename = optionsManager.getBuildFileName(firrtlConfig.outputSuffix, s"$dirName/${module.name}")
+            val outputFile = new java.io.PrintWriter(filename)
+            outputFile.write(module.value)
+            outputFile.close()
+          }
+          "" // Should we return something different here?
+      }
 
       FirrtlExecutionSuccess(firrtlConfig.compilerName, emittedRes)
     }
