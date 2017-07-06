@@ -204,6 +204,9 @@ private[iotesters] object setupVerilatorBackend {
         val chirrtl = firrtl.Parser.parse(emitted)
         val dut = getTopModule(circuit).asInstanceOf[T]
 
+        // This makes sure annotations for command line options get created
+        firrtl.Driver.loadAnnotations(optionsManager)
+
         /*
         The following block adds an annotation that tells the black box helper where the
         current build directory is, so that it can copy verilog resource files into the right place
