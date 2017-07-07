@@ -451,6 +451,33 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
 """
       (parse(exec(input))) should be (parse(check))
    }
+
+   // =============================
+   "ConstProp" should "only swap a given name with one other name" in {
+      val input =
+"""circuit Top :
+  module Top :
+    input x : UInt<1>
+    input y : UInt<1>
+    output z : UInt<3>
+    node _T_1 = add(x, y)
+    node n = _T_1
+    node m = _T_1
+    z <= add(n, m)
+"""
+      val check =
+"""circuit Top :
+  module Top :
+    input x : UInt<1>
+    input y : UInt<1>
+    output z : UInt<3>
+    node n = add(x, y)
+    node _T_1 = n
+    node m = n
+    z <= add(n, n)
+"""
+      (parse(exec(input))) should be (parse(check))
+   }
 }
 
 // More sophisticated tests of the full compiler
