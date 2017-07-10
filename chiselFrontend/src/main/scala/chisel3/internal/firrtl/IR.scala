@@ -266,7 +266,7 @@ case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends C
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
-case class Port(id: Data, dir: Direction)
+case class Port(id: Data, dir: UserDirection)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
 abstract class Component extends Arg {
   def id: BaseModule

@@ -32,9 +32,9 @@ class FixedPointFromBitsTester extends BasicTester {
   val sint_result = FixedPoint.fromDouble(-1.5, 4.W, 1.BP)
   val fp_result   = FixedPoint.fromDouble(1.5, 4.W, 1.BP)
 
-  val uint2fp = fp_tpe.fromBits(uint)
-  val sint2fp = fp_tpe.fromBits(sint)
-  val fp2fp   = fp_tpe.fromBits(fp)
+  val uint2fp = uint.asTypeOf(fp_tpe)
+  val sint2fp = sint.asTypeOf(fp_tpe)
+  val fp2fp   = fp.asTypeOf(fp_tpe)
 
   val uintToFp = uint.asFixedPoint(1.BP)
   val sintToFp = sint.asFixedPoint(1.BP)

@@ -28,7 +28,7 @@ object TesterDriver extends BackendCompilationUtilities {
 
     // Copy CPP harness and other Verilog sources from resources into files
     val cppHarness =  new File(path, "top.cpp")
-    copyResourceToFile("/top.cpp", cppHarness)
+    copyResourceToFile("/chisel3/top.cpp", cppHarness)
     val additionalVFiles = additionalVResources.map((name: String) => {
       val mangledResourceName = name.replace("/", "_")
       val out = new File(path, mangledResourceName)

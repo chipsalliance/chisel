@@ -40,7 +40,7 @@ private[chisel3] object SeqUtils {
 
   /** Returns the data value corresponding to the first true predicate.
     */
-  def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro CompileOptionsTransform.inArg
+  def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   def do_priorityMux[T <: Data](in: Seq[(Bool, T)])
                                (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
@@ -57,7 +57,7 @@ private[chisel3] object SeqUtils {
     * @note assumes exactly one true predicate, results undefined otherwise
     *       FixedPoint values or aggregates containing FixedPoint values cause this optimized structure to be lost
     */
-  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro CompileOptionsTransform.inArg
+  def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   //scalastyle:off method.length cyclomatic.complexity
   def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])
@@ -70,7 +70,7 @@ private[chisel3] object SeqUtils {
 
       def buildAndOrMultiplexor[TT <: Data](inputs: Iterable[(Bool, TT)]): T = {
         val masked = for ((s, i) <- inputs) yield Mux(s, i.asUInt(), 0.U)
-        output.fromBits(masked.reduceLeft(_ | _))
+        masked.reduceLeft(_ | _).asTypeOf(output)
       }
 
       output match {
@@ -82,7 +82,7 @@ private[chisel3] object SeqUtils {
           }
 
           val masked = for ((s, i) <- sInts) yield Mux(s, i, 0.S)
-          output.fromBits(masked.reduceLeft(_ | _))
+          masked.reduceLeft(_ | _).asTypeOf(output)
 
         case _: FixedPoint =>
           val (sels, possibleOuts) = in.toSeq.unzip

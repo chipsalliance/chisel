@@ -16,12 +16,9 @@ trait CompileOptions {
   val dontTryConnectionsSwapped: Boolean
   // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
   val dontAssumeDirectionality: Boolean
-  // Issue a deprecation warning if Data.{flip, asInput,asOutput} is used
-  // instead of Flipped, Input, or Output.
-  val deprecateOldDirectionMethods: Boolean
   // Check that referenced Data have actually been declared.
   val checkSynthesizable: Boolean
-  // Require explict assignment of DontCare to generate "x is invalid"
+  // Require explicit assignment of DontCare to generate "x is invalid"
   val explicitInvalidate: Boolean
 }
 
@@ -48,9 +45,6 @@ object ExplicitCompileOptions {
                              val dontTryConnectionsSwapped: Boolean,
                              // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
                              val dontAssumeDirectionality: Boolean,
-                             // Issue a deprecation warning if Data.{flip, asInput,asOutput} is used
-                             // instead of Flipped, Input, or Output.
-                             val deprecateOldDirectionMethods: Boolean,
                              // Check that referenced Data have actually been declared.
                              val checkSynthesizable: Boolean,
                              // Require an explicit DontCare assignment to generate a firrtl DefInvalid
@@ -65,7 +59,6 @@ object ExplicitCompileOptions {
     declaredTypeMustBeUnbound = false,
     dontTryConnectionsSwapped = false,
     dontAssumeDirectionality = false,
-    deprecateOldDirectionMethods = false,
     checkSynthesizable = false,
     explicitInvalidate = false
   )
@@ -77,7 +70,6 @@ object ExplicitCompileOptions {
     declaredTypeMustBeUnbound = true,
     dontTryConnectionsSwapped = true,
     dontAssumeDirectionality = true,
-    deprecateOldDirectionMethods = true,
     checkSynthesizable = true,
     explicitInvalidate = true
   )

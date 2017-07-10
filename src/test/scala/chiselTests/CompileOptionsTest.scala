@@ -82,8 +82,8 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
     class RequireIOWrapModule extends Module {
       val io = IO(new Bundle {
-        val in = UInt(32.W).asInput
-        val out = Bool().asOutput
+        val in = Input(UInt(32.W))
+        val out = Output(Bool())
       })
       io.out := io.in(1)
     }
@@ -96,8 +96,8 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
       class RequireIOWrapModule extends Module {
         val io = new Bundle {
-          val in = UInt(32.W).asInput
-          val out = Bool().asOutput
+          val in = Input(UInt(32.W))
+          val out = Output(Bool())
         }
         io.out := io.in(1)
       }

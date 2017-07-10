@@ -64,11 +64,7 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
       id._onModuleClose
     }
 
-    val firrtlPorts = for (port <- getModulePorts) yield {
-      // Port definitions need to know input or output at top-level. 'flipped' means Input.
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      firrtl.Port(port, direction)
-    }
+    val firrtlPorts = getModulePorts map {port => Port(port, port.userDirection)}
     _firrtlPorts = Some(firrtlPorts)
 
     // Generate IO invalidation commands to initialize outputs as unused,
@@ -84,7 +80,7 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     _component = Some(component)
     component
   }
-  
+
   // There is no initialization to be done by default.
   private[core] def initializeInParent() {}
 }
@@ -107,11 +103,16 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   private[core] override def initializeInParent() {
     implicit val sourceInfo = UnlocatableSourceInfo
 
+<<<<<<< HEAD
     // Generate firrtl invalids if the client doesn't want explicit control over their generation.
     if (!compileOptions.explicitInvalidate) {
       for (port <- getModulePorts) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
+=======
+    for (port <- getModulePorts) {
+      pushCommand(DefInvalid(sourceInfo, port.ref))
+>>>>>>> master
     }
 
     clock := Builder.forcedClock
@@ -126,14 +127,27 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   * IO), the clock and reset constructors will be phased out. Recommendation is to wrap the module
   * in a withClock/withReset/withClockAndReset block, or directly hook up clock or reset IO pins.
   */
-abstract class LegacyModule(
-    override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-    (implicit moduleCompileOptions: CompileOptions)
+abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     extends ImplicitModule {
+  // These are to be phased out
+  protected var override_clock: Option[Clock] = None
+  protected var override_reset: Option[Bool] = None
+
   // _clock and _reset can be clock and reset in these 2ary constructors
   // once chisel2 compatibility issues are resolved
+  @deprecated("Module constructor with override_clock and override_reset deprecated, use withClockAndReset", "chisel3")
+  def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+      (implicit moduleCompileOptions: CompileOptions) = {
+    this()
+    this.override_clock = override_clock
+    this.override_reset = override_reset
+  }
+
+  @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
   def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
+  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
+  @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
   def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
   // IO for this Module. At the Scala level (pre-FIRRTL transformations),
@@ -171,10 +185,14 @@ abstract class LegacyModule(
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
 
+<<<<<<< HEAD
     // Generate a firrtl invalid if the client doesn't want explicit control over their generation.
     if (!compileOptions.explicitInvalidate) {
       pushCommand(DefInvalid(sourceInfo, io.ref))
     }
+=======
+    pushCommand(DefInvalid(sourceInfo, io.ref))
+>>>>>>> master
 
     override_clock match {
       case Some(override_clock) => clock := override_clock

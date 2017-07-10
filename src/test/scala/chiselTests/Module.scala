@@ -60,7 +60,7 @@ class ModuleWireTester(c: ModuleWire) extends Tester(c) {
 class ModuleWhen extends Module {
   val io = IO(new Bundle {
     val s = new SimpleIO
-    val en = Bool()
+    val en = Output(Bool())
   })
   when(io.en) {
     val inc = Module(new PlusOne).io

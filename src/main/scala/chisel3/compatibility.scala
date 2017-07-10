@@ -12,21 +12,43 @@ package object Chisel {     // scalastyle:ignore package.object.name
   import scala.annotation.compileTimeOnly
 
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
-  type Direction = chisel3.core.Direction
 
-  val INPUT = chisel3.core.Direction.Input
-  val OUTPUT = chisel3.core.Direction.Output
-  val NODIR = chisel3.core.Direction.Unspecified
+  abstract class Direction
+  case object INPUT extends Direction
+  case object OUTPUT extends Direction
+  case object NODIR extends Direction
+
   object Flipped {
     def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
   }
-  // TODO: Possibly move the AddDirectionToData class here?
+
+  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
+    def asInput: T = chisel3.core.Input(target)
+    def asOutput: T = chisel3.core.Output(target)
+    def flip(): T = chisel3.core.Flipped(target)
+  }
+
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
+    import chisel3.core.{DataMirror, ActualDirection, UserDirection}
     def dir: Direction = {
-      target match {
-        case e: Element => e.dir
-        case _ => chisel3.core.Direction.Unspecified
+      DataMirror.isSynthesizable(target) match {
+        case true => target match {
+          case e: Element => DataMirror.directionOf(e) match {
+            case ActualDirection.Unspecified => NODIR
+            case ActualDirection.Output => OUTPUT
+            case ActualDirection.Input => INPUT
+            case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
+          }
+          case _ => NODIR
+        }
+        case false => DataMirror.userDirectionOf(target) match {  // returns local direction only
+          case UserDirection.Unspecified => NODIR
+          case UserDirection.Input => INPUT
+          case UserDirection.Output => OUTPUT
+          case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
+        }
       }
+
     }
   }
 
@@ -34,8 +56,39 @@ package object Chisel {     // scalastyle:ignore package.object.name
 
   type Data = chisel3.core.Data
   val Wire = chisel3.core.Wire
-  val Clock = chisel3.core.Clock
+  object Clock {
+    def apply(): Clock = new Clock
+
+    def apply(dir: Direction): Clock = {
+      val result = apply()
+      dir match {
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case _ => result
+      }
+    }
+  }
   type Clock = chisel3.core.Clock
+
+  // Implicit conversion to allow fromBits because it's being deprecated in chisel3
+  implicit class fromBitsable[T <: Data](val data: T) {
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo.SourceInfo
+
+    /** Creates an new instance of this type, unpacking the input Bits into
+      * structured data.
+      *
+      * This performs the inverse operation of toBits.
+      *
+      * @note does NOT assign to the object this is called on, instead creates
+      * and returns a NEW object (useful in a clone-and-assign scenario)
+      * @note does NOT check bit widths, may drop bits during assignment
+      * @note what fromBits assigs to must have known widths
+      */
+    def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      that.asTypeOf(data)
+    }
+  }
 
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec
@@ -74,9 +127,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def apply(dir: Direction, width: Width): UInt = {
       val result = apply(width)
       dir match {
-        case chisel3.core.Direction.Input => chisel3.core.Input(result)
-        case chisel3.core.Direction.Output => chisel3.core.Output(result)
-        case chisel3.core.Direction.Unspecified => result
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case NODIR => result
       }
     }
 
@@ -115,9 +168,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def apply(dir: Direction, width: Width): SInt = {
       val result = apply(width)
       dir match {
-        case chisel3.core.Direction.Input => chisel3.core.Input(result)
-        case chisel3.core.Direction.Output => chisel3.core.Output(result)
-        case chisel3.core.Direction.Unspecified => result
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case NODIR => result
       }
     }
   }
@@ -133,9 +186,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def apply(dir: Direction): Bool = {
       val result = apply()
       dir match {
-        case chisel3.core.Direction.Input => chisel3.core.Input(result)
-        case chisel3.core.Direction.Output => chisel3.core.Output(result)
-        case chisel3.core.Direction.Unspecified => result
+        case INPUT => chisel3.core.Input(result)
+        case OUTPUT => chisel3.core.Output(result)
+        case NODIR => result
       }
     }
   }
@@ -155,7 +208,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   import chisel3.core.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
-    // required) to build. 
+    // required) to build.
     override def _autoWrapPorts() = {
       if (!_ioPortBound()) {
         IO(io)
@@ -176,17 +229,21 @@ package object Chisel {     // scalastyle:ignore package.object.name
     // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     // Also provides the clock / reset constructors, which were used before withClock happened.
-    
-    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
-    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
-    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
+
+    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), None)(moduleCompileOptions)
+    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  =
+      this(None, Option(_reset))(moduleCompileOptions)
+    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
     override def _autoWrapPorts() = {
-      if (!_ioPortBound()) {
+      if (!_ioPortBound() && io != null) {
         IO(io)
       }
     }
   }
+
   val Module = chisel3.core.Module
   type Module = CompatibilityModule
 
@@ -203,7 +260,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     // parameterized scope.
     def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
       chisel3.core.Reg(t)
-    
+
     /** Creates a register with optional next and initialization values.
       *
       * @param t: data type for the register
@@ -226,7 +283,6 @@ package object Chisel {     // scalastyle:ignore package.object.name
           chisel3.core.Reg(t)
         }
         if (next ne null) {
-          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
           reg := next
         }
         reg

@@ -215,7 +215,7 @@ private[chisel3] object Builder {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    Binding.bind(cmd.id, OpBinder(forcedUserModule), "Error: During op creation, fresh result")
+    cmd.id.bind(OpBinding(forcedUserModule))
     pushCommand(cmd).id
   }
 

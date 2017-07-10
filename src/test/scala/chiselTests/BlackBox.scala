@@ -89,7 +89,7 @@ class BlackBoxConstant(value: Int) extends BlackBox(
     Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1))) {
   require(value >= 0, "value must be a UInt!")
   val io = IO(new Bundle {
-    val out = UInt(log2Ceil(value + 1).W).asOutput
+    val out = Output(UInt(log2Ceil(value + 1).W))
   })
 }
 
@@ -138,18 +138,18 @@ class BlackBoxWithParamsTester extends BasicTester {
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
     assertTesterPasses({ new BlackBoxTester },
-        Seq("/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"))
   }
   "Multiple BlackBoxes" should "work" in {
     assertTesterPasses({ new MultiBlackBoxTester },
-        Seq("/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"))
   }
   "A BlackBoxed register" should "work" in {
     assertTesterPasses({ new BlackBoxWithClockTester },
-        Seq("/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"))
   }
   "BlackBoxes with parameters" should "work" in {
     assertTesterPasses({ new BlackBoxWithParamsTester },
-        Seq("/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"))
   }
 }
