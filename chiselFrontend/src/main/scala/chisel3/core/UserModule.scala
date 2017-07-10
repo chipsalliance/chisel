@@ -103,16 +103,11 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   private[core] override def initializeInParent() {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-<<<<<<< HEAD
     // Generate firrtl invalids if the client doesn't want explicit control over their generation.
     if (!compileOptions.explicitInvalidate) {
       for (port <- getModulePorts) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
-=======
-    for (port <- getModulePorts) {
-      pushCommand(DefInvalid(sourceInfo, port.ref))
->>>>>>> master
     }
 
     clock := Builder.forcedClock
@@ -185,14 +180,10 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
 
-<<<<<<< HEAD
     // Generate a firrtl invalid if the client doesn't want explicit control over their generation.
     if (!compileOptions.explicitInvalidate) {
       pushCommand(DefInvalid(sourceInfo, io.ref))
     }
-=======
-    pushCommand(DefInvalid(sourceInfo, io.ref))
->>>>>>> master
 
     override_clock match {
       case Some(override_clock) => clock := override_clock

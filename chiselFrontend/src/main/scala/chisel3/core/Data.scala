@@ -441,6 +441,17 @@ object Wire {
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
 object DontCare extends Data {
+  // Define setter/getter pairing
+  // DontCare can only be bound to Ports and Wires (and Unbound), and only as a source
+  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
+    val resolvedDirection = UserDirection.fromParent(parentDirection, userDirection)
+    direction = resolvedDirection match {
+      case UserDirection.Unspecified | UserDirection.Output => ActualDirection.Output
+      case UserDirection.Input => throwException(s"DontCare may not be an input")
+    }
+    binding = target
+  }
+
   override private[chisel3] def flatten : IndexedSeq[Element] = IndexedSeq.empty[Element]
   def cloneType = DontCare
   private[chisel3] def toType = "DontCare"
@@ -451,7 +462,7 @@ object DontCare extends Data {
   private[core] def cloneTypeWidth(width: Width): this.type = cloneType
   /** Not really supported */
   def toPrintable: Printable = PString("DONTCARE")
-  private[core] def width = UnknownWidth()
+  private[chisel3] def width = UnknownWidth()
   private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
     Builder.error("DontCare cannot be a connection sink (LHS)")
   }
