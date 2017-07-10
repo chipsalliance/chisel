@@ -103,7 +103,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     class ModuleWithIncompleteAssignment extends Module {
 
       val io = IO(new Bundle {
-        val out = Bool()
+        val out = Output(Bool())
       })
       val counter = Counter(8)
       when (counter.inc()) {
@@ -122,7 +122,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     class ModuleWithUnconditionalAssignment extends Module {
 
       val io = IO(new Bundle {
-        val out = Bool()
+        val out = Output(Bool())
       })
       val counter = Counter(8)
       io.out := false.B
@@ -139,7 +139,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     class ModuleWithConditionalAndOtherwiseAssignment extends Module {
 
       val io = IO(new Bundle {
-        val out = Bool()
+        val out = Output(Bool())
       })
       val counter = Counter(8)
       when (counter.inc()) {

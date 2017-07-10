@@ -260,57 +260,49 @@ abstract class Data extends HasId {
   private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    if (this == DontCare) {
-      Builder.error("DontCare cannot be a connection sink (LHS)")
-    } else if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, "data to be connected")
-      // Handle Invalidate API
-      if (connectCompileOptions.explicitInvalidate && that == DontCare) {
+    (this, that) match {
+      case (DontCare, _) => Builder.error("DontCare cannot be a connection sink (LHS)")
+      case (_, DontCare) =>
         // Not a real connection. Emit firrtl "... is invalid"
         pushCommand(DefInvalid(sourceInfo, this.ref))
-      } else {
-        requireIsHardware(that, "data to be connected")
-        try {
-          MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
-        } catch {
-          case MonoConnect.MonoConnectException(message) =>
-            throwException(
-              s"Connection between sink ($this) and source ($that) failed @$message"
-            )
+      case (_, _) =>
+        if (connectCompileOptions.checkSynthesizable) {
+          requireIsHardware(this, "data to be connected")
+          requireIsHardware(that, "data to be connected")
+          try {
+            MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
+          } catch {
+            case MonoConnect.MonoConnectException(message) =>
+              throwException(
+                s"Connection between sink ($this) and source ($that) failed @$message"
+              )
+          }
+        } else {
+          this legacyConnect that
         }
-      }
-    } else if (connectCompileOptions.explicitInvalidate && that == DontCare) {
-      // Not a real connection. Emit firrtl "... is invalid"
-      pushCommand(DefInvalid(sourceInfo, this.ref))
-    } else {
-      this legacyConnect that
     }
   }
   private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
-    if (this == DontCare) {
-      Builder.error("DontCare cannot be a connection sink (LHS)")
-    } else if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, s"data to be bulk-connected")
-      // Handle Invalidate API
-      if (connectCompileOptions.explicitInvalidate && that == DontCare) {
+    (this, that) match {
+      case (DontCare, _) => Builder.error("DontCare cannot be a connection sink (LHS)")
+      case (_, DontCare) =>
         // Not a real connection. Emit firrtl "... is invalid"
         pushCommand(DefInvalid(sourceInfo, this.ref))
-      } else {
-        requireIsHardware(that, s"data to be bulk-connected")
-        try {
-          BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
-        } catch {
-          case BiConnect.BiConnectException(message) =>
-            throwException(
-              s"Connection between left ($this) and source ($that) failed @$message"
-            )
+      case (_, _) =>
+        if (connectCompileOptions.checkSynthesizable) {
+          requireIsHardware(this, s"data to be bulk-connected")
+          requireIsHardware(that, s"data to be bulk-connected")
+          try {
+            BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
+          } catch {
+            case BiConnect.BiConnectException(message) =>
+              throwException(
+                s"Connection between left ($this) and source ($that) failed @$message"
+              )
+          }
+        } else {
+          this legacyConnect that
         }
-      }
-    } else if (connectCompileOptions.explicitInvalidate && that == DontCare) {
-      // Not a real connection. Emit firrtl "... is invalid"
-      pushCommand(DefInvalid(sourceInfo, this.ref))
-    } else {
-      this legacyConnect that
     }
   }
 
