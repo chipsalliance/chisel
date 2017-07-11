@@ -19,8 +19,9 @@ class IntervalTest1 extends Module {
 
   io.out := io.in1 + io.in2
 }
+
 class IntervalTester extends CookbookTester(10) {
-  logger.Logger.setLevel(LogLevel.Info)
+  //logger.Logger.setLevel(LogLevel.Info)
   val dut = Module(new IntervalTest1)
 
   dut.io.in1 := 4.I()
@@ -31,6 +32,31 @@ class IntervalTester extends CookbookTester(10) {
   val i = Interval(range"[0,10)")
   stop()
 }
+
+class IntervalTest2 extends Module {
+  val io = IO(new Bundle {
+    val p = Input(Bool())
+    val in1 = Input(Interval(range"[0,4]"))
+    val in2 = Input(Interval(range"[0,6]"))
+    val out = Output(Interval())
+  })
+
+  io.out := Mux(io.p, io.in1, io.in2)
+}
+
+class IntervalTester2 extends CookbookTester(10) {
+  //logger.Logger.setLevel(LogLevel.Info)
+  val dut = Module(new IntervalTest2)
+
+  dut.io.p := 1.U
+  dut.io.in1 := 4.I()
+  dut.io.in2 := 5.I()
+  printf("dut.io.out: %b\n", dut.io.out.asUInt)
+  assert(dut.io.out === 4.I())
+
+  stop()
+}
+
 
 class SIntTest1 extends Module {
   val io = IO(new Bundle {
@@ -53,7 +79,7 @@ class SIntTest1Tester extends CookbookTester(10) {
 }
 
 class IntervalAddTester extends BasicTester {
-  logger.Logger.setLevel(LogLevel.Info)
+  //logger.Logger.setLevel(LogLevel.Info)
 
   val in1 = Wire(Interval(range"[0,4]"))
   val in2 = Wire(Interval(range"[0,4]"))
@@ -69,8 +95,9 @@ class IntervalAddTester extends BasicTester {
 
 }
 
+
 class IntervalChainedAddTester extends BasicTester {
-  logger.Logger.setLevel(LogLevel.Info)
+  //logger.Logger.setLevel(LogLevel.Info)
 
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
@@ -86,7 +113,7 @@ class IntervalChainedAddTester extends BasicTester {
 }
 
 class IntervalChainedMulTester extends BasicTester {
-  logger.Logger.setLevel(LogLevel.Info)
+  //logger.Logger.setLevel(LogLevel.Info)
 
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
@@ -102,7 +129,7 @@ class IntervalChainedMulTester extends BasicTester {
 }
 
 class IntervalChainedSubTester extends BasicTester {
-  logger.Logger.setLevel(LogLevel.Info)
+  //logger.Logger.setLevel(LogLevel.Info)
 
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
@@ -123,6 +150,9 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   }
   "Intervals can be created" in {
     assertTesterPasses{ new IntervalTester }
+  }
+  "Test a simple interval mux" in {
+    assertTesterPasses{ new IntervalTester2 }
   }
   "SInt for use comparing to Interval" in {
     assertTesterPasses{ new SIntTest1Tester }

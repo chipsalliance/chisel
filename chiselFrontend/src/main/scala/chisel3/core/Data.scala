@@ -61,6 +61,17 @@ private[core] object cloneSupertype {
             case _ => FixedPoint()
           }
         }
+        case (elt1: Interval, elt2: Interval) => {
+          (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
+            case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), KnownWidth(w1), KnownWidth(w2)) =>
+              val maxBinaryPoint = bp1 max bp2
+              val maxIntegerWidth = (w1 - bp1) max (w2 - bp2)
+              Interval((maxIntegerWidth + maxBinaryPoint).W, (maxBinaryPoint).BP, elt1.range merge elt2.range)
+            case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), _, _) =>
+              Interval(Width(), (bp1 max bp2).BP, elt1.range merge elt2.range)
+            case _ => Interval()
+          }
+        }
         case (elt1, elt2) =>
           throw new AssertionError(
             s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")

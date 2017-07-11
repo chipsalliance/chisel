@@ -145,6 +145,7 @@ sealed trait Range {
   def >> (that: Int): Range
   def << (that: KnownWidth): Range
   def >> (that: KnownWidth): Range
+  def merge(that: Range): Range
 }
 
 case object UnknownRange extends Range {
@@ -161,6 +162,7 @@ case object UnknownRange extends Range {
 
   override def getWidth = ???
   override def toString = ""
+  def merge(that: Range): Range = UnknownRange
 }
 
 sealed trait KnownBigIntRange extends Range {
@@ -173,7 +175,6 @@ sealed trait KnownBigIntRange extends Range {
     case (Open(low_val), Closed(high_val)) => low_val < high_val
     case (Closed(low_val), Closed(high_val)) => low_val <= high_val
   })
-
   override def toString: String = {
     (min, max) match {
       case (Open(low_val), Open(high_val)) => s"($min, $max)"
@@ -261,6 +262,31 @@ sealed case class KnownIntervalRange(
   def >> (that: Int): Range = KnownIntervalRange(Closed(low >> that), Closed(high >> that), binaryPoint)
   def << (width: KnownWidth): Range = KnownIntervalRange(Closed(low), Closed(high << (BigInt(2) << width.value).toInt), binaryPoint)
   def >> (width: KnownWidth): Range = KnownIntervalRange(Closed(low >> (BigInt(2) << width.value).toInt), Closed(high), binaryPoint)
+  def merge(that: Range): Range = that match {
+    case UnknownRange => UnknownRange
+    case KnownIntervalRange(lo, hi, bp) =>
+      val mergeLow = (min, lo) match {
+        case (Open(a), Open(b))      if a <= b => Open(a)
+        case (Open(a), Open(b))      if b < a  => Open(b)
+        case (Closed(a), Open(b))    if a <= b => Closed(a)
+        case (Closed(a), Open(b))    if b < a  => Open(b)
+        case (Open(a), Closed(b))    if a < b  => Open(a)
+        case (Open(a), Closed(b))    if b <= a => Closed(b)
+        case (Closed(a), Closed(b))  if a <= b => Closed(a)
+        case (Closed(a), Closed(b))  if b < a  => Closed(b)
+      }
+      val mergeHigh = (max, hi) match {
+        case (Open(a), Open(b))      if a >= b => Open(a)
+        case (Open(a), Open(b))      if b < a  => Open(b)
+        case (Closed(a), Open(b))    if a >= b => Closed(a)
+        case (Closed(a), Open(b))    if b > a  => Open(b)
+        case (Open(a), Closed(b))    if a > b  => Open(a)
+        case (Open(a), Closed(b))    if b >= a => Closed(b)
+        case (Closed(a), Closed(b))  if a >= b => Closed(a)
+        case (Closed(a), Closed(b))  if b > a  => Closed(b)
+      }
+      KnownIntervalRange(mergeLow, mergeHigh, bp max binaryPoint)
+  }
 }
 
 object Width {
