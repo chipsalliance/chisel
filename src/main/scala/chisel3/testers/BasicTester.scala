@@ -9,9 +9,12 @@ import internal._
 import internal.Builder.pushCommand
 import internal.firrtl._
 import internal.sourceinfo.SourceInfo
-//import chisel3.core.ExplicitCompileOptions.NotStrict
 
-class BasicTester extends Module() {
+// We don't want firrtl complaining about "not fully initialized" connections.
+abstract class ImplicitInvalidateModule extends Module()(chisel3.core.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false))
+
+class BasicTester extends ImplicitInvalidateModule() {
+//  implicit val testerCompileOptions = compileOptions
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.
   val io = IO(new Bundle())
 

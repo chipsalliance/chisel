@@ -4,9 +4,10 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.dontTouch
+import chisel3.testers.ImplicitInvalidateModule
 import firrtl.{FirrtlExecutionSuccess, Transform}
 
-class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
+class HasDeadCodeChild(withDontTouch: Boolean) extends ImplicitInvalidateModule {
   val io = IO(new Bundle {
     val a = Input(UInt(32.W))
     val b = Output(UInt(32.W))
@@ -18,7 +19,7 @@ class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
   }
 }
 
-class HasDeadCode(withDontTouch: Boolean) extends Module {
+class HasDeadCode(withDontTouch: Boolean) extends ImplicitInvalidateModule {
   val io = IO(new Bundle {
     val a = Input(UInt(32.W))
     val b = Output(UInt(32.W))
