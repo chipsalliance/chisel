@@ -134,7 +134,8 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     compileFirrtl(new ModuleWithUnconditionalAssignment)
   }
 
-  property("FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect with otherwise clause") {
+  // TODO: Until FIRRTL really handles conditional connections with otherwise clauses ...
+  ignore ("FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect with otherwise clause") {
     import chisel3.core.ExplicitCompileOptions.Strict
     class ModuleWithConditionalAndOtherwiseAssignment extends Module {
 

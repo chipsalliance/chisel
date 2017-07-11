@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.ImplicitInvalidateModule
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -37,13 +36,17 @@ class VectorPacketIO(n: Int) extends Bundle {
   * a module uses the vector based IO bundle
   * the value of n does not affect the error
   */
-class BrokenVectorPacketModule extends ImplicitInvalidateModule {
+class BrokenVectorPacketModule extends Module {
   val n  = 4
   val io = IO(new VectorPacketIO(n))
 
   /* the following method of initializing the circuit may change in the future */
   io.ins.foreach(_.nodeq())
   io.outs.foreach(_.noenq())
+  // The following is to prevent firrtl from complaining about "Reference ... is not fully initialized."
+  val emptyPacket = Wire(new Packet())
+  emptyPacket.header := 0.U
+  io.outs.foreach(_.enq(emptyPacket) )
 }
 
 class VectorPacketIOUnitTester extends BasicTester {
