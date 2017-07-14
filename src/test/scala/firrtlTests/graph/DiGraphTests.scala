@@ -16,12 +16,20 @@ class DiGraphTests extends FirrtlFlatSpec {
     "d" -> Set("e"),
     "e" -> Set.empty[String]))
 
+  val reversedAcyclicGraph = DiGraph(Map(
+    "a" -> Set.empty[String],
+    "b" -> Set("a"),
+    "c" -> Set("a"),
+    "d" -> Set("b", "c"),
+    "e" -> Set("d")))
+
   val cyclicGraph = DiGraph(Map(
     "a" -> Set("b","c"),
     "b" -> Set("d"),
     "c" -> Set("d"),
     "d" -> Set("a")))
 
+  val degenerateGraph = DiGraph(Map("a" -> Set.empty[String]))
 
   acyclicGraph.findSCCs.filter(_.length > 1) shouldBe empty
 
@@ -34,5 +42,9 @@ class DiGraphTests extends FirrtlFlatSpec {
   acyclicGraph.linearize.head should equal ("a")
 
   a [cyclicGraph.CyclicException] should be thrownBy cyclicGraph.linearize
+
+  acyclicGraph.reverse.edges should equal (reversedAcyclicGraph.edges)
+
+  degenerateGraph.edges should equal (degenerateGraph.reverse.edges)
 
 }
