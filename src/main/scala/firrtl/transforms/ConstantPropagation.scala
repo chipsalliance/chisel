@@ -317,7 +317,7 @@ class ConstantPropagation extends Transform {
       val stmtx = s map constPropStmt map constPropExpression
       stmtx match {
         case x: DefNode if !dontTouches.contains(x.name) => propagateRef(x.name, x.value)
-        case Connect(_, WRef(wname, wtpe, WireKind, _), expr) if !dontTouches.contains(wname) =>
+        case Connect(_, WRef(wname, wtpe, WireKind, _), expr: Literal) if !dontTouches.contains(wname) =>
           val exprx = constPropExpression(pad(expr, wtpe))
           propagateRef(wname, exprx)
         // Const prop registers that are fed only a constant or a mux between and constant and the
