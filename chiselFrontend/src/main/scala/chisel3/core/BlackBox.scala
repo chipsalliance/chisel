@@ -74,13 +74,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
       id._onModuleClose
     }
 
-    val firrtlPorts = for (port <- getModulePorts) yield {
-      // Port definitions need to know input or output at top-level.
-      // By FIRRTL semantics, 'flipped' becomes an Input
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      Port(port, direction)
-    }
-
+    val firrtlPorts = getModulePorts map {port => Port(port, port.userDirection)}
     val component = DefBlackBox(this, name, firrtlPorts, params)
     _component = Some(component)
     component
@@ -132,7 +126,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
   */
 abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
   def io: Record
-  
+
   // Allow access to bindings from the compatibility package
   protected def _ioPortBound() = portsContains(io)
 
@@ -165,19 +159,13 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
       id._onModuleClose
     }
 
-    val firrtlPorts = for ((_, port) <- namedPorts) yield {
-      // Port definitions need to know input or output at top-level.
-      // By FIRRTL semantics, 'flipped' becomes an Input
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      Port(port, direction)
-    }
-
+    val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.userDirection)}
     val component = DefBlackBox(this, name, firrtlPorts, params)
     _component = Some(component)
     component
   }
 
-  private[core] def initializeInParent() { 
+  private[core] def initializeInParent() {
     for ((_, port) <- io.elements) {
       pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }

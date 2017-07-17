@@ -17,12 +17,12 @@ object Reg {
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
-      Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
+      requireIsChiselType(t, "reg type")
     }
     val reg = t.chiselCloneType
     val clock = Node(Builder.forcedClock)
 
-    Binding.bind(reg, RegBinder(Builder.forcedUserModule), "Error: t")
+    reg.bind(RegBinding(Builder.forcedUserModule))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
   }
@@ -40,7 +40,6 @@ object RegNext {
     }).asInstanceOf[T]
     val reg = Reg(model)
 
-    Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
     reg := next
 
     reg
@@ -57,7 +56,6 @@ object RegNext {
     }).asInstanceOf[T]
     val reg = RegInit(model, init)  // TODO: this makes NO sense
 
-    Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
     reg := next
 
     reg
@@ -84,14 +82,14 @@ object RegInit {
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
-      Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
+      requireIsChiselType(t, "reg type")
     }
     val reg = t.chiselCloneType
     val clock = Node(Builder.forcedClock)
     val reset = Node(Builder.forcedReset)
 
-    Binding.bind(reg, RegBinder(Builder.forcedUserModule), "Error: t")
-    Binding.checkSynthesizable(init, s"'init' ($init)")
+    reg.bind(RegBinding(Builder.forcedUserModule))
+    requireIsHardware(init, "reg initializer")
     pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
     reg
   }

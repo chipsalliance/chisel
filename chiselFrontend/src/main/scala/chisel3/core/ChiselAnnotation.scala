@@ -2,6 +2,8 @@
 
 package chisel3.core
 
+import scala.language.existentials
+
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.Transform
 import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
@@ -56,7 +58,7 @@ object dontTouch { // scalastyle:ignore object.name
     */
   def apply[T <: Data](data: T)(implicit compileOptions: CompileOptions): T = {
     if (compileOptions.checkSynthesizable) {
-      Binding.checkSynthesizable(data, s"$data")
+      requireIsHardware(data, "Data marked dontTouch")
     }
     // TODO unify with firrtl.transforms.DontTouchAnnotation
     val anno = ChiselAnnotation(data, classOf[firrtl.Transform], "DONTtouch!")

@@ -15,7 +15,7 @@ lazy val customUnidocSettings = unidocSettings ++ Seq (
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0-SNAPSHOT_2017-06-22",
+  version := "3.0-SNAPSHOT_2017-07-17",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.11",
@@ -76,7 +76,7 @@ lazy val publishSettings = Seq (
   }
 )
 
-val defaultVersions = Map("firrtl" -> "1.0-SNAPSHOT_2017-06-22")
+val defaultVersions = Map("firrtl" -> "1.0-SNAPSHOT_2017-07-17")
 
 lazy val chiselSettings = Seq (
   name := "chisel3",
