@@ -74,11 +74,6 @@ lazy val publishSettings = ChiselSettings.publishSettings ++ Seq (
   parallelExecution in Test := true,
 
   javacOptions ++= Seq("-target", "1.7")
-  //  Hopefully we get these options back in Chisel3
-  //  scalacOptions in (Compile, doc) <++= (baseDirectory in LocalProject("chisel"), version) map { (bd, v) =>
-  //    Seq("-diagrams", "-diagrams-max-classes", "25", "-sourcepath", bd.getAbsolutePath, "-doc-source-url",
-  //        "https://github.com/ucb-bar/chisel/tree/master/€{FILE_PATH}.scala")
-  //  }
 )
 
 lazy val coreMacros = (project in file("coreMacros")).
@@ -112,10 +107,10 @@ lazy val chisel3 = (project in file(".")).
     ),
     aggregate in doc := false,
     // Include macro classes, resources, and sources main JAR.
-    mappings in (Compile, packageBin) <++= mappings in (coreMacros, Compile, packageBin),
-    mappings in (Compile, packageSrc) <++= mappings in (coreMacros, Compile, packageSrc),
-    mappings in (Compile, packageBin) <++= mappings in (chiselFrontend, Compile, packageBin),
-    mappings in (Compile, packageSrc) <++= mappings in (chiselFrontend, Compile, packageSrc),
+    mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,
+    mappings in (Compile, packageSrc) ++= (mappings in (coreMacros, Compile, packageSrc)).value,
+    mappings in (Compile, packageBin) ++= (mappings in (chiselFrontend, Compile, packageBin)).value,
+    mappings in (Compile, packageSrc) ++= (mappings in (chiselFrontend, Compile, packageSrc)).value,
     // Export the packaged JAR so projects that depend directly on Chisel project (rather than the
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
