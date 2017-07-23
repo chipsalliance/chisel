@@ -1,3 +1,4 @@
+// See LICENSE for license details.
 
 package chisel3.util
 
@@ -14,7 +15,7 @@ object MemShiftRegister {
     * @param n number of cycles to delay
     * @param en enable the shift
     */
-  def apply[ T <: Data ]( in : T, n : Int, en : Bool = true.B ) : T = {
+  def apply[T <: Data]( in : T, n : Int, en : Bool = true.B ) : T = {
     val memSR = Module( new MemShiftRegister( in, n ) )
     memSR.io.en := en
     memSR.io.in := in
@@ -28,10 +29,10 @@ object MemShiftRegister {
     * @param resetData reset value for each register in the shift
     * @param en enable the shift
     */
-  def apply[ T <: Data ]( in : T, n : Int, resetData : T, en : Bool ) : T = {
-    if ( n <= 2 )
+  def apply[T <: Data]( in : T, n : Int, resetData : T, en : Bool ) : T = {
+    if ( n <= 2 ) {
       ShiftRegister( in, n, resetData, en )
-    else {
+    } else {
       val memSR = Module( new MemShiftRegister( in, n ) )
       memSR.io.en := en
       memSR.io.in := in
@@ -50,7 +51,7 @@ object MemShiftRegister {
 
 /** Do not use this class directly, instead use [[chisel3.util.MemShiftRegister$]] Factory method
   */
-class MemShiftRegister[ T <: Data ]( genType : T, n : Int ) extends Module {
+class MemShiftRegister[T <: Data]( genType : T, n : Int ) extends Module {
   val io = IO(new Bundle {
     val in = Input( genType.cloneType )
     val en = Input( Bool() )
@@ -58,9 +59,9 @@ class MemShiftRegister[ T <: Data ]( genType : T, n : Int ) extends Module {
     val out = Output( genType.cloneType )
   })
 
-  if ( n <= 2 )
+  if ( n <= 2 ) {
     io.out := ShiftRegister( io.in, n, io.en )
-  else {
+  } else {
     val myMem = SyncReadMem( n, genType.cloneType )
 
     val cntr = Counter( io.en, n )

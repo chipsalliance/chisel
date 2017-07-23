@@ -1,3 +1,4 @@
+// See LICENSE for license details.
 
 package chiselTests
 
@@ -12,16 +13,18 @@ class MemShiftRegisterTester( n : Int, useRst : Boolean ) extends BasicTester {
   val in = Wire( UInt( 16.W ) )
   val en = Wire( Bool() )
   val memSr = {
-    if ( useRst )
+    if ( useRst ) {
       MemShiftRegister( in, n, 133.U( 16.W ), en )
-    else
+    } else {
       MemShiftRegister( in, n, en )
+    }
   }
   val srCmp = {
-    if ( useRst )
+    if ( useRst ) {
       ShiftRegister( in, n, 133.U( 16.W ), en )
-    else
+    } else {
       ShiftRegister( in, n, en )
+    }
   }
   val cycs = 3*n
   val cntr = Counter( true.B, cycs )
@@ -41,18 +44,20 @@ class MemShiftRegisterTester( n : Int, useRst : Boolean ) extends BasicTester {
   def getEnIdx : Int = {
     var cnt = 0
     for ( eni <- ensRaw.zipWithIndex ) {
-      if ( cnt >= n )
+      if ( cnt >= n ) {
         return eni._2
-      if ( eni._1 )
+      }
+      if ( eni._1 ) {
         cnt += 1
+      }
     }
     cycs
   }
 
-  if ( useRst )
+  if ( useRst ) {
     assert( srCmp === memSr,
       "ShiftRegister and MemShiftRegister should function the same" )
-  else {
+  } else {
     when ( cntr._1 >= getEnIdx.U ) {
       assert( srCmp === memSr,
         "ShiftRegister and MemShiftRegister should function the same" )
