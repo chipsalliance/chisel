@@ -3,8 +3,17 @@ package chisel3.util
 
 import chisel3._
 
+/** This is functionally identical to a ShiftRegister but uses a Memory for storage.
+  * If the value of n <= 2 it will revert to the ShiftRegister implementation.
+  */
 object MemShiftRegister {
 
+  /** Returns the n-cycle delayed version of the input signal with reset initialization.
+    *
+    * @param in input to delay
+    * @param n number of cycles to delay
+    * @param en enable the shift
+    */
   def apply[ T <: Data ]( in : T, n : Int, en : Bool = true.B ) : T = {
     val memSR = Module( new MemShiftRegister( in, n ) )
     memSR.io.en := en
@@ -12,6 +21,13 @@ object MemShiftRegister {
     memSR.io.out
   }
 
+  /** Returns the n-cycle delayed version of the input signal with reset initialization.
+    *
+    * @param in input to delay
+    * @param n number of cycles to delay
+    * @param resetData reset value for each register in the shift
+    * @param en enable the shift
+    */
   def apply[ T <: Data ]( in : T, n : Int, resetData : T, en : Bool ) : T = {
     if ( n <= 2 )
       ShiftRegister( in, n, resetData, en )
