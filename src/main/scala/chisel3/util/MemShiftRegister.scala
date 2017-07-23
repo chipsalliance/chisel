@@ -32,14 +32,15 @@ object MemShiftRegister {
     if ( n <= 2 )
       ShiftRegister( in, n, resetData, en )
     else {
-      val memOut = apply( in, n, en )
-      val initCntr = Counter( en, n )
+      val memSR = Module( new MemShiftRegister( in, n ) )
+      memSR.io.en := en
+      memSR.io.in := in
       val initDone = RegInit( false.B )
-      initDone := initDone | initCntr._2
+      initDone := initDone | memSR.io.cntrWrap
       val out = Wire( resetData.cloneType )
       out := resetData
       when ( initDone ) {
-        out := memOut
+        out := memSR.io.out
       }
       out
     }
@@ -47,31 +48,33 @@ object MemShiftRegister {
 
 }
 
+/** Do not use this class directly, instead use [[chisel3.util.MemShiftRegister$]] Factory method
+  */
 class MemShiftRegister[ T <: Data ]( genType : T, n : Int ) extends Module {
   val io = IO(new Bundle {
     val in = Input( genType.cloneType )
     val en = Input( Bool() )
+    val cntrWrap = Output( Bool() )
     val out = Output( genType.cloneType )
   })
 
   if ( n <= 2 )
     io.out := ShiftRegister( io.in, n, io.en )
   else {
-    val myMem = SyncReadMem( n - 1, genType.cloneType )
+    val myMem = SyncReadMem( n, genType.cloneType )
 
-    // put a register at the front and back
-    val regTop = RegEnable( io.in, io.en )
-    val cntr = Counter( io.en, n - 1 )
+    val cntr = Counter( io.en, n )
     val readAddr = Wire( UInt( cntr._1.getWidth.W + 1.W ) )
 
     readAddr := cntr._1 + 1.U
-    when ( cntr._1 === ( n - 2 ).U ) {
+    when ( cntr._1 === ( n - 1 ).U ) {
       readAddr := 0.U
     }
 
     when ( io.en ) {
-      myMem.write( cntr._1, regTop )
+      myMem.write( cntr._1, io.in )
     }
     io.out := myMem.read( readAddr, io.en )
+    io.cntrWrap := cntr._2
   }
 }

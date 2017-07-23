@@ -26,8 +26,14 @@ class MemShiftRegisterTester( n : Int, useRst : Boolean ) extends BasicTester {
   val cycs = 3*n
   val cntr = Counter( true.B, cycs )
   val myRand = new Random
-  val data = Vec( List.fill( cycs ) { myRand.nextInt( 1 << 15 ).U } )
-  val ensRaw = List.fill( cycs ) { (myRand.nextInt(10) == 0) }
+  when ( memSr =/= srCmp ) {
+    printf( "%d != %d\n", memSr, srCmp )
+    printf( "en = %d\n", en )
+  }
+  val enFreq = 2 + myRand.nextInt(10)
+  val dataRaw = List.fill( cycs ) { myRand.nextInt( 1 << 15 ) }
+  val data = Vec( dataRaw.map( _.U ) )
+  val ensRaw = List( true, true, false, true, false ) ++ List.fill( cycs - 5 ) { (myRand.nextInt( enFreq ) != 0) }
   val ens = Vec( ensRaw.map( _.B ) )
   in := data( cntr._1 )
   en := ens( cntr._1 )
@@ -69,6 +75,8 @@ class MemShiftRegisterSpec extends ChiselPropSpec {
     ( 3,  true),
     ( 5,  true),
     ( 25, true),
+    ( 55, true),
+    ( 67, true),
     ( 73, true)
   )
 
