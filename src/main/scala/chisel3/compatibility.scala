@@ -238,7 +238,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
     override def _autoWrapPorts() = {
-      if (!_ioPortBound()) {
+      if (!_ioPortBound() && io != null) {
         IO(io)
       }
     }
