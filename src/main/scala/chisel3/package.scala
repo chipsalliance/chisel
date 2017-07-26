@@ -17,6 +17,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Input   = chisel3.core.Input
   val Output  = chisel3.core.Output
   val Flipped = chisel3.core.Flipped
+  val chiselTypeOf = chisel3.core.chiselTypeOf
 
   type Data = chisel3.core.Data
   val Wire = chisel3.core.Wire

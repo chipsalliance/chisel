@@ -137,6 +137,15 @@ private[core] object cloneSupertype {
   }
 }
 
+/** Returns the chisel type of a hardware object, allowing other hardware to be constructed from it.
+  */
+object chiselTypeOf {
+  def apply[T <: Data](target: T): T = {
+    requireIsHardware(target)
+    target.chiselCloneType.asInstanceOf[T]
+  }
+}
+
 /**
 * Input, Output, and Flipped are used to define the directions of Module IOs.
 *
@@ -146,21 +155,24 @@ private[core] object cloneSupertype {
 */
 object Input {
   def apply[T<:Data](source: T): T = {
-    val out = source.cloneType
+    requireIsChiselType(source)
+    val out = source.cloneType.asInstanceOf[T]
     out.userDirection = UserDirection.Input
     out
   }
 }
 object Output {
   def apply[T<:Data](source: T): T = {
-    val out = source.cloneType
+    requireIsChiselType(source)
+    val out = source.cloneType.asInstanceOf[T]
     out.userDirection = UserDirection.Output
     out
   }
 }
 object Flipped {
   def apply[T<:Data](source: T): T = {
-    val out = source.cloneType
+    requireIsChiselType(source)
+    val out = source.cloneType.asInstanceOf[T]
     out.userDirection = UserDirection.flip(source.userDirection)
     out
   }
@@ -304,19 +316,23 @@ abstract class Data extends HasId {
 
   /** cloneType must be defined for any Chisel object extending Data.
     * It is responsible for constructing a basic copy of the object being cloned.
-    * If cloneType needs to recursively clone elements of an object, it should call
-    * the cloneType methods on those elements.
+    *
+    * Internal API, users should look at chisel3.chiselTypeOf(...).
+    *
     * @return a copy of the object.
     */
-  def cloneType: this.type
+  def cloneType: Data
 
   /** chiselCloneType is called at the top-level of a clone chain.
     * It calls the client's cloneType() method to construct a basic copy of the object being cloned,
     * then performs any fixups required to reconstruct the appropriate core state of the cloned object.
+    *
+    * Internal API, users should look at chisel3.chiselTypeOf(...).
+    *
     * @return a copy of the object with appropriate core state.
     */
   def chiselCloneType: this.type = {
-    val clone = this.cloneType  // get a fresh object, without bindings
+    val clone = this.cloneType.asInstanceOf[this.type]  // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.userDirection = userDirection
     clone
