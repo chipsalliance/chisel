@@ -5,10 +5,8 @@ package chisel3.internal.firrtl
 import chisel3._
 import core._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
-
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo}
 import _root_.firrtl.annotations.Annotation
-
 import _root_.firrtl.{ir => firrtlir}
 
 case class PrimOp(val name: String) {
@@ -106,7 +104,10 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
 //    s"asInterval(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
     s"asInterval(${SLit(unsigned, width).name}, $n, $n)"
   }
-  val range: Range = new KnownIntervalRange(Closed(n), Closed(n), binaryPoint)
+  val range: Range = {
+    new Range(Range.getBound(isClosed = true, BigDecimal(n)),
+      Range.getBound(isClosed = true, BigDecimal(n)), Range.getRangeWidth(binaryPoint))
+  }
   def minWidth: Int = 1 + n.bitLength
 }
 
@@ -124,20 +125,9 @@ case class Index(imm: Arg, value: Arg) extends Arg {
   override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[${value.fullName(ctx)}]"
 }
 
-sealed trait Bound
-sealed trait Unbound extends Bound
-sealed trait NumericBound[T] extends Bound {
-  val value: T
-}
-
-case object UnknownBound extends Unbound
-sealed case class Open[T](value: T) extends NumericBound[T] {
-}
-sealed case class Closed[T](value: T) extends NumericBound[T]
-
-sealed trait Range {
-  val min: Bound
-  val max: Bound
+sealed trait RangeType {
+  val min: firrtlir.Bound
+  val max: firrtlir.Bound
   def getWidth: Width
 
   def * (that: Range): Range
@@ -150,48 +140,158 @@ sealed trait Range {
   def merge(that: Range): Range
 }
 
-case object UnknownRange extends Range {
-  val min = UnknownBound
-  val max = UnknownBound
+//TODO: chick: extract logic, delete all this
+//case object UnknownRange extends Range {
+//  val min = UnknownBound
+//  val max = UnknownBound
+//
+//  def * (that: Range): Range = this
+//  def +& (that: Range): Range = this
+//  def -& (that: Range): Range = this
+//  def << (that: Int): Range = this
+//  def >> (that: Int): Range = this
+//  def << (that: KnownWidth): Range = this
+//  def >> (that: KnownWidth): Range = this
+//
+//  override def getWidth: Width = ???
+//  override def toString: String = ""
+//  def merge(that: Range): Range = UnknownRange
+//}
+//
+//sealed trait KnownBigIntRange extends Range {
+//  val min: NumericBound[BigInt]
+//  val max: NumericBound[BigInt]
+//
+//  require( (min, max) match {
+//    case (Open(low_val), Open(high_val)) => low_val < high_val - 1
+//    case (Closed(low_val), Open(high_val)) => low_val < high_val
+//    case (Open(low_val), Closed(high_val)) => low_val < high_val
+//    case (Closed(low_val), Closed(high_val)) => low_val <= high_val
+//  })
+//  override def toString: String = {
+//    (min, max) match {
+//      case (Open(low_val), Open(high_val)) => s"($min, $max)"
+//      case (Closed(low_val), Open(high_val)) => s"[$min, $max"
+//      case (Open(low_val), Closed(high_val)) => s"$min, $max"
+//      case (Closed(low_val), Closed(high_val)) => s"$min, $max"
+//    }
+//    s"$min, $max"
+//  }
+//}
+//
+//sealed case class KnownIntervalRange(
+//                                      min: NumericBound[BigInt],
+//                                      max: NumericBound[BigInt],
+//                                      binaryPoint: BinaryPoint = KnownBinaryPoint(0))
+//  extends KnownBigIntRange{
+//  val maxWidth = max match {
+//    case Open(v) => Width((v - 1).bitLength + 1)
+//    case Closed(v) => Width(v.bitLength + 1)
+//  }
+//  val minWidth = min match {
+//    case Open(v) => Width((v + 1).bitLength + 1)
+//    case Closed(v) => Width(v.bitLength + 1)
+//  }
+//
+//  def getWidth: Width = maxWidth.max(minWidth)
+//
+//  override def toString: String = {
+//    (min, max) match {
+//      case (Open(low_val), Open(high_val)) => s"[${min.value + 1}, ${max.value - 1})]"
+//      case (Closed(low_val), Open(high_val)) => s"[[${min.value} ${max.value - 1}]"
+//      case (Open(low_val), Closed(high_val)) => s"[${min.value + 1} ${max .value}]"
+//      case (Closed(low_val), Closed(high_val)) => s"[${min.value} ${max .value}]"
+//    }
+//  }
+//  def getValues: (BigInt, BigInt) = (min, max) match {
+//    case (Open(low_val), Open(high_val)) => (min.value + 1, max.value - 1)
+//    case (Closed(low_val), Open(high_val)) => (min.value, max.value - 1)
+//    case (Open(low_val), Closed(high_val)) => (min.value + 1, max.value)
+//    case (Closed(low_val), Closed(high_val)) => (min.value, max.value)
+//  }
+//  def getValues(that: Range): Option[(BigInt, BigInt, BinaryPoint)] = that match {
+//    case KnownIntervalRange(Open(l), Open(h), bP) => Some((l + 1, h - 1, bP))
+//    case KnownIntervalRange(Closed(l), Open(h), bP) => Some((l, h - 1, bP))
+//    case KnownIntervalRange(Open(l), Closed(h), bP) => Some((l + 1, h, bP))
+//    case KnownIntervalRange(Closed(l), Closed(h), bP) => Some((l, h, bP))
+//    case _ => None
+//  }
+//  private val (low, high) = getValues
+//  def * (that: Range): Range = getValues(that) match {
+//    case Some((l, h, bp)) => KnownIntervalRange(Closed(low * l), Closed(high * h), binaryPoint max bp)
+//    case _ => UnknownRange
+//  }
+//  def +& (that: Range): Range = getValues(that) match {
+//    case Some((l, h, bp)) => KnownIntervalRange(Closed(low + l), Closed(high + h), binaryPoint max bp)
+//    case _ => UnknownRange
+//  }
+//  def -& (that: Range): Range = getValues(that) match {
+//    case Some((l, h, bp)) => KnownIntervalRange(Closed(low - h), Closed(high - l), binaryPoint max bp)
+//    case _ => UnknownRange
+//  }
+//  def << (that: Int): Range = KnownIntervalRange(Closed(low << that), Closed(high << that), binaryPoint)
+//  def >> (that: Int): Range = KnownIntervalRange(Closed(low >> that), Closed(high >> that), binaryPoint)
+//  def << (width: KnownWidth): Range = KnownIntervalRange(Closed(low), Closed(high << (BigInt(2) << width.value).toInt), binaryPoint)
+//  def >> (width: KnownWidth): Range = KnownIntervalRange(Closed(low >> (BigInt(2) << width.value).toInt), Closed(high), binaryPoint)
+//  def merge(that: Range): Range = that match {
+//    case UnknownRange => UnknownRange
+//    case KnownIntervalRange(lo, hi, bp) =>
+//      val mergeLow = (min, lo) match {
+//        case (Open(a), Open(b))      if a <= b => Open(a)
+//        case (Open(a), Open(b))      if b < a  => Open(b)
+//        case (Closed(a), Open(b))    if a <= b => Closed(a)
+//        case (Closed(a), Open(b))    if b < a  => Open(b)
+//        case (Open(a), Closed(b))    if a < b  => Open(a)
+//        case (Open(a), Closed(b))    if b <= a => Closed(b)
+//        case (Closed(a), Closed(b))  if a <= b => Closed(a)
+//        case (Closed(a), Closed(b))  if b < a  => Closed(b)
+//      }
+//      val mergeHigh = (max, hi) match {
+//        case (Open(a), Open(b))      if a >= b => Open(a)
+//        case (Open(a), Open(b))      if b < a  => Open(b)
+//        case (Closed(a), Open(b))    if a >= b => Closed(a)
+//        case (Closed(a), Open(b))    if b > a  => Open(b)
+//        case (Open(a), Closed(b))    if a > b  => Open(a)
+//        case (Open(a), Closed(b))    if b >= a => Closed(b)
+//        case (Closed(a), Closed(b))  if a >= b => Closed(a)
+//        case (Closed(a), Closed(b))  if b > a  => Closed(b)
+//      }
+//      KnownIntervalRange(mergeLow, mergeHigh, bp max binaryPoint)
+//  }
+//}
 
-  def * (that: Range): Range = this
-  def +& (that: Range): Range = this
-  def -& (that: Range): Range = this
-  def << (that: Int): Range = this
-  def >> (that: Int): Range = this
-  def << (that: KnownWidth): Range = this
-  def >> (that: KnownWidth): Range = this
-
+sealed class Range(val min: firrtlir.Bound, val max: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width)
+extends firrtlir.IntervalType(min, max, firrtlBinaryPoint)
+with RangeType {
   override def getWidth: Width = ???
-  override def toString: String = ""
-  def merge(that: Range): Range = UnknownRange
-}
 
-sealed trait KnownBigIntRange extends Range {
-  val min: NumericBound[BigInt]
-  val max: NumericBound[BigInt]
+  override def *(that: Range): Range = ???
 
-  require( (min, max) match {
-    case (Open(low_val), Open(high_val)) => low_val < high_val - 1
-    case (Closed(low_val), Open(high_val)) => low_val < high_val
-    case (Open(low_val), Closed(high_val)) => low_val < high_val
-    case (Closed(low_val), Closed(high_val)) => low_val <= high_val
-  })
-  override def toString: String = {
-    (min, max) match {
-      case (Open(low_val), Open(high_val)) => s"($min, $max)"
-      case (Closed(low_val), Open(high_val)) => s"[$min, $max"
-      case (Open(low_val), Closed(high_val)) => s"$min, $max"
-      case (Closed(low_val), Closed(high_val)) => s"$min, $max"
+  override def +&(that: Range): Range = ???
+
+  override def -&(that: Range): Range = ???
+
+  override def <<(that: Int): Range = ???
+
+  override def >>(that: Int): Range = ???
+
+  override def <<(that: KnownWidth): Range = ???
+
+  override def >>(that: KnownWidth): Range = ???
+
+  override def merge(that: Range): Range = ???
+
+  def binaryPoint: BinaryPoint = {
+    firrtlBinaryPoint match {
+      case firrtlir.IntWidth(n) =>
+        assert(n < Int.MaxValue, s"binary point value $n is out of range")
+        KnownBinaryPoint(n.toInt)
+      case _ => UnknownBinaryPoint
     }
-    s"$min, $max"
   }
 }
 
-sealed class IntervalRange(min: firrtlir.Bound, max: firrtlir.Bound, binaryPoint: firrtlir.Width)
-extends firrtlir.IntervalType(min, max, binaryPoint) {}
-
-object IntervalRange {
+object Range {
   def getBound(isClosed: Boolean, value: String): firrtlir.Bound = {
     if(value == "?") {
       firrtlir.UnknownBound
@@ -204,13 +304,17 @@ object IntervalRange {
     }
   }
 
-  def getBound(isClosed: Boolean, value: Int): firrtlir.Bound = {
+  def getBound(isClosed: Boolean, value: BigDecimal): firrtlir.Bound = {
     if(isClosed) {
-      firrtlir.Open(BigDecimal(value))
+      firrtlir.Open(value)
     }
     else {
-      firrtlir.Closed(BigDecimal(value))
+      firrtlir.Closed(value)
     }
+  }
+
+  def getBound(isClosed: Boolean, value: Int): firrtlir.Bound = {
+    getBound(isClosed, (BigDecimal(value)))
   }
 
   def getBinaryPoint(s: String): firrtlir.Width = {
@@ -225,88 +329,33 @@ object IntervalRange {
       firrtlir.IntWidth(n)
     }
   }
-}
-
-sealed case class KnownIntervalRange(
-                                      min: NumericBound[BigInt],
-                                      max: NumericBound[BigInt],
-                                      binaryPoint: BinaryPoint = KnownBinaryPoint(0))
-  extends KnownBigIntRange{
-  val maxWidth = max match {
-    case Open(v) => Width((v - 1).bitLength + 1)
-    case Closed(v) => Width(v.bitLength + 1)
-  }
-  val minWidth = min match {
-    case Open(v) => Width((v + 1).bitLength + 1)
-    case Closed(v) => Width(v.bitLength + 1)
-  }
-
-  def getWidth: Width = maxWidth.max(minWidth)
-
-  override def toString: String = {
-    (min, max) match {
-      case (Open(low_val), Open(high_val)) => s"[${min.value + 1}, ${max.value - 1})]"
-      case (Closed(low_val), Open(high_val)) => s"[[${min.value} ${max.value - 1}]"
-      case (Open(low_val), Closed(high_val)) => s"[${min.value + 1} ${max .value}]"
-      case (Closed(low_val), Closed(high_val)) => s"[${min.value} ${max .value}]"
+  def getBinaryPoint(n: BinaryPoint): firrtlir.Width = {
+    n match {
+      case UnknownBinaryPoint => firrtlir.UnknownWidth
+      case KnownBinaryPoint(w) => firrtlir.IntWidth(w)
     }
   }
-  def getValues: (BigInt, BigInt) = (min, max) match {
-    case (Open(low_val), Open(high_val)) => (min.value + 1, max.value - 1)
-    case (Closed(low_val), Open(high_val)) => (min.value, max.value - 1)
-    case (Open(low_val), Closed(high_val)) => (min.value + 1, max.value)
-    case (Closed(low_val), Closed(high_val)) => (min.value, max.value)
+
+  def getRangeWidth(w: Width): firrtlir.Width = {
+    if(w.known) {
+      firrtlir.IntWidth(w.get)
+    }
+    else {
+      firrtlir.UnknownWidth
+    }
   }
-  def getValues(that: Range): Option[(BigInt, BigInt, BinaryPoint)] = that match {
-    case KnownIntervalRange(Open(l), Open(h), bP) => Some((l + 1, h - 1, bP))
-    case KnownIntervalRange(Closed(l), Open(h), bP) => Some((l, h - 1, bP))
-    case KnownIntervalRange(Open(l), Closed(h), bP) => Some((l + 1, h, bP))
-    case KnownIntervalRange(Closed(l), Closed(h), bP) => Some((l, h, bP))
-    case _ => None
+  def getRangeWidth(binaryPoint: BinaryPoint): firrtlir.Width = {
+    if(binaryPoint.known) {
+      firrtlir.IntWidth(binaryPoint.get)
+    }
+    else {
+      firrtlir.UnknownWidth
+    }
   }
-  private val (low, high) = getValues
-  def * (that: Range): Range = getValues(that) match {
-    case Some((l, h, bp)) => KnownIntervalRange(Closed(low * l), Closed(high * h), binaryPoint max bp)
-    case _ => UnknownRange
-  }
-  def +& (that: Range): Range = getValues(that) match {
-    case Some((l, h, bp)) => KnownIntervalRange(Closed(low + l), Closed(high + h), binaryPoint max bp)
-    case _ => UnknownRange
-  }
-  def -& (that: Range): Range = getValues(that) match {
-    case Some((l, h, bp)) => KnownIntervalRange(Closed(low - h), Closed(high - l), binaryPoint max bp)
-    case _ => UnknownRange
-  }
-  def << (that: Int): Range = KnownIntervalRange(Closed(low << that), Closed(high << that), binaryPoint)
-  def >> (that: Int): Range = KnownIntervalRange(Closed(low >> that), Closed(high >> that), binaryPoint)
-  def << (width: KnownWidth): Range = KnownIntervalRange(Closed(low), Closed(high << (BigInt(2) << width.value).toInt), binaryPoint)
-  def >> (width: KnownWidth): Range = KnownIntervalRange(Closed(low >> (BigInt(2) << width.value).toInt), Closed(high), binaryPoint)
-  def merge(that: Range): Range = that match {
-    case UnknownRange => UnknownRange
-    case KnownIntervalRange(lo, hi, bp) =>
-      val mergeLow = (min, lo) match {
-        case (Open(a), Open(b))      if a <= b => Open(a)
-        case (Open(a), Open(b))      if b < a  => Open(b)
-        case (Closed(a), Open(b))    if a <= b => Closed(a)
-        case (Closed(a), Open(b))    if b < a  => Open(b)
-        case (Open(a), Closed(b))    if a < b  => Open(a)
-        case (Open(a), Closed(b))    if b <= a => Closed(b)
-        case (Closed(a), Closed(b))  if a <= b => Closed(a)
-        case (Closed(a), Closed(b))  if b < a  => Closed(b)
-      }
-      val mergeHigh = (max, hi) match {
-        case (Open(a), Open(b))      if a >= b => Open(a)
-        case (Open(a), Open(b))      if b < a  => Open(b)
-        case (Closed(a), Open(b))    if a >= b => Closed(a)
-        case (Closed(a), Open(b))    if b > a  => Open(b)
-        case (Open(a), Closed(b))    if a > b  => Open(a)
-        case (Open(a), Closed(b))    if b >= a => Closed(b)
-        case (Closed(a), Closed(b))  if a >= b => Closed(a)
-        case (Closed(a), Closed(b))  if b > a  => Closed(b)
-      }
-      KnownIntervalRange(mergeLow, mergeHigh, bp max binaryPoint)
-  }
+
+  def unknownRange: Range = new Range(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
 }
+
 
 object Width {
   def apply(x: Int): Width = KnownWidth(x)

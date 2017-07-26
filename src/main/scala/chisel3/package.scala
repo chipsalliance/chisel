@@ -1,6 +1,5 @@
-import chisel3.core.CompileOptions
-import chisel3.internal.firrtl.{IntervalRange}
 // See LICENSE for license details.
+import chisel3.core.CompileOptions
 
 /** The chisel3 package contains the chisel3 API.
   * It maps core components into the public chisel3 namespace.
@@ -348,7 +347,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros
-      import internal.firrtl.NumericBound
 
       /** Specifies a range using mathematical range notation. Variables can be interpolated using
         * standard string interpolation syntax.
@@ -359,7 +357,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         * }}}
         */
 //      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
-      def range(args: Any*): IntervalRange = macro chisel3.internal.RangeTransform.apply
+      def range(args: Any*): chisel3.internal.firrtl.Range = macro chisel3.internal.RangeTransform.apply
     }
 
     import scala.annotation.compileTimeOnly

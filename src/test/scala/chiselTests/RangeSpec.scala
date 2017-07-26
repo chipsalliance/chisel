@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselRange
-import chisel3.internal.firrtl.{Closed, KnownIntervalRange, Open}
+import chisel3.internal.firrtl.Range
 import org.scalatest.{FreeSpec, Matchers}
 
 class RangeSpec extends FreeSpec with Matchers {
@@ -49,7 +49,6 @@ class RangeSpec extends FreeSpec with Matchers {
 //    }
 
     "range macros support precision" in {
-      import chisel3.internal.firrtl.IntervalRange
 
       val a = range"[2, 6).5"
       println(s"${a.serialize}")
@@ -58,8 +57,8 @@ class RangeSpec extends FreeSpec with Matchers {
       val c = range"(1,2)"
       println(s"${c.serialize}")
       val d = range"(?, ?)"
-      println(s"d is $d ${d.serialize}")
-      println(s"Done!")
+      println(s"${d.serialize}")
+
     }
 
 //    "UInt should get the correct width from a range" in {
