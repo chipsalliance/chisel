@@ -55,3 +55,4 @@ project/plugins/project/
 .idea/
 gen/
 project/project/
+/bin/
