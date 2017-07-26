@@ -9,6 +9,8 @@ import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
 
 import _root_.firrtl.annotations.Annotation
 
+import _root_.firrtl.{ir => firrtlir}
+
 case class PrimOp(val name: String) {
   override def toString: String = name
 }
@@ -160,8 +162,8 @@ case object UnknownRange extends Range {
   def << (that: KnownWidth): Range = this
   def >> (that: KnownWidth): Range = this
 
-  override def getWidth = ???
-  override def toString = ""
+  override def getWidth: Width = ???
+  override def toString: String = ""
   def merge(that: Range): Range = UnknownRange
 }
 
@@ -186,27 +188,44 @@ sealed trait KnownBigIntRange extends Range {
   }
 }
 
-//sealed case class KnownUIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
-//  require (min.value >= 0)
-//
-//  def getWidth: Width = max match {
-//    case Open(v) => Width((v - BigInt(1)).bitLength.max(1))
-//    case Closed(v) => Width(v.bitLength.max(1))
-//  }
-//}
-//
-//sealed case class KnownSIntRange(min: NumericBound[BigInt], max: NumericBound[BigInt]) extends KnownBigIntRange {
-//
-//  val maxWidth = max match {
-//    case Open(v) => Width((v - 1).bitLength + 1)
-//    case Closed(v) => Width(v.bitLength + 1)
-//  }
-//  val minWidth = min match {
-//    case Open(v) => Width((v + 1).bitLength + 1)
-//    case Closed(v) => Width(v.bitLength + 1)
-//  }
-//  def getWidth: Width = maxWidth.max(minWidth)
-//}
+sealed class IntervalRange(min: firrtlir.Bound, max: firrtlir.Bound, binaryPoint: firrtlir.Width)
+extends firrtlir.IntervalType(min, max, binaryPoint) {}
+
+object IntervalRange {
+  def getBound(isClosed: Boolean, value: String): firrtlir.Bound = {
+    if(value == "?") {
+      firrtlir.UnknownBound
+    }
+    else if(isClosed) {
+      firrtlir.Open(BigDecimal(value))
+    }
+    else {
+      firrtlir.Closed(BigDecimal(value))
+    }
+  }
+
+  def getBound(isClosed: Boolean, value: Int): firrtlir.Bound = {
+    if(isClosed) {
+      firrtlir.Open(BigDecimal(value))
+    }
+    else {
+      firrtlir.Closed(BigDecimal(value))
+    }
+  }
+
+  def getBinaryPoint(s: String): firrtlir.Width = {
+    firrtlir.UnknownWidth
+  }
+
+  def getBinaryPoint(n: Int): firrtlir.Width = {
+    if(n < 0) {
+      firrtlir.UnknownWidth
+    }
+    else {
+      firrtlir.IntWidth(n)
+    }
+  }
+}
 
 sealed case class KnownIntervalRange(
                                       min: NumericBound[BigInt],
