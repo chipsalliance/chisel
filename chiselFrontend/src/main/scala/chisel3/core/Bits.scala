@@ -602,6 +602,13 @@ trait UIntFactory {
 
   /** Create a UInt with the specified range */
   def apply(range: Range): UInt = {
+    range.min match {
+      case Closed(n) =>
+        if(n < 0) throw new IllegalArgumentException(s"Creating UInt: Invalid range with ${range.serialize}")
+      case Open(n) =>
+        if(n <= 0) throw new IllegalArgumentException(s"Creating UInt: Invalid range with ${range.serialize}")
+      case _ =>
+    }
     apply(range.getWidth)
   }
 //TODO: Fix this later

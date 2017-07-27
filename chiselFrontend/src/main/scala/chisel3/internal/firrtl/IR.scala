@@ -263,7 +263,23 @@ sealed trait RangeType {
 sealed class Range(val min: firrtlir.Bound, val max: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width)
 extends firrtlir.IntervalType(min, max, firrtlBinaryPoint)
 with RangeType {
-  override def getWidth: Width = ???
+  (min, max) match {
+    case (firrtlir.Open(begin), firrtlir.Open(end)) =>
+      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+    case (firrtlir.Open(begin), firrtlir.Closed(end)) =>
+      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+    case (firrtlir.Closed(begin), firrtlir.Open(end)) =>
+      if(begin > end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+    case (firrtlir.Closed(begin), firrtlir.Closed(end)) =>
+      if(begin > end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+    case _ =>
+  }
+  override def getWidth: Width = {
+    width match {
+      case firrtlir.IntWidth(n) => KnownWidth(n.toInt)
+      case firrtlir.UnknownWidth => UnknownWidth()
+    }
+  }
 
   override def *(that: Range): Range = ???
 
@@ -292,24 +308,40 @@ with RangeType {
 }
 
 object Range {
+  def apply(min: firrtlir.Bound, max: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width): Range = {
+    new Range(min, max, firrtlBinaryPoint)
+  }
+
+  def apply(min: firrtlir.Bound, max: firrtlir.Bound, binaryPoint: BinaryPoint): Range = {
+    new Range(min, max, Range.getBinaryPoint(binaryPoint))
+  }
+
+    def apply(min: firrtlir.Bound, max: firrtlir.Bound, binaryPoint: Int): Range = {
+      Range(min, max, BinaryPoint(binaryPoint))
+    }
+
+  def unapply(arg: Range): Option[(firrtlir.Bound, firrtlir.Bound, BinaryPoint)] = {
+    return Some((arg.min, arg.max, arg.binaryPoint))
+  }
+
   def getBound(isClosed: Boolean, value: String): firrtlir.Bound = {
     if(value == "?") {
       firrtlir.UnknownBound
     }
     else if(isClosed) {
-      firrtlir.Open(BigDecimal(value))
+      firrtlir.Closed(BigDecimal(value))
     }
     else {
-      firrtlir.Closed(BigDecimal(value))
+      firrtlir.Open(BigDecimal(value))
     }
   }
 
   def getBound(isClosed: Boolean, value: BigDecimal): firrtlir.Bound = {
     if(isClosed) {
-      firrtlir.Open(value)
+      firrtlir.Closed(value)
     }
     else {
-      firrtlir.Closed(value)
+      firrtlir.Open(value)
     }
   }
 

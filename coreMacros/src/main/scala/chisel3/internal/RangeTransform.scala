@@ -121,7 +121,7 @@ class RangeTransform(val c: blackbox.Context) {
       case Some(other) =>
         c.abort(c.enclosingPosition, s"Unknown end inclusive/exclusive specifier, got: '$other'")
       case None =>
-        Literal(Constant(-1))
+        Literal(Constant(0))
     }
 
     if (nextArgIndex < args.length) {
