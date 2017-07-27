@@ -266,10 +266,17 @@ with RangeType {
   (min, max) match {
     case (firrtlir.Open(begin), firrtlir.Open(end)) =>
       if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+      binaryPoint match {
+        case KnownBinaryPoint(bp) =>
+          if(begin >= end - (BigDecimal(1) / (1 << bp))) {
+            throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+          }
+        case _ =>
+      }
     case (firrtlir.Open(begin), firrtlir.Closed(end)) =>
       if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
     case (firrtlir.Closed(begin), firrtlir.Open(end)) =>
-      if(begin > end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
     case (firrtlir.Closed(begin), firrtlir.Closed(end)) =>
       if(begin > end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
     case _ =>

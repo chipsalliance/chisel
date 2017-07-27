@@ -4,10 +4,12 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselRange
-import chisel3.internal.firrtl.{BinaryPoint, Range}
+import chisel3.internal.firrtl.Range
 import firrtl.ir.{Closed, Open}
 import org.scalatest.{FreeSpec, Matchers}
 
+//noinspection ScalaStyle
+//scalastyle:off magic.number
 class RangeSpec extends FreeSpec with Matchers {
   "Ranges can be specified for UInt, SInt, and FixedPoint" - {
     "invalid range specifiers should fail at compile time" in {
@@ -50,15 +52,14 @@ class RangeSpec extends FreeSpec with Matchers {
     }
 
     "range macros support precision" in {
-
       val a = range"[2, 6).5"
-      println(s"${a.serialize}")
+      a.serialize should be ("Interval[2, 6).5")
       val b = range"[0, 16).4"
-      println(s"${b.serialize}")
-      val c = range"(1,2)"
-      println(s"${c.serialize}")
+      b.serialize should be ("Interval[0, 16).4")
+      val c = range"[1,2]"
+      c.serialize should be ("Interval[1, 2].0")
       val d = range"(?, ?)"
-      println(s"${d.serialize}")
+      d.serialize should be ("Interval.0")
 
     }
 
@@ -67,51 +68,53 @@ class RangeSpec extends FreeSpec with Matchers {
 //      UInt(range"[0, 8)").getWidth should be (3)
 //      UInt(range"[0, 0]").getWidth should be (1)
 //    }
-
+//
 //    "SInt should get the correct width from a range" in {
 //      SInt(range"[0, 8)").getWidth should be (4)
 //      SInt(range"[0, 8]").getWidth should be (5)
 //      SInt(range"[-4, 4)").getWidth should be (3)
 //      SInt(range"[0, 0]").getWidth should be (1)
 //    }
-//
-//    "UInt should check that the range is valid" in {
-//      an [IllegalArgumentException] should be thrownBy {
-//        UInt(range"[1, 0]")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        UInt(range"[-1, 1]")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        UInt(range"(0,0]")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        UInt(range"[0,0)")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        UInt(range"(0,0)")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        UInt(range"(0,1)")
-//      }
-//    }
-//
-//    "SInt should check that the range is valid" in {
-//      an [IllegalArgumentException] should be thrownBy {
-//        SInt(range"[1, 0]")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        SInt(range"(0,0]")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        SInt(range"[0,0)")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        SInt(range"(0,0)")
-//      }
-//      an [IllegalArgumentException] should be thrownBy {
-//        SInt(range"(0,1)")
-//      }
-//    }
+
+    "UInt should check that the range is valid" in {
+      an [IllegalArgumentException] should be thrownBy {
+        UInt(range"[1, 0]")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        UInt(range"[-1, 1]")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        UInt(range"(0,0]")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        UInt(range"[0,0)")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        UInt(range"(0,0)")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        UInt(range"(0,1)")
+      }
+    }
+
+    "SInt should check that the range is valid" in {
+      an [IllegalArgumentException] should be thrownBy {
+        SInt(range"[1, 0]")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        SInt(range"(0,0]")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        SInt(range"[0,0)")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        SInt(range"(0,0)")
+      }
+      an [IllegalArgumentException] should be thrownBy {
+        val r = range"(0,1)"
+        println(s"r = $r.serialize")
+        SInt(range"(0,1)")
+      }
+    }
   }
 }

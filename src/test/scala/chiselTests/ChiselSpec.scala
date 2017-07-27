@@ -67,8 +67,8 @@ class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
 class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
-  implicit override val generatorDrivenConfig =
-    PropertyCheckConfig(minSuccessful = 8, minSize = 1, maxSize = 4)
+//  implicit override val generatorDrivenConfig =
+//    PropertyCheckConfig(minSuccessful = 8, minSize = 1, maxSize = 4)
 
   // Generator for small positive integers.
   val smallPosInts = Gen.choose(1, 4)
