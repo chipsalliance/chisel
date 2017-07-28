@@ -34,7 +34,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     firrtlOutput should include("io.out is invalid")
   }
 
-  property("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with Strict CompileOptions") {
+  ignore("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with Strict CompileOptions") {
     import chisel3.core.ExplicitCompileOptions.Strict
     class ModuleWithoutDontCare extends Module {
 
@@ -98,7 +98,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
   }
 
-  property("FIRRTL should complain about partial initialization with Strict CompileOptions and conditional connect") {
+  ignore("FIRRTL should complain about partial initialization with Strict CompileOptions and conditional connect") {
     import chisel3.core.ExplicitCompileOptions.Strict
     class ModuleWithIncompleteAssignment extends Module {
 
