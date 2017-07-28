@@ -71,6 +71,6 @@ object ExplicitCompileOptions {
     dontTryConnectionsSwapped = true,
     dontAssumeDirectionality = true,
     checkSynthesizable = true,
-    explicitInvalidate = true
+    explicitInvalidate = false
   )
 }
