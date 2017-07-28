@@ -123,7 +123,7 @@ private[core] object cloneSupertype {
           throw new AssertionError(
             s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
       }).asInstanceOf[T] }
-      model.chiselCloneType
+      model.cloneTypeFull
     }
     else {
       for (elt <- elts.tail) {
@@ -132,7 +132,7 @@ private[core] object cloneSupertype {
         require(elt typeEquivalent elts.head,
           s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
       }
-      elts.head.chiselCloneType
+      elts.head.cloneTypeFull
     }
   }
 }
@@ -142,7 +142,7 @@ private[core] object cloneSupertype {
 object chiselTypeOf {
   def apply[T <: Data](target: T): T = {
     requireIsHardware(target)
-    target.chiselCloneType.asInstanceOf[T]
+    target.cloneTypeFull.asInstanceOf[T]
   }
 }
 
@@ -154,24 +154,30 @@ object chiselTypeOf {
 * Thus, an error will be thrown if these are used on bound Data
 */
 object Input {
-  def apply[T<:Data](source: T): T = {
-    requireIsChiselType(source)
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    if (compileOptions.checkSynthesizable) {
+      requireIsChiselType(source)
+    }
     val out = source.cloneType.asInstanceOf[T]
     out.userDirection = UserDirection.Input
     out
   }
 }
 object Output {
-  def apply[T<:Data](source: T): T = {
-    requireIsChiselType(source)
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    if (compileOptions.checkSynthesizable) {
+      requireIsChiselType(source)
+    }
     val out = source.cloneType.asInstanceOf[T]
     out.userDirection = UserDirection.Output
     out
   }
 }
 object Flipped {
-  def apply[T<:Data](source: T): T = {
-    requireIsChiselType(source)
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    if (compileOptions.checkSynthesizable) {
+      requireIsChiselType(source)
+    }
     val out = source.cloneType.asInstanceOf[T]
     out.userDirection = UserDirection.flip(source.userDirection)
     out
@@ -314,29 +320,27 @@ abstract class Data extends HasId {
   private[chisel3] def width: Width
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
-  /** cloneType must be defined for any Chisel object extending Data.
-    * It is responsible for constructing a basic copy of the object being cloned.
+  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
-    * Internal API, users should look at chisel3.chiselTypeOf(...).
+    * cloneType must be defined for any Chisel object extending Data.
+    * It is responsible for constructing a basic copy of the object being cloned.
     *
     * @return a copy of the object.
     */
-  def cloneType: Data
+  def cloneType: this.type
 
-  /** chiselCloneType is called at the top-level of a clone chain.
-    * It calls the client's cloneType() method to construct a basic copy of the object being cloned,
-    * then performs any fixups required to reconstruct the appropriate core state of the cloned object.
+  /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
-    * Internal API, users should look at chisel3.chiselTypeOf(...).
-    *
-    * @return a copy of the object with appropriate core state.
+    * Returns a copy of this data type, with hardware bindings (if any) removed.
+    * Directionality data is still preserved.
     */
-  def chiselCloneType: this.type = {
+  def cloneTypeFull: this.type = {
     val clone = this.cloneType.asInstanceOf[this.type]  // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.userDirection = userDirection
     clone
   }
+
   final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
   def litArg(): Option[LitArg] = None
@@ -361,7 +365,7 @@ abstract class Data extends HasId {
   /** Does a reinterpret cast of the bits in this node into the format that provides.
     * Returns a new Wire of that type. Does not modify existing nodes.
     *
-    * x.asTypeOf(that) performs the inverse operation of x = that.toBits.
+    * x.asTypeOf(that) performs the inverse operation of x := that.toBits.
     *
     * @note bit widths are NOT checked, may pad or drop bits from input
     * @note that should have known widths
@@ -369,7 +373,7 @@ abstract class Data extends HasId {
   def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val thatCloned = Wire(that.chiselCloneType)
+    val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt())
     thatCloned
   }
@@ -399,10 +403,10 @@ object Wire {
   def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T = {
     val model = (init.litArg match {
       // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
-      case Some(lit) if lit.forcedWidth => init.chiselCloneType
+      case Some(lit) if lit.forcedWidth => init.cloneTypeFull
       case _ => init match {
         case init: Bits => init.cloneTypeWidth(Width())
-        case init => init.chiselCloneType
+        case init => init.cloneTypeFull
       }
     }).asInstanceOf[T]
     apply(model, init)
@@ -418,7 +422,7 @@ object Wire {
   }
 
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val x = t.chiselCloneType
+    val x = t.cloneTypeFull
 
     // Bind each element of x to being a Wire
     x.bind(WireBinding(Builder.forcedUserModule))

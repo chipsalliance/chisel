@@ -89,10 +89,10 @@ object Vec {
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.cloneTypeFull, n)
 
   @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
+  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.cloneTypeFull, n)
 
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
@@ -588,9 +588,3 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
-
-private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "chiselCloneType", "toBits",
-    "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
-}
-

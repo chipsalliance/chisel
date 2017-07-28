@@ -43,6 +43,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     }
   }
 
+  implicit class cloneTypeable[T<:Data](val target: T) extends AnyVal {
+    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
+    def chiselCloneType: target.type = {
+      target.cloneTypeFull.asInstanceOf[target.type]
+    }
+  }
+
   type Aggregate = chisel3.core.Aggregate
   val Vec = chisel3.core.Vec
   type Vec[T <: Data] = chisel3.core.Vec[T]

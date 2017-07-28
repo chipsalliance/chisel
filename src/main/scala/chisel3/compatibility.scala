@@ -51,6 +51,11 @@ package object Chisel {     // scalastyle:ignore package.object.name
 
     }
   }
+  implicit class cloneTypeable[T<:Data](val target: T) extends AnyVal {
+    def chiselCloneType: target.type = {
+      target.cloneTypeFull.asInstanceOf[target.type]
+    }
+  }
 
   type ChiselException = chisel3.internal.ChiselException
 
