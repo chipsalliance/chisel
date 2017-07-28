@@ -825,12 +825,36 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
   /** subtract (no growth) operator */
   final def -% (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
-  def do_+& (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-    binop(sourceInfo, FixedPoint((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint), AddOp, that)
+  def do_+& (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    (this.width, that.width, this.binaryPoint, that.binaryPoint) match {
+      case (KnownWidth(thisWidth), KnownWidth(thatWidth), KnownBinaryPoint(thisBP), KnownBinaryPoint(thatBP)) =>
+        val thisIntWidth = thisWidth - thisBP
+        val thatIntWidth = thatWidth - thatBP
+        val newBinaryPoint = thisBP max thatBP
+        val newWidth = (thisIntWidth max thatIntWidth) + newBinaryPoint + 1
+        binop(sourceInfo, FixedPoint(newWidth.W, newBinaryPoint.BP), AddOp, that)
+      case _ =>
+        val newBinaryPoint = this.binaryPoint max that.binaryPoint
+        binop(sourceInfo, FixedPoint(UnknownWidth(), newBinaryPoint), AddOp, that)
+    }
+  }
+
   def do_+% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     (this +& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
-  def do_-& (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-    binop(sourceInfo, FixedPoint((this.width max that.width) + 1, this.binaryPoint max that.binaryPoint), SubOp, that)
+  def do_-& (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    (this.width, that.width, this.binaryPoint, that.binaryPoint) match {
+      case (KnownWidth(thisWidth), KnownWidth(thatWidth), KnownBinaryPoint(thisBP), KnownBinaryPoint(thatBP)) =>
+        val thisIntWidth = thisWidth - thisBP
+        val thatIntWidth = thatWidth - thatBP
+        val newBinaryPoint = thisBP max thatBP
+        val newWidth = (thisIntWidth max thatIntWidth) + newBinaryPoint + 1
+        binop(sourceInfo, FixedPoint(newWidth.W, newBinaryPoint.BP), SubOp, that)
+      case _ =>
+        val newBinaryPoint = this.binaryPoint max that.binaryPoint
+        binop(sourceInfo, FixedPoint(UnknownWidth(), newBinaryPoint), SubOp, that)
+    }
+  }
+
   def do_-% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     (this -& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
 
