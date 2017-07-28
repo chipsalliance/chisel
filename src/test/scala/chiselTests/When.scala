@@ -9,8 +9,6 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 
 class WhenTester() extends BasicTester {
-  // We don't want firrtl complaining about "not fully initialized" connections.
-  implicit val implicitCompileOptions = implicitInvalidateOptions
   val cnt = Counter(4)
   when(true.B) { cnt.inc() }
 
@@ -33,8 +31,6 @@ class WhenTester() extends BasicTester {
 }
 
 class OverlappedWhenTester() extends BasicTester {
-  // We don't want firrtl complaining about "not fully initialized" connections.
-  implicit val implicitCompileOptions = implicitInvalidateOptions
   val cnt = Counter(4)
   when(true.B) { cnt.inc() }
 

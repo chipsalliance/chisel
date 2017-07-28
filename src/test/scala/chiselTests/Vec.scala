@@ -135,17 +135,12 @@ class OneBitUnitRegVecTester extends BasicTester {
 }
 
 class ZeroEntryVecTester extends BasicTester {
-  // We don't want firrtl complaining about "not fully initialized" connections.
-  implicit val implicitCompileOptions = implicitInvalidateOptions
-  class BundleWithZeroEntryVec extends Bundle {
-    val foo = Bool()
-    val bar = Vec(0, Bool())
-    override def cloneType = (new BundleWithZeroEntryVec).asInstanceOf[this.type]
-  }
   require(Vec(0, Bool()).getWidth == 0)
 
-  val bundleWithZeroEntryVec = new BundleWithZeroEntryVec
-
+  val bundleWithZeroEntryVec = new Bundle {
+    val foo = Bool()
+    val bar = Vec(0, Bool())
+  }
   require(0.U.asTypeOf(bundleWithZeroEntryVec).getWidth == 1)
   require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
 
@@ -176,8 +171,6 @@ class PassthroughModuleTester extends Module {
 
 
 class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
-  // We don't want firrtl complaining about "not fully initialized" connections.
-  implicit val implicitCompileOptions = implicitInvalidateOptions
   val duts = Vec.fill(n)(Module(new PassthroughModule).io)
   val tester = Module(new PassthroughModuleTester)
 

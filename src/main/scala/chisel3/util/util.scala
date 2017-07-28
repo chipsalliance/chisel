@@ -16,11 +16,9 @@ package object util {
 
   // A significant issue is which CompileOptions should be in effect when we elaborate utility extensions.
   // If there is a parent module with compile options, use that, otherwise, materialize the default.
-  // I'd like to make this implicit, but that currently results in ambiguity with other implicit CompileOptions
-  //  definitions. We should review these mechanisms and define the OneTrueWay to provide implicit CompileOptions.
-  // Note: If this does become implicit, it can be overridden either by passing in explicit CompileOptions,
-  //  or adding an implicit at the site where we invoke the utility class/method.
-  val inheritedCompileOptions = chisel3.internal.Builder.currentModule match {
+  // Note: This can be overridden either by passing in explicit CompileOptions, or adding an implicit at the
+  //  site where we invoke the utility class/method.
+  implicit val inheritedCompileOptions = chisel3.internal.Builder.currentModule match {
     case Some(u: UserModule) => u.compileOptions
     case _ => CompileOptions.materialize
   }
