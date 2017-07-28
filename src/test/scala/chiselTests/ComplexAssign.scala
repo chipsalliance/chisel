@@ -7,7 +7,6 @@ import org.scalatest.prop._
 
 import chisel3._
 import chisel3.testers.BasicTester
-import chisel3.testers.ImplicitInvalidateModule
 import chisel3.util._
 import org.scalacheck.Shrink
 
@@ -16,7 +15,7 @@ class Complex[T <: Data](val re: T, val im: T) extends Bundle {
     new Complex(re.cloneType, im.cloneType).asInstanceOf[this.type]
 }
 
-class ComplexAssign(w: Int) extends ImplicitInvalidateModule {
+class ComplexAssign(w: Int) extends Module {
   val io = IO(new Bundle {
     val e   = Input(Bool())
     val in  = Input(new Complex(UInt(w.W), UInt(w.W)))

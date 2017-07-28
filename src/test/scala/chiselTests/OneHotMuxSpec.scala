@@ -2,10 +2,8 @@
 
 package chiselTests
 
-import chisel3.testers.BasicTester
-import chisel3.testers.ImplicitInvalidateModule
+import Chisel.testers.BasicTester
 import chisel3._
-import chisel3.core.CompileOptions
 import chisel3.experimental.FixedPoint
 import chisel3.util.Mux1H
 import org.scalatest._
@@ -45,7 +43,6 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
 }
 
 class SimpleOneHotTester extends BasicTester {
-  implicit val ohc = compileOptions
   val out = Wire(UInt())
   out := Mux1H(Seq(
     false.B -> 2.U,
@@ -124,7 +121,7 @@ class Agg1 extends Bundle {
 }
 
 object Agg1 extends HasMakeLit[Agg1] {
-  def makeLit(n: Int)(implicit compileOptions: CompileOptions): Agg1 = {
+  def makeLit(n: Int): Agg1 = {
     val x = n.toDouble / 4.0
     val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
 
@@ -145,7 +142,7 @@ class Agg2 extends Bundle {
 }
 
 object Agg2 extends HasMakeLit[Agg2] {
-  def makeLit(n: Int)(implicit compileOptions: CompileOptions): Agg2 = {
+  def makeLit(n: Int): Agg2 = {
     val x = n.toDouble / 4.0
     val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
 
@@ -159,7 +156,6 @@ object Agg2 extends HasMakeLit[Agg2] {
 }
 
 class ParameterizedAggregateOneHotTester extends BasicTester {
-  implicit val ohc = compileOptions
   val values = (0 until 4).map { n => Agg1.makeLit(n) }
 
   val dut = Module(new ParameterizedAggregateOneHot(Agg1, new Agg1))
@@ -174,10 +170,10 @@ class ParameterizedAggregateOneHotTester extends BasicTester {
 }
 
 trait HasMakeLit[T] {
-  def makeLit(n: Int)(implicit compileOptions: CompileOptions): T
+  def makeLit(n: Int): T
 }
 
-class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends ImplicitInvalidateModule {
+class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends Module {
   val io = IO(new Bundle {
     val selectors = Input(Vec(4, Bool()))
     val out = Output(outGen)
@@ -187,8 +183,7 @@ class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends Implicit
   io.out := Mux1H(terms)
 }
 
-class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) extends ImplicitInvalidateModule {
-  implicit val ohc = compileOptions
+class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) extends Module {
   val io = IO(new Bundle {
     val selectors = Input(Vec(4, Bool()))
     val out = Output(outGen)
@@ -208,7 +203,6 @@ class Bundle1 extends Bundle {
 }
 
 class InferredWidthAggregateOneHotTester extends BasicTester {
-  implicit val ohc = compileOptions
   val b0 = Wire(new Bundle1)
   b0.a := -0.25.F(2.BP)
   b0.b.c := -0.125.F(3.BP)
@@ -263,7 +257,6 @@ class Bundle3 extends Bundle {
 }
 
 class DifferentBundleOneHotTester extends BasicTester {
-  implicit val ohc = compileOptions
   val b0 = Wire(new Bundle2)
   b0.a := -0.25.F(2.BP)
   b0.b.c := -0.125.F(3.BP)

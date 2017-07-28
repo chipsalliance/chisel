@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.ImplicitInvalidateModule
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -37,7 +36,7 @@ class VectorPacketIO(n: Int) extends Bundle {
   * a module uses the vector based IO bundle
   * the value of n does not affect the error
   */
-class BrokenVectorPacketModule extends ImplicitInvalidateModule {
+class BrokenVectorPacketModule extends Module {
   val n  = 4
   val io = IO(new VectorPacketIO(n))
 
