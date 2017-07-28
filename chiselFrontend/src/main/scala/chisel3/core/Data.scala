@@ -67,7 +67,7 @@ private[core] object cloneSupertype {
               val maxBinaryPoint = bp1 max bp2
               val maxIntegerWidth = (w1 - bp1) max (w2 - bp2)
               val mergedRange = elt1.range merge elt2.range
-              val newRange = new Range(mergedRange.min, mergedRange.max, Range.getBinaryPoint(maxBinaryPoint))
+              val newRange = new IntervalRange(mergedRange.min, mergedRange.max, IntervalRange.getBinaryPoint(maxBinaryPoint))
               Interval((maxIntegerWidth + maxBinaryPoint).W, newRange)
             case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), _, _) =>
               Interval(Width(), elt1.range merge elt2.range)

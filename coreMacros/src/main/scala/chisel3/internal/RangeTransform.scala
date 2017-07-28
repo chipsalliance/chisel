@@ -133,13 +133,13 @@ class RangeTransform(val c: blackbox.Context) {
       c.abort(c.enclosingPosition, s"Unused characters in range specifier: '$unused'")
     }
 
-    val startBound = q"_root_.chisel3.internal.firrtl.Range.getBound($startInclusive, $minArg)"
+    val startBound = q"_root_.chisel3.internal.firrtl.IntervalRange.getBound($startInclusive, $minArg)"
 
-    val endBound = q"_root_.chisel3.internal.firrtl.Range.getBound($endInclusive, $maxArg)"
+    val endBound = q"_root_.chisel3.internal.firrtl.IntervalRange.getBound($endInclusive, $maxArg)"
 
-    val binaryPoint = q"_root_.chisel3.internal.firrtl.Range.getBinaryPoint($binaryPointString)"
+    val binaryPoint = q"_root_.chisel3.internal.firrtl.IntervalRange.getBinaryPoint($binaryPointString)"
 
-    q"new Range($startBound, $endBound, $binaryPoint)"
+    q"IntervalRange($startBound, $endBound, $binaryPoint)"
   }
 }
 

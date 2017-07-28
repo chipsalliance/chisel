@@ -270,9 +270,9 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
     * of the number is also affected by the specified binary point.  Caution advised
     */
-  final def asInterval(x: BinaryPoint, y: Range): Interval = macro SourceInfoTransform.xyArg
+  final def asInterval(x: BinaryPoint, y: IntervalRange): Interval = macro SourceInfoTransform.xyArg
 
-  def do_asInterval(binaryPoint: BinaryPoint, range: Range)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+  def do_asInterval(binaryPoint: BinaryPoint, range: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     throwException(s"Cannot call .asInterval on $this")
   }
 
@@ -548,13 +548,13 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
       case KnownBinaryPoint(value) =>
         pushOp(DefPrim(sourceInfo,
           Interval(width,
-            new Range(UnknownBound, UnknownBound, Range.getBinaryPoint(binaryPoint))), AsIntervalOp, ref))
+            new IntervalRange(UnknownBound, UnknownBound, IntervalRange.getBinaryPoint(binaryPoint))), AsIntervalOp, ref))
       case _ =>
         throwException(
           s"cannot call $this.asInterval($binaryPoint), you must specify a known binaryPoint")
     }
   }
-  def do_asInterval(range: Range = Range.unknownRange)
+  def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
                             (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     range.binaryPoint match {
       case KnownBinaryPoint(value) =>
@@ -601,7 +601,7 @@ trait UIntFactory {
   }
 
   /** Create a UInt with the specified range */
-  def apply(range: Range): UInt = {
+  def apply(range: IntervalRange): UInt = {
     range.min match {
       case Closed(n) =>
         if(n < 0) throw new IllegalArgumentException(s"Creating UInt: Invalid range with ${range.serialize}")
@@ -747,7 +747,7 @@ trait SIntFactory {
   def apply(width: Width): SInt = new SInt(width)
 
   /** Create a SInt with the specified range */
-  def apply(range: Range): SInt = {
+  def apply(range: IntervalRange): SInt = {
     apply(range.getWidth)
   }
 //TODO: fix this later
@@ -1105,17 +1105,15 @@ object FixedPoint {
   * @param lit
   */
 sealed class Interval private[core] (
-    width: Width,
-    val range: Range,
-    lit: Option[IntervalLit] = None)
+                                      width: Width,
+                                      val range: chisel3.internal.firrtl.IntervalRange,
+                                      lit: Option[IntervalLit] = None)
   extends Bits(width, lit) with Num[Interval] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Interval(w, range).asInstanceOf[this.type]
 //  private[chisel3] def toType = s"Interval$width$binaryPoint"
 
-  private[chisel3] def toType = {
-    s"Interval${range.toString}"
-  }
+  private[chisel3] def toType = s"${range.serialize}"
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Interval] && this.width == that.width
@@ -1183,7 +1181,7 @@ sealed class Interval private[core] (
   def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): Interval =
     binop(sourceInfo,
       Interval(this.width,
-        new Range(this.range.min, this.range.max, Range.getBinaryPoint(that))), SetBinaryPoint, that)
+        new IntervalRange(this.range.min, this.range.max, IntervalRange.getBinaryPoint(that))), SetBinaryPoint, that)
 
 
   /** Returns this wire bitwise-inverted. */
@@ -1270,10 +1268,10 @@ trait IntervalFactory {
   def apply(width: Width): Interval = Interval(width, 0.BP)
   /** Create a Interval type with specified width. */
   def apply(width: Width, binaryPoint: BinaryPoint): Interval = {
-    Interval(width, new Range(UnknownBound, UnknownBound, Range.getBinaryPoint(binaryPoint)))
+    Interval(width, new IntervalRange(UnknownBound, UnknownBound, IntervalRange.getBinaryPoint(binaryPoint)))
   }
   /** Create a Interval type with specified width. */
-  def apply(width: Width, range: Range): Interval = {
+  def apply(width: Width, range: chisel3.internal.firrtl.IntervalRange): Interval = {
     new Interval(width, range)
   }
 
@@ -1282,10 +1280,10 @@ trait IntervalFactory {
     val lit = IntervalLit(value, width, binaryPoint)
     val result = new Interval(
       width,
-      new Range(
+      new IntervalRange(
         Closed(BigDecimal(value)),
         Closed(BigDecimal(value)),
-        Range.getBinaryPoint(binaryPoint)
+        IntervalRange.getBinaryPoint(binaryPoint)
       ), Some(lit))
     // Bind result to being an Literal
     result.binding = LitBinding()
@@ -1293,7 +1291,7 @@ trait IntervalFactory {
   }
 
   /** Create a Interval with the specified range */
-  def apply(range: Range): Interval = {
+  def apply(range: IntervalRange): Interval = {
     val result = apply(range.getWidth, range)
     result
   }

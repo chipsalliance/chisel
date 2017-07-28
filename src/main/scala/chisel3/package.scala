@@ -357,7 +357,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         * }}}
         */
 //      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
-      def range(args: Any*): chisel3.internal.firrtl.Range = macro chisel3.internal.RangeTransform.apply
+      def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
     }
 
     import scala.annotation.compileTimeOnly

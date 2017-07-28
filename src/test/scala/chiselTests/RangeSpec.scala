@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselRange
-import chisel3.internal.firrtl.Range
+import chisel3.internal.firrtl.IntervalRange
 import firrtl.ir.{Closed, Open}
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -26,29 +26,29 @@ class RangeSpec extends FreeSpec with Matchers {
     }
 
     "range macros should allow open and closed bounds" in {
-      range"[-1, 1]" should be( Range(Closed(-1), Closed(1), 0) )
-      range"[-1, 1)" should be( Range(Closed(-1), Open(1), 0))
-      range"(-1, 1]" should be( Range(Open(-1), Closed(1), 0) )
-      range"(-1, 1)" should be( Range(Open(-1), Open(1), 0) )
+      range"[-1, 1]" should be( IntervalRange(Closed(-1), Closed(1), 0) )
+      range"[-1, 1)" should be( IntervalRange(Closed(-1), Open(1), 0))
+      range"(-1, 1]" should be( IntervalRange(Open(-1), Closed(1), 0) )
+      range"(-1, 1)" should be( IntervalRange(Open(-1), Open(1), 0) )
     }
 
     "range specifiers should be whitespace tolerant" in {
-      range"[-1,1)" should be( Range(Closed(-1), Open(1), 0) )
-      range" [-1,1) " should be( Range(Closed(-1), Open(1), 0) )
-      range" [ -1 , 1 ) " should be( Range(Closed(-1), Open(1), 0) )
-      range"   [   -1   ,   1   )   " should be( Range(Closed(-1), Open(1), 0) )
+      range"[-1,1)" should be( IntervalRange(Closed(-1), Open(1), 0) )
+      range" [-1,1) " should be( IntervalRange(Closed(-1), Open(1), 0) )
+      range" [ -1 , 1 ) " should be( IntervalRange(Closed(-1), Open(1), 0) )
+      range"   [   -1   ,   1   )   " should be( IntervalRange(Closed(-1), Open(1), 0) )
     }
 
     "range macros should work with interpolated variables" in {
       val a = 10
       val b = -3
 
-      range"[$b, $a)" should be( Range(Closed(b), Open(a), 0) )
-      range"[${a + b}, $a)" should be( Range(Closed(a + b), Open(a), 0) )
-      range"[${-3 - 7}, ${-3 + a})" should be( Range(Closed(-10), Open(-3 + a), 0) )
+      range"[$b, $a)" should be( IntervalRange(Closed(b), Open(a), 0) )
+      range"[${a + b}, $a)" should be( IntervalRange(Closed(a + b), Open(a), 0) )
+      range"[${-3 - 7}, ${-3 + a})" should be( IntervalRange(Closed(-10), Open(-3 + a), 0) )
 
       def number(n: Int): Int = n
-      range"[${number(1)}, ${number(3)})" should be( Range(Closed(1), Open(3), 0) )
+      range"[${number(1)}, ${number(3)})" should be( IntervalRange(Closed(1), Open(3), 0) )
     }
 
     "range macros support precision" in {
