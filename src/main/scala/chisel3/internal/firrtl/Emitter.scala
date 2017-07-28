@@ -13,12 +13,17 @@ private[chisel3] object Emitter {
 private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString
 
-  private def emitPort(e: Port): String = {
-    val dir = e.dir match {
+  private def emitPort(e: Port, topDir: UserDirection=UserDirection.Unspecified): String = {
+    val resolvedDir = UserDirection.fromParent(topDir, e.dir)
+    val dirString = resolvedDir match {
       case UserDirection.Unspecified | UserDirection.Output => "output"
       case UserDirection.Flip | UserDirection.Input => "input"
     }
-    s"$dir ${e.id.getRef.name} : ${emitType(e.id)}"
+    val clearDir = resolvedDir match {
+      case UserDirection.Input | UserDirection.Output => true
+      case UserDirection.Unspecified | UserDirection.Flip => false
+    }
+    s"$dirString ${e.id.getRef.name} : ${emitType(e.id, clearDir)}"
   }
 
   private def emitType(d: Data, clearDir: Boolean = false): String = d match {
@@ -101,8 +106,13 @@ private class Emitter(circuit: Circuit) {
   private def moduleDefn(m: Component): String = {
     val body = new StringBuilder
     withIndent {
-      for (p <- m.ports)
-        body ++= newline + emitPort(p)
+      for (p <- m.ports) {
+        val portDef = m match {
+          case bb: DefBlackBox => emitPort(p, bb.topDir)
+          case mod: DefModule => emitPort(p)
+        }
+        body ++= newline + portDef
+      }
       body ++= newline
 
       m match {

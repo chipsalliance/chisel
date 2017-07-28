@@ -75,7 +75,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
     }
 
     val firrtlPorts = getModulePorts map {port => Port(port, port.userDirection)}
-    val component = DefBlackBox(this, name, firrtlPorts, params)
+    val component = DefBlackBox(this, name, firrtlPorts, UserDirection.Unspecified, params)
     _component = Some(component)
     component
   }
@@ -160,7 +160,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     }
 
     val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.userDirection)}
-    val component = DefBlackBox(this, name, firrtlPorts, params)
+    val component = DefBlackBox(this, name, firrtlPorts, io.userDirection, params)
     _component = Some(component)
     component
   }
