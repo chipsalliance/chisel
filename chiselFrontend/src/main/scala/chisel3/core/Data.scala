@@ -19,7 +19,7 @@ object UserDirection {
   /** Node and its children are forced as output
     */
   case object Output extends UserDirection
-  /** Node and ites children are forced as inputs
+  /** Node and its children are forced as inputs
     */
   case object Input extends UserDirection
   /** Mainly for containers, children are flipped.

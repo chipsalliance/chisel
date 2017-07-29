@@ -26,10 +26,10 @@ package chisel3 {
     implicit class fromBigIntToLiteral(val bigint: BigInt) {
       /** Int to UInt conversion, recommended style for constants.
         */
-      def U(): UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+      def U: UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
       /** Int to SInt conversion, recommended style for constants.
         */
-      def S(): SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+      def S: SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
       /** Int to UInt conversion with specified width, recommended style for constants.
         */
       def U(width: Width): UInt = UInt.Lit(bigint, width)  // scalastyle:ignore method.name
@@ -57,7 +57,7 @@ package chisel3 {
     implicit class fromStringToLiteral(val str: String) {
       /** String to UInt parse, recommended style for constants.
         */
-      def U(): UInt = str.asUInt() // scalastyle:ignore method.name
+      def U: UInt = str.asUInt() // scalastyle:ignore method.name
       /** String to UInt parse with specified width, recommended style for constants.
         */
       def U(width: Width): UInt = str.asUInt(width) // scalastyle:ignore method.name
@@ -88,7 +88,7 @@ package chisel3 {
     implicit class fromBooleanToLiteral(val boolean: Boolean) {
       /** Boolean to Bool conversion, recommended style for constants.
         */
-      def B(): Bool = Bool.Lit(boolean)  // scalastyle:ignore method.name
+      def B: Bool = Bool.Lit(boolean)  // scalastyle:ignore method.name
 
       /** Boolean to Bool conversion, recommended style for variables.
         */
