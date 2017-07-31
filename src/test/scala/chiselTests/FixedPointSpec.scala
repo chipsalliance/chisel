@@ -102,8 +102,6 @@ class SBP extends Module {
 }
 
 class SBPTester extends BasicTester {
-  // We don't want firrtl complaining about "not fully initialized" connections.
-  implicit val implicitCompileOptions = implicitInvalidateOptions
   val dut = Module(new SBP)
   dut.io.in := 3.75.F(2.BP)
 
