@@ -83,8 +83,11 @@ object DataMirror {
     requireIsHardware(target, "node requested directionality on")
     target.direction
   }
-  // TODO: really not a reflection-style API, but a workaround for dir in the compatibility package
-  def isSynthesizable(target: Data) = target.hasBinding
+
+  // Internal reflection-style APIs, subject to change and removal whenever.
+  object internal {
+    def isSynthesizable(target: Data) = target.hasBinding
+  }
 }
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:

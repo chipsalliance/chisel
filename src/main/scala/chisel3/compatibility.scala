@@ -31,7 +31,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
     import chisel3.core.{DataMirror, ActualDirection, UserDirection}
     def dir: Direction = {
-      DataMirror.isSynthesizable(target) match {
+      DataMirror.internal.isSynthesizable(target) match {
         case true => target match {
           case e: Element => DataMirror.directionOf(e) match {
             case ActualDirection.Unspecified => NODIR
@@ -115,7 +115,6 @@ package object Chisel {     // scalastyle:ignore package.object.name
       * @param gen function that generates the [[Data]] that becomes the output
       * element
       */
-    @deprecated("Vec.fill(n)(gen) is deprecated. Please use Vec(Seq.fill(n)(gen))", "chisel3")
     def fill[T <: Data](n: Int)(gen: => T)(implicit compileOptions: CompileOptions): Vec[T] =
       apply(Seq.fill(n)(gen))
 

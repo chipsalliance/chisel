@@ -30,6 +30,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
       chisel3.core.WireInit(t, init)
   }
+  val WireInit = chisel3.core.WireInit
+
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
@@ -62,7 +64,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       apply(n, gen)
 
-    @deprecated("Vec.fill(n)(gen) is deprecated, use Vec(Seq.fill(n)(gen)) instead", "chisel3")
+    @deprecated("Vec.fill(n)(gen) is deprecated, use VecInit(Seq.fill(n)(gen)) instead", "chisel3")
     def fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       apply(Seq.fill(n)(gen))
 
