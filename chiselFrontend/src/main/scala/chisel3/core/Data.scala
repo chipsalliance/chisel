@@ -85,6 +85,13 @@ object DataMirror {
   }
   // TODO: really not a reflection-style API, but a workaround for dir in the compatibility package
   def isSynthesizable(target: Data) = target.hasBinding
+
+  object internal {
+    // For those odd cases where you need to care about object reference and uniqueness
+    def chiselTypeClone[T<:Data](target: Data): T = {
+      target.cloneTypeFull.asInstanceOf[T]
+    }
+  }
 }
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:
@@ -334,7 +341,7 @@ abstract class Data extends HasId {
     * Returns a copy of this data type, with hardware bindings (if any) removed.
     * Directionality data is still preserved.
     */
-  def cloneTypeFull: this.type = {
+  private[chisel3] def cloneTypeFull: this.type = {
     val clone = this.cloneType.asInstanceOf[this.type]  // get a fresh object, without bindings
     // Only the top-level direction needs to be fixed up, cloneType should do the rest
     clone.userDirection = userDirection

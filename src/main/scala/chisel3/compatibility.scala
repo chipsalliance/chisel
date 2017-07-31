@@ -52,8 +52,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     }
   }
   implicit class cloneTypeable[T<:Data](val target: T) extends AnyVal {
+    import chisel3.core.DataMirror
     def chiselCloneType: target.type = {
-      target.cloneTypeFull.asInstanceOf[target.type]
+      DataMirror.internal.chiselTypeClone(target).asInstanceOf[target.type]
     }
   }
 

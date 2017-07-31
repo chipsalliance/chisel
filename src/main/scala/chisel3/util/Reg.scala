@@ -8,8 +8,7 @@ object RegEnable {
   /** Returns a register with the specified next, update enable gate, and no reset initialization.
     */
   def apply[T <: Data](next: T, enable: Bool): T = {
-    val clonedNext = next.chiselCloneType
-    val r = Reg(clonedNext)
+    val r = Reg(chiselTypeOf(next))
     when (enable) { r := next }
     r
   }
