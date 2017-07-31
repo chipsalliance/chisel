@@ -184,6 +184,7 @@ class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false)
+                      (implicit compileOptions: chisel3.core.CompileOptions)
     extends Module() {
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
@@ -196,7 +197,19 @@ class Queue[T <: Data](gen: T,
     this.override_reset = Some(_reset)
   }
 
-  val io = IO(new QueueIO(gen, entries))
+  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
+    experimental.requireIsChiselType(gen)
+    gen
+  } else {
+    if (DataMirror.internal.isSynthesizable(gen)) {
+      println("WARNING: gen in new Queue(gen, ...) must be a Chisel type, not hardware")
+      gen.chiselCloneType
+    } else {
+      gen
+    }
+  }
+
+  val io = IO(new QueueIO(genType, entries))
 
   private val ram = Mem(entries, gen)
   private val enq_ptr = Counter(entries)
