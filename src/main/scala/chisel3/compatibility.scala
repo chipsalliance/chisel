@@ -123,11 +123,13 @@ package object Chisel {     // scalastyle:ignore package.object.name
       chisel3.core.VecInit(elts)
 
     def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
-    def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def do_apply[T <: Data](elt0: T, elts: T*)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit(elt0 +: elts.toSeq)
 
     def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
-    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit.tabulate(n)(gen)
   }
   type Vec[T <: Data] = chisel3.core.Vec[T]
@@ -525,11 +527,11 @@ package object Chisel {     // scalastyle:ignore package.object.name
     * Because its contents won't necessarily have the same level of stability and support as
     * non-experimental, you must explicitly import this package to use its contents.
     */
-  object experimental {
+  object experimental {  // scalastyle:ignore object.name
     import scala.annotation.compileTimeOnly
 
-    class dump extends chisel3.internal.naming.dump
-    class treedump extends chisel3.internal.naming.treedump
-    class chiselName extends chisel3.internal.naming.chiselName
+    class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
+    class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+    class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
   }
 }
