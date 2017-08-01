@@ -4,7 +4,6 @@ package chisel3.core
 
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
-
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
@@ -114,7 +113,10 @@ object BiConnect {
           }
         }
 
+      // DontCare cannot be a sink (LHS)
       case (DontCare, _) => throw DontCareCantBeSink
+
+      // Left and right are different subtypes of Data so fail
       case (left, right) => throw MismatchedException(left.toString, right.toString)
     }
 

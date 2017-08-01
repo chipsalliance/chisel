@@ -71,6 +71,8 @@ object ExplicitCompileOptions {
     dontTryConnectionsSwapped = true,
     dontAssumeDirectionality = true,
     checkSynthesizable = true,
+    // Once the issue with FIRRTL when processing is resolved (support for .when { ... } .otherwise { ... } without QOR issues),
+    //  this should be set to true so DefInvalid's have to be explicit.
     explicitInvalidate = false
   )
 }
