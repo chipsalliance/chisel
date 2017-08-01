@@ -15,7 +15,7 @@ import scala.collection.mutable.ArrayBuffer
 
 // TODO: FIRRTL will eventually return valid names
 private[iotesters] object validName {
-  def apply(name: String) = (if (firrtl.Utils.v_keywords contains name) name + "$"
+  def apply(name: String): String = (if (firrtl.Utils.v_keywords contains name) name + "$"
     else name) replace (".", "_") replace ("[", "_") replace ("]", "")
 }
 
@@ -30,7 +30,7 @@ private[iotesters] object getDataNames {
 }
 
 private[iotesters] object getPorts {
-  def apply(dut: Module, separator: String = ".") =
+  def apply(dut: Module, separator: String = "."): (Seq[(Element, String)], Seq[(Element, String)]) =
     getDataNames(dut, separator) partition { case (e, _) => DataMirror.directionOf(e) == ActualDirection.Input }
 }
 
@@ -38,12 +38,12 @@ private[iotesters] object flatten {
   def apply(data: Data): Seq[Element] = data match {
     case b: Element => Seq(b)
     case b: Record => b.elements.toSeq flatMap (x => apply(x._2))
-    case v: Vec[_] => v.toSeq flatMap apply
+    case v: Vec[_] => v flatMap apply
   }
 }
 
 private[iotesters] object getTopModule {
-  def apply(circuit: Circuit) = {
+  def apply(circuit: Circuit): BaseModule = {
     (circuit.components find (_.name == circuit.name)).get.id
   }
 }
@@ -52,30 +52,29 @@ private[iotesters] object getTopModule {
 private[iotesters] object getChiselNodes {
   import chisel3.internal.firrtl._
   def apply(circuit: Circuit): Seq[InstanceId] = {
-    circuit.components flatMap (_ match {
+    circuit.components flatMap {
       case m: DefModule =>
         m.commands flatMap {
           case x: DefReg => flatten(x.id)
           case x: DefRegInit => flatten(x.id)
           case mem: DefMemory => mem.t match {
             case _: Element => Seq(mem.id)
-            case _ => Nil // Do not supoort aggregate type memories
+            case _ => Nil // Do not support aggregate type memories
           }
           case mem: DefSeqMemory => mem.t match {
             case _: Element => Seq(mem.id)
-            case _ => Nil // Do not supoort aggregate type memories
+            case _ => Nil // Do not support aggregate type memories
           }
           case _ => Nil
         }
         // If it's anything else (i.e., a DefBlackBox), we don't know what to do with it.
       case _ => Nil
-    }
-    ) filterNot (x => (x.instanceName slice (0, 2)) == "T_")
+    } filterNot (x => (x.instanceName slice (0, 2)) == "T_")
   }
 }
 
 private[iotesters] object bigIntToStr {
-  def apply(x: BigInt, base: Int) = base match {
+  def apply(x: BigInt, base: Int): String = base match {
     case 2  if x < 0 => s"-0b${(-x).toString(base)}"
     case 16 if x < 0 => s"-0x${(-x).toString(base)}"
     case 2  => s"0b${x.toString(base)}"
@@ -85,12 +84,14 @@ private[iotesters] object bigIntToStr {
 }
 
 private[iotesters] object verilogToVCS {
-  def apply(
-    topModule: String,
-    dir: java.io.File,
-    vcsHarness: java.io.File
-                ): ProcessBuilder = {
-    val ccFlags = Seq("-I$VCS_HOME/include", "-I$dir", "-fPIC", "-std=c++11")
+  def constructVcsFlags(
+      topModule: String,
+      dir: java.io.File,
+      moreVcsFlags: Seq[String] = Seq.empty[String],
+      moreVcsCFlags: Seq[String] = Seq.empty[String]): Seq[String] = {
+
+    val DefaultCcFlags = Seq("-I$VCS_HOME/include", "-I$dir", "-fPIC", "-std=c++11")
+    val ccFlags = DefaultCcFlags ++ moreVcsCFlags
 
     val blackBoxVerilogList = {
       val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.FileListName)
@@ -114,23 +115,37 @@ private[iotesters] object verilogToVCS {
       "-P", "vpi.tab",
       "-cpp", "g++", "-O2", "-LDFLAGS", "-lstdc++",
       "-CFLAGS", "\"%s\"".format(ccFlags mkString " ")) ++
+      moreVcsFlags ++
       blackBoxVerilogList
 
+    vcsFlags
+  }
+
+  def apply(
+    topModule: String,
+    dir: java.io.File,
+    vcsHarness: java.io.File,
+    moreVcsFlags: Seq[String] = Seq.empty[String],
+    moreVcsCFlags: Seq[String] = Seq.empty[String]): ProcessBuilder = {
+    //TODO: chick: This should be done in some safer and more toolish way
+
+    val vcsFlags = constructVcsFlags(topModule, dir, moreVcsFlags, moreVcsCFlags)
+
     val cmd = Seq("cd", dir.toString, "&&", "vcs") ++ vcsFlags ++ Seq(
-      "-o", topModule, s"${topModule}.v", vcsHarness.toString, "vpi.cpp") mkString " "
+      "-o", topModule, s"$topModule.v", vcsHarness.toString, "vpi.cpp") mkString " "
     println(s"$cmd")
     Seq("bash", "-c", cmd)
   }
 }
 
 private[iotesters] case class BackendException(b: String)
-  extends Exception(s"Unknown backend: $b. Backend shoule be firrtl, verilator, vcs, or glsim")
+  extends Exception(s"Unknown backend: $b. Backend should be firrtl, verilator, vcs, or glsim")
 
 private[iotesters] case class TestApplicationException(exitVal: Int, lastMessage: String)
   extends RuntimeException(lastMessage)
 
 private[iotesters] object TesterProcess {
-  def apply(cmd: Seq[String], logs: ArrayBuffer[String]) = {
+  def apply(cmd: Seq[String], logs: ArrayBuffer[String]): Process = {
     require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exist")
     val processBuilder = Process(cmd mkString " ")
     val processLogger = ProcessLogger(println, logs += _) // don't log stdout

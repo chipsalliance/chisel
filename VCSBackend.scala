@@ -7,7 +7,7 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
 import chisel3.core.{ActualDirection, DataMirror}
 import chisel3.{ChiselExecutionFailure, ChiselExecutionSuccess}
-import firrtl.{ChirrtlForm, CircuitState, Transform}
+import firrtl.{ChirrtlForm, CircuitState}
 import firrtl.annotations.CircuitName
 import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDir}
 
@@ -164,7 +164,11 @@ private[iotesters] object setupVCSBackend {
         val vpdFile = new File(dir, s"${circuit.name}.vpd")
         copyVpiFiles(dir.toString)
         genVCSVerilogHarness(dut, new FileWriter(vcsHarnessFile), vpdFile.toString)
-        assert(verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName)).! == 0)
+        assert(
+          verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName),
+            moreVcsFlags = optionsManager.testerOptions.moreVcsFlags,
+            moreVcsCFlags = optionsManager.testerOptions.moreVcsCFlags
+          ).! == 0)
 
         val command = if(optionsManager.testerOptions.testCmd.nonEmpty) {
           optionsManager.testerOptions.testCmd

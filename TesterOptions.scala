@@ -6,10 +6,7 @@ import java.io.File
 
 import chisel3.HasChiselExecutionOptions
 import firrtl.{ComposableOptions, ExecutionOptionsManager, HasFirrtlOptions}
-import firrtl_interpreter.{HasInterpreterOptions, HasInterpreterSuite}
-
-import scala.collection.mutable
-
+import firrtl_interpreter.HasInterpreterSuite
 
 case class TesterOptions(
                           isGenVerilog:    Boolean = false,
@@ -20,6 +17,8 @@ case class TesterOptions(
                           displayBase:     Int     = 10,
                           testerSeed:      Long    = System.currentTimeMillis,
                           testCmd:         Seq[String] = Seq.empty,
+                          moreVcsFlags:    Seq[String] = Seq.empty,
+                          moreVcsCFlags:   Seq[String] = Seq.empty,
                           backendName:     String  = "firrtl",
                           logFileName:     String  = "",
                           waveform:        Option[File] = None) extends ComposableOptions
@@ -69,6 +68,16 @@ trait HasTesterOptions {
     .abbr("ttc")
     .foreach { x => testerOptions = testerOptions.copy(testCmd = x.split("""\s""")) }
     .text("Change the command run as the backend. Quote this if it contains spaces")
+
+  parser.opt[String]("more-vcs-flags")
+    .abbr("tmvf")
+    .foreach { x => testerOptions = testerOptions.copy(moreVcsFlags = x.split("""\s""")) }
+    .text("Add specified commands to the VCS command line")
+
+  parser.opt[String]("more-vcs-c-flags")
+    .abbr("tmvf")
+    .foreach { x => testerOptions = testerOptions.copy(moreVcsCFlags = x.split("""\s""")) }
+    .text("Add specified commands to the CFLAGS on the VCS command line")
 
   parser.opt[String]("log-file-name")
     .abbr("tlfn")
