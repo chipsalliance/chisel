@@ -22,7 +22,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Wire = chisel3.core.Wire
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
-  val DontCare = chisel3.core.DontCare
 
   implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
     @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
@@ -367,5 +366,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     class dump extends chisel3.internal.naming.dump
     class treedump extends chisel3.internal.naming.treedump
     class chiselName extends chisel3.internal.naming.chiselName
+
+    val DontCare = chisel3.core.DontCare
   }
 }

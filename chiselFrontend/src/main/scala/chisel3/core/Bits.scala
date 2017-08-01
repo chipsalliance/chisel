@@ -32,8 +32,15 @@ abstract class Element(private[chisel3] val width: Width) extends Data {
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
 
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(Connect(sourceInfo, this.lref, that.ref))
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, this.lref))
+    } else {
+      pushCommand(Connect(sourceInfo, this.lref, that.ref))
+    }
+  }
 }
 
 /** A data type for values represented by a single bitvector. Provides basic
