@@ -109,6 +109,8 @@ class DCETests extends FirrtlFlatSpec {
         |    input x : UInt<1>
         |    input y : UInt<1>
         |    output z : UInt<1>
+        |    x is invalid
+        |    y is invalid
         |    z <= x
         |  module Top :
         |    input x : UInt<1>

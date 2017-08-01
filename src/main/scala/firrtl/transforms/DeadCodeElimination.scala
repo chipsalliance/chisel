@@ -207,6 +207,9 @@ class DeadCodeElimination extends Transform {
         case Attach(info, exprs) => // If any exprs are dead then all are
           val dead = exprs.flatMap(getDeps(_)).forall(deadNodes.contains(_))
           if (dead) EmptyStmt else Attach(info, exprs)
+        case IsInvalid(info, expr) =>
+          val node = getDeps(expr) match { case Seq(elt) => elt }
+          if (deadNodes.contains(node)) EmptyStmt else IsInvalid(info, expr)
         case block: Block => block map onStmt
         case other => other
       }
