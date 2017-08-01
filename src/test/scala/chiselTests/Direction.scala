@@ -36,6 +36,12 @@ class BadSubDirection extends DirectionHaver {
   io.inBundle.out := 0.U
 }
 
+class TopDirectionOutput extends Module {
+  val io = IO(Output(new DirectionedBundle))
+  io.in := 42.U
+  io.out := 117.U
+}
+
 class DirectionSpec extends ChiselPropSpec with Matchers {
 
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
@@ -51,5 +57,9 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
     a[Exception] should be thrownBy {
      elaborate(new BadSubDirection)
     }
+  }
+
+  property("Top-level forced outputs should be assignable") {
+    elaborate(new TopDirectionOutput)
   }
 }
