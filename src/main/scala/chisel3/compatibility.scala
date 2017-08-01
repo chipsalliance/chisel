@@ -156,8 +156,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
     /** Create an SInt literal with specified width. */
     def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
 
-    def Lit(value: BigInt): SInt = value.asSInt
-    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
+    def Lit(value: BigInt): SInt = value.asSInt // scalastyle:ignore method.name
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W) // scalastyle:ignore method.name
 
     /** Create a SInt with a specified width - compatibility with Chisel2. */
     def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
@@ -209,7 +209,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
-    override def _autoWrapPorts() = {
+    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
       if (!_ioPortBound()) {
         IO(io)
       }
@@ -237,7 +237,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
-    override def _autoWrapPorts() = {
+    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
       if (!_ioPortBound() && io != null) {
         IO(io)
       }
@@ -487,7 +487,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     * Because its contents won't necessarily have the same level of stability and support as
     * non-experimental, you must explicitly import this package to use its contents.
     */
-  object experimental {
+  object experimental {  // scalastyle:ignore object.name
     import scala.annotation.compileTimeOnly
 
     class dump extends chisel3.internal.naming.dump

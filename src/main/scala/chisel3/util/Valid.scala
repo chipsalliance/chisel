@@ -47,8 +47,12 @@ object Pipe
       apply(v, b, latency-1)(compileOptions)
     }
   }
-  def apply[T <: Data](enqValid: Bool, enqBits: T)(implicit compileOptions: CompileOptions): Valid[T] = apply(enqValid, enqBits, 1)(compileOptions)
-  def apply[T <: Data](enq: Valid[T], latency: Int = 1)(implicit compileOptions: CompileOptions): Valid[T] = apply(enq.valid, enq.bits, latency)(compileOptions)
+  def apply[T <: Data](enqValid: Bool, enqBits: T)(implicit compileOptions: CompileOptions): Valid[T] = {
+    apply(enqValid, enqBits, 1)(compileOptions)
+  }
+  def apply[T <: Data](enq: Valid[T], latency: Int = 1)(implicit compileOptions: CompileOptions): Valid[T] = {
+    apply(enq.valid, enq.bits, latency)(compileOptions)
+  }
 }
 
 class Pipe[T <: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module
