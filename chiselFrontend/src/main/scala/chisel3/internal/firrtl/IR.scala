@@ -8,7 +8,8 @@ import chisel3.internal._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo}
 import _root_.firrtl.annotations.Annotation
 import _root_.firrtl.{ir => firrtlir}
-import _root_.firrtl.{passes => firrtlpasses}
+import _root_.firrtl.passes.{IsAdd, IsMax}
+import _root_.firrtl.PrimOps
 
 case class PrimOp(val name: String) {
   override def toString: String = name
@@ -262,12 +263,12 @@ sealed trait RangeType {
 //}
 
 sealed class IntervalRange(
-    val min: firrtlir.Bound,
-    val max: firrtlir.Bound,
+    lowerBound: firrtlir.Bound,
+    upper: firrtlir.Bound,
     private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
-  extends firrtlir.IntervalType(min, max, firrtlBinaryPoint)
+  extends firrtlir.IntervalType(lowerBound, upper, firrtlBinaryPoint)
   with RangeType {
-  (min, max) match {
+  (lower, upper) match {
     case (firrtlir.Open(begin), firrtlir.Open(end)) =>
       if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
       binaryPoint match {
@@ -295,28 +296,25 @@ sealed class IntervalRange(
   override def *(that: IntervalRange): IntervalRange = ???
 
   override def +&(that: IntervalRange): IntervalRange = {
-    val newMin = (this.min, that.min) match {
-      case (firrtlir.Open(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
-      case (firrtlir.Open(a), firrtlir.Closed(b)) => firrtlir.Open(a + b)
-      case (firrtlir.Closed(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
-      case (firrtlir.Closed(a), firrtlir.Closed(b)) => firrtlir.Closed(a + b)
-      case _ => firrtlir.UnknownBound
-    }
-    val newMax = (this.max, that.max) match {
-      case (firrtlir.Open(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
-      case (firrtlir.Open(a), firrtlir.Closed(b)) => firrtlir.Open(a + b)
-      case (firrtlir.Closed(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
-      case (firrtlir.Closed(a), firrtlir.Closed(b)) => firrtlir.Closed(a + b)
-      case _ => firrtlir.UnknownBound
-    }
-    val newBinaryPoint = (this.firrtlBinaryPoint, that.firrtlBinaryPoint) match {
-      case (firrtlir.IntWidth(a), firrtlir.IntWidth(b)) => new firrtlir.IntWidth(a.max(b))
-      case _ => firrtlir.UnknownWidth
-    }
+    val newMin = IsAdd(this.lower, that.lower)
+//    val newMin = (this.lower, that.lower) match {
+//      case (firrtlir.Open(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
+//      case (firrtlir.Open(a), firrtlir.Closed(b)) => firrtlir.Open(a + b)
+//      case (firrtlir.Closed(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
+//      case (firrtlir.Closed(a), firrtlir.Closed(b)) => firrtlir.Closed(a + b)
+//      case _ => firrtlir.UnknownBound
+//    }
+    val newMax = IsAdd(this.upper, that.upper)
+    val newBinaryPoint = IsMax(this.firrtlBinaryPoint, that.firrtlBinaryPoint)
     IntervalRange(newMin, newMax, newBinaryPoint)
   }
-
-  override def -&(that: IntervalRange): IntervalRange = ???
+  private def getRange(op: firrtlir.PrimOp, tpe1: IntervalRange, tpe2: IntervalRange): IntervalRange = ???
+  override def -&(that: IntervalRange): IntervalRange = {
+    PrimOps.set_primop_type(firrtlir.DoPrim(PrimOps.Sub, Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil,firrtlir.UnknownType)).tpe match {
+      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
+      case other => sys.error("BAD!")
+    }
+  }
 
   override def <<(that: Int): IntervalRange = ???
 
@@ -339,20 +337,20 @@ sealed class IntervalRange(
 }
 
 object IntervalRange {
-  def apply(min: firrtlir.Bound, max: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width): IntervalRange = {
-    new IntervalRange(min, max, firrtlBinaryPoint)
+  def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width): IntervalRange = {
+    new IntervalRange(lower, upper, firrtlBinaryPoint)
   }
 
-  def apply(min: firrtlir.Bound, max: firrtlir.Bound, binaryPoint: BinaryPoint): IntervalRange = {
-    new IntervalRange(min, max, IntervalRange.getBinaryPoint(binaryPoint))
+  def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: BinaryPoint): IntervalRange = {
+    new IntervalRange(lower, upper, IntervalRange.getBinaryPoint(binaryPoint))
   }
 
-    def apply(min: firrtlir.Bound, max: firrtlir.Bound, binaryPoint: Int): IntervalRange = {
-      IntervalRange(min, max, BinaryPoint(binaryPoint))
+    def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: Int): IntervalRange = {
+      IntervalRange(lower, upper, BinaryPoint(binaryPoint))
     }
 
   def unapply(arg: IntervalRange): Option[(firrtlir.Bound, firrtlir.Bound, BinaryPoint)] = {
-    return Some((arg.min, arg.max, arg.binaryPoint))
+    return Some((arg.lower, arg.upper, arg.binaryPoint))
   }
 
   def getBound(isClosed: Boolean, value: String): firrtlir.Bound = {
