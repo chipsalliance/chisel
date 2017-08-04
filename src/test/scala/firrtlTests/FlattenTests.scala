@@ -26,7 +26,6 @@ class FlattenTests extends LowTransformSpec {
     FlattenAnnotation(name)
   }
   
-  
   "The modules inside Top " should "be inlined" in {
      val input =
         """circuit Top :
@@ -50,6 +49,46 @@ class FlattenTests extends LowTransformSpec {
           |    i$b <= i$a
           |    b <= i$b
           |    i$a <= a
+          |  module Inline1 :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    b <= a""".stripMargin
+     execute(input, check, Seq(flatten("Top")))
+  }
+  
+  "Two instances of the same module inside Top " should "be inlined" in {
+     val input =
+        """circuit Top :
+          |  module Top :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    inst i1 of Inline1
+          |    inst i2 of Inline1
+          |    wire tmp : UInt<32>
+          |    i1.a <= a
+          |    tmp <= i1.b
+          |    i2.a <= tmp
+          |    b <= i2.b
+          |  module Inline1 :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    b <= a""".stripMargin
+     val check =
+        """circuit Top :
+          |  module Top :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    wire i1$a : UInt<32>
+          |    wire i1$b : UInt<32>
+          |    i1$b <= i1$a
+          |    wire i2$a : UInt<32>
+          |    wire i2$b : UInt<32>
+          |    i2$b <= i2$a
+          |    wire tmp : UInt<32>
+          |    b <= i2$b
+          |    tmp <= i1$b
+          |    i1$a <= a
+          |    i2$a <= tmp
           |  module Inline1 :
           |    input a : UInt<32>
           |    output b : UInt<32>

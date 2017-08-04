@@ -65,7 +65,7 @@ class Flatten extends Transform {
        case WDefInstance(info, instName, moduleName, instTpe) =>
          if (insts.contains(ComponentName(instName, ModuleName(parent.name, CircuitName(c.main))))
            || mods.contains(ModuleName(parent.name, CircuitName(c.main)))) {
-           val newModName = nsp.newName(moduleName+"_TO_FLATTEN")
+           val newModName = if (seedMods.contains(moduleName)) seedMods(moduleName) else nsp.newName(moduleName+"_TO_FLATTEN")
            seedMods += moduleName -> newModName
            WDefInstance(info, instName, newModName, instTpe)
          } else x
@@ -85,7 +85,7 @@ class Flatten extends Transform {
        def dupMod(x: Statement): Statement = x match {
          case _: Block => x map dupMod
          case WDefInstance(info, instName, moduleName, instTpe) =>
-           val newModName = nsp.newName(moduleName+"_TO_FLATTEN")
+           val newModName = if (replMods.contains(moduleName)) replMods(moduleName) else nsp.newName(moduleName+"_TO_FLATTEN")
            replMods += moduleName -> newModName
            WDefInstance(info, instName, newModName, instTpe)
          case _ => x 
