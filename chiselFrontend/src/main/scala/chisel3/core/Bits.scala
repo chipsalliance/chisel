@@ -602,7 +602,7 @@ trait UIntFactory {
 
   /** Create a UInt with the specified range */
   def apply(range: IntervalRange): UInt = {
-    range.min match {
+    range.lower match {
       case Closed(n) =>
         if(n < 0) throw new IllegalArgumentException(s"Creating UInt: Invalid range with ${range.serialize}")
       case Open(n) =>
@@ -1181,7 +1181,7 @@ sealed class Interval private[core] (
   def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): Interval =
     binop(sourceInfo,
       Interval(this.width,
-        new IntervalRange(this.range.min, this.range.max, IntervalRange.getBinaryPoint(that))), SetBinaryPoint, that)
+        new IntervalRange(this.range.lower, this.range.upper, IntervalRange.getBinaryPoint(that))), SetBinaryPoint, that)
 
 
   /** Returns this wire bitwise-inverted. */

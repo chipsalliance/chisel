@@ -128,8 +128,6 @@ case class Index(imm: Arg, value: Arg) extends Arg {
 }
 
 sealed trait RangeType {
-  val min: firrtlir.Bound
-  val max: firrtlir.Bound
   def getWidth: Width
 
   def * (that: IntervalRange): IntervalRange
@@ -264,11 +262,11 @@ sealed trait RangeType {
 
 sealed class IntervalRange(
     lowerBound: firrtlir.Bound,
-    upper: firrtlir.Bound,
+    upperBound: firrtlir.Bound,
     private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
-  extends firrtlir.IntervalType(lowerBound, upper, firrtlBinaryPoint)
+  extends firrtlir.IntervalType(lowerBound, upperBound, firrtlBinaryPoint)
   with RangeType {
-  (lower, upper) match {
+  (lower, upperBound) match {
     case (firrtlir.Open(begin), firrtlir.Open(end)) =>
       if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
       binaryPoint match {
@@ -295,25 +293,34 @@ sealed class IntervalRange(
 
   override def *(that: IntervalRange): IntervalRange = ???
 
-  override def +&(that: IntervalRange): IntervalRange = {
-    val newMin = IsAdd(this.lower, that.lower)
-//    val newMin = (this.lower, that.lower) match {
-//      case (firrtlir.Open(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
-//      case (firrtlir.Open(a), firrtlir.Closed(b)) => firrtlir.Open(a + b)
-//      case (firrtlir.Closed(a), firrtlir.Open(b)) => firrtlir.Open(a + b)
-//      case (firrtlir.Closed(a), firrtlir.Closed(b)) => firrtlir.Closed(a + b)
-//      case _ => firrtlir.UnknownBound
-//    }
-    val newMax = IsAdd(this.upper, that.upper)
-    val newBinaryPoint = IsMax(this.firrtlBinaryPoint, that.firrtlBinaryPoint)
-    IntervalRange(newMin, newMax, newBinaryPoint)
-  }
-  private def getRange(op: firrtlir.PrimOp, tpe1: IntervalRange, tpe2: IntervalRange): IntervalRange = ???
-  override def -&(that: IntervalRange): IntervalRange = {
-    PrimOps.set_primop_type(firrtlir.DoPrim(PrimOps.Sub, Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil,firrtlir.UnknownType)).tpe match {
+  private def doFirrtlOp(op: firrtlir.PrimOp, that: IntervalRange): IntervalRange = {
+    PrimOps.set_primop_type(
+      firrtlir.DoPrim(op,
+        Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil,firrtlir.UnknownType)
+    ).tpe match {
       case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
       case other => sys.error("BAD!")
     }
+  }
+
+  private def doFirrtlOp(op: firrtlir.PrimOp, that: Int): IntervalRange = {
+    PrimOps.set_primop_type(
+      firrtlir.DoPrim(op,
+        Seq(firrtlir.Reference("a", this)), Seq(BigInt(that)), firrtlir.UnknownType)
+    ).tpe match {
+      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
+      case other => sys.error("BAD!")
+    }
+  }
+
+  override def +&(that: IntervalRange): IntervalRange = {
+//    doFirrtlOp(PrimOps.Add, that)
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+  }
+  private def getRange(op: firrtlir.PrimOp, tpe1: IntervalRange, tpe2: IntervalRange): IntervalRange = ???
+  override def -&(that: IntervalRange): IntervalRange = {
+//    doFirrtlOp(PrimOps.Sub, that)
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
   }
 
   override def <<(that: Int): IntervalRange = ???
