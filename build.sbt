@@ -97,7 +97,8 @@ lazy val chisel3 = (project in file(".")).
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
   // The following is required until sbt-scoverage correctly deals with inDependencies
-  aggregate(coreMacros, chiselFrontend).
+  // Unfortunately, it also revives publishing of the subproject jars. Disable until the latter is resolved (again).
+  //aggregate(coreMacros, chiselFrontend).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
