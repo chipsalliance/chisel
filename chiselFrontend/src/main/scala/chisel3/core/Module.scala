@@ -235,9 +235,11 @@ abstract class BaseModule extends HasId {
         case data: Aggregate => data.userDirection match {
           // Recurse into children to ensure explicit direction set somewhere
           case UserDirection.Unspecified | UserDirection.Flip => data match {
-            case data: Record if (!data.compileOptions.dontAssumeDirectionality) =>
-              data.getElements.foreach(assignCompatDir(_, true))
-            case _ => data.getElements.foreach(assignCompatDir(_, false))
+            case record: Record =>
+              val compatRecord = !record.compileOptions.dontAssumeDirectionality
+              record.getElements.foreach(assignCompatDir(_, compatRecord))
+            case vec: Vec[_] =>
+              vec.getElements.foreach(assignCompatDir(_, insideCompat))
           }
           case UserDirection.Input | UserDirection.Output => // forced assign, nothing to do
         }
