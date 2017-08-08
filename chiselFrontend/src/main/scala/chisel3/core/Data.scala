@@ -202,10 +202,11 @@ abstract class Data extends HasId {
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
   private[core] def _assignCompatibilityExplicitDirection: Unit = {
-    _userDirection match {
-      case UserDirection.Unspecified => _userDirection = UserDirection.Output
-      case UserDirection.Flip => _userDirection = UserDirection.Input
-      case UserDirection.Input | UserDirection.Output => // nothing to do
+    (this, _userDirection) match {
+      case (_: Analog, _) => // nothing to do
+      case (_, UserDirection.Unspecified) => _userDirection = UserDirection.Output
+      case (_, UserDirection.Flip) => _userDirection = UserDirection.Input
+      case (_, UserDirection.Input | UserDirection.Output) => // nothing to do
     }
   }
 

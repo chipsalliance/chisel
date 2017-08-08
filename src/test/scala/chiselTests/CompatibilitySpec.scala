@@ -161,6 +161,14 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate { new Chisel2CompatibleRisc }
   }
 
+  it should "not try to assign directions to Analog" in {
+    elaborate(new Module {
+      val io = new Bundle {
+        val port = chisel3.experimental.Analog(32.W)
+      }
+    })
+  }
+
 
   class SmallBundle extends Bundle {
     val f1 = UInt(width = 4)
