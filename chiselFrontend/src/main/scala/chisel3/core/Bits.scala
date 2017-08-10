@@ -36,12 +36,26 @@ abstract class Element(private[chisel3] val width: Width) extends Data {
     pushCommand(Connect(sourceInfo, this.lref, that.ref))
 }
 
+/** Exists to unify common interfaces of [[Bits]] and [[Reset]]
+  * Workaround because macros cannot override abstract methods
+  */
+private[chisel3] sealed trait ToBoolable extends Element {
+
+  /** Casts this object to a [[Bool]]
+    *
+    * @note Width must be known and equal to 1
+    */
+  final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+}
+
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.
   */
 //scalastyle:off number.of.methods
 sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
-    extends Element(width) {
+    extends Element(width) with ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -266,9 +280,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
   final def toUInt(implicit compileOptions: CompileOptions): UInt = do_asUInt(DeprecatedSourceInfo, compileOptions)
 
-  final def toBool(): Bool = macro SourceInfoTransform.noArg
-
-  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
       case KnownWidth(1) => this(0)
       case _ => throwException(s"can't covert UInt<$width> to Bool")
@@ -699,11 +711,13 @@ trait SIntFactory {
 
 object SInt extends SIntFactory
 
+sealed trait Reset extends Element with ToBoolable
+
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
 // operations on a Bool make sense?
 /** A data type for booleans, defined as a single bit indicating true or false.
   */
-sealed class Bool(lit: Option[ULit] = None) extends UInt(1.W, lit) {
+sealed class Bool(lit: Option[ULit] = None) extends UInt(1.W, lit) with Reset {
   private[core] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool().asInstanceOf[this.type]

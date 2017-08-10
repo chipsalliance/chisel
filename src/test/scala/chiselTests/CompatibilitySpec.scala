@@ -260,4 +260,15 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       io.out := RegEnable(io.in(0), true.B)
     })
   }
+
+  "Reset" should "still walk, talk, and quack like a Bool" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = new Bundle {
+        val in = Bool(INPUT)
+        val out = Bool(OUTPUT)
+      }
+      io.out := io.in && reset
+    })
+  }
 }
