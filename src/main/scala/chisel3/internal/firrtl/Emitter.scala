@@ -2,7 +2,7 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.UserDirection
+import chisel3.core.SpecifiedDirection
 import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
@@ -13,15 +13,15 @@ private[chisel3] object Emitter {
 private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString
 
-  private def emitPort(e: Port, topDir: UserDirection=UserDirection.Unspecified): String = {
-    val resolvedDir = UserDirection.fromParent(topDir, e.dir)
+  private def emitPort(e: Port, topDir: SpecifiedDirection=SpecifiedDirection.Unspecified): String = {
+    val resolvedDir = SpecifiedDirection.fromParent(topDir, e.dir)
     val dirString = resolvedDir match {
-      case UserDirection.Unspecified | UserDirection.Output => "output"
-      case UserDirection.Flip | UserDirection.Input => "input"
+      case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => "output"
+      case SpecifiedDirection.Flip | SpecifiedDirection.Input => "input"
     }
     val clearDir = resolvedDir match {
-      case UserDirection.Input | UserDirection.Output => true
-      case UserDirection.Unspecified | UserDirection.Flip => false
+      case SpecifiedDirection.Input | SpecifiedDirection.Output => true
+      case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
     s"$dirString ${e.id.getRef.name} : ${emitType(e.id, clearDir)}"
   }
@@ -35,23 +35,23 @@ private class Emitter(circuit: Circuit) {
     case d: Vec[_] => s"${emitType(d.sample_element, clearDir)}[${d.length}]"
     case d: Record => {
       val childClearDir = clearDir ||
-          d.userDirection == UserDirection.Input || d.userDirection == UserDirection.Output
+          d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
       def eltPort(elt: Data): String = (childClearDir, firrtlUserDirOf(elt)) match {
         case (true, _) =>
           s"${elt.getRef.name} : ${emitType(elt, true)}"
-        case (false, UserDirection.Unspecified | UserDirection.Output) =>
+        case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
           s"${elt.getRef.name} : ${emitType(elt, false)}"
-        case (false, UserDirection.Flip | UserDirection.Input) =>
+        case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
           s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
       }
       d.elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
     }
   }
 
-  private def firrtlUserDirOf(d: Data): UserDirection = d match {
+  private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
-      UserDirection.fromParent(d.userDirection, firrtlUserDirOf(d.sample_element))
-    case d => d.userDirection
+      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
+    case d => d.specifiedDirection
   }
 
   private def emit(e: Command, ctx: Component): String = {

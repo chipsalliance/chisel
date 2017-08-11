@@ -15,10 +15,10 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
 
-    val resolvedDirection = UserDirection.fromParent(parentDirection, userDirection)
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     for (child <- getElements) {
       child.bind(ChildBinding(this), resolvedDirection)
     }
@@ -28,9 +28,9 @@ sealed abstract class Aggregate extends Data {
     direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
       // If empty, use my assigned direction
       resolvedDirection match {
-        case UserDirection.Unspecified | UserDirection.Flip => ActualDirection.Unspecified
-        case UserDirection.Output => ActualDirection.Output
-        case UserDirection.Input => ActualDirection.Input
+        case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+        case SpecifiedDirection.Output => ActualDirection.Output
+        case SpecifiedDirection.Input => ActualDirection.Input
       }
     } else if (childDirections == Set(ActualDirection.Unspecified)) {
       ActualDirection.Unspecified
@@ -43,16 +43,16 @@ sealed abstract class Aggregate extends Data {
             ActualDirection.Bidirectional(ActualDirection.Default),
             ActualDirection.Bidirectional(ActualDirection.Flipped))) {
       resolvedDirection match {
-        case UserDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-        case UserDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+        case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+        case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
         case _ => throw new RuntimeException("Unexpected forced Input / Output")
       }
     } else {
       this match {
         // Anything flies in compatibility mode
         case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
-          case UserDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case UserDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
           case _ => ActualDirection.Bidirectional(ActualDirection.Default)
         }
         case _ =>
@@ -275,11 +275,11 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
     // It may not be exactly equal to that value, but the results are the same.
     val reconstructedResolvedDirection = direction match {
-      case ActualDirection.Input => UserDirection.Input
-      case ActualDirection.Output => UserDirection.Output
+      case ActualDirection.Input => SpecifiedDirection.Input
+      case ActualDirection.Output => SpecifiedDirection.Output
       case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
-        UserDirection.Unspecified
-      case ActualDirection.Bidirectional(ActualDirection.Flipped) => UserDirection.Flip
+        SpecifiedDirection.Unspecified
+      case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
     }
     // TODO port technically isn't directly child of this data structure, but the result of some
     // muxes / demuxes. However, this does make access consistent with the top-level bindings.

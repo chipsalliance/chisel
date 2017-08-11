@@ -29,7 +29,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   }
 
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
-    import chisel3.core.{DataMirror, ActualDirection, UserDirection}
+    import chisel3.core.{DataMirror, ActualDirection, SpecifiedDirection}
     def dir: Direction = {
       DataMirror.isSynthesizable(target) match {
         case true => target match {
@@ -41,10 +41,10 @@ package object Chisel {     // scalastyle:ignore package.object.name
           }
           case _ => NODIR
         }
-        case false => DataMirror.userDirectionOf(target) match {  // returns local direction only
-          case UserDirection.Unspecified => NODIR
-          case UserDirection.Input => INPUT
-          case UserDirection.Output => OUTPUT
+        case false => DataMirror.specifiedDirectionOf(target) match {  // returns local direction only
+          case SpecifiedDirection.Unspecified => NODIR
+          case SpecifiedDirection.Input => INPUT
+          case SpecifiedDirection.Output => OUTPUT
           case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
         }
       }
