@@ -18,13 +18,13 @@ import chisel3.internal.firrtl.PrimOp._
   * uses are for representing primitive data types, like integers and bits.
   */
 abstract class Element(private[chisel3] val width: Width) extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
-    val resolvedDirection = UserDirection.fromParent(parentDirection, userDirection)
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     direction = resolvedDirection match {
-      case UserDirection.Unspecified | UserDirection.Flip => ActualDirection.Unspecified
-      case UserDirection.Output => ActualDirection.Output
-      case UserDirection.Input => ActualDirection.Input
+      case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+      case SpecifiedDirection.Output => ActualDirection.Output
+      case SpecifiedDirection.Input => ActualDirection.Input
     }
   }
 
@@ -1063,9 +1063,9 @@ final class Analog private (width: Width) extends Element(width) {
 
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
-  private[chisel3] override def bind(target: Binding, parentDirection: UserDirection) {
-    UserDirection.fromParent(parentDirection, userDirection) match {
-      case UserDirection.Unspecified | UserDirection.Flip =>
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+    SpecifiedDirection.fromParent(parentDirection, specifiedDirection) match {
+      case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
       case x => throwException(s"Analog may not have explicit direction, got '$x'")
     }
     val targetTopBinding = target match {

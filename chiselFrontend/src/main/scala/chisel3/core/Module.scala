@@ -232,16 +232,16 @@ abstract class BaseModule extends HasId {
       data match {
         case data: Element if insideCompat => data._assignCompatibilityExplicitDirection
         case data: Element => // Not inside a compatibility Bundle, nothing to be done
-        case data: Aggregate => data.userDirection match {
+        case data: Aggregate => data.specifiedDirection match {
           // Recurse into children to ensure explicit direction set somewhere
-          case UserDirection.Unspecified | UserDirection.Flip => data match {
+          case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => data match {
             case record: Record =>
               val compatRecord = !record.compileOptions.dontAssumeDirectionality
               record.getElements.foreach(assignCompatDir(_, compatRecord))
             case vec: Vec[_] =>
               vec.getElements.foreach(assignCompatDir(_, insideCompat))
           }
-          case UserDirection.Input | UserDirection.Output => // forced assign, nothing to do
+          case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
         }
       }
     }
