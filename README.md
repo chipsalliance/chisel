@@ -28,6 +28,10 @@ This will walk you through installing Chisel and its dependencies:
 
 ### (Ubuntu-like) Linux
 
+1. Install Java
+   ```
+   sudo apt-get install default-jdk
+   ```
 1. [Install sbt](http://www.scala-sbt.org/release/docs/Installing-sbt-on-Linux.html),
     which isn't available by default in the system package manager:
     ```
