@@ -508,6 +508,116 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
 """
       (parse(exec(input))) should be (parse(check))
    }
+
+   "ConstProp" should "propagate constant outputs" in {
+      val input =
+"""circuit Top :
+  module Child :
+    output out : UInt<1>
+    out <= UInt<1>(0)
+  module Top :
+    input x : UInt<1>
+    output z : UInt<1>
+    inst c of Child
+    z <= and(x, c.out)
+"""
+      val check =
+"""circuit Top :
+  module Child :
+    output out : UInt<1>
+    out <= UInt<1>(0)
+  module Top :
+    input x : UInt<1>
+    output z : UInt<1>
+    inst c of Child
+    z <= UInt<1>(0)
+"""
+      (parse(exec(input))) should be (parse(check))
+    }
+
+   "ConstProp" should "propagate constant inputs" in {
+      val input =
+"""circuit Top :
+  module Child :
+    input in0 : UInt<1>
+    input in1 : UInt<1>
+    output out : UInt<1>
+    out <= and(in0, in1)
+  module Top :
+    input x : UInt<1>
+    output z : UInt<1>
+    inst c of Child
+    c.in0 <= x
+    c.in1 <= UInt<1>(1)
+    z <= c.out
+"""
+      val check =
+"""circuit Top :
+  module Child :
+    input in0 : UInt<1>
+    input in1 : UInt<1>
+    output out : UInt<1>
+    out <= in0
+  module Top :
+    input x : UInt<1>
+    output z : UInt<1>
+    inst c of Child
+    c.in0 <= x
+    c.in1 <= UInt<1>(1)
+    z <= c.out
+"""
+      (parse(exec(input))) should be (parse(check))
+    }
+
+   "ConstProp" should "propagate constant inputs ONLY if ALL instance inputs get the same value" in {
+      def circuit(allSame: Boolean) =
+s"""circuit Top :
+  module Bottom :
+    input in : UInt<1>
+    output out : UInt<1>
+    out <= in
+  module Child :
+    output out : UInt<1>
+    inst b of Bottom
+    b.in <= UInt(1)
+    out <= b.out
+  module Top :
+    input x : UInt<1>
+    output z : UInt<1>
+
+    inst c of Child
+
+    inst b0 of Bottom
+    b0.in <= ${if (allSame) "UInt(1)" else "x"}
+    inst b1 of Bottom
+    b1.in <= UInt(1)
+
+    z <= and(and(b0.out, b1.out), c.out)
+"""
+      val resultFromAllSame =
+"""circuit Top :
+  module Bottom :
+    input in : UInt<1>
+    output out : UInt<1>
+    out <= UInt(1)
+  module Child :
+    output out : UInt<1>
+    inst b of Bottom
+    b.in <= UInt(1)
+    out <= UInt(1)
+  module Top :
+    input x : UInt<1>
+    output z : UInt<1>
+    inst c of Child
+    inst b0 of Bottom
+    b0.in <= UInt(1)
+    inst b1 of Bottom
+    b1.in <= UInt(1)
+    z <= UInt(1)
+"""
+      (parse(exec(circuit(false)))) should be (parse(circuit(false)))
+      (parse(exec(circuit(true)))) should be (parse(resultFromAllSame))
+    }
 }
 
 // More sophisticated tests of the full compiler
@@ -522,13 +632,7 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    output y : UInt<1>
           |    node z = x
           |    y <= z""".stripMargin
-      val check =
-        """circuit Top :
-          |  module Top :
-          |    input x : UInt<1>
-          |    output y : UInt<1>
-          |    node z = x
-          |    y <= z""".stripMargin
+      val check = input
     execute(input, check, Seq(dontTouch("Top.z")))
   }
 
@@ -541,15 +645,42 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    wire z : UInt<1>
           |    y <= z
           |    z <= x""".stripMargin
-      val check =
-        """circuit Top :
-          |  module Top :
-          |    input x : UInt<1>
-          |    output y : UInt<1>
-          |    wire z : UInt<1>
-          |    y <= z
-          |    z <= x""".stripMargin
+      val check = input
     execute(input, check, Seq(dontTouch("Top.z")))
+  }
+
+  it should "NOT optimize across dontTouch on output ports" in {
+    val input =
+      """circuit Top :
+         |  module Child :
+         |    output out : UInt<1>
+         |    out <= UInt<1>(0)
+         |  module Top :
+         |    input x : UInt<1>
+         |    output z : UInt<1>
+         |    inst c of Child
+         |    z <= and(x, c.out)""".stripMargin
+      val check = input
+    execute(input, check, Seq(dontTouch("Child.out")))
+  }
+
+  it should "NOT optimize across dontTouch on input ports" in {
+    val input =
+      """circuit Top :
+         |  module Child :
+         |    input in0 : UInt<1>
+         |    input in1 : UInt<1>
+         |    output out : UInt<1>
+         |    out <= and(in0, in1)
+         |  module Top :
+         |    input x : UInt<1>
+         |    output z : UInt<1>
+         |    inst c of Child
+         |    z <= c.out
+         |    c.in0 <= x
+         |    c.in1 <= UInt<1>(1)""".stripMargin
+      val check = input
+    execute(input, check, Seq(dontTouch("Child.in1")))
   }
 
   it should "still propagate constants even when there is name swapping" in {
@@ -607,6 +738,45 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    z <= UInt<16>("h303")""".stripMargin
     execute(input, check, Seq.empty)
   }
+
+  it should "pad constant connections to outputs when propagating" in {
+      val input =
+        """circuit Top :
+          |  module Child :
+          |    output x : UInt<8>
+          |    x <= UInt<2>("h3")
+          |  module Top :
+          |    output z : UInt<16>
+          |    inst c of Child
+          |    z <= cat(UInt<2>("h3"), c.x)""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    output z : UInt<16>
+          |    z <= UInt<16>("h303")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  it should "pad constant connections to submodule inputs when propagating" in {
+      val input =
+        """circuit Top :
+          |  module Child :
+          |    input x : UInt<8>
+          |    output y : UInt<16>
+          |    y <= cat(UInt<2>("h3"), x)
+          |  module Top :
+          |    output z : UInt<16>
+          |    inst c of Child
+          |    c.x <= UInt<2>("h3")
+          |    z <= c.y""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    output z : UInt<16>
+          |    z <= UInt<16>("h303")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
 
   "Registers with no reset or connections" should "be replaced with constant zero" in {
       val input =
