@@ -13,9 +13,9 @@ class IntegerMathTester extends BasicTester {
   /* absolute values tests */
 
   val uint = 3.U(4.W)
-  val sint = (-3).S()
-  val sintpos = 3.S()
-  val wrongSIntPos = 4.S()
+  val sint = (-3).S
+  val sintpos = 3.S
+  val wrongSIntPos = 4.S
 
   assert(uint.abs() === uint)
   assert(sint.abs() === sintpos)

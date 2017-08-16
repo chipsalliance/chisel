@@ -15,7 +15,7 @@ lazy val customUnidocSettings = unidocSettings ++ Seq (
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0-SNAPSHOT_2017-07-19",
+  version := "3.0-SNAPSHOT_2017-08-16",
   git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.11",
@@ -77,7 +77,7 @@ lazy val publishSettings = Seq (
   }
 )
 
-val defaultVersions = Map("firrtl" -> "1.0-SNAPSHOT_2017-07-19")
+val defaultVersions = Map("firrtl" -> "1.0-SNAPSHOT_2017-08-16")
 
 lazy val chiselSettings = Seq (
   name := "chisel3",
@@ -125,6 +125,9 @@ lazy val chisel = (project in file(".")).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
+  // The following is required until sbt-scoverage correctly deals with inDependencies
+  // Unfortunately, it also revives publishing of the subproject jars. Disable until the latter is resolved (again).
+  //aggregate(coreMacros, chiselFrontend).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(

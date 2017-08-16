@@ -2,12 +2,9 @@
 
 package chiselTests
 
-import org.scalatest._
 import chisel3._
 import chisel3.core.Binding.BindingException
-import chisel3.core.ExplicitCompileOptions
-import chisel3.testers.BasicTester
-import chisel3.core.CompileOptions
+import chisel3.core.CompileOptions._
 
 class CompileOptionsSpec extends ChiselFlatSpec {
 
