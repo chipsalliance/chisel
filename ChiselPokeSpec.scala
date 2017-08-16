@@ -112,7 +112,7 @@ trait PokeTester extends ChiselPokeTesterUtils {
 
   def test[T <: Module](dutGen: => T, testerBackend: TesterBackend=FirrtlInterpreterBackend)(block: (InnerTester, T) => Unit) {
     val options = new TesterOptionsManager
-    test(dutGen, FirrtlInterpreterBackend, options)(block)
+    test(dutGen, testerBackend, options)(block)
   }
 }
 
