@@ -167,7 +167,8 @@ private[iotesters] object setupVCSBackend {
         assert(
           verilogToVCS(circuit.name, dir, new File(vcsHarnessFileName),
             moreVcsFlags = optionsManager.testerOptions.moreVcsFlags,
-            moreVcsCFlags = optionsManager.testerOptions.moreVcsCFlags
+            moreVcsCFlags = optionsManager.testerOptions.moreVcsCFlags,
+            editCommands = optionsManager.testerOptions.vcsCommandEdits
           ).! == 0)
 
         val command = if(optionsManager.testerOptions.testCmd.nonEmpty) {

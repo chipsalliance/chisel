@@ -126,15 +126,19 @@ private[iotesters] object verilogToVCS {
     dir: java.io.File,
     vcsHarness: java.io.File,
     moreVcsFlags: Seq[String] = Seq.empty[String],
-    moreVcsCFlags: Seq[String] = Seq.empty[String]): ProcessBuilder = {
-    //TODO: chick: This should be done in some safer and more toolish way
+    moreVcsCFlags: Seq[String] = Seq.empty[String],
+    editCommands: String = ""): ProcessBuilder = {
 
     val vcsFlags = constructVcsFlags(topModule, dir, moreVcsFlags, moreVcsCFlags)
 
     val cmd = Seq("cd", dir.toString, "&&", "vcs") ++ vcsFlags ++ Seq(
       "-o", topModule, s"$topModule.v", vcsHarness.toString, "vpi.cpp") mkString " "
-    println(s"$cmd")
-    Seq("bash", "-c", cmd)
+
+    val commandEditor = CommandEditor(editCommands, "vcs-command-edit")
+    val finalCommand = commandEditor(cmd)
+    println(s"$finalCommand")
+
+    Seq("bash", "-c", finalCommand)
   }
 }
 

@@ -8,6 +8,8 @@ import chisel3.HasChiselExecutionOptions
 import firrtl.{ComposableOptions, ExecutionOptionsManager, HasFirrtlOptions}
 import firrtl_interpreter.HasInterpreterSuite
 
+import scala.util.matching.Regex
+
 case class TesterOptions(
                           isGenVerilog:    Boolean = false,
                           isGenHarness:    Boolean = false,
@@ -19,9 +21,14 @@ case class TesterOptions(
                           testCmd:         Seq[String] = Seq.empty,
                           moreVcsFlags:    Seq[String] = Seq.empty,
                           moreVcsCFlags:   Seq[String] = Seq.empty,
+                          vcsCommandEdits: String = "",
                           backendName:     String  = "firrtl",
                           logFileName:     String  = "",
                           waveform:        Option[File] = None) extends ComposableOptions
+
+object TesterOptions {
+  val VcsFileCommands: Regex = """file:(.+)""".r
+}
 
 trait HasTesterOptions {
   self: ExecutionOptionsManager =>
@@ -78,6 +85,12 @@ trait HasTesterOptions {
     .abbr("tmvf")
     .foreach { x => testerOptions = testerOptions.copy(moreVcsCFlags = x.split("""\s""")) }
     .text("Add specified commands to the CFLAGS on the VCS command line")
+
+  parser.opt[String]("vcs-command-edits")
+    .abbr("tvce")
+    .foreach { x =>
+      testerOptions = testerOptions.copy(vcsCommandEdits = x) }
+    .text("a file containing regex substitutions, one per line s/pattern/replacement/")
 
   parser.opt[String]("log-file-name")
     .abbr("tlfn")
