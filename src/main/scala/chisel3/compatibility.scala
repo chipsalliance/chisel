@@ -29,26 +29,17 @@ package object Chisel {     // scalastyle:ignore package.object.name
   }
 
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
-    import chisel3.core.{DataMirror, ActualDirection, SpecifiedDirection}
+    import chisel3.core.{DataMirror, ActualDirection, requireIsHardware}
     def dir: Direction = {
-      DataMirror.isSynthesizable(target) match {
-        case true => target match {
-          case e: Element => DataMirror.directionOf(e) match {
-            case ActualDirection.Unspecified => NODIR
-            case ActualDirection.Output => OUTPUT
-            case ActualDirection.Input => INPUT
-            case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
-          }
+      requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
+      target match {
+        case e: Element => DataMirror.directionOf(e) match {
+          case ActualDirection.Output => OUTPUT
+          case ActualDirection.Input => INPUT
           case _ => NODIR
         }
-        case false => DataMirror.specifiedDirectionOf(target) match {  // returns local direction only
-          case SpecifiedDirection.Unspecified => NODIR
-          case SpecifiedDirection.Input => INPUT
-          case SpecifiedDirection.Output => OUTPUT
-          case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
-        }
+        case _ => NODIR
       }
-
     }
   }
 
