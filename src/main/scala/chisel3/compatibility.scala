@@ -29,26 +29,17 @@ package object Chisel {     // scalastyle:ignore package.object.name
   }
 
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
-    import chisel3.core.{DataMirror, ActualDirection, UserDirection}
+    import chisel3.core.{DataMirror, ActualDirection, requireIsHardware}
     def dir: Direction = {
-      DataMirror.internal.isSynthesizable(target) match {
-        case true => target match {
-          case e: Element => DataMirror.directionOf(e) match {
-            case ActualDirection.Unspecified => NODIR
-            case ActualDirection.Output => OUTPUT
-            case ActualDirection.Input => INPUT
-            case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
-          }
+      requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
+      target match {
+        case e: Element => DataMirror.directionOf(e) match {
+          case ActualDirection.Output => OUTPUT
+          case ActualDirection.Input => INPUT
           case _ => NODIR
         }
-        case false => DataMirror.userDirectionOf(target) match {  // returns local direction only
-          case UserDirection.Unspecified => NODIR
-          case UserDirection.Input => INPUT
-          case UserDirection.Output => OUTPUT
-          case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
-        }
+        case _ => NODIR
       }
-
     }
   }
 
@@ -196,8 +187,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
     /** Create an SInt literal with specified width. */
     def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
 
-    def Lit(value: BigInt): SInt = value.asSInt
-    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
+    def Lit(value: BigInt): SInt = value.asSInt // scalastyle:ignore method.name
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W) // scalastyle:ignore method.name
 
     /** Create a SInt with a specified width - compatibility with Chisel2. */
     def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
@@ -249,7 +240,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
-    override def _autoWrapPorts() = {
+    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
       if (!_ioPortBound()) {
         IO(io)
       }
@@ -277,7 +268,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
-    override def _autoWrapPorts() = {
+    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
       if (!_ioPortBound() && io != null) {
         IO(io)
       }

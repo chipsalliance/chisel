@@ -266,7 +266,7 @@ case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends C
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
-case class Port(id: Data, dir: UserDirection)
+case class Port(id: Data, dir: SpecifiedDirection)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
 abstract class Component extends Arg {
   def id: BaseModule
@@ -274,6 +274,6 @@ abstract class Component extends Arg {
   def ports: Seq[Port]
 }
 case class DefModule(id: UserModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
-case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: UserDirection, params: Map[String, Param]) extends Component
+case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation] = Seq.empty)

@@ -11,17 +11,26 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   behavior of "Chisel compatibility layer"
 
   it should "accept direction arguments" in {
-    val directionArgument: Direction = Gen.oneOf(INPUT, OUTPUT, NODIR).sample.get
-    val b = Bool(directionArgument)
-    b shouldBe a [Bool]
-    b.getWidth shouldEqual 1
-    b.dir shouldEqual(directionArgument)
-    // Choose a random width
-    val width = Gen.choose(1, 2048).sample.get
-    val u = UInt(directionArgument, width)
-    u shouldBe a [UInt]
-    u.getWidth shouldEqual width
-    u.dir shouldEqual(directionArgument)
+    elaborate(new Module {
+      // Choose a random direction
+      val directionArgument: Direction = Gen.oneOf(INPUT, OUTPUT, NODIR).sample.get
+      val expectedDirection = directionArgument match {
+        case NODIR => OUTPUT
+        case other => other
+      }
+      // Choose a random width
+      val width = Gen.choose(1, 2048).sample.get
+      val io = new Bundle {
+        val b = Bool(directionArgument)
+        val u = UInt(directionArgument, width)
+      }
+      io.b shouldBe a [Bool]
+      io.b.getWidth shouldEqual 1
+      io.b.dir shouldEqual (expectedDirection)
+      io.u shouldBe a [UInt]
+      io.u.getWidth shouldEqual width
+      io.u.dir shouldEqual (expectedDirection)
+    })
   }
 
   it should "accept single argument U/SInt factory methods" in {
@@ -161,6 +170,14 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate { new Chisel2CompatibleRisc }
   }
 
+  it should "not try to assign directions to Analog" in {
+    elaborate(new Module {
+      val io = new Bundle {
+        val port = chisel3.experimental.Analog(32.W)
+      }
+    })
+  }
+
 
   class SmallBundle extends Bundle {
     val f1 = UInt(width = 4)
@@ -240,5 +257,39 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       b := child.noDir
     }
     elaborate { new DirectionLessConnectionModule() }
+  }
+
+  "Vec ports" should "give default directions to children so they can be used in chisel3.util" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = new Bundle {
+        val in = Vec(1, UInt(width = 8)).flip
+        val out = UInt(width = 8)
+      }
+      io.out := RegEnable(io.in(0), true.B)
+    })
+  }
+
+  "Data.dir" should "give the correct direction for io" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = (new Bundle {
+        val foo = Bool(OUTPUT)
+        val bar = Bool().flip
+      }).flip
+      Chisel.assert(io.foo.dir == INPUT)
+      Chisel.assert(io.bar.dir == OUTPUT)
+    })
+  }
+
+  // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
+  it should "fail for Chisel types" in {
+    import Chisel._
+    an [chisel3.core.Binding.ExpectedHardwareException] should be thrownBy {
+      elaborate(new Module {
+        val io = new Bundle { }
+        UInt(INPUT).dir
+      })
+    }
   }
 }

@@ -64,7 +64,7 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
       id._onModuleClose
     }
 
-    val firrtlPorts = getModulePorts map {port => Port(port, port.userDirection)}
+    val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
     _firrtlPorts = Some(firrtlPorts)
 
     // Generate IO invalidation commands to initialize outputs as unused
