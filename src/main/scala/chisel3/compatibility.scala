@@ -195,6 +195,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Bool = chisel3.core.Bool
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
+  type Reset = chisel3.core.Reset
+
+  implicit def resetToBool(reset: Reset): Bool = reset.toBool
 
   import chisel3.core.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
