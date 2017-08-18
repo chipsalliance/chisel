@@ -14,13 +14,26 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   import chisel3.util._
   import chisel3.internal.firrtl.Port
+  import chisel3.core.CompileOptions
 
   val Input   = chisel3.core.Input
   val Output  = chisel3.core.Output
   val Flipped = chisel3.core.Flipped
 
   type Data = chisel3.core.Data
-  val Wire = chisel3.core.Wire
+  object Wire extends chisel3.core.WireFactory {
+    import chisel3.core.CompileOptions
+
+    @deprecated("Wire(init=init) is deprecated, use WireInit(init) instead", "chisel3")
+    def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(init)
+
+    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(t, init)
+  }
+  val WireInit = chisel3.core.WireInit
+
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
@@ -44,7 +57,37 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   }
 
   type Aggregate = chisel3.core.Aggregate
-  val Vec = chisel3.core.Vec
+  object Vec extends chisel3.core.VecFactory {
+    import scala.language.experimental.macros
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
+    def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      apply(n, gen)
+
+    @deprecated("Vec.fill(n)(gen) is deprecated, use VecInit(Seq.fill(n)(gen)) instead", "chisel3")
+    def fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      apply(Seq.fill(n)(gen))
+
+    @deprecated("Vec(elts) is deprecated, use VecInit(elts) instead", "chisel3")
+    def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+    def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit(elts)
+
+    @deprecated("Vec(elt0, ...) is deprecated, use VecInit(elt0, ...) instead", "chisel3")
+    def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+    def do_apply[T <: Data](elt0: T, elts: T*)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit(elt0 +: elts.toSeq)
+
+    @deprecated("Vec.tabulate(n)(gen) is deprecated, use VecInit.tabulate(n)(gen) instead", "chisel3")
+    def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit.tabulate(n)(gen)
+  }
+  val VecInit = chisel3.core.VecInit
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
   type Bundle = chisel3.core.Bundle
@@ -282,9 +325,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
-    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x    // scalastyle:ignore method.name
-    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x      // scalastyle:ignore method.name
-    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x    // scalastyle:ignore method.name
+    def do_=== (that: BitPat)  // scalastyle:ignore method.name
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+    def do_!= (that: BitPat)  // scalastyle:ignore method.name
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x
+    def do_=/= (that: BitPat)  // scalastyle:ignore method.name
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
   }
 
 
@@ -364,8 +410,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
     import scala.annotation.compileTimeOnly
 
-    class dump extends chisel3.internal.naming.dump
-    class treedump extends chisel3.internal.naming.treedump
-    class chiselName extends chisel3.internal.naming.chiselName
+    class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
+    class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+    class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
   }
 }

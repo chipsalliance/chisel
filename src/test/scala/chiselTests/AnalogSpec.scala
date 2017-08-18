@@ -118,7 +118,7 @@ class AnalogSpec extends ChiselFlatSpec {
   it should "NOT be connectable to UInts" in {
     a [Exception] should be thrownBy {
       runTester { new BasicTester {
-        val uint = Wire(init = 0.U(32.W))
+        val uint = WireInit(0.U(32.W))
         val sint = Wire(Analog(32.W))
         sint := uint
       }}
@@ -179,7 +179,7 @@ class AnalogSpec extends ChiselFlatSpec {
   it should "work with blackboxes at different levels of the module hierarchy" in {
     assertTesterPasses(new AnalogTester {
       val mods = Seq(Module(new AnalogReaderBlackBox), Module(new AnalogReaderWrapper))
-      val busWire = Wire(writer.io.bus)
+      val busWire = Wire(writer.io.bus.cloneType)
       attach(writer.io.bus, mods(0).io.bus, mods(1).io.bus)
       mods.foreach(check(_))
     }, Seq("/chisel3/AnalogBlackBox.v"))
