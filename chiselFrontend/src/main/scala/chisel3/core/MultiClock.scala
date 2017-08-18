@@ -9,7 +9,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo}
 
-private[chisel3] final case class ClockAndReset(clock: Clock, reset: Bool)
+private[chisel3] final case class ClockAndReset(clock: Clock, reset: Reset)
 
 object withClockAndReset {  // scalastyle:ignore object.name
   /** Creates a new Clock and Reset scope
@@ -19,7 +19,7 @@ object withClockAndReset {  // scalastyle:ignore object.name
     * @param block the block of code to run with new implicit Clock and Reset
     * @return the result of the block
     */
-  def apply[T](clock: Clock, reset: Bool)(block: => T): T = {
+  def apply[T](clock: Clock, reset: Reset)(block: => T): T = {
     // Save parentScope
     val parentScope = Builder.currentClockAndReset
     Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
@@ -48,7 +48,7 @@ object withReset {  // scalastyle:ignore object.name
     * @param block the block of code to run with new implicit Reset
     * @return the result of the block
     */
-  def apply[T](reset: Bool)(block: => T): T =
+  def apply[T](reset: Reset)(block: => T): T =
     withClockAndReset(Module.clock, reset)(block)
 }
 
