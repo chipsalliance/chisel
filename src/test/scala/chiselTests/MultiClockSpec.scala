@@ -54,7 +54,7 @@ class MultiClockSubModuleTest extends BasicTester {
 
 /** Test withReset changing the reset of a Reg */
 class WithResetTest extends BasicTester {
-  val reset2 = Wire(init = false.B)
+  val reset2 = WireInit(false.B)
   val reg = withReset(reset2 || reset.toBool) { RegInit(0.U(8.W)) }
   reg := reg + 1.U
 
