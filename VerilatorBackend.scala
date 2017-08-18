@@ -42,7 +42,9 @@ object VerilatorCppHarnessGenerator {
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt) {
-      if (width <= 8) {
+      if (width == 0) {
+        // Do nothing- 0 width wires are removed
+      } else if (width <= 8) {
         codeBuffer.append(s"        sim_data.$vector.push_back(new VerilatorCData(&($pathName)));\n")
       } else if (width <= 16) {
         codeBuffer.append(s"        sim_data.$vector.push_back(new VerilatorSData(&($pathName)));\n")
