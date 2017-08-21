@@ -45,7 +45,7 @@ checkstyle:
 
 coverage:
 	$(SBT) $(SBT_FLAGS) coverage test
-	$(SBT) $(SBT_FLAGS) coverageReport
+	$(SBT) $(SBT_FLAGS) coverageReport coverageAggregate
 
 clean:
 	$(SBT) $(SBT_FLAGS) clean

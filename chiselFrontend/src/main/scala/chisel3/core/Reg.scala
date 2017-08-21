@@ -40,6 +40,7 @@ object RegNext {
     }).asInstanceOf[T]
     val reg = Reg(model)
 
+    requireIsHardware(next, "reg next")
     reg := next
 
     reg
@@ -56,6 +57,7 @@ object RegNext {
     }).asInstanceOf[T]
     val reg = RegInit(model, init)  // TODO: this makes NO sense
 
+    requireIsHardware(next, "reg next")
     reg := next
 
     reg

@@ -55,7 +55,7 @@ object printf { // scalastyle:ignore object.name
     * @param pable [[Printable]] to print
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
-    when (!Builder.forcedReset) {
+    when (!Module.reset.toBool) {
       printfWithoutReset(pable)
     }
   }

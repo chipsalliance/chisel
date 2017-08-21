@@ -12,7 +12,7 @@ class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
     val out = Output(Vec(vecSize, UInt()))
   })
-  io.out := Vec(Seq.fill(vecSize){0.U})
+  io.out := VecInit(Seq.fill(vecSize){0.U})
 }
 
 class RegTesterMod(vecSize: Int) extends Module {
@@ -36,7 +36,7 @@ class OneBitUnitRegVec extends Module {
   val io = IO(new Bundle {
     val out = Output(UInt(1.W))
   })
-  val oneBitUnitRegVec = Reg(Vec(1, 1.U))
+  val oneBitUnitRegVec = Reg(Vec(1, UInt(1.W)))
   oneBitUnitRegVec(0) := 1.U(1.W)
   io.out := oneBitUnitRegVec(0)
 }
@@ -78,8 +78,8 @@ class IOTesterModFill(vecSize: Int) extends Module {
   // This should generate a BindingException when we attempt to wire up the Vec.fill elements
   //  since they're pure types and hence unsynthesizeable.
   val io = IO(new Bundle {
-    val in = Input(Vec.fill(vecSize) {UInt()})
-    val out = Output(Vec.fill(vecSize) {UInt()})
+    val in = Input(VecInit(Seq.fill(vecSize) {UInt()}))
+    val out = Output(VecInit(Seq.fill(vecSize) {UInt()}))
   })
   io.out := io.in
 }
@@ -147,7 +147,7 @@ class ZeroEntryVecTester extends BasicTester {
   val m = Module(new Module {
     val io = IO(Output(bundleWithZeroEntryVec.cloneType))
   })
-  Wire(init = m.io.bar)
+  WireInit(m.io.bar)
 
   stop()
 }
@@ -171,7 +171,7 @@ class PassthroughModuleTester extends Module {
 
 
 class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
-  val duts = Vec.fill(n)(Module(new PassthroughModule).io)
+  val duts = VecInit(Seq.fill(n)(Module(new PassthroughModule).io))
   val tester = Module(new PassthroughModuleTester)
 
   val (cycle, done) = Counter(true.B, n)
