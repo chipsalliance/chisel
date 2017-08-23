@@ -95,6 +95,20 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
+  def emitVerilog[T <: RawModule](gen: () => T): String = {
+    execute(Array[String](), gen) match {
+      case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
+      case _ => sys.error("Cannot get Verilog!")
+    }
+  }
+
+  def emitVerilog[T <: RawModule](gen: => T): String = {
+    execute(Array[String](), { () => gen }) match {
+      case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
+      case _ => sys.error("Cannot get Verilog!")
+    }
+  }
+
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
