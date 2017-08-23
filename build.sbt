@@ -1,27 +1,45 @@
 // See LICENSE for license details.
 
-site.settings
+enablePlugins(SiteScaladocPlugin)
 
-site.includeScaladoc()
+enablePlugins(GhpagesPlugin)
 
-ghpages.settings
+def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
+  Seq() ++ {
+    // If we're building with Scala > 2.11, enable the compile option
+    //  switch to support our anonymous Bundle definitions:
+    //  https://github.com/scala/bug/issues/10047
+    CrossVersion.partialVersion(scalaVersion) match {
+      case Some((2, scalaMajor: Int)) if scalaMajor < 12 => Seq()
+      case _ => Seq("-Xsource:2.11")
+    }
+  }
+}
 
-import UnidocKeys._
-
-lazy val customUnidocSettings = unidocSettings ++ Seq (
-  doc in Compile := (doc in ScalaUnidoc).value,
-  target in unidoc in ScalaUnidoc := crossTarget.value / "api"
-)
+def javacOptionsVersion(scalaVersion: String): Seq[String] = {
+  Seq() ++ {
+    // Scala 2.12 requires Java 8. We continue to generate
+    //  Java 7 compatible code for Scala 2.11
+    //  for compatibility with old clients.
+    CrossVersion.partialVersion(scalaVersion) match {
+      case Some((2, scalaMajor: Int)) if scalaMajor < 12 =>
+        Seq("-source", "1.7", "-target", "1.7")
+      case _ =>
+        Seq("-source", "1.8", "-target", "1.8")
+    }
+  }
+}
 
 val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.1-SNAPSHOT",
-  git.remoteRepo := "git@github.com:ucb-bar/chisel3.git",
+  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.11",
-  scalacOptions := Seq("-deprecation", "-feature"),
+  crossScalaVersions := Seq("2.11.11", "2.12.3"),
+  scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // Use the root project's unmanaged base for all sub-projects.
@@ -54,8 +72,8 @@ lazy val chiselSettings = Seq (
       </license>
     </licenses>
     <scm>
-      <url>https://github.com/ucb-bar/chisel3.git</url>
-      <connection>scm:git:github.com/ucb-bar/chisel3.git</connection>
+      <url>https://github.com/freechipsproject/chisel3.git</url>
+      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
     </scm>
     <developers>
       <developer>
@@ -84,13 +102,13 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.5.0"
+    "com.github.scopt" %% "scopt" % "3.6.0"
   ),
 
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
 
-  javacOptions ++= Seq("-target", "1.7")
+  javacOptions ++= javacOptionsVersion(scalaVersion.value)
 )
 
 lazy val coreMacros = (project in file("coreMacros")).
@@ -107,6 +125,7 @@ lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
+  enablePlugins(ScalaUnidocPlugin).
   settings(
     buildInfoPackage := name.value,
     buildInfoOptions += BuildInfoOption.BuildTime,
@@ -114,7 +133,6 @@ lazy val chisel = (project in file(".")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(commonSettings: _*).
-  settings(customUnidocSettings: _*).
   settings(chiselSettings: _*).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
