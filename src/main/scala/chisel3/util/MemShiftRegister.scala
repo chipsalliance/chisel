@@ -75,7 +75,7 @@ class MemShiftRegister[T <: Data]( genType : T, n : Int ) extends Module {
     when ( io.en ) {
       myMem.write( cntr._1, io.in )
     }
-    io.out := myMem.read( readAddr, true.B )
+    io.out := myMem.read( readAddr, io.en )
     io.cntrWrap := cntr._2
   }
 }
