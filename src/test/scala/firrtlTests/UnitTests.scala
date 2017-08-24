@@ -127,7 +127,8 @@ class UnitTests extends FirrtlFlatSpec {
   "Emitting a nested expression" should "throw an exception" in {
     val passes = Seq(
       ToWorkingIR,
-      InferTypes)
+      InferTypes,
+      ResolveKinds)
     intercept[PassException] {
       val c = Parser.parse(splitExpTestCode.split("\n").toIterator)
       val c2 = passes.foldLeft(c)((c, p) => p run c)
