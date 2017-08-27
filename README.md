@@ -1,6 +1,12 @@
 # Chisel3
-Chisel3 is a new Firrtl based chisel.
-It is currently in BETA VERSION, so some Chisel features may change in the coming months.
+Chisel is a new hardware construction language to support adavanced hardware design and circuit generation.
+The latest version of Chisel is Chisel3, which uses Firrtl as an intermediate hardware representation language.
+
+Chisel3 is currently in BETA VERSION, so some Chisel features may change in the coming months.
+<!---
+Is it good to have this beta warning here and no lonk to the stable Chisel 2 version?
+This warning might scare away people.
+-->
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
 detailed description.
