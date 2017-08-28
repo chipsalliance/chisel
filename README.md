@@ -1,6 +1,6 @@
 # Chisel3
 
-Chisel is a new hardware construction language to support adavanced hardware design and circuit generation.
+Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
 The latest version of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
 which uses Firrtl as an intermediate hardware representation language.
 
