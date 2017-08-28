@@ -3,7 +3,7 @@
 name := "chisel3"
 
 val chiselDeps = chisel.dependencies(Seq(
-    ("edu.berkeley.cs" % "firrtl" % "1.1-SNAPSHOT", "firrtl")
+    ("edu.berkeley.cs" %% "firrtl" % "1.1-SNAPSHOT", "firrtl")
 ))
 
 val dependentProjects = chiselDeps.projects
