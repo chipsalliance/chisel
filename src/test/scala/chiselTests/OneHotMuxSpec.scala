@@ -126,10 +126,10 @@ object Agg1 extends HasMakeLit[Agg1] {
     val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
 
     val w = Wire(new Agg1)
-    w.v(0) := Wire(d.F(4.BP))
-    w.v(1) := Wire(e.F(4.BP))
-    w.a.f1 := Wire(f.F(3.BP))
-    w.a.f2 := Wire(g.F(5.BP))
+    w.v(0) := d.F(4.BP)
+    w.v(1) := e.F(4.BP)
+    w.a.f1 := f.F(3.BP)
+    w.a.f2 := g.F(5.BP)
     w
   }
 }
@@ -147,10 +147,10 @@ object Agg2 extends HasMakeLit[Agg2] {
     val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
 
     val w = Wire(new Agg2)
-    w.v(0) := Wire(d.F(4.BP))
-    w.v(1) := Wire(e.F(4.BP))
-    w.a.f1 := Wire(f.F(3.BP))
-    w.a.f2 := Wire(g.F(5.BP))
+    w.v(0) := d.F(4.BP)
+    w.v(1) := e.F(4.BP)
+    w.a.f1 := f.F(3.BP)
+    w.a.f2 := g.F(5.BP)
     w
   }
 }

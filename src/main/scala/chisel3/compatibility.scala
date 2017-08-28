@@ -29,33 +29,32 @@ package object Chisel {     // scalastyle:ignore package.object.name
   }
 
   implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
-    import chisel3.core.{DataMirror, ActualDirection, UserDirection}
+    import chisel3.core.{DataMirror, ActualDirection, requireIsHardware}
     def dir: Direction = {
-      DataMirror.isSynthesizable(target) match {
-        case true => target match {
-          case e: Element => DataMirror.directionOf(e) match {
-            case ActualDirection.Unspecified => NODIR
-            case ActualDirection.Output => OUTPUT
-            case ActualDirection.Input => INPUT
-            case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
-          }
+      requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
+      target match {
+        case e: Element => DataMirror.directionOf(e) match {
+          case ActualDirection.Output => OUTPUT
+          case ActualDirection.Input => INPUT
           case _ => NODIR
         }
-        case false => DataMirror.userDirectionOf(target) match {  // returns local direction only
-          case UserDirection.Unspecified => NODIR
-          case UserDirection.Input => INPUT
-          case UserDirection.Output => OUTPUT
-          case dir => throw new RuntimeException(s"Unexpected element direction '$dir'")
-        }
+        case _ => NODIR
       }
-
     }
   }
 
   type ChiselException = chisel3.internal.ChiselException
 
   type Data = chisel3.core.Data
-  val Wire = chisel3.core.Wire
+  object Wire extends chisel3.core.WireFactory {
+    import chisel3.core.CompileOptions
+
+    def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(init)
+
+    def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(t, init)
+  }
   object Clock {
     def apply(): Clock = new Clock
 
@@ -91,7 +90,39 @@ package object Chisel {     // scalastyle:ignore package.object.name
   }
 
   type Aggregate = chisel3.core.Aggregate
-  val Vec = chisel3.core.Vec
+  object Vec extends chisel3.core.VecFactory {
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
+    def apply[T <: Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
+      apply(n, gen)
+
+    /** Creates a new [[Vec]] of length `n` composed of the result of the given
+      * function repeatedly applied.
+      *
+      * @param n number of elements (and the number of times the function is
+      * called)
+      * @param gen function that generates the [[Data]] that becomes the output
+      * element
+      */
+    def fill[T <: Data](n: Int)(gen: => T)(implicit compileOptions: CompileOptions): Vec[T] =
+      apply(Seq.fill(n)(gen))
+
+    def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+    def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit(elts)
+
+    def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+    def do_apply[T <: Data](elt0: T, elts: T*)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit(elt0 +: elts.toSeq)
+
+    def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit.tabulate(n)(gen)
+  }
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
   type Record = chisel3.core.Record
@@ -204,6 +235,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Bool = chisel3.core.Bool
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
+  type Reset = chisel3.core.Reset
+
+  implicit def resetToBool(reset: Reset): Bool = reset.toBool
 
   import chisel3.core.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
@@ -490,8 +524,8 @@ package object Chisel {     // scalastyle:ignore package.object.name
   object experimental {  // scalastyle:ignore object.name
     import scala.annotation.compileTimeOnly
 
-    class dump extends chisel3.internal.naming.dump
-    class treedump extends chisel3.internal.naming.treedump
-    class chiselName extends chisel3.internal.naming.chiselName
+    class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
+    class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+    class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
   }
 }

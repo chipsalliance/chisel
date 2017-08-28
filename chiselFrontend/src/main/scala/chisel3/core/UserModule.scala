@@ -64,7 +64,7 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
       id._onModuleClose
     }
 
-    val firrtlPorts = getModulePorts map {port => Port(port, port.userDirection)}
+    val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
     _firrtlPorts = Some(firrtlPorts)
 
     // Generate IO invalidation commands to initialize outputs as unused,
@@ -94,8 +94,8 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
 abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
     extends UserModule {
   // Implicit clock and reset pins
-  val clock = IO(Input(Clock()))
-  val reset = IO(Input(Bool()))
+  val clock: Clock = IO(Input(Clock()))
+  val reset: Reset = IO(Input(Bool()))
 
   // Setup ClockAndReset
   Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
