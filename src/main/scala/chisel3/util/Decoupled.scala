@@ -233,8 +233,8 @@ class Queue[T <: Data](gen: T,
     maybe_full := do_enq
   }
 
-  io.deq.valid := !empty
-  io.enq.ready := !full
+  io.deq.valid := !reset & !empty
+  io.enq.ready := !reset & !full
   io.deq.bits := ram(deq_ptr.value)
 
   if (flow) {
