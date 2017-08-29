@@ -235,6 +235,10 @@ class Queue[T <: Data](gen: T,
 
   io.deq.valid := !empty
   io.enq.ready := !full
+  when (reset) {
+    io.deq.valid := false.B
+    io.enq.ready := false.B
+  }
   io.deq.bits := ram(deq_ptr.value)
 
   if (flow) {
