@@ -202,6 +202,18 @@ object Driver {
           "" // Should we return something different here?
       }
 
+      // If set, emit final annotations to a file
+      optionsManager.firrtlOptions.outputAnnotationFileName match {
+        case "" =>
+        case file =>
+          val filename = optionsManager.getBuildFileName("anno", file)
+          val outputFile = new java.io.PrintWriter(filename)
+          finalState.annotations.map {
+            case annos => outputFile.write(annos.annotations.mkString("\n"))
+          }
+          outputFile.close()
+      }
+
       FirrtlExecutionSuccess(firrtlConfig.compilerName, emittedRes)
     }
   }

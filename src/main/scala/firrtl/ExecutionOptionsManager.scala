@@ -155,6 +155,7 @@ case class FirrtlExecutionOptions(
     customTransforms:       Seq[Transform] = List.empty,
     annotations:            List[Annotation] = List.empty,
     annotationFileNameOverride: String = "",
+    outputAnnotationFileName: String = "",
     forceAppendAnnoFile:    Boolean = false,
     emitOneFilePerModule:   Boolean = false,
     dontCheckCombLoops:     Boolean = false,
@@ -283,8 +284,8 @@ trait HasFirrtlOptions {
 
   parser.opt[String]("annotation-file")
     .abbr("faf")
-    .valueName ("<output>").
-    foreach { x =>
+    .valueName ("<input-anno-file>")
+    .foreach { x =>
       firrtlOptions = firrtlOptions.copy(annotationFileNameOverride = x)
     }.text {
     "use this to override the default annotation file name, default is empty"
@@ -297,6 +298,15 @@ trait HasFirrtlOptions {
     }.text {
       "use this to force appending annotation file to annotations being passed in through optionsManager"
     }
+
+  parser.opt[String]("output-annotation-file")
+    .abbr("foaf")
+    .valueName ("<output-anno-file>")
+    .foreach { x =>
+      firrtlOptions = firrtlOptions.copy(outputAnnotationFileName = x)
+    }.text {
+    "use this to set the annotation output file"
+  }
 
   parser.opt[String]("compiler")
     .abbr("X")
