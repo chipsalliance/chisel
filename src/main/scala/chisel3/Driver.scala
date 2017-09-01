@@ -95,13 +95,11 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
-  def emitVerilog[T <: RawModule](gen: () => T): String = {
-    execute(Array[String](), gen) match {
-      case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
-      case _ => sys.error("Cannot get Verilog!")
-    }
-  }
-
+  /** Elaborates the Module specified in the gen function into Verilog
+    *
+    *  @param gen a function that creates a Module hierarchy
+    *  @return the resulting String containing the design in Verilog
+    */
   def emitVerilog[T <: RawModule](gen: => T): String = {
     execute(Array[String](), { () => gen }) match {
       case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
