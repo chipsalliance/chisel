@@ -184,6 +184,7 @@ class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false)
+                      (implicit compileOptions: chisel3.core.CompileOptions)
     extends Module() {
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
@@ -196,9 +197,21 @@ class Queue[T <: Data](gen: T,
     this.override_reset = Some(_reset)
   }
 
-  val io = IO(new QueueIO(gen, entries))
+  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
+    experimental.requireIsChiselType(gen)
+    gen
+  } else {
+    if (DataMirror.internal.isSynthesizable(gen)) {
+      println("WARNING: gen in new Queue(gen, ...) must be a Chisel type, not hardware")
+      gen.chiselCloneType
+    } else {
+      gen
+    }
+  }
 
-  private val ram = Mem(entries, gen)
+  val io = IO(new QueueIO(genType, entries))
+
+  private val ram = Mem(entries, genType)
   private val enq_ptr = Counter(entries)
   private val deq_ptr = Counter(entries)
   private val maybe_full = RegInit(false.B)
@@ -206,8 +219,8 @@ class Queue[T <: Data](gen: T,
   private val ptr_match = enq_ptr.value === deq_ptr.value
   private val empty = ptr_match && !maybe_full
   private val full = ptr_match && maybe_full
-  private val do_enq = Wire(init=io.enq.fire())
-  private val do_deq = Wire(init=io.deq.fire())
+  private val do_enq = WireInit(io.enq.fire())
+  private val do_deq = WireInit(io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits

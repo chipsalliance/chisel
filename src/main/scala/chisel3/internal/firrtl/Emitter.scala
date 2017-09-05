@@ -75,10 +75,21 @@ private class Emitter(circuit: Circuit) {
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
       case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
       case w: WhenBegin =>
+        // When consequences are always indented
         indent()
         s"when ${w.pred.fullName(ctx)} :"
-      case _: WhenEnd =>
+      case w: WhenEnd =>
+        // If a when has no else, the indent level must be reset to the enclosing block
         unindent()
+        if (!w.hasAlt) { for (i <- 0 until w.firrtlDepth) { unindent() } }
+        s"skip"
+      case a: AltBegin =>
+        // Else blocks are always indented
+        indent()
+        s"else :"
+      case o: OtherwiseEnd =>
+        // Chisel otherwise: ends all FIRRTL associated a Chisel when, resetting indent level
+        for (i <- 0 until o.firrtlDepth) { unindent() }
         s"skip"
     }
     firrtlLine + e.sourceInfo.makeMessage(" " + _)
@@ -120,8 +131,10 @@ private class Emitter(circuit: Circuit) {
           // Firrtl extmodule can overrule name
           body ++= newline + s"defname = ${bb.id.desiredName}"
           body ++= newline + (bb.params map { case (n, p) => emitParam(n, p) } mkString newline)
-        case mod: DefModule => for (cmd <- mod.commands) {
-          body ++= newline + emit(cmd, mod)
+        case mod: DefModule => {
+          // Preprocess whens & elsewhens, marking those that have no alternative
+          val procMod = mod.copy(commands = processWhens(mod.commands))
+          for (cmd <- procMod.commands) { body ++= newline + emit(cmd, procMod)}
         }
       }
       body ++= newline
@@ -140,6 +153,16 @@ private class Emitter(circuit: Circuit) {
     sb.append(moduleDefn(m))
     sb.result
   }
+
+  /** Preprocess the command queue, marking when/elsewhen statements
+    * that have no alternatives (elsewhens or otherwise). These
+    * alternative-free statements reset the indent level to the
+    * enclosing block upon emission.
+    */
+  private def processWhens(cmds: Seq[Command]):
+  Seq[Command] = { cmds.zip(cmds.tail).map({ case (a: WhenEnd, b:
+  AltBegin) => a.copy(hasAlt = true) case (a, b) => a }) ++
+  cmds.lastOption }
 
   private var indentLevel = 0
   private def newline = "\n" + ("  " * indentLevel)
