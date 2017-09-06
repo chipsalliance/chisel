@@ -554,7 +554,8 @@ class ExecutionOptionsManager(val applicationName: String) extends HasParser(app
       val dottedSuffix = if(suffix.startsWith(".")) suffix else s".$suffix"
       if(baseName.endsWith(dottedSuffix)) "" else dottedSuffix
     }
-
+    val path = directoryName + baseName.split("/").dropRight(1).mkString("/")
+    FileUtils.makeDirectory(path)
     s"$directoryName$baseName$normalizedSuffix"
   }
 }
