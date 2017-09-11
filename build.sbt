@@ -24,7 +24,7 @@ lazy val commonSettings = ChiselProjectDependenciesPlugin.chiselProjectSettings 
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.5.0"
+    "com.github.scopt" %% "scopt" % "3.6.0"
   ) ++ chiselDeps.libraries,
 
 
