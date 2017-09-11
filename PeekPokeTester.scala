@@ -7,6 +7,8 @@ import java.io.File
 import chisel3._
 import chisel3.core.{Aggregate, Element}
 import PeekPokeTester.extractElementBits
+import chisel3.experimental.FixedPoint
+import chisel3.internal.firrtl.KnownBinaryPoint
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
@@ -146,6 +148,11 @@ abstract class PeekPokeTester[+T <: Module](
     poke(signal, BigInt(value))
   }
 
+  def pokeFixedPoint(signal: FixedPoint, value: Double): Unit = {
+    val bigInt = value.F(signal.width, signal.binaryPoint).litValue()
+    poke(signal, bigInt)
+  }
+
   /** Locate a specific bundle element, given a name path.
     * TODO: Handle Vecs
     *
@@ -185,6 +192,14 @@ abstract class PeekPokeTester[+T <: Module](
 
   def peek(signal: Bits):BigInt = {
     if (!signal.isLit) backend.peek(signal, None) else signal.litValue()
+  }
+
+  def peekFixedPoint(signal: FixedPoint): Double = {
+    val bigInt = peek(signal)
+    signal.binaryPoint match {
+      case KnownBinaryPoint(bp) => FixedPoint.toDouble(bigInt, bp)
+      case _ => throw new Exception("Cannot peekFixedPoint with unknown binary point location")
+    }
   }
 
   def peek(signal: Aggregate): Seq[BigInt] =  {
@@ -252,6 +267,12 @@ abstract class PeekPokeTester[+T <: Module](
 
   def expect(signal: Bits, expected: Int, msg: => String): Boolean = {
     expect(signal, BigInt(expected), msg)
+  }
+
+  def expectFixedPoint(signal: FixedPoint, expected: Double, msg: => String, epsilon: Double = 0.01): Boolean = {
+    val double = peekFixedPoint(signal)
+
+    expect((double - expected).abs < epsilon, msg )
   }
 
   def expect (signal: Aggregate, expected: IndexedSeq[BigInt]): Boolean = {
