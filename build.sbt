@@ -2,20 +2,34 @@
 
 name := "chisel3"
 
+enablePlugins(SiteScaladocPlugin)
+
+enablePlugins(GhpagesPlugin)
+
+val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
+
+def chiselVersion(proj: String): String = {
+  sys.props.getOrElse(proj + "Version", defaultVersions(proj))
+}
+
 val chiselDeps = chisel.dependencies(Seq(
-    ("edu.berkeley.cs" %% "firrtl" % "1.1-SNAPSHOT", "firrtl")
+    ("edu.berkeley.cs" %% "firrtl" % chiselVersion("firrtl"), "firrtl")
 ))
 
 val dependentProjects = chiselDeps.projects
 
 lazy val commonSettings = ChiselProjectDependenciesPlugin.chiselProjectSettings ++ Seq (
   version := "3.1-SNAPSHOT",
+  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalacOptions ++= Seq("-deprecation", "-feature"),
   // Use the root project's unmanaged base for all sub-projects.
   unmanagedBase := (unmanagedBase in root).value,
   // Use the root project's classpath for all sub-projects.
   fullClasspath := (fullClasspath in Compile in root).value,
+
+  scalaVersion := "2.11.11",
+  crossScalaVersions := Seq("2.11.11", "2.12.3"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // Use the root project's unmanaged base for all sub-projects.
@@ -38,8 +52,8 @@ lazy val commonSettings = ChiselProjectDependenciesPlugin.chiselProjectSettings 
 
   pomExtra := pomExtra.value ++
     <scm>
-      <url>https://github.com/ucb-bar/chisel3.git</url>
-      <connection>scm:git:github.com/ucb-bar/chisel3.git</connection>
+      <url>https://github.com/freechipsproject/chisel3.git</url>
+      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
     </scm>
     <developers>
       <developer>
@@ -47,8 +61,26 @@ lazy val commonSettings = ChiselProjectDependenciesPlugin.chiselProjectSettings 
         <name>Jonathan Bachrach</name>
         <url>http://www.eecs.berkeley.edu/~jrb/</url>
       </developer>
-    </developers>
+    </developers>,
 
+  publishTo := {
+    val v = version.value
+    val nexus = "https://oss.sonatype.org/"
+    if (v.trim.endsWith("SNAPSHOT")) {
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    }
+    else {
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    }
+  },
+
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  ),
+
+  // Tests from other projects may still run concurrently.
+  parallelExecution in Test := true
 )
 
 lazy val coreMacros = (project in file("coreMacros")).
@@ -66,6 +98,7 @@ lazy val root = RootProject(file("."))
 
 lazy val chisel3 = (project in file(".")).
   enablePlugins(BuildInfoPlugin).
+  enablePlugins(ScalaUnidocPlugin).
   settings(ChiselProjectDependenciesPlugin.chiselBuildInfoSettings: _*).
   settings(commonSettings: _*).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
