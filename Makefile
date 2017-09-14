@@ -25,15 +25,15 @@ c_resources_dir := src/main/resources
 
 test_outs    := $(addprefix $(targetDir)/, $(addsuffix .out, $(test_results)))
 
-.PHONY:	smoke publish-local check clean jenkins-build coverage scaladoc test checkstyle compile
+.PHONY:	smoke publish-local pubishLocal check clean jenkins-build coverage scaladoc test checkstyle compile
 
-default:	publish-local
+default:	publishLocal
 
 smoke compile:
 	$(SBT) $(SBT_FLAGS) compile
 
-publish-local:
-	$(SBT) $(SBT_FLAGS) publish-local
+publish-local publishLocal:
+	$(SBT) $(SBT_FLAGS) publishLocal
 
 test:
 	$(SBT) $(SBT_FLAGS) test
@@ -69,7 +69,7 @@ site:
 # We need to run the coverage tests last, since Jenkins will fail the build if it can't find their results.
 jenkins-build: clean
 	$(SBT) $(SBT_FLAGS) test
-	$(SBT) $(SBT_FLAGS) clean publish-local
+	$(SBT) $(SBT_FLAGS) clean publishLocal
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
 
@@ -87,3 +87,8 @@ $(targetDir)/%.h:	$(c_resources_dir)/%.h
 
 $(targetDir)/%.out:	$(targetDir)/%
 	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS) --test --targetDir $(targetDir)"
+
+# The "last-resort" rule.
+# We assume the target is something like "+clean".
+%::
+	$(SBT) $(SBT_FLAGS) $@
