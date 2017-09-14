@@ -270,6 +270,17 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     })
   }
 
+  "Reset" should "still walk, talk, and quack like a Bool" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = new Bundle {
+        val in = Bool(INPUT)
+        val out = Bool(OUTPUT)
+      }
+      io.out := io.in && reset
+    })
+  }
+
   "Data.dir" should "give the correct direction for io" in {
     import Chisel._
     elaborate(new Module {
@@ -292,4 +303,5 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       })
     }
   }
+
 }

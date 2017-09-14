@@ -88,8 +88,8 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
 abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
     extends UserModule {
   // Implicit clock and reset pins
-  val clock = IO(Input(Clock()))
-  val reset = IO(Input(Bool()))
+  val clock: Clock = IO(Input(Clock()))
+  val reset: Reset = IO(Input(Bool()))
 
   // Setup ClockAndReset
   Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))

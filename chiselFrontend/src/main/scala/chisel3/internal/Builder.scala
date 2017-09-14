@@ -205,7 +205,7 @@ private[chisel3] object Builder {
     case None => throwException("Error: No implicit clock and reset.")
   }
   def forcedClock: Clock = forcedClockAndReset.clock
-  def forcedReset: Bool = forcedClockAndReset.reset
+  def forcedReset: Reset = forcedClockAndReset.reset
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
