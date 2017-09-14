@@ -1,6 +1,7 @@
 language: scala
 scala:
-  - 2.11
+  - 2.11.11
+  - 2.12.3
 sudo: false
 
 cache:
@@ -11,7 +12,7 @@ cache:
 git:
   depth: 10
 
-sbt_args: -Dsbt.log.noformat=true
+sbt_args: -Dsbt.log.noformat=true ++$TRAVIS_SCALA_VERSION
 
 env:
   global:
@@ -19,14 +20,14 @@ env:
     VERILATOR_ROOT=$INSTALL_DIR
     PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
 
+before_script:
+  - bash .install_verilator.sh
+  - verilator --version
+
 jobs:
   include:
-    - stage: prepare cache-verilator
-      script:
-      - bash .install_verilator.sh
-      - verilator --version
+    - stage: Test
     - &test
-      stage: Test
       script:
         # FIRRTL Tests
         - cd $TRAVIS_BUILD_DIR
