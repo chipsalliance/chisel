@@ -30,8 +30,6 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
-
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.1-SNAPSHOT",
@@ -39,6 +37,10 @@ lazy val commonSettings = Seq (
   autoAPIMappings := true,
   scalaVersion := "2.11.11",
   crossScalaVersions := Seq("2.11.11", "2.12.3"),
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  ),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
@@ -57,12 +59,11 @@ lazy val commonSettings = Seq (
   }
 )
 
-lazy val chiselSettings = Seq (
-  name := "chisel3",
-
+lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
+  // Don't add 'scm' elements if we have a git.remoteRepo definition.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -71,10 +72,6 @@ lazy val chiselSettings = Seq (
         <distribution>repo</distribution>
       </license>
     </licenses>
-    <scm>
-      <url>https://github.com/freechipsproject/chisel3.git</url>
-      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>
@@ -92,12 +89,17 @@ lazy val chiselSettings = Seq (
     else {
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
     }
-  },
+  }
+)
 
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  ),
+val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
+
+lazy val chiselSettings = Seq (
+  name := "chisel3",
+
+  // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
+  libraryDependencies ++= (Seq("firrtl").map {
+  dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
 
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
@@ -134,6 +136,7 @@ lazy val chisel = (project in file(".")).
   ).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
+  settings(publishSettings: _*).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
