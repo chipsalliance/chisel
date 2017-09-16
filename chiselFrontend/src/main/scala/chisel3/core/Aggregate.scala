@@ -15,12 +15,23 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
+  private var _litArg: Option[LitArg] = None
+  override def litArg = _litArg
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
 
+    target match {
+      case LitBinding() => _litArg = Some(ULit(0, 1.W)) // TODO[grebe] something better here
+      case _ =>
+    }
+
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     for (child <- getElements) {
-      child.bind(ChildBinding(this), resolvedDirection)
+      target match {
+        case LitBinding() => require(child.isLit())
+        case _ => child.bind(ChildBinding(this), resolvedDirection)
+      }
     }
 
     // Check that children obey the directionality rules.
@@ -586,3 +597,11 @@ private[core] object Bundle {
     "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
 }
 
+object Aggregate {
+  def LitBind(agg: Aggregate): Unit = {
+    agg.getElements.foreach { case x =>
+      require(x.isLit(), "Attempting to bind an aggregate as a lit with non-literal members")
+    }
+    agg.bind(LitBinding())
+  }
+}
