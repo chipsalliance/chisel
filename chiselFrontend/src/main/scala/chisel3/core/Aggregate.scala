@@ -15,23 +15,45 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private var _litArg: Option[LitArg] = None
-  override def litArg = _litArg
+  protected def childLitArgs = getElements.map(_.litArg).foldLeft[Option[Seq[LitArg]]](Some(Seq[LitArg]())) {
+    case (Some(elems), Some(lit)) => Some(elems :+ lit)
+    case _                        => None
+  }
+  override def litArg = {
+    // TODO[grebe] make a lit for Aggregates
+    childLitArgs.map { x => ULit(0, 1.W) }
+  }
+
+  private var checkedBinding = false
+  private def checkBinding = {
+    // check if this aggregate is a literal, and bind it if it hasn't been bound yet
+    if (!checkedBinding && getElements.length > 0 && childLitArgs.isDefined) {
+      this.bind(LitBinding()) //, SpecifiedDirection.Unspecified)
+    }
+    checkedBinding = true
+  }
+
+  protected[core] override def hasBinding = {
+   checkBinding
+   super.hasBinding
+  }
+
+  protected[core] override def binding = {
+    checkBinding
+    super.binding
+  }
 
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
 
-    target match {
-      case LitBinding() => _litArg = Some(ULit(0, 1.W)) // TODO[grebe] something better here
-      case _ =>
+    if (isLit) {
+      getElements.foreach { elem => require(elem.isLit()) }
+      return ()
     }
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     for (child <- getElements) {
-      target match {
-        case LitBinding() => require(child.isLit())
-        case _ => child.bind(ChildBinding(this), resolvedDirection)
-      }
+      child.bind(ChildBinding(this), resolvedDirection)
     }
 
     // Check that children obey the directionality rules.
@@ -459,6 +481,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
 
+  protected override def childLitArgs = elements.map({ case (_, data) => data.litArg }).foldLeft[Option[Seq[LitArg]]](Some(Seq[LitArg]())) {
+    case (Some(elems), Some(lit)) => Some(elems :+ lit)
+    case _                      => None
+  }
+
   override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
@@ -564,7 +591,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     // - A one-parameter constructor for a nested Bundle, with the enclosing
     //   parent Module as the argument
     val constructor = this.getClass.getConstructors.head
-    try {
+    val newBundle = try {
       val args = Seq.fill(constructor.getParameterTypes.size)(null)
       constructor.newInstance(args:_*).asInstanceOf[this.type]
     } catch {
@@ -581,6 +608,10 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
         Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method")
         this
     }
+
+    require(!newBundle.isLit, s"Bundle ${this.getClass} has a bad cloneType: it should never return a literal")
+
+    newBundle.asInstanceOf[this.type]
   }
 
   /** Default "pretty-print" implementation
@@ -597,11 +628,3 @@ private[core] object Bundle {
     "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
 }
 
-object Aggregate {
-  def LitBind(agg: Aggregate): Unit = {
-    agg.getElements.foreach { case x =>
-      require(x.isLit(), "Attempting to bind an aggregate as a lit with non-literal members")
-    }
-    agg.bind(LitBinding())
-  }
-}

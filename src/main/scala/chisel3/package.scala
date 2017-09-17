@@ -57,7 +57,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   }
 
   type Aggregate = chisel3.core.Aggregate
-  val Aggregate = chisel3.core.Aggregate
   object Vec extends chisel3.core.VecFactory {
     import scala.language.experimental.macros
     import chisel3.core.CompileOptions

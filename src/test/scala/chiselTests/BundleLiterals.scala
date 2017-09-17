@@ -5,62 +5,65 @@ package chiselTests
 import chisel3._
 import org.scalatest._
 
-class BundleWithLit(lit: Option[Int]=None) extends Bundle {
-  val internal = lit.map(_.U).getOrElse(UInt(4.W))
-  override def cloneType = new BundleWithLit(lit).asInstanceOf[this.type]
+case class BundleWithUInt(x: UInt = UInt()) extends Bundle {
+  override def cloneType = BundleWithUInt(x.cloneType).asInstanceOf[this.type]
 }
 
-object BundleWithLit {
-  def apply(x: Int) = {
-    val ret = new BundleWithLit(Some(x))
-    Aggregate.LitBind(ret)
-    ret
-  }
-  def apply() = {
-    new BundleWithLit()
-  }
+case class BundleWithBundleWithUInt(x: BundleWithUInt = BundleWithUInt()) extends Bundle {
+  override def cloneType = BundleWithBundleWithUInt(x.cloneType).asInstanceOf[this.type]
 }
 
-class BundleWithBundleWithLit(lit: Option[Int]=None) extends Bundle {
-  val internal = lit.map(BundleWithLit(_)).getOrElse(BundleWithLit())
-  override def cloneType = new BundleWithBundleWithLit(lit).asInstanceOf[this.type]
-}
+case class BundleWithUIntAndBadCloneType(x: UInt = UInt()) extends Bundle
 
-object BundleWithBundleWithLit {
-  def apply(x: Int) = {
-    val ret = new BundleWithBundleWithLit(Some(x))
-    Aggregate.LitBind(ret)
-    ret
-  }
-  def apply() = {
-    new BundleWithBundleWithLit()
-  }
-}
 
-class BundleWithLitModule extends Module {
+class BundleWithUIntModule extends Module {
   val io = IO(new Bundle {
-    val out = Output(BundleWithLit())
+    val out = Output(BundleWithUInt(UInt(4.W)))
   })
-  io.out := BundleWithLit(3)
+  io.out := BundleWithUInt(10.U)
 }
 
-class BundleWithBundleWithLitModule extends Module {
+class BundleWithCloneTypeModule extends Module {
   val io = IO(new Bundle {
-    val out = Output(BundleWithBundleWithLit())
+    val out = Output(BundleWithUInt(9.U)) // will call cloneType
   })
-  io.out := BundleWithBundleWithLit(3)
+  io.out := BundleWithUInt(5.U)
+}
+
+class BundleWithBadCloneTypeModule extends Module {
+  val io = IO(new Bundle {
+    val out = Output(BundleWithUIntAndBadCloneType(3.U))
+  })
+  io.out := BundleWithUIntAndBadCloneType(0.U)
+}
+
+class BundleWithBundleWithUIntModule extends Module {
+  val io = IO(new Bundle {
+    val out = Output(BundleWithBundleWithUInt(BundleWithUInt(UInt(4.W))))
+  })
+  io.out := BundleWithBundleWithUInt(BundleWithUInt(7.U))
 }
 
 class BundleLiteralsSpec extends FlatSpec with Matchers {
   behavior of "Bundle literals"
 
   it should "build the module without crashing" in {
-    println(chisel3.Driver.emitVerilog( new BundleWithLitModule ))
+    println(chisel3.Driver.emitVerilog( new BundleWithUIntModule ))
+  }
+
+  it should "work with a correct cloneType implementation" in {
+    println(chisel3.Driver.emitVerilog( new BundleWithCloneTypeModule ))
+  }
+
+  it should "throw an exception if cloneType is bad" in {
+    assertThrows[IllegalArgumentException] {
+      println(chisel3.Driver.emitVerilog( new BundleWithBadCloneTypeModule ))
+    }
   }
 
   behavior of "Bundle literals with bundle literals inside"
 
   it should "build the module without crashing" in {
-    println(chisel3.Driver.emitVerilog( new BundleWithBundleWithLitModule ))
+    println(chisel3.Driver.emitVerilog( new BundleWithBundleWithUIntModule ))
   }
 }
