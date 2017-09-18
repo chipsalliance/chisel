@@ -7,6 +7,7 @@ import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
+import chisel3.experimental.DontCare
 
 class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
@@ -146,6 +147,7 @@ class ZeroEntryVecTester extends BasicTester {
 
   val m = Module(new Module {
     val io = IO(Output(bundleWithZeroEntryVec.cloneType))
+    io.foo := false.B
   })
   WireInit(m.io.bar)
 
@@ -179,6 +181,8 @@ class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
     when (cycle =/= i.U) {
       m.in := 0.U  // default
       assert(m.out === 0.U)
+    } .otherwise {
+      m.in := DontCare
     }
   }
   // only connect one dut per cycle

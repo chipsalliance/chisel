@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.DontCare
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -39,6 +40,8 @@ class VectorPacketIO(n: Int) extends Bundle {
 class BrokenVectorPacketModule extends Module {
   val n  = 4
   val io = IO(new VectorPacketIO(n))
+
+  io := DontCare
 
   /* the following method of initializing the circuit may change in the future */
   io.ins.foreach(_.nodeq())

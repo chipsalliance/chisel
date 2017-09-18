@@ -30,7 +30,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     firrtlOutput should include("io.out is invalid")
   }
 
-  ignore("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with Strict CompileOptions") {
+  property("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with Strict CompileOptions") {
     import chisel3.core.ExplicitCompileOptions.Strict
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
@@ -57,31 +57,36 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       io <> DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("io is invalid")
+    firrtlOutput should include("io.in is invalid")
+    firrtlOutput should include("io.out is invalid")
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and bulk connect") {
     import chisel3.core.ExplicitCompileOptions.Strict
+    val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
-        val ins = Input(Vec(5, Bool()))
+        val ins = Input(Vec(nElements, Bool()))
       })
       io.ins <> DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("io is invalid")
+    for (i <- 0 until nElements)
+      firrtlOutput should include(s"io.ins[$i] is invalid")
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and mono connect") {
     import chisel3.core.ExplicitCompileOptions.Strict
+    val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
-        val ins = Input(Vec(5, Bool()))
+        val ins = Input(Vec(nElements, Bool()))
       })
       io.ins := DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("io is invalid")
+    for (i <- 0 until nElements)
+      firrtlOutput should include(s"io.ins[$i] is invalid")
   }
 
   property("a DontCare cannot be a connection sink (LHS) for := ") {
@@ -108,7 +113,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
   }
 
-  ignore("FIRRTL should complain about partial initialization with Strict CompileOptions and conditional connect") {
+  property("FIRRTL should complain about partial initialization with Strict CompileOptions and conditional connect") {
     import chisel3.core.ExplicitCompileOptions.Strict
     class ModuleWithIncompleteAssignment extends Module {
       val io = IO(new Bundle {

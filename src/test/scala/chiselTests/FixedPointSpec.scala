@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.DontCare
 import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{BinaryPoint, Width}
 import chisel3.testers.BasicTester
@@ -108,6 +109,7 @@ class SBPTester extends BasicTester {
   assert(dut.io.out === 3.0.F(0.BP))
 
   val test = Wire(FixedPoint(10.W, 5.BP))
+  test := DontCare
   val q = test.setBinaryPoint(18)
   assert(q.getWidth.U === 23.U)
 

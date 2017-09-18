@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.dontTouch
+import chisel3.experimental.DontCare
 import firrtl.{FirrtlExecutionSuccess, Transform}
 
 class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
@@ -13,6 +14,7 @@ class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
     val c = Output(Vec(2, UInt(32.W)))
   })
   io.b := io.a
+  io.c := DontCare
   if (withDontTouch) {
     dontTouch(io.c)
   }

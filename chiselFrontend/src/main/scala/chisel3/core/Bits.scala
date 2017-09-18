@@ -806,7 +806,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
 
   override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-    case _: FixedPoint => super.connect(that)
+    case _: FixedPoint|DontCare => super.connect(that)
     case _ => this badConnect that
   }
 

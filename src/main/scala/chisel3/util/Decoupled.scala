@@ -44,8 +44,6 @@ object ReadyValidIO {
       */
     def noenq(): Unit = {
       target.valid := false.B
-      // We want the type from the following, not any existing binding.
-      target.bits := Wire(target.bits.cloneType)
     }
 
     /** Assert ready on this port and return the associated data bits.
