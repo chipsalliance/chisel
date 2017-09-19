@@ -28,8 +28,6 @@ lazy val commonSettings = ChiselProjectDependenciesPlugin.chiselProjectSettings 
   // Use the root project's classpath for all sub-projects.
   fullClasspath := (fullClasspath in Compile in root).value,
 
-  scalaVersion := "2.11.11",
-  crossScalaVersions := Seq("2.11.11", "2.12.3"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // Use the root project's unmanaged base for all sub-projects.
