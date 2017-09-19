@@ -4,7 +4,7 @@ package chisel3.iotesters
 import chisel3._
 import chisel3.internal.InstanceId
 import firrtl.{FirrtlExecutionFailure, FirrtlExecutionSuccess}
-import firrtl_interpreter.{HasInterpreterSuite, InterpretiveTester}
+import firrtl_interpreter._
 
 private[iotesters] class FirrtlTerpBackend(
     dut: Module,
@@ -23,6 +23,12 @@ private[iotesters] class FirrtlTerpBackend(
         val name = portNames(port)
         interpretiveTester.poke(name, value)
         if (verbose) logger info s"  POKE $name <- ${bigIntToStr(value, base)}"
+
+      case mem: Mem[_] =>
+        val memoryName = mem.pathName.split("""\.""").tail.mkString(".")
+        interpretiveTester.pokeMemory(memoryName, off.getOrElse(0), value)
+        if (verbose) logger info s"  POKE MEMORY $memoryName <- ${bigIntToStr(value, base)}"
+
       case _ =>
     }
   }
@@ -40,6 +46,12 @@ private[iotesters] class FirrtlTerpBackend(
         val result = interpretiveTester.peek(name)
         if (verbose) logger info s"  PEEK $name -> ${bigIntToStr(result, base)}"
         result
+
+      case mem: Mem[_] =>
+        val memoryName = mem.pathName.split("""\.""").tail.mkString(".")
+
+        interpretiveTester.peekMemory(memoryName, off.getOrElse(0))
+
       case _ => BigInt(rnd.nextInt)
     }
   }
