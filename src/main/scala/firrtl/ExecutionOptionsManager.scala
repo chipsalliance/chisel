@@ -34,7 +34,9 @@ case class CommonOptions(
     globalLogLevel:    LogLevel.Value = LogLevel.None,
     logToFile:         Boolean        = false,
     logClassNames:     Boolean        = false,
-    classLogLevels: Map[String, LogLevel.Value] = Map.empty) extends ComposableOptions {
+    classLogLevels: Map[String, LogLevel.Value] = Map.empty,
+    programArgs:    Seq[String]                 = Seq.empty
+) extends ComposableOptions {
 
   def getLogFileName(optionsManager: ExecutionOptionsManager): String = {
     if(topName.isEmpty) {
@@ -126,6 +128,10 @@ trait HasCommonOptions {
     .text(s"shows class names and log level in logging output, useful for target --class-log-level")
 
   parser.help("help").text("prints this usage text")
+
+  parser.arg[String]("<arg>...").unbounded().optional().action( (x, c) =>
+    commonOptions = commonOptions.copy(programArgs = commonOptions.programArgs :+ x) ).text("optional unbounded args")
+
 }
 
 /** Firrtl output configuration specified by [[FirrtlExecutionOptions]]

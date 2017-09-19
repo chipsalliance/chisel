@@ -11,6 +11,7 @@ import firrtl.transforms.BlackBoxSourceHelper
 import firrtl._
 import firrtl.util.BackendCompilationUtilities
 
+//noinspection ScalaStyle
 class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities {
   "CommonOptions are some simple options available across the chisel3 ecosystem" - {
     "CommonOption provide an scopt implementation of an OptionParser" - {
@@ -52,6 +53,29 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
         dir.exists() should be (true)
         FileUtils.deleteDirectoryHierarchy("a") should be (true)
       }
+    }
+    "options include by default a list of strings that are returned in commonOptions.programArgs" in {
+      val optionsManager = new ExecutionOptionsManager("test")
+
+      optionsManager.parse(Array("--top-name", "dog", "fox", "tardigrade", "stomatopod")) should be (true)
+      println(s"programArgs ${optionsManager.commonOptions.programArgs}")
+      optionsManager.commonOptions.programArgs.length should be (3)
+      optionsManager.commonOptions.programArgs should be ("fox" :: "tardigrade" :: "stomatopod" :: Nil)
+
+      optionsManager.commonOptions = CommonOptions()
+      optionsManager.parse(
+        Array("dog", "stomatopod")) should be (true)
+      println(s"programArgs ${optionsManager.commonOptions.programArgs}")
+      optionsManager.commonOptions.programArgs.length should be (2)
+      optionsManager.commonOptions.programArgs should be ("dog" :: "stomatopod" :: Nil)
+
+      optionsManager.commonOptions = CommonOptions()
+      optionsManager.parse(
+        Array("fox", "--top-name", "dog", "tardigrade", "stomatopod")) should be (true)
+      println(s"programArgs ${optionsManager.commonOptions.programArgs}")
+      optionsManager.commonOptions.programArgs.length should be (3)
+      optionsManager.commonOptions.programArgs should be ("fox" :: "tardigrade" :: "stomatopod" :: Nil)
+
     }
   }
   "FirrtlOptions holds option information for the firrtl compiler" - {
