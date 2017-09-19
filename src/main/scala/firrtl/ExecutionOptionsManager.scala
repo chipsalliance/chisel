@@ -18,8 +18,25 @@ import scala.collection.Seq
 trait ComposableOptions
 
 abstract class HasParser(applicationName: String) {
-  final val parser: OptionParser[Unit] = new OptionParser[Unit](applicationName) {}
-}
+  final val parser = new OptionParser[Unit](applicationName) {
+    var terminateOnExit = true
+    override def terminate(exitState: Either[String, Unit]): Unit = {
+      if(terminateOnExit) sys.exit(0)
+    }
+  }
+
+  /**
+    * By default scopt calls sys.exit when --help is in options, this defeats that
+    */
+  def doNotExitOnHelp(): Unit = {
+    parser.terminateOnExit = false
+  }
+  /**
+    * By default scopt calls sys.exit when --help is in options, this un-defeats doNotExitOnHelp
+    */
+  def exitOnHelp(): Unit = {
+    parser.terminateOnExit = true
+  }}
 
 /**
   * Most of the chisel toolchain components require a topName which defines a circuit or a device under test.
