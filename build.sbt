@@ -152,7 +152,7 @@ lazy val chisel = (project in file(".")).
     //  go to great pains to package all chisel3 core code in a single Jar.
     // If you get errors indicating coverageReport is undefined, be sure
     //  you have sbt-scoverage in project/plugins.sbt
-    aggregate in Global := false,
+    aggregate := false,
     aggregate in coverageReport := true,
     // Include macro classes, resources, and sources main JAR.
     mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,
