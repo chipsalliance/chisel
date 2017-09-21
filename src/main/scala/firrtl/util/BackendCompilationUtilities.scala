@@ -102,7 +102,7 @@ trait BackendCompilationUtilities {
 
     val command = Seq(
       "verilator",
-      "--cc", s"$dutFile.v"
+      "--cc", s"${dir.getAbsolutePath}/$dutFile.v"
     ) ++
       blackBoxVerilogList ++
       vSources.flatMap(file => Seq("-v", file.getAbsolutePath)) ++
