@@ -12,7 +12,7 @@ import firrtl.Mappers._
 // Scala's mutable collections
 import scala.collection.mutable
 
-/** Ledger tracks [[Circuit]] statistics
+/** Ledger tracks [[firrtl.ir.Circuit]] statistics
   *
   * In this lesson, we want to count the number of muxes in each
   *  module in our design.
@@ -47,7 +47,7 @@ class Ledger {
 
 /** AnalyzeCircuit Transform
   *
-  * Walks [[ir.Circuit]], and records the number of muxes it finds, per module.
+  * Walks [[firrtl.ir.Circuit]], and records the number of muxes it finds, per module.
   *
   * While some compiler frameworks operate on graphs, we represent a Firrtl
   * circuit using a tree representation:

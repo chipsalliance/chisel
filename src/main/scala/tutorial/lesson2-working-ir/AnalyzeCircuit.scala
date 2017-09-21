@@ -14,7 +14,7 @@ import firrtl.Mappers._
 // Scala's mutable collections
 import scala.collection.mutable
 
-/** Ledger tracks [[Circuit]] statistics
+/** Ledger tracks [[firrtl.ir.Circuit]] statistics
   * 
   * In this lesson, we want to calculate the number of muxes, not just in 
   *  a module, but also in any instances it has of other modules, etc.
@@ -63,7 +63,7 @@ class Ledger {
 
 /** AnalyzeCircuit Transform
   *
-  * Walks [[ir.Circuit]], and records the number of muxes and instances it
+  * Walks [[firrtl.ir.Circuit]], and records the number of muxes and instances it
   *  finds, per module.
   *
   * While the Firrtl parser emits a bare form of the IR (located in firrtl.ir._),

@@ -169,9 +169,9 @@ final case object UnknownForm extends CircuitForm(-1) {
 abstract class Transform extends LazyLogging {
   /** A convenience function useful for debugging and error messages */
   def name: String = this.getClass.getSimpleName
-  /** The [[CircuitForm]] that this transform requires to operate on */
+  /** The [[firrtl.CircuitForm]] that this transform requires to operate on */
   def inputForm: CircuitForm
-  /** The [[CircuitForm]] that this transform outputs */
+  /** The [[firrtl.CircuitForm]] that this transform outputs */
   def outputForm: CircuitForm
   /** Perform the transform, encode renaming with RenameMap, and can
     *   delete annotations

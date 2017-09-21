@@ -35,7 +35,7 @@ object DontCheckCombLoopsAnnotation {
 /** Finds and detects combinational logic loops in a circuit, if any
   * exist. Returns the input circuit with no modifications.
   * 
-  * @throws a CombLoopException if a loop is found
+  * @throws CombLoopException if a loop is found
   * @note Input form: Low FIRRTL
   * @note Output form: Low FIRRTL (identity transform)
   * @note The pass looks for loops through combinational-read memories

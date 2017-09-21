@@ -26,7 +26,7 @@ import java.io.{File, FileWriter}
   * eligible for removal. Components marked with a [[DontTouchAnnotation]] will be treated as a
   * circuit sink and thus anything that drives such a marked component will NOT be removed.
   *
-  * This transform preserves deduplication. All instances of a given [[DefModule]] are treated as
+  * This transform preserves deduplication. All instances of a given [[firrtl.ir.DefModule]] are treated as
   * the same individual module. Thus, while certain instances may have dead code due to the
   * circumstances of their instantiation in their parent module, they will still not be removed. To
   * remove such modules, use the [[NoDedupAnnotation]] to prevent deduplication.
