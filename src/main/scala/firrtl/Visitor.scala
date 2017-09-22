@@ -53,12 +53,12 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     infoMode match {
       case UseInfo =>
         if (useInfo.length == 0) NoInfo
-        else ir.FileInfo(FIRRTLStringLitHandler.unescape(useInfo))
+        else ir.FileInfo(ir.StringLit.unescape(useInfo))
       case AppendInfo(filename) =>
         val newInfo = useInfo + ":" + genInfo(filename)
-        ir.FileInfo(FIRRTLStringLitHandler.unescape(newInfo))
+        ir.FileInfo(ir.StringLit.unescape(newInfo))
       case GenInfo(filename) =>
-        ir.FileInfo(FIRRTLStringLitHandler.unescape(genInfo(filename)))
+        ir.FileInfo(ir.StringLit.unescape(genInfo(filename)))
       case IgnoreInfo => NoInfo
     }
   }
@@ -208,7 +208,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   // visitStringLit
   private def visitStringLit[FirrtlNode](node: TerminalNode): StringLit = {
     val raw = node.getText.tail.init // Remove surrounding double quotes
-    FIRRTLStringLitHandler.unescape(raw)
+    ir.StringLit.unescape(raw)
   }
 
   private def visitWhen[FirrtlNode](ctx: WhenContext): Conditionally = {

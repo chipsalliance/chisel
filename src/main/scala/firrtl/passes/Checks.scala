@@ -85,7 +85,7 @@ object CheckHighForm extends Pass {
 
     def checkFstring(info: Info, mname: String, s: StringLit, i: Int) {
       val validFormats = "bdxc"
-      val (percent, npercents) = (s.array foldLeft (false, 0)){
+      val (percent, npercents) = s.string.foldLeft((false, 0)) {
         case ((percentx, n), b) if percentx && (validFormats contains b) =>
           (false, n + 1)
         case ((percentx, n), b) if percentx && b != '%' =>

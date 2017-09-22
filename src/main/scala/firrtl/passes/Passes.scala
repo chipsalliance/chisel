@@ -269,7 +269,7 @@ object VerilogWrap extends Pass {
   }
   def vWrapS(s: Statement): Statement = {
     s map vWrapS map vWrapE match {
-      case sx: Print => sx copy (string = VerilogStringLitHandler.format(sx.string))
+      case sx: Print => sx.copy(string = sx.string.verilogFormat)
       case sx => sx
     }
   }

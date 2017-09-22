@@ -42,8 +42,46 @@ trait HasInfo {
 }
 trait IsDeclaration extends HasName with HasInfo
 
-case class StringLit(array: Array[Byte]) extends FirrtlNode {
-  def serialize: String = FIRRTLStringLitHandler.escape(this)
+case class StringLit(string: String) extends FirrtlNode {
+  /** Returns an escaped and quoted String */
+  def escape: String = {
+    import scala.reflect.runtime.universe._
+    Literal(Constant(string)).toString
+  }
+  def serialize: String = {
+    val str = escape
+    str.slice(1, str.size - 1)
+  }
+  /** Format the string for Verilog */
+  def verilogFormat: StringLit = {
+    StringLit(string.replaceAll("%x", "%h"))
+  }
+  /** Returns an escaped and quoted String */
+  def verilogEscape: String = {
+    // normalize to turn things like ö into o
+    import java.text.Normalizer
+    val normalized = Normalizer.normalize(string, Normalizer.Form.NFD)
+    val ascii = normalized flatMap StringLit.toASCII
+    ascii.mkString("\"", "", "\"")
+  }
+}
+object StringLit {
+  /** Maps characters to ASCII for Verilog emission */
+  private def toASCII(char: Char): List[Char] = char match {
+    case nonASCII if !nonASCII.isValidByte => List('?')
+    case letter if letter.isLetter => List(letter)
+    case '\n' => List('\\', 'n')
+    case '\\' => List('\\', '\\')
+    case '\t' => List('\\', 't')
+    case '"' => List('\\', '"')
+    case other => List('?')
+  }
+
+  /** Create a StringLit from a raw parsed String */
+  def unescape(raw: String): StringLit = {
+    val str = StringContext.processEscapes(raw)
+    StringLit(str)
+  }
 }
 
 /** Primitive Operation
@@ -269,7 +307,7 @@ case class Print(
     clk: Expression,
     en: Expression) extends Statement with HasInfo {
   def serialize: String = {
-    val strs = Seq(clk.serialize, en.serialize, "\"" + string.serialize + "\"") ++
+    val strs = Seq(clk.serialize, en.serialize, string.escape) ++
                (args map (_.serialize))
     "printf(" + (strs mkString ", ") + ")" + info.serialize
   }
