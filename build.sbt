@@ -99,7 +99,8 @@ lazy val chiselSettings = Seq (
 
   // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
   libraryDependencies ++= (Seq("firrtl").map {
-  dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) }),
+    dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+  }),
 
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
