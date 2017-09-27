@@ -32,7 +32,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0-SNAPSHOT_2017-09-14",
+  version := "3.0-SNAPSHOT_2017-09-27",
   git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.11",
@@ -92,7 +92,7 @@ lazy val publishSettings = Seq (
   }
 )
 
-val defaultVersions = Map("firrtl" -> "1.0-SNAPSHOT_2017-09-14")
+val defaultVersions = Map("firrtl" -> "1.0-SNAPSHOT_2017-09-27")
 
 lazy val chiselSettings = Seq (
   name := "chisel3",
@@ -140,9 +140,7 @@ lazy val chisel = (project in file(".")).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
-  // The following is required until sbt-scoverage correctly deals with inDependencies
-  // Unfortunately, it also revives publishing of the subproject jars. Disable until the latter is resolved (again).
-  //aggregate(coreMacros, chiselFrontend).
+  aggregate(coreMacros, chiselFrontend).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
@@ -152,7 +150,13 @@ lazy val chisel = (project in file(".")).
       "-doc-title", name.value,
       "-doc-root-content", baseDirectory.value+"/root-doc.txt"
     ),
-    aggregate in doc := false,
+    // Disable aggregation in general, but enable it for specific tasks.
+    // Otherwise we get separate Jar files for each subproject and we
+    //  go to great pains to package all chisel3 core code in a single Jar.
+    // If you get errors indicating coverageReport is undefined, be sure
+    //  you have sbt-scoverage in project/plugins.sbt
+    aggregate := false,
+    aggregate in coverageReport := true,
     // Include macro classes, resources, and sources main JAR.
     mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,
     mappings in (Compile, packageSrc) ++= (mappings in (coreMacros, Compile, packageSrc)).value,
