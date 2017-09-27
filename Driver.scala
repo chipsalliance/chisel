@@ -126,7 +126,7 @@ object Driver {
     val chiselResult: ChiselExecutionResult = chisel3.Driver.execute(optionsManager, dutGenerator)
     chiselResult match {
       case ChiselExecutionSuccess(_, emitted, _) =>
-        optionsManager.replConfig = ReplConfig(firrtlSource = emitted)
+        optionsManager.replConfig = optionsManager.replConfig.copy(firrtlSource = emitted)
         FirrtlRepl.execute(optionsManager)
         true
       case ChiselExecutionFailure(message) =>
