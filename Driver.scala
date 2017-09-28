@@ -120,18 +120,29 @@ object Driver {
                                       dutGenerator: () => T,
                                       optionsManager: ReplOptionsManager = new ReplOptionsManager): Boolean = {
 
+    if (optionsManager.topName.isEmpty) {
+      if (optionsManager.targetDirName == ".") {
+        optionsManager.setTargetDirName("test_run_dir")
+      }
+      val genClassName = dutGenerator.getClass.getName
+      val testerName = genClassName.split("""\$\$""").headOption.getOrElse("") + genClassName.hashCode.abs
+      optionsManager.setTargetDirName(s"${optionsManager.targetDirName}/$testerName")
+    }
+
     optionsManager.chiselOptions = optionsManager.chiselOptions.copy(runFirrtlCompiler = false)
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
 
-    val chiselResult: ChiselExecutionResult = chisel3.Driver.execute(optionsManager, dutGenerator)
-    chiselResult match {
-      case ChiselExecutionSuccess(_, emitted, _) =>
-        optionsManager.replConfig = optionsManager.replConfig.copy(firrtlSource = emitted)
-        FirrtlRepl.execute(optionsManager)
-        true
-      case ChiselExecutionFailure(message) =>
-        println("Failed to compile circuit")
-        false
+    Logger.makeScope(optionsManager) {
+      val chiselResult: ChiselExecutionResult = chisel3.Driver.execute(optionsManager, dutGenerator)
+      chiselResult match {
+        case ChiselExecutionSuccess(_, emitted, _) =>
+          optionsManager.replConfig = optionsManager.replConfig.copy(firrtlSource = emitted)
+          FirrtlRepl.execute(optionsManager)
+          true
+        case ChiselExecutionFailure(message) =>
+          println("Failed to compile circuit")
+          false
+      }
     }
   }
   /**
