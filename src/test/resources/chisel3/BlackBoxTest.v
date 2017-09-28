@@ -12,6 +12,13 @@ module BlackBoxPassthrough(
   assign out = in;
 endmodule
 
+module BlackBoxPassthrough2(
+    input  [0:0] in,
+    output [0:0] out
+);
+  assign out = in;
+endmodule
+
 module BlackBoxMinus(
     input  [15:0] in1,
     input  [15:0] in2,

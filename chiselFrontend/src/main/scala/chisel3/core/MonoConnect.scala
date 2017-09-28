@@ -120,24 +120,23 @@ object MonoConnect {
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
   def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: UserModule): Unit = {
-    import Direction.{Input, Output} // Using extensively so import these
+    import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
     val sink_mod: BaseModule   = sink.binding.location.getOrElse(throw UnwritableSinkException)
     val source_mod: BaseModule = source.binding.location.getOrElse(context_mod)
 
-    val sink_direction: Option[Direction] = sink.binding.direction
-    val source_direction: Option[Direction] = source.binding.direction
-    // None means internal
+    val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
+    val source_direction = BindingDirection.from(source.topBinding, source.direction)
 
     // CASE: Context is same module that both left node and right node are in
     if( (context_mod == sink_mod) && (context_mod == source_mod) ) {
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CURRENT MOD   CURRENT MOD
-        case (Some(Output), _) => issueConnect(sink, source)
-        case (None,         _) => issueConnect(sink, source)
-        case (Some(Input),  _) => throw UnwritableSinkException
+        case (Output,       _) => issueConnect(sink, source)
+        case (Internal,     _) => issueConnect(sink, source)
+        case (Input,        _) => throw UnwritableSinkException
       }
     }
 
@@ -148,19 +147,19 @@ object MonoConnect {
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CURRENT MOD   CHILD MOD
-        case (None,         Some(Output)) => issueConnect(sink, source)
-        case (None,         Some(Input))  => issueConnect(sink, source)
-        case (Some(Output), Some(Output)) => issueConnect(sink, source)
-        case (Some(Output), Some(Input))  => issueConnect(sink, source)
-        case (_,            None) => {
+        case (Internal,     Output) => issueConnect(sink, source)
+        case (Internal,     Input)  => issueConnect(sink, source)
+        case (Output,       Output) => issueConnect(sink, source)
+        case (Output,       Input)  => issueConnect(sink, source)
+        case (_,            Internal) => {
           if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
             throw UnreadableSourceException
           }
         }
-        case (Some(Input),  Some(Output)) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
-        case (Some(Input),  _)    => throw UnwritableSinkException
+        case (Input,        Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
+        case (Input,        _)    => throw UnwritableSinkException
       }
     }
 
@@ -171,9 +170,9 @@ object MonoConnect {
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CHILD MOD     CURRENT MOD
-        case (Some(Input),  _) => issueConnect(sink, source)
-        case (Some(Output), _) => throw UnwritableSinkException
-        case (None,         _) => throw UnwritableSinkException
+        case (Input,        _) => issueConnect(sink, source)
+        case (Output,       _) => throw UnwritableSinkException
+        case (Internal,     _) => throw UnwritableSinkException
       }
     }
 
@@ -187,17 +186,17 @@ object MonoConnect {
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
         //    CHILD MOD     CHILD MOD
-        case (Some(Input),  Some(Input))  => issueConnect(sink, source)
-        case (Some(Input),  Some(Output)) => issueConnect(sink, source)
-        case (Some(Output), _)            => throw UnwritableSinkException
-        case (_,            None) => {
+        case (Input,        Input)  => issueConnect(sink, source)
+        case (Input,        Output) => issueConnect(sink, source)
+        case (Output,       _)      => throw UnwritableSinkException
+        case (_,            Internal) => {
           if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
             throw UnreadableSourceException
           }
         }
-        case (None,         _)            => throw UnwritableSinkException
+        case (Internal,     _)      => throw UnwritableSinkException
       }
     }
 

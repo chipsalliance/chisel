@@ -25,6 +25,14 @@ class BlackBoxPassthrough extends BlackBox {
   })
 }
 
+// Test Flip on top-level IO
+class BlackBoxPassthrough2 extends BlackBox {
+  val io = IO(Flipped(new Bundle() {
+    val in = Output(Bool())
+    val out = Input(Bool())
+  }))
+}
+
 class BlackBoxRegister extends BlackBox {
   val io = IO(new Bundle() {
     val clock = Input(Clock())
@@ -42,6 +50,14 @@ class BlackBoxTester extends BasicTester {
 
   assert(blackBoxNeg.io.out === 1.U)
   assert(blackBoxPos.io.out === 0.U)
+  stop()
+}
+
+class BlackBoxFlipTester extends BasicTester {
+  val blackBox = Module(new BlackBoxPassthrough2)
+
+  blackBox.io.in := 1.U
+  assert(blackBox.io.out === 1.U)
   stop()
 }
 
@@ -89,7 +105,7 @@ class BlackBoxConstant(value: Int) extends BlackBox(
     Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1))) {
   require(value >= 0, "value must be a UInt!")
   val io = IO(new Bundle {
-    val out = UInt(log2Ceil(value + 1).W).asOutput
+    val out = Output(UInt(log2Ceil(value + 1).W))
   })
 }
 
@@ -138,6 +154,10 @@ class BlackBoxWithParamsTester extends BasicTester {
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
     assertTesterPasses({ new BlackBoxTester },
+        Seq("/chisel3/BlackBoxTest.v"))
+  }
+  "A BlackBoxed with flipped IO" should "work" in {
+    assertTesterPasses({ new BlackBoxFlipTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
   "Multiple BlackBoxes" should "work" in {
