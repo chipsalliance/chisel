@@ -11,7 +11,7 @@ class Namespace private {
   private val tempNamePrefix: String = "_GEN"
   // Begin with a tempNamePrefix in namespace so we always have a number suffix
   private val namespace = mutable.HashSet[String](tempNamePrefix)
-  private var n = 0L
+  private var tempN = 0
 
   def tryName(value: String): Boolean = {
     val unused = !contains(value)
@@ -21,15 +21,23 @@ class Namespace private {
 
   def contains(value: String): Boolean = namespace.contains(value)
 
-  def newName(value: String): String = {
+  private def newNameIndex(value: String, idx: Int): (String, Int) = {
+    var n = idx
     var str = value
     while (!tryName(str)) {
       str = s"${value}_$n"
       n += 1
     }
-    str
+    (str, n)
   }
-  def newTemp: String = newName(tempNamePrefix)
+
+  def newName(value: String): String = newNameIndex(value, 0)._1
+
+  def newTemp: String = {
+    val (name, n) = newNameIndex(tempNamePrefix, tempN)
+    tempN = n
+    name
+  }
 }
 
 object Namespace {
