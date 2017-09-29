@@ -66,6 +66,9 @@ class StringSpec extends FirrtlPropSpec {
     val lit = StringLit.unescape(whitelist)
     // Check result
     assert(lit.serialize == whitelist)
+    // Scala likes to escape ' as \', Verilog doesn't
+    val verilogWhitelist = whitelist.replaceAll("""\\'""", "'")
+    assert(lit.verilogEscape.tail.init == verilogWhitelist)
   }
 
   // Valid escapes = \n, \t, \\, \", \'

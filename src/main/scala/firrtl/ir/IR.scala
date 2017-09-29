@@ -69,12 +69,12 @@ object StringLit {
   /** Maps characters to ASCII for Verilog emission */
   private def toASCII(char: Char): List[Char] = char match {
     case nonASCII if !nonASCII.isValidByte => List('?')
-    case letter if letter.isLetter => List(letter)
-    case '\n' => List('\\', 'n')
-    case '\\' => List('\\', '\\')
-    case '\t' => List('\\', 't')
     case '"' => List('\\', '"')
-    case other => List('?')
+    case '\\' => List('\\', '\\')
+    case c if c >= ' ' && c <= '~' => List(c)
+    case '\n' => List('\\', 'n')
+    case '\t' => List('\\', 't')
+    case _ => List('?')
   }
 
   /** Create a StringLit from a raw parsed String */
