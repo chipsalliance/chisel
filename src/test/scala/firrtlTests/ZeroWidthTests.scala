@@ -132,6 +132,50 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    node z = add(x, UInt<1>(0))""".stripMargin
       (parse(exec(input)).serialize) should be (parse(check).serialize)
   }
+  "Expression in cat with type <0>" should "be removed" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x: UInt<1>
+        |    input y: UInt<0>
+        |    node z = cat(x, y)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x: UInt<1>
+        |    node z = x""".stripMargin
+      (parse(exec(input)).serialize) should be (parse(check).serialize)
+  }
+  "Nested cats with type <0>" should "be removed" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x: UInt<0>
+        |    input y: UInt<0>
+        |    input z: UInt<0>
+        |    node a = cat(cat(x, y), z)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    skip""".stripMargin
+      (parse(exec(input)).serialize) should be (parse(check).serialize)
+  }
+  "Nested cats where one has type <0>" should "be unaffected" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x: UInt<1>
+        |    input y: UInt<0>
+        |    input z: UInt<1>
+        |    node a = cat(cat(x, y), z)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x: UInt<1>
+        |    input z: UInt<1>
+        |    node a = cat(x, z)""".stripMargin
+      (parse(exec(input)).serialize) should be (parse(check).serialize)
+  }
 }
 
 class ZeroWidthVerilog extends FirrtlFlatSpec {
