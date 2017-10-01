@@ -23,6 +23,8 @@ env:
 before_script:
   - bash .install_verilator.sh
   - verilator --version
+  - bash .install_yosys.sh
+  - yosys -V
 
 jobs:
   include:
