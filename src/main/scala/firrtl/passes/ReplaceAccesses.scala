@@ -18,7 +18,7 @@ object ReplaceAccesses extends Pass {
   def run(c: Circuit): Circuit = {
     def onStmt(s: Statement): Statement = s map onStmt map onExp
     def onExp(e: Expression): Expression = e match {
-      case WSubAccess(ex, UIntLiteral(value, width), t, g) => WSubIndex(ex, value.toInt, t, g)
+      case WSubAccess(ex, UIntLiteral(value, width), t, g) => WSubIndex(onExp(ex), value.toInt, t, g)
       case _ => e map onExp
     }
   
