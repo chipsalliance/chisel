@@ -32,3 +32,6 @@ jobs:
       script:
         - sbt clean assembly publish-local
         - bash .run_chisel_tests.sh
+    - stage: test
+      script:
+        - bash .run_formal_checks.sh
