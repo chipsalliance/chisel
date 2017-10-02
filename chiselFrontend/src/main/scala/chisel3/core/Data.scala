@@ -267,6 +267,10 @@ abstract class Data extends HasId {
     if (connectCompileOptions.checkSynthesizable) {
       requireIsHardware(this, "data to be connected")
       requireIsHardware(that, "data to be connected")
+      this.topBinding match {
+        case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
+        case _ =>  // fine
+      }
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
@@ -283,6 +287,10 @@ abstract class Data extends HasId {
     if (connectCompileOptions.checkSynthesizable) {
       requireIsHardware(this, s"data to be bulk-connected")
       requireIsHardware(that, s"data to be bulk-connected")
+      (this.topBinding, that.topBinding) match {
+        case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
+        case _ =>  // fine
+      }
       try {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
