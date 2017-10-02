@@ -9,7 +9,7 @@ import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.testers.BasicTester
 import chisel3.util._
 
-class FromBitsBundleTester extends BasicTester {
+class AsTypeOfBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
     val u  = UInt(4.W)
     val s  = SInt(4.W)
@@ -18,16 +18,16 @@ class FromBitsBundleTester extends BasicTester {
 
   val bun = new MultiTypeBundle
 
-  val bunFromBits = ((4 << 8) + (15 << 4) + (12 << 0)).U.asTypeOf(bun)
+  val bunAsTypeOf = ((4 << 8) + (15 << 4) + (12 << 0)).U.asTypeOf(bun)
 
-  assert(bunFromBits.u === 4.U)
-  assert(bunFromBits.s === -1.S)
-  assert(bunFromBits.fp === FixedPoint.fromDouble(-0.5, 4.W, 3.BP))
+  assert(bunAsTypeOf.u === 4.U)
+  assert(bunAsTypeOf.s === -1.S)
+  assert(bunAsTypeOf.fp === FixedPoint.fromDouble(-0.5, 4.W, 3.BP))
 
   stop()
 }
 
-class FromBitsVecTester extends BasicTester {
+class AsTypeOfVecTester extends BasicTester {
   val vec = ((15 << 12) + (0 << 8) + (1 << 4) + (2 << 0)).U.asTypeOf(Vec(4, SInt(4.W)))
 
   assert(vec(0) === 2.S)
@@ -38,7 +38,7 @@ class FromBitsVecTester extends BasicTester {
   stop()
 }
 
-class FromBitsTruncationTester extends BasicTester {
+class AsTypeOfTruncationTester extends BasicTester {
   val truncate = (64 + 3).U.asTypeOf(UInt(3.W))
   val expand   = 1.U.asTypeOf(UInt(3.W))
 
@@ -50,18 +50,27 @@ class FromBitsTruncationTester extends BasicTester {
   stop()
 }
 
-class FromBitsSpec extends ChiselFlatSpec {
-  behavior of "fromBits"
+class ResetAsTypeOfBoolTester extends BasicTester {
+  assert(reset.asTypeOf(Bool()) === reset.toBool)
+  stop()
+}
+
+class AsTypeOfSpec extends ChiselFlatSpec {
+  behavior of "asTypeOf"
 
   it should "work with Bundles containing Bits Types" in {
-    assertTesterPasses{ new FromBitsBundleTester }
+    assertTesterPasses{ new AsTypeOfBundleTester }
   }
 
   it should "work with Vecs containing Bits Types" in {
-    assertTesterPasses{ new FromBitsVecTester }
+    assertTesterPasses{ new AsTypeOfVecTester }
   }
 
   it should "expand and truncate UInts of different width" in {
-    assertTesterPasses{ new FromBitsTruncationTester }
+    assertTesterPasses{ new AsTypeOfTruncationTester }
+  }
+
+  it should "work for casting implicit Reset to Bool" in {
+    assertTesterPasses{ new ResetAsTypeOfBoolTester  }
   }
 }

@@ -1,6 +1,10 @@
 # Chisel3
-Chisel3 is a new Firrtl based chisel.
-It is currently in BETA VERSION, so some Chisel features may change in the coming months.
+
+Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
+The latest version of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
+which uses Firrtl as an intermediate hardware representation language.
+
+Chisel3 is currently in BETA VERSION, so some Chisel features may change in the coming months.
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
 detailed description.
@@ -28,6 +32,10 @@ This will walk you through installing Chisel and its dependencies:
 
 ### (Ubuntu-like) Linux
 
+1. Install Java
+   ```
+   sudo apt-get install default-jdk
+   ```
 1. [Install sbt](http://www.scala-sbt.org/release/docs/Installing-sbt-on-Linux.html),
     which isn't available by default in the system package manager:
     ```

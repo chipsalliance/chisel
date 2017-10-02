@@ -2,7 +2,7 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.UserDirection
+import chisel3.core.SpecifiedDirection
 import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
@@ -13,15 +13,15 @@ private[chisel3] object Emitter {
 private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString
 
-  private def emitPort(e: Port, topDir: UserDirection=UserDirection.Unspecified): String = {
-    val resolvedDir = UserDirection.fromParent(topDir, e.dir)
+  private def emitPort(e: Port, topDir: SpecifiedDirection=SpecifiedDirection.Unspecified): String = {
+    val resolvedDir = SpecifiedDirection.fromParent(topDir, e.dir)
     val dirString = resolvedDir match {
-      case UserDirection.Unspecified | UserDirection.Output => "output"
-      case UserDirection.Flip | UserDirection.Input => "input"
+      case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => "output"
+      case SpecifiedDirection.Flip | SpecifiedDirection.Input => "input"
     }
     val clearDir = resolvedDir match {
-      case UserDirection.Input | UserDirection.Output => true
-      case UserDirection.Unspecified | UserDirection.Flip => false
+      case SpecifiedDirection.Input | SpecifiedDirection.Output => true
+      case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
     s"$dirString ${e.id.getRef.name} : ${emitType(e.id, clearDir)}"
   }
@@ -35,23 +35,23 @@ private class Emitter(circuit: Circuit) {
     case d: Vec[_] => s"${emitType(d.sample_element, clearDir)}[${d.length}]"
     case d: Record => {
       val childClearDir = clearDir ||
-          d.userDirection == UserDirection.Input || d.userDirection == UserDirection.Output
+          d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
       def eltPort(elt: Data): String = (childClearDir, firrtlUserDirOf(elt)) match {
         case (true, _) =>
           s"${elt.getRef.name} : ${emitType(elt, true)}"
-        case (false, UserDirection.Unspecified | UserDirection.Output) =>
+        case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
           s"${elt.getRef.name} : ${emitType(elt, false)}"
-        case (false, UserDirection.Flip | UserDirection.Input) =>
+        case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
           s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
       }
       d.elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
     }
   }
 
-  private def firrtlUserDirOf(d: Data): UserDirection = d match {
+  private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
-      UserDirection.fromParent(d.userDirection, firrtlUserDirOf(d.sample_element))
-    case d => d.userDirection
+      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
+    case d => d.specifiedDirection
   }
 
   private def emit(e: Command, ctx: Component): String = {
@@ -75,10 +75,21 @@ private class Emitter(circuit: Circuit) {
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
       case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
       case w: WhenBegin =>
+        // When consequences are always indented
         indent()
         s"when ${w.pred.fullName(ctx)} :"
-      case _: WhenEnd =>
+      case w: WhenEnd =>
+        // If a when has no else, the indent level must be reset to the enclosing block
         unindent()
+        if (!w.hasAlt) { for (i <- 0 until w.firrtlDepth) { unindent() } }
+        s"skip"
+      case a: AltBegin =>
+        // Else blocks are always indented
+        indent()
+        s"else :"
+      case o: OtherwiseEnd =>
+        // Chisel otherwise: ends all FIRRTL associated a Chisel when, resetting indent level
+        for (i <- 0 until o.firrtlDepth) { unindent() }
         s"skip"
     }
     firrtlLine + e.sourceInfo.makeMessage(" " + _)
@@ -120,8 +131,10 @@ private class Emitter(circuit: Circuit) {
           // Firrtl extmodule can overrule name
           body ++= newline + s"defname = ${bb.id.desiredName}"
           body ++= newline + (bb.params map { case (n, p) => emitParam(n, p) } mkString newline)
-        case mod: DefModule => for (cmd <- mod.commands) {
-          body ++= newline + emit(cmd, mod)
+        case mod: DefModule => {
+          // Preprocess whens & elsewhens, marking those that have no alternative
+          val procMod = mod.copy(commands = processWhens(mod.commands))
+          for (cmd <- procMod.commands) { body ++= newline + emit(cmd, procMod)}
         }
       }
       body ++= newline
@@ -140,6 +153,16 @@ private class Emitter(circuit: Circuit) {
     sb.append(moduleDefn(m))
     sb.result
   }
+
+  /** Preprocess the command queue, marking when/elsewhen statements
+    * that have no alternatives (elsewhens or otherwise). These
+    * alternative-free statements reset the indent level to the
+    * enclosing block upon emission.
+    */
+  private def processWhens(cmds: Seq[Command]):
+  Seq[Command] = { cmds.zip(cmds.tail).map({ case (a: WhenEnd, b:
+  AltBegin) => a.copy(hasAlt = true) case (a, b) => a }) ++
+  cmds.lastOption }
 
   private var indentLevel = 0
   private def newline = "\n" + ("  " * indentLevel)
