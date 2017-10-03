@@ -8,6 +8,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
   */
@@ -289,6 +290,8 @@ abstract class Data extends HasId {
       requireIsHardware(that, s"data to be bulk-connected")
       (this.topBinding, that.topBinding) match {
         case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
+        // DontCare cannot be a sink (LHS)
+        case (_: DontCareBinding, _) => throw DontCareCantBeSink
         case _ =>  // fine
       }
       try {
@@ -436,31 +439,22 @@ object WireInit {
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
-object DontCare extends Data {
+object DontCare extends Element(width = UnknownWidth()) {
   binding = DontCareBinding()
   direction = ActualDirection.Output
-  def cloneType = DontCare
-  // Define setter/getter pairing
-  // DontCare can only be connected to Ports and Wires (and Unbound), and only as a source
-  // Attempts to change its binding are silently ignore.
+  override def cloneType = DontCare
+
+  // DontCare may only be connected to Ports and Wires (and Unbound), and only as a source
+  // Attempts to change its binding generate errors.
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
-    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    direction = resolvedDirection match {
-      case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => ActualDirection.Output
-      case SpecifiedDirection.Input => throwException(s"DontCare may not be an input")
+    target match {
+      case _: DontCareBinding =>
+      case _ => Builder.error(s"DontCare binding may not be changed (to ${target.toString}).")
     }
   }
 
-  override private[chisel3] def flatten : IndexedSeq[Element] = IndexedSeq.empty[Element]
-  private[chisel3] def toType = "DontCare"
-  private[chisel3] def allElements: Seq[Element] = Seq.empty[Element]
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    Builder.error("legacyConnect: DontCare cannot be a connection sink (LHS)")
-  }
-  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
-  /** Not really supported */
   def toPrintable: Printable = PString("DONTCARE")
-  private[chisel3] def width = UnknownWidth()
+
   private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
@@ -469,43 +463,6 @@ object DontCare extends Data {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }
-
-  private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = true
-}
-
-// For those occasions when we need an actual element, define one with appropriate width and binding.
-private[core] object DontCareElement extends Element(Width()) {
-  // Set the binding.
-  // NOTE: BindingDirection.from will return Internal for this Element.
-  binding = DontCareBinding()
-  direction = ActualDirection.Output
-  def cloneType = DontCareElement
-  private[core] def cloneTypeWidth(width: Width): this.type = cloneType
-  // Define setter/getter pairing
-  // DontCare can only be connected to Ports and Wires (and Unbound), and only as a source
-  // Attempts to change its binding are silently ignore.
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
-    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    direction = resolvedDirection match {
-      case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => ActualDirection.Output
-      case SpecifiedDirection.Input => throwException(s"DontCare may not be an input")
-    }
-  }
-
-  private[chisel3] def toType = "DontCareElement"
-  private[core] override def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
-    Builder.error("legacyConnect: DontCareElement cannot be a connection sink (LHS)")
-  }
-  /** Not really supported */
-  def toPrintable: Printable = PString("DONTCAREELEMENT")
-  private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
-    Builder.error("connectFromBits: DontCareElement cannot be a connection sink (LHS)")
-  }
-
-  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): chisel3.core.UInt = {
-    Builder.error("DontCareElement does not have a UInt representation")
-    0.U
-  }
-
+  // DontCare's match any type.
   private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = true
 }

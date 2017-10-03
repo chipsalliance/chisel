@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.core.BiConnect.BiConnectException
 import chisel3.util.Counter
 import chisel3.experimental.DontCare
 import firrtl.passes.CheckInitialization.RefNotInitializedException
@@ -57,8 +58,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       io <> DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("io.in is invalid")
-    firrtlOutput should include("io.out is invalid")
+    firrtlOutput should include("io is invalid")
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and bulk connect") {
@@ -71,8 +71,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       io.ins <> DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    for (i <- 0 until nElements)
-      firrtlOutput should include(s"io.ins[$i] is invalid")
+    firrtlOutput should include(s"io.ins is invalid")
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and mono connect") {
@@ -85,8 +84,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       io.ins := DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    for (i <- 0 until nElements)
-      firrtlOutput should include(s"io.ins[$i] is invalid")
+    firrtlOutput should include(s"io.ins is invalid")
   }
 
   property("a DontCare cannot be a connection sink (LHS) for := ") {
@@ -107,7 +105,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       val io = IO(new TrivialInterface)
       DontCare <> io.in
     }
-    val exception = intercept[ChiselException] {
+    val exception = intercept[BiConnectException] {
       elaborate(new ModuleWithDontCareSink)
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")

@@ -160,13 +160,13 @@ private class Emitter(circuit: Circuit) {
     * enclosing block upon emission.
     */
   private def processWhens(cmds: Seq[Command]):
-  Seq[Command] = { if (cmds.isEmpty) {
+  Seq[Command] = if (cmds.isEmpty) {
     Seq.empty
   } else {
     cmds.zip(cmds.tail).map({ case (a: WhenEnd, b:
       AltBegin) => a.copy(hasAlt = true) case (a, b) => a }) ++
       cmds.lastOption
-  } }
+  }
 
   private var indentLevel = 0
   private def newline = "\n" + ("  " * indentLevel)

@@ -71,6 +71,10 @@ lazy val chiselSettings = Seq (
         <distribution>repo</distribution>
       </license>
     </licenses>
+    <scm>
+      <url>https://github.com/freechipsproject/chisel3.git</url>
+      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
+    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>

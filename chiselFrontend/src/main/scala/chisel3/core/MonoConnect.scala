@@ -109,28 +109,8 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
         }
-      // DontCare source may be connected to anything.
-      case (sink_e: Element, DontCare) =>
-        val source_e =
-        elemConnect(sourceInfo, connectCompileOptions, sink_e, DontCareElement, context_mod)
-      // Handle Vec connected to DontCare case
-      case (sink_v: Vec[Data @unchecked], DontCare) =>
-        for(idx <- 0 until sink_v.length) {
-          try {
-            connect(sourceInfo, connectCompileOptions, sink_v(idx), DontCare, context_mod)
-          } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
-          }
-        }
-      // Handle Record connected to DontCare case
-      case (sink_r: Record, DontCare) =>
-        for((field, left_sub) <- sink_r.elements) {
-          try {
-            connect(sourceInfo, connectCompileOptions, left_sub, DontCare, context_mod)
-          } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
-          }
-        }
+      // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
+      case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
       case (DontCare, _) => throw DontCareCantBeSink
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)

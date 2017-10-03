@@ -89,29 +89,8 @@ object BiConnect {
         case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
       }
 
-        // Right (source) is a DontCare
-      case (left_e: Element, DontCare) =>
-        elemConnect(sourceInfo, connectCompileOptions, left_e, DontCareElement, context_mod)
-      // // Handle Vec case - connect to DontCare. Apply the DontCare to each element of the Vec.
-      case (left_v: Vec[Data @unchecked], DontCare) => {
-        for(idx <- 0 until left_v.length) {
-          try {
-            connect(sourceInfo, connectCompileOptions, left_v(idx), DontCare, context_mod)
-          } catch {
-            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
-          }
-        }
-      }
-      // Handle Records/Bundles. We apply the DontCare to each element of the Record/Bundle
-      case (left_r: Record, DontCare) =>
-        // For each field in left, connect to DontCare
-        for((field, left_sub) <- left_r.elements) {
-          try {
-            connect(sourceInfo, connectCompileOptions, left_sub, DontCare, context_mod)
-          } catch {
-            case BiConnectException(message) => throw BiConnectException(s".$field$message")
-          }
-        }
+      // Right is DontCare - it may be connected to anything. It generates a defInvalid for the left.
+      case (left, DontCare) => pushCommand(DefInvalid(sourceInfo, left.lref))
 
       // DontCare cannot be a sink (LHS)
       case (DontCare, _) => throw DontCareCantBeSink
