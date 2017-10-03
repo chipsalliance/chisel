@@ -41,8 +41,10 @@ class BrokenVectorPacketModule extends Module {
   val n  = 4
   val io = IO(new VectorPacketIO(n))
 
-  // Indicate we don't expect io to be connected, avoiding a "Reference io is not fully initialized" error from firrtl.
-  io := DontCare
+  // Avoid a "Reference io is not fully initialized" error from firrtl.
+  for (i <- 0 until n) {
+    io.outs(i) <> io.ins(i)
+  }
 
   /* the following method of initializing the circuit may change in the future */
   io.ins.foreach(_.nodeq())

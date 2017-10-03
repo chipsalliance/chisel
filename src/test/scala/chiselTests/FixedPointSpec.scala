@@ -109,8 +109,8 @@ class SBPTester extends BasicTester {
   assert(dut.io.out === 3.0.F(0.BP))
 
   val test = Wire(FixedPoint(10.W, 5.BP))
-  // Indicate we don't expect test to be connected, avoiding a "Reference test is not fully initialized" error from firrtl.
-  test := DontCare
+  // Initialize test, avoiding a "Reference test is not fully initialized" error from firrtl.
+  test := 0.0.F(5.BP)
   val q = test.setBinaryPoint(18)
   assert(q.getWidth.U === 23.U)
 
