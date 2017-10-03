@@ -440,18 +440,8 @@ object WireInit {
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
 object DontCare extends Element(width = UnknownWidth()) {
-  binding = DontCareBinding()
-  direction = ActualDirection.Output
+  bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
-
-  // DontCare may only be connected to Ports and Wires (and Unbound), and only as a source
-  // Attempts to change its binding generate errors.
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
-    target match {
-      case _: DontCareBinding =>
-      case _ => Builder.error(s"DontCare binding may not be changed (to ${target.toString}).")
-    }
-  }
 
   def toPrintable: Printable = PString("DONTCARE")
 
@@ -463,6 +453,6 @@ object DontCare extends Element(width = UnknownWidth()) {
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }
-  // DontCare's match any type.
-  private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = true
+  // DontCare's only match themselves.
+  private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
 }

@@ -89,11 +89,10 @@ object BiConnect {
         case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
       }
 
-      // Right is DontCare - it may be connected to anything. It generates a defInvalid for the left.
+      // If either side is a DontCare - it may be connected to anything.
+      // It generates a defInvalid for the other side.
       case (left, DontCare) => pushCommand(DefInvalid(sourceInfo, left.lref))
-
-      // DontCare cannot be a sink (LHS)
-      case (DontCare, _) => throw DontCareCantBeSink
+      case (DontCare, right) => pushCommand(DefInvalid(sourceInfo, right.lref))
 
       // Left and right are different subtypes of Data so fail
       case (left, right) => throw MismatchedException(left.toString, right.toString)
