@@ -202,7 +202,6 @@ class Queue[T <: Data](gen: T,
     gen
   } else {
     if (DataMirror.internal.isSynthesizable(gen)) {
-      println("WARNING: gen in new Queue(gen, ...) must be a Chisel type, not hardware")
       gen.chiselCloneType
     } else {
       gen
