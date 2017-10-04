@@ -217,7 +217,7 @@ abstract class BaseModule extends HasId {
    * TODO(twigg): Specifically walk the Data definition to call out which nodes
    * are problematic.
    */
-  protected def IO[T<:Data](iodef: T): iodef.type = {
+  protected def IO[T<:Data](iodef: T): T = {
     require(!_closed, "Can't add more ports after module close")
     requireIsChiselType(iodef, "io type")
 
