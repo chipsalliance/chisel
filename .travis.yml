@@ -12,7 +12,7 @@ cache:
 git:
   depth: 10
 
-sbt_args: -Dsbt.log.noformat=true ++$TRAVIS_SCALA_VERSION
+sbt_args: -Dsbt.log.noformat=true
 
 env:
   global:
@@ -23,17 +23,15 @@ env:
 before_script:
   - bash .install_verilator.sh
   - verilator --version
+  - bash .install_yosys.sh
+  - yosys -V
 
 jobs:
   include:
-    - stage: Test
-    - &test
+    - stage: test
       script:
-        # FIRRTL Tests
-        - cd $TRAVIS_BUILD_DIR
-        - sbt clean test
-    - <<: *test
-      script:
-        - cd $TRAVIS_BUILD_DIR
         - sbt clean assembly publish-local
         - bash .run_chisel_tests.sh
+    - stage: test
+      script:
+        - bash .run_formal_checks.sh
