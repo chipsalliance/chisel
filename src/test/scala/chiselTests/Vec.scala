@@ -145,7 +145,7 @@ class ZeroEntryVecTester extends BasicTester {
   require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
 
   val m = Module(new Module {
-    val io = IO(Output(bundleWithZeroEntryVec.cloneType))
+    val io = IO(Output(bundleWithZeroEntryVec))
   })
   WireInit(m.io.bar)
 
