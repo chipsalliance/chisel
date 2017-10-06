@@ -336,7 +336,7 @@ sealed class IntervalRange(
   def binaryPoint: BinaryPoint = {
     firrtlBinaryPoint match {
       case firrtlir.IntWidth(n) =>
-        assert(n < Int.MaxValue, s"binary point value $n is out of range")
+        core.assert(n < Int.MaxValue, s"binary point value $n is out of range")
         KnownBinaryPoint(n.toInt)
       case _ => UnknownBinaryPoint
     }
