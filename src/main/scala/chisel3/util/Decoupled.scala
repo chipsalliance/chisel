@@ -200,7 +200,6 @@ class Queue[T <: Data](gen: T,
     gen
   } else {
     if (DataMirror.internal.isSynthesizable(gen)) {
-      println("WARNING: gen in new Queue(gen, ...) must be a Chisel type, not hardware")
       gen.chiselCloneType
     } else {
       gen
@@ -280,7 +279,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): DecoupledIO[T] = {
-    val q = Module(new Queue(enq.bits.cloneType, entries, pipe, flow))
+    val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready

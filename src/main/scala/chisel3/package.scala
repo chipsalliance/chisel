@@ -19,6 +19,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Input   = chisel3.core.Input
   val Output  = chisel3.core.Output
   val Flipped = chisel3.core.Flipped
+  val chiselTypeOf = chisel3.core.chiselTypeOf
 
   type Data = chisel3.core.Data
   object Wire extends chisel3.core.WireFactory {
@@ -53,6 +54,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @deprecated("fromBits is deprecated, use asTypeOf instead", "chisel3")
     def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
       that.asTypeOf(data)
+    }
+  }
+
+  implicit class cloneTypeable[T <: Data](val target: T) extends AnyVal {
+    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
+    def chiselCloneType: T = {
+      target.cloneTypeFull.asInstanceOf[T]
     }
   }
 
