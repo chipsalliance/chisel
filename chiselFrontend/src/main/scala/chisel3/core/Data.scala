@@ -28,6 +28,9 @@ object debug {  // scalastyle:ignore object.name
 
 object DataMirror {
   def widthOf(target: Data): Width = target.width
+  def directionOf(target: Data): Direction = {
+    Data.getFirrtlDirection(target)
+  }
 }
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:
