@@ -1242,6 +1242,17 @@ sealed class Interval private[core] (
   override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
     pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
   }
+  override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    binaryPoint match {
+      case KnownBinaryPoint(value) =>
+        val iLit = ILit(value)
+        pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
+      case _ =>
+        throwException(
+          s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+    }
+  }
+
   def do_asInterval(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     pushOp(DefPrim(sourceInfo, Interval(this.width, this.range), AsIntervalOp, ref))
   }
