@@ -84,27 +84,41 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
-case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
+case class SLit(n: BigInt, w: Width, directUse: Boolean = true) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
   }
-  def minWidth: Int = 1 + n.bitLength
+  // TODO: (chick) check my logic please
+  // If SLit is directly created by the Chisel user, to account for #
+  // of bits needed to represent a negative n value, you need the + 1
+  // HOWEVER, if SLit is applied via IntervalLit or FPLit, n has already
+  // been converted two UNSIGNED, so no need for + 1
+  def minWidth: Int = 
+    if (directUse) 1 + n.bitLength
+    else n.bitLength
 }
 
 case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-    s"asFixedPoint(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+    s"asFixedPoint(${SLit(unsigned, width, directUse = false).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
 }
 
+// TODO: (chick) double check?; if binaryPoint > 0, n has already been shifted up 
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
 //    s"asInterval(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
-    s"asInterval(${SLit(unsigned, width).name}, $n, $n)"
+    binaryPoint match {
+      case KnownBinaryPoint(bp) =>
+        s"asInterval(${SLit(unsigned, width, directUse = false).name}, $n, $n, $bp)"
+      case _ =>
+        throw new Exception("Interval Lit requires known binary point")
+    }
+    
   }
   val range: IntervalRange = {
     new IntervalRange(IntervalRange.getBound(isClosed = true, BigDecimal(n)),
