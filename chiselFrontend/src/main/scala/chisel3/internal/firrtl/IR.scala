@@ -291,7 +291,10 @@ sealed class IntervalRange(
     }
   }
 
-  override def *(that: IntervalRange): IntervalRange = ???
+  // TODO: (chick) How to implement properly? (Angie)
+  override def *(that: IntervalRange): IntervalRange = {
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+  }
 
   private def doFirrtlOp(op: firrtlir.PrimOp, that: IntervalRange): IntervalRange = {
     PrimOps.set_primop_type(
