@@ -4,7 +4,7 @@ package chisel3 {
   import internal.Builder
 
   package object core {
-    import internal.firrtl.{Width, BinaryPoint}
+    import internal.firrtl.{Width, BinaryPoint, KnownBinaryPoint}
 
     /**
     * These implicit classes allow one to convert scala.Int|scala.BigInt to
@@ -108,6 +108,12 @@ package chisel3 {
       }
       def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
         FixedPoint.fromDouble(double, width, binaryPoint)
+      }
+      def I(binaryPoint: BinaryPoint): Interval = {
+        binaryPoint match {
+          case KnownBinaryPoint(bp) => Interval.fromDouble(double, binaryPoint = bp)
+          case _ => throw new Exception("Interval lit binary point must be known")
+        }
       }
     }
 
