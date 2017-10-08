@@ -1313,8 +1313,9 @@ sealed class Interval private[core] (
 }
 
 trait IntervalFactory {
-  /** Create a Interval type with inferred width. */
-  def apply(): Interval = apply(Width())
+  // TODO: (chick) -- formalize
+  /** Create a Interval type with inferred width and binary point. */
+  def apply(): Interval = apply(Width(), UnknownBinaryPoint)
   /** Create a Interval type with specified width. */
   def apply(width: Width): Interval = Interval(width, 0.BP)
   /** Create a Interval type with specified width. */
