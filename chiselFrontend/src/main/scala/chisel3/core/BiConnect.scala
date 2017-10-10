@@ -54,7 +54,7 @@ object BiConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: UserModule): Unit =
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: UserModule): Unit = {
     (left, right) match {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
@@ -69,12 +69,25 @@ object BiConnect {
         // TODO(twigg): Verify the element-level classes are connectable
       }
       // Handle Vec case
-      case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
-        if(left_v.length != right_v.length) { throw MismatchedVecException }
-        for(idx <- 0 until left_v.length) {
+      case (left_v: Vec[Data@unchecked], right_v: Vec[Data@unchecked]) => {
+        if (left_v.length != right_v.length) {
+          throw MismatchedVecException
+        }
+        for (idx <- 0 until left_v.length) {
           try {
             implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+          }
+        }
+      }
+      // Handle Vec connected to DontCare
+      case (left_v: Vec[Data@unchecked], DontCare) => {
+        for (idx <- 0 until left_v.length) {
+          try {
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, left_v(idx), right, context_mod)
           } catch {
             case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
           }
@@ -89,14 +102,40 @@ object BiConnect {
         case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
       }
 
-      // If either side is a DontCare - it may be connected to anything.
-      // It generates a defInvalid for the other side.
-      case (left, DontCare) => pushCommand(DefInvalid(sourceInfo, left.lref))
-      case (DontCare, right) => pushCommand(DefInvalid(sourceInfo, right.lref))
+      // Handle Records connected to DontCare (change to NotStrict)
+      case (left_r: Record, DontCare) =>
+        left_r.compileOptions match {
+          case ExplicitCompileOptions.NotStrict =>
+            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
+          case _ =>
+            // For each field in left, descend with right
+            for ((field, left_sub) <- left_r.elements) {
+              try {
+                connect(sourceInfo, connectCompileOptions, left_sub, right, context_mod)
+              } catch {
+                case BiConnectException(message) => throw BiConnectException(s".$field$message")
+              }
+            }
+        }
+      case (DontCare, right_r: Record) =>
+        right_r.compileOptions match {
+          case ExplicitCompileOptions.NotStrict =>
+            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
+          case _ =>
+            // For each field in left, descend with right
+            for ((field, right_sub) <- right_r.elements) {
+              try {
+                connect(sourceInfo, connectCompileOptions, left, right_sub, context_mod)
+              } catch {
+                case BiConnectException(message) => throw BiConnectException(s".$field$message")
+              }
+            }
+        }
 
       // Left and right are different subtypes of Data so fail
       case (left, right) => throw MismatchedException(left.toString, right.toString)
     }
+  }
 
   // Do connection of two Records
   def recordConnect(sourceInfo: SourceInfo,

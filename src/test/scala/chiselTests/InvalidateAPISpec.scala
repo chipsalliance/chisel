@@ -58,7 +58,8 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       io <> DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include("io is invalid")
+    firrtlOutput should include("io.out is invalid")
+    firrtlOutput should include("io.in is invalid")
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and bulk connect") {
@@ -71,7 +72,8 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       io.ins <> DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include(s"io.ins is invalid")
+    for (i <- 0 until nElements)
+     firrtlOutput should include(s"io.ins[$i] is invalid")
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and mono connect") {
@@ -84,7 +86,8 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       io.ins := DontCare
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
-    firrtlOutput should include(s"io.ins is invalid")
+    for (i <- 0 until nElements)
+      firrtlOutput should include(s"io.ins[$i] is invalid")
   }
 
   property("a DontCare cannot be a connection sink (LHS) for := ") {

@@ -91,6 +91,16 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
           }
         }
+      // Handle Vec connected to DontCare. Apply the DontCare to individual elements.
+      case (sink_v: Vec[Data @unchecked], DontCare) =>
+        for(idx <- 0 until sink_v.length) {
+          try {
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, sink_v(idx), source, context_mod)
+          } catch {
+            case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+          }
+        }
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
@@ -109,8 +119,20 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
         }
+      // Handle Record connected to DontCare. Apply the DontCare to individual elements.
+      case (sink_r: Record, DontCare) =>
+        // For each field, descend with right
+        for((field, sink_sub) <- sink_r.elements) {
+          try {
+            connect(sourceInfo, connectCompileOptions, sink_sub, source, context_mod)
+          } catch {
+            case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
+          }
+        }
+
       // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
       case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
+      // DontCare as a sink is illegal.
       case (DontCare, _) => throw DontCareCantBeSink
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
