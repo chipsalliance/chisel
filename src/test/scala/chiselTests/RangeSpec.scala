@@ -63,18 +63,20 @@ class RangeSpec extends FreeSpec with Matchers {
 
     }
 
-//    "UInt should get the correct width from a range" in {
-//      UInt(range"[0, 8]").getWidth should be (4)
-//      UInt(range"[0, 8)").getWidth should be (3)
-//      UInt(range"[0, 0]").getWidth should be (0)
-//    }
-//
-//    "SInt should get the correct width from a range" in {
-//      SInt(range"[0, 8)").getWidth should be (4)
-//      SInt(range"[0, 8]").getWidth should be (5)
-//      SInt(range"[-4, 4)").getWidth should be (3)
-//      SInt(range"[0, 0]").getWidth should be (0)
-//    }
+    "UInt should get the correct width from a range" in {
+      val r = IntervalRange(Closed(0), Closed(8), 0)
+      r.getWidth.get should be (5)
+      UInt(range"[0, 8]").getWidth should be (4)
+      UInt(range"[0, 8)").getWidth should be (3)
+      UInt(range"[0, 0]").getWidth should be (0)
+    }
+
+    "SInt should get the correct width from a range" in {
+      SInt(range"[0, 8)").getWidth should be (4)
+      SInt(range"[0, 8]").getWidth should be (5)
+      SInt(range"[-4, 4)").getWidth should be (3)
+      SInt(range"[0, 0]").getWidth should be (0)
+    }
 
     "UInt should check that the range is valid" in {
       an [IllegalArgumentException] should be thrownBy {

@@ -4,13 +4,12 @@ package chisel3.core
 
 import scala.language.experimental.macros
 import collection.mutable
-
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
+import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
-import _root_.firrtl.ir.{UnknownBound, Open, Closed}
+import _root_.firrtl.ir.{Closed, Open, UnknownBound}
 import _root_.firrtl.passes.IsKnown
 
 //scalastyle:off method.name
@@ -606,7 +605,10 @@ trait UIntFactory {
     result
   }
 
-  /** Create a UInt with the specified range */
+  /** Create a UInt with the specified range
+    * Because the ranges passed in are based on the bit widths of SInts which are the underlying type of
+    * interval we need to subtract 1 here before we create the UInt
+    */
   def apply(range: IntervalRange): UInt = {
     range.lower match {
       case Closed(n) =>
@@ -615,7 +617,11 @@ trait UIntFactory {
         if(n <= 0) throw new IllegalArgumentException(s"Creating UInt: Invalid range with ${range.serialize}")
       case _ =>
     }
-    apply(range.getWidth)
+    val uIntWidth = range.getWidth match {
+      case KnownWidth(n) => KnownWidth((n - 1).max(0))
+      case unknownWidth: UnknownWidth => unknownWidth
+    }
+    apply(uIntWidth)
   }
 //TODO: Fix this later
 //  /** Create a UInt with the specified range */

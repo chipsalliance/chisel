@@ -369,9 +369,9 @@ object IntervalRange {
     new IntervalRange(lower, upper, IntervalRange.getBinaryPoint(binaryPoint))
   }
 
-    def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: Int): IntervalRange = {
-      IntervalRange(lower, upper, BinaryPoint(binaryPoint))
-    }
+  def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: Int): IntervalRange = {
+    IntervalRange(lower, upper, BinaryPoint(binaryPoint))
+  }
 
   def unapply(arg: IntervalRange): Option[(firrtlir.Bound, firrtlir.Bound, BinaryPoint)] = {
     return Some((arg.lower, arg.upper, arg.binaryPoint))
