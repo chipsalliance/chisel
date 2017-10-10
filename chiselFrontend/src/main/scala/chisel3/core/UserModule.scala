@@ -103,6 +103,11 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   private[core] override def initializeInParent() {
     implicit val sourceInfo = UnlocatableSourceInfo
 
+    if (!compileOptions.explicitInvalidate) {
+      for (port <- getModulePorts) {
+        pushCommand(DefInvalid(sourceInfo, port.ref))
+      }
+    }
     clock := Builder.forcedClock
     reset := Builder.forcedReset
   }
