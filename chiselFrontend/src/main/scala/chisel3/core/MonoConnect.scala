@@ -145,9 +145,6 @@ object MonoConnect {
         //    CURRENT MOD   CURRENT MOD
         case (Output,       _) => issueConnect(sink, source)
         case (Internal,     _) => issueConnect(sink, source)
-        // Normally, this (an Input on the LHS of a connection) should generate an error,
-        //  but it's the way we indicate "DontCare"s
-        case (Input, Internal) if source.binding == DontCareBinding() => issueConnect(sink, source)
         case (Input,        _) => throw UnwritableSinkException
       }
     }
