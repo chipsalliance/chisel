@@ -340,13 +340,56 @@ sealed class IntervalRange(
     IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
   }
 
-  override def <<(that: Int): IntervalRange = ???
+  private def shiftLeft(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {
+    if(n < 1 ) {
+      bound
+    }
+    else {
+      val multiplier = 1 << n
+      bound match {
+        case firrtlir.Open(n) => firrtlir.Open(n * multiplier)
+        case firrtlir.Closed(n) => firrtlir.Closed(n * multiplier)
+        case _ => bound
+      }
+    }
+  }
 
-  override def >>(that: Int): IntervalRange = ???
+  private def shiftRight(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {
+    if(n < 1 ) {
+      bound
+    }
+    else {
+      val divisor = 1 << n
+      bound match {
+        case firrtlir.Open(n) => firrtlir.Open(n / divisor)
+        case firrtlir.Closed(n) => firrtlir.Closed(n / divisor)
+        case _ => bound
+      }
+    }
+  }
 
-  override def <<(that: KnownWidth): IntervalRange = ???
+  override def <<(that: Int): IntervalRange = {
+    IntervalRange(
+      shiftLeft(lowerBound, that),
+      shiftLeft(upperBound, that),
+      binaryPoint
+    )
+  }
 
-  override def >>(that: KnownWidth): IntervalRange = ???
+  override def >>(that: Int): IntervalRange = {
+    IntervalRange(
+      shiftRight(lowerBound, that),
+      shiftRight(upperBound, that),
+      binaryPoint
+    )
+  }
+
+  override def <<(that: KnownWidth): IntervalRange = {
+    this << that.value
+  }
+  override def >>(that: KnownWidth): IntervalRange = {
+    this >> that.value
+  }
 
   override def merge(that: IntervalRange): IntervalRange = ???
 

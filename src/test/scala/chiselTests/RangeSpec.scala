@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselRange
-import chisel3.internal.firrtl.IntervalRange
+import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
 import firrtl.ir.{Closed, Open}
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -76,6 +76,34 @@ class RangeSpec extends FreeSpec with Matchers {
       SInt(range"[0, 8]").getWidth should be (5)
       SInt(range"[-4, 4)").getWidth should be (3)
       SInt(range"[0, 0]").getWidth should be (0)
+    }
+
+    "Range should be left shiftable" in {
+      var r1 = range"[0, 4].1"
+      var r2 = r1 << 2
+      r2.lower should be (Closed(0))
+      r2.upper should be (Closed(16))
+      r2.binaryPoint should be (KnownBinaryPoint(1))
+
+      r1 = range"[-3, 3].1"
+      r2 = r1 << 2
+      r2.lower should be (Closed(-12))
+      r2.upper should be (Closed(12))
+      r2.binaryPoint should be (KnownBinaryPoint(1))
+    }
+
+    "Range should be right shiftable" in {
+      var r1 = range"[0, 4].9"
+      var r2 = r1 >> 1
+      r2.lower should be (Closed(0))
+      r2.upper should be (Closed(2))
+      r2.binaryPoint should be (KnownBinaryPoint(9))
+
+      r1 = range"[-12, 12].9"
+      r2 = r1 >> 2
+      r2.lower should be (Closed(-3))
+      r2.upper should be (Closed(3))
+      r2.binaryPoint should be (KnownBinaryPoint(9))
     }
 
     "UInt should check that the range is valid" in {
