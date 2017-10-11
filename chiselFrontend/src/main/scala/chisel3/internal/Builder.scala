@@ -71,7 +71,11 @@ trait InstanceId {
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
-  _parent.foreach(_.addId(this))
+  // Ignore null parents.
+  _parent match {
+    case Some(p: BaseModule) => p.addId(this)
+    case None | null =>
+  }
 
   private[chisel3] val _id: Long = Builder.idGen.next
   override def hashCode: Int = _id.toInt
