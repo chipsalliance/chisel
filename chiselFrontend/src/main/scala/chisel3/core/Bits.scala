@@ -1256,14 +1256,13 @@ sealed class Interval private[core] (
   override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     do_<<(that.toInt)
   override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-//    val newRange = that.width match {
-//      case w: KnownWidth => Range(range.min, range.maxthis.range << w
-//      case _ => UnknownRange
-//    }
-//    binop(sourceInfo,
-//      Interval(this.width.dynamicShiftLeft(that.width), newRange),
-//      DynamicShiftLeftOp, that)
-    ???
+    val newRange = that.width match {
+      case w: KnownWidth => this.range << w
+      case _ => IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint)
+    }
+    binop(sourceInfo,
+      Interval(this.width.dynamicShiftLeft(that.width), newRange),
+      DynamicShiftLeftOp, that)
   }
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     binop(sourceInfo,
@@ -1271,12 +1270,11 @@ sealed class Interval private[core] (
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     do_>>(that.toInt)
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-//    val newRange = that.width match {
-//      case w: KnownWidth => this.range >> w
-//      case _ => UnknownRange
-//    }
-//    binop(sourceInfo, Interval(this.width, this.binaryPoint, newRange), DynamicShiftRightOp, that)
-    ???
+    val newRange = that.width match {
+      case w: KnownWidth => this.range >> w
+      case _ => IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint)
+    }
+    binop(sourceInfo, Interval(this.width, newRange), DynamicShiftRightOp, that)
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
