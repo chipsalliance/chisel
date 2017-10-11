@@ -298,6 +298,22 @@ sealed class IntervalRange(
       if(begin > end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
     case _ =>
   }
+
+  def getPossibleValues: Seq[Double] = {
+    (lower, upperBound, firrtlBinaryPoint) match {
+      case (firrtlir.Open(begin), firrtlir.Open(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue until end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq.tail
+      case (firrtlir.Open(begin), firrtlir.Closed(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue to end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq.tail
+      case (firrtlir.Closed(begin), firrtlir.Open(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue until end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq
+      case (firrtlir.Closed(begin), firrtlir.Closed(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue to end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq
+      case _ =>
+        throw new Exception("Bounds unknown. Cannot get possible values from IntervalRange.")
+    } 
+  }
+
   override def getWidth: Width = {
     width match {
       case firrtlir.IntWidth(n) => KnownWidth(n.toInt)
