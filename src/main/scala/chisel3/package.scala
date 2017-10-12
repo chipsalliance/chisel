@@ -1,5 +1,6 @@
-import chisel3.core.CompileOptions
 // See LICENSE for license details.
+
+import chisel3.core.CompileOptions
 
 /** The chisel3 package contains the chisel3 API.
   * It maps core components into the public chisel3 namespace.
@@ -11,19 +12,40 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   import util.BitPat
 
-  import chisel3.core.{Binding, FlippedBinder}
   import chisel3.util._
   import chisel3.internal.firrtl.Port
+  import chisel3.core.CompileOptions
 
-  type Direction = chisel3.core.Direction
   val Input   = chisel3.core.Input
   val Output  = chisel3.core.Output
   val Flipped = chisel3.core.Flipped
+  val chiselTypeOf = chisel3.core.chiselTypeOf
 
   type Data = chisel3.core.Data
-  val Wire = chisel3.core.Wire
+  object Wire extends chisel3.core.WireFactory {
+    import chisel3.core.CompileOptions
+
+    @deprecated("Wire(init=init) is deprecated, use WireInit(init) instead", "chisel3")
+    def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(init)
+
+    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(t, init)
+  }
+  val WireInit = chisel3.core.WireInit
+
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
+
+  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
+    @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
+    def asInput: T = Input(target)
+    @deprecated("Output(Data) should be used over Data.asOutput", "chisel3")
+    def asOutput: T = Output(target)
+    @deprecated("Flipped(Data) should be used over Data.flip", "chisel3")
+    def flip(): T = Flipped(target)
+  }
 
   implicit class fromBitsable[T <: Data](val data: T) {
     import chisel3.core.CompileOptions
@@ -34,9 +56,46 @@ package object chisel3 {    // scalastyle:ignore package.object.name
       that.asTypeOf(data)
     }
   }
-  
+
+  implicit class cloneTypeable[T <: Data](val target: T) extends AnyVal {
+    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
+    def chiselCloneType: T = {
+      target.cloneTypeFull.asInstanceOf[T]
+    }
+  }
+
   type Aggregate = chisel3.core.Aggregate
-  val Vec = chisel3.core.Vec
+  object Vec extends chisel3.core.VecFactory {
+    import scala.language.experimental.macros
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
+    def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      apply(n, gen)
+
+    @deprecated("Vec.fill(n)(gen) is deprecated, use VecInit(Seq.fill(n)(gen)) instead", "chisel3")
+    def fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      apply(Seq.fill(n)(gen))
+
+    @deprecated("Vec(elts) is deprecated, use VecInit(elts) instead", "chisel3")
+    def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+    def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit(elts)
+
+    @deprecated("Vec(elt0, ...) is deprecated, use VecInit(elt0, ...) instead", "chisel3")
+    def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+    def do_apply[T <: Data](elt0: T, elts: T*)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit(elt0 +: elts.toSeq)
+
+    @deprecated("Vec.tabulate(n)(gen) is deprecated, use VecInit.tabulate(n)(gen) instead", "chisel3")
+    def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+      chisel3.core.VecInit.tabulate(n)(gen)
+  }
+  val VecInit = chisel3.core.VecInit
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
   type Bundle = chisel3.core.Bundle
@@ -69,34 +128,30 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     */
   trait UIntFactory extends chisel3.core.UIntFactory {
     /** Create a UInt literal with inferred width. */
-    @deprecated("use n.U", "chisel3, will be removed by end of 2016")
+    @deprecated("use n.U", "chisel3, will be removed by end of 2017")
     def apply(n: String): UInt = n.asUInt
     /** Create a UInt literal with fixed width. */
-    @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2016")
+    @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2017")
     def apply(n: String, width: Int): UInt = n.asUInt(width.W)
 
     /** Create a UInt literal with specified width. */
-    @deprecated("use value.U(width)", "chisel3, will be removed by end of 2016")
+    @deprecated("use value.U(width)", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt, width: Width): UInt = value.asUInt(width)
 
     /** Create a UInt literal with fixed width. */
-    @deprecated("use value.U(width.W)", "chisel3, will be removed by end of 2016")
+    @deprecated("use value.U(width.W)", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt, width: Int): UInt = value.asUInt(width.W)
 
-    /** Create a UInt with a specified width - compatibility with Chisel2. */
-    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
-    def apply(dir: Option[Direction] = None, width: Int): UInt = apply(width.W)
-
     /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-    @deprecated("use value.U", "chisel3, will be removed by end of 2016")
+    @deprecated("use value.U", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt): UInt = value.asUInt
 
     /** Create a UInt with a specified width */
-    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2016")
+    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2017")
     def width(width: Int): UInt = apply(width.W)
 
     /** Create a UInt port with specified width. */
-    @deprecated("use UInt(width)", "chisel3, will be removed by end of 2016")
+    @deprecated("use UInt(width)", "chisel3, will be removed by end of 2017")
     def width(width: Width): UInt = apply(width)
   }
 
@@ -105,28 +160,28 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     */
   trait SIntFactory extends chisel3.core.SIntFactory {
     /** Create a SInt type or port with fixed width. */
-    @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2016")
+    @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2017")
     def width(width: Int): SInt = apply(width.W)
     /** Create an SInt type with specified width. */
-    @deprecated("use SInt(width)", "chisel3, will be removed by end of 2016")
+    @deprecated("use SInt(width)", "chisel3, will be removed by end of 2017")
     def width(width: Width): SInt = apply(width)
 
     /** Create an SInt literal with inferred width. */
-    @deprecated("use value.S", "chisel3, will be removed by end of 2016")
+    @deprecated("use value.S", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt): SInt = value.asSInt
     /** Create an SInt literal with fixed width. */
-    @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2016")
+    @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
     /** Create an SInt literal with specified width. */
-    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
+    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
 
-    @deprecated("use value.S", "chisel3, will be removed by end of 2016")
-    def Lit(value: BigInt): SInt = value.asSInt
+    @deprecated("use value.S", "chisel3, will be removed by end of 2017")
+    def Lit(value: BigInt): SInt = value.asSInt // scalastyle:ignore method.name
 
-    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2016")
-    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
+    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2017")
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W) // scalastyle:ignore method.name
   }
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
@@ -135,7 +190,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   trait BoolFactory extends chisel3.core.BoolFactory {
     /** Creates Bool literal.
      */
-    @deprecated("use x.B", "chisel3, will be removed by end of 2016")
+    @deprecated("use x.B", "chisel3, will be removed by end of 2017")
     def apply(x: Boolean): Bool = x.B
   }
 
@@ -188,7 +243,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
           chisel3.core.Reg(t)
         }
         if (next ne null) {
-          Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
           reg := next
         }
         reg
@@ -279,15 +333,15 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
-    def do_=== (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x    // scalastyle:ignore method.name
-    def do_!= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x      // scalastyle:ignore method.name
-    def do_=/= (that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x    // scalastyle:ignore method.name
+    def do_=== (that: BitPat)  // scalastyle:ignore method.name
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+    def do_!= (that: BitPat)  // scalastyle:ignore method.name
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x
+    def do_=/= (that: BitPat)  // scalastyle:ignore method.name
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
   }
 
-  // Compatibility with existing code.
-  val INPUT = chisel3.core.Direction.Input
-  val OUTPUT = chisel3.core.Direction.Output
-  val NODIR = chisel3.core.Direction.Unspecified
+
   type ChiselException = chisel3.internal.ChiselException
 
   // Debugger/Tester access to internal Chisel data structures and methods.
@@ -295,14 +349,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     a.allElements
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
-  def getFirrtlDirection(d: Data): Direction = chisel3.core.Data.getFirrtlDirection(d)
 
   /** Package for experimental features, which may have their API changed, be removed, etc.
     *
     * Because its contents won't necessarily have the same level of stability and support as
     * non-experimental, you must explicitly import this package to use its contents.
     */
-  object experimental {
+  object experimental {  // scalastyle:ignore object.name
     type Param = chisel3.core.Param
     type IntParam = chisel3.core.IntParam
     val IntParam = chisel3.core.IntParam
@@ -342,6 +395,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type ChiselAnnotation = chisel3.core.ChiselAnnotation
     val ChiselAnnotation = chisel3.core.ChiselAnnotation
 
+    val DataMirror = chisel3.core.DataMirror
+    val requireIsHardware = chisel3.core.requireIsHardware
+    val requireIsChiselType = chisel3.core.requireIsChiselType
+    type Direction = chisel3.core.ActualDirection
+    val Direction = chisel3.core.ActualDirection
+
     implicit class ChiselRange(val sc: StringContext) extends AnyVal {
       import scala.language.experimental.macros
       import internal.firrtl.NumericBound
@@ -359,8 +418,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
     import scala.annotation.compileTimeOnly
 
-    class dump extends chisel3.internal.naming.dump
-    class treedump extends chisel3.internal.naming.treedump
-    class chiselName extends chisel3.internal.naming.chiselName
+    class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
+    class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+    class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
   }
 }

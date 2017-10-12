@@ -205,7 +205,7 @@ private[chisel3] object Builder {
     case None => throwException("Error: No implicit clock and reset.")
   }
   def forcedClock: Clock = forcedClockAndReset.clock
-  def forcedReset: Bool = forcedClockAndReset.reset
+  def forcedReset: Reset = forcedClockAndReset.reset
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
@@ -215,7 +215,7 @@ private[chisel3] object Builder {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    Binding.bind(cmd.id, OpBinder(forcedUserModule), "Error: During op creation, fresh result")
+    cmd.id.bind(OpBinding(forcedUserModule))
     pushCommand(cmd).id
   }
 

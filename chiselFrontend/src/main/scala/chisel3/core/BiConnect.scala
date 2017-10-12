@@ -138,15 +138,14 @@ object BiConnect {
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
   def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: UserModule): Unit = {
-    import Direction.{Input, Output} // Using extensively so import these
+    import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
-    val left_mod: BaseModule  = left.binding.location.getOrElse(context_mod)
-    val right_mod: BaseModule = right.binding.location.getOrElse(context_mod)
+    val left_mod: BaseModule  = left.topBinding.location.getOrElse(context_mod)
+    val right_mod: BaseModule = right.topBinding.location.getOrElse(context_mod)
 
-    val left_direction: Option[Direction] = left.binding.direction
-    val right_direction: Option[Direction] = right.binding.direction
-    // None means internal
+    val left_direction = BindingDirection.from(left.topBinding, left.direction)
+    val right_direction = BindingDirection.from(right.topBinding, right.direction)
 
     // CASE: Context is same module as left node and right node is in a child module
     if( (left_mod == context_mod) &&
@@ -154,15 +153,15 @@ object BiConnect {
       // Thus, right node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CHILD MOD
-        case (Some(Input),  Some(Input))  => issueConnectL2R(left, right)
-        case (None,         Some(Input))  => issueConnectL2R(left, right)
+        case (Input,        Input)  => issueConnectL2R(left, right)
+        case (Internal,     Input)  => issueConnectL2R(left, right)
 
-        case (Some(Output), Some(Output)) => issueConnectR2L(left, right)
-        case (None,         Some(Output)) => issueConnectR2L(left, right)
+        case (Output,       Output) => issueConnectR2L(left, right)
+        case (Internal,     Output) => issueConnectR2L(left, right)
 
-        case (Some(Input),  Some(Output)) => throw BothDriversException
-        case (Some(Output), Some(Input))  => throw NeitherDriverException
-        case (_,            None)         => throw UnknownRelationException
+        case (Input,        Output) => throw BothDriversException
+        case (Output,       Input)  => throw NeitherDriverException
+        case (_,            Internal) => throw UnknownRelationException
       }
     }
 
@@ -172,15 +171,15 @@ object BiConnect {
       // Thus, left node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CURRENT MOD
-        case (Some(Input),  Some(Input))  => issueConnectR2L(left, right)
-        case (Some(Input),  None)         => issueConnectR2L(left, right)
+        case (Input,        Input)  => issueConnectR2L(left, right)
+        case (Input,        Internal)         => issueConnectR2L(left, right)
 
-        case (Some(Output), Some(Output)) => issueConnectL2R(left, right)
-        case (Some(Output), None)         => issueConnectL2R(left, right)
+        case (Output,       Output) => issueConnectL2R(left, right)
+        case (Output,       Internal)         => issueConnectL2R(left, right)
 
-        case (Some(Input),  Some(Output)) => throw NeitherDriverException
-        case (Some(Output), Some(Input))  => throw BothDriversException
-        case (None, _)                    => throw UnknownRelationException
+        case (Input,        Output) => throw NeitherDriverException
+        case (Output,       Input)  => throw BothDriversException
+        case (Internal,     _)      => throw UnknownRelationException
       }
     }
 
@@ -188,39 +187,17 @@ object BiConnect {
     else if( (context_mod == left_mod) && (context_mod == right_mod) ) {
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CURRENT MOD
-        case (Some(Input),  Some(Output)) => issueConnectL2R(left, right)
-        case (Some(Input),  None)         => issueConnectL2R(left, right)
-        case (None,         Some(Output)) => issueConnectL2R(left, right)
+        case (Input,        Output) => issueConnectL2R(left, right)
+        case (Input,        Internal) => issueConnectL2R(left, right)
+        case (Internal,     Output) => issueConnectL2R(left, right)
 
-        case (Some(Output), Some(Input))  => issueConnectR2L(left, right)
-        case (Some(Output), None)         => issueConnectR2L(left, right)
-        case (None,         Some(Input))  => issueConnectR2L(left, right)
+        case (Output,       Input)  => issueConnectR2L(left, right)
+        case (Output,       Internal) => issueConnectR2L(left, right)
+        case (Internal,     Input)  => issueConnectR2L(left, right)
 
-        case (Some(Input),  Some(Input))  => {
-          if (connectCompileOptions.dontAssumeDirectionality) {
-            throw BothDriversException
-          } else {
-            (left.binding, right.binding) match {
-              case (PortBinding(_, _), PortBinding(_, _)) => throw BothDriversException
-              case (PortBinding(_, _), _) => issueConnectL2R(left, right)
-              case (_, PortBinding(_, _)) => issueConnectR2L(left, right)
-              case _ => throw BothDriversException
-            }
-          }
-        }
-        case (Some(Output), Some(Output)) => {
-          if (connectCompileOptions.dontAssumeDirectionality) {
-            throw BothDriversException
-          } else {
-            (left.binding, right.binding) match {
-              case (PortBinding(_, _), PortBinding(_, _)) => throw BothDriversException
-              case (PortBinding(_, _), _) => issueConnectR2L(left, right)
-              case (_, PortBinding(_, _)) => issueConnectL2R(left, right)
-              case _ => throw BothDriversException
-            }
-          }
-        }
-        case (None,         None)         => {
+        case (Input,        Input)  => throw BothDriversException
+        case (Output,       Output) => throw BothDriversException
+        case (Internal,     Internal) => {
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownDriverException
           } else {
@@ -239,18 +216,18 @@ object BiConnect {
       // Thus both nodes must be ports and have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CHILD MOD
-        case (Some(Input),  Some(Output)) => issueConnectR2L(left, right)
-        case (Some(Output), Some(Input))  => issueConnectL2R(left, right)
+        case (Input,        Output) => issueConnectR2L(left, right)
+        case (Output,       Input)  => issueConnectL2R(left, right)
 
-        case (Some(Input),  Some(Input))  => throw NeitherDriverException
-        case (Some(Output), Some(Output)) => throw BothDriversException
-        case (_, None)                    =>
+        case (Input,        Input)  => throw NeitherDriverException
+        case (Output,       Output) => throw BothDriversException
+        case (_, Internal)          =>
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownRelationException
           } else {
             issueConnectR2L(left, right)
           }
-        case (None, _)                    =>
+        case (Internal, _)          =>
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownRelationException
           } else {

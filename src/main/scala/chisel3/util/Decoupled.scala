@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.{DataMirror, Direction}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -88,7 +89,7 @@ object Decoupled
     */
   @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
+    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
     d.valid := irr.valid
@@ -122,7 +123,7 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
-    require(dec.bits.flatten forall (_.dir == INPUT), "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.")
     val i = Wire(new IrrevocableIO(dec.bits))
     dec.bits := i.bits
     dec.valid := i.valid
@@ -183,6 +184,7 @@ class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false)
+                      (implicit compileOptions: chisel3.core.CompileOptions)
     extends Module() {
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
@@ -195,9 +197,20 @@ class Queue[T <: Data](gen: T,
     this.override_reset = Some(_reset)
   }
 
-  val io = IO(new QueueIO(gen, entries))
+  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
+    experimental.requireIsChiselType(gen)
+    gen
+  } else {
+    if (DataMirror.internal.isSynthesizable(gen)) {
+      gen.chiselCloneType
+    } else {
+      gen
+    }
+  }
 
-  private val ram = Mem(entries, gen)
+  val io = IO(new QueueIO(genType, entries))
+
+  private val ram = Mem(entries, genType)
   private val enq_ptr = Counter(entries)
   private val deq_ptr = Counter(entries)
   private val maybe_full = RegInit(false.B)
@@ -205,8 +218,8 @@ class Queue[T <: Data](gen: T,
   private val ptr_match = enq_ptr.value === deq_ptr.value
   private val empty = ptr_match && !maybe_full
   private val full = ptr_match && maybe_full
-  private val do_enq = Wire(init=io.enq.fire())
-  private val do_deq = Wire(init=io.deq.fire())
+  private val do_enq = WireInit(io.enq.fire())
+  private val do_deq = WireInit(io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -268,7 +281,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): DecoupledIO[T] = {
-    val q = Module(new Queue(enq.bits.cloneType, entries, pipe, flow))
+    val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
     q.io.enq.valid := enq.valid // not using <> so that override is allowed
     q.io.enq.bits := enq.bits
     enq.ready := q.io.enq.ready

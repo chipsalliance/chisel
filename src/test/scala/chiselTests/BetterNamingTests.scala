@@ -26,12 +26,12 @@ class PerNameIndexing(count: Int) extends NamedModuleTester {
 // Note this only checks Iterable[Chisel.Data] which excludes Maps
 class IterableNaming extends NamedModuleTester {
   val seq = Seq.tabulate(3) { i =>
-    Seq.tabulate(2) { j => expectName(Wire(init = (i * j).U), s"seq_${i}_${j}") }
+    Seq.tabulate(2) { j => expectName(WireInit((i * j).U), s"seq_${i}_${j}") }
   }
-  val optSet = Some(Set(expectName(Wire(init = 0.U), "optSet_0"),
-                        expectName(Wire(init = 1.U), "optSet_1"),
-                        expectName(Wire(init = 2.U), "optSet_2"),
-                        expectName(Wire(init = 3.U), "optSet_3")))
+  val optSet = Some(Set(expectName(WireInit(0.U), "optSet_0"),
+                        expectName(WireInit(1.U), "optSet_1"),
+                        expectName(WireInit(2.U), "optSet_2"),
+                        expectName(WireInit(3.U), "optSet_3")))
 
   val stack = mutable.Stack[Module]()
   for (i <- 0 until 4) {
