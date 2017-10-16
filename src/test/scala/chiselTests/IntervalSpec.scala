@@ -4,10 +4,13 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{ChiselRange, Interval}
-import chisel3.internal.firrtl.IntervalRange
+import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
+import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.testers.BasicTester
 import cookbook.CookbookTester
 import logger.LogLevel
+import _root_.firrtl.ir.{Closed, Open, UnknownBound}
+
 import org.scalatest.{FreeSpec, Matchers}
 
 class IntervalTest1 extends Module {
@@ -95,6 +98,30 @@ class IntervalAddTester extends BasicTester {
 
 }
 
+class IntervalSetBinaryPointTester extends BasicTester {
+  implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
+  //TODO (chick) why does setBinaryPoint get too many arguments
+  val in1 = Wire(Interval(range"[0,4].4"))
+  //  val in2 = in1.setBinaryPoint(2)
+  //
+  //  assert(in2.binaryPoint == KnownBinaryPoint(2))
+
+  stop()
+}
+
+class IntervalWrapTester extends BasicTester {
+  implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
+  //TODO (chick) why does setBinaryPoint get too many arguments
+  val in1 = Wire(Interval(range"[0,15].6"))
+  val in2 = Wire(Interval(range"[1,6).4"))
+  val in3 = in1.wrap(in2)
+
+  assert(in3.range.lower == Closed(1), s"in3 lower ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
+  assert(in3.range.upper == Open(6), s"in3 upper ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
+  assert(in3.binaryPoint == KnownBinaryPoint(6), s"in3 binaryPoint ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
+
+  stop()
+}
 
 class IntervalChainedAddTester extends BasicTester {
   //logger.Logger.setLevel(LogLevel.Info)
@@ -156,6 +183,12 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   }
   "SInt for use comparing to Interval" in {
     assertTesterPasses{ new SIntTest1Tester }
+  }
+  "Intervals can have binary points set" in {
+    assertTesterPasses{ new IntervalSetBinaryPointTester }
+  }
+  "Intervals can wrap with another Interval" in {
+    assertTesterPasses{ new IntervalWrapTester }
   }
   "Intervals adds same answer as UInt" in {
     assertTesterPasses{ new IntervalChainedAddTester }

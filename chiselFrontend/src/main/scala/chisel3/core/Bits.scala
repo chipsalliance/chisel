@@ -1277,6 +1277,63 @@ sealed class Interval private[core] (
     binop(sourceInfo, Interval(this.width, newRange), DynamicShiftRightOp, that)
   }
 
+  final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), WrapOp, that)
+  }
+
+  final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //TODO (chick) follow model in firrtl PrimOps.scala
+    //    val lower = (this.range.lower, that.width) match {
+    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
+    //      case (_, _: UnknownWidth) => UnknownBound
+    //      case (UnknownBound, _)    => UnknownBound
+    //    }
+    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), WrapOp, that)
+    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), WrapOp, that)
+  }
+
+  final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //TODO (chick) follow model in firrtl PrimOps.scala
+    //    val lower = (this.range.lower, that.width) match {
+    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
+    //      case (_, _: UnknownWidth) => UnknownBound
+    //      case (UnknownBound, _)    => UnknownBound
+    //    }
+    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), WrapOp, that)
+    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), WrapOp, that)
+  }
+  final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), ClipOp, that)
+  }
+
+  final def clip(that: UInt): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //TODO (chick) follow model in firrtl PrimOps.scala
+    //    val lower = (this.range.lower, that.width) match {
+    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
+    //      case (_, _: UnknownWidth) => UnknownBound
+    //      case (UnknownBound, _)    => UnknownBound
+    //    }
+    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), ClipOp, that)
+    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), ClipOp, that)
+  }
+
+  final def clip(that: SInt): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //TODO (chick) follow model in firrtl PrimOps.scala
+    //    val lower = (this.range.lower, that.width) match {
+    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
+    //      case (_, _: UnknownWidth) => UnknownBound
+    //      case (UnknownBound, _)    => UnknownBound
+    //    }
+    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), ClipOp, that)
+    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), ClipOp, that)
+  }
+
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   }
