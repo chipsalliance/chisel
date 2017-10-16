@@ -178,6 +178,10 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
 
+    if (!compileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, io.ref))
+    }
+
     override_clock match {
       case Some(override_clock) => clock := override_clock
       case _ => clock := Builder.forcedClock
