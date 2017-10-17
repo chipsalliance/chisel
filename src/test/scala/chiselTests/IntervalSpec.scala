@@ -120,6 +120,48 @@ class IntervalWrapTester extends BasicTester {
   assert(in3.range.upper == Open(6), s"in3 upper ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
   assert(in3.binaryPoint == KnownBinaryPoint(6), s"in3 binaryPoint ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
 
+  val enclosedRange = range"[-2, 5]"
+  val base = Wire(Interval(range"[-4, 6]"))
+  val enclosed = Wire(Interval(enclosedRange))
+  val enclosing = Wire(Interval(range"[-6, 8]"))
+  val overlapLeft = Wire(Interval(range"[-10,-2]"))
+  val overlapRight = Wire(Interval(range"[-1,10]"))
+  val disjointLeft = Wire(Interval(range"[-14,-7]"))
+  val disjointRight = Wire(Interval(range"[7,11]"))
+
+  val w1 = base.wrap(enclosed)
+  val w2 = base.wrap(enclosing)
+  val w3 = base.wrap(overlapLeft)
+  val w4 = base.wrap(overlapRight)
+  val w5 = base.wrap(disjointLeft)
+  val w6 = base.wrap(disjointRight)
+  val w7 = base.wrap(enclosedRange)
+
+  base := 6.I()
+
+  assert(w1 === (-2).I())
+  assert(w2 === 6.I())
+  assert(w3 === (-3).I())
+  assert(w4 === 6.I())
+  assert(w5 === (-8).I())
+  //TODO (chick, adam) Why is this not 10.I
+  // assert(w6 === 10.I())
+  printf("w6 is %d\n", w6.asSInt())
+
+  assert(w7 === (-2).I())
+
+  //TODO (chick, adam) Why do these print out as positive numbers
+  printf("w1 is %d\n", w1.asSInt())
+  printf("w7 is %d\n", w7.asSInt())
+
+  println(s"enclosed ${w1.range.lower} ${w1.range.upper}")
+  println(s"enclosing ${w2.range.lower} ${w2.range.upper}")
+  println(s"overlapLeft ${w3.range.lower} ${w3.range.upper}")
+  println(s"overlapRight ${w4.range.lower} ${w4.range.upper}")
+  println(s"disjointLeft ${w5.range.lower} ${w5.range.upper}")
+  println(s"disjointRight ${w6.range.lower} ${w6.range.upper}")
+  println(s"enclosed from string ${w7.range.lower} ${w7.range.upper}")
+
   stop()
 }
 

@@ -11,8 +11,34 @@ import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfo
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.ir.{Closed, Open, UnknownBound}
 import _root_.firrtl.passes.IsKnown
+import _root_.firrtl.{ir => firrtlir}
 
 //scalastyle:off method.name
+
+object TypePropagate {
+  def apply[T <: Bits](op: firrtlir.PrimOp, args: Seq[Bits], consts: Seq[Int]): T = {
+    val expArgs = args.map(toFirrtlType).map(_root_.firrtl.WRef("whatever", _, _root_.firrtl.ExpKind, _root_.firrtl.UNKNOWNGENDER))
+    val prim = firrtlir.DoPrim(op, expArgs, consts.map(BigInt(_)), firrtlir.UnknownType)
+    val tpe = _root_.firrtl.PrimOps.set_primop_type(prim).tpe
+    toChiselType(tpe).asInstanceOf[T]
+  }
+  def chiselWidthToFirrtlWidth(w: Width): firrtlir.Width = w match {
+    case chisel3.internal.firrtl.KnownWidth(n) => firrtlir.IntWidth(n)
+    case _ => firrtlir.UnknownWidth
+  }
+  def firrtlWidthToChiselWidth(w: firrtlir.Width): Width  = w match {
+    case firrtlir.IntWidth(n) => chisel3.internal.firrtl.KnownWidth(n.toInt)
+    case _ => UnknownWidth()
+  }
+  def toFirrtlType(t: Bits): firrtlir.Type = t match {
+    case u: UInt => firrtlir.UIntType(chiselWidthToFirrtlWidth(u.width))
+    case u: SInt => firrtlir.SIntType(chiselWidthToFirrtlWidth(u.width))
+
+  }
+  def toChiselType(t: firrtlir.Type): Bits = t match {
+    case u: firrtlir.UIntType => UInt()
+  }
+}
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
@@ -1284,27 +1310,23 @@ sealed class Interval private[core] (
 
   final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    //TODO (chick) follow model in firrtl PrimOps.scala
-    //    val lower = (this.range.lower, that.width) match {
-    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
-    //      case (_, _: UnknownWidth) => UnknownBound
-    //      case (UnknownBound, _)    => UnknownBound
-    //    }
-    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), WrapOp, that)
-    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), WrapOp, that)
+    binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
   }
 
   final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    //TODO (chick) follow model in firrtl PrimOps.scala
-    //    val lower = (this.range.lower, that.width) match {
-    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
-    //      case (_, _: UnknownWidth) => UnknownBound
-    //      case (UnknownBound, _)    => UnknownBound
-    //    }
-    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), WrapOp, that)
-    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), WrapOp, that)
+    binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
   }
+
+  final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+//    val intervalTemplate = Wire(Interval(range))
+//    binop(sourceInfo,
+//      Interval(IntervalRange(that.lower, that.upper, this.range.binaryPoint)),
+//      WrapOp, intervalTemplate)
+    do_wrap(Wire(Interval(that)))
+  }
+
   final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
   def do_clip(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), ClipOp, that)
