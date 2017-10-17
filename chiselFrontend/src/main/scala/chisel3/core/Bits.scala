@@ -1320,10 +1320,6 @@ sealed class Interval private[core] (
 
   final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-//    val intervalTemplate = Wire(Interval(range))
-//    binop(sourceInfo,
-//      Interval(IntervalRange(that.lower, that.upper, this.range.binaryPoint)),
-//      WrapOp, intervalTemplate)
     do_wrap(Wire(Interval(that)))
   }
 
@@ -1334,26 +1330,17 @@ sealed class Interval private[core] (
 
   final def clip(that: UInt): Interval = macro SourceInfoTransform.thatArg
   def do_clip(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    //TODO (chick) follow model in firrtl PrimOps.scala
-    //    val lower = (this.range.lower, that.width) match {
-    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
-    //      case (_, _: UnknownWidth) => UnknownBound
-    //      case (UnknownBound, _)    => UnknownBound
-    //    }
-    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), ClipOp, that)
-    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), ClipOp, that)
+    binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), ClipOp, that)
   }
 
   final def clip(that: SInt): Interval = macro SourceInfoTransform.thatArg
   def do_clip(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    //TODO (chick) follow model in firrtl PrimOps.scala
-    //    val lower = (this.range.lower, that.width) match {
-    //      case (c: IsKnown, w: KnownWidth) => this.range.neg
-    //      case (_, _: UnknownWidth) => UnknownBound
-    //      case (UnknownBound, _)    => UnknownBound
-    //    }
-    //    binop(sourceInfo, Interval(IntervalRange(that.range.lower, that.range.upper, this.range.binaryPoint)), ClipOp, that)
-    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.binaryPoint)), ClipOp, that)
+    binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+  }
+
+  final def clip(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    do_clip(Wire(Interval(that)))
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {

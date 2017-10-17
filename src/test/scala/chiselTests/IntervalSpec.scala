@@ -13,6 +13,8 @@ import _root_.firrtl.ir.{Closed, Open, UnknownBound}
 
 import org.scalatest.{FreeSpec, Matchers}
 
+//scalastyle:off magic.number
+
 class IntervalTest1 extends Module {
   val io = IO(new Bundle {
     val in1 = Input(Interval(6.W, range"[0,4].3"))
@@ -152,7 +154,7 @@ class IntervalWrapTester extends BasicTester {
 
   //TODO (chick, adam) Why do these print out as positive numbers
   printf("w1 is %d\n", w1.asSInt())
-  printf("w7 is %d\n", w7.asSInt())
+  printf("enclosedViaRangeString is %d\n", w7.asSInt())
 
   println(s"enclosed ${w1.range.lower} ${w1.range.upper}")
   println(s"enclosing ${w2.range.lower} ${w2.range.upper}")
@@ -161,6 +163,48 @@ class IntervalWrapTester extends BasicTester {
   println(s"disjointLeft ${w5.range.lower} ${w5.range.upper}")
   println(s"disjointRight ${w6.range.lower} ${w6.range.upper}")
   println(s"enclosed from string ${w7.range.lower} ${w7.range.upper}")
+
+  stop()
+}
+
+class IntervalClipTester extends BasicTester {
+  implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
+
+  val enclosedRange = range"[-2, 5]"
+  val base = Wire(Interval(range"[-4, 6]"))
+  val enclosed = Wire(Interval(enclosedRange))
+  val enclosing = Wire(Interval(range"[-6, 8]"))
+  val overlapLeft = Wire(Interval(range"[-10,-2]"))
+  val overlapRight = Wire(Interval(range"[-1,10]"))
+  val disjointLeft = Wire(Interval(range"[-14,-7]"))
+  val disjointRight = Wire(Interval(range"[7,11]"))
+
+  val enclosedResult = base.clip(enclosed)
+  val enclosingResult = base.clip(enclosing)
+  val overlapLeftResult = base.clip(overlapLeft)
+  val overlapRightResult = base.clip(overlapRight)
+  val disjointLeftResult = base.clip(disjointLeft)
+  val disjointRightResult = base.clip(disjointRight)
+  val enclosedViaRangeString = base.clip(enclosedRange)
+
+  base := 6.I()
+
+  assert(enclosedResult === 5.I())
+  assert(enclosingResult === 6.I())
+  assert(overlapLeftResult === (-2).I())
+  assert(overlapRightResult === 6.I())
+  assert(disjointLeftResult === (-7).I())
+  assert(disjointRightResult === 7.I())
+
+  assert(enclosedViaRangeString === 5.I())
+
+  println(s"enclosed ${enclosedResult.range.lower} ${enclosedResult.range.upper}")
+  println(s"enclosing ${enclosingResult.range.lower} ${enclosingResult.range.upper}")
+  println(s"overlapLeft ${overlapLeftResult.range.lower} ${overlapLeftResult.range.upper}")
+  println(s"overlapRight ${overlapRightResult.range.lower} ${overlapRightResult.range.upper}")
+  println(s"disjointLeft ${disjointLeftResult.range.lower} ${disjointLeftResult.range.upper}")
+  println(s"disjointRight ${disjointRightResult.range.lower} ${disjointRightResult.range.upper}")
+  println(s"enclosedViaRangeString ${enclosedViaRangeString.range.lower} ${enclosedViaRangeString.range.upper}")
 
   stop()
 }
@@ -229,8 +273,11 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "Intervals can have binary points set" in {
     assertTesterPasses{ new IntervalSetBinaryPointTester }
   }
-  "Intervals can wrap with another Interval" in {
+  "Intervals can be wrapped with wrap operator" in {
     assertTesterPasses{ new IntervalWrapTester }
+  }
+  "Intervals can be clipped with clip (saturate) operator" in {
+    assertTesterPasses{ new IntervalClipTester }
   }
   "Intervals adds same answer as UInt" in {
     assertTesterPasses{ new IntervalChainedAddTester }
