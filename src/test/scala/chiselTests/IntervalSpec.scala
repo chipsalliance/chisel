@@ -102,11 +102,20 @@ class IntervalAddTester extends BasicTester {
 
 class IntervalSetBinaryPointTester extends BasicTester {
   implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
-  //TODO (chick) why does setBinaryPoint get too many arguments
   val in1 = Wire(Interval(range"[0,4].4"))
-  //  val in2 = in1.setBinaryPoint(2)
-  //
-  //  assert(in2.binaryPoint == KnownBinaryPoint(2))
+  val in2 = in1.setBinaryPoint(2)
+
+  assert(in2.binaryPoint == KnownBinaryPoint(2))
+
+  val toShiftLeft = Wire(Interval(range"[0,4].4"))
+  val shiftedLeft = in1.shiftLeftBinaryPoint(2)
+
+  assert(shiftedLeft.binaryPoint == KnownBinaryPoint(2), s"Error: bpshl result ${shiftedLeft.range} expected bt = 2")
+
+  val toShiftRight = Wire(Interval(range"[0,4].4"))
+  val shiftedRight = in1.shiftRightBinaryPoint(2)
+
+  assert(shiftedRight.binaryPoint == KnownBinaryPoint(6), s"Error: bpshl result ${shiftedRight.range} expected bt = 2")
 
   stop()
 }

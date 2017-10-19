@@ -1180,7 +1180,8 @@ sealed class Interval private[core] (
   extends Bits(width, lit) with Num[Interval] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Interval(w, range).asInstanceOf[this.type]
-//  private[chisel3] def toType = s"Interval$width$binaryPoint"
+
+  //  private[chisel3] def toType = s"Interval$width$binaryPoint"
 
   private[chisel3] def toType = s"${range.serialize}"
 
@@ -1189,69 +1190,85 @@ sealed class Interval private[core] (
 
   def binaryPoint: BinaryPoint = range.binaryPoint
 
-  override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
     case _: Interval => super.connect(that)
     case _ => this badConnect that
   }
 
-  final def unary_- (): Interval = macro SourceInfoTransform.noArg
-  final def unary_-% (): Interval = macro SourceInfoTransform.noArg
+  final def unary_-(): Interval = macro SourceInfoTransform.noArg
+  final def unary_-%(): Interval = macro SourceInfoTransform.noArg
 
-  def unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) - this
-  def unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) -% this
+  def unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) - this
+  def unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) -% this
 
   /** add (default - growing) operator */
-  override def do_+ (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  override def do_+(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     this +& that
   /** subtract (default - growing) operator */
-  override def do_- (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  override def do_-(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     this -& that
-  override def do_* (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  override def do_*(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     binop(sourceInfo, Interval(this.width + that.width, this.range * that.range), TimesOp, that)
-  override def do_/ (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  override def do_/(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     throwException(s"division is illegal on Interval types")
-  override def do_% (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  override def do_%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     throwException(s"mod is illegal on Interval types")
 
   /** add (width +1) operator */
-  final def +& (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def +&(that: Interval): Interval = macro SourceInfoTransform.thatArg
   /** add (no growth) operator */
-  final def +% (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def +%(that: Interval): Interval = macro SourceInfoTransform.thatArg
   /** subtract (width +1) operator */
-  final def -& (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def -&(that: Interval): Interval = macro SourceInfoTransform.thatArg
   /** subtract (no growth) operator */
-  final def -% (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def -%(that: Interval): Interval = macro SourceInfoTransform.thatArg
 
-  def do_+& (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  def do_+&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     binop(
       sourceInfo,
       Interval((this.width max that.width) + 1, this.range +& that.range),
       AddOp, that)
-  def do_+% (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing addition is not supported on Intervals")
-  def do_-& (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  def do_+%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing addition is not supported on Intervals")
+  def do_-&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     binop(sourceInfo,
       Interval((this.width max that.width) + 1, this.range -& that.range),
       SubOp, that)
-  def do_-% (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing subtraction is not supported on Intervals")
+  def do_-%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing subtraction is not supported on Intervals")
 
-  final def & (that: Interval): Interval = macro SourceInfoTransform.thatArg
-  final def | (that: Interval): Interval = macro SourceInfoTransform.thatArg
-  final def ^ (that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def &(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def |(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def ^(that: Interval): Interval = macro SourceInfoTransform.thatArg
 
-  def do_& (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  def do_&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     throwException(s"And is illegal between $this and $that")
-  def do_| (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  def do_|(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     throwException(s"Or is illegal between $this and $that")
-  def do_^ (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+  def do_^(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     throwException(s"Xor is illegal between $this and $that")
 
   final def setBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
 
-  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo): Interval =
+  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     binop(sourceInfo,
       Interval(this.width,
-        new IntervalRange(this.range.lower, this.range.upper, IntervalRange.getBinaryPoint(that))), SetBinaryPoint, that)
+        new IntervalRange(
+          this.range.lower, this.range.upper, IntervalRange.getBinaryPoint(that))), SetBinaryPoint, that)
 
+  final def shiftLeftBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
+
+  def do_shiftLeftBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val newBinaryPoint = this.range.binaryPoint + BinaryPoint(-that)
+    val newIntervalRange = IntervalRange(this.range.lower, this.range.upper, newBinaryPoint)
+    binop(sourceInfo, Interval(this.width, newIntervalRange), ShiftLeftBinaryPoint, that)
+  }
+
+  final def shiftRightBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
+
+  def do_shiftRightBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val newBinaryPoint = this.range.binaryPoint + BinaryPoint(that)
+    val newIntervalRange = IntervalRange(this.range.lower, this.range.upper, newBinaryPoint)
+    binop(sourceInfo, Interval(this.width, newIntervalRange), ShiftRightBinaryPoint, that)
+  }
 
   /** Returns this wire bitwise-inverted. */
   def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =

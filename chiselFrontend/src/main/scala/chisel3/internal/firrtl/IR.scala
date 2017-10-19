@@ -51,6 +51,8 @@ object PrimOp {
   val WrapOp = PrimOp("wrap")
   val ClipOp = PrimOp("clip")
   val SetBinaryPoint = PrimOp("bpset")
+  val ShiftLeftBinaryPoint = PrimOp("bpshl")
+  val ShiftRightBinaryPoint = PrimOp("bpshr")
   val AsClockOp = PrimOp("asClock")
 }
 
