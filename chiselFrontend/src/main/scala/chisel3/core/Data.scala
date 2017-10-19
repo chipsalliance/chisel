@@ -464,10 +464,9 @@ object WireInit {
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
 object DontCare extends Element(width = UnknownWidth()) {
-  // The following override prevents this definition from interfering with the reproducible generation of "user" IDs,
-  //  by keeping this "Chisel" object out of the UserModule's id list.
-  // This assumes that HasId ignores addId() for null parents, a pretty sensible assumption.
-  override private[chisel3] val _parent = None
+  // This object should be initialized before we execute any user code that refers to it,
+  //  otherwise this "Chisel" object will end up on the UserModule's id list.
+
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
 

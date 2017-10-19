@@ -93,6 +93,17 @@ object BiConnect {
           }
         }
       }
+      // Handle DontCare connected to Vec
+      case (DontCare, right_v: Vec[Data@unchecked]) => {
+        for (idx <- 0 until right_v.length) {
+          try {
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, left, right_v(idx), context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+          }
+        }
+      }
       // Handle Records defined in Chisel._ code (change to NotStrict)
       case (left_r: Record, right_r: Record) => (left_r.compileOptions, right_r.compileOptions) match {
         case (ExplicitCompileOptions.NotStrict, _) =>
