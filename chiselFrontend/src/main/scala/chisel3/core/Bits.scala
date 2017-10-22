@@ -1462,11 +1462,11 @@ trait IntervalFactory {
         val lower = lx match {
           case Open(x) => 
             val l = x + math.pow(2, -bp)
-            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / math.pow(2, bp)
+            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(1 << bp)
             Closed(min)
           case Closed(x) => 
             val l = x
-            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / math.pow(2, bp)
+            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(1 << bp)
             Closed(min)
           case _ => 
             lx
@@ -1474,11 +1474,11 @@ trait IntervalFactory {
         val upper = ux match {
           case Open(x) => 
             val u = x - math.pow(2, -bp)
-            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / math.pow(2, bp)
+            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(1 << bp)
             Closed(max)
           case Closed(x) => 
             val u = x
-            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / math.pow(2, bp)
+            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(1 << bp)
             Closed(max)
           case _ => 
             ux
