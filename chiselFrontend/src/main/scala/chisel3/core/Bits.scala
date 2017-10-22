@@ -9,7 +9,7 @@ import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
-import _root_.firrtl.ir.{Closed, Open, UnknownBound}
+import _root_.firrtl.ir.{Closed, Open, UnknownBound, Bound}
 import _root_.firrtl.passes.IsKnown
 import _root_.firrtl.{ir => firrtlir}
 
@@ -1451,9 +1451,43 @@ trait IntervalFactory {
   def apply(width: Width, binaryPoint: BinaryPoint): Interval = {
     Interval(width, new IntervalRange(UnknownBound, UnknownBound, IntervalRange.getBinaryPoint(binaryPoint)))
   }
+  
+  // TODO: (chick) Might want to round the range for asInterval as well?
   /** Create a Interval type with specified width. */
   def apply(width: Width, range: chisel3.internal.firrtl.IntervalRange): Interval = {
-    new Interval(width, range)
+    (range.lower, range.upper, range.binaryPoint) match {
+      case (lx: Bound, ux: Bound, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly -> convert to Closed
+        // TODO: (chick) can we pass open/close to firrtl?
+        val lower = lx match {
+          case Open(x) => 
+            val l = x + math.pow(2, -bp)
+            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / math.pow(2, bp)
+            Closed(min)
+          case Closed(x) => 
+            val l = x
+            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / math.pow(2, bp)
+            Closed(min)
+          case _ => 
+            lx
+        }
+        val upper = ux match {
+          case Open(x) => 
+            val u = x - math.pow(2, -bp)
+            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / math.pow(2, bp)
+            Closed(max)
+          case Closed(x) => 
+            val u = x
+            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / math.pow(2, bp)
+            Closed(max)
+          case _ => 
+            ux
+        }
+        val newRange = chisel3.internal.firrtl.IntervalRange(lower, upper, range.binaryPoint)
+        new Interval(width, newRange)
+      case _ =>
+        new Interval(width, range)
+    }  
   }
 
   /** Create a Interval literal with specified width. -- Note: Double already converted to BigInt via multiplication */
