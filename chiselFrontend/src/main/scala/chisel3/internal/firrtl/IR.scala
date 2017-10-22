@@ -273,8 +273,8 @@ sealed trait RangeType {
 //}
 
 sealed class IntervalRange(
-    lowerBound: firrtlir.Bound,
-    upperBound: firrtlir.Bound,
+    val lowerBound: firrtlir.Bound,
+    val upperBound: firrtlir.Bound,
     private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
   extends firrtlir.IntervalType(lowerBound, upperBound, firrtlBinaryPoint)
   with RangeType {

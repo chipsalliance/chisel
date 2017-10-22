@@ -33,10 +33,11 @@ object TypePropagate {
   def toFirrtlType(t: Bits): firrtlir.Type = t match {
     case u: UInt => firrtlir.UIntType(chiselWidthToFirrtlWidth(u.width))
     case u: SInt => firrtlir.SIntType(chiselWidthToFirrtlWidth(u.width))
-
+    case i: Interval => firrtlir.IntervalType(i.range.lowerBound, i.range.upperBound, i.range.firrtlBinaryPoint)
   }
   def toChiselType(t: firrtlir.Type): Bits = t match {
     case u: firrtlir.UIntType => UInt()
+    case i: firrtlir.IntervalType => Interval()
   }
 }
 
