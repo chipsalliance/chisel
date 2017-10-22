@@ -595,8 +595,8 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
       case (l: IsKnown, u: IsKnown, KnownBinaryPoint(bp)) =>
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.HALF_DOWN).toBigIntExact.get
-        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigIntExact.get
+        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -781,8 +781,8 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
       case (l: IsKnown, u: IsKnown, KnownBinaryPoint(bp)) =>
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.HALF_DOWN).toBigIntExact.get
-        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigIntExact.get
+        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -1047,8 +1047,8 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
       case (l: IsKnown, u: IsKnown, KnownBinaryPoint(bp)) =>
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.HALF_DOWN).toBigIntExact.get
-        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigIntExact.get
+        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -1557,4 +1557,3 @@ final class Analog private (width: Width) extends Element(width) {
 object Analog {
   def apply(width: Width): Analog = new Analog(width)
 }
-
