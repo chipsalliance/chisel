@@ -590,13 +590,23 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   }
 
   override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
-                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {                       
     (range.lower, range.upper, range.binaryPoint) match {
-      case (l: IsKnown, u: IsKnown, KnownBinaryPoint(bp)) =>
+      case (lx: IsKnown, ux: IsKnown, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly
+        // TODO: (chick) can we pass open/close to firrtl?
+        val l = lx match {
+          case Open(x) => x + math.pow(2, -bp)
+          case Closed(x) => x
+        }
+        val u = ux match { 
+          case Open(x) => x - math.pow(2, -bp)
+          case Closed(x) => x
+        }
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        val minBI = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -776,13 +786,23 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
   }
   
   override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
-                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {                       
     (range.lower, range.upper, range.binaryPoint) match {
-      case (l: IsKnown, u: IsKnown, KnownBinaryPoint(bp)) =>
+      case (lx: IsKnown, ux: IsKnown, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly
+        // TODO: (chick) can we pass open/close to firrtl?
+        val l = lx match {
+          case Open(x) => x + math.pow(2, -bp)
+          case Closed(x) => x
+        }
+        val u = ux match { 
+          case Open(x) => x - math.pow(2, -bp)
+          case Closed(x) => x
+        }
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        val minBI = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -1042,13 +1062,23 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
   }
 
   override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
-                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {                       
     (range.lower, range.upper, range.binaryPoint) match {
-      case (l: IsKnown, u: IsKnown, KnownBinaryPoint(bp)) =>
+      case (lx: IsKnown, ux: IsKnown, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly
+        // TODO: (chick) can we pass open/close to firrtl?
+        val l = lx match {
+          case Open(x) => x + math.pow(2, -bp)
+          case Closed(x) => x
+        }
+        val u = ux match { 
+          case Open(x) => x - math.pow(2, -bp)
+          case Closed(x) => x
+        }
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        val maxBI = (u.value * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        val minBI = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
