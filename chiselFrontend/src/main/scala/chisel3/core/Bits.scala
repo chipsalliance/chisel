@@ -1306,7 +1306,9 @@ sealed class Interval private[core] (
     val newBinaryPoint = this.range.binaryPoint + BinaryPoint(-that)
     // TODO: (chick) Match firrtl constraints -- decreasing precision changes ranges
     val newIntervalRange = IntervalRange(UnknownBound, UnknownBound, newBinaryPoint)
-    binop(sourceInfo, Interval(this.width + KnownWidth(-that), newIntervalRange), ShiftRightBinaryPoint, that)
+    // TODO: (chick) How to subtract width?
+    //binop(sourceInfo, Interval(this.width + KnownWidth(-that), newIntervalRange), ShiftRightBinaryPoint, that)
+    binop(sourceInfo, Interval(UnknownWidth(), newIntervalRange), ShiftRightBinaryPoint, that)
   }
 
   /** Returns this wire bitwise-inverted. */
