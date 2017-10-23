@@ -5,6 +5,55 @@ package chiselTests
 import chisel3._
 import org.scalatest._
 
+// Simple bundle which might be a literal.
+class MyPair(xLit: Option[Int] = None, yLit: Option[Int] = None) extends Bundle {
+  val x: UInt = xLit match {
+    case Some(l) => l.U(4.W)
+    case _ => UInt(4.W)
+  }
+  val y: UInt = yLit match {
+    case Some(l) => l.U(4.W)
+    case _ => UInt(4.W)
+  }
+
+  def +(that: MyPair): MyPair = {
+    val output = Wire(MyPair())
+    output.x := x + that.x
+    output.y := y + that.y
+    output
+  }
+
+  override def cloneType = (new MyPair(xLit, yLit)).asInstanceOf[this.type]
+}
+
+object MyPair {
+  // Create an unbound pair
+  def apply(): MyPair = new MyPair()
+
+  // Create a literal pair
+  def apply(x: Int, y: Int): MyPair = {
+    new MyPair(Some(x), Some(y))
+  }
+}
+
+// Example usecase of a user might use the MyPair type
+class PairModule extends Module {
+  val io = IO(new Bundle{
+      val in = Input(MyPair())
+      val plus_one = Output(MyPair())
+      val vanilla = Output(MyPair())
+  })
+  val not_a_lit = new MyPair(Some(1))
+  assert(!not_a_lit.isLit)
+  val only_a_type = new MyPair()
+  assert(!only_a_type.isLit)
+
+  val one = MyPair(1, 1)
+  assert(one.isLit)
+  io.vanilla := io.in
+  io.plus_one := io.in + one
+}
+
 case class BundleWithUInt(x: UInt = UInt()) extends Bundle {
   override def cloneType = BundleWithUInt(x.cloneType).asInstanceOf[this.type]
 }
@@ -46,6 +95,10 @@ class BundleWithBundleWithUIntModule extends Module {
 
 class BundleLiteralsSpec extends FlatSpec with Matchers {
   behavior of "Bundle literals"
+
+  it should "check that all elements are bound and work as expected" in {
+    println(chisel3.Driver.emitVerilog( new PairModule ))
+  }
 
   it should "build the module without crashing" in {
     println(chisel3.Driver.emitVerilog( new BundleWithUIntModule ))
