@@ -110,12 +110,12 @@ class IntervalSetBinaryPointTester extends BasicTester {
   val toShiftLeft = Wire(Interval(range"[0,4].4"))
   val shiftedLeft = in1.shiftLeftBinaryPoint(2)
 
-  assert(shiftedLeft.binaryPoint == KnownBinaryPoint(2), s"Error: bpshl result ${shiftedLeft.range} expected bt = 2")
+  assert(shiftedLeft.binaryPoint == KnownBinaryPoint(6), s"Error: bpshl result ${shiftedLeft.range} expected bt = 2")
 
   val toShiftRight = Wire(Interval(range"[0,4].4"))
   val shiftedRight = in1.shiftRightBinaryPoint(2)
 
-  assert(shiftedRight.binaryPoint == KnownBinaryPoint(6), s"Error: bpshl result ${shiftedRight.range} expected bt = 2")
+  assert(shiftedRight.binaryPoint == KnownBinaryPoint(2), s"Error: bpshl result ${shiftedRight.range} expected bt = 2")
 
   stop()
 }
@@ -149,13 +149,24 @@ class MoreIntervalShiftTester extends BasicTester {
 
 class IntervalWrapTester extends BasicTester {
   implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
-  //TODO (chick) why does setBinaryPoint get too many arguments
+
+  val t1 = Wire(Interval(range"[-20, 19]"))
+  val u1 = Wire(UInt(3.W))
+  val r1 = Reg(UInt())
+  r1 := u1
+  val t2 = t1.wrap(u1)
+  val t3 = t1.wrap(r1)
+
+  assert(t2.range.upper == Closed(7), s"t1 upper ${t2.range.upper} expected ${Closed(7)}")
+  assert(t3.range.upper == UnknownBound, s"t1 upper ${t3.range.upper} expected $UnknownBound")
+
   val in1 = Wire(Interval(range"[0,15].6"))
   val in2 = Wire(Interval(range"[1,6).4"))
   val in3 = in1.wrap(in2)
 
-  assert(in3.range.lower == Closed(1), s"in3 lower ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
-  assert(in3.range.upper == Open(6), s"in3 upper ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
+//  assert(in3.range.lower == Closed(1), s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
+  assert(in3.range.lower == UnknownBound, s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
+  assert(in3.range.upper == UnknownBound, s"in3 upper ${in3.range.upper} expected ${Open(6)}")
   assert(in3.binaryPoint == KnownBinaryPoint(6), s"in3 binaryPoint ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
 
   val enclosedRange = range"[-2, 5]"
