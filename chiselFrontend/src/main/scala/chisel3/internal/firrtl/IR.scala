@@ -77,6 +77,8 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   }
 }
 
+// Interval lit multiplied up to be representable as a BigInt
+// TODO: What's happening? Is this used? (chick)
 case class ILit(n: BigInt) extends Arg {
   def name: String = n.toString
 }
@@ -88,37 +90,29 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
-case class SLit(n: BigInt, w: Width, directUse: Boolean = true) extends LitArg(n, w) {
+case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asSInt(${ULit(unsigned, width).name})"
   }
-  // TODO: (chick) check my logic please
-  // If SLit is directly created by the Chisel user, to account for #
-  // of bits needed to represent a negative n value, you need the + 1
-  // HOWEVER, if SLit is applied via IntervalLit or FPLit, n has already
-  // been converted two UNSIGNED, so no need for + 1
-  def minWidth: Int = 
-    if (directUse) 1 + n.bitLength
-    else n.bitLength
+  def minWidth: Int = 1 + n.bitLength
 }
 
 case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-    s"asFixedPoint(${SLit(unsigned, width, directUse = false).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+    s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
 }
 
-// TODO: (chick) double check?; if binaryPoint > 0, n has already been shifted up 
+// If binaryPoint > 0, n has already been shifted up 
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-//    s"asInterval(${SLit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
     binaryPoint match {
       case KnownBinaryPoint(bp) =>
-        s"asInterval(${SLit(unsigned, width, directUse = false).name}, $n, $n, $bp)"
+        s"asInterval(${ULit(unsigned, width).name}, $n, $n, $bp)"
       case _ =>
         throw new Exception("Interval Lit requires known binary point")
     }
@@ -279,8 +273,8 @@ sealed trait RangeType {
 //}
 
 sealed class IntervalRange(
-    lowerBound: firrtlir.Bound,
-    upperBound: firrtlir.Bound,
+    val lowerBound: firrtlir.Bound,
+    val upperBound: firrtlir.Bound,
     private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
   extends firrtlir.IntervalType(lowerBound, upperBound, firrtlBinaryPoint)
   with RangeType {
@@ -367,9 +361,9 @@ sealed class IntervalRange(
     else {
       val multiplier = 1 << n
       bound match {
-        case firrtlir.Open(n) => firrtlir.Open(n * multiplier)
-        case firrtlir.Closed(n) => firrtlir.Closed(n * multiplier)
-        case _ => bound
+        case firrtlir.Open(x) => firrtlir.Open(x * multiplier)
+        case firrtlir.Closed(x) => firrtlir.Closed(x * multiplier)
+        case _ => firrtlir.UnknownBound
       }
     }
   }
@@ -379,12 +373,17 @@ sealed class IntervalRange(
       bound
     }
     else {
+      // Because of loss of significant digits, range changes too BUT to figure that out, you need to know BP
+      // TODO: (chick) -- can add bp info (if known); see firrtl primops
+      /*
       val divisor = 1 << n
       bound match {
-        case firrtlir.Open(n) => firrtlir.Open(n / divisor)
-        case firrtlir.Closed(n) => firrtlir.Closed(n / divisor)
+        case firrtlir.Open(x) => firrtlir.Open(x / divisor)
+        case firrtlir.Closed(x) => firrtlir.Closed(x / divisor)
         case _ => bound
       }
+      */
+      firrtlir.UnknownBound
     }
   }
 
@@ -405,10 +404,13 @@ sealed class IntervalRange(
   }
 
   override def <<(that: KnownWidth): IntervalRange = {
-    this << that.value
+    // TODO: (chick) requires being able to look at min/max of two possibly known bounds; see primop
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, binaryPoint)
   }
+
   override def >>(that: KnownWidth): IntervalRange = {
-    this >> that.value
+    // Worst case range is when this is not shifted
+    this
   }
 
   override def merge(that: IntervalRange): IntervalRange = ???
@@ -504,7 +506,6 @@ object IntervalRange {
   def unknownRange: IntervalRange = new IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
 }
 
-
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
   def apply(): Width = UnknownWidth()
@@ -512,9 +513,11 @@ object Width {
 
 sealed abstract class Width {
   type W = Int
+  // These ops straight up add widths together
   def max(that: Width): Width = this.op(that, _ max _)
   def + (that: Width): Width = this.op(that, _ + _)
   def + (that: Int): Width = this.op(this, (a, b) => a + that)
+  // Butchering of notation where new width is defined with some understanding of the op you're trying to perform
   def shiftRight(that: Int): Width = this.op(this, (a, b) => 0 max (a - that))
   def dynamicShiftLeft(that: Width): Width =
     this.op(that, (a, b) => a + (1 << b) - 1)
@@ -552,9 +555,11 @@ sealed abstract class BinaryPoint {
   def max(that: BinaryPoint): BinaryPoint = this.op(that, _ max _)
   def + (that: BinaryPoint): BinaryPoint = this.op(that, _ + _)
   def + (that: Int): BinaryPoint = this.op(this, (a, b) => a + that)
-  def shiftRight(that: Int): BinaryPoint = this.op(this, (a, b) => 0 max (a - that))
-  def dynamicShiftLeft(that: BinaryPoint): BinaryPoint =
-    this.op(that, (a, b) => a + (1 << b) - 1)
+  // TODO: (chick) check -- going by the same reasoning as for W, the resultant BP should be
+  // operation dependent. BUT shr, dshl should NOT change bp
+  def shiftRight(that: Int): BinaryPoint = ??? //this.op(this, (a, b) => 0 max (a - that))
+  def dynamicShiftLeft(that: BinaryPoint): BinaryPoint = ???
+    // this.op(that, (a, b) => a + (1 << b) - 1)
 
   def known: Boolean
   def get: W
