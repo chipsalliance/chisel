@@ -1366,12 +1366,21 @@ sealed class Interval private[core] (
 
   final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    require(that.widthKnown, "UInt clip width must be known")
+    val u = (1 << that.getWidth) - 1
+    do_wrap(Wire(Interval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0)))))
+    // TODO: (chick) Can this be done w/o known width?
   }
 
   final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    // TODO: (chick) same as above
+    require(that.widthKnown, "SInt clip width must be known")
+    val l = -(1 << (that.getWidth - 1))
+    val u = (1 << (that.getWidth - 1)) - 1
+    do_wrap(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
   }
 
   final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
