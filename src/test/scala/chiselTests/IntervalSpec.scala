@@ -124,7 +124,7 @@ class MoreIntervalShiftTester extends BasicTester {
   implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
 
   for {
-    rangeMin <- 0 to
+    rangeMin <- 0 to 0
   } {
 
   }
