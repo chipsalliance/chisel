@@ -34,8 +34,8 @@ sealed abstract class Aggregate extends Data {
   }
 
   protected[core] override def hasBinding = {
-   checkBinding
-   super.hasBinding
+    checkBinding
+    super.hasBinding
   }
 
   protected[core] override def binding = {
