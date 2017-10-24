@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.dontTouch
-import chisel3.experimental.DontCare
 import firrtl.{FirrtlExecutionSuccess, Transform}
 
 class HasDeadCodeChild(withDontTouch: Boolean) extends Module {

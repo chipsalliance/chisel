@@ -7,7 +7,6 @@ import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
-import chisel3.experimental.DontCare
 
 class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {

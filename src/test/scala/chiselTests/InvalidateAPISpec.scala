@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.core.BiConnect.BiConnectException
 import chisel3.util.Counter
-import chisel3.experimental.DontCare
 import firrtl.passes.CheckInitialization.RefNotInitializedException
 import org.scalatest._
 
