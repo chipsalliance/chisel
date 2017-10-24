@@ -1513,12 +1513,19 @@ trait IntervalFactory {
 
   /** Create a Interval literal with specified width. -- Note: Double already converted to BigInt via multiplication */
   protected[chisel3] def Lit(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
+    // TODO: (chick) Fundamental problem with the way IntervalLits are implemented in Chisel -- 
+    // You need to perform an "asInterval" at some point, which requires conversion from double to
+    // BigInt representation
+    binaryPoint match {
+      case KnownBinaryPoint(bp) =>
+      case _ => throw new Exception("Lit bp must be known!")
+    }
     val lit = IntervalLit(value, width, binaryPoint)
     val result = new Interval(
       width,
       new IntervalRange(
-        Closed(BigDecimal(value)),
-        Closed(BigDecimal(value)),
+        Closed(BigDecimal(value) / BigDecimal(1 << binaryPoint.get)),
+        Closed(BigDecimal(value) / BigDecimal(1 << binaryPoint.get)),
         IntervalRange.getBinaryPoint(binaryPoint)
       ), Some(lit))
     // Bind result to being an Literal
