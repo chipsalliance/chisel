@@ -1363,7 +1363,21 @@ sealed class Interval private[core] (
   final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
   // TODO: (chick) port correct firrtl constraints (requires 2^x)
   def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint)), WrapOp, that)
+    val dest = Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint))
+    val other = that
+    Binding.checkSynthesizable(this, s"'this' ($this)")
+    Binding.checkSynthesizable(other, s"'other' ($other)")
+    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(0)))
+  }
+
+  // Reassign interval without actually adding any logic
+  final def reassignInterval(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  def do_reassignInterval(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val dest = Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint))
+    val other = that
+    Binding.checkSynthesizable(this, s"'this' ($this)")
+    Binding.checkSynthesizable(other, s"'other' ($other)")
+    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(1)))
   }
 
   final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
