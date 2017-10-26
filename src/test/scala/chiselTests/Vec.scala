@@ -146,6 +146,7 @@ class ZeroEntryVecTester extends BasicTester {
 
   val m = Module(new Module {
     val io = IO(Output(bundleWithZeroEntryVec))
+    io.foo := false.B
   })
   WireInit(m.io.bar)
 
@@ -179,6 +180,8 @@ class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
     when (cycle =/= i.U) {
       m.in := 0.U  // default
       assert(m.out === 0.U)
+    } .otherwise {
+      m.in := DontCare
     }
   }
   // only connect one dut per cycle

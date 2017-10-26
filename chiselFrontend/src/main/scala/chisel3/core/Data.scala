@@ -8,6 +8,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
   */
@@ -33,8 +34,8 @@ object SpecifiedDirection {
     case Input => Output
   }
 
-  /** Returns the effective UserDirection of this node given the parent's effective UserDirection
-    * and the user-specified UserDirection of this node.
+  /** Returns the effective SpecifiedDirection of this node given the parent's effective SpecifiedDirection
+    * and the user-specified SpecifiedDirection of this node.
     */
   def fromParent(parentDirection: SpecifiedDirection, thisDirection: SpecifiedDirection) =
     (parentDirection, thisDirection) match {
@@ -222,7 +223,7 @@ abstract class Data extends HasId {
     _specifiedDirection = direction
   }
 
-  /** This overwrites a relative UserDirection with an explicit one, and is used to implement
+  /** This overwrites a relative SpecifiedDirection with an explicit one, and is used to implement
     * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
@@ -311,6 +312,8 @@ abstract class Data extends HasId {
       requireIsHardware(that, s"data to be bulk-connected")
       (this.topBinding, that.topBinding) match {
         case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
+        // DontCare cannot be a sink (LHS)
+        case (_: DontCareBinding, _) => throw DontCareCantBeSink
         case _ =>  // fine
       }
       try {
@@ -425,7 +428,9 @@ trait WireFactory {
     x.bind(WireBinding(Builder.forcedUserModule))
 
     pushCommand(DefWire(sourceInfo, x))
-    pushCommand(DefInvalid(sourceInfo, x.ref))
+    if (!compileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, x.ref))
+    }
 
     x
   }
@@ -453,4 +458,28 @@ object WireInit {
     x := init
     x
   }
+}
+
+/** RHS (source) for Invalidate API.
+  * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
+  */
+object DontCare extends Element(width = UnknownWidth()) {
+  // This object should be initialized before we execute any user code that refers to it,
+  //  otherwise this "Chisel" object will end up on the UserModule's id list.
+
+  bind(DontCareBinding(), SpecifiedDirection.Output)
+  override def cloneType = DontCare
+
+  def toPrintable: Printable = PString("DONTCARE")
+
+  private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
+    Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
+  }
+
+  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): chisel3.core.UInt = {
+    Builder.error("DontCare does not have a UInt representation")
+    0.U
+  }
+  // DontCare's only match themselves.
+  private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
 }
