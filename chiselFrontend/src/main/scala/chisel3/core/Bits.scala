@@ -32,8 +32,15 @@ abstract class Element(private[chisel3] val width: Width) extends Data {
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
 
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(Connect(sourceInfo, this.lref, that.ref))
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, this.lref))
+    } else {
+      pushCommand(Connect(sourceInfo, this.lref, that.ref))
+    }
+  }
 }
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]]
@@ -799,7 +806,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
 
   override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-    case _: FixedPoint => super.connect(that)
+    case _: FixedPoint|DontCare => super.connect(that)
     case _ => this badConnect that
   }
 

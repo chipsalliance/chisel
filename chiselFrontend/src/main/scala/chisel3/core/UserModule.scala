@@ -67,9 +67,15 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
     _firrtlPorts = Some(firrtlPorts)
 
-    // Generate IO invalidation commands to initialize outputs as unused
-    val invalidateCommands = getModulePorts map {port => DefInvalid(UnlocatableSourceInfo, port.ref)}
-
+    // Generate IO invalidation commands to initialize outputs as unused,
+    //  unless the client wants explicit control over their generation.
+    val invalidateCommands = {
+      if (!compileOptions.explicitInvalidate) {
+        getModulePorts map { port => DefInvalid(UnlocatableSourceInfo, port.ref) }
+      } else {
+        Seq()
+      }
+    }
     val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
     _component = Some(component)
     component
@@ -97,10 +103,11 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   private[core] override def initializeInParent() {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    for (port <- getModulePorts) {
-      pushCommand(DefInvalid(sourceInfo, port.ref))
+    if (!compileOptions.explicitInvalidate) {
+      for (port <- getModulePorts) {
+        pushCommand(DefInvalid(sourceInfo, port.ref))
+      }
     }
-
     clock := Builder.forcedClock
     reset := Builder.forcedReset
   }
@@ -171,7 +178,9 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    pushCommand(DefInvalid(sourceInfo, io.ref))
+    if (!compileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, io.ref))
+    }
 
     override_clock match {
       case Some(override_clock) => clock := override_clock
