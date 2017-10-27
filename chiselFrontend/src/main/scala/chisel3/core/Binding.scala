@@ -104,3 +104,6 @@ case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
 case class ChildBinding(parent: Data) extends Binding {
   def location = parent.binding.location
 }
+// A DontCare element has a specific Binding, somewhat like a literal.
+// It is a source (RHS). It may only be connected/applied to sinks.
+case class DontCareBinding() extends UnconstrainedBinding

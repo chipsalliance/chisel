@@ -3,7 +3,7 @@
 package chisel3.core
 
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.Connect
+import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
 
@@ -48,6 +48,8 @@ object MonoConnect {
     MonoConnectException(s": Source Record missing field ($field).")
   def MismatchedException(sink: String, source: String) =
     MonoConnectException(s": Sink ($sink) and Source ($source) have different types.")
+  def DontCareCantBeSink =
+    MonoConnectException(": DontCare cannot be a connection sink (LHS)")
 
   /** This function is what recursively tries to connect a sink and source together
   *
@@ -89,6 +91,16 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
           }
         }
+      // Handle Vec connected to DontCare. Apply the DontCare to individual elements.
+      case (sink_v: Vec[Data @unchecked], DontCare) =>
+        for(idx <- 0 until sink_v.length) {
+          try {
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, sink_v(idx), source, context_mod)
+          } catch {
+            case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+          }
+        }
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
@@ -107,14 +119,33 @@ object MonoConnect {
             case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
         }
+      // Handle Record connected to DontCare. Apply the DontCare to individual elements.
+      case (sink_r: Record, DontCare) =>
+        // For each field, descend with right
+        for((field, sink_sub) <- sink_r.elements) {
+          try {
+            connect(sourceInfo, connectCompileOptions, sink_sub, source, context_mod)
+          } catch {
+            case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
+          }
+        }
 
+      // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
+      case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
+      // DontCare as a sink is illegal.
+      case (DontCare, _) => throw DontCareCantBeSink
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }
 
   // This function (finally) issues the connection operation
   private def issueConnect(sink: Element, source: Element)(implicit sourceInfo: SourceInfo): Unit = {
-    pushCommand(Connect(sourceInfo, sink.lref, source.ref))
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Connect.
+    source.binding match {
+      case b: DontCareBinding => pushCommand(DefInvalid(sourceInfo, sink.lref))
+      case _ => pushCommand(Connect(sourceInfo, sink.lref, source.ref))
+    }
   }
 
   // This function checks if element-level connection operation allowed.
