@@ -84,10 +84,12 @@ object VerilatorCppHarnessGenerator {
     codeBuffer.append("        sim_data.outputs.clear();\n")
     codeBuffer.append("        sim_data.signals.clear();\n")
     inputs.toList foreach { case (node, name) =>
-      pushBack("inputs", name replace (dutName, "dut"), node.getWidth)
+      // replaceFirst used here in case port name contains the dutName
+      pushBack("inputs", name replaceFirst (dutName, "dut"), node.getWidth)
     }
     outputs.toList foreach { case (node, name) =>
-      pushBack("outputs", name replace (dutName, "dut"), node.getWidth)
+      // replaceFirst used here in case port name contains the dutName
+      pushBack("outputs", name replaceFirst (dutName, "dut"), node.getWidth)
     }
     pushBack("signals", "dut->reset", 1)
     codeBuffer.append(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
