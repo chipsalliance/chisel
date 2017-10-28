@@ -597,17 +597,17 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
         // No mechanism to pass open/close to firrtl so need to handle directly
         // TODO: (chick) can we pass open/close to firrtl?
         val l = lx match {
-          case Open(x) => x + math.pow(2, -bp)
+          case Open(x) => x + BigDecimal(1) / BigDecimal(1 << bp)
           case Closed(x) => x
         }
         val u = ux match { 
-          case Open(x) => x - math.pow(2, -bp)
+          case Open(x) => x - BigDecimal(1) / BigDecimal(1 << bp)
           case Closed(x) => x
         }
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        val maxBI = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        val minBI = (l * (1 << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * (1 << bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -793,17 +793,17 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
         // No mechanism to pass open/close to firrtl so need to handle directly
         // TODO: (chick) can we pass open/close to firrtl?
         val l = lx match {
-          case Open(x) => x + math.pow(2, -bp)
+          case Open(x) => x + BigDecimal(1) / BigDecimal(1 << bp)
           case Closed(x) => x
         }
         val u = ux match { 
-          case Open(x) => x - math.pow(2, -bp)
+          case Open(x) => x - BigDecimal(1) / BigDecimal(1 << bp)
           case Closed(x) => x
         }
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        val maxBI = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        val minBI = (l * (1 << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * (1 << bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -1069,17 +1069,17 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
         // No mechanism to pass open/close to firrtl so need to handle directly
         // TODO: (chick) can we pass open/close to firrtl?
         val l = lx match {
-          case Open(x) => x + math.pow(2, -bp)
+          case Open(x) => x + BigDecimal(1) / BigDecimal(1 << bp)
           case Closed(x) => x
         }
         val u = ux match { 
-          case Open(x) => x - math.pow(2, -bp)
+          case Open(x) => x - BigDecimal(1) / BigDecimal(1 << bp)
           case Closed(x) => x
         }
         //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
         // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
-        val minBI = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
-        val maxBI = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        val minBI = (l * (1 << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * (1 << bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
       case _ =>
         throwException(
@@ -1177,7 +1177,7 @@ object FixedPoint {
     * @return
     */
   def toBigInt(x: Double, binaryPoint    : Int): BigInt = {
-    val multiplier = math.pow(2,binaryPoint    )
+    val multiplier = 1 << binaryPoint
     val result = BigInt(math.round(x * multiplier))
     result
   }
@@ -1189,7 +1189,7 @@ object FixedPoint {
     * @return
     */
   def toDouble(i: BigInt, binaryPoint    : Int): Double = {
-    val multiplier = math.pow(2,binaryPoint)
+    val multiplier = 1 << binaryPoint
     val result = i.toDouble / multiplier
     result
   }
@@ -1496,24 +1496,24 @@ trait IntervalFactory {
         // TODO: (chick) can we pass open/close to firrtl?
         val lower = lx match {
           case Open(x) => 
-            val l = x + math.pow(2, -bp)
-            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(1 << bp)
+            val l = x + BigDecimal(1) / BigDecimal(1 << bp)
+            val min = (l *(1 << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(1 << bp)
             Closed(min)
           case Closed(x) => 
             val l = x
-            val min = (l * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(1 << bp)
+            val min = (l * (1 << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(1 << bp)
             Closed(min)
           case _ => 
             lx
         }
         val upper = ux match {
           case Open(x) => 
-            val u = x - math.pow(2, -bp)
-            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(1 << bp)
+            val u = x - BigDecimal(1) / BigDecimal(1 << bp)
+            val max = (u * (1 << bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(1 << bp)
             Closed(max)
           case Closed(x) => 
             val u = x
-            val max = (u * math.pow(2, bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(1 << bp)
+            val max = (u * (1 << bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(1 << bp)
             Closed(max)
           case _ => 
             ux
@@ -1598,7 +1598,7 @@ trait IntervalFactory {
     * @return
     */
   def toBigInt(x: Double, binaryPoint    : Int): BigInt = {
-    val multiplier = math.pow(2,binaryPoint    )
+    val multiplier = 1 << binaryPoint
     val result = BigInt(math.round(x * multiplier))
     result
   }
@@ -1610,7 +1610,7 @@ trait IntervalFactory {
     * @return
     */
   def toDouble(i: BigInt, binaryPoint    : Int): Double = {
-    val multiplier = math.pow(2,binaryPoint    )
+    val multiplier = 1 << binaryPoint
     val result = i.toDouble / multiplier
     result
   }
