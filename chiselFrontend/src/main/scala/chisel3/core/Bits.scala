@@ -1380,6 +1380,16 @@ sealed class Interval private[core] (
     pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(1)))
   }
 
+  // Conditionally reassign interval (if new interval is smaller) without actually adding any logic
+  final def conditionalReassignInterval(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  def do_conditionalReassignInterval(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val dest = Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint))
+    val other = that
+    Binding.checkSynthesizable(this, s"'this' ($this)")
+    Binding.checkSynthesizable(other, s"'other' ($other)")
+    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(2)))
+  }
+
   final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
