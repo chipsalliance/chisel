@@ -520,7 +520,7 @@ sealed abstract class Width {
   // Butchering of notation where new width is defined with some understanding of the op you're trying to perform
   def shiftRight(that: Int): Width = this.op(this, (a, b) => 0 max (a - that))
   def dynamicShiftLeft(that: Width): Width =
-    this.op(that, (a, b) => a + (BigInt(1) << b) - 1)
+    this.op(that, (a, b) => a + (1 << b) - 1)
 
   def known: Boolean
   def get: W
