@@ -283,7 +283,7 @@ sealed class IntervalRange(
       if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
       binaryPoint match {
         case KnownBinaryPoint(bp) =>
-          if(begin >= end - (BigDecimal(1) / (1 << bp))) {
+          if(begin >= end - (BigDecimal(1) / BigDecimal(BigInt(1) << bp))) {
             throw new IllegalArgumentException(s"Invalid range with ${serialize}")
           }
         case _ =>
@@ -359,7 +359,7 @@ sealed class IntervalRange(
       bound
     }
     else {
-      val multiplier = 1 << n
+      val multiplier = BigDecimal(BigInt(1) << n)
       bound match {
         case firrtlir.Open(x) => firrtlir.Open(x * multiplier)
         case firrtlir.Closed(x) => firrtlir.Closed(x * multiplier)
@@ -520,7 +520,7 @@ sealed abstract class Width {
   // Butchering of notation where new width is defined with some understanding of the op you're trying to perform
   def shiftRight(that: Int): Width = this.op(this, (a, b) => 0 max (a - that))
   def dynamicShiftLeft(that: Width): Width =
-    this.op(that, (a, b) => a + (1 << b) - 1)
+    this.op(that, (a, b) => a + (BigInt(1) << b) - 1)
 
   def known: Boolean
   def get: W
