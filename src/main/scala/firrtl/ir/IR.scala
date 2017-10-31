@@ -481,7 +481,7 @@ case class DoubleParam(name: String, value: Double) extends Param {
 }
 /** String Parameter */
 case class StringParam(name: String, value: StringLit) extends Param {
-  override def serialize: String = super.serialize + value.serialize
+  override def serialize: String = super.serialize + value.escape
 }
 /** Raw String Parameter
   * Useful for Verilog type parameters
