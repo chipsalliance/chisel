@@ -7,11 +7,6 @@ This repository's issues are reserved for feature requests and bug reports.
   - [ ] Feature request
   - [ ] Other enhancement
 
-* **Development phase**
-  - [ ] Request
-  - [ ] Proposal
-  - [ ] Implementation
-
 * **If the current behavior is a bug, please provide the steps to reproduce the problem:**
   * **What is the current behavior?**
   * **What is the expected behavior?**
