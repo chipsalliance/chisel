@@ -67,8 +67,15 @@ sealed abstract class Aggregate extends Data {
   def getElements: Seq[Data]
 
   private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, this.lref))
+    } else {
+      pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+    }
+  }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
@@ -93,7 +100,7 @@ trait VecFactory {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(gen, "vec type")
     }
-    new Vec(gen.chiselCloneType, n)
+    new Vec(gen.cloneTypeFull, n)
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
@@ -580,9 +587,3 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
-
-private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "chiselCloneType", "toBits",
-    "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
-}
-

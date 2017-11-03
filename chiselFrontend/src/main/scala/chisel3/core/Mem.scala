@@ -23,7 +23,7 @@ object Mem {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
     }
-    val mt  = t.chiselCloneType
+    val mt  = t.cloneTypeFull
     val mem = new Mem(mt, size)
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
@@ -92,7 +92,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
 
     val port = pushCommand(
       DefMemPort(sourceInfo,
-       t.chiselCloneType, Node(this), dir, i.ref, Node(Builder.forcedClock))
+       t.cloneTypeFull, Node(this), dir, i.ref, Node(Builder.forcedClock))
     ).id
     // Bind each element of port to being a MemoryPort
     port.bind(MemoryPortBinding(Builder.forcedUserModule))
@@ -126,7 +126,7 @@ object SyncReadMem {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
     }
-    val mt  = t.chiselCloneType
+    val mt  = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size)
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size))
     mem

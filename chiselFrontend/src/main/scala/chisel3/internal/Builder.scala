@@ -164,6 +164,10 @@ private[chisel3] object Builder {
   private def dynamicContext: DynamicContext =
     dynamicContextVar.value.getOrElse(new DynamicContext)
 
+  // Initialize any singleton objects before user code inadvertently inherits them.
+  private def initializeSingletons(): Unit = {
+    val dummy = DontCare
+  }
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
@@ -245,6 +249,7 @@ private[chisel3] object Builder {
       Circuit(components.last.name, components, annotations.map(_.toFirrtl))
     }
   }
+  initializeSingletons()
 }
 
 /** Allows public access to the naming stack in Builder / DynamicContext.

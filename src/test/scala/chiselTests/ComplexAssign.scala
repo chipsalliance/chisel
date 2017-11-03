@@ -8,6 +8,7 @@ import org.scalatest.prop._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import org.scalacheck.Shrink
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle {
   override def cloneType: this.type =
@@ -47,6 +48,9 @@ class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Basic
 
 class ComplexAssignSpec extends ChiselPropSpec {
   property("All complex assignments should return the correct result") {
+    // Disable shrinking on error.
+    implicit val noShrinkListVal = Shrink[List[Boolean]](_ => Stream.empty)
+    implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
     forAll(enSequence(2), safeUInts, safeUInts) { (en: List[Boolean], re: Int, im: Int) =>
       assertTesterPasses{ new ComplexAssignTester(en, re, im) }
     }

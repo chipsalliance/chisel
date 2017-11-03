@@ -2,10 +2,8 @@
 
 package chisel3.core
 
-import chisel3.internal.Builder
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Attach, Connect}
-import chisel3.internal.throwException
+import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
@@ -46,6 +44,8 @@ object BiConnect {
     BiConnectException(s": Left ($left) and Right ($right) have different types.")
   def AttachAlreadyBulkConnectedException(sourceInfo: SourceInfo) =
     BiConnectException(sourceInfo.makeMessage(": Analog previously bulk connected at " + _))
+  def DontCareCantBeSink =
+    BiConnectException(": DontCare cannot be a connection sink (LHS)")
 
 
   /** This function is what recursively tries to connect a left and right together
@@ -54,7 +54,7 @@ object BiConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: UserModule): Unit =
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: UserModule): Unit = {
     (left, right) match {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
@@ -69,12 +69,36 @@ object BiConnect {
         // TODO(twigg): Verify the element-level classes are connectable
       }
       // Handle Vec case
-      case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
-        if(left_v.length != right_v.length) { throw MismatchedVecException }
-        for(idx <- 0 until left_v.length) {
+      case (left_v: Vec[Data@unchecked], right_v: Vec[Data@unchecked]) => {
+        if (left_v.length != right_v.length) {
+          throw MismatchedVecException
+        }
+        for (idx <- 0 until left_v.length) {
           try {
             implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+          }
+        }
+      }
+      // Handle Vec connected to DontCare
+      case (left_v: Vec[Data@unchecked], DontCare) => {
+        for (idx <- 0 until left_v.length) {
+          try {
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, left_v(idx), right, context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+          }
+        }
+      }
+      // Handle DontCare connected to Vec
+      case (DontCare, right_v: Vec[Data@unchecked]) => {
+        for (idx <- 0 until right_v.length) {
+          try {
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, left, right_v(idx), context_mod)
           } catch {
             case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
           }
@@ -89,9 +113,40 @@ object BiConnect {
         case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
       }
 
+      // Handle Records connected to DontCare (change to NotStrict)
+      case (left_r: Record, DontCare) =>
+        left_r.compileOptions match {
+          case ExplicitCompileOptions.NotStrict =>
+            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
+          case _ =>
+            // For each field in left, descend with right
+            for ((field, left_sub) <- left_r.elements) {
+              try {
+                connect(sourceInfo, connectCompileOptions, left_sub, right, context_mod)
+              } catch {
+                case BiConnectException(message) => throw BiConnectException(s".$field$message")
+              }
+            }
+        }
+      case (DontCare, right_r: Record) =>
+        right_r.compileOptions match {
+          case ExplicitCompileOptions.NotStrict =>
+            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
+          case _ =>
+            // For each field in left, descend with right
+            for ((field, right_sub) <- right_r.elements) {
+              try {
+                connect(sourceInfo, connectCompileOptions, left, right_sub, context_mod)
+              } catch {
+                case BiConnectException(message) => throw BiConnectException(s".$field$message")
+              }
+            }
+        }
+
       // Left and right are different subtypes of Data so fail
       case (left, right) => throw MismatchedException(left.toString, right.toString)
     }
+  }
 
   // Do connection of two Records
   def recordConnect(sourceInfo: SourceInfo,
@@ -128,11 +183,25 @@ object BiConnect {
   // These functions (finally) issue the connection operation
   // Issue with right as sink, left as source
   private def issueConnectL2R(left: Element, right: Element)(implicit sourceInfo: SourceInfo): Unit = {
-    pushCommand(Connect(sourceInfo, right.lref, left.ref))
+    // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
+    // If either is a DontCareBinding, just issue a DefInvalid for the other,
+    //  otherwise, issue a Connect.
+    (left.binding, right.binding) match {
+      case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
+      case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
+      case (_, _) => pushCommand(Connect(sourceInfo, right.lref, left.ref))
+    }
   }
   // Issue with left as sink, right as source
   private def issueConnectR2L(left: Element, right: Element)(implicit sourceInfo: SourceInfo): Unit = {
-    pushCommand(Connect(sourceInfo, left.lref, right.ref))
+    // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
+    // If either is a DontCareBinding, just issue a DefInvalid for the other,
+    //  otherwise, issue a Connect.
+    (left.binding, right.binding) match {
+      case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
+      case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
+      case (_, _) => pushCommand(Connect(sourceInfo, left.lref, right.ref))
+    }
   }
 
   // This function checks if element-level connection operation allowed.
