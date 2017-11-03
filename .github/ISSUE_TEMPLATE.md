@@ -1,4 +1,4 @@
-**Note: for support questions, you are strongly advised to use Stack Overflow**.
+**Note: for support questions, you are strongly advised to use [Stack Overflow](https://stackoverflow.com/questions/tagged/chisel)**.
 
 This repository's issues are reserved for feature requests and bug reports.
 
