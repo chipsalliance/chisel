@@ -553,13 +553,69 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
   }
 
   override def cloneType : this.type = {
+    // Automatic Bundle cloning is inferred as follows:
+    // - User-overloaded cloneType is called instead of this (if supplied, so this method is never called)
+    // - Attempt to automatically fill in constructor parameters by using Scala reflection:
+    //   - If multiple constructors, error out
+    //   - If the constructor argument list can be matched to param accessors, call the constructor with
+    //     the result of those accessors
+    //   - Otherwise, error out
+    // - If Scala reflection crashes, fall back to Java reflection and inspect the constructor argument list:
+    //   - If no parameters, invoke constructor directly. That was easy!
+    //   - If the first parameter's type is equal to this Module, assume the Bundle is an inner class
+    //     and invoke it with the current containing Module
+    // - Error out to the user
+
+    def reflectError(desc: String) {
+      Builder.exception(s"Unable to automatically infer cloneType on $this: $desc"
+    }
+    
+    // Try Scala reflection
+    import scala.reflect.runtime.universe._
+
+    val mirror = runtimeMirror(this.getClass.getClassLoader)
+    val decls = mirror.classSymbol(this.getClass).typeSignature.decls
+    
+    val constructors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
+    if (constructors.length != 1) {
+      reflectError(s"found multiple constructors ($constructors). " +
+          "Either remove all but the default constructor, or define a custom cloneType method.")
+    }
+    
+    val params = decls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
+    val ctorParamss = constructors.head.paramLists
+    val ctorParams = ctorParamss match {
+      case Nil => List()
+      case ctorParams :: Nil => ctorParams
+      case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
+          List()  // make the type system happy
+    }
+    
+    // Check that all ctor params are immutable and accessible. Immutability is required to avoid
+    // potential subtle bugs (like values changing after cloning).
+    val ctorParamsNameSet = ctorParams.map(_.name.toString).toSet
+    val paramsNameSet = params.collect(_.isStable).map(_.name.toString).toSet
+    val paramsDiff = ctorParamsNameSet -- paramsNameSet
+    if (!paramsDiff.isEmpty) {
+      reflectError(s"constructor has parameters that are not both immutable and accessible ($paramsDiff)." + 
+          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+    }
+    
     // If the user did not provide a cloneType method, try invoking one of
     // the following constructors, not all of which necessarily exist:
     // - A zero-parameter constructor
     // - A one-paramater constructor, with null as the argument
     // - A one-parameter constructor for a nested Bundle, with the enclosing
     //   parent Module as the argument
+
+
+    // val classMirror = runtimeMirror.reflectClass(classSymbol)
+    val constructors = classSymbol.typeSignature.members.filter(_.isConstructor).toList
+    println(constructors)
+      
     val constructor = this.getClass.getConstructors.head
+    println(constructor)
+    println(constructor.getParameterTypes)
     try {
       val args = Seq.fill(constructor.getParameterTypes.size)(null)
       constructor.newInstance(args:_*).asInstanceOf[this.type]

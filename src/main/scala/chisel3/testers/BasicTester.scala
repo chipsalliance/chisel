@@ -11,9 +11,14 @@ import internal.firrtl._
 import internal.sourceinfo.SourceInfo
 //import chisel3.core.ExplicitCompileOptions.NotStrict
 
-class BasicTester extends Module() {
+class TesterIO extends Bundle {
   // The testbench has no IOs, rather it should communicate using printf, assert, and stop.
-  val io = IO(new Bundle())
+  // This is here (instead of just `new Bundle()`, since that has an implicit compileOptions
+  // constructor argument which is misapplied by clonetype
+}
+
+class BasicTester extends Module() {
+  val io = IO(new TesterIO)
 
   def popCount(n: Long): Int = n.toBinaryString.count(_=='1')
 
