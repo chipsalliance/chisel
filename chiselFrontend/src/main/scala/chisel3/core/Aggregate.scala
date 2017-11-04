@@ -557,30 +557,107 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
   }
 
   override def cloneType : this.type = {
-    // If the user did not provide a cloneType method, try invoking one of
-    // the following constructors, not all of which necessarily exist:
-    // - A zero-parameter constructor
-    // - A one-paramater constructor, with null as the argument
-    // - A one-parameter constructor for a nested Bundle, with the enclosing
-    //   parent Module as the argument
-    val constructor = this.getClass.getConstructors.head
-    try {
-      val args = Seq.fill(constructor.getParameterTypes.size)(null)
-      constructor.newInstance(args:_*).asInstanceOf[this.type]
-    } catch {
-      case e: java.lang.reflect.InvocationTargetException if e.getCause.isInstanceOf[java.lang.NullPointerException] =>
-        try {
-          constructor.newInstance(_parent.get).asInstanceOf[this.type]
-        } catch {
-          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-            Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
-              "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
-            this
-        }
-      case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-        Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method")
-        this
+    // Automatic Bundle cloning is inferred as follows:
+    // - User-overloaded cloneType is called instead of this (if supplied, so this method is never called)
+    // - Attempt to automatically fill in constructor parameters by using Scala reflection:
+    //   - If multiple constructors, error out
+    //   - If the constructor argument list can be matched to param accessors, call the constructor with
+    //     the result of those accessors
+    //   - Otherwise, error out
+    // - If Scala reflection crashes, fall back to Java reflection and inspect the constructor argument list:
+    //   - If no parameters, invoke constructor directly. That was easy!
+    //   - If the first parameter's type is equal to this Module, assume the Bundle is an inner class
+    //     and invoke it with the current containing Module
+    // - Error out to the user
+
+    def reflectError(desc: String) {
+      Builder.exception(s"Unable to automatically infer cloneType on $this: $desc")
     }
+
+    // Try Scala reflection
+    import scala.reflect.runtime.universe._
+
+    val mirror = runtimeMirror(this.getClass.getClassLoader)
+    val decls = mirror.classSymbol(this.getClass).typeSignature.decls
+    println(s"$this decls: $decls")
+
+    val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
+    if (ctors.size != 1) {
+      reflectError(s"found multiple constructors ($ctors). " +
+          "Either remove all but the default constructor, or define a custom cloneType method.")
+    }
+
+    val accessors = decls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
+    val ctorParamss = ctors.head.paramLists
+    val ctorParams = ctorParamss match {
+      case Nil => List()
+      case ctorParams :: Nil => ctorParams
+      case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
+          List()  // make the type system happy
+    }
+
+    // Check that all ctor params are immutable and accessible. Immutability is required to avoid
+    // potential subtle bugs (like values changing after cloning).
+    // This also generates better error messages (all missing elements shown at once) instead of
+    // failing at the use site one at a time.
+    val ctorParamsName = ctorParams.map(_.name.toString)
+    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
+    val paramsDiff = ctorParamsName.toSet -- accessorsName.toSet
+    if (!paramsDiff.isEmpty) {
+      reflectError(s"constructor has parameters ($paramsDiff) that are not both immutable and accessible." +
+          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+    }
+
+    // Get all the argument values
+    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
+    val instanceReflect = mirror.reflect(this)
+    val ctorParamsVals = ctorParamsName.map {
+      paramName => instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
+    }
+
+    // Invoke ctor
+    val classReflect = mirror.reflectClass(mirror.classSymbol(this.getClass))
+    classReflect.reflectConstructor(ctors.head).apply(ctorParamsVals:_*).asInstanceOf[this.type]
+
+
+
+//    val constructor = this.getClass.getConstructors.head
+//    val args = Seq.fill(constructor.getParameterTypes.size)(null)
+//    constructor.newInstance(args:_*).asInstanceOf[this.type]
+
+//    // If the user did not provide a cloneType method, try invoking one of
+//    // the following constructors, not all of which necessarily exist:
+//    // - A zero-parameter constructor
+//    // - A one-paramater constructor, with null as the argument
+//    // - A one-parameter constructor for a nested Bundle, with the enclosing
+//    //   parent Module as the argument
+//
+//
+//    // val classMirror = runtimeMirror.reflectClass(classSymbol)
+////    val constructors = classSymbol.typeSignature.members.filter(_.isConstructor).toList
+////    println(constructors)
+////
+//    val constructor = this.getClass.getConstructors.head
+//    println(constructor)
+//    println(constructor.getParameterTypes)
+//
+//    try {
+//      val args = Seq.fill(constructor.getParameterTypes.size)(null)
+//      constructor.newInstance(args:_*).asInstanceOf[this.type]
+//    } catch {
+//      case e: java.lang.reflect.InvocationTargetException if e.getCause.isInstanceOf[java.lang.NullPointerException] =>
+//        try {
+//          constructor.newInstance(_parent.get).asInstanceOf[this.type]
+//        } catch {
+//          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
+//            Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
+//              "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
+//            this
+//        }
+//      case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
+//        Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method")
+//        this
+//    }
   }
 
   /** Default "pretty-print" implementation

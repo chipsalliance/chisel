@@ -250,9 +250,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
-    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
-      if (!_ioPortBound()) {
-        IO(io)
+    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+      if (!_compatIoPortBound()) {
+        _bindIoInPlace(io)
       }
     }
   }
@@ -278,9 +278,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
-    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
-      if (!_ioPortBound() && io != null) {
-        IO(io)
+    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+      if (!_compatIoPortBound() && io != null) {
+        _bindIoInPlace(io)
       }
     }
   }
