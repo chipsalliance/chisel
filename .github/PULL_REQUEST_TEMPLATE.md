@@ -1,7 +1,11 @@
 * **Related issue** (if applicable)
 
+* **Type of change**
+  - [ ] Bug report
+  - [ ] Feature request
+  - [ ] Other enhancement
+
 * **Development Phase**
-  - [ ] request
   - [ ] proposal
   - [ ] implementation
 

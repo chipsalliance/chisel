@@ -17,4 +17,10 @@ This repository's issues are reserved for feature requests and bug reports.
 
 * **What is the use case for changing the behavior?**
 
+* **Impact**
+  - [ ] no functional change
+  - [ ] API addition (no impact on existing code)
+  - [ ] API modification
+  - [ ] unknown
+
 * **Other information** (e.g. detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, etc)
