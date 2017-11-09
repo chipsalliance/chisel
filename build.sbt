@@ -32,7 +32,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.0.0-RC1",
+  version := "3.0.0-RC2",
   git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.11",
@@ -92,7 +92,7 @@ lazy val publishSettings = Seq (
   }
 )
 
-val defaultVersions = Map("firrtl" -> "1.0.0-RC1")
+val defaultVersions = Map("firrtl" -> "1.0.0-RC2")
 
 lazy val chiselSettings = Seq (
   name := "chisel3",

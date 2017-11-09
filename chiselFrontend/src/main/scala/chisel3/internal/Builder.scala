@@ -166,7 +166,7 @@ private[chisel3] object Builder {
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
-    val dummy = DontCare
+    val dummy = core.DontCare
   }
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace

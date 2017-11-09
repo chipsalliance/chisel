@@ -57,7 +57,7 @@ ifneq (,$(RM_DIRS))
 endif
 
 scaladoc:
-	$(SBT) $(SBT_FLAGS) doc
+	$(SBT) $(SBT_FLAGS) unidoc
 
 site:
 	$(SBT) $(SBT_FLAGS) make-site
