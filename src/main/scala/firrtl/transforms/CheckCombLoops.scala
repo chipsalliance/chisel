@@ -77,15 +77,16 @@ class CheckCombLoops extends Transform {
       }
   }
 
-  private def getExprDeps(deps: mutable.Set[LogicNode])(e: Expression): Expression = e match {
+
+  private def getExprDeps(deps: MutableDiGraph[LogicNode], v: LogicNode)(e: Expression): Expression = e match {
     case r: WRef =>
-      deps += toLogicNode(r)
+      deps.addEdgeIfValid(v, toLogicNode(r))
       r
     case s: WSubField =>
-      deps += toLogicNode(s)
+      deps.addEdgeIfValid(v, toLogicNode(s))
       s
     case _ =>
-      e map getExprDeps(deps)
+      e map getExprDeps(deps, v)
   }
 
   private def getStmtDeps(
@@ -95,14 +96,14 @@ class CheckCombLoops extends Transform {
       case Connect(_,loc,expr) =>
         val lhs = toLogicNode(loc)
         if (deps.contains(lhs)) {
-          getExprDeps(deps.getEdges(lhs))(expr)
+          getExprDeps(deps, lhs)(expr)
         }
       case w: DefWire =>
         deps.addVertex(LogicNode(w.name))
       case n: DefNode =>
         val lhs = LogicNode(n.name)
         deps.addVertex(lhs)
-        getExprDeps(deps.getEdges(lhs))(n.value)
+        getExprDeps(deps, lhs)(n.value)
       case m: DefMemory if (m.readLatency == 0) =>
         for (rp <- m.readers) {
           val dataNode = deps.addVertex(LogicNode("data",Some(m.name),Some(rp)))
@@ -111,10 +112,8 @@ class CheckCombLoops extends Transform {
         }
       case i: WDefInstance =>
         val iGraph = simplifiedModules(i.module).transformNodes(n => n.copy(inst = Some(i.name)))
-        for (v <- iGraph.getVertices) {
-          deps.addVertex(v)
-          iGraph.getEdges(v).foreach { deps.addEdge(v,_) }
-        }
+        iGraph.getVertices.foreach(deps.addVertex(_))
+        iGraph.getVertices.foreach({ v => iGraph.getEdges(v).foreach { deps.addEdge(v,_) } })
       case _ =>
         s map getStmtDeps(simplifiedModules,deps)
     }
@@ -196,9 +195,9 @@ class CheckCombLoops extends Transform {
      *  exist. Maybe warn when iterating through modules.
      */
     val moduleMap = c.modules.map({m => (m.name,m) }).toMap
-    val iGraph = new InstanceGraph(c)
-    val moduleDeps = iGraph.graph.edges.map{ case (k,v) => (k.module, (v map { i => (i.name, i.module) }).toMap) }
-    val topoSortedModules = iGraph.graph.transformNodes(_.module).linearize.reverse map { moduleMap(_) }
+    val iGraph = new InstanceGraph(c).graph
+    val moduleDeps = iGraph.getEdgeMap.map({ case (k,v) => (k.module, (v map { i => (i.name, i.module) }).toMap) }).toMap
+    val topoSortedModules = iGraph.transformNodes(_.module).linearize.reverse map { moduleMap(_) }
     val moduleGraphs = new mutable.HashMap[String,DiGraph[LogicNode]]
     val simplifiedModuleGraphs = new mutable.HashMap[String,DiGraph[LogicNode]]
     for (m <- topoSortedModules) {
@@ -212,7 +211,7 @@ class CheckCombLoops extends Transform {
         val sccSubgraph = moduleGraphs(m.name).subgraph(scc.toSet)
         val cycle = findCycleInSCC(sccSubgraph)
         (cycle zip cycle.tail).foreach({ case (a,b) => require(moduleGraph.getEdges(a).contains(b)) })
-        val expandedCycle = expandInstancePaths(m.name,moduleGraphs,moduleDeps,Seq(m.name),cycle.reverse)
+        val expandedCycle = expandInstancePaths(m.name, moduleGraphs, moduleDeps, Seq(m.name), cycle.reverse)
         errors.append(new CombLoopException(m.info, m.name, expandedCycle))
       }
     }

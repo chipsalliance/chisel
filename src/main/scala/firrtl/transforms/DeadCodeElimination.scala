@@ -95,11 +95,11 @@ class DeadCodeElimination extends Transform {
       case DefRegister(_, name, _, clock, reset, init) =>
         val node = LogicNode(mod.name, name)
         depGraph.addVertex(node)
-        Seq(clock, reset, init).flatMap(getDeps(_)).foreach(ref => depGraph.addEdge(node, ref))
+        Seq(clock, reset, init).flatMap(getDeps(_)).foreach(ref => depGraph.addPairWithEdge(node, ref))
       case DefNode(_, name, value) =>
         val node = LogicNode(mod.name, name)
         depGraph.addVertex(node)
-        getDeps(value).foreach(ref => depGraph.addEdge(node, ref))
+        getDeps(value).foreach(ref => depGraph.addPairWithEdge(node, ref))
       case DefWire(_, name, _) =>
         depGraph.addVertex(LogicNode(mod.name, name))
       case mem: DefMemory =>
@@ -111,23 +111,23 @@ class DeadCodeElimination extends Transform {
         val sinks = exprs.getOrElse(FEMALE, List.empty).flatMap(getDeps(_))
         val memNode = getDeps(memRef) match { case Seq(node) => node }
         depGraph.addVertex(memNode)
-        sinks.foreach(sink => depGraph.addEdge(sink, memNode))
-        sources.foreach(source => depGraph.addEdge(memNode, source))
+        sinks.foreach(sink => depGraph.addPairWithEdge(sink, memNode))
+        sources.foreach(source => depGraph.addPairWithEdge(memNode, source))
       case Attach(_, exprs) => // Add edge between each expression
         exprs.flatMap(getDeps(_)).toSet.subsets(2).map(_.toList).foreach {
           case Seq(a, b) =>
-            depGraph.addEdge(a, b)
-            depGraph.addEdge(b, a)
+            depGraph.addPairWithEdge(a, b)
+            depGraph.addPairWithEdge(b, a)
         }
       case Connect(_, loc, expr) =>
         // This match enforces the low Firrtl requirement of expanded connections
         val node = getDeps(loc) match { case Seq(elt) => elt }
-        getDeps(expr).foreach(ref => depGraph.addEdge(node, ref))
+        getDeps(expr).foreach(ref => depGraph.addPairWithEdge(node, ref))
       // Simulation constructs are treated as top-level outputs
       case Stop(_,_, clk, en) =>
-        Seq(clk, en).flatMap(getDeps(_)).foreach(ref => depGraph.addEdge(circuitSink, ref))
+        Seq(clk, en).flatMap(getDeps(_)).foreach(ref => depGraph.addPairWithEdge(circuitSink, ref))
       case Print(_, _, args, clk, en) =>
-        (args :+ clk :+ en).flatMap(getDeps(_)).foreach(ref => depGraph.addEdge(circuitSink, ref))
+        (args :+ clk :+ en).flatMap(getDeps(_)).foreach(ref => depGraph.addPairWithEdge(circuitSink, ref))
       case Block(stmts) => stmts.foreach(onStmt(_))
       case ignore @ (_: IsInvalid | _: WDefInstance | EmptyStmt) => // do nothing
       case other => throw new Exception(s"Unexpected Statement $other")
@@ -153,30 +153,30 @@ class DeadCodeElimination extends Transform {
         val node = LogicNode(ext)
         // Don't touch external modules *unless* they are specifically marked as doTouch
         // Simply marking the extmodule itself is sufficient to prevent inputs from being removed
-        if (!doTouchExtMods.contains(ext.name)) depGraph.addEdge(circuitSink, node)
+        if (!doTouchExtMods.contains(ext.name)) depGraph.addPairWithEdge(circuitSink, node)
         ext.ports.foreach {
           case Port(_, pname, _, AnalogType(_)) =>
-            depGraph.addEdge(LogicNode(ext.name, pname), node)
-            depGraph.addEdge(node, LogicNode(ext.name, pname))
+            depGraph.addPairWithEdge(LogicNode(ext.name, pname), node)
+            depGraph.addPairWithEdge(node, LogicNode(ext.name, pname))
           case Port(_, pname, Output, _) =>
             val portNode = LogicNode(ext.name, pname)
-            depGraph.addEdge(portNode, node)
+            depGraph.addPairWithEdge(portNode, node)
             // Also mark all outputs as circuit sinks (unless marked doTouch obviously)
-            if (!doTouchExtMods.contains(ext.name)) depGraph.addEdge(circuitSink, portNode)
-          case Port(_, pname, Input, _) => depGraph.addEdge(node, LogicNode(ext.name, pname))
+            if (!doTouchExtMods.contains(ext.name)) depGraph.addPairWithEdge(circuitSink, portNode)
+          case Port(_, pname, Input, _) => depGraph.addPairWithEdge(node, LogicNode(ext.name, pname))
         }
     }
     // Connect circuitSink to ALL top-level ports (we don't want to change the top-level interface)
     val topModule = c.modules.find(_.name == c.main).get
     val topOutputs = topModule.ports.foreach { port =>
-      depGraph.addEdge(circuitSink, LogicNode(c.main, port.name))
+      depGraph.addPairWithEdge(circuitSink, LogicNode(c.main, port.name))
     }
 
     depGraph
   }
 
   private def deleteDeadCode(instMap: collection.Map[String, String],
-                             deadNodes: Set[LogicNode],
+                             deadNodes: collection.Set[LogicNode],
                              moduleMap: collection.Map[String, DefModule],
                              renames: RenameMap)
                             (mod: DefModule): Option[DefModule] = {
@@ -243,9 +243,9 @@ class DeadCodeElimination extends Transform {
     val c = state.circuit
     val moduleMap = c.modules.map(m => m.name -> m).toMap
     val iGraph = new InstanceGraph(c)
-    val moduleDeps = iGraph.graph.edges.map { case (k,v) =>
+    val moduleDeps = iGraph.graph.getEdgeMap.map({ case (k,v) =>
       k.module -> v.map(i => i.name -> i.module).toMap
-    }
+    })
     val topoSortedModules = iGraph.graph.transformNodes(_.module).linearize.reverse.map(moduleMap(_))
 
     val depGraph = {
@@ -255,7 +255,7 @@ class DeadCodeElimination extends Transform {
       dontTouches.foreach { dontTouch =>
         // Ensure that they are actually found
         if (vertices.contains(dontTouch)) {
-          dGraph.addEdge(circuitSink, dontTouch)
+          dGraph.addPairWithEdge(circuitSink, dontTouch)
         } else {
           val (root, tail) = Utils.splitRef(dontTouch.e1)
           DontTouchAnnotation.errorNotFound(root.serialize, tail.serialize)

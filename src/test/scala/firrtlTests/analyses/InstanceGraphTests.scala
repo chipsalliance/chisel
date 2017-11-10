@@ -11,7 +11,7 @@ import firrtl.passes._
 import firrtlTests._
 
 class InstanceGraphTests extends FirrtlFlatSpec {
-  private def getEdgeSet(graph: DiGraph[String]): Map[String, Set[String]] = {
+  private def getEdgeSet(graph: DiGraph[String]): collection.Map[String, collection.Set[String]] = {
     (graph.getVertices map {v => (v, graph.getEdges(v))}).toMap
   }
 

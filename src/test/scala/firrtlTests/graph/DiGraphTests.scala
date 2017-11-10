@@ -43,8 +43,8 @@ class DiGraphTests extends FirrtlFlatSpec {
 
   a [cyclicGraph.CyclicException] should be thrownBy cyclicGraph.linearize
 
-  acyclicGraph.reverse.edges should equal (reversedAcyclicGraph.edges)
+  acyclicGraph.reverse.getEdgeMap should equal (reversedAcyclicGraph.getEdgeMap)
 
-  degenerateGraph.edges should equal (degenerateGraph.reverse.edges)
+  degenerateGraph.getEdgeMap should equal (degenerateGraph.reverse.getEdgeMap)
 
 }

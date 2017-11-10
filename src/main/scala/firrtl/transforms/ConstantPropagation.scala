@@ -398,9 +398,9 @@ class ConstantPropagation extends Transform {
 
   private def run(c: Circuit, dontTouchMap: Map[String, Set[String]]): Circuit = {
     val iGraph = (new InstanceGraph(c)).graph
-    val moduleDeps = iGraph.edges.map { case (mod, children) =>
+    val moduleDeps = iGraph.getEdgeMap.map({ case (mod, children) =>
       mod.module -> children.map(i => i.name -> i.module).toMap
-    }
+    })
 
     // Module name to number of instances
     val instCount: Map[String, Int] = iGraph.getVertices.groupBy(_.module).mapValues(_.size)
