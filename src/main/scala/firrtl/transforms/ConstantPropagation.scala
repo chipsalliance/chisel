@@ -16,14 +16,19 @@ import firrtl.analyses.InstanceGraph
 import annotation.tailrec
 import collection.mutable
 
-class ConstantPropagation extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
-
-  private def pad(e: Expression, t: Type) = (bitWidth(e.tpe), bitWidth(t)) match {
+object ConstantPropagation {
+  /** Pads e to the width of t */
+  def pad(e: Expression, t: Type) = (bitWidth(e.tpe), bitWidth(t)) match {
     case (we, wt) if we < wt => DoPrim(Pad, Seq(e), Seq(wt), t)
     case (we, wt) if we == wt => e
   }
+
+}
+
+class ConstantPropagation extends Transform {
+  import ConstantPropagation._
+  def inputForm = LowForm
+  def outputForm = LowForm
 
   private def asUInt(e: Expression, t: Type) = DoPrim(AsUInt, Seq(e), Seq(), t)
 
