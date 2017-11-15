@@ -173,7 +173,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val annoFile = new File(targetDir, "annotations.anno")
 
     optionsManager.parse(
-      Array("--infer-rw", "circuit", "-faf", annoFile.toString, "-ffaaf")
+      Array("--infer-rw", "circuit", "-faf", annoFile.toString)
     ) should be (true)
 
     copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)

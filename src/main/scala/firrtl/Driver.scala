@@ -95,23 +95,15 @@ object Driver {
     *                       update the firrtlOptions with new annotations if it does
     */
   def loadAnnotations(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): Unit = {
-    /*
-     If firrtlAnnotations in the firrtlOptions are nonEmpty then these will be the annotations
-     used by firrtl.
-     To use the file annotations make sure that the annotations in the firrtlOptions are empty
-     The annotation file if needed is found via
-     s"$targetDirName/$topName.anno" or s"$annotationFileNameOverride.anno"
-    */
+
     def firrtlConfig = optionsManager.firrtlOptions
 
-    if (firrtlConfig.annotations.isEmpty || firrtlConfig.forceAppendAnnoFile) {
-      val annotationFileName = firrtlConfig.getAnnotationFileName(optionsManager)
-      val annotationFile = new File(annotationFileName)
-      if (annotationFile.exists) {
-        val annotationsYaml = io.Source.fromFile(annotationFile).getLines().mkString("\n").parseYaml
-        val annotationArray = annotationsYaml.convertTo[Array[Annotation]]
-        optionsManager.firrtlOptions = firrtlConfig.copy(annotations = firrtlConfig.annotations ++ annotationArray)
-      }
+    val annotationFileName = firrtlConfig.getAnnotationFileName(optionsManager)
+    val annotationFile = new File(annotationFileName)
+    if (annotationFile.exists) {
+      val annotationsYaml = io.Source.fromFile(annotationFile).getLines().mkString("\n").parseYaml
+      val annotationArray = annotationsYaml.convertTo[Array[Annotation]]
+      optionsManager.firrtlOptions = firrtlConfig.copy(annotations = firrtlConfig.annotations ++ annotationArray)
     }
 
     if(firrtlConfig.annotations.nonEmpty) {
