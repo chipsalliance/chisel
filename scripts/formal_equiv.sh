@@ -52,6 +52,7 @@ else
       hierarchy -top equiv
       clean -purge
       equiv_simple
+      equiv_induct
       equiv_status -assert
     "
 fi

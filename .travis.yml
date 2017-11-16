@@ -34,4 +34,4 @@ jobs:
         - bash .run_chisel_tests.sh
     - stage: test
       script:
-        - bash .run_formal_checks.sh
+        - travis_wait 90 bash .run_formal_checks.sh
