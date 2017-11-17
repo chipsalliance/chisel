@@ -4,7 +4,13 @@ import scala.collection.{Set, Map}
 import scala.collection.mutable
 import scala.collection.mutable.{LinkedHashSet, LinkedHashMap}
 
-/** A companion to create immutable DiGraphs from mutable data */
+/** An exception that is raised when an assumed DAG has a cycle */
+class CyclicException extends Exception("No valid linearization for cyclic graph")
+
+/** An exception that is raised when attempting to find an unreachable node */
+class PathNotFoundException extends Exception("Unreachable node")
+
+/** A companion to create DiGraphs from mutable data */
 object DiGraph {
   /** Create a DiGraph from a MutableDigraph, representing the same graph */
   def apply[T](mdg: MutableDiGraph[T]): DiGraph[T] = mdg
@@ -27,13 +33,6 @@ object DiGraph {
 
 /** Represents common behavior of all directed graphs */
 class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
-
-  /** An exception that is raised when an assumed DAG has a cycle */
-  class CyclicException extends Exception("No valid linearization for cyclic graph")
-  /** An exception that is raised when attempting to find an unreachable node */
-  class PathNotFoundException extends Exception("Unreachable node")
-
-
   /** Check whether the graph contains vertex v */
   def contains(v: T): Boolean = edges.contains(v)
 
