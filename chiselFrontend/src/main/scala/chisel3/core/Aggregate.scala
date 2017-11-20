@@ -569,20 +569,20 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     def reflectError(desc: String) {
       Builder.exception(s"Unable to automatically infer cloneType on $this: $desc")
     }
-    
+
     // Try Scala reflection
     import scala.reflect.runtime.universe._
 
     val mirror = runtimeMirror(this.getClass.getClassLoader)
     val decls = mirror.classSymbol(this.getClass).typeSignature.decls
     println(s"$this decls: $decls")
-    
+
     val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
     if (ctors.size != 1) {
       reflectError(s"found multiple constructors ($ctors). " +
           "Either remove all but the default constructor, or define a custom cloneType method.")
     }
-    
+
     val accessors = decls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
     val ctorParamss = ctors.head.paramLists
     val ctorParams = ctorParamss match {
@@ -592,35 +592,42 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
           List()  // make the type system happy
     }
     println(s"$this accessors: $accessors")
-    println(s"$this ctorParams: $ctorParams")
-    
+    println(s"$this ctorParams: $ctorParams of type ${ctorParams.map{_.typeSignature}}")
+    println(s"$this Java constructors ${this.getClass.getConstructors.toList}")
+    println(s"$this Java fields ${this.getClass.getDeclaredFields.toList}")
+
     // Check that all ctor params are immutable and accessible. Immutability is required to avoid
     // potential subtle bugs (like values changing after cloning).
     // This also generates better error messages (all missing elements shown at once) instead of
     // failing at the use site one at a time.
-    val ctorParamsName = ctorParams.map(_.name.toString)
-    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
-    val paramsDiff = ctorParamsName.toSet -- accessorsName.toSet
-    if (!paramsDiff.isEmpty) {
-      reflectError(s"constructor has parameters ($paramsDiff) that are not both immutable and accessible." + 
-          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
-    }
-    
-    // Get all the argument values
-    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
-    val instanceReflect = mirror.reflect(this)
-    val ctorParamsVals = ctorParamsName.map {
-      paramName => instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
-    }
-    
-    if (ctorParams.size > 0) {
-      print(s"Reflect got '$ctorParamsVals' for '$this'")
-    }
-    
-    // Invoke ctor
-    val classReflect = mirror.reflectClass(mirror.classSymbol(this.getClass))
-    classReflect.reflectConstructor(ctors.head).apply(ctorParamsVals:_*).asInstanceOf[this.type]
-    
+//    val ctorParamsName = ctorParams.map(_.name.toString)
+//    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
+//    val paramsDiff = ctorParamsName.toSet -- accessorsName.toSet
+//    if (!paramsDiff.isEmpty) {
+//      reflectError(s"constructor has parameters ($paramsDiff) that are not both immutable and accessible." +
+//          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+//    }
+//
+//    // Get all the argument values
+//    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
+//    val instanceReflect = mirror.reflect(this)
+//    val ctorParamsVals = ctorParamsName.map {
+//      paramName => instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
+//    }
+//
+//    if (ctorParams.size > 0) {
+//      print(s"Reflect got '$ctorParamsVals' for '$this'")
+//    }
+//
+//    // Invoke ctor
+//    val classReflect = mirror.reflectClass(mirror.classSymbol(this.getClass))
+////    classReflect.reflectConstructor(ctors.head).apply(null).asInstanceOf[this.type]
+//    classReflect.reflectConstructor(ctors.head).apply(ctorParamsVals:_*).asInstanceOf[this.type]
+//
+    val constructor = this.getClass.getConstructors.head
+    val args = Seq.fill(constructor.getParameterTypes.size)(null)
+    constructor.newInstance(args:_*).asInstanceOf[this.type]
+
 //    // If the user did not provide a cloneType method, try invoking one of
 //    // the following constructors, not all of which necessarily exist:
 //    // - A zero-parameter constructor
@@ -632,7 +639,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 //    // val classMirror = runtimeMirror.reflectClass(classSymbol)
 ////    val constructors = classSymbol.typeSignature.members.filter(_.isConstructor).toList
 ////    println(constructors)
-////      
+////
 //    val constructor = this.getClass.getConstructors.head
 //    println(constructor)
 //    println(constructor.getParameterTypes)
