@@ -208,6 +208,13 @@ abstract class Data extends HasId {
     }
   }
 
+  // If this Data is an instance of an inner class, record enclosing class
+  // This is only used for cloneType!
+  private[core] var outerModule: Option[BaseModule] =
+    (Option(this.getClass.getEnclosingClass) zip Builder.currentModule)
+      .find({ case (c, m) => c.isAssignableFrom(m.getClass) })
+      .map({ case (_, m) => m })
+
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
