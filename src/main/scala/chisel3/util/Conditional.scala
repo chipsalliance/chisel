@@ -24,10 +24,16 @@ object unless {  // scalastyle:ignore object.name
   * user-facing API.
   */
 class SwitchContext[T <: Bits](cond: T) {
+  private var whenContext: Option[WhenContext] = None
   def is(v: Iterable[T])(block: => Unit) {
     if (!v.isEmpty) {
-      when (v.map(_.asUInt === cond.asUInt).reduce(_||_)) {
-        block
+      // def instead of val so that logic ends up in legal place
+      def p = v.map(_.asUInt === cond.asUInt).reduce(_||_)
+      whenContext match {
+        case Some(w) =>
+          whenContext = Some(w.elsewhen(p)(block))
+        case None =>
+          whenContext = Some(when(p)(block))
       }
     }
   }
