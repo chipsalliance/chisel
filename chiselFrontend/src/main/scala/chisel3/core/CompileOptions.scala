@@ -60,7 +60,7 @@ object ExplicitCompileOptions {
     dontTryConnectionsSwapped = false,
     dontAssumeDirectionality = false,
     checkSynthesizable = false,
-    explicitInvalidate = false
+    explicitInvalidate = true
   )
 
   // Collection of "strict" connection compile options, preferred for new code.

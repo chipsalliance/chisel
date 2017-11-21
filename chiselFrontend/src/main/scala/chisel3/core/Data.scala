@@ -428,9 +428,9 @@ trait WireFactory {
     x.bind(WireBinding(Builder.forcedUserModule))
 
     pushCommand(DefWire(sourceInfo, x))
-    if (!compileOptions.explicitInvalidate) {
+    //if (!compileOptions.explicitInvalidate) {
       pushCommand(DefInvalid(sourceInfo, x.ref))
-    }
+    //}
 
     x
   }
