@@ -23,8 +23,8 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
   * @example
   *          {{{
   *          val optionsManager = new ExecutionOptionsManager("chisel3")
-  *              with FirrtlExecutionOptions
-  *              with ChiselExecutionOptions {
+  *              with HasFirrtlOptions
+  *              with HasChiselExecutionOptions {
   *            commonOptions = CommonOption(targetDirName = "my_target_dir")
   *            chiselOptions = ChiselExecutionOptions(runFirrtlCompiler = false)
   *          }
