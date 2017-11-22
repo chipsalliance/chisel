@@ -591,42 +591,35 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
           List()  // make the type system happy
     }
-    println(s"$this accessors: $accessors")
-    println(s"$this ctorParams: $ctorParams of type ${ctorParams.map{_.typeSignature}}")
-    println(s"$this Java constructors ${this.getClass.getConstructors.toList}")
-    println(s"$this Java fields ${this.getClass.getDeclaredFields.toList}")
 
     // Check that all ctor params are immutable and accessible. Immutability is required to avoid
     // potential subtle bugs (like values changing after cloning).
     // This also generates better error messages (all missing elements shown at once) instead of
     // failing at the use site one at a time.
-//    val ctorParamsName = ctorParams.map(_.name.toString)
-//    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
-//    val paramsDiff = ctorParamsName.toSet -- accessorsName.toSet
-//    if (!paramsDiff.isEmpty) {
-//      reflectError(s"constructor has parameters ($paramsDiff) that are not both immutable and accessible." +
-//          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
-//    }
-//
-//    // Get all the argument values
-//    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
-//    val instanceReflect = mirror.reflect(this)
-//    val ctorParamsVals = ctorParamsName.map {
-//      paramName => instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
-//    }
-//
-//    if (ctorParams.size > 0) {
-//      print(s"Reflect got '$ctorParamsVals' for '$this'")
-//    }
-//
-//    // Invoke ctor
-//    val classReflect = mirror.reflectClass(mirror.classSymbol(this.getClass))
-////    classReflect.reflectConstructor(ctors.head).apply(null).asInstanceOf[this.type]
-//    classReflect.reflectConstructor(ctors.head).apply(ctorParamsVals:_*).asInstanceOf[this.type]
-//
-    val constructor = this.getClass.getConstructors.head
-    val args = Seq.fill(constructor.getParameterTypes.size)(null)
-    constructor.newInstance(args:_*).asInstanceOf[this.type]
+    val ctorParamsName = ctorParams.map(_.name.toString)
+    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
+    val paramsDiff = ctorParamsName.toSet -- accessorsName.toSet
+    if (!paramsDiff.isEmpty) {
+      reflectError(s"constructor has parameters ($paramsDiff) that are not both immutable and accessible." +
+          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+    }
+
+    // Get all the argument values
+    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
+    val instanceReflect = mirror.reflect(this)
+    val ctorParamsVals = ctorParamsName.map {
+      paramName => instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
+    }
+
+    // Invoke ctor
+    val classReflect = mirror.reflectClass(mirror.classSymbol(this.getClass))
+    classReflect.reflectConstructor(ctors.head).apply(ctorParamsVals:_*).asInstanceOf[this.type]
+
+
+
+//    val constructor = this.getClass.getConstructors.head
+//    val args = Seq.fill(constructor.getParameterTypes.size)(null)
+//    constructor.newInstance(args:_*).asInstanceOf[this.type]
 
 //    // If the user did not provide a cloneType method, try invoking one of
 //    // the following constructors, not all of which necessarily exist:
