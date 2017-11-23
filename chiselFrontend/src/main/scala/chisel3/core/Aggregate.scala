@@ -5,6 +5,7 @@ package chisel3.core
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 import scala.language.experimental.macros
+import scala.util.Try
 
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
@@ -572,6 +573,30 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     def reflectError(desc: String) {
       Builder.exception(s"Unable to automatically infer cloneType on $this: $desc")
+    }
+
+    // Check if the bundle is an instance of an inner class by examining
+    // whether it has one one-argument constructor taking a type matching the enclosing class
+    if (this.getClass.getConstructors.size == 1) {
+      val aggClass = this.getClass
+      val constr = aggClass.getConstructors.head
+      val argTypes = constr.getParameterTypes
+      val outerClass = aggClass.getEnclosingClass
+      if (argTypes.size == 1 && outerClass != null) {
+        // attempt to clone using "$outer"
+        var clone: Option[this.type] =
+          Try[this.type](constr.newInstance(aggClass.getDeclaredField("$outer").get(this)).asInstanceOf[this.type]).toOption
+        if (clone.isEmpty) {
+          // fall back to outerModule field
+          clone = Try[this.type](constr.newInstance(outerModule.get).asInstanceOf[this.type]).toOption
+        }
+        clone.foreach(_.outerModule = this.outerModule)
+        if (clone.isDefined) {
+          return clone.get
+        } else {
+          reflectError("non-trivial inner Bundle class")
+        }
+      }
     }
 
     // Try Scala reflection
