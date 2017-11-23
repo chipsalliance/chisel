@@ -23,7 +23,7 @@ object Binding {
 object requireIsHardware {
   def apply(node: Data, msg: String = "") = {
     node._parent match {  // Compatibility layer hack
-      case Some(x: BaseModule) => x._compatAutoWrapPorts
+      case Some(x: BaseModule) => x._autoWrapPorts
       case _ =>
     }
     if (!node.hasBinding) {

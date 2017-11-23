@@ -9,7 +9,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
   behavior of "autoCloneType of inner Bundle in Chisel3"
 
   it should "clone a doubly-nested inner bundle successfully" in {
-    elaborate { 
+    elaborate {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
           class InnerIOType extends Bundle {
@@ -17,16 +17,18 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
           }
           def getIO = new InnerIOType
         }
-        val io = IO((new Middle(w)).getIO)
+        val io = IO(new Bundle {})
+        val myWire = Wire((new Middle(w)).getIO) 
       }
       new Outer(2)
     }
   }
 
   it should "clone an anonymous inner bundle successfully" in {
-    elaborate { 
+    elaborate {
       class TestTop(val w: Int) extends Module {
-        val io = IO(new Bundle{ val a = UInt(w.W) })
+        val io = IO(new Bundle {})
+        val myWire = Wire(new Bundle{ val a = UInt(w.W) })
       }
       new TestTop(2)
     }
@@ -63,10 +65,11 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
             val in = Input(UInt(w.W))
           }
         }
-        val io = IO((new Middle(w)).getIO)
+        val io = IO(new Bundle {})
+        val myWire = Wire((new Middle(w)).getIO)
       }
       new Outer(2)
     }
-  }).getMessage should include("non-trivial inner Bundle class")
+  }).getMessage should include("Unable to determine instance")
 
 }
