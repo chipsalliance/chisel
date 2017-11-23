@@ -149,7 +149,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
 
   // Allow access to bindings from the compatibility package
   protected def _compatIoPortBound() = portsContains(io)
-  
+
   protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
     val names = super.nameIds(rootClass)
 
