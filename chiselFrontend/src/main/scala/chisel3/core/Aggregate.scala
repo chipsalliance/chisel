@@ -706,48 +706,8 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case None => mirror.reflectClass(classSymbol)
     }
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
-
     clone.outerModule = this.outerModule
-
     clone
-
-//    val constructor = this.getClass.getConstructors.head
-//    val args = Seq.fill(constructor.getParameterTypes.size)(null)
-//    constructor.newInstance(args:_*).asInstanceOf[this.type]
-
-//    // If the user did not provide a cloneType method, try invoking one of
-//    // the following constructors, not all of which necessarily exist:
-//    // - A zero-parameter constructor
-//    // - A one-paramater constructor, with null as the argument
-//    // - A one-parameter constructor for a nested Bundle, with the enclosing
-//    //   parent Module as the argument
-//
-//
-//    // val classMirror = runtimeMirror.reflectClass(classSymbol)
-////    val constructors = classSymbol.typeSignature.members.filter(_.isConstructor).toList
-////    println(constructors)
-////
-//    val constructor = this.getClass.getConstructors.head
-//    println(constructor)
-//    println(constructor.getParameterTypes)
-//
-//    try {
-//      val args = Seq.fill(constructor.getParameterTypes.size)(null)
-//      constructor.newInstance(args:_*).asInstanceOf[this.type]
-//    } catch {
-//      case e: java.lang.reflect.InvocationTargetException if e.getCause.isInstanceOf[java.lang.NullPointerException] =>
-//        try {
-//          constructor.newInstance(_parent.get).asInstanceOf[this.type]
-//        } catch {
-//          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-//            Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
-//              "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
-//            this
-//        }
-//      case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-//        Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method")
-//        this
-//    }
   }
 
   /** Default "pretty-print" implementation
