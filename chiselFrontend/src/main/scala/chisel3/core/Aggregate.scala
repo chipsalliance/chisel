@@ -585,22 +585,55 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
           }
         }
         if (!outerClass.isAssignableFrom(outerInstance.getClass)) {
-          reflectError(s"Automatically determined outer class instance $outerInstance not assignable to outer class type $outerClass")
+          reflectError(s"Automatically determined outer class instance $outerInstance not assignable to outer class $outerClass")
         }
         Some(outerClass, outerInstance)
       case None => None
     }
 
+    // If possible (constructor with no arguments), try Java reflection first
+    // This handles two cases that Scala reflection doesn't:
+    // 1. getting the ClassSymbol of a class with an anonymous outer class fails with a
+    //    CyclicReference exception
+    // 2. invoking the constructor of an anonymous inner class seems broken (it expects the outer
+    //    class as an argument, but fails because the number of arguments passed in is incorrect)
+    if (clazz.getConstructors.size == 1) {
+      var ctor = clazz.getConstructors.head
+      val argTypes = ctor.getParameterTypes.toList
+      val clone = (argTypes, outerClassInstance) match {
+        case (Nil, None) => // no arguments, no outer class, invoke constructor directly
+          Some(ctor.newInstance().asInstanceOf[this.type])
+        case (argType :: Nil, Some((_, outerInstance))) =>
+          if (argType isAssignableFrom outerInstance.getClass) {
+            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+          } else {
+            None
+          }
+        case _ => None
+      }
+      clone match {
+        case Some(clone) =>
+          clone.outerModule = this.outerModule
+          return clone.asInstanceOf[this.type]
+        case None =>
+      }
+    }
+
     // Get constructor parameters and accessible fields
     val mirror = runtimeMirror(clazz.getClassLoader)
-    val classSymbol = mirror.classSymbol(clazz)
+    val classSymbol = try {
+      mirror.reflect(this).symbol
+    } catch {
+      case e: scala.reflect.internal.Symbols#CyclicReference => reflectError(s"Scala cannot reflect on $this, got exception $e." +
+          " This is known to occur with inner classes on anonymous outer classes." +
+          " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType.")
+    }
 
     val decls = classSymbol.typeSignature.decls
-
     val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
     if (ctors.size != 1) {
-      reflectError(s"found multiple constructors ($ctors). " +
-          "Either remove all but the default constructor, or define a custom cloneType method.")
+      reflectError(s"found multiple constructors ($ctors)." +
+          " Either remove all but the default constructor, or define a custom cloneType method.")
     }
     val ctor = ctors.head
 
@@ -610,7 +643,6 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case Nil => List()
       case ctorParams :: Nil => ctorParams
       case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
-          List()  // make the type system happy
     }
     val ctorParamsNames = ctorParams.map(_.name.toString)
 
@@ -639,7 +671,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
     val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
     if (!paramsDiff.isEmpty) {
-      reflectError(s"constructor has parameters ($paramsDiff) that are not both immutable and accessible." +
+      reflectError(s"constructor has parameters $paramsDiff that are not both immutable and accessible." +
           " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
     }
 
