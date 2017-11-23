@@ -27,7 +27,7 @@ class Packet extends Bundle {
   * lines also.
   * The problem does not occur if the Vec is taken out
   */
-class VectorPacketIO(n: Int) extends Bundle {
+class VectorPacketIO(val n: Int) extends Bundle {
   val ins  = Vec(n, chisel3.util.DeqIO(new Packet()))
   val outs = Vec(n, chisel3.util.EnqIO(new Packet()))
 }

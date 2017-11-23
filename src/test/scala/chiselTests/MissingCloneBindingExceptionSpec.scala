@@ -28,7 +28,7 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
     }
 
     elaborate(new TestTop)
-  }).getMessage should include("needs cloneType method")
+  }).getMessage should include("make all parameters immutable")
 
   behavior of "missing cloneType in Chisel2"
   ( the[ChiselException] thrownBy {
@@ -53,5 +53,5 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
     }
 
     elaborate(new TestTop)
-  }).getMessage should include("needs cloneType method")
+  }).getMessage should include("make all parameters immutable")
 }
