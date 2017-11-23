@@ -553,18 +553,8 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
   }
 
   override def cloneType : this.type = {
-    // Automatic Bundle cloning is inferred as follows:
-    // - User-overloaded cloneType is called instead of this (if supplied, so this method is never called)
-    // - Attempt to automatically fill in constructor parameters by using Scala reflection:
-    //   - If multiple constructors, error out
-    //   - If the constructor argument list can be matched to param accessors, call the constructor with
-    //     the result of those accessors
-    //   - Otherwise, error out
-    // - If Scala reflection crashes, fall back to Java reflection and inspect the constructor argument list:
-    //   - If no parameters, invoke constructor directly. That was easy!
-    //   - If the first parameter's type is equal to this Module, assume the Bundle is an inner class
-    //     and invoke it with the current containing Module
-    // - Error out to the user
+    // This attempts to infer constructor and arguments to clone this Bundle subtype without
+    // requiring the user explicitly overriding cloneType.
 
     def reflectError(desc: String): Nothing = {
       Builder.exception(s"Unable to automatically infer cloneType on $this: $desc").asInstanceOf[Nothing]
