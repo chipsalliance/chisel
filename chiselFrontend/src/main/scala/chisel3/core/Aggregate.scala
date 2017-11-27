@@ -627,11 +627,15 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
     val ctor = ctors.head
 
+    println(ctor)
+    println(ctor.paramLists)
+    
     val accessors = decls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
     val ctorParamss = ctor.paramLists
     val ctorParams = ctorParamss match {
       case Nil => List()
       case ctorParams :: Nil => ctorParams
+      case ctorParams :: ctorImplicits :: Nil => ctorParams ++ ctorImplicits
       case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
     }
     val ctorParamsNames = ctorParams.map(_.name.toString)
