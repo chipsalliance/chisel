@@ -128,10 +128,10 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _compatIoPortBound() = portsContains(io)
+  protected def _ioPortBound() = portsContains(io)
 
   private[core] override def generateComponent(): Component = {
-    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
+    _autoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(io != null, "BlackBox must have io")
