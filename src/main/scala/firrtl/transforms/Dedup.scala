@@ -30,14 +30,6 @@ object NoDedupAnnotation {
 class DedupModules extends Transform {
   def inputForm = HighForm
   def outputForm = HighForm
-  def execute(state: CircuitState): CircuitState = {
-    getMyAnnotations(state) match {
-      case Nil => state.copy(circuit = run(state.circuit, Seq.empty))
-      case annos =>
-        val noDedups = annos.collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
-        state.copy(circuit = run(state.circuit, noDedups))
-    }
-  }
   // Orders the modules of a circuit from leaves to root
   // A module will appear *after* all modules it instantiates
   private def buildModuleOrder(c: Circuit): Seq[String] = {
@@ -74,15 +66,17 @@ class DedupModules extends Transform {
 
   // Finds duplicate Modules
   // Also changes DefInstances to instantiate the deduplicated module
+  // Returns (Deduped Module name -> Seq of identical modules,
+  //          Deuplicate Module name -> deduped module name)
   private def findDups(
       moduleOrder: Seq[String],
       moduleMap: Map[String, DefModule],
-      noDedups: Seq[String]): Map[String, Seq[DefModule]] = {
+      noDedups: Seq[String]): (Map[String, Seq[DefModule]], Map[String, String]) = {
     // Module body -> Module name
     val dedupModules = mutable.HashMap.empty[String, String]
     // Old module name -> dup module name
     val dedupMap = mutable.HashMap.empty[String, String]
-    // Dup module name -> all old module names
+    // Deduplicated module name -> all identical modules
     val oldModuleMap = mutable.HashMap.empty[String, Seq[DefModule]]
 
     def onModule(m: DefModule): Unit = {
@@ -134,18 +128,29 @@ class DedupModules extends Transform {
       }
     }
     moduleOrder.foreach(n => onModule(moduleMap(n)))
-    oldModuleMap.toMap
+    (oldModuleMap.toMap, dedupMap.toMap)
   }
 
-  def run(c: Circuit, noDedups: Seq[String]): Circuit = {
+  def run(c: Circuit, noDedups: Seq[String]): (Circuit, RenameMap) = {
     val moduleOrder = buildModuleOrder(c)
     val moduleMap = c.modules.map(m => m.name -> m).toMap
 
-    val oldModuleMap = findDups(moduleOrder, moduleMap, noDedups)
+    val (oldModuleMap, dedupMap) = findDups(moduleOrder, moduleMap, noDedups)
 
     // Use old module list to preserve ordering
     val dedupedModules = c.modules.flatMap(m => oldModuleMap.get(m.name).map(_.head))
 
-    c.copy(modules = dedupedModules)
+    val cname = CircuitName(c.main)
+    val renameMap = RenameMap(dedupMap.map { case (from, to) =>
+      ModuleName(from, cname) -> List(ModuleName(to, cname))
+    })
+
+    (c.copy(modules = dedupedModules), renameMap)
+  }
+
+  def execute(state: CircuitState): CircuitState = {
+    val noDedups = getMyAnnotations(state).collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
+    val (newC, renameMap) = run(state.circuit, noDedups)
+    state.copy(circuit = newC, renames = Some(renameMap))
   }
 }

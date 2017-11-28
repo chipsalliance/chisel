@@ -463,4 +463,37 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should not contain (anno("foo", mod = "DeadExt"))
     resultAnno should not contain (anno("bar", mod = "DeadExt"))
   }
+
+  "Renaming" should "track deduplication" in {
+    val compiler = new VerilogCompiler
+    val input =
+     """circuit Top :
+        |  module Child :
+        |    input x : UInt<32>
+        |    output y : UInt<32>
+        |    y <= x
+        |  module Child_1 :
+        |    input x : UInt<32>
+        |    output y : UInt<32>
+        |    y <= x
+        |  module Top :
+        |    input in : UInt<32>[2]
+        |    output out : UInt<32>
+        |    inst a of Child
+        |    inst b of Child_1
+        |    a.x <= in[0]
+        |    b.x <= in[1]
+        |    out <= tail(add(a.y, b.y), 1)
+        |""".stripMargin
+    val annos = Seq(
+      anno("x", mod = "Child"), anno("y", mod = "Child_1"), manno("Child"), manno("Child_1")
+    )
+    val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, getAMap(annos)), Nil)
+    val resultAnno = result.annotations.get.annotations
+    resultAnno should contain (anno("x", mod = "Child"))
+    resultAnno should contain (anno("y", mod = "Child"))
+    resultAnno should contain (manno("Child"))
+    resultAnno should not contain (anno("y", mod = "Child_1"))
+    resultAnno should not contain (manno("Child_1"))
+  }
 }
