@@ -196,7 +196,7 @@ object Driver {
         case OneFilePerModule(dirName) =>
           val emittedModules = finalState.emittedComponents collect { case x: EmittedModule => x }
           if (emittedModules.isEmpty) throwInternalError // There should be something
-          emittedModules.foreach { case module =>
+          emittedModules.foreach { module =>
             val filename = optionsManager.getBuildFileName(firrtlConfig.outputSuffix, s"$dirName/${module.name}")
             val outputFile = new java.io.PrintWriter(filename)
             outputFile.write(module.value)
@@ -211,8 +211,8 @@ object Driver {
         case file =>
           val filename = optionsManager.getBuildFileName("anno", file)
           val outputFile = new java.io.PrintWriter(filename)
-          finalState.annotations.map {
-            case annos => outputFile.write(annos.annotations.mkString("\n"))
+          finalState.annotations.foreach {
+            finalAnnos => outputFile.write(finalAnnos.annotations.toYaml.prettyPrint)
           }
           outputFile.close()
       }
