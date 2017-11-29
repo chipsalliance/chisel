@@ -553,30 +553,155 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
   }
 
   override def cloneType : this.type = {
-    // If the user did not provide a cloneType method, try invoking one of
-    // the following constructors, not all of which necessarily exist:
-    // - A zero-parameter constructor
-    // - A one-paramater constructor, with null as the argument
-    // - A one-parameter constructor for a nested Bundle, with the enclosing
-    //   parent Module as the argument
-    val constructor = this.getClass.getConstructors.head
-    try {
-      val args = Seq.fill(constructor.getParameterTypes.size)(null)
-      constructor.newInstance(args:_*).asInstanceOf[this.type]
-    } catch {
-      case e: java.lang.reflect.InvocationTargetException if e.getCause.isInstanceOf[java.lang.NullPointerException] =>
-        try {
-          constructor.newInstance(_parent.get).asInstanceOf[this.type]
-        } catch {
-          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-            Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
-              "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
-            this
-        }
-      case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-        Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method")
-        this
+    // This attempts to infer constructor and arguments to clone this Bundle subtype without
+    // requiring the user explicitly overriding cloneType.
+
+    def reflectError(desc: String): Nothing = {
+      Builder.exception(s"Unable to automatically infer cloneType on $this: $desc").asInstanceOf[Nothing]
     }
+
+    import scala.reflect.runtime.universe._
+
+    // Check if this is an inner class, and if so, try to get the outer instance
+    val clazz = this.getClass
+    val outerClassInstance = Option(clazz.getEnclosingClass) match {
+      case Some(outerClass) =>
+        val outerInstance = try {
+          clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
+        } catch {
+          case _: NoSuchFieldException => this.outerModule match {
+            case Some(outerModule) => outerModule
+            case None => reflectError(s"Unable to determine instance of outer class $outerClass")
+          }
+        }
+        if (!outerClass.isAssignableFrom(outerInstance.getClass)) {
+          reflectError(s"Automatically determined outer class instance $outerInstance not assignable to outer class $outerClass")
+        }
+        Some(outerClass, outerInstance)
+      case None => None
+    }
+
+    // If possible (constructor with no arguments), try Java reflection first
+    // This handles two cases that Scala reflection doesn't:
+    // 1. getting the ClassSymbol of a class with an anonymous outer class fails with a
+    //    CyclicReference exception
+    // 2. invoking the constructor of an anonymous inner class seems broken (it expects the outer
+    //    class as an argument, but fails because the number of arguments passed in is incorrect)
+    if (clazz.getConstructors.size == 1) {
+      var ctor = clazz.getConstructors.head
+      val argTypes = ctor.getParameterTypes.toList
+      val clone = (argTypes, outerClassInstance) match {
+        case (Nil, None) => // no arguments, no outer class, invoke constructor directly
+          Some(ctor.newInstance().asInstanceOf[this.type])
+        case (argType :: Nil, Some((_, outerInstance))) =>
+          if (argType isAssignableFrom outerInstance.getClass) {
+            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+          } else {
+            None
+          }
+        case _ => None
+      }
+      clone match {
+        case Some(clone) =>
+          clone.outerModule = this.outerModule
+          return clone.asInstanceOf[this.type]
+        case None =>
+      }
+    }
+
+    // Get constructor parameters and accessible fields
+    val mirror = runtimeMirror(clazz.getClassLoader)
+    val classSymbol = try {
+      mirror.reflect(this).symbol
+    } catch {
+      case e: scala.reflect.internal.Symbols#CyclicReference => reflectError(s"Scala cannot reflect on $this, got exception $e." +
+          " This is known to occur with inner classes on anonymous outer classes." +
+          " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType.")
+    }
+
+    val decls = classSymbol.typeSignature.decls
+    val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
+    if (ctors.size != 1) {
+      reflectError(s"found multiple constructors ($ctors)." +
+          " Either remove all but the default constructor, or define a custom cloneType method.")
+    }
+    val ctor = ctors.head
+
+    println(ctor)
+    println(ctor.paramLists)
+    
+    val accessors = decls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
+    val ctorParamss = ctor.paramLists
+    val ctorParams = ctorParamss match {
+      case Nil => List()
+      case ctorParams :: Nil => ctorParams
+      case ctorParams :: ctorImplicits :: Nil => ctorParams ++ ctorImplicits
+      case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
+    }
+    val ctorParamsNames = ctorParams.map(_.name.toString)
+
+    // Special case for anonymous inner classes: their constructor consists of just the outer class reference
+    // Scala reflection on anonymous inner class constructors seems broken
+    if (ctorParams.size == 1 && outerClassInstance.isDefined &&
+        ctorParams.head.typeSignature == mirror.classSymbol(outerClassInstance.get._1).toType) {
+      // Fall back onto Java reflection
+      val ctors = clazz.getConstructors
+      require(ctors.size == 1)  // should be consistent with Scala constructors
+      try {
+        val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
+        clone.outerModule = this.outerModule
+        return clone
+      } catch {
+        case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
+          reflectError(s"Unexpected failure at constructor invocation, got $e.")
+      }
+    }
+
+    // Get constructor argument values
+    // Check that all ctor params are immutable and accessible. Immutability is required to avoid
+    // potential subtle bugs (like values changing after cloning).
+    // This also generates better error messages (all missing elements shown at once) instead of
+    // failing at the use site one at a time.
+    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
+    val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
+    if (!paramsDiff.isEmpty) {
+      reflectError(s"constructor has parameters $paramsDiff that are not both immutable and accessible." +
+          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+    }
+
+    // Get all the argument values
+    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
+    val instanceReflect = mirror.reflect(this)
+    val ctorParamsNameVals = ctorParamsNames.map {
+      paramName => paramName -> instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
+    }
+
+    // Oppurtunistic sanity check: ensure any arguments of type Data is not bound
+    // (which could lead to data conflicts, since it's likely the user didn't know to re-bind them).
+    // This is not guaranteed to catch all cases (for example, Data in Tuples or Iterables).
+    val boundDataParamNames = ctorParamsNameVals.map{ case (paramName, paramVal) => paramVal match {
+      case paramVal: Data => paramVal.hasBinding match {
+        case true => Some(paramName)
+        case false => None
+      }
+      case _ => None
+      }
+    }.filter(_.isDefined).map(_.get)
+    if (!boundDataParamNames.isEmpty) {
+      reflectError(s"constructor parameters ($boundDataParamNames) have values that are hardware types, which is likely to cause subtle errors." +
+          " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
+    }
+
+    val ctorParamsVals = ctorParamsNameVals.map{ case (_, paramVal) => paramVal }
+
+    // Invoke ctor
+    val classMirror = outerClassInstance match {
+      case Some((_, outerInstance)) => mirror.reflect(outerInstance).reflectClass(classSymbol)
+      case None => mirror.reflectClass(classSymbol)
+    }
+    val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
+    clone.outerModule = this.outerModule
+    clone
   }
 
   /** Default "pretty-print" implementation
