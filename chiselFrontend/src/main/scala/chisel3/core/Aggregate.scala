@@ -604,6 +604,10 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       clone match {
         case Some(clone) =>
           clone.outerModule = this.outerModule
+          if (!clone.typeEquivalent(this)) {
+            reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+            " Constructor argument values were not inferred, ensure constructor is deterministic.")
+          }
           return clone.asInstanceOf[this.type]
         case None =>
       }
@@ -626,11 +630,6 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
           " Either remove all but the default constructor, or define a custom cloneType method.")
     }
     val ctor = ctors.head
-
-    println(ctor)
-    println(ctor.paramLists)
-    
-    val accessors = decls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
     val ctorParamss = ctor.paramLists
     val ctorParams = ctorParamss match {
       case Nil => List()
@@ -656,6 +655,13 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
           reflectError(s"Unexpected failure at constructor invocation, got $e.")
       }
     }
+
+    // Get all the class symbols up to (but not including) Bundle and get all the accessors.
+    // (each ClassSymbol's decls only includes those declared in the class itself)
+    val bundleClassSymbol = mirror.classSymbol(classOf[Bundle])
+    val superClassSymbols = classSymbol.baseClasses.takeWhile(_ != bundleClassSymbol)
+    val superClassDecls = superClassSymbols.map(_.typeSignature.decls).flatten
+    val accessors = superClassDecls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
 
     // Get constructor argument values
     // Check that all ctor params are immutable and accessible. Immutability is required to avoid
@@ -701,6 +707,13 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
     clone.outerModule = this.outerModule
+
+    if (!clone.typeEquivalent(this)) {
+      reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
+          " and that the constructor is deterministic.")
+    }
+
     clone
   }
 
