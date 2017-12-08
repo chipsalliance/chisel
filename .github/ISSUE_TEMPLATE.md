@@ -23,4 +23,8 @@ This repository's issues are reserved for feature requests and bug reports.
   - [ ] API modification
   - [ ] unknown
 
+* **Development Phase**
+  - [ ] request
+  - [ ] proposal
+
 * **Other information** (e.g. detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, etc)

@@ -5,14 +5,14 @@
   - [ ] Feature request
   - [ ] Other enhancement
 
-* **Development Phase**
-  - [ ] proposal
-  - [ ] implementation
-
 * **Impact**
   - [ ] no functional change
   - [ ] API addition (no impact on existing code)
   - [ ] API modification
+
+* **Development Phase**
+  - [ ] proposal
+  - [ ] implementation
 
 * **Release Notes**
 
