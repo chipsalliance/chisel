@@ -7,7 +7,6 @@ import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-//import chisel3.core.ExplicitCompileOptions.Strict
 
 class WhenTester() extends BasicTester {
   val cnt = Counter(4)
@@ -66,6 +65,8 @@ class NoOtherwiseOverlappedWhenTester() extends BasicTester {
     out := 3.U
   } .elsewhen (cnt.value <= 3.U) {
     out := 0.U
+  } .otherwise {
+    out := DontCare
   }
 
   assert(out === cnt.value + 1.U)
