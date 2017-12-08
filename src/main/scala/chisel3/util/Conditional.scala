@@ -23,23 +23,35 @@ object unless {  // scalastyle:ignore object.name
 /** Implementation details for [[switch]]. See [[switch]] and [[chisel3.util.is is]] for the
   * user-facing API.
   */
-class SwitchContext[T <: Bits](cond: T) {
-  def is(v: Iterable[T])(block: => Unit) {
+class SwitchContext[T <: Bits](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
+  def is(v: Iterable[T])(block: => Unit): SwitchContext[T] = {
     if (!v.isEmpty) {
-      when (v.map(_.asUInt === cond.asUInt).reduce(_||_)) {
-        block
+      val newLits = v.map { w =>
+        require(w.isLit, "is conditions must be literals!")
+        val value = w.litValue
+        require(!lits.contains(value), "all is conditions must be mutually exclusive!")
+        value
       }
+      // def instead of val so that logic ends up in legal place
+      def p = v.map(_.asUInt === cond.asUInt).reduce(_||_)
+      whenContext match {
+        case Some(w) => new SwitchContext(cond, Some(w.elsewhen(p)(block)), lits ++ newLits)
+        case None => new SwitchContext(cond, Some(when(p)(block)), lits ++ newLits)
+      }
+    } else {
+      this
     }
   }
-  def is(v: T)(block: => Unit) { is(Seq(v))(block) }
-  def is(v: T, vr: T*)(block: => Unit) { is(v :: vr.toList)(block) }
+  def is(v: T)(block: => Unit): SwitchContext[T] = is(Seq(v))(block)
+  def is(v: T, vr: T*)(block: => Unit): SwitchContext[T] = is(v :: vr.toList)(block)
 }
 
 /** Use to specify cases in a [[switch]] block, equivalent to a [[when$ when]] block comparing to
   * the condition variable.
   *
   * @note illegal outside a [[switch]] block
-  * @note multiple conditions may fire simultaneously
+  * @note must be a literal
+  * @note each is must be mutually exclusive
   * @note dummy implementation, a macro inside [[switch]] transforms this into the actual
   * implementation
   */
@@ -80,15 +92,15 @@ object is {   // scalastyle:ignore object.name
 object switch {  // scalastyle:ignore object.name
   def apply[T <: Bits](cond: T)(x: => Unit): Unit = macro impl
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
-    val sc = c.universe.internal.reificationSupport.freshTermName("sc")
-    def extractIsStatement(tree: Tree): List[c.universe.Tree] = tree match {
-      // TODO: remove when Chisel compatibility package is removed
-      case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => List(q"$sc.is( ..$params )( ..$body )")
-      case q"chisel3.util.is.apply( ..$params )( ..$body )" => List(q"$sc.is( ..$params )( ..$body )")
-      case b => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
-    }
     val q"..$body" = x
-    val ises = body.flatMap(extractIsStatement(_))
-    q"""{ val $sc = new SwitchContext($cond); ..$ises }"""
+    val res = body.foldLeft(q"""new SwitchContext($cond, None, Set.empty)""") {
+      case (acc, tree) => tree match {
+        // TODO: remove when Chisel compatibility package is removed
+        case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
+        case q"chisel3.util.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
+        case b => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
+      }
+    }
+    q"""{ $res }"""
   }
 }
