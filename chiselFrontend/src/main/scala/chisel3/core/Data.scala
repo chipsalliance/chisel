@@ -70,9 +70,9 @@ object ActualDirection {
   case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
 }
 
-@deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
+@deprecated("Use dontTouch instead of debug in chisel3", "chisel3")
 object debug {  // scalastyle:ignore object.name
-  def apply (arg: Data): Data = arg
+  def apply(arg: Data)(implicit compileOptions: CompileOptions): Data = dontTouch(arg)
 }
 
 /** Experimental hardware construction reflection API
