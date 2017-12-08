@@ -2,10 +2,8 @@
 
 package chisel3.core
 
-import chisel3.internal.Builder
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Attach, Connect}
-import chisel3.internal.throwException
+import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
@@ -46,6 +44,8 @@ object BiConnect {
     BiConnectException(s": Left ($left) and Right ($right) have different types.")
   def AttachAlreadyBulkConnectedException(sourceInfo: SourceInfo) =
     BiConnectException(sourceInfo.makeMessage(": Analog previously bulk connected at " + _))
+  def DontCareCantBeSink =
+    BiConnectException(": DontCare cannot be a connection sink (LHS)")
 
 
   /** This function is what recursively tries to connect a left and right together
@@ -54,7 +54,7 @@ object BiConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: UserModule): Unit =
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: UserModule): Unit = {
     (left, right) match {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
@@ -69,9 +69,11 @@ object BiConnect {
         // TODO(twigg): Verify the element-level classes are connectable
       }
       // Handle Vec case
-      case (left_v: Vec[Data @unchecked], right_v: Vec[Data @unchecked]) => {
-        if(left_v.length != right_v.length) { throw MismatchedVecException }
-        for(idx <- 0 until left_v.length) {
+      case (left_v: Vec[Data@unchecked], right_v: Vec[Data@unchecked]) => {
+        if (left_v.length != right_v.length) {
+          throw MismatchedVecException
+        }
+        for (idx <- 0 until left_v.length) {
           try {
             implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
@@ -80,58 +82,139 @@ object BiConnect {
           }
         }
       }
-      // Handle Record case
-      case (left_r: Record, right_r: Record) => {
-        // Verify right has no extra fields that left doesn't have
-        for((field, right_sub) <- right_r.elements) {
-          if(!left_r.elements.isDefinedAt(field)) {
-            if (connectCompileOptions.connectFieldsMustMatch) {
-              throw MissingLeftFieldException(field)
-            }
-          }
-        }
-        // For each field in left, descend with right
-        for((field, left_sub) <- left_r.elements) {
+      // Handle Vec connected to DontCare
+      case (left_v: Vec[Data@unchecked], DontCare) => {
+        for (idx <- 0 until left_v.length) {
           try {
-            right_r.elements.get(field) match {
-              case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
-              case None => {
-                if (connectCompileOptions.connectFieldsMustMatch) {
-                  throw MissingRightFieldException(field)
-                }
-              }
-            }
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, left_v(idx), right, context_mod)
           } catch {
-            case BiConnectException(message) => throw BiConnectException(s".$field$message")
+            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
           }
         }
       }
+      // Handle DontCare connected to Vec
+      case (DontCare, right_v: Vec[Data@unchecked]) => {
+        for (idx <- 0 until right_v.length) {
+          try {
+            implicit val compileOptions = connectCompileOptions
+            connect(sourceInfo, connectCompileOptions, left, right_v(idx), context_mod)
+          } catch {
+            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+          }
+        }
+      }
+      // Handle Records defined in Chisel._ code (change to NotStrict)
+      case (left_r: Record, right_r: Record) => (left_r.compileOptions, right_r.compileOptions) match {
+        case (ExplicitCompileOptions.NotStrict, _) =>
+          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        case (_, ExplicitCompileOptions.NotStrict) =>
+          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+      }
+
+      // Handle Records connected to DontCare (change to NotStrict)
+      case (left_r: Record, DontCare) =>
+        left_r.compileOptions match {
+          case ExplicitCompileOptions.NotStrict =>
+            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
+          case _ =>
+            // For each field in left, descend with right
+            for ((field, left_sub) <- left_r.elements) {
+              try {
+                connect(sourceInfo, connectCompileOptions, left_sub, right, context_mod)
+              } catch {
+                case BiConnectException(message) => throw BiConnectException(s".$field$message")
+              }
+            }
+        }
+      case (DontCare, right_r: Record) =>
+        right_r.compileOptions match {
+          case ExplicitCompileOptions.NotStrict =>
+            left.bulkConnect(right)(sourceInfo, ExplicitCompileOptions.NotStrict)
+          case _ =>
+            // For each field in left, descend with right
+            for ((field, right_sub) <- right_r.elements) {
+              try {
+                connect(sourceInfo, connectCompileOptions, left, right_sub, context_mod)
+              } catch {
+                case BiConnectException(message) => throw BiConnectException(s".$field$message")
+              }
+            }
+        }
+
       // Left and right are different subtypes of Data so fail
       case (left, right) => throw MismatchedException(left.toString, right.toString)
     }
+  }
+
+  // Do connection of two Records
+  def recordConnect(sourceInfo: SourceInfo,
+                    connectCompileOptions: CompileOptions,
+                    left_r: Record,
+                    right_r: Record,
+                    context_mod: UserModule): Unit = {
+    // Verify right has no extra fields that left doesn't have
+    for((field, right_sub) <- right_r.elements) {
+      if(!left_r.elements.isDefinedAt(field)) {
+        if (connectCompileOptions.connectFieldsMustMatch) {
+          throw MissingLeftFieldException(field)
+        }
+      }
+    }
+    // For each field in left, descend with right
+    for((field, left_sub) <- left_r.elements) {
+      try {
+        right_r.elements.get(field) match {
+          case Some(right_sub) => connect(sourceInfo, connectCompileOptions, left_sub, right_sub, context_mod)
+          case None => {
+            if (connectCompileOptions.connectFieldsMustMatch) {
+              throw MissingRightFieldException(field)
+            }
+          }
+        }
+      } catch {
+        case BiConnectException(message) => throw BiConnectException(s".$field$message")
+      }
+    }
+  }
+
 
   // These functions (finally) issue the connection operation
   // Issue with right as sink, left as source
   private def issueConnectL2R(left: Element, right: Element)(implicit sourceInfo: SourceInfo): Unit = {
-    pushCommand(Connect(sourceInfo, right.lref, left.ref))
+    // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
+    // If either is a DontCareBinding, just issue a DefInvalid for the other,
+    //  otherwise, issue a Connect.
+    (left.binding, right.binding) match {
+      case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
+      case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
+      case (_, _) => pushCommand(Connect(sourceInfo, right.lref, left.ref))
+    }
   }
   // Issue with left as sink, right as source
   private def issueConnectR2L(left: Element, right: Element)(implicit sourceInfo: SourceInfo): Unit = {
-    pushCommand(Connect(sourceInfo, left.lref, right.ref))
+    // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
+    // If either is a DontCareBinding, just issue a DefInvalid for the other,
+    //  otherwise, issue a Connect.
+    (left.binding, right.binding) match {
+      case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
+      case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
+      case (_, _) => pushCommand(Connect(sourceInfo, left.lref, right.ref))
+    }
   }
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
   def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: UserModule): Unit = {
-    import Direction.{Input, Output} // Using extensively so import these
+    import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
-    val left_mod: BaseModule  = left.binding.location.getOrElse(context_mod)
-    val right_mod: BaseModule = right.binding.location.getOrElse(context_mod)
+    val left_mod: BaseModule  = left.topBinding.location.getOrElse(context_mod)
+    val right_mod: BaseModule = right.topBinding.location.getOrElse(context_mod)
 
-    val left_direction: Option[Direction] = left.binding.direction
-    val right_direction: Option[Direction] = right.binding.direction
-    // None means internal
+    val left_direction = BindingDirection.from(left.topBinding, left.direction)
+    val right_direction = BindingDirection.from(right.topBinding, right.direction)
 
     // CASE: Context is same module as left node and right node is in a child module
     if( (left_mod == context_mod) &&
@@ -139,15 +222,15 @@ object BiConnect {
       // Thus, right node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CHILD MOD
-        case (Some(Input),  Some(Input))  => issueConnectL2R(left, right)
-        case (None,         Some(Input))  => issueConnectL2R(left, right)
+        case (Input,        Input)  => issueConnectL2R(left, right)
+        case (Internal,     Input)  => issueConnectL2R(left, right)
 
-        case (Some(Output), Some(Output)) => issueConnectR2L(left, right)
-        case (None,         Some(Output)) => issueConnectR2L(left, right)
+        case (Output,       Output) => issueConnectR2L(left, right)
+        case (Internal,     Output) => issueConnectR2L(left, right)
 
-        case (Some(Input),  Some(Output)) => throw BothDriversException
-        case (Some(Output), Some(Input))  => throw NeitherDriverException
-        case (_,            None)         => throw UnknownRelationException
+        case (Input,        Output) => throw BothDriversException
+        case (Output,       Input)  => throw NeitherDriverException
+        case (_,            Internal) => throw UnknownRelationException
       }
     }
 
@@ -157,15 +240,15 @@ object BiConnect {
       // Thus, left node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CURRENT MOD
-        case (Some(Input),  Some(Input))  => issueConnectR2L(left, right)
-        case (Some(Input),  None)         => issueConnectR2L(left, right)
+        case (Input,        Input)  => issueConnectR2L(left, right)
+        case (Input,        Internal)         => issueConnectR2L(left, right)
 
-        case (Some(Output), Some(Output)) => issueConnectL2R(left, right)
-        case (Some(Output), None)         => issueConnectL2R(left, right)
+        case (Output,       Output) => issueConnectL2R(left, right)
+        case (Output,       Internal)         => issueConnectL2R(left, right)
 
-        case (Some(Input),  Some(Output)) => throw NeitherDriverException
-        case (Some(Output), Some(Input))  => throw BothDriversException
-        case (None, _)                    => throw UnknownRelationException
+        case (Input,        Output) => throw NeitherDriverException
+        case (Output,       Input)  => throw BothDriversException
+        case (Internal,     _)      => throw UnknownRelationException
       }
     }
 
@@ -173,39 +256,17 @@ object BiConnect {
     else if( (context_mod == left_mod) && (context_mod == right_mod) ) {
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CURRENT MOD
-        case (Some(Input),  Some(Output)) => issueConnectL2R(left, right)
-        case (Some(Input),  None)         => issueConnectL2R(left, right)
-        case (None,         Some(Output)) => issueConnectL2R(left, right)
+        case (Input,        Output) => issueConnectL2R(left, right)
+        case (Input,        Internal) => issueConnectL2R(left, right)
+        case (Internal,     Output) => issueConnectL2R(left, right)
 
-        case (Some(Output), Some(Input))  => issueConnectR2L(left, right)
-        case (Some(Output), None)         => issueConnectR2L(left, right)
-        case (None,         Some(Input))  => issueConnectR2L(left, right)
+        case (Output,       Input)  => issueConnectR2L(left, right)
+        case (Output,       Internal) => issueConnectR2L(left, right)
+        case (Internal,     Input)  => issueConnectR2L(left, right)
 
-        case (Some(Input),  Some(Input))  => {
-          if (connectCompileOptions.dontAssumeDirectionality) {
-            throw BothDriversException
-          } else {
-            (left.binding, right.binding) match {
-              case (PortBinding(_, _), PortBinding(_, _)) => throw BothDriversException
-              case (PortBinding(_, _), _) => issueConnectL2R(left, right)
-              case (_, PortBinding(_, _)) => issueConnectR2L(left, right)
-              case _ => throw BothDriversException
-            }
-          }
-        }
-        case (Some(Output), Some(Output)) => {
-          if (connectCompileOptions.dontAssumeDirectionality) {
-            throw BothDriversException
-          } else {
-            (left.binding, right.binding) match {
-              case (PortBinding(_, _), PortBinding(_, _)) => throw BothDriversException
-              case (PortBinding(_, _), _) => issueConnectR2L(left, right)
-              case (_, PortBinding(_, _)) => issueConnectL2R(left, right)
-              case _ => throw BothDriversException
-            }
-          }
-        }
-        case (None,         None)         => {
+        case (Input,        Input)  => throw BothDriversException
+        case (Output,       Output) => throw BothDriversException
+        case (Internal,     Internal) => {
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownDriverException
           } else {
@@ -224,18 +285,18 @@ object BiConnect {
       // Thus both nodes must be ports and have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CHILD MOD
-        case (Some(Input),  Some(Output)) => issueConnectR2L(left, right)
-        case (Some(Output), Some(Input))  => issueConnectL2R(left, right)
+        case (Input,        Output) => issueConnectR2L(left, right)
+        case (Output,       Input)  => issueConnectL2R(left, right)
 
-        case (Some(Input),  Some(Input))  => throw NeitherDriverException
-        case (Some(Output), Some(Output)) => throw BothDriversException
-        case (_, None)                    =>
+        case (Input,        Input)  => throw NeitherDriverException
+        case (Output,       Output) => throw BothDriversException
+        case (_, Internal)          =>
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownRelationException
           } else {
             issueConnectR2L(left, right)
           }
-        case (None, _)                    =>
+        case (Internal, _)          =>
           if (connectCompileOptions.dontAssumeDirectionality) {
             throw UnknownRelationException
           } else {

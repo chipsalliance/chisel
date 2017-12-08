@@ -70,7 +70,7 @@ object Module {
   /** Returns the implicit Clock */
   def clock: Clock = Builder.forcedClock
   /** Returns the implicit Reset */
-  def reset: Bool = Builder.forcedReset
+  def reset: Reset = Builder.forcedReset
 }
 
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.
@@ -219,8 +219,36 @@ abstract class BaseModule extends HasId {
    */
   protected def IO[T<:Data](iodef: T): iodef.type = {
     require(!_closed, "Can't add more ports after module close")
+    requireIsChiselType(iodef, "io type")
+
+    // Compatibility code: Chisel2 did not require explicit direction on nodes
+    // (unspecified treated as output, and flip on nothing was input).
+    // This sets assigns the explicit directions required by newer semantics on
+    // Bundles defined in compatibility mode.
+    // This recursively walks the tree, and assigns directions if no explicit
+    // direction given by upper-levels (override Input / Output) AND element is
+    // directly inside a compatibility Bundle determined by compile options.
+    def assignCompatDir(data: Data, insideCompat: Boolean): Unit = {
+      data match {
+        case data: Element if insideCompat => data._assignCompatibilityExplicitDirection
+        case data: Element => // Not inside a compatibility Bundle, nothing to be done
+        case data: Aggregate => data.specifiedDirection match {
+          // Recurse into children to ensure explicit direction set somewhere
+          case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => data match {
+            case record: Record =>
+              val compatRecord = !record.compileOptions.dontAssumeDirectionality
+              record.getElements.foreach(assignCompatDir(_, compatRecord))
+            case vec: Vec[_] =>
+              vec.getElements.foreach(assignCompatDir(_, insideCompat))
+          }
+          case SpecifiedDirection.Input | SpecifiedDirection.Output => // forced assign, nothing to do
+        }
+      }
+    }
+    assignCompatDir(iodef, false)
+
     // Bind each element of the iodef to being a Port
-    Binding.bind(iodef, PortBinder(this), "Error: iodef")
+    iodef.bind(PortBinding(this))
     _ports += iodef
     iodef
   }

@@ -16,10 +16,10 @@ class PlusOne extends Module {
 
 class ModuleVec(val n: Int) extends Module {
   val io = IO(new Bundle {
-    val ins  = Input(Vec(n, 32.U))
-    val outs = Output(Vec(n, 32.U))
+    val ins  = Input(Vec(n, UInt(32.W)))
+    val outs = Output(Vec(n, UInt(32.W)))
   })
-  val pluses = Vec.fill(n){ Module(new PlusOne).io }
+  val pluses = VecInit(Seq.fill(n){ Module(new PlusOne).io })
   for (i <- 0 until n) {
     pluses(i).in := io.ins(i)
     io.outs(i)   := pluses(i).out
@@ -41,7 +41,7 @@ class ModuleVecTester(c: ModuleVec) extends Tester(c) {
 
 class ModuleWire extends Module {
   val io = IO(new SimpleIO)
-  val inc = Wire(Module(new PlusOne).io.chiselCloneType)
+  val inc = Wire(chiselTypeOf(Module(new PlusOne).io))
   inc.in := io.in
   io.out := inc.out
 }
@@ -60,7 +60,7 @@ class ModuleWireTester(c: ModuleWire) extends Tester(c) {
 class ModuleWhen extends Module {
   val io = IO(new Bundle {
     val s = new SimpleIO
-    val en = Bool()
+    val en = Output(Bool())
   })
   when(io.en) {
     val inc = Module(new PlusOne).io

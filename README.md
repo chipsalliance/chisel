@@ -1,6 +1,10 @@
 # Chisel3
-Chisel3 is a new Firrtl based chisel.
-It is currently in BETA VERSION, so some Chisel features may change in the coming months.
+
+Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
+The latest version of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
+which uses Firrtl as an intermediate hardware representation language.
+
+Chisel3 is currently in BETA VERSION, so some Chisel features may change in the coming months.
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more
 detailed description.
@@ -10,66 +14,70 @@ The ScalaDoc for Chisel3 is available at the [API tab on the Chisel web site.](h
 ## Overview
 Chisel3 is much more modular than Chisel2, and the compilation pipeline looks
 like:
- - Chisel3 (Scala) to Firrtl (this is your "Chisel RTL").
- - [Firrtl](https://github.com/ucb-bar/firrtl) to Verilog (which then be passed
- into FPGA or ASIC tools).
- - Verilog to C++ for simulation and testing using
- [Verilator](http://www.veripool.org/wiki/verilator).
+- Chisel3 (Scala) to Firrtl (this is your "Chisel RTL").
+- [Firrtl](https://github.com/ucb-bar/firrtl) to Verilog (which then be passed
+  into FPGA or ASIC tools).
+- Verilog to C++ for simulation and testing using
+  [Verilator](http://www.veripool.org/wiki/verilator).
 
 ## Installation
 This will walk you through installing Chisel and its dependencies:
 - [sbt](http://www.scala-sbt.org/), which is the preferred Scala build system
   and what Chisel uses.
 - [Firrtl](https://github.com/ucb-bar/firrtl), which compiles Chisel's IR down
-  to Verilog. If you're building from the release branch of chisel3, separate installation of Firrtl is no longer required: the required jar will be automatically downloaed by sbt. If you're building chisel3 from the master branch, you'll need to follow the directions on the [firrtl project](https://github.com/ucb-bar/firrtl) to publish a local copy of the required jar.
+  to Verilog. If you're building from the release branch of chisel3, separate installation of Firrtl is no longer required: the required jar will be automatically downloaded by sbt. If you're building chisel3 from the master branch, you'll need to follow the directions on the [firrtl project](https://github.com/ucb-bar/firrtl) to publish a local copy of the required jar.
 - [Verilator](http://www.veripool.org/wiki/verilator), which compiles Verilog
   down to C++ for simulation. The included unit testing infrastructure uses
   this.
 
 ### (Ubuntu-like) Linux
 
+1. Install Java
+   ```
+   sudo apt-get install default-jdk
+   ```
 1. [Install sbt](http://www.scala-sbt.org/release/docs/Installing-sbt-on-Linux.html),
-  which isn't available by default in the system package manager:
-
-  ```
-  echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-  sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
-  sudo apt-get update
-  sudo apt-get install sbt
-  ```
+    which isn't available by default in the system package manager:
+    ```
+    echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
+    sudo apt-get update
+    sudo apt-get install sbt
+    ```
 1. Install Verilator. As of November 2016, the version of Verilator included by
-  in Ubuntu's default package repositories is too out of date, so it must be
-  compiled from source.
-  1. Install prerequisites (if not installed already):
+    in Ubuntu's default package repositories is too out of date, so it must be
+    compiled from source.
+    
+    1. Install prerequisites (if not installed already):
+        ```
+        sudo apt-get install git make autoconf g++ flex bison
+        ```
+    
+    2. Clone the Verilator repository:
+        ```
+        git clone http://git.veripool.org/git/verilator
+        ```
+    
+    3. In the Verilator repository directory, check out a known good version:
+        ```
+        git pull
+        git checkout verilator_3_886
+        ```
 
-    ```
-    sudo apt-get install git make autoconf g++ flex bison
-    ```
-  1. Clone the Verilator repository:
-
-    ```
-    git clone http://git.veripool.org/git/verilator
-    ```
-  1. In the Verilator repository directory, check out a known good version:
-
-    ```
-    git pull
-    git checkout verilator_3_886
-    ```
-  1. In the Verilator repository directory, build and install:
-
-    ```
-    unset VERILATOR_ROOT # For bash, unsetenv for csh
-    autoconf # Create ./configure script
-    ./configure
-    make
-    sudo make install
-    ```
+    4. In the Verilator repository directory, build and install:
+        ```
+        unset VERILATOR_ROOT # For bash, unsetenv for csh
+        autoconf # Create ./configure script
+        ./configure
+        make
+        sudo make install
+        ```
 
 ### Arch Linux
-    ```
-    yaourt -S firrtl-git verilator sbt
-    ```
+
+```
+yaourt -S firrtl-git verilator sbt
+```
 
 ### Windows
 
@@ -77,16 +85,9 @@ This will walk you through installing Chisel and its dependencies:
 
 ### Mac OS X
 
-1. Install sbt:
-
-  ```
-  brew install sbt
-  ```
-1. Install Verilator:
-
-  ```
-  brew install verilator
-  ```
+```
+brew install sbt verilator
+```
 
 ## Getting Started
 If you are migrating to Chisel3 from Chisel2, please visit
@@ -171,7 +172,7 @@ You will need to build from source and `publish-local`.
 The repo version can be found in the build.sbt file.
 At last check it was:
 
-      version := "3.1-SNAPSHOT",
+    version := "3.1-SNAPSHOT",
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager)
 repository, run:
@@ -206,22 +207,23 @@ match the version string in your local copy of Chisel's build.sbt.
 ### Chisel3 Architecture Overview
 
 The Chisel3 compiler consists of these main parts:
- - **The frontend**, `chisel.*`, which is the publicly visible "API" of Chisel
- and what is used in Chisel RTL. These just add data to the...
- - **The Builder**, `chisel.internal.Builder`, which maintains global state
- (like the currently open Module) and contains commands, generating...
- - **The intermediate data structures**, `chisel.firrtl.*`, which are
- syntactically very similar to Firrtl. Once the entire circuit has been
- elaborated, the top-level object (a `Circuit`) is then passed to...
- - **The Firrtl emitter**, `chisel.firrtl.Emitter`, which turns the
- intermediate data structures into a string that can be written out into a
- Firrtl file for further processing.
+
+- **The frontend**, `chisel.*`, which is the publicly visible "API" of Chisel
+  and what is used in Chisel RTL. These just add data to the...
+- **The Builder**, `chisel.internal.Builder`, which maintains global state
+  (like the currently open Module) and contains commands, generating...
+- **The intermediate data structures**, `chisel.firrtl.*`, which are
+  syntactically very similar to Firrtl. Once the entire circuit has been
+  elaborated, the top-level object (a `Circuit`) is then passed to...
+- **The Firrtl emitter**, `chisel.firrtl.Emitter`, which turns the
+  intermediate data structures into a string that can be written out into a
+  Firrtl file for further processing.
 
 Also included is:
- - **The standard library** of circuit generators, `chisel.util.*`. These
- contain commonly used interfaces and constructors (like `Decoupled`, which
- wraps a signal with a ready-valid pair) as well as fully parameterizable
- circuit generators (like arbiters and muxes).
- - **Driver utilities**, `chisel.Driver`, which contains compilation and test
- functions that are invoked in the standard Verilog generation and simulation
- testing infrastructure. These can also be used as part of custom flows.
+- **The standard library** of circuit generators, `chisel.util.*`. These
+  contain commonly used interfaces and constructors (like `Decoupled`, which
+  wraps a signal with a ready-valid pair) as well as fully parameterizable
+  circuit generators (like arbiters and muxes).
+- **Driver utilities**, `chisel.Driver`, which contains compilation and test
+  functions that are invoked in the standard Verilog generation and simulation
+  testing infrastructure. These can also be used as part of custom flows.

@@ -15,13 +15,67 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    for (child <- getElements) {
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
+
+    // Check that children obey the directionality rules.
+    val childDirections = getElements.map(_.direction).toSet
+    direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
+      // If empty, use my assigned direction
+      resolvedDirection match {
+        case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+        case SpecifiedDirection.Output => ActualDirection.Output
+        case SpecifiedDirection.Input => ActualDirection.Input
+      }
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      ActualDirection.Unspecified
+    } else if (childDirections == Set(ActualDirection.Input)) {
+      ActualDirection.Input
+    } else if (childDirections == Set(ActualDirection.Output)) {
+      ActualDirection.Output
+    } else if (childDirections subsetOf
+        Set(ActualDirection.Output, ActualDirection.Input,
+            ActualDirection.Bidirectional(ActualDirection.Default),
+            ActualDirection.Bidirectional(ActualDirection.Flipped))) {
+      resolvedDirection match {
+        case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+        case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+        case _ => throw new RuntimeException("Unexpected forced Input / Output")
+      }
+    } else {
+      this match {
+        // Anything flies in compatibility mode
+        case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
+        case _ =>
+          val childWithDirections = getElements zip getElements.map(_.direction)
+          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+      }
+    }
+  }
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]
 
-  private[core] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+  private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, this.lref))
+    } else {
+      pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+    }
+  }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
@@ -29,7 +83,7 @@ sealed abstract class Aggregate extends Data {
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = Wire(UInt(this.width), init=that)  // handles width padding
+    val bits = WireInit(UInt(this.width), that)  // handles width padding
     for (x <- flatten) {
       x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth
@@ -37,99 +91,17 @@ sealed abstract class Aggregate extends Data {
   }
 }
 
-object Vec {
+trait VecFactory {
   /** Creates a new [[Vec]] with `n` entries of the specified data type.
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
-
-  @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
-
-  /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
-    * nodes.
-    *
-    * @note input elements should be of the same type (this is checked at the
-    * FIRRTL level, but not at the Scala / Chisel level)
-    * @note the width of all output elements is the width of the largest input
-    * element
-    * @note output elements are connected from the input elements
-    */
-  def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
-
-  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
-    // varargs constructor, which is more in line with the style of the Scala
-    // collection API. However, a deprecation phase isn't possible, since
-    // changing apply(elt0, elts*) to apply(elts*) causes a function collision
-    // with apply(Seq) after type erasure. Workarounds by either introducing a
-    // DummyImplicit or additional type parameter will break some code.
-
-    // Check that types are homogeneous.  Width mismatch for Elements is safe.
-    require(!elts.isEmpty)
-
-    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
-
-    def doConnect(sink: T, source: T) = {
-      // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
-      // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
-      //       WireBinding which does not have a direction
-      val hasDirectioned = elts.head match {
-        case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
-        case t: Element => t.dir != Direction.Unspecified
-      }
-      if (hasDirectioned) {
-        sink bulkConnect source
-      } else {
-        sink connect source
-      }
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+    if (compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(gen, "vec type")
     }
-    for ((v, e) <- vec zip elts) {
-      doConnect(v, e)
-    }
-    vec
+    new Vec(gen.cloneTypeFull, n)
   }
-
-  /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
-    *
-    * @note input elements should be of the same type (this is checked at the
-    * FIRRTL level, but not at the Scala / Chisel level)
-    * @note the width of all output elements is the width of the largest input
-    * element
-    * @note output elements are connected from the input elements
-    */
-  def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
-
-  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply(elt0 +: elts.toSeq)
-
-  /** Creates a new [[Vec]] of length `n` composed of the results of the given
-    * function applied over a range of integer values starting from 0.
-    *
-    * @param n number of elements in the vector (the function is applied from
-    * 0 to `n-1`)
-    * @param gen function that takes in an Int (the index) and returns a
-    * [[Data]] that becomes the output element
-    */
-  def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
-
-  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply((0 until n).map(i => gen(i)))
-
-  /** Creates a new [[Vec]] of length `n` composed of the result of the given
-    * function repeatedly applied.
-    *
-    * @param n number of elements (amd the number of times the function is
-    * called)
-    * @param gen function that generates the [[Data]] that becomes the output
-    * element
-    */
-  @deprecated("Vec.fill(n)(gen) is deprecated. Please use Vec(Seq.fill(n)(gen))", "chisel3")
-  def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
-
-  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply(Seq.fill(n)(gen))
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
   private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -140,6 +112,8 @@ object Vec {
     else (idx | 0.U(w.W))(w-1,0)
   }
 }
+
+object Vec extends VecFactory
 
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
@@ -165,7 +139,7 @@ object Vec {
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
-sealed class Vec[T <: Data] private (gen: => T, val length: Int)
+sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
@@ -186,7 +160,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   *
   * Needed specifically for the case when the Vec is length 0.
   */
-  private[core] val sample_element: T = gen
+  private[chisel3] val sample_element: T = gen
 
   // allElements current includes sample_element
   // This is somewhat weird although I think the best course of action here is
@@ -226,16 +200,25 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(p ,s"'p' ($p)")
+    requireIsHardware(p, "vec index")
     val port = gen
+
+    // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
+    // It may not be exactly equal to that value, but the results are the same.
+    val reconstructedResolvedDirection = direction match {
+      case ActualDirection.Input => SpecifiedDirection.Input
+      case ActualDirection.Output => SpecifiedDirection.Output
+      case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
+        SpecifiedDirection.Unspecified
+      case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
+    }
+    // TODO port technically isn't directly child of this data structure, but the result of some
+    // muxes / demuxes. However, this does make access consistent with the top-level bindings.
+    // Perhaps there's a cleaner way of accomplishing this...
+    port.bind(ChildBinding(this), reconstructedResolvedDirection)
+
     val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
     port.setRef(this, i)
-
-    // Bind each element of port to being whatever the base type is
-    // Using the head element as the sample_element
-    for((port_elem, model_elem) <- port.allElements zip sample_element.allElements) {
-      port_elem.binding = model_elem.binding
-    }
 
     port
   }
@@ -256,7 +239,6 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 
-  private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
   override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
 
@@ -273,6 +255,74 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
       else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
     PString("Vec(") + Printables(elts) + PString(")")
   }
+}
+
+object VecInit {
+  /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
+    * nodes.
+    *
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
+    * @note the width of all output elements is the width of the largest input
+    * element
+    * @note output elements are connected from the input elements
+    */
+  def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+
+  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+    // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
+    // varargs constructor, which is more in line with the style of the Scala
+    // collection API. However, a deprecation phase isn't possible, since
+    // changing apply(elt0, elts*) to apply(elts*) causes a function collision
+    // with apply(Seq) after type erasure. Workarounds by either introducing a
+    // DummyImplicit or additional type parameter will break some code.
+
+    // Check that types are homogeneous.  Width mismatch for Elements is safe.
+    require(!elts.isEmpty)
+    elts.foreach(requireIsHardware(_, "vec element"))
+
+    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
+
+    // TODO: try to remove the logic for this mess
+    elts.head.direction match {
+      case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
+        // When internal wires are involved, driver / sink must be specified explicitly, otherwise
+        // the system is unable to infer which is driver / sink
+        (vec zip elts).foreach(x => x._1 := x._2)
+      case ActualDirection.Bidirectional(_) =>
+        // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
+        // Bulk connecting two wires may not succeed because Chisel frontend does not infer
+        // directions.
+        (vec zip elts).foreach(x => x._1 <> x._2)
+    }
+    vec
+  }
+
+  /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
+    *
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
+    * @note the width of all output elements is the width of the largest input
+    * element
+    * @note output elements are connected from the input elements
+    */
+  def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+
+  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply(elt0 +: elts.toSeq)
+
+  /** Creates a new [[Vec]] of length `n` composed of the results of the given
+    * function applied over a range of integer values starting from 0.
+    *
+    * @param n number of elements in the vector (the function is applied from
+    * 0 to `n-1`)
+    * @param gen function that takes in an Int (the index) and returns a
+    * [[Data]] that becomes the output element
+    */
+  def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+
+  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply((0 until n).map(i => gen(i)))
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection
@@ -362,7 +412,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-abstract class Record extends Aggregate {
+abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
   /** The collection of [[Data]]
     *
@@ -383,14 +433,6 @@ abstract class Record extends Aggregate {
 
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
-
-  private[chisel3] def toType = {
-    def eltPort(elt: Data): String = {
-      val flipStr: String = if(Data.isFirrtlFlipped(elt)) "flip " else ""
-      s"${flipStr}${elt.getRef.name} : ${elt.toType}"
-    }
-    elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
-  }
 
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
@@ -464,7 +506,7 @@ abstract class Record extends Aggregate {
   *   }
   * }}}
   */
-class Bundle extends Record {
+class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def className = "Bundle"
 
   /** The collection of [[Data]]
@@ -545,9 +587,3 @@ class Bundle extends Record {
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
-
-private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "chiselCloneType", "toBits",
-    "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
-}
-
