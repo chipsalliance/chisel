@@ -128,7 +128,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
       compileFirrtl(new ModuleWithIncompleteAssignment)
     }
     exception.getMessage should include("is not fully initialized")
- }
+  }
 
   property("FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect after unconditional connect") {
     import chisel3.core.ExplicitCompileOptions.Strict
@@ -204,5 +204,20 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers {
     }
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     firrtlOutput should include("is invalid")
+  }
+
+  property("DontCare as init value should not affect type inference") {
+    import chisel3.core.ExplicitCompileOptions.Strict
+    class ModuleWithDontCare extends Module {
+      val io = IO(new Bundle {})
+      class TrivialBundle extends Bundle {
+        val foo = Output(UInt(8.W))
+      }
+      val w0 = WireInit(new TrivialBundle, DontCare)
+      w0.foo := 0.U
+      val w1 = Wire(new TrivialBundle, DontCare)
+      w1.foo := 0.U
+    }
+    elaborate(new ModuleWithDontCare)
   }
 }
