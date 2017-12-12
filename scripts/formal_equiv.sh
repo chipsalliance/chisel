@@ -1,16 +1,19 @@
+#!/usr/bin/env bash
 # This script is for formally comparing the Verilog emitted by different git revisions
 # There must be two valid git revision arguments
 set -e
 
-if [ $# -ne 2 ]; then
-    echo "There must be exactly two arguments!"
+if [ $# -ne 3 ]; then
+    echo "There must be exactly three arguments!"
     exit -1
 fi
 
 HASH1=`git rev-parse $1`
 HASH2=`git rev-parse $2`
 
-echo "Comparing git revisions $HASH1 and $HASH2"
+DUT=$3
+
+echo "Comparing git revisions $HASH1 and $HASH2 on $DUT"
 
 if [ $HASH1 = $HASH2 ]; then
     echo "Both git revisions are the same! Nothing to do!"
@@ -20,10 +23,10 @@ fi
 RET=""
 make_verilog () {
     git checkout $1
-    local filename="rob.$1.v"
+    local filename="$DUT.$1.v"
 
     sbt clean
-    sbt "run-main firrtl.Driver -i regress/Rob.fir -o $filename -X verilog"
+    sbt "run-main firrtl.Driver -i $DUT.fir -o $filename -X verilog"
     RET=$filename
 }
 
@@ -43,11 +46,18 @@ else
     echo "Running equivalence check using Yosys"
     yosys -q -p "
       read_verilog $FILE1
-      rename Rob top1
-      read_verilog $FILE2
-      rename Rob top2
+      rename $DUT top1
       proc
       memory
+      flatten top1
+      hierarchy -top top1
+
+      read_verilog $FILE2
+      rename $DUT top2
+      proc
+      memory
+      flatten top2
+
       equiv_make top1 top2 equiv
       hierarchy -top equiv
       clean -purge
