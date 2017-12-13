@@ -721,7 +721,13 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    wire z : UInt<1>
           |    y <= z
           |    z <= x""".stripMargin
-      val check = input
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    output y : UInt<1>
+          |    node z = x
+          |    y <= z""".stripMargin
     execute(input, check, Seq(dontTouch("Top.z")))
   }
 

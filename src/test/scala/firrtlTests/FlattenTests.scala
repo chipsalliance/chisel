@@ -64,9 +64,8 @@ class FlattenTests extends LowTransformSpec {
           |    output b : UInt<32>
           |    inst i1 of Inline1
           |    inst i2 of Inline1
-          |    wire tmp : UInt<32>
           |    i1.a <= a
-          |    tmp <= i1.b
+          |    node tmp = i1.b
           |    i2.a <= tmp
           |    b <= i2.b
           |  module Inline1 :
@@ -84,9 +83,8 @@ class FlattenTests extends LowTransformSpec {
           |    wire i2$a : UInt<32>
           |    wire i2$b : UInt<32>
           |    i2$b <= i2$a
-          |    wire tmp : UInt<32>
+          |    node tmp = i1$b
           |    b <= i2$b
-          |    tmp <= i1$b
           |    i1$a <= a
           |    i2$a <= tmp
           |  module Inline1 :

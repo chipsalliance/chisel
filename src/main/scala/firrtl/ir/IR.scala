@@ -29,9 +29,22 @@ case class MultiInfo(infos: Seq[Info]) extends Info {
     case MultiInfo(seq) => seq flatMap collectStringLits
     case NoInfo => Seq.empty
   }
-  override def toString: String =
-    collectStringLits(this).map(_.serialize).mkString(" @[", " ", "]")
+  override def toString: String = {
+    val parts = collectStringLits(this)
+    if (parts.nonEmpty) parts.map(_.serialize).mkString(" @[", " ", "]")
+    else ""
+  }
   def ++(that: Info): Info = MultiInfo(Seq(this, that))
+}
+object MultiInfo {
+  def apply(infos: Info*) = {
+    val infosx = infos.filterNot(_ == NoInfo)
+    infosx.size match {
+      case 0 => NoInfo
+      case 1 => infosx.head
+      case _ => new MultiInfo(infosx)
+    }
+  }
 }
 
 trait HasName {
