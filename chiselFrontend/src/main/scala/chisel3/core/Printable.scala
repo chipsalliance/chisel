@@ -14,12 +14,39 @@ import java.util.{
 
 /** Superclass of things that can be printed in the resulting circuit
   *
-  * Usually created using the custom string interpolator p"..."
-  * TODO Add support for names of Modules
-  *   Currently impossible because unpack is called before the name is selected
-  *   Could be implemented by adding a new format specifier to Firrtl (eg. %m)
-  * TODO Should we provide more functions like map and mkPrintable?
+  * Usually created using the custom string interpolator `p"..."`. Printable string interpolation is
+  * similar to [[https://docs.scala-lang.org/overviews/core/string-interpolation.html String
+  * interpolation in Scala]] For example:
+  * {{{
+  *   printf(p"The value of wire = \$wire\n")
+  * }}}
+  * This is equivalent to writing:
+  * {{{
+  *   printf(p"The value of wire = %d\n", wire)
+  * }}}
+  * All Chisel data types have a method `.toPrintable` that gives a default pretty print that can be
+  * accessed via `p"..."`. This works even for aggregate types, for example:
+  * {{{
+  *   val myVec = VecInit(5.U, 10.U, 13.U)
+  *   printf(p"myVec = \$myVec\n")
+  *   // myVec = Vec(5, 10, 13)
+  *
+  *   val myBundle = Wire(new Bundle {
+  *     val foo = UInt()
+  *     val bar = UInt()
+  *   })
+  *   myBundle.foo := 3.U
+  *   myBundle.bar := 11.U
+  *   printf(p"myBundle = \$myBundle\n")
+  *   // myBundle = Bundle(a -> 3, b -> 11)
+  * }}}
+  * Users can override the default behavior of `.toPrintable` in custom [[Bundle]] and [[Record]]
+  * types.
   */
+// TODO Add support for names of Modules
+//   Currently impossible because unpack is called before the name is selected
+//   Could be implemented by adding a new format specifier to Firrtl (eg. %m)
+// TODO Should we provide more functions like map and mkPrintable?
 sealed abstract class Printable {
   /** Unpack into format String and a List of String arguments (identifiers)
     * @note This must be called after elaboration when Chisel nodes actually
