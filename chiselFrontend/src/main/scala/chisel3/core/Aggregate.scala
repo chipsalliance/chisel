@@ -118,11 +118,13 @@ object Vec extends VecFactory
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
   *
-  * Careful consideration should be given over the use of [[Vec]] vs [[Seq]] or some other scala collection. In
-  * general [[Vec]] only needs to be used when there is a need to express the hardware collection in a [[Reg]]
-  * or IO [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
+  * Careful consideration should be given over the use of [[Vec]] vs
+  * [[scala.collection.immutable.Seq Seq]] or some other Scala collection. In general [[Vec]] only
+  * needs to be used when there is a need to express the hardware collection in a [[Reg]] or IO
+  * [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
   *
-  * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in an IO [[Bundle]]
+  * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in
+  * an IO [[Bundle]]
   *
   *  {{{
   *    val io = IO(new Bundle {
@@ -468,7 +470,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
-    * Results in "$className(elt0.name -> elt0.value, ...)"
+    * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
   def toPrintable: Printable = toPrintableHelper(elements.toList)
 }
@@ -581,7 +583,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
-    * Results in "Bundle(elt0.name -> elt0.value, ...)"
+    * Results in "`Bundle(elt0.name -> elt0.value, ...)`"
     * @note The order is reversed from the order of elements in order to print
     *   the fields in the order they were defined
     */

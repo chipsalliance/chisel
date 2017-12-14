@@ -45,9 +45,9 @@ case class ChiselAnnotation(component: InstanceId, transformClass: Class[_ <: Tr
   * }
   * }}}
   *
-  * @note Calling this on Data creates an annotation that Chisel emits to a separate annotations
-  * file. This file must be passed to Firrtl independently of the .fir file.
-  * [[chisel3.Driver.execute]] will do this automatically.
+  * @note Calling this on [[Data]] creates an annotation that Chisel emits to a separate annotations
+  * file. This file must be passed to FIRRTL independently of the `.fir` file. The execute methods
+  * in [[chisel3.Driver]] will pass the annotations to FIRRTL automatically.
   */
 object dontTouch { // scalastyle:ignore object.name
   /** Marks a signal to be preserved in Chisel and Firrtl
