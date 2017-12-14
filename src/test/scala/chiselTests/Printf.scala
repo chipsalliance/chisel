@@ -14,7 +14,7 @@ class SinglePrintfTester() extends BasicTester {
 }
 
 class ASCIIPrintfTester() extends BasicTester {
-  printf((0x20 to 0x7e).map(_ toChar).mkString.replace("%", "%%"))
+  printf((0x20 to 0x7e).map(_.toChar).mkString.replace("%", "%%"))
   stop()
 }
 
