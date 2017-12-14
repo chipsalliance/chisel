@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
-import chisel3.experimental.requireIsChiselType
+import chisel3.experimental.{DataMirror, requireIsChiselType}
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended
@@ -18,7 +18,10 @@ final class CustomBundle(elts: (String, Data)*) extends Record {
     field -> elt
   }: _*)
   def apply(elt: String): Data = elements(elt)
-  override def cloneType = (new CustomBundle(elements.toList: _*)).asInstanceOf[this.type]
+  override def cloneType = {
+    val cloned = elts.map { case (n, d) => n -> DataMirror.internal.chiselTypeClone(d) }
+    (new CustomBundle(cloned: _*)).asInstanceOf[this.type]
+  }
 }
 
 trait RecordSpecUtils {
@@ -132,5 +135,14 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
     (the [ChiselException] thrownBy {
       elaborate { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
     }).getMessage should include ("Left Record missing field")
+  }
+
+  "CustomBundle" should "work like built-in aggregates" in {
+    elaborate(new Module {
+      val gen = new CustomBundle("foo" -> UInt(32.W))
+      val io = IO(Output(gen))
+      val wire = Wire(gen)
+      io := wire
+    })
   }
 }
