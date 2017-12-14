@@ -176,7 +176,9 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Seq
     */
   def <> (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(this.length == that.length)
+    if (this.length != that.length) {
+      Builder.error("Vec and Seq being bulk connected have different lengths!")
+    }
     for ((a, b) <- this zip that)
       a <> b
   }
