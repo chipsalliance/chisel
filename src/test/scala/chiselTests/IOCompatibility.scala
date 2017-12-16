@@ -30,7 +30,7 @@ class IOCModuleVec(val n: Int) extends Module {
 
 class IOCModuleWire extends Module {
   val io = IO(new IOCSimpleIO)
-  val inc = Wire(Module(new IOCPlusOne).io.chiselCloneType)
+  val inc = Wire(chiselTypeOf(Module(new IOCPlusOne).io))
   inc.in := io.in
   io.out := inc.out
 }

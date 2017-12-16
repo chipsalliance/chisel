@@ -252,4 +252,26 @@ class VecSpec extends ChiselPropSpec {
   property("Dynamic indexing of a Vec of Module IOs should work") {
     assertTesterPasses{ new ModuleIODynamicIndexTester(4) }
   }
+
+  property("It should be possible to bulk connect a Vec and a Seq") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val out = Output(Vec(4, UInt(8.W)))
+      })
+      val seq = Seq.fill(4)(0.U)
+      io.out <> seq
+    })
+  }
+
+  property("Bulk connecting a Vec and Seq of different sizes should report a ChiselException") {
+    a [ChiselException] should be thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {
+          val out = Output(Vec(4, UInt(8.W)))
+        })
+        val seq = Seq.fill(5)(0.U)
+        io.out <> seq
+      })
+    }
+  }
 }

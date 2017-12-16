@@ -22,6 +22,7 @@ object unless {  // scalastyle:ignore object.name
 
 /** Implementation details for [[switch]]. See [[switch]] and [[chisel3.util.is is]] for the
   * user-facing API.
+  * @note DO NOT USE. This API is subject to change without warning.
   */
 class SwitchContext[T <: Bits](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
   def is(v: Iterable[T])(block: => Unit): SwitchContext[T] = {

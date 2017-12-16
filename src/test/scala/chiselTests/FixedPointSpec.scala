@@ -126,4 +126,7 @@ class FixedPointSpec extends ChiselPropSpec {
   property("should mux different widths and binary points") {
     assertTesterPasses { new FixedPointMuxTester }
   }
+  property("Negative shift amounts are invalid") {
+    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(FixedPoint(1.W, 0.BP))) }
+  }
 }
