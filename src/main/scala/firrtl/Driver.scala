@@ -66,6 +66,17 @@ object Driver {
     outputString
   }
 
+  /** Print a warning message
+    *
+    * @param message error message
+    */
+  //scalastyle:off regex
+  def dramaticWarning(message: String): Unit = {
+    println(Console.YELLOW + "-"*78)
+    println(s"Warning: $message")
+    println("-"*78 + Console.RESET)
+  }
+
   /**
     * print the message in red
     *
