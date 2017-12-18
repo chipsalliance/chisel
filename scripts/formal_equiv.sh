@@ -26,7 +26,7 @@ make_verilog () {
     local filename="$DUT.$1.v"
 
     sbt clean
-    sbt "run-main firrtl.Driver -i $DUT.fir -o $filename -X verilog"
+    sbt "runMain firrtl.Driver -i $DUT.fir -o $filename -X verilog"
     RET=$filename
 }
 

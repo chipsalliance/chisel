@@ -1,7 +1,7 @@
 language: scala
 scala:
-  - 2.11.11
-  - 2.12.3
+  - 2.11.12
+  - 2.12.4
 sudo: false
 
 cache:
@@ -30,7 +30,7 @@ jobs:
   include:
     - stage: test
       script:
-        - sbt clean assembly publish-local
+        - sbt clean assembly publishLocal
         - bash .run_chisel_tests.sh
     - stage: test
       script:
