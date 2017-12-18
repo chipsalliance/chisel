@@ -6,6 +6,9 @@ import chisel3._
 
 import scala.language.implicitConversions
 
+/** Implicit conversions to automatically convert [[scala.Boolean]] and [[scala.Int]] to [[Bool]]
+  *  and [[UInt]] respectively
+  */
 object ImplicitConversions {
   // The explicit fromIntToLiteral resolves an ambiguous conversion between fromIntToLiteral and
   // UInt.asUInt.
