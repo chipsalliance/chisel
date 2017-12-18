@@ -89,33 +89,57 @@ object Driver {
     println("-"*78 + Console.RESET)
   }
 
-  /**
-    * Load annotation file based on options
-    * @param optionsManager use optionsManager config to load annotation file if it exists
-    *                       update the firrtlOptions with new annotations if it does
+  /** Load annotations from specified files and options
+    *
+    * @param optionsManager use optionsManager config to load annotation files
+    * @return Annotations read from files
     */
-  def loadAnnotations(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): Unit = {
+  //scalastyle:off cyclomatic.complexity method.length
+  def loadAnnotations(
+      optionsManager: ExecutionOptionsManager with HasFirrtlOptions
+  ): Seq[Annotation] = {
+    val firrtlConfig = optionsManager.firrtlOptions
 
-    def firrtlConfig = optionsManager.firrtlOptions
+    //noinspection ScalaDeprecation
+    val oldAnnoFileName = firrtlConfig.getAnnotationFileName(optionsManager)
+    val oldAnnoFile = new File(oldAnnoFileName).getCanonicalFile
 
-    val annotationFileName = firrtlConfig.getAnnotationFileName(optionsManager)
-    val annotationFile = new File(annotationFileName)
-    if (annotationFile.exists) {
-      val annotationsYaml = io.Source.fromFile(annotationFile).getLines().mkString("\n").parseYaml
-      val annotationArray = annotationsYaml.convertTo[Array[Annotation]]
-      optionsManager.firrtlOptions = firrtlConfig.copy(annotations = firrtlConfig.annotations ++ annotationArray)
+    val (annoFiles, usingImplicitAnnoFile) = {
+      val afs = firrtlConfig.annotationFileNames.map { x =>
+        new File(x).getCanonicalFile
+      }
+      // Implicit anno file could be included explicitly, only include it and
+      // warn if it's not also explicit
+      val use = oldAnnoFile.exists && !afs.contains(oldAnnoFile)
+      if (use) (oldAnnoFile +: afs, true) else (afs, false)
     }
 
-    if(firrtlConfig.annotations.nonEmpty) {
-      val targetDirAnno = List(Annotation(
+    // Warnings to get people to change to drop old API
+    if (firrtlConfig.annotationFileNameOverride.nonEmpty) {
+      val msg = "annotationFileNameOverride is deprecated! " +
+                "Use annotationFileNames"
+      Driver.dramaticWarning(msg)
+    } else if (usingImplicitAnnoFile) {
+      val msg = "Implicit .anno file from top-name is deprecated!\n" +
+             (" "*9) + "Use explicit -faf option or annotationFileNames"
+      Driver.dramaticWarning(msg)
+    }
+
+    val loadedAnnos = annoFiles.flatMap { file =>
+      if (!file.exists) {
+        throw new FileNotFoundException(s"Annotation file $file not found!")
+      }
+      val yaml = io.Source.fromFile(file).getLines().mkString("\n").parseYaml
+      yaml.convertTo[List[Annotation]]
+
+    }
+
+    val targetDirAnno =
+      List(Annotation(
         CircuitName("All"),
         classOf[BlackBoxSourceHelper],
         BlackBoxTargetDir(optionsManager.targetDirName).serialize
       ))
-
-      optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-        annotations = firrtlConfig.annotations ++ targetDirAnno)
-    }
 
     // Output Annotations
     val outputAnnos = firrtlConfig.getEmitterAnnos(optionsManager)
@@ -124,9 +148,7 @@ object Driver {
       (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation()) else Seq()) ++
       (if (firrtlConfig.noDCE) Seq(NoDCEAnnotation()) else Seq())
 
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      annotations = firrtlConfig.annotations ++ outputAnnos ++ globalAnnos)
-
+    targetDirAnno ++ outputAnnos ++ globalAnnos ++ firrtlConfig.annotations ++ loadedAnnos
   }
 
   /**
@@ -169,7 +191,7 @@ object Driver {
           }
       }
 
-      loadAnnotations(optionsManager)
+      val annos = loadAnnotations(optionsManager)
 
       val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
 
@@ -179,7 +201,7 @@ object Driver {
       val finalState = firrtlConfig.compiler.compile(
         CircuitState(parsedInput,
                      ChirrtlForm,
-                     Some(AnnotationMap(firrtlConfig.annotations))),
+                     Some(AnnotationMap(annos))),
         firrtlConfig.customTransforms
       )
 

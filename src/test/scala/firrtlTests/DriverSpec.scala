@@ -2,7 +2,7 @@
 
 package firrtlTests
 
-import java.io.{File, FileNotFoundException, FileOutputStream}
+import java.io.File
 import org.scalatest.{FreeSpec, Matchers}
 
 import firrtl.passes.InlineInstances
@@ -150,7 +150,23 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     }
   }
 
-  "Annotations can be read from a file" in {
+  // Deprecated
+  "Annotations can be read implicitly from the name of the circuit" in {
+    val top = "foo"
+    val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+      commonOptions = commonOptions.copy(topName = top)
+    }
+    val annoFile =  new File(optionsManager.commonOptions.targetDirName, top + ".anno")
+    copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)
+    optionsManager.firrtlOptions.annotations.length should be (0)
+    val annos = Driver.loadAnnotations(optionsManager)
+    annos.length should be (12) // 9 from circuit plus 3 general purpose
+    annos.count(_.transformClass == "firrtl.passes.InlineInstances") should be (9)
+    annoFile.delete()
+  }
+
+  // Deprecated
+  "Annotations can be read using annotationFileNameOverride" in {
     val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
       commonOptions = commonOptions.copy(topName = "a.fir")
       firrtlOptions = firrtlOptions.copy(
@@ -160,10 +176,26 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val annotationsTestFile =  new File(optionsManager.commonOptions.targetDirName, optionsManager.firrtlOptions.annotationFileNameOverride + ".anno")
     copyResourceToFile("/annotations/SampleAnnotations.anno", annotationsTestFile)
     optionsManager.firrtlOptions.annotations.length should be (0)
-    Driver.loadAnnotations(optionsManager)
-    optionsManager.firrtlOptions.annotations.length should be (12) // 9 from circuit plus 3 general purpose
+    val annos = Driver.loadAnnotations(optionsManager)
+    annos.length should be (12) // 9 from circuit plus 3 general purpose
+    annos.count(_.transformClass == "firrtl.passes.InlineInstances") should be (9)
+    annotationsTestFile.delete()
+  }
 
-    optionsManager.firrtlOptions.annotations.head.transformClass should be ("firrtl.passes.InlineInstances")
+  "Annotations can be read from multiple files" in {
+    val filename = "SampleAnnotations.anno"
+    val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+      commonOptions = commonOptions.copy(topName = "a.fir")
+      firrtlOptions = firrtlOptions.copy(
+        annotationFileNames = List.fill(2)(filename) // just read the safe file twice
+      )
+    }
+    val annotationsTestFile = new File(optionsManager.commonOptions.targetDirName, filename)
+    copyResourceToFile(s"/annotations/$filename", annotationsTestFile)
+    optionsManager.firrtlOptions.annotations.length should be (0)
+    val annos = Driver.loadAnnotations(optionsManager)
+    annos.length should be (21) // 18 from files plus 3 general purpose
+    annos.count(_.transformClass == "firrtl.passes.InlineInstances") should be (18)
     annotationsTestFile.delete()
   }
 
@@ -181,9 +213,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val firrtlOptions = optionsManager.firrtlOptions
     firrtlOptions.annotations.length should be (1) // infer-rw
 
-    Driver.loadAnnotations(optionsManager)
-
-    val anns = optionsManager.firrtlOptions.annotations.groupBy(_.transform)
+    val anns = Driver.loadAnnotations(optionsManager).groupBy(_.transform)
     anns(classOf[BlackBoxSourceHelper]).length should be (1) // built in to loadAnnotations
     anns(classOf[InferReadWrite]).length should be (1) // --infer-rw
     anns(classOf[InlineInstances]).length should be (9) // annotations file

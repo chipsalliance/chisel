@@ -177,6 +177,7 @@ case class FirrtlExecutionOptions(
     firrtlSource:           Option[String] = None,
     customTransforms:       Seq[Transform] = List.empty,
     annotations:            List[Annotation] = List.empty,
+    annotationFileNames:    List[String] = List.empty,
     annotationFileNameOverride: String = "",
     outputAnnotationFileName: String = "",
     emitOneFilePerModule:   Boolean = false,
@@ -273,6 +274,7 @@ case class FirrtlExecutionOptions(
     * @param optionsManager this is needed to access build function and its common options
     * @return
     */
+  @deprecated("Use FirrtlOptions.annotationFileNames instead", "1.1")
   def getAnnotationFileName(optionsManager: ExecutionOptionsManager): String = {
     optionsManager.getBuildFileName("anno", annotationFileNameOverride)
   }
@@ -309,12 +311,12 @@ trait HasFirrtlOptions {
 
   parser.opt[String]("annotation-file")
     .abbr("faf")
-    .valueName ("<input-anno-file>")
+    .unbounded()
+    .valueName("<input-anno-file>")
     .foreach { x =>
-      firrtlOptions = firrtlOptions.copy(annotationFileNameOverride = x)
-    }.text {
-    "use this to override the default annotation file name, default is empty"
-  }
+      val annoFiles = x +: firrtlOptions.annotationFileNames
+      firrtlOptions = firrtlOptions.copy(annotationFileNames = annoFiles)
+    }.text("Used to specify annotation files (can appear multiple times)")
 
   parser.opt[Unit]("force-append-anno-file")
     .abbr("ffaaf")
