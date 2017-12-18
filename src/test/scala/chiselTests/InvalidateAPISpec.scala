@@ -6,13 +6,15 @@ import chisel3._
 import chisel3.core.BiConnect.BiConnectException
 import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
+import firrtl.util.BackendCompilationUtilities
 import org.scalatest._
 
-class InvalidateAPISpec extends ChiselPropSpec with Matchers {
+class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities {
 
   def myGenerateFirrtl(t: => Module): String = Driver.emit(() => t)
   def compileFirrtl(t: => Module): Unit = {
-    Driver.execute(Array[String]("--compiler", "verilog"), () => t)
+    val testDir = createTestDirectory(this.getClass.getSimpleName)
+    Driver.execute(Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"), () => t)
   }
   class TrivialInterface extends Bundle {
     val in  = Input(Bool())
