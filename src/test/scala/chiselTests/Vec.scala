@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.RawModule
 import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -151,16 +152,6 @@ class ZeroEntryVecTester extends BasicTester {
   WireInit(m.io.bar)
 
   stop()
-}
-
-class PassthroughModuleIO extends Bundle {
-  val in = Input(UInt(32.W))
-  val out = Output(UInt(32.W))
-}
-
-class PassthroughModule extends Module {
-  val io = IO(new PassthroughModuleIO)
-  io.out := io.in
 }
 
 class PassthroughModuleTester extends Module {
