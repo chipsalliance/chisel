@@ -9,7 +9,7 @@ BUILT_FIRRTL_SHA1=""
 if [ -s $HOME/.ivy2/firrtl.sha1 ]; then
   BUILT_FIRRTL_SHA1=`cat $HOME/.ivy2/firrtl.sha1`
 fi
-if [ $FIRRTL_SHA1 != $BUILT_FIRRTL_SHA1 ]; then
+if [ "$FIRRTL_SHA1" != "$BUILT_FIRRTL_SHA"1 ]; then
   sbt +clean +publishLocal
   echo $FIRRTL_SHA1 > $HOME/.ivy2/firrtl.sha1
 fi
