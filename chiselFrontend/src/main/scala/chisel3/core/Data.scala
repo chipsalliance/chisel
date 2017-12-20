@@ -451,12 +451,19 @@ object WireInit {
     apply(model, init)
   }
 
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
     x := init
     x
+  }
+
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
   }
 }
 
