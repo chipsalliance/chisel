@@ -81,10 +81,10 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     component
   }
 
-  private[core] def initializeInParent(instanceCompileOptions: CompileOptions): Unit = {
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    if (!instanceCompileOptions.explicitInvalidate) {
+    if (!parentCompileOptions.explicitInvalidate) {
       for (port <- getModulePorts) {
         pushCommand(DefInvalid(sourceInfo, port.ref))
       }
@@ -107,10 +107,10 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   // Setup ClockAndReset
   Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
 
-  private[core] override def initializeInParent(instanceCompileOptions: CompileOptions): Unit = {
+  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    super.initializeInParent(instanceCompileOptions)
+    super.initializeInParent(parentCompileOptions)
     clock := Builder.forcedClock
     reset := Builder.forcedReset
   }
@@ -176,12 +176,12 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     super.generateComponent()
   }
 
-  private[core] override def initializeInParent(instanceCompileOptions: CompileOptions): Unit = {
+  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     // Don't generate source info referencing parents inside a module, since this interferes with
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    if (!instanceCompileOptions.explicitInvalidate) {
+    if (!parentCompileOptions.explicitInvalidate) {
       pushCommand(DefInvalid(sourceInfo, io.ref))
     }
 
