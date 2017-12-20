@@ -204,12 +204,14 @@ case class FirrtlExecutionOptions(
       case "low"       => new LowFirrtlCompiler()
       case "middle"    => new MiddleFirrtlCompiler()
       case "verilog"   => new VerilogCompiler()
+      case "sverilog"  => new VerilogCompiler()
     }
   }
 
   def outputSuffix: String = {
     compilerName match {
       case "verilog"   => "v"
+      case "sverilog"  => "sv"
       case "low"       => "lo.fir"
       case "high"      => "hi.fir"
       case "middle"    => "mid.fir"
@@ -259,6 +261,7 @@ case class FirrtlExecutionOptions(
       case "middle" => classOf[MiddleFirrtlEmitter]
       case "low" => classOf[LowFirrtlEmitter]
       case "verilog" => classOf[VerilogEmitter]
+      case "sverilog" => classOf[VerilogEmitter]
     }
     getOutputConfig(optionsManager) match {
       case SingleFile(_) => Seq(EmitCircuitAnnotation(emitter))
@@ -333,12 +336,12 @@ trait HasFirrtlOptions {
 
   parser.opt[String]("compiler")
     .abbr("X")
-    .valueName ("<high|middle|low|verilog>")
+    .valueName ("<high|middle|low|verilog|sverilog>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(compilerName = x)
     }
     .validate { x =>
-      if (Array("high", "middle", "low", "verilog").contains(x.toLowerCase)) parser.success
+      if (Array("high", "middle", "low", "verilog", "sverilog").contains(x.toLowerCase)) parser.success
       else parser.failure(s"$x not a legal compiler")
     }.text {
       s"compiler to use, default is ${firrtlOptions.compilerName}"
@@ -470,7 +473,7 @@ sealed trait FirrtlExecutionResult
   * Indicates a successful execution of the firrtl compiler, returning the compiled result and
   * the type of compile
   *
-  * @param emitType  The name of the compiler used, currently "high", "middle", "low", or "verilog"
+  * @param emitType  The name of the compiler used, currently "high", "middle", "low", "verilog", or "sverilog"
   * @param emitted   The emitted result of compilation
   */
 case class FirrtlExecutionSuccess(emitType: String, emitted: String) extends FirrtlExecutionResult
