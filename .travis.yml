@@ -13,7 +13,13 @@ git:
 
 sbt_args: -Dsbt.log.noformat=true
 
-install: ./.install-dependencies.sh
+before_script:
+  - bash .install-dependencies.sh
+
+stages:
+  - compile
+  - test
+  - style
 
 jobs:
   include:
