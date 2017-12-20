@@ -65,4 +65,34 @@ circuit Top :
     val graph = new InstanceGraph(circuit).graph.transformNodes(_.module)
     getEdgeSet(graph) shouldBe Map("Top" -> Set("Child1"), "Top2" -> Set("Child2", "Child3"), "Child2" -> Set("Child2a", "Child2b"), "Child1" -> Set(), "Child2a" -> Set(), "Child2b" -> Set(), "Child3" -> Set())
   }
+
+  it should "not drop duplicate nodes when they collide as a result of transformNodes" in {
+    val input =
+"""circuit Top :
+  module Buzz :
+    skip
+  module Fizz :
+    inst b of Buzz
+  module Foo :
+    inst f1 of Fizz
+  module Bar :
+    inst f2 of Fizz
+  module Top :
+    inst f of Foo
+    inst b of Bar
+"""
+    val circuit = ToWorkingIR.run(parse(input))
+    val graph = (new InstanceGraph(circuit)).graph
+
+    // Create graphs with edges from child to parent module
+    // g1 has collisions on parents to children, ie. it combines:
+    //   (f1, Fizz) -> (b, Buzz) and (f2, Fizz) -> (b, Buzz)
+    val g1 = graph.transformNodes(_.module).reverse
+    g1.getEdges("Fizz") shouldBe Set("Foo", "Bar")
+
+    val g2 = graph.reverse.transformNodes(_.module)
+    // g2 combines
+    //   (f1, Fizz) -> (f, Foo) and (f2, Fizz) -> (b, Bar)
+    g2.getEdges("Fizz") shouldBe Set("Foo", "Bar")
+  }
 }
