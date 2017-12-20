@@ -158,7 +158,7 @@ class AnnotationTests extends AnnotationSpec with Matchers {
         |  module Top :
         |    input clk: Clock
         |    input in: UInt<3>
-        |    mem m: 
+        |    mem m:
         |      data-type => {a: UInt<4>, b: UInt<4>[2]}
         |      depth => 8
         |      write-latency => 1
@@ -495,5 +495,11 @@ class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should contain (manno("Child"))
     resultAnno should not contain (anno("y", mod = "Child_1"))
     resultAnno should not contain (manno("Child_1"))
+  }
+
+  "AnnotationUtils.toNamed" should "invert Named.serialize" in {
+    val x = ComponentName("component", ModuleName("module", CircuitName("circuit")))
+    val y = AnnotationUtils.toNamed(x.serialize)
+    require(x == y)
   }
 }
