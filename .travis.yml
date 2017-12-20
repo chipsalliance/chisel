@@ -1,0 +1,28 @@
+language: scala
+scala:
+  - 2.11.11
+  - 2.12.3
+sudo: false
+
+cache:
+  directories:
+    $HOME/.ivy2
+
+git:
+  depth: 10
+
+sbt_args: -Dsbt.log.noformat=true
+
+install: ./.install-dependencies.sh
+
+jobs:
+  include:
+    - stage: compile
+      script:
+        - sbt clean compile
+    - stage: test
+      script:
+        - sbt test
+    - stage: style
+      script:
+        - sbt scalastyle  test:scalastyle
