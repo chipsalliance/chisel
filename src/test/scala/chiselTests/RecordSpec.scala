@@ -61,6 +61,7 @@ trait RecordSpecUtils {
 
   class RecordQueueTester extends BasicTester {
     val queue = Module(new Queue(fooBarType, 4))
+    queue.io <> DontCare
     queue.io.enq.valid := false.B
     val (cycle, done) = Counter(true.B, 4)
 
