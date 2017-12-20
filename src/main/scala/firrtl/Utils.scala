@@ -598,7 +598,7 @@ object Utils extends LazyLogging {
     "before", "begin", "bind", "bins", "binsof", "bit", "break",
     "buf", "bufif0", "bufif1", "byte",
 
-    "case", "casex", "casez", "cell", "chandle", "class", "clocking",
+    "case", "casex", "casez", "cell", "chandle", "checker", "class", "clocking",
     "cmos", "config", "const", "constraint", "context", "continue",
     "cover", "covergroup", "coverpoint", "cross",
 
