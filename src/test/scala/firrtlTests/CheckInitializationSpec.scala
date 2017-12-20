@@ -55,4 +55,20 @@ class CheckInitializationSpec extends FirrtlFlatSpec {
       }
     }
   }
+  "Missing assignment to submodule port" should "trigger a PassException" in {
+    val input =
+      """circuit Test :
+        |  module Child :
+        |    input in : UInt<32>
+        |  module Test :
+        |    input p : UInt<1>
+        |    inst c of Child
+        |    when p :
+        |      c.in <= UInt(1)""".stripMargin
+    intercept[CheckInitialization.RefNotInitializedException] {
+      passes.foldLeft(parse(input)) {
+        (c: Circuit, p: Pass) => p.run(c)
+      }
+    }
+  }
 }

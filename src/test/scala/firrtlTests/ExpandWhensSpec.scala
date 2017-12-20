@@ -122,6 +122,22 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     val check = "w is invalid"
     executeTest(input, check, false)
   }
+  it should "correctly handle submodule inputs" in {
+    val input =
+      """circuit Test :
+        |  module Child :
+        |    input in : UInt<32>
+        |  module Test :
+        |    input in : UInt<32>[2]
+        |    input p : UInt<1>
+        |    inst c of Child
+        |    when p :
+        |      c.in <= in[0]
+        |    else :
+        |      c.in <= in[1]""".stripMargin
+    val check = "mux(p, in[0], in[1])"
+    executeTest(input, check, true)
+  }
 }
 
 class ExpandWhensExecutionTest extends ExecutionTest("ExpandWhens", "/passes/ExpandWhens")
