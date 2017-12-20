@@ -13,7 +13,13 @@ git:
 
 sbt_args: -Dsbt.log.noformat=true
 
-before_script:
+env:
+  global:
+    INSTALL_DIR=$TRAVIS_BUILD_DIR/install
+    VERILATOR_ROOT=$INSTALL_DIR
+    PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
+
+before_install:
   - bash .install-dependencies.sh
 
 stages:
