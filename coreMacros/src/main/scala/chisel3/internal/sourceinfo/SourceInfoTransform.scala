@@ -38,7 +38,7 @@ class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
 class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](bc: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($bc)($implicitSourceInfo)"
+    q"$thisObj.do_apply($bc)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
 
