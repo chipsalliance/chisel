@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.RawModule
 import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -153,16 +154,6 @@ class ZeroEntryVecTester extends BasicTester {
   stop()
 }
 
-class PassthroughModuleIO extends Bundle {
-  val in = Input(UInt(32.W))
-  val out = Output(UInt(32.W))
-}
-
-class PassthroughModule extends Module {
-  val io = IO(new PassthroughModuleIO)
-  io.out := io.in
-}
-
 class PassthroughModuleTester extends Module {
   val io = IO(Flipped(new PassthroughModuleIO))
   // This drives the input of a PassthroughModule
@@ -251,5 +242,27 @@ class VecSpec extends ChiselPropSpec {
 
   property("Dynamic indexing of a Vec of Module IOs should work") {
     assertTesterPasses{ new ModuleIODynamicIndexTester(4) }
+  }
+
+  property("It should be possible to bulk connect a Vec and a Seq") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val out = Output(Vec(4, UInt(8.W)))
+      })
+      val seq = Seq.fill(4)(0.U)
+      io.out <> seq
+    })
+  }
+
+  property("Bulk connecting a Vec and Seq of different sizes should report a ChiselException") {
+    a [ChiselException] should be thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {
+          val out = Output(Vec(4, UInt(8.W)))
+        })
+        val seq = Seq.fill(5)(0.U)
+        io.out <> seq
+      })
+    }
   }
 }

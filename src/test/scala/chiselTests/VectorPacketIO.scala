@@ -51,7 +51,8 @@ class BrokenVectorPacketModule extends Module {
 }
 
 class VectorPacketIOUnitTester extends BasicTester {
-  val device_under_test = Module(new BrokenVectorPacketModule)
+  val dut = Module(new BrokenVectorPacketModule)
+  dut.io <> DontCare
 
   // This counter just makes the test end quicker
   val c = Counter(1)
