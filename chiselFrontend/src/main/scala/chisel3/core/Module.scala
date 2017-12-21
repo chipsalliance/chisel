@@ -126,7 +126,7 @@ abstract class BaseModule extends HasId {
 
   /** Sets up this module in the parent context
     */
-  private[core] def initializeInParent(instanceCompileOptions: CompileOptions): Unit
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit
 
   //
   // Chisel Internals
