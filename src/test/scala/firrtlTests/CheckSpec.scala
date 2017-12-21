@@ -7,7 +7,7 @@ import org.scalatest._
 import org.scalatest.prop._
 import firrtl.Parser
 import firrtl.ir.Circuit
-import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassExceptions,InferWidths,CheckWidths,ResolveGenders,CheckGenders}
+import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassException,InferWidths,CheckWidths,ResolveGenders,CheckGenders}
 
 class CheckSpec extends FlatSpec with Matchers {
   "Connecting bundles of different types" should "throw an exception" in {
@@ -242,4 +242,25 @@ class CheckSpec extends FlatSpec with Matchers {
     }
   }
 
+  for (op <- List("shl", "shr")) {
+    s"$op by negative amount" should "result in an error" in {
+      val passes = Seq(
+        ToWorkingIR,
+        CheckHighForm
+      )
+      val amount = -1
+      val input =
+        s"""circuit Unit :
+           |  module Unit :
+           |    input x: UInt<3>
+           |    output z: UInt
+           |    z <= $op(x, $amount)""".stripMargin
+      val exception = intercept[PassException] {
+        passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
+          (c: Circuit, p: Pass) => p.run(c)
+        }
+      }
+      exception.getMessage should include (s"Primop $op argument $amount < 0")
+    }
+  }
 }
