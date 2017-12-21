@@ -13,8 +13,8 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
 
   def myGenerateFirrtl(t: => Module): String = Driver.emit(() => t)
   def compileFirrtl(t: => Module): Unit = {
-    val testDir = createTestDirectory(this.getClass.getSimpleName)
-    Driver.execute(Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"), () => t)
+    val testDir = createTestDirectory("test_run_dir/InvalidateAPISpec")
+    Driver.execute(Array[String]("--target-dir", testDir.getAbsolutePath, "--compiler", "verilog"), () => t)
   }
   class TrivialInterface extends Bundle {
     val in  = Input(Bool())
