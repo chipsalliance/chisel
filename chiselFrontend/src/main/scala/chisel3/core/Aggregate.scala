@@ -559,6 +559,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def cloneType : this.type = {
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
+    import scala.language.existentials
 
     def reflectError(desc: String): Nothing = {
       Builder.exception(s"Unable to automatically infer cloneType on $this: $desc").asInstanceOf[Nothing]
@@ -568,21 +569,18 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     // Check if this is an inner class, and if so, try to get the outer instance
     val clazz = this.getClass
-    val outerClassInstance = Option(clazz.getEnclosingClass) match {
-      case Some(outerClass) =>
-        val outerInstance = try {
-          clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
-        } catch {
-          case _: NoSuchFieldException => this.outerModule match {
-            case Some(outerModule) => outerModule
-            case None => reflectError(s"Unable to determine instance of outer class $outerClass")
-          }
-        }
-        if (!outerClass.isAssignableFrom(outerInstance.getClass)) {
-          reflectError(s"Automatically determined outer class instance $outerInstance not assignable to outer class $outerClass")
-        }
-        Some(outerClass, outerInstance)
-      case None => None
+    val outerClassInstance = Option(clazz.getEnclosingClass).map { outerClass =>
+      val outerInstance = try {
+        clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
+      } catch {
+        case _: NoSuchFieldException =>
+          this.outerModule.getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
+      }
+      if (!outerClass.isAssignableFrom(outerInstance.getClass)) {
+        reflectError(s"Unable to determine instance of outer class $outerClass," +
+            s" guessed $outerInstance, but is not assignable to outer class $outerClass")
+      }
+      (outerClass, outerInstance)
     }
 
     // If possible (constructor with no arguments), try Java reflection first
@@ -686,18 +684,13 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       paramName => paramName -> instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
     }
 
-    // Oppurtunistic sanity check: ensure any arguments of type Data is not bound
+    // Opportunistic sanity check: ensure any arguments of type Data is not bound
     // (which could lead to data conflicts, since it's likely the user didn't know to re-bind them).
     // This is not guaranteed to catch all cases (for example, Data in Tuples or Iterables).
-    val boundDataParamNames = ctorParamsNameVals.map{ case (paramName, paramVal) => paramVal match {
-      case paramVal: Data => paramVal.hasBinding match {
-        case true => Some(paramName)
-        case false => None
-      }
-      case _ => None
-      }
-    }.filter(_.isDefined).map(_.get)
-    if (!boundDataParamNames.isEmpty) {
+    val boundDataParamNames = ctorParamsNameVals.collect {
+      case (paramName, paramVal: Data) if paramVal.hasBinding => paramName
+    }
+    if (boundDataParamNames.nonEmpty) {
       reflectError(s"constructor parameters ($boundDataParamNames) have values that are hardware types, which is likely to cause subtle errors." +
           " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
     }
