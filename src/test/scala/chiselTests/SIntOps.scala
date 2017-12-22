@@ -89,5 +89,9 @@ class SIntOpsSpec extends ChiselPropSpec {
     elaborate { new SIntOps }
   }
 
+  property("Negative shift amounts are invalid") {
+    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(SInt())) }
+  }
+
   ignore("SIntOpsTester should return the correct result") { }
 }

@@ -46,12 +46,18 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
     */
-  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.INFER)
+  def apply(x: UInt): T = macro SourceInfoTransform.xArg
+
+  def do_apply(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    makePort(sourceInfo, idx, MemPortDirection.INFER)
 
   /** Creates a read accessor into the memory with dynamic addressing. See the
     * class documentation of the memory for more detailed information.
     */
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = makePort(UnlocatableSourceInfo, idx, MemPortDirection.READ)
+  def read(x: UInt): T = macro SourceInfoTransform.xArg
+
+  def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    makePort(sourceInfo, idx, MemPortDirection.READ)
 
   /** Creates a write accessor into the memory.
     *
@@ -144,7 +150,9 @@ object SyncReadMem {
   * result is undefined (unlike Vec, where the last assignment wins)
   */
 sealed class SyncReadMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
-  def read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
+
+  def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val a = Wire(UInt())
     var port: Option[T] = None
     when (enable) {

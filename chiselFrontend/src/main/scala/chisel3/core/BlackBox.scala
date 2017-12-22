@@ -80,7 +80,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
     component
   }
 
-  private[core] def initializeInParent() {
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     for (x <- getModulePorts) {
@@ -165,7 +165,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     component
   }
 
-  private[core] def initializeInParent() {
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     for ((_, port) <- io.elements) {
       pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }
