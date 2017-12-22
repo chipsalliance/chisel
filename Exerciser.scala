@@ -49,6 +49,7 @@ abstract class Exerciser extends BasicTester {
   }
   def buildState(name: String = s"$current_states")(stop_condition : StopCondition)(generator: () => Unit): Unit = {
     //noinspection ScalaStyle
+    device_under_test.io := DontCare  // Support invalidate API.
     println(s"building state $current_states $name")
     when(state_number === (current_states).asUInt) {
       when(! state_locked) {
