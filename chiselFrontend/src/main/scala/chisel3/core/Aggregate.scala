@@ -577,7 +577,8 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
           this.outerModule.getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
       }
       if (!outerClass.isAssignableFrom(outerInstance.getClass)) {
-        reflectError(s"Automatically determined outer class instance $outerInstance not assignable to outer class $outerClass")
+        reflectError(s"Unable to determine instance of outer class $outerClass," +
+            s" guessed $outerInstance, but is not assignable to outer class $outerClass")
       }
       (outerClass, outerInstance)
     }
