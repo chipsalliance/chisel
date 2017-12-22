@@ -2,8 +2,8 @@
 
 package chisel3
 
-/** The util package provides extensions to core chisel for common hardware components and utility functions.
-  *
+/** The util package provides extensions to core chisel for common hardware components and utility
+  * functions
   */
 package object util {
 

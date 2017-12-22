@@ -217,5 +217,27 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       stop()
     })
   }
+
+  "An instance of a chisel3.Module inside a Chisel.Module" should "have its inputs invalidated" in {
+    compile {
+      import Chisel._
+      new Module {
+        val io = new Bundle {
+          val in = UInt(INPUT, width = 32)
+          val cond = Bool(INPUT)
+          val out = UInt(OUTPUT, width = 32)
+        }
+        val children = Seq(Module(new PassthroughModule),
+                           Module(new PassthroughMultiIOModule),
+                           Module(new PassthroughRawModule))
+        io.out := children.map(_.io.out).reduce(_ + _)
+        children.foreach { child =>
+          when (io.cond) {
+            child.io.in := io.in
+          }
+        }
+      }
+    }
+  }
 }
 

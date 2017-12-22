@@ -24,13 +24,15 @@ object Valid {
 }
 
 /** A hardware module that delays data coming down the pipeline
-  by the number of cycles set by the latency parameter. Functionality
-  is similar to ShiftRegister but this exposes a Pipe interface.
-
-  Example usage:
-    val pipe = new Pipe(UInt())
-    pipe.io.enq <> produce.io.out
-    consumer.io.in <> pipe.io.deq
+  * by the number of cycles set by the latency parameter. Functionality
+  * is similar to ShiftRegister but this exposes a Pipe interface.
+  *
+  * Example usage:
+  * {{{
+  *   val pipe = new Pipe(UInt())
+  *   pipe.io.enq <> produce.io.out
+  *   consumer.io.in <> pipe.io.deq
+  * }}}
   */
 object Pipe
 {

@@ -23,7 +23,9 @@ object Module {
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
-  def do_apply[T <: BaseModule](bc: => T)(implicit sourceInfo: SourceInfo): T = {
+  def do_apply[T <: BaseModule](bc: => T)
+                               (implicit sourceInfo: SourceInfo,
+                                         compileOptions: CompileOptions): T = {
     if (Builder.readyForModuleConstr) {
       throwException("Error: Called Module() twice without instantiating a Module." +
                      sourceInfo.makeMessage(" See " + _))
@@ -62,7 +64,7 @@ object Module {
     // Handle connections at enclosing scope
     if(!Builder.currentModule.isEmpty) {
       pushCommand(DefInstance(sourceInfo, module, component.ports))
-      module.initializeInParent()
+      module.initializeInParent(compileOptions)
     }
     module
   }
@@ -124,7 +126,7 @@ abstract class BaseModule extends HasId {
 
   /** Sets up this module in the parent context
     */
-  private[core] def initializeInParent()
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit
 
   //
   // Chisel Internals

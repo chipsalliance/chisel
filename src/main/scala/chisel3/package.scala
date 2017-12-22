@@ -32,6 +32,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
       chisel3.core.WireInit(t, init)
+
+    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    def apply[T <: Data](t: T, init: DontCare.type)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(t, init)
   }
   val WireInit = chisel3.core.WireInit
 
