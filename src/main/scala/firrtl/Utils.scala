@@ -130,6 +130,7 @@ class FIRRTLException(val str: String) extends Exception(str)
 object Utils extends LazyLogging {
   def throwInternalError =
     error("Internal Error! Please file an issue at https://github.com/ucb-bar/firrtl/issues")
+
   private[firrtl] def time[R](block: => R): (Double, R) = {
     val t0 = System.nanoTime()
     val result = block
@@ -139,7 +140,7 @@ object Utils extends LazyLogging {
   }
 
   /** Removes all [[firrtl.ir.EmptyStmt]] statements and condenses
-   * [[firrtl.ir.Block]] statements.
+    * [[firrtl.ir.Block]] statements.
     */
   def squashEmpty(s: Statement): Statement = s map squashEmpty match {
     case Block(stmts) =>
@@ -150,6 +151,31 @@ object Utils extends LazyLogging {
         case _ => Block(newStmts)
       }
     case sx => sx
+  }
+
+  /** Provide a nice name to create a temporary **/
+  def niceName(e: Expression): String = niceName(1)(e)
+  def niceName(depth: Int)(e: Expression): String = {
+    e match {
+      case WRef(name, _, _, _) if name(0) == '_' => name
+      case WRef(name, _, _, _) => "_" + name
+      case WSubAccess(expr, index, _, _) if depth <= 0 => niceName(depth)(expr)
+      case WSubAccess(expr, index, _, _) => niceName(depth)(expr) + niceName(depth - 1)(index)
+      case WSubField(expr, field, _, _) => niceName(depth)(expr) + "_" + field
+      case WSubIndex(expr, index, _, _) => niceName(depth)(expr) + "_" + index
+      case Reference(name, _) if name(0) == '_' => name
+      case Reference(name, _) => "_" + name
+      case SubAccess(expr, index,  _) if depth <= 0 => niceName(depth)(expr)
+      case SubAccess(expr, index,  _) => niceName(depth)(expr) + niceName(depth - 1)(index)
+      case SubField(expr, field, _) => niceName(depth)(expr) + "_" + field
+      case SubIndex(expr, index, _) => niceName(depth)(expr) + "_" + index
+      case DoPrim(op, args, consts, _) if depth <= 0 => "_" + op
+      case DoPrim(op, args, consts, _) => "_" + op + (args.map(niceName(depth - 1)) ++ consts.map("_" + _)).mkString("")
+      case Mux(cond, tval, fval, _) if depth <= 0 => "_mux"
+      case Mux(cond, tval, fval, _) => "_mux" + Seq(cond, tval, fval).map(niceName(depth - 1)).mkString("")
+      case UIntLiteral(value, _) => "_" + value
+      case SIntLiteral(value, _) => "_" + value
+    }
   }
 
   /** Indent the results of [[ir.FirrtlNode.serialize]] */

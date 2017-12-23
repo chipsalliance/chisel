@@ -15,10 +15,12 @@ import scala.collection.mutable
   */
 object RemoveAccesses extends Pass {
   private def AND(e1: Expression, e2: Expression) =
-    DoPrim(And, Seq(e1, e2), Nil, BoolType)
+    if(e1 == one) e2
+    else if(e2 == one) e1
+    else DoPrim(And, Seq(e1, e2), Nil, BoolType)
 
   private def EQV(e1: Expression, e2: Expression): Expression =
-    DoPrim(Eq, Seq(e1, e2), Nil, e1.tpe)
+    DoPrim(Eq, Seq(e1, e2), Nil, BoolType)
 
   /** Container for a base expression and its corresponding guard
     */
@@ -82,7 +84,7 @@ object RemoveAccesses extends Pass {
       val namespace = Namespace(m)
       def onStmt(s: Statement): Statement = {
         def create_temp(e: Expression): (Statement, Expression) = {
-          val n = namespace.newTemp
+          val n = namespace.newName(niceName(e))
           (DefWire(get_info(s), n, e.tpe), WRef(n, e.tpe, kind(e), gender(e)))
         }
 
@@ -101,7 +103,8 @@ object RemoveAccesses extends Pass {
                 stmts += wire
                 rs.zipWithIndex foreach {
                   case (x, i) if i < temps.size =>
-                    stmts += Connect(get_info(s),getTemp(i),x.base)
+                    stmts += IsInvalid(get_info(s),getTemp(i))
+                    stmts += Conditionally(get_info(s),x.guard,Connect(get_info(s),getTemp(i),x.base),EmptyStmt)
                   case (x, i) =>
                     stmts += Conditionally(get_info(s),x.guard,Connect(get_info(s),getTemp(i),x.base),EmptyStmt)
                 }

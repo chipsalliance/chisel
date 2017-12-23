@@ -12,7 +12,7 @@ DUT=$1
 if [ $TRAVIS_PULL_REQUEST = "false" ]; then
     echo "Not a pull request, no formal check"
     exit 0
-elif [[ $TRAVIS_COMMIT_MESSAGE == *"[skip formal checks]"* ]]; then
+elif git log --format=%B --no-merges $TRAVIS_BRANCH..HEAD | grep '\[skip formal checks\]'; then
     echo "Commit message says to skip formal checks"
     exit 0
 else
