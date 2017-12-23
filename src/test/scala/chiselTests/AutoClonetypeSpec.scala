@@ -35,6 +35,11 @@ class BaseBundleNonVal(i: Int) extends Bundle {
 class SubBundleVal(val i: Int, val i2: Int) extends BaseBundleNonVal(i) {
   val inner2 = UInt(i2.W)
 }
+class BundleWithAnonymousInner extends Bundle {
+  val inner = new Bundle {
+    val in = UInt(8.W)
+  }
+}
 
 class ModuleWithInner extends Module {
   class InnerBundle(val i: Int) extends Bundle {
@@ -111,5 +116,14 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
 
   "Inner bundles with Scala args" should "not need clonetype" in {
     elaborate { new ModuleWithInner }
+  }
+
+  "Anonymous inner Bundles of bound Bundles" should "not need clonetype" in {
+    elaborate(new Module {
+      val io = IO(new Bundle {})
+      val w0 = Wire(new BundleWithAnonymousInner)
+      val w1 = WireInit(w0)
+      val w2 = WireInit(w0.inner)
+    })
   }
 }

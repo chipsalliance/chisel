@@ -556,15 +556,32 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     case _ => None
   }
 
-  override def cloneType : this.type = {
+  // Memoize autoclonetype
+  private var _cloner: Option[() => this.type] = None
+
+  private def reflectError(desc: String): Nothing = {
+    Builder.exception(s"Unable to automatically infer cloneType on $this: $desc").asInstanceOf[Nothing]
+  }
+
+  override def cloneType : this.type = _cloner match {
+    case Some(f) =>
+      val clone = f()
+      if (!clone.typeEquivalent(this)) {
+        reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+        " Constructor argument values were not inferred, ensure constructor is deterministic.")
+      }
+      clone._cloner = _cloner
+      clone.outerModule = this.outerModule // TODO Is this right???
+      clone
+    case None =>
+      _cloner = Some(autocloneType)
+      cloneType
+  }
+
+  private def autocloneType: () => this.type = {
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials
-
-    def reflectError(desc: String): Nothing = {
-      Builder.exception(s"Unable to automatically infer cloneType on $this: $desc").asInstanceOf[Nothing]
-    }
-
     import scala.reflect.runtime.universe._
 
     // Check if this is an inner class, and if so, try to get the outer instance
@@ -574,7 +591,10 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
         clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
       } catch {
         case _: NoSuchFieldException =>
-          this.outerModule.getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
+          // If this Bundle has a ChildBinding, it's an anonymous inner Bundle of another Bundle
+          this.bindingOpt.collect { case ChildBinding(p) => p }
+              .orElse(this.outerModule)
+              .getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
       }
       if (!outerClass.isAssignableFrom(outerInstance.getClass)) {
         reflectError(s"Unable to determine instance of outer class $outerClass," +
@@ -592,27 +612,18 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     if (clazz.getConstructors.size == 1) {
       var ctor = clazz.getConstructors.head
       val argTypes = ctor.getParameterTypes.toList
-      val clone = (argTypes, outerClassInstance) match {
+      val cloner = (argTypes, outerClassInstance) match {
         case (Nil, None) => // no arguments, no outer class, invoke constructor directly
-          Some(ctor.newInstance().asInstanceOf[this.type])
+          Some(() => ctor.newInstance().asInstanceOf[this.type])
         case (argType :: Nil, Some((_, outerInstance))) =>
           if (argType isAssignableFrom outerInstance.getClass) {
-            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+            Some(() => ctor.newInstance(outerInstance).asInstanceOf[this.type])
           } else {
             None
           }
         case _ => None
       }
-      clone match {
-        case Some(clone) =>
-          clone.outerModule = this.outerModule
-          if (!clone.typeEquivalent(this)) {
-            reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
-            " Constructor argument values were not inferred, ensure constructor is deterministic.")
-          }
-          return clone.asInstanceOf[this.type]
-        case None =>
-      }
+      cloner.foreach(f => return f)
     }
 
     // Get constructor parameters and accessible fields
@@ -649,9 +660,8 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       val ctors = clazz.getConstructors
       require(ctors.size == 1)  // should be consistent with Scala constructors
       try {
-        val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
-        clone.outerModule = this.outerModule
-        return clone
+        val cloner = () => ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
+        return cloner
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
           reflectError(s"Unexpected failure at constructor invocation, got $e.")
@@ -702,16 +712,17 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case Some((_, outerInstance)) => mirror.reflect(outerInstance).reflectClass(classSymbol)
       case None => mirror.reflectClass(classSymbol)
     }
-    val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
-    clone.outerModule = this.outerModule
+    val constructor = classMirror.reflectConstructor(ctor)
+    () => {
+      val clone = constructor.apply(ctorParamsVals:_*).asInstanceOf[this.type]
 
-    if (!clone.typeEquivalent(this)) {
-      reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
-          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
-          " and that the constructor is deterministic.")
+      if (!clone.typeEquivalent(this)) {
+        reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+            " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
+            " and that the constructor is deterministic.")
+      }
+      clone
     }
-
-    clone
   }
 
   /** Default "pretty-print" implementation
