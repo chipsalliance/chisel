@@ -1237,7 +1237,7 @@ The divide operation divides \vv{num} by \vv{den}, truncating the fractional por
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
-mod & (num,den) & () & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
+rem & (num,den) & () & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
                    &&& (UInt,SInt) & UInt & min(w\ts{num},w\ts{den})\\
                    &&& (SInt,UInt) & SInt & min(w\ts{num},w\ts{den}+1)\\
                    &&& (SInt,SInt) & SInt & min(w\ts{num},w\ts{den})\\
@@ -1247,7 +1247,7 @@ mod & (num,den) & () & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
 \end{figure}
 The modulus operation yields the remainder from dividing \vv{num} by \vv{den}, keeping the sign of the numerator. Together with the divide operator, the modulus operator satisfies the relationship below:
 \begin{verbatim}
-num = add(mul(den,div(num,den)),mod(num,den))}
+num = add(mul(den,div(num,den)),rem(num,den))}
 \end{verbatim}
 
 \subsection{Comparison Operations}
