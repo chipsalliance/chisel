@@ -6,7 +6,7 @@ This repository's issues are reserved for feature requests and bug reports.
   - [ ] Other enhancement
 
 * **If the current behavior is a bug, please provide the steps to reproduce the problem:**
-  * **If possible, please directly provide the FIRRTL file which causes the issue**
+  * **If possible, please directly provide the FIRRTL file or a relevant fragment if the file is large**
   * **What is the current behavior?**
   * **What is the expected behavior?**
   * **Please tell us about your environment:**
