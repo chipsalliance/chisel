@@ -319,6 +319,6 @@ object FileUtils {
     Seq("bash", "-c", "which %s".format(cmd)).run(ioToDevNull).exitValue == 0
   }
 
-  /** isVCSAvailable - flag indicating vcs is available (for Verilog compilation and testing. */
+  /** Flag indicating if vcs is available (for Verilog compilation and testing). */
   lazy val isVCSAvailable: Boolean = isCommandAvailable("vcs")
 }
