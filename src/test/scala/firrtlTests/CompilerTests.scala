@@ -133,40 +133,23 @@ circuit Top :
  * to the correct Verilog.
  */
 class VerilogCompilerSpec extends CompilerSpec with Matchers {
-   val compiler = new VerilogCompiler()
-   val input =
-"""
-circuit Top :
-  module Top :
-    input a : UInt<1>[2]
-    output b : UInt<1>[2]
-    b <= a
-"""
-   val check = Seq(
-      "`ifdef RANDOMIZE_GARBAGE_ASSIGN",
-      "`define RANDOMIZE",
-      "`endif",
-      "`ifdef RANDOMIZE_INVALID_ASSIGN",
-      "`define RANDOMIZE",
-      "`endif",
-      "`ifdef RANDOMIZE_REG_INIT",
-      "`define RANDOMIZE",
-      "`endif",
-      "`ifdef RANDOMIZE_MEM_INIT",
-      "`define RANDOMIZE",
-      "`endif",
-      "",
-      "module Top(",
-      "  input   a_0,",
-      "  input   a_1,",
-      "  output  b_0,",
-      "  output  b_1",
-      ");",
-      "  assign b_0 = a_0;",
-      "  assign b_1 = a_1;",
-      "endmodule\n"
-   ).reduce(_ + "\n" + _)
-   "A circuit's verilog output" should "match the given string" in {
+   val input = """circuit Top :
+                 |  module Top :
+                 |    input a : UInt<1>[2]
+                 |    output b : UInt<1>[2]
+                 |    b <= a""".stripMargin
+   val check = """module Top(
+                 |  input   a_0,
+                 |  input   a_1,
+                 |  output  b_0,
+                 |  output  b_1
+                 |);
+                 |  assign b_0 = a_0;
+                 |  assign b_1 = a_1;
+                 |endmodule
+                 |""".stripMargin
+   def compiler = new VerilogCompiler()
+   "A circuit's verilog output" should "match the given string and not have RANDOMIZE if no invalids" in {
       getOutput should be (check)
    }
 }

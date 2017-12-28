@@ -30,7 +30,7 @@ object RemoveValidIf extends Pass {
   // Recursive. Replaces IsInvalid with connecting zero
   private def onStmt(s: Statement): Statement = s map onStmt map onExp match {
     case invalid @ IsInvalid(info, loc) => loc.tpe match {
-      case _: AnalogType => invalid // Unclear what we should do, can't remove or we emit invalid Firrtl
+      case _: AnalogType => EmptyStmt
       case tpe => Connect(info, loc, getGroundZero(tpe))
     }
     // Register connected to itself (since reset has been made explicit) is a register with no reset

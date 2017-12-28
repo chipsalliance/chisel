@@ -233,6 +233,36 @@ class InoutVerilogSpec extends FirrtlFlatSpec {
        |endmodule""".stripMargin.split("\n") map normalized
     executeTest(input, check, compiler)
   }
+
+  it should "not error if not isinvalid" in {
+    val compiler = new VerilogCompiler
+    val input =
+     """circuit Attaching :
+        |  module Attaching :
+        |    output an: Analog<3>
+        |""".stripMargin
+    val check =
+     """module Attaching(
+       |  inout  [2:0] an
+       |);
+       |endmodule""".stripMargin.split("\n") map normalized
+    executeTest(input, check, compiler)
+  }
+  it should "not error if isinvalid" in {
+    val compiler = new VerilogCompiler
+    val input =
+     """circuit Attaching :
+        |  module Attaching :
+        |    output an: Analog<3>
+        |    an is invalid
+        |""".stripMargin
+    val check =
+     """module Attaching(
+       |  inout  [2:0] an
+       |);
+       |endmodule""".stripMargin.split("\n") map normalized
+    executeTest(input, check, compiler)
+  }
 }
 
 class AttachAnalogSpec extends FirrtlFlatSpec {
