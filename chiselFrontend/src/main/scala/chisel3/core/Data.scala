@@ -208,11 +208,6 @@ abstract class Data extends HasId {
     }
   }
 
-  // If this Data is an instance of an inner class, record enclosing class
-  // This is only used for cloneType, and is mutable to allow autoCloneType to preserve the
-  // original outerModule.
-  private[core] var outerModule: Option[BaseModule] = Builder.currentModule
-
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
@@ -245,6 +240,7 @@ abstract class Data extends HasId {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
+  private[core] def bindingOpt = _binding
   private[core] def hasBinding = _binding.isDefined
   // Only valid after node is bound (synthesizable), crashes otherwise
   private[core] def binding = _binding.get

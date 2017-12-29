@@ -5,6 +5,12 @@ import Chisel.ChiselException
 import org.scalatest._
 import chisel3._
 
+class BundleWithAnonymousInner(val w: Int) extends Bundle {
+  val inner = new Bundle {
+    val foo = Input(UInt(w.W))
+  }
+}
+
 class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
   behavior of "autoCloneType of inner Bundle in Chisel3"
 
@@ -18,7 +24,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
           def getIO = new InnerIOType
         }
         val io = IO(new Bundle {})
-        val myWire = Wire((new Middle(w)).getIO) 
+        val myWire = Wire((new Middle(w)).getIO)
       }
       new Outer(2)
     }
@@ -53,6 +59,33 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
         i.io <> iw
       }
       new Outer(2)
+    }
+  }
+
+  it should "clone an anonymous, bound, inner bundle of another bundle successfully" in {
+    elaborate {
+      class TestModule(w: Int) extends Module {
+        val io = IO(new BundleWithAnonymousInner(w) )
+        val w0 = WireInit(io)
+        val w1 = WireInit(io.inner)
+      }
+      new TestModule(8)
+    }
+  }
+
+  it should "clone an anonymous, inner bundle of a Module, bound to another bundle successfully" in {
+    elaborate {
+      class TestModule(w: Int) extends Module {
+        val bun = new Bundle {
+          val foo = UInt(w.W)
+        }
+        val io = IO(new Bundle {
+          val inner = Input(bun)
+        })
+        val w0 = WireInit(io)
+        val w1 = WireInit(io.inner)
+      }
+      new TestModule(8)
     }
   }
 
