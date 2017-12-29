@@ -556,6 +556,11 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     case _ => None
   }
 
+  // If this Data is an instance of an inner class, record a *guess* at the outer object.
+  // This is only used for cloneType, and is mutable to allow autoCloneType to try guesses other
+  // than the module that was current when the Bundle was constructed.
+  private var _outerInst: Option[Object] = Builder.currentModule
+
   override def cloneType : this.type = {
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
@@ -570,16 +575,22 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     // Check if this is an inner class, and if so, try to get the outer instance
     val clazz = this.getClass
     val outerClassInstance = Option(clazz.getEnclosingClass).map { outerClass =>
+      def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
       val outerInstance = try {
         clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
       } catch {
         case _: NoSuchFieldException =>
-          this.outerModule.getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
+          // First check if this Bundle is bound and an anonymous inner Bundle of another Bundle
+          this.bindingOpt.collect { case ChildBinding(p) if canAssignOuterClass(p) => p }
+              .orElse(this._outerInst)
+              .getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
       }
-      if (!outerClass.isAssignableFrom(outerInstance.getClass)) {
+      if (!canAssignOuterClass(outerInstance)) {
         reflectError(s"Unable to determine instance of outer class $outerClass," +
             s" guessed $outerInstance, but is not assignable to outer class $outerClass")
       }
+      // Record the outer instance for future cloning
+      this._outerInst = Some(outerInstance)
       (outerClass, outerInstance)
     }
 
@@ -605,7 +616,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       }
       clone match {
         case Some(clone) =>
-          clone.outerModule = this.outerModule
+          clone._outerInst = this._outerInst
           if (!clone.typeEquivalent(this)) {
             reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
             " Constructor argument values were not inferred, ensure constructor is deterministic.")
@@ -650,7 +661,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       require(ctors.size == 1)  // should be consistent with Scala constructors
       try {
         val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
-        clone.outerModule = this.outerModule
+        clone._outerInst = this._outerInst
         return clone
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
@@ -703,7 +714,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case None => mirror.reflectClass(classSymbol)
     }
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
-    clone.outerModule = this.outerModule
+    clone._outerInst = this._outerInst
 
     if (!clone.typeEquivalent(this)) {
       reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
