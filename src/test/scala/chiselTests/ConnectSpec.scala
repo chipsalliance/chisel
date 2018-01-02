@@ -32,6 +32,7 @@ class PipeInternalWires extends Module {
 
 class CrossConnectTester(inType: Data, outType: Data) extends BasicTester {
   val dut = Module(new CrossConnects(inType, outType))
+  dut.io := DontCare
   stop()
 }
 

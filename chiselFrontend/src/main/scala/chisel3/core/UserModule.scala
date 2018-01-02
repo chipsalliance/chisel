@@ -67,16 +67,29 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
     _firrtlPorts = Some(firrtlPorts)
 
-    // Generate IO invalidation commands to initialize outputs as unused
-    val invalidateCommands = getModulePorts map {port => DefInvalid(UnlocatableSourceInfo, port.ref)}
-
+    // Generate IO invalidation commands to initialize outputs as unused,
+    //  unless the client wants explicit control over their generation.
+    val invalidateCommands = {
+      if (!compileOptions.explicitInvalidate) {
+        getModulePorts map { port => DefInvalid(UnlocatableSourceInfo, port.ref) }
+      } else {
+        Seq()
+      }
+    }
     val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
     _component = Some(component)
     component
   }
 
-  // There is no initialization to be done by default.
-  private[core] def initializeInParent() {}
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+
+    if (!parentCompileOptions.explicitInvalidate) {
+      for (port <- getModulePorts) {
+        pushCommand(DefInvalid(sourceInfo, port.ref))
+      }
+    }
+  }
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -94,13 +107,10 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   // Setup ClockAndReset
   Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
 
-  private[core] override def initializeInParent() {
+  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    for (port <- getModulePorts) {
-      pushCommand(DefInvalid(sourceInfo, port.ref))
-    }
-
+    super.initializeInParent(parentCompileOptions)
     clock := Builder.forcedClock
     reset := Builder.forcedReset
   }
@@ -166,12 +176,14 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     super.generateComponent()
   }
 
-  private[core] override def initializeInParent() {
+  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     // Don't generate source info referencing parents inside a module, since this interferes with
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    pushCommand(DefInvalid(sourceInfo, io.ref))
+    if (!parentCompileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, io.ref))
+    }
 
     override_clock match {
       case Some(override_clock) => clock := override_clock

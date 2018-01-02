@@ -13,6 +13,7 @@ class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
     val c = Output(Vec(2, UInt(32.W)))
   })
   io.b := io.a
+  io.c := DontCare
   if (withDontTouch) {
     dontTouch(io.c)
   }

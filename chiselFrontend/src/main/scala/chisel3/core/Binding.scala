@@ -88,11 +88,14 @@ sealed trait ConstrainedBinding extends TopBinding {
   def location = Some(enclosure)
 }
 
+// A binding representing a data that cannot be (re)assigned to.
+sealed trait ReadOnlyBinding extends TopBinding
+
 // TODO literal info here
-case class LitBinding() extends UnconstrainedBinding
+case class LitBinding() extends UnconstrainedBinding with ReadOnlyBinding
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: UserModule) extends ConstrainedBinding
+case class OpBinding(enclosure: UserModule) extends ConstrainedBinding with ReadOnlyBinding
 case class MemoryPortBinding(enclosure: UserModule) extends ConstrainedBinding
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
 case class RegBinding(enclosure: UserModule) extends ConstrainedBinding
@@ -101,3 +104,6 @@ case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
 case class ChildBinding(parent: Data) extends Binding {
   def location = parent.binding.location
 }
+// A DontCare element has a specific Binding, somewhat like a literal.
+// It is a source (RHS). It may only be connected/applied to sinks.
+case class DontCareBinding() extends UnconstrainedBinding

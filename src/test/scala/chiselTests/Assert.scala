@@ -46,7 +46,18 @@ class PipelinedResetTester extends BasicTester {
 
 class ModuloAssertTester extends BasicTester {
   assert((4.U % 2.U) === 0.U)
-  assert(1.U === 1.U, "I'm 110% sure this will succeed")
+  stop()
+}
+
+class FormattedAssertTester extends BasicTester {
+  val foobar = Wire(UInt(32.W))
+  foobar := 123.U
+  assert(foobar === 123.U, "Error! Wire foobar =/= %x! This is 100%% wrong.\n", foobar)
+  stop()
+}
+
+class BadUnescapedPercentAssertTester extends BasicTester {
+  assert(1.U === 1.U, "I'm 110% sure this is an invalid message")
   stop()
 }
 
@@ -62,5 +73,13 @@ class AssertSpec extends ChiselFlatSpec {
   }
   "Assertions" should "allow the modulo operator % in the message" in {
     assertTesterPasses{ new ModuloAssertTester }
+  }
+  they should "allow printf-style format strings with arguments" in {
+    assertTesterPasses{ new FormattedAssertTester }
+  }
+  they should "not allow unescaped % in the message" in {
+    a [java.util.UnknownFormatConversionException] should be thrownBy {
+      elaborate { new BadUnescapedPercentAssertTester }
+    }
   }
 }

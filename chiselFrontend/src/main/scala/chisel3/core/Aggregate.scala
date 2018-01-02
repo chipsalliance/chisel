@@ -67,8 +67,15 @@ sealed abstract class Aggregate extends Data {
   def getElements: Seq[Data]
 
   private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, this.lref))
+    } else {
+      pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+    }
+  }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
@@ -93,7 +100,7 @@ trait VecFactory {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(gen, "vec type")
     }
-    new Vec(gen.chiselCloneType, n)
+    new Vec(gen.cloneTypeFull, n)
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
@@ -111,11 +118,13 @@ object Vec extends VecFactory
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
   *
-  * Careful consideration should be given over the use of [[Vec]] vs [[Seq]] or some other scala collection. In
-  * general [[Vec]] only needs to be used when there is a need to express the hardware collection in a [[Reg]]
-  * or IO [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
+  * Careful consideration should be given over the use of [[Vec]] vs
+  * [[scala.collection.immutable.Seq Seq]] or some other Scala collection. In general [[Vec]] only
+  * needs to be used when there is a need to express the hardware collection in a [[Reg]] or IO
+  * [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
   *
-  * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in an IO [[Bundle]]
+  * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in
+  * an IO [[Bundle]]
   *
   *  {{{
   *    val io = IO(new Bundle {
@@ -167,7 +176,9 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Seq
     */
   def <> (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(this.length == that.length)
+    if (this.length != that.length) {
+      Builder.error("Vec and Seq being bulk connected have different lengths!")
+    }
     for ((a, b) <- this zip that)
       a <> b
   }
@@ -461,7 +472,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
-    * Results in "$className(elt0.name -> elt0.value, ...)"
+    * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
   def toPrintable: Printable = toPrintableHelper(elements.toList)
 }
@@ -574,15 +585,9 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
-    * Results in "Bundle(elt0.name -> elt0.value, ...)"
+    * Results in "`Bundle(elt0.name -> elt0.value, ...)`"
     * @note The order is reversed from the order of elements in order to print
     *   the fields in the order they were defined
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
-
-private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "chiselCloneType", "toBits",
-    "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
-}
-

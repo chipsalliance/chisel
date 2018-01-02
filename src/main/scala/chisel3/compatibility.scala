@@ -10,6 +10,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   import scala.language.experimental.macros
   import scala.annotation.StaticAnnotation
   import scala.annotation.compileTimeOnly
+  import scala.language.implicitConversions
 
   implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
 
@@ -40,6 +41,12 @@ package object Chisel {     // scalastyle:ignore package.object.name
         }
         case _ => NODIR
       }
+    }
+  }
+  implicit class cloneTypeable[T <: Data](val target: T) extends AnyVal {
+    import chisel3.core.DataMirror
+    def chiselCloneType: T = {
+      DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
     }
   }
 

@@ -19,6 +19,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Input   = chisel3.core.Input
   val Output  = chisel3.core.Output
   val Flipped = chisel3.core.Flipped
+  val chiselTypeOf = chisel3.core.chiselTypeOf
 
   type Data = chisel3.core.Data
   object Wire extends chisel3.core.WireFactory {
@@ -30,6 +31,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
     @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.core.WireInit(t, init)
+
+    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    def apply[T <: Data](t: T, init: DontCare.type)(implicit compileOptions: CompileOptions): T =
       chisel3.core.WireInit(t, init)
   }
   val WireInit = chisel3.core.WireInit
@@ -53,6 +58,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @deprecated("fromBits is deprecated, use asTypeOf instead", "chisel3")
     def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
       that.asTypeOf(data)
+    }
+  }
+
+  implicit class cloneTypeable[T <: Data](val target: T) extends AnyVal {
+    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
+    def chiselCloneType: T = {
+      target.cloneTypeFull.asInstanceOf[T]
     }
   }
 
@@ -341,6 +353,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     a.allElements
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
+  // Invalidate API - a DontCare element for explicit assignment to outputs,
+  //  indicating the signal is intentionally not driven.
+  val DontCare = chisel3.core.DontCare
 
   /** Package for experimental features, which may have their API changed, be removed, etc.
     *

@@ -4,10 +4,19 @@ package chisel3.util
 
 import chisel3._
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
-//import chisel3.core.ExplicitCompileOptions.Strict
 
 /** A counter module
- *
+  *
+  * Typically instantiated with apply methods in [[Counter$ object Counter]]
+  *
+  * @example {{{
+  *   val countOn = true.B // increment counter every clock cycle
+  *   val (counterValue, counterWrap) = Counter(countOn, 4)
+  *   when (counterValue === 3.U) {
+  *     ...
+  *   }
+  * }}}
+  *
   * @param n number of counts before the counter resets (or one more than the
   * maximum output value of the counter), need not be a power of two
   */
@@ -46,14 +55,6 @@ object Counter
     * @param n number of counts before the counter resets
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
-    *
-    * @example {{{
-    * val countOn = true.B // increment counter every clock cycle
-    * val (counterValue, counterWrap) = Counter(countOn, 4)
-    * when (counterValue === 3.U) {
-    *   ...
-    * }
-    * }}}
     */
   @chiselName
   def apply(cond: Bool, n: Int): (UInt, Bool) = {
