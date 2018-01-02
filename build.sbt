@@ -33,6 +33,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
 
 lazy val commonSettings = Seq (
+  coverageEnabled := (coverageEnabled in Global).value
   organization := "edu.berkeley.cs",
   version := "3.1-SNAPSHOT",
   git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
@@ -137,6 +138,7 @@ lazy val chisel = (project in file(".")).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
+//  aggregate(coreMacros, chiselFrontend).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
