@@ -556,31 +556,173 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     case _ => None
   }
 
+  // If this Data is an instance of an inner class, record a *guess* at the outer object.
+  // This is only used for cloneType, and is mutable to allow autoCloneType to try guesses other
+  // than the module that was current when the Bundle was constructed.
+  private var _outerInst: Option[Object] = Builder.currentModule
+
   override def cloneType : this.type = {
-    // If the user did not provide a cloneType method, try invoking one of
-    // the following constructors, not all of which necessarily exist:
-    // - A zero-parameter constructor
-    // - A one-paramater constructor, with null as the argument
-    // - A one-parameter constructor for a nested Bundle, with the enclosing
-    //   parent Module as the argument
-    val constructor = this.getClass.getConstructors.head
-    try {
-      val args = Seq.fill(constructor.getParameterTypes.size)(null)
-      constructor.newInstance(args:_*).asInstanceOf[this.type]
-    } catch {
-      case e: java.lang.reflect.InvocationTargetException if e.getCause.isInstanceOf[java.lang.NullPointerException] =>
-        try {
-          constructor.newInstance(_parent.get).asInstanceOf[this.type]
-        } catch {
-          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-            Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
-              "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
-            this
-        }
-      case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-        Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method")
-        this
+    // This attempts to infer constructor and arguments to clone this Bundle subtype without
+    // requiring the user explicitly overriding cloneType.
+    import scala.language.existentials
+
+    def reflectError(desc: String): Nothing = {
+      Builder.exception(s"Unable to automatically infer cloneType on $this: $desc").asInstanceOf[Nothing]
     }
+
+    import scala.reflect.runtime.universe._
+
+    // Check if this is an inner class, and if so, try to get the outer instance
+    val clazz = this.getClass
+    val outerClassInstance = Option(clazz.getEnclosingClass).map { outerClass =>
+      def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
+      val outerInstance = try {
+        clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
+      } catch {
+        case _: NoSuchFieldException =>
+          // First check if this Bundle is bound and an anonymous inner Bundle of another Bundle
+          this.bindingOpt.collect { case ChildBinding(p) if canAssignOuterClass(p) => p }
+              .orElse(this._outerInst)
+              .getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
+      }
+      if (!canAssignOuterClass(outerInstance)) {
+        reflectError(s"Unable to determine instance of outer class $outerClass," +
+            s" guessed $outerInstance, but is not assignable to outer class $outerClass")
+      }
+      // Record the outer instance for future cloning
+      this._outerInst = Some(outerInstance)
+      (outerClass, outerInstance)
+    }
+
+    // If possible (constructor with no arguments), try Java reflection first
+    // This handles two cases that Scala reflection doesn't:
+    // 1. getting the ClassSymbol of a class with an anonymous outer class fails with a
+    //    CyclicReference exception
+    // 2. invoking the constructor of an anonymous inner class seems broken (it expects the outer
+    //    class as an argument, but fails because the number of arguments passed in is incorrect)
+    if (clazz.getConstructors.size == 1) {
+      var ctor = clazz.getConstructors.head
+      val argTypes = ctor.getParameterTypes.toList
+      val clone = (argTypes, outerClassInstance) match {
+        case (Nil, None) => // no arguments, no outer class, invoke constructor directly
+          Some(ctor.newInstance().asInstanceOf[this.type])
+        case (argType :: Nil, Some((_, outerInstance))) =>
+          if (argType isAssignableFrom outerInstance.getClass) {
+            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+          } else {
+            None
+          }
+        case _ => None
+      }
+      clone match {
+        case Some(clone) =>
+          clone._outerInst = this._outerInst
+          if (!clone.typeEquivalent(this)) {
+            reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+            " Constructor argument values were not inferred, ensure constructor is deterministic.")
+          }
+          return clone.asInstanceOf[this.type]
+        case None =>
+      }
+    }
+
+    // Get constructor parameters and accessible fields
+    val mirror = runtimeMirror(clazz.getClassLoader)
+    val classSymbol = try {
+      mirror.reflect(this).symbol
+    } catch {
+      case e: scala.reflect.internal.Symbols#CyclicReference => reflectError(s"Scala cannot reflect on $this, got exception $e." +
+          " This is known to occur with inner classes on anonymous outer classes." +
+          " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType.")
+    }
+
+    val decls = classSymbol.typeSignature.decls
+    val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
+    if (ctors.size != 1) {
+      reflectError(s"found multiple constructors ($ctors)." +
+          " Either remove all but the default constructor, or define a custom cloneType method.")
+    }
+    val ctor = ctors.head
+    val ctorParamss = ctor.paramLists
+    val ctorParams = ctorParamss match {
+      case Nil => List()
+      case ctorParams :: Nil => ctorParams
+      case ctorParams :: ctorImplicits :: Nil => ctorParams ++ ctorImplicits
+      case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
+    }
+    val ctorParamsNames = ctorParams.map(_.name.toString)
+
+    // Special case for anonymous inner classes: their constructor consists of just the outer class reference
+    // Scala reflection on anonymous inner class constructors seems broken
+    if (ctorParams.size == 1 && outerClassInstance.isDefined &&
+        ctorParams.head.typeSignature == mirror.classSymbol(outerClassInstance.get._1).toType) {
+      // Fall back onto Java reflection
+      val ctors = clazz.getConstructors
+      require(ctors.size == 1)  // should be consistent with Scala constructors
+      try {
+        val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
+        clone._outerInst = this._outerInst
+        return clone
+      } catch {
+        case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
+          reflectError(s"Unexpected failure at constructor invocation, got $e.")
+      }
+    }
+
+    // Get all the class symbols up to (but not including) Bundle and get all the accessors.
+    // (each ClassSymbol's decls only includes those declared in the class itself)
+    val bundleClassSymbol = mirror.classSymbol(classOf[Bundle])
+    val superClassSymbols = classSymbol.baseClasses.takeWhile(_ != bundleClassSymbol)
+    val superClassDecls = superClassSymbols.map(_.typeSignature.decls).flatten
+    val accessors = superClassDecls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
+
+    // Get constructor argument values
+    // Check that all ctor params are immutable and accessible. Immutability is required to avoid
+    // potential subtle bugs (like values changing after cloning).
+    // This also generates better error messages (all missing elements shown at once) instead of
+    // failing at the use site one at a time.
+    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
+    val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
+    if (!paramsDiff.isEmpty) {
+      reflectError(s"constructor has parameters $paramsDiff that are not both immutable and accessible." +
+          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+    }
+
+    // Get all the argument values
+    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
+    val instanceReflect = mirror.reflect(this)
+    val ctorParamsNameVals = ctorParamsNames.map {
+      paramName => paramName -> instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
+    }
+
+    // Opportunistic sanity check: ensure any arguments of type Data is not bound
+    // (which could lead to data conflicts, since it's likely the user didn't know to re-bind them).
+    // This is not guaranteed to catch all cases (for example, Data in Tuples or Iterables).
+    val boundDataParamNames = ctorParamsNameVals.collect {
+      case (paramName, paramVal: Data) if paramVal.hasBinding => paramName
+    }
+    if (boundDataParamNames.nonEmpty) {
+      reflectError(s"constructor parameters ($boundDataParamNames) have values that are hardware types, which is likely to cause subtle errors." +
+          " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
+    }
+
+    val ctorParamsVals = ctorParamsNameVals.map{ case (_, paramVal) => paramVal }
+
+    // Invoke ctor
+    val classMirror = outerClassInstance match {
+      case Some((_, outerInstance)) => mirror.reflect(outerInstance).reflectClass(classSymbol)
+      case None => mirror.reflectClass(classSymbol)
+    }
+    val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
+    clone._outerInst = this._outerInst
+
+    if (!clone.typeEquivalent(this)) {
+      reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
+          " and that the constructor is deterministic.")
+    }
+
+    clone
   }
 
   /** Default "pretty-print" implementation

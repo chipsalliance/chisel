@@ -240,6 +240,7 @@ abstract class Data extends HasId {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
+  private[core] def bindingOpt = _binding
   private[core] def hasBinding = _binding.isDefined
   // Only valid after node is bound (synthesizable), crashes otherwise
   private[core] def binding = _binding.get

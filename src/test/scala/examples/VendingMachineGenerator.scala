@@ -9,7 +9,7 @@ import chisel3.util._
 
 import VendingMachineUtils._
 
-class VendingMachineIO(legalCoins: Seq[Coin]) extends Bundle {
+class VendingMachineIO(val legalCoins: Seq[Coin]) extends Bundle {
   require(legalCoins.size >= 1, "The vending machine must accept at least 1 coin!")
   // Order of coins by value
   val coins: Seq[Coin] = legalCoins sortBy (_.value)
