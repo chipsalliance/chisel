@@ -203,7 +203,7 @@ abstract class BaseModule extends HasId {
   /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
     * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
     */
-  protected def _bindIoInPlace(iodef: Data) {
+  protected def _bindIoInPlace(iodef: Data): Unit = {
     // Compatibility code: Chisel2 did not require explicit direction on nodes
     // (unspecified treated as output, and flip on nothing was input).
     // This sets assigns the explicit directions required by newer semantics on
