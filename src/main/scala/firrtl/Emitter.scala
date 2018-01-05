@@ -707,7 +707,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
           for (x <- initials) emit(Seq(tab, x))
           emit(Seq("  end"))
           emit(Seq("`endif // RANDOMIZE"))
-          emit(Seq("`undef RANDOMIZE"))
         }
 
         for (clk_stream <- at_clock if clk_stream._2.nonEmpty) {
