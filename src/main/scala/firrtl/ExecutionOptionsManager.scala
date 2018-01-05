@@ -13,7 +13,9 @@ import scala.collection.Seq
 
 /**
   * Use this trait to define an options class that can add its private command line options to a externally
-  * declared parser
+  * declared parser.
+  * '''NOTE''' In all derived trait/classes, if you intend on maintaining backwards compatibility,
+  *  be sure to add new options at the end of the current ones and don't remove any existing ones.
   */
 trait ComposableOptions
 
@@ -177,13 +179,13 @@ case class FirrtlExecutionOptions(
     firrtlSource:           Option[String] = None,
     customTransforms:       Seq[Transform] = List.empty,
     annotations:            List[Annotation] = List.empty,
-    annotationFileNames:    List[String] = List.empty,
     annotationFileNameOverride: String = "",
     outputAnnotationFileName: String = "",
     emitOneFilePerModule:   Boolean = false,
     dontCheckCombLoops:     Boolean = false,
-    noDCE:                  Boolean = false)
-  extends ComposableOptions {
+    noDCE:                  Boolean = false,
+    annotationFileNames:    List[String] = List.empty)
+extends ComposableOptions {
 
   require(!(emitOneFilePerModule && outputFileNameOverride.nonEmpty),
     "Cannot both specify the output filename and emit one file per module!!!")
