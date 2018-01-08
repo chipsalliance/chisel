@@ -5,8 +5,8 @@ package firrtlTests
 import firrtl._
 import org.scalatest.{Matchers, FreeSpec}
 
-class ExecutionOptionManagerSpec extends FreeSpec with Matchers {
-  "ExecutionOptionManager is a container for one more more ComposableOptions Block" - {
+class ExecutionOptionsManagerSpec extends FreeSpec with Matchers {
+  "ExecutionOptionsManager is a container for one more more ComposableOptions Block" - {
     "It has a default CommonOptionsBlock" in {
       val manager = new ExecutionOptionsManager("test")
       manager.commonOptions.targetDirName should be (".")
