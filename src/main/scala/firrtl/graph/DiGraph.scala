@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtl.graph
 
 import scala.collection.{Set, Map}
@@ -306,7 +308,6 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     edges.foreach({ case (k, v) => eprime(f(k)) ++= v.map(f(_)) })
     new DiGraph(eprime)
   }
-
 }
 
 class MutableDiGraph[T] extends DiGraph[T](new LinkedHashMap[T, LinkedHashSet[T]]) {

@@ -8,7 +8,7 @@ import firrtl.ir._
 import annotations._
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter, Writer}
-import wiring.WiringUtils.{getChildrenMap, countInstances, ChildrenMap, getLineage}
+import wiring.WiringUtils.{getChildrenMap, getLineage}
 import wiring.Lineage
 import ClockListUtils._
 import Utils._
@@ -30,7 +30,7 @@ class ClockList(top: String, writer: Writer) extends Pass {
     // === Checks ===
     // TODO(izraelevitz): Check all registers/memories use "clock" clock port
     // ==============
-    
+
     // Clock sources must be blackbox outputs and top's clock
     val partialSourceList = getSourceList(moduleMap)(lineages)
     val sourceList = partialSourceList ++ moduleMap(top).ports.collect{ case Port(i, n, Input, ClockType) => n }
@@ -39,7 +39,7 @@ class ClockList(top: String, writer: Writer) extends Pass {
     // Remove everything from the circuit, unless it has a clock type
     // This simplifies the circuit drastically so InlineInstances doesn't take forever.
     val onlyClockCircuit = RemoveAllButClocks.run(c)
-    
+
     // Inline the clock-only circuit up to the specified top module
     val modulesToInline = (c.modules.collect { case Module(_, n, _, _) if n != top => ModuleName(n, CircuitName(c.main)) }).toSet
     val inlineTransform = new InlineInstances

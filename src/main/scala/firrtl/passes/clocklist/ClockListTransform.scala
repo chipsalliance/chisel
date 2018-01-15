@@ -8,7 +8,6 @@ import firrtl.ir._
 import annotations._
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter, Writer}
-import wiring.WiringUtils.{getChildrenMap, countInstances, ChildrenMap, getLineage}
 import wiring.Lineage
 import ClockListUtils._
 import Utils._
@@ -22,23 +21,23 @@ object ClockListAnnotation {
 [Optional] ClockList
   List which signal drives each clock of every descendent of specified module
 
-Usage: 
+Usage:
   --list-clocks -c:<circuit>:-m:<module>:-o:<filename>
   *** Note: sub-arguments to --list-clocks should be delimited by : and not white space!
-"""    
-  
+"""
+
     //Parse pass options
     val passOptions = PassConfigUtil.getPassOptions(t, usage)
     val outputConfig = passOptions.getOrElse(
-      OutputConfigFileName, 
+      OutputConfigFileName,
       error("No output config file provided for ClockList!" + usage)
     )
     val passCircuit = passOptions.getOrElse(
-      PassCircuitName, 
+      PassCircuitName,
       error("No circuit name specified for ClockList!" + usage)
     )
     val passModule = passOptions.getOrElse(
-      PassModuleName, 
+      PassModuleName,
       error("No module name specified for ClockList!" + usage)
     )
     passOptions.get(InputConfigFileName) match {
@@ -65,7 +64,7 @@ class ClockListTransform extends Transform {
   def passSeq(top: String, writer: Writer): Seq[Pass] =
     Seq(new ClockList(top, writer))
   def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
-    case Seq(ClockListAnnotation(ModuleName(top, CircuitName(state.circuit.main)), out)) => 
+    case Seq(ClockListAnnotation(ModuleName(top, CircuitName(state.circuit.main)), out)) =>
       val outputFile = new PrintWriter(out)
       val newC = (new ClockList(top, outputFile)).run(state.circuit)
       outputFile.close()

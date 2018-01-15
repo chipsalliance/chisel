@@ -9,6 +9,9 @@ import firrtl.Utils._
 import firrtl.Mappers._
 import scala.collection.mutable
 import firrtl.annotations._
+import firrtl.annotations.AnnotationUtils._
+import firrtl.analyses.InstanceGraph
+import firrtl.graph.DiGraph
 import WiringUtils._
 
 /** Declaration kind in lineage (e.g. input port, output port, wire)
@@ -17,6 +20,19 @@ sealed trait DecKind
 case object DecInput extends DecKind
 case object DecOutput extends DecKind
 case object DecWire extends DecKind
+
+/** Store of pending wiring information for a Module */
+case class Modifications(
+  addPortOrWire: Option[(String, DecKind)] = None,
+  cons: Seq[(String, String)] = Seq.empty) {
+
+  override def toString: String = serialize("")
+
+  def serialize(tab: String): String = s"""
+   |$tab addPortOrWire: $addPortOrWire
+   |$tab cons: $cons
+   |""".stripMargin
+}
 
 /** A lineage tree representing the instance hierarchy in a design
   */
@@ -41,7 +57,7 @@ case class Lineage(
     |$tab children: ${children.map(c => tab + "   " + c._2.shortSerialize(tab + "    "))}
     |""".stripMargin
 
-  def foldLeft[B](z: B)(op: (B, (String, Lineage)) => B): B = 
+  def foldLeft[B](z: B)(op: (B, (String, Lineage)) => B): B =
     this.children.foldLeft(z)(op)
 
   def serialize(tab: String): String = s"""
@@ -57,9 +73,6 @@ case class Lineage(
     |""".stripMargin
 }
 
-
-
-
 object WiringUtils {
   type ChildrenMap = mutable.HashMap[String, Seq[(String, String)]]
 
@@ -69,10 +82,10 @@ object WiringUtils {
   def getChildrenMap(c: Circuit): ChildrenMap = {
     val childrenMap = new ChildrenMap()
     def getChildren(mname: String)(s: Statement): Statement = s match {
-      case s: WDefInstance => 
+      case s: WDefInstance =>
         childrenMap(mname) = childrenMap(mname) :+ (s.name, s.module)
         s
-      case s: DefInstance => 
+      case s: DefInstance =>
         childrenMap(mname) = childrenMap(mname) :+ (s.name, s.module)
         s
       case s => s map getChildren(mname)
@@ -84,86 +97,151 @@ object WiringUtils {
     childrenMap
   }
 
-  /** Counts the number of instances of a module declared under a top module
-    */
-  def countInstances(childrenMap: ChildrenMap, top: String, module: String): Int = {
-    if(top == module) 1
-    else childrenMap(top).foldLeft(0) { case (count, (i, child)) =>
-      count + countInstances(childrenMap, child, module)
-    }
-  }
-
   /** Returns a module's lineage, containing all children lineages as well
     */
   def getLineage(childrenMap: ChildrenMap, module: String): Lineage =
     Lineage(module, childrenMap(module) map { case (i, m) => (i, getLineage(childrenMap, m)) } )
 
-  /** Sets the sink, sinkParent, source, and sourceParent fields of every
-    *  Lineage in tree
+  /** Return a map of sink instances to source instances that minimizes
+    * distance
+    *
+    * @param sinks a sequence of sink modules
+    * @param source the source module
+    * @param i a graph representing a circuit
+    * @return a map of sink instance names to source instance names
+    * @throws WiringException if a sink is equidistant to two sources
     */
-  def setFields(sinks: Set[String], source: String)(lin: Lineage): Lineage = lin map setFields(sinks, source) match {
-    case l if sinks.contains(l.name) => l.copy(sink = true)
-    case l => 
-      val src = l.name == source
-      val sinkParent = l.children.foldLeft(false) { case (b, (i, m)) => b || m.sink || m.sinkParent }
-      val sourceParent = if(src) true else l.children.foldLeft(false) { case (b, (i, m)) => b || m.source || m.sourceParent }
-      l.copy(sinkParent=sinkParent, sourceParent=sourceParent, source=src)
-  }
+  def sinksToSources(sinks: Seq[Named],
+                     source: String,
+                     i: InstanceGraph):
+      Map[Seq[WDefInstance], Seq[WDefInstance]] = {
+    val owners = new mutable.HashMap[Seq[WDefInstance], Vector[Seq[WDefInstance]]]
+      .withDefaultValue(Vector())
+    val queue = new mutable.Queue[Seq[WDefInstance]]
+    val visited = new mutable.HashMap[Seq[WDefInstance], Boolean]
+      .withDefaultValue(false)
 
-  /** Sets the sharedParent of lineage top
-    */
-  def setSharedParent(top: String)(lin: Lineage): Lineage = lin map setSharedParent(top) match {
-    case l if l.name == top => l.copy(sharedParent = true)
-    case l => l
-  }
+    i.fullHierarchy.keys.filter { case WDefInstance(_,_,m,_) => m == source }
+      .foreach( i.fullHierarchy(_)
+                 .foreach { l =>
+                   queue.enqueue(l)
+                   owners(l) = Vector(l)
+                 }
+      )
 
-  /** Sets the addPort and cons fields of the lineage tree
-    */
-  def setThings(portNames:Map[String, String], compName: String)(lin: Lineage): Lineage = {
-    val funs = Seq(
-      ((l: Lineage) => l map setThings(portNames, compName)),
-      ((l: Lineage) => l match {
-        case Lineage(name, _, _, _, _, _, true, _, _) => //SharedParent
-          l.copy(addPort=Some((portNames(name), DecWire)))
-        case Lineage(name, _, _, _, true, _, _, _, _) => //SourceParent
-          l.copy(addPort=Some((portNames(name), DecOutput)))
-        case Lineage(name, _, _, _, _, true, _, _, _) => //SinkParent
-          l.copy(addPort=Some((portNames(name), DecInput)))
-        case Lineage(name, _, _, true, _, _, _, _, _) => //Sink
-          l.copy(addPort=Some((portNames(name), DecInput)))
-        case l => l
-      }),
-      ((l: Lineage) => l match {
-        case Lineage(name, _, true, _, _, _, _, _, _) => //Source
-          val tos = Seq(s"${portNames(name)}")
-          val from = compName
-          l.copy(cons = l.cons ++ tos.map(t => (t, from)))
-        case Lineage(name, _, _, _, true, _, _, _, _) => //SourceParent
-          val tos = Seq(s"${portNames(name)}")
-          val from = l.children.filter { case (i, c) => c.sourceParent }.map { case (i, c) => s"$i.${portNames(c.name)}" }.head
-          l.copy(cons = l.cons ++ tos.map(t => (t, from)))
-        case l => l
-      }),
-      ((l: Lineage) => l match {
-        case Lineage(name, _, _, _, _, true, _, _, _) => //SinkParent
-          val tos = l.children.filter { case (i, c) => (c.sinkParent || c.sink) && !c.sourceParent } map { case (i, c) => s"$i.${portNames(c.name)}" }
-          val from = s"${portNames(name)}"
-          l.copy(cons = l.cons ++ tos.map(t => (t, from)))
-        case l => l
-      })
-    )
-    funs.foldLeft(lin)((l, fun) => fun(l))
-  }
+    val sinkInsts = i.fullHierarchy.keys
+      .filter { case WDefInstance(_, _, module, _) =>
+        sinks.map(getModuleName(_)).contains(module) }
+      .flatMap { k => i.fullHierarchy(k)          }
+      .toSet
 
-  /** Return a map from module to its lineage in the tree
-    */
-  def pointToLineage(lin: Lineage): Map[String, Lineage] = {
-    val map = mutable.HashMap[String, Lineage]()
-    def onLineage(l: Lineage): Lineage = {
-      map(l.name) = l
-      l map onLineage
+    /** If we're lucky and there is only one source, then that source owns
+      * all sinks. If we're unlucky, we need to do a full (slow) BFS
+      * to figure out who owns what. Currently, the BFS is not
+      * performant.
+      *
+      * [todo] The performance of this will need to be improved.
+      * Possible directions are that if we're purely source-under-sink
+      * or sink-under-source, then ownership is trivially a mapping
+      * down/up. Ownership seems to require a BFS if we have
+      * sources/sinks not under sinks/sources.
+      */
+    if (queue.size == 1) {
+      val u = queue.dequeue
+      sinkInsts.foreach { v => owners(v) = Vector(u) }
+    } else {
+      while (queue.nonEmpty) {
+        val u = queue.dequeue
+        visited(u) = true
+
+        val edges = (i.graph.getEdges(u.last).map(u :+ _).toVector :+ u.dropRight(1))
+
+        // [todo] This is the critical section
+        edges
+          .filter( e => !visited(e) && e.nonEmpty )
+          .foreach{ v =>
+            owners(v) = owners(v) ++ owners(u)
+            queue.enqueue(v)
+          }
+      }
+
+      // Check that every sink has one unique owner. The only time that
+      // this should fail is if a sink is equidistant to two sources.
+      sinkInsts.foreach { s =>
+        if (!owners.contains(s) || owners(s).size > 1) {
+          throw new WiringException(
+            s"Unable to determine source mapping for sink '${s.map(_.name)}'") }
+      }
     }
-    onLineage(lin)
-    map.toMap
+
+    owners
+      .collect { case (k, v) if sinkInsts.contains(k) => (k, v.flatten) }.toMap
+  }
+
+  /** Helper script to extract a module name from a named Module or Component */
+  def getModuleName(n: Named): String = {
+    n match {
+      case ModuleName(m, _)                   => m
+      case ComponentName(_, ModuleName(m, _)) => m
+      case _ => throw new WiringException(
+        "Only Components or Modules have an associated Module name")
+    }
+  }
+
+  /** Determine the Type of a specific component
+    *
+    * @param c the circuit containing the target module
+    * @param module the module containing the target component
+    * @param comp the target component
+    * @return the component's type
+    * @throws WiringException if the module is not contained in the
+    * circuit or if the component is not contained in the module
+    */
+  def getType(c: Circuit, module: String, comp: String): Type = {
+    def getRoot(e: Expression): String = e match {
+      case r: Reference => r.name
+      case i: SubIndex => getRoot(i.expr)
+      case a: SubAccess => getRoot(a.expr)
+      case f: SubField => getRoot(f.expr)
+    }
+    val eComp = toExp(comp)
+    val root = getRoot(eComp)
+    var tpe: Option[Type] = None
+    def getType(s: Statement): Statement = s match {
+      case DefRegister(_, n, t, _, _, _) if n == root =>
+        tpe = Some(t)
+        s
+      case DefWire(_, n, t) if n == root =>
+        tpe = Some(t)
+        s
+      case WDefInstance(_, n, _, t) if n == root =>
+        tpe = Some(t)
+        s
+      case DefNode(_, n, e) if n == root =>
+        tpe = Some(e.tpe)
+        s
+      case sx: DefMemory if sx.name == root =>
+        tpe = Some(MemPortUtils.memType(sx))
+        sx
+      case sx => sx map getType
+    }
+    val m = c.modules find (_.name == module) getOrElse {
+      throw new WiringException(s"Must have a module named $module") }
+    tpe = m.ports find (_.name == root) map (_.tpe)
+    m match {
+      case Module(i, n, ps, b) => getType(b)
+      case e: ExtModule =>
+    }
+    tpe match {
+      case None => throw new WiringException(s"Didn't find $comp in $module!")
+      case Some(t) =>
+        def setType(e: Expression): Expression = e map setType match {
+          case ex: Reference => ex.copy(tpe = t)
+          case ex: SubField => ex.copy(tpe = field_type(ex.expr.tpe, ex.name))
+          case ex: SubIndex => ex.copy(tpe = sub_type(ex.expr.tpe))
+          case ex: SubAccess => ex.copy(tpe = sub_type(ex.expr.tpe))
+        }
+        setType(eComp).tpe
+    }
   }
 }

@@ -11,86 +11,79 @@ import scala.collection.mutable
 import firrtl.annotations._
 import WiringUtils._
 
-/** A component, e.g. register etc. Must be declared only once under the TopAnnotation
-  */
+/** A class for all exceptions originating from firrtl.passes.wiring */
+case class WiringException(msg: String) extends PassException(msg)
+
+/** An extractor of annotated source components */
 object SourceAnnotation {
-  def apply(target: ComponentName, pin: String): Annotation = Annotation(target, classOf[WiringTransform], s"source $pin")
+  def apply(target: ComponentName, pin: String): Annotation =
+    Annotation(target, classOf[WiringTransform], s"source $pin")
 
   private val matcher = "source (.+)".r
   def unapply(a: Annotation): Option[(ComponentName, String)] = a match {
-    case Annotation(ComponentName(n, m), _, matcher(pin)) => Some((ComponentName(n, m), pin))
+    case Annotation(ComponentName(n, m), _, matcher(pin)) =>
+      Some((ComponentName(n, m), pin))
     case _ => None
   }
 }
 
-/** A module, e.g. ExtModule etc., that should add the input pin
-  */
+/** An extractor of annotation sink components or modules */
 object SinkAnnotation {
-  def apply(target: ModuleName, pin: String): Annotation = Annotation(target, classOf[WiringTransform], s"sink $pin")
+  def apply(target: Named, pin: String): Annotation =
+    Annotation(target, classOf[WiringTransform], s"sink $pin")
 
   private val matcher = "sink (.+)".r
-  def unapply(a: Annotation): Option[(ModuleName, String)] = a match {
-    case Annotation(ModuleName(n, c), _, matcher(pin)) => Some((ModuleName(n, c), pin))
+  def unapply(a: Annotation): Option[(Named, String)] = a match {
+    case Annotation(ModuleName(n, c), _, matcher(pin)) =>
+      Some((ModuleName(n, c), pin))
+    case Annotation(ComponentName(n, m), _, matcher(pin)) =>
+      Some((ComponentName(n, m), pin))
     case _ => None
   }
 }
 
-/** A module under which all sink module must be declared, and there is only
-  * one source component
-  */
-object TopAnnotation {
-  def apply(target: ModuleName, pin: String): Annotation = Annotation(target, classOf[WiringTransform], s"top $pin")
-
-  private val matcher = "top (.+)".r
-  def unapply(a: Annotation): Option[(ModuleName, String)] = a match {
-    case Annotation(ModuleName(n, c), _, matcher(pin)) => Some((ModuleName(n, c), pin))
-    case _ => None
-  }
-}
-
-/** Add pins to modules and wires a signal to them, under the scope of a specified top module
-  * Description:
-  *   Adds a pin to each sink module
-  *   Punches ports up from the source signal to the specified top module
-  *   Punches ports down to each sink module
-  *   Wires the source up and down, connecting to all sink modules
-  * Restrictions:
-  *   - Can only have one source module instance under scope of the specified top
-  *   - All instances of each sink module must be under the scope of the specified top
-  * Notes:
-  *   - No module uniquification occurs (due to imposed restrictions)
+/** Wires a Module's Source Component to one or more Sink
+  * Modules/Components
+  *
+  * Sinks are wired to their closest source through their lowest
+  * common ancestor (LCA). Verbosely, this modifies the circuit in
+  * the following ways:
+  *   - Adds a pin to each sink module
+  *   - Punches ports up from source signals to the LCA
+  *   - Punches ports down from LCAs to each sink module
+  *   - Wires sources up to LCA, sinks down from LCA, and across each LCA
+  *
+  * @throws WiringException if a sink is equidistant to two sources
   */
 class WiringTransform extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
-  def transforms(wis: Seq[WiringInfo]) =
-    Seq(new Wiring(wis),
-        InferTypes,
-        ResolveKinds,
-        ResolveGenders)
+  def inputForm: CircuitForm = MidForm
+  def outputForm: CircuitForm = HighForm
+
+  /** Defines the sequence of Transform that should be applied */
+  private def transforms(w: Seq[WiringInfo]): Seq[Transform] = Seq(
+    new Wiring(w),
+    ToWorkingIR
+  )
+
   def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
     case Nil => state
-    case p => 
-      val sinks = mutable.HashMap[String, Set[String]]()
-      val sources = mutable.HashMap[String, String]()
-      val tops = mutable.HashMap[String, String]()
-      val comp = mutable.HashMap[String, String]()
-      p.foreach { 
+    case p =>
+      val sinks = mutable.HashMap[String, Seq[Named]]()
+      val sources = mutable.HashMap[String, ComponentName]()
+      p.foreach {
         case SinkAnnotation(m, pin) =>
-          sinks(pin) = sinks.getOrElse(pin, Set.empty) + m.name
+          sinks(pin) = sinks.getOrElse(pin, Seq.empty) :+ m
         case SourceAnnotation(c, pin) =>
-          sources(pin) = c.module.name
-          comp(pin) = c.name
-        case TopAnnotation(m, pin) => tops(pin) = m.name
+          sources(pin) = c
       }
-      (sources.size, tops.size, sinks.size, comp.size) match {
-        case (0, 0, p, 0) => state
-        case (s, t, p, c) if (p > 0) & (s == t) & (t == c) =>
-          val wis = tops.foldLeft(Seq[WiringInfo]()) { case (seq, (pin, top)) =>
-            seq :+ WiringInfo(sources(pin), comp(pin), sinks(pin), pin, top)
+      (sources.size, sinks.size) match {
+        case (0, p) => state
+        case (s, p) if (p > 0) =>
+          val wis = sources.foldLeft(Seq[WiringInfo]()) { case (seq, (pin, source)) =>
+            seq :+ WiringInfo(source, sinks(pin), pin)
           }
           transforms(wis).foldLeft(state) { (in, xform) => xform.runTransform(in) }
-        case _ => error("Wrong number of sources, tops, or sinks!")
+        case _ => error("Wrong number of sources or sinks!")
       }
   }
 }

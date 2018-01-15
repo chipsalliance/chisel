@@ -56,3 +56,6 @@ project/plugins/project/
 gen/
 project/project/
 /bin/
+
+*~
+*#*#

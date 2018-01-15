@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtl.analyses
 
 import scala.collection.mutable
@@ -10,13 +12,14 @@ import firrtl.Mappers._
 
 
 /** A class representing the instance hierarchy of a working IR Circuit
-  * 
+  *
   * @constructor constructs an instance graph from a Circuit
   * @param c the Circuit to analyze
   */
 class InstanceGraph(c: Circuit) {
 
-  private def collectInstances(insts: mutable.Set[WDefInstance])(s: Statement): Statement = s match {
+  private def collectInstances(insts: mutable.Set[WDefInstance])
+                              (s: Statement): Statement = s match {
     case i: WDefInstance =>
       insts += i
       i
@@ -72,7 +75,7 @@ class InstanceGraph(c: Circuit) {
   /** Finds the absolute paths (each represented by a Seq of instances
     * representing the chain of hierarchy) of all instances of a
     * particular module.
-    * 
+    *
     * @param module the name of the selected module
     * @return a Seq[Seq[WDefInstance]] of absolute instance paths
     */
@@ -81,5 +84,14 @@ class InstanceGraph(c: Circuit) {
     instances flatMap { i => fullHierarchy(i) }
   }
 
-}
+  /** An `[[EulerTour]]` representation of the `[[DiGraph]]` */
+  lazy val tour = EulerTour(graph, trueTopInstance)
 
+  /** Finds the lowest common ancestor instances for two module names in
+    * a design
+    */
+  def lowestCommonAncestor(moduleA: Seq[WDefInstance],
+                           moduleB: Seq[WDefInstance]): Seq[WDefInstance] = {
+    tour.rmq(moduleA, moduleB)
+  }
+}
