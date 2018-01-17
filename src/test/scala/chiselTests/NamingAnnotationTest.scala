@@ -12,7 +12,7 @@ import chisel3.testers.BasicTester
 import scala.collection.mutable.ListBuffer
 
 trait NamedModuleTester extends Module {
-  val io = IO(new Bundle())  // Named module testers don't need IO
+  val io = IO(new Bundle() {})  // Named module testers don't need IO
 
   val expectedNameMap = ListBuffer[(InstanceId, String)]()
   val expectedModuleNameMap = ListBuffer[(Module, String)]()

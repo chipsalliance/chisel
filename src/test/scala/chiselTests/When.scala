@@ -76,6 +76,23 @@ class NoOtherwiseOverlappedWhenTester() extends BasicTester {
   }
 }
 
+class SubmoduleWhenTester extends BasicTester {
+  val (cycle, done) = Counter(true.B, 3)
+  when (done) { stop() }
+  val children = Seq(Module(new PassthroughModule),
+                     Module(new PassthroughMultiIOModule),
+                     Module(new PassthroughRawModule))
+  children.foreach { child =>
+    when (cycle === 1.U) {
+      child.io.in := "hdeadbeef".U
+      assert(child.io.out === "hdeadbeef".U)
+    } .otherwise {
+      child.io.in := "h0badcad0".U
+      assert(child.io.out === "h0badcad0".U)
+    }
+  }
+}
+
 class WhenSpec extends ChiselFlatSpec {
   "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
     assertTesterPasses{ new WhenTester }
@@ -85,5 +102,8 @@ class WhenSpec extends ChiselFlatSpec {
   }
   "When and elsewhen without otherwise with overlapped conditions" should "work" in {
     assertTesterPasses{ new NoOtherwiseOverlappedWhenTester }
+  }
+  "Conditional connections to submodule ports" should "be handled properly" in {
+    assertTesterPasses(new SubmoduleWhenTester)
   }
 }

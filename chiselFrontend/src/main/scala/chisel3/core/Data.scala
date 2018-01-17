@@ -240,6 +240,7 @@ abstract class Data extends HasId {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
+  private[core] def bindingOpt = _binding
   private[core] def hasBinding = _binding.isDefined
   // Only valid after node is bound (synthesizable), crashes otherwise
   private[core] def binding = _binding.get
@@ -451,12 +452,19 @@ object WireInit {
     apply(model, init)
   }
 
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
     x := init
     x
+  }
+
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
   }
 }
 
