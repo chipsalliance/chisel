@@ -13,6 +13,7 @@ import firrtl._
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
+import _root_.firrtl.annotations.Annotation
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -107,12 +108,25 @@ object Driver extends BackendCompilationUtilities {
     }
   }
 
-  def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
-    val f = optName.getOrElse(new File(ir.name + ".fir"))
-    val w = new FileWriter(f)
-    w.write(Emitter.emit(ir))
+  def dumpFirrtl(ir: Circuit, optName: Option[File], optAnnoName: Option[File] = None): File = {
+    val circuit = Emitter.emit(ir)
+    dumpFirrtl(circuit, ir.name, ir.annotations, optName, optAnnoName)
+  }
+
+  def dumpFirrtl(ir: String, name: String, annotations: Seq[Annotation], optName: Option[File], optAnnoName: Option[File]): File = {
+    // use input because firrtl will be reading this
+    val firrtlFile = optName.getOrElse(new File(name + ".fir"))
+
+    val w = new FileWriter(firrtlFile)
+    w.write(ir)
     w.close()
-    f
+
+    val annotationFile = optAnnoName.getOrElse(new File(name + ".anno"))
+    val af = new FileWriter(annotationFile)
+    af.write(annotations.toArray.toYaml.prettyPrint)
+    af.close()
+
+    firrtlFile
   }
 
   private var target_dir: Option[String] = None
@@ -148,15 +162,9 @@ object Driver extends BackendCompilationUtilities {
     val firrtlString = Emitter.emit(circuit)
     val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
     val firrtlFile = new File(firrtlFileName)
-
-    val w = new FileWriter(firrtlFile)
-    w.write(firrtlString)
-    w.close()
-
     val annotationFile = new File(optionsManager.getBuildFileName("anno"))
-    val af = new FileWriter(annotationFile)
-    af.write(circuit.annotations.toArray.toYaml.prettyPrint)
-    af.close()
+
+    dumpFirrtl(firrtlString, circuit.name, circuit.annotations, Some(firrtlFile), Some(annotationFile))
 
     /** Find the set of transform classes associated with annotations then
       * instantiate an instance of each transform
