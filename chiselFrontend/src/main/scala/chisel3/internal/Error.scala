@@ -26,8 +26,9 @@ private[chisel3] class ErrorLog {
     errors += new Warning(m, getUserLineNumber)
 
   /** Log a deprecation warning message */
-  def deprecated(m: => String): Unit =
+  def deprecated(m: => String): Unit = {
     errors += new DeprecationWarning(m, getUserLineNumber)
+  }
 
   /** Emit an informational message */
   def info(m: String): Unit =
@@ -52,21 +53,28 @@ private[chisel3] class ErrorLog {
     }
   }
 
-  private def findFirstUserFrame(stack: Array[StackTraceElement]): Option[StackTraceElement] = {
-    def isUserCode(ste: StackTraceElement): Boolean = {
-      def isUserModule(c: Class[_]): Boolean =
-        c != null && (c == classOf[UserModule] || isUserModule(c.getSuperclass))
-      isUserModule(Class.forName(ste.getClassName))
+  /** Returns the best guess at the first stack frame that belongs to user code.
+    */
+  private def getUserLineNumber = {
+    def isChiselClassname(className: String): Boolean = {
+      // List of classpath prefixes that are Chisel internals and should be ignored when looking for user code
+      // utils are not part of internals and errors there can be reported
+      val chiselPrefixes = Set(
+          "chisel3.internal.",
+          "chisel3.core.",
+          "chisel3.package$"  // for some compatibility / deprecated types
+          )
+      !chiselPrefixes.filter(className.startsWith(_)).isEmpty
     }
 
-    stack.indexWhere(isUserCode) match {
-      case x if x < 0 => None
-      case x => Some(stack(x))
-    }
+    Thread.currentThread().getStackTrace.toList.dropWhile(
+          // Get rid of anything before entry to Chisel, like the java.lang.Thread.getStackTrace frame
+          ste => !isChiselClassname(ste.getClassName)
+        ).dropWhile(
+          // Get rid of everything in Chisel core
+          ste => isChiselClassname(ste.getClassName)
+        ).headOption
   }
-
-  private def getUserLineNumber =
-    findFirstUserFrame(Thread.currentThread().getStackTrace)
 
   private val errors = ArrayBuffer[LogEntry]()
 
