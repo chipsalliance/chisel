@@ -22,7 +22,7 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   val (insts, bitpats) = pairs.unzip
   val (cnt, wrap) = Counter(true.B, pairs.size)
   val dut = Module(new Decoder(bitpats))
-  dut.io.inst := Vec(insts.map(_.asUInt))(cnt)
+  dut.io.inst := VecInit(insts.map(_.asUInt))(cnt)
   when(!dut.io.matched) {
     assert(cnt === 0.U)
     stop()
