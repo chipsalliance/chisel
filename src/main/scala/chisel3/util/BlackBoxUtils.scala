@@ -4,13 +4,13 @@ package chisel3.util
 
 import chisel3._
 import chisel3.core.ChiselAnnotation
-import firrtl.transforms.{BlackBoxInline, BlackBoxResource, BlackBoxSourceHelper}
+import firrtl.transforms.{BlackBoxSourceHelper}
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
   def setResource(blackBoxResource: String): Unit = {
-    annotate(ChiselAnnotation(self, classOf[BlackBoxSourceHelper], BlackBoxResource(blackBoxResource).serialize))
+    annotate(ChiselAnnotation(self, classOf[BlackBoxSourceHelper], s"resource\n$blackBoxResource"))
   }
 }
 
@@ -19,6 +19,6 @@ trait HasBlackBoxInline extends BlackBox {
 
   def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
     annotate(ChiselAnnotation(
-      self, classOf[BlackBoxSourceHelper], BlackBoxInline(blackBoxName, blackBoxInline).serialize))
+      self, classOf[BlackBoxSourceHelper], s"inline\n$blackBoxName\n$blackBoxInline"))
   }
 }

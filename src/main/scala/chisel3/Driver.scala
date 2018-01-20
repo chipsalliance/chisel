@@ -10,6 +10,7 @@ import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl._
+import firrtl.annotations.{Annotation, JsonProtocol}
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
@@ -153,9 +154,9 @@ object Driver extends BackendCompilationUtilities {
     w.write(firrtlString)
     w.close()
 
-    val annotationFile = new File(optionsManager.getBuildFileName("anno"))
+    val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
     val af = new FileWriter(annotationFile)
-    af.write(circuit.annotations.toArray.toYaml.prettyPrint)
+    af.write(JsonProtocol.serialize(circuit.annotations))
     af.close()
 
     /** Find the set of transform classes associated with annotations then
@@ -164,11 +165,16 @@ object Driver extends BackendCompilationUtilities {
       *   transform being instantiated
       */
     val transforms = circuit.annotations
-                            .map(_.transform)
+                            .collect { case Annotation(_, transform, _) => transform }
                             .distinct
                             .filterNot(_ == classOf[firrtl.Transform])
                             .map { transformClass: Class[_ <: Transform] =>
       transformClass.newInstance()
+    }
+    if (transforms.nonEmpty) {
+      val msg = "Instantiating transforms automatically from LegacyAnnotations is deprecated\n" +
+        (" "*9) + "Use firrtl.annotations.RunTransformAnnotation"
+      firrtl.Driver.dramaticWarning(msg)
     }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(

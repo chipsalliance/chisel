@@ -7,7 +7,7 @@ import chisel3.experimental.ChiselAnnotation
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
-import firrtl.annotations.{Annotation, ModuleName, Named}
+import firrtl.annotations.{Annotation, ModuleName, Named, LegacyAnnotation}
 import org.scalatest._
 
 //scalastyle:off magic.number
@@ -129,7 +129,7 @@ class DiamondTester extends BasicTester {
 
 class AnnotatingDiamondSpec extends FreeSpec with Matchers {
   def findAnno(as: Seq[Annotation], name: String): Option[Annotation] = {
-    as.find { a => a.targetString == name }
+    as.collectFirst { case a: LegacyAnnotation if a.targetString == name => a }
   }
 
   """
