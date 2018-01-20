@@ -13,7 +13,7 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 class Valid[+T <: Data](gen: T) extends Bundle
 {
   val valid = Output(Bool())
-  val bits  = Output(gen.chiselCloneType)
+  val bits  = Output(gen)
   def fire(dummy: Int = 0): Bool = valid
   override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
 }

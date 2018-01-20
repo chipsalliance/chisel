@@ -21,7 +21,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
   val ready = Input(Bool())
   val valid = Output(Bool())
-  val bits  = Output(gen.chiselCloneType)
+  val bits  = Output(gen)
 }
 
 object ReadyValidIO {
@@ -200,7 +200,7 @@ class Queue[T <: Data](gen: T,
     gen
   } else {
     if (DataMirror.internal.isSynthesizable(gen)) {
-      gen.chiselCloneType
+      chiselTypeOf(gen)
     } else {
       gen
     }
