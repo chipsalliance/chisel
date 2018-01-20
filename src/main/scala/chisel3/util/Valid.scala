@@ -7,13 +7,21 @@ package chisel3.util
 
 import chisel3._
 import chisel3.core.CompileOptions
+import chisel3.experimental.DataMirror
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 /** An Bundle containing data and a signal determining if it is valid */
 class Valid[+T <: Data](gen: T) extends Bundle
 {
+  // Compatibility hack for rocket-chip
+  private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
+    case (true, Some(module: chisel3.core.ImplicitModule))
+        if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
+    case _ => gen
+  }
+
   val valid = Output(Bool())
-  val bits  = Output(gen)
+  val bits  = Output(genType)
   def fire(dummy: Int = 0): Bool = valid
   override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
 }

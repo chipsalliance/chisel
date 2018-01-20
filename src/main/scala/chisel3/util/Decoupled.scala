@@ -19,9 +19,16 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
+  // Compatibility hack for rocket-chip
+  private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
+    case (true, Some(module: chisel3.core.ImplicitModule))
+        if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
+    case _ => gen
+  }
+
   val ready = Input(Bool())
   val valid = Output(Bool())
-  val bits  = Output(gen)
+  val bits  = Output(genType)
 }
 
 object ReadyValidIO {
