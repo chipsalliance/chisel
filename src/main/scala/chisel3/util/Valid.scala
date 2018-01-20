@@ -47,7 +47,7 @@ object Pipe
   @chiselName
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] = {
     if (latency == 0) {
-      val out = Wire(Valid(enqBits))
+      val out = Wire(Valid(chiselTypeOf(enqBits)))
       out.valid := enqValid
       out.bits := enqBits
       out
