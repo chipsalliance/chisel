@@ -231,14 +231,6 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     */
   def apply(idx: Int): T = self(idx)
 
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(compileOptions)
-
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
-    do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
-  }
-
   override def cloneType: this.type = {
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
@@ -341,11 +333,15 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
 
+  @chiselRuntimeDeprecated
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(compileOptions)
 
+  @chiselRuntimeDeprecated
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit
+  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
+    do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
+  }
 
   /** Outputs true if p outputs true for every element.
     */
