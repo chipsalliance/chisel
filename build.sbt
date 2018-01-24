@@ -128,7 +128,6 @@ lazy val chisel = (project in file(".")).
   enablePlugins(ScalaUnidocPlugin).
   settings(
     buildInfoPackage := name.value,
-    buildInfoOptions += BuildInfoOption.BuildTime,
     buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
