@@ -108,6 +108,8 @@ class SBPTester extends BasicTester {
   assert(dut.io.out === 3.0.F(0.BP))
 
   val test = Wire(FixedPoint(10.W, 5.BP))
+  // Initialize test, avoiding a "Reference test is not fully initialized" error from firrtl.
+  test := 0.0.F(5.BP)
   val q = test.setBinaryPoint(18)
   assert(q.getWidth.U === 23.U)
 
@@ -123,5 +125,8 @@ class FixedPointSpec extends ChiselPropSpec {
   }
   property("should mux different widths and binary points") {
     assertTesterPasses { new FixedPointMuxTester }
+  }
+  property("Negative shift amounts are invalid") {
+    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(FixedPoint(1.W, 0.BP))) }
   }
 }

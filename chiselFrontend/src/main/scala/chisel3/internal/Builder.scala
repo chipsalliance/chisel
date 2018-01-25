@@ -164,6 +164,10 @@ private[chisel3] object Builder {
   private def dynamicContext: DynamicContext =
     dynamicContextVar.value.getOrElse(new DynamicContext)
 
+  // Initialize any singleton objects before user code inadvertently inherits them.
+  private def initializeSingletons(): Unit = {
+    val dummy = core.DontCare
+  }
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
@@ -205,7 +209,7 @@ private[chisel3] object Builder {
     case None => throwException("Error: No implicit clock and reset.")
   }
   def forcedClock: Clock = forcedClockAndReset.clock
-  def forcedReset: Bool = forcedClockAndReset.reset
+  def forcedReset: Reset = forcedClockAndReset.reset
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
@@ -215,7 +219,7 @@ private[chisel3] object Builder {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    Binding.bind(cmd.id, OpBinder(forcedUserModule), "Error: During op creation, fresh result")
+    cmd.id.bind(OpBinding(forcedUserModule))
     pushCommand(cmd).id
   }
 
@@ -245,6 +249,7 @@ private[chisel3] object Builder {
       Circuit(components.last.name, components, annotations.map(_.toFirrtl))
     }
   }
+  initializeSingletons()
 }
 
 /** Allows public access to the naming stack in Builder / DynamicContext.

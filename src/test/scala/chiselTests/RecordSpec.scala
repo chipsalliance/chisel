@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
+import chisel3.experimental.{DataMirror, requireIsChiselType}
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended
@@ -12,9 +13,15 @@ import scala.collection.immutable.ListMap
 //   it is a possible implementation of a programmatic "Bundle"
 //   (and can by connected to MyBundle below)
 final class CustomBundle(elts: (String, Data)*) extends Record {
-  val elements = ListMap(elts map { case (field, elt) => field -> elt.chiselCloneType }: _*)
+  val elements = ListMap(elts map { case (field, elt) =>
+    requireIsChiselType(elt)
+    field -> elt
+  }: _*)
   def apply(elt: String): Data = elements(elt)
-  override def cloneType = (new CustomBundle(elements.toList: _*)).asInstanceOf[this.type]
+  override def cloneType = {
+    val cloned = elts.map { case (n, d) => n -> DataMirror.internal.chiselTypeClone(d) }
+    (new CustomBundle(cloned: _*)).asInstanceOf[this.type]
+  }
 }
 
 trait RecordSpecUtils {
@@ -24,7 +31,8 @@ trait RecordSpecUtils {
     override def cloneType = (new MyBundle).asInstanceOf[this.type]
   }
   // Useful for constructing types from CustomBundle
-  val fooBarType = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
+  // This is a def because each call to this needs to return a new instance
+  def fooBarType = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
 
   class MyModule(output: => Record, input: => Record) extends Module {
     val io = IO(new Bundle {
@@ -53,6 +61,7 @@ trait RecordSpecUtils {
 
   class RecordQueueTester extends BasicTester {
     val queue = Module(new Queue(fooBarType, 4))
+    queue.io <> DontCare
     queue.io.enq.valid := false.B
     val (cycle, done) = Counter(true.B, 4)
 
@@ -127,5 +136,14 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
     (the [ChiselException] thrownBy {
       elaborate { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
     }).getMessage should include ("Left Record missing field")
+  }
+
+  "CustomBundle" should "work like built-in aggregates" in {
+    elaborate(new Module {
+      val gen = new CustomBundle("foo" -> UInt(32.W))
+      val io = IO(Output(gen))
+      val wire = Wire(gen)
+      io := wire
+    })
   }
 }

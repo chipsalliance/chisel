@@ -91,6 +91,11 @@ class BadBoolConversion extends Module {
   io.b := io.u.toBool
 }
 
+class NegativeShift(t: => Bits) extends Module {
+  val io = IO(new Bundle)
+  Reg(t) >> -1
+}
+
 class UIntOpsSpec extends ChiselPropSpec with Matchers {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
@@ -110,6 +115,10 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
 
   property("UIntOpsTester should return the correct result") {
     assertTesterPasses { new UIntOpsTester(123, 7) }
+  }
+
+  property("Negative shift amounts are invalid") {
+    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(UInt())) }
   }
 }
 

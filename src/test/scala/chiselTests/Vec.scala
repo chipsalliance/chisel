@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.RawModule
 import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -12,7 +13,7 @@ class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
     val out = Output(Vec(vecSize, UInt()))
   })
-  io.out := Vec(Seq.fill(vecSize){0.U})
+  io.out := VecInit(Seq.fill(vecSize){0.U})
 }
 
 class RegTesterMod(vecSize: Int) extends Module {
@@ -20,7 +21,7 @@ class RegTesterMod(vecSize: Int) extends Module {
     val in = Input(Vec(vecSize, UInt()))
     val out = Output(Vec(vecSize, UInt()))
   })
-  val vecReg = RegNext(io.in, Vec(Seq.fill(vecSize){0.U}))
+  val vecReg = RegNext(io.in, VecInit(Seq.fill(vecSize){0.U}))
   io.out := vecReg
 }
 
@@ -36,7 +37,7 @@ class OneBitUnitRegVec extends Module {
   val io = IO(new Bundle {
     val out = Output(UInt(1.W))
   })
-  val oneBitUnitRegVec = Reg(Vec(1, 1.U))
+  val oneBitUnitRegVec = Reg(Vec(1, UInt(1.W)))
   oneBitUnitRegVec(0) := 1.U(1.W)
   io.out := oneBitUnitRegVec(0)
 }
@@ -49,7 +50,7 @@ class LitTester(w: Int, values: List[Int]) extends BasicTester {
 }
 
 class RegTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = Vec(values.map(_.U(w.W)))
+  val v = VecInit(values.map(_.U(w.W)))
   val dut = Module(new RegTesterMod(values.length))
   val doneReg = RegInit(false.B)
   dut.io.in := v
@@ -65,7 +66,7 @@ class RegTester(w: Int, values: List[Int]) extends BasicTester {
 }
 
 class IOTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = Vec(values.map(_.U(w.W))) // Does this need a Wire? No. It's a Vec of Lits and hence synthesizeable.
+  val v = VecInit(values.map(_.U(w.W))) // Does this need a Wire? No. It's a Vec of Lits and hence synthesizeable.
   val dut = Module(new IOTesterMod(values.length))
   dut.io.in := v
   for ((a,b) <- dut.io.out.zip(values)) {
@@ -78,14 +79,14 @@ class IOTesterModFill(vecSize: Int) extends Module {
   // This should generate a BindingException when we attempt to wire up the Vec.fill elements
   //  since they're pure types and hence unsynthesizeable.
   val io = IO(new Bundle {
-    val in = Input(Vec.fill(vecSize) {UInt()})
-    val out = Output(Vec.fill(vecSize) {UInt()})
+    val in = Input(VecInit(Seq.fill(vecSize) {UInt()}))
+    val out = Output(VecInit(Seq.fill(vecSize) {UInt()}))
   })
   io.out := io.in
 }
 
 class ValueTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = Vec(values.map(_.asUInt(w.W)))
+  val v = VecInit(values.map(_.asUInt(w.W)))
   for ((a,b) <- v.zip(values)) {
     assert(a === b.asUInt)
   }
@@ -93,9 +94,9 @@ class ValueTester(w: Int, values: List[Int]) extends BasicTester {
 }
 
 class TabulateTester(n: Int) extends BasicTester {
-  val v = Vec(Range(0, n).map(i => (i*2).asUInt))
-  val x = Vec(Array.tabulate(n){ i => (i*2).asUInt })
-  val u = Vec.tabulate(n)(i => (i*2).asUInt)
+  val v = VecInit(Range(0, n).map(i => (i*2).asUInt))
+  val x = VecInit(Array.tabulate(n){ i => (i*2).asUInt })
+  val u = VecInit.tabulate(n)(i => (i*2).asUInt)
 
   assert(v.asUInt() === x.asUInt())
   assert(v.asUInt() === u.asUInt())
@@ -145,21 +146,12 @@ class ZeroEntryVecTester extends BasicTester {
   require(bundleWithZeroEntryVec.asUInt.getWidth == 1)
 
   val m = Module(new Module {
-    val io = IO(Output(bundleWithZeroEntryVec.cloneType))
+    val io = IO(Output(bundleWithZeroEntryVec))
+    io.foo := false.B
   })
-  Wire(init = m.io.bar)
+  WireInit(m.io.bar)
 
   stop()
-}
-
-class PassthroughModuleIO extends Bundle {
-  val in = Input(UInt(32.W))
-  val out = Output(UInt(32.W))
-}
-
-class PassthroughModule extends Module {
-  val io = IO(new PassthroughModuleIO)
-  io.out := io.in
 }
 
 class PassthroughModuleTester extends Module {
@@ -171,7 +163,7 @@ class PassthroughModuleTester extends Module {
 
 
 class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
-  val duts = Vec.fill(n)(Module(new PassthroughModule).io)
+  val duts = VecInit(Seq.fill(n)(Module(new PassthroughModule).io))
   val tester = Module(new PassthroughModuleTester)
 
   val (cycle, done) = Counter(true.B, n)
@@ -179,6 +171,8 @@ class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
     when (cycle =/= i.U) {
       m.in := 0.U  // default
       assert(m.out === 0.U)
+    } .otherwise {
+      m.in := DontCare
     }
   }
   // only connect one dut per cycle
@@ -284,5 +278,27 @@ class VecSpec extends ChiselPropSpec {
       val explicitVec = Vec(0.U(8.W), 1.U(8.W))
     }
     elaborate(new ExplicitVecMembers)
+  }
+
+  property("It should be possible to bulk connect a Vec and a Seq") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val out = Output(Vec(4, UInt(8.W)))
+      })
+      val seq = Seq.fill(4)(0.U)
+      io.out <> seq
+    })
+  }
+
+  property("Bulk connecting a Vec and Seq of different sizes should report a ChiselException") {
+    a [ChiselException] should be thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {
+          val out = Output(Vec(4, UInt(8.W)))
+        })
+        val seq = Seq.fill(5)(0.U)
+        io.out <> seq
+      })
+    }
   }
 }

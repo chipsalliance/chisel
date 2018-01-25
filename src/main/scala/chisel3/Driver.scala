@@ -23,8 +23,8 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
   * @example
   *          {{{
   *          val optionsManager = new ExecutionOptionsManager("chisel3")
-  *              with FirrtlExecutionOptions
-  *              with ChiselExecutionOptions {
+  *              with HasFirrtlOptions
+  *              with HasChiselExecutionOptions {
   *            commonOptions = CommonOption(targetDirName = "my_target_dir")
   *            chiselOptions = ChiselExecutionOptions(runFirrtlCompiler = false)
   *          }
@@ -95,6 +95,18 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
+  /** Elaborates the Module specified in the gen function into Verilog
+    *
+    *  @param gen a function that creates a Module hierarchy
+    *  @return the resulting String containing the design in Verilog
+    */
+  def emitVerilog[T <: RawModule](gen: => T): String = {
+    execute(Array[String](), { () => gen }) match {
+      case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
+      case _ => sys.error("Cannot get Verilog!")
+    }
+  }
+
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
@@ -146,10 +158,16 @@ object Driver extends BackendCompilationUtilities {
     af.write(circuit.annotations.toArray.toYaml.prettyPrint)
     af.close()
 
-    /* create custom transforms by finding the set of transform classes associated with annotations
-     * then instantiate them into actual transforms
-     */
-    val transforms = circuit.annotations.map(_.transform).toSet.map { transformClass: Class[_ <: Transform] =>
+    /** Find the set of transform classes associated with annotations then
+      * instantiate an instance of each transform
+      * @note Annotations targeting firrtl.Transform will not result in any
+      *   transform being instantiated
+      */
+    val transforms = circuit.annotations
+                            .map(_.transform)
+                            .distinct
+                            .filterNot(_ == classOf[firrtl.Transform])
+                            .map { transformClass: Class[_ <: Transform] =>
       transformClass.newInstance()
     }
     /* This passes the firrtl source and annotations directly to firrtl */
