@@ -10,7 +10,7 @@ import org.scalatest.{FreeSpec, Matchers}
 
 object doNotDedup {
   def apply(module: Module): Unit = {
-    annotate(LazyAnnotation[Module](module, (m) => NoDedupAnnotation(m.toNamed)))
+    annotate(LazyAnnotation(() => NoDedupAnnotation(module.toNamed)))
   }
 }
 

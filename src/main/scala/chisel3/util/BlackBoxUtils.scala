@@ -11,7 +11,7 @@ trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
   def setResource(blackBoxResource: String): Unit = {
-    val anno = LazyAnnotation[BlackBox](self, (s) => BlackBoxResourceAnno(s.toNamed, blackBoxResource))
+    val anno = LazyAnnotation(() => BlackBoxResourceAnno(self.toNamed, blackBoxResource))
     chisel3.experimental.annotate(anno)
     chisel3.experimental.annotate(RunTransformAnnotation(classOf[BlackBoxSourceHelper]))
   }
@@ -21,8 +21,7 @@ trait HasBlackBoxInline extends BlackBox {
   self: BlackBox =>
 
   def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
-    val anno = LazyAnnotation[BlackBox](self, (s) =>
-        BlackBoxInlineAnno(s.toNamed, blackBoxName, blackBoxInline))
+    val anno = LazyAnnotation(() => BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline))
     chisel3.experimental.annotate(anno)
     chisel3.experimental.annotate(RunTransformAnnotation(classOf[BlackBoxSourceHelper]))
   }

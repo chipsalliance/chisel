@@ -26,16 +26,16 @@ case class ChiselAnnotation(component: InstanceId, transformClass: Class[_ <: Tr
 @deprecated("Use LazyAnnotation instead", "3.1")
 object ChiselAnnotation
 
-final case class LazyAnnotation[T] private (arg: T, toFirrtl: (T) => Annotation) {
-  def get: Annotation = toFirrtl(arg)
+final case class LazyAnnotation private (f: () => Annotation) {
+  def get: Annotation = f()
 }
 
 object annotate { // scalastyle:ignore object.name
-  def apply(anno: LazyAnnotation[_]): Unit = {
+  def apply(anno: LazyAnnotation): Unit = {
     Builder.annotations += anno
   }
   def apply(anno: Annotation): Unit = {
-    Builder.annotations += LazyAnnotation[Unit](Unit, Unit => anno)
+    Builder.annotations += LazyAnnotation(() => anno)
   }
 }
 
@@ -68,7 +68,7 @@ object dontTouch { // scalastyle:ignore object.name
     if (compileOptions.checkSynthesizable) {
       requireIsHardware(data, "Data marked dontTouch")
     }
-    annotate(LazyAnnotation[T](data, (d) => DontTouchAnnotation(d.toNamed)))
+    annotate(LazyAnnotation(() => DontTouchAnnotation(data.toNamed)))
     data
   }
 }

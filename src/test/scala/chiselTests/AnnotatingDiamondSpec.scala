@@ -24,9 +24,7 @@ case class IdentityAnnotation(target: Named, value: String) extends SingleTarget
 }
 object identify {
   def apply(component: InstanceId, value: String): Unit = {
-    val anno = LazyAnnotation[(InstanceId, String)]((component, value),
-      { case (c, v) => IdentityAnnotation(c.toNamed, value) }
-    )
+    val anno = LazyAnnotation(() => IdentityAnnotation(component.toNamed, value))
     annotate(anno)
     annotate(RunTransformAnnotation(classOf[IdentityTransform]))
   }

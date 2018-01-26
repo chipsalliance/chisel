@@ -164,7 +164,7 @@ private[chisel3] class DynamicContext() {
   val idGen = new IdGen
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
-  val annotations = ArrayBuffer[LazyAnnotation[_]]()
+  val annotations = ArrayBuffer[LazyAnnotation]()
   var currentModule: Option[BaseModule] = None
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -188,7 +188,7 @@ private[chisel3] object Builder {
   def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
-  def annotations: ArrayBuffer[LazyAnnotation[_]] = dynamicContext.annotations
+  def annotations: ArrayBuffer[LazyAnnotation] = dynamicContext.annotations
   def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
 
   def currentModule: Option[BaseModule] = dynamicContext.currentModule

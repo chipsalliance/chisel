@@ -442,7 +442,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @deprecated("Use LazyAnnotation instead", "3.1")
     val ChiselAnnotation = chisel3.core.ChiselAnnotation
 
-    type LazyAnnotation[T] = chisel3.core.LazyAnnotation[T]
+    type LazyAnnotation = chisel3.core.LazyAnnotation
     val LazyAnnotation = chisel3.core.LazyAnnotation
 
     val annotate = chisel3.core.annotate
