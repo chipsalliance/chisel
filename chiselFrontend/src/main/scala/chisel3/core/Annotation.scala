@@ -7,6 +7,7 @@ import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.Transform
 import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
+import firrtl.transforms.DontTouchAnnotation
 
 /**
   * This is a stand-in for the firrtl.Annotations.Annotation because at the time this annotation
@@ -16,18 +17,25 @@ import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
   * @param transformClass  A fully-qualified class name of the transformation pass
   * @param value           A string value to be used by the transformation pass
   */
+@deprecated("Use LazyAnnotation instead", "3.1")
 case class ChiselAnnotation(component: InstanceId, transformClass: Class[_ <: Transform], value: String) {
   def toFirrtl: Annotation = {
-    val circuitName = CircuitName(component.pathName.split("""\.""").head)
-    component match {
-      case m: BaseModule =>
-        Annotation(
-          ModuleName(m.name, circuitName), transformClass, value)
-      case _ =>
-        Annotation(
-          ComponentName(
-            component.instanceName, ModuleName(component.parentModName, circuitName)), transformClass, value)
-    }
+    Annotation(component.toNamed, transformClass, value)
+  }
+}
+@deprecated("Use LazyAnnotation instead", "3.1")
+object ChiselAnnotation
+
+final case class LazyAnnotation[T] private (arg: T, toFirrtl: (T) => Annotation) {
+  def get: Annotation = toFirrtl(arg)
+}
+
+object annotate { // scalastyle:ignore object.name
+  def apply(anno: LazyAnnotation[_]): Unit = {
+    Builder.annotations += anno
+  }
+  def apply(anno: Annotation): Unit = {
+    Builder.annotations += LazyAnnotation[Unit](Unit, Unit => anno)
   }
 }
 
@@ -60,9 +68,7 @@ object dontTouch { // scalastyle:ignore object.name
     if (compileOptions.checkSynthesizable) {
       requireIsHardware(data, "Data marked dontTouch")
     }
-    // TODO unify with firrtl.transforms.DontTouchAnnotation
-    val anno = ChiselAnnotation(data, classOf[firrtl.Transform], "DONTtouch!")
-    Builder.annotations += anno
+    annotate(LazyAnnotation[T](data, (d) => DontTouchAnnotation(d.toNamed)))
     data
   }
 }

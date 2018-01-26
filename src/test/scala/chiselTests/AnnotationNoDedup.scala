@@ -3,16 +3,14 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.ChiselAnnotation
+import chisel3.experimental.{annotate, LazyAnnotation}
 import firrtl.FirrtlExecutionSuccess
-import firrtl.transforms.DedupModules
+import firrtl.transforms.NoDedupAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
-trait NoDedupAnnotator {
-  self: Module =>
-
-  def doNotDedup(module: Module): Unit = {
-    annotate(ChiselAnnotation(module, classOf[DedupModules], "nodedup!"))
+object doNotDedup {
+  def apply(module: Module): Unit = {
+    annotate(LazyAnnotation[Module](module, (m) => NoDedupAnnotation(m.toNamed)))
   }
 }
 
@@ -24,7 +22,7 @@ class MuchUsedModule extends Module {
   io.out := io.in +% 1.U
 }
 
-class UsesMuchUsedModule(addAnnos: Boolean) extends Module with NoDedupAnnotator{
+class UsesMuchUsedModule(addAnnos: Boolean) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(16.W))
     val out = Output(UInt(16.W))

@@ -198,7 +198,7 @@ object Flipped {
   * time) of bits, and must have methods to pack / unpack structured data to /
   * from bits.
   */
-abstract class Data extends HasId {
+abstract class Data extends HasId with NamedComponent {
   // This is a bad API that punches through object boundaries.
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {

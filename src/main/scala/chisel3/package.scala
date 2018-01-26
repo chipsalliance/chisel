@@ -437,8 +437,15 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type FixedPoint = chisel3.core.FixedPoint
     val FixedPoint = chisel3.core.FixedPoint
 
+    @deprecated("Use LazyAnnotation instead", "3.1")
     type ChiselAnnotation = chisel3.core.ChiselAnnotation
+    @deprecated("Use LazyAnnotation instead", "3.1")
     val ChiselAnnotation = chisel3.core.ChiselAnnotation
+
+    type LazyAnnotation[T] = chisel3.core.LazyAnnotation[T]
+    val LazyAnnotation = chisel3.core.LazyAnnotation
+
+    val annotate = chisel3.core.annotate
 
     val DataMirror = chisel3.core.DataMirror
     val requireIsHardware = chisel3.core.requireIsHardware

@@ -3,14 +3,17 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.core.ChiselAnnotation
-import firrtl.transforms.{BlackBoxSourceHelper}
+import chisel3.experimental.LazyAnnotation
+import firrtl.transforms.{BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper}
+import firrtl.annotations.RunTransformAnnotation
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
   def setResource(blackBoxResource: String): Unit = {
-    annotate(ChiselAnnotation(self, classOf[BlackBoxSourceHelper], s"resource\n$blackBoxResource"))
+    val anno = LazyAnnotation[BlackBox](self, (s) => BlackBoxResourceAnno(s.toNamed, blackBoxResource))
+    chisel3.experimental.annotate(anno)
+    chisel3.experimental.annotate(RunTransformAnnotation(classOf[BlackBoxSourceHelper]))
   }
 }
 
@@ -18,7 +21,9 @@ trait HasBlackBoxInline extends BlackBox {
   self: BlackBox =>
 
   def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
-    annotate(ChiselAnnotation(
-      self, classOf[BlackBoxSourceHelper], s"inline\n$blackBoxName\n$blackBoxInline"))
+    val anno = LazyAnnotation[BlackBox](self, (s) =>
+        BlackBoxInlineAnno(s.toNamed, blackBoxName, blackBoxInline))
+    chisel3.experimental.annotate(anno)
+    chisel3.experimental.annotate(RunTransformAnnotation(classOf[BlackBoxSourceHelper]))
   }
 }
