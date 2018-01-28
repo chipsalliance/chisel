@@ -4,7 +4,7 @@ package chisel3.testers2
 
 import chisel3._
 
-class FirrterpreterBackend(inst: FirrterpreterInstance) extends Backend {
+class FirrterpreterBackend(inst: FirrterpreterInstance) extends TesterBackend {
   def poke(signal: Data, value: BigInt): Unit = {
 
   }
@@ -38,7 +38,37 @@ case class TestErrorEntry(
 )
 
 object Firrterpreter {
-  def runTest[T <: Module](dutGen: () => T, test: T => Seq[TestErrorEntry]) {
+  import chisel3.internal.firrtl.Circuit
+  import chisel3.experimental.BaseModule
 
+  import firrtl._
+
+  import firrtl_interpreter._
+
+  def getTopModule(circuit: Circuit): BaseModule = {
+    (circuit.components find (_.name == circuit.name)).get.id
+  }
+
+  def runTest[T <: Module](dutGen: () => T)(test: T => Unit) {
+    val optionsManager = new ExecutionOptionsManager("chisel3")
+        with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite {
+      firrtlOptions = FirrtlExecutionOptions(
+        compilerName = "low"
+      )
+    }
+
+    chisel3.Driver.execute(optionsManager, dutGen) match {
+      case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
+        firrtlExecutionResult match {
+          case FirrtlExecutionSuccess(_, compiledFirrtl) =>
+            val dut = getTopModule(circuit).asInstanceOf[T]
+            val interpretiveTester = new InterpretiveTester(compiledFirrtl, optionsManager)
+
+          case FirrtlExecutionFailure(message) =>
+            throw new Exception(s"FirrtlBackend: failed firrtl compile message: $message")
+        }
+      case _ =>
+        throw new Exception("Problem with compilation")
+    }
   }
 }
