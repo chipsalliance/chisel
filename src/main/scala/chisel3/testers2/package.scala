@@ -10,14 +10,14 @@ class LiteralTypeException(message: String) extends Exception(message)
 package object testers2 {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
   implicit class testableBits(val x: Bits) {
-    def fromLitarg(value: Option[LitArg]) = value match {
+    def getLit(data: Bits) = data.litArg match {
       case Some(value: ULit) => value.n
-      case None => throw new NotLiteralException(s"$x not a literal, cannot be used in poke")
-      case Some(_) => throw new LiteralTypeException(s"$x of wrong type, cannot be used to poke Bits")
+      case None => throw new NotLiteralException(s"$data not a literal, cannot be used in poke")
+      case Some(_) => throw new LiteralTypeException(s"$data of wrong type, cannot be used to poke Bits")
     }
 
     def poke(value: Bits): Unit = {
-      Context().backend.poke(x, fromLitarg(value.litArg))
+      Context().backend.poke(x, getLit(value))
     }
 
     def peek(): Bits = {
@@ -29,10 +29,10 @@ package object testers2 {
     }
 
     def check(value: Bits): Unit = {
-      Context().backend.check(x, fromLitarg(value.litArg))
+      Context().backend.check(x, getLit(value))
     }
     def staleCheck(value: Bits): Unit = {
-      Context().backend.staleCheck(x, fromLitarg(value.litArg))
+      Context().backend.staleCheck(x, getLit(value))
     }
   }
 
