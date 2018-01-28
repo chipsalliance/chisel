@@ -11,5 +11,3 @@ object Context {
 
   private var context: Option[Instance] = None
 }
-
-
