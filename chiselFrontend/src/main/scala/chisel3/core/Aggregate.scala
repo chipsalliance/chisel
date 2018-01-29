@@ -582,24 +582,27 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       val outerInstance = _outerInst match {
         case Some(outerInstance) => outerInstance  // use _outerInst if defined
         case None =>  // determine outer instance if not already recorded
-          val reflectOuter = try {
-            Some(clazz.getDeclaredField("$outer").get(this))  // doesn't work in all cases, namely anonymous inner Bundles
+          try {
+            // Prefer this if it works, but doesn't work in all cases, namely anonymous inner Bundles
+            val outer = clazz.getDeclaredField("$outer").get(this)
+            _outerInst = Some(outer)
+            outer
           } catch {
-            case _: NoSuchFieldException => None
-          }
-          val allOuterCandidates = Seq(
-              reflectOuter.toSeq,
-              _containingModule.toSeq,
-              _containingBundles
-            ).flatten
-          allOuterCandidates.filter(canAssignOuterClass(_)) match {
-            case outer :: Nil =>
-              _outerInst = Some(outer)  // record the guess for future use
-              outer
-            case Nil => reflectError(s"Unable to determine instance of outer class $outerClass," +
-                s" no candidates assignable to outer class types; examined $allOuterCandidates")
-            case candidates => reflectError(s"Unable to determine instance of outer class $outerClass," +
-                s" multiple possible candidates $candidates assignable to outer class type")
+            case _: NoSuchFieldException =>
+              // Fallback using guesses based on common patterns
+              val allOuterCandidates = Seq(
+                  _containingModule.toSeq,
+                  _containingBundles
+                ).flatten.distinct
+              allOuterCandidates.filter(canAssignOuterClass(_)) match {
+                case outer :: Nil =>
+                  _outerInst = Some(outer)  // record the guess for future use
+                  outer
+                case Nil => reflectError(s"Unable to determine instance of outer class $outerClass," +
+                    s" no candidates assignable to outer class types; examined $allOuterCandidates")
+                case candidates => reflectError(s"Unable to determine instance of outer class $outerClass," +
+                    s" multiple possible candidates $candidates assignable to outer class type")
+              }
           }
       }
       (outerClass, outerInstance)
