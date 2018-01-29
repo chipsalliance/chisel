@@ -277,15 +277,26 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   }
 
   /** Reinterpret cast to Bits. */
+  @chiselRuntimeDeprecated
   @deprecated("Use asUInt, which does the same thing but returns a more concrete type", "chisel3")
-  final def asBits(): Bits = macro SourceInfoTransform.noArg
+  final def asBits(implicit compileOptions: CompileOptions): Bits = {
+    implicit val sourceInfo = DeprecatedSourceInfo
+    do_asUInt
+  }
 
-  def do_asBits(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits = asUInt()
-
+  @chiselRuntimeDeprecated
   @deprecated("Use asSInt, which makes the reinterpret cast more explicit", "chisel3")
-  final def toSInt(implicit compileOptions: CompileOptions): SInt = do_asSInt(DeprecatedSourceInfo, compileOptions)
+  final def toSInt(implicit compileOptions: CompileOptions): SInt = {
+    implicit val sourceInfo = DeprecatedSourceInfo
+    do_asSInt
+  }
+  
+  @chiselRuntimeDeprecated
   @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
-  final def toUInt(implicit compileOptions: CompileOptions): UInt = do_asUInt(DeprecatedSourceInfo, compileOptions)
+  final def toUInt(implicit compileOptions: CompileOptions): UInt = {
+    implicit val sourceInfo = DeprecatedSourceInfo
+    do_asUInt
+  }
 
   final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
@@ -477,7 +488,7 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   final def andR(): Bool = macro SourceInfoTransform.noArg
   final def xorR(): Bool = macro SourceInfoTransform.noArg
 
-  def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this != 0.U
+  def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= 0.U
   def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = ~this === 0.U
   def do_xorR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, XorReduceOp)
 
@@ -486,12 +497,12 @@ sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
   override def do_<= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
 
+  @chiselRuntimeDeprecated
   @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
-  final def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  final def != (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
   final def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
   final def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
-  def do_!= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=/= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=== (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
 
@@ -652,12 +663,12 @@ sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
   override def do_<= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
 
+  @chiselRuntimeDeprecated
   @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
-  final def != (that: SInt): Bool = macro SourceInfoTransform.thatArg
+  final def != (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
   final def =/= (that: SInt): Bool = macro SourceInfoTransform.thatArg
   final def === (that: SInt): Bool = macro SourceInfoTransform.thatArg
 
-  def do_!= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=/= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_=== (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
 
@@ -979,6 +990,7 @@ object FixedPoint {
   def apply(): FixedPoint = apply(Width(), BinaryPoint())
 
   /** Create an FixedPoint type or port with fixed width. */
+  @chiselRuntimeDeprecated
   @deprecated("Use FixedPoint(width: Width, binaryPoint: BinaryPoint) example FixedPoint(16.W, 8.BP)", "chisel3")
   def apply(width: Int, binaryPoint: Int): FixedPoint = apply(Width(width), BinaryPoint(binaryPoint))
 
@@ -1010,6 +1022,7 @@ object FixedPoint {
   /** Create an FixedPoint literal with inferred width from Double.
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
+  @chiselRuntimeDeprecated
   @deprecated("use fromDouble(value: Double, width: Width, binaryPoint: BinaryPoint)", "chisel3")
   def fromDouble(value: Double, dummy: PrivateType = PrivateObject,
                  width: Int = -1, binaryPoint: Int = 0): FixedPoint = {
