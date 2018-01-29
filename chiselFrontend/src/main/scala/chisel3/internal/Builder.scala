@@ -223,6 +223,35 @@ private[chisel3] object Builder {
     pushCommand(cmd).id
   }
 
+  // Record the Bundle instance, class name, and reverse stack trace position of open Bundles
+  private val bundleStack: ArrayBuffer[(Bundle, String, Int)] = ArrayBuffer()
+  // Called when Bundle construction begins, used to record a stack of open Bundle constructors to
+  // record candidates for Bundle autoclonetype. This is a best-effort guess.
+  // Returns the current stack of open Bundles
+  // Note: elt will NOT have finished construction, its elements cannot be accessed
+  def updateBundleStack(elt: Bundle): Seq[Bundle] = {
+    val stackClasses = Thread.currentThread().getStackTrace()
+        .map(_.getClassName)
+        .reverse  // so stack frame numbers are deterministic across calls
+
+    // Prune the existing Bundle stack of closed Bundles
+    while (!bundleStack.isEmpty &&
+        (bundleStack.last._3 >= stackClasses.size ||
+            (stackClasses(bundleStack.last._3) != bundleStack.last._2))) {
+      bundleStack.remove(bundleStack.size - 1)
+    }
+
+    // Append the current Bundle to the stack, if it's on the stack trace
+    val eltClassName = elt.getClass.getName
+    val eltStackPos = stackClasses.lastIndexOf(eltClassName)
+    if (eltStackPos >= 0) {
+      bundleStack.append((elt, eltClassName, eltStackPos))
+    }
+    // Otherwise discard the stack frame, this shouldn't fail noisily
+
+    bundleStack.map(_._1).toSeq
+  }
+
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
   def warning(m: => String): Unit = errors.warning(m)
