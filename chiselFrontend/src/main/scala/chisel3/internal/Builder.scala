@@ -156,6 +156,8 @@ private[chisel3] class DynamicContext() {
   var currentClockAndReset: Option[ClockAndReset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
+  // Record the Bundle instance, class name, and reverse stack trace position of open Bundles
+  val bundleStack: ArrayBuffer[(Bundle, String, Int)] = ArrayBuffer()
 }
 
 private[chisel3] object Builder {
@@ -223,8 +225,6 @@ private[chisel3] object Builder {
     pushCommand(cmd).id
   }
 
-  // Record the Bundle instance, class name, and reverse stack trace position of open Bundles
-  private val bundleStack: ArrayBuffer[(Bundle, String, Int)] = ArrayBuffer()
   // Called when Bundle construction begins, used to record a stack of open Bundle constructors to
   // record candidates for Bundle autoclonetype. This is a best-effort guess.
   // Returns the current stack of open Bundles
@@ -235,21 +235,21 @@ private[chisel3] object Builder {
         .reverse  // so stack frame numbers are deterministic across calls
 
     // Prune the existing Bundle stack of closed Bundles
-    while (!bundleStack.isEmpty &&
-        (bundleStack.last._3 >= stackClasses.size ||
-            (stackClasses(bundleStack.last._3) != bundleStack.last._2))) {
-      bundleStack.remove(bundleStack.size - 1)
+    while (!dynamicContext.bundleStack.isEmpty &&
+        (dynamicContext.bundleStack.last._3 >= stackClasses.size ||
+            (stackClasses(dynamicContext.bundleStack.last._3) != dynamicContext.bundleStack.last._2))) {
+      dynamicContext.bundleStack.remove(dynamicContext.bundleStack.size - 1)
     }
 
     // Append the current Bundle to the stack, if it's on the stack trace
     val eltClassName = elt.getClass.getName
     val eltStackPos = stackClasses.lastIndexOf(eltClassName)
     if (eltStackPos >= 0) {
-      bundleStack.append((elt, eltClassName, eltStackPos))
+      dynamicContext.bundleStack.append((elt, eltClassName, eltStackPos))
     }
     // Otherwise discard the stack frame, this shouldn't fail noisily
 
-    bundleStack.map(_._1).toSeq
+    dynamicContext.bundleStack.map(_._1).toSeq
   }
 
   def errors: ErrorLog = dynamicContext.errors
