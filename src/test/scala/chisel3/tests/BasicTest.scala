@@ -11,9 +11,10 @@ class BasicTest extends FlatSpec with ImplicitPokeTester {
       val io = IO(new Bundle {
         val out = UInt(8.W)
       })
-      out := 42.U
+      io.out := 42.U
     }) { c =>
       c.io.out.check(42.U)
+      c.clock.step()
     }
   }
 }
