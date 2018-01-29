@@ -20,8 +20,8 @@ trait TesterBackend {
     */
   def stalePeek(signal: Data): BigInt
 
-  def check(signal: Data, value: BigInt): BigInt
-  def staleCheck(signal: Data, value: BigInt): BigInt
+  def check(signal: Data, value: BigInt): Unit
+  def staleCheck(signal: Data, value: BigInt): Unit
 
   /** Advances the target clock by one cycle.
     */
