@@ -367,7 +367,7 @@ class ConstantPropagation extends Transform {
         // Const prop registers that are fed only a constant or a mux between and constant and the
         // register itself
         // This requires that reset has been made explicit
-        case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), expr) => expr match {
+        case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), expr) if !dontTouches.contains(lname) => expr match {
           case lit: Literal =>
             nodeMap(lname) = constPropExpression(pad(lit, ltpe))
           case Mux(_, tval: WRef, fval: Literal, _) if weq(lref, tval) =>

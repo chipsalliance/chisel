@@ -712,6 +712,21 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq(dontTouch("Top.z")))
   }
 
+  "ConstProp" should "NOT optimize across dontTouch on registers" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clk : Clock
+          |    input reset : UInt<1>
+          |    output y : UInt<1>
+          |    reg z : UInt<1>, clk
+          |    y <= z
+          |    z <= mux(reset, UInt<1>("h0"), z)""".stripMargin
+      val check = input
+    execute(input, check, Seq(dontTouch("Top.z")))
+  }
+
+
   it should "NOT optimize across dontTouch on wires" in {
       val input =
         """circuit Top :
