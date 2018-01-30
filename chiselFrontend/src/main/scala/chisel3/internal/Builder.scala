@@ -241,6 +241,9 @@ private[chisel3] object Builder {
       dynamicContext.bundleStack.remove(dynamicContext.bundleStack.size - 1)
     }
 
+    // Return the stack state before adding the most recent bundle
+    val lastStack = dynamicContext.bundleStack.map(_._1).toSeq
+
     // Append the current Bundle to the stack, if it's on the stack trace
     val eltClassName = elt.getClass.getName
     val eltStackPos = stackClasses.lastIndexOf(eltClassName)
@@ -249,7 +252,7 @@ private[chisel3] object Builder {
     }
     // Otherwise discard the stack frame, this shouldn't fail noisily
 
-    dynamicContext.bundleStack.map(_._1).toSeq
+    lastStack
   }
 
   def errors: ErrorLog = dynamicContext.errors
