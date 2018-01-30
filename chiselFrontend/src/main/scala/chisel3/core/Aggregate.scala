@@ -703,10 +703,10 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
 
     // Clone unbound parameters in case they are being used as bundle fields.
-    val ctorParamsVals = ctorParamsNameVals.map{ case (paramName, paramVal) => paramVal match {
-      case paramVal: Data => paramVal.cloneTypeFull
-      case paramVal => paramVal
-    } }
+    val ctorParamsVals = ctorParamsNameVals.map {
+      case (_, paramVal: Data) => paramVal.cloneTypeFull
+      case (_, paramVal) => paramVal
+    }
 
     // Invoke ctor
     val classMirror = outerClassInstance match {

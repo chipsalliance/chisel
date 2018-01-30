@@ -49,8 +49,7 @@ class ModuleWithInner extends Module {
 
 // A Bundle with an argument that is also a field.
 // Not necessarily good style (and not necessarily recommended), but allowed to preserve compatibility.
-class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle {
-}
+class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
 
 class AutoClonetypeSpec extends ChiselFlatSpec {
   "Bundles with Scala args" should "not need clonetype" in {
