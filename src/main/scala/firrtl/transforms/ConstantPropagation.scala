@@ -407,8 +407,13 @@ class ConstantPropagation extends Transform {
       mod.module -> children.map(i => i.name -> i.module).toMap
     })
 
-    // Module name to number of instances
-    val instCount: Map[String, Int] = iGraph.getVertices.groupBy(_.module).mapValues(_.size)
+    // This is a *relative* instance count, ie. how many there are when you visit each Module once
+    // (even if it is instantiated multiple times)
+    val instCount: Map[String, Int] = iGraph.getEdgeMap.foldLeft(Map(c.main -> 1)) {
+      case (cs, (_, values)) => values.foldLeft(cs) {
+        case (counts, value) => counts.updated(value.module, counts.getOrElse(value.module, 0) + 1)
+      }
+    }
 
     // DiGraph using Module names as nodes, destination of edge is a parent Module
     val parentGraph: DiGraph[String] = iGraph.reverse.transformNodes(_.module)

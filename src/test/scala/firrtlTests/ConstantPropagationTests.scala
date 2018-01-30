@@ -67,9 +67,9 @@ s"""circuit Top :
     out <= in
   module Child :
     output out : UInt<1>
-    inst b of Bottom
-    b.in <= UInt(1)
-    out <= b.out
+    inst b0 of Bottom
+    b0.in <= UInt(1)
+    out <= b0.out
   module Top :
     input x : UInt<1>
     output z : UInt<1>
@@ -91,8 +91,8 @@ s"""circuit Top :
     out <= UInt(1)
   module Child :
     output out : UInt<1>
-    inst b of Bottom
-    b.in <= UInt(1)
+    inst b0 of Bottom
+    b0.in <= UInt(1)
     out <= UInt(1)
   module Top :
     input x : UInt<1>
