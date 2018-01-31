@@ -43,7 +43,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester) exte
   }
 
   def check(signal: Data, value: BigInt): Unit = {
-    Context().env.testerExpect(peek(signal), value, resolveName(signal), None)
+    Context().env.testerExpect(value, peek(signal), resolveName(signal), None)
   }
 
   def staleCheck(signal: Data, value: BigInt): Unit = {
@@ -56,6 +56,10 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester) exte
   }
 
   def run(testFn: T => Unit): Unit = {
+    // TODO: don't hardcode in assumption of singleclock singlereset circuit
+    tester.poke("reset", 1)
+    tester.step(1)
+    tester.poke("reset", 0)
     testFn(dut)
   }
 }
