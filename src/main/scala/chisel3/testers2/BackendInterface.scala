@@ -6,7 +6,7 @@ import chisel3._
 
 /** Common interface definition for tester backends
   */
-trait TesterBackend {
+trait BackendInterface {
   /** Writes a value to a writable wire.
     * Throws an exception if write is not writable.
     */
@@ -26,4 +26,21 @@ trait TesterBackend {
   /** Advances the target clock by one cycle.
     */
   def step(signal: Clock, cycles: Int): Unit
+}
+
+/** Backend associated with a particular circuit, and can run tests
+  */
+trait BackendInstance[T <: Module] extends BackendInterface {
+  /** Runs of tests are wrapped in this, for any special setup/teardown that needs to happen.
+    * Takes the test function, which takes the module used as the testing interface.
+    * TesterContext setup is done externally.
+    */
+  def run(testFn: T => Unit): Unit
+}
+
+/** Interface into the testing environment, like ScalaTest
+  */
+trait TestEnvInterface {
+  def testerFail(msg: String): Unit
+  def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit
 }

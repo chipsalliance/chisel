@@ -6,17 +6,23 @@ import chisel3._
 
 import firrtl_interpreter._
 
-class FirrterpreterBackend(dut: Module, tester: InterpretiveTester) extends TesterBackend {
+class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester) extends BackendInstance[T] {
+  def getModule() = dut
+
   /** Returns a Seq of (data reference, fully qualified element names) for the input.
     * name is the name of data
     */
-  protected def getDataNames(name: String, data: Data): Seq[(Element, String)] = data match {
-    case e: Element => Seq(e -> name)
+  protected def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
+    case e: Element => Seq()
     case b: Record => b.elements.toSeq flatMap {case (n, e) => getDataNames(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => getDataNames(s"${name}_$i", e)}
-  }
+  })
 
+  // TODO: the naming facility should be part of infrastructure not backend
   protected val portNames = getDataNames("io", dut.io).toMap
+
+  def resolveName(signal: Data) =
+    portNames.getOrElse(signal, signal.toString())
 
   def poke(signal: Data, value: BigInt): Unit = {
     signal match {
@@ -37,8 +43,7 @@ class FirrterpreterBackend(dut: Module, tester: InterpretiveTester) extends Test
   }
 
   def check(signal: Data, value: BigInt): Unit = {
-    // TODO: better integration with test envs like scalacheck
-    require(peek(signal) == value)
+    Context().env.testerExpect(peek(signal), value, resolveName(signal), None)
   }
 
   def staleCheck(signal: Data, value: BigInt): Unit = {
@@ -49,12 +54,11 @@ class FirrterpreterBackend(dut: Module, tester: InterpretiveTester) extends Test
     // TODO: clock-dependence
     tester.step(cycles)
   }
-}
 
-case class TestErrorEntry(
-  val msg: String,
-  val loc: Seq[StackTraceElement]
-)
+  def run(testFn: T => Unit): Unit = {
+    testFn(dut)
+  }
+}
 
 object Firrterpreter {
   import chisel3.internal.firrtl.Circuit
@@ -66,7 +70,7 @@ object Firrterpreter {
     (circuit.components find (_.name == circuit.name)).get.id
   }
 
-  def runTest[T <: Module](dutGen: () => T)(test: T => Unit) {
+  def start[T <: Module](dutGen: => T): BackendInstance[T] = {
     val optionsManager = new ExecutionOptionsManager("chisel3")
         with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite {
       firrtlOptions = FirrtlExecutionOptions(
@@ -74,13 +78,13 @@ object Firrterpreter {
       )
     }
 
-    chisel3.Driver.execute(optionsManager, dutGen) match {
+    chisel3.Driver.execute(optionsManager, () => dutGen) match {
       case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
         firrtlExecutionResult match {
           case FirrtlExecutionSuccess(_, compiledFirrtl) =>
             val dut = getTopModule(circuit).asInstanceOf[T]
             val interpretiveTester = new InterpretiveTester(compiledFirrtl, optionsManager)
-
+            new FirrterpreterBackend(dut, interpretiveTester)
           case FirrtlExecutionFailure(message) =>
             throw new Exception(s"FirrtlBackend: failed firrtl compile message: $message")
         }
