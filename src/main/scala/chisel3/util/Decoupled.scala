@@ -17,8 +17,10 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
   * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
   * @param gen the type of data to be wrapped in Ready/Valid
   */
-abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
-{
+abstract class ReadyValidIO[+T <: Data](private val gen: T) extends Bundle
+{ // gen is a val to allow autoclonetype to work, but private to not be detected as a Bundle field.
+  // No, it's not the most intuitive or clean API. We'll revisit it for 3.1.1 or 3.2.
+
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
     case (true, Some(module: chisel3.core.ImplicitModule))
@@ -79,7 +81,6 @@ object ReadyValidIO {
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
-  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
 }
 
 /** This factory adds a decoupled handshaking protocol to a data bundle. */
@@ -101,9 +102,6 @@ object Decoupled
     irr.ready := d.ready
     d
   }
-//  override def cloneType: this.type = {
-//    DeqIO(gen).asInstanceOf[this.type]
-//  }
 }
 
 /** A concrete subclass of ReadyValidIO that promises to not change
@@ -113,9 +111,6 @@ object Decoupled
   * @param gen the type of data to be wrapped in IrrevocableIO
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
-{
-  override def cloneType: this.type = new IrrevocableIO(gen).asInstanceOf[this.type]
-}
 
 /** Factory adds an irrevocable handshaking protocol to a data bundle. */
 object Irrevocable
@@ -154,8 +149,10 @@ object DeqIO {
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
   */
-class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
-{
+class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
+{ // gen is a val to allow autoclonetype to work, but private to not be detected as a Bundle field.
+  // No, it's not the most intuitive or clean API. We'll revisit it for 3.1.1 or 3.2.
+
   /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
@@ -166,8 +163,6 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   val deq = Flipped(DeqIO(gen))
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-
-  override def cloneType = new QueueIO(gen, entries).asInstanceOf[this.type]
 }
 
 /** A hardware module implementing a Queue

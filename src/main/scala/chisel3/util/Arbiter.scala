@@ -14,11 +14,13 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   * @param gen data type
   * @param n number of inputs
   */
-class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
+class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
+  // gen is a val to allow autoclonetype to work, but private to not be detected as a Bundle field.
+  // No, it's not the most intuitive or clean API. We'll revisit it for 3.1.1 or 3.2.
+
   val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
   val chosen = Output(UInt(log2Ceil(n).W))
-  override def cloneType: this.type = new ArbiterIO(gen, n).asInstanceOf[this.type]
 }
 
 /** Arbiter Control determining which producer has access
