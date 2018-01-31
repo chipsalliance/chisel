@@ -15,8 +15,7 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   * @param n number of inputs
   */
 class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
-  // gen is a val to allow autoclonetype to work, but private to not be detected as a Bundle field.
-  // No, it's not the most intuitive or clean API. We'll revisit it for 3.1.1 or 3.2.
+  // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
   val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)

@@ -18,8 +18,7 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
   * @param gen the type of data to be wrapped in Ready/Valid
   */
 abstract class ReadyValidIO[+T <: Data](private val gen: T) extends Bundle
-{ // gen is a val to allow autoclonetype to work, but private to not be detected as a Bundle field.
-  // No, it's not the most intuitive or clean API. We'll revisit it for 3.1.1 or 3.2.
+{ // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
@@ -150,8 +149,7 @@ object DeqIO {
   * @param entries The max number of entries in the queue.
   */
 class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
-{ // gen is a val to allow autoclonetype to work, but private to not be detected as a Bundle field.
-  // No, it's not the most intuitive or clean API. We'll revisit it for 3.1.1 or 3.2.
+{ // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
   /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
    *  but internally, the queue implementation itself sits on the other side
