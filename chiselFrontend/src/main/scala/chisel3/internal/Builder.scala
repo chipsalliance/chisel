@@ -235,11 +235,10 @@ private[chisel3] object Builder {
         .reverse  // so stack frame numbers are deterministic across calls
 
     // Prune the existing Bundle stack of closed Bundles
-    while (!dynamicContext.bundleStack.isEmpty &&
-        (dynamicContext.bundleStack.last._3 >= stackClasses.size ||
-            (stackClasses(dynamicContext.bundleStack.last._3) != dynamicContext.bundleStack.last._2))) {
-      dynamicContext.bundleStack.remove(dynamicContext.bundleStack.size - 1)
+    val pruneLength = dynamicContext.bundleStack.reverse.prefixLength { case (_, cname, pos) =>
+      pos >= stackClasses.size || stackClasses(pos) != cname
     }
+    dynamicContext.bundleStack.trimEnd(pruneLength)
 
     // Return the stack state before adding the most recent bundle
     val lastStack = dynamicContext.bundleStack.map(_._1).toSeq
