@@ -17,9 +17,8 @@ import chisel3.internal.naming._  // can't use chisel3_ version because of compi
   * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
   * @param gen the type of data to be wrapped in Ready/Valid
   */
-abstract class ReadyValidIO[+T <: Data](private val gen: T) extends Bundle
-{ // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
-
+abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
+{
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
     case (true, Some(module: chisel3.core.ImplicitModule))
@@ -80,6 +79,7 @@ object ReadyValidIO {
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
+  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
 }
 
 /** This factory adds a decoupled handshaking protocol to a data bundle. */
@@ -110,6 +110,9 @@ object Decoupled
   * @param gen the type of data to be wrapped in IrrevocableIO
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
+{
+  override def cloneType: this.type = new IrrevocableIO(gen).asInstanceOf[this.type]
+}
 
 /** Factory adds an irrevocable handshaking protocol to a data bundle. */
 object Irrevocable

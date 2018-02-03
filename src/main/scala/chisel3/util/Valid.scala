@@ -11,12 +11,12 @@ import chisel3.experimental.DataMirror
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 /** An Bundle containing data and a signal determining if it is valid */
-class Valid[+T <: Data](private val gen: T) extends Bundle
-{ // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
-
+class Valid[+T <: Data](gen: T) extends Bundle
+{
   val valid = Output(Bool())
   val bits  = Output(gen)
   def fire(dummy: Int = 0): Bool = valid
+  override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
 }
 
 /** Adds a valid protocol to any interface */
