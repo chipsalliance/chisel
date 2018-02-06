@@ -84,6 +84,41 @@ antlr4PackageName in Antlr4 := Option("firrtl.antlr")
 
 antlr4Version in Antlr4 := "4.7"
 
+publishMavenStyle := true
+publishArtifact in Test := false
+pomIncludeRepository := { x => false }
+// Don't add 'scm' elements if we have a git.remoteRepo definition.
+pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
+  <licenses>
+    <license>
+      <name>BSD-style</name>
+      <url>http://www.opensource.org/licenses/bsd-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>jackbackrack</id>
+      <name>Jonathan Bachrach</name>
+      <url>http://www.eecs.berkeley.edu/~jrb/</url>
+    </developer>
+  </developers>
+
+publishTo := {
+  val v = version.value
+  val nexus = "https://oss.sonatype.org/"
+  if (v.trim.endsWith("SNAPSHOT")) {
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  } else {
+    Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  }
+}
+
+resolvers ++= Seq(
+  Resolver.sonatypeRepo("snapshots"),
+  Resolver.sonatypeRepo("releases")
+)
+
 // ScalaDoc
 
 enablePlugins(ScalaUnidocPlugin)
