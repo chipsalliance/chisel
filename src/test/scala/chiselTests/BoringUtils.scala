@@ -30,21 +30,20 @@ class InverterAfterWiring extends Module with BoringUtils {
   addSink(io.out, "id")
 }
 
-class PassthroughAfterWiringTester extends BasicTester {
+class InverterAfterWiringTester extends BasicTester {
   val dut = Module(new InverterAfterWiring)
 
   val (c, done) = Counter(true.B, 2)
 
   dut.io.in := c(0)
-  printf("[test] (in, out): (%x, %x)\n", dut.io.in, dut.io.out)
-  // assert(dut.io.out =/= dut.io.in)
+  assert(dut.io.out =/= dut.io.in)
 
   when (done) { stop() }
 }
 
 class BoringUtilsSpec extends ChiselFlatSpec with BackendCompilationUtilities {
   it should "connect within a module" in {
-    val target = "PassthroughAfterWiringTester"
+    val target = "InverterAfterWiringTester"
 
     val path = createTestDirectory(target)
     val fname = new File(path, target)
@@ -54,7 +53,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with BackendCompilationUtilities {
 
     Driver.execute(Array(
       "--target-dir", path.getAbsolutePath),
-      () => new PassthroughAfterWiringTester)
+      () => new InverterAfterWiringTester)
     val passed = if ((verilogToCpp(target, path, Seq.empty, cppHarness) #&&
         cppToExe(target, path)).! == 0) {
       executeExpectingSuccess(target, path)
