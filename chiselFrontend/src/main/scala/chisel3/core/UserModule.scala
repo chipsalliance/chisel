@@ -157,7 +157,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _ioPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(io)
 
   protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
     val names = super.nameIds(rootClass)
@@ -171,7 +171,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   }
 
   private[core] override def generateComponent(): Component = {
-    _autoWrapPorts()  // pre-IO(...) compatibility hack
+    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(io != null, "Module must have io")
