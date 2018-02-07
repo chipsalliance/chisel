@@ -2,9 +2,8 @@
 
 package chisel3.util
 
-import chisel3._
-import chisel3.internal._
-import chisel3.core.ChiselAnnotation
+import chisel3.internal.InstanceId
+import chisel3.core.{ChiselAnnotation, BaseModule}
 import _root_.firrtl.passes.wiring.WiringTransform
 
 /** Utilities for generating synthesizeable cross module references.
@@ -24,8 +23,8 @@ import _root_.firrtl.passes.wiring.WiringTransform
   * }
   * }}}
   */
-trait BoringUtils {
-  self: Module =>
+trait BoringUtils extends BaseModule {
+  self: BaseModule =>
 
   /** Add a named source cross module reference
     *
