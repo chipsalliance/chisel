@@ -47,6 +47,9 @@ class ModuleWithInner extends Module {
   require(myWire.i == 14)
 }
 
+// A Bundle with an argument that is also a field.
+// Not necessarily good style (and not necessarily recommended), but allowed to preserve compatibility.
+class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
 
 class AutoClonetypeSpec extends ChiselFlatSpec {
   "Bundles with Scala args" should "not need clonetype" in {
@@ -111,5 +114,13 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
 
   "Inner bundles with Scala args" should "not need clonetype" in {
     elaborate { new ModuleWithInner }
+  }
+
+  "Bundles with arguments as fields" should "not need clonetype" in {
+    elaborate { new Module {
+      val io = IO(Output(new BundleWithArgumentField(UInt(8.W), UInt(8.W))))
+      io.x := 1.U
+      io.y := 1.U
+    } }
   }
 }
