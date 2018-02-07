@@ -156,6 +156,8 @@ private[chisel3] class DynamicContext() {
   var currentClockAndReset: Option[ClockAndReset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
+  // Record the Bundle instance, class name, and reverse stack trace position of open Bundles
+  val bundleStack: ArrayBuffer[(Bundle, String, Int)] = ArrayBuffer()
 }
 
 private[chisel3] object Builder {
@@ -221,6 +223,35 @@ private[chisel3] object Builder {
     // Bind each element of the returned Data to being a Op
     cmd.id.bind(OpBinding(forcedUserModule))
     pushCommand(cmd).id
+  }
+
+  // Called when Bundle construction begins, used to record a stack of open Bundle constructors to
+  // record candidates for Bundle autoclonetype. This is a best-effort guess.
+  // Returns the current stack of open Bundles
+  // Note: elt will NOT have finished construction, its elements cannot be accessed
+  def updateBundleStack(elt: Bundle): Seq[Bundle] = {
+    val stackClasses = Thread.currentThread().getStackTrace()
+        .map(_.getClassName)
+        .reverse  // so stack frame numbers are deterministic across calls
+
+    // Prune the existing Bundle stack of closed Bundles
+    val pruneLength = dynamicContext.bundleStack.reverse.prefixLength { case (_, cname, pos) =>
+      pos >= stackClasses.size || stackClasses(pos) != cname
+    }
+    dynamicContext.bundleStack.trimEnd(pruneLength)
+
+    // Return the stack state before adding the most recent bundle
+    val lastStack = dynamicContext.bundleStack.map(_._1).toSeq
+
+    // Append the current Bundle to the stack, if it's on the stack trace
+    val eltClassName = elt.getClass.getName
+    val eltStackPos = stackClasses.lastIndexOf(eltClassName)
+    if (eltStackPos >= 0) {
+      dynamicContext.bundleStack.append((elt, eltClassName, eltStackPos))
+    }
+    // Otherwise discard the stack frame, this shouldn't fail noisily
+
+    lastStack
   }
 
   def errors: ErrorLog = dynamicContext.errors

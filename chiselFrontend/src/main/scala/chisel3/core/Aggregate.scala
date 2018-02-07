@@ -552,10 +552,15 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     case _ => None
   }
 
-  // If this Data is an instance of an inner class, record a *guess* at the outer object.
-  // This is only used for cloneType, and is mutable to allow autoCloneType to try guesses other
-  // than the module that was current when the Bundle was constructed.
-  private var _outerInst: Option[Object] = Builder.currentModule
+  // Memoize the outer instance for autoclonetype, especially where this is context-dependent
+  // (like the outer module or enclosing Bundles).
+  private var _outerInst: Option[Object] = None
+
+  // For autoclonetype, record possible candidates for outer instance.
+  // _outerInst should always take precedence, since it should be propagated from the original
+  // object which has the most accurate context.
+  private val _containingModule: Option[BaseModule] = Builder.currentModule
+  private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
 
   override def cloneType : this.type = {
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
@@ -570,23 +575,36 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     // Check if this is an inner class, and if so, try to get the outer instance
     val clazz = this.getClass
+
     val outerClassInstance = Option(clazz.getEnclosingClass).map { outerClass =>
       def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
-      val outerInstance = try {
-        clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
-      } catch {
-        case _: NoSuchFieldException =>
-          // First check if this Bundle is bound and an anonymous inner Bundle of another Bundle
-          this.bindingOpt.collect { case ChildBinding(p) if canAssignOuterClass(p) => p }
-              .orElse(this._outerInst)
-              .getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
+
+      val outerInstance = _outerInst match {
+        case Some(outerInstance) => outerInstance  // use _outerInst if defined
+        case None =>  // determine outer instance if not already recorded
+          try {
+            // Prefer this if it works, but doesn't work in all cases, namely anonymous inner Bundles
+            val outer = clazz.getDeclaredField("$outer").get(this)
+            _outerInst = Some(outer)
+            outer
+          } catch {
+            case (_: NoSuchFieldException | _: IllegalAccessException) =>
+              // Fallback using guesses based on common patterns
+              val allOuterCandidates = Seq(
+                  _containingModule.toSeq,
+                  _containingBundles
+                ).flatten.distinct
+              allOuterCandidates.filter(canAssignOuterClass(_)) match {
+                case outer :: Nil =>
+                  _outerInst = Some(outer)  // record the guess for future use
+                  outer
+                case Nil => reflectError(s"Unable to determine instance of outer class $outerClass," +
+                    s" no candidates assignable to outer class types; examined $allOuterCandidates")
+                case candidates => reflectError(s"Unable to determine instance of outer class $outerClass," +
+                    s" multiple possible candidates $candidates assignable to outer class type")
+              }
+          }
       }
-      if (!canAssignOuterClass(outerInstance)) {
-        reflectError(s"Unable to determine instance of outer class $outerClass," +
-            s" guessed $outerInstance, but is not assignable to outer class $outerClass")
-      }
-      // Record the outer instance for future cloning
-      this._outerInst = Some(outerInstance)
       (outerClass, outerInstance)
     }
 
