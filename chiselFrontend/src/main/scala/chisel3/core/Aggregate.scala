@@ -588,7 +588,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
             _outerInst = Some(outer)
             outer
           } catch {
-            case _: NoSuchFieldException =>
+            case (_: NoSuchFieldException | _: IllegalAccessException) =>
               // Fallback using guesses based on common patterns
               val allOuterCandidates = Seq(
                   _containingModule.toSeq,
