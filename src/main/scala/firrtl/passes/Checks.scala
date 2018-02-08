@@ -51,6 +51,8 @@ object CheckHighForm extends Pass {
     s"$info: A single module must be named $name.")
   class NegArgException(info: Info, mname: String, op: String, value: Int) extends PassException(
     s"$info: [module $mname] Primop $op argument $value < 0.")
+  class LsbLargerThanMsb(info: Info, mname: String, op: String, lsb: Int, msb: Int) extends PassException(
+    s"$info: [module $mname] Primop $op lsb $lsb > $msb.")
 
   // TODO FIXME
   // - Do we need to check for uniquness on port names?
@@ -86,6 +88,10 @@ object CheckHighForm extends Pass {
           }
         case Bits =>
           correctNum(Option(1), 2)
+          val (msb, lsb) = (e.consts(0).toInt, e.consts(1).toInt)
+          if (lsb > msb) {
+            errors.append(new LsbLargerThanMsb(info, mname, e.op.toString, lsb, msb))
+          }
         case Andr | Orr | Xorr | Neg =>
           correctNum(None,0)
       }
@@ -123,7 +129,7 @@ object CheckHighForm extends Pass {
 
     def checkHighFormT(info: Info, mname: String)(t: Type): Type =
       t map checkHighFormT(info, mname) match {
-        case tx: VectorType if tx.size < 0 => 
+        case tx: VectorType if tx.size < 0 =>
           errors.append(new NegVecSizeException(info, mname))
           t
         case _ => t map checkHighFormW(info, mname)
@@ -197,7 +203,7 @@ object CheckHighForm extends Pass {
       (m map checkHighFormP(m.name, names)
          map checkHighFormS(m.info, m.name, names))
     }
-    
+
     c.modules foreach checkHighFormM
     c.modules count (_.name == c.main) match {
       case 1 =>
@@ -274,7 +280,7 @@ object CheckTypes extends Pass {
   //;---------------- Helper Functions --------------
   def ut: UIntType = UIntType(UnknownWidth)
   def st: SIntType = SIntType(UnknownWidth)
-   
+
   def run (c:Circuit) : Circuit = {
     val errors = new Errors()
 
@@ -316,9 +322,9 @@ object CheckTypes extends Pass {
         })
         if (error) errors.append(new OpNotGround(info, mname, e.op.serialize))
       }
-      def strictFix(ls: Seq[Expression]) = 
+      def strictFix(ls: Seq[Expression]) =
         ls.filter(!_.tpe.isInstanceOf[FixedType]).size match {
-          case 0 => 
+          case 0 =>
           case x if(x == ls.size) =>
           case x => errors.append(new OpNoMixFix(info, mname, e.op.serialize))
         }
@@ -490,10 +496,10 @@ object CheckGenders extends Pass {
     case UNKNOWNGENDER => "unknown"
     case BIGENDER => "sourceOrSink"
   }
-   
+
   class WrongGender(info:Info, mname: String, expr: String, wrong: Gender, right: Gender) extends PassException(
     s"$info: [module $mname]  Expression $expr is used as a $wrong but can only be used as a $right.")
-   
+
   def run (c:Circuit): Circuit = {
     val errors = new Errors()
 
@@ -533,7 +539,7 @@ object CheckGenders extends Pass {
       }
       e
    }
-   
+
     def check_genders_e (info:Info, mname: String, genders: GenderMap)(e:Expression): Expression = {
       e match {
         case e: Mux => e map check_gender(info, mname, genders, MALE)
@@ -542,7 +548,7 @@ object CheckGenders extends Pass {
       }
       e map check_genders_e(info, mname, genders)
     }
-        
+
     def check_genders_s(minfo: Info, mname: String, genders: GenderMap)(s: Statement): Statement = {
       val info = get_info(s) match { case NoInfo => minfo case x => x }
       s match {
@@ -572,7 +578,7 @@ object CheckGenders extends Pass {
       }
       s map check_genders_e(info, mname, genders) map check_genders_s(minfo, mname, genders)
     }
-   
+
     for (m <- c.modules) {
       val genders = new GenderMap
       genders ++= (m.ports map (p => p.name -> to_gender(p.direction)))
