@@ -101,9 +101,6 @@ object Decoupled
     irr.ready := d.ready
     d
   }
-//  override def cloneType: this.type = {
-//    DeqIO(gen).asInstanceOf[this.type]
-//  }
 }
 
 /** A concrete subclass of ReadyValidIO that promises to not change
@@ -154,8 +151,9 @@ object DeqIO {
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
   */
-class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
-{
+class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
+{ // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
+
   /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
    *  but internally, the queue implementation itself sits on the other side
    *  of the interface so uses the flipped instance.
@@ -166,8 +164,6 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   val deq = Flipped(DeqIO(gen))
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-
-  override def cloneType = new QueueIO(gen, entries).asInstanceOf[this.type]
 }
 
 /** A hardware module implementing a Queue

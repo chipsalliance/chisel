@@ -702,7 +702,11 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
           " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
     }
 
-    val ctorParamsVals = ctorParamsNameVals.map{ case (_, paramVal) => paramVal }
+    // Clone unbound parameters in case they are being used as bundle fields.
+    val ctorParamsVals = ctorParamsNameVals.map {
+      case (_, paramVal: Data) => paramVal.cloneTypeFull
+      case (_, paramVal) => paramVal
+    }
 
     // Invoke ctor
     val classMirror = outerClassInstance match {
