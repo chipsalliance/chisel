@@ -255,7 +255,14 @@ abstract class BaseModule extends HasId {
     requireIsChiselType(iodef, "io type")
 
     // Clone the IO so we preserve immutability of data types
-    val iodefClone = iodef.cloneTypeFull
+    val iodefClone = try {
+      iodef.cloneTypeFull
+    } catch {
+      // For now this is going to be just a deprecation so we don't suddenly break everyone's code
+      case e: AutoClonetypeException =>
+        Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
+        iodef
+    }
     _bindIoInPlace(iodefClone)
     iodefClone
   }
