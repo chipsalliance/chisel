@@ -59,7 +59,7 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
   // n: the length of the Euler Tour
   // m: the size of blocks the Euler Tour is split into
   private val n = h.size
-  private val m = math.ceil(lg(n) / 2).toInt
+  private val m = math.max(1, math.ceil(lg(n) / 2).toInt)
 
   /** Split up the tour into blocks of size m, padding the last block to
     * be a multiple of m. Compute the minimum of each block, a, and

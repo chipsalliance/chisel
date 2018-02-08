@@ -395,16 +395,12 @@ class WiringTests extends FirrtlFlatSpec {
   }
 
   it should "wire with source and sink in the same module" in {
-    val sinks = Seq(ComponentName("s", ModuleName("A", CircuitName("Top"))))
-    val source = ComponentName("r", ModuleName("A", CircuitName("Top")))
+    val sinks = Seq(ComponentName("s", ModuleName("Top", CircuitName("Top"))))
+    val source = ComponentName("r", ModuleName("Top", CircuitName("Top")))
     val sas = WiringInfo(source, sinks, "pin")
     val input =
       """|circuit Top :
          |  module Top :
-         |    input clock: Clock
-         |    inst a of A
-         |    a.clock <= clock
-         |  module A :
          |    input clock: Clock
          |    wire s: UInt<5>
          |    reg r: UInt<5>, clock
@@ -412,10 +408,6 @@ class WiringTests extends FirrtlFlatSpec {
     val check =
       """|circuit Top :
          |  module Top :
-         |    input clock: Clock
-         |    inst a of A
-         |    a.clock <= clock
-         |  module A :
          |    input clock: Clock
          |    wire pin: UInt<5>
          |    wire s: UInt<5>
