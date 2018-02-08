@@ -46,7 +46,7 @@ private[chisel3] class ErrorLog {
     val depTag = s"[${Console.BLUE}deprecated${Console.RESET}]"
     val warnTag = s"[${Console.YELLOW}warn${Console.RESET}]"
     val errTag = s"[${Console.RED}error${Console.RESET}]"
-    deprecations foreach { case ((message, sourceLoc), count) =>
+    deprecations.foreach { case ((message, sourceLoc), count) =>
       println(s"$depTag $sourceLoc ($count calls): $message")
     }
     errors foreach println
