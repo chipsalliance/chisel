@@ -5,38 +5,64 @@ package chisel3.testers2
 import chisel3._
 import chisel3.util._
 
+// TODO get rid of this boilerplate
+import chisel3.internal.firrtl.{LitArg, ULit, SLit}
+
 package object TestAdapters {
   // TODO: clock should be optional
   class ReadyValidSource[T <: Data](x: ReadyValidIO[T], clk: Clock) {
-    x.valid.poke(false.B)
+    x.valid.weakPoke(false.B)
 
     // TODO: poking Bundles
     def enqueueNow(data: Bits): Unit = {
-      x.bits match {
+      x.ready.check(true.B)
+      x.bits match {  // TODO get rid of this boilerplate
         case x: Bits => x.poke(data)
       }
       x.valid.poke(true.B)
-      x.ready.check(true.B)
       fork {
         clk.step(1)
-        x.valid.poke(false.B)
+        x.valid.weakPoke(false.B)
+      }
+    }
+
+    def enqueueSeq(data: Seq[Bits]): AbstractTesterThread = {
+      fork {
+        for (elt <- data) {
+          while (x.ready.peek().litArg.get.asInstanceOf[ULit].n != 1) {
+            clk.step(1)
+          }
+          x.bits match {
+            case x: Bits => x.poke(elt)
+          }
+          x.valid.poke(true.B)
+          clk.step(1)
+          x.valid.poke(false.B)
+        }
       }
     }
   }
 
   class ReadyValidSink[T <: Data](x: ReadyValidIO[T], clk: Clock) {
-    x.ready.poke(false.B)
+    x.ready.weakPoke(false.B)
 
     // TODO: poking Bundles
     def checkDequeueNow(data: Bits): Unit = {
+      x.valid.check(true.B)
       x.bits match {
         case x: Bits => x.check(data)
       }
-      x.valid.check(true.B)
       x.ready.poke(true.B)
       fork {
         clk.step(1)
-        x.ready.poke(false.B)
+        x.ready.weakPoke(false.B)
+      }
+    }
+
+    def checkPeekNow(data: Bits): Unit = {
+      x.valid.check(true.B)
+      x.bits match {
+        case x: Bits => x.check(data)
       }
     }
 

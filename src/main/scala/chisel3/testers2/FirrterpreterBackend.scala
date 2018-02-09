@@ -4,7 +4,10 @@ package chisel3.testers2
 
 import chisel3._
 
+import scala.collection.mutable.HashMap
+
 import firrtl_interpreter._
+
 
 class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     extends BackendInstance[T] with ThreadedBackend {
@@ -30,10 +33,25 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   def resolveName(signal: Data) =
     portNames.getOrElse(signal, signal.toString())
 
-  def poke(signal: Data, value: BigInt): Unit = {
+  // List of active pokes and associated priority and poking TesterThread
+  protected val activePokes = HashMap[Data, (Int, TesterThread)]()
+
+  def poke(signal: Data, value: BigInt, priority: Int): Unit = {
     signal match {
       case signal: Bits =>
-        tester.poke(portNames(signal), value)
+        val doPoke = activePokes.get(signal) match {
+          case Some((activePriority, thread)) =>
+            // Ensure final peek isn't affected by thread execution order
+            if (activePriority == priority) {
+              require(thread == currentThread.get)
+            }
+            (activePriority >= priority)
+          case None => true
+        }
+        if (doPoke) {
+          tester.poke(portNames(signal), value)
+          activePokes +=((signal, (priority, currentThread.get)))
+        }
     }
   }
 
@@ -59,6 +77,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   protected def scheduler() {
     if (waitingThreads.isEmpty) {
       tester.step(1)
+      activePokes.clear()
       waitingThreads ++= threadOrder
     }
     val nextThread = waitingThreads.head

@@ -17,7 +17,11 @@ package object testers2 {
     }
 
     def poke(value: Bits): Unit = {
-      Context().backend.poke(x, getLit(value))
+      Context().backend.poke(x, getLit(value), 0)
+    }
+
+    def weakPoke(value: Bits): Unit = {
+      Context().backend.poke(x, getLit(value), 1)
     }
 
     def peek(): Bits = {
