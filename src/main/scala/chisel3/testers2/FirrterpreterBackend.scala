@@ -77,19 +77,37 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     }
   }
 
+  var scalatestThread: Option[Thread] = None
+  var interruptedException: Option[Exception] = None
+
+  protected def onException(e: Exception) {
+    interruptedException = Some(e)
+    scalatestThread.get.interrupt()
+  }
+
   def run(testFn: T => Unit): Unit = {
     // TODO: don't hardcode in assumption of singleclock singlereset circuit
     tester.poke("reset", 1)
     tester.step(1)
     tester.poke("reset", 0)
+
     val mainThread = fork( {
       testFn(dut)
     }, true)
+
     require(waitingThreads.length == 1)  // only thread should be main
     waitingThreads.trimStart(1)
     currentThread = Some(mainThread)
+    scalatestThread = Some(Thread.currentThread())
+
     mainThread.waiting.release()
-    mainThread.thread.join()
+    try {
+      mainThread.thread.join()
+    } catch {
+      case e: InterruptedException => throw interruptedException.get
+    }
+
+    scalatestThread = None
     currentThread = None
   }
 }

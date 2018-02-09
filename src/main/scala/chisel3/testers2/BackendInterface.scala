@@ -58,7 +58,12 @@ trait ThreadedBackend {
     val thread = new Thread(new Runnable {
       def run() {
         waiting.acquire()
-        runnable
+        val result = try {
+          runnable
+        } catch {
+          case e: Exception => onException(e)
+          waiting.acquire()
+        }
         if (!isMainThread) {
           threadFinished(TesterThread.this)
         } // otherwise main thread falls off the edge without running the next thread
@@ -74,6 +79,12 @@ trait ThreadedBackend {
     * (and may also step simulator time).
     */
   protected def scheduler()
+
+  /** Called when an exception happens inside a thread.
+    * Can be used to propagate the exception back up to the main thread.
+    * No guarantees are made about the state of the system on an exception.
+    */
+  protected def onException(e: Exception)
 
   protected def threadFinished(thread: TesterThread) {
     threadOrder -= thread
