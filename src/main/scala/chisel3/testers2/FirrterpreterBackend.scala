@@ -22,6 +22,11 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   // TODO: the naming facility should be part of infrastructure not backend
   protected val portNames = getDataNames("io", dut.io).toMap
 
+  protected val clockCounter = Map[Clock, Int]()
+  protected def getClockCycle(clk: Clock): Int = {
+    clockCounter.getOrElse(clk, 0)
+  }
+
   def resolveName(signal: Data) =
     portNames.getOrElse(signal, signal.toString())
 
@@ -57,6 +62,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
       waitingThreads ++= threadOrder
     }
     val nextThread = waitingThreads.head
+    currentThread = Some(nextThread)
     waitingThreads.trimStart(1)
     nextThread.waiting.release()
   }
@@ -65,8 +71,9 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     // TODO: clock-dependence
     // TODO: maybe a fast condition for when threading is not in use?
     for (_ <- 0 until cycles) {
+      val thisThread = currentThread.get
       scheduler()
-      threadMap(Thread.currentThread()).waiting.acquire()
+      thisThread.waiting.acquire()
     }
   }
 
@@ -80,8 +87,10 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     }, true)
     require(waitingThreads.length == 1)  // only thread should be main
     waitingThreads.trimStart(1)
+    currentThread = Some(mainThread)
     mainThread.waiting.release()
     mainThread.thread.join()
+    currentThread = None
   }
 }
 

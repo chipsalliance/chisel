@@ -66,10 +66,9 @@ trait ThreadedBackend {
       }
     })
   }
-
-  val threadMap = mutable.HashMap[Thread, TesterThread]()
-  val threadOrder = mutable.ArrayBuffer[TesterThread]()
+  var currentThread: Option[TesterThread] = None
   val waitingThreads = mutable.ArrayBuffer[TesterThread]()
+  val threadOrder = mutable.ArrayBuffer[TesterThread]()
 
   /** Invokes the thread scheduler, which unblocks the next thread to be run
     * (and may also step simulator time).
@@ -77,7 +76,6 @@ trait ThreadedBackend {
   protected def scheduler()
 
   protected def threadFinished(thread: TesterThread) {
-    threadMap -= thread.thread
     threadOrder -= thread
     scheduler()
     // TODO: join notification
@@ -85,7 +83,6 @@ trait ThreadedBackend {
 
   def fork(runnable: => Unit, isMainThread: Boolean): TesterThread = {
     val newThread = new TesterThread(runnable, isMainThread)
-    threadMap += ((newThread.thread, newThread))
     threadOrder += newThread
     waitingThreads += newThread
     newThread.thread.start()
