@@ -1355,16 +1355,18 @@ The shift left operation concatenates \vv{n} zero bits to the least significant 
 \begin{figure}[H]
 { \fontsize{10pt}{1.10em}\selectfont
 {\ttfamily
-\begin{tabular}{ |c|c|c|c|c|c| }   
-  \opheader 
-shr & (e) & (n) & (UInt) & UInt & w\ts{e}-n\\
-              &&& (SInt) & SInt & w\ts{e}-n\\
+\begin{tabular}{ |c|c|c|c|c|c| }
+  \opheader
+shr & (e) & (n) & (UInt) & UInt & max(1, w\ts{e}-n)\\
+              &&& (SInt) & SInt & max(1, w\ts{e}-n)\\
  \hline
 \end{tabular}
 }}
 \end{figure}
 
-The shift right operation truncates the least significant \vv{n} bits from \vv{e}. \vv{n} must be non-negative and strictly less than the bit width of \vv{e}.
+The shift right operation truncates the least significant \vv{n} bits from \vv{e}.
+If \vv{n} is greater than or equal to the bit-width of \vv{e}, the resulting value will be zero for unsigned types and the sign bit for signed types.
+\vv{n} must be non-negative.
 
 \subsection{Dynamic Shift Left Operation}
 
