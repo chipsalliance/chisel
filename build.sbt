@@ -51,10 +51,6 @@ lazy val commonSettings = ChiselProjectDependenciesPlugin.chiselProjectSettings 
 //  allDependencies := allDependencies.value ++ chiselLibraryDependencies(dependentProjects)
 
   pomExtra := pomExtra.value ++
-    <scm>
-      <url>https://github.com/freechipsproject/chisel3.git</url>
-      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>

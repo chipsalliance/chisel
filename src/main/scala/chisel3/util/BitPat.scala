@@ -5,6 +5,7 @@ package chisel3.util
 import scala.language.experimental.macros
 import chisel3._
 import chisel3.core.CompileOptions
+import chisel3.internal.chiselRuntimeDeprecated
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 object BitPat {
@@ -53,6 +54,7 @@ object BitPat {
     */
   def dontCare(width: Int): BitPat = BitPat("b" + ("?" * width))
 
+  @chiselRuntimeDeprecated
   @deprecated("Use BitPat.dontCare", "chisel3")
   def DC(width: Int): BitPat = dontCare(width)  // scalastyle:ignore method.name
 
@@ -91,9 +93,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
-  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
-
+  
   def do_=== (that: UInt)  // scalastyle:ignore method.name
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     value.asUInt === (that & mask.asUInt)
@@ -102,6 +102,10 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)
   }
+  
+  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  @chiselRuntimeDeprecated
+  @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   def do_!= (that: UInt)  // scalastyle:ignore method.name
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     this =/= that

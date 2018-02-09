@@ -30,8 +30,8 @@ class Tbl(w: Int, n: Int) extends Module {
 class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends BasicTester {
   val (cnt, wrap) = Counter(true.B, idxs.size)
   val dut = Module(new Tbl(w, n))
-  val vvalues = Vec(values.map(_.asUInt))
-  val vidxs = Vec(idxs.map(_.asUInt))
+  val vvalues = VecInit(values.map(_.asUInt))
+  val vidxs = VecInit(idxs.map(_.asUInt))
   val prev_idx = vidxs(cnt - 1.U)
   val prev_value = vvalues(cnt - 1.U)
   dut.io.wi := vidxs(cnt)

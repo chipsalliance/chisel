@@ -7,13 +7,14 @@ package chisel3.util
 
 import chisel3._
 import chisel3.core.CompileOptions
+import chisel3.experimental.DataMirror
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 /** An Bundle containing data and a signal determining if it is valid */
 class Valid[+T <: Data](gen: T) extends Bundle
 {
   val valid = Output(Bool())
-  val bits  = Output(gen.chiselCloneType)
+  val bits  = Output(gen)
   def fire(dummy: Int = 0): Bool = valid
   override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
 }
@@ -39,7 +40,7 @@ object Pipe
   @chiselName
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] = {
     if (latency == 0) {
-      val out = Wire(Valid(enqBits))
+      val out = Wire(Valid(chiselTypeOf(enqBits)))
       out.valid := enqValid
       out.bits := enqBits
       out

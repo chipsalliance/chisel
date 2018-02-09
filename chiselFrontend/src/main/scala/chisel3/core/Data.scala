@@ -70,8 +70,9 @@ object ActualDirection {
   case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
 }
 
-@deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
 object debug {  // scalastyle:ignore object.name
+  @chiselRuntimeDeprecated
+  @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
   def apply (arg: Data): Data = arg
 }
 
@@ -379,6 +380,7 @@ abstract class Data extends HasId {
     *
     * This performs the inverse operation of fromBits(Bits).
     */
+  @chiselRuntimeDeprecated
   @deprecated("Best alternative, .asUInt()", "chisel3")
   def toBits(implicit compileOptions: CompileOptions): UInt = do_asUInt(DeprecatedSourceInfo, compileOptions)
 
