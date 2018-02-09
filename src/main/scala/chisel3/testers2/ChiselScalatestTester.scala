@@ -30,8 +30,6 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   }
 
   def test[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
-    tester.run(dut => {
-      Context.run(tester, this, testFn)
-    })
+    Context.run(tester, this, testFn)
   }
 }

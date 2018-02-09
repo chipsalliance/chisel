@@ -41,4 +41,12 @@ package object testers2 {
       Context().backend.step(x, cycles)
     }
   }
+
+  def fork(runnable: => Unit): AbstractTesterThread = {
+    Context().backend.fork(runnable)
+  }
+
+  def join(thread: AbstractTesterThread) = {
+    Context().backend.join(thread)
+  }
 }

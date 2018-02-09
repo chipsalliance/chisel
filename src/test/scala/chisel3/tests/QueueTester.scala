@@ -18,10 +18,18 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
       })
       io.out <> Queue(io.in)
     })) { c =>
-      c.io.in.enqueueNow(42.U, c.clock)
-      c.io.out.expectDequeueNow(42.U, c.clock)
-      c.io.in.enqueueNow(43.U, c.clock)
-      c.io.out.expectDequeueNow(43.U, c.clock)
+      val source = new ReadyValidSource(c.io.in, c.clock)
+      val sink = new ReadyValidSink(c.io.out, c.clock)
+
+      source.enqueueNow(42.U)
+      sink.checkInvalid()
+      c.clock.step(1)
+      sink.checkDequeueNow(42.U)
+      c.clock.step(1)  // TODO: eliminate this once valid can be pulldown (low priority poke)
+      sink.checkInvalid()
+      source.enqueueNow(43.U)
+      c.clock.step(1)
+      sink.checkDequeueNow(43.U)
     }
   }
 }

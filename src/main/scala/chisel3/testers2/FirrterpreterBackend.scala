@@ -6,7 +6,8 @@ import chisel3._
 
 import firrtl_interpreter._
 
-class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester) extends BackendInstance[T] {
+class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
+    extends BackendInstance[T] with ThreadedBackend {
   def getModule() = dut
 
   /** Returns a Seq of (data reference, fully qualified element names) for the input.
@@ -50,9 +51,23 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester) exte
     throw new Exception("Stale check not implemented yet")
   }
 
+  protected def scheduler() {
+    if (waitingThreads.isEmpty) {
+      tester.step(1)
+      waitingThreads ++= threadOrder
+    }
+    val nextThread = waitingThreads.head
+    waitingThreads.trimStart(1)
+    nextThread.waiting.release()
+  }
+
   def step(signal: Clock, cycles: Int): Unit = {
     // TODO: clock-dependence
-    tester.step(cycles)
+    // TODO: maybe a fast condition for when threading is not in use?
+    for (_ <- 0 until cycles) {
+      scheduler()
+      threadMap(Thread.currentThread()).waiting.acquire()
+    }
   }
 
   def run(testFn: T => Unit): Unit = {
@@ -60,7 +75,13 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester) exte
     tester.poke("reset", 1)
     tester.step(1)
     tester.poke("reset", 0)
-    testFn(dut)
+    val mainThread = fork( {
+      testFn(dut)
+    }, true)
+    require(waitingThreads.length == 1)  // only thread should be main
+    waitingThreads.trimStart(1)
+    mainThread.waiting.release()
+    mainThread.thread.join()
   }
 }
 
