@@ -33,6 +33,18 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   def resolveName(signal: Data) =
     portNames.getOrElse(signal, signal.toString())
 
+  /** Desired threading checking behavior:
+    * -> indicates following, from different thread
+    * poke -> poke (higher priority): OK (result is order-independent)
+    * poke -> poke (same priority): not OK (result is order-dependent)
+    * poke -> peek (and reversed - equivalent to be order-independent): not OK (peek may be stale)
+    * poke -> peek of something in combinational shadow (and reversed): not OK
+    *
+    * should also maintain optional source trace information to help debug order-dependence failures
+    *
+    * fringe cases: poke -> poke (higher priority), peek: probably should be OK, but unlikely to be necessary?
+    */
+
   // List of active pokes and associated priority and poking TesterThread
   protected val activePokes = HashMap[Data, (Int, TesterThread)]()
 
