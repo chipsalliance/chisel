@@ -23,5 +23,5 @@ before_install:
   - bash .install-dependencies.sh
 
 script:
-  - sbt "++testOnly -- -l tags.RequiresBackend"
+  - sbt "+testOnly -- -l tags.RequiresBackend"
   - sbt scalastyle  test:scalastyle
