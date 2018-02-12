@@ -81,8 +81,15 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     component
   }
 
-  // There is no initialization to be done by default.
-  private[core] def initializeInParent() {}
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+
+    if (!parentCompileOptions.explicitInvalidate) {
+      for (port <- getModulePorts) {
+        pushCommand(DefInvalid(sourceInfo, port.ref))
+      }
+    }
+  }
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -100,14 +107,10 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   // Setup ClockAndReset
   Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
 
-  private[core] override def initializeInParent() {
+  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    if (!compileOptions.explicitInvalidate) {
-      for (port <- getModulePorts) {
-        pushCommand(DefInvalid(sourceInfo, port.ref))
-      }
-    }
+    super.initializeInParent(parentCompileOptions)
     clock := Builder.forcedClock
     reset := Builder.forcedReset
   }
@@ -128,6 +131,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
 
   // _clock and _reset can be clock and reset in these 2ary constructors
   // once chisel2 compatibility issues are resolved
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override_clock and override_reset deprecated, use withClockAndReset", "chisel3")
   def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
       (implicit moduleCompileOptions: CompileOptions) = {
@@ -136,10 +140,15 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     this.override_reset = override_reset
   }
 
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
   def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
+  
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
+  
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
   def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
@@ -148,7 +157,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _ioPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(io)
 
   protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
     val names = super.nameIds(rootClass)
@@ -162,7 +171,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   }
 
   private[core] override def generateComponent(): Component = {
-    _autoWrapPorts()  // pre-IO(...) compatibility hack
+    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(io != null, "Module must have io")
@@ -173,12 +182,12 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     super.generateComponent()
   }
 
-  private[core] override def initializeInParent() {
+  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     // Don't generate source info referencing parents inside a module, since this interferes with
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo
 
-    if (!compileOptions.explicitInvalidate) {
+    if (!parentCompileOptions.explicitInvalidate) {
       pushCommand(DefInvalid(sourceInfo, io.ref))
     }
 

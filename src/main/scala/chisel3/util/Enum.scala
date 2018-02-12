@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.chiselRuntimeDeprecated
 
 /** Defines a set of unique UInt constants
   *
@@ -39,6 +40,7 @@ trait Enum {
 }
 
 object Enum extends Enum {
+  @chiselRuntimeDeprecated
   @deprecated("use Enum(n)", "chisel3, will be removed soon")
   def apply[T <: Bits](nodeType: T, n: Int): List[T] = {
     require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")

@@ -80,7 +80,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
     component
   }
 
-  private[core] def initializeInParent() {
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     for (x <- getModulePorts) {
@@ -128,10 +128,10 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _ioPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(io)
 
   private[core] override def generateComponent(): Component = {
-    _autoWrapPorts()  // pre-IO(...) compatibility hack
+    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(io != null, "BlackBox must have io")
@@ -165,7 +165,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     component
   }
 
-  private[core] def initializeInParent() {
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     for ((_, port) <- io.elements) {
       pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }
