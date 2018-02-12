@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.experimental.{RawModule, withClockAndReset}
 import chisel3.testers.BasicTester
@@ -64,11 +65,11 @@ class RawModuleSpec extends ChiselFlatSpec {
     elaborate { new RawModuleWithImplicitModule }
   }
 
-  "RawModule" should "work" in {
+  "RawModule" should "work" taggedAs(TagRequiresBackend) in {
     assertTesterPasses({ new RawModuleTester })
   }
 
-  "ImplicitModule in a withClock block in a RawModule" should "work" in {
+  "ImplicitModule in a withClock block in a RawModule" should "work" taggedAs(TagRequiresBackend) in {
     assertTesterPasses({ new ImplicitModuleInRawModuleTester })
   }
 

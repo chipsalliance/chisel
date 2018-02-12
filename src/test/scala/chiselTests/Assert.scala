@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import org.scalatest._
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -62,19 +62,19 @@ class BadUnescapedPercentAssertTester extends BasicTester {
 }
 
 class AssertSpec extends ChiselFlatSpec {
-  "A failing assertion" should "fail the testbench" in {
+  "A failing assertion" should "fail the testbench" taggedAs(TagRequiresBackend) in {
     assert(!runTester{ new FailingAssertTester })
   }
-  "A succeeding assertion" should "not fail the testbench" in {
+  "A succeeding assertion" should "not fail the testbench" taggedAs(TagRequiresBackend) in {
     assertTesterPasses{ new SucceedingAssertTester }
   }
-  "An assertion" should "not assert until we come out of reset" in {
+  "An assertion" should "not assert until we come out of reset" taggedAs(TagRequiresBackend) in {
     assertTesterPasses{ new PipelinedResetTester }
   }
-  "Assertions" should "allow the modulo operator % in the message" in {
+  "Assertions" should "allow the modulo operator % in the message" taggedAs(TagRequiresBackend) in {
     assertTesterPasses{ new ModuloAssertTester }
   }
-  they should "allow printf-style format strings with arguments" in {
+  they should "allow printf-style format strings with arguments" taggedAs(TagRequiresBackend) in {
     assertTesterPasses{ new FormattedAssertTester }
   }
   they should "not allow unescaped % in the message" in {

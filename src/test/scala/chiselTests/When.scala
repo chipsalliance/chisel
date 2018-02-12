@@ -2,8 +2,7 @@
 
 package chiselTests
 
-import org.scalatest._
-
+import tags.RequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -93,6 +92,7 @@ class SubmoduleWhenTester extends BasicTester {
   }
 }
 
+@RequiresBackend
 class WhenSpec extends ChiselFlatSpec {
   "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
     assertTesterPasses{ new WhenTester }

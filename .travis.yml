@@ -1,3 +1,4 @@
+# We currently skip the backend tests so we don't need to install verilator.
 language: scala
 scala:
   - 2.11.12
@@ -7,18 +8,18 @@ sudo: false
 cache:
   directories:
     $HOME/.ivy2
-    $INSTALL_DIR
+#    $INSTALL_DIR
 
 git:
   depth: 10
 
 sbt_args: -Dsbt.log.noformat=true
 
-env:
-  global:
-    INSTALL_DIR=$TRAVIS_BUILD_DIR/install
-    VERILATOR_ROOT=$INSTALL_DIR
-    PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
+#env:
+#  global:
+#    INSTALL_DIR=$TRAVIS_BUILD_DIR/install
+#    VERILATOR_ROOT=$INSTALL_DIR
+#    PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
 
 before_install:
   - bash .install-dependencies.sh
@@ -35,7 +36,7 @@ jobs:
         - sbt clean compile
     - stage: test
       script:
-        - sbt test
+        - sbt test -l tags.RequiresBackend
     - stage: style
       script:
         - sbt scalastyle  test:scalastyle

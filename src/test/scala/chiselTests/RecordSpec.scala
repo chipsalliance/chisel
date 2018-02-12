@@ -2,10 +2,12 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import chisel3.experimental.{DataMirror, requireIsChiselType}
+
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended
@@ -112,19 +114,19 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
     elaborate { new MyModule(new MyBundle, fooBarType) }
   }
 
-  they should "follow UInt serialization/deserialization API" in {
+  they should "follow UInt serialization/deserialization API" taggedAs(TagRequiresBackend) in {
     assertTesterPasses { new RecordSerializationTest }
   }
 
-  they should "work as the type of a Queue" in {
+  they should "work as the type of a Queue" taggedAs(TagRequiresBackend) in {
     assertTesterPasses { new RecordQueueTester }
   }
 
-  they should "work as the type of a Module's io" in {
+  they should "work as the type of a Module's io" taggedAs(TagRequiresBackend) in {
     assertTesterPasses { new RecordIOTester }
   }
 
-  they should "support digits as names of fields" in {
+  they should "support digits as names of fields" taggedAs(TagRequiresBackend) in {
     assertTesterPasses { new RecordDigitTester }
   }
 

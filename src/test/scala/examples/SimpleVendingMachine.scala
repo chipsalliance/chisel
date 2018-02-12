@@ -2,6 +2,7 @@
 
 package examples
 
+import tags.RequiresBackend
 import chiselTests.ChiselFlatSpec
 import chisel3.testers.BasicTester
 import chisel3._
@@ -84,6 +85,7 @@ class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends BasicTest
   assert(dut.io.dispense === expected(cycle))
 }
 
+@RequiresBackend
 class SimpleVendingMachineSpec extends ChiselFlatSpec {
   "An FSM implementation of a vending machine" should "work" in {
     assertTesterPasses { new SimpleVendingMachineTester(new FSMVendingMachine) }

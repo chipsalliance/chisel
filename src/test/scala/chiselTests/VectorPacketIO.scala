@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -63,7 +64,7 @@ class VectorPacketIOUnitTester extends BasicTester {
 
 class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec {
   "a circuit using an io containing a vector of EnqIO wrapped packets" should
-    "compile and run" in {
+    "compile and run" taggedAs(TagRequiresBackend) in {
     assertTesterPasses {
       new VectorPacketIOUnitTester
     }

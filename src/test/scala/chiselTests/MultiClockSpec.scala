@@ -2,8 +2,9 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
-import chisel3.experimental.{withClockAndReset, withClock, withReset}
+import chisel3.experimental.{withClock, withClockAndReset, withReset}
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
 
@@ -115,11 +116,11 @@ class MultiClockMemTest extends BasicTester {
 
 class MultiClockSpec extends ChiselFlatSpec {
 
-  "withClock" should "scope the clock of registers" in {
+  "withClock" should "scope the clock of registers" taggedAs(TagRequiresBackend) in {
     assertTesterPasses(new ClockDividerTest)
   }
 
-  it should "scope ports of memories" in {
+  it should "scope ports of memories" taggedAs(TagRequiresBackend) in {
     assertTesterPasses(new MultiClockMemTest)
   }
 
@@ -129,11 +130,11 @@ class MultiClockSpec extends ChiselFlatSpec {
     })
   }
 
-  "withReset" should "scope the reset of registers" in {
+  "withReset" should "scope the reset of registers" taggedAs(TagRequiresBackend) in {
     assertTesterPasses(new WithResetTest)
   }
 
-  it should "scope the clock and reset of Modules" in {
+  it should "scope the clock and reset of Modules" taggedAs(TagRequiresBackend) in {
     assertTesterPasses(new MultiClockSubModuleTest)
   }
 
@@ -149,7 +150,7 @@ class MultiClockSpec extends ChiselFlatSpec {
     })
   }
 
-  it should "scope the clocks and resets of asserts" in {
+  it should "scope the clocks and resets of asserts" taggedAs(TagRequiresBackend) in {
     // Check that assert can fire
     assertTesterFails(new BasicTester {
       withClockAndReset(clock, reset) {

@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.testers.BasicTester
@@ -37,7 +38,7 @@ class CrossConnectTester(inType: Data, outType: Data) extends BasicTester {
 }
 
 class ConnectSpec extends ChiselPropSpec {
-  property("SInt := SInt should succeed") {
+  property("SInt := SInt should succeed", TagRequiresBackend) {
     assertTesterPasses{ new CrossConnectTester(SInt(16.W), SInt(16.W)) }
   }
   property("SInt := UInt should fail") {
@@ -46,7 +47,7 @@ class ConnectSpec extends ChiselPropSpec {
   property("SInt := FixedPoint should fail") {
     intercept[ChiselException]{ new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
   }
-  property("UInt := UInt should succeed") {
+  property("UInt := UInt should succeed", TagRequiresBackend) {
     assertTesterPasses{ new CrossConnectTester(UInt(16.W), UInt(16.W)) }
   }
   property("UInt := SInt should fail") {
@@ -56,14 +57,14 @@ class ConnectSpec extends ChiselPropSpec {
     intercept[ChiselException]{ new CrossConnectTester(FixedPoint(16.W, 8.BP), UInt(16.W)) }
   }
 
-  property("Clock := Clock should succeed") {
+  property("Clock := Clock should succeed", TagRequiresBackend) {
     assertTesterPasses{ new CrossConnectTester(Clock(), Clock()) }
   }
   property("Clock := UInt should fail") {
     intercept[ChiselException]{ new CrossConnectTester(Clock(), UInt(16.W)) }
   }
 
-  property("FixedPoint := FixedPoint should succeed") {
+  property("FixedPoint := FixedPoint should succeed",  TagRequiresBackend) {
     assertTesterPasses{ new CrossConnectTester(FixedPoint(16.W, 8.BP), FixedPoint(16.W, 8.BP)) }
   }
   property("FixedPoint := SInt should fail") {

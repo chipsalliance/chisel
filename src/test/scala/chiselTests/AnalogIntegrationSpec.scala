@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.RequiresBackend
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
@@ -123,6 +124,7 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
   when (done) { stop() }
 }
 
+@RequiresBackend
 class AnalogIntegrationSpec extends ChiselFlatSpec {
   behavior of "Verilator"
   it should "support simple bidirectional wires" in {

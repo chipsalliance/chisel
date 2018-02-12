@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.RequiresBackend
 import chisel3._
 import chisel3.experimental.MultiIOModule
 import chisel3.testers.BasicTester
@@ -48,6 +49,7 @@ class ComposedMultiIOTester extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class MultiIOSpec extends ChiselFlatSpec {
   "Multiple IOs in MultiIOModule" should "work" in {
     assertTesterPasses({ new MultiIOTester })

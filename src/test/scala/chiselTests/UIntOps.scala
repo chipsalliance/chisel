@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import org.scalatest._
 import chisel3.testers.BasicTester
@@ -113,7 +114,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
     elaborate { new UIntOps }
   }
 
-  property("UIntOpsTester should return the correct result") {
+  property("UIntOpsTester should return the correct result", TagRequiresBackend) {
     assertTesterPasses { new UIntOpsTester(123, 7) }
   }
 

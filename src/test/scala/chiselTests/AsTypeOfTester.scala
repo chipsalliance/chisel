@@ -2,12 +2,10 @@
 
 package chiselTests
 
-import org.scalatest._
-
+import tags.RequiresBackend
 import chisel3._
 import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.testers.BasicTester
-import chisel3.util._
 
 class AsTypeOfBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
@@ -55,6 +53,7 @@ class ResetAsTypeOfBoolTester extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class AsTypeOfSpec extends ChiselFlatSpec {
   behavior of "asTypeOf"
 

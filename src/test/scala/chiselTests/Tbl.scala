@@ -2,9 +2,7 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
-
+import tags.RequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -50,6 +48,7 @@ class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends Basi
   }
 }
 
+@RequiresBackend
 class TblSpec extends ChiselPropSpec {
   property("All table reads should return the previous write") {
     forAll(safeUIntPairN(8)) { case(w: Int, pairs: List[(Int, Int)]) =>

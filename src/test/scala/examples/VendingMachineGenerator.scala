@@ -2,6 +2,7 @@
 
 package examples
 
+import tags.RequiresBackend
 import chiselTests.ChiselFlatSpec
 import chisel3.testers.BasicTester
 import chisel3._
@@ -97,6 +98,7 @@ class ParameterizedVendingMachineTester(
   assert(dut.io.dispense === expectedVec(idx))
 }
 
+@RequiresBackend
 class VendingMachineGeneratorSpec extends ChiselFlatSpec {
   behavior of "The vending machine generator"
 

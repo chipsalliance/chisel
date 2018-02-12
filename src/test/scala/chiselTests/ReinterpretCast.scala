@@ -2,12 +2,10 @@
 
 package chiselTests
 
-import org.scalatest._
-
+import tags.RequiresBackend
 import chisel3._
 import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.testers.BasicTester
-import chisel3.util._
 
 class AsBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
@@ -50,6 +48,7 @@ class AsBitsTruncationTester extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class AsBitsSpec extends ChiselFlatSpec {
   behavior of "fromBits"
 

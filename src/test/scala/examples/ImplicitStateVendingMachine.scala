@@ -2,6 +2,7 @@
 
 package examples
 
+import tags.RequiresBackend
 import chiselTests.ChiselFlatSpec
 import chisel3._
 
@@ -24,6 +25,7 @@ class ImplicitStateVendingMachine extends SimpleVendingMachine {
   io.dispense := doDispense
 }
 
+@RequiresBackend
 class ImplicitStateVendingMachineSpec extends ChiselFlatSpec {
   "An vending machine implemented with implicit state" should "work" in {
     assertTesterPasses { new SimpleVendingMachineTester(new ImplicitStateVendingMachine) }

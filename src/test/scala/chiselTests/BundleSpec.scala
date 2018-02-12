@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -55,7 +56,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
     elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
   }
 
-  "Bundles" should "follow UInt serialization/deserialization API" in {
+  "Bundles" should "follow UInt serialization/deserialization API" taggedAs(TagRequiresBackend) in {
     assertTesterPasses { new BundleSerializationTest }
   }
 

@@ -2,8 +2,7 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
+import tags.RequiresBackend
 import org.scalacheck._
 
 import chisel3._
@@ -32,6 +31,7 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   }
 }
 
+@RequiresBackend
 class DecoderSpec extends ChiselPropSpec {
 
   // Use a single Int to make both a specific instruction and a BitPat that will match it

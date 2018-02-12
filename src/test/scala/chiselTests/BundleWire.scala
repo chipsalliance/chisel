@@ -1,11 +1,10 @@
 // See LICENSE for license details.
 
 package chiselTests
+
+import tags.RequiresBackend
 import chisel3._
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3.testers.BasicTester
-//import chisel3.core.ExplicitCompileOptions.Strict
 
 class Coord extends Bundle {
   val x = UInt(32.W)
@@ -56,6 +55,7 @@ class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class BundleWireSpec extends ChiselPropSpec {
 
   property("All vec elems should match the inputs") {
@@ -65,6 +65,7 @@ class BundleWireSpec extends ChiselPropSpec {
   }
 }
 
+@RequiresBackend
 class BundleToUIntSpec extends ChiselPropSpec {
   property("Bundles with same data but different, underlying elements should compare as UInt") {
     assertTesterPasses( new BundleToUnitTester )

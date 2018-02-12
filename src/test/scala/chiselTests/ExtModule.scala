@@ -2,13 +2,10 @@
 
 package chiselTests
 
-import java.io.File
-
-import org.scalatest._
+import tags.RequiresBackend
 import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
-import chisel3.util._
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
@@ -59,6 +56,7 @@ class MultiExtModuleTester extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
     assertTesterPasses({ new ExtModuleTester },

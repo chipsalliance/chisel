@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -27,7 +28,7 @@ class IntegerMathTester extends BasicTester {
 }
 
 class IntegerMathSpec extends ChiselPropSpec {
-  property("All integer ops should return the correct result") {
+  property("All integer ops should return the correct result", TagRequiresBackend) {
     assertTesterPasses{ new IntegerMathTester }
   }
 }

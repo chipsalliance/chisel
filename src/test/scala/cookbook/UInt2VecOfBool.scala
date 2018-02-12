@@ -2,6 +2,7 @@
 
 package cookbook
 
+import tags.RequiresBackend
 import chisel3._
 
 /* ### How do I create a Vec of Bools from a UInt?
@@ -22,6 +23,7 @@ class UInt2VecOfBool extends CookbookTester(1) {
   assert(vec(3) === true.B)
 }
 
+@RequiresBackend
 class UInt2VecOfBoolSpec extends CookbookSpec {
   "UInt2VecOfBool" should "work" in {
     assertTesterPasses { new UInt2VecOfBool }
