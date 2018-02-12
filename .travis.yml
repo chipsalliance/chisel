@@ -11,6 +11,11 @@ cache:
 git:
   depth: 10
 
+# Don't bother building and testing the PR branch itself. Just build the merge with master.
+branches:
+  only:
+    - "master"
+
 sbt_args: -Dsbt.log.noformat=true
 
 env:
