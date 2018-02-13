@@ -78,11 +78,11 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     throw new Exception("Stale peek not implemented yet")
   }
 
-  def check(signal: Data, value: BigInt): Unit = {
+  def expect(signal: Data, value: BigInt): Unit = {
     Context().env.testerExpect(value, peek(signal), resolveName(signal), None)
   }
 
-  def staleCheck(signal: Data, value: BigInt): Unit = {
+  def staleExpect(signal: Data, value: BigInt): Unit = {
     throw new Exception("Stale check not implemented yet")
   }
 

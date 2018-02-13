@@ -15,7 +15,7 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
       })
       io.out := 42.U
     }) { c =>
-      c.io.out.check(42.U)
+      c.io.out.expect(42.U)
     }
   }
 
@@ -28,13 +28,13 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
       counter := counter + 1.U
       io.out := counter
     }) { c =>
-      c.io.out.check(0.U)
+      c.io.out.expect(0.U)
       c.clock.step()
-      c.io.out.check(1.U)
+      c.io.out.expect(1.U)
       c.clock.step()
-      c.io.out.check(2.U)
+      c.io.out.expect(2.U)
       c.clock.step()
-      c.io.out.check(3.U)
+      c.io.out.expect(3.U)
     }
   }
 
@@ -47,9 +47,9 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
       io.out := io.in
     }) { c =>
       c.io.in.poke(0.U)
-      c.io.out.check(0.U)
+      c.io.out.expect(0.U)
       c.io.in.poke(42.U)
-      c.io.out.check(42.U)
+      c.io.out.expect(42.U)
     }
   }
 
@@ -63,10 +63,10 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
     }) { c =>
       c.io.in.poke(0.U)
       c.clock.step()
-      c.io.out.check(0.U)
+      c.io.out.expect(0.U)
       c.io.in.poke(42.U)
       c.clock.step()
-      c.io.out.check(42.U)
+      c.io.out.expect(42.U)
     }
   }
 }

@@ -25,8 +25,8 @@ trait BackendInterface {
     */
   def stalePeek(signal: Data): BigInt
 
-  def check(signal: Data, value: BigInt): Unit
-  def staleCheck(signal: Data, value: BigInt): Unit
+  def expect(signal: Data, value: BigInt): Unit
+  def staleExpect(signal: Data, value: BigInt): Unit
 
   /** Advances the target clock by one cycle.
     */
@@ -110,11 +110,19 @@ trait ThreadedBackend {
   */
 trait TestEnvInterface {
   // TODO: should these return boolean? or just assert out?
+  /** Runs a test, given a specific instantiated backend.
+    */
   def test[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): Unit
+  /** Runs a test, instantiating the default backend.
+    */
   def test[T <: Module](dutGen: => T)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen))(testFn)
   }
 
+  /** Fails the test now.
+    */
   def testerFail(msg: String): Unit
+  /** Expect a specific value on a wire, calling testerFail if the expectation isn't met
+    */
   def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit
 }

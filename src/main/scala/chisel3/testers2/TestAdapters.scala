@@ -15,7 +15,7 @@ package object TestAdapters {
 
     // TODO: poking Bundles
     def enqueueNow(data: Bits): Unit = {
-      x.ready.check(true.B)
+      x.ready.expect(true.B)
       x.bits match {  // TODO get rid of this boilerplate
         case x: Bits => x.poke(data)
       }
@@ -47,10 +47,10 @@ package object TestAdapters {
     x.ready.weakPoke(false.B)
 
     // TODO: poking Bundles
-    def checkDequeueNow(data: Bits): Unit = {
-      x.valid.check(true.B)
+    def expectDequeueNow(data: Bits): Unit = {
+      x.valid.expect(true.B)
       x.bits match {
-        case x: Bits => x.check(data)
+        case x: Bits => x.expect(data)
       }
       x.ready.poke(true.B)
       fork {
@@ -59,15 +59,15 @@ package object TestAdapters {
       }
     }
 
-    def checkPeekNow(data: Bits): Unit = {
-      x.valid.check(true.B)
+    def expectPeekNow(data: Bits): Unit = {
+      x.valid.expect(true.B)
       x.bits match {
-        case x: Bits => x.check(data)
+        case x: Bits => x.expect(data)
       }
     }
 
-    def checkInvalid(): Unit = {
-      x.valid.check(false.B)
+    def expectInvalid(): Unit = {
+      x.valid.expect(false.B)
     }
   }
 }

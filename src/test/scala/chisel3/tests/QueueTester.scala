@@ -22,12 +22,12 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
       val sink = new ReadyValidSink(c.io.out, c.clock)
 
       source.enqueueNow(42.U)
-      sink.checkInvalid()
+      sink.expectInvalid()
       c.clock.step(1)
-      sink.checkDequeueNow(42.U)
+      sink.expectDequeueNow(42.U)
       source.enqueueNow(43.U)
       c.clock.step(1)
-      sink.checkDequeueNow(43.U)
+      sink.expectDequeueNow(43.U)
     }
   }
 
@@ -44,17 +44,17 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
 
       source.enqueueSeq(Seq(42.U, 43.U, 44.U))
 
-      sink.checkInvalid()
+      sink.expectInvalid()
       c.clock.step(1)
-      sink.checkDequeueNow(42.U)
+      sink.expectDequeueNow(42.U)
       c.clock.step(1)
-      sink.checkPeekNow(43.U)  // check that queue stalls
+      sink.expectPeekNow(43.U)  // check that queue stalls
       c.clock.step(1)
-      sink.checkDequeueNow(43.U)
+      sink.expectDequeueNow(43.U)
       c.clock.step(1)
-      sink.checkDequeueNow(44.U)
+      sink.expectDequeueNow(44.U)
       c.clock.step(1)
-      sink.checkInvalid()
+      sink.expectInvalid()
     }
   }
 }

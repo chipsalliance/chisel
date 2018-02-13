@@ -32,11 +32,11 @@ package object testers2 {
       Context().backend.stalePeek(x).asUInt
     }
 
-    def check(value: Bits): Unit = {
-      Context().backend.check(x, getLit(value))
+    def expect(value: Bits): Unit = {
+      Context().backend.expect(x, getLit(value))
     }
-    def staleCheck(value: Bits): Unit = {
-      Context().backend.staleCheck(x, getLit(value))
+    def staleExpect(value: Bits): Unit = {
+      Context().backend.staleExpect(x, getLit(value))
     }
   }
 
