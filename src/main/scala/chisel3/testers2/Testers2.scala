@@ -18,5 +18,10 @@ object Context {
     }
   }
 
+  // TODO: better integration points for default tester selection
+  def createDefaultTester[T <: Module](dutGen: => T): BackendInstance[T] = {
+    Firrterpreter.start(dutGen)
+  }
+
   def apply(): Instance = context.value.get
 }

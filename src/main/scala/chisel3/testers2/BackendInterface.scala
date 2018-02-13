@@ -109,6 +109,12 @@ trait ThreadedBackend {
 /** Interface into the testing environment, like ScalaTest
   */
 trait TestEnvInterface {
+  // TODO: should these return boolean? or just assert out?
+  def test[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): Unit
+  def test[T <: Module](dutGen: => T)(testFn: T => Unit): Unit = {
+    test(Context.createDefaultTester(dutGen))(testFn)
+  }
+
   def testerFail(msg: String): Unit
   def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit
 }

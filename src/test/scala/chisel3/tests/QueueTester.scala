@@ -11,13 +11,13 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with Queue"
 
   it should "pass through elements, using enqueueNow" in {
-    test(Firrterpreter.start(new Module {
+    test(new Module {
       val io = IO(new Bundle {
         val in = Flipped(Decoupled(UInt(8.W)))
         val out = Decoupled(UInt(8.W))
       })
       io.out <> Queue(io.in)
-    })) { c =>
+    }) { c =>
       val source = new ReadyValidSource(c.io.in, c.clock)
       val sink = new ReadyValidSink(c.io.out, c.clock)
 
@@ -32,13 +32,13 @@ class QueueTest extends FlatSpec with ChiselScalatestTester {
   }
 
   it should "pass through elements, using enqueueSeq" in {
-    test(Firrterpreter.start(new Module {
+    test(new Module {
       val io = IO(new Bundle {
         val in = Flipped(Decoupled(UInt(8.W)))
         val out = Decoupled(UInt(8.W))
       })
       io.out <> Queue(io.in)
-    })) { c =>
+    }) { c =>
       val source = new ReadyValidSource(c.io.in, c.clock)
       val sink = new ReadyValidSink(c.io.out, c.clock)
 
