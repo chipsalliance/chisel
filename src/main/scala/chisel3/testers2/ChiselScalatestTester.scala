@@ -15,11 +15,11 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   // 3: (implicit testable*).check
   // 4: user code calling check
 
-  def testerFail(msg: String): Unit = {
+  override def testerFail(msg: String): Unit = {
     throw new TestFailedException(s"$msg", 4)
   }
 
-  def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
+  override def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
     if (expected != actual) {
       val appendMsg = msg match {
         case Some(msg) => s": $msg"
@@ -29,7 +29,7 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
     }
   }
 
-  def test[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
+  override def test[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
     Context.run(tester, this, testFn)
   }
 }

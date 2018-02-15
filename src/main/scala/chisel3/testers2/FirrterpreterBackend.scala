@@ -48,7 +48,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   // List of active pokes and associated priority and poking TesterThread
   protected val activePokes = HashMap[Data, (Int, TesterThread)]()
 
-  def poke(signal: Data, value: BigInt, priority: Int): Unit = {
+  override def poke(signal: Data, value: BigInt, priority: Int): Unit = {
     signal match {
       case signal: Bits =>
         val doPoke = activePokes.get(signal) match {
@@ -67,22 +67,22 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     }
   }
 
-  def peek(signal: Data): BigInt = {
+  override def peek(signal: Data): BigInt = {
     signal match {
       case signal: Bits =>
         tester.peek(portNames(signal))
     }
   }
 
-  def stalePeek(signal: Data): BigInt = {
+  override def stalePeek(signal: Data): BigInt = {
     throw new Exception("Stale peek not implemented yet")
   }
 
-  def expect(signal: Data, value: BigInt): Unit = {
+  override def expect(signal: Data, value: BigInt): Unit = {
     Context().env.testerExpect(value, peek(signal), resolveName(signal), None)
   }
 
-  def staleExpect(signal: Data, value: BigInt): Unit = {
+  override def staleExpect(signal: Data, value: BigInt): Unit = {
     throw new Exception("Stale check not implemented yet")
   }
 
@@ -98,7 +98,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     nextThread.waiting.release()
   }
 
-  def step(signal: Clock, cycles: Int): Unit = {
+  override def step(signal: Clock, cycles: Int): Unit = {
     // TODO: clock-dependence
     // TODO: maybe a fast condition for when threading is not in use?
     for (_ <- 0 until cycles) {
@@ -116,7 +116,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     scalatestThread.get.interrupt()
   }
 
-  def run(testFn: T => Unit): Unit = {
+  override def run(testFn: T => Unit): Unit = {
     // TODO: don't hardcode in assumption of singleclock singlereset circuit
     tester.poke("reset", 1)
     tester.step(1)

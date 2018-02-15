@@ -9,33 +9,43 @@ class LiteralTypeException(message: String) extends Exception(message)
   */
 package object testers2 {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
-  implicit class testableBits(val x: Bits) {
+  implicit class testableData[T <: Data](x: T) {
+    def poke(value: T): Unit = ???
+    def weakPoke(value: T): Unit = ???
+
+    def peek(): T = ???
+    def stalePeek(): T = ???
+
+    def expect(value: T): Unit = ???
+    def staleExpect(value: T): Unit = ???
+  }
+
+  implicit class testableBits(x: Bits) extends testableData[Bits](x) {
     def getLit(data: Bits) = data.litArg match {
       case Some(value: ULit) => value.n
       case None => throw new NotLiteralException(s"$data not a literal, cannot be used in poke")
       case Some(_) => throw new LiteralTypeException(s"$data of wrong type, cannot be used to poke Bits")
     }
 
-    def poke(value: Bits): Unit = {
+    override def poke(value: Bits): Unit = {
       Context().backend.poke(x, getLit(value), 0)
     }
-
-    def weakPoke(value: Bits): Unit = {
+    override def weakPoke(value: Bits): Unit = {
       Context().backend.poke(x, getLit(value), 1)
     }
 
-    def peek(): Bits = {
+    override def peek(): Bits = {
       // TODO: fixed width based on circuit sizing?
       Context().backend.peek(x).asUInt
     }
-    def stalePeek(): Bits = {
+    override def stalePeek(): Bits = {
       Context().backend.stalePeek(x).asUInt
     }
 
-    def expect(value: Bits): Unit = {
+    override def expect(value: Bits): Unit = {
       Context().backend.expect(x, getLit(value))
     }
-    def staleExpect(value: Bits): Unit = {
+    override def staleExpect(value: Bits): Unit = {
       Context().backend.staleExpect(x, getLit(value))
     }
   }
