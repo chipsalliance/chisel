@@ -19,7 +19,7 @@ class AnalogBlackBoxPort extends Bundle {
 
 // This IO can be used for a single BlackBox or to group multiple
 // Has multiple ports for driving and checking but only one shared bus
-class AnalogBlackBoxIO(n: Int) extends Bundle {
+class AnalogBlackBoxIO(val n: Int) extends Bundle {
   require(n > 0)
   val bus = Analog(32.W)
   val port = Vec(n, new AnalogBlackBoxPort)

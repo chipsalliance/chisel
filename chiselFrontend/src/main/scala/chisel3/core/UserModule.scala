@@ -131,6 +131,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
 
   // _clock and _reset can be clock and reset in these 2ary constructors
   // once chisel2 compatibility issues are resolved
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override_clock and override_reset deprecated, use withClockAndReset", "chisel3")
   def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
       (implicit moduleCompileOptions: CompileOptions) = {
@@ -139,10 +140,15 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     this.override_reset = override_reset
   }
 
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
   def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
+  
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
+  
+  @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
   def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
@@ -151,7 +157,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _ioPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(io)
 
   protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
     val names = super.nameIds(rootClass)
@@ -165,7 +171,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   }
 
   private[core] override def generateComponent(): Component = {
-    _autoWrapPorts()  // pre-IO(...) compatibility hack
+    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(io != null, "Module must have io")

@@ -10,6 +10,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
 
 object Mem {
+  @chiselRuntimeDeprecated
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: Int)(implicit compileOptions: CompileOptions): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
 
@@ -118,6 +119,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
 sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
 
 object SyncReadMem {
+  @chiselRuntimeDeprecated
   @deprecated("SeqMem/SyncReadMem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = do_apply(size, t)
 
