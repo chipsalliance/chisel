@@ -63,7 +63,7 @@ class DeadCodeElimination extends Transform {
         case ref @ (_: WRef | _: WSubField) => refs += ref
         case nested @ (_: Mux | _: DoPrim | _: ValidIf) => nested map rec
         case ignore @ (_: Literal) => // Do nothing
-        case unexpected => throwInternalError
+        case unexpected => throwInternalError()
       }
       e
     }
@@ -136,7 +136,7 @@ class DeadCodeElimination extends Transform {
     // Add all ports as vertices
     mod.ports.foreach {
       case Port(_, name, _, _: GroundType) => depGraph.addVertex(LogicNode(mod.name, name))
-      case other => throwInternalError
+      case other => throwInternalError()
     }
     onStmt(mod.body)
   }
@@ -261,7 +261,7 @@ class DeadCodeElimination extends Transform {
           None
         }
         else {
-          if (ext.ports != portsx) throwInternalError // Sanity check
+          if (ext.ports != portsx) throwInternalError() // Sanity check
           Some(ext.copy(ports = portsx))
         }
     }

@@ -99,7 +99,7 @@ class RemoveWires extends Transform {
           otherStmts += other
         case EmptyStmt => // Dont bother keeping EmptyStmts around
         case block: Block => block map onStmt
-        case _ => throwInternalError
+        case _ => throwInternalError()
       }
       stmt
     }

@@ -333,7 +333,7 @@ object InferWidths extends Pass {
         case wx: MinusWidth => map2(solve(wx.arg1), solve(wx.arg2), {_ - _})
         case wx: ExpWidth => map2(Some(BigInt(2)), solve(wx.arg1), pow_minus_one)
         case wx: IntWidth => Some(wx.width)
-        case wx => println(wx); error("Shouldn't be here"); None;
+        case wx => throwInternalError(Some(s"solve: shouldn't be here - %$wx")); None;
       }
 
       solve(w) match {

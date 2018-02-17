@@ -203,7 +203,7 @@ final case object LowForm extends CircuitForm(0)
   * this requirement.
   */
 final case object UnknownForm extends CircuitForm(-1) {
-  override def compare(that: CircuitForm): Int = { error("Illegal to compare UnknownForm"); 0 }
+  override def compare(that: CircuitForm): Int = { sys.error("Illegal to compare UnknownForm"); 0 }
 }
 
 /** The basic unit of operating on a Firrtl AST */
@@ -331,8 +331,8 @@ object CompilerUtils extends LazyLogging {
           Seq(new IRToWorkingIR, new ResolveAndCheck, new transforms.DedupModules,
               new HighFirrtlToMiddleFirrtl) ++ getLoweringTransforms(MidForm, outputForm)
         case MidForm => Seq(new MiddleFirrtlToLowFirrtl) ++ getLoweringTransforms(LowForm, outputForm)
-        case LowForm => throwInternalError // should be caught by if above
-        case UnknownForm => throwInternalError // should be caught by if above
+        case LowForm => throwInternalError(Some("getLoweringTransforms - LowForm")) // should be caught by if above
+        case UnknownForm => throwInternalError(Some("getLoweringTransforms - UnknownForm")) // should be caught by if above
       }
     }
   }

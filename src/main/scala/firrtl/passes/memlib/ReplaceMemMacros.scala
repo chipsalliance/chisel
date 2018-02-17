@@ -224,7 +224,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     val pins = getMyAnnotations(state) match {
       case Nil => Nil
       case Seq(PinAnnotation(CircuitName(c), pins)) => pins
-      case _ => throwInternalError
+      case _ => throwInternalError(Some(s"execute: getMyAnnotations - ${getMyAnnotations(state)}"))
     }
     val annos = (pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
       seq ++ memMods.collect { 

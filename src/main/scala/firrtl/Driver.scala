@@ -5,6 +5,7 @@ package firrtl
 import scala.collection._
 import scala.io.Source
 import scala.sys.process.{BasicIO,stringSeqToProcess}
+import scala.util.control.ControlThrowable
 import java.io.{File, FileNotFoundException}
 
 import net.jcazevedo.moultingyaml._
@@ -12,8 +13,9 @@ import logger.Logger
 import Parser.{IgnoreInfo, InfoMode}
 import annotations._
 import firrtl.annotations.AnnotationYamlProtocol._
+import firrtl.passes.PassException
 import firrtl.transforms._
-import Utils.throwInternalError
+import firrtl.Utils.throwInternalError
 
 
 /**
@@ -52,12 +54,23 @@ object Driver {
       customTransforms: Seq[Transform] = Seq.empty,
       annotations: AnnotationMap = AnnotationMap(Seq.empty)
   ): String = {
-    val parsedInput = Parser.parse(Source.fromFile(input).getLines(), infoMode)
     val outputBuffer = new java.io.CharArrayWriter
-    compiler.compile(
-      CircuitState(parsedInput, ChirrtlForm, Some(annotations)),
-      outputBuffer,
-      customTransforms)
+    try {
+      val parsedInput = Parser.parse(Source.fromFile(input).getLines(), infoMode)
+      compiler.compile(
+        CircuitState(parsedInput, ChirrtlForm, Some(annotations)),
+        outputBuffer,
+        customTransforms)
+    }
+
+    catch {
+      // Rethrow the exceptions which are expected or due to the runtime environment (out of memory, stack overflow)
+      case p: ControlThrowable => throw p
+      case p: PassException  => throw p
+      case p: FIRRTLException => throw p
+      // Treat remaining exceptions as internal errors.
+      case e: Exception => throwInternalError(exception = Some(e))
+    }
 
     val outputFile = new java.io.PrintWriter(output)
     val outputString = outputBuffer.toString
@@ -191,19 +204,35 @@ object Driver {
           }
       }
 
-      val annos = loadAnnotations(optionsManager)
+      var maybeFinalState: Option[CircuitState] = None
 
-      val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
+      // Wrap compilation in a try/catch to present Scala MatchErrors in a more user-friendly format.
+      try {
+        val annos = loadAnnotations(optionsManager)
 
-      // Does this need to be before calling compiler?
-      optionsManager.makeTargetDir()
+        val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
 
-      val finalState = firrtlConfig.compiler.compile(
-        CircuitState(parsedInput,
-                     ChirrtlForm,
-                     Some(AnnotationMap(annos))),
-        firrtlConfig.customTransforms
-      )
+        // Does this need to be before calling compiler?
+        optionsManager.makeTargetDir()
+
+        maybeFinalState = Some(firrtlConfig.compiler.compile(
+          CircuitState(parsedInput,
+            ChirrtlForm,
+            Some(AnnotationMap(annos))),
+          firrtlConfig.customTransforms
+        ))
+      }
+
+    catch {
+      // Rethrow the exceptions which are expected or due to the runtime environment (out of memory, stack overflow)
+      case p: ControlThrowable => throw p
+      case p: PassException  => throw p
+      case p: FIRRTLException => throw p
+      // Treat remaining exceptions as internal errors.
+      case e: Exception => throwInternalError(exception = Some(e))
+    }
+
+      val finalState = maybeFinalState.get
 
       // Do emission
       // Note: Single emission target assumption is baked in here
@@ -217,7 +246,7 @@ object Driver {
           emitted.value
         case OneFilePerModule(dirName) =>
           val emittedModules = finalState.emittedComponents collect { case x: EmittedModule => x }
-          if (emittedModules.isEmpty) throwInternalError // There should be something
+          if (emittedModules.isEmpty) throwInternalError() // There should be something
           emittedModules.foreach { module =>
             val filename = optionsManager.getBuildFileName(firrtlConfig.outputSuffix, s"$dirName/${module.name}")
             val outputFile = new java.io.PrintWriter(filename)
@@ -261,7 +290,7 @@ object Driver {
           optionsManager.showUsageAsError()
           failure
         case result =>
-          throw new Exception(s"Error: Unknown Firrtl Execution result $result")
+          throwInternalError(Some(s"Error: Unknown Firrtl Execution result $result"))
       }
     }
     else {

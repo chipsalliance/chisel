@@ -169,7 +169,7 @@ object ExpandWhens extends Pass {
         }
         Block(Seq(conseqStmt, altStmt) ++ memos)
       case block: Block => block map expandWhens(netlist, defaults, p)
-      case _ => throwInternalError
+      case _ => throwInternalError()
     }
     val netlist = new Netlist
     // Add ports to netlist

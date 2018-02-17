@@ -11,6 +11,7 @@ import PrimOps._
 import FIRRTLParser._
 import Parser.{AppendInfo, GenInfo, IgnoreInfo, InfoMode, UseInfo}
 import firrtl.ir._
+import Utils.throwInternalError
 
 
 class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
@@ -92,7 +93,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
       case (null, str, null, null) => StringParam(name, visitStringLit(str))
       case (null, null, dbl, null) => DoubleParam(name, dbl.getText.toDouble)
       case (null, null, null, raw) => RawStringParam(name, raw.getText.tail.init) // Remove "\'"s
-      case _ => throw new Exception(s"Internal error: Visiting impossible parameter ${ctx.getText}")
+      case _ => throwInternalError(Some(s"visiting impossible parameter ${ctx.getText}"))
     }
   }
 

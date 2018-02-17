@@ -71,9 +71,9 @@ class CheckCombLoops extends Transform {
           memport.expr match {
             case memref: WRef =>
               LogicNode(s.name,Some(memref.name),Some(memport.name))
-            case _ => throwInternalError
+            case _ => throwInternalError(Some(s"toLogicNode: unrecognized subsubfield expression - $memport"))
           }
-        case _ => throwInternalError
+        case _ => throwInternalError(Some(s"toLogicNode: unrecognized subfield expression - $s"))
       }
   }
 

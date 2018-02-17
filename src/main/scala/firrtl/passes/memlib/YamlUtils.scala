@@ -31,7 +31,7 @@ class YamlFileReader(file: String) {
         catch { case e: Exception => None }
       )
     }
-    else error("Yaml file doesn't exist!")
+    else sys.error("Yaml file doesn't exist!")
   }
 }
 

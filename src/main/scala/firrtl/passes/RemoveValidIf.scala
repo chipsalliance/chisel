@@ -24,7 +24,7 @@ object RemoveValidIf extends Pass {
     case _: UIntType => UIntZero
     case _: SIntType => SIntZero
     case ClockType => ClockZero
-    case other => throwInternalError
+    case other => throwInternalError()
   }
 
   // Recursive. Replaces IsInvalid with connecting zero

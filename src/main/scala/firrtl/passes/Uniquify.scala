@@ -109,7 +109,7 @@ object Uniquify extends Transform {
     }
     recUniquifyNames(t, namespace) match {
       case tx: BundleType => tx
-      case tx => error("Shouldn't be here")
+      case tx => throwInternalError(Some(s"uniquifyNames: shouldn't be here - $tx"))
     }
   }
 

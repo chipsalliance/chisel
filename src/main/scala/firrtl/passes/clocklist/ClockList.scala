@@ -44,7 +44,7 @@ class ClockList(top: String, writer: Writer) extends Pass {
     val modulesToInline = (c.modules.collect { case Module(_, n, _, _) if n != top => ModuleName(n, CircuitName(c.main)) }).toSet
     val inlineTransform = new InlineInstances
     val inlinedCircuit = inlineTransform.run(onlyClockCircuit, modulesToInline, Set(), None).circuit
-    val topModule = inlinedCircuit.modules.find(_.name == top).getOrElse(throwInternalError)
+    val topModule = inlinedCircuit.modules.find(_.name == top).getOrElse(throwInternalError(Some("no top module")))
 
     // Build a hashmap of connections to use for getOrigins
     val connects = getConnects(topModule)

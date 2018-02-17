@@ -56,7 +56,7 @@ object AnnotationUtils {
       val DecPattern = """([1-9]\d*)""".r
       def findClose(tokens: Seq[String], index: Int, nOpen: Int): Seq[String] = {
         if(index >= tokens.size) {
-          error("Cannot find closing bracket ]")
+          Utils.error("Cannot find closing bracket ]")
         } else tokens(index) match {
           case "[" => findClose(tokens, index + 1, nOpen + 1)
           case "]" if nOpen == 1 => tokens.slice(1, index)
@@ -81,6 +81,8 @@ object AnnotationUtils {
     }
     if(validComponentName(s)) {
       parse(tokenize(s))
-    } else error(s"Cannot convert $s into an expression.")
+    } else {
+      Utils.error(s"Cannot convert $s into an expression.")
+    }
   }
 }
