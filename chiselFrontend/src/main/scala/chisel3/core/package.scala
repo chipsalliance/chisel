@@ -32,20 +32,20 @@ package chisel3 {
       def S: SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
       /** Int to UInt conversion with specified width, recommended style for constants.
         */
-      def U(width: Width): UInt = UInt.Lit(bigint, width)  // scalastyle:ignore method.name
+      def U(width: Width): UIntLiteral = UInt.Lit(bigint, width)  // scalastyle:ignore method.name
       /** Int to SInt conversion with specified width, recommended style for constants.
         */
       def S(width: Width): SInt = SInt.Lit(bigint, width)  // scalastyle:ignore method.name
 
       /** Int to UInt conversion, recommended style for variables.
         */
-      def asUInt(): UInt = UInt.Lit(bigint, Width())
+      def asUInt(): UIntLiteral = UInt.Lit(bigint, Width())
       /** Int to SInt conversion, recommended style for variables.
         */
       def asSInt(): SInt = SInt.Lit(bigint, Width())
       /** Int to UInt conversion with specified width, recommended style for variables.
         */
-      def asUInt(width: Width): UInt = UInt.Lit(bigint, width)
+      def asUInt(width: Width): UIntLiteral = UInt.Lit(bigint, width)
       /** Int to SInt conversion with specified width, recommended style for variables.
         */
       def asSInt(width: Width): SInt = SInt.Lit(bigint, width)
@@ -70,7 +70,7 @@ package chisel3 {
       }
       /** String to UInt parse with specified width, recommended style for variables.
         */
-      def asUInt(width: Width): UInt = UInt.Lit(parse(str), width)
+      def asUInt(width: Width): UIntLiteral = UInt.Lit(parse(str), width)
 
       protected def parse(n: String) = {
         val (base, num) = n.splitAt(1)

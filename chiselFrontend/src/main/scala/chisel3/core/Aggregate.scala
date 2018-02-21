@@ -231,7 +231,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     */
   def apply(idx: Int): T = self(idx)
 
-  override def cloneType: this.type = {
+  override def cloneType: Vec[T] = {
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 

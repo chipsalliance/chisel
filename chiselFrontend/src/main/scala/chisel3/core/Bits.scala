@@ -290,7 +290,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     implicit val sourceInfo = DeprecatedSourceInfo
     do_asSInt
   }
-  
+
   @chiselRuntimeDeprecated
   @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
   final def toUInt(implicit compileOptions: CompileOptions): UInt = {
@@ -568,15 +568,6 @@ trait UIntFactory {
   /** Create a UInt port with specified width. */
   def apply(width: Width): UInt = new UInt(width)
 
-   /** Create a UInt literal with specified width. */
-  protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
-    val lit = ULit(value, width)
-    val result = new UInt(lit.width, Some(lit))
-    // Bind result to being an Literal
-    result.bind(LitBinding())
-    result
-  }
-
   /** Create a UInt with the specified range */
   def apply(range: Range): UInt = {
     apply(range.getWidth)
@@ -585,6 +576,12 @@ trait UIntFactory {
   def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
     apply(KnownUIntRange(range._1, range._2))
   }
+
+  /** Create a UInt literal with specified width. */
+  protected[chisel3] def Lit(value: BigInt, width: Width): UIntLiteral = {
+    new UIntLiteral(ULit(value, width))
+  }
+
 }
 
 object UInt extends UIntFactory

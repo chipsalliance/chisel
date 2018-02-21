@@ -2,6 +2,8 @@
 
 package chisel3.core
 
+import scala.language.implicitConversions
+
 import chisel3.internal.firrtl._
 
 trait Literal[+T <: Data] {
@@ -25,11 +27,17 @@ trait BitsLiteral extends Literal[Bits] {
 }
 
 class UIntLiteral(litVal: ULit) extends BitsLiteral with Literal[UInt] {
-  override def asInt: Int
-  override def asBigInt: BigInt
+  override def asInt: Int = {
+    require(litVal.n >= Int.MinValue && litVal.n <= Int.MaxValue)
+    litVal.n.toInt
+  }
+
+  override def asBigInt: BigInt = {
+    litVal.n
+  }
 
   override def toData: UInt = {
-    val data = UInt()
+    val data = new UInt(litVal.width, Some(litVal))
 
     data.bind(LitBinding())
     data
