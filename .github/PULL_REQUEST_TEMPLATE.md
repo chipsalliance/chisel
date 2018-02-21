@@ -1,18 +1,19 @@
+Please select the item best describing the pull request in each category and delete the other items.
 * **Related issue** (if applicable)
 
 * **Type of change**
-  - [ ] Bug report
-  - [ ] Feature request
-  - [ ] Other enhancement
+  * Bug report
+  * Feature request
+  * Other enhancement
 
 * **Impact**
-  - [ ] no functional change
-  - [ ] API addition (no impact on existing code)
-  - [ ] API modification
+  * no functional change
+  * API addition (no impact on existing code)
+  * API modification
 
 * **Development Phase**
-  - [ ] proposal
-  - [ ] implementation
+  * proposal
+  * implementation
 
 * **Release Notes**
 
