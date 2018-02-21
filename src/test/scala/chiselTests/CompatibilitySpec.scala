@@ -69,7 +69,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   it should "successfully compile a complete module" in {
     class Dummy extends Module {
       // The following just checks that we can create objects with nothing more than the Chisel compatibility package.
-      val io = new Bundle
+      val io = new Bundle {}
       val data = UInt(width = 3)
       new ArbiterIO(data, 2) shouldBe a [ArbiterIO[_]]
       new LockingRRArbiter(data, 2, 2, None) shouldBe a [LockingRRArbiter[_]]

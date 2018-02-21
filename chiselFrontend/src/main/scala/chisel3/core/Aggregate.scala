@@ -508,7 +508,7 @@ class AutoClonetypeException(message: String) extends ChiselException(message, n
   *   }
   * }}}
   */
-class Bundle(implicit compileOptions: CompileOptions) extends Record {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def className = "Bundle"
 
   /** The collection of [[Data]]
