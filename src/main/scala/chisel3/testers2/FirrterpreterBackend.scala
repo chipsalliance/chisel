@@ -48,7 +48,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   // List of active pokes and associated priority and poking TesterThread
   protected val activePokes = HashMap[Data, (Int, TesterThread)]()
 
-  override def poke(signal: Data, value: BigInt, priority: Int): Unit = {
+  override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
     signal match {
       case signal: Bits =>
         val doPoke = activePokes.get(signal) match {
@@ -67,23 +67,17 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     }
   }
 
-  override def peek(signal: Data): BigInt = {
+  override def peekBits(signal: Bits, stale: Boolean): BigInt = {
+    require(!stale, "Stale peek not yet implemented")
     signal match {
       case signal: Bits =>
         tester.peek(portNames(signal))
     }
   }
 
-  override def stalePeek(signal: Data): BigInt = {
-    throw new Exception("Stale peek not implemented yet")
-  }
-
-  override def expect(signal: Data, value: BigInt): Unit = {
-    Context().env.testerExpect(value, peek(signal), resolveName(signal), None)
-  }
-
-  override def staleExpect(signal: Data, value: BigInt): Unit = {
-    throw new Exception("Stale check not implemented yet")
+  override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
+    require(!stale, "Stale peek not yet implemented")
+    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
   protected def scheduler() {
@@ -109,9 +103,9 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   }
 
   var scalatestThread: Option[Thread] = None
-  var interruptedException: Option[Exception] = None
+  var interruptedException: Option[Throwable] = None
 
-  protected def onException(e: Exception) {
+  protected def onException(e: Throwable) {
     interruptedException = Some(e)
     scalatestThread.get.interrupt()
   }

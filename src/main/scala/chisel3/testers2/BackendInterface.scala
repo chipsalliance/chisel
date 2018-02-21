@@ -15,18 +15,15 @@ trait BackendInterface {
   /** Writes a value to a writable wire.
     * Throws an exception if write is not writable.
     */
-  def poke(signal: Data, value: BigInt, priority: Int): Unit
+  def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit
 
-  /** Returns the current combinational value (after any previous pokes have taken effect, and
-    * logic has propagated) on a wire.
+  /** Returns the current value on a wire.
+    * If stale is true, returns the current combinational value (after previous pokes have taken effect).
+    * If stale is false, returns the value at the beginning of the current cycle.
     */
-  def peek(signal: Data): BigInt
-  /** Returns the value at the beginning of the current cycle (before any pokes have taken effect) on a wire.
-    */
-  def stalePeek(signal: Data): BigInt
+  def peekBits(signal: Bits, stale: Boolean): BigInt
 
-  def expect(signal: Data, value: BigInt): Unit
-  def staleExpect(signal: Data, value: BigInt): Unit
+  def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit
 
   /** Advances the target clock by one cycle.
     */
@@ -62,6 +59,7 @@ trait ThreadedBackend {
           runnable
         } catch {
           case e: Exception => onException(e)
+          case e: Error => onException(e)
           waiting.acquire()
         }
         if (!isMainThread) {
@@ -84,7 +82,7 @@ trait ThreadedBackend {
     * Can be used to propagate the exception back up to the main thread.
     * No guarantees are made about the state of the system on an exception.
     */
-  protected def onException(e: Exception)
+  protected def onException(e: Throwable)
 
   protected def threadFinished(thread: TesterThread) {
     threadOrder -= thread

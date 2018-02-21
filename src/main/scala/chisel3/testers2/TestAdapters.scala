@@ -14,11 +14,9 @@ package object TestAdapters {
     x.valid.weakPoke(false.B)
 
     // TODO: poking Bundles
-    def enqueueNow(data: Bits): Unit = {
+    def enqueueNow(data: T): Unit = {
       x.ready.expect(true.B)
-      x.bits match {  // TODO get rid of this boilerplate
-        case x: Bits => x.poke(data)
-      }
+      x.bits.poke(data)
       x.valid.poke(true.B)
       fork {
         clk.step(1)
@@ -26,15 +24,13 @@ package object TestAdapters {
       }
     }
 
-    def enqueueSeq(data: Seq[Bits]): AbstractTesterThread = {
+    def enqueueSeq(data: Seq[T]): AbstractTesterThread = {
       fork {
         for (elt <- data) {
           while (x.ready.peek().litArg.get.asInstanceOf[ULit].n != 1) {
             clk.step(1)
           }
-          x.bits match {
-            case x: Bits => x.poke(elt)
-          }
+          x.bits.poke(elt)
           x.valid.poke(true.B)
           clk.step(1)
           x.valid.poke(false.B)
@@ -47,11 +43,9 @@ package object TestAdapters {
     x.ready.weakPoke(false.B)
 
     // TODO: poking Bundles
-    def expectDequeueNow(data: Bits): Unit = {
+    def expectDequeueNow(data: T): Unit = {
       x.valid.expect(true.B)
-      x.bits match {
-        case x: Bits => x.expect(data)
-      }
+      x.bits.expect(data)
       x.ready.poke(true.B)
       fork {
         clk.step(1)
@@ -59,11 +53,9 @@ package object TestAdapters {
       }
     }
 
-    def expectPeekNow(data: Bits): Unit = {
+    def expectPeekNow(data: T): Unit = {
       x.valid.expect(true.B)
-      x.bits match {
-        case x: Bits => x.expect(data)
-      }
+      x.bits.expect(data)
     }
 
     def expectInvalid(): Unit = {
