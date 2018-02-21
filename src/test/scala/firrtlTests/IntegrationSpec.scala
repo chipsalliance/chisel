@@ -48,6 +48,8 @@ class GCDSplitEmissionExecutionTest extends FirrtlFlatSpec {
   }
 }
 
-class RocketCompilationTest extends CompilationTest("rocket", "/regress")
-class BOOMRobCompilationTest extends CompilationTest("Rob", "/regress")
+class RobCompilationTest extends CompilationTest("Rob", "/regress")
+class RocketCoreCompilationTest extends CompilationTest("RocketCore", "/regress")
+class ICacheCompilationTest extends CompilationTest("ICache", "/regress")
+class FPUCompilationTest extends CompilationTest("FPU", "/regress")
 

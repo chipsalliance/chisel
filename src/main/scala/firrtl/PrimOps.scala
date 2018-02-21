@@ -129,86 +129,64 @@ object PrimOps extends LazyLogging {
     e copy (tpe = e.op match {
       case Add => (t1, t2) match {
         case (_: UIntType, _: UIntType) => UIntType(PLUS(MAX(w1, w2), IntWidth(1)))
-        case (_: UIntType, _: SIntType) => SIntType(PLUS(MAX(w1, MINUS(w2, IntWidth(1))), IntWidth(2)))
-        case (_: SIntType, _: UIntType) => SIntType(PLUS(MAX(w2, MINUS(w1, IntWidth(1))), IntWidth(2)))
         case (_: SIntType, _: SIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
         case (_: FixedType, _: FixedType) => FixedType(PLUS(PLUS(MAX(p1, p2), MAX(MINUS(w1, p1), MINUS(w2, p2))), IntWidth(1)), MAX(p1, p2))
         case _ => UnknownType
       }
       case Sub => (t1, t2) match {
-        case (_: UIntType, _: UIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
-        case (_: UIntType, _: SIntType) => SIntType(MAX(PLUS(w2, IntWidth(1)), PLUS(w1, IntWidth(2))))
-        case (_: SIntType, _: UIntType) => SIntType(MAX(PLUS(w1, IntWidth(1)), PLUS(w2, IntWidth(2))))
+        case (_: UIntType, _: UIntType) => UIntType(PLUS(MAX(w1, w2), IntWidth(1)))
         case (_: SIntType, _: SIntType) => SIntType(PLUS(MAX(w1, w2), IntWidth(1)))
         case (_: FixedType, _: FixedType) => FixedType(PLUS(PLUS(MAX(p1, p2),MAX(MINUS(w1, p1), MINUS(w2, p2))),IntWidth(1)), MAX(p1, p2))
         case _ => UnknownType
       }
       case Mul => (t1, t2) match {
         case (_: UIntType, _: UIntType) => UIntType(PLUS(w1, w2))
-        case (_: UIntType, _: SIntType) => SIntType(PLUS(w1, w2))
-        case (_: SIntType, _: UIntType) => SIntType(PLUS(w1, w2))
         case (_: SIntType, _: SIntType) => SIntType(PLUS(w1, w2))
         case (_: FixedType, _: FixedType) => FixedType(PLUS(w1, w2), PLUS(p1, p2))
         case _ => UnknownType
       }
       case Div => (t1, t2) match {
         case (_: UIntType, _: UIntType) => UIntType(w1)
-        case (_: UIntType, _: SIntType) => SIntType(PLUS(w1, IntWidth(1)))
-        case (_: SIntType, _: UIntType) => SIntType(w1)
         case (_: SIntType, _: SIntType) => SIntType(PLUS(w1, IntWidth(1)))
         case _ => UnknownType
       }
       case Rem => (t1, t2) match {
         case (_: UIntType, _: UIntType) => UIntType(MIN(w1, w2))
-        case (_: UIntType, _: SIntType) => UIntType(MIN(w1, w2))
-        case (_: SIntType, _: UIntType) => SIntType(MIN(w1, PLUS(w2, IntWidth(1))))
         case (_: SIntType, _: SIntType) => SIntType(MIN(w1, w2))
         case _ => UnknownType
       }
       case Lt => (t1, t2) match {
         case (_: UIntType, _: UIntType) => Utils.BoolType
-        case (_: SIntType, _: UIntType) => Utils.BoolType
-        case (_: UIntType, _: SIntType) => Utils.BoolType
         case (_: SIntType, _: SIntType) => Utils.BoolType
         case (_: FixedType, _: FixedType) => Utils.BoolType
         case _ => UnknownType
       }
       case Leq => (t1, t2) match {
         case (_: UIntType, _: UIntType) => Utils.BoolType
-        case (_: SIntType, _: UIntType) => Utils.BoolType
-        case (_: UIntType, _: SIntType) => Utils.BoolType
         case (_: SIntType, _: SIntType) => Utils.BoolType
         case (_: FixedType, _: FixedType) => Utils.BoolType
         case _ => UnknownType
       }
       case Gt => (t1, t2) match {
         case (_: UIntType, _: UIntType) => Utils.BoolType
-        case (_: SIntType, _: UIntType) => Utils.BoolType
-        case (_: UIntType, _: SIntType) => Utils.BoolType
         case (_: SIntType, _: SIntType) => Utils.BoolType
         case (_: FixedType, _: FixedType) => Utils.BoolType
         case _ => UnknownType
       }
       case Geq => (t1, t2) match {
         case (_: UIntType, _: UIntType) => Utils.BoolType
-        case (_: SIntType, _: UIntType) => Utils.BoolType
-        case (_: UIntType, _: SIntType) => Utils.BoolType
         case (_: SIntType, _: SIntType) => Utils.BoolType
         case (_: FixedType, _: FixedType) => Utils.BoolType
         case _ => UnknownType
       }
       case Eq => (t1, t2) match {
         case (_: UIntType, _: UIntType) => Utils.BoolType
-        case (_: SIntType, _: UIntType) => Utils.BoolType
-        case (_: UIntType, _: SIntType) => Utils.BoolType
         case (_: SIntType, _: SIntType) => Utils.BoolType
         case (_: FixedType, _: FixedType) => Utils.BoolType
         case _ => UnknownType
       }
       case Neq => (t1, t2) match {
         case (_: UIntType, _: UIntType) => Utils.BoolType
-        case (_: SIntType, _: UIntType) => Utils.BoolType
-        case (_: UIntType, _: SIntType) => Utils.BoolType
         case (_: SIntType, _: SIntType) => Utils.BoolType
         case (_: FixedType, _: FixedType) => Utils.BoolType
         case _ => UnknownType

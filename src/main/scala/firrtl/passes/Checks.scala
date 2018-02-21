@@ -112,7 +112,7 @@ object CheckHighForm extends Pass {
       if (npercents != i) errors.append(new BadPrintfIncorrectNumException(info, mname))
     }
 
-    def checkValidLoc(info: Info, mname: String, e: Expression) = e match {
+    def checkValidLoc(info: Info, mname: String, e: Expression): Unit = e match {
       case _: UIntLiteral | _: SIntLiteral | _: DoPrim =>
         errors.append(new InvalidLOCException(info, mname))
       case _ => // Do Nothing
@@ -254,6 +254,7 @@ object CheckTypes extends Pass {
   class OpNotAllSameType(info: Info, mname: String, op: String) extends PassException(
     s"$info: [module $mname]  Primop $op requires all operands to have the same type.")
   class OpNoMixFix(info:Info, mname: String, op: String) extends PassException(s"${info}: [module ${mname}]  Primop ${op} cannot operate on args of some, but not all, fixed type.")
+  class OpNotCorrectType(info:Info, mname: String, op: String, tpes: Seq[String]) extends PassException(s"${info}: [module ${mname}]  Primop ${op} does not have correct arg types: $tpes.")
   class OpNotAnalog(info: Info, mname: String, exp: String) extends PassException(
     s"$info: [module $mname]  Attach requires all arguments to be Analog type: $exp.")
   class NodePassiveType(info: Info, mname: String) extends PassException(
@@ -276,6 +277,9 @@ object CheckTypes extends Pass {
     s"$info: [module $mname]  Attach expression must be an port, wire, or port of instance: $expName.")
   class IllegalResetType(info: Info, mname: String, exp: String) extends PassException(
     s"$info: [module $mname]  Register resets must have type UInt<1>: $exp.")
+  class IllegalUnknownType(info: Info, mname: String, exp: String) extends PassException(
+    s"$info: [module $mname]  Uninferred type: $exp."
+  )
 
   //;---------------- Helper Functions --------------
   def ut: UIntType = UIntType(UnknownWidth)
@@ -290,65 +294,42 @@ object CheckTypes extends Pass {
       case tx: BundleType => tx.fields forall (x => x.flip == Default && passive(x.tpe))
       case tx => true
     }
-    def check_types_primop(info: Info, mname: String, e: DoPrim) {
-      def all_same_type (ls:Seq[Expression]) {
-        if (ls exists (x => wt(ls.head.tpe) != wt(e.tpe)))
-          errors.append(new OpNotAllSameType(info, mname, e.op.serialize))
-      }
-      def allUSC(ls: Seq[Expression]) {
-        val error = ls.foldLeft(false)((error, x) => x.tpe match {
-          case (_: UIntType| _: SIntType| ClockType) => error
-          case _ => true
-        })
-        if (error) errors.append(new OpNotGround(info, mname, e.op.serialize))
-      }
-      def allUSF(ls: Seq[Expression]) {
-        val error = ls.foldLeft(false)((error, x) => x.tpe match {
-          case (_: UIntType| _: SIntType| _: FixedType) => error
-          case _ => true
-        })
-        if (error) errors.append(new OpNotGround(info, mname, e.op.serialize))
-      }
-      def allUS(ls: Seq[Expression]) {
-        if (ls exists (x => x.tpe match {
-          case _: UIntType | _: SIntType => false
-          case _ => true
-        })) errors.append(new OpNotGround(info, mname, e.op.serialize))
-      }
-      def allF(ls: Seq[Expression]) {
-        val error = ls.foldLeft(false)((error, x) => x.tpe match {
-          case _:FixedType => error
-          case _ => true
-        })
-        if (error) errors.append(new OpNotGround(info, mname, e.op.serialize))
-      }
-      def strictFix(ls: Seq[Expression]) =
-        ls.filter(!_.tpe.isInstanceOf[FixedType]).size match {
-          case 0 =>
-          case x if(x == ls.size) =>
-          case x => errors.append(new OpNoMixFix(info, mname, e.op.serialize))
+    def check_types_primop(info: Info, mname: String, e: DoPrim): Unit = {
+      def checkAllTypes(exprs: Seq[Expression], okUInt: Boolean, okSInt: Boolean, okClock: Boolean, okFix: Boolean): Unit = {
+        exprs.foldLeft((false, false, false, false)) {
+          case ((isUInt, isSInt, isClock, isFix), expr) => expr.tpe match {
+            case u: UIntType  => (true, isSInt, isClock, isFix)
+            case s: SIntType  => (isUInt, true, isClock, isFix)
+            case ClockType    => (isUInt, isSInt, true, isFix)
+            case f: FixedType => (isUInt, isSInt, isClock, true)
+            case UnknownType =>
+              errors.append(new IllegalUnknownType(info, mname, e.serialize))
+              (isUInt, isSInt, isClock, isFix)
+            case other => throwInternalError(Some(s"Illegal Type: ${other.serialize}"))
+          }
+        } match {
+          //   (UInt,  SInt,  Clock, Fixed)
+          case (isAll, false, false, false) if isAll == okUInt  =>
+          case (false, isAll, false, false) if isAll == okSInt  =>
+          case (false, false, isAll, false) if isAll == okClock =>
+          case (false, false, false, isAll) if isAll == okFix   =>
+          case x => errors.append(new OpNotCorrectType(info, mname, e.op.serialize, exprs.map(_.tpe.serialize)))
         }
-      def all_uint (ls: Seq[Expression]) {
-        if (ls exists (x => x.tpe match {
-          case _: UIntType => false
-          case _ => true
-        })) errors.append(new OpNotAllUInt(info, mname, e.op.serialize))
-      }
-      def is_uint (x:Expression) {
-        if (x.tpe match {
-          case _: UIntType => false
-          case _ => true
-        }) errors.append(new OpNotUInt(info, mname, e.op.serialize, x.serialize))
       }
       e.op match {
-        case AsUInt | AsSInt | AsFixedPoint =>
-        case AsClock => allUSC(e.args)
-        case Dshl => is_uint(e.args(1)); allUSF(e.args)
-        case Dshr => is_uint(e.args(1)); allUSF(e.args)
-        case Add | Sub | Mul | Lt | Leq | Gt | Geq | Eq | Neq => allUSF(e.args); strictFix(e.args)
-        case Pad | Shl | Shr | Cat | Bits | Head | Tail => allUSF(e.args)
-        case BPShl | BPShr | BPSet => allF(e.args)
-        case _ => allUS(e.args)
+        case AsUInt | AsSInt | AsClock | AsFixedPoint =>
+          // All types are ok
+        case Dshl | Dshr =>
+          checkAllTypes(Seq(e.args.head), okUInt=true, okSInt=true,  okClock=false, okFix=true)
+          checkAllTypes(Seq(e.args(1)),   okUInt=true, okSInt=false, okClock=false, okFix=false)
+        case Add | Sub | Mul | Lt | Leq | Gt | Geq | Eq | Neq =>
+          checkAllTypes(e.args, okUInt=true, okSInt=true, okClock=false, okFix=true)
+        case Pad | Shl | Shr | Cat | Bits | Head | Tail =>
+          checkAllTypes(e.args, okUInt=true, okSInt=true, okClock=false, okFix=true)
+        case BPShl | BPShr | BPSet =>
+          checkAllTypes(e.args, okUInt=false, okSInt=false, okClock=false, okFix=true)
+        case _ =>
+          checkAllTypes(e.args, okUInt=true, okSInt=true, okClock=false, okFix=false)
       }
     }
 
@@ -421,7 +402,7 @@ object CheckTypes extends Pass {
           )
         case (t1: VectorType, t2: VectorType) =>
           bulk_equals(t1.tpe, t2.tpe, flip1, flip2)
-        case (t1, t2) => false
+        case (_, _) => false
       }
     }
 
