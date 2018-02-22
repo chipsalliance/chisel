@@ -5,6 +5,9 @@ package chisel3
 class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 
+class ThreadOrderDependentException(message: String) extends Exception(message)
+class SignalOverwriteException(message: String) extends Exception(message)
+
 /** Basic interfaces and implicit conversions for testers2
   */
 package object testers2 {
@@ -12,11 +15,11 @@ package object testers2 {
   implicit class testableData[T <: Data](x: T) {
     protected def pokeWithPriority(value: T, priority: Int): Unit = (x, value) match {
       case (x: Bool, value: Bool) => Context().backend.pokeBits(x, value.litToBigInt, priority)
-      // TODO can't happen because of type paramterization
+      // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only poke signals of type Bool with Bool value")
       case (x: Bits, value: UInt) => Context().backend.pokeBits(x, value.litToBigInt, priority)
       case (x: SInt, value: SInt) => Context().backend.pokeBits(x, value.litToBigInt, priority)
-      // TODO can't happen because of type paramterization
+      // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types

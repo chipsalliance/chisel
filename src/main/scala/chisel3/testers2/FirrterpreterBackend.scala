@@ -24,68 +24,45 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
 
   // TODO: the naming facility should be part of infrastructure not backend
   protected val portNames = getDataNames("io", dut.io).toMap
+  protected def resolveName(signal: Data) =
+    portNames.getOrElse(signal, signal.toString())
+
+  protected val threadingChecker = new ThreadingChecker()
+
+  override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
+    if (threadingChecker.doPoke(signal, priority, new Throwable)) {
+      tester.poke(portNames(signal), value)
+    }
+  }
+
+  override def peekBits(signal: Bits, stale: Boolean): BigInt = {
+    require(!stale, "Stale peek not yet implemented")
+
+    threadingChecker.doPeek(signal, new Throwable)
+    tester.peek(portNames(signal))
+  }
+
+  override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
+    require(!stale, "Stale peek not yet implemented")
+
+    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
+  }
 
   protected val clockCounter = Map[Clock, Int]()
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
 
-  def resolveName(signal: Data) =
-    portNames.getOrElse(signal, signal.toString())
-
-  /** Desired threading checking behavior:
-    * -> indicates following, from different thread
-    * poke -> poke (higher priority): OK (result is order-independent)
-    * poke -> poke (same priority): not OK (result is order-dependent)
-    * poke -> peek (and reversed - equivalent to be order-independent): not OK (peek may be stale)
-    * poke -> peek of something in combinational shadow (and reversed): not OK
-    *
-    * should also maintain optional source trace information to help debug order-dependence failures
-    *
-    * fringe cases: poke -> poke (higher priority), peek: probably should be OK, but unlikely to be necessary?
-    */
-
-  // List of active pokes and associated priority and poking TesterThread
-  protected val activePokes = HashMap[Data, (Int, TesterThread)]()
-
-  override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
-    signal match {
-      case signal: Bits =>
-        val doPoke = activePokes.get(signal) match {
-          case Some((activePriority, thread)) =>
-            // Ensure final peek isn't affected by thread execution order
-            if (activePriority == priority) {
-              require(thread == currentThread.get)
-            }
-            (activePriority >= priority)
-          case None => true
-        }
-        if (doPoke) {
-          tester.poke(portNames(signal), value)
-          activePokes +=((signal, (priority, currentThread.get)))
-        }
-    }
-  }
-
-  override def peekBits(signal: Bits, stale: Boolean): BigInt = {
-    require(!stale, "Stale peek not yet implemented")
-    signal match {
-      case signal: Bits =>
-        tester.peek(portNames(signal))
-    }
-  }
-
-  override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
-    require(!stale, "Stale peek not yet implemented")
-    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
-  }
-
   protected def scheduler() {
+    threadingChecker.finishThread(currentThread.get, dut.clock)  // TODO multiclock
+
     if (waitingThreads.isEmpty) {
+      threadingChecker.finishTimestep()
       tester.step(1)
-      activePokes.clear()
       waitingThreads ++= threadOrder
+      threadingChecker.newTimestep(dut.clock)  // TODO allow use on multiclock designs
     }
+
     val nextThread = waitingThreads.head
     currentThread = Some(nextThread)
     waitingThreads.trimStart(1)
@@ -129,7 +106,8 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     try {
       mainThread.thread.join()
     } catch {
-      case e: InterruptedException => throw interruptedException.get
+      case e: InterruptedException => Thread.sleep(500)  // TODO fix synchronization issue
+        throw interruptedException.get
     }
 
     scalatestThread = None

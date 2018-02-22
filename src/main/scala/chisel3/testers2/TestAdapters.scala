@@ -27,7 +27,7 @@ package object TestAdapters {
     def enqueueSeq(data: Seq[T]): AbstractTesterThread = {
       fork {
         for (elt <- data) {
-          while (x.ready.peek().litArg.get.asInstanceOf[ULit].n != 1) {
+          while (x.ready.peek().litToBoolean == false) {
             clk.step(1)
           }
           x.bits.poke(elt)
