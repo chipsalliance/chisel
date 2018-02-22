@@ -128,7 +128,6 @@ lazy val chisel = (project in file(".")).
   enablePlugins(ScalaUnidocPlugin).
   settings(
     buildInfoPackage := name.value,
-    buildInfoOptions += BuildInfoOption.BuildTime,
     buildInfoUsePackageAsPath := true,
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
@@ -137,7 +136,6 @@ lazy val chisel = (project in file(".")).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
-  aggregate(coreMacros, chiselFrontend).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(

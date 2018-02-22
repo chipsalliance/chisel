@@ -6,10 +6,12 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.chiselRuntimeDeprecated
 
 /** Compute the log2 rounded up with min value of 1 */
-@deprecated("Use log2Ceil instead", "chisel3")
 object log2Up {
+  @chiselRuntimeDeprecated
+  @deprecated("Use log2Ceil instead", "chisel3")
   def apply(in: BigInt): Int = Chisel.log2Up(in)
 }
 
@@ -23,8 +25,9 @@ object log2Ceil {
 }
 
 /** Compute the log2 rounded down with min value of 1 */
-@deprecated("Use log2Floor instead", "chisel3")
 object log2Down {
+  @chiselRuntimeDeprecated
+  @deprecated("Use log2Floor instead", "chisel3")
   def apply(in: BigInt): Int = Chisel.log2Down(in)
 }
 

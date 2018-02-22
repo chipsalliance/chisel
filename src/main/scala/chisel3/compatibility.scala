@@ -250,9 +250,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
-    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
-      if (!_ioPortBound()) {
-        IO(io)
+    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+      if (!_compatIoPortBound()) {
+        _bindIoInPlace(io)
       }
     }
   }
@@ -263,14 +263,19 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
 
   import chisel3.core.CompileOptions
-  abstract class CompatibilityModule(
-      override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-      (implicit moduleCompileOptions: CompileOptions)
-      extends chisel3.core.LegacyModule(override_clock, override_reset) {
+  abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
+      extends chisel3.core.LegacyModule {
     // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     // Also provides the clock / reset constructors, which were used before withClock happened.
 
+    // Provide a non-deprecated constructor
+    def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+        (implicit moduleCompileOptions: CompileOptions) = {
+      this()
+      this.override_clock = override_clock
+      this.override_reset = override_reset
+    }
     def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), None)(moduleCompileOptions)
     def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  =
@@ -278,9 +283,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
-    override def _autoWrapPorts(): Unit = { // scalastyle:ignore method.name
-      if (!_ioPortBound() && io != null) {
-        IO(io)
+    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+      if (!_compatIoPortBound() && io != null) {
+        _bindIoInPlace(io)
       }
     }
   }
