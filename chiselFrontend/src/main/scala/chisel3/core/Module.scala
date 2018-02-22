@@ -205,7 +205,7 @@ abstract class BaseModule extends HasId {
   //
   @deprecated("Use chisel3.experimental.annotate instead", "3.1")
   protected def annotate(annotation: ChiselAnnotation): Unit = {
-    Builder.annotations += LazyAnnotation(() => annotation.toFirrtl)
+    Builder.annotations += annotation
   }
 
   /**

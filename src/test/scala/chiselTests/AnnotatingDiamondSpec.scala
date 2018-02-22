@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{annotate, LazyAnnotation}
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import firrtl.{CircuitState, LowForm, Transform}
@@ -16,17 +16,21 @@ import firrtl.annotations.{
 }
 import org.scalatest._
 
-/** This and the IdentityTransform class serve as an example of how to write a Chisel/Firrtl
-  * library
+/** These annotations and the IdentityTransform class serve as an example of how to write a
+  * Chisel/Firrtl library
   */
 case class IdentityAnnotation(target: Named, value: String) extends SingleTargetAnnotation[Named] {
   def duplicate(n: Named) = this.copy(target = n)
 }
+/** ChiselAnnotation that corresponds to the above FIRRTL annotation */
+case class IdentityChiselAnnotation(target: InstanceId, value: String) extends ChiselAnnotation {
+  def toFirrtl = IdentityAnnotation(target.toNamed, value)
+}
 object identify {
   def apply(component: InstanceId, value: String): Unit = {
-    val anno = LazyAnnotation(() => IdentityAnnotation(component.toNamed, value))
+    val anno = IdentityChiselAnnotation(component, value)
     annotate(anno)
-    annotate(RunTransformAnnotation(classOf[IdentityTransform]))
+    annotate(ChiselAnnotation(component, classOf[IdentityTransform], ""))
   }
 }
 
@@ -140,7 +144,7 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
 
       Driver.execute(Array("--target-dir", "test_run_dir"), () => new TopOfDiamond) match {
         case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
-          val annos = circuit.annotations
+          val annos = circuit.annotations.map(_.toFirrtl)
           annos.count(_.isInstanceOf[IdentityAnnotation]) should be (10)
 
           annos.count {

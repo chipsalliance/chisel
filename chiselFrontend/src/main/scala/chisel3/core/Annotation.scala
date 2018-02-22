@@ -9,33 +9,48 @@ import firrtl.Transform
 import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
 import firrtl.transforms.DontTouchAnnotation
 
-/**
-  * This is a stand-in for the firrtl.Annotations.Annotation because at the time this annotation
-  * is created the component cannot be resolved, into a targetString.  Resolution can only
-  * happen after the circuit is elaborated
-  * @param component       A chisel thingy to be annotated, could be module, wire, reg, etc.
-  * @param transformClass  A fully-qualified class name of the transformation pass
-  * @param value           A string value to be used by the transformation pass
+/** Interface for Annotations in Chisel
+  *
+  * Defines a conversion to a corresponding FIRRTL Annotation
   */
-@deprecated("Use LazyAnnotation instead", "3.1")
-case class ChiselAnnotation(component: InstanceId, transformClass: Class[_ <: Transform], value: String) {
-  def toFirrtl: Annotation = {
-    Annotation(component.toNamed, transformClass, value)
-  }
+trait ChiselAnnotation {
+  /** Conversion to FIRRTL Annotation */
+  def toFirrtl: Annotation
 }
-@deprecated("Use LazyAnnotation instead", "3.1")
-object ChiselAnnotation
+object ChiselAnnotation {
+  @deprecated("Write a custom ChiselAnnotation subclass instead", "3.1")
+  def apply(component: InstanceId, transformClass: Class[_ <: Transform], value: String) =
+    ChiselLegacyAnnotation(component, transformClass, value)
+  @deprecated("Write a custom ChiselAnnotation subclass instead", "3.1")
+  def unapply(anno: ChiselAnnotation): Option[(InstanceId, Class[_ <: Transform], String)] =
+    anno match {
+      case ChiselLegacyAnnotation(c, t, v) => Some(c, t, v)
+      case _ => None
+    }
+}
 
-final case class LazyAnnotation private (f: () => Annotation) {
-  def get: Annotation = f()
+/** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this
+  * Annotation is present during a run of [[chisel3.Driver.execute]]. Automatic Transform
+  * instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
+  * FIRRTL.
+  */
+// TODO There should be a FIRRTL API for this instead
+trait RunFirrtlTransform extends ChiselAnnotation {
+  def transformClass: Class[_ <: Transform]
 }
+
+// This exists for implementation reasons, we don't want people using this type directly
+final case class ChiselLegacyAnnotation private[chisel3] (
+    component: InstanceId,
+    transformClass: Class[_ <: Transform],
+    value: String) extends ChiselAnnotation with RunFirrtlTransform {
+  def toFirrtl: Annotation = Annotation(component.toNamed, transformClass, value)
+}
+private[chisel3] object ChiselLegacyAnnotation
 
 object annotate { // scalastyle:ignore object.name
-  def apply(anno: LazyAnnotation): Unit = {
+  def apply(anno: ChiselAnnotation): Unit = {
     Builder.annotations += anno
-  }
-  def apply(anno: Annotation): Unit = {
-    Builder.annotations += LazyAnnotation(() => anno)
   }
 }
 
@@ -68,7 +83,7 @@ object dontTouch { // scalastyle:ignore object.name
     if (compileOptions.checkSynthesizable) {
       requireIsHardware(data, "Data marked dontTouch")
     }
-    annotate(LazyAnnotation(() => DontTouchAnnotation(data.toNamed)))
+    annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
     data
   }
 }

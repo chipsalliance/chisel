@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.internal.firrtl.Emitter
-import chisel3.experimental.RawModule
+import chisel3.experimental.{RawModule, RunFirrtlTransform}
 
 import java.io._
 import net.jcazevedo.moultingyaml._
@@ -156,7 +156,8 @@ object Driver extends BackendCompilationUtilities {
 
     val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
     val af = new FileWriter(annotationFile)
-    af.write(JsonProtocol.serialize(circuit.annotations))
+    val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
+    af.write(JsonProtocol.serialize(firrtlAnnos))
     af.close()
 
     /** Find the set of transform classes associated with annotations then
@@ -165,21 +166,16 @@ object Driver extends BackendCompilationUtilities {
       *   transform being instantiated
       */
     val transforms = circuit.annotations
-                            .collect { case Annotation(_, transform, _) => transform }
-                            .distinct
-                            .filterNot(_ == classOf[firrtl.Transform])
-                            .map { transformClass: Class[_ <: Transform] =>
-      transformClass.newInstance()
-    }
-    if (transforms.nonEmpty) {
-      val msg = "Instantiating transforms automatically from LegacyAnnotations is deprecated\n" +
-        (" "*9) + "Use firrtl.annotations.RunTransformAnnotation"
-      firrtl.Driver.dramaticWarning(msg)
-    }
+                       .collect { case anno: RunFirrtlTransform => anno.transformClass }
+                       .distinct
+                       .filterNot(_ == classOf[firrtl.Transform])
+                       .map { transformClass: Class[_ <: Transform] =>
+                         transformClass.newInstance()
+                       }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
       firrtlSource = Some(firrtlString),
-      annotations = optionsManager.firrtlOptions.annotations ++ circuit.annotations.toList,
+      annotations = optionsManager.firrtlOptions.annotations ++ firrtlAnnos,
       customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
