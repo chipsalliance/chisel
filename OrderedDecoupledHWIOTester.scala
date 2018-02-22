@@ -222,7 +222,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
     val associated_event_numbers = events.map { event => event.event_number }.toSet
     logScalaDebug(s"  associated event numbers ${associated_event_numbers.toArray.sorted.mkString(",")}")
 
-    Vec(
+    VecInit(
       input_event_list.indices.map { event_number => (associated_event_numbers.contains(event_number)).asBool } ++
         List(false.B) // We append a false at the end so no-one tries to go when counter done
     )
@@ -249,7 +249,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
                                             events           : ArrayBuffer[TestingEvent]
                                           ): Map[Data, Vec[UInt]] = {
     val port_vector_events = referenced_ports.map { port =>
-      port -> Vec(events.map { event => (event.port_values.getOrElse(port, BigInt(0))).asUInt } ++ List(0.U)) //0 added to end
+      port -> VecInit(events.map { event => (event.port_values.getOrElse(port, BigInt(0))).asUInt } ++ List(0.U)) //0 added to end
     }.toMap
 
     logScalaDebug(s"Input controller ${io_info.port_to_name(io_interface)} : ports " +
@@ -318,7 +318,7 @@ abstract class OrderedDecoupledHWIOTester extends HWIOTester {
           printf(s"output test event %d testing ${name(port)} = %d, should be %d\n",
             event_counter.value, port.asInstanceOf[UInt], port_vector_events(port)(counter_for_this_decoupled.value)
           )
-          when(port.asInstanceOf[UInt] != port_vector_events(port)(counter_for_this_decoupled.value)) {
+          when(port.asInstanceOf[UInt] =/= port_vector_events(port)(counter_for_this_decoupled.value)) {
             printf(s"Error: event %d ${name(port)} was %d should be %d\n",
               event_counter.value, port.asUInt, port_vector_events(port)(counter_for_this_decoupled.value))
             assert(false.B)
