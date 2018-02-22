@@ -89,6 +89,19 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
     }
   }
 
+  it should "clone a double-nested anonymous Bundle" in {
+    elaborate {
+      class TestModule() extends Module {
+        val io = IO(new Bundle {
+          val inner = Input(new Bundle {
+            val x = UInt(8.W)
+          })
+        })
+      }
+      new TestModule()
+    }
+  }
+
   behavior of "anonymous doubly-nested inner bundle fails with clear error"
   ( the[ChiselException] thrownBy {
     elaborate {
@@ -104,5 +117,4 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
       new Outer(2)
     }
   }).getMessage should include("Unable to determine instance")
-
 }

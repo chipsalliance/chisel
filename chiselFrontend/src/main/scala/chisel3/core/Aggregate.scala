@@ -473,6 +473,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def toPrintable: Printable = toPrintableHelper(elements.toList)
 }
 
+class AutoClonetypeException(message: String) extends ChiselException(message, null)
+
 /** Base class for data types defined as a bundle of other data types.
   *
   * Usage: extend this class (either as an anonymous or named class) and define
@@ -506,7 +508,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   *   }
   * }}}
   */
-class Bundle(implicit compileOptions: CompileOptions) extends Record {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def className = "Bundle"
 
   /** The collection of [[Data]]
@@ -552,41 +554,58 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     case _ => None
   }
 
-  // If this Data is an instance of an inner class, record a *guess* at the outer object.
-  // This is only used for cloneType, and is mutable to allow autoCloneType to try guesses other
-  // than the module that was current when the Bundle was constructed.
-  private var _outerInst: Option[Object] = Builder.currentModule
+  // Memoize the outer instance for autoclonetype, especially where this is context-dependent
+  // (like the outer module or enclosing Bundles).
+  private var _outerInst: Option[Object] = None
+
+  // For autoclonetype, record possible candidates for outer instance.
+  // _outerInst should always take precedence, since it should be propagated from the original
+  // object which has the most accurate context.
+  private val _containingModule: Option[BaseModule] = Builder.currentModule
+  private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
 
   override def cloneType : this.type = {
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials
-
-    def reflectError(desc: String): Nothing = {
-      Builder.exception(s"Unable to automatically infer cloneType on $this: $desc").asInstanceOf[Nothing]
-    }
-
     import scala.reflect.runtime.universe._
 
-    // Check if this is an inner class, and if so, try to get the outer instance
     val clazz = this.getClass
+
+    def reflectError(desc: String): Nothing = {
+      throw new AutoClonetypeException(s"Unable to automatically infer cloneType on $clazz: $desc")
+    }
+
+    // Check if this is an inner class, and if so, try to get the outer instance
     val outerClassInstance = Option(clazz.getEnclosingClass).map { outerClass =>
       def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
-      val outerInstance = try {
-        clazz.getDeclaredField("$outer").get(this)  // doesn't work in all cases, namely anonymous inner Bundles
-      } catch {
-        case _: NoSuchFieldException =>
-          // First check if this Bundle is bound and an anonymous inner Bundle of another Bundle
-          this.bindingOpt.collect { case ChildBinding(p) if canAssignOuterClass(p) => p }
-              .orElse(this._outerInst)
-              .getOrElse(reflectError(s"Unable to determine instance of outer class $outerClass"))
+
+      val outerInstance = _outerInst match {
+        case Some(outerInstance) => outerInstance  // use _outerInst if defined
+        case None =>  // determine outer instance if not already recorded
+          try {
+            // Prefer this if it works, but doesn't work in all cases, namely anonymous inner Bundles
+            val outer = clazz.getDeclaredField("$outer").get(this)
+            _outerInst = Some(outer)
+            outer
+          } catch {
+            case (_: NoSuchFieldException | _: IllegalAccessException) =>
+              // Fallback using guesses based on common patterns
+              val allOuterCandidates = Seq(
+                  _containingModule.toSeq,
+                  _containingBundles
+                ).flatten.distinct
+              allOuterCandidates.filter(canAssignOuterClass(_)) match {
+                case outer :: Nil =>
+                  _outerInst = Some(outer)  // record the guess for future use
+                  outer
+                case Nil => reflectError(s"Unable to determine instance of outer class $outerClass," +
+                    s" no candidates assignable to outer class types; examined $allOuterCandidates")
+                case candidates => reflectError(s"Unable to determine instance of outer class $outerClass," +
+                    s" multiple possible candidates $candidates assignable to outer class type")
+              }
+          }
       }
-      if (!canAssignOuterClass(outerInstance)) {
-        reflectError(s"Unable to determine instance of outer class $outerClass," +
-            s" guessed $outerInstance, but is not assignable to outer class $outerClass")
-      }
-      // Record the outer instance for future cloning
-      this._outerInst = Some(outerInstance)
       (outerClass, outerInstance)
     }
 
@@ -614,7 +633,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
         case Some(clone) =>
           clone._outerInst = this._outerInst
           if (!clone.typeEquivalent(this)) {
-            reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+            reflectError(s"automatically cloned $clone not type-equivalent to base." +
             " Constructor argument values were not inferred, ensure constructor is deterministic.")
           }
           return clone.asInstanceOf[this.type]
@@ -627,7 +646,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val classSymbol = try {
       mirror.reflect(this).symbol
     } catch {
-      case e: scala.reflect.internal.Symbols#CyclicReference => reflectError(s"Scala cannot reflect on $this, got exception $e." +
+      case e: scala.reflect.internal.Symbols#CyclicReference => reflectError(s"got exception $e attempting Scala reflection." +
           " This is known to occur with inner classes on anonymous outer classes." +
           " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType.")
     }
@@ -661,7 +680,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
         return clone
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
-          reflectError(s"Unexpected failure at constructor invocation, got $e.")
+          reflectError(s"unexpected failure at constructor invocation, got $e.")
       }
     }
 
@@ -680,7 +699,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
     val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
     if (!paramsDiff.isEmpty) {
-      reflectError(s"constructor has parameters $paramsDiff that are not both immutable and accessible." +
+      reflectError(s"constructor has parameters (${paramsDiff.toList.sorted.mkString(", ")}) that are not both immutable and accessible." +
           " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
     }
 
@@ -698,11 +717,15 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case (paramName, paramVal: Data) if paramVal.hasBinding => paramName
     }
     if (boundDataParamNames.nonEmpty) {
-      reflectError(s"constructor parameters ($boundDataParamNames) have values that are hardware types, which is likely to cause subtle errors." +
+      reflectError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
           " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
     }
 
-    val ctorParamsVals = ctorParamsNameVals.map{ case (_, paramVal) => paramVal }
+    // Clone unbound parameters in case they are being used as bundle fields.
+    val ctorParamsVals = ctorParamsNameVals.map {
+      case (_, paramVal: Data) => paramVal.cloneTypeFull
+      case (_, paramVal) => paramVal
+    }
 
     // Invoke ctor
     val classMirror = outerClassInstance match {
