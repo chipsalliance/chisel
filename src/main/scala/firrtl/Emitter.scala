@@ -218,7 +218,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
     }
     x match {
       case (e: DoPrim) => emit(op_stream(e), top + 1)
-      case (e: Mux) => emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
+      case (e: Mux) => {
+        if(e.tpe == ClockType) throw EmitterException("Cannot emit clock muxes directly")
+        emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
+      }
       case (e: ValidIf) => emit(Seq(cast(e.value)),top + 1)
       case (e: WRef) => w write e.serialize
       case (e: WSubField) => w write LowerTypes.loweredName(e)
@@ -319,7 +322,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
          }
        case AsUInt => Seq("$unsigned(", a0, ")")
        case AsSInt => Seq("$signed(", a0, ")")
-       case AsClock => Seq("$unsigned(", a0, ")")
+       case AsClock => Seq(a0)
        case Dshlw => Seq(cast(a0), " << ", a1)
        case Dshl => Seq(cast(a0), " << ", a1)
        case Dshr => doprim.tpe match {
@@ -433,6 +436,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
             }
             expr match {
               case m: Mux if canFlatten(m) =>
+                if(m.tpe == ClockType) throw EmitterException("Cannot emit clock muxes directly")
                 val ifStatement = Seq(tabs, "if (", m.cond, ") begin")
                 val trueCase = addUpdate(m.tval, tabs + tab)
                 val elseStatement = Seq(tabs, "end else begin")

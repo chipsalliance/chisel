@@ -77,7 +77,7 @@ object AnalysisUtils {
 
   /** Checks whether the two memories are equivalent in all respects except name
     */
-  def eqMems(a: DefAnnotatedMemory, b: DefAnnotatedMemory, noDeDupeMems: Seq[String]) =
+  def eqMems(a: DefAnnotatedMemory, b: DefAnnotatedMemory, noDeDupeMems: Seq[String]): Boolean =
     a == b.copy(info = a.info, name = a.name, memRef = a.memRef) &&
     !(noDeDupeMems.contains(a.name) || noDeDupeMems.contains(b.name))
 }
@@ -120,6 +120,6 @@ object ResolveMaskGranularity extends Pass {
     case sx => sx map updateStmts(connects)
   }
 
-  def annotateModMems(m: DefModule) = m map updateStmts(getConnects(m))
-  def run(c: Circuit) = c copy (modules = c.modules map annotateModMems)
+  def annotateModMems(m: DefModule): DefModule = m map updateStmts(getConnects(m))
+  def run(c: Circuit): Circuit = c copy (modules = c.modules map annotateModMems)
 }

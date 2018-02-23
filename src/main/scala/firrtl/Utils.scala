@@ -226,6 +226,10 @@ object Utils extends LazyLogging {
       case SIntLiteral(value, _) => "_" + value
     }
   }
+  /** Maps node name to value */
+  type NodeMap = mutable.HashMap[String, Expression]
+
+  def isTemp(str: String): Boolean = str.head == '_'
 
   /** Indent the results of [[ir.FirrtlNode.serialize]] */
   def indent(str: String) = str replaceAllLiterally ("\n", "\n  ")
@@ -306,88 +310,45 @@ object Utils extends LazyLogging {
     case _ => false
   }
 
-//============== TYPES ================
-//<<<<<<< HEAD
-//   def mux_type (e1:Expression,e2:Expression) : Type = mux_type(tpe(e1),tpe(e2))
-//   def mux_type (t1:Type,t2:Type) : Type = {
-//      if (wt(t1) == wt(t2)) {
-//         (t1,t2) match { 
-//            case (t1:UIntType,t2:UIntType) => UIntType(UnknownWidth)
-//            case (t1:SIntType,t2:SIntType) => SIntType(UnknownWidth)
-//            case (t1:FixedType,t2:FixedType) => FixedType(UnknownWidth, UnknownWidth)
-//            case (t1:VectorType,t2:VectorType) => VectorType(mux_type(t1.tpe,t2.tpe),t1.size)
-//            case (t1:BundleType,t2:BundleType) => 
-//               BundleType((t1.fields,t2.fields).zipped.map((f1,f2) => {
-//                  Field(f1.name,f1.flip,mux_type(f1.tpe,f2.tpe))
-//               }))
-//         }
-//      } else UnknownType
-//   }
-//   def mux_type_and_widths (e1:Expression,e2:Expression) : Type = mux_type_and_widths(tpe(e1),tpe(e2))
-//   def PLUS (w1:Width,w2:Width) : Width = (w1, w2) match {
-//     case (IntWidth(i), IntWidth(j)) => IntWidth(i + j)
-//     case _ => PlusWidth(w1,w2)
-//   }
-//   def MAX (w1:Width,w2:Width) : Width = (w1, w2) match {
-//     case (IntWidth(i), IntWidth(j)) => IntWidth(max(i,j))
-//     case _ => MaxWidth(Seq(w1,w2))
-//   }
-//   def MINUS (w1:Width,w2:Width) : Width = (w1, w2) match {
-//     case (IntWidth(i), IntWidth(j)) => IntWidth(i - j)
-//     case _ => MinusWidth(w1,w2)
-//   }
-//   def POW (w1:Width) : Width = w1 match {
-//     case IntWidth(i) => IntWidth(pow_minus_one(BigInt(2), i))
-//     case _ => ExpWidth(w1)
-//   }
-//   def MIN (w1:Width,w2:Width) : Width = (w1, w2) match {
-//     case (IntWidth(i), IntWidth(j)) => IntWidth(min(i,j))
-//     case _ => MinWidth(Seq(w1,w2))
-//   }
-//   def mux_type_and_widths (t1:Type,t2:Type) : Type = {
-//      def wmax (w1:Width,w2:Width) : Width = {
-//         (w1,w2) match {
-//            case (w1:IntWidth,w2:IntWidth) => IntWidth(w1.width.max(w2.width))
-//            case (w1,w2) => MaxWidth(Seq(w1,w2))
-//         }
-//      }
-//      val wt1 = new WrappedType(t1)
-//      val wt2 = new WrappedType(t2)
-//      if (wt1 == wt2) {
-//         (t1,t2) match {
-//            case (t1:UIntType,t2:UIntType) => UIntType(wmax(t1.width,t2.width))
-//            case (t1:SIntType,t2:SIntType) => SIntType(wmax(t1.width,t2.width))
-//            case (FixedType(w1, p1), FixedType(w2, p2)) =>
-//              FixedType(PLUS(MAX(p1, p2),MAX(MINUS(w1, p1), MINUS(w2, p2))), MAX(p1, p2))
-//            case (t1:VectorType,t2:VectorType) => VectorType(mux_type_and_widths(t1.tpe,t2.tpe),t1.size)
-//            case (t1:BundleType,t2:BundleType) => BundleType((t1.fields zip t2.fields).map{case (f1, f2) => Field(f1.name,f1.flip,mux_type_and_widths(f1.tpe,f2.tpe))})
-//         }
-//      } else UnknownType
-//   }
-//   def module_type (m:DefModule) : Type = {
-//      BundleType(m.ports.map(p => p.toField))
-//   }
-//   def sub_type (v:Type) : Type = {
-//      v match {
-//         case v:VectorType => v.tpe
-//         case v => UnknownType
-//      }
-//   }
-//   def field_type (v:Type,s:String) : Type = {
-//      v match {
-//         case v:BundleType => {
-//            val ft = v.fields.find(p => p.name == s)
-//            ft match {
-//               case ft:Some[Field] => ft.get.tpe
-//               case ft => UnknownType
-//            }
-//         }
-//         case v => UnknownType
-//      }
-//   }
-//=======
+  /** Returns children Expressions of e */
+  def getKids(e: Expression): Seq[Expression] = {
+    val kids = mutable.ArrayBuffer[Expression]()
+    def addKids(e: Expression): Expression = {
+      kids += e
+      e
+    }
+    e map addKids
+    kids
+  }
+
+  /** Walks two expression trees and returns a sequence of tuples of where they differ */
+  def diff(e1: Expression, e2: Expression): Seq[(Expression, Expression)] = {
+    if(weq(e1, e2)) Nil
+    else {
+      val (e1Kids, e2Kids) = (getKids(e1), getKids(e2))
+
+      if(e1Kids == Nil || e2Kids == Nil || e1Kids.size != e2Kids.size) Seq((e1, e2))
+      else {
+        e1Kids.zip(e2Kids).flatMap { case (e1k, e2k) => diff(e1k, e2k) }
+      }
+    }
+  }
+
+  /** Returns an inlined expression (replacing node references with values),
+    * stopping on a stopping condition or until the reference is not a node
+    */
+  def inline(nodeMap: NodeMap, stop: String => Boolean = {x: String => false})(e: Expression): Expression = {
+    def onExp(e: Expression): Expression = e map onExp match {
+      case Reference(name, _) if nodeMap.contains(name) && !stop(name) => onExp(nodeMap(name))
+      case WRef(name, _, _, _) if nodeMap.contains(name) && !stop(name) => onExp(nodeMap(name))
+      case other => other
+    }
+    onExp(e)
+  }
+
   def mux_type(e1: Expression, e2: Expression): Type = mux_type(e1.tpe, e2.tpe)
   def mux_type(t1: Type, t2: Type): Type = (t1, t2) match {
+    case (ClockType, ClockType) => ClockType
     case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
     case (t1: SIntType, t2: SIntType) => SIntType(UnknownWidth)
     case (t1: FixedType, t2: FixedType) => FixedType(UnknownWidth, UnknownWidth)
@@ -405,6 +366,7 @@ object Utils extends LazyLogging {
       case (w1x, w2x) => MaxWidth(Seq(w1x, w2x))
     }
     (t1, t2) match {
+      case (ClockType, ClockType) => ClockType
       case (t1x: UIntType, t2x: UIntType) => UIntType(wmax(t1x.width, t2x.width))
       case (t1x: SIntType, t2x: SIntType) => SIntType(wmax(t1x.width, t2x.width))
       case (FixedType(w1, p1), FixedType(w2, p2)) =>
@@ -432,7 +394,6 @@ object Utils extends LazyLogging {
     }
     case vx => UnknownType
   }
-//>>>>>>> e54fb610c6bf0a7fe5c9c0f0e0b3acbb3728cfd0
    
 // =================================
   def error(str: String, cause: Throwable = null) = throw new FIRRTLException(str, cause)

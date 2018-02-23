@@ -259,8 +259,8 @@ object CheckTypes extends Pass {
     s"$info: [module $mname]  Attach requires all arguments to be Analog type: $exp.")
   class NodePassiveType(info: Info, mname: String) extends PassException(
     s"$info: [module $mname]  Node must be a passive type.")
-  class MuxSameType(info: Info, mname: String) extends PassException(
-    s"$info: [module $mname]  Must mux between equivalent types.")
+  class MuxSameType(info: Info, mname: String, t1: String, t2: String) extends PassException(
+    s"$info: [module $mname]  Must mux between equivalent types: $t1 != $t2.")
   class MuxPassiveTypes(info: Info, mname: String) extends PassException(
     s"$info: [module $mname]  Must mux between passive types.")
   class MuxCondUInt(info: Info, mname: String) extends PassException(
@@ -361,15 +361,13 @@ object CheckTypes extends Pass {
         case (e: DoPrim) => check_types_primop(info, mname, e)
         case (e: Mux) =>
           if (wt(e.tval.tpe) != wt(e.fval.tpe))
-            errors.append(new MuxSameType(info, mname))
+            errors.append(new MuxSameType(info, mname, e.tval.tpe.serialize, e.fval.tpe.serialize))
           if (!passive(e.tpe))
             errors.append(new MuxPassiveTypes(info, mname))
           e.cond.tpe match {
             case _: UIntType =>
             case _ => errors.append(new MuxCondUInt(info, mname))
           }
-          if ((e.tval.tpe == ClockType) || (e.fval.tpe == ClockType))
-            errors.append(new MuxClock(info, mname))
         case (e: ValidIf) =>
           if (!passive(e.tpe))
             errors.append(new ValidIfPassiveTypes(info, mname))
