@@ -3,7 +3,7 @@ package chisel3.tests
 import org.scalatest._
 
 import chisel3._
-import chisel3.testers2._
+import chisel3.tester._
 
 class ElementTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2 with Element types"

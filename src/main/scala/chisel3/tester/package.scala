@@ -10,7 +10,7 @@ class LiteralTypeException(message: String) extends Exception(message)
 
 /** Basic interfaces and implicit conversions for testers2
   */
-package object testers2 {
+package object tester {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
   implicit class testableData[T <: Data](x: T) {
     protected def pokeWithPriority(value: T, priority: Int): Unit = (x, value) match {

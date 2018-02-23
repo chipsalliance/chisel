@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.testers2
+package chisel3.tester
 
 import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
 import scala.collection.mutable
