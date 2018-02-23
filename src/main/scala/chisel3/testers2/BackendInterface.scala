@@ -258,6 +258,7 @@ trait ThreadedBackend {
   protected def threadFinished(thread: TesterThread) {
     allThreads -= thread
     scheduler()
+    // TODO: finish the current thread for threadchecker
     // TODO: join notification
   }
 

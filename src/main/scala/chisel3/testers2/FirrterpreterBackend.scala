@@ -110,6 +110,8 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     for (_ <- 0 until cycles) {
       val thisThread = currentThread.get
       threadingChecker.finishThread(thisThread, signal)
+      // TODO this also needs to be called on thread death
+
       blockedThreads.put(signal, blockedThreads.getOrElseUpdate(signal, Seq()) :+ thisThread)
       scheduler()
       thisThread.waiting.acquire()
@@ -125,7 +127,6 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   }
 
   override def run(testFn: T => Unit): Unit = {
-    // TODO: don't hardcode in assumption of singleclock singlereset circuit
     tester.poke("reset", 1)
     tester.step(1)
     tester.poke("reset", 0)
