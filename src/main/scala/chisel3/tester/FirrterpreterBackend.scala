@@ -4,11 +4,10 @@ package chisel3.tester
 
 import chisel3._
 
-import java.util.concurrent.{SynchronousQueue, TimeUnit}
+import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
 import scala.collection.mutable
 
 import firrtl_interpreter._
-
 
 class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     extends BackendInstance[T] with ThreadedBackend {
@@ -57,10 +56,17 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   protected val lastClockValue = mutable.HashMap[Clock, Boolean]()
 
   protected def scheduler() {
-    while (activeThreads.isEmpty) {
+    var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
+
+    while (activeThreads.isEmpty && !testDone) {
       threadingChecker.finishTimestep()
       tester.step(1)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+
+      if (mainTesterThread.get.done) {
+        testDone = true
+      }
+
       threadingChecker.newTimestep(dut.clock)
 
       // Unblock threads waiting on main clock
@@ -88,10 +94,15 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
       }
     }
 
-    val nextThread = activeThreads.head
-    currentThread = Some(nextThread)
-    activeThreads.trimStart(1)
-    nextThread.waiting.release()
+    if (!testDone) {  // if test isn't over, run next thread
+      val nextThread = activeThreads.head
+      currentThread = Some(nextThread)
+      activeThreads.trimStart(1)
+      nextThread.waiting.release()
+    } else {  // if test is done, return to the main scalatest thread
+      scalatestWaiting.release()
+    }
+
   }
 
   override def step(signal: Clock, cycles: Int): Unit = {
@@ -109,6 +120,8 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   }
 
   protected var scalatestThread: Option[Thread] = None
+  protected var mainTesterThread: Option[TesterThread] = None
+  protected val scalatestWaiting = new Semaphore(0)
   protected val interruptedException = new SynchronousQueue[Throwable]()
 
   protected def onException(e: Throwable) {
@@ -121,23 +134,25 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     tester.step(1)
     tester.poke("reset", 0)
 
-    val mainThread = fork( {
+    val mainThread = fork(
       testFn(dut)
-    }, true)
+    )
 
     require(activeThreads.length == 1)  // only thread should be main
     activeThreads.trimStart(1)
     currentThread = Some(mainThread)
     scalatestThread = Some(Thread.currentThread())
+    mainTesterThread = Some(mainThread)
 
     mainThread.waiting.release()
     try {
-      mainThread.thread.join()
+      scalatestWaiting.acquire()
     } catch {
       case e: InterruptedException =>
         throw interruptedException.poll(10, TimeUnit.SECONDS)
     }
 
+    mainTesterThread = None
     scalatestThread = None
     currentThread = None
 

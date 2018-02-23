@@ -166,8 +166,9 @@ trait ThreadedBackend {
   }
 
 
-  protected class TesterThread(runnable: => Unit, isMainThread: Boolean) extends AbstractTesterThread {
+  protected class TesterThread(runnable: => Unit) extends AbstractTesterThread {
     val waiting = new Semaphore(0)
+    var done: Boolean = false
 
     val thread = new Thread(new Runnable {
       def run() {
@@ -182,12 +183,7 @@ trait ThreadedBackend {
             case e: Error => onException(e)
               waiting.acquire()
           }
-          if (!isMainThread) {
-            // schedule the next thread before falling off the edge
-            // main thread just stops, which will wake the tester thread and end the test
-            threadFinished(TesterThread.this)
-          }
-          // TODO: should the last timestep finish? otherwise could be thread ordering effects
+          threadFinished(TesterThread.this)
         } catch {
           case e: InterruptedException =>  // currently used as a signal to stop the thread
             // TODO: allow other uses for InterruptedException?
@@ -214,21 +210,20 @@ trait ThreadedBackend {
   protected def onException(e: Throwable)
 
   protected def threadFinished(thread: TesterThread) {
+    thread.done = true
     allThreads -= thread
     scheduler()
     // TODO: finish the current thread for threadchecker
     // TODO: join notification
   }
 
-  def fork(runnable: => Unit, isMainThread: Boolean): TesterThread = {
-    val newThread = new TesterThread(runnable, isMainThread)
+  def fork(runnable: => Unit): TesterThread = {
+    val newThread = new TesterThread(runnable)
     allThreads += newThread
     activeThreads += newThread
     newThread.thread.start()
     newThread
   }
-
-  def fork(runnable: => Unit): TesterThread = fork(runnable, false)
 
   def join(thread: AbstractTesterThread) = ???
 }
