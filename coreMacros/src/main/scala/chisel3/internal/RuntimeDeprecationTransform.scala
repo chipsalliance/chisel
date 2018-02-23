@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 import scala.annotation.StaticAnnotation
 import scala.annotation.compileTimeOnly
 
-
+object RuntimeDeprecatedTransform
 class RuntimeDeprecatedTransform(val c: Context) {
   import c.universe._
 

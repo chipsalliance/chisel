@@ -17,6 +17,7 @@ import scala.language.experimental.macros
 import scala.annotation.StaticAnnotation
 import scala.annotation.compileTimeOnly
 
+object DebugTransforms
 class DebugTransforms(val c: Context) {
   import c.universe._
 
@@ -45,6 +46,7 @@ class DebugTransforms(val c: Context) {
   }
 }
 
+object NamingTransforms
 class NamingTransforms(val c: Context) {
   import c.universe._
   import Flag._

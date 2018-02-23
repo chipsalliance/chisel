@@ -27,6 +27,7 @@ trait SourceInfoTransformMacro {
   def implicitCompileOptions = q"implicitly[_root_.chisel3.core.CompileOptions]"
 }
 
+object UIntTransform
 class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def bitset(off: c.Tree, dat: c.Tree): c.Tree = {
@@ -35,6 +36,7 @@ class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Module instantiation transform
+object InstTransform
 class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](bc: c.Tree): c.Tree = {
@@ -42,6 +44,7 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](size: c.Tree, t: c.Tree): c.Tree = {
@@ -49,6 +52,7 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+object MuxTransform
 class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](cond: c.Tree, con: c.Tree, alt: c.Tree): c.Tree = {
@@ -57,6 +61,7 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+object VecTransform
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply_elts(elts: c.Tree): c.Tree = {
@@ -93,6 +98,7 @@ abstract class AutoSourceTransform extends SourceInfoTransformMacro {
   }
 }
 
+object SourceInfoTransform
 class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
@@ -129,6 +135,7 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   }
 }
 
+object CompileOptionsTransform
 class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
@@ -145,8 +152,9 @@ class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
   }
 }
 
-/** Special whitebox version of the blackbox SourceInfoTransform, used when fun things need to happen to satisfy the
-  * type system while preventing the use of macro overrides.
+object SourceInfoWhiteboxTransform
+/** Special whitebox version of the blackbox SourceInfoTransform, used when fun things need to
+  * happen to satisfy the type system while preventing the use of macro overrides.
   */
 class SourceInfoWhiteboxTransform(val c: whitebox.Context) extends AutoSourceTransform {
   import c.universe._
