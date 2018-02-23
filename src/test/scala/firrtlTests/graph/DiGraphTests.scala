@@ -58,4 +58,18 @@ class DiGraphTests extends FirrtlFlatSpec {
     tupleGraph.transformNodes(_._1).getEdgeMap should contain ("a" -> Set("b", "c"))
   }
 
+  "Graph summation" should "be order-wise equivalent to original" in {
+    val first = acyclicGraph.subgraph(Set("a", "b", "c"))
+    val second = acyclicGraph.subgraph(Set("b", "c", "d", "e"))
+
+    (first + second).getEdgeMap should equal (acyclicGraph.getEdgeMap)
+  }
+
+  it should "be idempotent" in {
+    val first = acyclicGraph.subgraph(Set("a", "b", "c"))
+    val second = acyclicGraph.subgraph(Set("b", "c", "d", "e"))
+
+    (first + second + second + second).getEdgeMap should equal (acyclicGraph.getEdgeMap)
+  }
+
 }
