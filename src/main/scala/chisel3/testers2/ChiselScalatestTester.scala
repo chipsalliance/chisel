@@ -11,9 +11,10 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   // Stack trace depths:
   // 0: this function
   // 1: TestEnvInterface.testerExpect (superclass of this)
-  // 2: BackendInterface.check
-  // 3: (implicit testable*).check
-  // 4: user code calling check
+  // 2: BackendInterface.expect
+  // 3: (implicit testable*).expectWithStale
+  // 4: (implicit testable*).expect
+  // 5: user code calling check
 
   override def testerFail(msg: String): Unit = {
     throw new TestFailedException(s"$msg", 4)
@@ -25,7 +26,7 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
         case Some(msg) => s": $msg"
         case _ => ""
       }
-      throw new TestFailedException(s"$signal=$actual did not equal expected=$expected$appendMsg", 4)
+      throw new TestFailedException(s"$signal=$actual did not equal expected=$expected$appendMsg", 5)
     }
   }
 

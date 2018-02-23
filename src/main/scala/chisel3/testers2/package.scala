@@ -2,6 +2,9 @@
 
 package chisel3
 
+import chisel3.experimental.FixedPoint
+import chisel3.internal.firrtl.FPLit
+
 class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 
@@ -18,6 +21,10 @@ package object testers2 {
       case (x: SInt, value: SInt) => Context().backend.pokeBits(x, value.litToBigInt, priority)
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
+      case (x: FixedPoint, value: FixedPoint) => {
+        require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+        Context().backend.pokeBits(x, value.litToBigInt, priority)
+      }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types
     }
@@ -33,6 +40,10 @@ package object testers2 {
       }
       case (x: UInt) => Context().backend.peekBits(x, stale).asUInt(x.width).asInstanceOf[T]
       case (x: SInt) => Context().backend.peekBits(x, stale).asSInt(x.width).asInstanceOf[T]
+      case (x: FixedPoint) => {
+        val multiplier = math.pow(2, x.binaryPoint.get)
+        (Context().backend.peekBits(x, stale).toDouble / multiplier).F(x.binaryPoint).asInstanceOf[T]
+      }
       case x => throw new LiteralTypeException(s"don't know how to peek $x")
     }
 
@@ -47,6 +58,10 @@ package object testers2 {
       case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litToBigInt, stale)
       // TODO can't happen because of type paramterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only expect SInt value from signals of type SInt")
+      case (x: FixedPoint, value: FixedPoint) => {
+        require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
+        Context().backend.expectBits(x, value.litToBigInt, stale)
+      }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
     }
@@ -65,6 +80,7 @@ package object testers2 {
     def litToBigInt: BigInt = x.litArg match {
       case Some(value: ULit) => value.n
       case Some(value: SLit) => value.n
+      case Some(value: FPLit) => value.n
       case Some(_) => throw new LiteralTypeException(s"$x of wrong type")
       case None => throw new NotLiteralException(s"$x not a literal")
     }
@@ -77,6 +93,13 @@ package object testers2 {
       case 0 => false
       case 1 => true
       case x => throw new NotLiteralException(s"unexpected value $x from Bool")
+    }
+  }
+
+  implicit class litExtractableFixedPoint(x: FixedPoint) extends litExtractableBits(x) {
+    def litToDouble: Double = {
+      val multiplier = math.pow(2, x.binaryPoint.get)
+      litToBigInt.toDouble / multiplier
     }
   }
 

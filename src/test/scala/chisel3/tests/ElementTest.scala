@@ -58,8 +58,67 @@ class ElementTest extends FlatSpec with ChiselScalatestTester {
       c.io.expect(127.S, -1.S, 126.S)
       c.io.expect(127.S, -127.S, 0.S)
       c.io.expect(-128.S, 127.S, -1.S)
+      c.io.expect(-126.S, 127.S, 1.S)
 
+      c.io.expect(127.S, 1.S, -128.S)
+      c.io.expect(-128.S, -1.S, 127.S)
       c.io.expect(127.S, 127.S, -2.S)
+      c.io.expect(-128.S, -128.S, 0.S)
+    }
+  }
+
+  it should "work with Bool" in {
+    test(new Module {
+      val io = IO(new Bundle {
+        val in1 = Input(Bool())
+        val in2 = Input(Bool())
+        val outAnd = Output(Bool())
+        val outOr = Output(Bool())
+
+        def expect(in1Val: Bool, in2Val: Bool, andVal: Bool, orVal: Bool) {
+          in1.poke(in1Val)
+          in2.poke(in2Val)
+          outAnd.expect(andVal)
+          outOr.expect(orVal)
+        }
+      })
+      io.outAnd := io.in1 && io.in2
+      io.outOr := io.in1 || io.in2
+    }) { c =>
+      c.io.expect(true.B, true.B, true.B, true.B)
+      c.io.expect(false.B, false.B, false.B, false.B)
+      c.io.expect(true.B, false.B, false.B, true.B)
+      c.io.expect(false.B, true.B, false.B, true.B)
+    }
+  }
+
+  it should "work with FixedPoint" in {
+    import chisel3.experimental.FixedPoint
+    test(new Module {
+      val io = IO(new Bundle {
+        val in1 = Input(FixedPoint(8.W, 4.BP))
+        val in2 = Input(FixedPoint(8.W, 4.BP))
+        val out = Output(FixedPoint(8.W, 4.BP))
+
+        def expect(in1Val: FixedPoint, in2Val: FixedPoint, outVal: FixedPoint) {
+          in1.poke(in1Val)
+          in2.poke(in2Val)
+          out.expect(outVal)
+        }
+      })
+      io.out := io.in1 + io.in2
+    }) { c =>
+      c.io.expect(0.F(4.BP), 0.F(4.BP), 0.F(4.BP))
+      c.io.expect(1.F(4.BP), 1.F(4.BP), 2.F(4.BP))
+      c.io.expect(0.5.F(4.BP), 0.5.F(4.BP), 1.F(4.BP))
+      c.io.expect(0.5.F(4.BP), -0.5.F(4.BP), 0.F(4.BP))
+
+      // Overflow test, treating it as a 4-bit signed int
+      c.io.expect(7.F(4.BP), 1.F(4.BP), -8.F(4.BP))
+      c.io.expect(-8.F(4.BP), -1.F(4.BP), 7.F(4.BP))
+
+      c.io.expect(7.F(4.BP), 7.F(4.BP), -2.F(4.BP))
+      c.io.expect(-8.F(4.BP), -8.F(4.BP), 0.F(4.BP))
     }
   }
 }
