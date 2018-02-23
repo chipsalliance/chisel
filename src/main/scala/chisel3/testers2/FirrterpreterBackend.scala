@@ -81,12 +81,11 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   }
 
   var scalatestThread: Option[Thread] = None
-  var interruptedException = new SynchronousQueue[Throwable]()
+  val interruptedException = new SynchronousQueue[Throwable]()
 
   protected def onException(e: Throwable) {
     scalatestThread.get.interrupt()
     interruptedException.offer(e, 10, TimeUnit.SECONDS)
-    currentThread.get.waiting.acquire()
   }
 
   override def run(testFn: T => Unit): Unit = {
@@ -114,6 +113,13 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
 
     scalatestThread = None
     currentThread = None
+
+    for (thread <- threadOrder) {
+      // Kill the threads using an InterruptedException
+      if (thread.thread.isAlive) {
+        thread.thread.interrupt()
+      }
+    }
   }
 }
 

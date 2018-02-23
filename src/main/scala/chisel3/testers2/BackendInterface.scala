@@ -4,7 +4,7 @@ package chisel3.testers2
 
 import scala.collection.mutable
 
-import java.util.concurrent.Semaphore
+import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
 
 import chisel3._
 
@@ -211,20 +211,29 @@ trait ThreadedBackend {
 
   protected class TesterThread(runnable: => Unit, isMainThread: Boolean) extends AbstractTesterThread {
     val waiting = new Semaphore(0)
+
     val thread = new Thread(new Runnable {
       def run() {
-        waiting.acquire()
-        val result = try {
-          runnable
-        } catch {
-          case e: Exception => onException(e)
-          case e: Error => onException(e)
+        try {
           waiting.acquire()
+          val result = try {
+            runnable
+          } catch {
+            case e: InterruptedException => throw e  // propagate to upper level handler
+            case e: Exception => onException(e)
+            case e: Error => onException(e)
+            waiting.acquire()
+          }
+          if (!isMainThread) {
+            // schedule the next thread before falling off the edge
+            // main thread just stops, which will wake the tester thread and end the test
+            threadFinished(TesterThread.this)
+          }
+          // TODO: should the last timestep finish? otherwise could be thread ordering effects
+        } catch {
+          case e: InterruptedException =>  // currently used as a signal to stop the thread
+            // TODO: allow other uses for InterruptedException?
         }
-        if (!isMainThread) {
-          threadFinished(TesterThread.this)
-        } // otherwise main thread falls off the edge without running the next thread
-        // TODO: should main thread at least finish its cycle?
       }
     })
   }
