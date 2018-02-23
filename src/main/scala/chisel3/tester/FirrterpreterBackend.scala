@@ -55,46 +55,36 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   }
 
   protected val lastClockValue = mutable.HashMap[Clock, Boolean]()
-  protected val pendingClocks = mutable.ArrayBuffer[Clock]()
 
   protected def scheduler() {
     while (activeThreads.isEmpty) {
       threadingChecker.finishTimestep()
+      tester.step(1)
+      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+      threadingChecker.newTimestep(dut.clock)
 
-      // If there are no pending clocks, check if any have been enabled
-      if (pendingClocks.isEmpty) {
-        // TODO: purge unused clocks instead of still continuing to track them
-        val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
-        for (waitingClock <- waitingClocks) {
-          val currentClockVal = tester.peek(portNames(waitingClock)).toInt match {
-            case 0 => false
-            case 1 => true
-          }
-          if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
-            lastClockValue.put(waitingClock, currentClockVal)
-            if (currentClockVal == true) {
-              pendingClocks += waitingClock
-            }
+      // Unblock threads waiting on main clock
+      activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+      blockedThreads.remove(dut.clock)
+
+      // Unblock threads waiting on dependent clocks
+      // TODO: purge unused clocks instead of still continuing to track them
+      val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
+      for (waitingClock <- waitingClocks) {
+        val currentClockVal = tester.peek(portNames(waitingClock)).toInt match {
+          case 0 => false
+          case 1 => true
+        }
+        if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
+          lastClockValue.put(waitingClock, currentClockVal)
+          if (currentClockVal == true) {
+            activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
+            blockedThreads.remove(waitingClock)
+            threadingChecker.newTimestep(waitingClock)
+
+            clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
           }
         }
-      }
-
-      // If so, run tasks
-      if (!pendingClocks.isEmpty) {
-        val activeClock = pendingClocks.head
-        pendingClocks.trimStart(1)
-        clockCounter.put(activeClock, getClockCycle(activeClock) + 1)
-        threadingChecker.newTimestep(activeClock)
-
-        activeThreads ++= blockedThreads.getOrElse(activeClock, Seq())
-        blockedThreads.remove(activeClock)
-      } else {  // Otherwise, step the main clock
-        tester.step(1)
-        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
-        threadingChecker.newTimestep(dut.clock)
-
-        activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
-        blockedThreads.remove(dut.clock)
       }
     }
 
