@@ -178,8 +178,9 @@ trait ThreadedBackend {
           } catch {
             case e: InterruptedException => throw e  // propagate to upper level handler
             case e: Exception => onException(e)
+              waiting.acquire()
             case e: Error => onException(e)
-            waiting.acquire()
+              waiting.acquire()
           }
           if (!isMainThread) {
             // schedule the next thread before falling off the edge
