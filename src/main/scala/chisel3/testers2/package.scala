@@ -5,9 +5,6 @@ package chisel3
 class NotLiteralException(message: String) extends Exception(message)
 class LiteralTypeException(message: String) extends Exception(message)
 
-class ThreadOrderDependentException(message: String) extends Exception(message)
-class SignalOverwriteException(message: String) extends Exception(message)
-
 /** Basic interfaces and implicit conversions for testers2
   */
 package object testers2 {

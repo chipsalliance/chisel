@@ -237,9 +237,12 @@ trait ThreadedBackend {
       }
     })
   }
-  var currentThread: Option[TesterThread] = None
-  val waitingThreads = mutable.ArrayBuffer[TesterThread]()
-  val threadOrder = mutable.ArrayBuffer[TesterThread]()
+
+  protected var currentThread: Option[TesterThread] = None
+
+  protected val activeThreads = mutable.ArrayBuffer[TesterThread]()  // list of threads scheduled for sequential execution
+  protected val blockedThreads = mutable.HashMap[Clock, Seq[TesterThread]]()  // threads blocking on a clock edge
+  protected val allThreads = mutable.ArrayBuffer[TesterThread]()  // list of all threads
 
   /** Invokes the thread scheduler, which unblocks the next thread to be run
     * (and may also step simulator time).
@@ -253,15 +256,15 @@ trait ThreadedBackend {
   protected def onException(e: Throwable)
 
   protected def threadFinished(thread: TesterThread) {
-    threadOrder -= thread
+    allThreads -= thread
     scheduler()
     // TODO: join notification
   }
 
   def fork(runnable: => Unit, isMainThread: Boolean): TesterThread = {
     val newThread = new TesterThread(runnable, isMainThread)
-    threadOrder += newThread
-    waitingThreads += newThread
+    allThreads += newThread
+    activeThreads += newThread
     newThread.thread.start()
     newThread
   }

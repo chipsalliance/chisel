@@ -5,7 +5,7 @@ package chisel3.testers2
 import chisel3._
 
 import java.util.concurrent.{SynchronousQueue, TimeUnit}
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 import firrtl_interpreter._
 
@@ -49,24 +49,58 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
-  protected val clockCounter = Map[Clock, Int]()
+  protected val clockCounter = mutable.HashMap[Clock, Int]()
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
 
-  protected def scheduler() {
-    threadingChecker.finishThread(currentThread.get, dut.clock)  // TODO multiclock
+  protected val lastClockValue = mutable.HashMap[Clock, Boolean]()
+  protected val pendingClocks = mutable.ArrayBuffer[Clock]()
 
-    if (waitingThreads.isEmpty) {
+  protected def scheduler() {
+    while (activeThreads.isEmpty) {
       threadingChecker.finishTimestep()
-      tester.step(1)
-      waitingThreads ++= threadOrder
-      threadingChecker.newTimestep(dut.clock)  // TODO allow use on multiclock designs
+
+      // If there are no pending clocks, check if any have been enabled
+      if (pendingClocks.isEmpty) {
+        // TODO: purge unused clocks instead of still continuing to track them
+        val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
+        for (waitingClock <- waitingClocks) {
+          val currentClockVal = tester.peek(portNames(waitingClock)).toInt match {
+            case 0 => false
+            case 1 => true
+          }
+          if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
+            lastClockValue.put(waitingClock, currentClockVal)
+            if (currentClockVal == true) {
+              pendingClocks += waitingClock
+            }
+          }
+        }
+      }
+
+      // If so, run tasks
+      if (!pendingClocks.isEmpty) {
+        val activeClock = pendingClocks.head
+        pendingClocks.trimStart(1)
+        clockCounter.put(activeClock, getClockCycle(activeClock) + 1)
+        threadingChecker.newTimestep(activeClock)
+
+        activeThreads ++= blockedThreads.getOrElse(activeClock, Seq())
+        blockedThreads.remove(activeClock)
+      } else {  // Otherwise, step the main clock
+        tester.step(1)
+        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+        threadingChecker.newTimestep(dut.clock)
+
+        activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+        blockedThreads.remove(dut.clock)
+      }
     }
 
-    val nextThread = waitingThreads.head
+    val nextThread = activeThreads.head
     currentThread = Some(nextThread)
-    waitingThreads.trimStart(1)
+    activeThreads.trimStart(1)
     nextThread.waiting.release()
   }
 
@@ -75,13 +109,15 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     // TODO: maybe a fast condition for when threading is not in use?
     for (_ <- 0 until cycles) {
       val thisThread = currentThread.get
+      threadingChecker.finishThread(thisThread, signal)
+      blockedThreads.put(signal, blockedThreads.getOrElseUpdate(signal, Seq()) :+ thisThread)
       scheduler()
       thisThread.waiting.acquire()
     }
   }
 
-  var scalatestThread: Option[Thread] = None
-  val interruptedException = new SynchronousQueue[Throwable]()
+  protected var scalatestThread: Option[Thread] = None
+  protected val interruptedException = new SynchronousQueue[Throwable]()
 
   protected def onException(e: Throwable) {
     scalatestThread.get.interrupt()
@@ -98,8 +134,8 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
       testFn(dut)
     }, true)
 
-    require(waitingThreads.length == 1)  // only thread should be main
-    waitingThreads.trimStart(1)
+    require(activeThreads.length == 1)  // only thread should be main
+    activeThreads.trimStart(1)
     currentThread = Some(mainThread)
     scalatestThread = Some(Thread.currentThread())
 
@@ -114,7 +150,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     scalatestThread = None
     currentThread = None
 
-    for (thread <- threadOrder) {
+    for (thread <- allThreads.clone()) {
       // Kill the threads using an InterruptedException
       if (thread.thread.isAlive) {
         thread.thread.interrupt()
