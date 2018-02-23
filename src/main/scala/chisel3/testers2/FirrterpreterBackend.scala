@@ -4,6 +4,7 @@ package chisel3.testers2
 
 import chisel3._
 
+import java.util.concurrent.{SynchronousQueue, TimeUnit}
 import scala.collection.mutable.HashMap
 
 import firrtl_interpreter._
@@ -80,11 +81,12 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   }
 
   var scalatestThread: Option[Thread] = None
-  var interruptedException: Option[Throwable] = None
+  var interruptedException = new SynchronousQueue[Throwable]()
 
   protected def onException(e: Throwable) {
-    interruptedException = Some(e)
     scalatestThread.get.interrupt()
+    interruptedException.offer(e, 10, TimeUnit.SECONDS)
+    currentThread.get.waiting.acquire()
   }
 
   override def run(testFn: T => Unit): Unit = {
@@ -106,8 +108,8 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     try {
       mainThread.thread.join()
     } catch {
-      case e: InterruptedException => Thread.sleep(500)  // TODO fix synchronization issue
-        throw interruptedException.get
+      case e: InterruptedException =>
+        throw interruptedException.poll(10, TimeUnit.SECONDS)
     }
 
     scalatestThread = None
