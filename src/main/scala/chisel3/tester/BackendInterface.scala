@@ -7,7 +7,21 @@ import chisel3._
 class ThreadOrderDependentException(message: String) extends Exception(message)
 class SignalOverwriteException(message: String) extends Exception(message)
 
-trait AbstractTesterThread
+trait AbstractTesterThread {
+
+}
+
+class TesterThreadList(elts: Seq[AbstractTesterThread]) {
+  def toSeq(): Seq[AbstractTesterThread] = elts
+
+  def join() {
+    elts foreach { thread => Context().backend.join(thread) }
+  }
+
+  def fork(runnable: => Unit): TesterThreadList = {
+    new TesterThreadList(elts :+ Context().backend.fork(runnable))
+  }
+}
 
 /** Common interface definition for tester backends
   */
@@ -31,7 +45,7 @@ trait BackendInterface {
 
   def fork(runnable: => Unit): AbstractTesterThread
 
-  def join(thread: AbstractTesterThread)
+  def join(thread: AbstractTesterThread): Unit
 }
 
 /** Backend associated with a particular circuit, and can run tests

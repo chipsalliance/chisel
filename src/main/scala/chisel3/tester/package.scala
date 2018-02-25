@@ -103,11 +103,7 @@ package object tester {
     }
   }
 
-  def fork(runnable: => Unit): AbstractTesterThread = {
-    Context().backend.fork(runnable)
-  }
-
-  def join(thread: AbstractTesterThread) = {
-    Context().backend.join(thread)
+  def fork(runnable: => Unit): TesterThreadList = {
+    new TesterThreadList(Seq(Context().backend.fork(runnable)))
   }
 }

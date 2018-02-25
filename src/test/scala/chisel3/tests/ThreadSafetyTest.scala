@@ -18,12 +18,10 @@ class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
         fork {
           c.io.in.poke(true.B)
           c.clock.step(1)  // TODO: remove need for explicit clock
-        }
-        fork {
+        } .fork {
           c.io.in.poke(true.B)
           c.clock.step(1)
-        }
-        c.clock.step(2)  // TODO: use thread joins
+        } .join
       }
     }
   }
@@ -39,12 +37,10 @@ class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
         fork {
           c.io.in.weakPoke(true.B)
           c.clock.step(1)  // TODO: remove need for explicit clock
-        }
-        fork {
+        } .fork {
           c.io.in.weakPoke(true.B)
           c.clock.step(1)
-        }
-        c.clock.step(2)  // TODO: use thread joins
+        } .join
       }
     }
   }
@@ -59,12 +55,10 @@ class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
         fork {
           c.io.in.expect(true.B)
           c.clock.step(1)  // TODO: remove need for explicit clock
-        }
-        fork {
+        } .fork {
           c.io.in.poke(true.B)
           c.clock.step(1)
-        }
-        c.clock.step(2)  // TODO: use thread joins
+        } .join
       }
     }
   }

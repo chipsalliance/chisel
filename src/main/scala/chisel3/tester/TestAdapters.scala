@@ -24,7 +24,7 @@ package object TestAdapters {
       }
     }
 
-    def enqueueSeq(data: Seq[T]): AbstractTesterThread = {
+    def enqueueSeq(data: Seq[T]): TesterThreadList = {
       fork {
         for (elt <- data) {
           while (x.ready.peek().litToBoolean == false) {

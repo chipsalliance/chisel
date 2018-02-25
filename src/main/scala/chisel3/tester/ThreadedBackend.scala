@@ -196,6 +196,7 @@ trait ThreadedBackend {
 
   protected val activeThreads = mutable.ArrayBuffer[TesterThread]()  // list of threads scheduled for sequential execution
   protected val blockedThreads = mutable.HashMap[Clock, Seq[TesterThread]]()  // threads blocking on a clock edge
+  protected val joinedThreads = mutable.HashMap[TesterThread, Seq[TesterThread]]()  // threads blocking on another thread
   protected val allThreads = mutable.ArrayBuffer[TesterThread]()  // list of all threads
 
   /** Invokes the thread scheduler, which unblocks the next thread to be run
@@ -212,9 +213,11 @@ trait ThreadedBackend {
   protected def threadFinished(thread: TesterThread) {
     thread.done = true
     allThreads -= thread
+    joinedThreads.remove(thread) match {
+      case Some(testerThreads) => activeThreads ++= testerThreads
+      case None =>
+    }
     scheduler()
-    // TODO: finish the current thread for threadchecker
-    // TODO: join notification
   }
 
   def fork(runnable: => Unit): TesterThread = {
@@ -225,5 +228,13 @@ trait ThreadedBackend {
     newThread
   }
 
-  def join(thread: AbstractTesterThread) = ???
+  def join(thread: AbstractTesterThread) = {
+    val thisThread = currentThread.get
+    val threadTyped = thread.asInstanceOf[TesterThread]  // TODO get rid of this, perhap by making it typesafe
+    if (!threadTyped.done) {
+      joinedThreads.put(threadTyped, joinedThreads.getOrElseUpdate(threadTyped, Seq()) :+ thisThread)
+      scheduler()
+      thisThread.waiting.acquire()
+    }
+  }
 }
