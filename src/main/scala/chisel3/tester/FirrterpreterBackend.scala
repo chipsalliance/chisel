@@ -179,6 +179,7 @@ object Firrterpreter {
   def start[T <: Module](dutGen: => T): BackendInstance[T] = {
     val optionsManager = new ExecutionOptionsManager("chisel3")
         with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite {
+      commonOptions = CommonOptions(targetDirName = "test_run_dir")
       firrtlOptions = FirrtlExecutionOptions(
         compilerName = "low"
       )
