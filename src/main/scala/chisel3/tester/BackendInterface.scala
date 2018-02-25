@@ -59,10 +59,15 @@ trait TestEnvInterface {
     test(Context.createDefaultTester(dutGen))(testFn)
   }
 
-  /** Fails the test now.
+  /** Logs a tester failure at this point.
+    * Failures queued until the next checkpoint.
     */
   def testerFail(msg: String): Unit
-  /** Expect a specific value on a wire, calling testerFail if the expectation isn't met
+  /** Expect a specific value on a wire, calling testerFail if the expectation isn't met.
+    * Failures queued until the next checkpoint.
     */
   def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit
+  /** If there are any failures, reports them and end the test now.
+    */
+  def checkpoint()
 }

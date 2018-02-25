@@ -56,7 +56,6 @@ class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
           val in = Input(Bool())
         })
       }) { c =>
-        c.io.in.poke(true.B)  // TODO: expect should not trigger until end of timestep
         fork {
           c.io.in.expect(true.B)
           c.clock.step(1)  // TODO: remove need for explicit clock

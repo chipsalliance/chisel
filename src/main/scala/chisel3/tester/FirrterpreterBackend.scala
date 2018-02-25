@@ -60,6 +60,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
 
     while (activeThreads.isEmpty && !testDone) {
       threadingChecker.finishTimestep()
+      Context().env.checkpoint()
       tester.step(1)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 

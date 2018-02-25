@@ -2,12 +2,16 @@
 
 package chisel3.tester
 
+import scala.collection.mutable
+
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 
 import chisel3._
 
 trait ChiselScalatestTester extends Assertions with TestEnvInterface {
+  protected val batchedFailures = mutable.ArrayBuffer[TestFailedException]()
+
   // Stack trace depths:
   // 0: this function
   // 1: TestEnvInterface.testerExpect (superclass of this)
@@ -15,9 +19,8 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   // 3: (implicit testable*).expectWithStale
   // 4: (implicit testable*).expect
   // 5: user code calling check
-
   override def testerFail(msg: String): Unit = {
-    throw new TestFailedException(s"$msg", 4)
+    batchedFailures += new TestFailedException(s"$msg", 4)
   }
 
   override def testerExpect(expected: Any, actual: Any, signal: String, msg: Option[String]): Unit = {
@@ -26,7 +29,14 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
         case Some(msg) => s": $msg"
         case _ => ""
       }
-      throw new TestFailedException(s"$signal=$actual did not equal expected=$expected$appendMsg", 5)
+      batchedFailures += new TestFailedException(s"$signal=$actual did not equal expected=$expected$appendMsg", 5)
+    }
+  }
+
+  override def checkpoint(): Unit = {
+    // TODO: report multiple exceptions simultaneously
+    for (failure <- batchedFailures) {
+      throw failure
     }
   }
 
