@@ -159,7 +159,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val annoFile =  new File(optionsManager.commonOptions.targetDirName, top + ".anno")
     copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)
     optionsManager.firrtlOptions.annotations.length should be (0)
-    val annos = Driver.loadAnnotations(optionsManager)
+    val annos = Driver.getAnnotations(optionsManager)
     annos.length should be (12) // 9 from circuit plus 3 general purpose
     annos.count(_.transformClass == "firrtl.passes.InlineInstances") should be (9)
     annoFile.delete()
@@ -176,7 +176,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val annotationsTestFile =  new File(optionsManager.commonOptions.targetDirName, optionsManager.firrtlOptions.annotationFileNameOverride + ".anno")
     copyResourceToFile("/annotations/SampleAnnotations.anno", annotationsTestFile)
     optionsManager.firrtlOptions.annotations.length should be (0)
-    val annos = Driver.loadAnnotations(optionsManager)
+    val annos = Driver.getAnnotations(optionsManager)
     annos.length should be (12) // 9 from circuit plus 3 general purpose
     annos.count(_.transformClass == "firrtl.passes.InlineInstances") should be (9)
     annotationsTestFile.delete()
@@ -193,7 +193,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val annotationsTestFile = new File(optionsManager.commonOptions.targetDirName, filename)
     copyResourceToFile(s"/annotations/$filename", annotationsTestFile)
     optionsManager.firrtlOptions.annotations.length should be (0)
-    val annos = Driver.loadAnnotations(optionsManager)
+    val annos = Driver.getAnnotations(optionsManager)
     annos.length should be (21) // 18 from files plus 3 general purpose
     annos.count(_.transformClass == "firrtl.passes.InlineInstances") should be (18)
     annotationsTestFile.delete()
@@ -213,8 +213,8 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val firrtlOptions = optionsManager.firrtlOptions
     firrtlOptions.annotations.length should be (1) // infer-rw
 
-    val anns = Driver.loadAnnotations(optionsManager).groupBy(_.transform)
-    anns(classOf[BlackBoxSourceHelper]).length should be (1) // built in to loadAnnotations
+    val anns = Driver.getAnnotations(optionsManager).groupBy(_.transform)
+    anns(classOf[BlackBoxSourceHelper]).length should be (1) // built-in to getAnnotations
     anns(classOf[InferReadWrite]).length should be (1) // --infer-rw
     anns(classOf[InlineInstances]).length should be (9) // annotations file
 

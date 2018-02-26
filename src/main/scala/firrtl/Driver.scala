@@ -102,13 +102,26 @@ object Driver {
     println("-"*78 + Console.RESET)
   }
 
-  /** Load annotations from specified files and options
+  /** Load annotation file based on options
+    * @param optionsManager use optionsManager config to load annotation file if it exists
+    *                       update the firrtlOptions with new annotations if it does
+    */
+  @deprecated("Use side-effect free getAnnotation instead", "1.1")
+  def loadAnnotations(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): Unit = {
+    val msg = "Driver.loadAnnotations is deprecated, use Driver.getAnnotations instead"
+    Driver.dramaticWarning(msg)
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+      annotations = Driver.getAnnotations(optionsManager).toList
+    )
+  }
+
+  /** Get annotations from specified files and options
     *
     * @param optionsManager use optionsManager config to load annotation files
     * @return Annotations read from files
     */
   //scalastyle:off cyclomatic.complexity method.length
-  def loadAnnotations(
+  def getAnnotations(
       optionsManager: ExecutionOptionsManager with HasFirrtlOptions
   ): Seq[Annotation] = {
     val firrtlConfig = optionsManager.firrtlOptions
@@ -208,7 +221,7 @@ object Driver {
 
       // Wrap compilation in a try/catch to present Scala MatchErrors in a more user-friendly format.
       try {
-        val annos = loadAnnotations(optionsManager)
+        val annos = getAnnotations(optionsManager)
 
         val parsedInput = Parser.parse(firrtlSource, firrtlConfig.infoMode)
 
