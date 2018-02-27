@@ -119,6 +119,10 @@ private[iotesters] object setupFirrtlTerpBackend {
 
     // the backend must be firrtl if we are here, therefore we want the firrtl compiler
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
+    // Workaround to propagate Annotations generated from command-line options to second Firrtl
+    // invocation, run after updating compilerName so we only get one emitCircuit annotation
+    val annos = firrtl.Driver.getAnnotations(optionsManager)
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(annotations = annos.toList)
     chisel3.Driver.execute(optionsManager, dutGen) match {
       case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
         val dut = getTopModule(circuit).asInstanceOf[T]
