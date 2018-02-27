@@ -47,6 +47,12 @@ class ModuleWithInner extends Module {
   require(myWire.i == 14)
 }
 
+object CompanionObjectWithBundle {
+  class Inner extends Bundle {
+    val data = UInt(8.W)
+  }
+}
+
 // A Bundle with an argument that is also a field.
 // Not necessarily good style (and not necessarily recommended), but allowed to preserve compatibility.
 class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
@@ -121,6 +127,13 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
       val io = IO(Output(new BundleWithArgumentField(UInt(8.W), UInt(8.W))))
       io.x := 1.U
       io.y := 1.U
+    } }
+  }
+
+  "Bundles inside companion objects" should "not need clonetype" in {
+    elaborate { new Module {
+      val io = IO(Output(new CompanionObjectWithBundle.Inner))
+      io.data := 1.U
     } }
   }
 }
