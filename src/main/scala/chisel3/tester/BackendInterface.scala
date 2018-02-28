@@ -3,6 +3,8 @@
 package chisel3.tester
 
 import chisel3._
+import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import firrtl_interpreter.HasInterpreterSuite
 
 class ThreadOrderDependentException(message: String) extends Exception(message)
 class SignalOverwriteException(message: String) extends Exception(message)
@@ -71,6 +73,9 @@ trait TestEnvInterface {
     */
   def test[T <: Module](dutGen: => T)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen))(testFn)
+  }
+  def test[T <: Module](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite)(testFn: T => Unit): Unit = {
+    test(Context.createDefaultTester(dutGen, options))(testFn)
   }
 
   /** Logs a tester failure at this point.
