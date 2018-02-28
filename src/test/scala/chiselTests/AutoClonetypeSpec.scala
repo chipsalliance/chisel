@@ -48,6 +48,9 @@ class ModuleWithInner extends Module {
 }
 
 object CompanionObjectWithBundle {
+  class ParameterizedInner(val i: Int) extends Bundle {
+    val data = UInt(i.W)
+  }
   class Inner extends Bundle {
     val data = UInt(8.W)
   }
@@ -133,6 +136,13 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   "Bundles inside companion objects" should "not need clonetype" in {
     elaborate { new Module {
       val io = IO(Output(new CompanionObjectWithBundle.Inner))
+      io.data := 1.U
+    } }
+  }
+
+  "Parameterized bundles inside companion objects" should "not need clonetype" in {
+    elaborate { new Module {
+      val io = IO(Output(new CompanionObjectWithBundle.ParameterizedInner(8)))
       io.data := 1.U
     } }
   }
