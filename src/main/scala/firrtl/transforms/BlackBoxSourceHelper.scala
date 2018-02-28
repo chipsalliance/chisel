@@ -5,89 +5,59 @@ package firrtl.transforms
 import java.io.{File, FileNotFoundException, FileOutputStream, PrintWriter}
 
 import firrtl._
-import firrtl.annotations.{Annotation, ModuleName}
+import firrtl.Utils.throwInternalError
+import firrtl.annotations._
 
 import scala.collection.mutable.ArrayBuffer
 
+sealed trait BlackBoxHelperAnno extends Annotation
 
-trait BlackBoxSource {
-  def serialize: String
-  def name: String
+case class BlackBoxTargetDirAnno(targetDir: String) extends BlackBoxHelperAnno
+    with NoTargetAnnotation {
+  override def serialize: String = s"targetDir\n$targetDir"
 }
 
-object BlackBoxSource {
-  val MaxFields = 3
-
-  def parse(s: String): Option[BlackBoxSource] = {
-    s.split("\n", MaxFields).toList  match {
-      case "resource" :: id ::  _ => Some(BlackBoxResource(id))
-      case "inline" :: name :: text :: _ => Some(BlackBoxInline(name, text))
-      case "targetDir" :: targetDir :: _ => Some(BlackBoxTargetDir(targetDir))
-      case _ => throw new FIRRTLException(s"Error: Bad BlackBox annotations $s")
-    }
-  }
+case class BlackBoxResourceAnno(target: ModuleName, resourceId: String) extends BlackBoxHelperAnno
+    with SingleTargetAnnotation[ModuleName] {
+  def duplicate(n: ModuleName) = this.copy(target = n)
+  override def serialize: String = s"resource\n$resourceId"
 }
 
-case class BlackBoxTargetDir(targetDir: String) extends BlackBoxSource {
-  def serialize: String = s"targetDir\n$targetDir"
-  def name: String = targetDir
+case class BlackBoxInlineAnno(target: ModuleName, name: String, text: String) extends BlackBoxHelperAnno
+    with SingleTargetAnnotation[ModuleName] {
+  def duplicate(n: ModuleName) = this.copy(target = n)
+  override def serialize: String = s"inline\n$name\n$text"
 }
 
-case class BlackBoxResource(resourceId: String) extends BlackBoxSource {
-  def serialize: String = s"resource\n$resourceId"
-  def name: String = resourceId.split("/").last
-}
-
-case class BlackBoxInline(name: String, text: String) extends BlackBoxSource {
-  def serialize: String = s"inline\n$name\n$text"
-}
-
-object BlackBoxSourceAnnotation {
-  def apply(targetDir: ModuleName, value: String): Annotation = {
-    assert(BlackBoxSource.parse(value).isDefined)
-    Annotation(targetDir, classOf[BlackBoxSourceHelper], value)
-  }
-
-  def unapply(a: Annotation): Option[(ModuleName, BlackBoxSource)] = a match {
-    case Annotation(ModuleName(n, c), _, text) => Some((ModuleName(n, c), BlackBoxSource.parse(text).get))
-    case _ => None
-  }
-}
-
-/**
-  * This transform handles the moving of verilator source for black boxes into the
+/** Handle source for Verilog ExtModules (BlackBoxes)
+  *
+  * This transform handles the moving of Verilog source for black boxes into the
   * target directory so that it can be accessed by verilator or other backend compilers
   * While parsing it's annotations it looks for a BlackBoxTargetDir annotation that
-  * will set the directory where the verilog will be written.  This annotation is typically be
+  * will set the directory where the Verilog will be written.  This annotation is typically be
   * set by the execution harness, or directly in the tests
   */
 class BlackBoxSourceHelper extends firrtl.Transform {
-  private var targetDir: File = new File(".")
-  private val fileList = new ArrayBuffer[String]
+  private val DefaultTargetDir = new File(".")
 
   override def inputForm: CircuitForm = LowForm
   override def outputForm: CircuitForm = LowForm
 
-  /**
-    * parse the annotations and convert the generic annotations to specific information
-    * required to find the verilog
-    * @note Side effect is that while converting a magic target dir annotation is found and sets the target
+  /** Collect BlackBoxHelperAnnos and and find the target dir if specified
     * @param annos a list of generic annotations for this transform
-    * @return
+    * @return BlackBoxHelperAnnos and target directory
     */
-  def getSources(annos: Seq[Annotation]): Seq[BlackBoxSource] = {
-    annos.flatMap { anno => BlackBoxSource.parse(anno.value) }
-      .flatMap {
-        case BlackBoxTargetDir(dest) =>
-          targetDir = new File(dest)
-          if(! targetDir.exists()) { FileUtils.makeDirectory(targetDir.getAbsolutePath) }
-          None
-        case b: BlackBoxSource => Some(b)
-        case _ => None
+  def collectAnnos(annos: Seq[Annotation]): (Set[BlackBoxHelperAnno], File) =
+    annos.foldLeft((Set.empty[BlackBoxHelperAnno], DefaultTargetDir)) {
+      case ((acc, tdir), anno) => anno match {
+        case BlackBoxTargetDirAnno(dir) =>
+          val targetDir = new File(dir)
+          if (!targetDir.exists()) { FileUtils.makeDirectory(targetDir.getAbsolutePath) }
+          (acc, targetDir)
+        case a: BlackBoxHelperAnno => (acc + a, tdir)
+        case _ => (acc, tdir)
       }
-      .sortBy(a => a.name)
-      .distinct
-  }
+    }
 
   /**
     * write the verilog source for each annotation to the target directory
@@ -96,31 +66,28 @@ class BlackBoxSourceHelper extends firrtl.Transform {
     * @return A transformed Firrtl AST
     */
   override def execute(state: CircuitState): CircuitState = {
-    val resultState = getMyAnnotations(state) match {
-      case Nil => state
-      case myAnnotations =>
-        val sources = getSources(myAnnotations)
-        sources.foreach {
-          case BlackBoxResource(resourceId) =>
-            val name = resourceId.split("/").last
-            val outFile = new File(targetDir, name)
-            BlackBoxSourceHelper.copyResourceToFile(resourceId,outFile)
-            fileList += outFile.getAbsolutePath
-          case BlackBoxInline(name, text) =>
-            val outFile = new File(targetDir, name)
-            val writer = new PrintWriter(outFile)
-            writer.write(text)
-            writer.close()
-            fileList += outFile.getAbsolutePath
-          case _ =>
-        }
-        state
+    val (annos, targetDir) = collectAnnos(state.annotations)
+    val fileList = annos.foldLeft(List.empty[String]) {
+      case (fileList, anno) => anno match {
+        case BlackBoxResourceAnno(_, resourceId) =>
+          val name = resourceId.split("/").last
+          val outFile = new File(targetDir, name)
+          BlackBoxSourceHelper.copyResourceToFile(resourceId,outFile)
+          outFile.getAbsolutePath +: fileList
+        case BlackBoxInlineAnno(_, name, text) =>
+          val outFile = new File(targetDir, name)
+          val writer = new PrintWriter(outFile)
+          writer.write(text)
+          writer.close()
+          outFile.getAbsolutePath +: fileList
+        case _ => throwInternalError()
+      }
     }
     // If we have BlackBoxes, generate the helper file.
     // If we don't, make sure it doesn't exist or we'll confuse downstream processing
     //  that triggers behavior on the existence of the file
     val helperFile = new File(targetDir, BlackBoxSourceHelper.FileListName)
-    if(fileList.nonEmpty) {
+    if (fileList.nonEmpty) {
       val writer = new PrintWriter(helperFile)
       writer.write(fileList.map { fileName => s"-v $fileName" }.mkString("\n"))
       writer.close()
@@ -128,7 +95,7 @@ class BlackBoxSourceHelper extends firrtl.Transform {
       helperFile.delete()
     }
 
-    resultState
+    state
   }
 }
 

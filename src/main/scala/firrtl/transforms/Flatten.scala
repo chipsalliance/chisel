@@ -10,13 +10,8 @@ import scala.collection.mutable
 import firrtl.passes.{InlineInstances,PassException}
 
 /** Tags an annotation to be consumed by this transform */
-object FlattenAnnotation {
-  def apply(target: Named): Annotation = Annotation(target, classOf[Flatten], "")
-
-  def unapply(a: Annotation): Option[Named] = a match {
-    case Annotation(named, t, _) if t == classOf[Flatten] => Some(named)
-    case _ => None
-  }
+case class FlattenAnnotation(target: Named) extends SingleTargetAnnotation[Named] {
+  def duplicate(n: Named) = FlattenAnnotation(n)
 }
 
 /**
@@ -39,7 +34,7 @@ class Flatten extends Transform {
            }.toSet, instNames)
          case FlattenAnnotation(ModuleName(mod, cir)) => (modNames + ModuleName(mod, cir), instNames)
          case FlattenAnnotation(ComponentName(com, mod)) => (modNames, instNames + ComponentName(com, mod))
-         case _ => throw new PassException("Annotation must be InlineDeepAnnotation")
+         case _ => throw new PassException("Annotation must be a FlattenAnnotation")
        }
      }
 
@@ -107,7 +102,8 @@ class Flatten extends Transform {
    }
    
    override def execute(state: CircuitState): CircuitState = {
-     getMyAnnotations(state) match {
+     val annos = state.annotations.collect { case a @ FlattenAnnotation(_) => a }
+     annos match {
        case Nil => CircuitState(state.circuit, state.form)
        case myAnnotations =>
          val c = state.circuit

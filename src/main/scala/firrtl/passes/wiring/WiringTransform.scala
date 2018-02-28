@@ -14,32 +14,16 @@ import WiringUtils._
 /** A class for all exceptions originating from firrtl.passes.wiring */
 case class WiringException(msg: String) extends PassException(msg)
 
-/** An extractor of annotated source components */
-object SourceAnnotation {
-  def apply(target: ComponentName, pin: String): Annotation =
-    Annotation(target, classOf[WiringTransform], s"source $pin")
-
-  private val matcher = "source (.+)".r
-  def unapply(a: Annotation): Option[(ComponentName, String)] = a match {
-    case Annotation(ComponentName(n, m), _, matcher(pin)) =>
-      Some((ComponentName(n, m), pin))
-    case _ => None
-  }
+/** A component, e.g. register etc. Must be declared only once under the TopAnnotation */
+case class SourceAnnotation(target: ComponentName, pin: String) extends
+    SingleTargetAnnotation[ComponentName] {
+  def duplicate(n: ComponentName) = this.copy(target = n)
 }
 
-/** An extractor of annotation sink components or modules */
-object SinkAnnotation {
-  def apply(target: Named, pin: String): Annotation =
-    Annotation(target, classOf[WiringTransform], s"sink $pin")
-
-  private val matcher = "sink (.+)".r
-  def unapply(a: Annotation): Option[(Named, String)] = a match {
-    case Annotation(ModuleName(n, c), _, matcher(pin)) =>
-      Some((ModuleName(n, c), pin))
-    case Annotation(ComponentName(n, m), _, matcher(pin)) =>
-      Some((ComponentName(n, m), pin))
-    case _ => None
-  }
+/** A module, e.g. ExtModule etc., that should add the input pin */
+case class SinkAnnotation(target: Named, pin: String) extends
+    SingleTargetAnnotation[Named] {
+  def duplicate(n: Named) = this.copy(target = n)
 }
 
 /** Wires a Module's Source Component to one or more Sink
@@ -64,26 +48,30 @@ class WiringTransform extends Transform {
     new Wiring(w),
     ToWorkingIR
   )
-
-  def execute(state: CircuitState): CircuitState = getMyAnnotations(state) match {
-    case Nil => state
-    case p =>
-      val sinks = mutable.HashMap[String, Seq[Named]]()
-      val sources = mutable.HashMap[String, ComponentName]()
-      p.foreach {
-        case SinkAnnotation(m, pin) =>
-          sinks(pin) = sinks.getOrElse(pin, Seq.empty) :+ m
-        case SourceAnnotation(c, pin) =>
-          sources(pin) = c
-      }
-      (sources.size, sinks.size) match {
-        case (0, p) => state
-        case (s, p) if (p > 0) =>
-          val wis = sources.foldLeft(Seq[WiringInfo]()) { case (seq, (pin, source)) =>
-            seq :+ WiringInfo(source, sinks(pin), pin)
-          }
-          transforms(wis).foldLeft(state) { (in, xform) => xform.runTransform(in) }
-        case _ => error("Wrong number of sources or sinks!")
-      }
+  def execute(state: CircuitState): CircuitState = {
+    val annos = state.annotations.collect {
+      case a @ (_: SinkAnnotation | _: SourceAnnotation) => a
+    }
+    annos match {
+      case Seq() => state
+      case p =>
+        val sinks = mutable.HashMap[String, Seq[Named]]()
+        val sources = mutable.HashMap[String, ComponentName]()
+        p.foreach {
+          case SinkAnnotation(m, pin) =>
+            sinks(pin) = sinks.getOrElse(pin, Seq.empty) :+ m
+          case SourceAnnotation(c, pin) =>
+            sources(pin) = c
+        }
+        (sources.size, sinks.size) match {
+          case (0, p) => state
+          case (s, p) if (p > 0) =>
+            val wis = sources.foldLeft(Seq[WiringInfo]()) { case (seq, (pin, source)) =>
+              seq :+ WiringInfo(source, sinks(pin), pin)
+            }
+            transforms(wis).foldLeft(state) { (in, xform) => xform.runTransform(in) }
+          case _ => error("Wrong number of sources or sinks!")
+        }
+    }
   }
 }

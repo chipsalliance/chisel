@@ -4,38 +4,11 @@ package firrtlTests.transforms
 
 import firrtl.annotations.{Annotation, CircuitName, ModuleName}
 import firrtl.transforms._
-import firrtl.{AnnotationMap, FIRRTLException, Transform, VerilogCompiler}
+import firrtl.{FIRRTLException, Transform, VerilogCompiler}
 import firrtlTests.{HighTransformSpec, LowTransformSpec}
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
 
-
-/**
- * Tests inline instances transformation
- */
-class BlacklBoxSourceHelperSpec extends FreeSpec with Matchers {
-  "BlackBoxSourceAnnotations" - {
-    val modName = ModuleName("dog", CircuitName("fox"))
-    val resource = "file://somefile.v"
-
-    "should parse and unparse" in {
-
-      val serialized = BlackBoxResource(resource).serialize
-      BlackBoxSource.parse(serialized) match {
-        case Some(BlackBoxResource(id)) =>
-          id should be (resource)
-          Succeeded
-        case _ => Failed
-      }
-    }
-    "should fail on unsupported kinds" in {
-      intercept[FIRRTLException] {
-        BlackBoxSourceAnnotation(modName, "bad value")
-      }
-      BlackBoxSourceAnnotation(modName, BlackBoxResource(resource).serialize).isInstanceOf[Annotation] should be(true)
-    }
-  }
-}
 
 class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
    def transform: Transform = new BlackBoxSourceHelper
@@ -79,8 +52,8 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
   "annotated external modules" should "appear in output directory" in {
 
     val annos = Seq(
-      Annotation(moduleName, classOf[BlackBoxSourceHelper], BlackBoxTargetDir("test_run_dir").serialize),
-      Annotation(moduleName, classOf[BlackBoxSourceHelper], BlackBoxResource("/blackboxes/AdderExtModule.v").serialize)
+      BlackBoxTargetDirAnno("test_run_dir"),
+      BlackBoxResourceAnno(moduleName, "/blackboxes/AdderExtModule.v")
     )
 
     execute(input, output, annos)

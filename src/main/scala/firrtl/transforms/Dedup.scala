@@ -14,15 +14,9 @@ import scala.collection.mutable
 
 /** A component, e.g. register etc. Must be declared only once under the TopAnnotation
   */
-object NoDedupAnnotation {
-  def apply(target: ModuleName): Annotation = Annotation(target, classOf[DedupModules], s"nodedup!")
-
-  def unapply(a: Annotation): Option[ModuleName] = a match {
-    case Annotation(ModuleName(n, c), _, "nodedup!") => Some(ModuleName(n, c))
-    case _ => None
-  }
+case class NoDedupAnnotation(target: ModuleName) extends SingleTargetAnnotation[ModuleName] {
+  def duplicate(n: ModuleName) = NoDedupAnnotation(n)
 }
-
 
 // Only use on legal Firrtl. Specifically, the restriction of
 //  instance loops must have been checked, or else this pass can
@@ -150,7 +144,7 @@ class DedupModules extends Transform {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val noDedups = getMyAnnotations(state).collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
+    val noDedups = state.annotations.collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
     val (newC, renameMap) = run(state.circuit, noDedups)
     state.copy(circuit = newC, renames = Some(renameMap))
   }

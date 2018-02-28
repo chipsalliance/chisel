@@ -45,7 +45,7 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
                    |""".stripMargin
 
     val writer = new java.io.StringWriter
-    compile(CircuitState(parse(input), ChirrtlForm, None), writer)
+    compile(CircuitState(parse(input), ChirrtlForm), writer)
   }
 
   "Simple combinational loop" should "throw an exception" in {
@@ -66,7 +66,7 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
 
     val writer = new java.io.StringWriter
     intercept[CheckCombLoops.CombLoopException] {
-      compile(CircuitState(parse(input), ChirrtlForm, None), writer)
+      compile(CircuitState(parse(input), ChirrtlForm), writer)
     }
   }
 
@@ -87,7 +87,7 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
 
     val writer = new java.io.StringWriter
     intercept[CheckCombLoops.CombLoopException] {
-      compile(CircuitState(parse(input), ChirrtlForm, None), writer)
+      compile(CircuitState(parse(input), ChirrtlForm), writer)
     }
   }
 
@@ -119,7 +119,7 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
 
     val writer = new java.io.StringWriter
     intercept[CheckCombLoops.CombLoopException] {
-      compile(CircuitState(parse(input), ChirrtlForm, None), writer)
+      compile(CircuitState(parse(input), ChirrtlForm), writer)
     }
   }
 
@@ -147,7 +147,7 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
 
     val writer = new java.io.StringWriter
     intercept[CheckCombLoops.CombLoopException] {
-      compile(CircuitState(parse(input), ChirrtlForm, None), writer)
+      compile(CircuitState(parse(input), ChirrtlForm), writer)
     }
   }
 
@@ -171,7 +171,7 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
 
     val writer = new java.io.StringWriter
     intercept[CheckCombLoops.CombLoopException] {
-      compile(CircuitState(parse(input), ChirrtlForm, None), writer)
+      compile(CircuitState(parse(input), ChirrtlForm), writer)
     }
   }
 }

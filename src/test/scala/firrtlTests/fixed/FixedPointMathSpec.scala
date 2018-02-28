@@ -2,7 +2,7 @@
 
 package firrtlTests.fixed
 
-import firrtl.{CircuitState, ChirrtlForm, LowFirrtlCompiler, Parser, AnnotationMap}
+import firrtl.{CircuitState, ChirrtlForm, LowFirrtlCompiler, Parser}
 import firrtl.Parser.IgnoreInfo
 import firrtlTests.FirrtlFlatSpec
 

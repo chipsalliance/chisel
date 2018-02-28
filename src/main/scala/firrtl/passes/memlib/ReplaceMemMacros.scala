@@ -14,19 +14,8 @@ import firrtl.annotations._
 import wiring._
 
 
-/** Annotates the name of the pin to add for WiringTransform
-  */
-object PinAnnotation {
-  def apply(target: CircuitName, pins: Seq[String]): Annotation = {
-    Annotation(target, classOf[ReplaceMemMacros], s"pins:${pins.mkString(" ")}")
-  }
-  private val matcher = "pins:(.*)".r
-  def unapply(a: Annotation): Option[(CircuitName, Seq[String])] = a match {
-    case Annotation(CircuitName(c), _, matcher(rest)) =>
-      Some((CircuitName(c), rest.split(" ")))
-    case _ => None
-  }
-}
+/** Annotates the name of the pins to add for WiringTransform */
+case class PinAnnotation(pins: Seq[String]) extends NoTargetAnnotation
 
 /** Replace DefAnnotatedMemory with memory blackbox + wrapper + conf file.
   * This will not generate wmask ports if not needed.
@@ -221,19 +210,17 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     val modules = c.modules map updateMemMods(namespace, nameMap, memMods)
     // print conf
     writer.serialize()
-    val pins = getMyAnnotations(state) match {
-      case Nil => Nil
-      case Seq(PinAnnotation(CircuitName(c), pins)) => pins
+    val pannos = state.annotations.collect { case a: PinAnnotation => a }
+    val pins = pannos match {
+      case Seq() => Nil
+      case Seq(PinAnnotation(pins)) => pins
       case _ => throwInternalError(Some(s"execute: getMyAnnotations - ${getMyAnnotations(state)}"))
     }
-    val annos = (pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
-      seq ++ memMods.collect { 
-        case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin) 
+    val annos = pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
+      seq ++ memMods.collect {
+        case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin)
       }
-    }) ++ (state.annotations match {
-      case None => Seq.empty
-      case Some(a) => a.annotations
-    })
-    CircuitState(c.copy(modules = modules ++ memMods), inputForm, Some(AnnotationMap(annos)))
+    } ++ state.annotations
+    CircuitState(c.copy(modules = modules ++ memMods), inputForm, annos)
   }
 }

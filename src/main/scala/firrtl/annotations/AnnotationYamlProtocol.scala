@@ -7,23 +7,24 @@ import net.jcazevedo.moultingyaml._
 
 object AnnotationYamlProtocol extends DefaultYamlProtocol {
   // bottom depends on top
-  implicit object AnnotationYamlFormat extends YamlFormat[Annotation] {
-    def write(a: Annotation) = YamlObject(
+  implicit object AnnotationYamlFormat extends YamlFormat[LegacyAnnotation] {
+    def write(a: LegacyAnnotation) = YamlObject(
       YamlString("targetString") -> YamlString(a.targetString),
       YamlString("transformClass") -> YamlString(a.transformClass),
       YamlString("value") -> YamlString(a.value)
     )
 
-    def read(yamlValue: YamlValue): Annotation = {
+    def read(yamlValue: YamlValue): LegacyAnnotation = {
       try {
         yamlValue.asYamlObject.getFields(
           YamlString("targetString"),
           YamlString("transformClass"),
           YamlString("value")) match {
           case Seq(YamlString(targetString), YamlString(transformClass), YamlString(value)) =>
-            Annotation(
-              toTarget(targetString), Class.forName(transformClass).asInstanceOf[Class[_ <: Transform]], value)
-          case _ => deserializationError("Annotation expected")
+            LegacyAnnotation(toTarget(targetString),
+                             Class.forName(transformClass).asInstanceOf[Class[_ <: Transform]],
+                             value)
+          case _ => deserializationError("LegacyAnnotation expected")
         }
       }
       catch {

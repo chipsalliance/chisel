@@ -320,23 +320,14 @@ class DeadCodeElimination extends Transform {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val (dontTouches: Seq[LogicNode], doTouchExtMods: Seq[String], noDCE: Option[Boolean]) =
-      state.annotations match {
-        case Some(aMap) =>
-          // TODO Do with single walk over annotations
-          val dontTouches = aMap.annotations.collect {
-            case DontTouchAnnotation(component) => LogicNode(component)
-          }
-          val optExtMods = aMap.annotations.collect {
-            case OptimizableExtModuleAnnotation(ModuleName(name, _)) => name
-          }
-          val noDCE = aMap.annotations.collectFirst {
-            case NoDCEAnnotation() => true
-          }
-          (dontTouches, optExtMods, noDCE)
-        case None => (Seq.empty, Seq.empty, None)
-      }
-    if (noDCE.getOrElse(false)) {
+    val dontTouches: Seq[LogicNode] = state.annotations.collect {
+      case DontTouchAnnotation(component) => LogicNode(component)
+    }
+    val doTouchExtMods: Seq[String] = state.annotations.collect {
+      case OptimizableExtModuleAnnotation(ModuleName(name, _)) => name
+    }
+    val noDCE = state.annotations.contains(NoDCEAnnotation)
+    if (noDCE) {
       logger.info("Skipping DCE")
       state
     } else {

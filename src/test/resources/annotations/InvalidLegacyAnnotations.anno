@@ -1,0 +1,26 @@
+- targetString: CircuitTop
+  transformClass: firrtl.VerilogEmitter
+  value: emitCircuit
+- targetString: CircuitTop
+  transformClass: firrtl.VerilogEmitter
+  value: emitAllModules
+- targetString: CircuitTop
+  transformClass: firrtl.Transform
+  value: emittedFirrtlCircuit:0
+- targetString: CircuitTop
+  transformClass: firrtl.Transform
+  value: emittedVerilogCircuit:0
+- targetString: CircuitTop
+  transformClass: firrtl.Transform
+  value: emittedFirrtlModule:0
+- targetString: CircuitTop
+  transformClass: firrtl.Transform
+  value: emittedVerilogModule:0
+- targetString: foo
+  transformClass: firrtl.Transform
+  value: |
+    DELETED by DeadCodeElimination
+    targetString: foo
+    transformClass: firrtl.passes.InlineInstances
+    value: ''
+

@@ -22,10 +22,10 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   val cppHarnessResourceName: String = "/firrtl/testTop.cpp"
 
   /** Compiles input Firrtl to Verilog */
-  def compileToVerilog(input: String, annotations: AnnotationMap = AnnotationMap(Seq.empty)): String = {
+  def compileToVerilog(input: String, annotations: AnnotationSeq = Seq.empty): String = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val compiler = new VerilogCompiler
-    val res = compiler.compileAndEmit(CircuitState(circuit, HighForm, Some(annotations)))
+    val res = compiler.compileAndEmit(CircuitState(circuit, HighForm, annotations))
     res.getEmittedCircuit.value
   }
   /** Compile a Firrtl file
@@ -38,7 +38,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       prefix: String,
       srcDir: String,
       customTransforms: Seq[Transform] = Seq.empty,
-      annotations: AnnotationMap = new AnnotationMap(Seq.empty)): File = {
+      annotations: AnnotationSeq = Seq.empty): File = {
     val testDir = createTestDirectory(prefix)
     copyResourceToFile(s"${srcDir}/${prefix}.fir", new File(testDir, s"${prefix}.fir"))
 
@@ -47,7 +47,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       firrtlOptions = FirrtlExecutionOptions(
                         infoModeName = "ignore",
                         customTransforms = customTransforms,
-                        annotations = annotations.annotations.toList)
+                        annotations = annotations.toList)
     }
     firrtl.Driver.execute(optionsManager)
 
@@ -65,7 +65,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       srcDir: String,
       verilogPrefixes: Seq[String] = Seq.empty,
       customTransforms: Seq[Transform] = Seq.empty,
-      annotations: AnnotationMap = new AnnotationMap(Seq.empty)) = {
+      annotations: AnnotationSeq = Seq.empty) = {
     val testDir = compileFirrtlTest(prefix, srcDir, customTransforms, annotations)
     val harness = new File(testDir, s"top.cpp")
     copyResourceToFile(cppHarnessResourceName, harness)
@@ -111,8 +111,7 @@ trait FirrtlMatchers extends Matchers {
       expected: Seq[String],
       compiler: Compiler,
       annotations: Seq[Annotation] = Seq.empty) = {
-    val annoMap = AnnotationMap(annotations)
-    val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(annoMap)))
+    val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm, annotations))
     val lines = finalState.getEmittedCircuit.value split "\n" map normalized
     for (e <- expected) {
       lines should contain (e)

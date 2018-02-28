@@ -185,7 +185,7 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
     }
 
     val chirrtlTransform = new CheckChirrtlTransform
-    chirrtlTransform.execute(CircuitState(parse(input), ChirrtlForm, Some(new AnnotationMap(Seq.empty))))
+    chirrtlTransform.execute(CircuitState(parse(input), ChirrtlForm))
   }
 
   "Fixed point numbers" should "remove nested AsFixedPoint" in {

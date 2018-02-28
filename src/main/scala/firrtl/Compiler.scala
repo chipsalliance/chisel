@@ -97,12 +97,12 @@ final class RenameMap private () {
   }.mkString("\n")
 }
 
-/**
- * Container of all annotations for a Firrtl compiler.
- */
-case class AnnotationMap(annotations: Seq[Annotation]) {
-  def get(id: Class[_]): Seq[Annotation] = annotations.filter(a => a.transform == id)
-  def get(named: Named): Seq[Annotation] = annotations.filter(n => n == named)
+/** Container of all annotations for a Firrtl compiler */
+class AnnotationSeq private (private[firrtl] val underlying: List[Annotation]) {
+  def toSeq: Seq[Annotation] = underlying.toSeq
+}
+object AnnotationSeq {
+  def apply(xs: Seq[Annotation]) = new AnnotationSeq(xs.toList)
 }
 
 /** Current State of the Circuit
@@ -117,8 +117,8 @@ case class AnnotationMap(annotations: Seq[Annotation]) {
 case class CircuitState(
     circuit: Circuit,
     form: CircuitForm,
-    annotations: Option[AnnotationMap] = None,
-    renames: Option[RenameMap] = None) {
+    annotations: AnnotationSeq,
+    renames: Option[RenameMap]) {
 
   /** Helper for getting just an emitted circuit */
   def emittedCircuitOption: Option[EmittedCircuit] =
@@ -130,20 +130,15 @@ case class CircuitState(
       throw new FIRRTLException(s"No EmittedCircuit found! Did you delete any annotations?\n$deletedAnnotations")
   }
   /** Helper function for extracting emitted components from annotations */
-  def emittedComponents: Seq[EmittedComponent] = {
-    val emittedOpt = annotations map (_.annotations collect {
-      case EmittedCircuitAnnotation(x) => x
-      case EmittedModuleAnnotation(x) => x
-    })
-    emittedOpt.getOrElse(Seq.empty)
-  }
-  def deletedAnnotations: Seq[Annotation] = {
-    val deletedOpt = annotations map (_.annotations collect {
-      case DeletedAnnotation(xformName, anno) =>
-        DeletedAnnotation(xformName, anno)
-    })
-    deletedOpt.getOrElse(Seq.empty)
-  }
+  def emittedComponents: Seq[EmittedComponent] =
+    annotations.collect { case emitted: EmittedAnnotation[_] => emitted.value }
+  def deletedAnnotations: Seq[Annotation] =
+    annotations.collect { case anno: DeletedAnnotation => anno }
+}
+object CircuitState {
+  def apply(circuit: Circuit, form: CircuitForm): CircuitState = apply(circuit, form, Seq())
+  def apply(circuit: Circuit, form: CircuitForm, annotations: AnnotationSeq) =
+    new CircuitState(circuit, form, annotations, None)
 }
 
 /** Current form of the Firrtl Circuit
@@ -222,15 +217,19 @@ abstract class Transform extends LazyLogging {
     * @return A transformed Firrtl AST
     */
   protected def execute(state: CircuitState): CircuitState
+
   /** Convenience method to get annotations relevant to this Transform
     *
     * @param state The [[CircuitState]] form which to extract annotations
     * @return A collection of annotations
     */
-  final def getMyAnnotations(state: CircuitState): Seq[Annotation] = state.annotations match {
-    case Some(annotations) => annotations.get(this.getClass) //TODO(azidar): ++ annotations.get(classOf[Transform])
-    case None => Nil
+  @deprecated("Just collect the actual Annotation types the transform wants", "1.1")
+  final def getMyAnnotations(state: CircuitState): Seq[Annotation] = {
+    val msg = "getMyAnnotations is deprecated, use collect and match on concrete types"
+    Driver.dramaticWarning(msg)
+    state.annotations.collect { case a: LegacyAnnotation if a.transform == this.getClass => a }
   }
+
   /** Perform the transform and update annotations.
     *
     * @param state Input Firrtl AST
@@ -253,23 +252,23 @@ abstract class Transform extends LazyLogging {
     }
     logger.trace(s"Circuit:\n${result.circuit.serialize}")
     logger.info(s"======== Finished Transform $name ========\n")
-    CircuitState(result.circuit, result.form, Some(AnnotationMap(remappedAnnotations)), None)
+    CircuitState(result.circuit, result.form, remappedAnnotations, None)
   }
 
   /** Propagate annotations and update their names.
     *
-    * @param inAnno input AnnotationMap
-    * @param resAnno result AnnotationMap
+    * @param inAnno input AnnotationSeq
+    * @param resAnno result AnnotationSeq
     * @param renameOpt result RenameMap
     * @return the updated annotations
     */
   final private def propagateAnnotations(
-      inAnno: Option[AnnotationMap],
-      resAnno: Option[AnnotationMap],
-      renameOpt: Option[RenameMap]): Seq[Annotation] = {
+      inAnno: AnnotationSeq,
+      resAnno: AnnotationSeq,
+      renameOpt: Option[RenameMap]): AnnotationSeq = {
     val newAnnotations = {
-      val inSet = inAnno.getOrElse(AnnotationMap(Seq.empty)).annotations.toSet
-      val resSet = resAnno.getOrElse(AnnotationMap(Seq.empty)).annotations.toSet
+      val inSet = inAnno.toSet
+      val resSet = resAnno.toSet
       val deleted = (inSet -- resSet).map {
         case DeletedAnnotation(xFormName, delAnno) => DeletedAnnotation(s"$xFormName+$name", delAnno)
         case anno => DeletedAnnotation(name, anno)
@@ -283,7 +282,7 @@ abstract class Transform extends LazyLogging {
     val renames = renameOpt.getOrElse(RenameMap())
     for {
       anno <- newAnnotations.toSeq
-      newAnno <- anno.update(renames.get(anno.target).getOrElse(Seq(anno.target)))
+      newAnno <- anno.update(renames)
     } yield newAnno
   }
 }
@@ -437,12 +436,7 @@ trait Compiler extends LazyLogging {
   def compileAndEmit(state: CircuitState,
                      customTransforms: Seq[Transform] = Seq.empty): CircuitState = {
     val emitAnno = EmitCircuitAnnotation(emitter.getClass)
-    // TODO This is ridiculous. Fix Annotations
-    val annotations = state.annotations.map(_.annotations).getOrElse(Seq.empty)
-    val annotationMap = AnnotationMap(annotations :+ emitAnno)
-
-    // Run compiler
-    compile(state.copy(annotations = Some(annotationMap)), customTransforms)
+    compile(state.copy(annotations = emitAnno +: state.annotations), customTransforms)
   }
 
   /** Perform compilation

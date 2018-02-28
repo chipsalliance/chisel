@@ -10,7 +10,6 @@ import AnnotationUtils.{validModuleName, validComponentName, toExp}
  * Named classes associate an annotation with a component in a Firrtl circuit
  */
 sealed trait Named {
-  def name: String
   def serialize: String
 }
 

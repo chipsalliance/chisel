@@ -1,0 +1,50 @@
+- targetString: foo
+  transformClass: firrtl.passes.InlineInstances
+  value: ''
+- targetString: foo.bar
+  transformClass: firrtl.passes.clocklist.ClockListTransform
+  value: output
+- targetString: foo
+  transformClass: firrtl.passes.memlib.InferReadWrite
+  value: ''
+- targetString: foo
+  transformClass: firrtl.passes.memlib.ReplSeqMem
+  value: input output
+- targetString: foo.bar.x
+  transformClass: firrtl.passes.memlib.ResolveMemoryReference
+  value: nodedupmem!
+- targetString: foo.bar
+  transformClass: firrtl.transforms.DedupModules
+  value: nodedup!
+- targetString: foo.bar.x
+  transformClass: firrtl.passes.wiring.WiringTransform
+  value: source pin
+- targetString: foo.bar.x
+  transformClass: firrtl.passes.wiring.WiringTransform
+  value: sink pin
+- targetString: foo.bar
+  transformClass: firrtl.transforms.BlackBoxSourceHelper
+  value: |-
+    resource
+    resource
+- targetString: foo.bar
+  transformClass: firrtl.transforms.BlackBoxSourceHelper
+  value: |-
+    inline
+    name
+    text
+- targetString: foo.bar
+  transformClass: firrtl.transforms.BlackBoxSourceHelper
+  value: |-
+    targetDir
+    targetdir
+- targetString: CircuitTop
+  transformClass: firrtl.transforms.DeadCodeElimination
+  value: noDCE!
+- targetString: foo.bar.x
+  transformClass: firrtl.Transform
+  value: DONTtouch!
+- targetString: foo.bar
+  transformClass: firrtl.Transform
+  value: optimizableExtModule!
+

@@ -20,7 +20,7 @@ class DCETests extends FirrtlFlatSpec {
     new SimpleTransform(RemoveEmpty, LowForm)
   )
   private def exec(input: String, check: String, annos: Seq[Annotation] = List.empty): Unit = {
-    val state = CircuitState(parse(input), ChirrtlForm, Some(AnnotationMap(annos)))
+    val state = CircuitState(parse(input), ChirrtlForm, annos)
     val finalState = (new LowFirrtlCompiler).compileAndEmit(state, customTransforms)
     val res = finalState.getEmittedCircuit.value
     // Convert to sets for comparison

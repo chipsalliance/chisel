@@ -63,8 +63,8 @@ circuit Top :
     io2.commit_entry.bits.info <- R1
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc)))
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(aMap)))
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:Top:-o:"+confLoc))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     println(res.annotations)
     parse(res.getEmittedCircuit.value)
@@ -86,8 +86,8 @@ circuit Top :
         write mport T_155 = mem[p_address], clock
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:Top:-o:"+confLoc)))
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(aMap)))
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:Top:-o:"+confLoc))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
     (new java.io.File(confLoc)).delete()
@@ -111,8 +111,8 @@ circuit CustomMemory :
       skip 
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:CustomMemory:-o:"+confLoc)))
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(aMap)))
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
     (new java.io.File(confLoc)).delete()
@@ -136,8 +136,8 @@ circuit CustomMemory :
       skip 
 """.stripMargin
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:CustomMemory:-o:"+confLoc)))
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(aMap)))
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
     (new java.io.File(confLoc)).delete()
@@ -209,10 +209,10 @@ circuit CustomMemory :
       skip
 """
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(
-      ReplSeqMemAnnotation("-c:CustomMemory:-o:"+confLoc),
-      NoDedupMemAnnotation(ComponentName("mem_0", ModuleName("CustomMemory",CircuitName("CustomMemory"))))))
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(aMap)))
+    val annos = Seq(
+      ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
+      NoDedupMemAnnotation(ComponentName("mem_0", ModuleName("CustomMemory",CircuitName("CustomMemory")))))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     val circuit = parse(res.getEmittedCircuit.value)
     val numExtMods = circuit.modules.count {
@@ -249,10 +249,10 @@ circuit CustomMemory :
       skip
 """
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(
-      ReplSeqMemAnnotation("-c:CustomMemory:-o:"+confLoc),
-      NoDedupMemAnnotation(ComponentName("mem_1", ModuleName("CustomMemory",CircuitName("CustomMemory"))))))
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(aMap)))
+    val annos = Seq(
+      ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
+      NoDedupMemAnnotation(ComponentName("mem_1", ModuleName("CustomMemory",CircuitName("CustomMemory")))))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     val circuit = parse(res.getEmittedCircuit.value)
     val numExtMods = circuit.modules.count {
@@ -285,8 +285,8 @@ circuit CustomMemory :
       skip
 """
     val confLoc = "ReplSeqMemTests.confTEMP"
-    val aMap = AnnotationMap(Seq(ReplSeqMemAnnotation("-c:CustomMemory:-o:"+confLoc)))
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(aMap)))
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     val circuit = parse(res.getEmittedCircuit.value)
     val numExtMods = circuit.modules.count {

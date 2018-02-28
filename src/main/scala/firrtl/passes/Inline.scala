@@ -10,14 +10,9 @@ import firrtl.annotations._
 // Datastructures
 import scala.collection.mutable
 
-// Tags an annotation to be consumed by this pass
-object InlineAnnotation {
-  def apply(target: Named): Annotation = Annotation(target, classOf[InlineInstances], "")
-
-  def unapply(a: Annotation): Option[Named] = a match {
-    case Annotation(named, t, _) if t == classOf[InlineInstances] => Some(named)
-    case _ => None
-  }
+/** Indicates that something should be inlined */
+case class InlineAnnotation(target: Named) extends SingleTargetAnnotation[Named] {
+  def duplicate(n: Named) = InlineAnnotation(n)
 }
 
 // Only use on legal Firrtl. Specifically, the restriction of
@@ -37,18 +32,17 @@ class InlineInstances extends Transform {
            }.toSet, instNames)
          case InlineAnnotation(ModuleName(mod, cir)) => (modNames + ModuleName(mod, cir), instNames)
          case InlineAnnotation(ComponentName(com, mod)) => (modNames, instNames + ComponentName(com, mod))
-         case _ => throw new PassException("Annotation must be InlineAnnotation")
+         case _ => (modNames, instNames)
        }
      }
 
    def execute(state: CircuitState): CircuitState = {
      // TODO Add error check for more than one annotation for inlining
-     // TODO Propagate other annotations
-     getMyAnnotations(state) match {
-       case Nil => CircuitState(state.circuit, state.form)
-       case myAnnotations =>
-         val (modNames, instNames) = collectAnns(state.circuit, myAnnotations)
-         run(state.circuit, modNames, instNames, state.annotations)
+     val (modNames, instNames) = collectAnns(state.circuit, state.annotations)
+     if (modNames.nonEmpty || instNames.nonEmpty) {
+       run(state.circuit, modNames, instNames, state.annotations)
+     } else {
+       state
      }
    }
 
@@ -92,7 +86,7 @@ class InlineInstances extends Transform {
    }
 
 
-  def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName], annos: Option[AnnotationMap]): CircuitState = {
+  def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName], annos: AnnotationSeq): CircuitState = {
     def getInstancesOf(c: Circuit, modules: Set[String]): Set[String] =
       c.modules.foldLeft(Set[String]()) { (set, d) =>
         d match {

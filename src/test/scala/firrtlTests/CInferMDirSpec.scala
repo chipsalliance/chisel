@@ -68,8 +68,7 @@ circuit foo :
         bar <= io.in
 """.stripMargin
 
-    val annotationMap = AnnotationMap(Nil)
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
   }

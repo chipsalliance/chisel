@@ -14,11 +14,9 @@ class FindTargetDirTransform(expected: String) extends Transform {
   var run = false
   def execute(state: CircuitState): CircuitState = {
     run = true
-    state.annotations.foreach { aMap =>
-      aMap.annotations.collectFirst {
-        case TargetDirAnnotation(expected) =>
-          foundTargetDir = true
-      }
+    state.annotations.collectFirst {
+      case TargetDirAnnotation(expected) =>
+        foundTargetDir = true
     }
     state
   }

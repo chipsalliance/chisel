@@ -67,8 +67,8 @@ case class CommonOptions(
   }
 }
 
-/** [[annotations.GlobalCircuitAnnotation]] that contains the [[CommonOptions]] target directory */
-object TargetDirAnnotation extends GlobalCircuitAnnotation
+/** Annotation that contains the [[CommonOptions]] target directory */
+case class TargetDirAnnotation(value: String) extends SingleStringAnnotation
 
 trait HasCommonOptions {
   self: ExecutionOptionsManager =>
@@ -408,7 +408,7 @@ trait HasFirrtlOptions {
     .valueName ("<circuit>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations :+ InferReadWriteAnnotation(x),
+        annotations = firrtlOptions.annotations :+ InferReadWriteAnnotation,
         customTransforms = firrtlOptions.customTransforms :+ new passes.memlib.InferReadWrite
       )
     }.text {
@@ -420,7 +420,7 @@ trait HasFirrtlOptions {
     .valueName ("-c:<circuit>:-i:<filename>:-o:<filename>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations :+ ReplSeqMemAnnotation(x),
+        annotations = firrtlOptions.annotations :+ ReplSeqMemAnnotation.parse(x),
         customTransforms = firrtlOptions.customTransforms :+ new passes.memlib.ReplSeqMem
       )
     }
@@ -433,7 +433,7 @@ trait HasFirrtlOptions {
     .valueName ("-c:<circuit>:-m:<module>:-o:<filename>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(
-        annotations = firrtlOptions.annotations :+ ClockListAnnotation(x),
+        annotations = firrtlOptions.annotations :+ ClockListAnnotation.parse(x),
         customTransforms = firrtlOptions.customTransforms :+ new passes.clocklist.ClockListTransform
       )
     }

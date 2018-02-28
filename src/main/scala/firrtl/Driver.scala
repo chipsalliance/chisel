@@ -5,6 +5,7 @@ package firrtl
 import scala.collection._
 import scala.io.Source
 import scala.sys.process.{BasicIO,stringSeqToProcess}
+import scala.util.{Try, Success, Failure}
 import scala.util.control.ControlThrowable
 import java.io.{File, FileNotFoundException}
 
@@ -41,44 +42,6 @@ import firrtl.Utils.throwInternalError
   */
 
 object Driver {
-  //noinspection ScalaDeprecation
-  // Compiles circuit. First parses a circuit from an input file,
-  //  executes all compiler passes, and writes result to an output
-  //  file.
-  @deprecated("Please use execute", "firrtl 1.0")
-  def compile(
-      input: String,
-      output: String,
-      compiler: Compiler,
-      infoMode: InfoMode = IgnoreInfo,
-      customTransforms: Seq[Transform] = Seq.empty,
-      annotations: AnnotationMap = AnnotationMap(Seq.empty)
-  ): String = {
-    val outputBuffer = new java.io.CharArrayWriter
-    try {
-      val parsedInput = Parser.parse(Source.fromFile(input).getLines(), infoMode)
-      compiler.compile(
-        CircuitState(parsedInput, ChirrtlForm, Some(annotations)),
-        outputBuffer,
-        customTransforms)
-    }
-
-    catch {
-      // Rethrow the exceptions which are expected or due to the runtime environment (out of memory, stack overflow)
-      case p: ControlThrowable => throw p
-      case p: PassException  => throw p
-      case p: FIRRTLException => throw p
-      // Treat remaining exceptions as internal errors.
-      case e: Exception => throwInternalError(exception = Some(e))
-    }
-
-    val outputFile = new java.io.PrintWriter(output)
-    val outputString = outputBuffer.toString
-    outputFile.write(outputString)
-    outputFile.close()
-    outputString
-  }
-
   /** Print a warning message
     *
     * @param message error message
@@ -155,26 +118,35 @@ object Driver {
       if (!file.exists) {
         throw new FileNotFoundException(s"Annotation file $file not found!")
       }
-      val yaml = io.Source.fromFile(file).getLines().mkString("\n").parseYaml
-      yaml.convertTo[List[Annotation]]
-
+      // Try new protocol first
+      JsonProtocol.deserializeTry(file).getOrElse {
+        val annos = Try {
+          val yaml = io.Source.fromFile(file).getLines().mkString("\n").parseYaml
+          yaml.convertTo[List[LegacyAnnotation]]
+        }
+        annos match {
+          case Success(result) =>
+            val msg = s"$file is a YAML file!\n" +
+                      (" "*9) + "YAML Annotation files are deprecated! Use JSON"
+            Driver.dramaticWarning(msg)
+            result
+          case Failure(_) => throw new InvalidAnnotationFileException(file.toString)
+        }
+      }
     }
 
-    val targetDirAnno =
-      List(Annotation(
-        CircuitName("All"),
-        classOf[BlackBoxSourceHelper],
-        BlackBoxTargetDir(optionsManager.targetDirName).serialize
-      ))
+    val targetDirAnno = List(BlackBoxTargetDirAnno(optionsManager.targetDirName))
 
     // Output Annotations
     val outputAnnos = firrtlConfig.getEmitterAnnos(optionsManager)
 
     val globalAnnos = Seq(TargetDirAnnotation(optionsManager.targetDirName)) ++
-      (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation()) else Seq()) ++
-      (if (firrtlConfig.noDCE) Seq(NoDCEAnnotation()) else Seq())
+      (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation) else Seq()) ++
+      (if (firrtlConfig.noDCE) Seq(NoDCEAnnotation) else Seq())
 
-    targetDirAnno ++ outputAnnos ++ globalAnnos ++ firrtlConfig.annotations ++ loadedAnnos
+    val annos = targetDirAnno ++ outputAnnos ++ globalAnnos ++
+                firrtlConfig.annotations ++ loadedAnnos
+    LegacyAnnotation.convertLegacyAnnos(annos)
   }
 
   /**
@@ -229,21 +201,18 @@ object Driver {
         optionsManager.makeTargetDir()
 
         maybeFinalState = Some(firrtlConfig.compiler.compile(
-          CircuitState(parsedInput,
-            ChirrtlForm,
-            Some(AnnotationMap(annos))),
+          CircuitState(parsedInput, ChirrtlForm, annos),
           firrtlConfig.customTransforms
         ))
       }
-
-    catch {
-      // Rethrow the exceptions which are expected or due to the runtime environment (out of memory, stack overflow)
-      case p: ControlThrowable => throw p
-      case p: PassException  => throw p
-      case p: FIRRTLException => throw p
-      // Treat remaining exceptions as internal errors.
-      case e: Exception => throwInternalError(exception = Some(e))
-    }
+      catch {
+        // Rethrow the exceptions which are expected or due to the runtime environment (out of memory, stack overflow)
+        case p: ControlThrowable => throw p
+        case p: PassException  => throw p
+        case p: FIRRTLException => throw p
+        // Treat remaining exceptions as internal errors.
+        case e: Exception => throwInternalError(exception = Some(e))
+      }
 
       val finalState = maybeFinalState.get
 
@@ -273,11 +242,9 @@ object Driver {
       optionsManager.firrtlOptions.outputAnnotationFileName match {
         case "" =>
         case file =>
-          val filename = optionsManager.getBuildFileName("anno", file)
+          val filename = optionsManager.getBuildFileName("anno.json", file)
           val outputFile = new java.io.PrintWriter(filename)
-          finalState.annotations.foreach {
-            finalAnnos => outputFile.write(finalAnnos.annotations.toYaml.prettyPrint)
-          }
+          outputFile.write(JsonProtocol.serialize(finalState.annotations))
           outputFile.close()
       }
 

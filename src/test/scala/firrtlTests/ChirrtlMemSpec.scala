@@ -78,8 +78,7 @@ circuit foo :
     io.out <= bar
 """.stripMargin
 
-    val annotationMap = AnnotationMap(Nil)
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
   }
@@ -104,14 +103,13 @@ circuit foo :
     io.out <= bar
 """.stripMargin
 
-    val annotationMap = AnnotationMap(Nil)
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
   }
 
   ignore should "Memories should not have validif on port clocks when declared in a when" in {
-    val input = 
+    val input =
       """;buildInfoPackage: chisel3, version: 3.0-SNAPSHOT, scalaVersion: 2.11.11, sbtVersion: 0.13.16, builtAtString: 2017-10-06 20:55:20.367, builtAtMillis: 1507323320367
         |circuit Stack :
         |  module Stack :
@@ -157,8 +155,7 @@ circuit foo :
         |      skip @[Stack.scala 19:16]
         |    io.dataOut <= out @[Stack.scala 31:14]
         """.stripMargin
-    val annotationMap = AnnotationMap(Nil)
-    val res = (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), Nil).circuit
+    val res = (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
     assert(res search {
       case Connect(_, WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_35",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
       case Connect(_, WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_17",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
@@ -179,8 +176,7 @@ circuit foo :
         |      read mport bar = mem[addr], clock
         |      out <= bar
         |""".stripMargin
-    val annotationMap = AnnotationMap(Nil)
-    val res = (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), Nil).circuit
+    val res = (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
     assert(res search {
       case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
     })
@@ -201,8 +197,7 @@ circuit foo :
         |      read mport bar = mem[addr], local
         |      out <= bar
         |""".stripMargin
-    val annotationMap = AnnotationMap(Nil)
-    val res = new LowFirrtlCompiler().compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), Nil).circuit
+    val res = new LowFirrtlCompiler().compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
     assert(res search {
       case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
     })
@@ -223,9 +218,7 @@ circuit foo :
         |      read mport bar = mem[addr], asClock(local)
         |      out <= bar
         |""".stripMargin
-    val annotationMap = AnnotationMap(Nil)
-
-    val res = new LowFirrtlCompiler().compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), Nil).circuit
+    val res = new LowFirrtlCompiler().compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
     assert(res search {
       case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), DoPrim(AsClock, Seq(WRef("clock", _, _, _)), Nil, _)) => true
     })
@@ -246,9 +239,7 @@ circuit foo :
         |      read mport bar = mem[addr], asClock(clock)
         |      out <= bar
         |""".stripMargin
-    val annotationMap = AnnotationMap(Nil)
-
-    val res = (new HighFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm, Some(annotationMap)), Nil).circuit
+    val res = (new HighFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
     assert(res search {
       case Connect(_, SubField(SubField(Reference("mem", _), "bar", _), "clk", _), DoPrim(AsClock, Seq(Reference("clock", _)), _, _)) => true
     })

@@ -24,7 +24,7 @@ class UnitTests extends FirrtlFlatSpec {
     val c = transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {
       (c: CircuitState, t: Transform) => t.runTransform(c)
     }.circuit
-    CircuitState(c, UnknownForm, None, None)
+    CircuitState(c, UnknownForm, Seq(), None)
   }
 
   "Pull muxes" should "not be exponential in runtime" in {
