@@ -640,8 +640,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
           } else {
             None
           }
-        case _ => println(s"$argTypes, $outerClassInstance")
-        None
+        case _ => None
 
       }
       clone match {
