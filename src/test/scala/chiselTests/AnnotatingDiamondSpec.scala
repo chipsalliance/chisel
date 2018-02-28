@@ -11,8 +11,7 @@ import firrtl.annotations.{
   Annotation,
   SingleTargetAnnotation,
   ModuleName,
-  Named,
-  RunTransformAnnotation
+  Named
 }
 import org.scalatest._
 
