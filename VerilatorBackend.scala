@@ -215,13 +215,8 @@ private[iotesters] object setupVerilatorBackend {
         The following block adds an annotation that tells the black box helper where the
         current build directory is, so that it can copy verilog resource files into the right place
          */
-        val annotationMap = firrtl.AnnotationMap(optionsManager.firrtlOptions.annotations ++ List(
-          firrtl.annotations.Annotation(
-            CircuitName(circuit.name),
-            classOf[BlackBoxSourceHelper],
-            BlackBoxTargetDir(optionsManager.targetDirName).serialize
-          )
-        ))
+        val annotations = optionsManager.firrtlOptions.annotations ++
+          List(BlackBoxTargetDirAnno(optionsManager.targetDirName))
 
         val transforms = optionsManager.firrtlOptions.customTransforms
 
@@ -232,7 +227,7 @@ private[iotesters] object setupVerilatorBackend {
         val verilogWriter = new FileWriter(verilogFile)
 
         val compileResult = (new firrtl.VerilogCompiler).compileAndEmit(
-          CircuitState(chirrtl, ChirrtlForm, Some(annotationMap)),
+          CircuitState(chirrtl, ChirrtlForm, annotations),
           customTransforms = transforms
         )
         val compiledStuff = compileResult.getEmittedCircuit
@@ -245,7 +240,7 @@ private[iotesters] object setupVerilatorBackend {
         val cppHarnessWriter = new FileWriter(cppHarnessFile)
         val vcdFile = new File(dir, s"${circuit.name}.vcd")
         val emittedStuff = VerilatorCppHarnessGenerator.codeGen(
-          dut, CircuitState(chirrtl, ChirrtlForm, Some(annotationMap)), vcdFile.toString
+          dut, CircuitState(chirrtl, ChirrtlForm, annotations), vcdFile.toString
         )
         cppHarnessWriter.append(emittedStuff)
         cppHarnessWriter.close()

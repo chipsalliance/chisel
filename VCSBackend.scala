@@ -9,7 +9,7 @@ import chisel3.core.{ActualDirection, DataMirror}
 import chisel3.{ChiselExecutionFailure, ChiselExecutionSuccess}
 import firrtl.{ChirrtlForm, CircuitState}
 import firrtl.annotations.CircuitName
-import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDir}
+import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDirAnno}
 
 /**
   * Copies the necessary header files used for verilator compilation to the specified destination folder
@@ -136,13 +136,8 @@ private[iotesters] object setupVCSBackend {
         The following block adds an annotation that tells the black box helper where the
         current build directory is, so that it can copy verilog resource files into the right place
          */
-        val annotationMap = firrtl.AnnotationMap(optionsManager.firrtlOptions.annotations ++ List(
-          firrtl.annotations.Annotation(
-            CircuitName(circuit.name),
-            classOf[BlackBoxSourceHelper],
-            BlackBoxTargetDir(optionsManager.targetDirName).serialize
-          )
-        ))
+        val annotations = optionsManager.firrtlOptions.annotations ++
+          List(BlackBoxTargetDirAnno(optionsManager.targetDirName))
 
         val transforms = optionsManager.firrtlOptions.customTransforms
 
@@ -151,7 +146,7 @@ private[iotesters] object setupVCSBackend {
         val verilogWriter = new FileWriter(verilogFile)
 
         val compileResult = (new firrtl.VerilogCompiler).compileAndEmit(
-          CircuitState(chirrtl, ChirrtlForm, Some(annotationMap)),
+          CircuitState(chirrtl, ChirrtlForm, annotations),
           customTransforms = transforms
         )
         val compiledStuff = compileResult.getEmittedCircuit

@@ -112,11 +112,10 @@ object chiselMain {
         (new firrtl.LowFirrtlEmitter).emit(firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm), writer)
         writer.close()
       case _ if context.isGenVerilog =>
-        val annotations = firrtl.AnnotationMap(Seq(
-          firrtl.passes.memlib.InferReadWriteAnnotation(name)))
+        val annotations = Seq(firrtl.passes.memlib.InferReadWriteAnnotation)
         val writer = new FileWriter(verilogFile)
         val compileResult = (new firrtl.VerilogCompiler).compileAndEmit(
-          firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, Some(annotations)),
+          firrtl.CircuitState(chirrtl, firrtl.ChirrtlForm, annotations),
           List(new firrtl.passes.memlib.InferReadWrite)
         )
         writer.write(compileResult.getEmittedCircuit.value)
