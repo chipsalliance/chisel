@@ -45,26 +45,12 @@ class DontTouchSpec extends ChiselFlatSpec {
       verilog should not include (signal)
     }
   }
-}
-class DontTouchSpec2 extends ChiselFlatSpec {
-  val deadSignals = List(
-    "io_c_0",
-    "io_c_1",
-    "dead"
-  )
-  "Dead code" should "NOT be removed if marked dontTouch" in {
+  it should "NOT be removed if marked dontTouch" in {
     val verilog = compile(new HasDeadCode(true))
     for (signal <- deadSignals) {
       verilog should include (signal)
     }
   }
-}
-class DontTouchSpec3 extends ChiselFlatSpec {
-  val deadSignals = List(
-    "io_c_0",
-    "io_c_1",
-    "dead"
-  )
   "Dont touch" should "only work on bound hardware" in {
     a [chisel3.core.Binding.BindingException] should be thrownBy {
       compile(new Module {
