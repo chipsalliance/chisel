@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import org.scalatest._
+import tags.RequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -34,6 +34,7 @@ class ParameterizedModuleTester() extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class ParameterizedModuleSpec extends ChiselFlatSpec {
   "Different parameterized modules" should "have different behavior" in {
     assertTesterPasses(new ParameterizedModuleTester())

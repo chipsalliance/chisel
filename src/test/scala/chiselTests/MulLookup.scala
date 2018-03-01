@@ -2,9 +2,8 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class MulLookup(val w: Int) extends Module {
@@ -31,8 +30,7 @@ class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester {
 }
 
 class MulLookupSpec extends ChiselPropSpec {
-
-  property("Mul lookup table should return the correct result") {
+  property("Mul lookup table should return the correct result", TagRequiresBackend) {
     forAll(smallPosInts, smallPosInts) { (x: Int, y: Int) =>
       assertTesterPasses{ new MulLookupTester(3, x, y) }
     }

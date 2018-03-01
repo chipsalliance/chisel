@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import org.scalatest._
+import tags.RequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -19,6 +19,7 @@ class StopImmediatelyTester extends BasicTester {
   assert(cycle =/= 5.U, "Simulation did not exit upon executing stop()")
 }
 
+@RequiresBackend
 class StopSpec extends ChiselFlatSpec {
   "stop()" should "stop and succeed the testbench" in {
     assertTesterPasses { new StopTester }

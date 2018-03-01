@@ -3,6 +3,7 @@
 package chiselTests
 
 import collection.immutable.ListMap
+import tags.TagRequiresBackend
 
 // Keep Chisel._ separate from chisel3._ below
 object CompatibilityComponents {
@@ -80,7 +81,7 @@ object Chisel3Components {
 
 class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
-  "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
+  "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" taggedAs(TagRequiresBackend) in {
     import chisel3._
     import chisel3.testers.BasicTester
     import CompatibilityComponents._
@@ -99,7 +100,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     })
   }
 
-  "Moduless defined in the chisel3._" should "successfully bulk connect in Chisel._" in {
+  "Moduless defined in the chisel3._" should "successfully bulk connect in Chisel._" taggedAs(TagRequiresBackend) in {
     import Chisel._
     import chisel3.testers.BasicTester
     import Chisel3Components._
@@ -119,7 +120,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
   }
 
 
-  "Bundles defined in Chisel._" should "work in chisel3._ Modules" in {
+  "Bundles defined in Chisel._" should "work in chisel3._ Modules" taggedAs(TagRequiresBackend) in {
     import chisel3._
     import chisel3.testers.BasicTester
     import Chisel3Components._
@@ -138,7 +139,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     })
   }
 
-  "Bundles defined in chisel3._" should "work in Chisel._ Modules" in {
+  "Bundles defined in chisel3._" should "work in Chisel._ Modules" taggedAs(TagRequiresBackend) in {
     import chisel3._
     import chisel3.testers.BasicTester
     import CompatibilityComponents._
@@ -159,7 +160,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
 
   "Similar Bundles defined in the chisel3._ and Chisel._" should
-      "successfully bulk connect in chisel3._" in {
+      "successfully bulk connect in chisel3._" taggedAs(TagRequiresBackend) in {
     import chisel3._
     import chisel3.testers.BasicTester
     import Chisel3Components._
@@ -190,7 +191,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       stop()
     })
   }
-  they should "successfully bulk connect in Chisel._" in {
+
+  they should "successfully bulk connect in Chisel._" taggedAs(TagRequiresBackend) in {
     import Chisel._
     import chisel3.testers.BasicTester
     import Chisel3Components._

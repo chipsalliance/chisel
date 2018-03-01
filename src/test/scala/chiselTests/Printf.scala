@@ -2,9 +2,8 @@
 
 package chiselTests
 
-import org.scalatest._
+import tags.RequiresBackend
 import chisel3._
-import chisel3.util._
 import chisel3.testers.BasicTester
 
 class SinglePrintfTester() extends BasicTester {
@@ -30,6 +29,7 @@ class ASCIIPrintableTester extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class PrintfSpec extends ChiselFlatSpec {
   "A printf with a single argument" should "run" in {
     assertTesterPasses { new SinglePrintfTester }

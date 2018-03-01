@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{BinaryPoint, Width}
@@ -117,13 +118,13 @@ class SBPTester extends BasicTester {
 }
 
 class FixedPointSpec extends ChiselPropSpec {
-  property("should allow set binary point") {
+  property("should allow set binary point", TagRequiresBackend) {
     assertTesterPasses { new SBPTester }
   }
-  property("should allow fromBits") {
+  property("should allow fromBits", TagRequiresBackend) {
     assertTesterPasses { new FixedPointFromBitsTester }
   }
-  property("should mux different widths and binary points") {
+  property("should mux different widths and binary points", TagRequiresBackend) {
     assertTesterPasses { new FixedPointMuxTester }
   }
   property("Negative shift amounts are invalid") {

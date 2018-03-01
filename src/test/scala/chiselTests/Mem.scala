@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
@@ -20,7 +21,7 @@ class MemVecTester extends BasicTester {
 }
 
 class MemorySpec extends ChiselPropSpec {
-  property("Mem of Vec should work") {
+  property("Mem of Vec should work", TagRequiresBackend) {
     assertTesterPasses { new MemVecTester }
   }
 }

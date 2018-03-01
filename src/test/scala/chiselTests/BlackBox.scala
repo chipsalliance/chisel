@@ -2,14 +2,11 @@
 
 package chiselTests
 
-import java.io.File
-
-import org.scalatest._
+import tags.RequiresBackend
 import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
 import chisel3.util._
-//import chisel3.core.ExplicitCompileOptions.Strict
 
 class BlackBoxInverter extends BlackBox {
   val io = IO(new Bundle() {
@@ -151,6 +148,7 @@ class BlackBoxWithParamsTester extends BasicTester {
   when(end) { stop() }
 }
 
+@RequiresBackend
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
     assertTesterPasses({ new BlackBoxTester },

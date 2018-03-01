@@ -2,10 +2,9 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
-import org.scalatest._
-import org.scalatest.prop._
 
 class GCD extends Module {
   val io = IO(new Bundle {
@@ -52,7 +51,7 @@ class GCDSpec extends ChiselPropSpec {
     elaborate { new GCD }
   }
 
-  property("GCDTester should return the correct result") {
+  property("GCDTester should return the correct result", TagRequiresBackend) {
     forAll (gcds) { (a: Int, b: Int, z: Int) =>
       assertTesterPasses{ new GCDTester(a, b, z) }
     }

@@ -2,9 +2,7 @@
 
 package chiselTests
 
-import firrtl.ir.Input
-import org.scalatest._
-import org.scalatest.prop._
+import tags.RequiresBackend
 import chisel3._
 import chisel3.util._
 import chisel3.core.DataMirror
@@ -62,6 +60,7 @@ class ShiftResetTester(n: Int) extends BasicTester {
   }
 }
 
+@RequiresBackend
 class ShiftRegisterSpec extends ChiselPropSpec {
   property("ShiftRegister should shift") {
     forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftTester(shift) } }

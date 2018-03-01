@@ -2,8 +2,8 @@
 
 package chiselTests
 
+import tags.TagRequiresBackend
 import chisel3._
-import chisel3.experimental.RawModule
 import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -187,13 +187,13 @@ class VecSpec extends ChiselPropSpec {
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
-  property("Vecs should be assignable") {
+  property("Vecs should be assignable", TagRequiresBackend) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new ValueTester(w, v) }
     }
   }
 
-  property("Vecs should be passed through vec IO") {
+  property("Vecs should be passed through vec IO", TagRequiresBackend) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new IOTester(w, v) }
     }
@@ -208,39 +208,39 @@ class VecSpec extends ChiselPropSpec {
     }
   }
 
-  property("A Reg of a Vec should operate correctly") {
+  property("A Reg of a Vec should operate correctly", TagRequiresBackend) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new RegTester(w, v) }
     }
   }
 
-  property("A Vec of lit should operate correctly") {
+  property("A Vec of lit should operate correctly", TagRequiresBackend) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new LitTester(w, v) }
     }
   }
 
-  property("Vecs should tabulate correctly") {
+  property("Vecs should tabulate correctly", TagRequiresBackend) {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new TabulateTester(n) } }
   }
 
-  property("Regs of vecs should be usable as shift registers") {
+  property("Regs of vecs should be usable as shift registers", TagRequiresBackend) {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new ShiftRegisterTester(n) } }
   }
 
-  property("Infering widths on huge Vecs should not cause a stack overflow") {
+  property("Infering widths on huge Vecs should not cause a stack overflow", TagRequiresBackend) {
     assertTesterPasses { new HugeVecTester(10000) }
   }
 
-  property("A Reg of a Vec of a single 1 bit element should compile and work") {
+  property("A Reg of a Vec of a single 1 bit element should compile and work", TagRequiresBackend) {
     assertTesterPasses{ new OneBitUnitRegVecTester }
   }
 
-  property("A Vec with zero entries should compile and have zero width") {
+  property("A Vec with zero entries should compile and have zero width", TagRequiresBackend) {
     assertTesterPasses{ new ZeroEntryVecTester }
   }
 
-  property("Dynamic indexing of a Vec of Module IOs should work") {
+  property("Dynamic indexing of a Vec of Module IOs should work", TagRequiresBackend) {
     assertTesterPasses{ new ModuleIODynamicIndexTester(4) }
   }
 

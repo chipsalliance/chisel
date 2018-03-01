@@ -2,9 +2,7 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
-
+import tags.RequiresBackend
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -38,6 +36,7 @@ class WrapTester(max: Int) extends BasicTester {
   }
 }
 
+@RequiresBackend
 class CounterSpec extends ChiselPropSpec {
   property("Counter should count up") {
     forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new CountTester(max) } }

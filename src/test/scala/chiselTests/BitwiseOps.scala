@@ -2,9 +2,8 @@
 
 package chiselTests
 
+import tags.RequiresBackend
 import chisel3._
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
@@ -18,6 +17,7 @@ class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   stop()
 }
 
+@RequiresBackend
 class BitwiseOpsSpec extends ChiselPropSpec {
   property("All bit-wise ops should return the correct result") {
     forAll(safeUIntPair) { case(w: Int, a: Int, b: Int) =>

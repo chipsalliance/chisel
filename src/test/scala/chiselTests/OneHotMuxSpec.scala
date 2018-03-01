@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import tags.RequiresBackend
 import Chisel.testers.BasicTester
 import chisel3._
 import chisel3.experimental.FixedPoint
@@ -9,7 +10,7 @@ import chisel3.util.Mux1H
 import org.scalatest._
 
 //scalastyle:off magic.number
-
+@RequiresBackend
 class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
   "simple one hot mux with uint should work" in {
     assertTesterPasses(new SimpleOneHotTester)
