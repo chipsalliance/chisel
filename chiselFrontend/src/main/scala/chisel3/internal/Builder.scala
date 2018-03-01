@@ -8,6 +8,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3._
 import core._
 import firrtl._
+import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -66,6 +67,9 @@ trait InstanceId {
   def pathName: String
   def parentPathName: String
   def parentModName: String
+  /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
+  def toNamed: Named
+
 }
 
 private[chisel3] trait HasId extends InstanceId {
@@ -129,6 +133,11 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p.name
     case None => throwException(s"$instanceName doesn't have a parent")
   }
+  // TODO Should this be public?
+  protected def circuitName: String = _parent match {
+    case None => instanceName
+    case Some(p) => p.circuitName
+  }
 
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
@@ -141,6 +150,14 @@ private[chisel3] trait HasId extends InstanceId {
       m.getParameterTypes.isEmpty && valNames.contains(m.getName) && !m.getDeclaringClass.isAssignableFrom(rootClass)
     this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
   }
+}
+/** Holds the implementation of toNamed for Data and MemBase */
+private[chisel3] trait NamedComponent extends HasId {
+  /** Returns a FIRRTL ComponentName that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toNamed: ComponentName =
+    ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
 }
 
 private[chisel3] class DynamicContext() {
@@ -277,7 +294,7 @@ private[chisel3] object Builder {
       errors.checkpoint()
       errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components, annotations.map(_.toFirrtl))
+      Circuit(components.last.name, components, annotations)
     }
   }
   initializeSingletons()
