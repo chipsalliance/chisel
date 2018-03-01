@@ -176,14 +176,18 @@ object Firrterpreter {
     (circuit.components find (_.name == circuit.name)).get.id
   }
 
-  def start[T <: Module](dutGen: => T): BackendInstance[T] = {
-    val optionsManager = new ExecutionOptionsManager("chisel3")
-        with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite {
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
-      firrtlOptions = FirrtlExecutionOptions(
-        compilerName = "low"
-      )
+  def start[T <: Module](dutGen: => T, options: Option[ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite] = None): BackendInstance[T] = {
+    val optionsManager = options match  {
+      case Some(o: ExecutionOptionsManager) => o
+
+      case None =>
+        new ExecutionOptionsManager("chisel3")
+          with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite {
+          commonOptions = CommonOptions(targetDirName = "test_run_dir")
+        }
     }
+    // the backend must be firrtl if we are here, therefore we want the firrtl compiler
+    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(compilerName = "low")
 
     chisel3.Driver.execute(optionsManager, () => dutGen) match {
       case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>

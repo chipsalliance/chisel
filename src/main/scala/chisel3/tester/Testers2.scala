@@ -3,8 +3,9 @@
 package chisel3.tester
 
 import scala.util.DynamicVariable
-
 import chisel3._
+import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import firrtl_interpreter.HasInterpreterSuite
 
 object Context {
   class Instance(val backend: BackendInterface, val env: TestEnvInterface) {
@@ -21,6 +22,11 @@ object Context {
   // TODO: better integration points for default tester selection
   def createDefaultTester[T <: Module](dutGen: => T): BackendInstance[T] = {
     Firrterpreter.start(dutGen)
+  }
+
+  // TODO: add TesterOptions (from chisel-testers) and use that to control default tester selection.
+  def createDefaultTester[T <: Module](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite): BackendInstance[T] = {
+    Firrterpreter.start(dutGen, Some(options))
   }
 
   def apply(): Instance = context.value.get
