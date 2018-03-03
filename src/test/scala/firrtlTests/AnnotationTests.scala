@@ -495,6 +495,7 @@ class JsonAnnotationTests extends AnnotationTests {
       InlineAnnotation(CircuitName("fox")),
       InlineAnnotation(ModuleName("dog", CircuitName("bear"))),
       InlineAnnotation(ComponentName("chocolate", ModuleName("like", CircuitName("i")))),
+      InlineAnnotation(ComponentName("chocolate.frog", ModuleName("like", CircuitName("i")))),
       PinAnnotation(Seq("sea-lion", "monk-seal"))
     ).toArray
 

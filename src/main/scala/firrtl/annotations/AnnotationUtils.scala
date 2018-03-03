@@ -14,7 +14,7 @@ import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.ir._
 import firrtl.Utils.error
 
-class InvalidAnnotationFileException(msg: String) extends Exception(msg)
+class InvalidAnnotationFileException(msg: String) extends FIRRTLException(msg)
 
 object AnnotationUtils {
   def toYaml(a: LegacyAnnotation): String = a.toYaml.prettyPrint
@@ -48,10 +48,10 @@ object AnnotationUtils {
     case None => Seq(s)
   }
 
-  def toNamed(s: String): Named = tokenize(s) match {
-    case Seq(n) => CircuitName(n)
-    case Seq(c, ".", m) => ModuleName(m, CircuitName(c))
-    case Seq(c, ".", m, ".", x) => ComponentName(x, ModuleName(m, CircuitName(c)))
+  def toNamed(s: String): Named = s.split("\\.", 3) match {
+    case Array(n) => CircuitName(n)
+    case Array(c, m) => ModuleName(m, CircuitName(c))
+    case Array(c, m, x) => ComponentName(x, ModuleName(m, CircuitName(c)))
   }
 
   /** Given a serialized component/subcomponent reference, subindex, subaccess,
