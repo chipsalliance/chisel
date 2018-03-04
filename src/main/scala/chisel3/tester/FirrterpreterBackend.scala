@@ -23,7 +23,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   })
 
   // TODO: the naming facility should be part of infrastructure not backend
-  protected val portNames = getDataNames("io", dut.io).toMap
+  protected val portNames = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).toMap
   protected def resolveName(signal: Data) =
     portNames.getOrElse(signal, signal.toString())
 
