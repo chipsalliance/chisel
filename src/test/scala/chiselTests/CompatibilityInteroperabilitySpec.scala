@@ -12,6 +12,8 @@ object CompatibilityComponents {
   class ChiselBundle extends Bundle {
     val a = UInt(width = 32)
     val b = UInt(width = 32).flip
+
+    override def cloneType = (new ChiselBundle).asInstanceOf[this.type]
   }
   class ChiselRecord extends Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
@@ -46,6 +48,8 @@ object Chisel3Components {
   class Chisel3Bundle extends Bundle {
     val a = Output(UInt(32.W))
     val b = Input(UInt(32.W))
+
+    override def cloneType = (new Chisel3Bundle).asInstanceOf[this.type]
   }
 
   class Chisel3Record extends Record {
@@ -216,6 +220,28 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       b.io <> a.io
       stop()
     })
+  }
+
+  "An instance of a chisel3.Module inside a Chisel.Module" should "have its inputs invalidated" in {
+    compile {
+      import Chisel._
+      new Module {
+        val io = new Bundle {
+          val in = UInt(INPUT, width = 32)
+          val cond = Bool(INPUT)
+          val out = UInt(OUTPUT, width = 32)
+        }
+        val children = Seq(Module(new PassthroughModule),
+                           Module(new PassthroughMultiIOModule),
+                           Module(new PassthroughRawModule))
+        io.out := children.map(_.io.out).reduce(_ + _)
+        children.foreach { child =>
+          when (io.cond) {
+            child.io.in := io.in
+          }
+        }
+      }
+    }
   }
 }
 

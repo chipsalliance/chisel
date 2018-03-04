@@ -92,7 +92,7 @@ class BadBoolConversion extends Module {
 }
 
 class NegativeShift(t: => Bits) extends Module {
-  val io = IO(new Bundle)
+  val io = IO(new Bundle {})
   Reg(t) >> -1
 }
 

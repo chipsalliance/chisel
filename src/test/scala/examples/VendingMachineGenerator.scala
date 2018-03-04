@@ -9,7 +9,7 @@ import chisel3.util._
 
 import VendingMachineUtils._
 
-class VendingMachineIO(legalCoins: Seq[Coin]) extends Bundle {
+class VendingMachineIO(val legalCoins: Seq[Coin]) extends Bundle {
   require(legalCoins.size >= 1, "The vending machine must accept at least 1 coin!")
   // Order of coins by value
   val coins: Seq[Coin] = legalCoins sortBy (_.value)
@@ -84,11 +84,11 @@ class ParameterizedVendingMachineTester(
   val inputs: Seq[Option[Coin]] = Seq.fill(testLength)(coins.lift(_rand.nextInt(coins.size + 1)))
   val expected: Seq[Boolean] = getExpectedResults(inputs, dut.sodaCost)
 
-  val inputVec: Vec[UInt] = Vec(inputs map {
+  val inputVec: Vec[UInt] = VecInit(inputs map {
     case Some(coin) => (1 << dut.io.indexMap(coin.name)).asUInt(coins.size.W)
     case None => 0.asUInt(coins.size.W)
   })
-  val expectedVec: Vec[Bool] = Vec(expected map (_.B))
+  val expectedVec: Vec[Bool] = VecInit(expected map (_.B))
 
   val (idx, done) = Counter(true.B, testLength + 1)
   when (done) { stop(); stop() } // Two stops for Verilator

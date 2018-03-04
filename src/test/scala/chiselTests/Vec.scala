@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.RawModule
 import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -20,7 +21,7 @@ class RegTesterMod(vecSize: Int) extends Module {
     val in = Input(Vec(vecSize, UInt()))
     val out = Output(Vec(vecSize, UInt()))
   })
-  val vecReg = RegNext(io.in, Vec(Seq.fill(vecSize){0.U}))
+  val vecReg = RegNext(io.in, VecInit(Seq.fill(vecSize){0.U}))
   io.out := vecReg
 }
 
@@ -49,7 +50,7 @@ class LitTester(w: Int, values: List[Int]) extends BasicTester {
 }
 
 class RegTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = Vec(values.map(_.U(w.W)))
+  val v = VecInit(values.map(_.U(w.W)))
   val dut = Module(new RegTesterMod(values.length))
   val doneReg = RegInit(false.B)
   dut.io.in := v
@@ -65,7 +66,7 @@ class RegTester(w: Int, values: List[Int]) extends BasicTester {
 }
 
 class IOTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = Vec(values.map(_.U(w.W))) // Does this need a Wire? No. It's a Vec of Lits and hence synthesizeable.
+  val v = VecInit(values.map(_.U(w.W))) // Does this need a Wire? No. It's a Vec of Lits and hence synthesizeable.
   val dut = Module(new IOTesterMod(values.length))
   dut.io.in := v
   for ((a,b) <- dut.io.out.zip(values)) {
@@ -85,7 +86,7 @@ class IOTesterModFill(vecSize: Int) extends Module {
 }
 
 class ValueTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = Vec(values.map(_.asUInt(w.W)))
+  val v = VecInit(values.map(_.asUInt(w.W)))
   for ((a,b) <- v.zip(values)) {
     assert(a === b.asUInt)
   }
@@ -93,9 +94,9 @@ class ValueTester(w: Int, values: List[Int]) extends BasicTester {
 }
 
 class TabulateTester(n: Int) extends BasicTester {
-  val v = Vec(Range(0, n).map(i => (i*2).asUInt))
-  val x = Vec(Array.tabulate(n){ i => (i*2).asUInt })
-  val u = Vec.tabulate(n)(i => (i*2).asUInt)
+  val v = VecInit(Range(0, n).map(i => (i*2).asUInt))
+  val x = VecInit(Array.tabulate(n){ i => (i*2).asUInt })
+  val u = VecInit.tabulate(n)(i => (i*2).asUInt)
 
   assert(v.asUInt() === x.asUInt())
   assert(v.asUInt() === u.asUInt())
@@ -151,16 +152,6 @@ class ZeroEntryVecTester extends BasicTester {
   WireInit(m.io.bar)
 
   stop()
-}
-
-class PassthroughModuleIO extends Bundle {
-  val in = Input(UInt(32.W))
-  val out = Output(UInt(32.W))
-}
-
-class PassthroughModule extends Module {
-  val io = IO(new PassthroughModuleIO)
-  io.out := io.in
 }
 
 class PassthroughModuleTester extends Module {

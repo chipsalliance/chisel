@@ -75,9 +75,9 @@ class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends BasicTest
   val (cycle, done) = Counter(true.B, 10)
   when (done) { stop(); stop() } // Stop twice because of Verilator
 
-  val nickelInputs = Vec(true.B, true.B, true.B, true.B, true.B, false.B, false.B, false.B, true.B, false.B)
-  val dimeInputs   = Vec(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
-  val expected     = Vec(false.B, false.B, false.B, false.B, true.B , false.B, false.B, true.B, false.B, false.B)
+  val nickelInputs = VecInit(true.B, true.B, true.B, true.B, true.B, false.B, false.B, false.B, true.B, false.B)
+  val dimeInputs   = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected     = VecInit(false.B, false.B, false.B, false.B, true.B , false.B, false.B, true.B, false.B, false.B)
 
   dut.io.nickel := nickelInputs(cycle)
   dut.io.dime := dimeInputs(cycle)

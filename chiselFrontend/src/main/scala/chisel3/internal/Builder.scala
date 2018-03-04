@@ -8,6 +8,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3._
 import core._
 import firrtl._
+import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -66,6 +67,9 @@ trait InstanceId {
   def pathName: String
   def parentPathName: String
   def parentModName: String
+  /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
+  def toNamed: Named
+
 }
 
 private[chisel3] trait HasId extends InstanceId {
@@ -129,6 +133,11 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p.name
     case None => throwException(s"$instanceName doesn't have a parent")
   }
+  // TODO Should this be public?
+  protected def circuitName: String = _parent match {
+    case None => instanceName
+    case Some(p) => p.circuitName
+  }
 
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
@@ -141,6 +150,14 @@ private[chisel3] trait HasId extends InstanceId {
       m.getParameterTypes.isEmpty && valNames.contains(m.getName) && !m.getDeclaringClass.isAssignableFrom(rootClass)
     this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
   }
+}
+/** Holds the implementation of toNamed for Data and MemBase */
+private[chisel3] trait NamedComponent extends HasId {
+  /** Returns a FIRRTL ComponentName that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toNamed: ComponentName =
+    ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
 }
 
 private[chisel3] class DynamicContext() {
@@ -156,6 +173,8 @@ private[chisel3] class DynamicContext() {
   var currentClockAndReset: Option[ClockAndReset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
+  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
+  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 }
 
 private[chisel3] object Builder {
@@ -223,10 +242,44 @@ private[chisel3] object Builder {
     pushCommand(cmd).id
   }
 
+  // Called when Bundle construction begins, used to record a stack of open Bundle constructors to
+  // record candidates for Bundle autoclonetype. This is a best-effort guess.
+  // Returns the current stack of open Bundles
+  // Note: elt will NOT have finished construction, its elements cannot be accessed
+  def updateBundleStack(elt: Bundle): Seq[Bundle] = {
+    val stackElts = Thread.currentThread().getStackTrace()
+        .reverse  // so stack frame numbers are deterministic across calls
+        .dropRight(2)  // discard Thread.getStackTrace and updateBundleStack
+
+    // Determine where we are in the Bundle stack
+    val eltClassName = elt.getClass.getName
+    val eltStackPos = stackElts.map(_.getClassName).lastIndexOf(eltClassName)
+
+    // Prune the existing Bundle stack of closed Bundles
+    // If we know where we are in the stack, discard frames above that
+    val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
+    val pruneLength = dynamicContext.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
+      pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
+    }
+    dynamicContext.bundleStack.trimEnd(pruneLength)
+
+    // Return the stack state before adding the most recent bundle
+    val lastStack = dynamicContext.bundleStack.map(_._1).toSeq
+
+    // Append the current Bundle to the stack, if it's on the stack trace
+    if (eltStackPos >= 0) {
+      val stackElt = stackElts(eltStackPos)
+      dynamicContext.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
+    }
+    // Otherwise discard the stack frame, this shouldn't fail noisily
+
+    lastStack
+  }
+
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = errors.error(m)
   def warning(m: => String): Unit = errors.warning(m)
-  def deprecated(m: => String): Unit = errors.deprecated(m)
+  def deprecated(m: => String, location: Option[String] = None): Unit = errors.deprecated(m, location)
 
   /** Record an exception as an error, and throw it.
     *
@@ -246,7 +299,7 @@ private[chisel3] object Builder {
       errors.checkpoint()
       errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components, annotations.map(_.toFirrtl))
+      Circuit(components.last.name, components, annotations)
     }
   }
   initializeSingletons()
