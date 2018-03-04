@@ -90,8 +90,6 @@ lazy val publishSettings = Seq (
   }
 )
 
-val defaultVersions = Map("firrtl" -> "1.1-SNAPSHOT")
-
 lazy val chiselSettings = Seq (
   name := "chisel3",
 
