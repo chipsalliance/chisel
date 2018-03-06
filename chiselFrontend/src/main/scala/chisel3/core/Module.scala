@@ -13,6 +13,8 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 
+import _root_.firrtl.annotations.{CircuitName, ModuleName}
+
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
@@ -139,6 +141,11 @@ abstract class BaseModule extends HasId {
   /** Legalized name of this module. */
   final val name = Builder.globalNamespace.name(desiredName)
 
+  /** Returns a FIRRTL ModuleName that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toNamed: ModuleName = ModuleName(this.name, CircuitName(this.circuitName))
+
   /** Called at the Module.apply(...) level after this Module has finished elaborating.
     * Returns a map of nodes -> names, for named nodes.
     *
@@ -191,38 +198,20 @@ abstract class BaseModule extends HasId {
     *
     * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
     */
-  def _autoWrapPorts() {}
+  def _compatAutoWrapPorts() {}
 
   //
   // BaseModule User API functions
   //
+  @deprecated("Use chisel3.experimental.annotate instead", "3.1")
   protected def annotate(annotation: ChiselAnnotation): Unit = {
     Builder.annotations += annotation
   }
 
-  /**
-   * This must wrap the datatype used to set the io field of any Module.
-   * i.e. All concrete modules must have defined io in this form:
-   * [lazy] val io[: io type] = IO(...[: io type])
-   *
-   * Items in [] are optional.
-   *
-   * The granted iodef WILL NOT be cloned (to allow for more seamless use of
-   * anonymous Bundles in the IO) and thus CANNOT have been bound to any logic.
-   * This will error if any node is bound (e.g. due to logic in a Bundle
-   * constructor, which is considered improper).
-   *
-   * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
-   * requested (so that all calls to ports will return the same information).
-   * Internal API.
-   *
-   * TODO(twigg): Specifically walk the Data definition to call out which nodes
-   * are problematic.
-   */
-  protected def IO[T<:Data](iodef: T): iodef.type = {
-    require(!_closed, "Can't add more ports after module close")
-    requireIsChiselType(iodef, "io type")
-
+  /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
+    * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
+    */
+  protected def _bindIoInPlace(iodef: Data): Unit = {
     // Compatibility code: Chisel2 did not require explicit direction on nodes
     // (unspecified treated as output, and flip on nothing was input).
     // This sets assigns the explicit directions required by newer semantics on
@@ -249,10 +238,41 @@ abstract class BaseModule extends HasId {
     }
     assignCompatDir(iodef, false)
 
-    // Bind each element of the iodef to being a Port
     iodef.bind(PortBinding(this))
     _ports += iodef
-    iodef
+  }
+
+  /**
+   * This must wrap the datatype used to set the io field of any Module.
+   * i.e. All concrete modules must have defined io in this form:
+   * [lazy] val io[: io type] = IO(...[: io type])
+   *
+   * Items in [] are optional.
+   *
+   * The granted iodef must be a chisel type and not be bound to hardware.
+   *
+   * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
+   * requested (so that all calls to ports will return the same information).
+   * Internal API.
+   *
+   * TODO(twigg): Specifically walk the Data definition to call out which nodes
+   * are problematic.
+   */
+  protected def IO[T<:Data](iodef: T): T = {
+    require(!_closed, "Can't add more ports after module close")
+    requireIsChiselType(iodef, "io type")
+
+    // Clone the IO so we preserve immutability of data types
+    val iodefClone = try {
+      iodef.cloneTypeFull
+    } catch {
+      // For now this is going to be just a deprecation so we don't suddenly break everyone's code
+      case e: AutoClonetypeException =>
+        Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
+        iodef
+    }
+    _bindIoInPlace(iodefClone)
+    iodefClone
   }
 
   //

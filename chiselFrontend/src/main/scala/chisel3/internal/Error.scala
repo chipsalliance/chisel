@@ -28,8 +28,16 @@ private[chisel3] class ErrorLog {
     println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))  // scalastyle:ignore regex
 
   /** Log a deprecation warning message */
-  def deprecated(m: => String): Unit = {
-    val thisEntry = (m, getUserLineNumber)
+  def deprecated(m: => String, location: Option[String]): Unit = {
+    val sourceLoc = location match {
+      case Some(loc) => loc
+      case None => getUserLineNumber match {
+        case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
+        case None => "(unknown)"
+      }
+    }
+
+    val thisEntry = (m, sourceLoc)
     deprecations += ((thisEntry, deprecations.getOrElse(thisEntry, 0) + 1))
   }
 
@@ -38,12 +46,8 @@ private[chisel3] class ErrorLog {
     val depTag = s"[${Console.BLUE}deprecated${Console.RESET}]"
     val warnTag = s"[${Console.YELLOW}warn${Console.RESET}]"
     val errTag = s"[${Console.RED}error${Console.RESET}]"
-    deprecations foreach { case ((message, stackElement), count) =>
-      val line = stackElement match {
-        case Some(stackElement) => s"$depTag ${stackElement.getFileName}:${stackElement.getLineNumber} ($count calls): $message"
-        case None => s"$depTag (unknown location) ($count calls): $message"
-      }
-      println(line)
+    deprecations.foreach { case ((message, sourceLoc), count) =>
+      println(s"$depTag $sourceLoc ($count calls): $message")
     }
     errors foreach println
 
@@ -99,7 +103,7 @@ private[chisel3] class ErrorLog {
   }
 
   private val errors = ArrayBuffer[LogEntry]()
-  private val deprecations = LinkedHashMap[(String, Option[StackTraceElement]), Int]()
+  private val deprecations = LinkedHashMap[(String, String), Int]()
 
   private val startTime = System.currentTimeMillis
   private def elapsedTime: Long = System.currentTimeMillis - startTime
