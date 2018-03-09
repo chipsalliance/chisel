@@ -239,9 +239,15 @@ object VCSTesterBackend {
         // Generate Harness
         val vcsHarnessFileName = s"${circuit.name}-harness.v"
         val vcsHarnessFile = new File(dir, vcsHarnessFileName)
+        val vcsHarnessWriter = new FileWriter(vcsHarnessFile)
         val vpdFile = new File(dir, s"${circuit.name}.vpd")
         copyVpiFiles(dir.toString)
         generateHarness(dut, vpdFile.toString)
+        val emittedStuff = generateHarness(
+          dut, vpdFile.toString
+        )
+        vcsHarnessWriter.append(emittedStuff)
+        vcsHarnessWriter.close()
 
         val cmdEditor = vcsToExeCmdEditor match {
           case Some(f: (TesterOptionsManager => String => String)) => Some(f(optionsManager))
