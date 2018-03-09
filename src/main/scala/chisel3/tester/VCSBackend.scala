@@ -50,10 +50,10 @@ object VCSTesterBackend {
         System.err.format("createFile error: %s%n", x)
     }
 
-    Files.copy(getClass.getResourceAsStream("/sim_api.h"), simApiHFilePath, REPLACE_EXISTING)
-    Files.copy(getClass.getResourceAsStream("/vpi.h"), vpiHFilePath, REPLACE_EXISTING)
-    Files.copy(getClass.getResourceAsStream("/vpi.cpp"), vpiCppFilePath, REPLACE_EXISTING)
-    Files.copy(getClass.getResourceAsStream("/vpi.tab"), vpiTabFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/chisel3/tester/sim_api.h"), simApiHFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/chisel3/tester/vpi.h"), vpiHFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/chisel3/tester/vpi.cpp"), vpiCppFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/chisel3/tester/vpi.tab"), vpiTabFilePath, REPLACE_EXISTING)
   }
 
   /**

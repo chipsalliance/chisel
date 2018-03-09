@@ -32,7 +32,7 @@ class InterProcessBackend[T <: Module](
   private val HARD_POKE = 1
 //  def getPortNames(dut: Module) = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).map{case (d: Data, s: String) => (d, (dut.name + "." + s))}.toMap
   // We need to add the dut name to the signal name for the backend.
-  protected val portNames = getPortNames(dut) map { case (k: Data, v: String) => (k, (dut.name + portNameDelimiter + v))}
+  protected val portNames = getPortNames(dut) map { case (k: Data, v: String) => (k, v)}
   val (inputs, outputs) = getIOPorts(dut)
   protected def resolveName(signal: Data) =
     portNames.getOrElse(signal, dut.name + portNameDelimiter + signal.toString())
@@ -290,7 +290,7 @@ class InterProcessBackend[T <: Module](
 
   private def getId(path: String) = {
     mwhile(!sendCmd(SIM_CMD.GETID)) { }
-    mwhile(!sendCmd(path)) { }
+    mwhile(!sendCmd(dut.name + portNameDelimiter + path)) { }
     if (exitValue.isCompleted) {
       0
     } else {
@@ -502,7 +502,7 @@ class InterProcessBackend[T <: Module](
   override def run(testFn: T => Unit): Unit = {
     // Once everything has been prepared, we can start the communications.
     start()
-    val resetPath = dut.name + ".reset"
+    val resetPath = "reset"
     pokeSignal(resetPath, 1, HARD_POKE)
     step(1)
     pokeSignal(resetPath, 0, HARD_POKE)

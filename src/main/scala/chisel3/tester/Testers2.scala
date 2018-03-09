@@ -24,13 +24,15 @@ object Context {
 
   // TODO: add TesterOptions (from chisel-testers) and use that to control default tester selection.
   def createDefaultTester[T <: Module](dutGen: => T, options: TesterOptionsManager): BackendInstance[T] = {
+    if (options.targetDirName == ".") {
+      options.setTargetDirName("test_run_dir")
+    }
     options.testerOptions.backendName match {
       case "firrtl" => Firrterpreter.start(dutGen, Some(options))
       case "verilator" => VerilatorTesterBackend.start(dutGen, options)
       case "vcs" => VCSTesterBackend.start(dutGen, options)
       case ub: String => throw new RuntimeException(s"""Chisel3: unrecognized backend "$ub"""")
     }
-
   }
 
   def apply(): Instance = context.value.get

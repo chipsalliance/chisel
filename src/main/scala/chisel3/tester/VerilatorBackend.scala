@@ -44,8 +44,8 @@ object VerilatorTesterBackend {
         System.err.format("createFile error: %s%n", x)
     }
 
-    Files.copy(getClass.getResourceAsStream("/sim_api.h"), simApiHFilePath, REPLACE_EXISTING)
-    Files.copy(getClass.getResourceAsStream("/veri_api.h"), verilatorApiHFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/chisel3/tester/sim_api.h"), simApiHFilePath, REPLACE_EXISTING)
+    Files.copy(getClass.getResourceAsStream("/chisel3/tester/veri_api.h"), verilatorApiHFilePath, REPLACE_EXISTING)
   }
 
   /**
@@ -96,16 +96,14 @@ object VerilatorTesterBackend {
     codeBuffer.append("        sim_data.inputs.clear();\n")
     codeBuffer.append("        sim_data.outputs.clear();\n")
     codeBuffer.append("        sim_data.signals.clear();\n")
-    // Replace the "." in the top-level io reference with the C pointer dereference operator.
-    val dutIODotRef = dutName + "."
-    val dutIOPtrRef = "dut->"
+
     inputs.toList foreach { case (node, name) =>
       // replaceFirst used here in case port name contains the dutName
-      pushBack("inputs", name replaceFirst (dutIODotRef, dutIOPtrRef), node.getWidth)
+      pushBack("inputs", s"dut->$name", node.getWidth)
     }
     outputs.toList foreach { case (node, name) =>
       // replaceFirst used here in case port name contains the dutName
-      pushBack("outputs", name replaceFirst (dutIODotRef, dutIOPtrRef), node.getWidth)
+      pushBack("outputs", s"dut->$name", node.getWidth)
     }
     pushBack("signals", "dut->reset", 1)
     codeBuffer.append(s"""        sim_data.signal_map["%s"] = 0;\n""".format(dut.reset.pathName))
