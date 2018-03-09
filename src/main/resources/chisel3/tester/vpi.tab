@@ -1,0 +1,5 @@
+$init_rsts call=init_rsts_calltf
+$init_ins call=init_ins_calltf
+$init_outs call=init_outs_calltf
+$init_sigs call=init_sigs_calltf
+$tick call=tick_calltf check=tick_compiletf acc+=rw,frc:*
