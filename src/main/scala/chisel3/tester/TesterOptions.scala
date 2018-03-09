@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.iotesters
+package chisel3.tester
 
 import java.io.File
 

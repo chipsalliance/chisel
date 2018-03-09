@@ -3,7 +3,7 @@
 package chisel3.tester
 
 import chisel3._
-
+import chisel3.tester.TesterUtils.getPortNames
 import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
 import scala.collection.mutable
 
@@ -13,17 +13,8 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
     extends BackendInstance[T] with ThreadedBackend {
   def getModule() = dut
 
-  /** Returns a Seq of (data reference, fully qualified element names) for the input.
-    * name is the name of data
-    */
-  protected def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case e: Element => Seq()
-    case b: Record => b.elements.toSeq flatMap {case (n, e) => getDataNames(s"${name}_$n", e)}
-    case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => getDataNames(s"${name}_$i", e)}
-  })
-
   // TODO: the naming facility should be part of infrastructure not backend
-  protected val portNames = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).toMap
+  protected val portNames = getPortNames(dut)
   protected def resolveName(signal: Data) =
     portNames.getOrElse(signal, signal.toString())
 

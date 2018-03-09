@@ -1,13 +1,11 @@
 // See LICENSE for license details.
 
-package chisel3.iotesters
+package chisel3.tester
 
 import scala.collection.mutable.ArrayBuffer
 
-import chisel3.core._
-
 /** Records and reports runtime errors and warnings. */
-private[iotesters] class TestErrorLog {
+private[tester] class TestErrorLog {
   def hasErrors: Boolean = errors.exists(_.isFatal)
 
   /** Log an error message */

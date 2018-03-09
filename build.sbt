@@ -31,7 +31,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val defaultVersions = Map(
-  "firrtl" -> "1.1-SNAPSHOT",
+  "firrtl" -> "1.2-SNAPSHOT",
   "firrtl-interpreter" -> "1.2-SNAPSHOT"
 )
 

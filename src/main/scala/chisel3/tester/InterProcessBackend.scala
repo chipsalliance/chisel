@@ -1,20 +1,106 @@
 // See LICENSE for license details.
-package chisel3.iotesters
 
+package chisel3.tester
+
+import java.io.File
+import java.nio.channels.FileChannel
+import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
 
 import chisel3._
+import chisel3.tester.TesterUtils.{getIOPorts, getPortNames}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.immutable.ListMap
-import scala.concurrent.{Future, Await, ExecutionContext, blocking}
+import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 import scala.concurrent.duration._
 import scala.sys.process.{Process, ProcessLogger}
 import java.io.{File, PrintStream}
 import java.nio.channels.FileChannel
+import java.util.concurrent.TimeUnit
 
-private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
+class InterProcessBackend[T <: Module](
+  dut: T,
+  cmd: Seq[String],
+  rnd: scala.util.Random)
+  extends BackendInstance[T] with ThreadedBackend {
+  val portNameDelimiter: String = "."
+  val ioPortNameDelimiter: String = "."
+  implicit val logger = new TestErrorLog
+
+  def getModule() = dut
+
+  private val HARD_POKE = 1
+//  def getPortNames(dut: Module) = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).map{case (d: Data, s: String) => (d, (dut.name + "." + s))}.toMap
+  // We need to add the dut name to the signal name for the backend.
+  protected val portNames = getPortNames(dut) map { case (k: Data, v: String) => (k, (dut.name + portNameDelimiter + v))}
+  val (inputs, outputs) = getIOPorts(dut)
+  protected def resolveName(signal: Data) =
+    portNames.getOrElse(signal, dut.name + portNameDelimiter + signal.toString())
+
+  protected val threadingChecker = new ThreadingChecker()
+
+  private[tester] case class TestApplicationException(exitVal: Int, lastMessage: String)
+    extends RuntimeException(lastMessage)
+
+  private[tester] object TesterProcess {
+    def apply(cmd: Seq[String], logs: ArrayBuffer[String]): Process = {
+      require(new java.io.File(cmd.head).exists, s"${cmd.head} doesn't exist")
+      val processBuilder = Process(cmd mkString " ")
+      val processLogger = ProcessLogger(println, logs += _) // don't log stdout
+      processBuilder run processLogger
+    }
+    def kill() {
+      while(!exitValue.isCompleted) process.destroy
+      println("Exit Code: %d".format(process.exitValue))
+    }
+  }
+
+  private class Channel(name: String) {
+    private lazy val file = new java.io.RandomAccessFile(name, "rw")
+    private lazy val channel = file.getChannel
+    @volatile private lazy val buffer = {
+      /* We have seen runs where buffer.put(0,0) fails with:
+  [info]   java.lang.IndexOutOfBoundsException:
+  [info]   at java.nio.Buffer.checkIndex(Buffer.java:532)
+  [info]   at java.nio.DirectByteBuffer.put(DirectByteBuffer.java:300)
+  [info]   at Chisel.Tester$Channel.release(Tester.scala:148)
+  [info]   at Chisel.Tester.start(Tester.scala:717)
+  [info]   at Chisel.Tester.<init>(Tester.scala:743)
+  [info]   at ArbiterSuite$ArbiterTests$8.<init>(ArbiterTest.scala:396)
+  [info]   at ArbiterSuite$$anonfun$testStableRRArbiter$1.apply(ArbiterTest.scala:440)
+  [info]   at ArbiterSuite$$anonfun$testStableRRArbiter$1.apply(ArbiterTest.scala:440)
+  [info]   at Chisel.Driver$.apply(Driver.scala:65)
+  [info]   at Chisel.chiselMain$.apply(hcl.scala:63)
+  [info]   ...
+       */
+      val size = channel.size
+      assert(size > 16, "channel.size is bogus: %d".format(size))
+      channel map (FileChannel.MapMode.READ_WRITE, 0, size)
+    }
+    implicit def intToByte(i: Int) = i.toByte
+    val channel_data_offset_64bw = 4    // Offset from start of channel buffer to actual user data in 64bit words.
+    def aquire {
+      buffer put (0, 1)
+      buffer put (2, 0)
+      while((buffer get 1) == 1 && (buffer get 2) == 0) {}
+    }
+    def release { buffer put (0, 0) }
+    def ready = (buffer get 3) == 0
+    def valid = (buffer get 3) == 1
+    def produce { buffer put (3, 1) }
+    def consume { buffer put (3, 0) }
+    def update(idx: Int, data: Long) { buffer putLong (8 * idx + channel_data_offset_64bw, data) }
+    def update(base: Int, data: String) {
+      data.zipWithIndex foreach {case (c, i) => buffer put (base + i + channel_data_offset_64bw, c) }
+      buffer put (base + data.size + channel_data_offset_64bw, 0)
+    }
+    def apply(idx: Int): Long = buffer getLong (8 * idx + channel_data_offset_64bw)
+    def close { file.close }
+    buffer order java.nio.ByteOrder.nativeOrder
+    new File(name).delete
+  }
+
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
-    val (inputs, outputs) = getPorts(dut)
     def genChunk(args: (Data, String)) = args match {
       case (pin, name) => name -> ((pin.getWidth-1)/64 + 1)
     }
@@ -33,10 +119,10 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
   private val _logs = ArrayBuffer[String]()
 
   //initialize simulator process
-  private[iotesters] val process = TesterProcess(cmd, _logs)
+  private val process = TesterProcess(cmd, _logs)
   // Set up a Future to wait for (and signal) the test process exit.
   import ExecutionContext.Implicits.global
-  private[iotesters] val exitValue = Future(blocking(process.exitValue))
+  private val exitValue = Future(blocking(process.exitValue))
   // memory mapped channels
   private val (inChannel, outChannel, cmdChannel) = {
     // Wait for the startup message
@@ -73,13 +159,12 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     (in_channel, out_channel, cmd_channel)
   }
 
-  private def dumpLogs(implicit logger: TestErrorLog) {
+  private def dumpLogs() {
     _logs foreach logger.info
     _logs.clear
   }
 
   private def throwExceptionIfDead(exitValue: Future[Int]) {
-    implicit val logger = new TestErrorLog
     if (exitValue.isCompleted) {
       val exitCode = Await.result(exitValue, Duration(-1, SECONDS))
       // We assume the error string is the last log entry.
@@ -88,7 +173,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
       } else {
         "test application exit"
       } + " - exit code %d".format(exitCode)
-      dumpLogs(logger)
+      dumpLogs()
       throw new TestApplicationException(exitCode, errorString)
     }
   }
@@ -189,18 +274,18 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     ready
   }
 
-  private def update {
+  private def update() {
     mwhile(!sendCmd(SIM_CMD.UPDATE)) { }
     mwhile(!sendInputs) { }
     mwhile(!recvOutputs) { }
     isStale = false
   }
 
-  private def takeStep(implicit logger: TestErrorLog) {
+  private def takeStep() {
     mwhile(!sendCmd(SIM_CMD.STEP)) { }
     mwhile(!sendInputs) { }
     mwhile(!recvOutputs) { }
-    dumpLogs
+    dumpLogs()
   }
 
   private def getId(path: String) = {
@@ -252,8 +337,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     }
   }
 
-  private def start {
-    implicit val logger = new TestErrorLog // Start dumps to screen
+  private def start() {
     println(s"""STARTING ${cmd mkString " "}""")
     mwhile(!recvOutputs) { }
     // reset(5)
@@ -263,37 +347,47 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     }
   }
 
-  def poke(signal: String, value: BigInt)(implicit logger: TestErrorLog) {
-    if (inputsNameToChunkSizeMap contains signal) {
-      _pokeMap(signal) = value
+  def pokeSignal(signalName: String, value: BigInt, priority: Int) {
+    if (inputsNameToChunkSizeMap contains signalName) {
+      _pokeMap(signalName) = value
       isStale = true
     } else {
-      val id = _signalMap getOrElseUpdate (signal, getId(signal))
+      val id = _signalMap getOrElseUpdate (signalName, getId(signalName))
       if (id >= 0) {
-        poke(id, _chunks getOrElseUpdate (signal, getChunk(id)), value)
+        poke(id, _chunks getOrElseUpdate (signalName, getChunk(id)), value)
         isStale = true
       } else {
-        logger info s"Can't find $signal in the emulator..."
+        logger info s"Can't find $signalName in the emulator..."
       }
     }
   }
 
-  def peek(signal: String)(implicit logger: TestErrorLog): Option[BigInt] = {
+  override def pokeBits(signal: Bits, value: BigInt, priority: Int) {
+    pokeSignal(portNames(signal), value, priority)
+  }
+
+  def peekSignal(signalName: String, stale: Boolean): Option[BigInt] = {
     if (isStale) update
-    if (outputsNameToChunkSizeMap contains signal) _peekMap get signal
-    else if (inputsNameToChunkSizeMap contains signal) _pokeMap get signal
-    else {
-      val id = _signalMap getOrElseUpdate (signal, getId(signal))
-      if (id >= 0) {
-        Some(peek(id, _chunks getOrElse (signal, getChunk(id))))
-      } else {
-        logger info s"Can't find $signal in the emulator..."
-        None
+    val result =
+      if (outputsNameToChunkSizeMap contains signalName) _peekMap get signalName
+      else if (inputsNameToChunkSizeMap contains signalName) _pokeMap get signalName
+      else {
+        val id = _signalMap getOrElseUpdate (signalName, getId(signalName))
+        if (id >= 0) {
+          Some(peek(id, _chunks getOrElse (signalName, getChunk(id))))
+        } else {
+          logger info s"Can't find $signalName in the emulator..."
+          None
+        }
       }
-    }
+    result
   }
 
-  def step(n: Int)(implicit logger: TestErrorLog) {
+  override def peekBits(signal: Bits, stale: Boolean): BigInt = {
+    peekSignal(portNames(signal), stale).getOrElse(BigInt(rnd.nextInt()))
+  }
+
+  def step(n: Int) {
     update
     (0 until n) foreach (_ => takeStep)
   }
@@ -305,7 +399,7 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     }
   }
 
-  def finish(implicit logger: TestErrorLog) {
+  def finish() {
     mwhile(!sendCmd(SIM_CMD.FIN)) { }
     println("Exit Code: %d".format(
       Await.result(exitValue, Duration.Inf)))
@@ -315,51 +409,131 @@ private[iotesters] class SimApiInterface(dut: Module, cmd: Seq[String]) {
     cmdChannel.close
   }
 
-  // Once everything has been prepared, we can start the communications.
-  start
-}
 
-private[iotesters] class Channel(name: String) {
-  private lazy val file = new java.io.RandomAccessFile(name, "rw")
-  private lazy val channel = file.getChannel
-  @volatile private lazy val buffer = {
-    /* We have seen runs where buffer.put(0,0) fails with:
-[info]   java.lang.IndexOutOfBoundsException:
-[info]   at java.nio.Buffer.checkIndex(Buffer.java:532)
-[info]   at java.nio.DirectByteBuffer.put(DirectByteBuffer.java:300)
-[info]   at Chisel.Tester$Channel.release(Tester.scala:148)
-[info]   at Chisel.Tester.start(Tester.scala:717)
-[info]   at Chisel.Tester.<init>(Tester.scala:743)
-[info]   at ArbiterSuite$ArbiterTests$8.<init>(ArbiterTest.scala:396)
-[info]   at ArbiterSuite$$anonfun$testStableRRArbiter$1.apply(ArbiterTest.scala:440)
-[info]   at ArbiterSuite$$anonfun$testStableRRArbiter$1.apply(ArbiterTest.scala:440)
-[info]   at Chisel.Driver$.apply(Driver.scala:65)
-[info]   at Chisel.chiselMain$.apply(hcl.scala:63)
-[info]   ...
-     */
-    val size = channel.size
-    assert(size > 16, "channel.size is bogus: %d".format(size))
-    channel map (FileChannel.MapMode.READ_WRITE, 0, size)
+  override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
+    require(!stale, "Stale peek not yet implemented")
+
+    Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
-  implicit def intToByte(i: Int) = i.toByte
-  val channel_data_offset_64bw = 4    // Offset from start of channel buffer to actual user data in 64bit words.
-  def aquire {
-    buffer put (0, 1)
-    buffer put (2, 0)
-    while((buffer get 1) == 1 && (buffer get 2) == 0) {}
+
+  protected val clockCounter = HashMap[Clock, Int]()
+  protected def getClockCycle(clk: Clock): Int = {
+    clockCounter.getOrElse(clk, 0)
   }
-  def release { buffer put (0, 0) }
-  def ready = (buffer get 3) == 0
-  def valid = (buffer get 3) == 1
-  def produce { buffer put (3, 1) }
-  def consume { buffer put (3, 0) }
-  def update(idx: Int, data: Long) { buffer putLong (8 * idx + channel_data_offset_64bw, data) }
-  def update(base: Int, data: String) {
-    data.zipWithIndex foreach {case (c, i) => buffer put (base + i + channel_data_offset_64bw, c) }
-    buffer put (base + data.size + channel_data_offset_64bw, 0)
+
+  protected val lastClockValue = HashMap[Clock, Boolean]()
+
+  protected def scheduler() {
+    var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
+
+    while (activeThreads.isEmpty && !testDone) {
+      threadingChecker.finishTimestep()
+      Context().env.checkpoint()
+      step(1)
+      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+
+      if (mainTesterThread.get.done) {
+        testDone = true
+      }
+
+      threadingChecker.newTimestep(dut.clock)
+
+      // Unblock threads waiting on main clock
+      activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+      blockedThreads.remove(dut.clock)
+
+      // Unblock threads waiting on dependent clocks
+      // TODO: purge unused clocks instead of still continuing to track them
+      val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
+      for (waitingClock <- waitingClocks) {
+        val currentClockVal = peekSignal(portNames(waitingClock), false).get.toInt match {
+          case 0 => false
+          case 1 => true
+        }
+        if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
+          lastClockValue.put(waitingClock, currentClockVal)
+          if (currentClockVal == true) {
+            activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
+            blockedThreads.remove(waitingClock)
+            threadingChecker.newTimestep(waitingClock)
+
+            clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
+          }
+        }
+      }
+    }
+
+    if (!testDone) {  // if test isn't over, run next thread
+      val nextThread = activeThreads.head
+      currentThread = Some(nextThread)
+      activeThreads.trimStart(1)
+      nextThread.waiting.release()
+    } else {  // if test is done, return to the main scalatest thread
+      finish()
+      scalatestWaiting.release()
+    }
+
   }
-  def apply(idx: Int): Long = buffer getLong (8 * idx + channel_data_offset_64bw)
-  def close { file.close }
-  buffer order java.nio.ByteOrder.nativeOrder
-  new File(name).delete
+
+  override def step(signal: Clock, cycles: Int): Unit = {
+    // TODO: clock-dependence
+    // TODO: maybe a fast condition for when threading is not in use?
+    for (_ <- 0 until cycles) {
+      val thisThread = currentThread.get
+      threadingChecker.finishThread(thisThread, signal)
+      // TODO this also needs to be called on thread death
+
+      blockedThreads.put(signal, blockedThreads.getOrElseUpdate(signal, Seq()) :+ thisThread)
+      scheduler()
+      thisThread.waiting.acquire()
+    }
+  }
+
+  protected var scalatestThread: Option[Thread] = None
+  protected var mainTesterThread: Option[TesterThread] = None
+  protected val scalatestWaiting = new Semaphore(0)
+  protected val interruptedException = new SynchronousQueue[Throwable]()
+
+  protected def onException(e: Throwable) {
+    scalatestThread.get.interrupt()
+    interruptedException.offer(e, 10, TimeUnit.SECONDS)
+  }
+
+  override def run(testFn: T => Unit): Unit = {
+    // Once everything has been prepared, we can start the communications.
+    start()
+    val resetPath = dut.name + ".reset"
+    pokeSignal(resetPath, 1, HARD_POKE)
+    step(1)
+    pokeSignal(resetPath, 0, HARD_POKE)
+
+    val mainThread = fork(
+      testFn(dut)
+    )
+
+    require(activeThreads.length == 1)  // only thread should be main
+    activeThreads.trimStart(1)
+    currentThread = Some(mainThread)
+    scalatestThread = Some(Thread.currentThread())
+    mainTesterThread = Some(mainThread)
+
+    mainThread.waiting.release()
+    try {
+      scalatestWaiting.acquire()
+    } catch {
+      case e: InterruptedException =>
+        throw interruptedException.poll(10, TimeUnit.SECONDS)
+    }
+
+    mainTesterThread = None
+    scalatestThread = None
+    currentThread = None
+
+    for (thread <- allThreads.clone()) {
+      // Kill the threads using an InterruptedException
+      if (thread.thread.isAlive) {
+        thread.thread.interrupt()
+      }
+    }
+  }
 }
