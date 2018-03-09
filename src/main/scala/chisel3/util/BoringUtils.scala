@@ -4,7 +4,7 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.InstanceId
+import chisel3.internal.{InstanceId, NamedComponent}
 import _root_.firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
 
 /** Utilities for generating synthesizeable cross module references.
@@ -32,7 +32,7 @@ trait BoringUtils extends BaseModule {
     * @param component source circuit component
     * @param name unique identifier for this source
     */
-  def addSource(component: internal.NamedComponent, name: String): Unit = {
+  def addSource(component: NamedComponent, name: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
       def toFirrtl = SourceAnnotation(component.toNamed, name)
       def transformClass = classOf[WiringTransform]
