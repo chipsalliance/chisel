@@ -8,14 +8,21 @@ import chisel3.tester._
 class BasicTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2"
 
-  it should "test static circuits" in {
-    test(new Module {
-      val io = IO(new Bundle {
-        val out = Output(UInt(8.W))
-      })
-      io.out := 42.U
-    }) { c =>
-      c.io.out.expect(42.U)
+  private val backendNames = Array[String] ("firrtl"/*, "verilator"*/)
+  for (backendName <- backendNames) {
+    val options = new TesterOptionsManager {
+      testerOptions = TesterOptions(backendName = backendName)
+    }
+
+    it should s"test static circuits (with $backendName)" in {
+      test(new Module {
+        val io = IO(new Bundle {
+          val out = Output(UInt(8.W))
+        })
+        io.out := 42.U
+      }, options) { c =>
+        c.io.out.expect(42.U)
+      }
     }
   }
 

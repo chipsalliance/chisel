@@ -167,7 +167,7 @@ object Firrterpreter {
     (circuit.components find (_.name == circuit.name)).get.id
   }
 
-  def start[T <: Module](dutGen: => T, options: Option[ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite] = None): BackendInstance[T] = {
+  def start[T <: Module](dutGen: => T, options: Option[TesterOptionsManager] = None): BackendInstance[T] = {
     val optionsManager = options match  {
       case Some(o: ExecutionOptionsManager) => o
 

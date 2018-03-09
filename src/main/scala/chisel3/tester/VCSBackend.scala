@@ -13,13 +13,13 @@ import firrtl.transforms.BlackBoxTargetDirAnno
 import scala.sys.process.ProcessBuilder
 
 class VCSProcessBackend[T <: Module](
-  dut: T,
-  cmd: Seq[String],
-  rnd: scala.util.Random
+  val dut: T,
+  val cmd: Seq[String],
+  val rnd: scala.util.Random
   ) extends InterProcessBackend[T](dut, cmd, rnd) {
 }
 
-object VCSTesterShim {
+object VCSTesterBackend {
   import chisel3.internal.firrtl.Circuit
   import chisel3.experimental.BaseModule
 
@@ -168,26 +168,37 @@ object VCSTesterShim {
   }
 
   def verilogToVCSExe(
-                         topModule: String,
-                         dir: java.io.File,
-                         vcsHarness: java.io.File,
-                         moreVcsFlags: Seq[String] = Seq.empty[String],
-                         moreVcsCFlags: Seq[String] = Seq.empty[String],
-                         editCommands: String = ""): ProcessBuilder = {
+    topModule: String,
+    dir: java.io.File,
+    vcsHarness: java.io.File,
+    moreVcsFlags: Seq[String] = Seq.empty[String],
+    moreVcsCFlags: Seq[String] = Seq.empty[String],
+    vcsToExeCmdEditor: Option[(String) => String] = None
+                     ): ProcessBuilder = {
 
     val vcsFlags = constructVcsFlags(topModule, dir, moreVcsFlags, moreVcsCFlags)
 
     val cmd = Seq("cd", dir.toString, "&&", "vcs") ++ vcsFlags ++ Seq(
       "-o", topModule, s"$topModule.v", vcsHarness.toString, "vpi.cpp") mkString " "
 
-    val commandEditor = CommandEditor(editCommands, "vcs-command-edit")
-    val finalCommand = commandEditor(cmd)
+    val finalCommand = vcsToExeCmdEditor match {
+      case Some(f: ((String) => String)) => f(cmd)
+      case None => cmd
+    }
     println(s"$finalCommand")
 
     Seq("bash", "-c", finalCommand)
   }
 
-  def start[T <: Module](dutGen: => T, options: TesterOptionsManager): BackendInstance[T] = {
+  /** Start an external VCS simulation process.
+    *
+    * @param dutGen - the curcuit to be simulated
+    * @param options - TesterOptionsManager options
+    * @param vcsToExeCmdEditor - an optional function taking two argument lists: (TesterOptionsManager)(String) and returning a String
+    * @tparam T
+    * @return - a BackendInstance suitable for driving the simulation.
+    */
+  def start[T <: Module](dutGen: => T, options: TesterOptionsManager, vcsToExeCmdEditor: Option[TesterOptionsManager => String => String] = None): BackendInstance[T] = {
     val optionsManager = options
     // We need to intercept the CHIRRTL output and tweak it.
     optionsManager.chiselOptions = optionsManager.chiselOptions.copy(runFirrtlCompiler = false)
@@ -211,7 +222,7 @@ object VCSTesterShim {
 
         val transforms = optionsManager.firrtlOptions.customTransforms
 
-        VerilatorTesterShim.copyHeaderFiles(optionsManager.targetDirName)
+        VerilatorTesterBackend.copyHeaderFiles(optionsManager.targetDirName)
 
         // Generate Verilog
         val verilogFile = new File(dir, s"${circuit.name}.v")
@@ -232,11 +243,15 @@ object VCSTesterShim {
         copyVpiFiles(dir.toString)
         generateHarness(dut, vpdFile.toString)
 
+        val cmdEditor = vcsToExeCmdEditor match {
+          case Some(f: (TesterOptionsManager => String => String)) => Some(f(optionsManager))
+          case None => None
+        }
         assert(
           verilogToVCSExe(circuit.name, dir, new File(vcsHarnessFileName),
             moreVcsFlags = optionsManager.testerOptions.moreVcsFlags,
             moreVcsCFlags = optionsManager.testerOptions.moreVcsCFlags,
-            editCommands = optionsManager.testerOptions.vcsCommandEdits
+            vcsToExeCmdEditor = cmdEditor
           ).! == 0
         )
 

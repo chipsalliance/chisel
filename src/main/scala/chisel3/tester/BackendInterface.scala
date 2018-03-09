@@ -74,7 +74,7 @@ trait TestEnvInterface {
   def test[T <: Module](dutGen: => T)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen))(testFn)
   }
-  def test[T <: Module](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite)(testFn: T => Unit): Unit = {
+  def test[T <: Module](dutGen: => T, options: TesterOptionsManager)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen, options))(testFn)
   }
 

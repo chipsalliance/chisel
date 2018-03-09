@@ -17,7 +17,7 @@ class VerilatorProcessBackend[T <: Module](
   ) extends InterProcessBackend[T](dut, cmd, rnd) {
 }
 
-object VerilatorTesterShim {
+object VerilatorTesterBackend {
   import chisel3.internal.firrtl.Circuit
   import chisel3.experimental.BaseModule
 
