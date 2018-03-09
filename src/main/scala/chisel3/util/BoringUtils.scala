@@ -5,7 +5,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental._
 import chisel3.internal.InstanceId
-import _root_.firrtl.passes.wiring.WiringTransform
+import _root_.firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
 
 /** Utilities for generating synthesizeable cross module references.
   *
@@ -32,9 +32,12 @@ trait BoringUtils extends BaseModule {
     * @param component source circuit component
     * @param name unique identifier for this source
     */
-  def addSource(component: InstanceId, name: String): Unit = {
-    annotate(
-      ChiselAnnotation(component, classOf[WiringTransform], s"source $name"))
+  def addSource(component: internal.NamedComponent, name: String): Unit = {
+    val anno = new ChiselAnnotation with RunFirrtlTransform {
+      def toFirrtl = SourceAnnotation(component.toNamed, name)
+      def transformClass = classOf[WiringTransform]
+    }
+    annotate(anno)
   }
 
   /** Add a named sink cross module reference. Multiple sinks may map to
@@ -45,7 +48,10 @@ trait BoringUtils extends BaseModule {
     * a source identifier
     */
   def addSink(component: InstanceId, name: String): Unit = {
-    annotate(
-      ChiselAnnotation(component, classOf[WiringTransform], s"sink $name"))
+    val anno = new ChiselAnnotation with RunFirrtlTransform {
+      def toFirrtl = SinkAnnotation(component.toNamed, name)
+      def transformClass = classOf[WiringTransform]
+    }
+    annotate(anno)
   }
 }
