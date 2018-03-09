@@ -13,6 +13,8 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 
+import _root_.firrtl.annotations.{CircuitName, ModuleName}
+
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
@@ -139,6 +141,11 @@ abstract class BaseModule extends HasId {
   /** Legalized name of this module. */
   final val name = Builder.globalNamespace.name(desiredName)
 
+  /** Returns a FIRRTL ModuleName that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toNamed: ModuleName = ModuleName(this.name, CircuitName(this.circuitName))
+
   /** Called at the Module.apply(...) level after this Module has finished elaborating.
     * Returns a map of nodes -> names, for named nodes.
     *
@@ -196,6 +203,7 @@ abstract class BaseModule extends HasId {
   //
   // BaseModule User API functions
   //
+  @deprecated("Use chisel3.experimental.annotate instead", "3.1")
   protected def annotate(annotation: ChiselAnnotation): Unit = {
     Builder.annotations += annotation
   }

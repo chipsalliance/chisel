@@ -3,47 +3,50 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.ChiselAnnotation
+import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
-import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
-import firrtl.annotations.{Annotation, ModuleName, Named}
+import firrtl.{CircuitState, LowForm, Transform}
+import firrtl.annotations.{
+  Annotation,
+  SingleTargetAnnotation,
+  ModuleName,
+  Named
+}
 import org.scalatest._
 
-//scalastyle:off magic.number
-/**
-  * This and the Identity transform class are a highly schematic implementation of a
-  * library implementation of   (i.e. code outside of firrtl itself)
+/** These annotations and the IdentityTransform class serve as an example of how to write a
+  * Chisel/Firrtl library
   */
-object IdentityAnnotation {
-  def apply(target: Named, value: String): Annotation = Annotation(target, classOf[IdentityTransform], value)
-
-  def unapply(a: Annotation): Option[(Named, String)] = a match {
-    case Annotation(named, t, value) if t == classOf[IdentityTransform] => Some((named, value))
-    case _ => None
+case class IdentityAnnotation(target: Named, value: String) extends SingleTargetAnnotation[Named] {
+  def duplicate(n: Named) = this.copy(target = n)
+}
+/** ChiselAnnotation that corresponds to the above FIRRTL annotation */
+case class IdentityChiselAnnotation(target: InstanceId, value: String)
+    extends ChiselAnnotation with RunFirrtlTransform {
+  def toFirrtl = IdentityAnnotation(target.toNamed, value)
+  def transformClass = classOf[IdentityTransform]
+}
+object identify {
+  def apply(component: InstanceId, value: String): Unit = {
+    val anno = IdentityChiselAnnotation(component, value)
+    annotate(anno)
   }
 }
 
 class IdentityTransform extends Transform {
-  override def inputForm: CircuitForm = LowForm
+  def inputForm = LowForm
+  def outputForm = LowForm
 
-  override def outputForm: CircuitForm = LowForm
-
-  override def execute(state: CircuitState): CircuitState = {
-    getMyAnnotations(state) match {
-      case Nil => state
-      case myAnnotations =>
-        state
+  def execute(state: CircuitState): CircuitState = {
+    val annosx = state.annotations.map {
+      case IdentityAnnotation(t, value) => IdentityAnnotation(t, value + ":seen")
+      case other => other
     }
+    state.copy(annotations = annosx)
   }
 }
 
-trait IdentityAnnotator {
-  self: Module =>
-  def identify(component: InstanceId, value: String): Unit = {
-    annotate(ChiselAnnotation(component, classOf[IdentityTransform], value))
-  }
-}
 /** A diamond circuit Top instantiates A and B and both A and B instantiate C
   * Illustrations of annotations of various components and modules in both
   * relative and absolute cases
@@ -54,7 +57,7 @@ trait IdentityAnnotator {
   * This class has parameterizable widths, it will generate different hardware
   * @param widthC io width
   */
-class ModC(widthC: Int) extends Module with IdentityAnnotator {
+class ModC(widthC: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(widthC.W))
     val out = Output(UInt(widthC.W))
@@ -71,7 +74,7 @@ class ModC(widthC: Int) extends Module with IdentityAnnotator {
   * based on it's parameter
   * @param annoParam  parameter is only used in annotation not in circuit
   */
-class ModA(annoParam: Int) extends Module with IdentityAnnotator {
+class ModA(annoParam: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt())
     val out = Output(UInt())
@@ -86,7 +89,7 @@ class ModA(annoParam: Int) extends Module with IdentityAnnotator {
   identify(io.out, s"ModA.io.out(ignore_param)")
 }
 
-class ModB(widthB: Int) extends Module with IdentityAnnotator{
+class ModB(widthB: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(widthB.W))
     val out = Output(UInt(widthB.W))
@@ -98,7 +101,7 @@ class ModB(widthB: Int) extends Module with IdentityAnnotator{
   identify(io.in, s"modB.io.in annotated from inside modB")
 }
 
-class TopOfDiamond extends Module with IdentityAnnotator {
+class TopOfDiamond extends Module {
   val io = IO(new Bundle {
     val in   = Input(UInt(32.W))
     val out  = Output(UInt(32.W))
@@ -128,9 +131,6 @@ class DiamondTester extends BasicTester {
 }
 
 class AnnotatingDiamondSpec extends FreeSpec with Matchers {
-  def findAnno(as: Seq[Annotation], name: String): Option[Annotation] = {
-    as.find { a => a.targetString == name }
-  }
 
   """
     |Diamond is an example of a module that has two sub-modules A and B who both instantiate their
@@ -144,16 +144,16 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
 
       Driver.execute(Array("--target-dir", "test_run_dir"), () => new TopOfDiamond) match {
         case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
-          val annos = circuit.annotations
-          annos.length should be (10)
+          val annos = circuit.annotations.map(_.toFirrtl)
+          annos.count(_.isInstanceOf[IdentityAnnotation]) should be (10)
 
           annos.count {
-            case Annotation(ModuleName(name, _), _, annoValue) => name == "ModC" && annoValue == "ModC(16)"
+            case IdentityAnnotation(ModuleName("ModC", _), "ModC(16)") => true
             case _ => false
           } should be (1)
 
           annos.count {
-            case Annotation(ModuleName(name, _), _, annoValue) => name == "ModC_1" && annoValue == "ModC(32)"
+            case IdentityAnnotation(ModuleName("ModC_1", _), "ModC(32)") => true
             case _ => false
           } should be (1)
         case _ =>
