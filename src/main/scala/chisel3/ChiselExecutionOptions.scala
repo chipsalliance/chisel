@@ -2,7 +2,8 @@
 
 package chisel3
 
-import firrtl.{ExecutionOptionsManager, ComposableOptions}
+import chisel3.tester.{ScalaSimulator, TreadleSimulator}
+import firrtl.{ComposableOptions, ExecutionOptionsManager}
 
 //TODO: provide support for running firrtl as separate process, could alternatively be controlled by external driver
 //TODO: provide option for not saving chirrtl file, instead calling firrtl with in memory chirrtl
@@ -13,9 +14,10 @@ import firrtl.{ExecutionOptionsManager, ComposableOptions}
   * @note this extends FirrtlExecutionOptions which extends CommonOptions providing easy access to down chain options
   */
 case class ChiselExecutionOptions(
-                                   runFirrtlCompiler: Boolean = true
-                                   // var runFirrtlAsProcess: Boolean = false
-                                 ) extends ComposableOptions
+  runFirrtlCompiler : Boolean = true,
+  scalaSimulator    : ScalaSimulator = TreadleSimulator
+  // var runFirrtlAsProcess: Boolean = false
+) extends ComposableOptions
 
 trait HasChiselExecutionOptions {
   self: ExecutionOptionsManager =>
@@ -30,5 +32,12 @@ trait HasChiselExecutionOptions {
       chiselOptions = chiselOptions.copy(runFirrtlCompiler = false)
     }
     .text("Stop after chisel emits chirrtl file")
+
+  parser.opt[String]("scala-backend")
+    .abbr("chsb")
+    .foreach { x =>
+      chiselOptions = chiselOptions.copy(scalaSimulator = ScalaSimulator(x))
+    }
+    .text(s"Choose scala simulation engine, either interpreter or interpreter")
 }
 

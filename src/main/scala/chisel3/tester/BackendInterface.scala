@@ -90,3 +90,15 @@ trait TestEnvInterface {
     */
   def checkpoint()
 }
+
+trait ScalaSimulator
+
+object ScalaSimulator {
+  def apply(name: String): ScalaSimulator = name match {
+    case "interpreter" => FirrtlInterpreterSimulator
+    case "treadle"     => TreadleSimulator
+  }
+}
+
+object FirrtlInterpreterSimulator extends ScalaSimulator
+object TreadleSimulator extends ScalaSimulator
