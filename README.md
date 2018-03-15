@@ -13,7 +13,7 @@
 
  This repository is in ALPHA VERSION, so many things may change in the coming months.
 
-#### Wiki's and Tutorials
+#### Wiki Pages and Tutorials
 
 Useful information is on our wiki, located here:
 * https://github.com/ucb-bar/firrtl/wiki
