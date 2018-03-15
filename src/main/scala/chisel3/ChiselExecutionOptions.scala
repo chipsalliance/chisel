@@ -14,9 +14,8 @@ import firrtl.{ComposableOptions, ExecutionOptionsManager}
   * @note this extends FirrtlExecutionOptions which extends CommonOptions providing easy access to down chain options
   */
 case class ChiselExecutionOptions(
-  runFirrtlCompiler : Boolean = true,
+  runFirrtlCompiler : Boolean        = true,
   scalaSimulator    : ScalaSimulator = TreadleSimulator
-  // var runFirrtlAsProcess: Boolean = false
 ) extends ComposableOptions
 
 trait HasChiselExecutionOptions {
@@ -32,12 +31,5 @@ trait HasChiselExecutionOptions {
       chiselOptions = chiselOptions.copy(runFirrtlCompiler = false)
     }
     .text("Stop after chisel emits chirrtl file")
-
-  parser.opt[String]("scala-backend")
-    .abbr("chsb")
-    .foreach { x =>
-      chiselOptions = chiselOptions.copy(scalaSimulator = ScalaSimulator(x))
-    }
-    .text(s"Choose scala simulation engine, either interpreter or interpreter")
 }
 
