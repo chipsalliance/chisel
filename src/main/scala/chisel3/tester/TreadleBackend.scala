@@ -11,21 +11,23 @@ import treadle.{HasTreadleSuite, TreadleTester}
 
 class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
-  def getModule() = dut
+
+  def getModule: T = dut
 
   /** Returns a Seq of (data reference, fully qualified element names) for the input.
     * name is the name of data
     */
   protected def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
-    case e: Element => Seq()
+    case _: Element => Seq()
     case b: Record => b.elements.toSeq flatMap {case (n, e) => getDataNames(s"${name}_$n", e)}
     case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => getDataNames(s"${name}_$i", e)}
   })
 
   // TODO: the naming facility should be part of infrastructure not backend
-  protected val portNames = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).toMap
-  protected def resolveName(signal: Data) =
-    portNames.getOrElse(signal, signal.toString())
+  protected val portNames: Map[Data, String] = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).toMap
+  protected def resolveName(signal: Data): String = {
+    portNames.getOrElse(signal, signal.toString)
+  }
 
   protected val threadingChecker = new ThreadingChecker()
 
@@ -48,12 +50,12 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
-  protected val clockCounter = mutable.HashMap[Clock, Int]()
+  protected val clockCounter : mutable.HashMap[Clock, Int] = mutable.HashMap()
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
 
-  protected val lastClockValue = mutable.HashMap[Clock, Boolean]()
+  protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
 
   protected def scheduler() {
     var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
@@ -84,7 +86,7 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
         }
         if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
           lastClockValue.put(waitingClock, currentClockVal)
-          if (currentClockVal == true) {
+          if (currentClockVal) {
             activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
             blockedThreads.remove(waitingClock)
             threadingChecker.newTimestep(waitingClock)
@@ -149,7 +151,7 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     try {
       scalatestWaiting.acquire()
     } catch {
-      case e: InterruptedException =>
+      case _: InterruptedException =>
         throw interruptedException.poll(10, TimeUnit.SECONDS)
     }
 
