@@ -355,7 +355,12 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
                                                  emitOneFilePerModule = true)
         }
 
-        firrtl.Driver.execute(manager)
+        firrtl.Driver.execute(manager) match {
+          case success: FirrtlExecutionSuccess =>
+            success.circuitState.annotations.length should be > (0)
+          case _ =>
+
+        }
 
         for (name <- expectedOutputFileNames) {
           val file = new File(name)

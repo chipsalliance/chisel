@@ -248,7 +248,7 @@ object Driver {
           outputFile.close()
       }
 
-      FirrtlExecutionSuccess(firrtlConfig.compilerName, emittedRes)
+      FirrtlExecutionSuccess(firrtlConfig.compilerName, emittedRes, finalState)
     }
   }
 
