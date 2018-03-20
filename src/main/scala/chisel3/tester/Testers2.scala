@@ -31,6 +31,7 @@ object Context {
       case "firrtl" => Firrterpreter.start(dutGen, Some(options))
       case "verilator" => VerilatorTesterBackend.start(dutGen, options)
       case "vcs" => VCSTesterBackend.start(dutGen, options)
+      case "jni" => JNILibraryTesterBackend.start(dutGen, options)
       case ub: String => throw new RuntimeException(s"""Chisel3: unrecognized backend "$ub"""")
     }
   }
