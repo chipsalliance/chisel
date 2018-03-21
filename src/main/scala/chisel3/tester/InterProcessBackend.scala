@@ -449,42 +449,49 @@ class InterProcessBackend[T <: Module](
 
   protected def scheduler() {
     var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
+    var exception: Option[Throwable] = None
 
-    while (activeThreads.isEmpty && !testDone) {
-      threadingChecker.finishTimestep()
-      Context().env.checkpoint()
-      step(1)
-      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+    try {
+      while (activeThreads.isEmpty && !testDone) {
+        threadingChecker.finishTimestep()
+        Context().env.checkpoint()
+        step(1)
+        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-      if (mainTesterThread.get.done) {
-        testDone = true
-      }
-
-      threadingChecker.newTimestep(dut.clock)
-
-      // Unblock threads waiting on main clock
-      activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
-      blockedThreads.remove(dut.clock)
-
-      // Unblock threads waiting on dependent clocks
-      // TODO: purge unused clocks instead of still continuing to track them
-      val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
-      for (waitingClock <- waitingClocks) {
-        val currentClockVal = peekSignal(portNames(waitingClock), false).get.toInt match {
-          case 0 => false
-          case 1 => true
+        if (mainTesterThread.get.done) {
+          testDone = true
         }
-        if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
-          lastClockValue.put(waitingClock, currentClockVal)
-          if (currentClockVal == true) {
-            activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
-            blockedThreads.remove(waitingClock)
-            threadingChecker.newTimestep(waitingClock)
 
-            clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
+        threadingChecker.newTimestep(dut.clock)
+
+        // Unblock threads waiting on main clock
+        activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+        blockedThreads.remove(dut.clock)
+
+        // Unblock threads waiting on dependent clocks
+        // TODO: purge unused clocks instead of still continuing to track them
+        val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
+        for (waitingClock <- waitingClocks) {
+          val currentClockVal = peekSignal(portNames(waitingClock), false).get.toInt match {
+            case 0 => false
+            case 1 => true
+          }
+          if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
+            lastClockValue.put(waitingClock, currentClockVal)
+            if (currentClockVal == true) {
+              activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
+              blockedThreads.remove(waitingClock)
+              threadingChecker.newTimestep(waitingClock)
+
+              clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
+            }
           }
         }
       }
+    } catch {
+      case e: Throwable =>
+        exception = Some(e)
+        testDone = true
     }
 
     if (!testDone) {  // if test isn't over, run next thread
@@ -496,7 +503,11 @@ class InterProcessBackend[T <: Module](
       finish()
       scalatestWaiting.release()
     }
-
+    exception match {
+      case Some(e: Throwable) =>
+        throw e
+      case None =>
+    }
   }
 
   override def step(signal: Clock, cycles: Int): Unit = {
@@ -519,7 +530,11 @@ class InterProcessBackend[T <: Module](
   protected val interruptedException = new SynchronousQueue[Throwable]()
 
   protected def onException(e: Throwable) {
-    scalatestThread.get.interrupt()
+    scalatestThread match {
+      case Some(t: Thread) =>
+        t.interrupt()
+      case None =>
+    }
     interruptedException.offer(e, 10, TimeUnit.SECONDS)
   }
 
