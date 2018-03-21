@@ -18,22 +18,13 @@ import firrtl.Mappers._
   */
 class InstanceGraph(c: Circuit) {
 
-  private def collectInstances(insts: mutable.Set[WDefInstance])
-                              (s: Statement): Statement = s match {
-    case i: WDefInstance =>
-      insts += i
-      i
-    case _ =>
-      s map collectInstances(insts)
-  }
-
   private val moduleMap = c.modules.map({m => (m.name,m) }).toMap
   private val instantiated = new mutable.HashSet[String]
   private val childInstances =
     new mutable.HashMap[String,mutable.Set[WDefInstance]]
   for (m <- c.modules) {
     childInstances(m.name) = new mutable.HashSet[WDefInstance]
-    m map collectInstances(childInstances(m.name))
+    m map InstanceGraph.collectInstances(childInstances(m.name))
     instantiated ++= childInstances(m.name).map(i => i.module)
   }
 
@@ -44,7 +35,7 @@ class InstanceGraph(c: Circuit) {
   uninstantiated.foreach({ subTop =>
     val topInstance = WDefInstance(subTop,subTop)
     instanceQueue.enqueue(topInstance)
-    while (!instanceQueue.isEmpty) {
+    while (instanceQueue.nonEmpty) {
       val current = instanceQueue.dequeue
       instanceGraph.addVertex(current)
       for (child <- childInstances(current.module)) {
@@ -70,14 +61,14 @@ class InstanceGraph(c: Circuit) {
   /** A list of absolute paths (each represented by a Seq of instances)
     * of all module instances in the Circuit.
     */
-  lazy val fullHierarchy = graph.pathsInDAG(trueTopInstance)
+  lazy val fullHierarchy: collection.Map[WDefInstance,Seq[Seq[WDefInstance]]] = graph.pathsInDAG(trueTopInstance)
 
   /** Finds the absolute paths (each represented by a Seq of instances
     * representing the chain of hierarchy) of all instances of a
     * particular module.
     *
     * @param module the name of the selected module
-    * @return a Seq[Seq[WDefInstance]] of absolute instance paths
+    * @return a Seq[ Seq[WDefInstance] ] of absolute instance paths
     */
   def findInstancesInHierarchy(module: String): Seq[Seq[WDefInstance]] = {
     val instances = graph.getVertices.filter(_.module == module).toSeq
@@ -93,5 +84,32 @@ class InstanceGraph(c: Circuit) {
   def lowestCommonAncestor(moduleA: Seq[WDefInstance],
                            moduleB: Seq[WDefInstance]): Seq[WDefInstance] = {
     tour.rmq(moduleA, moduleB)
+  }
+
+  /**
+    * Module order from highest module to leaf module
+    * @return sequence of modules in order from top to leaf
+    */
+  def moduleOrder: Seq[DefModule] = {
+    graph.transformNodes(_.module).linearize.map(moduleMap(_))
+  }
+}
+
+object InstanceGraph {
+
+  /** Returns all WDefInstances in a Statement
+    *
+    * @param insts mutable datastructure to append to
+    * @param s statement to descend
+    * @return
+    */
+  def collectInstances(insts: mutable.Set[WDefInstance])
+                      (s: Statement): Statement = s match {
+    case i: WDefInstance =>
+      insts += i
+      i
+    case i: DefInstance => throwInternalError(Some("Expecting WDefInstance, found a DefInstance!"))
+    case i: WDefInstanceConnector => throwInternalError(Some("Expecting WDefInstance, found a WDefInstanceConnector!"))
+    case _ => s map collectInstances(insts)
   }
 }

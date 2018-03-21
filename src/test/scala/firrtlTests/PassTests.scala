@@ -20,13 +20,14 @@ abstract class SimpleTransformSpec extends FlatSpec with FirrtlMatchers with Com
 
    // Executes the test. Call in tests.
    // annotations cannot have default value because scalatest trait Suite has a default value
-   def execute(input: String, check: String, annotations: Seq[Annotation]): Unit = {
+   def execute(input: String, check: String, annotations: Seq[Annotation]): CircuitState = {
       val finalState = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annotations))
       val actual = RemoveEmpty.run(parse(finalState.getEmittedCircuit.value)).serialize
       val expected = parse(check).serialize
       logger.debug(actual)
       logger.debug(expected)
       (actual) should be (expected)
+      finalState
    }
    // Executes the test, should throw an error
    // No default to be consistent with execute

@@ -48,7 +48,7 @@ class InoutVerilogSpec extends FirrtlFlatSpec {
        |);
        |endmodule
        |""".stripMargin.split("\n") map normalized
-    executeTest(input, check, compiler)
+    executeTest(input, check, compiler, Seq(dontDedup("A"), dontDedup("B")))
   }
 
   it should "attach two instances" in {

@@ -24,6 +24,9 @@ object Mappers {
     implicit def forString(f: String => String): StmtMagnet = new StmtMagnet {
       override def map(stmt: Statement): Statement = stmt mapString f
     }
+    implicit def forInfo(f: Info => Info): StmtMagnet = new StmtMagnet {
+      override def map(stmt: Statement): Statement = stmt mapInfo f
+    }
   }
   implicit class StmtMap(val _stmt: Statement) extends AnyVal {
     // Using implicit types to allow overloading of function type to map, see StmtMagnet above
@@ -95,6 +98,9 @@ object Mappers {
     implicit def forString(f: String => String): ModuleMagnet = new ModuleMagnet {
       override def map(module: DefModule): DefModule = module mapString f
     }
+    implicit def forInfo(f: Info => Info): ModuleMagnet = new ModuleMagnet {
+      override def map(module: DefModule): DefModule = module mapInfo f
+    }
   }
   implicit class ModuleMap(val _module: DefModule) extends AnyVal {
     def map[T](f: T => T)(implicit magnet: (T => T) => ModuleMagnet): DefModule = magnet(f).map(_module)
@@ -110,6 +116,9 @@ object Mappers {
     }
     implicit def forString(f: String => String): CircuitMagnet = new CircuitMagnet {
       override def map(circuit: Circuit): Circuit = circuit mapString f
+    }
+    implicit def forInfo(f: Info => Info): CircuitMagnet = new CircuitMagnet {
+      override def map(circuit: Circuit): Circuit = circuit mapInfo f
     }
   }
   implicit class CircuitMap(val _circuit: Circuit) extends AnyVal {

@@ -87,6 +87,7 @@ case class WDefInstance(info: Info, name: String, module: String, tpe: Type) ext
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
+  def mapInfo(f: Info => Info): Statement = this.copy(f(info))
 }
 object WDefInstance {
   def apply(name: String, module: String): WDefInstance = new WDefInstance(NoInfo, name, module, UnknownType)
@@ -104,6 +105,7 @@ case class WDefInstanceConnector(
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
+  def mapInfo(f: Info => Info): Statement = this.copy(f(info))
 }
 
 // Resultant width is the same as the maximum input width
@@ -280,6 +282,7 @@ case class CDefMemory(
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
+  def mapInfo(f: Info => Info): Statement = this.copy(f(info))
 }
 case class CDefMPort(info: Info,
     name: String,
@@ -295,5 +298,6 @@ case class CDefMPort(info: Info,
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
+  def mapInfo(f: Info => Info): Statement = this.copy(f(info))
 }
 
