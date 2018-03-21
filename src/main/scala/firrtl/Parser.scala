@@ -11,15 +11,13 @@ import firrtl.ir._
 import firrtl.Utils.time
 import firrtl.antlr.{FIRRTLParser, _}
 
-class ParserException(message: String) extends Exception(message)
+class ParserException(message: String) extends FIRRTLException(message)
 
 case class ParameterNotSpecifiedException(message: String) extends ParserException(message)
-
 case class ParameterRedefinedException(message: String) extends ParserException(message)
-
 case class InvalidStringLitException(message: String) extends ParserException(message)
-
 case class InvalidEscapeCharException(message: String) extends ParserException(message)
+case class SyntaxErrorsException(message: String) extends ParserException(message)
 
 
 object Parser extends LazyLogging {
@@ -42,7 +40,7 @@ object Parser extends LazyLogging {
       val cst = parser.circuit
 
       val numSyntaxErrors = parser.getNumberOfSyntaxErrors
-      if (numSyntaxErrors > 0) throw new ParserException(s"$numSyntaxErrors syntax error(s) detected")
+      if (numSyntaxErrors > 0) throw new SyntaxErrorsException(s"$numSyntaxErrors syntax error(s) detected")
       cst
     }
 

@@ -157,6 +157,20 @@ class ParserSpec extends FirrtlFlatSpec {
     val c = firrtl.Parser.parse(input)
     firrtl.Parser.parse(c.serialize)
   }
+
+  "Parsing errors" should "be reported as normal exceptions" in {
+    val input = s"""
+      |circuit Test
+      |  module Test :
+
+      |""".stripMargin
+    val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+      firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
+    }
+    a [SyntaxErrorsException] shouldBe thrownBy {
+      Driver.execute(manager)
+    }
+  }
 }
 
 class ParserPropSpec extends FirrtlPropSpec {
