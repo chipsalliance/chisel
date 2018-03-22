@@ -180,8 +180,6 @@ trait ThreadedBackend {
             case e: InterruptedException => throw e  // propagate to upper level handler
             case e: Exception => onException(e)
               waiting.acquire()
-            case e: Error => onException(e)
-              waiting.acquire()
           }
           threadFinished(TesterThread.this)
         } catch {
