@@ -179,7 +179,6 @@ trait ThreadedBackend {
           } catch {
             case e: InterruptedException => throw e  // propagate to upper level handler
             case e: Exception => onException(e)
-              waiting.acquire()
           }
           threadFinished(TesterThread.this)
         } catch {
@@ -210,18 +209,22 @@ trait ThreadedBackend {
 
   protected def threadFinished(thread: TesterThread) {
     thread.done = true
-    allThreads -= thread
-    joinedThreads.remove(thread) match {
-      case Some(testerThreads) => activeThreads ++= testerThreads
-      case None =>
+    allThreads.synchronized {
+      allThreads -= thread
+      joinedThreads.remove(thread) match {
+        case Some(testerThreads) => activeThreads ++= testerThreads
+        case None =>
+      }
     }
     scheduler()
   }
 
   def fork(runnable: => Unit): TesterThread = {
     val newThread = new TesterThread(runnable)
-    allThreads += newThread
-    activeThreads += newThread
+    allThreads.synchronized {
+      allThreads += newThread
+      activeThreads += newThread
+    }
     newThread.thread.start()
     newThread
   }
@@ -233,6 +236,18 @@ trait ThreadedBackend {
       joinedThreads.put(threadTyped, joinedThreads.getOrElseUpdate(threadTyped, Seq()) :+ thisThread)
       scheduler()
       thisThread.waiting.acquire()
+    }
+  }
+  def killAllTesterThreads(): Unit = {
+    allThreads.synchronized {
+      for (thread <- allThreads) {
+        if (thread != null) {
+          // Kill the threads using an InterruptedException
+          if (thread.thread.isAlive) {
+            thread.thread.interrupt()
+          }
+        }
+      }
     }
   }
 }

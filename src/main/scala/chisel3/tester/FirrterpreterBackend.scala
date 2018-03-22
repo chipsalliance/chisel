@@ -47,64 +47,52 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   protected val lastClockValue = mutable.HashMap[Clock, Boolean]()
 
   protected def scheduler() {
-    var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
-    var exception: Option[Throwable] = None
+    var testDone: Boolean = false // set at the end of the clock cycle that the main thread dies on
 
-    try {
-      while (activeThreads.isEmpty && !testDone) {
-        threadingChecker.finishTimestep()
-        Context().env.checkpoint()
-        tester.step(1)
-        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+    while (activeThreads.isEmpty && !testDone) {
+      threadingChecker.finishTimestep()
+      Context().env.checkpoint()
+      tester.step(1)
+      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-        if (mainTesterThread.get.done) {
-          testDone = true
+      if (mainTesterThread.get.done) {
+        testDone = true
+      }
+
+      threadingChecker.newTimestep(dut.clock)
+
+      // Unblock threads waiting on main clock
+      activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+      blockedThreads.remove(dut.clock)
+
+      // Unblock threads waiting on dependent clocks
+      // TODO: purge unused clocks instead of still continuing to track them
+      val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
+      for (waitingClock <- waitingClocks) {
+        val currentClockVal = tester.peek(portNames(waitingClock)).toInt match {
+          case 0 => false
+          case 1 => true
         }
+        if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
+          lastClockValue.put(waitingClock, currentClockVal)
+          if (currentClockVal == true) {
+            activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
+            blockedThreads.remove(waitingClock)
+            threadingChecker.newTimestep(waitingClock)
 
-        threadingChecker.newTimestep(dut.clock)
-
-        // Unblock threads waiting on main clock
-        activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
-        blockedThreads.remove(dut.clock)
-
-        // Unblock threads waiting on dependent clocks
-        // TODO: purge unused clocks instead of still continuing to track them
-        val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
-        for (waitingClock <- waitingClocks) {
-          val currentClockVal = tester.peek(portNames(waitingClock)).toInt match {
-            case 0 => false
-            case 1 => true
-          }
-          if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
-            lastClockValue.put(waitingClock, currentClockVal)
-            if (currentClockVal == true) {
-              activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
-              blockedThreads.remove(waitingClock)
-              threadingChecker.newTimestep(waitingClock)
-
-              clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
-            }
+            clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
           }
         }
       }
-    } catch {
-      case e: Throwable =>
-        exception = Some(e)
-        testDone = true
     }
 
-    if (!testDone) {  // if test isn't over, run next thread
+    if (!testDone) { // if test isn't over, run next thread
       val nextThread = activeThreads.head
       currentThread = Some(nextThread)
       activeThreads.trimStart(1)
       nextThread.waiting.release()
-    } else {  // if test is done, return to the main scalatest thread
+    } else { // if test is done, return to the main scalatest thread
       scalatestWaiting.release()
-    }
-    exception match {
-      case Some(e: Throwable) =>
-        throw e
-      case None =>
     }
   }
 
@@ -133,10 +121,19 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
         t.interrupt()
       case None =>
     }
-    interruptedException.offer(e, 10, TimeUnit.SECONDS)
+    try {
+      val accepted = interruptedException.offer(e, 10, TimeUnit.SECONDS)
+      if (!accepted) {
+        System.err.println(s"FirrterpreterBackend.onException couldn't transfer ${e} (timeout)")
+      }
+    } catch {
+      case e: InterruptedException =>
+        System.err.println(s"FirrterpreterBackend.onException couldn't transfer ${e} (exception)")
+    }
   }
 
   override def run(testFn: T => Unit): Unit = {
+    var exception: Option[Throwable] = None
     tester.poke("reset", 1)
     tester.step(1)
     tester.poke("reset", 0)
@@ -156,18 +153,30 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
       scalatestWaiting.acquire()
     } catch {
       case e: InterruptedException =>
-        throw interruptedException.poll(10, TimeUnit.SECONDS)
+        try {
+          exception = Some(interruptedException.poll(10, TimeUnit.SECONDS))
+        } catch {
+          case e: InterruptedException =>
+            println("FirrterpreterBackend.run: couldn't transfer interruptedException")
+            exception = Some(e)
+          case e: Throwable =>
+            exception = Some(e)
+        }
+      case e: Throwable =>
+        exception = Some(e)
     }
 
     mainTesterThread = None
     scalatestThread = None
     currentThread = None
 
-    for (thread <- allThreads.clone()) {
-      // Kill the threads using an InterruptedException
-      if (thread.thread.isAlive) {
-        thread.thread.interrupt()
-      }
+    killAllTesterThreads()
+
+    exception match {
+      case Some(t: Throwable) =>
+        println(s"run: throwing ${t}")
+        throw t
+      case None =>
     }
   }
 }
