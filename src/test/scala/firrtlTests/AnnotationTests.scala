@@ -10,6 +10,7 @@ import firrtl._
 import firrtl.transforms.OptimizableExtModuleAnnotation
 import firrtl.passes.InlineAnnotation
 import firrtl.passes.memlib.PinAnnotation
+import firrtl.util.BackendCompilationUtilities
 import firrtl.transforms.DontTouchAnnotation
 import net.jcazevedo.moultingyaml._
 import org.scalatest.Matchers
@@ -476,7 +477,7 @@ class LegacyAnnotationTests extends AnnotationTests {
   }
 }
 
-class JsonAnnotationTests extends AnnotationTests {
+class JsonAnnotationTests extends AnnotationTests with BackendCompilationUtilities {
   // Helper annotations
   case class SimpleAnno(target: ComponentName, value: String) extends
       SingleTargetAnnotation[ComponentName] {
@@ -510,5 +511,84 @@ class JsonAnnotationTests extends AnnotationTests {
     val readAnnos = JsonProtocol.deserializeTry(text).get
 
     annos should be (readAnnos)
+  }
+
+  private def setupManager(annoFileText: Option[String]) = {
+    val source = """
+      |circuit test :
+      |  module test :
+      |    input x : UInt<1>
+      |    output z : UInt<1>
+      |    z <= x
+      |    node y = x""".stripMargin
+    val testDir = createTestDirectory(this.getClass.getSimpleName)
+    val annoFile = new File(testDir, "anno.json")
+
+    annoFileText.foreach { text =>
+      val w = new FileWriter(annoFile)
+      w.write(text)
+      w.close()
+    }
+
+    new ExecutionOptionsManager("annos") with HasFirrtlOptions {
+      commonOptions = CommonOptions(targetDirName = testDir.getPath)
+      firrtlOptions = FirrtlExecutionOptions(
+        firrtlSource = Some(source),
+        annotationFileNames = List(annoFile.getPath)
+      )
+    }
+  }
+
+  "Annotation file not found" should "give a reasonable error message" in {
+    val manager = setupManager(None)
+
+    an [AnnotationFileNotFoundException] shouldBe thrownBy {
+      Driver.execute(manager)
+    }
+  }
+
+  "Annotation class not found" should "give a reasonable error message" in {
+    val anno = """
+      |[
+      |  {
+      |    "class":"ThisClassDoesNotExist",
+      |    "target":"test.test.y"
+      |  }
+      |] """.stripMargin
+    val manager = setupManager(Some(anno))
+
+    the [Exception] thrownBy Driver.execute(manager) should matchPattern {
+      case InvalidAnnotationFileException(_, _: AnnotationClassNotFoundException) =>
+    }
+  }
+
+  "Malformed annotation file" should "give a reasonable error message" in {
+    val anno = """
+      |[
+      |  {
+      |    "class":
+      |    "target":"test.test.y"
+      |  }
+      |] """.stripMargin
+    val manager = setupManager(Some(anno))
+
+    the [Exception] thrownBy Driver.execute(manager) should matchPattern {
+      case InvalidAnnotationFileException(_, _: InvalidAnnotationJSONException) =>
+    }
+  }
+
+  "Non-array annotation file" should "give a reasonable error message" in {
+    val anno = """
+      |{
+      |  "class":"firrtl.transforms.DontTouchAnnotation",
+      |  "target":"test.test.y"
+      |}
+      |""".stripMargin
+    val manager = setupManager(Some(anno))
+
+    the [Exception] thrownBy Driver.execute(manager) should matchPattern {
+      case InvalidAnnotationFileException(_, InvalidAnnotationJSONException(msg))
+        if msg.contains("JObject") =>
+    }
   }
 }
