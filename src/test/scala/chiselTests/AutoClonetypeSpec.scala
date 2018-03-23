@@ -161,4 +161,15 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
     } }
   }
 
+  "3.0 null compatibility" should "not need clonetype" in {
+    elaborate { new Module {
+      class InnerClassThing {
+        def createBundle = new Bundle {
+          val a = Output(UInt(8.W))
+        }
+      }
+      val io = IO((new InnerClassThing).createBundle)
+      val a = WireInit(io)
+    } }
+  }
 }
