@@ -2,13 +2,11 @@
 
 package chisel3.tester
 
-import java.io.{File, FileWriter, IOException}
-import java.nio.file.StandardCopyOption.REPLACE_EXISTING
-import java.nio.file.{FileAlreadyExistsException, Files, Paths}
+import java.io.{File, FileWriter}
 
+import firrtl.util.BackendCompilationUtilities._
 import chisel3._
 import chisel3.tester.TesterUtils.{getIOPorts, getPortNames}
-import firrtl.transforms.{BlackBoxSourceHelper, BlackBoxTargetDirAnno}
 
 class VerilatorProcessBackend[T <: Module](
       dut: T,
@@ -259,7 +257,7 @@ int main(int argc, char **argv, char **env) {
       ).! == 0
     )
     assert(chisel3.Driver.cppToLib(circuitName, dir, shimPieces, extraObjects).! == 0)
-    "V" + circuitName + ".dylib"
+    s"V${circuitName}.${sharedLibraryExtension}"
   }
 
   def start[T <: Module](dutGen: => T, options: TesterOptionsManager): BackendInstance[T] = {
