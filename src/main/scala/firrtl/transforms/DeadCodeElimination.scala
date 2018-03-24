@@ -178,7 +178,8 @@ class DeadCodeElimination extends Transform {
   private def deleteDeadCode(instMap: collection.Map[String, String],
                              deadNodes: collection.Set[LogicNode],
                              moduleMap: collection.Map[String, DefModule],
-                             renames: RenameMap)
+                             renames: RenameMap,
+                             topName: String)
                             (mod: DefModule): Option[DefModule] = {
     // For log-level debug
     def deleteMsg(decl: IsDeclaration): String = {
@@ -249,7 +250,8 @@ class DeadCodeElimination extends Transform {
     mod match {
       case Module(info, name, _, body) =>
         val bodyx = onStmt(body)
-        if (emptyBody && portsx.isEmpty) {
+        // We don't delete the top module, even if it's empty
+        if (emptyBody && portsx.isEmpty && name != topName) {
           logger.debug(deleteMsg(mod))
           None
         } else {
@@ -307,7 +309,7 @@ class DeadCodeElimination extends Transform {
     // current status of the modulesxMap is used to either delete instances or update their types
     val modulesxMap = mutable.HashMap.empty[String, DefModule]
     topoSortedModules.foreach { case mod =>
-      deleteDeadCode(moduleDeps(mod.name), deadNodes, modulesxMap, renames)(mod) match {
+      deleteDeadCode(moduleDeps(mod.name), deadNodes, modulesxMap, renames, c.main)(mod) match {
         case Some(m) => modulesxMap += m.name -> m
         case None => renames.delete(ModuleName(mod.name, CircuitName(c.main)))
       }

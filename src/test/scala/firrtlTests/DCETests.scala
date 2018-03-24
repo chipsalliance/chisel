@@ -391,6 +391,29 @@ class DCETests extends FirrtlFlatSpec {
         |    z <= foo.z""".stripMargin
     exec(input, check)
   }
+
+  "Emitted Verilog" should "not contain dead \"register update\" code" in {
+    val input = parse(
+      """circuit test :
+        |  module test :
+        |    input clock : Clock
+        |    input a : UInt<1>
+        |    input x : UInt<8>
+        |    output z : UInt<8>
+        |    reg r : UInt, clock
+        |    when a :
+        |      r <= x
+        |    z <= r""".stripMargin
+    )
+
+    val state = CircuitState(input, ChirrtlForm)
+    val result = (new VerilogCompiler).compileAndEmit(state, List.empty)
+    val verilog = result.getEmittedCircuit.value
+    // Check that mux is removed!
+    verilog shouldNot include regex ("""a \? x : r;""")
+    // Check for register update
+    verilog should include regex ("""(?m)if \(a\) begin\n\s*r <= x;\s*end""")
+  }
 }
 
 class DCECommandLineSpec extends FirrtlFlatSpec {
