@@ -69,7 +69,10 @@ class WiringTransform extends Transform {
             val wis = sources.foldLeft(Seq[WiringInfo]()) { case (seq, (pin, source)) =>
               seq :+ WiringInfo(source, sinks(pin), pin)
             }
-            transforms(wis).foldLeft(state) { (in, xform) => xform.runTransform(in) }
+            val annosx = state.annotations.filterNot(annos.toSet.contains)
+            transforms(wis)
+              .foldLeft(state) { (in, xform) => xform.runTransform(in) }
+              .copy(annotations = annosx)
           case _ => error("Wrong number of sources or sinks!")
         }
     }
