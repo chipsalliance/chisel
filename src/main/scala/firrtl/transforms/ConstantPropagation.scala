@@ -358,6 +358,7 @@ class ConstantPropagation extends Transform {
 
     def constPropStmt(s: Statement): Statement = {
       val stmtx = s map constPropStmt map constPropExpression(nodeMap, instMap, constSubOutputs)
+      // Record things that should be propagated
       stmtx match {
         case x: DefNode if !dontTouches.contains(x.name) => propagateRef(x.name, x.value)
         case Connect(_, WRef(wname, wtpe, WireKind, _), expr: Literal) if !dontTouches.contains(wname) =>
@@ -387,7 +388,13 @@ class ConstantPropagation extends Transform {
           portsMap(port) = paddedLit +: portsMap.getOrElse(port, List.empty)
         case _ =>
       }
-      stmtx
+      // Actually transform some statements
+      stmtx match {
+        // Propagate connections to references
+        case Connect(info, lhs, rref @ WRef(rname, _, NodeKind, _)) if !dontTouches.contains(rname) =>
+          Connect(info, lhs, nodeMap(rname))
+        case other => other
+      }
     }
 
     val modx = m.copy(body = backPropStmt(constPropStmt(m.body)))

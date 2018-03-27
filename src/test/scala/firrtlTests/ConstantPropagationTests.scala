@@ -543,7 +543,7 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
     output z : UInt<1>
     node _T_1 = and(x, y)
     node n = _T_1
-    z <= n
+    z <= and(n, x)
 """
       val check =
 """circuit Top :
@@ -553,7 +553,7 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
     output z : UInt<1>
     node n = and(x, y)
     node _T_1 = n
-    z <= n
+    z <= and(n, x)
 """
       (parse(exec(input))) should be (parse(check))
    }
@@ -663,7 +663,7 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
     wire hit : UInt<1>
     node _T_1 = or(x, y)
     node _T_2 = _T_1
-    hit <= _T_1
+    hit <= or(x, y)
     z <= hit
 """
       (parse(exec(input))) should be (parse(check))
@@ -948,6 +948,27 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    input reset : UInt<1>
           |    output z : UInt<8>
           |    z <= UInt<8>("hb")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  "Connections to a node reference" should "be replaced with the rhs of that node" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input a : UInt<8>
+          |    input b : UInt<8>
+          |    input c : UInt<1>
+          |    output z : UInt<8>
+          |    node x = mux(c, a, b)
+          |    z <= x""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input a : UInt<8>
+          |    input b : UInt<8>
+          |    input c : UInt<1>
+          |    output z : UInt<8>
+          |    z <= mux(c, a, b)""".stripMargin
     execute(input, check, Seq.empty)
   }
 }

@@ -180,8 +180,7 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
         |    output out: {a: UInt<3>, b: UInt<3>[2]}
         |    wire w: {a: UInt<3>, b: UInt<3>[2]}
         |    w is invalid
-        |    node n = mux(pred, in, w)
-        |    out <= n
+        |    out <= mux(pred, in, w)
         |    reg r: {a: UInt<3>, b: UInt<3>[2]}, clk
         |    cmem mem: {a: UInt<3>, b: UInt<3>[2]}[8]
         |    write mport write = mem[pred], clk
@@ -191,7 +190,6 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
       anno("in.a"), anno("in.b[0]"), anno("in.b[1]"),
       anno("out.a"), anno("out.b[0]"), anno("out.b[1]"),
       anno("w.a"), anno("w.b[0]"), anno("w.b[1]"),
-      anno("n.a"), anno("n.b[0]"), anno("n.b[1]"),
       anno("r.a"), anno("r.b[0]"), anno("r.b[1]"),
       anno("write.a"), anno("write.b[0]"), anno("write.b[1]"),
       dontTouch("Top.r"), dontTouch("Top.w")
@@ -222,9 +220,6 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should contain (anno("w_a"))
     resultAnno should contain (anno("w_b_0"))
     resultAnno should contain (anno("w_b_1"))
-    resultAnno should contain (anno("n_a"))
-    resultAnno should contain (anno("n_b_0"))
-    resultAnno should contain (anno("n_b_1"))
     resultAnno should contain (anno("r_a"))
     resultAnno should contain (anno("r_b_0"))
     resultAnno should contain (anno("r_b_1"))
@@ -244,11 +239,10 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
         |    output out: {a: UInt<3>, b: UInt<3>[2]}
         |    wire w: {a: UInt<3>, b: UInt<3>[2]}
         |    w is invalid
-        |    node n = mux(pred, in, w)
-        |    out <= n
+        |    out <= mux(pred, in, w)
         |    reg r: {a: UInt<3>, b: UInt<3>[2]}, clk
         |""".stripMargin
-    val annos = Seq(anno("in"), anno("out"), anno("w"), anno("n"), anno("r"), dontTouch("Top.r"),
+    val annos = Seq(anno("in"), anno("out"), anno("w"), anno("r"), dontTouch("Top.r"),
                     dontTouch("Top.w"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annos), Nil)
     val resultAnno = result.annotations.toSeq
@@ -261,9 +255,6 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should contain (anno("w_a"))
     resultAnno should contain (anno("w_b_0"))
     resultAnno should contain (anno("w_b_1"))
-    resultAnno should contain (anno("n_a"))
-    resultAnno should contain (anno("n_b_0"))
-    resultAnno should contain (anno("n_b_1"))
     resultAnno should contain (anno("r_a"))
     resultAnno should contain (anno("r_b_0"))
     resultAnno should contain (anno("r_b_1"))
@@ -284,7 +275,7 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
         |    out <= n
         |    reg r: {a: UInt<3>, b: UInt<3>[2]}, clk
         |""".stripMargin
-    val annos = Seq(anno("in.b"), anno("out.b"), anno("w.b"), anno("n.b"), anno("r.b"),
+    val annos = Seq(anno("in.b"), anno("out.b"), anno("w.b"), anno("r.b"),
                     dontTouch("Top.r"), dontTouch("Top.w"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annos), Nil)
     val resultAnno = result.annotations.toSeq
@@ -294,8 +285,6 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should contain (anno("out_b_1"))
     resultAnno should contain (anno("w_b_0"))
     resultAnno should contain (anno("w_b_1"))
-    resultAnno should contain (anno("n_b_0"))
-    resultAnno should contain (anno("n_b_1"))
     resultAnno should contain (anno("r_b_0"))
     resultAnno should contain (anno("r_b_1"))
   }
