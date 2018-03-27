@@ -3,7 +3,8 @@
 package chisel3.tester
 
 import chisel3._
-import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
+import java.util.concurrent.{Semaphore, ConcurrentLinkedQueue, TimeUnit}
+import scala.collection.mutable
 
 import scala.collection.mutable
 import firrtl_interpreter._
@@ -29,8 +30,6 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     portNames.getOrElse(signal, signal.toString)
   }
 
-  protected val threadingChecker = new ThreadingChecker()
-
   override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
     if (threadingChecker.doPoke(signal, priority, new Throwable)) {
       tester.poke(portNames(signal), value)
@@ -54,59 +53,13 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
+  protected def getClock(clk: Clock): Boolean = tester.peek(portNames(clk)).toInt match {
+    case 0 => false
+    case 1 => true
+  }
 
   protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
-
-  protected def scheduler() {
-    var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
-
-    while (activeThreads.isEmpty && !testDone) {
-      threadingChecker.finishTimestep()
-      Context().env.checkpoint()
-      tester.step(1)
-      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
-
-      if (mainTesterThread.get.done) {
-        testDone = true
-      }
-
-      threadingChecker.newTimestep(dut.clock)
-
-      // Unblock threads waiting on main clock
-      activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
-      blockedThreads.remove(dut.clock)
-
-      // Unblock threads waiting on dependent clocks
-      // TODO: purge unused clocks instead of still continuing to track them
-      val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
-      for (waitingClock <- waitingClocks) {
-        val currentClockVal = tester.peek(portNames(waitingClock)).toInt match {
-          case 0 => false
-          case 1 => true
-        }
-        if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
-          lastClockValue.put(waitingClock, currentClockVal)
-          if (currentClockVal) {
-            activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
-            blockedThreads.remove(waitingClock)
-            threadingChecker.newTimestep(waitingClock)
-
-            clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
-          }
-        }
-      }
-    }
-
-    if (!testDone) {  // if test isn't over, run next thread
-      val nextThread = activeThreads.head
-      currentThread = Some(nextThread)
-      activeThreads.trimStart(1)
-      nextThread.waiting.release()
-    } else {  // if test is done, return to the main scalatest thread
-      scalatestWaiting.release()
-    }
-
-  }
+  protected val threadingChecker = new ThreadingChecker()
 
   override def step(signal: Clock, cycles: Int): Unit = {
     // TODO: clock-dependence
@@ -114,6 +67,9 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     for (_ <- 0 until cycles) {
       val thisThread = currentThread.get
       threadingChecker.finishThread(thisThread, signal)
+      if (signal != dut.clock && !lastClockValue.contains(signal)) {
+        lastClockValue.put(signal, getClock(signal))
+      }
       // TODO this also needs to be called on thread death
 
       blockedThreads.put(signal, blockedThreads.getOrElseUpdate(signal, Seq()) :+ thisThread)
@@ -122,14 +78,11 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     }
   }
 
-  protected var scalatestThread: Option[Thread] = None
-  protected var mainTesterThread: Option[TesterThread] = None
   protected val scalatestWaiting = new Semaphore(0)
-  protected val interruptedException = new SynchronousQueue[Throwable]()
+  protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
 
   protected def onException(e: Throwable) {
-    scalatestThread.get.interrupt()
-    interruptedException.offer(e, 10, TimeUnit.SECONDS)
+    interruptedException.offer(e)
   }
 
   override def run(testFn: T => Unit): Unit = {
@@ -137,27 +90,50 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     tester.step(1)
     tester.poke("reset", 0)
 
-    val mainThread = fork(
-      testFn(dut)
-    )
-
+    val mainThread = fork(testFn(dut))
+    // TODO: stop abstraction-breaking activeThreads
     require(activeThreads.length == 1)  // only thread should be main
-    activeThreads.trimStart(1)
-    currentThread = Some(mainThread)
-    scalatestThread = Some(Thread.currentThread())
-    mainTesterThread = Some(mainThread)
+    activeThreads.trimStart(1)  // delete active threads - TODO fix this
+    blockedThreads.put(dut.clock, Seq(mainThread))  // TODO dehackify, this allows everything below to kick off
 
-    mainThread.waiting.release()
-    try {
-      scalatestWaiting.acquire()
-    } catch {
-      case _: InterruptedException =>
-        throw interruptedException.poll(10, TimeUnit.SECONDS)
+    // TODO: allow dependent clocks?
+    while (!mainThread.done) {  // iterate timesteps
+
+      threadingChecker.newTimestep(dut.clock)
+
+      val unblockedThreads = new mutable.ArrayBuffer[TesterThread]()
+
+      // Unblock threads waiting on main clock
+      unblockedThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+      blockedThreads.remove(dut.clock)
+      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+
+      // TODO: allow dependent clocks to step based on test stimulus generator
+      // Unblock threads waiting on dependent clock
+      require((blockedThreads.keySet - dut.clock) subsetOf lastClockValue.keySet)
+      val untrackClocks = lastClockValue.keySet -- blockedThreads.keySet
+      for (untrackClock <- untrackClocks) {  // purge unused clocks
+        lastClockValue.remove(untrackClock)
+      }
+      lastClockValue foreach { case (clock, lastValue) =>
+        val currentValue = getClock(clock)
+        if (currentValue != lastValue) {
+          lastClockValue.put(clock, currentValue)
+
+          unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
+          blockedThreads.remove(clock)
+          threadingChecker.newTimestep(clock)
+
+          clockCounter.put(clock, getClockCycle(clock) + 1)
+        }
+      }
+
+      runThreads(unblockedThreads)
+
+      threadingChecker.finishTimestep()
+      Context().env.checkpoint()
+      tester.step(1)
     }
-
-    mainTesterThread = None
-    scalatestThread = None
-    currentThread = None
 
     for (thread <- allThreads.clone()) {
       // Kill the threads using an InterruptedException

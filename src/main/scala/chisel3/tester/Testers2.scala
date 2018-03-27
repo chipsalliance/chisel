@@ -29,11 +29,8 @@ object Context {
     dutGen: => T,
     options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite
   ): BackendInstance[T] = {
-
-    options.chiselOptions.scalaSimulator match {
-      case FirrtlInterpreterSimulator => Firrterpreter.start(dutGen, Some(options))
-      case TreadleSimulator           => TreadleExecutive.start(dutGen)
-    }
+    // TODO: pass options to interpreter
+    TreadleExecutive.start(dutGen)
   }
 
   def apply(): Instance = context.value.get

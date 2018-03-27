@@ -174,16 +174,16 @@ trait ThreadedBackend {
       def run() {
         try {
           waiting.acquire()
-          val result = try {
+          try {
             runnable
           } catch {
             case e: InterruptedException => throw e  // propagate to upper level handler
-            case e: Exception => onException(e)
-              waiting.acquire()
-            case e: Error => onException(e)
-              waiting.acquire()
+            case e @ (_: Exception | _: Error) =>
+              onException(e)
           }
+          done = true
           threadFinished(TesterThread.this)
+          scheduler()
         } catch {
           case e: InterruptedException =>  // currently used as a signal to stop the thread
             // TODO: allow other uses for InterruptedException?
@@ -193,31 +193,72 @@ trait ThreadedBackend {
   }
 
   protected var currentThread: Option[TesterThread] = None
+  protected val driverSemaphore = new Semaphore(0)  // blocks runThreads() while it's running
 
+  // TODO: replace with concurrent data structures?
   protected val activeThreads = mutable.ArrayBuffer[TesterThread]()  // list of threads scheduled for sequential execution
   protected val blockedThreads = mutable.HashMap[Clock, Seq[TesterThread]]()  // threads blocking on a clock edge
   protected val joinedThreads = mutable.HashMap[TesterThread, Seq[TesterThread]]()  // threads blocking on another thread
   protected val allThreads = mutable.ArrayBuffer[TesterThread]()  // list of all threads
 
-  /** Invokes the thread scheduler, which unblocks the next thread to be run
-    * (and may also step simulator time).
-    */
-  protected def scheduler()
+  /**
+   * Runs the specified threads, blocking this thread while those are running.
+   * Newly formed threads or unblocked join threads will also run.
+   *
+   * Prior to this call: caller should remove those threads from the blockedThread list.
+   * TODO: does this interface suck?
+   *
+   * Updates internal thread queue data structures. Exceptions will also be queued through onException() calls.
+   * TODO: can (should?) this provide a more functional interface? eg returning what threads are blocking on?
+   */
+  protected def runThreads(threads: Seq[TesterThread]) {
+    activeThreads ++= threads
+    scheduler()
+    driverSemaphore.acquire()
+  }
 
-  /** Called when an exception happens inside a thread.
-    * Can be used to propagate the exception back up to the main thread.
-    * No guarantees are made about the state of the system on an exception.
-    */
+  /**
+   * Invokes the thread scheduler, which should be done anytime a thread needs to pass time.
+   * Prior to this call: caller should add itself to the blocked / joined threads list
+   * (unless terminating).
+   * After this call: caller should block on its semaphore (unless terminating). currentThread
+   * will no longer be valid.
+   *
+   * Unblocks the next thread to be run, possibly also also stepping time via advanceTime().
+   * When there are no more active threads, unblocks the driver thread via driverSemaphore.
+   */
+  protected def scheduler() {
+    if (!activeThreads.isEmpty) {
+      val nextThread = activeThreads.head
+      currentThread = Some(nextThread)
+      activeThreads.trimStart(1)
+      nextThread.waiting.release()
+    } else {
+      currentThread = None
+      driverSemaphore.release()
+    }
+  }
+
+  /**
+   * Called when an exception happens inside a thread.
+   * Can be used to propagate the exception back up to the main thread.
+   * No guarantees are made about the state of the system on an exception.
+   *
+   * The thread then terminates, and the thread scheduler is invoked to unblock the next thread.
+   * The implementation should only record the exception, which is properly handled later.
+   */
   protected def onException(e: Throwable)
 
+  /**
+   * Called on thread completion to remove this thread from the running list.
+   * Does not terminate the thread, does not schedule the next thread.
+   */
   protected def threadFinished(thread: TesterThread) {
-    thread.done = true
     allThreads -= thread
     joinedThreads.remove(thread) match {
       case Some(testerThreads) => activeThreads ++= testerThreads
       case None =>
     }
-    scheduler()
   }
 
   def fork(runnable: => Unit): TesterThread = {
