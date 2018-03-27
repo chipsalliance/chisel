@@ -96,11 +96,7 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     activeThreads.trimStart(1)  // delete active threads - TODO fix this
     blockedThreads.put(dut.clock, Seq(mainThread))  // TODO dehackify, this allows everything below to kick off
 
-    // TODO: allow dependent clocks?
     while (!mainThread.done) {  // iterate timesteps
-
-      threadingChecker.newTimestep(dut.clock)
-
       val unblockedThreads = new mutable.ArrayBuffer[TesterThread]()
 
       // Unblock threads waiting on main clock
@@ -119,12 +115,13 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
         val currentValue = getClock(clock)
         if (currentValue != lastValue) {
           lastClockValue.put(clock, currentValue)
+          if (currentValue) {  // rising edge
+            unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
+            blockedThreads.remove(clock)
+            threadingChecker.newTimestep(clock)
 
-          unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
-          blockedThreads.remove(clock)
-          threadingChecker.newTimestep(clock)
-
-          clockCounter.put(clock, getClockCycle(clock) + 1)
+            clockCounter.put(clock, getClockCycle(clock) + 1)
+          }
         }
       }
 
