@@ -48,6 +48,8 @@ trait BackendInterface {
   def fork(runnable: => Unit): AbstractTesterThread
 
   def join(thread: AbstractTesterThread): Unit
+
+  def timescope(contents: => Unit): Unit
 }
 
 /** Backend associated with a particular circuit, and can run tests

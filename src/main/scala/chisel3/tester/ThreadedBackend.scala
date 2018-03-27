@@ -37,12 +37,19 @@ trait ThreadedBackend {
       *   Report batched test failures
       */
 
-    // Batch up pokes and peeks within a thread so they can be associated with a clock
-    protected val threadPoke = mutable.HashMap[Data, (Int, Throwable)]()  // data poked to priority
-    protected val threadPeek = mutable.HashMap[Data, Throwable]()
+    case class PokeRecord(thread: TesterThread, priority: Int, trace: Throwable)
+    case class PeekRecord(thread: TesterThread, trace: Throwable)
+
+//    protected val timestepPokes = mutable.HashMap[Data, mutable.ArrayBuffer[PokeRecord]]()
+//    protected val timestepPeeks = mutable.HashMap[Data, mutable.ArrayBuffer[PokeRecord]]()
 
     // Within a timestep, need to enforce ordering-independence of peeks and pokes
     protected val timestepPokePriority = mutable.HashMap[Data, Int]()  // data poked to priority
+
+
+    // Batch up pokes and peeks within a thread so they can be associated with a clock
+    protected val threadPoke = mutable.HashMap[Data, (Int, Throwable)]()  // data poked to priority
+    protected val threadPeek = mutable.HashMap[Data, Throwable]()
 
     protected val timestepPokes = mutable.HashMap[Data, Seq[(Int, Clock, TesterThread, Throwable)]]()  // data poked to thread, priority, expiry clock
     protected val timestepPeeks = mutable.HashMap[Data, Seq[(Clock, TesterThread, Throwable)]]()  // data peeked to thread, expiry clock
@@ -271,11 +278,15 @@ trait ThreadedBackend {
 
   def join(thread: AbstractTesterThread) = {
     val thisThread = currentThread.get
-    val threadTyped = thread.asInstanceOf[TesterThread]  // TODO get rid of this, perhap by making it typesafe
+    val threadTyped = thread.asInstanceOf[TesterThread]  // TODO get rid of this, perhaps by making it typesafe
     if (!threadTyped.done) {
       joinedThreads.put(threadTyped, joinedThreads.getOrElseUpdate(threadTyped, Seq()) :+ thisThread)
       scheduler()
       thisThread.waiting.acquire()
     }
+  }
+
+  def timescope(contents: => Unit): Unit = {
+
   }
 }
