@@ -27,41 +27,57 @@ object RenameMap {
 // TODO This should probably be refactored into immutable and mutable versions
 final class RenameMap private () {
   private val underlying = mutable.HashMap[Named, Seq[Named]]()
+
+  /** Get renames of a [[CircuitName]]
+    * @note A [[CircuitName]] can only be renamed to a single [[CircuitName]]
+    */
+  def get(key: CircuitName): Option[CircuitName] = underlying.get(key).map {
+    case Seq(c: CircuitName) => c
+    case other => error(s"Unsupported Circuit rename to $other!")
+  }
+  /** Get renames of a [[ModuleName]]
+    * @note A [[ModuleName]] can only be renamed to one-or-more [[ModuleName]]s
+    */
+  def get(key: ModuleName): Option[Seq[ModuleName]] = {
+    def nestedRename(m: ModuleName): Option[Seq[ModuleName]] =
+      this.get(m.circuit).map(cname => Seq(ModuleName(m.name, cname)))
+    underlying.get(key) match {
+      case Some(names) => Some(names.flatMap {
+        case m: ModuleName =>
+          nestedRename(m).getOrElse(Seq(m))
+        case other => error(s"Unsupported Module rename of $key to $other")
+      })
+      case None => nestedRename(key)
+    }
+  }
+  /** Get renames of a [[ComponentName]]
+    * @note A [[ComponentName]] can only be renamed to one-or-more [[ComponentName]]s
+    */
+  def get(key: ComponentName): Option[Seq[ComponentName]] = {
+    def nestedRename(c: ComponentName): Option[Seq[ComponentName]] =
+      this.get(c.module).map { modules =>
+        modules.map(mname => ComponentName(c.name, mname))
+      }
+    underlying.get(key) match {
+      case Some(names) => Some(names.flatMap {
+        case c: ComponentName =>
+          nestedRename(c).getOrElse(Seq(c))
+        case other => error(s"Unsupported Component rename of $key to $other")
+      })
+      case None => nestedRename(key)
+    }
+  }
   /** Get new names for an old name
     *
     * This is analogous to get on standard Scala collection Maps
     * None indicates the key was not renamed
     * Empty indicates the name was deleted
     */
-  // TODO Is there a better way to express this?
-  def get(key: Named): Option[Seq[Named]] = {
-    underlying.get(key) match {
-      // If the key was renamed, check if anything it renamed to is a component
-      // If so, check if nested modules were renamed
-      case Some(names) => Some(names.flatMap {
-        case comp @ ComponentName(cname, mod) =>
-          underlying.get(mod) match {
-            case Some(mods) => mods.map {
-              case modx: ModuleName =>
-                ComponentName(cname, modx)
-              case _ => error("Unexpected rename of Module to non-Module!")
-            }
-            case None => List(comp)
-          }
-        case other => List(other)
-      })
-      // If key wans't renamed, still check if it's a component
-      // If so, check if nexted modules were renamed
-      case None => key match {
-        case ComponentName(cname, mod) =>
-          underlying.get(mod).map(_.map {
-            case modx: ModuleName =>
-              ComponentName(cname, modx)
-            case _ => error("Unexpected rename of Module to non-Module!")
-          })
-        case other => None
-      }
-    }
+  def get(key: Named): Option[Seq[Named]] = key match {
+    case c: ComponentName => this.get(c)
+    case m: ModuleName => this.get(m)
+    // The CircuitName version returns Option[CircuitName]
+    case c: CircuitName => this.get(c).map(Seq(_))
   }
 
   // Mutable helpers
