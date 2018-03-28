@@ -971,4 +971,44 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |    z <= mux(c, a, b)""".stripMargin
     execute(input, check, Seq.empty)
   }
+
+  "Registers connected only to themselves" should "be replaced with zero" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output a : UInt<8>
+          |    reg ra : UInt<8>, clock
+          |    ra <= ra
+          |    a <= ra
+          |""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output a : UInt<8>
+          |    a <= UInt<8>(0)
+          |""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  "Registers connected only to themselves from constant propagation" should "be replaced with zero" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output a : UInt<8>
+          |    reg ra : UInt<8>, clock
+          |    ra <= or(ra, UInt(0))
+          |    a <= ra
+          |""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output a : UInt<8>
+          |    a <= UInt<8>(0)
+          |""".stripMargin
+    execute(input, check, Seq.empty)
+  }
 }
