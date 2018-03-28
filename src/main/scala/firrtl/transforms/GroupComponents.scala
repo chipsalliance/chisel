@@ -5,7 +5,7 @@ import firrtl.Mappers._
 import firrtl.ir._
 import firrtl.annotations.{Annotation, ComponentName}
 import firrtl.passes.{InferTypes, LowerTypes, MemPortUtils}
-import firrtl.Utils.{kind, throwInternalError}
+import firrtl.Utils.kind
 import firrtl.graph.{DiGraph, MutableDiGraph}
 
 import scala.collection.mutable

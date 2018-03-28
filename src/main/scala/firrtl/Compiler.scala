@@ -330,8 +330,8 @@ object CompilerUtils extends LazyLogging {
           Seq(new IRToWorkingIR, new ResolveAndCheck, new transforms.DedupModules,
               new HighFirrtlToMiddleFirrtl) ++ getLoweringTransforms(MidForm, outputForm)
         case MidForm => Seq(new MiddleFirrtlToLowFirrtl) ++ getLoweringTransforms(LowForm, outputForm)
-        case LowForm => throwInternalError(Some("getLoweringTransforms - LowForm")) // should be caught by if above
-        case UnknownForm => throwInternalError(Some("getLoweringTransforms - UnknownForm")) // should be caught by if above
+        case LowForm => throwInternalError("getLoweringTransforms - LowForm") // should be caught by if above
+        case UnknownForm => throwInternalError("getLoweringTransforms - UnknownForm") // should be caught by if above
       }
     }
   }

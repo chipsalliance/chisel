@@ -29,7 +29,7 @@ object FlattenRegUpdate {
           netlist(lhs) = rhs
         case DefNode(_, nname, rhs) =>
           netlist(WRef(nname)) = rhs
-        case _: IsInvalid => throwInternalError(Some("Unexpected IsInvalid, should have been removed by now"))
+        case _: IsInvalid => throwInternalError("Unexpected IsInvalid, should have been removed by now")
         case _ => // Do nothing
       }
       stmt

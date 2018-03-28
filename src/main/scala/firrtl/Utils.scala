@@ -169,14 +169,11 @@ object Utils extends LazyLogging {
     * @param message - possible string to emit,
     * @param exception - possible exception triggering the error.
    */
-  def throwInternalError(message: Option[String] = None, exception: Option[Exception] = None) = {
+  def throwInternalError(message: String = "", exception: Option[Exception] = None) = {
     // We'll get the first exception in the chain, keeping it intact.
     val first = true
     val throwable = getThrowable(exception, true)
-    val string: String = message match {
-      case Some(s: String) => s + "\n"
-      case _ => ""
-    }
+    val string = if (message.nonEmpty) message + "\n" else message
     error("Internal Error! %sPlease file an issue at https://github.com/ucb-bar/firrtl/issues".format(string), throwable)
   }
 
@@ -263,7 +260,7 @@ object Utils extends LazyLogging {
     }
   }
    def get_flip(t: Type, i: Int, f: Orientation): Orientation = {
-     if (i >= get_size(t)) throwInternalError(Some(s"get_flip: shouldn't be here - $i >= get_size($t)"))
+     if (i >= get_size(t)) throwInternalError(s"get_flip: shouldn't be here - $i >= get_size($t)")
      t match {
        case (_: GroundType) => f
        case (tx: BundleType) =>
@@ -436,7 +433,7 @@ object Utils extends LazyLogging {
             ilen + get_size(t1x.tpe), jlen + get_size(t2x.tpe))
         }._1
       case (ClockType, ClockType) => if (flip1 == flip2) Seq((0, 0)) else Nil
-      case _ => throwInternalError(Some(s"get_valid_points: shouldn't be here - ($t1, $t2)"))
+      case _ => throwInternalError(s"get_valid_points: shouldn't be here - ($t1, $t2)")
     }
   }
 
@@ -482,9 +479,9 @@ object Utils extends LazyLogging {
   def get_field(v: Type, s: String): Field = v match {
     case vx: BundleType => vx.fields find (_.name == s) match {
       case Some(ft) => ft
-      case None => throwInternalError(Some(s"get_field: shouldn't be here - $v.$s"))
+      case None => throwInternalError(s"get_field: shouldn't be here - $v.$s")
     }
-    case vx => throwInternalError(Some(s"get_field: shouldn't be here - $v"))
+    case vx => throwInternalError(s"get_field: shouldn't be here - $v")
   }
 
   def times(flip: Orientation, d: Direction): Direction = times(flip, d)
@@ -527,7 +524,7 @@ object Utils extends LazyLogging {
     case ex: Mux => MALE
     case ex: ValidIf => MALE
     case WInvalid => MALE
-    case ex => throwInternalError(Some(s"gender: shouldn't be here - $e"))
+    case ex => throwInternalError(s"gender: shouldn't be here - $e")
   }
   def get_gender(s: Statement): Gender = s match {
     case sx: DefWire => BIGENDER

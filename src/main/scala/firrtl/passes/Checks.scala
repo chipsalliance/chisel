@@ -305,7 +305,7 @@ object CheckTypes extends Pass {
             case UnknownType =>
               errors.append(new IllegalUnknownType(info, mname, e.serialize))
               (isUInt, isSInt, isClock, isFix)
-            case other => throwInternalError(Some(s"Illegal Type: ${other.serialize}"))
+            case other => throwInternalError(s"Illegal Type: ${other.serialize}")
           }
         } match {
           //   (UInt,  SInt,  Clock, Fixed)

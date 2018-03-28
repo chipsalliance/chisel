@@ -19,7 +19,7 @@ object ConvertFixedToSInt extends Pass {
       } else if (point - p < 0) {
         DoPrim(Shr, Seq(e), Seq(p - point), UnknownType)
       } else e
-    case FixedType(w, p) => throwInternalError(Some(s"alignArg: shouldn't be here - $e"))
+    case FixedType(w, p) => throwInternalError(s"alignArg: shouldn't be here - $e")
     case _ => e
   }
   def calcPoint(es: Seq[Expression]): BigInt =
@@ -29,7 +29,7 @@ object ConvertFixedToSInt extends Pass {
     }).reduce(max(_, _))
   def toSIntType(t: Type): Type = t match {
     case FixedType(IntWidth(w), IntWidth(p)) => SIntType(IntWidth(w))
-    case FixedType(w, p) => throwInternalError(Some(s"toSIntType: shouldn't be here - $t"))
+    case FixedType(w, p) => throwInternalError(s"toSIntType: shouldn't be here - $t")
     case _ => t map toSIntType
   }
   def run(c: Circuit): Circuit = {

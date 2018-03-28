@@ -269,7 +269,7 @@ object Driver {
           optionsManager.showUsageAsError()
           failure
         case result =>
-          throwInternalError(Some(s"Error: Unknown Firrtl Execution result $result"))
+          throwInternalError(s"Error: Unknown Firrtl Execution result $result")
       }
     }
     else {

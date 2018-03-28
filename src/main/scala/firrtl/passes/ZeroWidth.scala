@@ -7,7 +7,6 @@ import firrtl.PrimOps._
 import firrtl.ir._
 import firrtl._
 import firrtl.Mappers._
-import firrtl.Utils.throwInternalError
 
 
 object ZeroWidth extends Transform {

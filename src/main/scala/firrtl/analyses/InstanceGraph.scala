@@ -108,8 +108,8 @@ object InstanceGraph {
     case i: WDefInstance =>
       insts += i
       i
-    case i: DefInstance => throwInternalError(Some("Expecting WDefInstance, found a DefInstance!"))
-    case i: WDefInstanceConnector => throwInternalError(Some("Expecting WDefInstance, found a WDefInstanceConnector!"))
+    case i: DefInstance => throwInternalError("Expecting WDefInstance, found a DefInstance!")
+    case i: WDefInstanceConnector => throwInternalError("Expecting WDefInstance, found a WDefInstanceConnector!")
     case _ => s map collectInstances(insts)
   }
 }
