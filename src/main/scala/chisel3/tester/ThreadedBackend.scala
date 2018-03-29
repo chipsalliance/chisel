@@ -70,15 +70,16 @@ trait ThreadedBackend {
      * Logs a poke operation for later checking.
      * Returns whether to execute it, based on priorities compared to other active pokes.
      */
-    def doPoke(timescope: Timescope, signal: Data, value: BigInt, priority: Int, trace: Throwable): Boolean = {
+    def doPoke(thread: TesterThread, signal: Data, value: BigInt, priority: Int, trace: Throwable): Boolean = {
+      val timescope = threadTimescopes(thread).last
       val pokeRecord = SignalPokeRecord(timescope, priority, value, trace)
-      timestepPokes.getOrElse(signal, mutable.ListBuffer[PokeRecord]()).append(
+      timestepPokes.getOrElseUpdate(signal, mutable.ListBuffer[PokeRecord]()).append(
           pokeRecord)
       timescope.pokes.put(signal, pokeRecord)
-      signalPokes.get(signal) match {
-        case Some(pokes) => priority <= (pokes.keys foldLeft Int.MaxValue)(Math.min)
-        case None => true
-      }
+      signalPokes.getOrElseUpdate(signal, mutable.HashMap[Int, mutable.ListBuffer[Timescope]]())
+          .getOrElseUpdate(priority, mutable.ListBuffer[Timescope]())
+          .append(timescope)
+      priority <= (signalPokes(signal).keys foldLeft Int.MaxValue)(Math.min)
     }
 
     /**
@@ -94,7 +95,7 @@ trait ThreadedBackend {
      */
     def newTimescope(parent: TesterThread): Timescope = {
       val newTimescope = new Timescope(parent)
-      threadTimescopes.getOrElse(parent, mutable.ListBuffer[Timescope]()).append(
+      threadTimescopes.getOrElseUpdate(parent, mutable.ListBuffer[Timescope]()).append(
           newTimescope)
       newTimescope
     }
@@ -104,7 +105,7 @@ trait ThreadedBackend {
      * parent thread), returns a map of wires to values of any signals that need to be updated.
      */
     def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
-      val timescopeList = threadTimescopes.get(timescope.parent)
+      val timescopeList = threadTimescopes(timescope.parent)
       require(timescopeList.last == timescope)
       timescopeList.dropRight(1)
 
@@ -132,7 +133,7 @@ trait ThreadedBackend {
 
       // Register those pokes as happening on this timestep
       revertMap foreach { case (data, pokeRecord) =>
-        timestepPokes.getOrElse(data, mutable.ListBuffer[PokeRecord]()).append(
+        timestepPokes.getOrElseUpdate(data, mutable.ListBuffer[PokeRecord]()).append(
             pokeRecord)
       }
 
@@ -143,10 +144,17 @@ trait ThreadedBackend {
     }
 
     /**
+     * Called upon advancing the specified clock, allowing peeks to clear
+     */
+    def advanceClock(clock: Clock): Unit = {
+
+    }
+
+    /**
      * Starts a new timestep, checking if there were any conflicts on the previous timestep (and
      * throwing exceptions if there were).
      */
-    def newTimestep(): Unit = {
+    def timestep(): Unit = {
       // commit the last poke and peek on this timestep from each thread
 
       // check overlapped pokes from different threads with same priority
@@ -281,7 +289,9 @@ trait ThreadedBackend {
         try {
           waiting.acquire()
           try {
-            runnable
+            timescope {
+              runnable
+            }
           } catch {
             case e: InterruptedException => throw e  // propagate to upper level handler
             case e @ (_: Exception | _: Error) =>
@@ -383,9 +393,5 @@ trait ThreadedBackend {
       scheduler()
       thisThread.waiting.acquire()
     }
-  }
-
-  def timescope(contents: => Unit): Unit = {
-
   }
 }

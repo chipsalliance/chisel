@@ -31,7 +31,7 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   }
 
   override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
-    if (threadingChecker.doPoke(signal, priority, new Throwable)) {
+    if (threadingChecker.doPoke(currentThread.get, signal, value, priority, new Throwable)) {
       tester.poke(portNames(signal), value)
     }
   }
@@ -39,7 +39,7 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   override def peekBits(signal: Bits, stale: Boolean): BigInt = {
     require(!stale, "Stale peek not yet implemented")
 
-    threadingChecker.doPeek(signal, new Throwable)
+    threadingChecker.doPeek(currentThread.get, signal, new Throwable)
     tester.peek(portNames(signal))
   }
 
@@ -61,24 +61,27 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
   protected val threadingChecker = new ThreadingChecker()
 
+  override def timescope(contents: => Unit): Unit = {
+    val newTimescope = threadingChecker.newTimescope(currentThread.get)
+    contents
+    threadingChecker.closeTimescope(newTimescope)
+  }
+
   override def step(signal: Clock, cycles: Int): Unit = {
-    // TODO: clock-dependence
     // TODO: maybe a fast condition for when threading is not in use?
     for (_ <- 0 until cycles) {
-      val thisThread = currentThread.get
-      threadingChecker.finishThread(thisThread, signal)
+      // If a new clock, record the current value so change detection is instantaneous
       if (signal != dut.clock && !lastClockValue.contains(signal)) {
         lastClockValue.put(signal, getClock(signal))
       }
-      // TODO this also needs to be called on thread death
 
+      val thisThread = currentThread.get
       blockedThreads.put(signal, blockedThreads.getOrElseUpdate(signal, Seq()) :+ thisThread)
       scheduler()
       thisThread.waiting.acquire()
     }
   }
 
-  protected val scalatestWaiting = new Semaphore(0)
   protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
 
   protected def onException(e: Throwable) {
@@ -86,11 +89,13 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   }
 
   override def run(testFn: T => Unit): Unit = {
-    tester.poke("reset", 1)
-    tester.step(1)
-    tester.poke("reset", 0)
+    val mainThread = fork {
+      tester.poke("reset", 1)
+      tester.step(1)
+      tester.poke("reset", 0)
 
-    val mainThread = fork(testFn(dut))
+      testFn(dut)
+    }
     // TODO: stop abstraction-breaking activeThreads
     require(activeThreads.length == 1)  // only thread should be main
     activeThreads.trimStart(1)  // delete active threads - TODO fix this
@@ -118,16 +123,22 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
           if (currentValue) {  // rising edge
             unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
             blockedThreads.remove(clock)
-            threadingChecker.newTimestep(clock)
+            threadingChecker.advanceClock(clock)
 
             clockCounter.put(clock, getClockCycle(clock) + 1)
           }
         }
       }
 
+      // Actually run things
       runThreads(unblockedThreads)
 
-      threadingChecker.finishTimestep()
+      // Propagate exceptions
+      if (!interruptedException.isEmpty()) {
+        throw interruptedException.poll()
+      }
+
+      threadingChecker.timestep()
       Context().env.checkpoint()
       tester.step(1)
     }
