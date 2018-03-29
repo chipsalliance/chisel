@@ -18,7 +18,7 @@ class ThreadJoinTest extends FlatSpec with ChiselScalatestTester {
 
   it should "join a single thread" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
-      c.io.in.poke(15.U)
+      c.io.in.weakPoke(15.U)
       fork {
         c.clock.step(1)
         c.io.in.poke(16.U)
@@ -30,7 +30,7 @@ class ThreadJoinTest extends FlatSpec with ChiselScalatestTester {
 
   it should "join multiple threads of uneven length, order 1" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
-      c.io.in.poke(15.U)
+      c.io.in.weakPoke(15.U)
       fork {
         c.clock.step(3)
         c.io.in.poke(16.U)
@@ -44,7 +44,7 @@ class ThreadJoinTest extends FlatSpec with ChiselScalatestTester {
 
   it should "join multiple threads of uneven length, order 2" in {
     test(new PassthroughModule(UInt(8.W))) { c =>
-      c.io.in.poke(15.U)
+      c.io.in.weakPoke(15.U)
       fork {  // do-nothing thread finishes first
         c.clock.step(1)
       } .fork {

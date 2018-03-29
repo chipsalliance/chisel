@@ -44,10 +44,13 @@ trait ThreadedBackend {
 
     abstract class PokeRecord {
       def priority: Int
+      def thread: TesterThread
     }
     case class SignalPokeRecord(timescope: Timescope, priority: Int, value: BigInt,
-        trace: Throwable) extends PokeRecord
-    case class XPokeRecord() extends PokeRecord {
+        trace: Throwable) extends PokeRecord {
+      override def thread = timescope.parent
+    }
+    case class XPokeRecord(thread: TesterThread) extends PokeRecord {
       def priority: Int = Int.MaxValue
     }
     case class PeekRecord(thread: TesterThread, trace: Throwable)
@@ -61,7 +64,7 @@ trait ThreadedBackend {
     protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()
 
     // Active peeks on a signal, lasts until the specified clock advances
-    protected val signalPeeks = mutable.HashMap[Clock, mutable.ListBuffer[(Data, PeekRecord)]]()
+    protected val signalPeeks = mutable.HashMap[Clock, mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]]()
 
     // All poke revert operations
 
@@ -83,8 +86,9 @@ trait ThreadedBackend {
      * Logs a peek operation for later checking.
      */
     def doPeek(thread: TesterThread, signal: Data, clock: Clock, trace: Throwable): Unit = {
-      signalPeeks.getOrElseUpdate(clock, mutable.ListBuffer()).append(
-          (signal, PeekRecord(thread, trace)))
+      signalPeeks.getOrElseUpdate(clock, mutable.HashMap())
+          .getOrElseUpdate(signal, mutable.ListBuffer())
+          .append(PeekRecord(thread, trace))
     }
 
     /**
@@ -125,7 +129,7 @@ trait ThreadedBackend {
       val revertMap = timescope.pokes.toMap map { case (data, pokeRecord) =>
         (data, signalPokes.get(data) match {
           case Some(pokesMap) => pokesMap(pokesMap.keys.min).last.pokes(data)
-          case None => XPokeRecord()
+          case None => XPokeRecord(timescope.parent)
         })
       }
 
@@ -145,7 +149,7 @@ trait ThreadedBackend {
      * Called upon advancing the specified clock, allowing peeks to clear
      */
     def advanceClock(clock: Clock): Unit = {
-
+      signalPeeks.remove(clock)
     }
 
     /**
@@ -153,128 +157,46 @@ trait ThreadedBackend {
      * throwing exceptions if there were).
      */
     def timestep(): Unit = {
-      // commit the last poke and peek on this timestep from each thread
-
       // check overlapped pokes from different threads with same priority
+      signalPokes foreach { case (signal, priorityToTimescopes) =>
+        priorityToTimescopes foreach { case (priority, timescopes) =>
+          val threads = timescopes.map(_.parent).distinct
+          if (threads.length > 1) {
+            throw new ThreadOrderDependentException(s"conflicting pokes on signal $signal at priority $priority from threads $threads")
+          }
+        }
+      }
 
       // check poke | peek dependencies
+      // Order keys by signal instead of clock
+      val signalPeeksBySignal = signalPeeks.toSeq.map({ case (clock, signalToPeeks) =>
+        signalToPeeks.toSeq  // to Seq[(Data, ListBuffer[PeekRecord])]
+      }).flatten.groupBy({ case (signal, peeks) =>
+        signal  // group top-level Map by signal
+      }).map({ case (signal, signalToPeeks) =>
+        (signal, signalToPeeks.map(_._2).flatten)  // flatten Seq[(..., ListBuffer[PeekRecord])] to Seq[PeekRecord]
+      })
 
+      signalPeeksBySignal foreach { case (signal, peeks) =>
+        val peekThreads = peeks.map(_.thread).toSet
+        val pokeThreads = signalPokes.get(signal) match {
+          case Some(priorityToTimescopes) =>
+            priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent).toSet
+          case None => Set[TesterThread]()
+        }
+        val revertThreads = revertPokes.get(signal) match {
+          case Some(pokes) => pokes.map(_.thread).toSet
+          case None => Set[TesterThread]()
+        }
+        // TODO: better error reporting
+        if (!(pokeThreads subsetOf peekThreads)) {
+          throw new ThreadOrderDependentException(s"poke on $signal conflicts with previous peeks")
+        }
+        if (!(revertThreads subsetOf peekThreads)) {
+          throw new ThreadOrderDependentException(s"revert on $signal conflicts with previous peeks")
+        }
+      }
     }
-
-
-//    // Logs the poke for later checking, returns whether to execute it or not (based on
-//    // priority on the current timestep)
-//    def doPoke(signal: Data, priority: Int, trace: Throwable): Boolean = {
-//      // Only record the poke if it takes effect in the context of the current thread
-//      // (even if it doesn't happen because something else in the timestep stomped over it).
-//      // This allows cross-thread pokes to be validated in the finishTimestep() phase.
-//      val threadPokeOk = threadPoke.get(signal) match {
-//        case Some((prevPriority: Int, _)) if priority <= prevPriority => true
-//        case _ => true
-//      }
-//      if (threadPokeOk) {
-//        threadPoke.put(signal, (priority, trace))
-//        if (priority <= timestepPokePriority.getOrElse(signal, Int.MaxValue)) {
-//          timestepPokePriority.put(signal, priority)
-//          true
-//        } else {
-//          false
-//        }
-//      } else {
-//        false
-//      }
-//    }
-//
-//    // Logs the peek for later checking
-//    def doPeek(signal: Data, trace: Throwable): Unit = {
-//      threadPeek.put(signal, trace)
-//    }
-//
-//    // Marks the current thread as finished, associating a thread and clock with the peeks and pokes
-//    // and moves them to the timestep. No checks performed here.
-//    def finishThread(thread: TesterThread, clock: Clock): Unit = {
-//      threadPoke.foreach { case (signal, (priority, trace)) =>
-//        val thisEntry = (priority, clock, thread, trace)
-//        timestepPokes.put(signal, timestepPokes.getOrElse(signal, Seq()) :+ thisEntry)
-//      }
-//      threadPoke.clear()
-//      threadPeek.foreach { case (signal, trace) =>
-//        val thisEntry = (clock, thread, trace)
-//        timestepPeeks.put(signal, timestepPeeks.getOrElse(signal, Seq()) :+ thisEntry)
-//      }
-//      threadPeek.clear()
-//    }
-//
-//    // Finishes the current timestep and checks that no conditions were violated.
-//    def finishTimestep(): Unit = {
-//      // Check sequences of peeks and pokes
-//      val allSignals = timestepPokes.keySet ++ timestepPeeks.keySet
-//      for (signal <- allSignals) {
-//        val pokes = timestepPokes.getOrElse(signal, Seq())
-//        val peeks = timestepPeeks.getOrElse(signal, Seq())
-//
-//        // Check poke -> poke of same priority
-//        // TODO: this assumes one entry per thread, which is currently true but not enforced by the data structure
-//        val (singlePokes, multiPokes) = pokes.groupBy { case (priority, clock, thread, trace) => priority }
-//          .span { case (priority, data) => data.length == 1 }
-//          //.filter { case (priority, seq) => seq.length > 1 }
-//        // TODO: better error reporting
-//        if (!multiPokes.isEmpty) {
-//          throw new ThreadOrderDependentException(s"conflicting pokes on signal $signal: $multiPokes")
-//        }
-//
-//        // TODO: check same clock for all pokes
-//
-//        // Check any combination of pokes and peeks from different threads
-//        val effectivePoke = singlePokes.map { case (priority, seq) =>
-//          require(seq.length == 1)
-//          seq.head  // simplify by extracting only element of seq
-//        }.reduceOption[(Int, Clock, TesterThread, Throwable)] {
-//          case ((p1, c1, th1, tr1), (p2, c2, th2, tr2)) if p1 < p2 => (p1, c1, th1, tr1)
-//          case ((p1, c1, th1, tr1), (p2, c2, th2, tr2)) if p2 < p1 => (p2, c2, th2, tr2)
-//        }
-//
-//        effectivePoke match {
-//          case Some((_, _, pokeThread, pokeTrace)) =>
-//            val peeksFromNonPokeThread = peeks.map {
-//              case (_, peekThread, peekTrace) if pokeThread != peekThread => Some(peekThread, peekTrace)
-//              case _ => None }.flatten
-//            if (!peeksFromNonPokeThread.isEmpty) {
-//              throw new ThreadOrderDependentException(s"conflicting peeks/pokes on signal $signal: poke from $effectivePoke, peeks from $peeksFromNonPokeThread")
-//            }
-//          case None =>
-//        }
-//
-//        // Check pokes against inter-timestep lockouts
-//        (effectivePoke, lockedData.get(signal)) match {
-//          case (Some((_, _, pokeThread, pokeTrace)), Some(lockedDatas)) if !lockedDatas.isEmpty =>
-//            throw new SignalOverwriteException(s"poke on $signal conflicts with previous accesses: $lockedDatas")
-//          case _ =>
-//        }
-//
-//        // TODO: check combinational shadows of pokes and peeks
-//
-//        // Transfer to locked data for future timesteps
-//        effectivePoke.map { case (_, clock, _, trace) =>
-//          val thisEntry = (clock, trace)
-//          lockedData.put(signal, lockedData.getOrElse(signal, Seq()) :+ thisEntry)
-//        }
-//        peeks.map { case (clock, _, trace) =>
-//          val thisEntry = (clock, trace)
-//          lockedData.put(signal, lockedData.getOrElse(signal, Seq()) :+ thisEntry)
-//        }
-//      }
-//      timestepPokePriority.clear()
-//      timestepPokes.clear()
-//      timestepPeeks.clear()
-//    }
-//
-//    // Starts a new timestep, clearing out locked signals that were due to expire.
-//    def newTimestep(clock: Clock): Unit = {
-//      for (signal <- lockedData.keysIterator) {
-//        lockedData.put(signal, lockedData.get(signal).get.filter{ case (lockedClock, _) => clock != lockedClock })
-//      }
-//    }
   }
 
 
