@@ -107,7 +107,10 @@ trait ThreadedBackend {
     def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
       val timescopeList = threadTimescopes(timescope.parent)
       require(timescopeList.last == timescope)
-      timescopeList.dropRight(1)
+      timescopeList.trimEnd(1)
+      if (timescopeList.isEmpty) {
+        threadTimescopes.remove(timescope.parent)
+      }
 
       // Clear the timescope from signal pokes
       timescope.pokes foreach { case (data, pokeRecord) =>
@@ -122,12 +125,11 @@ trait ThreadedBackend {
       }
 
       // Get the PeekRecords of the value to revert to
-      val revertMap = mutable.HashMap[Data, PokeRecord]()
-      timescope.pokes foreach { case (data, pokeRecord) =>
-        signalPokes.get(data) match {
+      val revertMap = timescope.pokes.toMap map { case (data, pokeRecord) =>
+        (data, signalPokes.get(data) match {
           case Some(pokesMap) => pokesMap(pokesMap.keys.min).last.pokes(data)
           case None => XPokeRecord()
-        }
+        })
       }
 
       // Register those pokes as happening on this timestep
@@ -136,7 +138,7 @@ trait ThreadedBackend {
             pokeRecord)
       }
 
-      revertMap.toMap map { case (data, pokeRecord) => (data, pokeRecord match {
+      revertMap map { case (data, pokeRecord) => (data, pokeRecord match {
         case signal: SignalPokeRecord => Some(signal.value)
         case _: XPokeRecord => None
       } ) }

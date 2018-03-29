@@ -15,12 +15,12 @@ package object TestAdapters {
     x.valid.weakPoke(false.B)
 
     def enqueueNow(data: T): Unit = {
-      x.ready.expect(true.B)
-      timescope {
+      fork { timescope {
+        x.ready.expect(true.B)
         x.bits.poke(data)
         x.valid.poke(true.B)
         clk.step(1)
-      }
+      }}
     }
 
     def enqueueSeq(data: Seq[T]): TesterThreadList = {
@@ -44,12 +44,12 @@ package object TestAdapters {
     x.ready.weakPoke(false.B)
 
     def expectDequeueNow(data: T): Unit = {
-      x.valid.expect(true.B)
-      x.bits.expect(data)
-      timescope {
+      fork { timescope {
+        x.valid.expect(true.B)
+        x.bits.expect(data)
         x.ready.poke(true.B)
         clk.step(1)
-      }
+      } }
     }
 
     def expectPeekNow(data: T): Unit = {

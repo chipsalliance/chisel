@@ -32,6 +32,7 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
 
   override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
     if (threadingChecker.doPoke(currentThread.get, signal, value, priority, new Throwable)) {
+      println(s"${portNames(signal)} <- $value")
       tester.poke(portNames(signal), value)
     }
   }
@@ -40,12 +41,15 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     require(!stale, "Stale peek not yet implemented")
 
     threadingChecker.doPeek(currentThread.get, signal, new Throwable)
-    tester.peek(portNames(signal))
+    val a = tester.peek(portNames(signal))
+    println(s"${portNames(signal)} -> $a")
+    a
   }
 
   override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
+    println(s"${portNames(signal)} ?> $value")
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
@@ -64,7 +68,14 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   override def timescope(contents: => Unit): Unit = {
     val newTimescope = threadingChecker.newTimescope(currentThread.get)
     contents
-    threadingChecker.closeTimescope(newTimescope)
+    threadingChecker.closeTimescope(newTimescope).foreach { case (data, valueOption) =>
+      valueOption match {
+        case Some(value) => tester.poke(portNames(data), value)
+          println(s"${portNames(data)} <- (revert) $value")
+        case None => tester.poke(portNames(data), 0)  // TODO: randomize or 4-state sim
+          println(s"${portNames(data)} <- (revert) DC")
+      }
+    }
   }
 
   override def step(signal: Clock, cycles: Int): Unit = {
@@ -108,6 +119,8 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
       unblockedThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
       blockedThreads.remove(dut.clock)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+
+      println(s"clock step")
 
       // TODO: allow dependent clocks to step based on test stimulus generator
       // Unblock threads waiting on dependent clock
