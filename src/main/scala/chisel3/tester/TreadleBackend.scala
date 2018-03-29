@@ -40,7 +40,8 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   override def peekBits(signal: Bits, stale: Boolean): BigInt = {
     require(!stale, "Stale peek not yet implemented")
 
-    threadingChecker.doPeek(currentThread.get, signal, new Throwable)
+    // TODO: properly determine clock
+    threadingChecker.doPeek(currentThread.get, signal, dut.clock, new Throwable)
     val a = tester.peek(portNames(signal))
     println(s"${portNames(signal)} -> $a")
     a

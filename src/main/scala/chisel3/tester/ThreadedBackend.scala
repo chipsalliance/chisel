@@ -58,13 +58,12 @@ trait ThreadedBackend {
     // The stack of timescopes must all be from the same thread, this invariant must be checked before
     // pokes are committed to this data structure.
     protected val signalPokes = mutable.HashMap[Data, mutable.HashMap[Int, mutable.ListBuffer[Timescope]]]()
+    protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()
 
-    // Between timesteps, maintain a list of accesses that lock out changes in values
-    protected val lockedData = mutable.HashMap[Data, Seq[(Clock, Throwable)]]()
+    // Active peeks on a signal, lasts until the specified clock advances
+    protected val signalPeeks = mutable.HashMap[Clock, mutable.ListBuffer[(Data, PeekRecord)]]()
 
-    // All poke operations happening on this timestep, including end-of-timescope reverts.
-    protected val timestepPokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()
-    protected val timestepPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
+    // All poke revert operations
 
     /**
      * Logs a poke operation for later checking.
@@ -73,11 +72,9 @@ trait ThreadedBackend {
     def doPoke(thread: TesterThread, signal: Data, value: BigInt, priority: Int, trace: Throwable): Boolean = {
       val timescope = threadTimescopes(thread).last
       val pokeRecord = SignalPokeRecord(timescope, priority, value, trace)
-      timestepPokes.getOrElseUpdate(signal, mutable.ListBuffer[PokeRecord]()).append(
-          pokeRecord)
       timescope.pokes.put(signal, pokeRecord)
-      signalPokes.getOrElseUpdate(signal, mutable.HashMap[Int, mutable.ListBuffer[Timescope]]())
-          .getOrElseUpdate(priority, mutable.ListBuffer[Timescope]())
+      signalPokes.getOrElseUpdate(signal, mutable.HashMap())
+          .getOrElseUpdate(priority, mutable.ListBuffer())
           .append(timescope)
       priority <= (signalPokes(signal).keys foldLeft Int.MaxValue)(Math.min)
     }
@@ -85,9 +82,9 @@ trait ThreadedBackend {
     /**
      * Logs a peek operation for later checking.
      */
-    def doPeek(thread: TesterThread, signal: Data, trace: Throwable): Unit = {
-      timestepPeeks.getOrElseUpdate(signal, mutable.ListBuffer[PeekRecord]()).append(
-          PeekRecord(thread, trace))
+    def doPeek(thread: TesterThread, signal: Data, clock: Clock, trace: Throwable): Unit = {
+      signalPeeks.getOrElseUpdate(clock, mutable.ListBuffer()).append(
+          (signal, PeekRecord(thread, trace)))
     }
 
     /**
@@ -95,7 +92,7 @@ trait ThreadedBackend {
      */
     def newTimescope(parent: TesterThread): Timescope = {
       val newTimescope = new Timescope(parent)
-      threadTimescopes.getOrElseUpdate(parent, mutable.ListBuffer[Timescope]()).append(
+      threadTimescopes.getOrElseUpdate(parent, mutable.ListBuffer()).append(
           newTimescope)
       newTimescope
     }
@@ -134,7 +131,7 @@ trait ThreadedBackend {
 
       // Register those pokes as happening on this timestep
       revertMap foreach { case (data, pokeRecord) =>
-        timestepPokes.getOrElseUpdate(data, mutable.ListBuffer[PokeRecord]()).append(
+        revertPokes.getOrElseUpdate(data, mutable.ListBuffer()).append(
             pokeRecord)
       }
 
