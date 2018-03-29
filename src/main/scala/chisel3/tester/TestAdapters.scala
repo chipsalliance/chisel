@@ -11,16 +11,15 @@ import chisel3.internal.firrtl.{LitArg, ULit, SLit}
 package object TestAdapters {
   // TODO: clock should be optional
   class ReadyValidSource[T <: Data](x: ReadyValidIO[T], clk: Clock) {
+    // TODO assumption this never goes out of scope
     x.valid.weakPoke(false.B)
 
-    // TODO: poking Bundles
     def enqueueNow(data: T): Unit = {
       x.ready.expect(true.B)
-      x.bits.poke(data)
-      x.valid.poke(true.B)
-      fork {
+      timescope {
+        x.bits.poke(data)
+        x.valid.poke(true.B)
         clk.step(1)
-        x.valid.weakPoke(false.B)
       }
     }
 
@@ -30,26 +29,26 @@ package object TestAdapters {
           while (x.ready.peek().litToBoolean == false) {
             clk.step(1)
           }
-          x.bits.poke(elt)
-          x.valid.poke(true.B)
-          clk.step(1)
-          x.valid.poke(false.B)
+          timescope {
+            x.bits.poke(elt)
+            x.valid.poke(true.B)
+            clk.step(1)
+          }
         }
       }
     }
   }
 
   class ReadyValidSink[T <: Data](x: ReadyValidIO[T], clk: Clock) {
+    // TODO assumption this never goes out of scope
     x.ready.weakPoke(false.B)
 
-    // TODO: poking Bundles
     def expectDequeueNow(data: T): Unit = {
       x.valid.expect(true.B)
       x.bits.expect(data)
-      x.ready.poke(true.B)
-      fork {
+      timescope {
+        x.ready.poke(true.B)
         clk.step(1)
-        x.ready.weakPoke(false.B)
       }
     }
 

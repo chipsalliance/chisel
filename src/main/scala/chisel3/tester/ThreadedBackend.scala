@@ -111,9 +111,8 @@ trait ThreadedBackend {
 
       // Clear the timescope from signal pokes
       timescope.pokes foreach { case (data, pokeRecord) =>
-        val pokeList = signalPokes(data)(pokeRecord.priority)
-        require(pokeList.last == timescope)  // TODO: does this invariant always hold?
-        pokeList.dropRight(1)
+        // TODO: can this be made a constant time operation?
+        signalPokes(data)(pokeRecord.priority) -= timescope
         if (signalPokes(data)(pokeRecord.priority).isEmpty) {
           signalPokes(data).remove(pokeRecord.priority)
         }
