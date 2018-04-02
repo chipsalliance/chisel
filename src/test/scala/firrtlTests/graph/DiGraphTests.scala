@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtlTests.graph
 
 import java.io._
@@ -49,6 +51,16 @@ class DiGraphTests extends FirrtlFlatSpec {
   acyclicGraph.linearize.head should equal ("a")
 
   a [CyclicException] should be thrownBy cyclicGraph.linearize
+
+  try {
+    cyclicGraph.linearize
+  }
+  catch {
+    case c: CyclicException =>
+      c.getMessage.contains("found at a") should be (true)
+      c.node.asInstanceOf[String] should be ("a")
+    case _: Throwable =>
+  }
 
   acyclicGraph.reverse.getEdgeMap should equal (reversedAcyclicGraph.getEdgeMap)
 

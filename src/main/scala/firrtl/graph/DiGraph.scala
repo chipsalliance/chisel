@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.collection.mutable.{LinkedHashSet, LinkedHashMap}
 
 /** An exception that is raised when an assumed DAG has a cycle */
-class CyclicException extends Exception("No valid linearization for cyclic graph")
+class CyclicException(val node: Any) extends Exception(s"No valid linearization for cyclic graph, found at $node")
 
 /** An exception that is raised when attempting to find an unreachable node */
 class PathNotFoundException extends Exception("Unreachable node")
@@ -79,7 +79,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
 
     def visit(n: T): Unit = {
       if (tempMarked.contains(n)) {
-        throw new CyclicException
+        throw new CyclicException(n)
       }
       if (unmarked.contains(n)) {
         tempMarked += n

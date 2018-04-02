@@ -111,9 +111,10 @@ class RemoveWires extends Transform {
           case Success(logic) =>
             Module(info, name, ports, Block(decls ++ logic ++ otherStmts))
           // If we hit a CyclicException, just abort removing wires
-          case Failure(_: CyclicException) =>
+          case Failure(c: CyclicException) =>
+            val problematicNode = c.node
             logger.warn(s"Cycle found in module $name, " +
-              "wires will not be removed which can prevent optimizations!")
+              s"wires will not be removed which can prevent optimizations! Problem node: $problematicNode")
             mod
           case Failure(other) => throw other
         }
