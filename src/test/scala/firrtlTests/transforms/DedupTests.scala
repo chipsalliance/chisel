@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
 package firrtlTests
-package transform
+package transforms
 
 import firrtl.annotations._
 import firrtl.transforms.{DedupModules}
@@ -171,6 +171,80 @@ class DedupModuleTests extends HighTransformSpec {
      finalState.annotations.collect({ case d: DummyAnnotation => d }).head should be(DummyAnnotation(ComponentName("a2.x", mname)))
 
   }
+  "Extmodules" should "with the same defname and parameters should dedup" in {
+     val input =
+        """circuit Top :
+          |  module Top :
+          |    output out: UInt<1>
+          |    inst a1 of A
+          |    inst a2 of A_
+          |    out <= and(a1.x, a2.y)
+          |  module A : @[yy 2:2]
+          |    output x: UInt<1> @[yy 2:2]
+          |    inst b of B
+          |    x <= b.u
+          |  module A_ : @[xx 1:1]
+          |    output y: UInt<1> @[xx 1:1]
+          |    inst c of C
+          |    y <= c.v
+          |  extmodule B : @[aa 3:3]
+          |    output u : UInt<1> @[aa 4:4]
+          |    defname = BB
+          |    parameter N = 0
+          |  extmodule C : @[bb 5:5]
+          |    output v : UInt<1> @[bb 6:6]
+          |    defname = BB
+          |    parameter N = 0
+        """.stripMargin
+     val check =
+        """circuit Top :
+          |  module Top :
+          |    output out: UInt<1>
+          |    inst a1 of A
+          |    inst a2 of A
+          |    out <= and(a1.x, a2.x)
+          |  module A : @[yy 2:2]
+          |    output x: UInt<1> @[yy 2:2]
+          |    inst b of B
+          |    x <= b.u
+          |  extmodule B : @[aa 3:3]
+          |    output u : UInt<1> @[aa 4:4]
+          |    defname = BB
+          |    parameter N = 0
+        """.stripMargin
+
+     execute(input, check, Seq.empty)
+  }
+  "Extmodules" should "with the different defname or parameters should NOT dedup" in {
+     def mkfir(defnames: (String, String), params: (String, String)) =
+       s"""circuit Top :
+          |  module Top :
+          |    output out: UInt<1>
+          |    inst a1 of A
+          |    inst a2 of A_
+          |    out <= and(a1.x, a2.y)
+          |  module A : @[yy 2:2]
+          |    output x: UInt<1> @[yy 2:2]
+          |    inst b of B
+          |    x <= b.u
+          |  module A_ : @[xx 1:1]
+          |    output y: UInt<1> @[xx 1:1]
+          |    inst c of C
+          |    y <= c.v
+          |  extmodule B : @[aa 3:3]
+          |    output u : UInt<1> @[aa 4:4]
+          |    defname = ${defnames._1}
+          |    parameter N = ${params._1}
+          |  extmodule C : @[bb 5:5]
+          |    output v : UInt<1> @[bb 6:6]
+          |    defname = ${defnames._2}
+          |    parameter N = ${params._2}
+        """.stripMargin
+     val diff_defname = mkfir(("BB", "CC"), ("0", "0"))
+     execute(diff_defname, diff_defname, Seq.empty)
+     val diff_params = mkfir(("BB", "BB"), ("0", "1"))
+     execute(diff_params, diff_params, Seq.empty)
+  }
   "The module A and B" should "be deduped with the first module in order" in {
     val input =
       """circuit Top :
@@ -209,23 +283,3 @@ class DedupModuleTests extends HighTransformSpec {
   }
 }
 
-// Execution driven tests for inlining modules
-// TODO(izraelevitz) fix this test
-//class InlineInstancesIntegrationSpec extends FirrtlPropSpec {
-//  // Shorthand for creating annotations to inline modules
-//  def inlineModules(names: Seq[String]): Seq[CircuitAnnotation] =
-//    Seq(StickyCircuitAnnotation(InlineCAKind, names.map(n => ModuleName(n) -> TagAnnotation).toMap))
-//
-//  case class Test(name: String, dir: String, ann: Seq[CircuitAnnotation])
-//
-//  val runTests = Seq(
-//    Test("GCDTester", "/integration", inlineModules(Seq("DecoupledGCD")))
-//  )
-//
-//  runTests foreach { test =>
-//    property(s"${test.name} should execute correctly with inlining") {
-//      println(s"Got annotations ${test.ann}")
-//      runFirrtlTest(test.name, test.dir, test.ann)
-//    }
-//  }
-//}

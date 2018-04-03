@@ -126,11 +126,7 @@ object DedupModules {
       case h: IsDeclaration => h map rename map retype(h.name) map onExp map reinfo
       case other => other map reinfo map onExp map onStmt
     }
-    val finalModule = module match {
-      case m: Module => m map onPort map onStmt
-      case other => other
-    }
-    finalModule
+    module map onPort map onStmt
   }
 
   /**
