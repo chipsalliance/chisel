@@ -9,6 +9,7 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import chisel3.{assert => chisel3Assert, _}
 import chisel3.tester.TesterUtils.getIOPorts
 import firrtl.transforms.BlackBoxTargetDirAnno
+import firrtl.util.BackendCompilationUtilities._
 
 import scala.sys.process.ProcessBuilder
 
@@ -267,7 +268,8 @@ object VCSTesterBackend {
           updatedOptions.testerOptions.testCmd
         }
         else {
-          Seq(new File(dir, s"V${circuit.name}").toString)
+	  val exe = if (osVersion == OSVersion.Windows) ".exe" else ""
+          Seq(new File(dir, s"V${circuit.name}${exe}").toString)
         }
         val seed = updatedOptions.testerOptions.testerSeed
         val rnd = new scala.util.Random(seed)

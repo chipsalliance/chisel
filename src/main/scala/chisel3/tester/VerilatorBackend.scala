@@ -34,7 +34,7 @@ object VerilatorTesterBackend {
     val cppHarnessFile = new File(dir, cppHarnessFileName)
     val cppHarnessWriter = new FileWriter(cppHarnessFile)
     val vcdFile = new File(dir, s"${circuitName}.vcd")
-    val vcdFilePath = vcdFile.toString
+    val vcdFilePath = getPosixCompatibleAbsolutePath(vcdFile.toString)
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt) {
@@ -284,7 +284,8 @@ int main(int argc, char **argv, char **env) {
           updatedOptions.testerOptions.testCmd
         }
         else {
-          Seq(new File(dir, s"V${circuit.name}").toString)
+	  val exe = if (osVersion == OSVersion.Windows) ".exe" else ""
+          Seq(new File(dir, s"V${circuit.name}${exe}").toString)
         }
         val seed = updatedOptions.testerOptions.testerSeed
         val rnd = new scala.util.Random(seed)

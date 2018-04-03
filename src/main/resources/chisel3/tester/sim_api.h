@@ -2,7 +2,7 @@
 #define __SIM_API_H
 
 #ifdef __WINNT
-#include <windows>
+#include <windows.h>
 #endif
 #include <cassert>
 #include <cstdio>
@@ -21,6 +21,12 @@
 #include <sys/mman.h>
 #endif
 #include <time.h>
+
+extern "C"
+{
+  // From local.
+  int fsync (int fd);
+}
 
 enum SIM_CMD { RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN };
 const int SIM_CMD_MAX_BYTES = 1024;
@@ -112,7 +118,7 @@ public:
             exit(1);
         }
 #ifdef __WINNT
-        hMapFile = CreateFileMapping(_get_osfhandle(fd), NULL, PAGE_READWRITE, 0, 0, NULL);
+        hMapFile = CreateFileMapping((HANDLE)_get_osfhandle(fd), NULL, PAGE_READWRITE, 0, 0, NULL);
         if (hMapFile == INVALID_HANDLE_VALUE) {
             DWORD errorVal = GetLastError();
             LPTSTR lpBuffer;
@@ -123,7 +129,7 @@ public:
                 (LPTSTR)&lpBuffer,
                 80,
                 NULL
-            )
+					   );
             std::string errorMessage = m_prefix + "file: " + full_file_path + " CreateFileMapping: " + "%s (%d)";
             fprintf(stderr, errorMessage.c_str(), lpBuffer, errorVal);
             LocalFree(lpBuffer);
@@ -140,7 +146,7 @@ public:
                 (LPTSTR)&lpBuffer,
                 80,
                 NULL
-            )
+					   );
             std::string errorMessage = m_prefix + "file: " + full_file_path + " MapViewOfFile: " + "%s (%d)";
             fprintf(stderr, errorMessage.c_str(), lpBuffer, errorVal);
             LocalFree(lpBuffer);
@@ -166,7 +172,11 @@ public:
     map_size(ROUND_UP(_data_size + channel_data_offset_64bw * 8, gSystemPageSize))
         {
         static std::string m_prefix("channel_t::channel_t: ");
+#ifdef __WINNT
+	char *rp = NULL;
+#else
         char * rp = realpath(file_name.c_str(), NULL);
+#endif
         full_file_path = std::string(rp == NULL ? file_name : rp);
         if (rp != NULL) {
             free(rp);
@@ -181,7 +191,7 @@ public:
   ~SharedMap() {
 #ifdef __WINNT
     if (mapped_buffer) {
-        UnmapViewOfFile(mapped_buffer);
+      UnmapViewOfFile((LPCVOID)mapped_buffer);
         mapped_buffer = NULL;
     }
     CloseHandle(hMapFile);
@@ -265,9 +275,9 @@ public:
         //  and have all our clients update their Makefiles (if they don't use ours) to build the simulator.
         if (gSystemPageSize == 0) {
 #ifdef __WINNT
-          LPSYSTEM_INFO lpSystemInfo;
-          GetNativeSystemInfo(&lpSystemInfo);
-          gSystemPageSize = lpSystemInfo->dwPageSize;
+          SYSTEM_INFO systemInfo;
+          GetNativeSystemInfo(&systemInfo);
+          gSystemPageSize = systemInfo.dwPageSize;
 
 #else
           gSystemPageSize = sysconf(_SC_PAGESIZE);
