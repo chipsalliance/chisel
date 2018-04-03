@@ -1,6 +1,9 @@
 #ifndef __SIM_API_H
 #define __SIM_API_H
 
+#ifdef __WINNT
+#include <windows>
+#endif
 #include <cassert>
 #include <cstdio>
 #include <cerrno>
@@ -14,7 +17,9 @@
 #include <queue>
 #include <fcntl.h>
 #include <unistd.h>
+#ifndef __WINNT
 #include <sys/mman.h>
+#endif
 #include <time.h>
 
 enum SIM_CMD { RESET, STEP, UPDATE, POKE, PEEK, FORCE, GETID, GETCHK, FIN };
@@ -106,17 +111,60 @@ public:
             perror((m_prefix + "file: " + full_file_path + " fsync").c_str());
             exit(1);
         }
+#ifdef __WINNT
+        hMapFile = CreateFileMapping(_get_osfhandle(fd), NULL, PAGE_READWRITE, 0, 0, NULL);
+        if (hMapFile == INVALID_HANDLE_VALUE) {
+            DWORD errorVal = GetLastError();
+            LPTSTR lpBuffer;
+            DWORD fmResult = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
+                NULL,
+                errorVal,
+                0,
+                (LPTSTR)&lpBuffer,
+                80,
+                NULL
+            )
+            std::string errorMessage = m_prefix + "file: " + full_file_path + " CreateFileMapping: " + "%s (%d)";
+            fprintf(stderr, errorMessage.c_str(), lpBuffer, errorVal);
+            LocalFree(lpBuffer);
+            exit(1);
+        }
+        volatile char * buffer = (volatile char *)MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, map_size);
+        if (buffer == NULL) {
+            DWORD errorVal = GetLastError();
+            LPTSTR lpBuffer;
+            DWORD fmResult = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
+                NULL,
+                errorVal,
+                0,
+                (LPTSTR)&lpBuffer,
+                80,
+                NULL
+            )
+            std::string errorMessage = m_prefix + "file: " + full_file_path + " MapViewOfFile: " + "%s (%d)";
+            fprintf(stderr, errorMessage.c_str(), lpBuffer, errorVal);
+            LocalFree(lpBuffer);
+            exit(1);
+
+        }
+#else
         volatile char * buffer = (volatile char *)mmap(NULL, map_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (buffer == MAP_FAILED) {
+        if (buffer == MAP_FAILED) {
             perror((m_prefix + "file: " + full_file_path + " mmap").c_str());
             exit(1);
         }
+#endif
         return buffer;
     }
 
 #define ROUND_UP(N, S) ((((N) + (S) -1 ) & (~((S) - 1))))
-    SharedMap(std::string _file_name, size_t _data_size): file_name(_file_name), fd(open(file_name.c_str(),  O_RDWR|O_CREAT|O_TRUNC, (mode_t)0600)),
-          map_size(ROUND_UP(_data_size + channel_data_offset_64bw * 8, gSystemPageSize)) {
+    SharedMap(std::string _file_name, size_t _data_size): file_name(_file_name),
+#ifdef __WINNT
+    hMapFile(INVALID_HANDLE_VALUE),
+#endif
+    fd(open(file_name.c_str(),  O_RDWR|O_CREAT|O_TRUNC, (mode_t)0600)),
+    map_size(ROUND_UP(_data_size + channel_data_offset_64bw * 8, gSystemPageSize))
+        {
         static std::string m_prefix("channel_t::channel_t: ");
         char * rp = realpath(file_name.c_str(), NULL);
         full_file_path = std::string(rp == NULL ? file_name : rp);
@@ -131,12 +179,24 @@ public:
         mapped_buffer = init_map();
     }
   ~SharedMap() {
+#ifdef __WINNT
+    if (mapped_buffer) {
+        UnmapViewOfFile(mapped_buffer);
+        mapped_buffer = NULL;
+    }
+    CloseHandle(hMapFile);
+    hMapFile = INVALID_HANDLE_VALUE;
+#else
     munmap((void *)mapped_buffer, map_size);
+#endif
     close(fd);
   }
   volatile char * mapped_buffer;
   const std::string file_name;
   std::string full_file_path;
+#ifdef __WINNT
+  HANDLE hMapFile;
+#endif
   const int fd;
   const size_t map_size;
 };
@@ -204,7 +264,14 @@ public:
         // This is horrible, but we'd rather not have to generate another .cpp initialization file,
         //  and have all our clients update their Makefiles (if they don't use ours) to build the simulator.
         if (gSystemPageSize == 0) {
+#ifdef __WINNT
+          LPSYSTEM_INFO lpSystemInfo;
+          GetNativeSystemInfo(&lpSystemInfo);
+          gSystemPageSize = lpSystemInfo->dwPageSize;
+
+#else
           gSystemPageSize = sysconf(_SC_PAGESIZE);
+#endif
         }
         pid_t pid = getpid();
         in_ch_name  << std::dec << std::setw(8) << std::setfill('0') << pid << ".in";
