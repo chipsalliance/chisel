@@ -10,6 +10,7 @@ import chisel3._
 import chisel3.tester.TesterUtils.{getIOPorts, getPortNames}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.immutable.ListMap
 import firrtl.util.BackendCompilationUtilities._
 
 import JNILibraryBackend._
@@ -52,7 +53,7 @@ class JNILibraryBackend[T <: Module](
     def genChunk(args: (Data, String)) = args match {
       case (pin, name) => name -> ((pin.getWidth-1)/64 + 1)
     }
-    (HashMap((inputs map genChunk): _*), HashMap((outputs map genChunk): _*))
+    (ListMap((inputs map genChunk): _*), ListMap((outputs map genChunk): _*))
   }
   implicit def int(x: Int):  BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
   implicit def int(x: Long): BigInt = (BigInt(x >>> 1) << 1) | BigInt(x & 1)
