@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.tester._
 import org.scalatest._
 import org.scalatest.prop._
+import java.time.{Duration, Instant}
 
 class GCD extends Module {
   val io = IO(new Bundle {
@@ -52,7 +53,9 @@ class GCDSpec extends PropSpec with ChiselScalatestTester with PropertyChecks {
     ("a", "b", "z"),  // First tuple defines column names
     ( 64,  48,  16),  // Subsequent tuples define the data
     ( 12,   9,   3),
-    ( 48,  64,  16))
+    ( 48,  64,  16),
+    (1000,  3,  gcd(1000, 3))
+  )
 
 /*
   property("GCD should elaborate") {
@@ -73,11 +76,13 @@ class GCDSpec extends PropSpec with ChiselScalatestTester with PropertyChecks {
           dut.io.b.poke(b.U)
           dut.io.e.poke(true.B)
 
+	  val start = Instant.now
           do {
             dut.clock.step()
             dut.io.e.poke(false.B)
           } while(!dut.io.v.peek().litToBoolean)
-
+	  val finish = Instant.now
+	  println(s"${backendName} gcd($a, $b) took ${Duration.between(start, finish).toString}")
           dut.io.z.expect(z.U)
         }
       }
