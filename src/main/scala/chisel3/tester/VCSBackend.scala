@@ -9,6 +9,7 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import chisel3.{assert => chisel3Assert, _}
 import chisel3.tester.TesterUtils.getIOPorts
 import firrtl.transforms.BlackBoxTargetDirAnno
+import firrtl.util.BackendCompilationUtilities._
 
 import scala.sys.process.ProcessBuilder
 
@@ -32,8 +33,9 @@ object VCSTesterBackend {
   /**
     * Copies the necessary header files used for VCS compilation to the specified destination folder
     */
-  def copyVpiFiles(destinationDirPath: String): Unit = {
-    new File(destinationDirPath).mkdirs()
+  def copyVpiFiles(destinationDir: File): Unit = {
+    val destinationDirPath = destinationDir.toString
+    destinationDir.mkdirs()
     val simApiHFilePath = Paths.get(destinationDirPath + "/sim_api.h")
     val vpiHFilePath = Paths.get(destinationDirPath + "/vpi.h")
     val vpiCppFilePath = Paths.get(destinationDirPath + "/vpi.cpp")
@@ -59,7 +61,13 @@ object VCSTesterBackend {
   /**
     * Generates the Module specific VCS harness cpp file for verilator compilation
     */
-  def generateHarness(dut: chisel3.Module, vcdFilePath: String, isGateLevel: Boolean = false): String = {
+  def generateHarness(dut: chisel3.Module, circuitName: String, dir: File, options: TesterOptionsManager, isGateLevel: Boolean = false): File = {
+    val vcsHarnessFileName = s"${circuitName}-harness.v"
+    val vcsHarnessFile = new File(dir, vcsHarnessFileName)
+    val vcsHarnessWriter = new FileWriter(vcsHarnessFile)
+    val vcdFile = new File(dir, s"${circuitName}.vpd")
+    val vcdFilePath = vcdFile.toString
+    copyVpiFiles(dir)
     val codeBuffer = new StringBuilder
     val dutName = dut.name
     val (inputs, outputs) = getIOPorts(dut)
@@ -127,7 +135,10 @@ object VCSTesterBackend {
     codeBuffer.append("    $vcdplusflush;\n")
     codeBuffer.append("  end\n\n")
     codeBuffer.append("endmodule\n")
-    codeBuffer.toString()
+    val emittedStuff = codeBuffer.toString()
+    vcsHarnessWriter.append(emittedStuff)
+    vcsHarnessWriter.close()
+    vcsHarnessFile
   }
 
   def constructVcsFlags(
@@ -168,12 +179,12 @@ object VCSTesterBackend {
   }
 
   def verilogToVCSExe(
-    topModule: String,
-    dir: java.io.File,
-    vcsHarness: java.io.File,
-    moreVcsFlags: Seq[String] = Seq.empty[String],
-    moreVcsCFlags: Seq[String] = Seq.empty[String],
-    vcsToExeCmdEditor: Option[(String) => String] = None
+                         topModule: String,
+                         dir: java.io.File,
+                         vcsHarness: java.io.File,
+                         moreVcsFlags: Seq[String] = Seq.empty[String],
+                         moreVcsCFlags: Seq[String] = Seq.empty[String],
+                         vcsToExeCmdEditor: Option[(String) => String] = None
                      ): ProcessBuilder = {
 
     val vcsFlags = constructVcsFlags(topModule, dir, moreVcsFlags, moreVcsCFlags)
@@ -190,6 +201,38 @@ object VCSTesterBackend {
     Seq("bash", "-c", finalCommand)
   }
 
+  def verilogToLib(
+                         topModule: String,
+                         dir: java.io.File,
+                         vcsHarness: java.io.File,
+                         moreVcsFlags: Seq[String] = Seq.empty[String],
+                         moreVcsCFlags: Seq[String] = Seq.empty[String],
+                         vcsToExeCmdEditor: Option[(String) => String] = None
+                     ): ProcessBuilder = {
+
+    val vcsFlags = constructVcsFlags(topModule, dir, moreVcsFlags, moreVcsCFlags)
+
+    val cmd = Seq("cd", dir.toString, "&&", "vcs") ++ vcsFlags ++ Seq(
+      "-o", topModule, s"$topModule.v", vcsHarness.toString, "vpi.cpp") mkString " "
+
+    val finalCommand = vcsToExeCmdEditor match {
+      case Some(f: ((String) => String)) => f(cmd)
+      case None => cmd
+    }
+    println(s"$finalCommand")
+
+    Seq("bash", "-c", finalCommand)
+  }
+
+  def buildSharedLibrary(circuitName: String, dir: File, cppHarnessFile: File, options: TesterOptionsManager): String = {
+//    assert(
+//      verilogToLib(circuitName, dir, cppHarnessFile,
+//        moreVcsFlags = options.testerOptions.moreVcsFlags,
+//        moreVcsCFlags = options.testerOptions.moreVcsCFlags
+//      ).! == 0
+    throw new RuntimeException("Can't build VCS shared library")
+  }
+
   /** Start an external VCS simulation process.
     *
     * @param dutGen - the curcuit to be simulated
@@ -199,75 +242,36 @@ object VCSTesterBackend {
     * @return - a BackendInstance suitable for driving the simulation.
     */
   def start[T <: Module](dutGen: => T, options: TesterOptionsManager, vcsToExeCmdEditor: Option[TesterOptionsManager => String => String] = None): BackendInstance[T] = {
-    val optionsManager = options
-    // We need to intercept the CHIRRTL output and tweak it.
-    optionsManager.chiselOptions = optionsManager.chiselOptions.copy(runFirrtlCompiler = false)
-    optionsManager.makeTargetDir()
-    val dir = new File(optionsManager.targetDirName)
-
-    chisel3.Driver.execute(optionsManager, () => dutGen) match {
+    val (result, updatedOptions) = CSimulator.generateVerilog(dutGen, options)
+    result match {
       case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
-        val chirrtl = firrtl.Parser.parse(emitted)
         val dut = getTopModule(circuit).asInstanceOf[T]
-
-        // This makes sure annotations for command line options get created
-        firrtl.Driver.loadAnnotations(optionsManager)
-
-        /*
-        The following block adds an annotation that tells the black box helper where the
-        current build directory is, so that it can copy verilog resource files into the right place
-         */
-        val annotations = optionsManager.firrtlOptions.annotations ++
-          List(BlackBoxTargetDirAnno(optionsManager.targetDirName))
-
-        val transforms = optionsManager.firrtlOptions.customTransforms
-
-        VerilatorTesterBackend.copyHeaderFiles(optionsManager.targetDirName)
-
-        // Generate Verilog
-        val verilogFile = new File(dir, s"${circuit.name}.v")
-        val verilogWriter = new FileWriter(verilogFile)
-
-        val compileResult = (new firrtl.VerilogCompiler).compileAndEmit(
-          CircuitState(chirrtl, ChirrtlForm, annotations),
-          customTransforms = transforms
-        )
-        val compiledStuff = compileResult.getEmittedCircuit
-        verilogWriter.write(compiledStuff.value)
-        verilogWriter.close()
-
+        val dir = new File(updatedOptions.targetDirName)
         // Generate Harness
-        val vcsHarnessFileName = s"${circuit.name}-harness.v"
-        val vcsHarnessFile = new File(dir, vcsHarnessFileName)
-        val vcsHarnessWriter = new FileWriter(vcsHarnessFile)
-        val vpdFile = new File(dir, s"${circuit.name}.vpd")
-        copyVpiFiles(dir.toString)
-        generateHarness(dut, vpdFile.toString)
-        val emittedStuff = generateHarness(
-          dut, vpdFile.toString
+        val vcsHarnessFile = generateHarness(
+          dut, circuit.name, dir, updatedOptions
         )
-        vcsHarnessWriter.append(emittedStuff)
-        vcsHarnessWriter.close()
 
         val cmdEditor = vcsToExeCmdEditor match {
-          case Some(f: (TesterOptionsManager => String => String)) => Some(f(optionsManager))
+          case Some(f: (TesterOptionsManager => String => String)) => Some(f(updatedOptions))
           case None => None
         }
         assert(
-          verilogToVCSExe(circuit.name, dir, new File(vcsHarnessFileName),
-            moreVcsFlags = optionsManager.testerOptions.moreVcsFlags,
-            moreVcsCFlags = optionsManager.testerOptions.moreVcsCFlags,
+          verilogToVCSExe(circuit.name, dir, vcsHarnessFile,
+            moreVcsFlags = updatedOptions.testerOptions.moreVcsFlags,
+            moreVcsCFlags = updatedOptions.testerOptions.moreVcsCFlags,
             vcsToExeCmdEditor = cmdEditor
           ).! == 0
         )
 
-        val command = if(optionsManager.testerOptions.testCmd.nonEmpty) {
-          optionsManager.testerOptions.testCmd
+        val command = if(updatedOptions.testerOptions.testCmd.nonEmpty) {
+          updatedOptions.testerOptions.testCmd
         }
         else {
-          Seq(new File(dir, s"V${circuit.name}").toString)
+	  val exe = if (osVersion == OSVersion.Windows) ".exe" else ""
+          Seq(new File(dir, s"V${circuit.name}${exe}").toString)
         }
-        val seed = optionsManager.testerOptions.testerSeed
+        val seed = updatedOptions.testerOptions.testerSeed
         val rnd = new scala.util.Random(seed)
         new InterProcessBackend(dut, command, rnd)
       case _ =>

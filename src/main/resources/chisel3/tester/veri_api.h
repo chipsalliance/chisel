@@ -5,6 +5,16 @@
 #include "sim_api.h"
 #include <vector>
 
+// Definitions for waveform generation.
+struct VCDInfo {
+    const char * fileName;
+    VerilatedVcdC* vcdFP;
+    VCDInfo() {
+        fileName = NULL;
+        vcdFP = NULL;
+    }
+};
+
 class VerilatorDataWrapper {
 public:
     virtual size_t get_value(uint64_t* values) = 0;

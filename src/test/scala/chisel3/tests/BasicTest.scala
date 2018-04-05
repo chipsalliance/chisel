@@ -8,7 +8,7 @@ import chisel3.tester._
 class BasicTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2"
 
-  private val backendNames = Array[String] ("firrtl", "verilator")
+  private val backendNames = Array[String] ("firrtl", "verilator", "jni")
   for (backendName <- backendNames) {
     val options = new TesterOptionsManager {
       testerOptions = TesterOptions(backendName = backendName)

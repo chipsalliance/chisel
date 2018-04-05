@@ -14,15 +14,54 @@ import scala.collection.immutable.ListMap
 import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 import scala.concurrent.duration._
 import scala.sys.process.{Process, ProcessLogger}
-import java.io.{File, PrintStream}
+import java.io.{File, RandomAccessFile}
+import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.util.concurrent.TimeUnit
+
+object InterProcessBackend {
+
+  trait ChannelProtocol {
+    def aquire: Unit
+    def release: Unit
+    def ready: Boolean
+    def valid: Boolean
+    def produce: Unit
+    def consume: Unit
+  }
+  object VerilatorChannelProtocol {
+    val channel_data_offset_64bw = 4    // Offset from start of channel buffer to actual user data in 64bit words.
+  }
+  class VerilatorChannelProtocol(val buffer: java.nio.ByteBuffer) extends ChannelProtocol {
+    import VerilatorChannelProtocol._
+    implicit def intToByte(i: Int) = i.toByte
+    buffer order java.nio.ByteOrder.nativeOrder
+    buffer.clear()
+    def aquire {
+      buffer put (0, 1)
+      buffer put (2, 0)
+      while((buffer get 1) == 1 && (buffer get 2) == 0) {}
+    }
+    def release { buffer put (0, 0) }
+    def ready = (buffer get 3) == 0
+    def valid = (buffer get 3) == 1
+    def produce { buffer put (3, 1) }
+    def consume { buffer put (3, 0) }
+    def update(idx: Int, data: Long) { buffer putLong (8 * idx + channel_data_offset_64bw, data) }
+    def update(base: Int, data: String) {
+      data.zipWithIndex foreach {case (c, i) => buffer put (base + i + channel_data_offset_64bw, c) }
+      buffer put (base + data.size + channel_data_offset_64bw, 0)
+    }
+    def apply(idx: Int): Long = buffer getLong (8 * idx + channel_data_offset_64bw)
+  }
+}
 
 class InterProcessBackend[T <: Module](
   dut: T,
   cmd: Seq[String],
   rnd: scala.util.Random)
   extends BackendInstance[T] with ThreadedBackend {
+  import InterProcessBackend._
   val portNameDelimiter: String = "."
   val ioPortNameDelimiter: String = "."
   implicit val logger = new TestErrorLog
@@ -55,10 +94,10 @@ class InterProcessBackend[T <: Module](
     }
   }
 
-  private class Channel(name: String) {
-    private lazy val file = new java.io.RandomAccessFile(name, "rw")
-    private lazy val channel = file.getChannel
-    @volatile private lazy val buffer = {
+  def getMappedBuffer(name: String): (MappedByteBuffer, RandomAccessFile) = {
+    val file = new java.io.RandomAccessFile(name, "rw")
+    val channel = file.getChannel
+    /* @volatile */ val buffer = {
       /* We have seen runs where buffer.put(0,0) fails with:
   [info]   java.lang.IndexOutOfBoundsException:
   [info]   at java.nio.Buffer.checkIndex(Buffer.java:532)
@@ -77,27 +116,12 @@ class InterProcessBackend[T <: Module](
       assert(size > 16, "channel.size is bogus: %d".format(size))
       channel map (FileChannel.MapMode.READ_WRITE, 0, size)
     }
-    implicit def intToByte(i: Int) = i.toByte
-    val channel_data_offset_64bw = 4    // Offset from start of channel buffer to actual user data in 64bit words.
-    def aquire {
-      buffer put (0, 1)
-      buffer put (2, 0)
-      while((buffer get 1) == 1 && (buffer get 2) == 0) {}
-    }
-    def release { buffer put (0, 0) }
-    def ready = (buffer get 3) == 0
-    def valid = (buffer get 3) == 1
-    def produce { buffer put (3, 1) }
-    def consume { buffer put (3, 0) }
-    def update(idx: Int, data: Long) { buffer putLong (8 * idx + channel_data_offset_64bw, data) }
-    def update(base: Int, data: String) {
-      data.zipWithIndex foreach {case (c, i) => buffer put (base + i + channel_data_offset_64bw, c) }
-      buffer put (base + data.size + channel_data_offset_64bw, 0)
-    }
-    def apply(idx: Int): Long = buffer getLong (8 * idx + channel_data_offset_64bw)
-    def close { file.close }
-    buffer order java.nio.ByteOrder.nativeOrder
     new File(name).delete
+    (buffer, file)
+  }
+
+  private class Channel(t: Tuple2[MappedByteBuffer, RandomAccessFile]) extends VerilatorChannelProtocol(t._1) {
+    def close {t._2.close}
   }
 
   val (inputsNameToChunkSizeMap, outputsNameToChunkSizeMap) = {
@@ -142,9 +166,9 @@ class InterProcessBackend[T <: Module](
     val in_channel_name = _logs.remove(0)
     val out_channel_name = _logs.remove(0)
     val cmd_channel_name = _logs.remove(0)
-    val in_channel = new Channel(in_channel_name)
-    val out_channel = new Channel(out_channel_name)
-    val cmd_channel = new Channel(cmd_channel_name)
+    val in_channel = new Channel(getMappedBuffer(in_channel_name))
+    val out_channel = new Channel(getMappedBuffer(out_channel_name))
+    val cmd_channel = new Channel(getMappedBuffer(cmd_channel_name))
 
     println(s"inChannelName: ${in_channel_name}")
     println(s"outChannelName: ${out_channel_name}")
@@ -425,42 +449,49 @@ class InterProcessBackend[T <: Module](
 
   protected def scheduler() {
     var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
+    var exception: Option[Throwable] = None
 
-    while (activeThreads.isEmpty && !testDone) {
-      threadingChecker.finishTimestep()
-      Context().env.checkpoint()
-      step(1)
-      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+    try {
+      while (activeThreads.isEmpty && !testDone) {
+        threadingChecker.finishTimestep()
+        Context().env.checkpoint()
+        step(1)
+        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-      if (mainTesterThread.get.done) {
-        testDone = true
-      }
-
-      threadingChecker.newTimestep(dut.clock)
-
-      // Unblock threads waiting on main clock
-      activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
-      blockedThreads.remove(dut.clock)
-
-      // Unblock threads waiting on dependent clocks
-      // TODO: purge unused clocks instead of still continuing to track them
-      val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
-      for (waitingClock <- waitingClocks) {
-        val currentClockVal = peekSignal(portNames(waitingClock), false).get.toInt match {
-          case 0 => false
-          case 1 => true
+        if (mainTesterThread.get.done) {
+          testDone = true
         }
-        if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
-          lastClockValue.put(waitingClock, currentClockVal)
-          if (currentClockVal == true) {
-            activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
-            blockedThreads.remove(waitingClock)
-            threadingChecker.newTimestep(waitingClock)
 
-            clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
+        threadingChecker.newTimestep(dut.clock)
+
+        // Unblock threads waiting on main clock
+        activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+        blockedThreads.remove(dut.clock)
+
+        // Unblock threads waiting on dependent clocks
+        // TODO: purge unused clocks instead of still continuing to track them
+        val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
+        for (waitingClock <- waitingClocks) {
+          val currentClockVal = peekSignal(portNames(waitingClock), false).get.toInt match {
+            case 0 => false
+            case 1 => true
+          }
+          if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
+            lastClockValue.put(waitingClock, currentClockVal)
+            if (currentClockVal == true) {
+              activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
+              blockedThreads.remove(waitingClock)
+              threadingChecker.newTimestep(waitingClock)
+
+              clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
+            }
           }
         }
       }
+    } catch {
+      case e: Throwable =>
+        exception = Some(e)
+        testDone = true
     }
 
     if (!testDone) {  // if test isn't over, run next thread
@@ -472,7 +503,11 @@ class InterProcessBackend[T <: Module](
       finish()
       scalatestWaiting.release()
     }
-
+    exception match {
+      case Some(e: Throwable) =>
+        throw e
+      case None =>
+    }
   }
 
   override def step(signal: Clock, cycles: Int): Unit = {
@@ -495,7 +530,11 @@ class InterProcessBackend[T <: Module](
   protected val interruptedException = new SynchronousQueue[Throwable]()
 
   protected def onException(e: Throwable) {
-    scalatestThread.get.interrupt()
+    scalatestThread match {
+      case Some(t: Thread) =>
+        t.interrupt()
+      case None =>
+    }
     interruptedException.offer(e, 10, TimeUnit.SECONDS)
   }
 

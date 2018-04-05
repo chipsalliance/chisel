@@ -6,14 +6,11 @@ import chisel3.internal.firrtl.Emitter
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
 
 import java.io._
-import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl._
 import firrtl.annotations.{Annotation, JsonProtocol}
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-
-import _root_.firrtl.annotations.AnnotationYamlProtocol._
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -84,7 +81,6 @@ case class ChiselExecutionSuccess(
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
 object Driver extends BackendCompilationUtilities {
-
   /** Elaborates the Module specified in the gen function into a Circuit
     *
     *  @param gen a function that creates a Module hierarchy

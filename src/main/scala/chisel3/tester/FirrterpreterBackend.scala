@@ -47,7 +47,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   protected val lastClockValue = mutable.HashMap[Clock, Boolean]()
 
   protected def scheduler() {
-    var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
+    var testDone: Boolean = false // set at the end of the clock cycle that the main thread dies on
 
     while (activeThreads.isEmpty && !testDone) {
       threadingChecker.finishTimestep()
@@ -86,15 +86,14 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
       }
     }
 
-    if (!testDone) {  // if test isn't over, run next thread
+    if (!testDone) { // if test isn't over, run next thread
       val nextThread = activeThreads.head
       currentThread = Some(nextThread)
       activeThreads.trimStart(1)
       nextThread.waiting.release()
-    } else {  // if test is done, return to the main scalatest thread
+    } else { // if test is done, return to the main scalatest thread
       scalatestWaiting.release()
     }
-
   }
 
   override def step(signal: Clock, cycles: Int): Unit = {
@@ -117,11 +116,24 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   protected val interruptedException = new SynchronousQueue[Throwable]()
 
   protected def onException(e: Throwable) {
-    scalatestThread.get.interrupt()
-    interruptedException.offer(e, 10, TimeUnit.SECONDS)
+    scalatestThread match {
+      case Some(t: Thread) =>
+        t.interrupt()
+      case None =>
+    }
+    try {
+      val accepted = interruptedException.offer(e, 10, TimeUnit.SECONDS)
+      if (!accepted) {
+        System.err.println(s"FirrterpreterBackend.onException couldn't transfer ${e} (timeout)")
+      }
+    } catch {
+      case e: InterruptedException =>
+        System.err.println(s"FirrterpreterBackend.onException couldn't transfer ${e} (exception)")
+    }
   }
 
   override def run(testFn: T => Unit): Unit = {
+    var exception: Option[Throwable] = None
     tester.poke("reset", 1)
     tester.step(1)
     tester.poke("reset", 0)
@@ -141,18 +153,30 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
       scalatestWaiting.acquire()
     } catch {
       case e: InterruptedException =>
-        throw interruptedException.poll(10, TimeUnit.SECONDS)
+        try {
+          exception = Some(interruptedException.poll(10, TimeUnit.SECONDS))
+        } catch {
+          case e: InterruptedException =>
+            println("FirrterpreterBackend.run: couldn't transfer interruptedException")
+            exception = Some(e)
+          case e: Throwable =>
+            exception = Some(e)
+        }
+      case e: Throwable =>
+        exception = Some(e)
     }
 
     mainTesterThread = None
     scalatestThread = None
     currentThread = None
 
-    for (thread <- allThreads.clone()) {
-      // Kill the threads using an InterruptedException
-      if (thread.thread.isAlive) {
-        thread.thread.interrupt()
-      }
+    killAllTesterThreads()
+
+    exception match {
+      case Some(t: Throwable) =>
+        println(s"run: throwing ${t}")
+        throw t
+      case None =>
     }
   }
 }
