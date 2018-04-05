@@ -34,7 +34,7 @@ object VerilatorTesterBackend {
     val cppHarnessFile = new File(dir, cppHarnessFileName)
     val cppHarnessWriter = new FileWriter(cppHarnessFile)
     val vcdFile = new File(dir, s"${circuitName}.vcd")
-    val vcdFilePath = getPosixCompatibleAbsolutePath(vcdFile.toString)
+    val vcdFilePath = getPosixCompatiblePath(vcdFile.toString)
     val codeBuffer = new StringBuilder
 
     def pushBack(vector: String, pathName: String, width: BigInt) {
