@@ -3,12 +3,12 @@
 package chisel3.tester
 
 import chisel3._
-import java.util.concurrent.{Semaphore, ConcurrentLinkedQueue, TimeUnit}
-import scala.collection.mutable
+import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore, TimeUnit}
 
 import scala.collection.mutable
+import scala.collection.mutable
 import firrtl_interpreter._
-import treadle.{HasTreadleSuite, TreadleTester}
+import treadle.{HasTreadleSuite, TreadleOptions, TreadleTester}
 
 class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
@@ -190,6 +190,7 @@ object TreadleExecutive {
         new ExecutionOptionsManager("chisel3")
           with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite with HasTreadleSuite {
           commonOptions = CommonOptions(targetDirName = "test_run_dir")
+          treadleOptions = TreadleOptions(setVerbose = false)
         }
     }
     // the backend must be firrtl if we are here, therefore we want the firrtl compiler

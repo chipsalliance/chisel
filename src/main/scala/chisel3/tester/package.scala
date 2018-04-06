@@ -30,6 +30,14 @@ package object tester {
     }
 
     def poke(value: T): Unit = pokeWithPriority(value, 0)
+    def poke(value: RecordLiteral): Unit = {
+      value.literals.foreach { case (key, v) =>
+        key.pokeWithPriority(v, 0)
+      }
+      value.subAggregates.foreach { case (key, v) =>
+        key.poke(v)
+      }
+    }
     def weakPoke(value: T): Unit = pokeWithPriority(value, 1)
 
     protected def peekWithStale(stale: Boolean): T = x match {
@@ -62,11 +70,20 @@ package object tester {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
         Context().backend.expectBits(x, value.litToBigInt, stale)
       }
+
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
     }
 
     def expect(value: T): Unit = expectWithStale(value, false)
+    def expect(value: RecordLiteral): Unit = {
+      value.literals.foreach { case (key, v) =>
+        key.expectWithStale(v, false)
+      }
+      value.subAggregates.foreach { case (key, v) =>
+        key.expect(v)
+      }
+    }
     def staleExpect(value: T): Unit = expectWithStale(value, true)
   }
 

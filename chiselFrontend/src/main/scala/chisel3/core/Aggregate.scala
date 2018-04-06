@@ -5,11 +5,12 @@ package chisel3.core
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+
+import scala.collection.mutable
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -405,6 +406,17 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
 
   def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))
+}
+
+class RecordLiteral(r: Record) {
+  val literals = new mutable.HashMap[Data, Data]
+  val subAggregates = new mutable.HashMap[Data, RecordLiteral]
+  def set(d: Data, value: Data): Unit = {
+    literals(d) = value
+  }
+  def set(d: Data, value: RecordLiteral): Unit = {
+    subAggregates(d) = value
+  }
 }
 
 /** Base class for Aggregates based on key values pairs of String and Data
