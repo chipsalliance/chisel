@@ -4,6 +4,9 @@ package chisel3.tester
 
 import scala.util.DynamicVariable
 import chisel3._
+import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
+import firrtl_interpreter.HasInterpreterSuite
+import treadle.HasTreadleSuite
 
 object Context {
   class Instance(val backend: BackendInterface, val env: TestEnvInterface) {
@@ -19,16 +22,19 @@ object Context {
 
   // TODO: better integration points for default tester selection
   def createDefaultTester[T <: Module](dutGen: => T): BackendInstance[T] = {
-    Firrterpreter.start(dutGen)
+    TreadleExecutive.start(dutGen)
   }
 
-  // TODO: add TesterOptions (from chisel-testers) and use that to control default tester selection.
-  def createDefaultTester[T <: Module](dutGen: => T, options: TesterOptionsManager): BackendInstance[T] = {
+  def createDefaultTester[T <: Module](
+    dutGen: => T,
+    options: TesterOptionsManager
+  ): BackendInstance[T] = {
     if (options.targetDirName == ".") {
       options.setTargetDirName("test_run_dir")
     }
     options.testerOptions.backendName match {
       case "firrtl" => Firrterpreter.start(dutGen, Some(options))
+      case "treadle" => TreadleExecutive.start(dutGen, Some(options))
       case "verilator" => VerilatorTesterBackend.start(dutGen, options)
       case "vcs" => VCSTesterBackend.start(dutGen, options)
       case "jni" => JNILibraryTesterBackend.start(dutGen, options)

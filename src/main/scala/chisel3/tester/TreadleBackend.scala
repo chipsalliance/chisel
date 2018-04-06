@@ -3,18 +3,29 @@
 package chisel3.tester
 
 import chisel3._
-import chisel3.tester.TesterUtils.getPortNames
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.{Semaphore, ConcurrentLinkedQueue, TimeUnit}
 import scala.collection.mutable
 
+import scala.collection.mutable
 import firrtl_interpreter._
+import treadle.{HasTreadleSuite, TreadleTester}
 
-class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
+class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
+
   def getModule: T = dut
 
+  /** Returns a Seq of (data reference, fully qualified element names) for the input.
+    * name is the name of data
+    */
+  protected def getDataNames(name: String, data: Data): Seq[(Data, String)] = Seq(data -> name) ++ (data match {
+    case _: Element => Seq()
+    case b: Record => b.elements.toSeq flatMap {case (n, e) => getDataNames(s"${name}_$n", e)}
+    case v: Vec[_] => v.zipWithIndex flatMap {case (e, i) => getDataNames(s"${name}_$i", e)}
+  })
+
   // TODO: the naming facility should be part of infrastructure not backend
-  protected val portNames = getPortNames(dut)
+  protected val portNames: Map[Data, String] = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).toMap
   protected def resolveName(signal: Data): String = {
     portNames.getOrElse(signal, signal.toString)
   }
@@ -39,7 +50,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
-//    println(s"${portNames(signal)} ?> $value")
+    println(s"${portNames(signal)} ?> $value")
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
@@ -155,7 +166,7 @@ class FirrterpreterBackend[T <: Module](dut: T, tester: InterpretiveTester)
   }
 }
 
-object Firrterpreter {
+object TreadleExecutive {
   import chisel3.internal.firrtl.Circuit
   import chisel3.experimental.BaseModule
 
@@ -167,16 +178,17 @@ object Firrterpreter {
 
   def start[T <: Module](
     dutGen: => T,
-    options: Option[ExecutionOptionsManager
+    options: Option[TesterOptionsManager
             with HasChiselExecutionOptions
             with HasFirrtlOptions
-            with HasInterpreterSuite] = None): BackendInstance[T] = {
+            with HasInterpreterSuite
+            with HasTreadleSuite] = None): BackendInstance[T] = {
     val optionsManager = options match  {
       case Some(o: ExecutionOptionsManager) => o
 
       case None =>
         new ExecutionOptionsManager("chisel3")
-          with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite {
+          with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite with HasTreadleSuite {
           commonOptions = CommonOptions(targetDirName = "test_run_dir")
         }
     }
@@ -188,8 +200,8 @@ object Firrterpreter {
         firrtlExecutionResult match {
           case FirrtlExecutionSuccess(_, compiledFirrtl) =>
             val dut = getTopModule(circuit).asInstanceOf[T]
-            val interpretiveTester = new InterpretiveTester(compiledFirrtl, optionsManager)
-            new FirrterpreterBackend(dut, interpretiveTester)
+            val interpretiveTester = new TreadleTester(compiledFirrtl, optionsManager)
+            new TreadleBackend(dut, interpretiveTester)
           case FirrtlExecutionFailure(message) =>
             throw new Exception(s"FirrtlBackend: failed firrtl compile message: $message")
         }

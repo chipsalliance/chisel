@@ -4,10 +4,12 @@ package chisel3.tester
 
 import java.io.File
 import java.nio.file.Paths
-import java.util.concurrent.{Semaphore, SynchronousQueue, TimeUnit}
+import java.util.concurrent.ConcurrentLinkedQueue
+import scala.collection.mutable
 
 import chisel3._
 import chisel3.tester.TesterUtils.{getIOPorts, getPortNames}
+import chisel3.tester.InterProcessBackend
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.immutable.ListMap
@@ -34,18 +36,16 @@ class JNILibraryBackend[T <: Module](
   val ioPortNameDelimiter: String = "."
   implicit val logger = new TestErrorLog
 
-  def getModule() = dut
+  def getModule: T = dut
 
   private val HARD_POKE = 1
 //  def getPortNames(dut: Module) = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).map{case (d: Data, s: String) => (d, (dut.name + "." + s))}.toMap
   // We need to add the dut name to the signal name for the backend.
   protected val portNames = getPortNames(dut) map { case (k: Data, v: String) => (k, v)}
   val (inputs, outputs) = getIOPorts(dut)
-  protected def resolveName(signal: Data) =
+  protected def resolveName(signal: Data): String = {
     portNames.getOrElse(signal, dut.name + portNameDelimiter + signal.toString())
-
-  protected val threadingChecker = new ThreadingChecker()
-
+  }
   private[tester] case class TestApplicationException(exitVal: Int, lastMessage: String)
     extends RuntimeException(lastMessage)
 
@@ -165,7 +165,7 @@ class JNILibraryBackend[T <: Module](
     recvOutputs()
   }
 
-  def pokeSignal(signalName: String, value: BigInt, priority: Int) {
+  def pokeSignal(signalName: String, value: BigInt) {
     if (inputsNameToChunkSizeMap contains signalName) {
       _pokeMap(signalName) = value
       isStale = true
@@ -175,36 +175,46 @@ class JNILibraryBackend[T <: Module](
         poke(id, _chunks getOrElseUpdate (signalName, getSignalWordSize(id)), value)
         isStale = true
       } else {
-        logger info s"Can't find $signalName in the emulator..."
+        throw InterProcessBackend.InterProcessBackendException(s"Can't find $signalName in the emulator...")
       }
     }
   }
 
-  override def pokeBits(signal: Bits, value: BigInt, priority: Int) {
-    pokeSignal(portNames(signal), value, priority)
+  override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
+    if (threadingChecker.doPoke(currentThread.get, signal, value, priority, new Throwable)) {
+//      println(s"${portNames(signal)} <- $value")
+      pokeSignal(portNames(signal), value)
+    }
   }
 
-  def peekSignal(signalName: String, stale: Boolean): Option[BigInt] = {
+  def peekSignal(signalName: String): BigInt = {
     if (isStale) {
       update
     }
     val result =
-      if (outputsNameToChunkSizeMap contains signalName) _peekMap get signalName
-      else if (inputsNameToChunkSizeMap contains signalName) _pokeMap get signalName
-      else {
+      if (outputsNameToChunkSizeMap contains signalName) {
+        _peekMap(signalName)
+      } else if (inputsNameToChunkSizeMap contains signalName) {
+        _pokeMap(signalName)
+      } else {
         val id = _signalMap getOrElseUpdate (signalName, getId(signalName))
         if (id >= 0) {
-          Some(peek(id, _chunks getOrElse (signalName, getSignalWordSize(id))))
+          peek(id, _chunks getOrElse (signalName, getSignalWordSize(id)))
         } else {
-          logger info s"Can't find $signalName in the emulator..."
-          None
+          throw InterProcessBackend.InterProcessBackendException(s"Can't find $signalName in the emulator...")
         }
       }
     result
   }
 
   override def peekBits(signal: Bits, stale: Boolean): BigInt = {
-    peekSignal(portNames(signal), stale).getOrElse(BigInt(rnd.nextInt()))
+    require(!stale, "Stale peek not yet implemented")
+
+    // TODO: properly determine clock
+    threadingChecker.doPeek(currentThread.get, signal, dut.clock, new Throwable)
+    val a = peekSignal(portNames(signal))
+//    println(s"${portNames(signal)} -> $a")
+    a
   }
 
   def step(n: Int) {
@@ -236,133 +246,111 @@ class JNILibraryBackend[T <: Module](
     }
   }
 
-  protected val clockCounter = HashMap[Clock, Int]()
+  protected val clockCounter : mutable.HashMap[Clock, Int] = mutable.HashMap()
   protected def getClockCycle(clk: Clock): Int = {
     clockCounter.getOrElse(clk, 0)
   }
+  protected def getClock(clk: Clock): Boolean = peekSignal(portNames(clk)).toInt match {
+    case 0 => false
+    case 1 => true
+  }
 
-  protected val lastClockValue = HashMap[Clock, Boolean]()
+  protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
+  protected val threadingChecker = new ThreadingChecker()
 
-  protected def scheduler() {
-    var testDone: Boolean = false  // set at the end of the clock cycle that the main thread dies on
-    var exception: Option[Throwable] = None
-
-    try {
-      while (activeThreads.isEmpty && !testDone) {
-        threadingChecker.finishTimestep()
-        Context().env.checkpoint()
-        step(1)
-        clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
-
-        if (mainTesterThread.get.done) {
-          testDone = true
-        }
-
-        threadingChecker.newTimestep(dut.clock)
-
-        // Unblock threads waiting on main clock
-        activeThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
-        blockedThreads.remove(dut.clock)
-
-        // Unblock threads waiting on dependent clocks
-        // TODO: purge unused clocks instead of still continuing to track them
-        val waitingClocks = blockedThreads.keySet ++ lastClockValue.keySet - dut.clock
-        for (waitingClock <- waitingClocks) {
-          val currentClockVal = peekSignal(portNames(waitingClock), false).get.toInt match {
-            case 0 => false
-            case 1 => true
-          }
-          if (lastClockValue.getOrElseUpdate(waitingClock, currentClockVal) != currentClockVal) {
-            lastClockValue.put(waitingClock, currentClockVal)
-            if (currentClockVal == true) {
-              activeThreads ++= blockedThreads.getOrElse(waitingClock, Seq())
-              blockedThreads.remove(waitingClock)
-              threadingChecker.newTimestep(waitingClock)
-
-              clockCounter.put(waitingClock, getClockCycle(waitingClock) + 1)
-            }
-          }
-        }
+  override def timescope(contents: => Unit): Unit = {
+    val newTimescope = threadingChecker.newTimescope(currentThread.get)
+    contents
+    threadingChecker.closeTimescope(newTimescope).foreach { case (data, valueOption) =>
+      valueOption match {
+        case Some(value) => pokeSignal(portNames(data), value)
+          println(s"${portNames(data)} <- (revert) $value")
+        case None => pokeSignal(portNames(data), 0)  // TODO: randomize or 4-state sim
+          println(s"${portNames(data)} <- (revert) DC")
       }
-    } catch {
-      case e: Throwable =>
-        exception = Some(e)
-        testDone = true
-    }
-
-    if (!testDone) {  // if test isn't over, run next thread
-      val nextThread = activeThreads.head
-      currentThread = Some(nextThread)
-      activeThreads.trimStart(1)
-      nextThread.waiting.release()
-    } else {  // if test is done, return to the main scalatest thread
-      finish()
-      scalatestWaiting.release()
-    }
-    exception match {
-      case Some(e: Throwable) =>
-        throw e
-      case None =>
     }
   }
 
   override def step(signal: Clock, cycles: Int): Unit = {
-    // TODO: clock-dependence
     // TODO: maybe a fast condition for when threading is not in use?
     for (_ <- 0 until cycles) {
-      val thisThread = currentThread.get
-      threadingChecker.finishThread(thisThread, signal)
-      // TODO this also needs to be called on thread death
+      // If a new clock, record the current value so change detection is instantaneous
+      if (signal != dut.clock && !lastClockValue.contains(signal)) {
+        lastClockValue.put(signal, getClock(signal))
+      }
 
+      val thisThread = currentThread.get
       blockedThreads.put(signal, blockedThreads.getOrElseUpdate(signal, Seq()) :+ thisThread)
       scheduler()
       thisThread.waiting.acquire()
     }
   }
 
-  protected var scalatestThread: Option[Thread] = None
-  protected var mainTesterThread: Option[TesterThread] = None
-  protected val scalatestWaiting = new Semaphore(0)
-  protected val interruptedException = new SynchronousQueue[Throwable]()
+  protected val interruptedException = new ConcurrentLinkedQueue[Throwable]()
 
   protected def onException(e: Throwable) {
-    scalatestThread match {
-      case Some(t: Thread) =>
-        t.interrupt()
-      case None =>
-    }
-    interruptedException.offer(e, 10, TimeUnit.SECONDS)
+    interruptedException.offer(e)
   }
 
   override def run(testFn: T => Unit): Unit = {
     // Once everything has been prepared, we can start the communications.
     start()
-    val resetPath = "reset"
-    pokeSignal(resetPath, 1, HARD_POKE)
-    step(1)
-    pokeSignal(resetPath, 0, HARD_POKE)
+    val mainThread = fork {
+      val resetPath = "reset"
+      pokeSignal(resetPath, 1)
+      step(1)
+      pokeSignal(resetPath, 0)
 
-    val mainThread = fork(
       testFn(dut)
-    )
-
-    require(activeThreads.length == 1)  // only thread should be main
-    activeThreads.trimStart(1)
-    currentThread = Some(mainThread)
-    scalatestThread = Some(Thread.currentThread())
-    mainTesterThread = Some(mainThread)
-
-    mainThread.waiting.release()
-    try {
-      scalatestWaiting.acquire()
-    } catch {
-      case e: InterruptedException =>
-        throw interruptedException.poll(10, TimeUnit.SECONDS)
     }
+    // TODO: stop abstraction-breaking activeThreads
+    require(activeThreads.length == 1)  // only thread should be main
+    activeThreads.trimStart(1)  // delete active threads - TODO fix this
+    blockedThreads.put(dut.clock, Seq(mainThread))  // TODO dehackify, this allows everything below to kick off
 
-    mainTesterThread = None
-    scalatestThread = None
-    currentThread = None
+    while (!mainThread.done) {  // iterate timesteps
+      val unblockedThreads = new mutable.ArrayBuffer[TesterThread]()
+
+      // Unblock threads waiting on main clock
+      unblockedThreads ++= blockedThreads.getOrElse(dut.clock, Seq())
+      blockedThreads.remove(dut.clock)
+      clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
+
+//      println(s"clock step")
+
+      // TODO: allow dependent clocks to step based on test stimulus generator
+      // Unblock threads waiting on dependent clock
+      require((blockedThreads.keySet - dut.clock) subsetOf lastClockValue.keySet)
+      val untrackClocks = lastClockValue.keySet -- blockedThreads.keySet
+      for (untrackClock <- untrackClocks) {  // purge unused clocks
+        lastClockValue.remove(untrackClock)
+      }
+      lastClockValue foreach { case (clock, lastValue) =>
+        val currentValue = getClock(clock)
+        if (currentValue != lastValue) {
+          lastClockValue.put(clock, currentValue)
+          if (currentValue) {  // rising edge
+            unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
+            blockedThreads.remove(clock)
+            threadingChecker.advanceClock(clock)
+
+            clockCounter.put(clock, getClockCycle(clock) + 1)
+          }
+        }
+      }
+
+      // Actually run things
+      runThreads(unblockedThreads)
+
+      // Propagate exceptions
+      if (!interruptedException.isEmpty()) {
+        throw interruptedException.poll()
+      }
+
+      threadingChecker.timestep()
+      Context().env.checkpoint()
+      step(1)
+    }
 
     for (thread <- allThreads.clone()) {
       // Kill the threads using an InterruptedException

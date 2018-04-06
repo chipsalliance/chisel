@@ -106,4 +106,8 @@ package object tester {
   def fork(runnable: => Unit): TesterThreadList = {
     new TesterThreadList(Seq(Context().backend.fork(runnable)))
   }
+
+  def timescope(contents: => Unit): Unit = {
+    Context().backend.timescope(contents)
+  }
 }

@@ -2,7 +2,8 @@
 
 package chisel3
 
-import firrtl.{ExecutionOptionsManager, ComposableOptions}
+import chisel3.tester.{ScalaSimulator, TreadleSimulator}
+import firrtl.{ComposableOptions, ExecutionOptionsManager}
 
 //TODO: provide support for running firrtl as separate process, could alternatively be controlled by external driver
 //TODO: provide option for not saving chirrtl file, instead calling firrtl with in memory chirrtl
@@ -13,9 +14,9 @@ import firrtl.{ExecutionOptionsManager, ComposableOptions}
   * @note this extends FirrtlExecutionOptions which extends CommonOptions providing easy access to down chain options
   */
 case class ChiselExecutionOptions(
-                                   runFirrtlCompiler: Boolean = true
-                                   // var runFirrtlAsProcess: Boolean = false
-                                 ) extends ComposableOptions
+  runFirrtlCompiler : Boolean        = true,
+  scalaSimulator    : ScalaSimulator = TreadleSimulator
+) extends ComposableOptions
 
 trait HasChiselExecutionOptions {
   self: ExecutionOptionsManager =>

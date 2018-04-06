@@ -62,7 +62,7 @@ class GCDSpec extends PropSpec with ChiselScalatestTester with PropertyChecks {
     elaborate { new GCD }
   }
 */
-  private val backendNames = Array[String] ("firrtl", "jni", "verilator")
+  private val backendNames = Array[String] ("firrtl", "treadle", "jni", "verilator")
   for (backendName <- backendNames) {
     val options = new TesterOptionsManager {
       testerOptions = TesterOptions(backendName = backendName)

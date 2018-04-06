@@ -41,15 +41,13 @@ class ClockDividerTest extends FlatSpec with ChiselScalatestTester {
         c.clock.step()
         c.io.mainOut.expect(3.U)
         c.io.divOut.expect(1.U)
-      }
-      fork {
+      } .fork {
         c.io.mainOut.expect(0.U)
         c.io.divOut.expect(0.U)
         c.io.divClock.step()
         c.io.mainOut.expect(2.U)
         c.io.divOut.expect(1.U)
-      }
-      c.clock.step(8)  // TODO replace with join on threads
+      } .join
     }
   }
 }
