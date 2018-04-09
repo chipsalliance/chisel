@@ -18,12 +18,13 @@ import firrtl.util.BackendCompilationUtilities._
 import JNILibraryBackend._
 
 object JNILibraryBackend {
-  var shimLoaded = false
-  def loadJNITestShim(fullPath: String): Unit = {
+  private[this] var shimLoaded = false
+  private[this] val lock = new Object()
+  def loadJNITestShim(fullPath: String): Unit = lock.synchronized {
     if (!shimLoaded) {
+      shimLoaded = true
       System.load(fullPath)
     }
-    shimLoaded = true
   }
 }
 
