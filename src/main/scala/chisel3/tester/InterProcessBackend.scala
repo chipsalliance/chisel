@@ -567,5 +567,6 @@ class InterProcessBackend[T <: Module](
         thread.thread.interrupt()
       }
     }
+    finish()
   }
 }

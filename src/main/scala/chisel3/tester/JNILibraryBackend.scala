@@ -359,6 +359,7 @@ class JNILibraryBackend[T <: Module](
         thread.thread.interrupt()
       }
     }
+    finish()
   }
 }
 
