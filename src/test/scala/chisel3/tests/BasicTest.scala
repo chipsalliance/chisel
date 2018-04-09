@@ -4,13 +4,18 @@ import org.scalatest._
 
 import chisel3._
 import chisel3.tester._
+import firrtl.CommonOptions
 
 class BasicTest extends FlatSpec with ChiselScalatestTester {
   behavior of "Testers2"
 
-  private val backendNames = Array[String] ("firrtl", "verilator", "jni")
+  private val backendNames = Array[String] ("treadle", "firrtl", "verilator", "jni")
   for (backendName <- backendNames) {
+    val defaultTargetDirName = "test_run_dir"
     val options = new TesterOptionsManager {
+      // sbt ends up running these tests in parallel and there are collisions when
+      //  generating code with the verilator and jni backends.
+      commonOptions = CommonOptions(targetDirName = s"${defaultTargetDirName}/${backendName}")
       testerOptions = TesterOptions(backendName = backendName)
     }
 

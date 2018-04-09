@@ -8,6 +8,8 @@ import org.scalatest._
 import org.scalatest.prop._
 import java.time.{Duration, Instant}
 
+import firrtl.CommonOptions
+
 class GCD extends Module {
   val io = IO(new Bundle {
     val a  = Input(UInt(32.W))
@@ -64,10 +66,13 @@ class GCDSpec extends PropSpec with ChiselScalatestTester with PropertyChecks {
 */
   private val backendNames = Array[String] ("firrtl", "treadle", "jni", "verilator")
   for (backendName <- backendNames) {
+    val defaultTargetDirName = "test_run_dir"
     val options = new TesterOptionsManager {
+      // sbt may end up running these tests in parallel and there are collisions when
+      //  generating code with the verilator and jni backends.
+      commonOptions = CommonOptions(targetDirName = s"${defaultTargetDirName}/${backendName}")
       testerOptions = TesterOptions(backendName = backendName)
     }
-
 
     property(s"GCDTester should return the correct result (with $backendName)") {
       test(new GCD, options) { dut =>
