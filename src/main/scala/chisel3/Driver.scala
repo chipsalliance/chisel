@@ -109,6 +109,11 @@ object Driver extends BackendCompilationUtilities {
     }
   }
 
+  /** Emit the CHIRRTL of a circuit
+    *
+    * @param ir The circuit to emit
+    * @param optName An optional filename (will use s"${ir.name}.fir" otherwise)
+    */
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
@@ -117,6 +122,11 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
+  /** Emit the annotations of a circuit
+    *
+    * @param ir The circuit containing annotations to be emitted
+    * @param optName An optional filename (will use s"${ir.name}.json" otherwise)
+    */
   def dumpAnnotations(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".json"))
     val w = new FileWriter(f)
@@ -136,17 +146,21 @@ object Driver extends BackendCompilationUtilities {
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
 
-  private def customTransformsArg(annos: Seq[ChiselAnnotation]): Array[String] = annos
+  /** Determine custom transforms FIRRTL Driver command line arguments,
+    * e.g., "--custom-transforms ..."
+    *
+    * @param ir A circuit that may contain annotations
+    * @return An array of command line arguments
+    */
+  private def customTransformsArg(ir: Circuit): Array[String] = ir.annotations
     .collect { case anno: RunFirrtlTransform => anno.transformClass }
     .distinct
     .filterNot(_ == classOf[firrtl.Transform])
     .map{ transformClass: Class[_ <: Transform] => transformClass.getName } match {
       case a: Seq[String] if a.nonEmpty => Array("--custom-transforms") ++ a
-      case a: Seq[String] => Array("")
-      case _ => throw new Exception("Shouldn't be here...") }
+      case _ => Array("") }
 
-  /**
-    * Run the chisel3 compiler and possibly the firrtl compiler with options specified.
+  /** Run the chisel3 compiler and possibly the firrtl compiler with options specified.
     *
     * @param optionsManager The options specified
     * @param dut            The device under test
@@ -161,7 +175,7 @@ object Driver extends BackendCompilationUtilities {
 
     val optionsManagerX = new ExecutionOptionsManager(
       optionsManager.applicationName,
-      Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit.annotations),
+      Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit),
       optionsManager.firrtlOptions.annotations) with HasFirrtlOptions with HasChiselExecutionOptions
 
     val (chiselOptions, firrtlOptions) = (optionsManagerX.chiselOptions, optionsManagerX.firrtlOptions)
@@ -180,8 +194,7 @@ object Driver extends BackendCompilationUtilities {
     ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
-  /**
-    * Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
+  /** Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
     *
     * @param args   The options specified, command line style
     * @param dut    The device under test
@@ -192,7 +205,7 @@ object Driver extends BackendCompilationUtilities {
     val firrtlString = Emitter.emit(circuit)
     val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
 
-    val argsx = args ++ Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit.annotations)
+    val argsx = args ++ Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit)
 
     val optionsManager = new ExecutionOptionsManager("chisel3", argsx, firrtlAnnos)
         with HasChiselExecutionOptions with HasFirrtlOptions
