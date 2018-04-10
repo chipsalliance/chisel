@@ -56,6 +56,12 @@ object CompanionObjectWithBundle {
   }
 }
 
+class NestedAnonymousBundle extends Bundle {
+  val a = Output(new Bundle {
+    val a = UInt(8.W)
+  })
+}
+
 // A Bundle with an argument that is also a field.
 // Not necessarily good style (and not necessarily recommended), but allowed to preserve compatibility.
 class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
@@ -144,6 +150,26 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
     elaborate { new Module {
       val io = IO(Output(new CompanionObjectWithBundle.ParameterizedInner(8)))
       io.data := 1.U
+    } }
+  }
+
+  "Nested directioned anonymous Bundles" should "not need clonetype" in {
+    elaborate { new Module {
+      val io = IO(new NestedAnonymousBundle)
+      val a = WireInit(io)
+      io.a.a := 1.U
+    } }
+  }
+
+  "3.0 null compatibility" should "not need clonetype" in {
+    elaborate { new Module {
+      class InnerClassThing {
+        def createBundle = new Bundle {
+          val a = Output(UInt(8.W))
+        }
+      }
+      val io = IO((new InnerClassThing).createBundle)
+      val a = WireInit(io)
     } }
   }
 }
