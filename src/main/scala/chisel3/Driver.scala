@@ -12,31 +12,11 @@ import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 
 import java.io._
-
-/**
-  * The Driver provides methods to invoke the chisel3 compiler and the FIRRTL compiler.
-  * By default FIRRTL is automatically run after chisel. Command line options
-  *
-  * @example
-  *          {{{
-  *          val optionsManager = new ExecutionOptionsManager("chisel3")
-  *              with HasFirrtlOptions
-  *              with HasChiselExecutionOptions {
-  *            commonOptions = CommonOption(targetDirName = "my_target_dir")
-  *            chiselOptions = ChiselExecutionOptions(runFirrtlCompiler = false)
-  *          }
-  *          chisel3.Driver.execute(optionsManager, () => new Dut)
-  *          }}}
-  * or via command line arguments
-  * @example {{{
-  *          args = "--no-run-firrtl --target-dir my-target-dir".split(" +")
-  *          chisel3.execute(args, () => new DUT)
-  *          }}}
-  */
 import BuildInfo._
 
 trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
-  /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
+  /**
+    * Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
     *
     * @param prefix basename of the file
     * @param dir    directory where file lives
@@ -62,27 +42,41 @@ trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
 trait ChiselExecutionResult
 
 /**
+  * Getting one of these indicates a successful Chisel run
   *
   * @param circuitOption  Optional circuit, has information like circuit name
   * @param emitted            The emitted Chirrrl text
   * @param firrtlResultOption Optional Firrtl result, @see ucb-bar/firrtl for details
   */
 case class ChiselExecutionSuccess(
-                                  circuitOption: Option[Circuit],
-                                  emitted: String,
-                                  firrtlResultOption: Option[FirrtlExecutionResult]
-                                  ) extends ChiselExecutionResult
+  circuitOption: Option[Circuit],
+  emitted: String,
+  firrtlResultOption: Option[FirrtlExecutionResult]) extends ChiselExecutionResult
 
 /**
   * Getting one of these indicates failure of some sort
- *
+  *
   * @param message  a clue perhaps will be provided in the here
   */
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
+/**
+  * The Driver provides methods to invoke the Chisel3 compiler and the
+  * FIRRTL compiler. By default FIRRTL is automatically run after chisel.
+  *
+  * @example
+  * {{{
+  * val args = Array(
+  *   "--top-name", "MyTopModule",     // The name of the top module
+  *   "--target-dir", "my_target_dir", // The work directory
+  *   "--compiler", "low" )            // The FIRRTL compiler to use
+  * Driver.execute(args, () => new MyTopModule)
+  * }}}
+  */
 object Driver extends BackendCompilationUtilities {
 
-  /** Elaborates the Module specified in the gen function into a Circuit
+  /**
+    * Elaborates the Module specified in the gen function into a Circuit
     *
     *  @param gen a function that creates a Module hierarchy
     *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
@@ -93,7 +87,8 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
-  /** Elaborates the Module specified in the gen function into Verilog
+  /**
+    * Elaborates the Module specified in the gen function into Verilog
     *
     *  @param gen a function that creates a Module hierarchy
     *  @return the resulting String containing the design in Verilog
@@ -105,7 +100,8 @@ object Driver extends BackendCompilationUtilities {
     }
   }
 
-  /** Emit the CHIRRTL of a circuit
+  /**
+    * Emit the CHIRRTL of a circuit
     *
     * @param ir The circuit to emit
     * @param optName An optional filename (will use s"${ir.name}.fir" otherwise)
@@ -118,7 +114,8 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
-  /** Emit the annotations of a circuit
+  /**
+    * Emit the annotations of a circuit
     *
     * @param ir The circuit containing annotations to be emitted
     * @param optName An optional filename (will use s"${ir.name}.json" otherwise)
@@ -142,7 +139,8 @@ object Driver extends BackendCompilationUtilities {
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
 
-  /** Determine custom transforms FIRRTL Driver command line arguments,
+  /**
+    * Determine custom transforms FIRRTL Driver command line arguments,
     * e.g., "--custom-transforms ..."
     *
     * @param ir A circuit that may contain annotations
@@ -156,7 +154,8 @@ object Driver extends BackendCompilationUtilities {
       case a: Seq[String] if a.nonEmpty => Array("--custom-transforms") ++ a
       case _ => Array("") }
 
-  /** Run the chisel3 compiler and possibly the firrtl compiler with options specified.
+  /**
+    * Run the chisel3 compiler and possibly the firrtl compiler with options specified.
     *
     * @param optionsManager The options specified
     * @param dut            The device under test
@@ -190,7 +189,8 @@ object Driver extends BackendCompilationUtilities {
     ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
-  /** Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
+  /**
+    * Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
     *
     * @param args   The options specified, command line style
     * @param dut    The device under test
