@@ -47,10 +47,11 @@ trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
     * @return       true if compiler completed successfully
     */
   def compileFirrtlToVerilog(prefix: String, dir: File): Boolean = {
-    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
-      commonOptions = CommonOptions(topName = prefix, targetDirName = dir.getAbsolutePath)
-      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog")
-    }
+    val optionsManager = new ExecutionOptionsManager(
+      "chisel3",
+      Array("--top-name", prefix,
+            "--target-dir", dir.getAbsolutePath,
+            "--compiler", "verilog")) with HasChiselExecutionOptions with HasFirrtlOptions
 
     firrtl.Driver.execute(optionsManager) match {
       case _: FirrtlExecutionSuccess => true
@@ -128,37 +129,21 @@ object Driver extends BackendCompilationUtilities {
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
 
   /**
-    * Run the chisel3 compiler and possibly the firrtl compiler with options specified
- *
+    * Run the chisel3 compiler and possibly the firrtl compiler with options specified.
+    *
     * @param optionsManager The options specified
     * @param dut                    The device under test
     * @return                       An execution result with useful stuff, or failure with message
     */
+  @deprecated("use Driver.execute(args: Array[String], dut: () => RawModule)", "3.2.0")
   def execute(
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => RawModule): ChiselExecutionResult = {
     val circuit = elaborate(dut)
 
-    // this little hack let's us set the topName with the circuit name if it has not been set from args
-    optionsManager.setTopNameIfNotSet(circuit.name)
-
-    val firrtlOptions = optionsManager.firrtlOptions
-    val chiselOptions = optionsManager.chiselOptions
-
     // use input because firrtl will be reading this
     val firrtlString = Emitter.emit(circuit)
-    val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
-    val firrtlFile = new File(firrtlFileName)
-
-    val w = new FileWriter(firrtlFile)
-    w.write(firrtlString)
-    w.close()
-
-    val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
-    val af = new FileWriter(annotationFile)
     val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
-    af.write(JsonProtocol.serialize(firrtlAnnos))
-    af.close()
 
     /** Find the set of transform classes associated with annotations then
       * instantiate an instance of each transform
@@ -166,43 +151,95 @@ object Driver extends BackendCompilationUtilities {
       *   transform being instantiated
       */
     val transforms = circuit.annotations
-                       .collect { case anno: RunFirrtlTransform => anno.transformClass }
-                       .distinct
-                       .filterNot(_ == classOf[firrtl.Transform])
-                       .map { transformClass: Class[_ <: Transform] =>
-                         transformClass.newInstance()
-                       }
+      .collect { case anno: RunFirrtlTransform => anno.transformClass }
+      .distinct
+      .filterNot(_ == classOf[firrtl.Transform])
+      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
     /* This passes the firrtl source and annotations directly to firrtl */
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlSource = Some(firrtlString),
-      annotations = optionsManager.firrtlOptions.annotations ++ firrtlAnnos,
-      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
+    val argTransforms = if (transforms.nonEmpty)
+      Array("--custom-transforms") ++ transforms.map(_.getClass.getName)
+    else
+      Array("")
 
-    val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
-      Some(firrtl.Driver.execute(optionsManager))
+    val firrtlOptions = optionsManager.firrtlOptions
+
+    val optionsManagerX = new ExecutionOptionsManager(
+      optionsManager.applicationName,
+      Array("--firrtl-source", firrtlString) ++ argTransforms,
+      firrtlOptions.annotations) with HasFirrtlOptions with HasChiselExecutionOptions
+
+    val chiselOptions = optionsManagerX.chiselOptions
+
+    if (chiselOptions.saveChirrtl) {
+      val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
+      val firrtlFile = new File(firrtlFileName)
+      val w = new FileWriter(firrtlFile)
+      w.write(firrtlString)
+      w.close()
     }
-    else {
+
+    if (chiselOptions.saveAnnotations) {
+      val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
+      val af = new FileWriter(annotationFile)
+      af.write(JsonProtocol.serialize(firrtlAnnos))
+      af.close()
+    }
+
+    val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler)
+      Some(firrtl.Driver.execute(optionsManagerX))
+    else
       None
-    }
+
     ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
   /**
     * Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
- *
+    *
     * @param args   The options specified, command line style
     * @param dut    The device under test
     * @return       An execution result with useful stuff, or failure with message
     */
   def execute(args: Array[String], dut: () => RawModule): ChiselExecutionResult = {
-    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions
+    val circuit = elaborate(dut)
+    val firrtlString = Emitter.emit(circuit)
+    val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
 
-    optionsManager.parse(args) match {
-      case true =>
-        execute(optionsManager, dut)
-      case _ =>
-        ChiselExecutionFailure("could not parse results")
+    val transforms = circuit.annotations
+      .collect { case anno: RunFirrtlTransform => anno.transformClass }
+      .distinct
+      .filterNot(_ == classOf[firrtl.Transform])
+      .map{ transformClass: Class[_ <: Transform] => RunFirrtlTransformAnnotation(transformClass.toString) }
+    val argTransforms = if (transforms.nonEmpty)
+      Array("--custom-transforms") ++ transforms.map(_.getClass.getName)
+    else
+      Array("")
+    val argsx = args ++ Array("--firrtl-source", firrtlString)
+
+    val optionsManager = new ExecutionOptionsManager("chisel3", argsx, firrtlAnnos)
+        with HasChiselExecutionOptions with HasFirrtlOptions
+
+    if (optionsManager.chiselOptions.saveChirrtl) {
+      val firrtlFileName = optionsManager.firrtlOptions.getInputFileName(optionsManager)
+      val firrtlFile = new File(firrtlFileName)
+      val w = new FileWriter(firrtlFile)
+      w.write(firrtlString)
+      w.close()
     }
+
+    if (optionsManager.chiselOptions.saveAnnotations) {
+      val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
+      val af = new FileWriter(annotationFile)
+      af.write(JsonProtocol.serialize(firrtlAnnos))
+      af.close()
+    }
+
+    val firrtlExecutionResult = if(optionsManager.chiselOptions.runFirrtlCompiler)
+      Some(firrtl.Driver.execute(optionsManager))
+    else
+      None
+
+    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
   /**
