@@ -5,21 +5,17 @@ package chisel3
 import chisel3.internal.firrtl.Emitter
 import chisel3.experimental.{RawModule, RunFirrtlTransform, ChiselAnnotation}
 
-import java.io._
-import net.jcazevedo.moultingyaml._
-
 import internal.firrtl._
-import firrtl._
-import firrtl.annotations.{Annotation, JsonProtocol}
+import firrtl.{ExecutionOptionsManager, HasFirrtlOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure,
+  FirrtlExecutionResult, Transform}
+import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 
-import _root_.firrtl.annotations.AnnotationYamlProtocol._
+import java.io._
 
 /**
-  * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
-  * By default firrtl is automatically run after chisel.  an [[ExecutionOptionsManager]]
-  * is needed to manage options.  It can parser command line arguments or coordinate
-  * multiple chisel toolchain tools options.
+  * The Driver provides methods to invoke the chisel3 compiler and the FIRRTL compiler.
+  * By default FIRRTL is automatically run after chisel. Command line options
   *
   * @example
   *          {{{
@@ -104,7 +100,7 @@ object Driver extends BackendCompilationUtilities {
     */
   def emitVerilog[T <: RawModule](gen: => T): String = {
     execute(Array[String](), { () => gen }) match {
-      case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
+      case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(_, verilog))) => verilog
       case _ => sys.error("Cannot get Verilog!")
     }
   }
