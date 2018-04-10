@@ -9,7 +9,6 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.tester.TesterUtils.{getIOPorts, getPortNames}
-import chisel3.tester.InterProcessBackend
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.immutable.ListMap
@@ -18,13 +17,19 @@ import firrtl.util.BackendCompilationUtilities._
 import JNILibraryBackend._
 
 object JNILibraryBackend {
-  private[this] var shimLoaded = false
-  private[this] val lock = new Object()
-  def loadJNITestShim(fullPath: String): Unit = lock.synchronized {
-    if (!shimLoaded) {
-      shimLoaded = true
-      System.load(fullPath)
-    }
+  val singletonName = "chisel3.tester.SingletonLoaderShim"
+  var classLoader: ClassLoader = Thread.currentThread.getContextClassLoader
+  if (classLoader == null)
+    classLoader = classOf[chisel3.tester.SingletonLoaderShim].getClassLoader
+  if (classLoader == null)
+    classLoader = ClassLoader.getSystemClassLoader()
+  // Load and initialize the singelton.
+  println(s"loading ${singletonName} using ${classLoader.toString}")
+  val instance = Class.forName(singletonName, true, classLoader)
+//  val singletonLoaderShim: SingletonLoaderShim = instance.INSTANCE
+  val singletonLoaderShim: SingletonLoaderShim = SingletonLoaderShim.INSTANCE
+  def loadJNITestShim(fullPath: String): Unit = {
+    singletonLoaderShim.loadJNITestShim(fullPath)
   }
 }
 
