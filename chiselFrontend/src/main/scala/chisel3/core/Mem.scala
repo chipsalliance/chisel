@@ -156,6 +156,7 @@ sealed class SyncReadMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
 
   def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val a = Wire(UInt())
+    a := DontCare
     var port: Option[T] = None
     when (enable) {
       a := addr

@@ -589,6 +589,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case (outerClass, _) => Some(outerClass)
     }
 
+    // For compatibility with pre-3.1, where null is tried as an argument to the constructor.
+    // This stores potential error messages which may be used later.
+    var outerClassError: Option[String] = None
+
     // Check if this is an inner class, and if so, try to get the outer instance
     val outerClassInstance = enclosingClassOption.map { outerClass =>
       def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
@@ -612,10 +616,14 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
                 case outer :: Nil =>
                   _outerInst = Some(outer)  // record the guess for future use
                   outer
-                case Nil => autoClonetypeError(s"Unable to determine instance of outer class $outerClass," +
-                    s" no candidates assignable to outer class types; examined $allOuterCandidates")
-                case candidates => autoClonetypeError(s"Unable to determine instance of outer class $outerClass," +
-                    s" multiple possible candidates $candidates assignable to outer class type")
+                case Nil =>  // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
+                  outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
+                      s" no candidates assignable to outer class types; examined $allOuterCandidates")
+                  null
+                case candidates => // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
+                  outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
+                      s" multiple possible candidates $candidates assignable to outer class type")
+                  null
               }
           }
       }
@@ -635,7 +643,12 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
         case (Nil, None) => // no arguments, no outer class, invoke constructor directly
           Some(ctor.newInstance().asInstanceOf[this.type])
         case (argType :: Nil, Some((_, outerInstance))) =>
-          if (argType isAssignableFrom outerInstance.getClass) {
+          if (outerInstance == null) {
+            Builder.deprecated(s"chisel3.1 autoclonetype failed, falling back to 3.0 behavior using null as the outer instance." +
+                s" Autoclonetype failure reason: ${outerClassError.get}",
+                Some(s"$clazz"))
+            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+          } else if (argType isAssignableFrom outerInstance.getClass) {
             Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
           } else {
             None
@@ -738,6 +751,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     // Invoke ctor
     val classMirror = outerClassInstance match {
+      case Some((_, null)) => autoClonetypeError(outerClassError.get)  // deals with the null hack for 3.0 compatibility
       case Some((_, outerInstance)) => mirror.reflect(outerInstance).reflectClass(classSymbol)
       case _ => mirror.reflectClass(classSymbol)
     }
