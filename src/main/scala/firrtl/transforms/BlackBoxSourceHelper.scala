@@ -8,7 +8,7 @@ import firrtl._
 import firrtl.Utils.throwInternalError
 import firrtl.annotations._
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.immutable.ListSet
 
 sealed trait BlackBoxHelperAnno extends Annotation
 
@@ -47,8 +47,8 @@ class BlackBoxSourceHelper extends firrtl.Transform {
     * @param annos a list of generic annotations for this transform
     * @return BlackBoxHelperAnnos and target directory
     */
-  def collectAnnos(annos: Seq[Annotation]): (Set[BlackBoxHelperAnno], File) =
-    annos.foldLeft((Set.empty[BlackBoxHelperAnno], DefaultTargetDir)) {
+  def collectAnnos(annos: Seq[Annotation]): (ListSet[BlackBoxHelperAnno], File) =
+    annos.foldLeft((ListSet.empty[BlackBoxHelperAnno], DefaultTargetDir)) {
       case ((acc, tdir), anno) => anno match {
         case BlackBoxTargetDirAnno(dir) =>
           val targetDir = new File(dir)
@@ -67,40 +67,33 @@ class BlackBoxSourceHelper extends firrtl.Transform {
     */
   override def execute(state: CircuitState): CircuitState = {
     val (annos, targetDir) = collectAnnos(state.annotations)
-    val fileList = annos.foldLeft(List.empty[String]) {
-      case (fileList, anno) => anno match {
-        case BlackBoxResourceAnno(_, resourceId) =>
-          val name = resourceId.split("/").last
-          val outFile = new File(targetDir, name)
-          BlackBoxSourceHelper.copyResourceToFile(resourceId,outFile)
-          outFile.getAbsolutePath +: fileList
-        case BlackBoxInlineAnno(_, name, text) =>
-          val outFile = new File(targetDir, name)
-          val writer = new PrintWriter(outFile)
-          writer.write(text)
-          writer.close()
-          outFile.getAbsolutePath +: fileList
-        case _ => throwInternalError()
-      }
+
+    val resourceFiles: ListSet[File] = annos.collect {
+      case BlackBoxResourceAnno(_, resourceId) =>
+        val name = resourceId.split("/").last
+        val outFile = new File(targetDir, name)
+        (resourceId, outFile)
+    }.map { case (res, file) =>
+      BlackBoxSourceHelper.copyResourceToFile(res, file)
+      file
     }
-    // If we have BlackBoxes, generate the helper file.
-    // If we don't, make sure it doesn't exist or we'll confuse downstream processing
-    //  that triggers behavior on the existence of the file
-    val helperFile = new File(targetDir, BlackBoxSourceHelper.FileListName)
-    if (fileList.nonEmpty) {
-      val writer = new PrintWriter(helperFile)
-      writer.write(fileList.map { fileName => s"-v $fileName" }.mkString("\n"))
-      writer.close()
-    } else {
-      helperFile.delete()
+
+    val inlineFiles: ListSet[File] = annos.collect {
+      case BlackBoxInlineAnno(_, name, text) =>
+        val outFile = new File(targetDir, name)
+        (text, outFile)
+    }.map { case (text, file) =>
+      BlackBoxSourceHelper.writeTextToFile(text, file)
+      file
     }
+
+    BlackBoxSourceHelper.writeFileList(resourceFiles ++ inlineFiles, targetDir)
 
     state
   }
 }
 
 object BlackBoxSourceHelper {
-  val FileListName = "black_box_verilog_files.f"
   /**
     * finds the named resource and writes into the directory
     * @param name the name of the resource
@@ -116,4 +109,17 @@ object BlackBoxSourceHelper {
     out.close()
   }
 
+  val fileListName = "firrtl_black_box_resource_files.f"
+
+  def writeFileList(files: ListSet[File], targetDir: File) {
+    if (files.nonEmpty) {
+      writeTextToFile(files.mkString("\n"), new File(targetDir, fileListName))
+    }
+  }
+
+  def writeTextToFile(text: String, file: File) {
+    val out = new PrintWriter(file)
+    out.write(text)
+    out.close()
+  }
 }
