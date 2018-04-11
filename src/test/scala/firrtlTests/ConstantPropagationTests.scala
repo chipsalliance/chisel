@@ -836,6 +836,25 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq.empty)
   }
 
+  it should "pad zero when constant propping a register replaced with zero" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output z : UInt<16>
+          |    reg r : UInt<8>, clock
+          |    r <= or(r, UInt(0))
+          |    node n = UInt("hab")
+          |    z <= cat(n, r)""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    output z : UInt<16>
+          |    z <= UInt<16>("hab00")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
   it should "pad constant connections to outputs when propagating" in {
       val input =
         """circuit Top :

@@ -379,7 +379,8 @@ class ConstantPropagation extends Transform {
           case Mux(_, tval: Literal, fval: WRef, _) if weq(lref, fval) =>
             nodeMap(lname) = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(tval, ltpe))
           case WRef(`lname`, _,_,_) => // If a register is connected to itself, propagate zero
-            nodeMap(lname) = passes.RemoveValidIf.getGroundZero(ltpe)
+            val zero = passes.RemoveValidIf.getGroundZero(ltpe)
+            nodeMap(lname) = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(zero, ltpe))
           case _ =>
         }
         // Mark instance inputs connected to a constant
