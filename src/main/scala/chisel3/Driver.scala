@@ -161,7 +161,6 @@ object Driver extends BackendCompilationUtilities {
     * @param dut            The device under test
     * @return               An execution result with useful stuff, or failure with message
     */
-  @deprecated("use Driver.execute(args: Array[String], dut: () => RawModule)", "3.2.0")
   def execute(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlExecutionOptions,
               dut: () => RawModule): ChiselExecutionResult = {
     val circuit = elaborate(dut)
@@ -171,7 +170,7 @@ object Driver extends BackendCompilationUtilities {
     val optionsManagerX = new ExecutionOptionsManager(
       optionsManager.applicationName,
       Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit),
-      optionsManager.firrtlOptions.annotations) with HasFirrtlExecutionOptions with HasChiselExecutionOptions
+      optionsManager.options ++ firrtlAnnos) with HasFirrtlExecutionOptions with HasChiselExecutionOptions
 
     val (chiselOptions, firrtlOptions) = (optionsManagerX.chiselOptions, optionsManagerX.firrtlOptions)
 
@@ -197,29 +196,9 @@ object Driver extends BackendCompilationUtilities {
     * @return       An execution result with useful stuff, or failure with message
     */
   def execute(args: Array[String], dut: () => RawModule): ChiselExecutionResult = {
-    val circuit = elaborate(dut)
-    val firrtlString = Emitter.emit(circuit)
-    val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
-
-    val argsx = args ++ Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit)
-
-    val optionsManager = new ExecutionOptionsManager("chisel3", argsx, firrtlAnnos)
+    val optionsManager = new ExecutionOptionsManager("chisel3", args)
         with HasChiselExecutionOptions with HasFirrtlExecutionOptions
-
-    val (chiselOptions, firrtlOptions) = (optionsManager.chiselOptions, optionsManager.firrtlOptions)
-
-    if (chiselOptions.saveChirrtl)
-      dumpFirrtl(circuit, Some(new File(firrtlOptions.getInputFileName(optionsManager))))
-
-    if (chiselOptions.saveAnnotations)
-      dumpAnnotations(circuit, Some(new File(optionsManager.getBuildFileName("anno.json"))))
-
-    val firrtlExecutionResult = if (chiselOptions.runFirrtlCompiler)
-      Some(firrtl.Driver.execute(optionsManager))
-    else
-      None
-
-    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
+    execute(optionsManager, dut)
   }
 
   /**
