@@ -25,7 +25,7 @@ class DriverSpec extends FreeSpec with Matchers {
       val  targetDir = "."
       Driver.execute(Array.empty[String], () => new DummyModule) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          val exts = List("anno", "fir", "v")
+          val exts = List("anno.json", "fir", "v")
           for (ext <- exts) {
             val dummyOutput = new File(targetDir, "DummyModule" + "." + ext)
             dummyOutput.exists() should be(true)
@@ -41,7 +41,7 @@ class DriverSpec extends FreeSpec with Matchers {
       val  targetDir = "local-build"
       Driver.execute(Array("-tn", "dm", "-td", targetDir), () => new DummyModule) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          val exts = List("anno", "fir", "v")
+          val exts = List("anno.json", "fir", "v")
           for (ext <- exts) {
             val dummyOutput = new File(targetDir, "dm" + "." + ext)
             dummyOutput.exists() should be(true)

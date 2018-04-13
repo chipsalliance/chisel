@@ -31,7 +31,7 @@ object Mem {
   }
 }
 
-sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId {
+sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with NamedComponent {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
@@ -156,6 +156,7 @@ sealed class SyncReadMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
 
   def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val a = Wire(UInt())
+    a := DontCare
     var port: Option[T] = None
     when (enable) {
       a := addr
