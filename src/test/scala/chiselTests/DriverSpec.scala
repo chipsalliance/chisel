@@ -5,7 +5,7 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import firrtl.{FirrtlExecutionSuccess, ExecutionOptionsManager, HasFirrtlOptions}
+import firrtl.{FirrtlExecutionSuccess, ExecutionOptionsManager, HasFirrtlExecutionOptions}
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
 
@@ -112,7 +112,7 @@ class DriverSpec extends FreeSpec with Matchers {
       val optionsManager = new ExecutionOptionsManager (
         "test",
         Array( "-tn", name,
-               "-td", targetDir ) ) with HasFirrtlOptions with HasChiselExecutionOptions
+               "-td", targetDir ) ) with HasFirrtlExecutionOptions with HasChiselExecutionOptions
       Driver.execute(optionsManager, () => new DummyModule) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
           filesShouldExist(List("anno.json", "fir", "v"))

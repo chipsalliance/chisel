@@ -11,7 +11,7 @@ import chisel3.experimental.RawModule
 import chisel3.testers._
 import firrtl.{
   ExecutionOptionsManager,
-  HasFirrtlOptions,
+  HasFirrtlExecutionOptions,
   FirrtlExecutionSuccess,
   FirrtlExecutionFailure
 }

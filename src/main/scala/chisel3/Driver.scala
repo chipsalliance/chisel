@@ -6,7 +6,7 @@ import chisel3.internal.firrtl.Emitter
 import chisel3.experimental.{RawModule, RunFirrtlTransform, ChiselAnnotation}
 
 import internal.firrtl._
-import firrtl.{ExecutionOptionsManager, HasFirrtlOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure,
+import firrtl.{ExecutionOptionsManager, HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure,
   FirrtlExecutionResult, Transform}
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
@@ -27,7 +27,7 @@ trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
       "chisel3",
       Array("--top-name", prefix,
             "--target-dir", dir.getAbsolutePath,
-            "--compiler", "verilog")) with HasChiselExecutionOptions with HasFirrtlOptions
+            "--compiler", "verilog")) with HasChiselExecutionOptions with HasFirrtlExecutionOptions
 
     firrtl.Driver.execute(optionsManager) match {
       case _: FirrtlExecutionSuccess => true
@@ -162,7 +162,7 @@ object Driver extends BackendCompilationUtilities {
     * @return               An execution result with useful stuff, or failure with message
     */
   @deprecated("use Driver.execute(args: Array[String], dut: () => RawModule)", "3.2.0")
-  def execute(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
+  def execute(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlExecutionOptions,
               dut: () => RawModule): ChiselExecutionResult = {
     val circuit = elaborate(dut)
     val firrtlString = Emitter.emit(circuit)
@@ -171,7 +171,7 @@ object Driver extends BackendCompilationUtilities {
     val optionsManagerX = new ExecutionOptionsManager(
       optionsManager.applicationName,
       Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit),
-      optionsManager.firrtlOptions.annotations) with HasFirrtlOptions with HasChiselExecutionOptions
+      optionsManager.firrtlOptions.annotations) with HasFirrtlExecutionOptions with HasChiselExecutionOptions
 
     val (chiselOptions, firrtlOptions) = (optionsManagerX.chiselOptions, optionsManagerX.firrtlOptions)
 
@@ -204,7 +204,7 @@ object Driver extends BackendCompilationUtilities {
     val argsx = args ++ Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit)
 
     val optionsManager = new ExecutionOptionsManager("chisel3", argsx, firrtlAnnos)
-        with HasChiselExecutionOptions with HasFirrtlOptions
+        with HasChiselExecutionOptions with HasFirrtlExecutionOptions
 
     val (chiselOptions, firrtlOptions) = (optionsManager.chiselOptions, optionsManager.firrtlOptions)
 
