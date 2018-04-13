@@ -484,7 +484,6 @@ object Utils extends LazyLogging {
     case vx => throwInternalError(s"get_field: shouldn't be here - $v")
   }
 
-  def times(flip: Orientation, d: Direction): Direction = times(flip, d)
   def times(d: Direction,flip: Orientation): Direction = flip match {
     case Default => d
     case Flip => swap(d)
