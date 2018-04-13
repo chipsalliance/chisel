@@ -1,4 +1,3 @@
-# We currently skip the backend tests so we don't need to install verilator.
 language: scala
 
 sudo: false
@@ -28,5 +27,5 @@ before_install:
   - bash .install-dependencies.sh
 
 script:
-  - sbt "+testOnly -- -l tags.RequiresBackend"
+  - sbt test
   - sbt scalastyle  test:scalastyle
