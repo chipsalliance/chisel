@@ -173,8 +173,8 @@ private[chisel3] class DynamicContext() {
   var currentClockAndReset: Option[ClockAndReset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
-  // Record the Bundle instance, class name, and reverse stack trace position of open Bundles
-  val bundleStack: ArrayBuffer[(Bundle, String, Int)] = ArrayBuffer()
+  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
+  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 }
 
 private[chisel3] object Builder {
@@ -247,13 +247,19 @@ private[chisel3] object Builder {
   // Returns the current stack of open Bundles
   // Note: elt will NOT have finished construction, its elements cannot be accessed
   def updateBundleStack(elt: Bundle): Seq[Bundle] = {
-    val stackClasses = Thread.currentThread().getStackTrace()
-        .map(_.getClassName)
+    val stackElts = Thread.currentThread().getStackTrace()
         .reverse  // so stack frame numbers are deterministic across calls
+        .dropRight(2)  // discard Thread.getStackTrace and updateBundleStack
+
+    // Determine where we are in the Bundle stack
+    val eltClassName = elt.getClass.getName
+    val eltStackPos = stackElts.map(_.getClassName).lastIndexOf(eltClassName)
 
     // Prune the existing Bundle stack of closed Bundles
-    val pruneLength = dynamicContext.bundleStack.reverse.prefixLength { case (_, cname, pos) =>
-      pos >= stackClasses.size || stackClasses(pos) != cname
+    // If we know where we are in the stack, discard frames above that
+    val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
+    val pruneLength = dynamicContext.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
+      pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
     }
     dynamicContext.bundleStack.trimEnd(pruneLength)
 
@@ -261,10 +267,9 @@ private[chisel3] object Builder {
     val lastStack = dynamicContext.bundleStack.map(_._1).toSeq
 
     // Append the current Bundle to the stack, if it's on the stack trace
-    val eltClassName = elt.getClass.getName
-    val eltStackPos = stackClasses.lastIndexOf(eltClassName)
     if (eltStackPos >= 0) {
-      dynamicContext.bundleStack.append((elt, eltClassName, eltStackPos))
+      val stackElt = stackElts(eltStackPos)
+      dynamicContext.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
     }
     // Otherwise discard the stack frame, this shouldn't fail noisily
 
