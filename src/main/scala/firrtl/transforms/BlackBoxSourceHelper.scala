@@ -113,7 +113,11 @@ object BlackBoxSourceHelper {
 
   def writeFileList(files: ListSet[File], targetDir: File) {
     if (files.nonEmpty) {
-      writeTextToFile(files.mkString("\n"), new File(targetDir, fileListName))
+      // We need the absolute path here (or strip targetDir from the file path),
+      //  so verilator will create a path to the file that works from the targetDir.
+      //  Otherwise, when make tries to determine dependencies based on the *__ver.d file, we end up with errors like:
+      //    make[1]: *** No rule to make target `test_run_dir/examples.AccumBlackBox_PeekPokeTest_Verilator345491158/AccumBlackBox.v', needed by `.../chisel-testers/test_run_dir/examples.AccumBlackBox_PeekPokeTest_Verilator345491158/VAccumBlackBoxWrapper.h'.  Stop.
+      writeTextToFile(files.map(_.getAbsolutePath).mkString("\n"), new File(targetDir, fileListName))
     }
   }
 
