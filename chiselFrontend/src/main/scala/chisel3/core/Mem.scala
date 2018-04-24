@@ -116,7 +116,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data](t: T, length: Int) extends MemBase(t, length)
+sealed class Mem[T <: Data] private (t: T, length: Int) extends MemBase(t, length)
 
 object SyncReadMem {
   @chiselRuntimeDeprecated
@@ -151,7 +151,7 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data](t: T, n: Int) extends MemBase[T](t, n) {
+sealed class SyncReadMem[T <: Data] private (t: T, n: Int) extends MemBase[T](t, n) {
   def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
 
   def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
