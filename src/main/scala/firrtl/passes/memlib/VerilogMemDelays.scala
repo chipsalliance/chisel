@@ -10,6 +10,8 @@ import firrtl.Mappers._
 import firrtl.PrimOps._
 import MemPortUtils._
 
+import collection.mutable
+
 /** This pass generates delay reigsters for memories for verilog */
 object VerilogMemDelays extends Pass {
   val ug = UNKNOWNGENDER
@@ -32,8 +34,9 @@ object VerilogMemDelays extends Pass {
   def memDelayStmt(
       netlist: Netlist,
       namespace: Namespace,
-      repl: Netlist)
-      (s: Statement): Statement = s map memDelayStmt(netlist, namespace, repl) match {
+      repl: Netlist,
+      stmts: mutable.ArrayBuffer[Statement])
+      (s: Statement): Statement = s.map(memDelayStmt(netlist, namespace, repl, stmts)) match {
     case sx: DefMemory =>
       val ports = (sx.readers ++ sx.writers).toSet
       def newPortName(rw: String, p: String) = (for {
@@ -96,8 +99,7 @@ object VerilogMemDelays extends Pass {
         Connect(NoInfo, memPortField(mem, writer, "data"), data)
       )
  
-
-      Block(mem +: ((sx.readers flatMap {reader =>
+      stmts ++= ((sx.readers flatMap {reader =>
         // generate latency pipes for read ports (enable & addr)
         val clk = netlist(memPortField(sx, reader, "clk"))
         val (en, ss1) = pipe(memPortField(sx, reader, "en"), sx.readLatency - 1, clk, one)
@@ -125,7 +127,8 @@ object VerilogMemDelays extends Pass {
         ss1 ++ ss2 ++ ss3 ++ ss4 ++ ss5 ++ ss6 ++
         readPortConnects(reader, clk, en, raddr) ++
         writePortConnects(writer, clk, AND(en, wmode), wmask, waddr, wdata)
-      })))
+      }))
+      mem // The mem stays put
     case sx: Connect => kind(sx.loc) match {
       case MemKind => EmptyStmt
       case _ => sx
@@ -144,13 +147,17 @@ object VerilogMemDelays extends Pass {
   def replaceStmt(repl: Netlist)(s: Statement): Statement =
     s map replaceStmt(repl) map replaceExp(repl)
 
+  def appendStmts(sx: Seq[Statement])(s: Statement): Statement = Block(s +: sx)
+
   def memDelayMod(m: DefModule): DefModule = {
     val netlist = new Netlist
     val namespace = Namespace(m)
     val repl = new Netlist
-    (m map buildNetlist(netlist)
-       map memDelayStmt(netlist, namespace, repl)
-       map replaceStmt(repl))
+    val extraStmts = mutable.ArrayBuffer.empty[Statement]
+    m.map(buildNetlist(netlist))
+     .map(memDelayStmt(netlist, namespace, repl, extraStmts))
+     .map(replaceStmt(repl))
+     .map(appendStmts(extraStmts))
   }
 
   def run(c: Circuit): Circuit =
