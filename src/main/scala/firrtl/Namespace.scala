@@ -11,7 +11,8 @@ class Namespace private {
   private val tempNamePrefix: String = "_GEN"
   // Begin with a tempNamePrefix in namespace so we always have a number suffix
   private val namespace = mutable.HashSet[String](tempNamePrefix)
-  private var tempN = 0
+  // Memoize where we were on a given prefix
+  private val indices = mutable.HashMap[String, Int]()
 
   def tryName(value: String): Boolean = {
     val unused = !contains(value)
@@ -21,23 +22,23 @@ class Namespace private {
 
   def contains(value: String): Boolean = namespace.contains(value)
 
-  private def newNameIndex(value: String, idx: Int): (String, Int) = {
-    var n = idx
-    var str = value
-    while (!tryName(str)) {
-      str = s"${value}_$n"
-      n += 1
+  def newName(value: String): String = {
+    // First try, just check
+    if (tryName(value)) value
+    else {
+      var idx = indices.getOrElse(value, 0)
+      var str = value
+      do {
+        str = s"${value}_$idx"
+        idx += 1
+      }
+      while (!(tryName(str)))
+      indices(value) = idx
+      str
     }
-    (str, n)
   }
 
-  def newName(value: String): String = newNameIndex(value, 0)._1
-
-  def newTemp: String = {
-    val (name, n) = newNameIndex(tempNamePrefix, tempN)
-    tempN = n
-    name
-  }
+  def newTemp: String = newName(tempNamePrefix)
 }
 
 /* TODO(azidar): Make Namespace return unique names that will not conflict with expanded
