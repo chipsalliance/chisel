@@ -56,8 +56,12 @@ ifneq (,$(RM_DIRS))
 	$(RM) -r $(RM_DIRS)
 endif
 
-scaladoc:
+scaladoc: root-doc.txt
 	$(SBT) $(SBT_FLAGS) unidoc
+
+# Extract the version from sbt and include it in the top Scala doc.
+root-doc.txt:	root-doc.txt.template build.sbt Makefile
+	VERSION=`sbt -Dsbt.log.noformat=true version | perl -ne 'if ( /^\[info\] (\S+)$$/ ) { print $$1; }'` && perl -pe "s/\\\$$Version\\\$$/$$VERSION/" root-doc.txt.template > $@
 
 site:
 	$(SBT) $(SBT_FLAGS) make-site
