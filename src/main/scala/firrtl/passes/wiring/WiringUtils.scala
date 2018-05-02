@@ -36,6 +36,7 @@ case class Modifications(
 
 /** A lineage tree representing the instance hierarchy in a design
   */
+@deprecated("Use DiGraph/InstanceGraph", "1.1.1")
 case class Lineage(
     name: String,
     children: Seq[(String, Lineage)] = Seq.empty,
@@ -74,11 +75,13 @@ case class Lineage(
 }
 
 object WiringUtils {
+  @deprecated("Use DiGraph/InstanceGraph", "1.1.1")
   type ChildrenMap = mutable.HashMap[String, Seq[(String, String)]]
 
   /** Given a circuit, returns a map from module name to children
     * instance/module names
     */
+  @deprecated("Use DiGraph/InstanceGraph", "1.1.1")
   def getChildrenMap(c: Circuit): ChildrenMap = {
     val childrenMap = new ChildrenMap()
     def getChildren(mname: String)(s: Statement): Statement = s match {
@@ -99,6 +102,7 @@ object WiringUtils {
 
   /** Returns a module's lineage, containing all children lineages as well
     */
+  @deprecated("Use DiGraph/InstanceGraph", "1.1.1")
   def getLineage(childrenMap: ChildrenMap, module: String): Lineage =
     Lineage(module, childrenMap(module) map { case (i, m) => (i, getLineage(childrenMap, m)) } )
 

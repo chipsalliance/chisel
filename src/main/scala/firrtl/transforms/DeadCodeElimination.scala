@@ -11,7 +11,6 @@ import firrtl.Mappers._
 import firrtl.WrappedExpression._
 import firrtl.Utils.{throwInternalError, toWrappedExpression, kind}
 import firrtl.MemoizedHash._
-import wiring.WiringUtils.getChildrenMap
 
 import collection.mutable
 import java.io.{File, FileWriter}
