@@ -1,6 +1,7 @@
 package chisel3.core
 
 import chisel3.internal.Builder.{forcedModule}
+import chisel3.internal.firrtl.LitArg
 
 object Binding {
   class BindingException(message: String) extends Exception(message)
@@ -92,8 +93,6 @@ sealed trait ConstrainedBinding extends TopBinding {
 // A binding representing a data that cannot be (re)assigned to.
 sealed trait ReadOnlyBinding extends TopBinding
 
-// TODO literal info here
-case class LitBinding() extends UnconstrainedBinding with ReadOnlyBinding
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
 case class OpBinding(enclosure: UserModule) extends ConstrainedBinding with ReadOnlyBinding
@@ -108,3 +107,9 @@ case class ChildBinding(parent: Data) extends Binding {
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
 case class DontCareBinding() extends UnconstrainedBinding
+
+sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
+// Literal binding attached to a element that is not part of a Bundle.
+case class ElementLitBinding(litArg: LitArg) extends LitBinding
+// Literal binding attached to the root of a Bundle, containing literal values of its children.
+case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding

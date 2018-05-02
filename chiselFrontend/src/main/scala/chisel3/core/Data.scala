@@ -364,8 +364,25 @@ abstract class Data extends HasId with NamedComponent {
 
   final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
-  def litArg(): Option[LitArg] = None
+
+  @chiselRuntimeDeprecated
+  @deprecated("Literal accessors on Data are deprecated, a replacement is pending", "chisel3.2")
+  def litArg(): Option[LitArg] = bindingOpt match {
+    case Some(_) => topBinding match {
+      case ElementLitBinding(litArg) => Some(litArg)
+      case BundleLitBinding(litMap) => litMap.get(this) match {
+        case Some(litArg) => Some(litArg)
+        case _ => None  // DontCares in a bundle literal are treated as non-literal
+      }
+      case _ => None
+    }
+    case _ => None
+  }
+  @chiselRuntimeDeprecated
+  @deprecated("Literal accessors on Data are deprecated, a replacement is pending", "chisel3.2")
   def litValue(): BigInt = litArg.get.num
+  @chiselRuntimeDeprecated
+  @deprecated("Literal accessors on Data are deprecated, a replacement is pending", "chisel3.2")
   def isLit(): Boolean = litArg.isDefined
 
   /** Returns the width, in bits, if currently known.
