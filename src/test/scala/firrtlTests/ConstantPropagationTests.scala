@@ -1030,4 +1030,21 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
           |""".stripMargin
     execute(input, check, Seq.empty)
   }
+
+  "Temporary named port" should "not be declared as a node" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input _T_61 : UInt<1>
+        |    output z : UInt<1>
+        |    node a = _T_61
+        |    z <= a""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input _T_61 : UInt<1>
+        |    output z : UInt<1>
+        |    z <= _T_61""".stripMargin
+    execute(input, check, Seq.empty)
+  }
 }
