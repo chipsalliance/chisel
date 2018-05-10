@@ -70,7 +70,9 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     }
     val myBundleLiteral = (new MyBundle).Lit(42, true)
     println(myBundleLiteral.a)
+    println(myBundleLiteral.a.hashCode)
     println(myBundleLiteral.b)
+    println(myBundleLiteral.b.hashCode)
     println(myBundleLiteral.a == myBundleLiteral.b)
     assert(myBundleLiteral.a.litToBigInt == 42)
     assert(myBundleLiteral.b.litToBigInt == 1)
