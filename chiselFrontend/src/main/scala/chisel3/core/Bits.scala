@@ -75,6 +75,28 @@ sealed abstract class Bits(width: Width)
 
   def cloneType: this.type = cloneTypeWidth(width)
 
+  protected def litArgOption: Option[LitArg] = bindingOpt match {
+    case Some(_) => topBinding match {
+      case ElementLitBinding(litArg) => Some(litArg)
+      case BundleLitBinding(litMap) => litMap.get(this) match {
+        case Some(litArg) => Some(litArg)
+        case _ => None
+      }
+      case _ => None
+    }
+    case _ => None
+  }
+
+  override def litToBigIntOption: Option[BigInt] = litArgOption match {
+    case Some(litArg) => Some(litArg.num)
+    case _ => None
+  }
+
+  private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption match {
+    case Some(litArg) => Some(litArg.forcedWidth)
+    case _ => None
+  }
+
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
   final def head(n: Int): UInt = macro SourceInfoTransform.nArg
 
@@ -741,6 +763,15 @@ sealed class Bool() extends UInt(1.W) with Reset {
     new Bool().asInstanceOf[this.type]
   }
 
+  def litToBooleanOption: Option[Boolean] = litToBigIntOption match {
+    case Some(intVal) if intVal == 1 => Some(true)
+    case Some(intVal) if intVal == 0 => Some(false)
+    case Some(intVal) => throwException(s"Boolean with unexpected literal value $intVal")
+    case None => None
+  }
+
+  def litToBoolean: Boolean = litToBooleanOption.get
+
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
   final def & (that: Bool): Bool = macro SourceInfoTransform.thatArg
@@ -819,6 +850,16 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     case _: FixedPoint|DontCare => super.connect(that)
     case _ => this badConnect that
   }
+
+  def litToDoubleOption: Option[Double] = litToBigIntOption match {
+    case Some(intVal) =>
+      val multiplier = math.pow(2, binaryPoint.get)
+      Some(intVal.toDouble / multiplier)
+    case _ => None
+  }
+
+  def litToDouble: Double = litToDoubleOption.get
+
 
   final def unary_- (): FixedPoint = macro SourceInfoTransform.noArg
   final def unary_-% (): FixedPoint = macro SourceInfoTransform.noArg
@@ -1114,6 +1155,8 @@ final class Analog private (width: Width) extends Element(width) {
     }
     binding = target
   }
+
+  override def litToBigIntOption = None
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     throwException("Analog does not support asUInt")

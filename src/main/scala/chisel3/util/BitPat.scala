@@ -74,9 +74,8 @@ object BitPat {
     * @note the UInt must be a literal
     */
   def apply(x: UInt): BitPat = {
-    require(x.isLit)
     val len = if (x.isWidthKnown) x.getWidth else 0
-    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
+    apply("b" + x.litToBigInt.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
 }
 
@@ -93,7 +92,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
   def getWidth: Int = width
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  
+
   def do_=== (that: UInt)  // scalastyle:ignore method.name
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     value.asUInt === (that & mask.asUInt)
@@ -102,7 +101,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)
   }
-  
+
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
   @chiselRuntimeDeprecated
   @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")

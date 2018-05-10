@@ -62,6 +62,8 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
+  def litToBigIntOption: Option[BigInt] = ???  // TODO implement me
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]

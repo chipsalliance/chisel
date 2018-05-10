@@ -23,6 +23,8 @@ sealed class Clock extends Element(Width(1)) {
     case _ => super.badConnect(that)(sourceInfo)
   }
 
+  override def litToBigIntOption = None
+
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")
 
