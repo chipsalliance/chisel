@@ -69,13 +69,10 @@ object RegInit {
     * Register type is inferred from the initializer.
     */
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init.litArg match {
+    val model = (init match {
       // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-      case Some(lit) if lit.forcedWidth => init.cloneTypeFull
-      case _ => init match {
-        case init: Bits => init.cloneTypeWidth(Width())
-        case init => init.cloneTypeFull
-      }
+      case init: Bits if init.litIsForcedWidth == Some(false) => init.cloneTypeWidth(Width())
+      case init => init.cloneTypeFull
     }).asInstanceOf[T]
     RegInit(model, init)
   }

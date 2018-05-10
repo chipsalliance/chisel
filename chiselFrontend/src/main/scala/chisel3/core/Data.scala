@@ -366,24 +366,32 @@ abstract class Data extends HasId with NamedComponent {
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
 
   @chiselRuntimeDeprecated
-  @deprecated("Literal accessors on Data are deprecated, a replacement is pending", "chisel3.2")
+  @deprecated("litArg is deprecated, use litToBigIntOption or litTo*Option", "chisel3.2")
   def litArg(): Option[LitArg] = bindingOpt match {
     case Some(_) => topBinding match {
       case ElementLitBinding(litArg) => Some(litArg)
-      case BundleLitBinding(litMap) => litMap.get(this) match {
-        case Some(litArg) => Some(litArg)
-        case _ => None  // DontCares in a bundle literal are treated as non-literal
-      }
+      case BundleLitBinding(litMap) => None  // this API does not support Bundle literals
       case _ => None
     }
     case _ => None
   }
   @chiselRuntimeDeprecated
-  @deprecated("Literal accessors on Data are deprecated, a replacement is pending", "chisel3.2")
+  @deprecated("litValue deprecated, use litToBigInt or litTo*", "chisel3.2")
   def litValue(): BigInt = litArg.get.num
   @chiselRuntimeDeprecated
-  @deprecated("Literal accessors on Data are deprecated, a replacement is pending", "chisel3.2")
+  @deprecated("isLit is deprecated, use litToBigIntOption or litTo*Option", "chisel3.2")
   def isLit(): Boolean = litArg.isDefined
+
+  /**
+   * If this is a literal that is representable as bits, returns the value as a BigInt.
+   * If not a literal, or not representable as bits (for example, is or contains Analog), returns None.
+   */
+  def litToBigIntOption: Option[BigInt]
+
+  /**
+   * Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
+   */
+  def litToBigInt: BigInt = litToBigIntOption.get
 
   /** Returns the width, in bits, if currently known.
     * @throws java.util.NoSuchElementException if the width is not known. */
@@ -460,13 +468,10 @@ object Wire extends WireFactory
 
 object WireInit {
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init.litArg match {
+    val model = (init match {
       // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
-      case Some(lit) if lit.forcedWidth => init.cloneTypeFull
-      case _ => init match {
-        case init: Bits => init.cloneTypeWidth(Width())
-        case init => init.cloneTypeFull
-      }
+      case init: Bits if init.litIsForcedWidth == Some(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
     }).asInstanceOf[T]
     apply(model, init)
   }
@@ -496,6 +501,8 @@ object DontCare extends Element(width = UnknownWidth()) {
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
+
+  override def litToBigIntOption = None
 
   def toPrintable: Printable = PString("DONTCARE")
 
