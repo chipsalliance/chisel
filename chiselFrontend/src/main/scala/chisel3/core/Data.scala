@@ -252,12 +252,17 @@ abstract class Data extends HasId with NamedComponent {
     _binding = Some(target)
   }
 
-  private[core] def topBinding: TopBinding = {
-    binding match {
-      case ChildBinding(parent) => parent.topBinding
-      case topBinding: TopBinding => topBinding
+  private[core] def topBindingOpt: Option[TopBinding] = {
+    bindingOpt match {
+      case Some(binding) => binding match {
+        case ChildBinding(parent) => parent.topBindingOpt
+        case binding: TopBinding => Some(binding)
+      }
+      case None => None
     }
   }
+
+  private[core] def topBinding: TopBinding = topBindingOpt.get
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
@@ -336,8 +341,27 @@ abstract class Data extends HasId with NamedComponent {
     */
   private[core] def typeEquivalent(that: Data): Boolean
 
-  private[chisel3] def lref: Node = Node(this)
-  private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
+  // Internal API: returns a ref that can be assigned to, if consistent with the binding
+  private[chisel3] def lref: Node = {
+    requireIsHardware(this)
+    topBindingOpt match {
+      case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(binding: TopBinding) => Node(this)
+      case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
+    }
+  }
+
+
+  // Internal API: returns a ref, if bound. Literals should override this as needed.
+  private[chisel3] def ref: Arg = {
+    requireIsHardware(this)
+    topBindingOpt match {
+      case Some(binding: LitBinding) => throwException(s"internal error: can't handle literal binding $binding")
+      case Some(binding: TopBinding) => Node(this)
+      case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
+    }
+  }
+
   private[chisel3] def width: Width
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
@@ -367,12 +391,9 @@ abstract class Data extends HasId with NamedComponent {
 
   @chiselRuntimeDeprecated
   @deprecated("litArg is deprecated, use litToBigIntOption or litTo*Option", "chisel3.2")
-  def litArg(): Option[LitArg] = bindingOpt match {
-    case Some(_) => topBinding match {
-      case ElementLitBinding(litArg) => Some(litArg)
-      case BundleLitBinding(litMap) => None  // this API does not support Bundle literals
-      case _ => None
-    }
+  def litArg(): Option[LitArg] = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => Some(litArg)
+    case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
     case _ => None
   }
   @chiselRuntimeDeprecated

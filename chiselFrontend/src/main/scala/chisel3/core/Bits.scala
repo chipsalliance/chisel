@@ -75,13 +75,10 @@ sealed abstract class Bits(width: Width)
 
   def cloneType: this.type = cloneTypeWidth(width)
 
-  protected def litArgOption: Option[LitArg] = bindingOpt match {
-    case Some(_) => topBinding match {
-      case ElementLitBinding(litArg) => Some(litArg)
-      case BundleLitBinding(litMap) => litMap.get(this) match {
-        case Some(litArg) => Some(litArg)
-        case _ => None
-      }
+  protected def litArgOption: Option[LitArg] = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => Some(litArg)
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(litArg)
       case _ => None
     }
     case _ => None
@@ -95,6 +92,12 @@ sealed abstract class Bits(width: Width)
   private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption match {
     case Some(litArg) => Some(litArg.forcedWidth)
     case _ => None
+  }
+
+  // provide bits-specific literal handling functionality here
+  override private[chisel3] def ref: Arg = topBindingOpt match {
+    case Some(binding: LitBinding) => binding.asInstanceOf[ElementLitBinding].litArg
+    case _ => super.ref
   }
 
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
