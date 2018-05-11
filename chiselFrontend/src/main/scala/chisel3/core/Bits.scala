@@ -77,10 +77,7 @@ sealed abstract class Bits(width: Width)
 
   protected def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => Some(litArg)
-      case _ => None
-    }
+    case Some(BundleLitBinding(litMap)) => litMap.get(this)
     case _ => None
   }
 
@@ -444,8 +441,7 @@ abstract trait Num[T <: Data] {
 /** A data type for unsigned integers, represented as a binary bitvector.
   * Defines arithmetic operations between other integer types.
   */
-sealed class UInt private[core] (width: Width)
-    extends Bits(width) with Num[UInt] {
+sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt] {
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[UInt] && this.width == that.width
@@ -862,7 +858,6 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
   }
 
   def litToDouble: Double = litToDoubleOption.get
-
 
   final def unary_- (): FixedPoint = macro SourceInfoTransform.noArg
   final def unary_-% (): FixedPoint = macro SourceInfoTransform.noArg
