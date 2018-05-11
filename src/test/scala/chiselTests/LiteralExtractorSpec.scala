@@ -59,16 +59,16 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       // the future.
       import chisel3.core.BundleLitBinding
       import chisel3.internal.firrtl.{ULit, Width}
-      def Lit(aVal: BigInt, bVal: Boolean): MyBundle = {
+      def Lit(aVal: UInt, bVal: Bool): MyBundle = {
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
-            clone.a -> ULit(aVal, Width()),
-            clone.b -> ULit(if (bVal) 1 else 0, Width(1)))
-        ))
+            clone.a -> aVal.elementLitArg.get,
+            clone.b -> bVal.elementLitArg.get
+        )))
         clone
       }
     }
-    val myBundleLiteral = (new MyBundle).Lit(42, true)
+    val myBundleLiteral = (new MyBundle).Lit(42.U, true.B)
     assert(myBundleLiteral.a.litToBigInt == 42)
     assert(myBundleLiteral.b.litToBigInt == 1)
     assert(myBundleLiteral.b.litToBoolean == true)

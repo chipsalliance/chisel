@@ -50,6 +50,14 @@ private[chisel3] object Namespace {
   def empty: Namespace = new Namespace(Set.empty[String])
 }
 
+private[chisel3] class IdGen {
+  private var counter = -1L
+  def next: Long = {
+    counter += 1
+    counter
+  }
+}
+
 /** Public API to access Node/Signal names.
   * currently, the node's name, the full path name, and references to its parent Module and component.
   * These are only valid once the design has been elaborated, and should not be used during its construction.
@@ -69,12 +77,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
   _parent.foreach(_.addId(this))
 
-  private[chisel3] val _id: Long = Builder.newId()
-  override def hashCode: Int = _id.toInt
-  override def equals(that: Any): Boolean = that match {
-    case x: HasId => _id == x._id
-    case _ => false
-  }
+  private[chisel3] val _id: Long = Builder.idGen.next
 
   // Facilities for 'suggesting' a name to this.
   // Post-name hooks called to carry the suggestion to other candidates as needed
@@ -153,6 +156,14 @@ private[chisel3] trait NamedComponent extends HasId {
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
 }
 
+// Mutable global state for chisel that can appear outside a Builder context
+private[chisel3] class ChiselContext() {
+  val idGen = new IdGen
+
+  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
+  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
+}
+
 private[chisel3] class DynamicContext() {
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
@@ -165,29 +176,25 @@ private[chisel3] class DynamicContext() {
   var currentClockAndReset: Option[ClockAndReset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
-  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
-  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 }
 
 private[chisel3] object Builder {
-  // IDs are unique through the program lifespan
-  var nextId = 0
-  def newId(): Long = {
-    val thisId = nextId
-    nextId = thisId + 1
-    require(nextId > thisId)
-    thisId
-  }
-
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
-  private def dynamicContext: DynamicContext =
-    dynamicContextVar.value.getOrElse(new DynamicContext)
+  private def dynamicContext: DynamicContext = {
+    require(dynamicContextVar.value.isDefined, "must be inside Builder context")
+    dynamicContextVar.value.get
+  }
+
+  private val chiselContext = new DynamicVariable[ChiselContext](new ChiselContext)
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
     val dummy = core.DontCare
   }
+
+  def idGen: IdGen = chiselContext.value.idGen
+
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
@@ -258,18 +265,18 @@ private[chisel3] object Builder {
     // Prune the existing Bundle stack of closed Bundles
     // If we know where we are in the stack, discard frames above that
     val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
-    val pruneLength = dynamicContext.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
+    val pruneLength = chiselContext.value.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
       pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
     }
-    dynamicContext.bundleStack.trimEnd(pruneLength)
+    chiselContext.value.bundleStack.trimEnd(pruneLength)
 
     // Return the stack state before adding the most recent bundle
-    val lastStack = dynamicContext.bundleStack.map(_._1).toSeq
+    val lastStack = chiselContext.value.bundleStack.map(_._1).toSeq
 
     // Append the current Bundle to the stack, if it's on the stack trace
     if (eltStackPos >= 0) {
       val stackElt = stackElts(eltStackPos)
-      dynamicContext.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
+      chiselContext.value.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
     }
     // Otherwise discard the stack frame, this shouldn't fail noisily
 
@@ -292,15 +299,17 @@ private[chisel3] object Builder {
   }
 
   def build[T <: UserModule](f: => T): Circuit = {
-    dynamicContextVar.withValue(Some(new DynamicContext())) {
-      errors.info("Elaborating design...")
-      val mod = f
-      mod.forceName(mod.name, globalNamespace)
-      errors.checkpoint()
-      errors.info("Done elaborating.")
+    //chiselContext.withValue(new ChiselContext) {
+      dynamicContextVar.withValue(Some(new DynamicContext())) {
+        errors.info("Elaborating design...")
+        val mod = f
+        mod.forceName(mod.name, globalNamespace)
+        errors.checkpoint()
+        errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components, annotations)
-    }
+        Circuit(components.last.name, components, annotations)
+      }
+    //}
   }
   initializeSingletons()
 }
