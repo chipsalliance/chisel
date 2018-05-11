@@ -79,6 +79,10 @@ private[chisel3] trait HasId extends InstanceId {
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
+  // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
+  override def hashCode: Int = super.hashCode()
+  override def equals(that: Any): Boolean = super.equals(that)
+
   // Facilities for 'suggesting' a name to this.
   // Post-name hooks called to carry the suggestion to other candidates as needed
   private var suggested_name: Option[String] = None
@@ -200,7 +204,10 @@ private[chisel3] object Builder {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
 
-  def currentModule: Option[BaseModule] = dynamicContext.currentModule
+  def currentModule: Option[BaseModule] = dynamicContextVar.value match {
+    case Some(dyanmicContext) => dynamicContext.currentModule
+    case _ => None
+  }
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
@@ -284,9 +291,10 @@ private[chisel3] object Builder {
   }
 
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = errors.error(m)
-  def warning(m: => String): Unit = errors.warning(m)
-  def deprecated(m: => String, location: Option[String] = None): Unit = errors.deprecated(m, location)
+  def error(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.error(m)
+  def warning(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def deprecated(m: => String, location: Option[String] = None): Unit =
+    if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
 
   /** Record an exception as an error, and throw it.
     *
