@@ -18,7 +18,7 @@ import firrtl.Mappers._
   */
 class InstanceGraph(c: Circuit) {
 
-  private val moduleMap = c.modules.map({m => (m.name,m) }).toMap
+  val moduleMap = c.modules.map({m => (m.name,m) }).toMap
   private val instantiated = new mutable.HashSet[String]
   private val childInstances =
     new mutable.HashMap[String,mutable.Set[WDefInstance]]
@@ -93,6 +93,14 @@ class InstanceGraph(c: Circuit) {
   def moduleOrder: Seq[DefModule] = {
     graph.transformNodes(_.module).linearize.map(moduleMap(_))
   }
+
+  
+  /** Given a circuit, returns a map from module name to children
+     * instance/module definitions
+     */
+  def getChildrenInstances: scala.collection.Map[String,mutable.Set[WDefInstance]] = childInstances 
+
+
 }
 
 object InstanceGraph {
