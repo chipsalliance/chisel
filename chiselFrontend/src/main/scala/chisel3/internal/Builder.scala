@@ -299,7 +299,7 @@ private[chisel3] object Builder {
   }
 
   def build[T <: UserModule](f: => T): Circuit = {
-    //chiselContext.withValue(new ChiselContext) {
+    chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
         errors.info("Elaborating design...")
         val mod = f
@@ -309,7 +309,7 @@ private[chisel3] object Builder {
 
         Circuit(components.last.name, components, annotations)
       }
-    //}
+   }
   }
   initializeSingletons()
 }
