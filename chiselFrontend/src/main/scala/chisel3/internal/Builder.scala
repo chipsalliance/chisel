@@ -50,14 +50,6 @@ private[chisel3] object Namespace {
   def empty: Namespace = new Namespace(Set.empty[String])
 }
 
-private[chisel3] class IdGen {
-  private var counter = -1L
-  def next: Long = {
-    counter += 1
-    counter
-  }
-}
-
 /** Public API to access Node/Signal names.
   * currently, the node's name, the full path name, and references to its parent Module and component.
   * These are only valid once the design has been elaborated, and should not be used during its construction.
@@ -77,7 +69,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
   _parent.foreach(_.addId(this))
 
-  private[chisel3] val _id: Long = Builder.idGen.next
+  private[chisel3] val _id: Long = Builder.newId()
   override def hashCode: Int = _id.toInt
   override def equals(that: Any): Boolean = that match {
     case x: HasId => _id == x._id
@@ -162,7 +154,6 @@ private[chisel3] trait NamedComponent extends HasId {
 }
 
 private[chisel3] class DynamicContext() {
-  val idGen = new IdGen
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
@@ -179,6 +170,15 @@ private[chisel3] class DynamicContext() {
 }
 
 private[chisel3] object Builder {
+  // IDs are unique through the program lifespan
+  var nextId = 0
+  def newId(): Long = {
+    val thisId = nextId
+    nextId = thisId + 1
+    require(nextId > thisId)
+    thisId
+  }
+
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
   private def dynamicContext: DynamicContext =
@@ -188,7 +188,6 @@ private[chisel3] object Builder {
   private def initializeSingletons(): Unit = {
     val dummy = core.DontCare
   }
-  def idGen: IdGen = dynamicContext.idGen
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
