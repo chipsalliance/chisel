@@ -339,19 +339,36 @@ object FileUtils {
     }
   }
 
-  /** Indicate if an external command (executable) is available.
+  /** Indicate if an external command (executable) is available (from the current PATH).
     *
-    * @param cmd the command/executable
-    * @return true if ```cmd``` is found in PATH.
+    * @param cmd the command/executable plus any arguments to the command as a Seq().
+    * @return true if ```cmd <args>``` returns a 0 exit status.
     */
-  def isCommandAvailable(cmd: String): Boolean = {
+  def isCommandAvailable(cmd: Seq[String]): Boolean = {
     // Eat any output.
     val sb = new StringBuffer
     val ioToDevNull = BasicIO(withIn = false, sb, None)
 
-    Seq("bash", "-c", "which %s".format(cmd)).run(ioToDevNull).exitValue == 0
+    try {
+      cmd.run(ioToDevNull).exitValue == 0
+    } catch {
+      case e: Throwable => false
+    }
   }
 
-  /** Flag indicating if vcs is available (for Verilog compilation and testing). */
-  lazy val isVCSAvailable: Boolean = isCommandAvailable("vcs")
+  /** Indicate if an external command (executable) is available (from the current PATH).
+    *
+    * @param cmd the command/executable (without any arguments).
+    * @return true if ```cmd``` returns a 0 exit status.
+    */
+  def isCommandAvailable(cmd:String): Boolean = {
+    isCommandAvailable(Seq(cmd))
+  }
+
+  /** Flag indicating if vcs is available (for Verilog compilation and testing).
+    * We used to use a bash command (`which ...`) to determine this, but this is problematic on Windows (issue #807).
+    * Instead we try to run the executable itself (with innocuous arguments) and interpret any errors/exceptions
+    *  as an indication that the executable is unavailable.
+    */
+  lazy val isVCSAvailable: Boolean = isCommandAvailable(Seq("vcs",  "-platform"))
 }
