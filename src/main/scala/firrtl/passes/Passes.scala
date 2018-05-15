@@ -252,32 +252,6 @@ object Legalize extends Pass {
   }
 }
 
-object VerilogWrap extends Pass {
-  def vWrapE(e: Expression): Expression = e map vWrapE match {
-    case e: DoPrim => e.op match {
-      case Tail => e.args.head match {
-        case e0: DoPrim => e0.op match {
-          case Add => DoPrim(Addw, e0.args, Nil, e.tpe)
-          case Sub => DoPrim(Subw, e0.args, Nil, e.tpe)
-          case _ => e
-        }
-        case _ => e
-      }
-      case _ => e
-    }
-    case _ => e
-  }
-  def vWrapS(s: Statement): Statement = {
-    s map vWrapS map vWrapE match {
-      case sx: Print => sx.copy(string = sx.string.verilogFormat)
-      case sx => sx
-    }
-  }
-
-  def run(c: Circuit): Circuit =
-    c copy (modules = c.modules map (_ map vWrapS))
-}
-
 object VerilogRename extends Pass {
   def verilogRenameN(n: String): String =
     if (v_keywords(n)) "%s$".format(n) else n
