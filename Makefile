@@ -17,7 +17,7 @@ default: build
 # Fetch mill (if we don't have it.
 $(MILL_BIN):
 	$(MKDIR) $(dir $@)
-	$(CURL) -o $@ https://www.github.com/lihaoyi/mill/releases/download/0.2.0/0.2.0 && chmod +x $@
+	$(CURL) -o $@ https://github.com/ucbjrl/mill/releases/download/0.2.0-FDF/mill-0.2.0-FDF && chmod +x $@
 
 # Fetch antlr4 (if we don't have it.
 $(ANTLR4_JAR):
