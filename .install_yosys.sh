@@ -5,7 +5,7 @@ if [ ! -f $INSTALL_DIR/bin/yosys ]; then
   git clone https://github.com/cliffordwolf/yosys.git
   cd yosys
   git pull
-  git checkout yosys-0.7
+  git checkout master
   make
   make PREFIX=$INSTALL_DIR install
 fi
