@@ -176,6 +176,42 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    node a = cat(x, z)""".stripMargin
       (parse(exec(input)).serialize) should be (parse(check).serialize)
   }
+  "Stop with type <0>" should "be replaced with UInt(0)" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input clk: Clock
+        |    input x: UInt<1>
+        |    input y: UInt<0>
+        |    input z: UInt<1>
+        |    stop(clk, y, 1)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input clk: Clock
+        |    input x: UInt<1>
+        |    input z: UInt<1>
+        |    stop(clk, UInt(0), 1)""".stripMargin
+      (parse(exec(input)).serialize) should be (parse(check).serialize)
+  }
+  "Print with type <0>" should "be replaced with UInt(0)" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input clk: Clock
+        |    input x: UInt<1>
+        |    input y: UInt<0>
+        |    input z: UInt<1>
+        |    printf(clk, UInt(1), "%d %d %d\n", x, y, z)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input clk: Clock
+        |    input x: UInt<1>
+        |    input z: UInt<1>
+        |    printf(clk, UInt(1), "%d %d %d\n", x, UInt(0), z)""".stripMargin
+      (parse(exec(input)).serialize) should be (parse(check).serialize)
+  }
 }
 
 class ZeroWidthVerilog extends FirrtlFlatSpec {

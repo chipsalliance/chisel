@@ -69,7 +69,8 @@ class HighFirrtlToMiddleFirrtl extends CoreTransform {
     passes.InferWidths,
     passes.CheckWidths,
     passes.ConvertFixedToSInt,
-    passes.ZeroWidth)
+    passes.ZeroWidth,
+    passes.InferTypes)
 }
 
 /** Expands all aggregate types into many ground-typed components. Must

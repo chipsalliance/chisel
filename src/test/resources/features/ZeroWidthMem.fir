@@ -12,9 +12,13 @@ circuit ZeroWidthMem :
     infer mport ramin = ram[waddr], clock
     infer mport ramout = ram[raddr], clock
 
+    cmem totallyEmptyRam : UInt<0>[16]
+    infer mport emptyRamout = totallyEmptyRam[raddr], clock
+
     ramin.0 <= in.0
     ramin.1 <= in.1
-    out <= ramout
+    out.0   <= ramout.0
+    out.1   <= ramout.1
 
     wire foo : UInt<32>
     foo <= UInt<32>("hdeadbeef")
@@ -25,4 +29,7 @@ circuit ZeroWidthMem :
       else :
         printf(clock, UInt(1), "Assertion failed!\n")
         stop(clock, UInt(1), 1) ; Failure!
+
+    when neq(emptyRamout, UInt<1>("h0")) :
+      stop(clock, UInt(1), 1) ; Failure! empty mem should be zero
 
