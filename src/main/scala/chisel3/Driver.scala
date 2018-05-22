@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.Emitter
+import chisel3.internal.firrtl.Converter
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
 
 import java.io._
@@ -92,9 +92,10 @@ object Driver extends BackendCompilationUtilities {
     */
   def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
 
-  def emit[T <: RawModule](gen: () => T): String = Emitter.emit(elaborate(gen))
+  def emit[T <: RawModule](gen: () => T): String = Driver.emit(elaborate(gen))
 
-  def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
+  def emit[T <: RawModule](ir: Circuit): String =
+    Converter.convert(ir).serialize
 
   /** Elaborates the Module specified in the gen function into Verilog
     *
@@ -111,7 +112,7 @@ object Driver extends BackendCompilationUtilities {
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
-    w.write(Emitter.emit(ir))
+    w.write(Driver.emit(ir))
     w.close()
     f
   }
@@ -146,7 +147,7 @@ object Driver extends BackendCompilationUtilities {
     val chiselOptions = optionsManager.chiselOptions
 
     // use input because firrtl will be reading this
-    val firrtlString = Emitter.emit(circuit)
+    val firrtlString = emit(circuit)
     val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
     val firrtlFile = new File(firrtlFileName)
 
