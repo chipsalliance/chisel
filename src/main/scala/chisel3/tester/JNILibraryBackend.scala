@@ -13,23 +13,35 @@ import chisel3.tester.TesterUtils.{getIOPorts, getPortNames}
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.immutable.ListMap
 import firrtl.util.BackendCompilationUtilities._
-
 import JNILibraryBackend._
 
 object JNILibraryBackend {
   val singletonName = "chisel3.tester.SingletonLoaderShim"
-  var classLoader: ClassLoader = Thread.currentThread.getContextClassLoader
+  var classLoader: ClassLoader = ClassLoader.getSystemClassLoader()
   if (classLoader == null)
     classLoader = classOf[chisel3.tester.SingletonLoaderShim].getClassLoader
   if (classLoader == null)
-    classLoader = ClassLoader.getSystemClassLoader()
+    throw new Exception("Can't find classloader.")
   // Load and initialize the singelton.
-  println(s"loading ${singletonName} using ${classLoader.toString}")
-  val instance = Class.forName(singletonName, true, classLoader)
-//  val singletonLoaderShim: SingletonLoaderShim = instance.INSTANCE
-  val singletonLoaderShim: SingletonLoaderShim = SingletonLoaderShim.INSTANCE
+  val singletonLoaderShim: Option[SingletonLoaderShimInterface] = Some(SingletonLoaderShim.getInstance())
+
+//  println(s"loading ${singletonName} using ${classLoader.toString}")
+  //  val singletonLoaderShim: Option[SingletonLoaderShim] = try {
+//    val clazz = Class.forName(singletonName, true, classLoader)
+//    //  val singletonLoaderShim: SingletonLoaderShim = instance.INSTANCE
+//    val method = clazz.getDeclaredMethod("getInstance")
+//    val singletonLoaderShim: SingletonLoaderShim = method.invoke(null).asInstanceOf[SingletonLoaderShim]
+//    //  val singletonLoaderShim: SingletonLoaderShim = instance.asInstanceOf[SingletonLoaderShim].getInstance()
+//    //  val singletonLoaderShim: SingletonLoaderShim = SingletonLoaderShim.getInstance
+//    Some(singletonLoaderShim)
+//  } catch {
+//    case t: Throwable =>
+//      println("Exception: " + t)
+//      None
+//  }
   def loadJNITestShim(fullPath: String): Unit = {
-    singletonLoaderShim.loadJNITestShim(fullPath)
+    println (s"loadJNITestShim: shim $singletonLoaderShim path $fullPath")
+    singletonLoaderShim.get.loadJNITestShim(fullPath)
   }
 }
 

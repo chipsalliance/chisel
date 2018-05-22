@@ -1,4 +1,5 @@
 // See LICENSE for license details.
+import Tests._
 
 enablePlugins(SiteScaladocPlugin)
 
@@ -112,7 +113,21 @@ lazy val chiselSettings = Seq (
   // Tests from other projects may still run concurrently.
   parallelExecution in Test := true,
 
-  javacOptions ++= javacOptionsVersion(scalaVersion.value)
+  javacOptions ++= javacOptionsVersion(scalaVersion.value),
+
+  Test / fork := true
+//  {
+//    val nameToType = Map("BasicTest" -> "JNI")
+//    def groupByJNI(tests: Seq[TestDefinition]) =
+//      tests groupBy (_.name) map {
+////        case ("JNI", tests) =>
+////          new Group("JNI", tests, InProcess)
+//        case (testName, tests) =>
+//          new Group(testName, tests, InProcess)
+//      } toSeq
+//
+//    testGrouping in Test := groupByJNI( (definedTests in Test).value )
+//  }
 )
 
 lazy val coreMacros = (project in file("coreMacros")).

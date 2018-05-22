@@ -151,7 +151,7 @@ object VCSTesterBackend {
     val ccFlags = DefaultCcFlags ++ moreVcsCFlags
 
     val blackBoxVerilogList = {
-      val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.FileListName)
+      val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.fileListName)
       if(list_file.exists()) {
         Seq("-f", list_file.getAbsolutePath)
       }
