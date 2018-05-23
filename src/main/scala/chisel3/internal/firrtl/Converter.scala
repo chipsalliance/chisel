@@ -52,6 +52,7 @@ private[chisel3] object Converter {
     case ModuleIO(mod, name) =>
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else fir.SubField(fir.Reference(mod.getRef.name, fir.UnknownType), name, fir.UnknownType)
+    case u @ ULit(n, UnknownWidth()) => fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
     case ULit(n, w) => fir.UIntLiteral(n, convert(w))
     case slit @ SLit(n, w) => fir.SIntLiteral(n, convert(w))
       val unsigned = if (n < 0) (BigInt(1) << slit.width.get) + n else n
