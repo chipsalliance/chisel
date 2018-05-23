@@ -146,8 +146,10 @@ object Driver extends BackendCompilationUtilities {
     val firrtlOptions = optionsManager.firrtlOptions
     val chiselOptions = optionsManager.chiselOptions
 
-    // use input because firrtl will be reading this
-    val firrtlString = emit(circuit)
+    val firrtlCircuit = Converter.convert(circuit)
+
+    // Still emit to leave an artifact (and because this always has been the behavior)
+    val firrtlString = firrtlCircuit.serialize
     val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
     val firrtlFile = new File(firrtlFileName)
 
@@ -155,6 +157,7 @@ object Driver extends BackendCompilationUtilities {
     w.write(firrtlString)
     w.close()
 
+    // Emit the annotations because it has always been the behavior
     val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
     val af = new FileWriter(annotationFile)
     val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
@@ -175,7 +178,7 @@ object Driver extends BackendCompilationUtilities {
                        }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlSource = Some(firrtlString),
+      firrtlCircuit = Some(firrtlCircuit),
       annotations = optionsManager.firrtlOptions.annotations ++ firrtlAnnos,
       customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
 
