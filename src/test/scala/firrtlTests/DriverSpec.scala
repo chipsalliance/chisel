@@ -17,6 +17,8 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.util.BackendCompilationUtilities
 
+import scala.util.{Try, Success, Failure}
+
 class ExceptingTransform extends Transform {
   def inputForm = HighForm
   def outputForm = HighForm
@@ -123,6 +125,47 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
       inputFileName should be ("./bob.fir")
       val outputFileName = firrtlOptions.getTargetFile(optionsManager)
       outputFileName should be ("carol.v")
+    }
+    val input = """
+      |circuit Top :
+      |  module Top :
+      |    input x : UInt<8>
+      |    output y : UInt<8>
+      |    y <= x""".stripMargin
+    val circuit = Parser.parse(input.split("\n").toIterator)
+    "firrtl source can be provided directly" in {
+      val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+        commonOptions = CommonOptions(topName = "Top")
+        firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
+      }
+      assert(firrtl.Driver.getCircuit(manager).isSuccess)
+    }
+    "firrtl Circuits can be provided directly" in {
+      val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+        commonOptions = CommonOptions(topName = "Top")
+        firrtlOptions = FirrtlExecutionOptions(firrtlCircuit = Some(circuit))
+      }
+      firrtl.Driver.getCircuit(manager) shouldBe Success(circuit)
+    }
+    "Only one of inputFileNameOverride, firrtlSource, and firrtlCircuit can be used at a time" in {
+      val manager1 = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+        commonOptions = CommonOptions(topName = "Top")
+        firrtlOptions = FirrtlExecutionOptions(firrtlCircuit = Some(circuit),
+                                               firrtlSource = Some(input))
+      }
+      val manager2 = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+        commonOptions = CommonOptions(topName = "Top")
+        firrtlOptions = FirrtlExecutionOptions(inputFileNameOverride = "hi",
+                                               firrtlSource = Some(input))
+      }
+      val manager3 = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+        commonOptions = CommonOptions(topName = "Top")
+        firrtlOptions = FirrtlExecutionOptions(inputFileNameOverride = "hi",
+                                               firrtlCircuit = Some(circuit))
+      }
+      assert(firrtl.Driver.getCircuit(manager1).isFailure)
+      assert(firrtl.Driver.getCircuit(manager2).isFailure)
+      assert(firrtl.Driver.getCircuit(manager3).isFailure)
     }
     "various annotations can be created from command line, currently:" - {
       "inline annotation" in {
