@@ -3,7 +3,10 @@
 package chiselTests
 
 import chisel3._
+import chisel3.core.FixedPoint
 import chisel3.experimental.RawModule
+import chisel3.testers.BasicTester
+import chisel3.util.Counter
 import org.scalatest._
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
@@ -11,6 +14,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     assert(0.U.litToBigInt === BigInt(0))
     assert(1.U.litToBigInt === BigInt(1))
     assert(42.U.litToBigInt === BigInt(42))
+    assert(42.U.litToBigInt === 42.U.litToBigInt)
 
     assert(0.S.litToBigInt === BigInt(0))
     assert(-1.S.litToBigInt === BigInt(-1))
@@ -50,6 +54,47 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     }}
   }
 
+
+  "literals declared outside a builder context" should "compare with those inside builder context" in {
+    class InsideBundle extends Bundle {
+      val x = SInt(8.W)
+      val y = FixedPoint(8.W, 4.BP)
+
+      import chisel3.core.BundleLitBinding
+      def Lit(aVal: SInt, bVal: FixedPoint): InsideBundle = {
+        val clone = cloneType
+        clone.selfBind(BundleLitBinding(Map(
+          clone.x -> aVal.elementLitArg.get,
+          clone.y -> bVal.elementLitArg.get
+        )))
+        clone
+      }
+    }
+
+    class LitInsideOutsideTester(outsideLiteral: InsideBundle) extends BasicTester {
+      val insideLiteral = (new InsideBundle).Lit(7.S, 6.125.F(4.BP))
+
+      // the following errors with "assertion failed"
+
+      chisel3.core.assert(outsideLiteral === insideLiteral)
+
+      // the following lines of code error
+      // with "chisel3.core.BundleLitBinding cannot be cast to chisel3.core.ElementLitBinding"
+
+      chisel3.core.assert(outsideLiteral.x === insideLiteral.x)
+      chisel3.core.assert(outsideLiteral.y === insideLiteral.y)
+      chisel3.core.assert(outsideLiteral.x === 7.S)
+      chisel3.core.assert(outsideLiteral.y === 6.125.F(4.BP))
+
+      stop()
+    }
+
+    val outsideLiteral = (new InsideBundle).Lit(7.S, 6.125.F(4.BP))
+    assertTesterPasses{ new LitInsideOutsideTester(outsideLiteral) }
+
+  }
+
+
   "bundle literals" should "do the right thing" in {
     class MyBundle extends Bundle {
       val a = UInt(8.W)
@@ -62,8 +107,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       def Lit(aVal: UInt, bVal: Bool): MyBundle = {
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
-            clone.a -> aVal.elementLitArg.get,
-            clone.b -> bVal.elementLitArg.get
+          clone.a -> aVal.elementLitArg.get,
+          clone.b -> bVal.elementLitArg.get
         )))
         clone
       }
