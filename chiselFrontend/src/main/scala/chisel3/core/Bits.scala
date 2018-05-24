@@ -190,8 +190,10 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     */
   final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
 
-  def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type =
-    binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = this.width match {
+    case KnownWidth(w) if w >= that => this
+    case _ => binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
+  }
 
   /** Returns this wire bitwise-inverted. */
   final def unary_~ (): Bits = macro SourceInfoWhiteboxTransform.noArg
