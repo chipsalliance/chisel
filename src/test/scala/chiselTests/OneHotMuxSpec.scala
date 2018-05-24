@@ -40,6 +40,11 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
       assertTesterPasses(new DifferentBundleOneHotTester)
     }
   }
+  "UIntToOH with output width greater than 2^(input width)" in {
+    intercept[IllegalArgumentException] {
+      assertTesterPasses(new UIntToOHTester)
+    }
+  }
 }
 
 class SimpleOneHotTester extends BasicTester {
@@ -283,4 +288,11 @@ class DifferentBundleOneHotTester extends BasicTester {
   stop()
 }
 
+class UIntToOHTester extends BasicTester {
+  val out = UIntToOH(1.U, 3)
 
+  require(out.getWidth == 3)
+  assert(out === 2.U)
+
+  stop()
+}
