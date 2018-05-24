@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.core.FixedPoint
 import chisel3.experimental.RawModule
 import chisel3.testers.BasicTester
-import chisel3.util.Counter
 import org.scalatest._
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
