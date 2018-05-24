@@ -21,7 +21,8 @@ case object NoInfo extends Info {
 }
 case class FileInfo(info: StringLit) extends Info {
   override def toString: String = " @[" + info.serialize + "]"
-  def ++(that: Info): Info = MultiInfo(Seq(this, that))
+  //scalastyle:off method.name
+  def ++(that: Info): Info = if (that == NoInfo) this else MultiInfo(Seq(this, that))
 }
 case class MultiInfo(infos: Seq[Info]) extends Info {
   private def collectStringLits(info: Info): Seq[StringLit] = info match {
@@ -34,7 +35,8 @@ case class MultiInfo(infos: Seq[Info]) extends Info {
     if (parts.nonEmpty) parts.map(_.serialize).mkString(" @[", " ", "]")
     else ""
   }
-  def ++(that: Info): Info = MultiInfo(Seq(this, that))
+  //scalastyle:off method.name
+  def ++(that: Info): Info = if (that == NoInfo) this else MultiInfo(infos :+ that)
 }
 object MultiInfo {
   def apply(infos: Info*) = {

@@ -30,9 +30,9 @@ object ExpandWhens extends Pass {
     val modulesx = c.modules map {
       case m: ExtModule => m
       case m: Module =>
-      val (netlist, simlist, attaches, bodyx) = expandWhens(m)
+      val (netlist, simlist, attaches, bodyx, sourceInfoMap) = expandWhens(m)
       val attachedAnalogs = attaches.flatMap(_.exprs.map(we)).toSet
-      val newBody = Block(Seq(squashEmpty(bodyx)) ++ expandNetlist(netlist, attachedAnalogs) ++
+      val newBody = Block(Seq(squashEmpty(bodyx)) ++ expandNetlist(netlist, attachedAnalogs, sourceInfoMap) ++
                               combineAttaches(attaches) ++ simlist)
       Module(m.info, m.name, m.ports, newBody)
     }
@@ -44,6 +44,15 @@ object ExpandWhens extends Pass {
 
   /** Maps a reference to whatever connects to it. Used to resolve last connect semantics */
   type Netlist = mutable.LinkedHashMap[WrappedExpression, Expression]
+
+  /** Collects Info data serialized names for nodes, aggregating into MultiInfo when necessary */
+  class InfoMap extends mutable.HashMap[String, Info] {
+    override def default(key: String): Info = {
+      val x = NoInfo
+      this(key) = x
+      x
+    }
+  }
 
   /** Contains all simulation constructs */
   type Simlist = mutable.ArrayBuffer[Statement]
@@ -61,12 +70,23 @@ object ExpandWhens extends Pass {
     * @note Seq[Attach] contains all Attach statements (unsimplified)
     * @note Statement contains all declarations in the module (including DefNode's)
     */
-  def expandWhens(m: Module): (Netlist, Simlist, Seq[Attach], Statement) = {
+  def expandWhens(m: Module): (Netlist, Simlist, Seq[Attach], Statement, InfoMap) = {
     val namespace = Namespace(m)
     val simlist = new Simlist
     val nodes = new NodeMap
     // Seq of attaches in order
     lazy val attaches = mutable.ArrayBuffer.empty[Attach]
+
+    val infoMap: InfoMap = new InfoMap
+
+    /**
+      * Adds into into map, aggregates info into MultiInfo where necessary
+      * @param key  serialized name of node
+      * @param info info being recorded
+      */
+    def saveInfo(key: String, info: Info): Unit = {
+      infoMap(key) = infoMap(key) ++ info
+    }
 
     /** Removes connections/attaches from the statement
       * Mutates namespace, simlist, nodes, attaches
@@ -99,6 +119,7 @@ object ExpandWhens extends Pass {
         r
       // For value assignments, update netlist/attaches and return EmptyStmt
       case c: Connect =>
+        saveInfo(c.loc.serialize, c.info)
         netlist(c.loc) = c.expr
         EmptyStmt
       case c: IsInvalid =>
@@ -177,7 +198,7 @@ object ExpandWhens extends Pass {
       getFemaleRefs(name, tpe, to_gender(dir)) map (ref => we(ref) -> WVoid)
     })
     val bodyx = expandWhens(netlist, Seq(netlist), one)(m.body)
-    (netlist, simlist, attaches, bodyx)
+    (netlist, simlist, attaches, bodyx, infoMap)
   }
 
 
@@ -200,11 +221,13 @@ object ExpandWhens extends Pass {
     * @todo Preserve Info
     * @note Remove IsInvalids on attached Analog-typed components
     */
-  private def expandNetlist(netlist: Netlist, attached: Set[WrappedExpression]) =
+  private def expandNetlist(netlist: Netlist, attached: Set[WrappedExpression], sourceInfoMap: InfoMap) =
     netlist map {
       case (k, WInvalid) => // Remove IsInvalids on attached Analog types
         if (attached.contains(k)) EmptyStmt else IsInvalid(NoInfo, k.e1)
-      case (k, v) => Connect(NoInfo, k.e1, v)
+      case (k, v) =>
+        val info = sourceInfoMap(k.e1.serialize)
+        Connect(info, k.e1, v)
     }
 
   /** Returns new sequence of combined Attaches
