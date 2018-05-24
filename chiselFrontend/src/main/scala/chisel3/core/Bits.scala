@@ -95,7 +95,11 @@ sealed abstract class Bits(width: Width)
 
   // provide bits-specific literal handling functionality here
   override private[chisel3] def ref: Arg = topBindingOpt match {
-    case Some(binding: LitBinding) => binding.asInstanceOf[ElementLitBinding].litArg
+    case Some(ElementLitBinding(litArg)) => litArg
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => litArg
+      case _ => throwException(s"internal error: DontCare should be caught before connect")
+    }
     case _ => super.ref
   }
 
