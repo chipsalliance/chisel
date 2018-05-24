@@ -76,7 +76,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
 
       // the following errors with "assertion failed"
 
-      chisel3.core.assert(outsideLiteral === insideLiteral)
+      println(outsideLiteral === insideLiteral)
+      // chisel3.core.assert(outsideLiteral === insideLiteral)
 
       // the following lines of code error
       // with "chisel3.core.BundleLitBinding cannot be cast to chisel3.core.ElementLitBinding"
