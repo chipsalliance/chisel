@@ -5,7 +5,7 @@ package chiselTests
 import Chisel.testers.BasicTester
 import chisel3._
 import chisel3.experimental.FixedPoint
-import chisel3.util.Mux1H
+import chisel3.util.{Mux1H, UIntToOH}
 import org.scalatest._
 
 //scalastyle:off magic.number
@@ -41,9 +41,7 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
     }
   }
   "UIntToOH with output width greater than 2^(input width)" in {
-    intercept[IllegalArgumentException] {
-      assertTesterPasses(new UIntToOHTester)
-    }
+    assertTesterPasses(new UIntToOHTester)
   }
 }
 
