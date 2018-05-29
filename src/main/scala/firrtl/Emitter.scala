@@ -264,7 +264,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
        case Pad =>
          val w = bitWidth(a0.tpe)
          val diff = c0 - w
-         if (w == BigInt(0)) Seq(a0)
+         if (w == BigInt(0) || diff <= 0) Seq(a0)
          else doprim.tpe match {
            // Either sign extend or zero extend.
            // If width == BigInt(1), don't extract bit

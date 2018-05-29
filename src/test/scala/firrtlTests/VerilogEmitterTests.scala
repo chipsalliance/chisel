@@ -10,6 +10,7 @@ import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.passes._
 import firrtl.Parser.IgnoreInfo
+import FirrtlCheckers._
 
 class DoPrimVerilog extends FirrtlFlatSpec {
   "Xorr" should "emit correctly" in {
@@ -148,5 +149,28 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
         |endmodule
         |""".stripMargin.split("\n") map normalized
     executeTest(input, check, compiler)
+  }
+  "The Verilog Emitter" should "support pads with width <= the width of the argument" in {
+    // We do just a few passes instead of using the VerilogCompiler to ensure that the pad actually
+    // reaches the VerilogEmitter and isn't removed by an optimization transform
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes
+    )
+    def input(n: Int) =
+      s"""circuit Test :
+         |  module Test :
+         |    input in : UInt<8>
+         |    output out : UInt<8>
+         |    out <= pad(in, $n)
+         |""".stripMargin
+    for (w <- Seq(6, 8)) {
+      val circuit = passes.foldLeft(parse(input(w))) { case (c, p) => p.run(c) }
+      val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
+      val emitter = new VerilogEmitter
+      val result = emitter.execute(state)
+      result should containLine ("assign out = in;")
+    }
   }
 }
