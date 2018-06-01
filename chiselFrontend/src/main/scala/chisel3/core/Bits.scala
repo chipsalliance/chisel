@@ -67,6 +67,9 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
+  // If this is a literal, setRef so that we don't allocate a name
+  litArg.foreach(setRef)
+
   // Only used for in a few cases, hopefully to be removed
   private[core] def cloneTypeWidth(width: Width): this.type
 
